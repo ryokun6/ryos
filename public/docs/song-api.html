@@ -610,19 +610,19 @@ X-Username: &lt;username&gt;</code></pre>
 <h2>Lyrics Processing</h2>
 <h3>Lyrics Formats</h3>
 <p>The API supports two lyrics formats from KuGou:</p>
-<table><thead><tr><th>Format</th><th>Description</th></tr></thead><tbody><tr><td><strong>LRC</strong></td><td>Standard timestamped lyrics: <code>[00:00.00]Lyrics text</code></td></tr><tr><td><strong>KRC</strong></td><td>Word-level timing: <code>[0,1000]<0,500,0>Word<500,500,0>Word</code></td></tr></tbody></table>
+<table><thead><tr><th>Format</th><th>Description</th></tr></thead><tbody><tr><td><strong>LRC</strong></td><td>Standard timestamped lyrics: <code>[00:00.00]Lyrics text</code></td></tr><tr><td><strong>KRC</strong></td><td>Word-level timing: <code>[0,1000]&lt;0,500,0&gt;Word&lt;500,500,0&gt;Word</code></td></tr></tbody></table>
 <p>KRC format provides karaoke-style word-by-word timing with embedded translations.</p>
 <h3>Line Filtering</h3>
 <p>Lines are automatically filtered to remove: <ul><li>Credit/metadata lines (作词, 作曲, Produced by, etc.)</li><li>Title/artist header lines</li><li>Empty parenthetical content</li></ul></p>
 <h3>Chinese Conversion</h3>
-<ul><li>Lyrics from KuGou are in Simplified Chinese</li><li>Automatically converted to Traditional Chinese for display</li><li>Japanese lyrics are detected and preserved without conversion</li></ul>
+<ul><li>Lyrics from KuGou are in Simplified Chinese</li></ul><ul><li>Automatically converted to Traditional Chinese for display</li><li>Japanese lyrics are detected and preserved without conversion</li></ul>
 <h3>Embedded Translations</h3>
 <p>KRC files may contain embedded Chinese translations in a base64-encoded <code>[language:]</code> tag. These are automatically extracted for Traditional Chinese translation requests, bypassing AI generation.</p>
 <hr>
 <h2>Furigana Generation</h2>
 <p>Furigana (振り仮名) are reading annotations for Japanese kanji.</p>
 <h3>Process</h3>
-<ol><li>Lines containing kanji are identified</li><li>Non-kanji lines get plain text segments immediately</li><li>AI generates readings in <code><kanji:reading></code> format</li><li>Readings are parsed into segments: <code>[{text: "私", reading: "わたし"}]</code></li></ol>
+<ol><li>Lines containing kanji are identified</li></ol><ol><li>Non-kanji lines get plain text segments immediately</li><li>AI generates readings in <code>&lt;kanji:reading&gt;</code> format</li><li>Readings are parsed into segments: <code>[{text: "私", reading: "わたし"}]</code></li></ol>
 <h3>Output Format</h3>
 <pre><code>[
   [
@@ -638,8 +638,7 @@ X-Username: &lt;username&gt;</code></pre>
 <h3>Target Languages</h3>
 <table><thead><tr><th>Language</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>zh-TW</code></td><td>Traditional Chinese characters</td><td>사랑 → 思浪 (sounds like "sarang")</td></tr><tr><td><code>en</code></td><td>English phonetics</td><td>사랑 → "saw wrong"</td></tr></tbody></table>
 <h3>Process</h3>
-<ol><li>Non-English lines are identified</li><li>English lines are passed through unchanged</li><li>AI generates readings considering:</li></ol>
-<ul><li>Phonetic accuracy (sound must be close)</li><li>Semantic meaning (prefer meaningful characters)</li><li>Furigana annotations (if provided for Japanese)</li></ul>
+<ol><li>Non-English lines are identified</li></ol><ol><li>English lines are passed through unchanged</li><li>AI generates readings considering:<ul><li>Phonetic accuracy (sound must be close)</li><li>Semantic meaning (prefer meaningful characters)</li><li>Furigana annotations (if provided for Japanese)</li></ul></li></ol>
 <h3>Output Format</h3>
 <pre><code>[
   [
@@ -784,7 +783,7 @@ const importRes = await fetch('/api/song', {
 });</code></pre>
 <hr>
 <h2>Related Endpoints</h2>
-<ul><li><a href="/docs/api-auth.md">Authentication API</a> - User authentication</li><li><a href="/docs/api-chat.md">Chat API</a> - Chat functionality</li></ul>
+<ul><li><a href="/docs/chat-api">Chat API</a> - AI chat with tool calling</li></ul><ul><li><a href="/docs/media-api">Media API</a> - YouTube search and audio features</li></ul>
       </article>
       
       <nav class="nav">

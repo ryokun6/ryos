@@ -325,7 +325,7 @@
   }&gt;;
 }</code></pre>
 <h3>Headers</h3>
-<table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>Optional</td><td><code>Bearer <token></code> for authenticated requests</td></tr><tr><td><code>X-Username</code></td><td>Optional</td><td>Username for rate limit tracking</td></tr><tr><td><code>Content-Type</code></td><td>Required</td><td><code>application/json</code></td></tr></tbody></table>
+<table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>Optional</td><td><code>Bearer &lt;token&gt;</code> for authenticated requests</td></tr><tr><td><code>X-Username</code></td><td>Optional</td><td>Username for rate limit tracking</td></tr><tr><td><code>Content-Type</code></td><td>Required</td><td><code>application/json</code></td></tr></tbody></table>
 <h3>Response</h3>
 <strong>Text Mode</strong> (<code>mode: "text"</code>)
 <pre><code>{
@@ -336,9 +336,9 @@
 <table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Image MIME type (e.g., <code>image/png</code>)</td></tr><tr><td><code>X-Image-Description</code></td><td>Optional description of generated image</td></tr></tbody></table>
 <h3>Rate Limits</h3>
 <table><thead><tr><th>User Type</th><th>Text Requests</th><th>Image Requests</th><th>Window</th></tr></thead><tbody><tr><td>Anonymous</td><td>15/hour</td><td>1/hour</td><td>1 hour</td></tr><tr><td>Authenticated</td><td>50/hour</td><td>12/hour</td><td>1 hour</td></tr></tbody></table>
-<p>Rate limit headers included in responses: <ul><li><code>X-RateLimit-Limit</code>: Maximum requests allowed</li><li><code>X-RateLimit-Remaining</code>: Requests remaining</li><li><code>X-RateLimit-Reset</code>: Seconds until reset</li><li><code>Retry-After</code>: Seconds to wait (on 429)</li></ul></p>
+<p>Rate limit headers included in responses: <ul><li><code>X-RateLimit-Limit</code>: Maximum requests allowed</li></ul><ul><li><code>X-RateLimit-Remaining</code>: Requests remaining</li><li><code>X-RateLimit-Reset</code>: Seconds until reset</li><li><code>Retry-After</code>: Seconds to wait (on 429)</li></ul></p>
 <h3>Models</h3>
-<ul><li><strong>Text</strong>: <code>gemini-2.5-flash</code></li><li><strong>Image</strong>: <code>gemini-2.5-flash-image-preview</code></li></ul>
+<ul><li><strong>Text</strong>: <code>gemini-2.5-flash</code></li></ul><ul><li><strong>Image</strong>: <code>gemini-2.5-flash-image-preview</code></li></ul>
 <h3>Example</h3>
 <strong>Text Generation</strong>
 <pre><code>curl -X POST https://os.ryo.lu/api/applet-ai \
@@ -402,7 +402,7 @@
 <table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Required</td><td><code>application/json</code></td></tr></tbody></table>
 <h3>Response</h3>
 <p>Returns a streaming response (<code>text/event-stream</code>) containing the generated HTML page. The response follows the AI SDK's UI message stream format.</p>
-<p>Generated HTML includes: <ul><li>Era-appropriate styling and typography</li><li>Historical or futuristic design elements</li><li><code><!-- TITLE: ... --></code> comment with page title</li><li>Complete, self-contained HTML document</li></ul></p>
+<p>Generated HTML includes: <ul><li>Era-appropriate styling and typography</li><li>Historical or futuristic design elements</li><li><code>&lt;!-- TITLE: ... --&gt;</code> comment with page title</li><li>Complete, self-contained HTML document</li></ul></p>
 <p>Results are cached in Redis for future retrieval.</p>
 <h3>Rate Limits</h3>
 <table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>3 requests</td><td>1 minute</td></tr><tr><td>Budget</td><td>10 requests</td><td>5 hours</td></tr></tbody></table>
@@ -482,7 +482,7 @@
 <table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>No title provided</code></td><td>Missing or invalid title field</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Burst or daily limit exceeded</td></tr><tr><td>500</td><td><code>Error parsing title</code></td><td>AI parsing failed</td></tr></tbody></table>
 <hr>
 <h2>Related</h2>
-<ul><li><strong><a href="./07-chat-system.md">Chat API</a></strong> - Main AI chat endpoint with tool calling</li><li><strong><a href="./09-ai-integration.md">AI Integration</a></strong> - AI providers and available tools</li><li><strong><a href="./04-api-layer.md">API Layer</a></strong> - Overview of all ryOS API endpoints</li><li><strong><a href="./apps-chats.md">Chats App</a></strong> - Frontend chat application documentation</li></ul>
+<ul><li><strong><a href="/docs/chat-api">Chat API</a></strong> - Main AI chat endpoint with tool calling</li></ul><ul><li><strong><a href="/docs/ai-integration">AI Integration</a></strong> - AI providers and available tools</li><li><strong><a href="/docs/api-reference">API Reference</a></strong> - Overview of all ryOS API endpoints</li><li><strong><a href="/docs/chats">Chats App</a></strong> - Frontend chat application documentation</li></ul>
       </article>
       
       <nav class="nav">

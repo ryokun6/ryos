@@ -38,7 +38,8 @@ function markdownToHtml(md: string, appContext?: string): string {
   });
 
   // Inline code - process before other text processing to avoid conflicts
-  html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+  // Must escape HTML entities inside inline code to prevent <title>, <script>, etc. from being interpreted
+  html = html.replace(/`([^`]+)`/g, (_, code) => `<code>${escapeHtml(code)}</code>`);
 
   // Tables
   html = html.replace(
@@ -60,7 +61,7 @@ function markdownToHtml(md: string, appContext?: string): string {
   html = html.replace(/^## (.+)$/gm, "<h2>$1</h2>");
   html = html.replace(/^# (.+)$/gm, "<h1>$1</h1>");
 
-  // Process lists - handle both unordered (*, -, +) and ordered (1., 2., etc.) lists
+  // Process lists - handle both unordered (*, -, +) and ordered (1., 2., etc.) lists with nesting
   // First pass: convert individual list items to temporary markers
   const listItems: { type: 'ul' | 'ol'; content: string; indent: number }[] = [];
   
@@ -77,33 +78,61 @@ function markdownToHtml(md: string, appContext?: string): string {
     return `__LIST_ITEM_${idx}__`;
   });
   
-  // Second pass: group consecutive list items of the same type
+  // Merge list item blocks separated by single blank lines (for numbered lists with gaps)
+  html = html.replace(/(__LIST_ITEM_\d+__)\n\n(__LIST_ITEM_\d+__)/g, '$1\n$2');
+  html = html.replace(/(__LIST_ITEM_\d+__)\n\n(__LIST_ITEM_\d+__)/g, '$1\n$2'); // Run twice for multiple gaps
+  
+  // Second pass: group consecutive list items and build nested structure
   html = html.replace(/(__LIST_ITEM_\d+__\n?)+/g, (match) => {
     const indices = [...match.matchAll(/__LIST_ITEM_(\d+)__/g)].map(m => parseInt(m[1]));
     if (indices.length === 0) return match;
     
-    // Group items by type, creating new lists when type changes
+    // Build nested list HTML with proper nesting
     let result = '';
-    let currentType: 'ul' | 'ol' | null = null;
-    let currentItems: string[] = [];
+    const stack: { type: 'ul' | 'ol'; indent: number; hasOpenLi: boolean }[] = [];
     
-    for (const idx of indices) {
-      const item = listItems[idx];
-      if (currentType !== null && currentType !== item.type) {
-        // Flush current list
-        result += `<${currentType}>${currentItems.map(c => `<li>${c}</li>`).join('')}</${currentType}>\n`;
-        currentItems = [];
+    for (let i = 0; i < indices.length; i++) {
+      const item = listItems[indices[i]];
+      const nextItem = i < indices.length - 1 ? listItems[indices[i + 1]] : null;
+      
+      // Close nested lists and li's when going to same or lower indent
+      while (stack.length > 0 && stack[stack.length - 1].indent > item.indent) {
+        const popped = stack.pop()!;
+        if (popped.hasOpenLi) result += '</li>';
+        result += `</${popped.type}>`;
       }
-      currentType = item.type;
-      currentItems.push(item.content);
+      
+      // Close previous li if at same indent level  
+      if (stack.length > 0 && stack[stack.length - 1].indent === item.indent && stack[stack.length - 1].hasOpenLi) {
+        result += '</li>';
+        stack[stack.length - 1].hasOpenLi = false;
+      }
+      
+      // Open new list if needed (first item or deeper indent)
+      if (stack.length === 0 || item.indent > stack[stack.length - 1].indent) {
+        result += `<${item.type}>`;
+        stack.push({ type: item.type, indent: item.indent, hasOpenLi: false });
+      }
+      
+      // Add the list item
+      result += `<li>${item.content}`;
+      stack[stack.length - 1].hasOpenLi = true;
+      
+      // Close li immediately if next item is at same or lower indent (not nested)
+      if (!nextItem || nextItem.indent <= item.indent) {
+        result += '</li>';
+        stack[stack.length - 1].hasOpenLi = false;
+      }
     }
     
-    // Flush remaining items
-    if (currentType !== null && currentItems.length > 0) {
-      result += `<${currentType}>${currentItems.map(c => `<li>${c}</li>`).join('')}</${currentType}>\n`;
+    // Close all remaining open tags
+    while (stack.length > 0) {
+      const popped = stack.pop()!;
+      if (popped.hasOpenLi) result += '</li>';
+      result += `</${popped.type}>`;
     }
     
-    return result;
+    return result + '\n';
   });
 
   // Bold and italic

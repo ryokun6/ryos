@@ -308,11 +308,11 @@
   "siteName": "Example Site"
 }</code></pre>
 <strong>Response Fields:</strong>
-<table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>url</code></td><td>string</td><td>The original URL</td></tr><tr><td><code>title</code></td><td>string?</td><td>Page title (from <code><title></code>, og:title, or twitter:title)</td></tr><tr><td><code>description</code></td><td>string?</td><td>Page description (from og:description, twitter:description, or meta description)</td></tr><tr><td><code>image</code></td><td>string?</td><td>Preview image URL (from og:image or twitter:image)</td></tr><tr><td><code>siteName</code></td><td>string?</td><td>Site name (from og:site_name or hostname)</td></tr></tbody></table>
+<table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>url</code></td><td>string</td><td>The original URL</td></tr><tr><td><code>title</code></td><td>string?</td><td>Page title (from <code>&lt;title&gt;</code>, og:title, or twitter:title)</td></tr><tr><td><code>description</code></td><td>string?</td><td>Page description (from og:description, twitter:description, or meta description)</td></tr><tr><td><code>image</code></td><td>string?</td><td>Preview image URL (from og:image or twitter:image)</td></tr><tr><td><code>siteName</code></td><td>string?</td><td>Site name (from og:site_name or hostname)</td></tr></tbody></table>
 <strong>Error Responses:</strong>
 <table><thead><tr><th>Status</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td>Missing or invalid URL</td></tr><tr><td>403</td><td>Unauthorized origin</td></tr><tr><td>405</td><td>Method not allowed</td></tr><tr><td>408</td><td>Request timeout</td></tr><tr><td>429</td><td>Rate limit exceeded</td></tr><tr><td>503</td><td>Network error</td></tr></tbody></table>
 <h3>Rate Limits</h3>
-<ul><li><strong>Global limit:</strong> 10 requests per minute per IP</li><li><strong>Per-host limit:</strong> 5 requests per minute per IP per target hostname</li></ul>
+<ul><li><strong>Global limit:</strong> 10 requests per minute per IP</li></ul><ul><li><strong>Per-host limit:</strong> 5 requests per minute per IP per target hostname</li></ul>
 <h3>Example</h3>
 <pre><code>// Fetch link preview
 const response = await fetch('/api/link-preview?url=https://github.com');
@@ -327,7 +327,7 @@ console.log(metadata);
 //   siteName: "GitHub"
 // }</code></pre>
 <h3>Notes</h3>
-<ul><li>YouTube URLs are handled specially using the oEmbed API for reliable metadata</li><li>Responses are cached for 1 hour (<code>Cache-Control: public, max-age=3600</code>)</li><li>HTML entities in metadata are automatically decoded</li><li>Relative image URLs are converted to absolute URLs</li></ul>
+<ul><li>YouTube URLs are handled specially using the oEmbed API for reliable metadata</li></ul><ul><li>Responses are cached for 1 hour (<code>Cache-Control: public, max-age=3600</code>)</li><li>HTML entities in metadata are automatically decoded</li><li>Relative image URLs are converted to absolute URLs</li></ul>
 <hr>
 <h2>iFrame Check</h2>
 <p>Checks if a URL allows iframe embedding and optionally proxies content to bypass embedding restrictions. Also supports retrieving cached historical versions of pages.</p>
@@ -351,7 +351,7 @@ console.log(metadata);
   "title": "Page Title"
 }</code></pre>
 <h4><code>proxy</code> Mode (Default)</h4>
-<p>Proxies the content with embedding-blocking headers removed. Injects: <ul><li><code><base></code> tag for relative URL resolution</li><li>Click interceptor script for navigation handling</li><li>History API patch for cross-origin compatibility</li><li>Font override styles (unless theme is "macosx")</li></ul></p>
+<p>Proxies the content with embedding-blocking headers removed. Injects: <ul><li><code>&lt;base&gt;</code> tag for relative URL resolution</li><li>Click interceptor script for navigation handling</li><li>History API patch for cross-origin compatibility</li><li>Font override styles (unless theme is "macosx")</li></ul></p>
 <strong>Response:</strong> The proxied HTML content with modified headers.
 <strong>Custom Response Headers:</strong>
 <table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Proxied-Page-Title</code></td><td>URL-encoded page title (if available)</td></tr><tr><td><code>X-Wayback-Cache</code></td><td>"HIT" if content was served from Wayback cache</td></tr></tbody></table>
@@ -400,7 +400,7 @@ const waybackSrc = `/api/iframe-check?url=https://example.com&amp;mode=proxy&amp
 <table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/share-applet</code></td><td>Retrieve applet by ID or list all applets</td></tr><tr><td>POST</td><td><code>/api/share-applet</code></td><td>Save or update an applet</td></tr><tr><td>DELETE</td><td><code>/api/share-applet</code></td><td>Delete an applet (admin only)</td></tr><tr><td>PATCH</td><td><code>/api/share-applet</code></td><td>Update applet metadata (admin only)</td></tr></tbody></table>
 <h3>Authentication</h3>
 <p>Most operations require authentication via headers:</p>
-<table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>Bearer token: <code>Bearer <token></code></td></tr><tr><td><code>X-Username</code></td><td>Username of the authenticated user</td></tr></tbody></table>
+<table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>Bearer token: <code>Bearer &lt;token&gt;</code></td></tr><tr><td><code>X-Username</code></td><td>Username of the authenticated user</td></tr></tbody></table>
 <h3>GET - Retrieve Applet</h3>
 <strong>Query Parameters:</strong>
 <table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>string</td><td>No<em></td><td>Applet ID to retrieve</td></tr><tr><td><code>list</code></td><td>string</td><td>No</em></td><td>Set to <code>"true"</code> to list all applets</td></tr></tbody></table>
@@ -410,7 +410,7 @@ const waybackSrc = `/api/iframe-check?url=https://example.com&amp;mode=proxy&amp
   "content": "&lt;html&gt;...&lt;/html&gt;",
   "title": "My Applet",
   "name": "my-applet",
-  "icon": "🎮",
+  "icon": "game",
   "windowWidth": 400,
   "windowHeight": 300,
   "createdAt": 1704067200000,
@@ -424,7 +424,7 @@ const waybackSrc = `/api/iframe-check?url=https://example.com&amp;mode=proxy&amp
       "id": "abc123...",
       "title": "Featured Applet",
       "name": "featured-applet",
-      "icon": "⭐",
+      "icon": "star",
       "createdAt": 1704067200000,
       "featured": true,
       "createdBy": "ryo"
@@ -433,7 +433,7 @@ const waybackSrc = `/api/iframe-check?url=https://example.com&amp;mode=proxy&amp
       "id": "def456...",
       "title": "My Applet",
       "name": "my-applet",
-      "icon": "🎮",
+      "icon": "game",
       "createdAt": 1704000000000,
       "featured": false,
       "createdBy": "user123"
@@ -507,7 +507,7 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
 <table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/admin</code></td><td>Query users and statistics</td></tr><tr><td>POST</td><td><code>/api/admin</code></td><td>Perform admin actions</td></tr></tbody></table>
 <h3>Authentication</h3>
 <p>All admin endpoints require:</p>
-<table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>Bearer token: <code>Bearer <token></code></td></tr><tr><td><code>X-Username</code></td><td>Must be <code>"ryo"</code></td></tr></tbody></table>
+<table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>Bearer token: <code>Bearer &lt;token&gt;</code></td></tr><tr><td><code>X-Username</code></td><td>Must be <code>"ryo"</code></td></tr></tbody></table>
 <p>Unauthorized requests return <code>403 Forbidden</code>.</p>
 <h3>GET Operations</h3>
 <strong>Query Parameters:</strong>
@@ -656,7 +656,7 @@ await fetch('/api/admin', {
 <h2>CORS</h2>
 <p>All utility APIs implement CORS with origin validation. Allowed origins are configured server-side. Requests from unauthorized origins receive <code>403 Forbidden</code>.</p>
 <h2>Related</h2>
-<ul><li><a href="./04-api-layer.md">API Layer Overview</a> - General API architecture</li><li><a href="./07-chat-system.md">Chat System</a> - Chat room APIs</li><li><a href="./09-ai-integration.md">AI Integration</a> - AI-powered features</li></ul>
+<ul><li><a href="/docs/api-reference">API Reference</a> - General API architecture</li></ul><ul><li><a href="/docs/chat-rooms-api">Chat Rooms API</a> - Real-time chat room APIs</li><li><a href="/docs/ai-integration">AI Integration</a> - AI-powered features</li></ul>
       </article>
       
       <nav class="nav">

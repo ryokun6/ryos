@@ -299,7 +299,7 @@
 <pre><code>X-Username: &lt;username&gt;
 Authorization: Bearer &lt;token&gt;</code></pre>
 <h3>Token Lifecycle</h3>
-<ul><li><strong>Generation</strong>: Tokens are generated on user creation or via <code>generateToken</code></li><li><strong>Expiration</strong>: Tokens expire after 90 days (<code>USER_EXPIRATION_TIME</code>)</li><li><strong>Grace Period</strong>: Expired tokens can be refreshed within 30 days (<code>TOKEN_GRACE_PERIOD</code>)</li><li><strong>Refresh</strong>: Use <code>refreshToken</code> to get a new token before/after expiration</li></ul>
+<ul><li><strong>Generation</strong>: Tokens are generated on user creation or via <code>generateToken</code></li></ul><ul><li><strong>Expiration</strong>: Tokens expire after 90 days (<code>USER_EXPIRATION_TIME</code>)</li><li><strong>Grace Period</strong>: Expired tokens can be refreshed within 30 days (<code>TOKEN_GRACE_PERIOD</code>)</li><li><strong>Refresh</strong>: Use <code>refreshToken</code> to get a new token before/after expiration</li></ul>
 <h3>Password Authentication</h3>
 <p>Users can optionally set a password for account recovery:</p>
 <pre><code>// Set password (requires auth)
@@ -380,7 +380,7 @@ Body: { roomId: "abc123", username: "alice" }
 POST /api/chat-rooms?action=switchRoom
 Body: { previousRoomId: "abc123", nextRoomId: "def456", username: "alice" }</code></pre>
 <h3>Deleting Rooms</h3>
-<ul><li><strong>Public rooms</strong>: Admin only</li><li><strong>Private rooms</strong>: Any member can leave; room is deleted when ≤1 member remains</li></ul>
+<ul><li><strong>Public rooms</strong>: Admin only</li></ul><ul><li><strong>Private rooms</strong>: Any member can leave; room is deleted when ≤1 member remains</li></ul>
 <pre><code>DELETE /api/chat-rooms?action=deleteRoom&amp;roomId=abc123
 Headers: { X-Username: "ryo", Authorization: "Bearer &lt;token&gt;" }</code></pre>
 <h2>Messages</h2>
@@ -547,7 +547,7 @@ const { token: newToken } = await res.json();</code></pre>
 <pre><code>export const runtime = "nodejs";
 export const maxDuration = 15; // seconds</code></pre>
 <h2>Related</h2>
-<ul><li><a href="/docs/README.md">ryOS Documentation</a></li><li><a href="/api/_utils/">API Utils</a> - Shared utilities for authentication, validation, logging</li><li><a href="https://pusher.com/docs">Pusher Documentation</a></li><li><a href="https://upstash.com/docs/redis/overall/getstarted">Upstash Redis</a></li></ul>
+<ul><li><a href="/docs/overview">ryOS Overview</a> - Main documentation</li></ul><ul><li><a href="/docs/chat-api">Chat API</a> - AI chat endpoint</li><li><a href="https://pusher.com/docs">Pusher Documentation</a></li><li><a href="https://upstash.com/docs/redis/overall/getstarted">Upstash Redis</a></li></ul>
       </article>
       
       <nav class="nav">

@@ -314,7 +314,7 @@
   "speed": 1.1
 }</code></pre>
 <strong>Output Format Options:</strong>
-<ul><li><code>mp3_44100_128</code> - MP3 at 44.1kHz, 128kbps</li><li><code>mp3_22050_32</code> - MP3 at 22.05kHz, 32kbps</li><li><code>pcm_16000</code> - PCM at 16kHz</li><li><code>pcm_22050</code> - PCM at 22.05kHz</li><li><code>pcm_24000</code> - PCM at 24kHz</li><li><code>pcm_44100</code> - PCM at 44.1kHz</li><li><code>ulaw_8000</code> - μ-law at 8kHz</li></ul>
+<ul><li><code>mp3_44100_128</code> - MP3 at 44.1kHz, 128kbps</li></ul><ul><li><code>mp3_22050_32</code> - MP3 at 22.05kHz, 32kbps</li><li><code>pcm_16000</code> - PCM at 16kHz</li><li><code>pcm_22050</code> - PCM at 22.05kHz</li><li><code>pcm_24000</code> - PCM at 24kHz</li><li><code>pcm_44100</code> - PCM at 44.1kHz</li><li><code>ulaw_8000</code> - μ-law at 8kHz</li></ul>
 <h3>Response</h3>
 <strong>Success (200):</strong>
 <p>Returns audio stream with headers:</p>
@@ -460,7 +460,7 @@ console.log('Transcription:', text);</code></pre>
 <h3>Rate Limits</h3>
 <table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>20 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>200 requests</td><td>24 hours</td></tr></tbody></table>
 <h3>API Key Rotation</h3>
-<p>The endpoint supports multiple YouTube API keys for quota rotation: <ul><li><code>YOUTUBE_API_KEY</code> - Primary key</li><li><code>YOUTUBE_API_KEY_2</code> - Backup key</li></ul></p>
+<p>The endpoint supports multiple YouTube API keys for quota rotation: <ul><li><code>YOUTUBE_API_KEY</code> - Primary key</li></ul><ul><li><code>YOUTUBE_API_KEY_2</code> - Backup key</li></ul></p>
 <p>When the primary key's quota is exceeded, requests automatically fall back to backup keys.</p>
 <h3>Example</h3>
 <strong>Request:</strong>
@@ -501,7 +501,7 @@ results.forEach(video =&gt; {
 <table><thead><tr><th>Variable</th><th>Required For</th><th>Description</th></tr></thead><tbody><tr><td><code>OPENAI_API_KEY</code></td><td>TTS (OpenAI), Transcription</td><td>OpenAI API key</td></tr><tr><td><code>ELEVENLABS_API_KEY</code></td><td>TTS (ElevenLabs)</td><td>ElevenLabs API key</td></tr><tr><td><code>YOUTUBE_API_KEY</code></td><td>YouTube Search</td><td>Primary YouTube Data API v3 key</td></tr><tr><td><code>YOUTUBE_API_KEY_2</code></td><td>YouTube Search</td><td>Backup YouTube API key (optional)</td></tr><tr><td><code>REDIS_KV_REST_API_URL</code></td><td>Rate Limiting</td><td>Upstash Redis URL</td></tr><tr><td><code>REDIS_KV_REST_API_TOKEN</code></td><td>Rate Limiting</td><td>Upstash Redis token</td></tr></tbody></table>
 <hr>
 <h2>Related</h2>
-<ul><li><a href="/workspace/docs/apps-karaoke.md">Song API</a> - Song library management for karaoke</li><li><a href="/workspace/docs/07-chat-system.md">Chat API</a> - AI chat with voice integration</li><li><a href="/workspace/docs/09-ai-integration.md">AI Integration</a> - Overview of AI capabilities</li></ul>
+<ul><li><a href="/docs/song-api">Song API</a> - Song library management for karaoke</li></ul><ul><li><a href="/docs/chat-api">Chat API</a> - AI chat with voice integration</li><li><a href="/docs/ai-integration">AI Integration</a> - Overview of AI capabilities</li></ul>
       </article>
       
       <nav class="nav">
