@@ -8,6 +8,8 @@ export const config = {
 
 const SYNC_KEY_PREFIX = "sync:user:";
 const SYNC_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
+const MAX_SYNC_BYTES = 1_000_000; // ~1MB safety cap
+const MAX_SNAPSHOTS = 200; // hard cap to prevent abuse
 
 type SyncEnvelope = {
   deviceId: string;
@@ -87,13 +89,21 @@ export default async function handler(request: Request): Promise<Response> {
 
   let body: SyncEnvelope | null = null;
   try {
-    body = (await request.json()) as SyncEnvelope;
+    const text = await request.text();
+    if (text.length > MAX_SYNC_BYTES) {
+      return new Response("Payload too large", { status: 413 });
+    }
+    body = JSON.parse(text) as SyncEnvelope;
   } catch {
     return new Response("Invalid JSON", { status: 400 });
   }
 
   if (!body || !body.deviceId || !Array.isArray(body.snapshots)) {
     return new Response("Invalid payload", { status: 400 });
+  }
+
+  if (body.snapshots.length > MAX_SNAPSHOTS) {
+    return new Response("Too many snapshots", { status: 413 });
   }
 
   await redis.set(storageKey, body, { ex: SYNC_TTL_SECONDS });
