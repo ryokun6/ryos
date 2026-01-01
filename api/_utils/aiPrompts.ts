@@ -160,7 +160,7 @@ export const IE_HTML_GENERATION_INSTRUCTIONS = `
 - Output ONLY raw HTML – no markdown code blocks, no chat, no comments before or after
 - Begin with title comment: <!-- TITLE: Your Generated Page Title -->
 - Body content only – no doctype, html, head, or body tags (system wraps it in an iframe)
-- Single self-contained file: styles in <style> tag, scripts in <script> tag
+- Put HTML content FIRST, then <style> tags and <script> tags at the VERY END
 - Never import external files or scripts (except CDN libraries like Three.js if needed)
 
 ## Styling
