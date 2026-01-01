@@ -175,7 +175,7 @@ export const storeDescriptors: StoreDescriptor[] = [
   {
     key: "ryos:karaoke",
     file: "src/stores/useKaraokeStore.ts",
-    version: 0,
+    version: 2,
     storage: "localStorage",
     category: "media",
     sync: { eligible: true, defaultEnabled: false },

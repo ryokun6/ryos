@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createPersistedStore, type PersistedStoreMeta } from "./persistAdapter";
 import { useIpodStore, Track } from "./useIpodStore";
 
 /** Helper to get current index from song ID */
@@ -31,7 +31,7 @@ interface KaraokeData {
   isFullScreen: boolean;
 }
 
-export interface KaraokeState extends KaraokeData {
+export interface KaraokeState extends KaraokeData, PersistedStoreMeta {
   // Getters
   getCurrentTrack: () => Track | null;
   getCurrentIndex: () => number;
@@ -62,9 +62,10 @@ const initialKaraokeData: KaraokeData = {
 const CURRENT_KARAOKE_STORE_VERSION = 2; // Updated for currentSongId
 
 export const useKaraokeStore = create<KaraokeState>()(
-  persist(
+  createPersistedStore(
     (set, get) => ({
       ...initialKaraokeData,
+      _updatedAt: Date.now(),
 
       // Getter to get current track from iPod library
       getCurrentTrack: () => {
@@ -81,14 +82,14 @@ export const useKaraokeStore = create<KaraokeState>()(
         return getIndexFromSongId(tracks, currentSongId);
       },
 
-      setCurrentSongId: (songId) => set({ currentSongId: songId }),
+      setCurrentSongId: (songId) => set({ currentSongId: songId, _updatedAt: Date.now() }),
 
       togglePlay: () => {
         // Prevent playback when offline
         if (typeof navigator !== "undefined" && !navigator.onLine) {
           return;
         }
-        set((state) => ({ isPlaying: !state.isPlaying }));
+        set((state) => ({ isPlaying: !state.isPlaying, _updatedAt: Date.now() }));
       },
 
       setIsPlaying: (playing) => {
@@ -96,17 +97,19 @@ export const useKaraokeStore = create<KaraokeState>()(
         if (playing && typeof navigator !== "undefined" && !navigator.onLine) {
           return;
         }
-        set({ isPlaying: playing });
+        set({ isPlaying: playing, _updatedAt: Date.now() });
       },
 
-      toggleLoopCurrent: () => set((state) => ({ loopCurrent: !state.loopCurrent })),
+      toggleLoopCurrent: () =>
+        set((state) => ({ loopCurrent: !state.loopCurrent, _updatedAt: Date.now() })),
 
-      toggleLoopAll: () => set((state) => ({ loopAll: !state.loopAll })),
+      toggleLoopAll: () => set((state) => ({ loopAll: !state.loopAll, _updatedAt: Date.now() })),
 
       toggleShuffle: () =>
         set((state) => ({
           isShuffled: !state.isShuffled,
           playbackHistory: !state.isShuffled ? [] : state.playbackHistory,
+          _updatedAt: Date.now(),
         })),
 
       nextTrack: () =>
@@ -150,6 +153,7 @@ export const useKaraokeStore = create<KaraokeState>()(
             currentSongId: nextSongId, 
             isPlaying: true,
             playbackHistory: newPlaybackHistory,
+            _updatedAt: Date.now(),
           };
         }),
 
@@ -181,12 +185,14 @@ export const useKaraokeStore = create<KaraokeState>()(
             currentSongId: prevSongId, 
             isPlaying: true,
             playbackHistory: newPlaybackHistory,
+            _updatedAt: Date.now(),
           };
         }),
 
-      toggleFullScreen: () => set((state) => ({ isFullScreen: !state.isFullScreen })),
+      toggleFullScreen: () =>
+        set((state) => ({ isFullScreen: !state.isFullScreen, _updatedAt: Date.now() })),
 
-      setFullScreen: (fullScreen) => set({ isFullScreen: fullScreen }),
+      setFullScreen: (fullScreen) => set({ isFullScreen: fullScreen, _updatedAt: Date.now() }),
     }),
     {
       name: "ryos:karaoke",
@@ -197,6 +203,7 @@ export const useKaraokeStore = create<KaraokeState>()(
         loopAll: state.loopAll,
         isShuffled: state.isShuffled,
         isFullScreen: state.isFullScreen,
+        _updatedAt: state._updatedAt,
         // Don't persist isPlaying or playbackHistory
       }),
       migrate: (persistedState, version) => {
@@ -206,13 +213,16 @@ export const useKaraokeStore = create<KaraokeState>()(
           console.log(
             `Migrating Karaoke store from version ${version} to ${CURRENT_KARAOKE_STORE_VERSION}`
           );
-          return {
+          const migrated = {
             ...state,
             currentSongId: null, // Reset - will pick first track
             isPlaying: false,
             playbackHistory: [],
           };
+          if (!migrated._updatedAt) migrated._updatedAt = Date.now();
+          return migrated;
         }
+        if (!state._updatedAt) state._updatedAt = Date.now();
         return state;
       },
     }
