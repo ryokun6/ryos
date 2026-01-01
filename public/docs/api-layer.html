@@ -189,16 +189,28 @@
     <a href="/docs/apps-pc" class="nav-child ">Virtual PC</a>
   </div>
 </div>
+<a href="/docs/api-ai-endpoints" class="">AI Endpoints</a>
+<a href="/docs/api-chat-rooms" class="">Chat Rooms API</a>
+<a href="/docs/api-chat" class="">Chat API</a>
+<a href="/docs/api-media" class="">Media API</a>
+<a href="/docs/api-song" class="">Song API</a>
+<a href="/docs/api-utilities" class="">Utility APIs</a>
     </nav>
     
     <main class="content">
       <article>
         <h1>API Layer</h1>
 <p>ryOS uses Vercel Serverless Functions with Edge runtime.</p>
+<h2>API Documentation</h2>
+<table><thead><tr><th>Endpoint Group</th><th>Description</th></tr></thead><tbody><tr><td><a href="api-chat.html">Chat API</a></td><td>Main AI chat with streaming and tool calling</td></tr><tr><td><a href="api-song.html">Song API</a></td><td>Music library CRUD, lyrics, furigana, translations</td></tr><tr><td><a href="api-chat-rooms.html">Chat Rooms API</a></td><td>Real-time chat rooms with Pusher/Redis</td></tr><tr><td><a href="api-ai-endpoints.html">AI Endpoints</a></td><td>Applet generation, IE time-travel, parse-title</td></tr><tr><td><a href="api-media.html">Media API</a></td><td>Text-to-speech, transcription, YouTube search</td></tr><tr><td><a href="api-utilities.html">Utility APIs</a></td><td>Link preview, iframe check, share applet, admin</td></tr></tbody></table>
 <h2>AI Endpoints</h2>
 <table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat</code></td><td>Main AI chat with tool calling</td></tr><tr><td><code>/api/applet-ai</code></td><td>Applet text + image generation</td></tr><tr><td><code>/api/ie-generate</code></td><td>Time-travel page generation</td></tr><tr><td><code>/api/parse-title</code></td><td>Music metadata extraction</td></tr></tbody></table>
 <h2>Media Endpoints</h2>
 <table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/song/</code></td><td>Song library CRUD</td></tr><tr><td><code>/api/song/[id]</code></td><td>Individual song operations</td></tr><tr><td><code>/api/speech</code></td><td>Text-to-speech</td></tr><tr><td><code>/api/audio-transcribe</code></td><td>Speech-to-text</td></tr><tr><td><code>/api/youtube-search</code></td><td>YouTube music search</td></tr></tbody></table>
+<h2>Communication Endpoints</h2>
+<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat-rooms</code></td><td>Real-time chat room management</td></tr></tbody></table>
+<h2>Utility Endpoints</h2>
+<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/link-preview</code></td><td>URL metadata extraction</td></tr><tr><td><code>/api/iframe-check</code></td><td>Embeddability checking</td></tr><tr><td><code>/api/share-applet</code></td><td>Applet sharing</td></tr><tr><td><code>/api/admin</code></td><td>Admin operations</td></tr></tbody></table>
 <h2>Authentication</h2>
 <pre><code>Authorization: Bearer {token}
 X-Username: {username}</code></pre>

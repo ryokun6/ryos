@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Rooms API - ryOS Docs</title>
+  <link rel="icon" href="/icons/mac-192.png">
+  <style>
+    @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
+    @font-face { font-family: "Monaco"; src: url("/fonts/monacottf.woff2") format("woff2"); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Geneva", system-ui, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #fff;
+      color: #000;
+    }
+    a { color: #00f; }
+    a:hover { text-decoration: none; }
+    code, pre { font-family: "Monaco", monospace; font-size: 11px; }
+    code { background: #f0f0f0; padding: 1px 4px; }
+    pre { background: #f8f8f8; border: 1px solid #ddd; padding: 12px; overflow-x: auto; margin: 12px 0; }
+    pre code { background: none; padding: 0; }
+    
+    /* Layout */
+    .header {
+      position: sticky; top: 0; z-index: 10;
+      background: #fff; border-bottom: 1px solid #ccc;
+      padding: 0 16px; height: 40px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-left img { width: 20px; height: 20px; display: block; }
+    .header-left span { font-weight: bold; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .header-right a { text-decoration: none; color: #333; }
+    .header-right a:hover { color: #000; }
+    .header-right .github { display: flex; align-items: center; gap: 4px; }
+    .header-right .launch { background: #000; color: #fff; padding: 4px 12px; }
+    
+    .container { display: flex; max-width: 960px; margin: 0 auto; }
+    
+    .sidebar {
+      width: 180px; flex-shrink: 0;
+      border-right: 1px solid #ccc;
+      padding: 12px;
+      position: sticky; top: 40px;
+      height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .sidebar a {
+      display: block; padding: 4px 8px; margin: 2px 0;
+      text-decoration: none; color: #333;
+    }
+    .sidebar a:hover { background: #f0f0f0; }
+    .sidebar a.active { background: #000; color: #fff; }
+    
+    /* Tree hierarchy styles */
+    .nav-group { margin: 4px 0; }
+    .nav-toggle {
+      display: flex; align-items: center; gap: 4px;
+      background: none; border: none; padding: 0; width: 100%;
+      cursor: pointer; text-align: left; font: inherit; color: inherit;
+    }
+    .nav-toggle:hover { background: #f0f0f0; }
+    .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
+    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; }
+    .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
+    .nav-child { padding-left: 8px; font-size: 11px; }
+    
+    .content { flex: 1; padding: 24px 32px; min-width: 0; }
+    
+    /* Typography */
+    h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
+    h2 { font-size: 14px; margin: 24px 0 12px; }
+    h3 { font-size: 12px; margin: 16px 0 8px; }
+    p { margin: 8px 0; }
+    ul { margin: 8px 0 8px 20px; }
+    li { margin: 4px 0; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    th { background: #f0f0f0; font-weight: bold; }
+    
+    /* Navigation */
+    .nav { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
+    .nav a { text-decoration: none; color: #333; }
+    .nav a:hover { color: #000; }
+    
+    
+    /* Mobile menu button */
+    .menu-btn { 
+      display: none; 
+      background: transparent; 
+      border: 0; 
+      padding: 4px; 
+      cursor: pointer; 
+      line-height: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+      color: inherit;
+    }
+    .menu-btn svg { display: block; width: 18px; height: 18px; pointer-events: none; }
+    @media screen and (max-width: 768px) {
+      .menu-btn { 
+        display: -webkit-flex !important;
+        display: flex !important; 
+        -webkit-align-items: center;
+        align-items: center; 
+        -webkit-justify-content: center;
+        justify-content: center;
+      }
+      .header-left img { display: none !important; }
+      .sidebar { 
+        position: fixed; left: -200px; top: 40px; 
+        width: 200px; height: calc(100vh - 40px);
+        background: #fff; z-index: 20;
+        transition: left 0.2s;
+      }
+      .sidebar.open { left: 0; box-shadow: 2px 0 8px rgba(0,0,0,0.1); }
+      .content { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit">
+        <img src="/icons/mac-192.png" alt="ryOS" width="20" height="20">
+        <span>ryOS</span>
+      </a>
+      <span style="color:#999">/</span>
+      <span style="color:#666">Docs</span>
+    </div>
+    <div class="header-right">
+      <a href="https://github.com/ryokun6/ryos" target="_blank" class="github">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <a href="/" class="launch">Launch</a>
+    </div>
+  </header>
+  
+  <div class="container">
+    <nav class="sidebar">
+      <a href="/docs/overview" class="">Overview</a>
+<a href="/docs/state-management" class="">State Management</a>
+<a href="/docs/window-manager" class="">Window Manager</a>
+<a href="/docs/api-layer" class="">API Layer</a>
+<a href="/docs/theme-system" class="">Theme System</a>
+<a href="/docs/components" class="">Components</a>
+<a href="/docs/chat-system" class="">Chat System</a>
+<a href="/docs/file-system" class="">File System</a>
+<a href="/docs/ai-integration" class="">AI Integration</a>
+<a href="/docs/build-system" class="">Build System</a>
+<a href="/docs/i18n-hooks" class="">i18n & Hooks</a>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/apps" class="">Apps</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/apps-admin" class="nav-child ">Admin</a>
+    <a href="/docs/apps-applet-viewer" class="nav-child ">Applet Store</a>
+    <a href="/docs/apps-chats" class="nav-child ">Chats</a>
+    <a href="/docs/apps-control-panels" class="nav-child ">Control Panels</a>
+    <a href="/docs/apps-finder" class="nav-child ">Finder</a>
+    <a href="/docs/apps-internet-explorer" class="nav-child ">Internet Explorer</a>
+    <a href="/docs/apps-ipod" class="nav-child ">iPod</a>
+    <a href="/docs/apps-karaoke" class="nav-child ">Karaoke</a>
+    <a href="/docs/apps-minesweeper" class="nav-child ">Minesweeper</a>
+    <a href="/docs/apps-paint" class="nav-child ">Paint</a>
+    <a href="/docs/apps-photo-booth" class="nav-child ">Photo Booth</a>
+    <a href="/docs/apps-soundboard" class="nav-child ">Soundboard</a>
+    <a href="/docs/apps-synth" class="nav-child ">Synth</a>
+    <a href="/docs/apps-terminal" class="nav-child ">Terminal</a>
+    <a href="/docs/apps-textedit" class="nav-child ">TextEdit</a>
+    <a href="/docs/apps-videos" class="nav-child ">Videos</a>
+    <a href="/docs/apps-pc" class="nav-child ">Virtual PC</a>
+  </div>
+</div>
+<a href="/docs/api-ai-endpoints" class="">AI Endpoints</a>
+<a href="/docs/api-chat-rooms" class="active">Chat Rooms API</a>
+<a href="/docs/api-chat" class="">Chat API</a>
+<a href="/docs/api-media" class="">Media API</a>
+<a href="/docs/api-song" class="">Song API</a>
+<a href="/docs/api-utilities" class="">Utility APIs</a>
+    </nav>
+    
+    <main class="content">
+      <article>
+        <h1>Chat Rooms API</h1>
+<p>Real-time chat rooms API powered by Pusher WebSockets and Redis (Upstash). Supports public and private rooms with presence tracking, token-based authentication, and AI-powered replies.</p>
+<h2>Endpoints</h2>
+<p>All actions are performed on a single endpoint using the <code>action</code> query parameter.</p>
+<table><thead><tr><th>Method</th><th>Action</th><th>Description</th><th>Auth Required</th></tr></thead><tbody><tr><td>GET</td><td><code>getRooms</code></td><td>List all accessible rooms</td><td>No</td></tr><tr><td>GET</td><td><code>getRoom</code></td><td>Get a single room by ID</td><td>Yes</td></tr><tr><td>GET</td><td><code>getMessages</code></td><td>Get messages for a room</td><td>No</td></tr><tr><td>GET</td><td><code>getBulkMessages</code></td><td>Get messages for multiple rooms</td><td>No</td></tr><tr><td>GET</td><td><code>getRoomUsers</code></td><td>Get active users in a room</td><td>Yes</td></tr><tr><td>GET</td><td><code>getUsers</code></td><td>Search users by username</td><td>No</td></tr><tr><td>GET</td><td><code>checkPassword</code></td><td>Check if user has password set</td><td>Yes</td></tr><tr><td>GET</td><td><code>cleanupPresence</code></td><td>Clean up expired presence (admin)</td><td>Yes (admin)</td></tr><tr><td>GET</td><td><code>debugPresence</code></td><td>Debug presence data (admin)</td><td>Yes (admin)</td></tr><tr><td>POST</td><td><code>createRoom</code></td><td>Create a new room</td><td>Yes</td></tr><tr><td>POST</td><td><code>joinRoom</code></td><td>Join a room</td><td>No</td></tr><tr><td>POST</td><td><code>leaveRoom</code></td><td>Leave a room</td><td>No</td></tr><tr><td>POST</td><td><code>switchRoom</code></td><td>Switch between rooms</td><td>No</td></tr><tr><td>POST</td><td><code>sendMessage</code></td><td>Send a message to a room</td><td>Yes</td></tr><tr><td>POST</td><td><code>generateRyoReply</code></td><td>Generate AI reply from Ryo</td><td>Yes</td></tr><tr><td>POST</td><td><code>createUser</code></td><td>Create a new user account</td><td>No</td></tr><tr><td>POST</td><td><code>generateToken</code></td><td>Generate auth token for user</td><td>Yes</td></tr><tr><td>POST</td><td><code>refreshToken</code></td><td>Refresh an existing token</td><td>No</td></tr><tr><td>POST</td><td><code>verifyToken</code></td><td>Verify token validity</td><td>No</td></tr><tr><td>POST</td><td><code>authenticateWithPassword</code></td><td>Login with username/password</td><td>No</td></tr><tr><td>POST</td><td><code>setPassword</code></td><td>Set user password</td><td>Yes</td></tr><tr><td>POST</td><td><code>clearAllMessages</code></td><td>Clear all messages (admin)</td><td>Yes (admin)</td></tr><tr><td>POST</td><td><code>resetUserCounts</code></td><td>Reset all user counts (admin)</td><td>Yes (admin)</td></tr><tr><td>POST</td><td><code>listTokens</code></td><td>List user's active tokens</td><td>Yes</td></tr><tr><td>POST</td><td><code>logoutAllDevices</code></td><td>Logout from all devices</td><td>Yes</td></tr><tr><td>POST</td><td><code>logoutCurrent</code></td><td>Logout current session</td><td>Yes</td></tr><tr><td>DELETE</td><td><code>deleteRoom</code></td><td>Delete a room</td><td>Yes</td></tr><tr><td>DELETE</td><td><code>deleteMessage</code></td><td>Delete a message (admin)</td><td>Yes (admin)</td></tr></tbody></table>
+<h2>Authentication</h2>
+<p>The API uses token-based authentication with the following headers:</p>
+<pre><code>X-Username: &lt;username&gt;
+Authorization: Bearer &lt;token&gt;</code></pre>
+<h3>Token Lifecycle</h3>
+<ul><li><strong>Generation</strong>: Tokens are generated on user creation or via <code>generateToken</code></li></ul>
+<ul><li><strong>Expiration</strong>: Tokens expire after 90 days (<code>USER_EXPIRATION_TIME</code>)</li></ul>
+<ul><li><strong>Grace Period</strong>: Expired tokens can be refreshed within 30 days (<code>TOKEN_GRACE_PERIOD</code>)</li></ul>
+<ul><li><strong>Refresh</strong>: Use <code>refreshToken</code> to get a new token before/after expiration</li></ul>
+<h3>Password Authentication</h3>
+<p>Users can optionally set a password for account recovery:</p>
+<pre><code>// Set password (requires auth)
+POST /api/chat-rooms?action=setPassword
+Body: { password: "min8chars" }
+
+// Login with password
+POST /api/chat-rooms?action=authenticateWithPassword
+Body: { username: "alice", password: "min8chars" }</code></pre>
+<p>Minimum password length: 8 characters</p>
+<h2>TypeScript Types</h2>
+<h3>Room Types</h3>
+<pre><code>type RoomType = "public" | "private";
+
+interface Room {
+  id: string;
+  name: string;
+  type: RoomType;
+  createdAt: number;
+  userCount: number;
+  members?: string[]; // Only for private rooms
+}
+
+interface RoomWithUsers extends Room {
+  users: string[];
+}</code></pre>
+<h3>Message Types</h3>
+<pre><code>interface Message {
+  id: string;
+  roomId: string;
+  username: string;
+  content: string;
+  timestamp: number;
+}
+
+interface BulkMessagesResult {
+  messagesMap: Record&lt;string, Message[]&gt;;
+  validRoomIds: string[];
+  invalidRoomIds: string[];
+}</code></pre>
+<h3>User Types</h3>
+<pre><code>interface User {
+  username: string;
+  lastActive: number;
+}</code></pre>
+<h2>Room Management</h2>
+<h3>Creating Rooms</h3>
+<strong>Public Rooms</strong> (admin only):
+<pre><code>POST /api/chat-rooms?action=createRoom
+Headers: { X-Username: "ryo", Authorization: "Bearer &lt;token&gt;" }
+Body: { name: "general", type: "public" }</code></pre>
+<strong>Private Rooms</strong> (any authenticated user):
+<pre><code>POST /api/chat-rooms?action=createRoom
+Headers: { X-Username: "alice", Authorization: "Bearer &lt;token&gt;" }
+Body: { type: "private", members: ["alice", "bob"] }</code></pre>
+<p>Private room names are auto-generated as <code>@alice, @bob</code>.</p>
+<h3>Listing Rooms</h3>
+<pre><code>GET /api/chat-rooms?action=getRooms&amp;username=alice
+
+// Response
+{
+  "rooms": [
+    { "id": "abc123", "name": "general", "type": "public", "userCount": 5, ... },
+    { "id": "def456", "name": "@alice, @bob", "type": "private", "userCount": 2, "members": ["alice", "bob"], ... }
+  ]
+}</code></pre>
+<p>Users only see public rooms and private rooms they're members of.</p>
+<h3>Joining/Leaving Rooms</h3>
+<pre><code>// Join
+POST /api/chat-rooms?action=joinRoom
+Body: { roomId: "abc123", username: "alice" }
+
+// Leave
+POST /api/chat-rooms?action=leaveRoom
+Body: { roomId: "abc123", username: "alice" }
+
+// Switch (optimized for changing rooms)
+POST /api/chat-rooms?action=switchRoom
+Body: { previousRoomId: "abc123", nextRoomId: "def456", username: "alice" }</code></pre>
+<h3>Deleting Rooms</h3>
+<ul><li><strong>Public rooms</strong>: Admin only</li></ul>
+<ul><li><strong>Private rooms</strong>: Any member can leave; room is deleted when ≤1 member remains</li></ul>
+<pre><code>DELETE /api/chat-rooms?action=deleteRoom&amp;roomId=abc123
+Headers: { X-Username: "ryo", Authorization: "Bearer &lt;token&gt;" }</code></pre>
+<h2>Messages</h2>
+<h3>Sending Messages</h3>
+<pre><code>POST /api/chat-rooms?action=sendMessage
+Headers: { X-Username: "alice", Authorization: "Bearer &lt;token&gt;" }
+Body: { roomId: "abc123", username: "alice", content: "Hello world!" }</code></pre>
+<strong>Rate Limiting</strong> (public rooms only):
+<ul><li>Short burst: 3 messages per 10 seconds</li></ul>
+<ul><li>Long burst: 20 messages per 60 seconds</li></ul>
+<ul><li>Minimum interval: 2 seconds between messages</li></ul>
+<strong>Content Validation</strong>:
+<ul><li>Maximum length: Configured via <code>MAX_MESSAGE_LENGTH</code></li></ul>
+<ul><li>Profanity filtering with URL preservation</li></ul>
+<ul><li>HTML escaping for XSS prevention</li></ul>
+<ul><li>Duplicate message detection</li></ul>
+<h3>Getting Messages</h3>
+<pre><code>// Single room (default limit: 20, max: 500)
+GET /api/chat-rooms?action=getMessages&amp;roomId=abc123&amp;limit=50
+
+// Multiple rooms
+GET /api/chat-rooms?action=getBulkMessages&amp;roomIds=abc123,def456</code></pre>
+<h3>AI-Powered Replies (Ryo)</h3>
+<p>Generate responses from the AI assistant "Ryo":</p>
+<pre><code>POST /api/chat-rooms?action=generateRyoReply
+Headers: { X-Username: "alice", Authorization: "Bearer &lt;token&gt;" }
+Body: {
+  roomId: "abc123",
+  prompt: "@ryo what do you think?",
+  systemState: {
+    chatRoomContext: {
+      recentMessages: "alice: Hello\nbob: Hi there",
+      mentionedMessage: "What's the weather like?"
+    }
+  }
+}</code></pre>
+<p>Uses Google's Gemini 2.5 Flash model.</p>
+<h2>Real-time Events</h2>
+<p>The API uses Pusher for real-time WebSocket communication.</p>
+<h3>Channels</h3>
+<table><thead><tr><th>Channel Pattern</th><th>Description</th></tr></thead><tbody><tr><td><code>chats-public</code></td><td>Public room events (all users)</td></tr><tr><td><code>chats-{username}</code></td><td>Private events for specific user</td></tr><tr><td><code>room-{roomId}</code></td><td>Room-specific message events</td></tr></tbody></table>
+<h3>Events</h3>
+<table><thead><tr><th>Event</th><th>Payload</th><th>Description</th></tr></thead><tbody><tr><td><code>room-created</code></td><td><code>{ room: Room }</code></td><td>New room created</td></tr><tr><td><code>room-updated</code></td><td><code>{ room: Room }</code></td><td>Room data changed (user count, etc.)</td></tr><tr><td><code>room-deleted</code></td><td><code>{ roomId: string }</code></td><td>Room deleted</td></tr><tr><td><code>room-message</code></td><td><code>{ roomId: string, message: Message }</code></td><td>New message in room</td></tr><tr><td><code>message-deleted</code></td><td><code>{ roomId: string, messageId: string }</code></td><td>Message deleted</td></tr><tr><td><code>rooms-updated</code></td><td><code>{ rooms: Room[] }</code></td><td>Batch room updates</td></tr></tbody></table>
+<h3>Subscribing to Events</h3>
+<pre><code>import Pusher from 'pusher-js';
+
+const pusher = new Pusher(PUSHER_KEY, { cluster: PUSHER_CLUSTER });
+
+// Subscribe to public rooms
+const publicChannel = pusher.subscribe('chats-public');
+publicChannel.bind('room-created', (data) =&gt; console.log('New room:', data.room));
+
+// Subscribe to room messages
+const roomChannel = pusher.subscribe('room-abc123');
+roomChannel.bind('room-message', (data) =&gt; console.log('New message:', data.message));
+
+// Subscribe to private updates (for logged-in user)
+const userChannel = pusher.subscribe('chats-alice');
+userChannel.bind('room-created', (data) =&gt; console.log('Invited to room:', data.room));</code></pre>
+<h2>Redis Data Structure</h2>
+<h3>Key Prefixes</h3>
+<table><thead><tr><th>Prefix</th><th>Description</th></tr></thead><tbody><tr><td><code>chat:room:{roomId}</code></td><td>Room object (JSON)</td></tr><tr><td><code>chat:messages:{roomId}</code></td><td>Message list (Redis List, max 100)</td></tr><tr><td><code>chat:users:{username}</code></td><td>User object (JSON)</td></tr><tr><td><code>chat:room:users:{roomId}</code></td><td>Room user set (deprecated, use presence)</td></tr><tr><td><code>chat:presence:{roomId}:{username}</code></td><td>Individual presence key</td></tr><tr><td><code>chat:presencez:{roomId}</code></td><td>Room presence ZSET (score = timestamp)</td></tr><tr><td><code>chat:rooms</code></td><td>Set of all room IDs</td></tr></tbody></table>
+<h3>TTL Values</h3>
+<table><thead><tr><th>Key Type</th><th>TTL</th></tr></thead><tbody><tr><td>Room presence</td><td>24 hours (86400s)</td></tr><tr><td>User/Token</td><td>90 days (7776000s)</td></tr><tr><td>Token grace period</td><td>30 days (2592000s)</td></tr></tbody></table>
+<h3>Rate Limiting Keys</h3>
+<table><thead><tr><th>Prefix</th><th>Description</th></tr></thead><tbody><tr><td><code>rl:chat:b:s:{roomId}:{username}</code></td><td>Short burst counter (10s window)</td></tr><tr><td><code>rl:chat:b:l:{roomId}:{username}</code></td><td>Long burst counter (60s window)</td></tr><tr><td><code>rl:chat:b:last:{roomId}:{username}</code></td><td>Last message timestamp</td></tr><tr><td><code>rl:block:{action}:{identifier}</code></td><td>Rate limit block (24h)</td></tr></tbody></table>
+<h2>Presence</h2>
+<p>User presence is tracked using Redis Sorted Sets (ZSETs) with timestamps as scores.</p>
+<h3>How It Works</h3>
+<ol><li>When a user joins/sends a message, their presence is updated: <pre><code>   ZADD chat:presencez:{roomId} {timestamp} {username}</code></pre></li></ol>
+<ol><li>Active users are retrieved by pruning expired entries: <pre><code>   ZREMRANGEBYSCORE chat:presencez:{roomId} 0 {cutoffTimestamp}
+   ZRANGE chat:presencez:{roomId} 0 -1</code></pre></li></ol>
+<ol><li>Users are considered "offline" after 24 hours of inactivity</li></ol>
+<h3>Presence Operations</h3>
+<pre><code>// Set/refresh presence
+await setRoomPresence(roomId, username);
+await refreshRoomPresence(roomId, username);
+
+// Remove presence
+await removeRoomPresence(roomId, username);
+
+// Get active users
+const users = await getActiveUsersInRoom(roomId);
+
+// Refresh room user count
+const count = await refreshRoomUserCount(roomId);</code></pre>
+<h3>Admin Cleanup</h3>
+<pre><code>GET /api/chat-rooms?action=cleanupPresence
+Headers: { X-Username: "ryo", Authorization: "Bearer &lt;token&gt;" }</code></pre>
+<h2>Example Usage</h2>
+<h3>Complete Flow: Create User and Send Message</h3>
+<pre><code>// 1. Create user
+const createRes = await fetch('/api/chat-rooms?action=createUser', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ username: 'alice', password: 'securepass123' })
+});
+const { user, token } = await createRes.json();
+
+// 2. Get rooms
+const roomsRes = await fetch('/api/chat-rooms?action=getRooms&amp;username=alice');
+const { rooms } = await roomsRes.json();
+
+// 3. Join a room
+await fetch('/api/chat-rooms?action=joinRoom', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ roomId: rooms[0].id, username: 'alice' })
+});
+
+// 4. Send a message
+const msgRes = await fetch('/api/chat-rooms?action=sendMessage', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Username': 'alice',
+    'Authorization': `Bearer ${token}`
+  },
+  body: JSON.stringify({
+    roomId: rooms[0].id,
+    username: 'alice',
+    content: 'Hello everyone!'
+  })
+});
+const { message } = await msgRes.json();
+
+// 5. Subscribe to real-time updates
+const pusher = new Pusher(PUSHER_KEY, { cluster: PUSHER_CLUSTER });
+const channel = pusher.subscribe(`room-${rooms[0].id}`);
+channel.bind('room-message', (data) =&gt; {
+  console.log('New message:', data.message);
+});</code></pre>
+<h3>Creating a Private Room</h3>
+<pre><code>const res = await fetch('/api/chat-rooms?action=createRoom', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Username': 'alice',
+    'Authorization': `Bearer ${token}`
+  },
+  body: JSON.stringify({
+    type: 'private',
+    members: ['alice', 'bob', 'charlie']
+  })
+});
+const { room } = await res.json();
+// room.name = "@alice, @bob, @charlie"</code></pre>
+<h3>Token Refresh Flow</h3>
+<pre><code>// When token is about to expire or has expired (within grace period)
+const res = await fetch('/api/chat-rooms?action=refreshToken', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    username: 'alice',
+    oldToken: expiredToken
+  })
+});
+const { token: newToken } = await res.json();</code></pre>
+<h2>Error Responses</h2>
+<p>All errors return JSON with an <code>error</code> field:</p>
+<pre><code>{ "error": "Error message" }</code></pre>
+<table><thead><tr><th>Status</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td>Bad request (missing/invalid parameters)</td></tr><tr><td>401</td><td>Unauthorized (invalid/missing token)</td></tr><tr><td>403</td><td>Forbidden (insufficient permissions)</td></tr><tr><td>404</td><td>Not found (room/user doesn't exist)</td></tr><tr><td>409</td><td>Conflict (username already taken)</td></tr><tr><td>429</td><td>Too many requests (rate limited)</td></tr><tr><td>500</td><td>Internal server error</td></tr></tbody></table>
+<h2>Configuration</h2>
+<h3>Environment Variables</h3>
+<table><thead><tr><th>Variable</th><th>Description</th></tr></thead><tbody><tr><td><code>REDIS_KV_REST_API_URL</code></td><td>Upstash Redis REST URL</td></tr><tr><td><code>REDIS_KV_REST_API_TOKEN</code></td><td>Upstash Redis REST token</td></tr><tr><td><code>PUSHER_APP_ID</code></td><td>Pusher application ID</td></tr><tr><td><code>PUSHER_KEY</code></td><td>Pusher public key</td></tr><tr><td><code>PUSHER_SECRET</code></td><td>Pusher secret key</td></tr><tr><td><code>PUSHER_CLUSTER</code></td><td>Pusher cluster region</td></tr></tbody></table>
+<h3>Runtime Configuration</h3>
+<pre><code>export const runtime = "nodejs";
+export const maxDuration = 15; // seconds</code></pre>
+<h2>Related</h2>
+<ul><li><a href="/docs/README.md">ryOS Documentation</a></li></ul>
+<ul><li><a href="/api/_utils/">API Utils</a> - Shared utilities for authentication, validation, logging</li></ul>
+<ul><li><a href="https://pusher.com/docs">Pusher Documentation</a></li></ul>
+<ul><li><a href="https://upstash.com/docs/redis/overall/getstarted">Upstash Redis</a></li></ul>
+
+      </article>
+      
+      <nav class="nav">
+        <a href="/docs/api-ai-endpoints">← AI Endpoints</a>
+        <a href="/docs/api-chat">Chat API →</a>
+      </nav>
+      
+    </main>
+  </div>
+  
+  <script>
+    function toggleNavGroup(button) {
+      const group = button.closest('.nav-group');
+      const children = group.querySelector('.nav-children');
+      const svg = button.querySelector('svg');
+      const isExpanded = group.classList.contains('expanded');
+      
+      if (isExpanded) {
+        group.classList.remove('expanded');
+        children.style.display = 'none';
+        svg.style.transform = 'rotate(0deg)';
+        button.setAttribute('aria-expanded', 'false');
+      } else {
+        group.classList.add('expanded');
+        children.style.display = 'block';
+        svg.style.transform = 'rotate(90deg)';
+        button.setAttribute('aria-expanded', 'true');
+      }
+    }
+    
+    document.addEventListener('click', (e) => {
+      const sidebar = document.querySelector('.sidebar');
+      const menuBtn = document.querySelector('.menu-btn');
+      const clickedMenuBtn = menuBtn && menuBtn.contains(e.target);
+      if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
+        sidebar.classList.remove('open');
+      }
+    });
+  </script>
+</body>
+</html>

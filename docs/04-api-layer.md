@@ -2,6 +2,17 @@
 
 ryOS uses Vercel Serverless Functions with Edge runtime.
 
+## API Documentation
+
+| Endpoint Group | Description |
+|----------------|-------------|
+| [Chat API](api-chat.html) | Main AI chat with streaming and tool calling |
+| [Song API](api-song.html) | Music library CRUD, lyrics, furigana, translations |
+| [Chat Rooms API](api-chat-rooms.html) | Real-time chat rooms with Pusher/Redis |
+| [AI Endpoints](api-ai-endpoints.html) | Applet generation, IE time-travel, parse-title |
+| [Media API](api-media.html) | Text-to-speech, transcription, YouTube search |
+| [Utility APIs](api-utilities.html) | Link preview, iframe check, share applet, admin |
+
 ## AI Endpoints
 
 | Endpoint | Purpose |
@@ -20,6 +31,21 @@ ryOS uses Vercel Serverless Functions with Edge runtime.
 | `/api/speech` | Text-to-speech |
 | `/api/audio-transcribe` | Speech-to-text |
 | `/api/youtube-search` | YouTube music search |
+
+## Communication Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `/api/chat-rooms` | Real-time chat room management |
+
+## Utility Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `/api/link-preview` | URL metadata extraction |
+| `/api/iframe-check` | Embeddability checking |
+| `/api/share-applet` | Applet sharing |
+| `/api/admin` | Admin operations |
 
 ## Authentication
 
