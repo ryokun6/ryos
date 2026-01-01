@@ -1,7 +1,7 @@
 import { buildLocalSnapshots } from "./registry";
 import type { SnapshotEnvelope } from "./types";
 import { pushSnapshots, pullSnapshots, deleteRemoteSnapshots } from "./client";
-import { mergeSnapshots, snapshotArrayToMap } from "./utils";
+import { mergeSnapshots } from "./utils";
 import { useSyncSettingsStore } from "@/stores/useSyncSettingsStore";
 import { getOrCreateDeviceId } from "./device";
 
