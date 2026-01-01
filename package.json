@@ -100,6 +100,7 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-i18next": "^16.5.0",
+    "react-markdown": "^10.1.0",
     "react-player": "^2.16.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^2.6.0",
