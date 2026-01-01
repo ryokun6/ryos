@@ -1636,10 +1636,10 @@
 
 /* macOS: Style toast containers with semi-transparent pinstripes like dock */
 .os-theme-macosx .toaster [data-sonner-toast] {
-  background: rgba(248, 248, 248, 0.75) !important;
-  background-image: var(--os-pinstripe-menubar) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-  border: none !important;
+  background: rgba(248, 248, 248, 0.75);
+  background-image: var(--os-pinstripe-menubar);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: none;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -1647,7 +1647,7 @@
 /* Ensure toast text is readable on semi-transparent background */
 .os-theme-macosx .toaster [data-sonner-toast] [data-title],
 .os-theme-macosx .toaster [data-sonner-toast] [data-description] {
-  color: rgba(0, 0, 0, 0.9) !important;
+  color: rgba(0, 0, 0, 0.9);
 }
 
 /* macOS: Style toast buttons with aqua button */
