@@ -32,7 +32,8 @@ export async function pullSnapshots(
   const url = getApiUrl(`${SYNC_ENDPOINT}?action=pull`);
   const resp = await fetch(url, { headers: buildHeaders(auth) });
   if (!resp.ok) {
-    throw new Error(`Sync pull failed: ${resp.status}`);
+    const message = resp.statusText || "pull_failed";
+    throw new Error(`Sync pull failed: ${resp.status} ${message}`);
   }
   return resp.json() as Promise<{ snapshots: StoreSnapshot[] }>;
 }
