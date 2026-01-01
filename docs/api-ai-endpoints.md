@@ -1,0 +1,396 @@
+# AI Endpoints
+
+ryOS provides several AI-powered endpoints for content generation, separate from the main chat interface. These endpoints power specialized features like applet generation, time-travel web pages, and music metadata extraction.
+
+All AI endpoints run on Vercel Edge Functions with rate limiting and CORS protection.
+
+## Applet AI
+
+The Applet AI endpoint powers intelligent responses within sandboxed HTML applets, supporting both text generation and AI image generation.
+
+### Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/applet-ai` | Generate text responses or images for applets |
+
+### Request
+
+```typescript
+{
+  // Text prompt (required if no messages provided)
+  prompt?: string;           // max 4000 characters
+  
+  // Conversation history (alternative to prompt)
+  messages?: Array<{
+    role: "user" | "assistant" | "system";
+    content?: string;        // max 4000 characters
+    attachments?: Array<{    // max 4 per message, user messages only
+      mediaType: string;     // e.g., "image/png", "image/jpeg"
+      data: string;          // base64-encoded image data
+    }>;
+  }>;                        // max 12 messages
+  
+  // Optional applet context
+  context?: string;          // max 2000 characters
+  
+  // Generation parameters
+  temperature?: number;      // 0-1, default 0.6
+  mode?: "text" | "image";   // default "text"
+  
+  // Image attachments (mode="image" only)
+  images?: Array<{           // max 4 images
+    mediaType: string;
+    data: string;            // base64-encoded
+  }>;
+}
+```
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Authorization` | Optional | `Bearer <token>` for authenticated requests |
+| `X-Username` | Optional | Username for rate limit tracking |
+| `Content-Type` | Required | `application/json` |
+
+### Response
+
+**Text Mode** (`mode: "text"`)
+
+```json
+{
+  "reply": "Generated response text"
+}
+```
+
+**Image Mode** (`mode: "image"`)
+
+Returns binary image data with headers:
+
+| Header | Description |
+|--------|-------------|
+| `Content-Type` | Image MIME type (e.g., `image/png`) |
+| `X-Image-Description` | Optional description of generated image |
+
+### Rate Limits
+
+| User Type | Text Requests | Image Requests | Window |
+|-----------|---------------|----------------|--------|
+| Anonymous | 15/hour | 1/hour | 1 hour |
+| Authenticated | 50/hour | 12/hour | 1 hour |
+
+Rate limit headers included in responses:
+
+- `X-RateLimit-Limit`: Maximum requests allowed
+- `X-RateLimit-Remaining`: Requests remaining
+- `X-RateLimit-Reset`: Seconds until reset
+- `Retry-After`: Seconds to wait (on 429)
+
+### Models
+
+- **Text**: `gemini-2.5-flash`
+- **Image**: `gemini-2.5-flash-image-preview`
+
+### Example
+
+**Text Generation**
+
+```bash
+curl -X POST https://os.ryo.lu/api/applet-ai \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "What is the weather like today?",
+    "context": "Weather applet showing San Francisco",
+    "temperature": 0.7
+  }'
+```
+
+Response:
+
+```json
+{
+  "reply": "I don't have access to real-time weather data, but based on San Francisco's typical climate..."
+}
+```
+
+**Image Generation**
+
+```bash
+curl -X POST https://os.ryo.lu/api/applet-ai \
+  -H "Content-Type: application/json" \
+  -d '{
+    "mode": "image",
+    "prompt": "A pixel art sunset over mountains"
+  }' \
+  --output generated-image.png
+```
+
+**Conversation with Attachments**
+
+```bash
+curl -X POST https://os.ryo.lu/api/applet-ai \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-token" \
+  -H "X-Username: yourname" \
+  -d '{
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is in this image?",
+        "attachments": [{
+          "mediaType": "image/png",
+          "data": "iVBORw0KGgoAAAANSUhEUgAA..."
+        }]
+      }
+    ]
+  }'
+```
+
+### Error Responses
+
+| Status | Error | Description |
+|--------|-------|-------------|
+| 400 | `Invalid request body` | Missing or invalid parameters |
+| 401 | `authentication_failed` | Invalid or missing auth token |
+| 403 | `Unauthorized` | Origin not allowed |
+| 405 | `Method not allowed` | Non-POST request |
+| 429 | `rate_limit_exceeded` | Rate limit exceeded |
+| 500 | `Failed to generate response` | AI generation error |
+| 502 | `The model did not return an image` | Image generation failed |
+
+---
+
+## Internet Explorer Generator
+
+The Internet Explorer Generator creates "time-travel" web pages, reimagining how websites might have looked in different eras (past or future). It generates complete HTML pages styled to match historical design trends or speculative future aesthetics.
+
+### Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/ie-generate` | Generate era-appropriate web page redesigns |
+
+### Request
+
+**Query Parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `url` | string | Target URL to redesign |
+| `year` | string | Target year for the design |
+| `model` | string | AI model to use (optional) |
+
+**Request Body**
+
+```typescript
+{
+  url?: string;              // Target URL (alternative to query param)
+  year?: string;             // Target year (alternative to query param)
+  messages?: Array<{         // Conversation context
+    role: "user" | "assistant" | "system";
+    content: string;
+    // ... UIMessage fields
+  }>;
+  model?: SupportedModel;    // AI model selection
+}
+```
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Content-Type` | Required | `application/json` |
+
+### Response
+
+Returns a streaming response (`text/event-stream`) containing the generated HTML page. The response follows the AI SDK's UI message stream format.
+
+Generated HTML includes:
+- Era-appropriate styling and typography
+- Historical or futuristic design elements
+- `<!-- TITLE: ... -->` comment with page title
+- Complete, self-contained HTML document
+
+Results are cached in Redis for future retrieval.
+
+### Rate Limits
+
+| Scope | Limit | Window |
+|-------|-------|--------|
+| Burst | 3 requests | 1 minute |
+| Budget | 10 requests | 5 hours |
+
+### Supported Models
+
+| Model | Provider |
+|-------|----------|
+| `gemini-2.5-pro` | Google |
+| `gemini-2.5-flash` | Google |
+| `claude-4.5` | Anthropic |
+| `claude-4` | Anthropic |
+| `gpt-5` | OpenAI |
+| `gpt-5.1` (default) | OpenAI |
+| `gpt-4o` | OpenAI |
+
+### Design Guidelines
+
+The AI applies different design principles based on the target year:
+
+**Future Years** (after current year):
+- Bold, creative speculation about design trends
+- Embraces backdrop-blur, simple animations
+- Uses emojis or simple SVGs for icons
+- Considers potential technological breakthroughs
+
+**Past Years** (before current year):
+- Matches historical design era (Art Deco, Web 1.0, etc.)
+- Considers available technology of the time
+- Simulates period-appropriate materials and textures
+- May output as print, newspaper, telegram, etc. for very old dates
+
+**Current Year**:
+- Reflects current website state accurately
+- Up-to-date styling and branding
+
+### Example
+
+```bash
+curl -X POST "https://os.ryo.lu/api/ie-generate?url=apple.com&year=1984" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {
+        "role": "user",
+        "content": "Generate a page for Apple in 1984"
+      }
+    ]
+  }'
+```
+
+### Error Responses
+
+| Status | Error | Description |
+|--------|-------|-------------|
+| 400 | `Invalid messages format` | Malformed messages array |
+| 400 | `Unsupported model` | Invalid model parameter |
+| 403 | `Unauthorized` | Origin not allowed |
+| 405 | `Method not allowed` | Non-POST request |
+| 429 | `rate_limit_exceeded` | Burst or budget limit exceeded |
+| 500 | `Internal Server Error` | Generation failed |
+
+---
+
+## Parse Title (Music Metadata)
+
+The Parse Title endpoint uses AI to extract structured music metadata from YouTube video titles. It intelligently parses song titles, artist names, and album information from various title formats.
+
+### Endpoint
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/parse-title` | Extract music metadata from video titles |
+
+### Request
+
+```typescript
+{
+  title: string;           // Raw YouTube video title (required)
+  author_name?: string;    // YouTube channel name (optional, helps identify artist)
+}
+```
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `Content-Type` | Required | `application/json` |
+
+### Response
+
+```typescript
+{
+  title: string;           // Extracted song title (falls back to raw title)
+  artist?: string;         // Extracted artist name (if found)
+  album?: string;          // Extracted album name (if found)
+}
+```
+
+### Rate Limits
+
+| Scope | Limit | Window |
+|-------|-------|--------|
+| Burst | 15 requests | 1 minute |
+| Daily | 500 requests | 24 hours |
+
+### Model
+
+Uses `gpt-4.1-mini` for efficient metadata parsing.
+
+### Language Handling
+
+The parser prefers original language names over romanized/translated versions:
+
+| Input | Output |
+|-------|--------|
+| `"Jay Chou - Sunny Day (周杰倫 - 晴天)"` | `{"title": "晴天", "artist": "周杰倫"}` |
+| `"NewJeans (뉴진스) 'How Sweet' Official MV"` | `{"title": "How Sweet", "artist": "뉴진스"}` |
+
+### Example
+
+```bash
+curl -X POST https://os.ryo.lu/api/parse-title \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Daft Punk - Get Lucky (Official Audio) ft. Pharrell Williams, Nile Rodgers",
+    "author_name": "Daft Punk"
+  }'
+```
+
+Response:
+
+```json
+{
+  "title": "Get Lucky",
+  "artist": "Daft Punk"
+}
+```
+
+**Complex Title Parsing**
+
+```bash
+curl -X POST https://os.ryo.lu/api/parse-title \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "[MV] IU(아이유) _ Blueming(블루밍)",
+    "author_name": "1theK (원더케이)"
+  }'
+```
+
+Response:
+
+```json
+{
+  "title": "Blueming",
+  "artist": "아이유"
+}
+```
+
+### Error Responses
+
+| Status | Error | Description |
+|--------|-------|-------------|
+| 400 | `No title provided` | Missing or invalid title field |
+| 403 | `Unauthorized` | Origin not allowed |
+| 405 | `Method not allowed` | Non-POST request |
+| 429 | `rate_limit_exceeded` | Burst or daily limit exceeded |
+| 500 | `Error parsing title` | AI parsing failed |
+
+---
+
+## Related
+
+- **[Chat API](./07-chat-system.md)** - Main AI chat endpoint with tool calling
+- **[AI Integration](./09-ai-integration.md)** - AI providers and available tools
+- **[API Layer](./04-api-layer.md)** - Overview of all ryOS API endpoints
+- **[Chats App](./apps-chats.md)** - Frontend chat application documentation
