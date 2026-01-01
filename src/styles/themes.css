@@ -941,19 +941,19 @@
 
 /* Preserve lyrics translation sizes on macOS theme */
 .os-theme-macosx .ipod-force-font .lyrics-translation-ipod {
-  font-size: 10px !important;
-  margin-top: 0.2em !important;
+  font-size: 10px;
+  margin-top: 0.2em;
 }
 
 .os-theme-macosx .karaoke-force-font .lyrics-translation-karaoke {
   font-size: clamp(14px, 4cqw, 60px);
-  margin-top: 0.2em !important;
+  margin-top: 0.2em;
 }
 
 .os-theme-macosx .ipod-force-font .lyrics-translation-fullscreen,
 .os-theme-macosx .karaoke-force-font .lyrics-translation-fullscreen {
   font-size: clamp(14px, min(5vw, 5vh), 60px);
-  margin-top: 0.2em !important;
+  margin-top: 0.2em;
 }
 
 /* Old-school karaoke container needs larger gap between lines due to text-stroke */
