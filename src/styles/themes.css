@@ -3,6 +3,7 @@
   --os-font-ui: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
     -apple-system, sans-serif;
   --os-font-mono: "Monaco", "ArkPixel", "SerenityOS-Emoji", monospace;
+  --font-ms-sans: var(--os-font-ui);
   --os-color-window-bg: #ffffff;
   --os-color-menubar-bg: #ffffff;
   --os-color-menubar-border: #000000;
@@ -18,6 +19,7 @@
   --os-color-button-active-face: #cccccc;
   --os-color-selection-bg: #000000;
   --os-color-selection-text: #ffffff;
+  --os-color-selection-glow: rgba(0, 0, 0, 0.15);
   --os-color-text-primary: #000000;
   --os-color-text-secondary: #666666;
   --os-color-text-disabled: #999999;
@@ -29,7 +31,7 @@
 }
 
 /* Inactive selection palette for background windows (System 7) */
-:root[data-os-theme="system7"] .window:not(.is-foreground) {
+.os-theme-system7 .window:not(.is-foreground) {
   --os-color-selection-bg: #cfcfcf; /* neutral gray */
   --os-color-selection-text: #000000;
 }
@@ -43,42 +45,42 @@
 }
 
 /* Inactive selection palette for background windows (Windows 98) */
-:root[data-os-theme="win98"] .window:not(.is-foreground) {
+.os-theme-win98 .window:not(.is-foreground) {
   --os-color-selection-bg: #c0c0c0; /* classic 98 gray */
   --os-color-selection-text: #000000;
 }
 
 /* Ensure all UI elements in Windows 98 theme use the theme font with ArkPixel fallback */
-:root[data-os-theme="win98"] button,
-:root[data-os-theme="win98"] input,
-:root[data-os-theme="win98"] label,
-:root[data-os-theme="win98"] select,
-:root[data-os-theme="win98"] textarea,
-:root[data-os-theme="win98"] [role="menuitem"],
-:root[data-os-theme="win98"] [role="menuitemcheckbox"],
-:root[data-os-theme="win98"] [role="menuitemradio"],
-:root[data-os-theme="win98"] [role="option"] {
+.os-theme-win98 button,
+.os-theme-win98 input,
+.os-theme-win98 label,
+.os-theme-win98 select,
+.os-theme-win98 textarea,
+.os-theme-win98 [role="menuitem"],
+.os-theme-win98 [role="menuitemcheckbox"],
+.os-theme-win98 [role="menuitemradio"],
+.os-theme-win98 [role="option"] {
   font-family: var(--os-font-ui) !important;
   font-smooth: antialiased !important;
   -webkit-font-smoothing: antialiased !important;
 }
 
 /* Inactive selection palette for background windows (Windows XP) */
-:root[data-os-theme="xp"] .window:not(.is-foreground) {
+.os-theme-xp .window:not(.is-foreground) {
   --os-color-selection-bg: #ece9da; /* soft gray */
   --os-color-selection-text: #000000;
 }
 
 /* Ensure all UI elements in Windows XP theme use the theme font with ArkPixel fallback */
-:root[data-os-theme="xp"] button,
-:root[data-os-theme="xp"] input,
-:root[data-os-theme="xp"] label,
-:root[data-os-theme="xp"] select,
-:root[data-os-theme="xp"] textarea,
-:root[data-os-theme="xp"] [role="menuitem"],
-:root[data-os-theme="xp"] [role="menuitemcheckbox"],
-:root[data-os-theme="xp"] [role="menuitemradio"],
-:root[data-os-theme="xp"] [role="option"] {
+.os-theme-xp button,
+.os-theme-xp input,
+.os-theme-xp label,
+.os-theme-xp select,
+.os-theme-xp textarea,
+.os-theme-xp [role="menuitem"],
+.os-theme-xp [role="menuitemcheckbox"],
+.os-theme-xp [role="menuitemradio"],
+.os-theme-xp [role="option"] {
   font-family: var(--os-font-ui) !important;
   font-smooth: antialiased !important;
   -webkit-font-smoothing: antialiased !important;

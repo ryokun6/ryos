@@ -857,10 +857,10 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 /* styles. Uses !important to override Tailwind arbitrary value classes or    */
 /* inline styles that set image-rendering: pixelated.                         */
 /* ------------------------------------------------------------------------- */
-:root[data-os-theme="macosx"] .\[image-rendering\:pixelated\],
-:root[data-os-theme="macosx"] img,
-:root[data-os-theme="macosx"] canvas,
-:root[data-os-theme="macosx"] video {
+.os-theme-macosx .\[image-rendering\:pixelated\],
+.os-theme-macosx img,
+.os-theme-macosx canvas,
+.os-theme-macosx video {
   image-rendering: auto !important;
 }
 
