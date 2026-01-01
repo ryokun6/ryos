@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createPersistedStore, type PersistedStoreMeta } from "./persistAdapter";
 
 export interface Game {
   id: string;
@@ -65,20 +65,24 @@ const DEFAULT_GAMES: Game[] = [
   },
 ];
 
-interface PcStoreState {
+interface PcStoreState extends PersistedStoreMeta {
   games: Game[];
   setGames: (games: Game[]) => void;
 }
 
 export const usePcStore = create<PcStoreState>()(
-  persist(
+  createPersistedStore(
     (set) => ({
       games: DEFAULT_GAMES,
-      setGames: (games) => set({ games }),
+      _updatedAt: Date.now(),
+      setGames: (games) => set({ games, _updatedAt: Date.now() }),
     }),
     {
       name: "ryos:pc",
-      partialize: (state) => ({ games: state.games }),
+      partialize: (state) => ({
+        games: state.games,
+        _updatedAt: state._updatedAt,
+      }),
     }
   )
 );

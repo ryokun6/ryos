@@ -190,4 +190,13 @@ export const storeDescriptors: StoreDescriptor[] = [
     sync: { eligible: true, defaultEnabled: true },
     notes: "Recent documents and editor prefs; not the filesystem content itself.",
   },
+  {
+    key: "ryos:pc",
+    file: "src/stores/usePcStore.ts",
+    version: 0,
+    storage: "localStorage",
+    category: "media",
+    sync: { eligible: true, defaultEnabled: false },
+    notes: "JS-DOS game list (metadata only).",
+  },
 ];
