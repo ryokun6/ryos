@@ -1,0 +1,71 @@
+# Chats
+
+Chats is the central communication hub for ryOS, enabling users to interact with the intelligent Ryo AI assistant, engage in public chat rooms, and even control their desktop environment using natural language commands. It streamlines various ryOS functionalities into a single, intuitive interface.
+
+## Overview
+
+The Chats app serves as a versatile communication platform within ryOS. Its primary function is to provide direct access to the Ryo AI assistant, a powerful tool capable of understanding natural language requests to assist with coding, provide help with ryOS features, and even manage files and applications. Beyond its AI capabilities, Chats also fosters community interaction by allowing users to join public chat rooms, connecting with other ryOS users.
+
+Whether you need to quickly generate a code snippet, find a specific file, launch an app, or simply chat with fellow users, Chats offers a unified and efficient way to manage your digital interactions. Its blend of AI-driven productivity and social connectivity makes it an indispensable part of the ryOS experience, designed to enhance user workflow and collaboration.
+
+## Features
+
+*   **Ryo AI Assistant:**
+    *   **Intelligent Conversation:** Chat with Ryo for general assistance, code generation, or specific help regarding ryOS functionalities.
+    *   **File & Applet Management:** Request Ryo to create new HTML applets, edit existing documents, read file contents, or search the Applets Store for new tools.
+    *   **System Control:** Command Ryo to launch or close applications, switch between ryOS themes, or manage playback in the iPod app.
+    *   **Contextual Assistance:** Send a 👋 nudge to receive context-aware tips from Ryo. When music is playing, Ryo automatically enters "DJ Mode," offering relevant music-related interactions.
+*   **Interactive Chat Rooms:**
+    *   **Public Engagement:** Join various public chat rooms to connect and communicate with other ryOS users.
+    *   **AI Integration in Rooms:** Mention `@ryo` within any chat room to solicit responses or assistance from the AI assistant in a public context.
+*   **Voice Messaging:**
+    *   **Push-to-Talk:** Utilize the Push-to-Talk feature by holding the `Space` key or tapping the microphone button to record and send voice messages effortlessly.
+
+## User Guide
+
+### Getting Started
+To launch the Chats app, simply click its icon in the ryOS dock or navigate to it via the Applets Store. Upon opening, you'll be presented with the chat interface, ready for you to interact with Ryo or join a chat room.
+
+### Key Actions
+*   **To chat with Ryo:** Type your message directly into the input field at the bottom of the window and press Enter.
+*   **To create or edit files:** Simply ask Ryo, e.g., "Ryo, create a new HTML applet called 'MyWidget'" or "Ryo, edit my 'Notes.txt' file."
+*   **To control ryOS apps:** Issue commands like "Ryo, launch Calculator" or "Ryo, switch to Dark theme."
+*   **To join a chat room:** Look for the chat room sidebar (if visible) or use a menu option to browse and join available rooms.
+*   **To send a voice message:** Hold down the `Space` key while speaking, then release to send. Alternatively, click the microphone icon to record.
+
+### Tips & Shortcuts
+*   **Push-to-Talk:** Hold the `Space` key for quick voice messages.
+*   **AI in Chat Rooms:** Type `@ryo` followed by your message in a chat room to get an AI response.
+*   **Contextual Help:** Send a `👋 nudge` message to Ryo for helpful tips based on your current ryOS activity.
+*   **DJ Mode:** If the Music app is playing, Ryo will automatically offer music-related interactions.
+
+## Technical Details
+
+### Window Configuration
+*   **Default size:** 560×360px
+*   **Minimum size:** 300×320px
+
+### Component Architecture
+The app consists of 7 component file(s):
+
+*   `components/ChatMessages.tsx`
+*   `components/TokenStatus.tsx`
+*   `components/CreateRoomDialog.tsx`
+*   `components/ChatRoomSidebar.tsx`
+*   `components/ChatsMenuBar.tsx`
+*   `components/ChatInput.tsx`
+*   `components/ChatsAppComponent.tsx`
+
+### Hooks & Utilities
+**Custom Hooks:**
+*   `hooks/useTokenRefresh.ts`
+*   `hooks/useRyoChat.ts`
+*   `hooks/useChatRoom.ts`
+*   `hooks/useAiChat.ts`
+
+### State Management
+The Chats app leverages a Zustand store, specifically `useChatsStore`, for managing global application state related to chat messages, room information, and other UI states. Local component state is also utilized where appropriate for temporary UI interactions.
+
+## Related Apps
+
+The **Files** app works seamlessly with Chats, as Ryo can directly interact with documents and applets stored within your file system. The **Music** app integrates with Chats, enabling Ryo's "DJ Mode" for a more interactive audio experience.

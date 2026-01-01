@@ -1,0 +1,70 @@
+# Soundboard
+
+The Soundboard app for ryOS provides a versatile platform for recording, organizing, and playing short audio clips and sound effects. It's an essential tool for content creators, live streamers, or anyone needing instant access to custom audio cues within their desktop environment.
+
+## Overview
+
+Soundboard transforms your ryOS desktop into a personalized audio control center. Users can quickly record new sound effects directly into dedicated slots, visualize their audio with dynamic waveforms, and trigger playback using simple keyboard shortcuts. The application is designed for efficiency, allowing for rapid sound capture and retrieval, making it ideal for live performances, podcasts, or adding flair to everyday interactions.
+
+Beyond basic recording and playback, Soundboard emphasizes organization and customization. Users can label their sound effects with titles and emojis for easy identification and manage multiple boards, each holding a distinct collection of sounds. This flexibility ensures that users can curate specific sets of sounds for different projects or moods, all within an intuitive and visually engaging interface.
+
+## Features
+
+The Soundboard app offers a robust set of features designed for flexibility and ease of use:
+
+*   **Instant Recording & Playback:**
+    *   🎙️ **Record Slot:** Click any sound slot to begin recording audio, and click again to stop.
+    *   ▶️ **Keyboard Play:** Trigger sounds instantly by pressing the corresponding 1-9 keyboard keys.
+    *   🌊 **Waveform View:** Observe a live waveform visualization during both recording and playback, providing immediate visual feedback on your audio.
+
+*   **Customization & Organization:**
+    *   ✏️ **Customize Slot:** Personalize each sound sample with a unique emoji and title for quick visual identification and better organization.
+    *   📂 **Multiple Boards:** Create, rename, and effortlessly switch between different sound boards, allowing you to manage diverse collections of sound effects for various contexts.
+
+*   **Sharing & Persistence:**
+    *   🌍 **Import / Export:** Easily share your custom sound boards with others by exporting them as files, or import new boards by simply dragging and dropping the file into the app.
+
+## User Guide
+
+### Getting Started
+To launch the Soundboard app, locate its icon in the ryOS Application Launcher or search for "Soundboard." Upon opening, you'll be presented with an empty sound grid, ready for you to start recording or importing your audio clips.
+
+### Key Actions
+
+*   **Recording a Sound:** Click on an empty (or existing) sound slot to begin recording. The waveform will appear, showing live audio input. Click the slot again to stop recording. The recorded audio will be saved to that slot.
+*   **Playing a Sound:** To play a sound, either click on its slot or press the corresponding number key (1-9) on your keyboard.
+*   **Customizing a Slot:** Right-click on a sound slot to access options for adding an emoji, changing its title, or deleting the sound.
+*   **Managing Boards:** Use the menu bar to create new boards, switch between existing ones, or rename your current board. This allows you to organize different sets of sounds.
+*   **Importing/Exporting Boards:** Access the "File" menu to export your current board as a file, or simply drag and drop an exported Soundboard file into the app window to import a new board.
+
+### Tips & Shortcuts
+*   **Keyboard Shortcuts:** The most efficient way to trigger sounds is by using the number keys 1-9, which correspond to the sound slots in the grid.
+*   **Drag-and-Drop:** Quickly import board files by dragging them directly onto the Soundboard app window.
+*   **Visual Feedback:** Pay attention to the waveform view during recording to ensure your audio levels are appropriate and the recording is successful.
+
+## Technical Details
+
+### Window Configuration
+*   Default size: 650×475px
+*   Minimum size: 550×375px
+
+### Component Architecture
+The app consists of 6 component file(s):
+
+*   `components/Waveform.tsx`
+*   `components/BoardList.tsx`
+*   `components/SoundboardMenuBar.tsx`
+*   `components/SoundSlot.tsx`
+*   `components/SoundGrid.tsx`
+*   `components/SoundboardAppComponent.tsx`
+
+### Hooks & Utilities
+
+No custom hooks or utilities.
+
+### State Management
+The Soundboard app primarily manages its state using Zustand stores, specifically `useSoundboardStore`, which handles the persistence and global access to sound board data, including multiple boards, active board selection, and individual sound slot configurations. Local state within components and custom hooks like `useSoundboard` also manage transient UI states and audio recording/playback processes.
+
+## Related Apps
+
+The Soundboard app works well in conjunction with the ryOS File Manager for organizing and managing exported sound board files, and could be paired with a ryOS Media Player for previewing longer audio clips before importing them into a sound slot.

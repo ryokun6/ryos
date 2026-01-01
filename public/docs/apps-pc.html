@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>i18n & Hooks - ryOS Docs</title>
+  <title>Virtual PC - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -161,15 +161,15 @@
 <a href="/docs/file-system.html" class="">File System</a>
 <a href="/docs/ai-integration.html" class="">AI Integration</a>
 <a href="/docs/build-system.html" class="">Build System</a>
-<a href="/docs/i18n-hooks.html" class="active">i18n & Hooks</a>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<a href="/docs/i18n-hooks.html" class="">i18n & Hooks</a>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/apps.html" class="">Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/apps-admin.html" class="nav-child ">Admin</a>
     <a href="/docs/apps-applet-viewer.html" class="nav-child ">Applet Store</a>
     <a href="/docs/apps-chats.html" class="nav-child ">Chats</a>
@@ -186,37 +186,63 @@
     <a href="/docs/apps-terminal.html" class="nav-child ">Terminal</a>
     <a href="/docs/apps-textedit.html" class="nav-child ">TextEdit</a>
     <a href="/docs/apps-videos.html" class="nav-child ">Videos</a>
-    <a href="/docs/apps-pc.html" class="nav-child ">Virtual PC</a>
+    <a href="/docs/apps-pc.html" class="nav-child active">Virtual PC</a>
   </div>
 </div>
     </nav>
     
     <main class="content">
       <article>
-        <h1>i18n & Hooks</h1>
-<p>Internationalization and 29+ custom hooks.</p>
-<h2>Supported Languages</h2>
-<table><thead><tr><th>Code</th><th>Language</th></tr></thead><tbody><tr><td><code>en</code></td><td>English (default)</td></tr><tr><td><code>zh-TW</code></td><td>Chinese Traditional</td></tr><tr><td><code>ja</code></td><td>Japanese</td></tr><tr><td><code>ko</code></td><td>Korean</td></tr><tr><td><code>fr</code></td><td>French</td></tr><tr><td><code>de</code></td><td>German</td></tr><tr><td><code>es</code></td><td>Spanish</td></tr><tr><td><code>pt</code></td><td>Portuguese</td></tr><tr><td><code>it</code></td><td>Italian</td></tr><tr><td><code>ru</code></td><td>Russian</td></tr></tbody></table>
-<h2>Key Hooks</h2>
-<strong>Window & App Management:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useLaunchApp</code></td><td>Launch apps with multi-window support</td></tr><tr><td><code>useWindowManager</code></td><td>Drag, resize, snap-to-edge</td></tr><tr><td><code>useWindowInsets</code></td><td>Theme-dependent constraints</td></tr></tbody></table>
-<strong>Audio System:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useSound</code></td><td>Web Audio API playback</td></tr><tr><td><code>useChatSynth</code></td><td>Chat typing sounds</td></tr><tr><td><code>useTerminalSounds</code></td><td>Terminal feedback</td></tr><tr><td><code>useTtsQueue</code></td><td>Text-to-speech queue</td></tr><tr><td><code>useAudioRecorder</code></td><td>Audio recording</td></tr></tbody></table>
-<strong>Device Detection:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useIsMobile</code></td><td>Mobile detection (<768px)</td></tr><tr><td><code>useIsPhone</code></td><td>Phone detection (<640px)</td></tr><tr><td><code>useMediaQuery</code></td><td>CSS media query hook</td></tr></tbody></table>
-<h2>Using i18n</h2>
-<pre><code>import { useTranslation } from "react-i18next";
+        <h1>Virtual PC</h1>
+<p>Virtual PC is a unique ryOS application that brings the nostalgia of classic DOS computing directly to your web browser. It provides a simulated 3D PC environment, allowing users to run vintage games and applications through its integrated js-dos emulator. Experience a blast from the past with full keyboard and mouse support, all within your ryOS desktop.</p>
+<h2>Overview</h2>
+<p>The Virtual PC app transforms your ryOS desktop into a retro computing station, offering a fully functional 3D-rendered personal computer simulation. Powered by the robust js-dos emulator, it provides a seamless way to interact with DOS-based software, from iconic games to productivity tools, without needing to install anything locally. Its primary purpose is to deliver an authentic and immersive retro gaming and computing experience, making classic software accessible and enjoyable for modern users.</p>
+<p>Users can dive into a curated selection of pre-loaded DOS games or potentially expand their library (though not explicitly covered in this document, it's an emulator capability). The app prioritizes user interaction, offering responsive controls and display options to tailor the experience. Whether you're a retro enthusiast or simply curious about early computing, Virtual PC offers a fascinating window into the past.</p>
+<h2>Features</h2>
+<ul><li><strong>PC Emulator</strong>: Run a wide array of classic DOS games and applications directly within your ryOS browser environment, powered by js-dos.</li></ul>
+<ul><li><strong>Keyboard Controls</strong>: Leverage your physical keyboard for authentic in-game input and navigation within the emulated DOS environment.</li></ul>
+<ul><li><strong>Mouse Capture</strong>: Seamlessly switch between controlling the ryOS desktop and the emulated PC by clicking inside the Virtual PC window to capture the mouse, and clicking again or pressing <code>Esc</code> to release it.</li></ul>
+<ul><li><strong>Full-Screen Mode</strong>: Toggle an immersive, full-screen display via the <code>View</code> menu to eliminate distractions and fully enjoy the retro experience.</li></ul>
+<ul><li><strong>Save States</strong>: Preserve your game progress or application state at any point and load it back later using the convenient <code>File</code> menu options.</li></ul>
+<ul><li><strong>Aspect Ratio Control</strong>: Optimize your visual experience by switching between classic 4∶3 or modern widescreen aspect ratios to best fit your monitor.</li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To launch Virtual PC, simply click its icon in the ryOS application launcher. Once open, the app will load a default game or DOS environment, ready for interaction. Use your keyboard and mouse to navigate and play.
+<h3>Key Actions</h3>
+<ul><li><strong>Launching Games</strong>: Upon opening, the app typically loads a pre-selected game. You can switch between available games via the <code>File</code> menu.</li></ul>
+<ul><li><strong>Interacting with the Emulator</strong>:<ul><li><strong>Keyboard Input</strong>: Your physical keyboard acts as the input for the emulated PC. Type commands or play games as if you were on a real DOS machine.</li><li><strong>Mouse Control</strong>: Click anywhere inside the Virtual PC window to capture your mouse cursor, allowing you to use it within the emulated environment. To release the mouse and regain control of the ryOS desktop, click again or press the <code>Escape</code> key.</li></ul></li></ul>
+<ul><li><strong>Managing Game Progress</strong>: Access the <code>File</code> menu to find options for <code>Save State</code> and <code>Load State</code>, allowing you to pause and resume your progress at any time.</li></ul>
+<ul><li><strong>Adjusting Display</strong>:<ul><li><strong>Full Screen</strong>: For an uninterrupted experience, select <code>View</code> > <code>Full Screen</code>. Press <code>Esc</code> to exit full-screen mode.</li><li><strong>Aspect Ratio</strong>: In the <code>View</code> menu, you can toggle between <code>4∶3</code> (classic) and <code>Widescreen</code> to suit your preference or monitor's display.</li></ul></li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li><strong>Mouse Capture Toggle</strong>: The quickest way to capture/release your mouse is to simply click inside/outside the emulator window.</li></ul>
+<ul><li><strong>Full-Screen Quick Exit</strong>: While in full-screen mode, pressing the <code>Escape</code> key will typically return you to windowed mode.</li></ul>
+<ul><li><strong>Performance</strong>: For the best experience, ensure your browser and system meet the recommended ryOS specifications. Closing other demanding applications might improve emulator performance.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 645×511px</li></ul>
+<ul><li>Minimum size: 645×511px</li></ul>
+<ul><li>Maximum size: 645×511px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 2 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/pc/components/PcMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PcMenuBar.tsx</a></code>: Manages the application's menu bar, handling actions like opening help dialogs, managing game states, and toggling display options.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/pc/components/PcAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PcAppComponent.tsx</a></code>: The main application component, responsible for rendering the Virtual PC window, managing the emulator lifecycle, and coordinating interactions between the menu bar and the js-dos instance.</li></ul>
+<h3>Hooks & Utilities</h3>
+<strong>Custom Hooks:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/pc/hooks/useJsDos.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useJsDos.ts</a></code>: A custom hook that encapsulates the logic for integrating and interacting with the js-dos emulator library, managing its lifecycle, events, and commands.</li></ul>
+<p>No custom utility files are directly associated with this app's core functionality.</p>
+<h3>State Management</h3>
+Virtual PC manages its state using a combination of local React component state and global Zustand stores.
+Local <code>useState</code> hooks are used to manage UI-specific states such as dialog visibility (<code>isHelpDialogOpen</code>, <code>isAboutDialogOpen</code>), loading indicators (<code>isLoading</code>), emulator interaction states (<code>isGameRunning</code>, <code>isMouseCaptured</code>, <code>isFullScreen</code>), and display preferences (<code>currentRenderAspect</code>, <code>mouseSensitivity</code>).
+Global state management is handled by Zustand stores, specifically <code>usePcStore</code> for managing the list of available games and <code>useThemeStore</code> for integrating with ryOS theme settings.
+<h2>Related Apps</h2>
+<ul><li><strong>File Explorer</strong>: While Virtual PC manages its own game files internally, a ryOS File Explorer could eventually be used to import or manage game ROMs and other DOS files.</li></ul>
+<ul><li><strong>Settings</strong>: The ryOS Settings app could provide global preferences that impact Virtual PC, such as system-wide audio settings or display configurations.</li></ul>
 
-const { t } = useTranslation();
-
-t("common.menu.file")              // "File"
-t("apps.finder.name")              // "Finder"
-t("common.dialog.aboutApp", { appName: "Finder" })</code></pre>
       </article>
       
       <nav class="nav">
-        <a href="/docs/build-system.html">← Build System</a>
-        <a href="/docs/apps.html">Apps →</a>
+        <a href="/docs/apps-paint.html">← Paint</a>
+        <a href="/docs/apps-photo-booth.html">Photo Booth →</a>
       </nav>
       
     </main>

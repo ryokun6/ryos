@@ -180,6 +180,7 @@ export default defineConfig({
           /^\/api\//,  // API routes
           /^\/iframe-check/,  // iframe proxy endpoint
           /^\/404/,  // Don't intercept 404 redirects
+          /^\/docs\//,  // Documentation pages - serve static HTML files directly
           // App routes handled by middleware for OG preview links
           // These need to reach the middleware first, then redirect to ?_ryo=1
           /^\/finder$/,

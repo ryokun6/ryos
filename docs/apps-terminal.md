@@ -1,0 +1,82 @@
+# Terminal
+
+The Terminal app in ryOS provides a powerful command-line interface for interacting with the system. It combines traditional Unix-like commands with modern AI assistance, offering a versatile tool for both developers and advanced users to manage files, execute commands, and automate tasks.
+
+## Overview
+
+Terminal serves as the primary command-line interface within the ryOS desktop environment, allowing users to execute commands, navigate the file system, and manage files directly from a textual prompt. Its core functionality mirrors familiar Unix-like environments, providing a robust platform for system interaction and scripting. Beyond basic operations, Terminal is designed to enhance productivity with integrated AI capabilities, offering intelligent assistance for complex tasks or information retrieval. It's an essential tool for those who prefer precision and speed over graphical interfaces, enabling deep control and automation within ryOS.
+
+## Features
+
+*   **Command-Line Interface:** Execute a wide range of commands including `ls`, `cd`, `cat`, `pwd`, `clear`, `touch`, `mkdir`, `rm`, `echo`, `date`, `whoami`, `open`, `cowsay`, and `about` for system interaction and file management.
+*   **Virtual File System Navigation:** Seamlessly navigate the same virtual file system as the Finder app using standard Unix commands, ensuring consistency across the ryOS environment.
+*   **AI Assistant Integration:** Leverage an integrated AI assistant by typing commands like `ai <your_query>`, providing intelligent help, code suggestions, or information directly within the terminal.
+*   **In-Terminal File Editing:** Directly open and edit text documents using the `edit <filename>` command (launching TextEdit) or the `vim <filename>` command for a Vim-style editor, streamlining workflow without leaving the terminal.
+*   **Command History:** Easily recall and re-execute previous commands using the `↑` (Up Arrow) and `↓` (Down Arrow) keys, enhancing productivity and reducing repetitive typing.
+*   **Auditory Feedback:** Provides distinct sound cues for successful command output, errors, and AI assistant replies, which can be toggled via the `View ▸ Sounds` menu option for a more engaging experience.
+
+## User Guide
+
+### Getting Started
+To launch the Terminal app, locate its icon in the Dock or through the Applications folder. Upon opening, you'll be presented with a command prompt where you can begin typing commands.
+
+### Key Actions
+*   **Navigating the File System:** Use `ls` to list contents of the current directory, `cd <directory>` to change directories, and `pwd` to print the current working directory.
+*   **Managing Files:** Create new files with `touch <filename>`, create directories with `mkdir <directoryname>`, and remove files with `rm <filename>`.
+*   **Viewing Content:** Display the content of text files using `cat <filename>`.
+*   **Getting Help:** Type `help` to view a list of available commands and their basic usage.
+*   **Using the AI Assistant:** Initiate a query or task for the AI assistant through the `ai <your_query>` command.
+*   **Editing Files:** Open a file in the graphical TextEdit app using `edit <filename>` or launch the in-terminal Vim-style editor with `vim <filename>`.
+*   **Clearing the Screen:** Use the `clear` command to wipe the terminal screen clean.
+
+### Tips & Shortcuts
+*   Press the `↑` (Up Arrow) and `↓` (Down Arrow) keys to quickly cycle through your command history, making it easy to re-run or modify previous commands.
+*   Terminal sounds provide useful auditory feedback; if they become distracting, you can toggle them off in the `View` menu under `Sounds`.
+
+## Technical Details
+
+### Window Configuration
+- Default size: 600×400px
+- Minimum size: 400×300px
+
+### Component Architecture
+The app consists of 7 component file(s):
+
+- `components/AnimatedEllipsis.tsx`
+- `components/UrgentMessageAnimation.tsx`
+- `components/TerminalAppComponent.tsx`
+- `components/VimEditor.tsx`
+- `components/TerminalToolInvocation.tsx`
+- `components/TerminalMenuBar.tsx`
+- `components/TypewriterText.tsx`
+
+### Hooks & Utilities
+
+**Utilities:**
+- `utils/commandParser.ts`
+- `commands/cd.ts`
+- `commands/date.ts`
+- `commands/echo.ts`
+- `commands/help.ts`
+- `commands/vim.ts`
+- `commands/touch.ts`
+- `commands/open.ts`
+- `commands/whoami.ts`
+- `commands/pwd.ts`
+- `commands/mkdir.ts`
+- `commands/rm.ts`
+- `commands/about.ts`
+- `commands/ls.ts`
+- `commands/ai.ts`
+- `commands/cowsay.ts`
+- `commands/index.ts`
+- `commands/clear.ts`
+
+### State Management
+The Terminal app utilizes Zustand stores, specifically `useTerminalStore`, to manage its global state, including command history, current directory, and terminal output. It also interacts with other stores like `useFileSystem` for file system operations, `useAiChat` for AI interactions, and `useTextEditStore` for file editing.
+
+## Related Apps
+
+*   **Finder:** Terminal interacts directly with the same virtual file system as Finder, allowing seamless navigation and file management between the graphical and command-line interfaces.
+*   **TextEdit:** The `edit` command in Terminal directly launches files into the TextEdit app for graphical document editing.
+*   **Chats:** The AI assistant feature in Terminal leverages the same underlying AI capabilities found in the dedicated Chats app.

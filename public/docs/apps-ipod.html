@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iPod - ryOS Docs</title>
+  <link rel="icon" href="/icons/mac-192.png">
+  <style>
+    @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
+    @font-face { font-family: "Monaco"; src: url("/fonts/monacottf.woff2") format("woff2"); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Geneva", system-ui, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #fff;
+      color: #000;
+    }
+    a { color: #00f; }
+    a:hover { text-decoration: none; }
+    code, pre { font-family: "Monaco", monospace; font-size: 11px; }
+    code { background: #f0f0f0; padding: 1px 4px; }
+    pre { background: #f8f8f8; border: 1px solid #ddd; padding: 12px; overflow-x: auto; margin: 12px 0; }
+    pre code { background: none; padding: 0; }
+    
+    /* Layout */
+    .header {
+      position: sticky; top: 0; z-index: 10;
+      background: #fff; border-bottom: 1px solid #ccc;
+      padding: 0 16px; height: 40px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-left img { width: 20px; height: 20px; display: block; }
+    .header-left span { font-weight: bold; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .header-right a { text-decoration: none; color: #333; }
+    .header-right a:hover { color: #000; }
+    .header-right .github { display: flex; align-items: center; gap: 4px; }
+    .header-right .launch { background: #000; color: #fff; padding: 4px 12px; }
+    
+    .container { display: flex; max-width: 960px; margin: 0 auto; }
+    
+    .sidebar {
+      width: 180px; flex-shrink: 0;
+      border-right: 1px solid #ccc;
+      padding: 12px;
+      position: sticky; top: 40px;
+      height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .sidebar a {
+      display: block; padding: 4px 8px; margin: 2px 0;
+      text-decoration: none; color: #333;
+    }
+    .sidebar a:hover { background: #f0f0f0; }
+    .sidebar a.active { background: #000; color: #fff; }
+    
+    /* Tree hierarchy styles */
+    .nav-group { margin: 4px 0; }
+    .nav-toggle {
+      display: flex; align-items: center; gap: 4px;
+      background: none; border: none; padding: 0; width: 100%;
+      cursor: pointer; text-align: left; font: inherit; color: inherit;
+    }
+    .nav-toggle:hover { background: #f0f0f0; }
+    .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
+    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; }
+    .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
+    .nav-child { padding-left: 8px; font-size: 11px; }
+    
+    .content { flex: 1; padding: 24px 32px; min-width: 0; }
+    
+    /* Typography */
+    h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
+    h2 { font-size: 14px; margin: 24px 0 12px; }
+    h3 { font-size: 12px; margin: 16px 0 8px; }
+    p { margin: 8px 0; }
+    ul { margin: 8px 0 8px 20px; }
+    li { margin: 4px 0; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    th { background: #f0f0f0; font-weight: bold; }
+    
+    /* Navigation */
+    .nav { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
+    .nav a { text-decoration: none; color: #333; }
+    .nav a:hover { color: #000; }
+    
+    
+    /* Mobile menu button */
+    .menu-btn { 
+      display: none; 
+      background: transparent; 
+      border: 0; 
+      padding: 4px; 
+      cursor: pointer; 
+      line-height: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+      color: inherit;
+    }
+    .menu-btn svg { display: block; width: 18px; height: 18px; pointer-events: none; }
+    @media screen and (max-width: 768px) {
+      .menu-btn { 
+        display: -webkit-flex !important;
+        display: flex !important; 
+        -webkit-align-items: center;
+        align-items: center; 
+        -webkit-justify-content: center;
+        justify-content: center;
+      }
+      .header-left img { display: none !important; }
+      .sidebar { 
+        position: fixed; left: -200px; top: 40px; 
+        width: 200px; height: calc(100vh - 40px);
+        background: #fff; z-index: 20;
+        transition: left 0.2s;
+      }
+      .sidebar.open { left: 0; box-shadow: 2px 0 8px rgba(0,0,0,0.1); }
+      .content { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit">
+        <img src="/icons/mac-192.png" alt="ryOS" width="20" height="20">
+        <span>ryOS</span>
+      </a>
+      <span style="color:#999">/</span>
+      <span style="color:#666">Docs</span>
+    </div>
+    <div class="header-right">
+      <a href="https://github.com/ryokun6/ryos" target="_blank" class="github">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <a href="/" class="launch">Launch</a>
+    </div>
+  </header>
+  
+  <div class="container">
+    <nav class="sidebar">
+      <a href="/docs/overview.html" class="">Overview</a>
+<a href="/docs/state-management.html" class="">State Management</a>
+<a href="/docs/window-manager.html" class="">Window Manager</a>
+<a href="/docs/api-layer.html" class="">API Layer</a>
+<a href="/docs/theme-system.html" class="">Theme System</a>
+<a href="/docs/components.html" class="">Components</a>
+<a href="/docs/chat-system.html" class="">Chat System</a>
+<a href="/docs/file-system.html" class="">File System</a>
+<a href="/docs/ai-integration.html" class="">AI Integration</a>
+<a href="/docs/build-system.html" class="">Build System</a>
+<a href="/docs/i18n-hooks.html" class="">i18n & Hooks</a>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/apps.html" class="">Apps</a>
+  </button>
+  <div class="nav-children" style="display: block;">
+    <a href="/docs/apps-admin.html" class="nav-child ">Admin</a>
+    <a href="/docs/apps-applet-viewer.html" class="nav-child ">Applet Store</a>
+    <a href="/docs/apps-chats.html" class="nav-child ">Chats</a>
+    <a href="/docs/apps-control-panels.html" class="nav-child ">Control Panels</a>
+    <a href="/docs/apps-finder.html" class="nav-child ">Finder</a>
+    <a href="/docs/apps-internet-explorer.html" class="nav-child ">Internet Explorer</a>
+    <a href="/docs/apps-ipod.html" class="nav-child active">iPod</a>
+    <a href="/docs/apps-karaoke.html" class="nav-child ">Karaoke</a>
+    <a href="/docs/apps-minesweeper.html" class="nav-child ">Minesweeper</a>
+    <a href="/docs/apps-paint.html" class="nav-child ">Paint</a>
+    <a href="/docs/apps-photo-booth.html" class="nav-child ">Photo Booth</a>
+    <a href="/docs/apps-soundboard.html" class="nav-child ">Soundboard</a>
+    <a href="/docs/apps-synth.html" class="nav-child ">Synth</a>
+    <a href="/docs/apps-terminal.html" class="nav-child ">Terminal</a>
+    <a href="/docs/apps-textedit.html" class="nav-child ">TextEdit</a>
+    <a href="/docs/apps-videos.html" class="nav-child ">Videos</a>
+    <a href="/docs/apps-pc.html" class="nav-child ">Virtual PC</a>
+  </div>
+</div>
+    </nav>
+    
+    <main class="content">
+      <article>
+        <h1>iPod</h1>
+<p>The iPod app for ryOS brings the classic 1st generation iPod experience to your web desktop. It allows you to manage and play music from YouTube, complete with iconic features like the click wheel, cover flow, and synchronized lyrics, all within a familiar retro interface.</p>
+<h2>Overview</h2>
+<p>The ryOS iPod app reimagines the nostalgic charm of a classic portable music player, seamlessly integrated with modern web capabilities. It's designed for users who appreciate a focused, distraction-free music listening experience, reminiscent of early 2000s tech. Users can curate their music library by adding tracks directly from YouTube, enjoying a blend of retro aesthetics and contemporary content.</p>
+<p>Beyond basic playback, the iPod app offers a rich interactive experience. Navigate your music collection with an intuitive click wheel, visually browse albums with Cover Flow, and enhance your listening with real-time synced lyrics. It's perfect for casual listening, focused work sessions with background music, or simply reliving a beloved piece of technology within the ryOS environment.</p>
+<h2>Features</h2>
+<p>The iPod app (v1.0) provides a rich set of features designed to emulate and enhance the classic iPod experience:</p>
+<ul><li><strong>Music Management & Discovery:</strong><ul><li>🎵 <strong>Add Songs from YouTube:</strong> Easily expand your music library by pasting YouTube URLs directly into the app.</li><li><strong>Dynamic Library:</strong> Your added music forms a personalized library, accessible through the classic iPod interface.</li></ul></li></ul>
+<ul><li><strong>Intuitive Navigation & Interface:</strong><ul><li>🔄 <strong>Click Wheel Navigation:</strong> Experience authentic iPod navigation using the interactive click wheel to browse menus, artists, albums, and songs.</li><li><strong>Cover Flow:</strong> Visually explore your music collection with the iconic Cover Flow interface, displaying album art in a dynamic 3D carousel.</li><li><strong>Customizable Display:</strong> Adjust backlight settings and themes to personalize your iPod's look.</li><li>📺 <strong>Fullscreen Video Playback:</strong> Switch to a fullscreen view for an immersive video experience when available.</li></ul></li></ul>
+<ul><li><strong>Enhanced Playback Experience:</strong><ul><li>⏯️ <strong>Comprehensive Playback Controls:</strong> Full control over your music, including play, pause, skip forward/backward, and volume adjustments.</li><li>⚙️ <strong>Advanced Playback Modes:</strong> Utilize shuffle and repeat functionalities for individual songs or entire playlists.</li><li>🎤 <strong>Synced Lyrics & Language Support:</strong> View synchronized lyrics with advanced features like translations, furigana (for Japanese), romaji, and pinyin (for Chinese), enhancing language learning or appreciation.</li></ul></li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To begin using the iPod app, simply launch it from your ryOS desktop. The app will open to its default menu screen, replicating the classic iPod interface. Use the interactive click wheel to navigate through options and start building your music library.
+<h3>Key Actions</h3>
+<ul><li><strong>Adding Music:</strong> Select the "Add Songs" option from the main menu and paste a YouTube URL into the prompt to import a new track into your library.</li></ul>
+<ul><li><strong>Browsing Your Library:</strong> Navigate to "Music" using the click wheel to explore your saved songs, artists, and albums. Use Cover Flow for a visually engaging browsing experience.</li></ul>
+<ul><li><strong>Controlling Playback:</strong> While a song is playing, use the central play/pause button, and the skip buttons on the click wheel to manage your listening.</li></ul>
+<ul><li><strong>Accessing Lyrics:</strong> During playback, select the lyrics option to view synchronized lyrics, with options for translations and phonetic aids.</li></ul>
+<ul><li><strong>Adjusting Settings:</strong> Access display and playback mode settings through the main menu to customize your iPod's appearance and playback behavior.</li></ul>
+<h3>Tips & Shortcuts</h3>
+The click wheel is your primary interaction method; treat it like a physical iPod wheel for navigation. The central button acts as 'select,' while the outer ring allows scrolling through lists and options. Look for visual cues on the screen to understand current menu options and selected items.
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 300×480px</li></ul>
+<ul><li>Minimum size: 300×480px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 14 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/components/LyricsDisplay.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/LyricsDisplay.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/components/FullScreenPortal.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/FullScreenPortal.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/components/PipPlayer.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PipPlayer.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/components/IpodAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/IpodAppComponent.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/components/screen/BatteryIndicator.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/screen/BatteryIndicator.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/components/screen/MenuListItem.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/screen/MenuListItem.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/components/screen/StatusDisplay.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/screen/StatusDisplay.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/components/screen/ScrollingText.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/screen/ScrollingText.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/components/screen/Scrollbar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/screen/Scrollbar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/components/screen/index.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/screen/index.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/components/CoverFlow.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/CoverFlow.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/components/IpodMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/IpodMenuBar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/components/IpodWheel.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/IpodWheel.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/components/IpodScreen.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/IpodScreen.tsx</a></code></li></ul>
+<h3>Hooks & Utilities</h3>
+<strong>Custom Hooks:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/hooks/index.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/index.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/ipod/hooks/useLibraryUpdateChecker.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useLibraryUpdateChecker.ts</a></code></li></ul>
+<strong>Utilities:</strong>
+No dedicated utility files are listed for this application.
+<h3>State Management</h3>
+The iPod app leverages Zustand for robust state management, utilizing several stores including <code>useIpodStore</code> for core music library and playback state, <code>useAudioSettingsStore</code> for audio preferences, <code>useThemeStore</code> for visual themes, and <code>useAppStore</code> for general application-level settings. This ensures a consistent and reactive user experience across the application.
+<h2>Related Apps</h2>
+<p>The iPod app integrates well with ryOS's system-wide audio controls for volume management. Users might also find the 'Notes' app useful for jotting down song ideas or creating custom playlists for later use.</p>
+      </article>
+      
+      <nav class="nav">
+        <a href="/docs/apps-internet-explorer.html">← Internet Explorer</a>
+        <a href="/docs/apps-karaoke.html">Karaoke →</a>
+      </nav>
+      
+    </main>
+  </div>
+  
+  <script>
+    function toggleNavGroup(button) {
+      const group = button.closest('.nav-group');
+      const children = group.querySelector('.nav-children');
+      const svg = button.querySelector('svg');
+      const isExpanded = group.classList.contains('expanded');
+      
+      if (isExpanded) {
+        group.classList.remove('expanded');
+        children.style.display = 'none';
+        svg.style.transform = 'rotate(0deg)';
+        button.setAttribute('aria-expanded', 'false');
+      } else {
+        group.classList.add('expanded');
+        children.style.display = 'block';
+        svg.style.transform = 'rotate(90deg)';
+        button.setAttribute('aria-expanded', 'true');
+      }
+    }
+    
+    document.addEventListener('click', (e) => {
+      const sidebar = document.querySelector('.sidebar');
+      const menuBtn = document.querySelector('.menu-btn');
+      const clickedMenuBtn = menuBtn && menuBtn.contains(e.target);
+      if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
+        sidebar.classList.remove('open');
+      }
+    });
+  </script>
+</body>
+</html>

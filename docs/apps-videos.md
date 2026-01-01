@@ -1,0 +1,65 @@
+# Videos
+
+The Videos app for ryOS provides a dedicated platform for watching online and local video content, featuring a classic, retro-inspired interface. It's designed to offer a straightforward and enjoyable multimedia experience directly within your desktop environment.
+
+## Overview
+
+The Videos app serves as ryOS's primary multimedia player for video content. Users can seamlessly stream videos from popular platforms like YouTube by simply pasting a URL, or play local video files directly within the desktop environment. This makes it a versatile tool for entertainment, educational content, or simply having background video content while working in other ryOS apps.
+
+Designed with a nostalgic QuickTime player aesthetic, the app blends modern functionality with a unique, retro user interface. It focuses on delivering a smooth playback experience with essential controls and robust playlist management capabilities, allowing users to curate their viewing experience.
+
+## Features
+
+The Videos app comes packed with features to enhance your video playback experience:
+
+*   **Flexible Video Sources:** Easily add videos to your playlist by pasting any YouTube URL, or play local video files stored on your system.
+*   **Comprehensive Playback Controls:** Navigate your content with intuitive controls for play, pause, next, and previous video selection.
+*   **Advanced Playback Options:** Customize your viewing with options to loop the current video, loop the entire playlist, or shuffle the playlist order for a randomized experience.
+*   **Robust Playlist Management:** Organize and manage your video collection efficiently with a dedicated playlist interface, allowing you to reorder or remove videos as needed.
+*   **Retro User Interface (UI):** Enjoy a unique and nostalgic visual experience with a design inspired by classic QuickTime players, offering a distinctive aesthetic within ryOS.
+
+## User Guide
+
+### Getting Started
+
+To launch the Videos app, locate its icon in the ryOS application launcher and click on it. The app will open in its default window size, presenting you with a retro-themed player ready for you to add and play videos.
+
+### Key Actions
+
+*   **Add Video:** To add a new video, locate the "Add Video" option (likely in a menu or as a button). A dialog will appear where you can paste a YouTube URL. Once added, the video will appear in your playlist.
+*   **Playback Controls:** Use the familiar play/pause, next, and previous buttons located in the player controls to navigate through your videos.
+*   **Manage Playlist:** Access the playlist view to see all your added videos. From here, you can select a specific video to play, reorder the list, or remove videos.
+*   **Loop & Shuffle:** Toggle the "Loop" button to repeat the current video or the entire playlist. Activate the "Shuffle" button to randomize the playback order of your playlist.
+
+### Tips & Shortcuts
+
+*   The app's interface is designed for simplicity, echoing classic media players. Look for familiar icons for immediate understanding of controls.
+*   Keep a list of your favorite YouTube URLs handy for quick playlist additions.
+*   Utilize the loop and shuffle features to create a continuous background video experience tailored to your mood.
+
+## Technical Details
+
+### Window Configuration
+
+*   Default size: 400×420px
+*   Minimum size: 400×340px
+
+### Component Architecture
+
+The app consists of 3 component file(s):
+
+*   `components/SeekBar.tsx`
+*   `components/VideosAppComponent.tsx`
+*   `components/VideosMenuBar.tsx`
+
+### Hooks & Utilities
+
+No custom hooks or utilities are explicitly defined within the app's specific directories. However, the application leverages common ryOS platform hooks and utility functions for various functionalities like sound effects, theming, and internationalization.
+
+### State Management
+
+The Videos app primarily manages its state using Zustand stores. Specifically, `useVideoStore` is utilized for handling the video playlist data, current playback status, and related settings. Additionally, it integrates with `useAppStore` for general application-level state and `useThemeStore` for theme-related preferences, ensuring a consistent and efficient state management approach across the ryOS environment.
+
+## Related Apps
+
+The Videos app complements other media-focused applications in ryOS, such as the "Music" app for audio playback or the "Browser" app for discovering new content and fetching video URLs.

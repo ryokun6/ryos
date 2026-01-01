@@ -1,0 +1,71 @@
+# Applet Store
+
+The Applet Store is your central hub for discovering, installing, and managing a diverse collection of user-created HTML applets within ryOS. It empowers you to personalize and extend your desktop environment with lightweight, custom applications from the community.
+
+## Overview
+
+The Applet Store serves as the primary gateway to a vibrant ecosystem of mini-applications within ryOS. It provides users with an intuitive interface to browse, explore, and install a wide range of HTML applets contributed by the community. These applets can vary from simple utility tools and interactive widgets to more complex mini-applications, all designed to enhance your ryOS experience.
+
+Beyond just discovery, the Applet Store facilitates the seamless integration and execution of these applets, making them readily available on your ryOS desktop. It also offers powerful features for managing your installed applets, ensuring they are kept up-to-date, and enabling you to share your favorite finds with others in the ryOS community. Furthermore, the Applet Store integrates with ryOS Chat, allowing you to generate custom applets on demand, transforming your ideas into functional tools instantly.
+
+Whether you're looking to add a quick-access calculator, a personalized weather widget, or a unique game, the Applet Store makes it effortless to customize and expand the functionality of your ryOS desktop.
+
+## Features
+
+*   **Applet Discovery & Installation:**
+    *   **Browse the Applet Store:** Explore a diverse and growing catalog of user-created HTML applets contributed by the ryOS community.
+    *   **Install Applets:** Easily install new applets with a single click, integrating them into your ryOS environment.
+    *   **View Applets:** Open and run applets that you've installed from the store or saved from other sources like ryOS Chat.
+
+*   **Applet Creation & Sharing:**
+    *   **Create with ryOS Chat:** Leverage the power of ryOS Chat to generate custom HTML applets based on your descriptions and ideas, getting working apps instantly.
+    *   **Share Applets:** Distribute your favorite applets with other ryOS users using the built-in sharing functionality in the File menu.
+
+*   **Applet Management:**
+    *   **Open from Finder:** Directly browse and open applet files saved on your ryOS file system, offering flexibility in managing your applet collection.
+    *   **Keep Updated:** Periodically check for and install the latest versions of your installed applets to ensure you have the most recent features and bug fixes.
+
+## User Guide
+
+### Getting Started
+To launch the Applet Store, locate its icon in your ryOS applications menu or dock and click it. Upon opening, you'll typically be presented with the main feed, showcasing a selection of popular and newly added applets ready for you to explore.
+
+### Key Actions
+*   **Browsing and Installing Applets:** Open the "Store" menu to discover new applets. You can browse categories or search for specific functionalities. Clicking on an applet will display its details, from where you can choose to install it.
+*   **Running Applets:** Once an applet is installed or saved, you can run it directly from the Applet Store's interface or by selecting "View Applets" from the "File" menu to see your collection.
+*   **Creating Applets with ryOS Chat:** To generate a custom applet, go to the "Store" menu and select "Create with ryOS Chat." This will open a chat interface where you can describe the applet you want to create, and ryOS Chat will generate the code for you.
+*   **Sharing Applets:** To share an applet you enjoy, select it within the Applet Store and then use the "Share Applet" option available in the "File" menu.
+*   **Opening Local Applets:** If you have applet files saved on your system, use the "File" menu's "Open from Finder" option to browse your file system and open them directly in the Applet Store.
+*   **Checking for Updates:** To ensure your installed applets are current, select "Check for Updates" from the "Store" menu.
+
+### Tips & Shortcuts
+The Applet Store utilizes standard ryOS window controls for resizing and closing. For quick assistance, look for a "Help" option in the menu bar which provides details about the app's features. The "About" dialog offers version information. Some applets may require user authentication, which will be handled through a dedicated login dialog.
+
+## Technical Details
+
+### Window Configuration
+*   Default size: 320×450px
+*   Minimum size: 300×200px
+
+### Component Architecture
+The app consists of 4 component file(s):
+
+-   `components/AppletViewerAppComponent.tsx`: The main application component, responsible for orchestrating the overall Applet Store functionality, managing state, and integrating various sub-components.
+-   `components/AppStore.tsx`: Handles the core logic and UI for browsing, displaying, and interacting with the applet catalog.
+-   `components/AppStoreFeed.tsx`: Focuses on rendering the list or grid of available applets, likely including filtering and sorting capabilities.
+-   `components/AppletViewerMenuBar.tsx`: Manages the application's menu bar, providing access to file operations, store options, and help dialogs.
+
+### Hooks & Utilities
+**Custom Hooks:**
+-   `hooks/useAppletUpdates.ts`: Manages the logic and state related to checking for, downloading, and applying updates to installed applets.
+
+**Utilities:**
+-   `utils/appletActions.ts`: Provides a collection of functions to perform various actions on applets, such as loading, saving, and interacting with their content.
+
+### State Management
+The Applet Store extensively uses Zustand stores for managing global application state, including `useThemeStore` for theme preferences, `useAppletStore` for the collection of installed and available applets, `useAppStore` for general ryOS application state, `useChatsStore` for integration with chat functionalities (e.g., `ryOS Chat`), and `useFilesStore` for interacting with the ryOS file system. Local component state is also utilized for UI-specific elements and temporary data.
+
+## Related Apps
+
+*   **ryOS Chat:** Integrates directly with the Applet Store, allowing users to generate custom HTML applets through conversational prompts.
+*   **Finder:** Enables users to manage and open applet files directly from their ryOS file system, complementing the Applet Store's browsing and installation capabilities.

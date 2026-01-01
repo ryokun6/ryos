@@ -1,0 +1,67 @@
+# Paint
+
+Paint (v1.0.4) is a core ryOS application designed for creative expression and basic image manipulation. It provides a familiar canvas-based interface for drawing, editing, and applying effects to digital images, making digital art accessible for all ryOS users.
+
+## Overview
+
+Paint serves as a versatile image creation and editing tool within the ryOS environment. Users can leverage its intuitive interface to sketch ideas, create simple graphics, or perform quick edits on existing images. Its focus is on accessibility and ease of use, making it suitable for both casual users and those needing a straightforward tool for visual tasks.
+
+The application supports fundamental drawing operations, comprehensive color management, and a selection of artistic filters. From freehand drawing with various brushes to filling areas with unique patterns, Paint offers a robust yet approachable experience for digital artistry and basic photo enhancements.
+
+## Features
+
+*   **Intuitive Drawing Tools**: A comprehensive toolbar on the left provides various drawing implements, including pencils, brushes, shapes (lines, rectangles, circles), and more, to bring your ideas to life on the canvas.
+*   **Vibrant Color Palette**: Easily select and apply colors from a dedicated palette located below the tools, allowing for precise control over your artwork's hues and fills.
+*   **Creative Patterns**: Enhance your designs by choosing from a diverse range of patterns in the bottom palette to fill shapes and areas, adding texture and visual interest to your artwork.
+*   **Image Filters**: Transform your images with a suite of built-in filters like Invert, Grayscale, and Brightness adjustments, accessible via the `Filters` menu for quick visual effects.
+*   **Undo/Redo Functionality**: Effortlessly correct mistakes and experiment with confidence using the undo feature, ensuring a smooth and forgiving creative workflow.
+*   **Flexible Saving Options**: Save your creations to the ryOS file system, either preserving the current file using `File > Save` or saving a new version with a different name using `File > Save As`.
+
+## User Guide
+
+### Getting Started
+To launch Paint, locate its icon in the ryOS application launcher or open an image file associated with Paint. Once open, you'll be presented with a blank canvas, ready for your artistic endeavors. Select a tool, pick a color, and start drawing!
+
+### Key Actions
+*   **Drawing**: Select a tool from the left-hand toolbar (e.g., Pencil, Brush, Line, Rectangle) and click/drag on the canvas to draw. Adjust stroke width using the settings panel.
+*   **Choosing Colors**: Click on a color swatch in the color palette located below the tools to set your active drawing color for lines, fills, or text.
+*   **Applying Patterns**: Select a pattern from the bottom palette to use it for filling shapes or areas with predefined textures.
+*   **Undoing Actions**: If you make a mistake, navigate to `Edit > Undo` in the menu bar or use the keyboard shortcut `⌘Z` to revert your last action.
+*   **Saving Your Work**: To save your current artwork, go to `File > Save`. If you wish to save it under a new name or in a different location, use `File > Save As`.
+*   **Applying Filters**: Explore various visual effects by selecting options from the `Filters` menu, such as `Invert`, `Grayscale`, or `Brightness`, to quickly alter your image's appearance.
+
+### Tips & Shortcuts
+*   Use `⌘Z` to quickly undo your last drawing or editing action.
+*   Experiment with different brush sizes using the stroke settings to vary your line thickness and create diverse visual effects.
+*   Combine patterns with different foreground and background colors for unique textural designs.
+*   Before applying a filter, consider saving your current progress using `File > Save As` to easily revert if you don't like the result, preserving your original artwork.
+
+## Technical Details
+
+### Window Configuration
+*   Default size: 713×480px
+*   Minimum size: 400×400px
+*   Maximum size: 713×535px
+
+### Component Architecture
+The app consists of 8 component file(s):
+
+*   `components/PaintToolbar.tsx`
+*   `components/PaintFiltersMenu.tsx`
+*   `components/PaintColorPalette.tsx`
+*   `components/PaintStrokeSettings.tsx`
+*   `components/PaintCanvas.tsx`
+*   `components/PaintAppComponent.tsx`
+*   `components/PaintMenuBar.tsx`
+*   `components/PaintPatternPalette.tsx`
+
+### Hooks & Utilities
+
+No custom hooks or utilities.
+
+### State Management
+Paint manages its application state using a combination of local React component state (e.g., `useState` for selected tools, patterns, stroke width, and undo/redo capabilities) and global state managed through Zustand stores (`usePaintStore` for application-specific global state and `useAppStore` for general ryOS application management).
+
+## Related Apps
+
+Paint works well alongside the **Finder** app for managing and organizing your saved image files, and **Photos** for viewing and quick touch-ups of more complex images.

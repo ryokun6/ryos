@@ -1,0 +1,66 @@
+# Karaoke
+
+Karaoke is a dynamic and interactive music player for ryOS, designed to bring the joy of karaoke directly to your desktop. It offers a rich experience with real-time synced lyrics, translation capabilities, and pronunciation guides, making it perfect for both entertainment and language learning.
+
+## Overview
+
+The Karaoke app transforms your ryOS environment into a personal karaoke studio. Users can easily search for and add songs from YouTube, building a comprehensive music library shared with the iPod app. Its core functionality revolves around providing a seamless lyric display experience, where text scrolls in sync with the music, complete with options for adjusting timing precision.
+
+Beyond basic playback, Karaoke stands out with its robust customization for lyrics, allowing users to switch fonts, adjust layouts, and integrate translations. For language enthusiasts, it offers invaluable pronunciation aids like furigana, romaji, and pinyin, enhancing the learning process. The app is deeply integrated within ryOS, allowing for intuitive control via chat commands and offering a familiar experience alongside other multimedia applications.
+
+## Features
+
+*   **Comprehensive Song Library Management**: Easily search YouTube for a vast selection of songs, or paste direct URLs to add tracks to your personal library. This library is seamlessly shared with the ryOS iPod app.
+*   **Dynamic Lyrics Synchronization**: Experience perfectly timed lyrics that scroll with the music. Users can fine-tune the timing offset using intuitive controls like the `[` and `]` keys, mouse wheel, or drag gestures.
+*   **Customizable Lyrics Display and Learning Aids**: Personalize your karaoke experience by changing fonts and layouts. Enhance language learning with integrated translations and specialized pronunciation guides such as furigana (Japanese), romaji (Japanese), or pinyin (Chinese).
+*   **Seamless Integration with iPod**: Share a unified music library with the ryOS iPod app, allowing you to add songs in either application and access them across both.
+*   **Voice Control and Chat Integration**: Control playback, adjust settings, and request songs directly through ryOS's chat functionality by interacting with Ryo.
+*   **Efficient Playback Control**: Utilize convenient keyboard shortcuts for quick control over your music, including `Space` for play/pause and arrow keys for seeking within a track or changing songs.
+
+## User Guide
+
+### Getting Started
+To launch Karaoke, simply click its icon in the ryOS application launcher. Once open, you can immediately begin by searching for songs using the search bar or adding a YouTube URL. Your shared music library will be accessible for playback.
+
+### Key Actions
+
+*   **Add Songs**: Click the "Add Song" button or use the search bar to find music on YouTube. You can also paste a YouTube URL directly into the search field.
+*   **Play/Pause**: Use the `Space` bar or click the play/pause button on the interface to control track playback.
+*   **Adjust Lyrics Timing**: If lyrics are out of sync, press `[` to delay or `]` to advance them. Alternatively, scroll your mouse wheel or drag up/down on the lyrics display to fine-tune the offset.
+*   **Customize Display**: Access settings to change lyric fonts, alignment, toggle translations, and enable/disable pronunciation guides like furigana, romaji, or pinyin.
+*   **Navigate Tracks**: Use the left and right arrow keys to skip to the previous or next song in your playlist or library.
+*   **Seek within Track**: Use the up and down arrow keys to quickly seek forward or backward within the current song.
+
+### Tips & Shortcuts
+*   **`Space`**: Play/Pause current song.
+*   **`[` / `]`**: Adjust lyrics offset (delay/advance).
+*   **Mouse Wheel / Drag**: Fine-tune lyrics offset on the lyrics display.
+*   **Left/Right Arrow Keys**: Navigate to previous/next track.
+*   **Up/Down Arrow Keys**: Seek forward/backward within the current track.
+*   Remember that any song added in Karaoke will also appear in your iPod library, and vice-versa, ensuring a consistent music collection across ryOS.
+*   Leverage chat commands with Ryo for hands-free control, ideal when you're busy singing!
+
+## Technical Details
+
+### Window Configuration
+*   **Default size**: 560×560px
+*   **Minimum size**: 400×300px
+*   **Mobile**: Square aspect ratio (height = width)
+
+### Component Architecture
+The app consists of 2 component file(s):
+
+*   `components/KaraokeMenuBar.tsx`
+*   `components/KaraokeAppComponent.tsx`
+
+### Hooks & Utilities
+
+No custom hooks or utilities.
+
+### State Management
+The Karaoke app primarily leverages Zustand stores for managing its global state, including song library information (`useIpodStore`), specific karaoke settings (`useKaraokeStore`), audio playback preferences (`useAudioSettingsStore`), and theme-related configurations (`useThemeStore`). Local component state is used for UI elements and temporary interactions.
+
+## Related Apps
+
+*   **iPod**: Shares the same music library with Karaoke, allowing for seamless song management and playback across both applications.
+*   **Chat**: Provides an interactive way to control Karaoke playback, adjust settings, and request songs through natural language commands to Ryo.

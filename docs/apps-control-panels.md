@@ -1,0 +1,72 @@
+# Control Panels
+
+The Control Panels app in ryOS serves as the central hub for customizing your desktop environment and system preferences. It provides intuitive access to personalize your experience, from visual aesthetics to crucial system behaviors, ensuring ryOS adapts to your unique workflow and style.
+
+## Overview
+
+Control Panels is the primary application for managing and personalizing your ryOS experience. Users can fine-tune various aspects of the desktop environment, including its visual presentation, audio feedback, and underlying system configurations. This app is designed for both casual users looking to customize their workspace and advanced users needing to adjust core system settings or perform maintenance tasks like data backup and restoration. Its intuitive tabbed interface ensures that all settings are easily discoverable and manageable, providing a comprehensive solution for tailoring ryOS to individual preferences and operational requirements.
+
+## Features
+
+The Control Panels app offers a comprehensive suite of features to personalize and manage your ryOS environment:
+
+*   **Personalization & Appearance:**
+    *   **Desktop Wallpaper:** Choose from a selection of photos, patterns, or dynamic shader effects to customize your desktop background.
+    *   **Shader Effects:** Apply unique visual enhancements like CRT, Galaxy, or Aurora effects to the ryOS interface for a distinct look.
+    *   **Screen Savers:** Configure and enable various screen savers to engage when your system is idle, adding both aesthetics and privacy.
+*   **Audio & Sound Management:**
+    *   **Volume Mixer:** Adjust overall system volume and fine-tune specific audio outputs for a balanced sound experience.
+    *   **Sound Toggles:** Enable or disable various sound effects, including general UI sounds, typing synthesizer effects, and distinct audio cues for the Terminal and Internet Explorer apps.
+*   **AI Integration:**
+    *   **AI Model Selection:** Choose the preferred AI model that powers intelligent features within other ryOS applications, such as Chats and the Terminal assistant.
+*   **System Management & Maintenance:**
+    *   **Backup & Restore:** Securely export all ryOS settings and user files for backup purposes, and easily restore them from a previously saved backup.
+    *   **Language Settings:** Select your preferred language for the entire ryOS interface to ensure a localized and comfortable user experience.
+    *   **System Reset:** Access options to reset individual application preferences to their default state or perform a complete format of the virtual file system, effectively wiping user data and resetting the system to a clean slate.
+
+## User Guide
+
+### Getting Started
+To launch the Control Panels app, locate its icon in the ryOS Start Menu or Taskbar. Once open, navigate through the various settings categories using the tabs provided at the top of the window, each dedicated to a specific area of system configuration.
+
+### Key Actions
+*   **Customize Appearance:** Navigate to the "Appearance" or "Display" tab to modify your wallpaper, apply shader effects, or configure screen savers. You can select from predefined options or, where available, upload your own assets.
+*   **Manage Sounds:** In the "Sounds" tab, use the volume mixer to adjust audio levels. Toggle switches allow you to enable or disable specific sound effects like UI feedback, typing sounds, and application-specific audio.
+*   **Select AI Model:** Access the "AI Model" section to choose the intelligence engine that best suits your needs for AI-powered features across ryOS applications.
+*   **Backup/Restore Settings:** Utilize the "Backup & Restore" options to export your current ryOS configuration and files, or import a previously saved backup to restore your settings.
+*   **Change Language:** Go to the "Language" settings to switch the ryOS interface to your desired language, providing a localized experience.
+*   **Perform System Actions:** Under the "System" tab, you can reset individual app preferences to their defaults or, with caution, initiate a format of the virtual file system to clear all user data.
+
+### Tips & Shortcuts
+*   The Control Panels app uses a clear, tabbed interface for easy navigation between different categories of settings. Click on a tab (e.g., "Appearance", "Sounds") to quickly jump to that specific section.
+*   Many settings, such as sound toggles, utilize simple on/off switches for quick and intuitive adjustments.
+*   For complex settings like wallpaper selection, dedicated pickers (`WallpaperPicker`, `ScreenSaverPicker`) provide visual previews and a range of options for easy customization.
+*   System-level actions, such as "Format File System," typically require confirmation dialogs to prevent accidental data loss and ensure user intent.
+
+## Technical Details
+
+### Window Configuration
+- Default size: 365×415px
+- Minimum size: 320×415px
+- Maximum size: 365×600px
+
+### Component Architecture
+The app consists of 5 component file(s):
+
+- `components/VolumeMixer.tsx`: Manages audio output levels and sound effect toggles for the ryOS environment.
+- `components/WallpaperPicker.tsx`: Provides an interactive interface for selecting and applying desktop wallpapers.
+- `components/ControlPanelsAppComponent.tsx`: The main application component, orchestrating various settings tabs, dialogs, and core logic.
+- `components/ScreenSaverPicker.tsx`: Handles the selection and configuration of screen savers for the desktop.
+- `components/ControlPanelsMenuBar.tsx`: Implements the application's menu bar, offering access to app-level actions like Help and About.
+
+### Hooks & Utilities
+No custom hooks or utilities are directly associated with the core Control Panels app component.
+
+### State Management
+The Control Panels app primarily manages its state using Zustand stores. It leverages `useAppStoreShallow`, `useAudioSettingsStoreShallow`, and `useDisplaySettingsStoreShallow` to interact with and persist global application, audio, and display settings across the ryOS environment, ensuring changes are saved and reflected system-wide.
+
+## Related Apps
+
+*   **Terminal:** The AI Model selection within Control Panels directly impacts the behavior and capabilities of the Terminal's integrated assistant features.
+*   **Chats:** The chosen AI Model also dictates the intelligence behind AI interactions and responses within the Chats application.
+*   **Finder:** System actions like formatting the virtual file system directly affect the files and directories managed by the Finder app, requiring careful consideration.

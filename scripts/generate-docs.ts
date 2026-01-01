@@ -8,9 +8,11 @@ import { join } from "node:path";
 
 const DOCS_DIR = "docs";
 const OUTPUT_DIR = "public/docs";
+const GITHUB_REPO = "https://github.com/ryokun6/ryos";
+const GITHUB_BLOB = `${GITHUB_REPO}/blob/main`;
 
 // Simple markdown to HTML converter
-function markdownToHtml(md: string): string {
+function markdownToHtml(md: string, appContext?: string): string {
   let html = md;
 
   const escapeHtml = (str: string) =>
@@ -24,7 +26,7 @@ function markdownToHtml(md: string): string {
     return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
   });
 
-  // Inline code
+  // Inline code - process before other text processing to avoid conflicts
   html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
 
   // Tables
@@ -46,23 +48,172 @@ function markdownToHtml(md: string): string {
   html = html.replace(/^## (.+)$/gm, "<h2>$1</h2>");
   html = html.replace(/^# (.+)$/gm, "<h1>$1</h1>");
 
-  // Bold and italic
+  // Process lists - handle both unordered (*, -, +) and ordered (1., 2., etc.) lists with nesting
+  // Must process BEFORE bold/italic to avoid conflicts with * marker
+  html = html.replace(/(\n|^)(([*+-]|\d+\.)\s+.+(\n(?: {2,4}([*+-]|\d+\.)\s+.+| {2,4}[^*\d\-+].+))*)/g, (match, prefix, listContent) => {
+    const lines = listContent.split('\n').filter((l: string) => l.trim());
+    if (lines.length === 0) return match;
+
+    interface ListItem {
+      content: string;
+      children: ListItem[];
+      type: 'ul' | 'ol';
+    }
+
+    interface ListContext {
+      type: 'ul' | 'ol';
+      indent: number;
+      items: ListItem[];
+    }
+
+    let listStack: ListContext[] = [];
+    let rootItems: ListItem[] = [];
+    let currentParent: ListItem[] = rootItems;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      // Match list item markers
+      const ulMatch = line.match(/^(\s*)([*+-])\s+(.+)$/);
+      const olMatch = line.match(/^(\s*)(\d+)\.\s+(.+)$/);
+
+      if (ulMatch || olMatch) {
+        const match = ulMatch || olMatch!;
+        const indent = match[1].length;
+        const content = match[3];
+        const type = ulMatch ? 'ul' : 'ol';
+
+        // Find the correct parent list for this indent level
+        while (listStack.length > 0 && indent <= listStack[listStack.length - 1].indent) {
+          listStack.pop();
+        }
+
+        // Determine parent items array based on stack
+        if (listStack.length === 0) {
+          currentParent = rootItems;
+        } else {
+          const lastList = listStack[listStack.length - 1];
+          if (lastList.items.length > 0) {
+            currentParent = lastList.items[lastList.items.length - 1].children;
+          } else {
+            currentParent = [];
+          }
+        }
+
+        // Create new item
+        const item: ListItem = { content, children: [], type };
+
+        // If we need a new list context (type change or indent increase)
+        if (listStack.length === 0 || listStack[listStack.length - 1].type !== type || indent > listStack[listStack.length - 1].indent) {
+          listStack.push({ type, indent, items: [item] });
+          currentParent.push(item);
+        } else {
+          // Same list level - just add item to existing list context
+          listStack[listStack.length - 1].items.push(item);
+          currentParent.push(item);
+        }
+      } else if (listStack.length > 0) {
+        // Continuation line - add to last item of deepest list
+        const lastList = listStack[listStack.length - 1];
+        if (lastList.items.length > 0) {
+          const lastItem = lastList.items[lastList.items.length - 1];
+          lastItem.content += ' ' + trimmed;
+        }
+      }
+    }
+
+    // Build HTML from tree structure
+    function renderItems(items: ListItem[]): string {
+      if (items.length === 0) return '';
+      
+      let result = '';
+      let currentType: 'ul' | 'ol' | null = null;
+      let currentGroup: ListItem[] = [];
+
+      for (const item of items) {
+        if (currentType !== null && currentType !== item.type) {
+          // Type changed - render current group and start new one
+          const tag = currentType === 'ul' ? 'ul' : 'ol';
+          result += `<${tag}>${currentGroup.map(i => `<li>${i.content}${renderItems(i.children)}</li>`).join('')}</${tag}>`;
+          currentGroup = [];
+        }
+        currentType = item.type;
+        currentGroup.push(item);
+      }
+
+      // Render final group
+      if (currentType !== null && currentGroup.length > 0) {
+        const tag = currentType === 'ul' ? 'ul' : 'ol';
+        result += `<${tag}>${currentGroup.map(i => `<li>${i.content}${renderItems(i.children)}</li>`).join('')}</${tag}>`;
+      }
+
+      return result;
+    }
+
+    return prefix + renderItems(rootItems) + '\n';
+  });
+
+  // Bold and italic - process after lists to avoid conflicts with list markers
   html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
 
   // Links
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 
-  // Unordered lists
-  html = html.replace(/\n((?:- .+\n?)+)/g, (_, list) => {
-    const items = list.trim().split("\n").map((item: string) => `<li>${item.replace(/^- /, "")}</li>`).join("");
-    return `\n<ul>${items}</ul>\n`;
+  // Convert file path references to GitHub links
+  // Handle file paths mentioned in <code> tags (inline code) - these are the most common case
+  html = html.replace(/<code>([^<]*)<\/code>/g, (match, content) => {
+    if (match.includes('http') || match.includes('github.com') || match.includes('href=')) return match;
+    
+    // Match file paths with extensions - handle both full paths (src/...) and relative paths (components/...)
+    // First try to match full paths with base directory
+    let filePathMatch = content.match(/(src\/|api\/|scripts\/|docs\/|public\/)([a-zA-Z0-9_\-\/\.]+\.(tsx?|jsx?|json|css|html|md|sh|mdc))/);
+    
+    let fullPath: string | null = null;
+    
+    if (filePathMatch) {
+      // Has base path like src/ or api/
+      fullPath = filePathMatch[1] + filePathMatch[2];
+    } else {
+      // Try to match relative paths without base directory
+      filePathMatch = content.match(/([a-zA-Z0-9_\-\/]+)\/([a-zA-Z0-9_\-\/\.]+\.(tsx?|jsx?|json|css|html|md|sh|mdc))/);
+      if (filePathMatch && filePathMatch[1] && filePathMatch[2]) {
+        // Relative path without base - need to determine correct base path
+        const folder = filePathMatch[1];
+        const filename = filePathMatch[2];
+        
+        // Extract the first segment of the path to determine folder type (handle nested paths like "components/screen")
+        const firstSegment = folder.split('/')[0];
+        
+        // Check if this looks like an app-specific component (components/, hooks/, utils/ folders)
+        if (appContext && (firstSegment === 'components' || firstSegment === 'hooks' || firstSegment === 'utils' || firstSegment === 'tools' || firstSegment === 'commands' || firstSegment === 'extensions')) {
+          // App-specific file - prepend src/apps/{appName}/
+          fullPath = `src/apps/${appContext}/${folder}/${filename}`;
+        } else if (firstSegment === 'stores' || firstSegment === 'lib' || firstSegment.startsWith('contexts') || firstSegment.startsWith('types')) {
+          // Shared src-level file
+          fullPath = `src/${folder}/${filename}`;
+        } else {
+          // Default assumption - try src/ first (covers most cases)
+          fullPath = `src/${folder}/${filename}`;
+        }
+      }
+    }
+    
+    if (!fullPath || !filePathMatch) return match;
+    
+    const githubUrl = `${GITHUB_BLOB}/${fullPath}`;
+    const linkedContent = content.replace(
+      filePathMatch[0],
+      `<a href="${githubUrl}" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">${filePathMatch[0]}</a>`
+    );
+    return `<code>${linkedContent}</code>`;
   });
 
   // Horizontal rules
   html = html.replace(/^---$/gm, "<hr>");
 
-  // Paragraphs
+  // Paragraphs - process last, wrapping text blocks that aren't already HTML
   html = html.split("\n\n").map((block) => {
     block = block.trim();
     if (!block) return "";
@@ -83,15 +234,61 @@ interface DocEntry {
   id: string;
   title: string;
   html: string;
+  isAppDoc?: boolean;
+}
+
+function generateSidebar(doc: DocEntry, allDocs: DocEntry[]): string {
+  // Separate main docs from app docs
+  const mainDocs = allDocs.filter((d) => !d.isAppDoc);
+  const appDocs = allDocs.filter((d) => d.isAppDoc);
+  
+  // Find the apps parent doc
+  const appsDoc = mainDocs.find((d) => d.id === "apps");
+  
+  // Build sidebar items
+  const items: string[] = [];
+  
+  for (const d of mainDocs) {
+    if (d.id === "apps" && appDocs.length > 0) {
+      // This is the Apps parent - create a collapsible group
+      const isCurrentPage = doc.id === "apps" || doc.isAppDoc;
+      const isExpanded = isCurrentPage ? "expanded" : "";
+      const childrenDisplay = isCurrentPage ? "block" : "none";
+      const svgTransform = isCurrentPage ? "rotate(90deg)" : "rotate(0deg)";
+      const ariaExpanded = isCurrentPage ? "true" : "false";
+      
+      // Sort app docs by title for consistent ordering
+      const sortedAppDocs = [...appDocs].sort((a, b) => a.title.localeCompare(b.title));
+      
+      items.push(`
+<div class="nav-group ${isExpanded}">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="${ariaExpanded}">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: ${svgTransform};">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/${d.id}.html" class="${doc.id === "apps" ? "active" : ""}">${d.title}</a>
+  </button>
+  <div class="nav-children" style="display: ${childrenDisplay};">
+    ${sortedAppDocs.map((appDoc) => 
+      `<a href="/docs/${appDoc.id}.html" class="nav-child ${appDoc.id === doc.id ? "active" : ""}">${appDoc.title}</a>`
+    ).join("\n    ")}
+  </div>
+</div>
+      `.trim());
+    } else {
+      // Regular doc item
+      items.push(`<a href="/docs/${d.id}.html" class="${d.id === doc.id ? "active" : ""}">${d.title}</a>`);
+    }
+  }
+  
+  return items.join("\n");
 }
 
 function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number): string {
   const prev = currentIndex > 0 ? allDocs[currentIndex - 1] : null;
   const next = currentIndex < allDocs.length - 1 ? allDocs[currentIndex + 1] : null;
 
-  const sidebar = allDocs.map((d) => 
-    `<a href="/docs/${d.id}.html" class="${d.id === doc.id ? "active" : ""}">${d.title}</a>`
-  ).join("\n");
+  const sidebar = generateSidebar(doc, allDocs);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -152,6 +349,19 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
     }
     .sidebar a:hover { background: #f0f0f0; }
     .sidebar a.active { background: #000; color: #fff; }
+    
+    /* Tree hierarchy styles */
+    .nav-group { margin: 4px 0; }
+    .nav-toggle {
+      display: flex; align-items: center; gap: 4px;
+      background: none; border: none; padding: 0; width: 100%;
+      cursor: pointer; text-align: left; font: inherit; color: inherit;
+    }
+    .nav-toggle:hover { background: #f0f0f0; }
+    .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
+    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; }
+    .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
+    .nav-child { padding-left: 8px; font-size: 11px; }
     
     .content { flex: 1; padding: 24px 32px; min-width: 0; }
     
@@ -250,6 +460,25 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
   </div>
   
   <script>
+    function toggleNavGroup(button) {
+      const group = button.closest('.nav-group');
+      const children = group.querySelector('.nav-children');
+      const svg = button.querySelector('svg');
+      const isExpanded = group.classList.contains('expanded');
+      
+      if (isExpanded) {
+        group.classList.remove('expanded');
+        children.style.display = 'none';
+        svg.style.transform = 'rotate(0deg)';
+        button.setAttribute('aria-expanded', 'false');
+      } else {
+        group.classList.add('expanded');
+        children.style.display = 'block';
+        svg.style.transform = 'rotate(90deg)';
+        button.setAttribute('aria-expanded', 'true');
+      }
+    }
+    
     document.addEventListener('click', (e) => {
       const sidebar = document.querySelector('.sidebar');
       const menuBtn = document.querySelector('.menu-btn');
@@ -273,11 +502,22 @@ async function generate() {
 
   for (const file of mdFiles) {
     const content = await readFile(join(DOCS_DIR, file), "utf-8");
-    const html = markdownToHtml(content);
     const titleMatch = content.match(/^# (.+)$/m);
     const title = titleMatch ? titleMatch[1] : file.replace(/^\d+-/, "").replace(".md", "");
     const id = file.replace(/^\d+-/, "").replace(".md", "");
-    docs.push({ id, title, html });
+    const isAppDoc = file.startsWith("apps-") && file !== "12-apps.md";
+    
+    // Extract app name from filename for context (e.g., "apps-chats.md" -> "chats")
+    let appContext: string | undefined;
+    if (isAppDoc) {
+      const appNameMatch = file.match(/^apps-(.+)\.md$/);
+      if (appNameMatch) {
+        appContext = appNameMatch[1];
+      }
+    }
+    
+    const html = markdownToHtml(content, appContext);
+    docs.push({ id, title, html, isAppDoc });
   }
 
   // Generate individual pages
