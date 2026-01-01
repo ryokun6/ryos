@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createPersistedStore, type PersistedStoreMeta } from "./persistAdapter";
 import { Soundboard, SoundSlot, PlaybackState } from "@/types/types";
 import i18n from "@/lib/i18n";
 
@@ -14,7 +14,7 @@ const createDefaultBoard = (): Soundboard => ({
   }) as SoundSlot[],
 });
 
-export interface SoundboardStoreState {
+export interface SoundboardStoreState extends PersistedStoreMeta {
   boards: Soundboard[];
   activeBoardId: string | null;
   playbackStates: PlaybackState[];
@@ -47,7 +47,7 @@ const SOUNDBOARD_STORE_VERSION = 1;
 const SOUNDBOARD_STORE_NAME = "ryos:soundboard";
 
 export const useSoundboardStore = create<SoundboardStoreState>()(
-  persist(
+  createPersistedStore(
     (set, get) => ({
       boards: [],
       activeBoardId: null,
@@ -57,6 +57,7 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
       }) as PlaybackState[],
       selectedDeviceId: null,
       hasInitialized: false,
+      _updatedAt: Date.now(),
 
       initializeBoards: async () => {
         if (get().hasInitialized) {
@@ -66,9 +67,9 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
         const currentBoards = get().boards;
 
         if (currentBoards.length > 0) {
-          set({ hasInitialized: true });
+          set({ hasInitialized: true, _updatedAt: Date.now() });
           if (!get().activeBoardId) {
-            set({ activeBoardId: currentBoards[0].id });
+            set({ activeBoardId: currentBoards[0].id, _updatedAt: Date.now() });
           }
           return;
         }
@@ -103,6 +104,7 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
               boards: importedBoards,
               activeBoardId: importedBoards[0].id,
               hasInitialized: true,
+              _updatedAt: Date.now(),
             });
           } else {
             const defaultBoard = createDefaultBoard();
@@ -110,6 +112,7 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
               boards: [defaultBoard],
               activeBoardId: defaultBoard.id,
               hasInitialized: true,
+              _updatedAt: Date.now(),
             });
           }
         } catch (error) {
@@ -122,6 +125,7 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
             boards: [defaultBoard],
             activeBoardId: defaultBoard.id,
             hasInitialized: true,
+            _updatedAt: Date.now(),
           });
         }
       },
@@ -131,6 +135,7 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
         set((state) => ({
           boards: [...state.boards, newBoard],
           activeBoardId: newBoard.id,
+          _updatedAt: Date.now(),
         }));
       },
 
@@ -139,6 +144,7 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
           boards: state.boards.map((board) =>
             board.id === boardId ? { ...board, name } : board
           ),
+          _updatedAt: Date.now(),
         }));
       },
 
@@ -149,14 +155,19 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
           if (state.activeBoardId === boardId) {
             newActiveBoardId = newBoards.length > 0 ? newBoards[0].id : null;
           }
-          return { boards: newBoards, activeBoardId: newActiveBoardId };
+          return {
+            boards: newBoards,
+            activeBoardId: newActiveBoardId,
+            _updatedAt: Date.now(),
+          };
         });
       },
 
-      setActiveBoardId: (boardId) => set({ activeBoardId: boardId }),
+      setActiveBoardId: (boardId) =>
+        set({ activeBoardId: boardId, _updatedAt: Date.now() }),
 
       setSelectedDeviceId: (deviceId) => {
-        set({ selectedDeviceId: deviceId });
+        set({ selectedDeviceId: deviceId, _updatedAt: Date.now() });
       },
 
       updateSlot: (boardId, slotIndex, updates) => {
@@ -200,7 +211,7 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
                 ? currentState.isRecording
                 : isRecording,
           };
-          return { playbackStates: newPlaybackStates };
+          return { playbackStates: newPlaybackStates, _updatedAt: Date.now() };
         });
       },
 
@@ -215,10 +226,12 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
           }),
           selectedDeviceId: null,
           hasInitialized: true, // Mark as initialized after reset
+          _updatedAt: Date.now(),
         });
       },
 
-      _setBoards_internal: (boards) => set({ boards }),
+      _setBoards_internal: (boards) =>
+        set({ boards, _updatedAt: Date.now() }),
     }),
     {
       name: SOUNDBOARD_STORE_NAME,
@@ -228,6 +241,7 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
         activeBoardId: state.activeBoardId,
         selectedDeviceId: state.selectedDeviceId,
         hasInitialized: state.hasInitialized,
+        _updatedAt: state._updatedAt,
       }),
       onRehydrateStorage: () => {
         return (state, error) => {
