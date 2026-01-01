@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { OsThemeId } from "@/themes/types";
+import { applyThemeCssVariables, getTheme } from "@/themes";
 
 interface ThemeState {
   current: OsThemeId;
@@ -47,13 +48,20 @@ async function ensureLegacyCss(theme: OsThemeId) {
   }
 }
 
+function applyThemeGlobals(theme: OsThemeId) {
+  if (typeof document === "undefined") return;
+  const resolved = getTheme(theme);
+  document.documentElement.dataset.osTheme = theme;
+  applyThemeCssVariables(resolved);
+  ensureLegacyCss(theme);
+}
+
 export const useThemeStore = create<ThemeState>((set) => ({
   current: "macosx",
   setTheme: (theme) => {
     set({ current: theme });
     localStorage.setItem("os_theme", theme);
-    document.documentElement.dataset.osTheme = theme;
-    ensureLegacyCss(theme);
+    applyThemeGlobals(theme);
     // Note: No need to invalidate icon cache on theme switch.
     // Theme switching changes the icon PATH (e.g., /icons/default/ → /icons/macosx/),
     // and the service worker caches each path separately.
@@ -62,7 +70,6 @@ export const useThemeStore = create<ThemeState>((set) => ({
     const saved = localStorage.getItem("os_theme") as OsThemeId | null;
     const theme = saved || "macosx";
     set({ current: theme });
-    document.documentElement.dataset.osTheme = theme;
-    ensureLegacyCss(theme);
+    applyThemeGlobals(theme);
   },
 }));

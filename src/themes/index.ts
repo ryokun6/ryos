@@ -3,6 +3,7 @@ import { macosx } from "./macosx";
 import { xp } from "./xp";
 import { win98 } from "./win98";
 import { OsTheme, OsThemeId, ThemeMetadata } from "./types";
+import { applyThemeCssVariables, themeToCssVariables } from "./variables";
 
 export const themes: Record<OsThemeId, OsTheme> = {
   system7,
@@ -39,3 +40,4 @@ export function isMacTheme(id: OsThemeId): boolean {
 }
 
 export type { OsTheme, OsThemeId, ThemeMetadata } from "./types";
+export { applyThemeCssVariables, themeToCssVariables };
