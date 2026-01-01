@@ -126,7 +126,7 @@ export function HelpDialog({
         </p>
         {isMacTheme ? (
           <button
-            className="aqua-button primary text-[12px] px-3 py-1"
+            className="aqua-button secondary text-[12px] px-3 py-1"
             onClick={handleViewDocs}
           >
             {t("common.dialog.viewDocs")}
