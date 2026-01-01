@@ -120,10 +120,13 @@ export async function syncOnce(
     };
     const pushResp = await pushSnapshots(mergedEnvelope, auth);
     if (!pushResp.ok) {
+      useSyncSettingsStore.getState().markSyncError?.(pushResp.statusText || "push_failed");
       return { ok: false, status: pushResp.status, error: pushResp.statusText || "push_failed" };
     }
+    useSyncSettingsStore.getState().markSyncSuccess?.();
     return { ok: true, status: pushResp.status, merged };
   } catch (err) {
+    useSyncSettingsStore.getState().markSyncError?.((err as Error).message);
     return { ok: false, status: 0, error: (err as Error).message };
   }
 }
