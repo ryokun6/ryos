@@ -740,7 +740,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             className={`absolute left-0 right-0 font-geneva-12 flex items-center justify-center gap-2 ${
               ipodMode ? "px-2" : "px-6"
             }`}
-            style={{ bottom: ipodMode ? "6px" : "3cqmin" }}
+            style={{ bottom: ipodMode ? "6px" : "5cqmin" }}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
