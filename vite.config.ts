@@ -113,14 +113,24 @@ export default defineConfig({
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
           const url = req.url || '';
+          // Redirect /docs and /docs/ to /docs/overview
           if (url === '/docs' || url === '/docs/') {
-            res.writeHead(302, { Location: '/docs/overview.html' });
+            res.writeHead(302, { Location: '/docs/overview' });
             res.end();
             return;
           }
-          if (url.startsWith('/docs/') && url.endsWith('.html')) {
-            // Let Vite serve the file from public/
+          // Handle clean URLs for docs - serve .html files
+          if (url.startsWith('/docs/') && !url.endsWith('.html')) {
+            const htmlPath = url + '.html';
+            req.url = htmlPath;
             return next();
+          }
+          // Redirect .html URLs to clean URLs (match Vercel behavior)
+          if (url.startsWith('/docs/') && url.endsWith('.html')) {
+            const cleanUrl = url.replace(/\.html$/, '');
+            res.writeHead(308, { Location: cleanUrl });
+            res.end();
+            return;
           }
           next();
         });
