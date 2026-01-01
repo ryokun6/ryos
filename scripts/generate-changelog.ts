@@ -22,6 +22,7 @@ const ROOT_DIR = join(__dirname, "..");
 const OUTPUT_PATH = join(ROOT_DIR, "docs", "9-changelog.md");
 
 const DEFAULT_MONTHS = 12;
+const DEFAULT_PER_MONTH_LIMIT = 20;
 
 const MAJOR_KEYWORDS = [
   "feat",
@@ -69,6 +70,7 @@ interface CommitEntry {
 interface Options {
   months: number;
   all: boolean;
+  perMonthLimit: number;
 }
 
 function parseArgs(): Options {
@@ -95,7 +97,27 @@ function parseArgs(): Options {
     }
   }
 
-  return { months, all };
+  const perMonthFlagIndex = args.findIndex((arg) => arg === "--per-month");
+  let perMonthLimit = DEFAULT_PER_MONTH_LIMIT;
+
+  if (perMonthFlagIndex !== -1) {
+    const value = args[perMonthFlagIndex + 1];
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isNaN(parsed) && parsed > 0) {
+      perMonthLimit = parsed;
+    }
+  } else {
+    const inlinePerMonth = args.find((arg) => arg.startsWith("--per-month="));
+    if (inlinePerMonth) {
+      const value = inlinePerMonth.split("=")[1];
+      const parsed = Number.parseInt(value, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        perMonthLimit = parsed;
+      }
+    }
+  }
+
+  return { months, all, perMonthLimit };
 }
 
 function normalizeMessage(message: string): string {
@@ -216,7 +238,7 @@ function renderMarkdown(entries: CommitEntry[], options: Options): string {
   lines.push(
     `_Auto-generated from git history on ${new Date().toISOString()}. ` +
     `Run \`bun run generate:changelog\` to refresh. ` +
-    `${options.all ? "Using full history." : `Default window: last ${options.months} month(s).`} ` +
+    `${options.all ? "Using full history." : `Default window: last ${options.months} month(s), max ${options.perMonthLimit} per category.`} ` +
     `Merge commits are skipped. Major keywords: ${MAJOR_KEYWORDS.join(", ")}. Minor keywords: ${MINOR_KEYWORDS.join(", ")}._`
   );
   lines.push("");
@@ -232,8 +254,12 @@ function renderMarkdown(entries: CommitEntry[], options: Options): string {
     if (data.major.length === 0) {
       lines.push("  - _No major changes noted._");
     } else {
-      for (const msg of data.major) {
+      const majorToShow = options.all ? data.major : data.major.slice(0, options.perMonthLimit);
+      for (const msg of majorToShow) {
         lines.push(`  - ${msg}`);
+      }
+      if (!options.all && data.major.length > options.perMonthLimit) {
+        lines.push(`  - _… ${data.major.length - options.perMonthLimit} more major change(s) in git log_`);
       }
     }
 
@@ -241,8 +267,12 @@ function renderMarkdown(entries: CommitEntry[], options: Options): string {
     if (data.minor.length === 0) {
       lines.push("  - _No minor changes noted._");
     } else {
-      for (const msg of data.minor) {
+      const minorToShow = options.all ? data.minor : data.minor.slice(0, options.perMonthLimit);
+      for (const msg of minorToShow) {
         lines.push(`  - ${msg}`);
+      }
+      if (!options.all && data.minor.length > options.perMonthLimit) {
+        lines.push(`  - _… ${data.minor.length - options.perMonthLimit} more minor change(s) in git log_`);
       }
     }
 
