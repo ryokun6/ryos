@@ -752,8 +752,8 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                 ipodMode ? "p-1 bg-white/10" : "p-3"
               }`}
               style={{
-                width: ipodMode ? "18px" : "clamp(32px, 8cqmin, 48px)",
-                height: ipodMode ? "18px" : "clamp(32px, 8cqmin, 48px)",
+                width: ipodMode ? "18px" : "clamp(36px, 8cqmin, 48px)",
+                height: ipodMode ? "18px" : "clamp(36px, 8cqmin, 48px)",
                 ...(!ipodMode && isMacTheme ? {
                   background: "linear-gradient(to bottom, rgba(50, 50, 50, 0.7), rgba(25, 25, 25, 0.7))",
                   boxShadow: "0 2px 4px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
@@ -803,8 +803,8 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                 !ipodMode ? (showCD ? "text-white" : "text-white/80 hover:text-white") : ""
               }`}
               style={{
-                width: ipodMode ? "18px" : "clamp(32px, 8cqmin, 48px)",
-                height: ipodMode ? "18px" : "clamp(32px, 8cqmin, 48px)",
+                width: ipodMode ? "18px" : "clamp(36px, 8cqmin, 48px)",
+                height: ipodMode ? "18px" : "clamp(36px, 8cqmin, 48px)",
                 ...(!ipodMode && isMacTheme ? {
                   background: showCD 
                     ? "linear-gradient(to bottom, rgba(70, 70, 70, 0.8), rgba(40, 40, 40, 0.8))"
