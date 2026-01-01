@@ -836,10 +836,10 @@
 
 .os-theme-macosx .ipod-force-font .font-geneva-12 {
   font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
-    -apple-system, sans-serif !important;
-  -webkit-font-smoothing: antialiased !important;
-  font-smooth: always !important;
-  font-size: 12px !important;
+    -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-smooth: always;
+  font-size: 12px;
 }
 
 .os-theme-macosx .synth-force-font .font-geneva-12 {
