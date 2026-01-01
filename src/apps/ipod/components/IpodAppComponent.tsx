@@ -1094,6 +1094,21 @@ export function IpodAppComponent({
     }
   }, [playClickSound, vibrate, registerActivity, tracks, startTrackSwitch, setCurrentSongId, setIsPlaying, showVideo, toggleVideo]);
 
+  // Play a track without exiting CoverFlow
+  const handleCoverFlowPlayInPlace = useCallback((index: number) => {
+    playClickSound();
+    vibrate();
+    registerActivity();
+    
+    const track = tracks[index];
+    if (track) {
+      startTrackSwitch();
+      setCurrentSongId(track.id);
+      setIsPlaying(true);
+      // Don't close CoverFlow - stay in place
+    }
+  }, [playClickSound, vibrate, registerActivity, tracks, startTrackSwitch, setCurrentSongId, setIsPlaying]);
+
   const handleCoverFlowExit = useCallback(() => {
     playClickSound();
     vibrate();
@@ -1844,6 +1859,7 @@ export function IpodAppComponent({
                 isVisible={isCoverFlowOpen}
                 isPlaying={isPlaying}
                 onTogglePlay={togglePlay}
+                onPlayTrackInPlace={handleCoverFlowPlayInPlace}
               />
             </div>
 

@@ -838,6 +838,17 @@ export function KaraokeAppComponent({
     }
   }, [tracks, startTrackSwitch, setCurrentSongId, setIsPlaying]);
 
+  // Play a track without exiting CoverFlow
+  const handleCoverFlowPlayInPlace = useCallback((index: number) => {
+    const trackId = tracks[index]?.id;
+    if (trackId) {
+      startTrackSwitch();
+      setCurrentSongId(trackId);
+      setIsPlaying(true);
+      // Don't close CoverFlow - stay in place
+    }
+  }, [tracks, startTrackSwitch, setCurrentSongId, setIsPlaying]);
+
   // CoverFlow rotation feedback
   const handleCoverFlowRotation = useCallback(() => {
     // Optional: play click sound or vibrate here if desired
@@ -1220,6 +1231,7 @@ export function KaraokeAppComponent({
                 ipodMode={false}
                 isPlaying={isPlaying}
                 onTogglePlay={togglePlay}
+                onPlayTrackInPlace={handleCoverFlowPlayInPlace}
               />
             </div>
           )}

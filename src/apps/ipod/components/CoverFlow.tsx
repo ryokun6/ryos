@@ -206,6 +206,8 @@ interface CoverFlowProps {
   isPlaying?: boolean;
   /** Callback to toggle play/pause */
   onTogglePlay?: () => void;
+  /** Callback to play a specific track without exiting CoverFlow */
+  onPlayTrackInPlace?: (index: number) => void;
 }
 
 export interface CoverFlowRef {
@@ -224,7 +226,7 @@ function CoverImage({
   onTogglePlay,
   selectedIndex,
   currentIndex,
-  onSelectTrack,
+  onPlayTrackInPlace,
 }: {
   track: Track;
   position: number;
@@ -234,7 +236,7 @@ function CoverImage({
   onTogglePlay?: () => void;
   selectedIndex: number;
   currentIndex: number;
-  onSelectTrack: (index: number) => void;
+  onPlayTrackInPlace?: (index: number) => void;
 }) {
   // Use track's cover (from Kugou, fetched during library sync), fallback to YouTube thumbnail
   // Use higher resolution images for karaoke mode (non-iPod)
@@ -245,16 +247,16 @@ function CoverImage({
   const kugouImageSize = ipodMode ? 400 : 800;
   const coverUrl = formatKugouImageUrl(track?.cover, kugouImageSize) ?? youtubeThumbnail;
 
-  // Handle disc click - select track if different, otherwise toggle play/pause
+  // Handle disc click - play track if different, otherwise toggle play/pause
   const handleDiscClick = useCallback(() => {
     if (selectedIndex !== currentIndex) {
-      // Different track - select and play it
-      onSelectTrack(selectedIndex);
+      // Different track - play it without exiting CoverFlow
+      onPlayTrackInPlace?.(selectedIndex);
     } else {
       // Same track - toggle play/pause
       onTogglePlay?.();
     }
-  }, [selectedIndex, currentIndex, onSelectTrack, onTogglePlay]);
+  }, [selectedIndex, currentIndex, onPlayTrackInPlace, onTogglePlay]);
 
   // Cover size: larger for iPod mode (extends downward more)
   const coverSize = ipodMode ? 65 : 60; // cqmin units
@@ -475,6 +477,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   ipodMode = true,
   isPlaying = false,
   onTogglePlay,
+  onPlayTrackInPlace,
 }, ref) {
   const [selectedIndex, setSelectedIndex] = useState(currentIndex);
   const [showCD, setShowCD] = useState(false);
@@ -725,7 +728,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     onTogglePlay={onTogglePlay}
                     selectedIndex={selectedIndex}
                     currentIndex={currentIndex}
-                    onSelectTrack={onSelectTrack}
+                    onPlayTrackInPlace={onPlayTrackInPlace}
                   />
                 ))}
               </AnimatePresence>
@@ -746,7 +749,13 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onTogglePlay?.();
+                // If viewing a different track, play it without exiting CoverFlow
+                if (selectedIndex !== currentIndex) {
+                  onPlayTrackInPlace?.(selectedIndex);
+                } else {
+                  // Same track - just toggle play/pause
+                  onTogglePlay?.();
+                }
               }}
               className={`relative flex-shrink-0 rounded-full transition-all text-white/80 hover:text-white hover:brightness-110 ${
                 ipodMode ? "p-1 bg-white/10" : "p-3"
@@ -761,10 +770,10 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                   background: "rgba(255, 255, 255, 0.08)",
                 } : {}),
               }}
-              title={isPlaying ? "Pause" : "Play"}
+              title={isPlaying && selectedIndex === currentIndex ? "Pause" : "Play"}
             >
               {!ipodMode && isMacTheme && <AquaShineOverlay />}
-              {isPlaying ? (
+              {isPlaying && selectedIndex === currentIndex ? (
                 <Pause className="w-full h-full relative z-10" fill="currentColor" strokeWidth={0} />
               ) : (
                 <Play className="w-full h-full relative z-10" fill="currentColor" strokeWidth={0} />
