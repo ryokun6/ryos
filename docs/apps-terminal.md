@@ -27,6 +27,7 @@ To launch the Terminal app, locate its icon in the Dock or through the Applicati
 *   **Getting Help:** Type `help` to view a list of available commands and their basic usage.
 *   **Using the AI Assistant:** Initiate a query or task for the AI assistant through the `ai <your_query>` command.
 *   **Editing Files:** Open a file in the graphical TextEdit app using `edit <filename>` or launch the in-terminal Vim-style editor with `vim <filename>`.
+    *   In Vim: `:w` to save, `:wq` to save & quit, `:q` warns on unsaved changes, `:q!` force-quits without saving.
 *   **Clearing the Screen:** Use the `clear` command to wipe the terminal screen clean.
 
 ### Tips & Shortcuts

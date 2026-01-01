@@ -7,6 +7,38 @@ import {
 } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
 
+// Helpers
+const normalizePath = (path: string): string => {
+  const segments = path.split("/").filter(Boolean);
+  const stack: string[] = [];
+
+  for (const segment of segments) {
+    if (segment === ".") continue;
+    if (segment === "..") {
+      stack.pop();
+    } else {
+      stack.push(segment);
+    }
+  }
+
+  return "/" + stack.join("/");
+};
+
+const resolvePath = (input: string, currentPath: string): string => {
+  if (input.startsWith("/")) {
+    return normalizePath(input);
+  }
+  const base = currentPath === "/" ? "" : currentPath;
+  return normalizePath(`${base}/${input}`);
+};
+
+const getStoreForPath = (path: string): string | null => {
+  if (path.startsWith("/Documents/")) return STORES.DOCUMENTS;
+  if (path.startsWith("/Images/")) return STORES.IMAGES;
+  if (path.startsWith("/Applets/")) return STORES.APPLETS;
+  return null;
+};
+
 export const vimCommand: Command = {
   name: "vim",
   description: "apps.terminal.commands.vim",
@@ -22,59 +54,61 @@ export const vimCommand: Command = {
       };
     }
 
-    const fileName = args[0];
-    const file = context.files.find((f) => f.name === fileName);
+    const targetInput = args[0];
+    const resolvedPath = resolvePath(targetInput, context.currentPath);
 
-    if (!file) {
-      return {
-        output: `file not found: ${fileName}`,
-        isError: true,
-      };
-    }
+    // Get terminal store instance
+    const terminalStore = useTerminalStore.getState();
+    const fileStore = useFilesStore.getState();
+    const fileMetadata = fileStore.getItem(resolvedPath);
+    const contextFile =
+      context.files.find((f) => f.path === resolvedPath) ||
+      context.files.find((f) => f.name === fileName);
+    const fileName =
+      fileMetadata?.name || resolvedPath.split("/").filter(Boolean).pop() || targetInput;
 
-    if (file.isDirectory) {
+    // Directory guard
+    if (fileMetadata?.isDirectory || contextFile?.isDirectory) {
       return {
         output: `${fileName} is a directory, not a file`,
         isError: true,
       };
     }
 
-    // Get terminal store instance
-    const terminalStore = useTerminalStore.getState();
-
-    // Load file content
+    // Load file content if it exists
     let fileContent = "";
+    let isNewFile = false;
 
     try {
-      // Check if this is a real file (in Documents or Images)
-      if (
-        file.path.startsWith("/Documents/") ||
-        file.path.startsWith("/Images/")
-      ) {
-        // Get file metadata from the store to find UUID
-        const fileStore = useFilesStore.getState();
-        const fileMetadata = fileStore.getItem(file.path);
+      if (fileMetadata || contextFile) {
+        // Attempt to load content from IndexedDB when possible
+        if (fileMetadata?.uuid) {
+          const storeName = getStoreForPath(resolvedPath);
+          if (storeName) {
+            const contentData = await dbOperations.get<DocumentContent>(
+              storeName,
+              fileMetadata.uuid
+            );
 
-        if (fileMetadata && fileMetadata.uuid) {
-          // Determine store based on file path
-          const storeName = file.path.startsWith("/Documents/")
-            ? STORES.DOCUMENTS
-            : STORES.IMAGES;
-
-          const contentData = await dbOperations.get<DocumentContent>(
-            storeName,
-            fileMetadata.uuid
-          );
-
-          if (contentData && contentData.content) {
-            // Convert content to text
-            if (contentData.content instanceof Blob) {
-              fileContent = await contentData.content.text();
-            } else if (typeof contentData.content === "string") {
-              fileContent = contentData.content;
+            if (contentData?.content) {
+              if (contentData.content instanceof Blob) {
+                fileContent = await contentData.content.text();
+              } else if (typeof contentData.content === "string") {
+                fileContent = contentData.content;
+              }
             }
           }
         }
+
+        // Fallback to any in-memory content on the item
+        if (!fileContent && typeof fileMetadata?.content === "string") {
+          fileContent = fileMetadata.content;
+        } else if (!fileContent && typeof contextFile?.content === "string") {
+          fileContent = contextFile.content;
+        }
+      } else {
+        // New buffer
+        isNewFile = true;
       }
     } catch (error) {
       console.error("Error reading file for vim:", error);
@@ -86,13 +120,17 @@ export const vimCommand: Command = {
       name: fileName,
       content: fileContent || "",
     });
+    terminalStore.setVimFilePath(resolvedPath);
+    terminalStore.setVimOriginalContent(fileContent || "");
+    terminalStore.setVimIsDirty(false);
+    terminalStore.setVimIsNewFile(isNewFile);
     terminalStore.setVimPosition(0);
     terminalStore.setVimCursorLine(0);
     terminalStore.setVimCursorColumn(0);
     terminalStore.setVimMode("normal");
 
     return {
-      output: `opening ${fileName} in vim...`,
+      output: `opening ${resolvedPath} in vim...`,
       isError: false,
     };
   },

@@ -348,6 +348,7 @@ export function TerminalAppComponent({
     setIsInVimMode,
     vimFile,
     setVimFile,
+    setVimFilePath,
     vimPosition,
     setVimPosition,
     vimCursorLine,
@@ -358,12 +359,56 @@ export function TerminalAppComponent({
     setVimMode,
     vimClipboard,
     setVimClipboard,
+    setVimOriginalContent,
+    vimIsDirty,
+    setVimIsDirty,
+    vimIsNewFile,
+    setVimIsNewFile,
   } = useTerminalStore();
   const [spinnerIndex, setSpinnerIndex] = useState(0);
   const [isInteractingWithPreview, setIsInteractingWithPreview] =
     useState(false);
   const [inputFocused, setInputFocused] = useState(false); // Add state for input focus
   const spinnerChars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+
+  const setVimFileContent = useCallback(
+    (content: string) => {
+      const currentFile = useTerminalStore.getState().vimFile;
+      if (!currentFile) return;
+
+      setVimFile({ ...currentFile, content });
+
+      const original = useTerminalStore.getState().vimOriginalContent;
+      setVimIsDirty(content !== original);
+    },
+    [setVimFile, setVimIsDirty]
+  );
+
+  const resetVimState = useCallback(() => {
+    setIsInVimMode(false);
+    setVimFile(null);
+    setVimFilePath(null);
+    setVimPosition(0);
+    setVimCursorLine(0);
+    setVimCursorColumn(0);
+    setVimMode("normal");
+    setVimClipboard("");
+    setVimOriginalContent("");
+    setVimIsDirty(false);
+    setVimIsNewFile(false);
+  }, [
+    setIsInVimMode,
+    setVimFile,
+    setVimFilePath,
+    setVimPosition,
+    setVimCursorLine,
+    setVimCursorColumn,
+    setVimMode,
+    setVimClipboard,
+    setVimOriginalContent,
+    setVimIsDirty,
+    setVimIsNewFile,
+  ]);
 
   // Track if auto-scrolling is enabled
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
@@ -512,13 +557,13 @@ export function TerminalAppComponent({
 
   const [isClearingTerminal, setIsClearingTerminal] = useState(false);
 
-  const handleCommandSubmit = (e: React.FormEvent) => {
+  const handleCommandSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!currentCommand.trim()) return;
 
     if (isInVimMode) {
-      handleVimInput(currentCommand);
+      await handleVimInput(currentCommand);
       return;
     }
 
@@ -567,7 +612,7 @@ export function TerminalAppComponent({
 
   // parseCommand is now imported from utils/commandParser
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = async (e: React.KeyboardEvent) => {
     if (isInVimMode) {
       // Insert mode handling
       if (vimMode === "insert") {
@@ -600,10 +645,7 @@ export function TerminalAppComponent({
             lines.splice(vimCursorLine, 1);
 
             // Update file content
-            setVimFile({
-              ...vimFile,
-              content: lines.join("\n"),
-            });
+            setVimFileContent(lines.join("\n"));
 
             // Move cursor to the end of the previous line
             setVimCursorLine((prev) => prev - 1);
@@ -634,10 +676,7 @@ export function TerminalAppComponent({
             lines[vimCursorLine] = newLine;
 
             // Update file content
-            setVimFile({
-              ...vimFile,
-              content: lines.join("\n"),
-            });
+            setVimFileContent(lines.join("\n"));
 
             // Move cursor backward
             setVimCursorColumn((prev) => Math.max(0, prev - 1));
@@ -664,10 +703,7 @@ export function TerminalAppComponent({
           lines.splice(vimCursorLine + 1, 0, afterCursor);
 
           // Update file content
-          setVimFile({
-            ...vimFile,
-            content: lines.join("\n"),
-          });
+          setVimFileContent(lines.join("\n"));
 
           // Move cursor to the beginning of the new line
           setVimCursorLine((prev) => prev + 1);
@@ -705,10 +741,7 @@ export function TerminalAppComponent({
           lines[vimCursorLine] = newLine;
 
           // Update file content
-          setVimFile({
-            ...vimFile,
-            content: lines.join("\n"),
-          });
+          setVimFileContent(lines.join("\n"));
 
           // Move cursor after the tab
           setVimCursorColumn((prev) => prev + 2);
@@ -740,10 +773,7 @@ export function TerminalAppComponent({
             lines.splice(vimCursorLine + 1, 1);
 
             // Update file content
-            setVimFile({
-              ...vimFile,
-              content: lines.join("\n"),
-            });
+            setVimFileContent(lines.join("\n"));
 
             return;
           }
@@ -757,10 +787,7 @@ export function TerminalAppComponent({
             lines[vimCursorLine] = newLine;
 
             // Update file content
-            setVimFile({
-              ...vimFile,
-              content: lines.join("\n"),
-            });
+            setVimFileContent(lines.join("\n"));
           }
 
           return;
@@ -1097,10 +1124,7 @@ export function TerminalAppComponent({
           newLines.splice(vimCursorLine + 1, 0, "");
 
           // Update file content
-          setVimFile({
-            ...vimFile,
-            content: newLines.join("\n"),
-          });
+          setVimFileContent(newLines.join("\n"));
 
           // Move cursor to the beginning of the new line
           setVimCursorLine((prev) => prev + 1);
@@ -1124,10 +1148,7 @@ export function TerminalAppComponent({
           newLines.splice(vimCursorLine, 0, "");
 
           // Update file content
-          setVimFile({
-            ...vimFile,
-            content: newLines.join("\n"),
-          });
+          setVimFileContent(newLines.join("\n"));
 
           // Keep cursor at the same line (which is now the new empty line)
           setVimCursorColumn(0);
@@ -1157,10 +1178,7 @@ export function TerminalAppComponent({
               newLines.splice(vimCursorLine, 1);
 
               // Update file content
-              setVimFile({
-                ...vimFile,
-                content: newLines.join("\n"),
-              });
+              setVimFileContent(newLines.join("\n"));
 
               // Adjust cursor position if we deleted the last line
               if (vimCursorLine >= newLines.length) {
@@ -1175,10 +1193,7 @@ export function TerminalAppComponent({
 
               // Clear the line content but keep the line
               const newLines = [""];
-              setVimFile({
-                ...vimFile,
-                content: newLines.join("\n"),
-              });
+              setVimFileContent(newLines.join("\n"));
 
               setVimCursorColumn(0);
             }
@@ -1217,10 +1232,7 @@ export function TerminalAppComponent({
             newLines.splice(vimCursorLine + 1, 0, vimClipboard);
 
             // Update file content
-            setVimFile({
-              ...vimFile,
-              content: newLines.join("\n"),
-            });
+            setVimFileContent(newLines.join("\n"));
 
             // Move cursor to the next line (the pasted line)
             setVimCursorLine((prev) => prev + 1);
@@ -1259,7 +1271,7 @@ export function TerminalAppComponent({
 
         // Add colon prefix to command if needed
         const command = ":" + currentCommand;
-        handleVimInput(command);
+        await handleVimInput(command);
         return;
       }
     }
@@ -2150,48 +2162,60 @@ export function TerminalAppComponent({
     setCurrentCommand("");
   };
 
-  const handleVimInput = (input: string) => {
+  const handleVimInput = async (input: string) => {
+    const pushVimHistory = (
+      command: string,
+      output: string,
+      isError = false
+    ) => {
+      setCommandHistory((prev) => [
+        ...prev,
+        {
+          command,
+          output,
+          path: currentPath,
+          isSystemMessage: isError,
+        },
+      ]);
+    };
+
     // Handle commands that start with ":"
     if (input.startsWith(":")) {
-      if (input === ":q" || input === ":q!" || input === ":wq") {
-        // Exit vim mode
-        const output = input === ":wq" ? `"${vimFile?.name}" written` : "";
+      const exCmd = input.slice(1).trim();
 
-        setCommandHistory([
-          ...commandHistory,
-          {
-            command: input,
-            output,
-            path: currentPath,
-          },
-        ]);
-
-        // Save file if using :wq
-        if (input === ":wq" && vimFile) {
-          saveVimFile(vimFile);
+      if (exCmd === "q") {
+        if (useTerminalStore.getState().vimIsDirty) {
+          pushVimHistory(input, "No write since last change (add ! to override)", true);
+          setCurrentCommand("");
+          return;
         }
-
-        // Clear vim state
-        setIsInVimMode(false);
-        setVimFile(null);
-        setVimPosition(0);
-        setVimMode("normal");
+        pushVimHistory(input, "");
+        resetVimState();
+      } else if (exCmd === "q!") {
+        pushVimHistory(input, "");
+        resetVimState();
+      } else if (exCmd === "w" || exCmd === "w!" || exCmd === "write") {
+        const result = await saveVimFile();
+        pushVimHistory(input, result.message, !result.ok);
+      } else if (exCmd === "wq" || exCmd === "x") {
+        const result = await saveVimFile();
+        pushVimHistory(input, result.message, !result.ok);
+        if (result.ok) {
+          resetVimState();
+        }
       } else {
         // Unsupported vim command
-        setCommandHistory([
-          ...commandHistory,
-          {
-            command: input,
-            output: `unsupported vim command: ${input}`,
-            path: currentPath,
-          },
-        ]);
+        pushVimHistory(input, `unsupported vim command: ${input}`, true);
       }
     } else if (input === "j" || input === "k") {
-      // Handle navigation (j: down, k: up)
-      if (!vimFile) return;
+      // Optional viewport scrolling via input submission (legacy)
+      const currentVimFile = useTerminalStore.getState().vimFile;
+      if (!currentVimFile) {
+        setCurrentCommand("");
+        return;
+      }
 
-      const lines = vimFile.content.split("\n");
+      const lines = currentVimFile.content.split("\n");
       const maxVisibleLines = 20; // Number of lines to display
       const maxPosition = Math.max(0, lines.length - maxVisibleLines);
 
@@ -2206,39 +2230,51 @@ export function TerminalAppComponent({
     setCurrentCommand("");
   };
 
-  // Helper function to save vim file content
-  const saveVimFile = async (vimFile: { name: string; content: string }) => {
+  const saveVimFile = async (): Promise<{ ok: boolean; message: string }> => {
+    const currentVimFile = useTerminalStore.getState().vimFile;
+    if (!currentVimFile) {
+      return { ok: false, message: "No file open" };
+    }
+
+    const normalizePath = (path: string) => {
+      const segments = path.split("/").filter(Boolean);
+      return "/" + segments.join("/");
+    };
+
+    const inferredPath =
+      useTerminalStore.getState().vimFilePath ||
+      normalizePath(
+        `${currentPath === "/" ? "" : currentPath}/${currentVimFile.name}`
+      );
+
     try {
-      // Find the file in the current files list to get its path
-      const fileObj = files.find((f) => f.name === vimFile.name);
-
-      if (!fileObj) {
-        console.error(`Could not find file ${vimFile.name} for saving`);
-        return;
-      }
-
-      // Use the saveFile API directly from useFileSystem
       await saveFile({
-        path: fileObj.path,
-        name: vimFile.name,
-        content: vimFile.content,
+        path: inferredPath,
+        name: currentVimFile.name,
+        content: currentVimFile.content,
         type: "text",
+        icon: "/icons/file-text.png",
       });
 
-      console.log(`Saved vim file ${vimFile.name} to ${fileObj.path}`);
+      setVimOriginalContent(currentVimFile.content);
+      setVimIsDirty(false);
+      setVimIsNewFile(false);
+      setVimFilePath(inferredPath);
+
+      return { ok: true, message: `"${currentVimFile.name}" written` };
     } catch (error) {
       const err = error as Error;
-      console.error(`Error saving vim file: ${err.message || "Unknown error"}`);
-
-      // Show error in terminal
+      const message = `Error saving file: ${err.message || "Unknown error"}`;
       setCommandHistory((prev) => [
         ...prev,
         {
           command: "",
-          output: `Error saving file: ${err.message || "Unknown error"}`,
+          output: message,
           path: currentPath,
+          isSystemMessage: true,
         },
       ]);
+      return { ok: false, message };
     }
   };
 
@@ -2260,10 +2296,7 @@ export function TerminalAppComponent({
     lines[vimCursorLine] = newLine;
 
     // Update file content
-    setVimFile({
-      ...vimFile,
-      content: lines.join("\n"),
-    });
+    setVimFileContent(lines.join("\n"));
 
     // Move cursor forward
     setVimCursorColumn((prev) => prev + 1);
@@ -2428,6 +2461,8 @@ export function TerminalAppComponent({
             vimCursorLine={vimCursorLine}
             vimCursorColumn={vimCursorColumn}
             vimMode={vimMode}
+            isDirty={vimIsDirty}
+            isNewFile={vimIsNewFile}
           />
           <div className="flex items-center mt-1">
             <span 
