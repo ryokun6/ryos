@@ -904,8 +904,10 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 /* System 7 theme: square corners, black border, drop shadow, smaller body text */
 .os-theme-system7 [data-sonner-toast] {
   border-radius: 0 !important;
-  border: 1px solid #000 !important;
+  border: 1px solid var(--os-color-window-border, #000) !important;
   box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5) !important;
+  background: var(--os-color-window-bg, #fff) !important;
+  color: var(--os-color-text-primary, #000) !important;
 }
 
 /* Smaller body text for System 7 toasts */
@@ -922,7 +924,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   background: transparent !important;
   box-shadow: none !important;
   border-radius: 0 !important;
-  color: #000 !important;
+  color: var(--os-color-text-primary, #000) !important;
 }
 
 .os-theme-system7 [data-sonner-toast] button:active {
