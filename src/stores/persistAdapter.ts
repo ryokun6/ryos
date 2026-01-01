@@ -61,7 +61,7 @@ export function createPersistedStore<T extends object, PersistedState = T>(
 ) {
   const storage = createSafeJSONStorage(options.storage);
 
-  return persist(config, {
+  return persist<T, [], [], PersistedState>(config, {
     name: options.name,
     version: options.version,
     storage,
