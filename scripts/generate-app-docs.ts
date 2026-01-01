@@ -20,25 +20,25 @@ const DOCS_DIR = "docs";
 const APPS_DIR = "src/apps";
 const OUTPUT_DIR = DOCS_DIR;
 
-// App IDs with their section numbers (under section 5)
+// App IDs with their section numbers (under section 2 - Apps)
 const APP_CONFIGS: Record<string, { sectionNum: string; docName: string }> = {
-  "chats": { sectionNum: "5.1", docName: "chats" },
-  "internet-explorer": { sectionNum: "5.2", docName: "internet-explorer" },
-  "ipod": { sectionNum: "5.3", docName: "ipod" },
-  "karaoke": { sectionNum: "5.4", docName: "karaoke" },
-  "textedit": { sectionNum: "5.5", docName: "textedit" },
-  "finder": { sectionNum: "5.6", docName: "finder" },
-  "paint": { sectionNum: "5.7", docName: "paint" },
-  "photo-booth": { sectionNum: "5.8", docName: "photo-booth" },
-  "terminal": { sectionNum: "5.9", docName: "terminal" },
-  "control-panels": { sectionNum: "5.10", docName: "control-panels" },
-  "soundboard": { sectionNum: "5.11", docName: "soundboard" },
-  "synth": { sectionNum: "5.12", docName: "synth" },
-  "videos": { sectionNum: "5.13", docName: "videos" },
-  "minesweeper": { sectionNum: "5.14", docName: "minesweeper" },
-  "pc": { sectionNum: "5.15", docName: "virtual-pc" },
-  "admin": { sectionNum: "5.16", docName: "admin" },
-  "applet-viewer": { sectionNum: "5.17", docName: "applet-store" },
+  "chats": { sectionNum: "2.1", docName: "chats" },
+  "internet-explorer": { sectionNum: "2.2", docName: "internet-explorer" },
+  "ipod": { sectionNum: "2.3", docName: "ipod" },
+  "karaoke": { sectionNum: "2.4", docName: "karaoke" },
+  "textedit": { sectionNum: "2.5", docName: "textedit" },
+  "finder": { sectionNum: "2.6", docName: "finder" },
+  "paint": { sectionNum: "2.7", docName: "paint" },
+  "photo-booth": { sectionNum: "2.8", docName: "photo-booth" },
+  "terminal": { sectionNum: "2.9", docName: "terminal" },
+  "control-panels": { sectionNum: "2.10", docName: "control-panels" },
+  "soundboard": { sectionNum: "2.11", docName: "soundboard" },
+  "synth": { sectionNum: "2.12", docName: "synth" },
+  "videos": { sectionNum: "2.13", docName: "videos" },
+  "minesweeper": { sectionNum: "2.14", docName: "minesweeper" },
+  "pc": { sectionNum: "2.15", docName: "virtual-pc" },
+  "admin": { sectionNum: "2.16", docName: "admin" },
+  "applet-viewer": { sectionNum: "2.17", docName: "applet-store" },
 };
 
 const APP_IDS = Object.keys(APP_CONFIGS) as (keyof typeof APP_CONFIGS)[];
