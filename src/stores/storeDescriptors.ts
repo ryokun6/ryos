@@ -182,6 +182,15 @@ export const storeDescriptors: StoreDescriptor[] = [
     notes: "Karaoke queues/history; lyrics and audio fetched separately.",
   },
   {
+    key: "ryos:photo-booth",
+    file: "src/stores/usePhotoBoothStore.ts",
+    version: 1,
+    storage: "localStorage",
+    category: "media",
+    sync: { eligible: true, defaultEnabled: false },
+    notes: "Photo references only; image blobs managed elsewhere.",
+  },
+  {
     key: "ryos:textedit",
     file: "src/stores/useTextEditStore.ts",
     version: 1,
