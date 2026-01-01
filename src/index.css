@@ -946,11 +946,11 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 .os-theme-xp [data-sonner-toast] [data-description],
 .os-theme-xp [data-sonner-toast] .text-sm,
 .os-theme-xp [data-sonner-toast] [data-content] {
-  color: #000 !important;
+  color: var(--os-color-text-primary, #000) !important;
   font-family: var(--os-font-ui) !important;
   font-size: 11px !important;
-  -webkit-font-smoothing: none !important;
-  font-smooth: never !important;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
 }
 
 .os-theme-xp [data-sonner-toast] button {
@@ -962,8 +962,8 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #888, inset 2px 2px #dfdfdf !important;
   color: var(--os-color-text-primary, #000) !important;
   padding: 4px 12px !important;
-  -webkit-font-smoothing: none !important;
-  font-smooth: never !important;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
 }
 
 .os-theme-xp [data-sonner-toast] button:active {
@@ -983,10 +983,10 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 .os-theme-win98 [data-sonner-toast] [data-description],
 .os-theme-win98 [data-sonner-toast] .text-sm,
 .os-theme-win98 [data-sonner-toast] [data-content] {
-  color: #000 !important;
+  color: var(--os-color-text-primary, #000) !important;
   font-size: 12px !important;
-  -webkit-font-smoothing: none !important;
-  font-smooth: never !important;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
 }
 
 .os-theme-win98 [data-sonner-toast] button {
@@ -998,8 +998,8 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf !important;
   color: var(--os-color-text-primary, #000) !important;
   padding: 4px 12px !important;
-  -webkit-font-smoothing: none !important;
-  font-smooth: never !important;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
 }
 
 .os-theme-win98 [data-sonner-toast] button:active {
