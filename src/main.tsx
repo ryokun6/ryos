@@ -1,7 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
-import { DocsPage } from "./pages/DocsPage";
 import { Analytics } from "@vercel/analytics/react";
 import "./index.css";
 import { useThemeStore } from "./stores/useThemeStore";
@@ -11,9 +10,6 @@ import { preloadIpodData } from "./stores/useIpodStore";
 import { initPrefetch } from "./utils/prefetch";
 import "./lib/i18n";
 import { primeReactResources } from "./lib/reactResources";
-
-// Check if we're on the docs route
-const isDocsRoute = window.location.pathname === "/docs" || window.location.pathname.startsWith("/docs/");
 
 // Prime React 19 resource hints before anything else runs
 primeReactResources();
@@ -73,21 +69,9 @@ initPrefetch();
 useThemeStore.getState().hydrate();
 useLanguageStore.getState().hydrate();
 
-// Render either the docs page or the main app
-if (isDocsRoute) {
-  // Docs route - render documentation without full OS
-  ReactDOM.createRoot(document.getElementById("root")!).render(
-    <React.StrictMode>
-      <DocsPage />
-      <Analytics />
-    </React.StrictMode>
-  );
-} else {
-  // Main app route
-  ReactDOM.createRoot(document.getElementById("root")!).render(
-    <React.StrictMode>
-      <App />
-      <Analytics />
-    </React.StrictMode>
-  );
-}
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
+    <Analytics />
+  </React.StrictMode>
+);
