@@ -66,8 +66,8 @@ function markdownToHtml(md: string, appContext?: string): string {
       items: ListItem[];
     }
 
-    let listStack: ListContext[] = [];
-    let rootItems: ListItem[] = [];
+    const listStack: ListContext[] = [];
+    const rootItems: ListItem[] = [];
     let currentParent: ListItem[] = rootItems;
 
     for (const line of lines) {
@@ -168,7 +168,7 @@ function markdownToHtml(md: string, appContext?: string): string {
     
     // Match file paths with extensions - handle both full paths (src/...) and relative paths (components/...)
     // First try to match full paths with base directory
-    let filePathMatch = content.match(/(src\/|api\/|scripts\/|docs\/|public\/)([a-zA-Z0-9_\-\/\.]+\.(tsx?|jsx?|json|css|html|md|sh|mdc))/);
+    let filePathMatch = content.match(/(src\/|api\/|scripts\/|docs\/|public\/)([a-zA-Z0-9_\-/.]+\.(tsx?|jsx?|json|css|html|md|sh|mdc))/);
     
     let fullPath: string | null = null;
     
@@ -177,7 +177,7 @@ function markdownToHtml(md: string, appContext?: string): string {
       fullPath = filePathMatch[1] + filePathMatch[2];
     } else {
       // Try to match relative paths without base directory
-      filePathMatch = content.match(/([a-zA-Z0-9_\-\/]+)\/([a-zA-Z0-9_\-\/\.]+\.(tsx?|jsx?|json|css|html|md|sh|mdc))/);
+      filePathMatch = content.match(/([a-zA-Z0-9_\-/]+)\/([a-zA-Z0-9_\-/.]+\.(tsx?|jsx?|json|css|html|md|sh|mdc))/);
       if (filePathMatch && filePathMatch[1] && filePathMatch[2]) {
         // Relative path without base - need to determine correct base path
         const folder = filePathMatch[1];
@@ -241,9 +241,6 @@ function generateSidebar(doc: DocEntry, allDocs: DocEntry[]): string {
   // Separate main docs from app docs
   const mainDocs = allDocs.filter((d) => !d.isAppDoc);
   const appDocs = allDocs.filter((d) => d.isAppDoc);
-  
-  // Find the apps parent doc
-  const appsDoc = mainDocs.find((d) => d.id === "apps");
   
   // Build sidebar items
   const items: string[] = [];

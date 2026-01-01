@@ -10,8 +10,8 @@
  *   bun run scripts/generate-app-docs.ts --dry-run          # Preview without generating
  */
 
-import { readFile, readdir, stat, writeFile, mkdir } from "fs/promises";
-import { join, dirname, basename, extname } from "path";
+import { readFile, readdir, stat, writeFile } from "fs/promises";
+import { join } from "path";
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 
@@ -140,7 +140,7 @@ async function readAppIndex(appId: string): Promise<{
 
   // Extract helpItems export - handle multiline content with dotall flag
   const helpItemsMatch = content.match(/export const helpItems\s*=\s*(\[[\s\S]*?\]);/s);
-  let helpItems: HelpItem[] = [];
+  const helpItems: HelpItem[] = [];
   if (helpItemsMatch) {
     try {
       // Use a simple pattern that matches icon, title, description fields - works reliably
@@ -572,7 +572,7 @@ Environment:
   let failCount = 0;
 
   for (const appId of appsToProcess) {
-    if (!APP_IDS.includes(appId as any)) {
+    if (!(APP_IDS as readonly string[]).includes(appId)) {
       console.error(`❌ Invalid app ID: ${appId}`);
       failCount++;
       continue;
