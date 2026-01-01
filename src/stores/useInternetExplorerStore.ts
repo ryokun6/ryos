@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createPersistedStore, type PersistedStoreMeta } from "./persistAdapter";
 
 // Define types
 export interface Favorite {
@@ -376,7 +376,7 @@ export interface ErrorResponse {
   targetUrl?: string;
 }
 
-interface InternetExplorerStore {
+interface InternetExplorerStore extends PersistedStoreMeta {
   // Navigation state
   url: string;
   year: string;
@@ -567,10 +567,11 @@ const getInitialState = () => ({
   // Add initial state for pending navigation
   pendingUrl: null as string | null,
   pendingYear: null as string | null,
+  _updatedAt: Date.now(),
 });
 
 export const useInternetExplorerStore = create<InternetExplorerStore>()(
-  persist(
+  createPersistedStore(
     (set, get) => ({
       ...getInitialState(),
 
@@ -849,6 +850,7 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
         timelineSettings: state.timelineSettings,
         language: state.language,
         location: state.location,
+        _updatedAt: state._updatedAt,
       }),
       migrate: (persistedState: unknown, version: number) => {
         // Use Record<string, unknown> to allow safe property access with type checking
@@ -896,6 +898,10 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
         finalState.favorites = Array.isArray(finalState.favorites)
           ? finalState.favorites
           : DEFAULT_FAVORITES;
+
+        finalState._updatedAt =
+          (state as InternetExplorerStore | undefined)?._updatedAt ||
+          Date.now();
 
         return finalState as InternetExplorerStore;
       },

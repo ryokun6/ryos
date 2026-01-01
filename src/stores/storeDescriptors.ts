@@ -157,7 +157,7 @@ export const storeDescriptors: StoreDescriptor[] = [
   {
     key: "ryos:internet-explorer",
     file: "src/stores/useInternetExplorerStore.ts",
-    version: 0,
+    version: 4,
     storage: "localStorage",
     category: "ui",
     sync: { eligible: true, defaultEnabled: false },
