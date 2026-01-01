@@ -15,6 +15,19 @@ import {
   section,
 } from "./test-utils";
 
+const CHAT_ROOMS_BASE = `${BASE_URL}/api/chat-rooms`;
+const ROOMS_ENDPOINT = `${CHAT_ROOMS_BASE}/rooms`;
+const USERS_ENDPOINT = `${CHAT_ROOMS_BASE}/users`;
+const AUTH_SIGNUP = `${CHAT_ROOMS_BASE}/auth/signup`;
+const AUTH_LOGIN = `${CHAT_ROOMS_BASE}/auth/login`;
+const AUTH_VERIFY = `${CHAT_ROOMS_BASE}/auth/token/verify`;
+const AUTH_PASSWORD = `${CHAT_ROOMS_BASE}/auth/password`;
+const AUTH_TOKENS = `${CHAT_ROOMS_BASE}/auth/tokens`;
+const AUTH_LOGOUT_ALL = `${CHAT_ROOMS_BASE}/auth/logout/all`;
+const ADMIN_DEBUG_PRESENCE = `${CHAT_ROOMS_BASE}/admin/presence/debug`;
+const ADMIN_CLEANUP_PRESENCE = `${CHAT_ROOMS_BASE}/admin/presence/cleanup`;
+const ADMIN_RESET_USER_COUNTS = `${CHAT_ROOMS_BASE}/admin/reset-user-counts`;
+
 let testToken: string | null = null;
 let testUsername: string | null = null;
 
@@ -37,7 +50,7 @@ let publicTestRoomId: string | null = null;
 // ============================================================================
 
 async function testGetRooms(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=getRooms`);
+  const res = await fetchWithOrigin(`${ROOMS_ENDPOINT}`);
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
   const data = await res.json();
   assert(Array.isArray(data.rooms), "Expected rooms array");
@@ -45,7 +58,7 @@ async function testGetRooms(): Promise<void> {
 
 async function testGetRoomsWithUsername(): Promise<void> {
   const res = await fetchWithOrigin(
-    `${BASE_URL}/api/chat-rooms?action=getRooms&username=testuser`
+    `${ROOMS_ENDPOINT}?username=testuser`
   );
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
   const data = await res.json();
@@ -53,7 +66,7 @@ async function testGetRoomsWithUsername(): Promise<void> {
 }
 
 async function testCreateUserMissingUsername(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=createUser`, {
+  const res = await fetchWithOrigin(AUTH_SIGNUP, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({}),
@@ -64,7 +77,7 @@ async function testCreateUserMissingUsername(): Promise<void> {
 }
 
 async function testCreateUserMissingPassword(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=createUser`, {
+  const res = await fetchWithOrigin(AUTH_SIGNUP, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username: "testuser_nopwd" }),
@@ -75,7 +88,7 @@ async function testCreateUserMissingPassword(): Promise<void> {
 }
 
 async function testCreateUserShortPassword(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=createUser`, {
+  const res = await fetchWithOrigin(AUTH_SIGNUP, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username: "testuser_short", password: "123" }),
@@ -86,7 +99,7 @@ async function testCreateUserShortPassword(): Promise<void> {
 }
 
 async function testCreateUserInvalidUsername(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=createUser`, {
+  const res = await fetchWithOrigin(AUTH_SIGNUP, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username: "ab", password: "testpassword123" }),
@@ -96,7 +109,7 @@ async function testCreateUserInvalidUsername(): Promise<void> {
 
 async function testCreateUserSuccess(): Promise<void> {
   testUsername = `tuser${Date.now()}`;
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=createUser`, {
+  const res = await fetchWithOrigin(AUTH_SIGNUP, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -116,7 +129,7 @@ async function testVerifyToken(): Promise<void> {
     throw new Error("No test token available");
   }
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=verifyToken`,
+    AUTH_VERIFY,
     testToken,
     testUsername,
     {
@@ -133,7 +146,7 @@ async function testVerifyToken(): Promise<void> {
 
 async function testVerifyInvalidToken(): Promise<void> {
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=verifyToken`,
+    AUTH_VERIFY,
     "invalidtoken123",
     "testuser",
     {
@@ -150,7 +163,7 @@ async function testAuthenticateWithPassword(): Promise<void> {
     throw new Error("No test username available");
   }
   const res = await fetchWithOrigin(
-    `${BASE_URL}/api/chat-rooms?action=authenticateWithPassword`,
+    AUTH_LOGIN,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -171,7 +184,7 @@ async function testAuthenticateWithWrongPassword(): Promise<void> {
     throw new Error("No test username available");
   }
   const res = await fetchWithOrigin(
-    `${BASE_URL}/api/chat-rooms?action=authenticateWithPassword`,
+    AUTH_LOGIN,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -185,14 +198,14 @@ async function testAuthenticateWithWrongPassword(): Promise<void> {
 }
 
 async function testGetUsers(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=getUsers&search=test`);
+  const res = await fetchWithOrigin(`${USERS_ENDPOINT}?search=test`);
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
   const data = await res.json();
   assert(Array.isArray(data.users), "Expected users array");
 }
 
 async function testGetUsersShortQuery(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=getUsers&search=a`);
+  const res = await fetchWithOrigin(`${USERS_ENDPOINT}?search=a`);
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
   const data = await res.json();
   assert(Array.isArray(data.users), "Expected users array");
@@ -200,7 +213,7 @@ async function testGetUsersShortQuery(): Promise<void> {
 }
 
 async function testJoinRoomMissingFields(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=joinRoom`, {
+  const res = await fetchWithOrigin(`${ROOMS_ENDPOINT}/missing-room/join`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({}),
@@ -209,11 +222,10 @@ async function testJoinRoomMissingFields(): Promise<void> {
 }
 
 async function testSendMessageUnauthorized(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=sendMessage`, {
+  const res = await fetchWithOrigin(`${ROOMS_ENDPOINT}/test/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      roomId: "test",
       username: "test",
       content: "Hello",
     }),
@@ -223,7 +235,7 @@ async function testSendMessageUnauthorized(): Promise<void> {
 
 async function testDeleteRoomUnauthorized(): Promise<void> {
   const res = await fetchWithOrigin(
-    `${BASE_URL}/api/chat-rooms?action=deleteRoom&roomId=test`,
+    `${ROOMS_ENDPOINT}/test`,
     {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -233,8 +245,8 @@ async function testDeleteRoomUnauthorized(): Promise<void> {
 }
 
 async function testInvalidAction(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=invalidAction`);
-  assertEq(res.status, 401, `Expected 401, got ${res.status}`);
+  const res = await fetchWithOrigin(`${CHAT_ROOMS_BASE}/invalid`);
+  assertEq(res.status, 404, `Expected 404, got ${res.status}`);
 }
 
 async function testCheckPasswordWithAuth(): Promise<void> {
@@ -242,7 +254,7 @@ async function testCheckPasswordWithAuth(): Promise<void> {
     throw new Error("No test token available");
   }
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=checkPassword`,
+    AUTH_PASSWORD,
     testToken,
     testUsername,
     { method: "GET" }
@@ -257,13 +269,11 @@ async function testListTokens(): Promise<void> {
     throw new Error("No test token available");
   }
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=listTokens`,
+    AUTH_TOKENS,
     testToken,
     testUsername,
     {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
+      method: "GET",
     }
   );
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
@@ -278,7 +288,7 @@ async function testListTokens(): Promise<void> {
 
 async function testAdminAuthenticate(): Promise<void> {
   const res = await fetchWithOrigin(
-    `${BASE_URL}/api/chat-rooms?action=authenticateWithPassword`,
+    AUTH_LOGIN,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -292,7 +302,7 @@ async function testAdminAuthenticate(): Promise<void> {
   if (res.status === 401) {
     // Try to create the user first (dev seed)
     const createRes = await fetchWithOrigin(
-      `${BASE_URL}/api/chat-rooms?action=createUser`,
+      AUTH_SIGNUP,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -321,7 +331,7 @@ async function testAdminDebugPresence(): Promise<void> {
     throw new Error("No admin token available - run testAdminAuthenticate first");
   }
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=debugPresence`,
+    ADMIN_DEBUG_PRESENCE,
     adminToken,
     ADMIN_USERNAME,
     { method: "GET" }
@@ -337,7 +347,7 @@ async function testAdminDebugPresenceUnauthorized(): Promise<void> {
   }
   // Non-admin user should get 403
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=debugPresence`,
+    ADMIN_DEBUG_PRESENCE,
     testToken,
     testUsername,
     { method: "GET" }
@@ -350,10 +360,10 @@ async function testAdminCleanupPresence(): Promise<void> {
     throw new Error("No admin token available");
   }
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=cleanupPresence`,
+    ADMIN_CLEANUP_PRESENCE,
     adminToken,
     ADMIN_USERNAME,
-    { method: "GET" }
+    { method: "POST" }
   );
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
   const data = await res.json();
@@ -366,10 +376,10 @@ async function testAdminCleanupPresenceUnauthorized(): Promise<void> {
   }
   // Non-admin user should get 403
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=cleanupPresence`,
+    ADMIN_CLEANUP_PRESENCE,
     testToken,
     testUsername,
-    { method: "GET" }
+    { method: "POST" }
   );
   assertEq(res.status, 403, `Expected 403 for non-admin, got ${res.status}`);
 }
@@ -384,7 +394,7 @@ async function testSeedOrFindAiChannel(): Promise<void> {
   }
 
   // First, check if #ai channel exists
-  const roomsRes = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=getRooms`);
+  const roomsRes = await fetchWithOrigin(`${ROOMS_ENDPOINT}`);
   assertEq(roomsRes.status, 200, `Expected 200, got ${roomsRes.status}`);
   const roomsData = await roomsRes.json();
 
@@ -399,7 +409,7 @@ async function testSeedOrFindAiChannel(): Promise<void> {
 
   // Create the #ai channel as admin
   const createRes = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=createRoom`,
+    ROOMS_ENDPOINT,
     adminToken,
     ADMIN_USERNAME,
     {
@@ -424,7 +434,7 @@ async function testGetMessages(): Promise<void> {
   }
 
   const res = await fetchWithOrigin(
-    `${BASE_URL}/api/chat-rooms?action=getMessages&roomId=${testRoomId}`
+    `${ROOMS_ENDPOINT}/${testRoomId}/messages`
   );
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
   const data = await res.json();
@@ -438,14 +448,13 @@ async function testSendMessageAsAdmin(): Promise<void> {
 
   const testContent = `Test message from admin at ${Date.now()}`;
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=sendMessage`,
+    `${ROOMS_ENDPOINT}/${testRoomId}/messages`,
     adminToken,
     ADMIN_USERNAME,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        roomId: testRoomId,
         username: ADMIN_USERNAME,
         content: testContent,
       }),
@@ -466,14 +475,13 @@ async function testSendMessageAsRegularUser(): Promise<void> {
 
   const testContent = `Test message from user at ${Date.now()}`;
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=sendMessage`,
+    `${ROOMS_ENDPOINT}/${testRoomId}/messages`,
     testToken,
     testUsername,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        roomId: testRoomId,
         username: testUsername,
         content: testContent,
       }),
@@ -491,14 +499,13 @@ async function testSendMessageMissingContent(): Promise<void> {
   }
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=sendMessage`,
+    `${ROOMS_ENDPOINT}/${testRoomId}/messages`,
     adminToken,
     ADMIN_USERNAME,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        roomId: testRoomId,
         username: ADMIN_USERNAME,
         content: "",
       }),
@@ -514,14 +521,13 @@ async function testSendMessageToNonexistentRoom(): Promise<void> {
 
   // Use alphanumeric room ID (no hyphens) to pass validation, but room shouldn't exist
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=sendMessage`,
+    `${ROOMS_ENDPOINT}/aaaa0000bbbb1111cccc2222/messages`,
     adminToken,
     ADMIN_USERNAME,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        roomId: "aaaa0000bbbb1111cccc2222",
         username: ADMIN_USERNAME,
         content: "Test message",
       }),
@@ -536,7 +542,7 @@ async function testDeleteMessageAsAdmin(): Promise<void> {
   }
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=deleteMessage&roomId=${testRoomId}&messageId=${testMessageId}`,
+    `${ROOMS_ENDPOINT}/${testRoomId}/messages/${testMessageId}`,
     adminToken,
     ADMIN_USERNAME,
     {
@@ -556,14 +562,13 @@ async function testDeleteMessageAsNonAdmin(): Promise<void> {
 
   // First send a message to delete
   const sendRes = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=sendMessage`,
+    `${ROOMS_ENDPOINT}/${testRoomId}/messages`,
     testToken,
     testUsername,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        roomId: testRoomId,
         username: testUsername,
         content: `Message to try delete at ${Date.now()}`,
       }),
@@ -575,7 +580,7 @@ async function testDeleteMessageAsNonAdmin(): Promise<void> {
 
   // Try to delete as non-admin (should fail)
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=deleteMessage&roomId=${testRoomId}&messageId=${messageId}`,
+    `${ROOMS_ENDPOINT}/${testRoomId}/messages/${messageId}`,
     testToken,
     testUsername,
     {
@@ -588,7 +593,7 @@ async function testDeleteMessageAsNonAdmin(): Promise<void> {
   // Clean up: delete as admin
   if (adminToken) {
     await fetchWithAuth(
-      `${BASE_URL}/api/chat-rooms?action=deleteMessage&roomId=${testRoomId}&messageId=${messageId}`,
+      `${ROOMS_ENDPOINT}/${testRoomId}/messages/${messageId}`,
       adminToken,
       ADMIN_USERNAME,
       {
@@ -605,7 +610,7 @@ async function testDeleteNonexistentMessage(): Promise<void> {
   }
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=deleteMessage&roomId=${testRoomId}&messageId=nonexistent-message-id`,
+    `${ROOMS_ENDPOINT}/${testRoomId}/messages/nonexistent-message-id`,
     adminToken,
     ADMIN_USERNAME,
     {
@@ -627,7 +632,7 @@ async function testCreatePublicRoomAsAdmin(): Promise<void> {
 
   const roomName = `testroom${Date.now()}`;
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=createRoom`,
+    ROOMS_ENDPOINT,
     adminToken,
     ADMIN_USERNAME,
     {
@@ -653,7 +658,7 @@ async function testCreatePublicRoomAsNonAdmin(): Promise<void> {
   }
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=createRoom`,
+    ROOMS_ENDPOINT,
     testToken,
     testUsername,
     {
@@ -674,7 +679,7 @@ async function testCreatePublicRoomMissingName(): Promise<void> {
   }
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=createRoom`,
+    ROOMS_ENDPOINT,
     adminToken,
     ADMIN_USERNAME,
     {
@@ -694,7 +699,7 @@ async function testCreatePrivateRoom(): Promise<void> {
   }
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=createRoom`,
+    ROOMS_ENDPOINT,
     testToken,
     testUsername,
     {
@@ -723,7 +728,7 @@ async function testCreatePrivateRoomMissingMembers(): Promise<void> {
   }
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=createRoom`,
+    ROOMS_ENDPOINT,
     testToken,
     testUsername,
     {
@@ -744,7 +749,7 @@ async function testCreateRoomInvalidType(): Promise<void> {
   }
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=createRoom`,
+    ROOMS_ENDPOINT,
     adminToken,
     ADMIN_USERNAME,
     {
@@ -770,14 +775,13 @@ async function testSendMessageInPrivateRoom(): Promise<void> {
 
   const testContent = `Private message at ${Date.now()}`;
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=sendMessage`,
+    `${ROOMS_ENDPOINT}/${privateRoomId}/messages`,
     testToken,
     testUsername,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        roomId: privateRoomId,
         username: testUsername,
         content: testContent,
       }),
@@ -795,7 +799,7 @@ async function testGetMessagesInPrivateRoom(): Promise<void> {
   }
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=getMessages&roomId=${privateRoomId}`,
+    `${ROOMS_ENDPOINT}/${privateRoomId}/messages`,
     testToken,
     testUsername,
     { method: "GET" }
@@ -813,7 +817,7 @@ async function testPrivateRoomVisibility(): Promise<void> {
 
   // Get rooms as the member - should see private room
   const memberRes = await fetchWithOrigin(
-    `${BASE_URL}/api/chat-rooms?action=getRooms&username=${testUsername}`
+    `${ROOMS_ENDPOINT}?username=${testUsername}`
   );
   assertEq(memberRes.status, 200, `Expected 200, got ${memberRes.status}`);
   const memberData = await memberRes.json();
@@ -823,9 +827,7 @@ async function testPrivateRoomVisibility(): Promise<void> {
   assert(memberSeesRoom, "Member should see private room in room list");
 
   // Get rooms without username - should NOT see private room
-  const anonRes = await fetchWithOrigin(
-    `${BASE_URL}/api/chat-rooms?action=getRooms`
-  );
+  const anonRes = await fetchWithOrigin(`${ROOMS_ENDPOINT}`);
   assertEq(anonRes.status, 200, `Expected 200, got ${anonRes.status}`);
   const anonData = await anonRes.json();
   const anonSeesRoom = anonData.rooms.some(
@@ -841,14 +843,13 @@ async function testAdminCanMessagePrivateRoom(): Promise<void> {
 
   const testContent = `Admin reply in private room at ${Date.now()}`;
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=sendMessage`,
+    `${ROOMS_ENDPOINT}/${privateRoomId}/messages`,
     adminToken,
     ADMIN_USERNAME,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        roomId: privateRoomId,
         username: ADMIN_USERNAME,
         content: testContent,
       }),
@@ -866,7 +867,7 @@ async function testDeletePrivateRoomAsMember(): Promise<void> {
 
   // Member can leave/delete private room
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=deleteRoom&roomId=${privateRoomId}`,
+    `${ROOMS_ENDPOINT}/${privateRoomId}`,
     testToken,
     testUsername,
     {
@@ -885,7 +886,7 @@ async function testDeletePublicRoomAsAdmin(): Promise<void> {
   }
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=deleteRoom&roomId=${publicTestRoomId}`,
+    `${ROOMS_ENDPOINT}/${publicTestRoomId}`,
     adminToken,
     ADMIN_USERNAME,
     {
@@ -905,7 +906,7 @@ async function testDeletePublicRoomAsNonAdmin(): Promise<void> {
 
   // Non-admin should not be able to delete public rooms
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=deleteRoom&roomId=${testRoomId}`,
+    `${ROOMS_ENDPOINT}/${testRoomId}`,
     testToken,
     testUsername,
     {
@@ -923,7 +924,7 @@ async function testDeleteMessageWithInvalidToken(): Promise<void> {
 
   // Try to delete message with invalid token
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=deleteMessage&roomId=${testRoomId}&messageId=${testMessageId}`,
+    `${ROOMS_ENDPOINT}/${testRoomId}/messages/${testMessageId}`,
     "invalid_token_12345",
     ADMIN_USERNAME,
     {
@@ -941,7 +942,7 @@ async function testDeletePublicRoomWithInvalidToken(): Promise<void> {
 
   // Try to delete public room with invalid token
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=deleteRoom&roomId=${publicTestRoomId}`,
+    `${ROOMS_ENDPOINT}/${publicTestRoomId}`,
     "invalid_token_12345",
     ADMIN_USERNAME,
     {
@@ -955,7 +956,7 @@ async function testDeletePublicRoomWithInvalidToken(): Promise<void> {
 async function testCreatePublicRoomWithInvalidToken(): Promise<void> {
   const roomName = `testroom${Date.now()}`;
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/chat-rooms?action=createRoom`,
+    ROOMS_ENDPOINT,
     "invalid_token_12345",
     ADMIN_USERNAME,
     {
@@ -979,11 +980,11 @@ export async function runChatRoomsTests(): Promise<{ passed: number; failed: num
   clearResults();
 
   console.log("\n  Public Endpoints\n");
-  await runTest("GET /api/chat-rooms?action=getRooms", testGetRooms);
-  await runTest("GET /api/chat-rooms?action=getRooms&username=...", testGetRoomsWithUsername);
-  await runTest("GET /api/chat-rooms?action=getUsers", testGetUsers);
-  await runTest("GET /api/chat-rooms?action=getUsers (short query)", testGetUsersShortQuery);
-  await runTest("GET /api/chat-rooms?action=invalidAction", testInvalidAction);
+  await runTest("GET /api/chat-rooms/rooms", testGetRooms);
+  await runTest("GET /api/chat-rooms/rooms?username=...", testGetRoomsWithUsername);
+  await runTest("GET /api/chat-rooms/users", testGetUsers);
+  await runTest("GET /api/chat-rooms/users (short query)", testGetUsersShortQuery);
+  await runTest("GET /api/chat-rooms/invalid", testInvalidAction);
 
   console.log("\n  User Creation Validation\n");
   await runTest("POST createUser - missing username", testCreateUserMissingUsername);
