@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog - ryOS Docs</title>
+  <link rel="icon" href="/icons/mac-192.png">
+  <style>
+    @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
+    @font-face { font-family: "Monaco"; src: url("/fonts/monacottf.woff2") format("woff2"); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Geneva", system-ui, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #fff;
+      color: #000;
+    }
+    a { color: #00f; }
+    a:hover { text-decoration: none; }
+    code, pre { font-family: "Monaco", monospace; font-size: 11px; }
+    code { background: #f0f0f0; padding: 1px 4px; }
+    pre { background: #f8f8f8; border: 1px solid #ddd; padding: 12px; overflow-x: auto; margin: 12px 0; }
+    pre code { background: none; padding: 0; }
+    
+    /* Layout */
+    .header {
+      position: sticky; top: 0; z-index: 10;
+      background: #fff; border-bottom: 1px solid #ccc;
+      padding: 0 16px; height: 40px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-left img { width: 20px; height: 20px; display: block; }
+    .header-left span { font-weight: bold; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .header-right a { text-decoration: none; color: #333; }
+    .header-right a:hover { color: #000; }
+    .header-right .github { display: flex; align-items: center; gap: 4px; }
+    .header-right .launch { background: #000; color: #fff; padding: 4px 12px; }
+    
+    .container { display: flex; max-width: 1100px; margin: 0 auto; }
+    
+    .sidebar {
+      width: 220px; flex-shrink: 0;
+      border-right: 1px solid #ccc;
+      padding: 12px;
+      position: sticky; top: 40px;
+      height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .sidebar a {
+      display: block; padding: 4px 8px; margin: 2px 0;
+      text-decoration: none; color: #333;
+      font-size: 11px;
+    }
+    .sidebar a:hover { background: #f0f0f0; }
+    .sidebar a.active { background: #000; color: #fff; }
+    
+    /* Tree hierarchy styles */
+    .nav-group { margin: 4px 0; }
+    .nav-spacer { width: 8px; flex-shrink: 0; } /* Same width as toggle arrow */
+    .nav-no-toggle { cursor: default; }
+    .nav-toggle {
+      display: flex; align-items: center; gap: 4px;
+      background: none; border: none; padding: 0; width: 100%;
+      cursor: pointer; text-align: left; font: inherit; color: inherit;
+    }
+    .nav-toggle:hover { background: #f0f0f0; }
+    .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
+    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; font-size: 11px; }
+    .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
+    .nav-child { padding-left: 8px !important; font-size: 10px !important; color: #555 !important; }
+    .nav-child:hover { color: #000 !important; }
+    .nav-child.active { color: #fff !important; }
+    
+    .content { flex: 1; padding: 24px 32px; min-width: 0; }
+    
+    /* Typography */
+    h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
+    h2 { font-size: 14px; margin: 24px 0 12px; }
+    h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
+    p { margin: 8px 0; }
+    ul, ol { margin: 8px 0 8px 20px; }
+    li { margin: 4px 0; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    th { background: #f0f0f0; font-weight: bold; }
+    
+    /* Collapsible details */
+    details { margin: 8px 0; }
+    details summary { 
+      cursor: pointer; 
+      color: #666; 
+      font-size: 11px;
+      padding: 4px 0;
+      user-select: none;
+    }
+    details summary:hover { color: #000; }
+    details[open] summary { margin-bottom: 8px; }
+    details ul { margin-top: 0; }
+    
+    /* Navigation */
+    .nav { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
+    .nav a { text-decoration: none; color: #333; }
+    .nav a:hover { color: #000; }
+    
+    /* Mobile menu button */
+    .menu-btn { 
+      display: none; 
+      background: transparent; 
+      border: 0; 
+      padding: 4px; 
+      cursor: pointer; 
+      line-height: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+      color: inherit;
+    }
+    .menu-btn svg { display: block; width: 18px; height: 18px; pointer-events: none; }
+    @media screen and (max-width: 768px) {
+      .menu-btn { 
+        display: -webkit-flex !important;
+        display: flex !important; 
+        -webkit-align-items: center;
+        align-items: center; 
+        -webkit-justify-content: center;
+        justify-content: center;
+      }
+      .header-left img { display: none !important; }
+      .sidebar { 
+        position: fixed; left: -240px; top: 40px; 
+        width: 240px; height: calc(100vh - 40px);
+        background: #fff; z-index: 20;
+        transition: left 0.2s;
+      }
+      .sidebar.open { left: 0; box-shadow: 2px 0 8px rgba(0,0,0,0.1); }
+      .content { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit">
+        <img src="/icons/mac-192.png" alt="ryOS" width="20" height="20">
+        <span>ryOS</span>
+      </a>
+      <span style="color:#999">/</span>
+      <span style="color:#666">Docs</span>
+    </div>
+    <div class="header-right">
+      <a href="https://github.com/ryokun6/ryos" target="_blank" class="github">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <a href="/" class="launch">Launch</a>
+    </div>
+  </header>
+  
+  <div class="container">
+    <nav class="sidebar">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/overview" class="">1. Overview</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/api-reference" class="">2. API Reference</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
+    <a href="/docs/song-api" class="nav-child ">2.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">2.3 Media API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">2.4 Chat Rooms API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">2.5 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">2.6 Utility APIs</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/application-framework" class="">4. Application Framework</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">4.1 Window Manager</a>
+    <a href="/docs/state-management" class="nav-child ">4.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/core-applications" class="">5. Apps</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chats" class="nav-child ">5.1 Chats</a>
+    <a href="/docs/internet-explorer" class="nav-child ">5.2 Internet Explorer</a>
+    <a href="/docs/ipod" class="nav-child ">5.3 iPod</a>
+    <a href="/docs/karaoke" class="nav-child ">5.4 Karaoke</a>
+    <a href="/docs/textedit" class="nav-child ">5.5 TextEdit</a>
+    <a href="/docs/finder" class="nav-child ">5.6 Finder</a>
+    <a href="/docs/paint" class="nav-child ">5.7 Paint</a>
+    <a href="/docs/photo-booth" class="nav-child ">5.8 Photo Booth</a>
+    <a href="/docs/terminal" class="nav-child ">5.9 Terminal</a>
+    <a href="/docs/control-panels" class="nav-child ">5.10 Control Panels</a>
+    <a href="/docs/soundboard" class="nav-child ">5.11 Soundboard</a>
+    <a href="/docs/synth" class="nav-child ">5.12 Synth</a>
+    <a href="/docs/videos" class="nav-child ">5.13 Videos</a>
+    <a href="/docs/minesweeper" class="nav-child ">5.14 Minesweeper</a>
+    <a href="/docs/virtual-pc" class="nav-child ">5.15 Virtual PC</a>
+    <a href="/docs/admin" class="nav-child ">5.16 Admin</a>
+    <a href="/docs/applet-store" class="nav-child ">5.17 Applet Store</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/storage-file-system" class="">6. File System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">7. Audio System</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/ui-components" class="">8. UI Components and Shared Systems</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/component-library" class="nav-child ">8.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">8.2 i18n & Hooks</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/changelog" class="active">9. Changelog</a>
+  </div>
+</div>
+    </nav>
+    
+    <main class="content">
+      <article>
+        <h1>Changelog</h1>
+<p>A summary of changes and updates to ryOS, organized by month.</p>
+<hr>
+<h2>January 2026</h2>
+<ul><li>Restructured documentation with hierarchical DeepWiki-style navigation and clean URLs.</li></ul>
+<ul><li>Enhanced documentation generation with skip and force options.</li></ul>
+<ul><li>Improved documentation navigation and routing.</li></ul>
+<details>
+<summary>Minor changes (7)</summary>
+<ul><li>Added a 'View Docs' button to the Help Dialog and updated IE bookmarks, linking to app-specific documentation.</li></ul>
+<ul><li>Fixed issues with documentation routing and rendering, including h4 headers and Vercel deployment problems.</li></ul>
+<ul><li>Updated documentation translations to use 'documentation' instead of 'document'.</li></ul>
+<ul><li>Made the documentation page mobile-friendly with vertical scrolling and System 7-inspired styling.</li></ul>
+<ul><li>Added comprehensive documentation for utility, AI, Media, and Chat API endpoints, including Chat Rooms.</li></ul>
+<ul><li>Fixed coverflow styles and improved media display and animations.</li></ul>
+<ul><li>Updated prebuild script to include documentation generation and bump version information.</li></ul>
+</details>
+<h2>December 2025</h2>
+<ul><li>Added Karaoke app, a windowed full-screen iPod player with lyrics synchronization and customizable font options.</li></ul>
+<ul><li>Enhanced iPod app with Cover Flow album browser, PIP player, YouTube search, and improved lyrics handling including furigana, soramimi, and translations.</li></ul>
+<ul><li>Implemented Admin app with user and song management, enhanced authentication, and Redis sync for song metadata.</li></ul>
+<ul><li>Introduced screen saver functionality with bouncing logo and i18n support.</li></ul>
+<ul><li>Enhanced lyrics display with old-school karaoke styling, romaji support, and improved Chinese and Korean text rendering.</li></ul>
+<ul><li>Unified song API endpoint and client refactoring for improved song metadata handling and lyrics processing.</li></ul>
+<details>
+<summary>Minor changes (10)</summary>
+<ul><li>Improved CoverFlow component with enhanced interactivity, styling, and animation.</li></ul>
+<ul><li>Enhanced Apple Menu with new items and improved document handling.</li></ul>
+<ul><li>Refactored lyrics processing and display for improved performance and accuracy, including AI-powered soramimi generation and chunked streaming.</li></ul>
+<ul><li>Enhanced localization support across various components with new translations and improved language handling.</li></ul>
+<ul><li>Improved window management with Expose/Mission Control mode, dock auto-hide, and enhanced drag-and-drop functionality.</li></ul>
+<ul><li>Added keyboard shortcuts for lyrics offset adjustment and improved playback controls.</li></ul>
+<ul><li>Fixed various bugs related to lyrics display, font rendering, and UI layout in iPod and Karaoke components.</li></ul>
+<ul><li>Updated dependencies and optimized Vite configuration for improved performance and stability.</li></ul>
+<ul><li>Enhanced chat functionality with keep talking mode, audio waveform visualization, and transcript saving.</li></ul>
+<ul><li>Improved CORS handling and enhanced security measures for API endpoints.</li></ul>
+</details>
+<h2>November 2025</h2>
+<ul><li>Implement App Store with AI-generated applets, including sharing, updating, and management features.</li></ul>
+<ul><li>Enhance iPod functionality with video playback, translation, and fullscreen controls, including new video additions.</li></ul>
+<ul><li>Improve applet-AI integration with Google Gemini, rate limiting, image attachments, and enhanced error handling.</li></ul>
+<ul><li>Introduce Progressive Web App (PWA) support with service worker for faster loading and offline capabilities.</li></ul>
+<ul><li>Implement build versioning with commit SHA and enhance prefetching and cache management with update notifications.</li></ul>
+<ul><li>Enhance desktop shortcut management with theme-conditional visibility and trash functionality.</li></ul>
+<details>
+<summary>Minor changes (9)</summary>
+<ul><li>Update UI components with improved toast notifications, styling, and animation enhancements.</li></ul>
+<ul><li>Refactor various components for improved performance, code clarity, and maintainability.</li></ul>
+<ul><li>Fix several bugs related to applet updates, file handling, and component mounting.</li></ul>
+<ul><li>Add analytics tracking for applet viewer and key events.</li></ul>
+<ul><li>Enhance security with improved CORS handling and authentication token validation.</li></ul>
+<ul><li>Improve audio control with enhancements to useSound and useWindowManager hooks.</li></ul>
+<ul><li>Update version information and applet metadata across various components.</li></ul>
+<ul><li>Refactor chat functionality with improved tool output and message formatting.</li></ul>
+<ul><li>Adjust iPod controls and update translations.</li></ul>
+</details>
+<h2>October 2025</h2>
+<ul><li>Enhance ryOS Applet Viewer with new sharing, import/export, and content handling features.</li></ul>
+<ul><li>Improve applet design guidelines for enhanced clarity and responsiveness.</li></ul>
+<ul><li>Implement HTML generation and saving functionality for ryOS Applets.</li></ul>
+<ul><li>Upgrade Zod library from v3 to v4.</li></ul>
+<details>
+<summary>Minor changes (10)</summary>
+<ul><li>Add icon support and toast notifications for generated HTML applets.</li></ul>
+<ul><li>Refactor chat and file management functionality in ryOS.</li></ul>
+<ul><li>Improve AI prompt instructions for app generation and Chinese responses.</li></ul>
+<ul><li>Enhance MacDock component with emoji scaling and layout adjustments.</li></ul>
+<ul><li>Update app icons and file handling for applets.</li></ul>
+<ul><li>Fix login message visibility when user is logged in.</li></ul>
+<ul><li>Add new songs to ipod-videos.</li></ul>
+<ul><li>Add watch option to Vite server configuration to ignore terminal files.</li></ul>
+<ul><li>Refine font handling for macOSX theme in applet viewer and HTML preview.</li></ul>
+<ul><li>Update app filtering and enhance file synchronization.</li></ul>
+</details>
+<h2>September 2025</h2>
+<ul><li>Add lyrics translation persistence and force refresh functionality.</li></ul>
+<ul><li>Switch title parsing from OpenAI to Google Gemini and refactor AI prompt handling.</li></ul>
+<ul><li>Enhance AI chat hook with automatic message handling and improved logging.</li></ul>
+<ul><li>Update default AI model to Claude 4.5 and then GPT-5.</li></ul>
+<ul><li>Improve TextEdit functionality with a fallback mechanism for instance management.</li></ul>
+<details>
+<summary>Minor changes (8)</summary>
+<ul><li>Add several new videos to the iPod video library.</li></ul>
+<ul><li>Fix display of active language in translation dropdown and lyric offset for specific songs.</li></ul>
+<ul><li>Add more prefixes to skip in LRC parsing and recording engineer/digital editing to skip prefixes.</li></ul>
+<ul><li>Remove rate limiting from lyrics translation API.</li></ul>
+<ul><li>Refactor lyrics display delay and use persistent translation language preference.</li></ul>
+<ul><li>Increase lyrics translation timeout to 120 seconds.</li></ul>
+<ul><li>Upgrade zod dependency to satisfy AI SDK requirements.</li></ul>
+<ul><li>Prioritize English names in metadata parsing.</li></ul>
+</details>
+<h2>August 2025</h2>
+<ul><li>Updated the default AI model to GPT-4.1.</li></ul>
+<ul><li>Implemented a macOS-style Dock with app icons, animations, and improved interactions.</li></ul>
+<ul><li>Enhanced chat room functionality with Redis-based presence tracking, improved profanity filtering, and collapsible sections.</li></ul>
+<ul><li>Refactored TextEditAppComponent with new editor context, hooks, toolbar features, and improved dialog handling.</li></ul>
+<ul><li>Implemented multi-token support for authentication and enhanced security measures.</li></ul>
+<details>
+<summary>Minor changes (10)</summary>
+<ul><li>Added new music videos to the iPod videos collection.</li></ul>
+<ul><li>Improved Finder UI responsiveness, layout, and icon styling for different view types.</li></ul>
+<ul><li>Enhanced Dock component with improved app launching behavior, dynamic dividers, and macOS-specific rendering logic.</li></ul>
+<ul><li>Updated iframe sandbox to allow forms and popups and added security enhancements.</li></ul>
+<ul><li>Implemented mobile/touch support in Dock component by disabling magnification for coarse pointers and no hover.</li></ul>
+<ul><li>Refactored terminal component to extract commands, utils, and components.</li></ul>
+<ul><li>Improved chat message handling, styling, and emoji support in chat rooms.</li></ul>
+<ul><li>Enhanced app components to conditionally render the menu bar based on foreground state.</li></ul>
+<ul><li>Implemented CORS and rate limiting across multiple API endpoints.</li></ul>
+<ul><li>Fixed aquarium token detection for Ryo's messages in chat rooms.</li></ul>
+</details>
+<h2>July 2025</h2>
+<ul><li>Add emoji aquarium feature to chat messages.</li></ul>
+<ul><li>Implement server-side Ryo reply generation and update chat handling.</li></ul>
+<ul><li>Enhance iPod app with fullscreen lyrics controls, translation, and improved responsiveness.</li></ul>
+<ul><li>Implement link previews in chats with custom handling for YouTube and web links.</li></ul>
+<ul><li>Refactor instance management in AppManager and useAppStore for improved consistency and performance.</li></ul>
+<ul><li>Implement theme-aware menu bars across various components and enhance theme support throughout the application.</li></ul>
+<ul><li>Add Windows 98 theme support and legacy CSS management.</li></ul>
+<details>
+<summary>Minor changes (10)</summary>
+<ul><li>Add rate limiting for user creation and chat bursts to prevent abuse.</li></ul>
+<ul><li>Update AI model to Google Gemini for lyrics translation and add Gemini 2.5 flash model.</li></ul>
+<ul><li>Fix mobile Safari playback issues and improve fullscreen video player interactions in the iPod app.</li></ul>
+<ul><li>Improve mobile touch interactions for chat messages, link previews, and video playback controls.</li></ul>
+<ul><li>Update macOS icons with new graphics assets and refine theme styling across various components.</li></ul>
+<ul><li>Enhance username validation and handling in chat rooms and Redis operations.</li></ul>
+<ul><li>Update video store with new default video and improve shuffle and track selection logic.</li></ul>
+<ul><li>Refactor ChatMessages and ChatsApp components for improved message handling and styling.</li></ul>
+<ul><li>Update TerminalAppComponent to use Monaco font and adjust sound playback logic.</li></ul>
+<ul><li>Improve icon caching and versioning strategy, and enhance wallpaper routing and caching strategy.</li></ul>
+</details>
+<h2>June 2025</h2>
+<ul><li>Implement multi-token authentication and user-specific token management in the chat API.</li></ul>
+<ul><li>Enhance chat room functionality with private room support, user presence tracking, and improved room management.</li></ul>
+<ul><li>Refactor chat API for improved system message handling, caching, and Pusher event broadcasting.</li></ul>
+<ul><li>Implement password management features and enhance authentication flow across chat components.</li></ul>
+<ul><li>Add right-click context menus to Desktop and Finder with data-driven menu items.</li></ul>
+<ul><li>Implement bulk message fetching for chat rooms, enhancing the API with a new action and corresponding handler.</li></ul>
+<ul><li>Improve file metadata restoration with existing UUID preservation.</li></ul>
+<details>
+<summary>Minor changes (10)</summary>
+<ul><li>Update Redis cache prefix for lyric translations.</li></ul>
+<ul><li>Improve chat rendering accuracy by decoding HTML entities in chat messages.</li></ul>
+<ul><li>Enhance CreateRoomDialog with user selection badges and improved UI styles.</li></ul>
+<ul><li>Refactor rate limiting logic for privileged user handling and fix type casting for AI message count check.</li></ul>
+<ul><li>Update iPod videos with new entries and adjustments.</li></ul>
+<ul><li>Extend token grace period and user token expiration time.</li></ul>
+<ul><li>Refactor chat error messages and placeholders for improved clarity.</li></ul>
+<ul><li>Update dependencies and refactor SpeechHighlight extension.</li></ul>
+<ul><li>Refactor room selection logic in ChatsAppComponent to handle scrolling for unread messages.</li></ul>
+<ul><li>Update speech volume settings in useAppStore and adjust ducking factor in useTtsQueue hook.</li></ul>
+</details>
+<h2>May 2025</h2>
+<ul><li>Implement multi-instance support for Finder and Terminal apps, enabling users to run multiple instances simultaneously.</li></ul>
+<ul><li>Enhance chat functionality with AI-powered tools, improved message handling, markdown support, and user experience improvements.</li></ul>
+<ul><li>Improve iPod app with full-screen lyrics display, enhanced playback controls, library import/export, and updated default videos.</li></ul>
+<ul><li>Refactor core components to use Zustand for state management, improving performance and removing local storage dependencies.</li></ul>
+<ul><li>Integrate geolocation and user local time into the chat system state for more contextual interactions.</li></ul>
+<ul><li>Enhance text editing with markdown conversion, search/replace functionality, and external content synchronization.</li></ul>
+<details>
+<summary>Minor changes (10)</summary>
+<ul><li>Add volume control and mute functionality for master, UI, speech, chat synth, and iPod audio.</li></ul>
+<ul><li>Improve Internet Explorer with direct passthrough URL handling, updated favorites, and enhanced navigation.</li></ul>
+<ul><li>Enhance file management in Finder with drag-and-drop support and improved file type handling.</li></ul>
+<ul><li>Update AI prompts and instructions for improved clarity and user engagement.</li></ul>
+<ul><li>Fix audio context management for improved playback reliability on iOS Safari.</li></ul>
+<ul><li>Implement username recovery mechanism and profanity filter in chat rooms.</li></ul>
+<ul><li>Enhance PhotoBoothComponent with new effects and swipe detection.</li></ul>
+<ul><li>Refactor chat room API for consistency and clarity.</li></ul>
+<ul><li>Update dependencies for improved functionality and security.</li></ul>
+<ul><li>Improve mobile responsiveness and layout consistency across various components.</li></ul>
+</details>
+<h2>April 2025</h2>
+<ul><li>Enhanced the Internet Explorer app with AI-powered content generation, caching, and improved navigation, including Wayback Machine integration and shared URL handling.</li></ul>
+<ul><li>Refactored multiple components (TextEdit, Chats, InternetExplorer, TimeMachineView, Ipod, Videos, AppManager) to use Zustand for improved state management.</li></ul>
+<ul><li>Enhanced the Time Machine View with improved animations, navigation, responsiveness, and shader effects.</li></ul>
+<ul><li>Integrated terminal sounds feature into the application with UI toggle and enhanced audio effects.</li></ul>
+<ul><li>Updated the default AI model to gpt-4.1 and claude-3.7 at various points, reflecting model testing and availability.</li></ul>
+<ul><li>Improved chat functionality with sidebar visibility preference, toast notifications, and AI-generated HTML support.</li></ul>
+<details>
+<summary>Minor changes (10)</summary>
+<ul><li>Added new tracks and updated video titles in the iPod app.</li></ul>
+<ul><li>Updated default favorites in Internet Explorer with new and reordered entries.</li></ul>
+<ul><li>Improved error handling and debugging capabilities in the Internet Explorer app.</li></ul>
+<ul><li>Enhanced font mapping and added Monaco font support for improved readability.</li></ul>
+<ul><li>Refined AI generation prompts and deliverable instructions for better content creation.</li></ul>
+<ul><li>Updated dependencies and improved TypeScript configuration.</li></ul>
+<ul><li>Implemented CORS support in API endpoints.</li></ul>
+<ul><li>Added pixelated rendering for images in the iframe-check API.</li></ul>
+<ul><li>Improved iframe embedding check logic and navigation handling.</li></ul>
+<ul><li>Enhanced system state to include iPod functionality.</li></ul>
+</details>
+<h2>March 2025</h2>
+<ul><li>Implement a new AI-powered chat assistant with HTML preview and terminal integration, featuring code generation, streaming support, and enhanced user interaction.</li></ul>
+<ul><li>Introduce a Synth app with piano presets, mobile responsiveness, 3D waveform visualization, and preset management with storage support.</li></ul>
+<ul><li>Add a Photo Booth app with camera selection, filter support, stream sharing, and file system integration for capturing and saving photos.</li></ul>
+<ul><li>Enhance the iPod app with dynamic video playlist loading, touch event handling, animated text scrolling, and improved layout.</li></ul>
+<ul><li>Implement IndexedDB for caching chat rooms, messages, and wallpapers, along with backup and restore functionality.</li></ul>
+<ul><li>Improve terminal functionality with Vim editor, command history, new commands (echo, whoami, date), and enhanced UI elements.</li></ul>
+<details>
+<summary>Minor changes (10)</summary>
+<ul><li>Enhance chat functionality with Pusher integration for real-time updates, profanity filtering, and improved message handling.</li></ul>
+<ul><li>Update chat API to use Node.js runtime, improve response formatting, and add logging and error handling improvements.</li></ul>
+<ul><li>Improve IpodAppComponent with video playback functionality, dynamic menu items, and theme management.</li></ul>
+<ul><li>Refactor file handling to support Blob content and object URLs in Finder, Paint, and other components.</li></ul>
+<ul><li>Enhance HTML Preview component with draggable controls, toolbar collapse, and improved scaling and positioning logic.</li></ul>
+<ul><li>Update TerminalAppComponent with urgent message animation, input focus state management, and improved command help output.</li></ul>
+<ul><li>Improve video wallpaper handling in Desktop and WallpaperPicker components with loading state management.</li></ul>
+<ul><li>Enhance WindowFrame with persistent window state management and sound effects for window state changes.</li></ul>
+<ul><li>Update dependencies and refactor code for improved clarity and maintainability across various components.</li></ul>
+<ul><li>Add mobile responsiveness to HtmlPreview component and improve touch interaction in Synth app.</li></ul>
+</details>
+<h2>February 2025</h2>
+<ul><li>Add PC Emulator app with multiple classic games and enhanced UI.</li></ul>
+<ul><li>Add Minesweeper app with mobile touch support and responsive window management.</li></ul>
+<ul><li>Add Videos app with retro CD player UI, time tracking, and enhanced playback controls.</li></ul>
+<ul><li>Implement Trash Management and File Saving Features in Finder and TextEdit apps.</li></ul>
+<ul><li>Enhance Paint app with pattern-based drawing, advanced drawing tools, clipboard operations, and improved UI inspired by MacPaint.</li></ul>
+<ul><li>Integrate audio transcription support into Chats and TextEdit apps.</li></ul>
+<ul><li>Migrate file system to IndexedDB and enhance storage management.</li></ul>
+<details>
+<summary>Minor changes (10)</summary>
+<ul><li>Add file saving and drag-and-drop functionality to Chats, Finder, and TextEdit apps.</li></ul>
+<ul><li>Add sound effects to UI components and Finder file interactions.</li></ul>
+<ul><li>Improve mobile touch interactions and window resizing across multiple apps.</li></ul>
+<ul><li>Enhance ChatInput with keyboard and touch device support, nudge feature, and MSN nudge sound effect.</li></ul>
+<ul><li>Enhance Finder UI with Dynamic View and Sorting Options.</li></ul>
+<ul><li>Enhance TextEdit with file import/export, markdown support, and improved file handling.</li></ul>
+<ul><li>Improve video player with animated title, number transitions, and migration to react-player for enhanced browser compatibility.</li></ul>
+<ul><li>Update Internet Explorer with enhanced navigation state management and Wayback Machine integration.</li></ul>
+<ul><li>Add CRT display mode and scanline effect.</li></ul>
+<ul><li>Update Control Panels with system management features, backup/restore functionality, and typing sound synthesis toggle.</li></ul>
+</details>
+<h2>January 2025</h2>
+<ul><li>Introduced a multi-app architecture with improved window management and persistent app state using localStorage.</li></ul>
+<ul><li>Added a new Chats app with rich text editing powered by Tiptap, including slash commands, text formatting, and persistent chat history.</li></ul>
+<ul><li>Enhanced the Soundboard app with JSON-based import/export, multiple board support, and improved audio recording and playback.</li></ul>
+<ul><li>Implemented a new Internet Explorer app with favorites functionality, history navigation, and improved iframe rendering.</li></ul>
+<ul><li>Improved mobile web app support with enhanced UI responsiveness, window constraints, and disabled user scaling.</li></ul>
+<ul><li>Added AI assistant persona with cultural interests and software creation mission.</li></ul>
+<details>
+<summary>Minor changes (9)</summary>
+<ul><li>Enhanced UI components with styling and formatting improvements, including dialogs, menus, and buttons.</li></ul>
+<ul><li>Improved chat message styling with sender and timestamp details, animations, and text selection support.</li></ul>
+<ul><li>Refactored several components for better modularity and maintainability, including App, MenuBar, and dialogs.</li></ul>
+<ul><li>Added sound effects to UI components and interactions using Tone.js.</li></ul>
+<ul><li>Updated default favorites in Internet Explorer and added new fonts.</li></ul>
+<ul><li>Improved audio device selection and permission handling for sound recording.</li></ul>
+<ul><li>Added window resizing and draggable functionality with persistent size and position.</li></ul>
+<ul><li>Updated README with comprehensive project features and structure.</li></ul>
+<ul><li>Added help and about dialogs to apps with metadata and help items.</li></ul>
+</details>
+<hr>
+<em>This changelog is automatically generated and summarized from git history. Last updated: 2026-01-01</em>
+      </article>
+      
+      <nav class="nav">
+        <a href="/docs/i18n">← i18n & Hooks</a>
+        <span></span>
+      </nav>
+      
+    </main>
+  </div>
+  
+  <script>
+    function toggleNavGroup(button) {
+      const group = button.closest('.nav-group');
+      const children = group.querySelector('.nav-children');
+      const svg = button.querySelector('svg');
+      const isExpanded = group.classList.contains('expanded');
+      
+      if (isExpanded) {
+        group.classList.remove('expanded');
+        children.style.display = 'none';
+        svg.style.transform = 'rotate(0deg)';
+        button.setAttribute('aria-expanded', 'false');
+      } else {
+        group.classList.add('expanded');
+        children.style.display = 'block';
+        svg.style.transform = 'rotate(90deg)';
+        button.setAttribute('aria-expanded', 'true');
+      }
+    }
+    
+    document.addEventListener('click', (e) => {
+      const sidebar = document.querySelector('.sidebar');
+      const menuBtn = document.querySelector('.menu-btn');
+      const clickedMenuBtn = menuBtn && menuBtn.contains(e.target);
+      if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
+        sidebar.classList.remove('open');
+      }
+    });
+  </script>
+</body>
+</html>
