@@ -50,6 +50,7 @@ export const macosx: OsTheme = {
     selection: {
       bg: "#3067da",
       text: "#FFFFFF",
+      glow: "rgba(48, 103, 218, 0.5)",
     },
     text: {
       primary: "#000000",
@@ -61,8 +62,21 @@ export const macosx: OsTheme = {
     borderWidth: "1px",
     radius: "0.5rem", // 8px - macOS style rounding
     titleBarHeight: "1.375rem", // 22px - classic OS X height
+    titleBarBorderWidth: "1px",
     titleBarRadius: "8px 8px 0px 0px", // macOS style rounded top corners
     windowShadow: "0 8px 25px rgba(0,0,0,0.5)",
+  },
+  textures: {
+    toolbarImage: "url(\"/assets/brushed-metal.jpg\")",
+    toolbarSize: "cover",
+    toolbarRepeat: "no-repeat",
+    toolbarPosition: "center",
+    pinstripeTitlebar:
+      "linear-gradient(\n    to bottom,\n    rgba(255, 255, 255, 0.3) 0%,\n    rgba(219, 219, 219, 0.6) 70%,\n    rgba(206, 206, 206, 0.7) 100%\n  )",
+    pinstripeWindow:
+      "repeating-linear-gradient(\n      0deg,\n      transparent 0px,\n      transparent 1.5px,\n      rgba(255, 255, 255, 0.85) 1.5px,\n      rgba(255, 255, 255, 0.85) 4px\n    ),\n    linear-gradient(to bottom, #ececec 0%, #ececec 100%)",
+    pinstripeMenubar:
+      "repeating-linear-gradient(\n    0deg,\n    transparent 0px,\n    transparent 1.5px,\n    rgba(255, 255, 255, 0.55) 1.5px,\n    rgba(255, 255, 255, 0.55) 4px\n  )",
   },
   wallpaperDefaults: {
     photo: "/wallpapers/photos/aqua/abstract-7.jpg",

@@ -17,6 +17,10 @@ export const xp: OsTheme = {
   fonts: {
     ui: "Tahoma, Segoe UI, sans-serif",
     mono: "Consolas, Courier New, monospace",
+    extra: {
+      "--font-ms-sans":
+        '"Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel", "SerenityOS-Emoji", system-ui, sans-serif',
+    },
   },
   colors: {
     windowBg: "#ECE9D8",
