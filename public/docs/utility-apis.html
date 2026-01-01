@@ -82,6 +82,7 @@
     h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
     p { margin: 8px 0; }
     ul, ol { margin: 8px 0 8px 20px; }
     li { margin: 4px 0; }
@@ -308,7 +309,7 @@ console.log(metadata);
 <strong>Query Parameters:</strong>
 <table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>url</code></td><td>string</td><td>Yes</td><td>The URL to check or proxy</td></tr><tr><td><code>mode</code></td><td>string</td><td>No</td><td>Operation mode: <code>check</code>, <code>proxy</code>, <code>ai</code>, or <code>list-cache</code> (default: <code>proxy</code>)</td></tr><tr><td><code>year</code></td><td>string</td><td>No</td><td>Year for Wayback Machine or AI cache (e.g., "2020", "1000 BC")</td></tr><tr><td><code>month</code></td><td>string</td><td>No</td><td>Month for Wayback Machine (e.g., "01" for January)</td></tr><tr><td><code>theme</code></td><td>string</td><td>No</td><td>Theme name - font overrides are skipped for "macosx" theme</td></tr></tbody></table>
 <h3>Modes</h3>
-<p>#### <code>check</code> Mode</p>
+<h4><code>check</code> Mode</h4>
 <p>Performs a header-only check to determine if the URL allows iframe embedding.</p>
 <strong>Response (200):</strong>
 <pre><code>{
@@ -321,7 +322,7 @@ console.log(metadata);
   "reason": "X-Frame-Options: DENY",
   "title": "Page Title"
 }</code></pre>
-<p>#### <code>proxy</code> Mode (Default)</p>
+<h4><code>proxy</code> Mode (Default)</h4>
 <p>Proxies the content with embedding-blocking headers removed. Injects: <ul><li><code><base></code> tag for relative URL resolution</li></ul></p>
 <ul><li>Click interceptor script for navigation handling</li></ul>
 <ul><li>History API patch for cross-origin compatibility</li></ul>
@@ -329,7 +330,7 @@ console.log(metadata);
 <strong>Response:</strong> The proxied HTML content with modified headers.
 <strong>Custom Response Headers:</strong>
 <table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Proxied-Page-Title</code></td><td>URL-encoded page title (if available)</td></tr><tr><td><code>X-Wayback-Cache</code></td><td>"HIT" if content was served from Wayback cache</td></tr></tbody></table>
-<p>#### <code>ai</code> Mode</p>
+<h4><code>ai</code> Mode</h4>
 <p>Retrieves AI-generated historical page versions from cache.</p>
 <strong>Additional Parameters:</strong>
 <table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>year</code></td><td>string</td><td>Yes</td><td>Historical year (e.g., "1995", "500 BC", "1 CE", "current")</td></tr></tbody></table>
@@ -339,7 +340,7 @@ console.log(metadata);
 <pre><code>{
   "aiCache": false
 }</code></pre>
-<p>#### <code>list-cache</code> Mode</p>
+<h4><code>list-cache</code> Mode</h4>
 <p>Lists all available cached years (both AI-generated and Wayback Machine) for a URL.</p>
 <strong>Response (200):</strong>
 <pre><code>{
@@ -489,7 +490,7 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
 <h3>GET Operations</h3>
 <strong>Query Parameters:</strong>
 <table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>action</code></td><td>string</td><td>Yes</td><td>Operation to perform</td></tr><tr><td><code>username</code></td><td>string</td><td>For some actions</td><td>Target username</td></tr><tr><td><code>limit</code></td><td>number</td><td>No</td><td>Result limit (default: 50)</td></tr></tbody></table>
-<p>#### <code>getStats</code> Action</p>
+<h4><code>getStats</code> Action</h4>
 <p>Get system-wide statistics.</p>
 <strong>Response:</strong>
 <pre><code>{
@@ -497,7 +498,7 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
   "totalRooms": 12,
   "totalMessages": 5430
 }</code></pre>
-<p>#### <code>getAllUsers</code> Action</p>
+<h4><code>getAllUsers</code> Action</h4>
 <p>List all registered users.</p>
 <strong>Response:</strong>
 <pre><code>{
@@ -514,7 +515,7 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
     }
   ]
 }</code></pre>
-<p>#### <code>getUserProfile</code> Action</p>
+<h4><code>getUserProfile</code> Action</h4>
 <p>Get detailed profile for a specific user.</p>
 <strong>Additional Parameters:</strong>
 <table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>username</code></td><td>string</td><td>Yes</td><td>Target username</td></tr></tbody></table>
@@ -531,7 +532,7 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
     { "id": "random", "name": "Random" }
   ]
 }</code></pre>
-<p>#### <code>getUserMessages</code> Action</p>
+<h4><code>getUserMessages</code> Action</h4>
 <p>Get recent messages from a specific user.</p>
 <strong>Additional Parameters:</strong>
 <table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>username</code></td><td>string</td><td>Yes</td><td>Target username</td></tr><tr><td><code>limit</code></td><td>number</td><td>No</td><td>Maximum messages to return (default: 50)</td></tr></tbody></table>
@@ -550,7 +551,7 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
 <h3>POST Operations</h3>
 <strong>Request Body:</strong>
 <table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>action</code></td><td>string</td><td>Yes</td><td>Operation to perform</td></tr><tr><td><code>targetUsername</code></td><td>string</td><td>Yes</td><td>User to act on</td></tr><tr><td><code>reason</code></td><td>string</td><td>No</td><td>Reason for action (for bans)</td></tr></tbody></table>
-<p>#### <code>deleteUser</code> Action</p>
+<h4><code>deleteUser</code> Action</h4>
 <p>Permanently delete a user account (cannot delete admin "ryo").</p>
 <strong>Request:</strong>
 <pre><code>{
@@ -565,7 +566,7 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
 <ul><li>Deletes user record</li></ul>
 <ul><li>Deletes password hash</li></ul>
 <ul><li>Invalidates all authentication tokens</li></ul>
-<p>#### <code>banUser</code> Action</p>
+<h4><code>banUser</code> Action</h4>
 <p>Ban a user from the chat system (cannot ban admin "ryo").</p>
 <strong>Request:</strong>
 <pre><code>{
@@ -581,7 +582,7 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
 <ul><li>Sets <code>banned: true</code> on user record</li></ul>
 <ul><li>Stores ban reason and timestamp</li></ul>
 <ul><li>Invalidates all authentication tokens (forces logout)</li></ul>
-<p>#### <code>unbanUser</code> Action</p>
+<h4><code>unbanUser</code> Action</h4>
 <p>Remove ban from a user.</p>
 <strong>Request:</strong>
 <pre><code>{

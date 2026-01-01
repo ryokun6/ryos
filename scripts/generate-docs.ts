@@ -49,7 +49,8 @@ function markdownToHtml(md: string, appContext?: string): string {
     }
   );
 
-  // Headers
+  // Headers (process in order from most # to least)
+  html = html.replace(/^#### (.+)$/gm, "<h4>$1</h4>");
   html = html.replace(/^### (.+)$/gm, "<h3>$1</h3>");
   html = html.replace(/^## (.+)$/gm, "<h2>$1</h2>");
   html = html.replace(/^# (.+)$/gm, "<h1>$1</h1>");
@@ -407,6 +408,7 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
     h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
     p { margin: 8px 0; }
     ul, ol { margin: 8px 0 8px 20px; }
     li { margin: 4px 0; }

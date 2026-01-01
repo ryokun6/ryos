@@ -82,6 +82,7 @@
     h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
     p { margin: 8px 0; }
     ul, ol { margin: 8px 0 8px 20px; }
     li { margin: 4px 0; }
@@ -380,7 +381,7 @@ data: {"type":"tool-result","toolCallId":"...","result":{...}}
 data: {"type":"finish","finishReason":"stop"}</code></pre>
 <h3>Error Responses</h3>
 <table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid messages format</code></td><td>Messages array is missing or malformed</td></tr><tr><td>400</td><td><code>Unsupported model</code></td><td>Requested model is not supported</td></tr><tr><td>400</td><td><code>Invalid JSON</code></td><td>Request body is not valid JSON</td></tr><tr><td>401</td><td><code>authentication_failed</code></td><td>Invalid or missing authentication token</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Request origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Only POST requests are accepted</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Rate limit exceeded for the user</td></tr><tr><td>500</td><td><code>Internal Server Error</code></td><td>Server-side error</td></tr></tbody></table>
-<p>#### Rate Limit Error Response</p>
+<h4>Rate Limit Error Response</h4>
 <pre><code>interface RateLimitError {
   error: "rate_limit_exceeded";
   isAuthenticated: boolean;
@@ -400,7 +401,8 @@ const model = queryModel || bodyModel || "gpt-5.1";</code></pre>
 <h2>Tool Calling</h2>
 <p>The Chat API supports extensive tool calling for controlling ryOS applications and system features.</p>
 <h3>Application Control</h3>
-<p>#### <code>launchApp</code> Launch an application in ryOS.</p>
+<h4><code>launchApp</code></h4>
+Launch an application in ryOS.
 <pre><code>{
   id: AppId;           // Required: App to launch
   url?: string;        // For internet-explorer: URL to load
@@ -413,12 +415,14 @@ type AppId =
   | "textedit" | "paint" | "photo-booth" | "minesweeper"
   | "videos" | "ipod" | "karaoke" | "synth" | "pc"
   | "terminal" | "applet-viewer" | "control-panels" | "admin";</code></pre>
-<p>#### <code>closeApp</code> Close an application.</p>
+<h4><code>closeApp</code></h4>
+Close an application.
 <pre><code>{
   id: AppId;  // App to close
 }</code></pre>
 <h3>Media Control</h3>
-<p>#### <code>ipodControl</code> Control iPod playback.</p>
+<h4><code>ipodControl</code></h4>
+Control iPod playback.
 <pre><code>{
   action: "toggle" | "play" | "pause" | "playKnown" | "addAndPlay" | "next" | "previous";
   id?: string;              // YouTube ID or URL (for addAndPlay/playKnown)
@@ -428,7 +432,8 @@ type AppId =
   enableFullscreen?: boolean;
   enableTranslation?: string; // Language code for lyrics translation
 }</code></pre>
-<p>#### <code>karaokeControl</code> Control Karaoke playback (same schema as iPod, without <code>enableVideo</code>).</p>
+<h4><code>karaokeControl</code></h4>
+Control Karaoke playback (same schema as iPod, without <code>enableVideo</code>).
 <pre><code>{
   action: "toggle" | "play" | "pause" | "playKnown" | "addAndPlay" | "next" | "previous";
   id?: string;
@@ -437,7 +442,8 @@ type AppId =
   enableFullscreen?: boolean;
   enableTranslation?: string;
 }</code></pre>
-<p>#### <code>searchSongs</code> Search for songs on YouTube.</p>
+<h4><code>searchSongs</code></h4>
+Search for songs on YouTube.
 <pre><code>// Input
 {
   query: string;       // Search query (1-200 chars)
@@ -456,34 +462,40 @@ type AppId =
   hint: string;
 }</code></pre>
 <h3>Virtual File System</h3>
-<p>#### <code>list</code> List items from the virtual file system.</p>
+<h4><code>list</code></h4>
+List items from the virtual file system.
 <pre><code>{
   path: "/Applets" | "/Documents" | "/Applications" | "/Music" | "/Applets Store";
   query?: string;  // Search filter (for Applets Store)
   limit?: number;  // Max results 1-50 (for Applets Store)
 }</code></pre>
-<p>#### <code>open</code> Open a file or launch an app.</p>
+<h4><code>open</code></h4>
+Open a file or launch an app.
 <pre><code>{
   path: string;  // e.g., "/Applets/Calculator.app", "/Documents/notes.md"
 }</code></pre>
-<p>#### <code>read</code> Read file contents.</p>
+<h4><code>read</code></h4>
+Read file contents.
 <pre><code>{
   path: string;  // Path to file in /Applets, /Documents, or /Applets Store
 }</code></pre>
-<p>#### <code>write</code> Create or modify documents.</p>
+<h4><code>write</code></h4>
+Create or modify documents.
 <pre><code>{
   path: string;     // e.g., "/Documents/notes.md"
   content: string;  // Document content
   mode?: "overwrite" | "append" | "prepend";
 }</code></pre>
-<p>#### <code>edit</code> Make targeted edits to existing files.</p>
+<h4><code>edit</code></h4>
+Make targeted edits to existing files.
 <pre><code>{
   path: string;       // File path
   old_string: string; // Text to replace (must be unique)
   new_string: string; // Replacement text
 }</code></pre>
 <h3>HTML/Applet Generation</h3>
-<p>#### <code>generateHtml</code> Generate an HTML applet for ryOS.</p>
+<h4><code>generateHtml</code></h4>
+Generate an HTML applet for ryOS.
 <pre><code>// Input
 {
   html: string;    // HTML content (body only)
@@ -498,7 +510,8 @@ type AppId =
   icon: string;
 }</code></pre>
 <h3>System Settings</h3>
-<p>#### <code>settings</code> Change system preferences.</p>
+<h4><code>settings</code></h4>
+Change system preferences.
 <pre><code>{
   language?: "en" | "zh-TW" | "ja" | "ko" | "fr" | "de" | "es" | "pt" | "it" | "ru";
   theme?: "system7" | "macosx" | "xp" | "win98";
@@ -507,7 +520,8 @@ type AppId =
   checkForUpdates?: boolean; // Trigger update check
 }</code></pre>
 <h3>Special Tools</h3>
-<p>#### <code>aquarium</code> Render an emoji aquarium in the chat bubble.</p>
+<h4><code>aquarium</code></h4>
+Render an emoji aquarium in the chat bubble.
 <pre><code>{}  // No parameters</code></pre>
 <h2>Example Usage</h2>
 <h3>Basic Chat Request</h3>

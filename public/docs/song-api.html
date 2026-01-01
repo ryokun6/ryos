@@ -82,6 +82,7 @@
     h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
     h2 { font-size: 14px; margin: 24px 0 12px; }
     h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
     p { margin: 8px 0; }
     ul, ol { margin: 8px 0 8px 20px; }
     li { margin: 4px 0; }
@@ -275,9 +276,9 @@ X-Username: &lt;username&gt;</code></pre>
 <h2>Collection Endpoints</h2>
 <h3>GET /api/song</h3>
 <p>List all songs or filter by specific criteria.</p>
-<p>#### Query Parameters</p>
+<h4>Query Parameters</h4>
 <table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>createdBy</code></td><td>string</td><td>Filter by creator username</td></tr><tr><td><code>ids</code></td><td>string</td><td>Comma-separated list of song IDs for batch fetch</td></tr><tr><td><code>include</code></td><td>string</td><td>Comma-separated: <code>metadata</code>, <code>lyrics</code>, <code>translations</code>, <code>furigana</code>, <code>soramimi</code> (default: <code>metadata</code>)</td></tr></tbody></table>
-<p>#### Response</p>
+<h4>Response</h4>
 <pre><code>{
   "songs": [
     {
@@ -303,7 +304,7 @@ X-Username: &lt;username&gt;</code></pre>
 }</code></pre>
 <h3>POST /api/song</h3>
 <p>Create a single song or perform bulk import.</p>
-<p>#### Single Song Creation</p>
+<h4>Single Song Creation</h4>
 <pre><code>{
   "id": "dQw4w9WgXcQ",
   "title": "Never Gonna Give You Up",
@@ -317,7 +318,7 @@ X-Username: &lt;username&gt;</code></pre>
     "artist": "Rick Astley"
   }
 }</code></pre>
-<p>#### Bulk Import (Admin Only)</p>
+<h4>Bulk Import (Admin Only)</h4>
 <pre><code>{
   "action": "import",
   "songs": [
@@ -340,7 +341,7 @@ X-Username: &lt;username&gt;</code></pre>
   ]
 }</code></pre>
 <p>Content fields (<code>lyrics</code>, <code>translations</code>, <code>furigana</code>, <code>soramimi</code>, <code>soramimiByLang</code>) can be compressed using gzip and base64 encoded with a <code>gzip:</code> prefix.</p>
-<p>#### Response</p>
+<h4>Response</h4>
 <pre><code>{
   "success": true,
   "id": "dQw4w9WgXcQ",
@@ -357,7 +358,7 @@ X-Username: &lt;username&gt;</code></pre>
 }</code></pre>
 <h3>DELETE /api/song</h3>
 <p>Delete all songs (admin only).</p>
-<p>#### Response</p>
+<h4>Response</h4>
 <pre><code>{
   "success": true,
   "deleted": 42
@@ -366,9 +367,9 @@ X-Username: &lt;username&gt;</code></pre>
 <h2>Individual Song Endpoints</h2>
 <h3>GET /api/song/{id}</h3>
 <p>Retrieve a song by its YouTube video ID.</p>
-<p>#### Query Parameters</p>
+<h4>Query Parameters</h4>
 <table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>include</code></td><td>string</td><td>Comma-separated: <code>metadata</code>, <code>lyrics</code>, <code>translations</code>, <code>furigana</code>, <code>soramimi</code> (default: <code>metadata</code>)</td></tr></tbody></table>
-<p>#### Response</p>
+<h4>Response</h4>
 <pre><code>{
   "id": "dQw4w9WgXcQ",
   "title": "Song Title",
@@ -403,18 +404,18 @@ X-Username: &lt;username&gt;</code></pre>
 }</code></pre>
 <h3>POST /api/song/{id}</h3>
 <p>Update song metadata or perform an action.</p>
-<p>#### Actions</p>
+<h4>Actions</h4>
 <table><thead><tr><th>Action</th><th>Description</th><th>Auth Required</th></tr></thead><tbody><tr><td>(none)</td><td>Update metadata</td><td>Yes (owner)</td></tr><tr><td><code>search-lyrics</code></td><td>Search KuGou for lyrics</td><td>No</td></tr><tr><td><code>fetch-lyrics</code></td><td>Fetch lyrics from KuGou</td><td>First fetch: No, Force refresh: Yes</td></tr><tr><td><code>translate-stream</code></td><td>Generate translation (SSE)</td><td>First: No, Force: Yes</td></tr><tr><td><code>furigana-stream</code></td><td>Generate furigana (SSE)</td><td>First: No, Force: Yes</td></tr><tr><td><code>soramimi-stream</code></td><td>Generate soramimi (SSE)</td><td>First: No, Force: Yes</td></tr><tr><td><code>clear-cached-data</code></td><td>Clear cached annotations</td><td>No</td></tr><tr><td><code>unshare</code></td><td>Clear createdBy field</td><td>Admin only</td></tr></tbody></table>
 <hr>
 <h2>Action: search-lyrics</h2>
 <p>Search for matching lyrics on KuGou.</p>
-<p>#### Request</p>
+<h4>Request</h4>
 <pre><code>{
   "action": "search-lyrics",
   "query": "周杰倫 晴天"
 }</code></pre>
 <p>If <code>query</code> is omitted, uses the song's title and artist.</p>
-<p>#### Response</p>
+<h4>Response</h4>
 <pre><code>{
   "results": [
     {
@@ -430,7 +431,7 @@ X-Username: &lt;username&gt;</code></pre>
 <hr>
 <h2>Action: fetch-lyrics</h2>
 <p>Fetch lyrics from KuGou using a lyrics source.</p>
-<p>#### Request</p>
+<h4>Request</h4>
 <pre><code>{
   "action": "fetch-lyrics",
   "lyricsSource": {
@@ -449,7 +450,7 @@ X-Username: &lt;username&gt;</code></pre>
   "soramimiTargetLanguage": "zh-TW"
 }</code></pre>
 <table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>lyricsSource</code></td><td>object</td><td>KuGou source (from search results)</td></tr><tr><td><code>force</code></td><td>boolean</td><td>Force refresh even if cached</td></tr><tr><td><code>title</code></td><td>string</td><td>Optional title for auto-search</td></tr><tr><td><code>artist</code></td><td>string</td><td>Optional artist for auto-search</td></tr><tr><td><code>returnMetadata</code></td><td>boolean</td><td>Include metadata in response</td></tr><tr><td><code>translateTo</code></td><td>string</td><td>Language code to check translation status</td></tr><tr><td><code>includeFurigana</code></td><td>boolean</td><td>Include furigana status in response</td></tr><tr><td><code>includeSoramimi</code></td><td>boolean</td><td>Include soramimi status in response</td></tr><tr><td><code>soramimiTargetLanguage</code></td><td>string</td><td><code>zh-TW</code> or <code>en</code> (default: <code>zh-TW</code>)</td></tr></tbody></table>
-<p>#### Response</p>
+<h4>Response</h4>
 <pre><code>{
   "lyrics": {
     "parsedLines": [
@@ -482,13 +483,13 @@ X-Username: &lt;username&gt;</code></pre>
 <hr>
 <h2>Action: translate-stream</h2>
 <p>Generate AI translation with Server-Sent Events (SSE) streaming.</p>
-<p>#### Request</p>
+<h4>Request</h4>
 <pre><code>{
   "action": "translate-stream",
   "language": "en",
   "force": false
 }</code></pre>
-<p>#### Response (SSE)</p>
+<h4>Response (SSE)</h4>
 <p>If cached: <pre><code>{"type": "cached", "translation": "[00:00.00]First line..."}</code></pre></p>
 <p>If generating: <pre><code>{"type": "data-start", "data": {"totalLines": 50, "message": "Translation started"}}
 {"type": "data-line", "data": {"lineIndex": 0, "translation": "First line", "progress": 2}}
@@ -498,12 +499,12 @@ X-Username: &lt;username&gt;</code></pre>
 <hr>
 <h2>Action: furigana-stream</h2>
 <p>Generate furigana (Japanese reading annotations) with SSE streaming.</p>
-<p>#### Request</p>
+<h4>Request</h4>
 <pre><code>{
   "action": "furigana-stream",
   "force": false
 }</code></pre>
-<p>#### Response (SSE)</p>
+<h4>Response (SSE)</h4>
 <p>If cached: <pre><code>{"type": "cached", "furigana": [[{"text": "歌詞", "reading": "かし"}]]}</code></pre></p>
 <p>If generating: <pre><code>{"type": "data-start", "data": {"totalLines": 50, "message": "Furigana generation started"}}
 {"type": "data-line", "data": {"lineIndex": 0, "furigana": [{"text": "私", "reading": "わたし"}], "progress": 2}}
@@ -513,7 +514,7 @@ X-Username: &lt;username&gt;</code></pre>
 <h2>Action: soramimi-stream</h2>
 <p>Generate soramimi (空耳 - phonetic misheard lyrics) with SSE streaming.</p>
 <p>Soramimi creates Chinese or English phonetic readings that sound like the original lyrics but can be read as meaningful text in the target language.</p>
-<p>#### Request</p>
+<h4>Request</h4>
 <pre><code>{
   "action": "soramimi-stream",
   "force": false,
@@ -521,7 +522,7 @@ X-Username: &lt;username&gt;</code></pre>
   "furigana": [[{"text": "私", "reading": "わたし"}]]
 }</code></pre>
 <table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>force</code></td><td>boolean</td><td>Force regeneration</td></tr><tr><td><code>targetLanguage</code></td><td>string</td><td><code>zh-TW</code> (Chinese) or <code>en</code> (English)</td></tr><tr><td><code>furigana</code></td><td>array</td><td>Optional furigana to help AI know kanji pronunciation</td></tr></tbody></table>
-<p>#### Response (SSE)</p>
+<h4>Response (SSE)</h4>
 <pre><code>{"type": "data-start", "data": {"totalLines": 50, "message": "AI processing started"}}
 {"type": "data-line", "data": {"lineIndex": 0, "soramimi": [{"text": "私", "reading": "娃她惜"}], "progress": 2}}
 ...
@@ -530,14 +531,14 @@ X-Username: &lt;username&gt;</code></pre>
 <hr>
 <h2>Action: clear-cached-data</h2>
 <p>Clear cached translations, furigana, and/or soramimi.</p>
-<p>#### Request</p>
+<h4>Request</h4>
 <pre><code>{
   "action": "clear-cached-data",
   "clearTranslations": true,
   "clearFurigana": true,
   "clearSoramimi": true
 }</code></pre>
-<p>#### Response</p>
+<h4>Response</h4>
 <pre><code>{
   "success": true,
   "cleared": ["translations", "furigana", "soramimi"]
@@ -545,7 +546,7 @@ X-Username: &lt;username&gt;</code></pre>
 <hr>
 <h2>Update Metadata</h2>
 <p>Default POST action (no <code>action</code> field) updates song metadata.</p>
-<p>#### Request</p>
+<h4>Request</h4>
 <pre><code>{
   "title": "New Title",
   "artist": "New Artist",
@@ -559,7 +560,7 @@ X-Username: &lt;username&gt;</code></pre>
   "isShare": true
 }</code></pre>
 <table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>lyricOffset</code></td><td>number</td><td>Offset in ms (-300000 to 300000)</td></tr><tr><td><code>clearTranslations</code></td><td>boolean</td><td>Clear cached translations</td></tr><tr><td><code>clearFurigana</code></td><td>boolean</td><td>Clear cached furigana</td></tr><tr><td><code>clearSoramimi</code></td><td>boolean</td><td>Clear cached soramimi</td></tr><tr><td><code>clearLyrics</code></td><td>boolean</td><td>Clear lyrics content</td></tr><tr><td><code>isShare</code></td><td>boolean</td><td>Set createdBy to current user</td></tr></tbody></table>
-<p>#### Response</p>
+<h4>Response</h4>
 <pre><code>{
   "success": true,
   "id": "dQw4w9WgXcQ",
@@ -569,7 +570,7 @@ X-Username: &lt;username&gt;</code></pre>
 <hr>
 <h2>DELETE /api/song/{id}</h2>
 <p>Delete a song (admin only).</p>
-<p>#### Response</p>
+<h4>Response</h4>
 <pre><code>{
   "success": true,
   "deleted": true
