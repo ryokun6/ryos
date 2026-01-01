@@ -1890,10 +1890,18 @@ export function ControlPanelsAppComponent({
                         Sync settings and media metadata across devices (opt-in)
                       </span>
                     </div>
-                    <Switch
-                      checked={syncSettings.enabled}
-                      onCheckedChange={(v) => syncSettings.setEnabled(v)}
-                    />
+                    <div className="flex flex-col items-end gap-1">
+                      <Switch
+                        checked={syncSettings.enabled && !!authToken && !!username}
+                        disabled={!authToken || !username}
+                        onCheckedChange={(v) => syncSettings.setEnabled(v)}
+                      />
+                      {!authToken || !username ? (
+                        <span className="text-[11px] text-red-600 font-geneva-12">
+                          Login required
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between">
