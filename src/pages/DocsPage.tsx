@@ -877,13 +877,13 @@ export function DocsPage() {
 
   return (
     <div
-      className="min-h-screen bg-[#c0c0c0] font-[Geneva,Chicago,sans-serif] text-black"
+      className="bg-[#c0c0c0] font-[Geneva,Chicago,sans-serif] text-black"
       style={{
         backgroundImage: `url("data:image/svg+xml,%3Csvg width='4' height='4' viewBox='0 0 4 4' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h2v2H0zM2 2h2v2H2z' fill='%23a0a0a0' fill-opacity='0.3'/%3E%3C/svg%3E")`,
       }}
     >
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b-2 border-black">
+      <header className="bg-white border-b-2 border-black">
         <div className="flex items-center justify-between px-3 sm:px-4 h-10">
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Mobile menu button */}
@@ -929,12 +929,21 @@ export function DocsPage() {
         />
       )}
 
-      {/* Sidebar - fixed on mobile, static on desktop */}
+      {/* Mobile sidebar - slides in from left */}
       <aside
-        className={`fixed md:fixed top-10 left-0 z-40 h-[calc(100vh-2.5rem)] w-56 bg-white border-r-2 border-black p-2 overflow-y-auto transition-transform duration-200 md:translate-x-0 ${
+        className={`fixed top-0 left-0 z-50 h-full w-56 bg-white border-r-2 border-black p-2 pt-12 transition-transform duration-200 md:hidden ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="absolute top-2 right-2 p-1 border-2 border-black bg-white"
+          aria-label="Close menu"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
         <nav className="space-y-1">
           {sections.map((section) => (
             <button
@@ -952,63 +961,84 @@ export function DocsPage() {
         </nav>
       </aside>
 
-      {/* Main Content */}
-      <main className="md:ml-56 min-h-[calc(100vh-2.5rem)]">
-        <div className="max-w-4xl mx-auto p-3 sm:p-6">
-          {/* Content Window */}
-          <div className="bg-white border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] sm:shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
-            {/* Window Title Bar */}
-            <div
-              className="h-6 border-b-2 border-black flex items-center px-2"
-              style={{
-                background: `repeating-linear-gradient(
-                  90deg,
-                  #000 0px,
-                  #000 1px,
-                  #fff 1px,
-                  #fff 3px
-                )`,
-              }}
-            >
-              <div className="w-3 h-3 border-2 border-black bg-white mr-2 shrink-0" />
-              <span className="bg-white px-2 text-xs sm:text-sm font-bold truncate">
-                {sections.find((s) => s.id === activeSection)?.title}
-              </span>
+      <div className="flex">
+        {/* Desktop sidebar */}
+        <aside className="hidden md:block w-56 shrink-0 bg-white border-r-2 border-black p-2">
+          <nav className="space-y-1">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => handleSectionChange(section.id)}
+                className={`w-full text-left px-3 py-2 text-sm border-2 transition-colors ${
+                  activeSection === section.id
+                    ? "bg-black text-white border-black"
+                    : "bg-white text-black border-transparent hover:border-black"
+                }`}
+              >
+                {section.title}
+              </button>
+            ))}
+          </nav>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 min-w-0">
+          <div className="max-w-4xl mx-auto p-3 sm:p-6">
+            {/* Content Window */}
+            <div className="bg-white border-2 border-black shadow-[2px_2px_0_0_rgba(0,0,0,1)] sm:shadow-[4px_4px_0_0_rgba(0,0,0,1)]">
+              {/* Window Title Bar */}
+              <div
+                className="h-6 border-b-2 border-black flex items-center px-2"
+                style={{
+                  background: `repeating-linear-gradient(
+                    90deg,
+                    #000 0px,
+                    #000 1px,
+                    #fff 1px,
+                    #fff 3px
+                  )`,
+                }}
+              >
+                <div className="w-3 h-3 border-2 border-black bg-white mr-2 shrink-0" />
+                <span className="bg-white px-2 text-xs sm:text-sm font-bold truncate">
+                  {sections.find((s) => s.id === activeSection)?.title}
+                </span>
+              </div>
+
+              {/* Window Content */}
+              <div className="p-3 sm:p-6">
+                <ContentComponent />
+              </div>
             </div>
 
-            {/* Window Content */}
-            <div className="p-3 sm:p-6">
-              <ContentComponent />
+            {/* Navigation */}
+            <div className="flex justify-between gap-2 mt-4 sm:mt-6 pb-6">
+              {currentIndex > 0 ? (
+                <button
+                  onClick={() => handleSectionChange(sections[currentIndex - 1].id)}
+                  className="px-2 sm:px-4 py-2 bg-white border-2 border-black hover:bg-gray-100 text-xs sm:text-sm font-bold shadow-[2px_2px_0_0_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] truncate max-w-[45%]"
+                >
+                  ← <span className="hidden sm:inline">{sections[currentIndex - 1].title}</span>
+                  <span className="sm:hidden">Prev</span>
+                </button>
+              ) : (
+                <div />
+              )}
+              {currentIndex < sections.length - 1 ? (
+                <button
+                  onClick={() => handleSectionChange(sections[currentIndex + 1].id)}
+                  className="px-2 sm:px-4 py-2 bg-white border-2 border-black hover:bg-gray-100 text-xs sm:text-sm font-bold shadow-[2px_2px_0_0_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] truncate max-w-[45%]"
+                >
+                  <span className="hidden sm:inline">{sections[currentIndex + 1].title}</span>
+                  <span className="sm:hidden">Next</span> →
+                </button>
+              ) : (
+                <div />
+              )}
             </div>
           </div>
-
-          {/* Navigation */}
-          <div className="flex justify-between gap-2 mt-4 sm:mt-6">
-            {currentIndex > 0 ? (
-              <button
-                onClick={() => handleSectionChange(sections[currentIndex - 1].id)}
-                className="px-2 sm:px-4 py-2 bg-white border-2 border-black hover:bg-gray-100 text-xs sm:text-sm font-bold shadow-[2px_2px_0_0_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] truncate max-w-[45%]"
-              >
-                ← <span className="hidden sm:inline">{sections[currentIndex - 1].title}</span>
-                <span className="sm:hidden">Prev</span>
-              </button>
-            ) : (
-              <div />
-            )}
-            {currentIndex < sections.length - 1 ? (
-              <button
-                onClick={() => handleSectionChange(sections[currentIndex + 1].id)}
-                className="px-2 sm:px-4 py-2 bg-white border-2 border-black hover:bg-gray-100 text-xs sm:text-sm font-bold shadow-[2px_2px_0_0_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] truncate max-w-[45%]"
-              >
-                <span className="hidden sm:inline">{sections[currentIndex + 1].title}</span>
-                <span className="sm:hidden">Next</span> →
-              </button>
-            ) : (
-              <div />
-            )}
-          </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
