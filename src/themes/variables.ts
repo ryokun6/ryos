@@ -12,6 +12,7 @@ export function themeToCssVariables(theme: OsTheme): Record<string, string> {
   const vars: Record<string, string> = {
     "--os-font-ui": theme.fonts.ui,
     "--os-font-mono": theme.fonts.mono ?? theme.fonts.ui,
+    ...(theme.fonts.extra ?? {}),
 
     "--os-color-window-bg": theme.colors.windowBg,
     "--os-color-menubar-bg": theme.colors.menubarBg,
@@ -80,6 +81,39 @@ export function themeToCssVariables(theme: OsTheme): Record<string, string> {
     if (trafficLights.maximizeHover) {
       vars["--os-color-traffic-light-maximize-hover"] =
         trafficLights.maximizeHover;
+    }
+  }
+
+  if (theme.colors.selection.glow) {
+    vars["--os-color-selection-glow"] = theme.colors.selection.glow;
+  }
+
+  if (theme.metrics.titleBarBorderWidth) {
+    vars["--os-metrics-titlebar-border-width"] = theme.metrics.titleBarBorderWidth;
+  }
+
+  if (theme.textures) {
+    const { textures } = theme;
+    if (textures.toolbarImage) {
+      vars["--os-texture-toolbar-image"] = textures.toolbarImage;
+    }
+    if (textures.toolbarSize) {
+      vars["--os-texture-toolbar-size"] = textures.toolbarSize;
+    }
+    if (textures.toolbarRepeat) {
+      vars["--os-texture-toolbar-repeat"] = textures.toolbarRepeat;
+    }
+    if (textures.toolbarPosition) {
+      vars["--os-texture-toolbar-position"] = textures.toolbarPosition;
+    }
+    if (textures.pinstripeTitlebar) {
+      vars["--os-pinstripe-titlebar"] = textures.pinstripeTitlebar;
+    }
+    if (textures.pinstripeWindow) {
+      vars["--os-pinstripe-window"] = textures.pinstripeWindow;
+    }
+    if (textures.pinstripeMenubar) {
+      vars["--os-pinstripe-menubar"] = textures.pinstripeMenubar;
     }
   }
 

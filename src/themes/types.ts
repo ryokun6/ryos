@@ -33,6 +33,8 @@ export interface OsTheme {
   fonts: {
     ui: string;
     mono?: string;
+    /** Additional named font aliases (e.g., --font-ms-sans) */
+    extra?: Record<string, string>;
   };
   colors: {
     windowBg: string;
@@ -67,6 +69,7 @@ export interface OsTheme {
     selection: {
       bg: string;
       text: string;
+      glow?: string;
     };
     text: {
       primary: string;
@@ -79,7 +82,17 @@ export interface OsTheme {
     radius: string;
     titleBarHeight: string;
     titleBarRadius?: string; // For Yosemite style rounded corners
+    titleBarBorderWidth?: string;
     windowShadow: string;
+  };
+  textures?: {
+    toolbarImage?: string;
+    toolbarSize?: string;
+    toolbarRepeat?: string;
+    toolbarPosition?: string;
+    pinstripeTitlebar?: string;
+    pinstripeWindow?: string;
+    pinstripeMenubar?: string;
   };
   assets?: {
     closeButton?: string;

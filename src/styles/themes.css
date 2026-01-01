@@ -28,112 +28,10 @@
   --os-window-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5);
 }
 
-/* System 7 Theme */
-:root[data-os-theme="system7"] {
-  --os-font-ui: "ChicagoKare", "ArkPixel", "SerenityOS-Emoji", system-ui,
-    -apple-system, sans-serif;
-  --os-font-mono: "Monaco", "ArkPixel", "SerenityOS-Emoji", monospace;
-  --os-color-window-bg: #ffffff;
-  --os-color-menubar-bg: #ffffff;
-  --os-color-menubar-border: #000000;
-  --os-color-menubar-text: #000000;
-  --os-color-window-border: #000000;
-  --os-color-titlebar-active-bg: #ffffff;
-  --os-color-titlebar-inactive-bg: #ffffff;
-  --os-color-titlebar-text: #000000;
-  --os-color-titlebar-text-inactive: #666666;
-  --os-color-titlebar-pattern: linear-gradient(#000 50%, transparent 0);
-  --os-color-button-face: #ffffff;
-  --os-color-button-highlight: #ffffff;
-  --os-color-button-shadow: #808080;
-  --os-color-button-active-face: #cccccc;
-  --os-color-selection-bg: #000000;
-  --os-color-selection-text: #ffffff;
-  --os-color-text-primary: #000000;
-  --os-color-text-secondary: #666666;
-  --os-color-text-disabled: #999999;
-  --os-metrics-border-width: 2px;
-  --os-metrics-radius: 0px; /* System 7 has square corners */
-  --os-metrics-titlebar-height: 1.5rem;
-  --os-metrics-menubar-height: 30px;
-  --os-window-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5);
-}
-
 /* Inactive selection palette for background windows (System 7) */
 :root[data-os-theme="system7"] .window:not(.is-foreground) {
   --os-color-selection-bg: #cfcfcf; /* neutral gray */
   --os-color-selection-text: #000000;
-}
-
-/* Mac OS X Theme */
-:root[data-os-theme="macosx"] {
-  --os-font-ui: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
-    "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, sans-serif;
-  --os-font-mono: Monaco, Menlo, monospace;
-  --os-color-window-bg: #ececec;
-  --os-color-menubar-bg: linear-gradient(to bottom, #f8f8f8, #d4d4d4);
-  --os-color-menubar-border: rgba(0, 0, 0, 0.44);
-  --os-color-menubar-text: #000000;
-  --os-color-window-border: rgba(0, 0, 0, 0.4);
-  --os-color-window-border-inactive: rgba(0, 0, 0, 0.08);
-  --os-color-titlebar-border: rgba(0, 0, 0, 0.3);
-  --os-color-titlebar-border-inactive: rgba(0, 0, 0, 0.2);
-  --os-color-titlebar-active-bg: linear-gradient(
-    to bottom,
-    #e8e8e8 0%,
-    #d0d0d0 100%
-  );
-  --os-color-titlebar-inactive-bg: linear-gradient(to bottom, #f6f6f6, #e0e0e0);
-  --os-color-titlebar-text: #000000;
-  --os-color-titlebar-text-inactive: #7f7f7f;
-  --os-color-button-face: #ffffff;
-  --os-color-button-highlight: #ffffff;
-  --os-color-button-shadow: rgba(0, 0, 0, 0.4);
-  --os-color-button-active-face: #e0e0e0;
-  --os-color-traffic-light-close: #4a0a07;
-  --os-color-traffic-light-minimize: #7a5915;
-  --os-color-traffic-light-maximize: #10541a;
-  --os-color-selection-bg: rgba(39, 101, 202, 0.88);
-  --os-color-selection-text: #ffffff;
-  /* Derived selection glow (used for focus rings). Keep alpha in a separate var */
-  --os-color-selection-glow: rgba(48, 103, 218, 0.5);
-  --os-color-text-primary: #000000;
-  --os-color-text-secondary: #4b4b4b;
-  --os-color-text-disabled: #999999;
-  --os-metrics-border-width: 0.5px;
-  --os-metrics-titlebar-border-width: 1px;
-  --os-metrics-radius: 0.45rem;
-  --os-metrics-titlebar-height: 1.375rem;
-  --os-metrics-menubar-height: 25px;
-  --os-window-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-  /* Shared texture variables */
-  --os-texture-toolbar-image: url("/assets/brushed-metal.jpg");
-  --os-texture-toolbar-size: cover;
-  --os-texture-toolbar-repeat: no-repeat;
-  --os-texture-toolbar-position: center;
-  /* Pinstripe patterns */
-  --os-pinstripe-titlebar: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.3) 0%,
-    rgba(219, 219, 219, 0.6) 70%,
-    rgba(206, 206, 206, 0.7) 100%
-  );
-  --os-pinstripe-window: repeating-linear-gradient(
-      0deg,
-      transparent 0px,
-      transparent 1.5px,
-      rgba(255, 255, 255, 0.85) 1.5px,
-      rgba(255, 255, 255, 0.85) 4px
-    ),
-    linear-gradient(to bottom, #ececec 0%, #ececec 100%);
-  --os-pinstripe-menubar: repeating-linear-gradient(
-    0deg,
-    transparent 0px,
-    transparent 1.5px,
-    rgba(255, 255, 255, 0.55) 1.5px,
-    rgba(255, 255, 255, 0.55) 4px
-  );
 }
 
 /* Shared toolbar texture utility. Uses variables defined by the active theme. */
@@ -142,38 +40,6 @@
   background-size: var(--os-texture-toolbar-size, cover);
   background-repeat: var(--os-texture-toolbar-repeat, no-repeat);
   background-position: var(--os-texture-toolbar-position, center);
-}
-
-/* Windows 98 Theme */
-:root[data-os-theme="win98"] {
-  --os-font-ui: "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
-    "SerenityOS-Emoji", sans-serif;
-  --os-font-mono: Monaco, Consolas, "Courier New", monospace;
-  --font-ms-sans: "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
-    "SerenityOS-Emoji", system-ui, sans-serif;
-  --os-color-window-bg: #c0c0c0;
-  --os-color-menubar-bg: #c0c0c0;
-  --os-color-menubar-border: #808080;
-  --os-color-menubar-text: #000000;
-  --os-color-window-border: #000000;
-  --os-color-titlebar-active-bg: linear-gradient(to right, #000084, #1084d0);
-  --os-color-titlebar-inactive-bg: linear-gradient(to right, #808080, #c0c0c0);
-  --os-color-titlebar-text: #ffffff;
-  --os-color-titlebar-text-inactive: #e0e0e0;
-  --os-color-button-face: #c0c0c0;
-  --os-color-button-highlight: #ffffff;
-  --os-color-button-shadow: #808080;
-  --os-color-button-active-face: #b0b0b0;
-  --os-color-selection-bg: #000080;
-  --os-color-selection-text: #ffffff;
-  --os-color-text-primary: #000000;
-  --os-color-text-secondary: #333333;
-  --os-color-text-disabled: #7f7f7f;
-  --os-metrics-border-width: 2px;
-  --os-metrics-radius: 0px;
-  --os-metrics-titlebar-height: 1.375rem;
-  --os-metrics-menubar-height: 30px;
-  --os-window-shadow: none;
 }
 
 /* Inactive selection palette for background windows (Windows 98) */
@@ -195,38 +61,6 @@
   font-family: var(--os-font-ui) !important;
   font-smooth: antialiased !important;
   -webkit-font-smoothing: antialiased !important;
-}
-
-/* Windows XP Theme */
-:root[data-os-theme="xp"] {
-  --os-font-ui: Tahoma, "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
-    "SerenityOS-Emoji", sans-serif;
-  --os-font-mono: Consolas, Courier New, monospace;
-  --font-ms-sans: "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
-    "SerenityOS-Emoji", system-ui, sans-serif;
-  --os-color-window-bg: #ece9d8;
-  --os-color-menubar-bg: linear-gradient(to bottom, #245edc, #1941a5);
-  --os-color-menubar-border: #0a246a;
-  --os-color-menubar-text: #ffffff;
-  --os-color-window-border: #0054e3;
-  --os-color-titlebar-active-bg: linear-gradient(to bottom, #0058e6, #1941a5);
-  --os-color-titlebar-inactive-bg: linear-gradient(to bottom, #8b9dc3, #7a8aab);
-  --os-color-titlebar-text: #ffffff;
-  --os-color-titlebar-text-inactive: #d5ddf3;
-  --os-color-button-face: #ece9d8;
-  --os-color-button-highlight: #ffffff;
-  --os-color-button-shadow: #aca899;
-  --os-color-button-active-face: #d8d5c8;
-  --os-color-selection-bg: #316ac5;
-  --os-color-selection-text: #ffffff;
-  --os-color-text-primary: #000000;
-  --os-color-text-secondary: #5a5a5a;
-  --os-color-text-disabled: #a0a0a0;
-  --os-metrics-border-width: 3px;
-  --os-metrics-radius: 0.5rem;
-  --os-metrics-titlebar-height: 1.875rem;
-  --os-metrics-menubar-height: 30px;
-  --os-window-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
 }
 
 /* Inactive selection palette for background windows (Windows XP) */

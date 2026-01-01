@@ -17,6 +17,10 @@ export const win98: OsTheme = {
   fonts: {
     ui: "Tahoma, MS Sans Serif, sans-serif",
     mono: "Consolas, Courier New, monospace",
+    extra: {
+      "--font-ms-sans":
+        '"Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel", "SerenityOS-Emoji", system-ui, sans-serif',
+    },
   },
   colors: {
     windowBg: "#C0C0C0", // classic 3D face color
