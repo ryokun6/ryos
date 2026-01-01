@@ -58,6 +58,19 @@
     .sidebar a:hover { background: #f0f0f0; }
     .sidebar a.active { background: #000; color: #fff; }
     
+    /* Tree hierarchy styles */
+    .nav-group { margin: 4px 0; }
+    .nav-toggle {
+      display: flex; align-items: center; gap: 4px;
+      background: none; border: none; padding: 0; width: 100%;
+      cursor: pointer; text-align: left; font: inherit; color: inherit;
+    }
+    .nav-toggle:hover { background: #f0f0f0; }
+    .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
+    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; }
+    .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
+    .nav-child { padding-left: 8px; font-size: 11px; }
+    
     .content { flex: 1; padding: 24px 32px; min-width: 0; }
     
     /* Typography */
@@ -149,6 +162,33 @@
 <a href="/docs/ai-integration.html" class="">AI Integration</a>
 <a href="/docs/build-system.html" class="">Build System</a>
 <a href="/docs/i18n-hooks.html" class="">i18n & Hooks</a>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/apps.html" class="">Apps</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/apps-admin.html" class="nav-child ">Admin</a>
+    <a href="/docs/apps-applet-viewer.html" class="nav-child ">Applet Store</a>
+    <a href="/docs/apps-chats.html" class="nav-child ">Chats</a>
+    <a href="/docs/apps-control-panels.html" class="nav-child ">Control Panels</a>
+    <a href="/docs/apps-finder.html" class="nav-child ">Finder</a>
+    <a href="/docs/apps-internet-explorer.html" class="nav-child ">Internet Explorer</a>
+    <a href="/docs/apps-ipod.html" class="nav-child ">iPod</a>
+    <a href="/docs/apps-karaoke.html" class="nav-child ">Karaoke</a>
+    <a href="/docs/apps-minesweeper.html" class="nav-child ">Minesweeper</a>
+    <a href="/docs/apps-paint.html" class="nav-child ">Paint</a>
+    <a href="/docs/apps-photo-booth.html" class="nav-child ">Photo Booth</a>
+    <a href="/docs/apps-soundboard.html" class="nav-child ">Soundboard</a>
+    <a href="/docs/apps-synth.html" class="nav-child ">Synth</a>
+    <a href="/docs/apps-terminal.html" class="nav-child ">Terminal</a>
+    <a href="/docs/apps-textedit.html" class="nav-child ">TextEdit</a>
+    <a href="/docs/apps-videos.html" class="nav-child ">Videos</a>
+    <a href="/docs/apps-pc.html" class="nav-child ">Virtual PC</a>
+  </div>
+</div>
     </nav>
     
     <main class="content">
@@ -174,7 +214,14 @@
 ├── src-tauri/        # Desktop app config
 └── scripts/          # Build scripts</code></pre>
 <h2>Key Features</h2>
-<ul><li><strong>Multi-Theme Support:</strong> System 7, Mac OS X (Aqua), Windows XP, Windows 98</li><li><strong>17 Built-in Apps:</strong> Finder, TextEdit, Paint, iPod, Terminal, Chats, and more</li><li><strong>AI Assistant (Ryo):</strong> Chat, tool calling, app control, code generation</li><li><strong>Virtual File System:</strong> IndexedDB-backed with lazy loading</li><li><strong>Real-time Chat:</strong> Pusher-powered rooms with AI integration</li><li><strong>PWA Support:</strong> Offline-capable with service worker caching</li><li><strong>Desktop App:</strong> Tauri-based native app</li></ul>
+<ul><li><strong>Multi-Theme Support:</strong> System 7, Mac OS X (Aqua), Windows XP, Windows 98</li></ul>
+<ul><li><strong>17 Built-in Apps:</strong> Finder, TextEdit, Paint, iPod, Terminal, Chats, and more</li></ul>
+<ul><li><strong>AI Assistant (Ryo):</strong> Chat, tool calling, app control, code generation</li></ul>
+<ul><li><strong>Virtual File System:</strong> IndexedDB-backed with lazy loading</li></ul>
+<ul><li><strong>Real-time Chat:</strong> Pusher-powered rooms with AI integration</li></ul>
+<ul><li><strong>PWA Support:</strong> Offline-capable with service worker caching</li></ul>
+<ul><li><strong>Desktop App:</strong> Tauri-based native app</li></ul>
+
       </article>
       
       <nav class="nav">
@@ -186,6 +233,25 @@
   </div>
   
   <script>
+    function toggleNavGroup(button) {
+      const group = button.closest('.nav-group');
+      const children = group.querySelector('.nav-children');
+      const svg = button.querySelector('svg');
+      const isExpanded = group.classList.contains('expanded');
+      
+      if (isExpanded) {
+        group.classList.remove('expanded');
+        children.style.display = 'none';
+        svg.style.transform = 'rotate(0deg)';
+        button.setAttribute('aria-expanded', 'false');
+      } else {
+        group.classList.add('expanded');
+        children.style.display = 'block';
+        svg.style.transform = 'rotate(90deg)';
+        button.setAttribute('aria-expanded', 'true');
+      }
+    }
+    
     document.addEventListener('click', (e) => {
       const sidebar = document.querySelector('.sidebar');
       const menuBtn = document.querySelector('.menu-btn');

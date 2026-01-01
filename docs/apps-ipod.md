@@ -1,0 +1,80 @@
+# iPod
+
+The iPod app for ryOS brings the classic 1st generation iPod experience to your web desktop. It allows you to manage and play music from YouTube, complete with iconic features like the click wheel, cover flow, and synchronized lyrics, all within a familiar retro interface.
+
+## Overview
+
+The ryOS iPod app reimagines the nostalgic charm of a classic portable music player, seamlessly integrated with modern web capabilities. It's designed for users who appreciate a focused, distraction-free music listening experience, reminiscent of early 2000s tech. Users can curate their music library by adding tracks directly from YouTube, enjoying a blend of retro aesthetics and contemporary content.
+
+Beyond basic playback, the iPod app offers a rich interactive experience. Navigate your music collection with an intuitive click wheel, visually browse albums with Cover Flow, and enhance your listening with real-time synced lyrics. It's perfect for casual listening, focused work sessions with background music, or simply reliving a beloved piece of technology within the ryOS environment.
+
+## Features
+
+The iPod app (v1.0) provides a rich set of features designed to emulate and enhance the classic iPod experience:
+
+*   **Music Management & Discovery:**
+    *   🎵 **Add Songs from YouTube:** Easily expand your music library by pasting YouTube URLs directly into the app.
+    *   **Dynamic Library:** Your added music forms a personalized library, accessible through the classic iPod interface.
+*   **Intuitive Navigation & Interface:**
+    *   🔄 **Click Wheel Navigation:** Experience authentic iPod navigation using the interactive click wheel to browse menus, artists, albums, and songs.
+    *   **Cover Flow:** Visually explore your music collection with the iconic Cover Flow interface, displaying album art in a dynamic 3D carousel.
+    *   **Customizable Display:** Adjust backlight settings and themes to personalize your iPod's look.
+    *   📺 **Fullscreen Video Playback:** Switch to a fullscreen view for an immersive video experience when available.
+*   **Enhanced Playback Experience:**
+    *   ⏯️ **Comprehensive Playback Controls:** Full control over your music, including play, pause, skip forward/backward, and volume adjustments.
+    *   ⚙️ **Advanced Playback Modes:** Utilize shuffle and repeat functionalities for individual songs or entire playlists.
+    *   🎤 **Synced Lyrics & Language Support:** View synchronized lyrics with advanced features like translations, furigana (for Japanese), romaji, and pinyin (for Chinese), enhancing language learning or appreciation.
+
+## User Guide
+
+### Getting Started
+To begin using the iPod app, simply launch it from your ryOS desktop. The app will open to its default menu screen, replicating the classic iPod interface. Use the interactive click wheel to navigate through options and start building your music library.
+
+### Key Actions
+*   **Adding Music:** Select the "Add Songs" option from the main menu and paste a YouTube URL into the prompt to import a new track into your library.
+*   **Browsing Your Library:** Navigate to "Music" using the click wheel to explore your saved songs, artists, and albums. Use Cover Flow for a visually engaging browsing experience.
+*   **Controlling Playback:** While a song is playing, use the central play/pause button, and the skip buttons on the click wheel to manage your listening.
+*   **Accessing Lyrics:** During playback, select the lyrics option to view synchronized lyrics, with options for translations and phonetic aids.
+*   **Adjusting Settings:** Access display and playback mode settings through the main menu to customize your iPod's appearance and playback behavior.
+
+### Tips & Shortcuts
+The click wheel is your primary interaction method; treat it like a physical iPod wheel for navigation. The central button acts as 'select,' while the outer ring allows scrolling through lists and options. Look for visual cues on the screen to understand current menu options and selected items.
+
+## Technical Details
+
+### Window Configuration
+- Default size: 300×480px
+- Minimum size: 300×480px
+
+### Component Architecture
+The app consists of 14 component file(s):
+
+- `components/LyricsDisplay.tsx`
+- `components/FullScreenPortal.tsx`
+- `components/PipPlayer.tsx`
+- `components/IpodAppComponent.tsx`
+- `components/screen/BatteryIndicator.tsx`
+- `components/screen/MenuListItem.tsx`
+- `components/screen/StatusDisplay.tsx`
+- `components/screen/ScrollingText.tsx`
+- `components/screen/Scrollbar.tsx`
+- `components/screen/index.ts`
+- `components/CoverFlow.tsx`
+- `components/IpodMenuBar.tsx`
+- `components/IpodWheel.tsx`
+- `components/IpodScreen.tsx`
+
+### Hooks & Utilities
+**Custom Hooks:**
+- `hooks/index.ts`
+- `hooks/useLibraryUpdateChecker.ts`
+
+**Utilities:**
+No dedicated utility files are listed for this application.
+
+### State Management
+The iPod app leverages Zustand for robust state management, utilizing several stores including `useIpodStore` for core music library and playback state, `useAudioSettingsStore` for audio preferences, `useThemeStore` for visual themes, and `useAppStore` for general application-level settings. This ensures a consistent and reactive user experience across the application.
+
+## Related Apps
+
+The iPod app integrates well with ryOS's system-wide audio controls for volume management. Users might also find the 'Notes' app useful for jotting down song ideas or creating custom playlists for later use.

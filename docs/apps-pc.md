@@ -1,0 +1,69 @@
+# Virtual PC
+
+Virtual PC is a unique ryOS application that brings the nostalgia of classic DOS computing directly to your web browser. It provides a simulated 3D PC environment, allowing users to run vintage games and applications through its integrated js-dos emulator. Experience a blast from the past with full keyboard and mouse support, all within your ryOS desktop.
+
+## Overview
+
+The Virtual PC app transforms your ryOS desktop into a retro computing station, offering a fully functional 3D-rendered personal computer simulation. Powered by the robust js-dos emulator, it provides a seamless way to interact with DOS-based software, from iconic games to productivity tools, without needing to install anything locally. Its primary purpose is to deliver an authentic and immersive retro gaming and computing experience, making classic software accessible and enjoyable for modern users.
+
+Users can dive into a curated selection of pre-loaded DOS games or potentially expand their library (though not explicitly covered in this document, it's an emulator capability). The app prioritizes user interaction, offering responsive controls and display options to tailor the experience. Whether you're a retro enthusiast or simply curious about early computing, Virtual PC offers a fascinating window into the past.
+
+## Features
+
+*   **PC Emulator**: Run a wide array of classic DOS games and applications directly within your ryOS browser environment, powered by js-dos.
+*   **Keyboard Controls**: Leverage your physical keyboard for authentic in-game input and navigation within the emulated DOS environment.
+*   **Mouse Capture**: Seamlessly switch between controlling the ryOS desktop and the emulated PC by clicking inside the Virtual PC window to capture the mouse, and clicking again or pressing `Esc` to release it.
+*   **Full-Screen Mode**: Toggle an immersive, full-screen display via the `View` menu to eliminate distractions and fully enjoy the retro experience.
+*   **Save States**: Preserve your game progress or application state at any point and load it back later using the convenient `File` menu options.
+*   **Aspect Ratio Control**: Optimize your visual experience by switching between classic 4∶3 or modern widescreen aspect ratios to best fit your monitor.
+
+## User Guide
+
+### Getting Started
+To launch Virtual PC, simply click its icon in the ryOS application launcher. Once open, the app will load a default game or DOS environment, ready for interaction. Use your keyboard and mouse to navigate and play.
+
+### Key Actions
+
+*   **Launching Games**: Upon opening, the app typically loads a pre-selected game. You can switch between available games via the `File` menu.
+*   **Interacting with the Emulator**:
+    *   **Keyboard Input**: Your physical keyboard acts as the input for the emulated PC. Type commands or play games as if you were on a real DOS machine.
+    *   **Mouse Control**: Click anywhere inside the Virtual PC window to capture your mouse cursor, allowing you to use it within the emulated environment. To release the mouse and regain control of the ryOS desktop, click again or press the `Escape` key.
+*   **Managing Game Progress**: Access the `File` menu to find options for `Save State` and `Load State`, allowing you to pause and resume your progress at any time.
+*   **Adjusting Display**:
+    *   **Full Screen**: For an uninterrupted experience, select `View` > `Full Screen`. Press `Esc` to exit full-screen mode.
+    *   **Aspect Ratio**: In the `View` menu, you can toggle between `4∶3` (classic) and `Widescreen` to suit your preference or monitor's display.
+
+### Tips & Shortcuts
+
+*   **Mouse Capture Toggle**: The quickest way to capture/release your mouse is to simply click inside/outside the emulator window.
+*   **Full-Screen Quick Exit**: While in full-screen mode, pressing the `Escape` key will typically return you to windowed mode.
+*   **Performance**: For the best experience, ensure your browser and system meet the recommended ryOS specifications. Closing other demanding applications might improve emulator performance.
+
+## Technical Details
+
+### Window Configuration
+- Default size: 645×511px
+- Minimum size: 645×511px
+- Maximum size: 645×511px
+
+### Component Architecture
+The app consists of 2 component file(s):
+
+- `components/PcMenuBar.tsx`: Manages the application's menu bar, handling actions like opening help dialogs, managing game states, and toggling display options.
+- `components/PcAppComponent.tsx`: The main application component, responsible for rendering the Virtual PC window, managing the emulator lifecycle, and coordinating interactions between the menu bar and the js-dos instance.
+
+### Hooks & Utilities
+**Custom Hooks:**
+- `hooks/useJsDos.ts`: A custom hook that encapsulates the logic for integrating and interacting with the js-dos emulator library, managing its lifecycle, events, and commands.
+
+No custom utility files are directly associated with this app's core functionality.
+
+### State Management
+Virtual PC manages its state using a combination of local React component state and global Zustand stores.
+Local `useState` hooks are used to manage UI-specific states such as dialog visibility (`isHelpDialogOpen`, `isAboutDialogOpen`), loading indicators (`isLoading`), emulator interaction states (`isGameRunning`, `isMouseCaptured`, `isFullScreen`), and display preferences (`currentRenderAspect`, `mouseSensitivity`).
+Global state management is handled by Zustand stores, specifically `usePcStore` for managing the list of available games and `useThemeStore` for integrating with ryOS theme settings.
+
+## Related Apps
+
+*   **File Explorer**: While Virtual PC manages its own game files internally, a ryOS File Explorer could eventually be used to import or manage game ROMs and other DOS files.
+*   **Settings**: The ryOS Settings app could provide global preferences that impact Virtual PC, such as system-wide audio settings or display configurations.

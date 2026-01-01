@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>i18n & Hooks - ryOS Docs</title>
+  <title>Soundboard - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -161,15 +161,15 @@
 <a href="/docs/file-system.html" class="">File System</a>
 <a href="/docs/ai-integration.html" class="">AI Integration</a>
 <a href="/docs/build-system.html" class="">Build System</a>
-<a href="/docs/i18n-hooks.html" class="active">i18n & Hooks</a>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<a href="/docs/i18n-hooks.html" class="">i18n & Hooks</a>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/apps.html" class="">Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/apps-admin.html" class="nav-child ">Admin</a>
     <a href="/docs/apps-applet-viewer.html" class="nav-child ">Applet Store</a>
     <a href="/docs/apps-chats.html" class="nav-child ">Chats</a>
@@ -181,7 +181,7 @@
     <a href="/docs/apps-minesweeper.html" class="nav-child ">Minesweeper</a>
     <a href="/docs/apps-paint.html" class="nav-child ">Paint</a>
     <a href="/docs/apps-photo-booth.html" class="nav-child ">Photo Booth</a>
-    <a href="/docs/apps-soundboard.html" class="nav-child ">Soundboard</a>
+    <a href="/docs/apps-soundboard.html" class="nav-child active">Soundboard</a>
     <a href="/docs/apps-synth.html" class="nav-child ">Synth</a>
     <a href="/docs/apps-terminal.html" class="nav-child ">Terminal</a>
     <a href="/docs/apps-textedit.html" class="nav-child ">TextEdit</a>
@@ -193,30 +193,52 @@
     
     <main class="content">
       <article>
-        <h1>i18n & Hooks</h1>
-<p>Internationalization and 29+ custom hooks.</p>
-<h2>Supported Languages</h2>
-<table><thead><tr><th>Code</th><th>Language</th></tr></thead><tbody><tr><td><code>en</code></td><td>English (default)</td></tr><tr><td><code>zh-TW</code></td><td>Chinese Traditional</td></tr><tr><td><code>ja</code></td><td>Japanese</td></tr><tr><td><code>ko</code></td><td>Korean</td></tr><tr><td><code>fr</code></td><td>French</td></tr><tr><td><code>de</code></td><td>German</td></tr><tr><td><code>es</code></td><td>Spanish</td></tr><tr><td><code>pt</code></td><td>Portuguese</td></tr><tr><td><code>it</code></td><td>Italian</td></tr><tr><td><code>ru</code></td><td>Russian</td></tr></tbody></table>
-<h2>Key Hooks</h2>
-<strong>Window & App Management:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useLaunchApp</code></td><td>Launch apps with multi-window support</td></tr><tr><td><code>useWindowManager</code></td><td>Drag, resize, snap-to-edge</td></tr><tr><td><code>useWindowInsets</code></td><td>Theme-dependent constraints</td></tr></tbody></table>
-<strong>Audio System:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useSound</code></td><td>Web Audio API playback</td></tr><tr><td><code>useChatSynth</code></td><td>Chat typing sounds</td></tr><tr><td><code>useTerminalSounds</code></td><td>Terminal feedback</td></tr><tr><td><code>useTtsQueue</code></td><td>Text-to-speech queue</td></tr><tr><td><code>useAudioRecorder</code></td><td>Audio recording</td></tr></tbody></table>
-<strong>Device Detection:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useIsMobile</code></td><td>Mobile detection (<768px)</td></tr><tr><td><code>useIsPhone</code></td><td>Phone detection (<640px)</td></tr><tr><td><code>useMediaQuery</code></td><td>CSS media query hook</td></tr></tbody></table>
-<h2>Using i18n</h2>
-<pre><code>import { useTranslation } from "react-i18next";
-
-const { t } = useTranslation();
-
-t("common.menu.file")              // "File"
-t("apps.finder.name")              // "Finder"
-t("common.dialog.aboutApp", { appName: "Finder" })</code></pre>
+        <h1>Soundboard</h1>
+<p>The Soundboard app for ryOS provides a versatile platform for recording, organizing, and playing short audio clips and sound effects. It's an essential tool for content creators, live streamers, or anyone needing instant access to custom audio cues within their desktop environment.</p>
+<h2>Overview</h2>
+<p>Soundboard transforms your ryOS desktop into a personalized audio control center. Users can quickly record new sound effects directly into dedicated slots, visualize their audio with dynamic waveforms, and trigger playback using simple keyboard shortcuts. The application is designed for efficiency, allowing for rapid sound capture and retrieval, making it ideal for live performances, podcasts, or adding flair to everyday interactions.</p>
+<p>Beyond basic recording and playback, Soundboard emphasizes organization and customization. Users can label their sound effects with titles and emojis for easy identification and manage multiple boards, each holding a distinct collection of sounds. This flexibility ensures that users can curate specific sets of sounds for different projects or moods, all within an intuitive and visually engaging interface.</p>
+<h2>Features</h2>
+<p>The Soundboard app offers a robust set of features designed for flexibility and ease of use:</p>
+<ul><li><strong>Instant Recording & Playback:</strong><ul><li>🎙️ <strong>Record Slot:</strong> Click any sound slot to begin recording audio, and click again to stop.</li><li>▶️ <strong>Keyboard Play:</strong> Trigger sounds instantly by pressing the corresponding 1-9 keyboard keys.</li><li>🌊 <strong>Waveform View:</strong> Observe a live waveform visualization during both recording and playback, providing immediate visual feedback on your audio.</li></ul></li></ul>
+<ul><li><strong>Customization & Organization:</strong><ul><li>✏️ <strong>Customize Slot:</strong> Personalize each sound sample with a unique emoji and title for quick visual identification and better organization.</li><li>📂 <strong>Multiple Boards:</strong> Create, rename, and effortlessly switch between different sound boards, allowing you to manage diverse collections of sound effects for various contexts.</li></ul></li></ul>
+<ul><li><strong>Sharing & Persistence:</strong><ul><li>🌍 <strong>Import / Export:</strong> Easily share your custom sound boards with others by exporting them as files, or import new boards by simply dragging and dropping the file into the app.</li></ul></li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To launch the Soundboard app, locate its icon in the ryOS Application Launcher or search for "Soundboard." Upon opening, you'll be presented with an empty sound grid, ready for you to start recording or importing your audio clips.
+<h3>Key Actions</h3>
+<ul><li><strong>Recording a Sound:</strong> Click on an empty (or existing) sound slot to begin recording. The waveform will appear, showing live audio input. Click the slot again to stop recording. The recorded audio will be saved to that slot.</li></ul>
+<ul><li><strong>Playing a Sound:</strong> To play a sound, either click on its slot or press the corresponding number key (1-9) on your keyboard.</li></ul>
+<ul><li><strong>Customizing a Slot:</strong> Right-click on a sound slot to access options for adding an emoji, changing its title, or deleting the sound.</li></ul>
+<ul><li><strong>Managing Boards:</strong> Use the menu bar to create new boards, switch between existing ones, or rename your current board. This allows you to organize different sets of sounds.</li></ul>
+<ul><li><strong>Importing/Exporting Boards:</strong> Access the "File" menu to export your current board as a file, or simply drag and drop an exported Soundboard file into the app window to import a new board.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li><strong>Keyboard Shortcuts:</strong> The most efficient way to trigger sounds is by using the number keys 1-9, which correspond to the sound slots in the grid.</li></ul>
+<ul><li><strong>Drag-and-Drop:</strong> Quickly import board files by dragging them directly onto the Soundboard app window.</li></ul>
+<ul><li><strong>Visual Feedback:</strong> Pay attention to the waveform view during recording to ensure your audio levels are appropriate and the recording is successful.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 650×475px</li></ul>
+<ul><li>Minimum size: 550×375px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 6 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/soundboard/components/Waveform.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/Waveform.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/soundboard/components/BoardList.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/BoardList.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/soundboard/components/SoundboardMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/SoundboardMenuBar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/soundboard/components/SoundSlot.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/SoundSlot.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/soundboard/components/SoundGrid.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/SoundGrid.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/soundboard/components/SoundboardAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/SoundboardAppComponent.tsx</a></code></li></ul>
+<h3>Hooks & Utilities</h3>
+<p>No custom hooks or utilities.</p>
+<h3>State Management</h3>
+The Soundboard app primarily manages its state using Zustand stores, specifically <code>useSoundboardStore</code>, which handles the persistence and global access to sound board data, including multiple boards, active board selection, and individual sound slot configurations. Local state within components and custom hooks like <code>useSoundboard</code> also manage transient UI states and audio recording/playback processes.
+<h2>Related Apps</h2>
+<p>The Soundboard app works well in conjunction with the ryOS File Manager for organizing and managing exported sound board files, and could be paired with a ryOS Media Player for previewing longer audio clips before importing them into a sound slot.</p>
       </article>
       
       <nav class="nav">
-        <a href="/docs/build-system.html">← Build System</a>
-        <a href="/docs/apps.html">Apps →</a>
+        <a href="/docs/apps-photo-booth.html">← Photo Booth</a>
+        <a href="/docs/apps-synth.html">Synth →</a>
       </nav>
       
     </main>

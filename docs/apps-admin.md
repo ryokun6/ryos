@@ -1,0 +1,63 @@
+# Admin
+
+The Admin app is the central system administration panel for ryOS, providing privileged users with comprehensive tools to manage core system components. It allows for oversight and control of users, chat rooms, and critical system configuration, ensuring the smooth and secure operation of the ryOS environment.
+
+## Overview
+
+The Admin app serves as the backbone for maintaining the integrity and functionality of the ryOS environment. Designed exclusively for administrators, it offers a powerful interface to monitor system health, manage user accounts, and moderate content within the platform's communication channels. Its primary purpose is to ensure smooth operation, enforce policies, and provide a secure and well-managed experience for all ryOS users.
+
+This application consolidates various administrative tasks into a single, intuitive interface, allowing administrators to efficiently perform their duties without needing to access backend systems directly. From user lifecycle management to content moderation and system diagnostics, the Admin app is an indispensable tool for maintaining a healthy and vibrant ryOS ecosystem.
+
+## Features
+
+The Admin app provides a robust set of features tailored for system administrators:
+
+*   👑 **Exclusive Admin Access**: Only the designated admin user (ryo) can launch and interact with this application, ensuring secure and controlled system management.
+*   👥 **User Account Management**: View, search, and manage all registered users within ryOS. This includes the ability to inspect user profiles, modify account settings, and perform actions such as banning users.
+*   💬 **Chat Room Moderation**: Oversee and manage active chat rooms across ryOS. Administrators can identify and delete inappropriate content, helping to maintain a safe and respectful community environment.
+*   📊 **System Statistics & Monitoring**: Access real-time or historical data on system performance, user activity, and other key usage metrics, aiding in operational insights and resource planning.
+*   🎶 **Song Metadata Administration**: Manage cached song metadata within ryOS. This includes functionalities for listing all cached songs, performing bulk imports of new metadata, and deleting individual or all cached song entries.
+
+## User Guide
+
+### Getting Started
+To launch the Admin app, ensure you are logged in as the designated 'ryo' admin user. Locate the 'Admin' icon in your ryOS desktop environment or application launcher and click it. The app will open, presenting a sidebar for quick navigation to different administrative sections.
+
+### Key Actions
+*   **Manage User Accounts**: Navigate to the User Management section via the sidebar to view a comprehensive list of all ryOS users. Utilize the search bar to quickly find specific users and access their profiles for detailed management options, including the ability to ban or update user information.
+*   **Moderate Chat Rooms**: Access the Room Management panel to monitor active chat rooms. Select a room to review its content and take action on inappropriate messages or users, ensuring community guidelines are upheld.
+*   **Review System Statistics**: Visit the Statistics section to examine various system metrics, usage reports, and performance indicators, providing crucial insights into the ryOS platform's health and activity.
+*   **Administer Song Metadata**: Use the dedicated Song Metadata panel to list, import, or delete cached song information. This ensures the music library is accurate, up-to-date, and free from outdated or erroneous entries.
+
+### Tips & Shortcuts
+*   The **sidebar** provides quick navigation between the different administrative modules (e.g., Users, Rooms, Statistics).
+*   Utilize the **search functionality** within user and room management panels to quickly locate specific entries by name or ID.
+*   Look for **refresh icons** (e.g., `RefreshCw`) to update data in tables and ensure you're viewing the most current information.
+*   Be mindful of **confirmation dialogs** (e.g., `ConfirmDialog`) that appear for destructive actions like deleting users or content; these are designed to prevent accidental data loss.
+
+## Technical Details
+
+### Window Configuration
+- Default size: 800×500px
+- Minimum size: 600×400px
+
+### Component Architecture
+The app consists of 5 component file(s):
+
+- `components/SongDetailPanel.tsx`: Handles the display and management of individual song metadata details.
+- `components/AdminMenuBar.tsx`: Provides the top-level menu bar for the Admin app, including general app actions.
+- `components/UserProfilePanel.tsx`: Dedicated panel for viewing and managing individual user profiles and settings.
+- `components/AdminSidebar.tsx`: The primary navigation component, allowing administrators to switch between different management sections.
+- `components/AdminAppComponent.tsx`: The main application component that orchestrates the layout and functionality of the Admin app.
+
+### Hooks & Utilities
+
+No custom hooks or utilities are defined within this app's specific files. The app leverages platform-level hooks and utilities for core functionalities.
+
+### State Management
+The Admin app manages its state using a combination of local React state (`useState`) for UI interactions and component-specific data. It also integrates with global state management via Zustand stores, such as `useThemeStore` for consistent theming across ryOS. Furthermore, it utilizes platform-level hooks like `useAuth` for user authentication verification and `useOffline` to manage its behavior in disconnected environments.
+
+## Related Apps
+
+*   **Settings**: While the Admin app provides system-wide configuration, the Settings app allows individual users to customize their personal ryOS experience and preferences.
+*   **Chat**: The Admin app's Room Management features directly relate to the Chat app, enabling administrators to moderate content and users within its various chat rooms.

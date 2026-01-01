@@ -1,0 +1,58 @@
+# Photo Booth
+
+Photo Booth for ryOS is a delightful and straightforward application designed to capture moments using your webcam. It allows users to take single photos or quick sequences, enhance them with fun visual effects, and easily manage their captures within the ryOS environment.
+
+## Overview
+
+Photo Booth serves as ryOS's primary tool for webcam photography, offering a simple and intuitive interface for capturing images. Whether you're taking a quick profile picture, experimenting with creative filters, or just having fun, the app provides all the necessary features without unnecessary complexity. Its focus is on immediate photo capture and simple post-processing, making it an accessible utility for all ryOS users. Photos are automatically saved and can be easily downloaded or viewed directly within the application.
+
+## Features
+
+*   **Effortless Photo Capture:** Take single photos instantly with a dedicated camera button or capture a rapid sequence of four images with the timer function.
+*   **Dynamic Visual Effects:** Apply a variety of fun and creative visual effects and filters to your live webcam feed before or during photo capture.
+*   **Integrated Photo Management:** View all your captured photos in an organized strip at the bottom of the app window, allowing for quick review.
+*   **Easy Photo Download:** Download any saved photo directly to your ryOS file system with a single click from the photo strip.
+*   **Multi-Camera Support:** Seamlessly switch between multiple connected webcams, if available, to choose your preferred input device.
+*   **Automatic Saving:** All photos taken are automatically saved within the application for convenient access and future download.
+
+## User Guide
+
+### Getting Started
+To launch Photo Booth, simply locate its icon in the ryOS application launcher and click on it. The app will open, activate your webcam, and display a live feed, ready for you to start capturing photos.
+
+### Key Actions
+
+*   **Taking a Photo:** To capture a single image, click the large red camera button located prominently in the application's interface. A shutter sound will confirm your photo has been taken.
+*   **Quick Snaps:** For a burst of photos, click the timer button, positioned to the left of the main camera button. This will initiate a countdown, capturing four photos one second apart, ideal for dynamic shots.
+*   **Applying Visual Effects:** To add fun filters to your live feed, click the effects button (often represented by an icon like a magic wand or palette). This will typically open a menu or carousel of available effects that you can apply in real-time.
+*   **Managing Photos:** Click the photo stack button (usually found on the far left) to toggle the visibility of the photo strip at the bottom of the window. This strip displays all the photos you've taken in the current session.
+*   **Downloading Photos:** To save a photo from the app to your ryOS file system, simply click on the desired photo within the photo strip. The image will be downloaded automatically.
+*   **Switching Cameras:** If your device has multiple webcams connected, look for a camera switch button (often an icon with two arrows forming a circle) to cycle through and select your preferred camera input.
+
+### Tips & Shortcuts
+*   **Swipe Gestures:** On touch-enabled devices or with a trackpad, you can often swipe left or right across the main camera view to quickly cycle through different visual effects.
+*   **Reviewing Photos:** Use the photo strip to quickly review your captures. Clicking on a photo not only downloads it but might also bring it into a larger preview for closer inspection.
+
+## Technical Details
+
+### Window Configuration
+*   Default size: 644×510px
+*   Minimum size: 644×510px
+*   Maximum size: 644×510px
+
+### Component Architecture
+The app consists of 2 component file(s):
+
+*   `components/PhotoBoothComponent.tsx`: The main application component, handling webcam feed, capture logic, effects, and overall UI.
+*   `components/PhotoBoothMenuBar.tsx`: Manages the application's menu bar, providing access to help, about information, and potentially other settings.
+
+### Hooks & Utilities
+
+No custom hooks or utilities are explicitly defined within the app's direct architecture.
+
+### State Management
+Photo Booth manages its application state using Zustand, a fast and scalable state-management solution. This includes managing the captured photos, selected effects, camera status, and other UI-related states.
+
+## Related Apps
+
+*   **Finder:** After downloading photos from Photo Booth, you can use the ryOS Finder app to locate, rename, move, or share your captured images within your file system.

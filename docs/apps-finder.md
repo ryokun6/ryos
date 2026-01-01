@@ -1,0 +1,77 @@
+# Finder
+
+Finder is the core file management application for ryOS, providing users with a familiar interface to browse, organize, and manage their files within a secure, virtualized file system powered by IndexedDB. It serves as your primary interaction point for all documents, applications, and data stored within your ryOS environment.
+
+## Overview
+
+The ryOS Finder app acts as the central hub for all file-related operations, offering an intuitive and efficient way to navigate your digital workspace. It allows users to explore a hierarchical file system, providing a desktop-like experience for managing personal and system files. By leveraging IndexedDB, Finder ensures that your data is persistently stored and quickly accessible across sessions, maintaining a consistent and reliable user experience. Designed for both simplicity and power, Finder streamlines file organization, from creating new directories to managing the trash, empowering users with essential tools for a productive workflow within ryOS.
+
+## Features
+
+*   **Intuitive Navigation:**
+    *   Effortlessly move through directories using "Back" and "Forward" navigation buttons.
+    *   Quickly jump to any specific path using the address bar.
+    *   Access common and important locations like Documents, Applications, and Trash instantly via the "Go" menu.
+*   **Comprehensive File Management:**
+    *   Create new folders to effectively organize your content.
+    *   Rename files and folders with ease to maintain clarity.
+    *   Move items between directories using a simple drag-and-drop interface.
+    *   Delete files by dragging them to the Trash.
+    *   Permanently remove unwanted items by emptying the Trash.
+*   **Flexible Viewing & Sorting:**
+    *   Adjust the visual presentation of files and folders by switching between different icon sizes.
+    *   Sort items by various criteria, including Name, Kind (file type), Size, or Date modified, to quickly locate specific content.
+*   **Quick Access & System Insights:**
+    *   Directly jump to predefined system locations like Documents, Applications, or Trash from the "Go" menu.
+    *   Monitor your storage usage and item count directly in the window footer, providing real-time information about your file system.
+
+## User Guide
+
+### Getting Started
+To launch the Finder app, simply click its icon in the ryOS Dock or locate it within the Applications folder. Upon opening, Finder will typically display your home directory, allowing you to immediately begin browsing and managing your files.
+
+### Key Actions
+*   **Navigating:** Use the `Back` (left arrow) and `Forward` (right arrow) buttons in the toolbar to revisit previous locations. For direct access, type a path into the address bar and press Enter, or utilize the `Go` menu to jump to system folders like `Documents`, `Applications`, or `Trash`.
+*   **Creating Folders:** To create a new folder in the current directory, navigate to the `File` menu and select "New Folder", or right-click in an empty area of the file list and choose "New Folder" from the context menu.
+*   **Managing Items:**
+    *   **Rename:** Right-click on a file or folder and choose "Rename" to change its name.
+    *   **Move:** Drag a file or folder from its current location and drop it into another folder to move it.
+    *   **Delete:** Drag files or folders to the `Trash` icon in the Finder window's footer or the ryOS Dock to send them to the trash.
+*   **Viewing and Sorting:** Access the `View` menu or use the dedicated toolbar options to change the icon size (e.g., small, medium, large) or to sort items by `Name`, `Kind`, `Size`, or `Date` to organize your view.
+*   **Emptying Trash:** To permanently delete items from your system, open the `Trash` folder, then select "Empty Trash" from the `File` menu or right-click on the Trash icon in the Dock.
+
+### Tips & Shortcuts
+*   **Drag & Drop Efficiency:** Finder fully supports drag-and-drop functionality for moving, copying (if applicable), and deleting files, as well as interacting with other ryOS applications.
+*   **Context Menus:** Right-clicking on files, folders, or empty space within the file list brings up context-sensitive menus, offering quick access to common actions like renaming, opening, or creating new items.
+*   **Address Bar Power:** The address bar not only displays your current path but also allows you to type in full paths or even just folder names for quick navigation.
+
+## Technical Details
+
+### Window Configuration
+-   Default size: 400×300px
+-   Minimum size: 300×200px
+
+### Component Architecture
+The app consists of 4 component file(s):
+
+-   `components/FinderAppComponent.tsx`: The primary application component, orchestrating the overall layout, managing global state, and integrating various sub-components.
+-   `components/FileList.tsx`: Responsible for rendering the list of files and folders within the current directory, handling user interactions such as selection, drag-and-drop, and displaying file icons.
+-   `components/FinderMenuBar.tsx`: Implements the application's menu bar, providing access to `File`, `Edit`, `View`, and `Go` menus, along with navigation controls.
+-   `components/FileIcon.tsx`: A reusable presentational component dedicated to displaying individual file and folder icons, potentially with type-specific visual cues.
+
+### Hooks & Utilities
+**Custom Hooks:**
+-   `hooks/useFileSystem.ts`: This custom hook encapsulates the core logic for interacting with the IndexedDB-backed virtual file system. It provides a clean API for performing CRUD (Create, Read, Update, Delete) operations on files and folders, handling path resolution, and managing file system state.
+
+**Utility Files:**
+No custom utility files are explicitly defined for this app.
+
+### State Management
+The Finder app employs a robust state management strategy combining global and local approaches:
+*   **Zustand Stores:** It heavily utilizes Zustand for global state management, including `useFinderStore` for app-specific settings like the current path, view type, and sort order; `useFilesStore` for broader file-related data; `useAppStore` for overall application lifecycle; and `useThemeStore` for user interface theme preferences.
+*   **Local Component State:** Standard React `useState` and `useRef` hooks are used within individual components (e.g., `FinderAppComponent`, `FileList`) to manage ephemeral UI state, such as dialog visibility, selected items, input field values, and other component-specific interactions.
+*   **`useFileSystem` Hook:** This custom hook acts as a specialized state manager for the file system itself, abstracting away the complexities of IndexedDB interactions and providing a consistent interface for file system manipulation.
+
+## Related Apps
+
+Finder integrates seamlessly with other ryOS applications; for instance, files can be opened by their respective default applications (e.g., a text file by the `Text Editor` app), and newly installed applications from the `App Store` automatically appear in the Applications folder.

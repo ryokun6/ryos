@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>i18n & Hooks - ryOS Docs</title>
+  <title>Minesweeper - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -161,15 +161,15 @@
 <a href="/docs/file-system.html" class="">File System</a>
 <a href="/docs/ai-integration.html" class="">AI Integration</a>
 <a href="/docs/build-system.html" class="">Build System</a>
-<a href="/docs/i18n-hooks.html" class="active">i18n & Hooks</a>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<a href="/docs/i18n-hooks.html" class="">i18n & Hooks</a>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/apps.html" class="">Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/apps-admin.html" class="nav-child ">Admin</a>
     <a href="/docs/apps-applet-viewer.html" class="nav-child ">Applet Store</a>
     <a href="/docs/apps-chats.html" class="nav-child ">Chats</a>
@@ -178,7 +178,7 @@
     <a href="/docs/apps-internet-explorer.html" class="nav-child ">Internet Explorer</a>
     <a href="/docs/apps-ipod.html" class="nav-child ">iPod</a>
     <a href="/docs/apps-karaoke.html" class="nav-child ">Karaoke</a>
-    <a href="/docs/apps-minesweeper.html" class="nav-child ">Minesweeper</a>
+    <a href="/docs/apps-minesweeper.html" class="nav-child active">Minesweeper</a>
     <a href="/docs/apps-paint.html" class="nav-child ">Paint</a>
     <a href="/docs/apps-photo-booth.html" class="nav-child ">Photo Booth</a>
     <a href="/docs/apps-soundboard.html" class="nav-child ">Soundboard</a>
@@ -193,30 +193,50 @@
     
     <main class="content">
       <article>
-        <h1>i18n & Hooks</h1>
-<p>Internationalization and 29+ custom hooks.</p>
-<h2>Supported Languages</h2>
-<table><thead><tr><th>Code</th><th>Language</th></tr></thead><tbody><tr><td><code>en</code></td><td>English (default)</td></tr><tr><td><code>zh-TW</code></td><td>Chinese Traditional</td></tr><tr><td><code>ja</code></td><td>Japanese</td></tr><tr><td><code>ko</code></td><td>Korean</td></tr><tr><td><code>fr</code></td><td>French</td></tr><tr><td><code>de</code></td><td>German</td></tr><tr><td><code>es</code></td><td>Spanish</td></tr><tr><td><code>pt</code></td><td>Portuguese</td></tr><tr><td><code>it</code></td><td>Italian</td></tr><tr><td><code>ru</code></td><td>Russian</td></tr></tbody></table>
-<h2>Key Hooks</h2>
-<strong>Window & App Management:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useLaunchApp</code></td><td>Launch apps with multi-window support</td></tr><tr><td><code>useWindowManager</code></td><td>Drag, resize, snap-to-edge</td></tr><tr><td><code>useWindowInsets</code></td><td>Theme-dependent constraints</td></tr></tbody></table>
-<strong>Audio System:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useSound</code></td><td>Web Audio API playback</td></tr><tr><td><code>useChatSynth</code></td><td>Chat typing sounds</td></tr><tr><td><code>useTerminalSounds</code></td><td>Terminal feedback</td></tr><tr><td><code>useTtsQueue</code></td><td>Text-to-speech queue</td></tr><tr><td><code>useAudioRecorder</code></td><td>Audio recording</td></tr></tbody></table>
-<strong>Device Detection:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useIsMobile</code></td><td>Mobile detection (<768px)</td></tr><tr><td><code>useIsPhone</code></td><td>Phone detection (<640px)</td></tr><tr><td><code>useMediaQuery</code></td><td>CSS media query hook</td></tr></tbody></table>
-<h2>Using i18n</h2>
-<pre><code>import { useTranslation } from "react-i18next";
+        <h1>Minesweeper</h1>
+<p>Minesweeper is a classic puzzle game available in ryOS, challenging users to locate hidden mines on a grid without detonating them. It provides a quick and engaging mental exercise directly within your web-based desktop environment.</p>
+<h2>Overview</h2>
+<p>Minesweeper offers the familiar and addictive gameplay experience of the timeless puzzle game. The core objective is to uncover all safe cells on the board while avoiding the hidden mines. Players use logic and deduction, guided by numbers on revealed cells that indicate how many mines are adjacent to them.</p>
+<p>Designed for both casual players and those seeking a quick mental workout, Minesweeper integrates seamlessly into the ryOS environment. Its intuitive controls are optimized for both desktop and mobile interfaces, ensuring a smooth experience regardless of the device. The app tracks game progress with a timer and a mine counter, adding a competitive element for players aiming to improve their times.</p>
+<h2>Features</h2>
+<ul><li><strong>Classic Minesweeper Gameplay:</strong> Engage in the traditional game where you strategically reveal cells and use numerical clues to deduce mine locations.</li></ul>
+<ul><li><strong>Intuitive Control Scheme:</strong><ul><li><strong>Desktop Controls:</strong> Left-click to reveal a cell, right-click to flag a suspected mine, and double-click a revealed number to automatically reveal its unflagged neighbors.</li><li><strong>Mobile Controls:</strong> Tap a cell to reveal it, and long-press a cell to flag or unflag a mine.</li></ul></li></ul>
+<ul><li><strong>Real-time Game Tracking:</strong> A dedicated top bar displays the elapsed game time and the count of remaining unflagged mines.</li></ul>
+<ul><li><strong>Easy Game Restart:</strong> Quickly begin a new game at any point by clicking the smiley face button on the top bar or selecting <code>Game ▸ New</code> from the menu.</li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+Launch Minesweeper from your ryOS app launcher. The game starts immediately with a new board. Begin by clicking or tapping cells to reveal them and start your deduction process.
+<h3>Key Actions</h3>
+<ul><li><strong>Reveal a Cell:</strong> Click the left mouse button (desktop) or tap (mobile) on any unrevealed cell. If it's a mine, the game ends. If it's a number, it indicates how many mines are in the 8 surrounding cells.</li></ul>
+<ul><li><strong>Flag a Mine:</strong> To mark a cell you suspect contains a mine, right-click (desktop) or long-press (mobile) on it. This places a flag, preventing accidental revelation and helping you keep track.</li></ul>
+<ul><li><strong>Auto-Reveal Neighbors:</strong> Once you've confidently flagged all the mines adjacent to a revealed number cell, you can double-click that number (desktop only) to automatically reveal all its unflagged neighbors. This is a powerful shortcut for clearing safe areas quickly.</li></ul>
+<ul><li><strong>Restart Game:</strong> If you want to start a fresh board, simply click the smiley face icon in the top bar or navigate to <code>Game ▸ New</code> in the application menu.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li>Use flags strategically to narrow down potential mine locations. Flagging a cell you're unsure about is safer than revealing it.</li></ul>
+<ul><li>The double-click auto-reveal feature is crucial for efficient play on desktop. Master its use to speed up your game times.</li></ul>
+<ul><li>Don't hesitate to restart if you find yourself in a tricky spot or make a mistake; the game is designed for quick, repeated plays.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 305×400px</li></ul>
+<ul><li>Minimum size: 305×400px</li></ul>
+<ul><li>Maximum size: 305×400px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 2 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/minesweeper/components/MinesweeperAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/MinesweeperAppComponent.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/minesweeper/components/MinesweeperMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/MinesweeperMenuBar.tsx</a></code></li></ul>
+<h3>Hooks & Utilities</h3>
+<p>No custom hooks or utilities.</p>
+<h3>State Management</h3>
+The Minesweeper app primarily manages its game state using local component state, leveraging React's <code>useState</code> hook for tracking the game board, cell properties (revealed, flagged, mine status), game status (active, won, lost), and the timer. It also integrates with ryOS-wide state management via <code>useThemeStore</code> for theme synchronization and <code>useTranslation</code> for internationalization, ensuring a consistent user experience within the desktop environment.
+<h2>Related Apps</h2>
+<ul><li><strong>Solitaire:</strong> Another classic single-player puzzle game found in ryOS, offering a different kind of mental challenge.</li></ul>
+<ul><li><strong>Calculator:</strong> A simple utility app, similar to Minesweeper in its direct, focused functionality and quick accessibility.</li></ul>
 
-const { t } = useTranslation();
-
-t("common.menu.file")              // "File"
-t("apps.finder.name")              // "Finder"
-t("common.dialog.aboutApp", { appName: "Finder" })</code></pre>
       </article>
       
       <nav class="nav">
-        <a href="/docs/build-system.html">← Build System</a>
-        <a href="/docs/apps.html">Apps →</a>
+        <a href="/docs/apps-karaoke.html">← Karaoke</a>
+        <a href="/docs/apps-paint.html">Paint →</a>
       </nav>
       
     </main>

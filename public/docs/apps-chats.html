@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>i18n & Hooks - ryOS Docs</title>
+  <title>Chats - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -161,18 +161,18 @@
 <a href="/docs/file-system.html" class="">File System</a>
 <a href="/docs/ai-integration.html" class="">AI Integration</a>
 <a href="/docs/build-system.html" class="">Build System</a>
-<a href="/docs/i18n-hooks.html" class="active">i18n & Hooks</a>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<a href="/docs/i18n-hooks.html" class="">i18n & Hooks</a>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/apps.html" class="">Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/apps-admin.html" class="nav-child ">Admin</a>
     <a href="/docs/apps-applet-viewer.html" class="nav-child ">Applet Store</a>
-    <a href="/docs/apps-chats.html" class="nav-child ">Chats</a>
+    <a href="/docs/apps-chats.html" class="nav-child active">Chats</a>
     <a href="/docs/apps-control-panels.html" class="nav-child ">Control Panels</a>
     <a href="/docs/apps-finder.html" class="nav-child ">Finder</a>
     <a href="/docs/apps-internet-explorer.html" class="nav-child ">Internet Explorer</a>
@@ -193,30 +193,57 @@
     
     <main class="content">
       <article>
-        <h1>i18n & Hooks</h1>
-<p>Internationalization and 29+ custom hooks.</p>
-<h2>Supported Languages</h2>
-<table><thead><tr><th>Code</th><th>Language</th></tr></thead><tbody><tr><td><code>en</code></td><td>English (default)</td></tr><tr><td><code>zh-TW</code></td><td>Chinese Traditional</td></tr><tr><td><code>ja</code></td><td>Japanese</td></tr><tr><td><code>ko</code></td><td>Korean</td></tr><tr><td><code>fr</code></td><td>French</td></tr><tr><td><code>de</code></td><td>German</td></tr><tr><td><code>es</code></td><td>Spanish</td></tr><tr><td><code>pt</code></td><td>Portuguese</td></tr><tr><td><code>it</code></td><td>Italian</td></tr><tr><td><code>ru</code></td><td>Russian</td></tr></tbody></table>
-<h2>Key Hooks</h2>
-<strong>Window & App Management:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useLaunchApp</code></td><td>Launch apps with multi-window support</td></tr><tr><td><code>useWindowManager</code></td><td>Drag, resize, snap-to-edge</td></tr><tr><td><code>useWindowInsets</code></td><td>Theme-dependent constraints</td></tr></tbody></table>
-<strong>Audio System:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useSound</code></td><td>Web Audio API playback</td></tr><tr><td><code>useChatSynth</code></td><td>Chat typing sounds</td></tr><tr><td><code>useTerminalSounds</code></td><td>Terminal feedback</td></tr><tr><td><code>useTtsQueue</code></td><td>Text-to-speech queue</td></tr><tr><td><code>useAudioRecorder</code></td><td>Audio recording</td></tr></tbody></table>
-<strong>Device Detection:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useIsMobile</code></td><td>Mobile detection (<768px)</td></tr><tr><td><code>useIsPhone</code></td><td>Phone detection (<640px)</td></tr><tr><td><code>useMediaQuery</code></td><td>CSS media query hook</td></tr></tbody></table>
-<h2>Using i18n</h2>
-<pre><code>import { useTranslation } from "react-i18next";
-
-const { t } = useTranslation();
-
-t("common.menu.file")              // "File"
-t("apps.finder.name")              // "Finder"
-t("common.dialog.aboutApp", { appName: "Finder" })</code></pre>
+        <h1>Chats</h1>
+<p>Chats is the central communication hub for ryOS, enabling users to interact with the intelligent Ryo AI assistant, engage in public chat rooms, and even control their desktop environment using natural language commands. It streamlines various ryOS functionalities into a single, intuitive interface.</p>
+<h2>Overview</h2>
+<p>The Chats app serves as a versatile communication platform within ryOS. Its primary function is to provide direct access to the Ryo AI assistant, a powerful tool capable of understanding natural language requests to assist with coding, provide help with ryOS features, and even manage files and applications. Beyond its AI capabilities, Chats also fosters community interaction by allowing users to join public chat rooms, connecting with other ryOS users.</p>
+<p>Whether you need to quickly generate a code snippet, find a specific file, launch an app, or simply chat with fellow users, Chats offers a unified and efficient way to manage your digital interactions. Its blend of AI-driven productivity and social connectivity makes it an indispensable part of the ryOS experience, designed to enhance user workflow and collaboration.</p>
+<h2>Features</h2>
+<ul><li><strong>Ryo AI Assistant:</strong><ul><li><strong>Intelligent Conversation:</strong> Chat with Ryo for general assistance, code generation, or specific help regarding ryOS functionalities.</li><li><strong>File & Applet Management:</strong> Request Ryo to create new HTML applets, edit existing documents, read file contents, or search the Applets Store for new tools.</li><li><strong>System Control:</strong> Command Ryo to launch or close applications, switch between ryOS themes, or manage playback in the iPod app.</li><li><strong>Contextual Assistance:</strong> Send a 👋 nudge to receive context-aware tips from Ryo. When music is playing, Ryo automatically enters "DJ Mode," offering relevant music-related interactions.</li></ul></li></ul>
+<ul><li><strong>Interactive Chat Rooms:</strong><ul><li><strong>Public Engagement:</strong> Join various public chat rooms to connect and communicate with other ryOS users.</li><li><strong>AI Integration in Rooms:</strong> Mention <code>@ryo</code> within any chat room to solicit responses or assistance from the AI assistant in a public context.</li></ul></li></ul>
+<ul><li><strong>Voice Messaging:</strong><ul><li><strong>Push-to-Talk:</strong> Utilize the Push-to-Talk feature by holding the <code>Space</code> key or tapping the microphone button to record and send voice messages effortlessly.</li></ul></li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To launch the Chats app, simply click its icon in the ryOS dock or navigate to it via the Applets Store. Upon opening, you'll be presented with the chat interface, ready for you to interact with Ryo or join a chat room.
+<h3>Key Actions</h3>
+<ul><li><strong>To chat with Ryo:</strong> Type your message directly into the input field at the bottom of the window and press Enter.</li></ul>
+<ul><li><strong>To create or edit files:</strong> Simply ask Ryo, e.g., "Ryo, create a new HTML applet called 'MyWidget'" or "Ryo, edit my 'Notes.txt' file."</li></ul>
+<ul><li><strong>To control ryOS apps:</strong> Issue commands like "Ryo, launch Calculator" or "Ryo, switch to Dark theme."</li></ul>
+<ul><li><strong>To join a chat room:</strong> Look for the chat room sidebar (if visible) or use a menu option to browse and join available rooms.</li></ul>
+<ul><li><strong>To send a voice message:</strong> Hold down the <code>Space</code> key while speaking, then release to send. Alternatively, click the microphone icon to record.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li><strong>Push-to-Talk:</strong> Hold the <code>Space</code> key for quick voice messages.</li></ul>
+<ul><li><strong>AI in Chat Rooms:</strong> Type <code>@ryo</code> followed by your message in a chat room to get an AI response.</li></ul>
+<ul><li><strong>Contextual Help:</strong> Send a <code>👋 nudge</code> message to Ryo for helpful tips based on your current ryOS activity.</li></ul>
+<ul><li><strong>DJ Mode:</strong> If the Music app is playing, Ryo will automatically offer music-related interactions.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li><strong>Default size:</strong> 560×360px</li></ul>
+<ul><li><strong>Minimum size:</strong> 300×320px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 7 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatMessages.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatMessages.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/TokenStatus.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/TokenStatus.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/CreateRoomDialog.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/CreateRoomDialog.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatRoomSidebar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatRoomSidebar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatsMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatsMenuBar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatInput.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatInput.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/components/ChatsAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/ChatsAppComponent.tsx</a></code></li></ul>
+<h3>Hooks & Utilities</h3>
+<strong>Custom Hooks:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/hooks/useTokenRefresh.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useTokenRefresh.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/hooks/useRyoChat.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useRyoChat.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/hooks/useChatRoom.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useChatRoom.ts</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/hooks/useAiChat.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useAiChat.ts</a></code></li></ul>
+<h3>State Management</h3>
+The Chats app leverages a Zustand store, specifically <code>useChatsStore</code>, for managing global application state related to chat messages, room information, and other UI states. Local component state is also utilized where appropriate for temporary UI interactions.
+<h2>Related Apps</h2>
+<p>The <strong>Files</strong> app works seamlessly with Chats, as Ryo can directly interact with documents and applets stored within your file system. The <strong>Music</strong> app integrates with Chats, enabling Ryo's "DJ Mode" for a more interactive audio experience.</p>
       </article>
       
       <nav class="nav">
-        <a href="/docs/build-system.html">← Build System</a>
-        <a href="/docs/apps.html">Apps →</a>
+        <a href="/docs/apps-applet-viewer.html">← Applet Store</a>
+        <a href="/docs/apps-control-panels.html">Control Panels →</a>
       </nav>
       
     </main>

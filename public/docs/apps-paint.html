@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>i18n & Hooks - ryOS Docs</title>
+  <title>Paint - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -161,15 +161,15 @@
 <a href="/docs/file-system.html" class="">File System</a>
 <a href="/docs/ai-integration.html" class="">AI Integration</a>
 <a href="/docs/build-system.html" class="">Build System</a>
-<a href="/docs/i18n-hooks.html" class="active">i18n & Hooks</a>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<a href="/docs/i18n-hooks.html" class="">i18n & Hooks</a>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/apps.html" class="">Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/apps-admin.html" class="nav-child ">Admin</a>
     <a href="/docs/apps-applet-viewer.html" class="nav-child ">Applet Store</a>
     <a href="/docs/apps-chats.html" class="nav-child ">Chats</a>
@@ -179,7 +179,7 @@
     <a href="/docs/apps-ipod.html" class="nav-child ">iPod</a>
     <a href="/docs/apps-karaoke.html" class="nav-child ">Karaoke</a>
     <a href="/docs/apps-minesweeper.html" class="nav-child ">Minesweeper</a>
-    <a href="/docs/apps-paint.html" class="nav-child ">Paint</a>
+    <a href="/docs/apps-paint.html" class="nav-child active">Paint</a>
     <a href="/docs/apps-photo-booth.html" class="nav-child ">Photo Booth</a>
     <a href="/docs/apps-soundboard.html" class="nav-child ">Soundboard</a>
     <a href="/docs/apps-synth.html" class="nav-child ">Synth</a>
@@ -193,30 +193,59 @@
     
     <main class="content">
       <article>
-        <h1>i18n & Hooks</h1>
-<p>Internationalization and 29+ custom hooks.</p>
-<h2>Supported Languages</h2>
-<table><thead><tr><th>Code</th><th>Language</th></tr></thead><tbody><tr><td><code>en</code></td><td>English (default)</td></tr><tr><td><code>zh-TW</code></td><td>Chinese Traditional</td></tr><tr><td><code>ja</code></td><td>Japanese</td></tr><tr><td><code>ko</code></td><td>Korean</td></tr><tr><td><code>fr</code></td><td>French</td></tr><tr><td><code>de</code></td><td>German</td></tr><tr><td><code>es</code></td><td>Spanish</td></tr><tr><td><code>pt</code></td><td>Portuguese</td></tr><tr><td><code>it</code></td><td>Italian</td></tr><tr><td><code>ru</code></td><td>Russian</td></tr></tbody></table>
-<h2>Key Hooks</h2>
-<strong>Window & App Management:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useLaunchApp</code></td><td>Launch apps with multi-window support</td></tr><tr><td><code>useWindowManager</code></td><td>Drag, resize, snap-to-edge</td></tr><tr><td><code>useWindowInsets</code></td><td>Theme-dependent constraints</td></tr></tbody></table>
-<strong>Audio System:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useSound</code></td><td>Web Audio API playback</td></tr><tr><td><code>useChatSynth</code></td><td>Chat typing sounds</td></tr><tr><td><code>useTerminalSounds</code></td><td>Terminal feedback</td></tr><tr><td><code>useTtsQueue</code></td><td>Text-to-speech queue</td></tr><tr><td><code>useAudioRecorder</code></td><td>Audio recording</td></tr></tbody></table>
-<strong>Device Detection:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useIsMobile</code></td><td>Mobile detection (<768px)</td></tr><tr><td><code>useIsPhone</code></td><td>Phone detection (<640px)</td></tr><tr><td><code>useMediaQuery</code></td><td>CSS media query hook</td></tr></tbody></table>
-<h2>Using i18n</h2>
-<pre><code>import { useTranslation } from "react-i18next";
-
-const { t } = useTranslation();
-
-t("common.menu.file")              // "File"
-t("apps.finder.name")              // "Finder"
-t("common.dialog.aboutApp", { appName: "Finder" })</code></pre>
+        <h1>Paint</h1>
+<p>Paint (v1.0.4) is a core ryOS application designed for creative expression and basic image manipulation. It provides a familiar canvas-based interface for drawing, editing, and applying effects to digital images, making digital art accessible for all ryOS users.</p>
+<h2>Overview</h2>
+<p>Paint serves as a versatile image creation and editing tool within the ryOS environment. Users can leverage its intuitive interface to sketch ideas, create simple graphics, or perform quick edits on existing images. Its focus is on accessibility and ease of use, making it suitable for both casual users and those needing a straightforward tool for visual tasks.</p>
+<p>The application supports fundamental drawing operations, comprehensive color management, and a selection of artistic filters. From freehand drawing with various brushes to filling areas with unique patterns, Paint offers a robust yet approachable experience for digital artistry and basic photo enhancements.</p>
+<h2>Features</h2>
+<ul><li><strong>Intuitive Drawing Tools</strong>: A comprehensive toolbar on the left provides various drawing implements, including pencils, brushes, shapes (lines, rectangles, circles), and more, to bring your ideas to life on the canvas.</li></ul>
+<ul><li><strong>Vibrant Color Palette</strong>: Easily select and apply colors from a dedicated palette located below the tools, allowing for precise control over your artwork's hues and fills.</li></ul>
+<ul><li><strong>Creative Patterns</strong>: Enhance your designs by choosing from a diverse range of patterns in the bottom palette to fill shapes and areas, adding texture and visual interest to your artwork.</li></ul>
+<ul><li><strong>Image Filters</strong>: Transform your images with a suite of built-in filters like Invert, Grayscale, and Brightness adjustments, accessible via the <code>Filters</code> menu for quick visual effects.</li></ul>
+<ul><li><strong>Undo/Redo Functionality</strong>: Effortlessly correct mistakes and experiment with confidence using the undo feature, ensuring a smooth and forgiving creative workflow.</li></ul>
+<ul><li><strong>Flexible Saving Options</strong>: Save your creations to the ryOS file system, either preserving the current file using <code>File > Save</code> or saving a new version with a different name using <code>File > Save As</code>.</li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To launch Paint, locate its icon in the ryOS application launcher or open an image file associated with Paint. Once open, you'll be presented with a blank canvas, ready for your artistic endeavors. Select a tool, pick a color, and start drawing!
+<h3>Key Actions</h3>
+<ul><li><strong>Drawing</strong>: Select a tool from the left-hand toolbar (e.g., Pencil, Brush, Line, Rectangle) and click/drag on the canvas to draw. Adjust stroke width using the settings panel.</li></ul>
+<ul><li><strong>Choosing Colors</strong>: Click on a color swatch in the color palette located below the tools to set your active drawing color for lines, fills, or text.</li></ul>
+<ul><li><strong>Applying Patterns</strong>: Select a pattern from the bottom palette to use it for filling shapes or areas with predefined textures.</li></ul>
+<ul><li><strong>Undoing Actions</strong>: If you make a mistake, navigate to <code>Edit > Undo</code> in the menu bar or use the keyboard shortcut <code>⌘Z</code> to revert your last action.</li></ul>
+<ul><li><strong>Saving Your Work</strong>: To save your current artwork, go to <code>File > Save</code>. If you wish to save it under a new name or in a different location, use <code>File > Save As</code>.</li></ul>
+<ul><li><strong>Applying Filters</strong>: Explore various visual effects by selecting options from the <code>Filters</code> menu, such as <code>Invert</code>, <code>Grayscale</code>, or <code>Brightness</code>, to quickly alter your image's appearance.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li>Use <code>⌘Z</code> to quickly undo your last drawing or editing action.</li></ul>
+<ul><li>Experiment with different brush sizes using the stroke settings to vary your line thickness and create diverse visual effects.</li></ul>
+<ul><li>Combine patterns with different foreground and background colors for unique textural designs.</li></ul>
+<ul><li>Before applying a filter, consider saving your current progress using <code>File > Save As</code> to easily revert if you don't like the result, preserving your original artwork.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 713×480px</li></ul>
+<ul><li>Minimum size: 400×400px</li></ul>
+<ul><li>Maximum size: 713×535px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 8 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/paint/components/PaintToolbar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintToolbar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/paint/components/PaintFiltersMenu.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintFiltersMenu.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/paint/components/PaintColorPalette.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintColorPalette.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/paint/components/PaintStrokeSettings.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintStrokeSettings.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/paint/components/PaintCanvas.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintCanvas.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/paint/components/PaintAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintAppComponent.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/paint/components/PaintMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintMenuBar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/paint/components/PaintPatternPalette.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/PaintPatternPalette.tsx</a></code></li></ul>
+<h3>Hooks & Utilities</h3>
+<p>No custom hooks or utilities.</p>
+<h3>State Management</h3>
+Paint manages its application state using a combination of local React component state (e.g., <code>useState</code> for selected tools, patterns, stroke width, and undo/redo capabilities) and global state managed through Zustand stores (<code>usePaintStore</code> for application-specific global state and <code>useAppStore</code> for general ryOS application management).
+<h2>Related Apps</h2>
+<p>Paint works well alongside the <strong>Finder</strong> app for managing and organizing your saved image files, and <strong>Photos</strong> for viewing and quick touch-ups of more complex images.</p>
       </article>
       
       <nav class="nav">
-        <a href="/docs/build-system.html">← Build System</a>
-        <a href="/docs/apps.html">Apps →</a>
+        <a href="/docs/apps-minesweeper.html">← Minesweeper</a>
+        <a href="/docs/apps-pc.html">Virtual PC →</a>
       </nav>
       
     </main>

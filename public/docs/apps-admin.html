@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>i18n & Hooks - ryOS Docs</title>
+  <title>Admin - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -161,16 +161,16 @@
 <a href="/docs/file-system.html" class="">File System</a>
 <a href="/docs/ai-integration.html" class="">AI Integration</a>
 <a href="/docs/build-system.html" class="">Build System</a>
-<a href="/docs/i18n-hooks.html" class="active">i18n & Hooks</a>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<a href="/docs/i18n-hooks.html" class="">i18n & Hooks</a>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/apps.html" class="">Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/apps-admin.html" class="nav-child ">Admin</a>
+  <div class="nav-children" style="display: block;">
+    <a href="/docs/apps-admin.html" class="nav-child active">Admin</a>
     <a href="/docs/apps-applet-viewer.html" class="nav-child ">Applet Store</a>
     <a href="/docs/apps-chats.html" class="nav-child ">Chats</a>
     <a href="/docs/apps-control-panels.html" class="nav-child ">Control Panels</a>
@@ -193,30 +193,55 @@
     
     <main class="content">
       <article>
-        <h1>i18n & Hooks</h1>
-<p>Internationalization and 29+ custom hooks.</p>
-<h2>Supported Languages</h2>
-<table><thead><tr><th>Code</th><th>Language</th></tr></thead><tbody><tr><td><code>en</code></td><td>English (default)</td></tr><tr><td><code>zh-TW</code></td><td>Chinese Traditional</td></tr><tr><td><code>ja</code></td><td>Japanese</td></tr><tr><td><code>ko</code></td><td>Korean</td></tr><tr><td><code>fr</code></td><td>French</td></tr><tr><td><code>de</code></td><td>German</td></tr><tr><td><code>es</code></td><td>Spanish</td></tr><tr><td><code>pt</code></td><td>Portuguese</td></tr><tr><td><code>it</code></td><td>Italian</td></tr><tr><td><code>ru</code></td><td>Russian</td></tr></tbody></table>
-<h2>Key Hooks</h2>
-<strong>Window & App Management:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useLaunchApp</code></td><td>Launch apps with multi-window support</td></tr><tr><td><code>useWindowManager</code></td><td>Drag, resize, snap-to-edge</td></tr><tr><td><code>useWindowInsets</code></td><td>Theme-dependent constraints</td></tr></tbody></table>
-<strong>Audio System:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useSound</code></td><td>Web Audio API playback</td></tr><tr><td><code>useChatSynth</code></td><td>Chat typing sounds</td></tr><tr><td><code>useTerminalSounds</code></td><td>Terminal feedback</td></tr><tr><td><code>useTtsQueue</code></td><td>Text-to-speech queue</td></tr><tr><td><code>useAudioRecorder</code></td><td>Audio recording</td></tr></tbody></table>
-<strong>Device Detection:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useIsMobile</code></td><td>Mobile detection (<768px)</td></tr><tr><td><code>useIsPhone</code></td><td>Phone detection (<640px)</td></tr><tr><td><code>useMediaQuery</code></td><td>CSS media query hook</td></tr></tbody></table>
-<h2>Using i18n</h2>
-<pre><code>import { useTranslation } from "react-i18next";
+        <h1>Admin</h1>
+<p>The Admin app is the central system administration panel for ryOS, providing privileged users with comprehensive tools to manage core system components. It allows for oversight and control of users, chat rooms, and critical system configuration, ensuring the smooth and secure operation of the ryOS environment.</p>
+<h2>Overview</h2>
+<p>The Admin app serves as the backbone for maintaining the integrity and functionality of the ryOS environment. Designed exclusively for administrators, it offers a powerful interface to monitor system health, manage user accounts, and moderate content within the platform's communication channels. Its primary purpose is to ensure smooth operation, enforce policies, and provide a secure and well-managed experience for all ryOS users.</p>
+<p>This application consolidates various administrative tasks into a single, intuitive interface, allowing administrators to efficiently perform their duties without needing to access backend systems directly. From user lifecycle management to content moderation and system diagnostics, the Admin app is an indispensable tool for maintaining a healthy and vibrant ryOS ecosystem.</p>
+<h2>Features</h2>
+<p>The Admin app provides a robust set of features tailored for system administrators:</p>
+<ul><li>👑 <strong>Exclusive Admin Access</strong>: Only the designated admin user (ryo) can launch and interact with this application, ensuring secure and controlled system management.</li></ul>
+<ul><li>👥 <strong>User Account Management</strong>: View, search, and manage all registered users within ryOS. This includes the ability to inspect user profiles, modify account settings, and perform actions such as banning users.</li></ul>
+<ul><li>💬 <strong>Chat Room Moderation</strong>: Oversee and manage active chat rooms across ryOS. Administrators can identify and delete inappropriate content, helping to maintain a safe and respectful community environment.</li></ul>
+<ul><li>📊 <strong>System Statistics & Monitoring</strong>: Access real-time or historical data on system performance, user activity, and other key usage metrics, aiding in operational insights and resource planning.</li></ul>
+<ul><li>🎶 <strong>Song Metadata Administration</strong>: Manage cached song metadata within ryOS. This includes functionalities for listing all cached songs, performing bulk imports of new metadata, and deleting individual or all cached song entries.</li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To launch the Admin app, ensure you are logged in as the designated 'ryo' admin user. Locate the 'Admin' icon in your ryOS desktop environment or application launcher and click it. The app will open, presenting a sidebar for quick navigation to different administrative sections.
+<h3>Key Actions</h3>
+<ul><li><strong>Manage User Accounts</strong>: Navigate to the User Management section via the sidebar to view a comprehensive list of all ryOS users. Utilize the search bar to quickly find specific users and access their profiles for detailed management options, including the ability to ban or update user information.</li></ul>
+<ul><li><strong>Moderate Chat Rooms</strong>: Access the Room Management panel to monitor active chat rooms. Select a room to review its content and take action on inappropriate messages or users, ensuring community guidelines are upheld.</li></ul>
+<ul><li><strong>Review System Statistics</strong>: Visit the Statistics section to examine various system metrics, usage reports, and performance indicators, providing crucial insights into the ryOS platform's health and activity.</li></ul>
+<ul><li><strong>Administer Song Metadata</strong>: Use the dedicated Song Metadata panel to list, import, or delete cached song information. This ensures the music library is accurate, up-to-date, and free from outdated or erroneous entries.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li>The <strong>sidebar</strong> provides quick navigation between the different administrative modules (e.g., Users, Rooms, Statistics).</li></ul>
+<ul><li>Utilize the <strong>search functionality</strong> within user and room management panels to quickly locate specific entries by name or ID.</li></ul>
+<ul><li>Look for <strong>refresh icons</strong> (e.g., <code>RefreshCw</code>) to update data in tables and ensure you're viewing the most current information.</li></ul>
+<ul><li>Be mindful of <strong>confirmation dialogs</strong> (e.g., <code>ConfirmDialog</code>) that appear for destructive actions like deleting users or content; these are designed to prevent accidental data loss.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 800×500px</li></ul>
+<ul><li>Minimum size: 600×400px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 5 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/admin/components/SongDetailPanel.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/SongDetailPanel.tsx</a></code>: Handles the display and management of individual song metadata details.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/admin/components/AdminMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/AdminMenuBar.tsx</a></code>: Provides the top-level menu bar for the Admin app, including general app actions.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/admin/components/UserProfilePanel.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/UserProfilePanel.tsx</a></code>: Dedicated panel for viewing and managing individual user profiles and settings.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/admin/components/AdminSidebar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/AdminSidebar.tsx</a></code>: The primary navigation component, allowing administrators to switch between different management sections.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/admin/components/AdminAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/AdminAppComponent.tsx</a></code>: The main application component that orchestrates the layout and functionality of the Admin app.</li></ul>
+<h3>Hooks & Utilities</h3>
+<p>No custom hooks or utilities are defined within this app's specific files. The app leverages platform-level hooks and utilities for core functionalities.</p>
+<h3>State Management</h3>
+The Admin app manages its state using a combination of local React state (<code>useState</code>) for UI interactions and component-specific data. It also integrates with global state management via Zustand stores, such as <code>useThemeStore</code> for consistent theming across ryOS. Furthermore, it utilizes platform-level hooks like <code>useAuth</code> for user authentication verification and <code>useOffline</code> to manage its behavior in disconnected environments.
+<h2>Related Apps</h2>
+<ul><li><strong>Settings</strong>: While the Admin app provides system-wide configuration, the Settings app allows individual users to customize their personal ryOS experience and preferences.</li></ul>
+<ul><li><strong>Chat</strong>: The Admin app's Room Management features directly relate to the Chat app, enabling administrators to moderate content and users within its various chat rooms.</li></ul>
 
-const { t } = useTranslation();
-
-t("common.menu.file")              // "File"
-t("apps.finder.name")              // "Finder"
-t("common.dialog.aboutApp", { appName: "Finder" })</code></pre>
       </article>
       
       <nav class="nav">
-        <a href="/docs/build-system.html">← Build System</a>
-        <a href="/docs/apps.html">Apps →</a>
+        <a href="/docs/apps.html">← Apps</a>
+        <a href="/docs/apps-applet-viewer.html">Applet Store →</a>
       </nav>
       
     </main>

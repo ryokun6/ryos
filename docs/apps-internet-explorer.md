@@ -1,0 +1,66 @@
+# Internet Explorer
+
+Internet Explorer for ryOS is a groundbreaking web browser that transcends traditional browsing by integrating AI-powered content generation and temporal navigation. It allows users to not only access the modern internet but also to explore reconstructed historical web pages and envision speculative future web experiences, making it a powerful tool for research, nostalgia, and imaginative discovery.
+
+## Overview
+
+ryOS's Internet Explorer redefines the web browsing experience, offering a unique blend of historical exploration and futuristic imagination. Its core functionality enables seamless navigation of the contemporary internet, similar to any standard browser. However, its standout feature is the "Time Machine View," which allows users to select specific years and witness how websites appeared in the past or might evolve in the future. This is made possible through advanced AI, which intelligently reconstructs very old sites (pre-1996) and creatively generates plausible future web interfaces and content.
+
+Targeted at users who are curious about the evolution of the internet, researchers looking to visualize historical web data, or anyone seeking a novel way to interact with web content, Internet Explorer provides a rich, interactive journey through time. Its capabilities extend beyond mere display, offering tools to save specific temporal views as favorites and share unique historical or future web journeys with others, fostering a collaborative and exploratory web experience.
+
+## Features
+
+*   **Core Web Browsing**:
+    *   **Browse the Web**: Navigate to any URL by entering it into the address bar.
+    *   **Standard Navigation Controls**: Utilize familiar Back, Forward, Refresh, and Stop buttons for easy page management.
+*   **Temporal Exploration & AI**:
+    *   **Travel Through Time**: Select any year from a dedicated dropdown menu to view websites as they appeared in the past or as they might in the future.
+    *   **History Reimagined**: Leveraging AI, the browser reconstructs the look and feel of very old websites (pre-1996) and intelligently imagines future web experiences.
+    *   **Explore Time Nodes**: Click the clock icon in the address bar to reveal available snapshots or AI-generated versions of the current site across different points in time.
+*   **Personalization & Sharing**:
+    *   **Save Favorites**: Easily add current websites, along with their specific year view, to a personal Favorites bar for quick access later.
+    *   **Share Your Journey**: Generate a unique link using the Share button that points to the exact page and year you are currently viewing, allowing others to experience your temporal discovery.
+
+## User Guide
+
+### Getting Started
+To launch Internet Explorer, click its icon in the ryOS desktop environment. Once open, you can immediately begin browsing by typing a URL into the address bar and pressing Enter. Explore the unique features by interacting with the time selection dropdown and navigation buttons.
+
+### Key Actions
+*   **Navigating to a Website**: Type your desired URL into the address bar at the top of the window and press `Enter` or click the "Go" button.
+*   **Moving Between Pages**: Use the "Back" and "Forward" arrow buttons to navigate through your browsing history. The "Refresh" button reloads the current page, and the "Stop" button halts page loading.
+*   **Traveling Through Time**: Locate the year dropdown menu, typically near the address bar. Select a year to load the current website as it appeared (or is imagined to appear) in that specific time.
+*   **Saving Favorite Views**: While on a page and in a specific year you wish to remember, click the "Star" icon to add it to your Favorites bar for quick recall.
+*   **Discovering Site Snapshots**: Click the "Clock" icon next to the address bar to view a timeline of available "Time Nodes" for the current website, offering different historical or future versions.
+*   **Sharing Your Discoveries**: To share a specific web page and its temporal view, click the "Share" button. This will generate a direct link that others can use to see exactly what you're seeing.
+
+### Tips & Shortcuts
+*   **Address Bar Efficiency**: You can quickly navigate to a new site by typing its URL directly into the address bar and pressing Enter, even if you're currently viewing another page.
+*   **Dynamic Time Exploration**: Experiment with different years in the time dropdown. The AI will dynamically render content, especially for very old or future dates, offering a truly unique experience.
+*   **Favorites for Research**: Use Favorites not just for personal sites, but to bookmark specific historical versions of research-relevant pages.
+
+## Technical Details
+
+### Window Configuration
+*   Default size: 730×600px
+*   Minimum size: 400×300px
+
+### Component Architecture
+The app consists of 4 component file(s):
+
+*   `components/TimeMachineView.tsx`: Manages the core logic and rendering for displaying web content across different time periods.
+*   `components/InternetExplorerAppComponent.tsx`: The main application component, orchestrating all sub-components and managing overall app state.
+*   `components/TimeNavigationControls.tsx`: Handles the UI elements for temporal navigation, including the year selection dropdown and time node interaction.
+*   `components/InternetExplorerMenuBar.tsx`: Implements the top menu bar, housing navigation buttons, favorites, and other app-level actions.
+
+### Hooks & Utilities
+**Custom Hooks:**
+*   `hooks/useAiGeneration.ts`: A custom hook responsible for interfacing with the AI backend to reconstruct historical web pages and generate future web content.
+
+### State Management
+Internet Explorer utilizes Zustand for its global state management. This includes managing the current URL, selected year, browsing history, user favorites, and settings related to AI generation and display. Local component state is used for UI interactions within individual components.
+
+## Related Apps
+
+*   **Terminal**: For advanced users, the Terminal could be used to fetch raw web data or interact with web services, complementing the graphical browsing experience.
+*   **Notes**: Users can easily copy and paste content, or even generated share links, from Internet Explorer into the Notes app for personal archiving or project documentation.

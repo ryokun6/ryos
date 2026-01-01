@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>i18n & Hooks - ryOS Docs</title>
+  <title>Applet Store - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -161,17 +161,17 @@
 <a href="/docs/file-system.html" class="">File System</a>
 <a href="/docs/ai-integration.html" class="">AI Integration</a>
 <a href="/docs/build-system.html" class="">Build System</a>
-<a href="/docs/i18n-hooks.html" class="active">i18n & Hooks</a>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<a href="/docs/i18n-hooks.html" class="">i18n & Hooks</a>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/apps.html" class="">Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/apps-admin.html" class="nav-child ">Admin</a>
-    <a href="/docs/apps-applet-viewer.html" class="nav-child ">Applet Store</a>
+    <a href="/docs/apps-applet-viewer.html" class="nav-child active">Applet Store</a>
     <a href="/docs/apps-chats.html" class="nav-child ">Chats</a>
     <a href="/docs/apps-control-panels.html" class="nav-child ">Control Panels</a>
     <a href="/docs/apps-finder.html" class="nav-child ">Finder</a>
@@ -193,30 +193,54 @@
     
     <main class="content">
       <article>
-        <h1>i18n & Hooks</h1>
-<p>Internationalization and 29+ custom hooks.</p>
-<h2>Supported Languages</h2>
-<table><thead><tr><th>Code</th><th>Language</th></tr></thead><tbody><tr><td><code>en</code></td><td>English (default)</td></tr><tr><td><code>zh-TW</code></td><td>Chinese Traditional</td></tr><tr><td><code>ja</code></td><td>Japanese</td></tr><tr><td><code>ko</code></td><td>Korean</td></tr><tr><td><code>fr</code></td><td>French</td></tr><tr><td><code>de</code></td><td>German</td></tr><tr><td><code>es</code></td><td>Spanish</td></tr><tr><td><code>pt</code></td><td>Portuguese</td></tr><tr><td><code>it</code></td><td>Italian</td></tr><tr><td><code>ru</code></td><td>Russian</td></tr></tbody></table>
-<h2>Key Hooks</h2>
-<strong>Window & App Management:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useLaunchApp</code></td><td>Launch apps with multi-window support</td></tr><tr><td><code>useWindowManager</code></td><td>Drag, resize, snap-to-edge</td></tr><tr><td><code>useWindowInsets</code></td><td>Theme-dependent constraints</td></tr></tbody></table>
-<strong>Audio System:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useSound</code></td><td>Web Audio API playback</td></tr><tr><td><code>useChatSynth</code></td><td>Chat typing sounds</td></tr><tr><td><code>useTerminalSounds</code></td><td>Terminal feedback</td></tr><tr><td><code>useTtsQueue</code></td><td>Text-to-speech queue</td></tr><tr><td><code>useAudioRecorder</code></td><td>Audio recording</td></tr></tbody></table>
-<strong>Device Detection:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useIsMobile</code></td><td>Mobile detection (<768px)</td></tr><tr><td><code>useIsPhone</code></td><td>Phone detection (<640px)</td></tr><tr><td><code>useMediaQuery</code></td><td>CSS media query hook</td></tr></tbody></table>
-<h2>Using i18n</h2>
-<pre><code>import { useTranslation } from "react-i18next";
+        <h1>Applet Store</h1>
+<p>The Applet Store is your central hub for discovering, installing, and managing a diverse collection of user-created HTML applets within ryOS. It empowers you to personalize and extend your desktop environment with lightweight, custom applications from the community.</p>
+<h2>Overview</h2>
+<p>The Applet Store serves as the primary gateway to a vibrant ecosystem of mini-applications within ryOS. It provides users with an intuitive interface to browse, explore, and install a wide range of HTML applets contributed by the community. These applets can vary from simple utility tools and interactive widgets to more complex mini-applications, all designed to enhance your ryOS experience.</p>
+<p>Beyond just discovery, the Applet Store facilitates the seamless integration and execution of these applets, making them readily available on your ryOS desktop. It also offers powerful features for managing your installed applets, ensuring they are kept up-to-date, and enabling you to share your favorite finds with others in the ryOS community. Furthermore, the Applet Store integrates with ryOS Chat, allowing you to generate custom applets on demand, transforming your ideas into functional tools instantly.</p>
+<p>Whether you're looking to add a quick-access calculator, a personalized weather widget, or a unique game, the Applet Store makes it effortless to customize and expand the functionality of your ryOS desktop.</p>
+<h2>Features</h2>
+<ul><li><strong>Applet Discovery & Installation:</strong><ul><li><strong>Browse the Applet Store:</strong> Explore a diverse and growing catalog of user-created HTML applets contributed by the ryOS community.</li><li><strong>Install Applets:</strong> Easily install new applets with a single click, integrating them into your ryOS environment.</li><li><strong>View Applets:</strong> Open and run applets that you've installed from the store or saved from other sources like ryOS Chat.</li></ul></li></ul>
+<ul><li><strong>Applet Creation & Sharing:</strong><ul><li><strong>Create with ryOS Chat:</strong> Leverage the power of ryOS Chat to generate custom HTML applets based on your descriptions and ideas, getting working apps instantly.</li><li><strong>Share Applets:</strong> Distribute your favorite applets with other ryOS users using the built-in sharing functionality in the File menu.</li></ul></li></ul>
+<ul><li><strong>Applet Management:</strong><ul><li><strong>Open from Finder:</strong> Directly browse and open applet files saved on your ryOS file system, offering flexibility in managing your applet collection.</li><li><strong>Keep Updated:</strong> Periodically check for and install the latest versions of your installed applets to ensure you have the most recent features and bug fixes.</li></ul></li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To launch the Applet Store, locate its icon in your ryOS applications menu or dock and click it. Upon opening, you'll typically be presented with the main feed, showcasing a selection of popular and newly added applets ready for you to explore.
+<h3>Key Actions</h3>
+<ul><li><strong>Browsing and Installing Applets:</strong> Open the "Store" menu to discover new applets. You can browse categories or search for specific functionalities. Clicking on an applet will display its details, from where you can choose to install it.</li></ul>
+<ul><li><strong>Running Applets:</strong> Once an applet is installed or saved, you can run it directly from the Applet Store's interface or by selecting "View Applets" from the "File" menu to see your collection.</li></ul>
+<ul><li><strong>Creating Applets with ryOS Chat:</strong> To generate a custom applet, go to the "Store" menu and select "Create with ryOS Chat." This will open a chat interface where you can describe the applet you want to create, and ryOS Chat will generate the code for you.</li></ul>
+<ul><li><strong>Sharing Applets:</strong> To share an applet you enjoy, select it within the Applet Store and then use the "Share Applet" option available in the "File" menu.</li></ul>
+<ul><li><strong>Opening Local Applets:</strong> If you have applet files saved on your system, use the "File" menu's "Open from Finder" option to browse your file system and open them directly in the Applet Store.</li></ul>
+<ul><li><strong>Checking for Updates:</strong> To ensure your installed applets are current, select "Check for Updates" from the "Store" menu.</li></ul>
+<h3>Tips & Shortcuts</h3>
+The Applet Store utilizes standard ryOS window controls for resizing and closing. For quick assistance, look for a "Help" option in the menu bar which provides details about the app's features. The "About" dialog offers version information. Some applets may require user authentication, which will be handled through a dedicated login dialog.
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 320×450px</li></ul>
+<ul><li>Minimum size: 300×200px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 4 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/applet-viewer/components/AppletViewerAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/AppletViewerAppComponent.tsx</a></code>: The main application component, responsible for orchestrating the overall Applet Store functionality, managing state, and integrating various sub-components.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/applet-viewer/components/AppStore.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/AppStore.tsx</a></code>: Handles the core logic and UI for browsing, displaying, and interacting with the applet catalog.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/applet-viewer/components/AppStoreFeed.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/AppStoreFeed.tsx</a></code>: Focuses on rendering the list or grid of available applets, likely including filtering and sorting capabilities.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/applet-viewer/components/AppletViewerMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/AppletViewerMenuBar.tsx</a></code>: Manages the application's menu bar, providing access to file operations, store options, and help dialogs.</li></ul>
+<h3>Hooks & Utilities</h3>
+<strong>Custom Hooks:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/applet-viewer/hooks/useAppletUpdates.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useAppletUpdates.ts</a></code>: Manages the logic and state related to checking for, downloading, and applying updates to installed applets.</li></ul>
+<strong>Utilities:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/applet-viewer/utils/appletActions.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">utils/appletActions.ts</a></code>: Provides a collection of functions to perform various actions on applets, such as loading, saving, and interacting with their content.</li></ul>
+<h3>State Management</h3>
+The Applet Store extensively uses Zustand stores for managing global application state, including <code>useThemeStore</code> for theme preferences, <code>useAppletStore</code> for the collection of installed and available applets, <code>useAppStore</code> for general ryOS application state, <code>useChatsStore</code> for integration with chat functionalities (e.g., <code>ryOS Chat</code>), and <code>useFilesStore</code> for interacting with the ryOS file system. Local component state is also utilized for UI-specific elements and temporary data.
+<h2>Related Apps</h2>
+<ul><li><strong>ryOS Chat:</strong> Integrates directly with the Applet Store, allowing users to generate custom HTML applets through conversational prompts.</li></ul>
+<ul><li><strong>Finder:</strong> Enables users to manage and open applet files directly from their ryOS file system, complementing the Applet Store's browsing and installation capabilities.</li></ul>
 
-const { t } = useTranslation();
-
-t("common.menu.file")              // "File"
-t("apps.finder.name")              // "Finder"
-t("common.dialog.aboutApp", { appName: "Finder" })</code></pre>
       </article>
       
       <nav class="nav">
-        <a href="/docs/build-system.html">← Build System</a>
-        <a href="/docs/apps.html">Apps →</a>
+        <a href="/docs/apps-admin.html">← Admin</a>
+        <a href="/docs/apps-chats.html">Chats →</a>
       </nav>
       
     </main>

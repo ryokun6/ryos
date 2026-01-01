@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>i18n & Hooks - ryOS Docs</title>
+  <title>Videos - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -161,15 +161,15 @@
 <a href="/docs/file-system.html" class="">File System</a>
 <a href="/docs/ai-integration.html" class="">AI Integration</a>
 <a href="/docs/build-system.html" class="">Build System</a>
-<a href="/docs/i18n-hooks.html" class="active">i18n & Hooks</a>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<a href="/docs/i18n-hooks.html" class="">i18n & Hooks</a>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/apps.html" class="">Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/apps-admin.html" class="nav-child ">Admin</a>
     <a href="/docs/apps-applet-viewer.html" class="nav-child ">Applet Store</a>
     <a href="/docs/apps-chats.html" class="nav-child ">Chats</a>
@@ -185,7 +185,7 @@
     <a href="/docs/apps-synth.html" class="nav-child ">Synth</a>
     <a href="/docs/apps-terminal.html" class="nav-child ">Terminal</a>
     <a href="/docs/apps-textedit.html" class="nav-child ">TextEdit</a>
-    <a href="/docs/apps-videos.html" class="nav-child ">Videos</a>
+    <a href="/docs/apps-videos.html" class="nav-child active">Videos</a>
     <a href="/docs/apps-pc.html" class="nav-child ">Virtual PC</a>
   </div>
 </div>
@@ -193,30 +193,50 @@
     
     <main class="content">
       <article>
-        <h1>i18n & Hooks</h1>
-<p>Internationalization and 29+ custom hooks.</p>
-<h2>Supported Languages</h2>
-<table><thead><tr><th>Code</th><th>Language</th></tr></thead><tbody><tr><td><code>en</code></td><td>English (default)</td></tr><tr><td><code>zh-TW</code></td><td>Chinese Traditional</td></tr><tr><td><code>ja</code></td><td>Japanese</td></tr><tr><td><code>ko</code></td><td>Korean</td></tr><tr><td><code>fr</code></td><td>French</td></tr><tr><td><code>de</code></td><td>German</td></tr><tr><td><code>es</code></td><td>Spanish</td></tr><tr><td><code>pt</code></td><td>Portuguese</td></tr><tr><td><code>it</code></td><td>Italian</td></tr><tr><td><code>ru</code></td><td>Russian</td></tr></tbody></table>
-<h2>Key Hooks</h2>
-<strong>Window & App Management:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useLaunchApp</code></td><td>Launch apps with multi-window support</td></tr><tr><td><code>useWindowManager</code></td><td>Drag, resize, snap-to-edge</td></tr><tr><td><code>useWindowInsets</code></td><td>Theme-dependent constraints</td></tr></tbody></table>
-<strong>Audio System:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useSound</code></td><td>Web Audio API playback</td></tr><tr><td><code>useChatSynth</code></td><td>Chat typing sounds</td></tr><tr><td><code>useTerminalSounds</code></td><td>Terminal feedback</td></tr><tr><td><code>useTtsQueue</code></td><td>Text-to-speech queue</td></tr><tr><td><code>useAudioRecorder</code></td><td>Audio recording</td></tr></tbody></table>
-<strong>Device Detection:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useIsMobile</code></td><td>Mobile detection (<768px)</td></tr><tr><td><code>useIsPhone</code></td><td>Phone detection (<640px)</td></tr><tr><td><code>useMediaQuery</code></td><td>CSS media query hook</td></tr></tbody></table>
-<h2>Using i18n</h2>
-<pre><code>import { useTranslation } from "react-i18next";
-
-const { t } = useTranslation();
-
-t("common.menu.file")              // "File"
-t("apps.finder.name")              // "Finder"
-t("common.dialog.aboutApp", { appName: "Finder" })</code></pre>
+        <h1>Videos</h1>
+<p>The Videos app for ryOS provides a dedicated platform for watching online and local video content, featuring a classic, retro-inspired interface. It's designed to offer a straightforward and enjoyable multimedia experience directly within your desktop environment.</p>
+<h2>Overview</h2>
+<p>The Videos app serves as ryOS's primary multimedia player for video content. Users can seamlessly stream videos from popular platforms like YouTube by simply pasting a URL, or play local video files directly within the desktop environment. This makes it a versatile tool for entertainment, educational content, or simply having background video content while working in other ryOS apps.</p>
+<p>Designed with a nostalgic QuickTime player aesthetic, the app blends modern functionality with a unique, retro user interface. It focuses on delivering a smooth playback experience with essential controls and robust playlist management capabilities, allowing users to curate their viewing experience.</p>
+<h2>Features</h2>
+<p>The Videos app comes packed with features to enhance your video playback experience:</p>
+<ul><li><strong>Flexible Video Sources:</strong> Easily add videos to your playlist by pasting any YouTube URL, or play local video files stored on your system.</li></ul>
+<ul><li><strong>Comprehensive Playback Controls:</strong> Navigate your content with intuitive controls for play, pause, next, and previous video selection.</li></ul>
+<ul><li><strong>Advanced Playback Options:</strong> Customize your viewing with options to loop the current video, loop the entire playlist, or shuffle the playlist order for a randomized experience.</li></ul>
+<ul><li><strong>Robust Playlist Management:</strong> Organize and manage your video collection efficiently with a dedicated playlist interface, allowing you to reorder or remove videos as needed.</li></ul>
+<ul><li><strong>Retro User Interface (UI):</strong> Enjoy a unique and nostalgic visual experience with a design inspired by classic QuickTime players, offering a distinctive aesthetic within ryOS.</li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+<p>To launch the Videos app, locate its icon in the ryOS application launcher and click on it. The app will open in its default window size, presenting you with a retro-themed player ready for you to add and play videos.</p>
+<h3>Key Actions</h3>
+<ul><li><strong>Add Video:</strong> To add a new video, locate the "Add Video" option (likely in a menu or as a button). A dialog will appear where you can paste a YouTube URL. Once added, the video will appear in your playlist.</li></ul>
+<ul><li><strong>Playback Controls:</strong> Use the familiar play/pause, next, and previous buttons located in the player controls to navigate through your videos.</li></ul>
+<ul><li><strong>Manage Playlist:</strong> Access the playlist view to see all your added videos. From here, you can select a specific video to play, reorder the list, or remove videos.</li></ul>
+<ul><li><strong>Loop & Shuffle:</strong> Toggle the "Loop" button to repeat the current video or the entire playlist. Activate the "Shuffle" button to randomize the playback order of your playlist.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li>The app's interface is designed for simplicity, echoing classic media players. Look for familiar icons for immediate understanding of controls.</li></ul>
+<ul><li>Keep a list of your favorite YouTube URLs handy for quick playlist additions.</li></ul>
+<ul><li>Utilize the loop and shuffle features to create a continuous background video experience tailored to your mood.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 400×420px</li></ul>
+<ul><li>Minimum size: 400×340px</li></ul>
+<h3>Component Architecture</h3>
+<p>The app consists of 3 component file(s):</p>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/videos/components/SeekBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/SeekBar.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/videos/components/VideosAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/VideosAppComponent.tsx</a></code></li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/videos/components/VideosMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/VideosMenuBar.tsx</a></code></li></ul>
+<h3>Hooks & Utilities</h3>
+<p>No custom hooks or utilities are explicitly defined within the app's specific directories. However, the application leverages common ryOS platform hooks and utility functions for various functionalities like sound effects, theming, and internationalization.</p>
+<h3>State Management</h3>
+<p>The Videos app primarily manages its state using Zustand stores. Specifically, <code>useVideoStore</code> is utilized for handling the video playlist data, current playback status, and related settings. Additionally, it integrates with <code>useAppStore</code> for general application-level state and <code>useThemeStore</code> for theme-related preferences, ensuring a consistent and efficient state management approach across the ryOS environment.</p>
+<h2>Related Apps</h2>
+<p>The Videos app complements other media-focused applications in ryOS, such as the "Music" app for audio playback or the "Browser" app for discovering new content and fetching video URLs.</p>
       </article>
       
       <nav class="nav">
-        <a href="/docs/build-system.html">← Build System</a>
-        <a href="/docs/apps.html">Apps →</a>
+        <a href="/docs/apps-textedit.html">← TextEdit</a>
+        <span></span>
       </nav>
       
     </main>

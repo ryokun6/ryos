@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>i18n & Hooks - ryOS Docs</title>
+  <title>Internet Explorer - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -161,21 +161,21 @@
 <a href="/docs/file-system.html" class="">File System</a>
 <a href="/docs/ai-integration.html" class="">AI Integration</a>
 <a href="/docs/build-system.html" class="">Build System</a>
-<a href="/docs/i18n-hooks.html" class="active">i18n & Hooks</a>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<a href="/docs/i18n-hooks.html" class="">i18n & Hooks</a>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/apps.html" class="">Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/apps-admin.html" class="nav-child ">Admin</a>
     <a href="/docs/apps-applet-viewer.html" class="nav-child ">Applet Store</a>
     <a href="/docs/apps-chats.html" class="nav-child ">Chats</a>
     <a href="/docs/apps-control-panels.html" class="nav-child ">Control Panels</a>
     <a href="/docs/apps-finder.html" class="nav-child ">Finder</a>
-    <a href="/docs/apps-internet-explorer.html" class="nav-child ">Internet Explorer</a>
+    <a href="/docs/apps-internet-explorer.html" class="nav-child active">Internet Explorer</a>
     <a href="/docs/apps-ipod.html" class="nav-child ">iPod</a>
     <a href="/docs/apps-karaoke.html" class="nav-child ">Karaoke</a>
     <a href="/docs/apps-minesweeper.html" class="nav-child ">Minesweeper</a>
@@ -193,30 +193,53 @@
     
     <main class="content">
       <article>
-        <h1>i18n & Hooks</h1>
-<p>Internationalization and 29+ custom hooks.</p>
-<h2>Supported Languages</h2>
-<table><thead><tr><th>Code</th><th>Language</th></tr></thead><tbody><tr><td><code>en</code></td><td>English (default)</td></tr><tr><td><code>zh-TW</code></td><td>Chinese Traditional</td></tr><tr><td><code>ja</code></td><td>Japanese</td></tr><tr><td><code>ko</code></td><td>Korean</td></tr><tr><td><code>fr</code></td><td>French</td></tr><tr><td><code>de</code></td><td>German</td></tr><tr><td><code>es</code></td><td>Spanish</td></tr><tr><td><code>pt</code></td><td>Portuguese</td></tr><tr><td><code>it</code></td><td>Italian</td></tr><tr><td><code>ru</code></td><td>Russian</td></tr></tbody></table>
-<h2>Key Hooks</h2>
-<strong>Window & App Management:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useLaunchApp</code></td><td>Launch apps with multi-window support</td></tr><tr><td><code>useWindowManager</code></td><td>Drag, resize, snap-to-edge</td></tr><tr><td><code>useWindowInsets</code></td><td>Theme-dependent constraints</td></tr></tbody></table>
-<strong>Audio System:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useSound</code></td><td>Web Audio API playback</td></tr><tr><td><code>useChatSynth</code></td><td>Chat typing sounds</td></tr><tr><td><code>useTerminalSounds</code></td><td>Terminal feedback</td></tr><tr><td><code>useTtsQueue</code></td><td>Text-to-speech queue</td></tr><tr><td><code>useAudioRecorder</code></td><td>Audio recording</td></tr></tbody></table>
-<strong>Device Detection:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useIsMobile</code></td><td>Mobile detection (<768px)</td></tr><tr><td><code>useIsPhone</code></td><td>Phone detection (<640px)</td></tr><tr><td><code>useMediaQuery</code></td><td>CSS media query hook</td></tr></tbody></table>
-<h2>Using i18n</h2>
-<pre><code>import { useTranslation } from "react-i18next";
+        <h1>Internet Explorer</h1>
+<p>Internet Explorer for ryOS is a groundbreaking web browser that transcends traditional browsing by integrating AI-powered content generation and temporal navigation. It allows users to not only access the modern internet but also to explore reconstructed historical web pages and envision speculative future web experiences, making it a powerful tool for research, nostalgia, and imaginative discovery.</p>
+<h2>Overview</h2>
+<p>ryOS's Internet Explorer redefines the web browsing experience, offering a unique blend of historical exploration and futuristic imagination. Its core functionality enables seamless navigation of the contemporary internet, similar to any standard browser. However, its standout feature is the "Time Machine View," which allows users to select specific years and witness how websites appeared in the past or might evolve in the future. This is made possible through advanced AI, which intelligently reconstructs very old sites (pre-1996) and creatively generates plausible future web interfaces and content.</p>
+<p>Targeted at users who are curious about the evolution of the internet, researchers looking to visualize historical web data, or anyone seeking a novel way to interact with web content, Internet Explorer provides a rich, interactive journey through time. Its capabilities extend beyond mere display, offering tools to save specific temporal views as favorites and share unique historical or future web journeys with others, fostering a collaborative and exploratory web experience.</p>
+<h2>Features</h2>
+<ul><li><strong>Core Web Browsing</strong>:<ul><li><strong>Browse the Web</strong>: Navigate to any URL by entering it into the address bar.</li><li><strong>Standard Navigation Controls</strong>: Utilize familiar Back, Forward, Refresh, and Stop buttons for easy page management.</li></ul></li></ul>
+<ul><li><strong>Temporal Exploration & AI</strong>:<ul><li><strong>Travel Through Time</strong>: Select any year from a dedicated dropdown menu to view websites as they appeared in the past or as they might in the future.</li><li><strong>History Reimagined</strong>: Leveraging AI, the browser reconstructs the look and feel of very old websites (pre-1996) and intelligently imagines future web experiences.</li><li><strong>Explore Time Nodes</strong>: Click the clock icon in the address bar to reveal available snapshots or AI-generated versions of the current site across different points in time.</li></ul></li></ul>
+<ul><li><strong>Personalization & Sharing</strong>:<ul><li><strong>Save Favorites</strong>: Easily add current websites, along with their specific year view, to a personal Favorites bar for quick access later.</li><li><strong>Share Your Journey</strong>: Generate a unique link using the Share button that points to the exact page and year you are currently viewing, allowing others to experience your temporal discovery.</li></ul></li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+To launch Internet Explorer, click its icon in the ryOS desktop environment. Once open, you can immediately begin browsing by typing a URL into the address bar and pressing Enter. Explore the unique features by interacting with the time selection dropdown and navigation buttons.
+<h3>Key Actions</h3>
+<ul><li><strong>Navigating to a Website</strong>: Type your desired URL into the address bar at the top of the window and press <code>Enter</code> or click the "Go" button.</li></ul>
+<ul><li><strong>Moving Between Pages</strong>: Use the "Back" and "Forward" arrow buttons to navigate through your browsing history. The "Refresh" button reloads the current page, and the "Stop" button halts page loading.</li></ul>
+<ul><li><strong>Traveling Through Time</strong>: Locate the year dropdown menu, typically near the address bar. Select a year to load the current website as it appeared (or is imagined to appear) in that specific time.</li></ul>
+<ul><li><strong>Saving Favorite Views</strong>: While on a page and in a specific year you wish to remember, click the "Star" icon to add it to your Favorites bar for quick recall.</li></ul>
+<ul><li><strong>Discovering Site Snapshots</strong>: Click the "Clock" icon next to the address bar to view a timeline of available "Time Nodes" for the current website, offering different historical or future versions.</li></ul>
+<ul><li><strong>Sharing Your Discoveries</strong>: To share a specific web page and its temporal view, click the "Share" button. This will generate a direct link that others can use to see exactly what you're seeing.</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li><strong>Address Bar Efficiency</strong>: You can quickly navigate to a new site by typing its URL directly into the address bar and pressing Enter, even if you're currently viewing another page.</li></ul>
+<ul><li><strong>Dynamic Time Exploration</strong>: Experiment with different years in the time dropdown. The AI will dynamically render content, especially for very old or future dates, offering a truly unique experience.</li></ul>
+<ul><li><strong>Favorites for Research</strong>: Use Favorites not just for personal sites, but to bookmark specific historical versions of research-relevant pages.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 730×600px</li></ul>
+<ul><li>Minimum size: 400×300px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 4 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/internet-explorer/components/TimeMachineView.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/TimeMachineView.tsx</a></code>: Manages the core logic and rendering for displaying web content across different time periods.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/internet-explorer/components/InternetExplorerAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/InternetExplorerAppComponent.tsx</a></code>: The main application component, orchestrating all sub-components and managing overall app state.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/internet-explorer/components/TimeNavigationControls.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/TimeNavigationControls.tsx</a></code>: Handles the UI elements for temporal navigation, including the year selection dropdown and time node interaction.</li></ul>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/internet-explorer/components/InternetExplorerMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">components/InternetExplorerMenuBar.tsx</a></code>: Implements the top menu bar, housing navigation buttons, favorites, and other app-level actions.</li></ul>
+<h3>Hooks & Utilities</h3>
+<strong>Custom Hooks:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/internet-explorer/hooks/useAiGeneration.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">hooks/useAiGeneration.ts</a></code>: A custom hook responsible for interfacing with the AI backend to reconstruct historical web pages and generate future web content.</li></ul>
+<h3>State Management</h3>
+Internet Explorer utilizes Zustand for its global state management. This includes managing the current URL, selected year, browsing history, user favorites, and settings related to AI generation and display. Local component state is used for UI interactions within individual components.
+<h2>Related Apps</h2>
+<ul><li><strong>Terminal</strong>: For advanced users, the Terminal could be used to fetch raw web data or interact with web services, complementing the graphical browsing experience.</li></ul>
+<ul><li><strong>Notes</strong>: Users can easily copy and paste content, or even generated share links, from Internet Explorer into the Notes app for personal archiving or project documentation.</li></ul>
 
-const { t } = useTranslation();
-
-t("common.menu.file")              // "File"
-t("apps.finder.name")              // "Finder"
-t("common.dialog.aboutApp", { appName: "Finder" })</code></pre>
       </article>
       
       <nav class="nav">
-        <a href="/docs/build-system.html">← Build System</a>
-        <a href="/docs/apps.html">Apps →</a>
+        <a href="/docs/apps-finder.html">← Finder</a>
+        <a href="/docs/apps-ipod.html">iPod →</a>
       </nav>
       
     </main>
