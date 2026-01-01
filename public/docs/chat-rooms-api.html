@@ -163,42 +163,42 @@
     <a href="/docs/overview" class="">1. Overview</a>
   </button>
   <div class="nav-children" style="display: none;">
-    <a href="/docs/build-system" class="nav-child ">1.1 Build System</a>
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/ai-integration" class="">2. AI Integration</a>
+    <a href="/docs/api-reference" class="">2. API Reference</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
-    <a href="/docs/ai-content-generation" class="nav-child ">2.2 AI Endpoints</a>
-    <a href="/docs/speech-audio-ai" class="nav-child ">2.3 Media API</a>
-    <a href="/docs/song-api" class="nav-child ">2.4 Song API</a>
-    <a href="/docs/utility-apis" class="nav-child ">2.5 Utility APIs</a>
-    <a href="/docs/api-overview" class="nav-child ">2.6 API Layer</a>
-  </div>
-</div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/application-framework" class="">3. Application Framework</a>
-  </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/window-management" class="nav-child ">3.1 Window Manager</a>
-    <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
-    <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/song-api" class="nav-child ">2.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">2.3 Media API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child active">2.4 Chat Rooms API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">2.5 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">2.6 Utility APIs</a>
   </div>
 </div>
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/storage-file-system" class="">4. File System</a>
+    <a href="/docs/ai-integration" class="">3. AI Integration</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/application-framework" class="">4. Application Framework</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/window-management" class="nav-child ">4.1 Window Manager</a>
+    <a href="/docs/state-management" class="nav-child ">4.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -231,18 +231,13 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/audio-system" class="">6. Audio System</a>
+    <a href="/docs/storage-file-system" class="">6. File System</a>
   </div>
 </div>
-<div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
-      <path d="M2 0v8l4-4z"/>
-    </svg>
-    <a href="/docs/real-time-communication" class="">7. Chat System</a>
-  </button>
-  <div class="nav-children" style="display: block;">
-    <a href="/docs/chat-rooms-api" class="nav-child active">7.1 Chat Rooms API</a>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">7. Audio System</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -250,11 +245,11 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/ui-shared-systems" class="">8. UI Components and Shared Systems</a>
+    <a href="/docs/ui-components" class="">8. UI Components and Shared Systems</a>
   </button>
   <div class="nav-children" style="display: none;">
-    <a href="/docs/ui-components" class="nav-child ">8.1 Components</a>
-    <a href="/docs/i18n-hooks" class="nav-child ">8.2 i18n & Hooks</a>
+    <a href="/docs/component-library" class="nav-child ">8.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">8.2 i18n & Hooks</a>
   </div>
 </div>
     </nav>
@@ -534,8 +529,8 @@ export const maxDuration = 15; // seconds</code></pre>
       </article>
       
       <nav class="nav">
-        <a href="/docs/real-time-communication">← Chat System</a>
-        <a href="/docs/ui-shared-systems">UI Components and Shared Systems →</a>
+        <a href="/docs/media-api">← Media API</a>
+        <a href="/docs/ai-generation-apis">AI Endpoints →</a>
       </nav>
       
     </main>

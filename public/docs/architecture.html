@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Application Framework - ryOS Docs</title>
+  <title>Architecture & Build - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -155,15 +155,15 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/overview" class="">1. Overview</a>
   </button>
-  <div class="nav-children" style="display: none;">
-    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
+  <div class="nav-children" style="display: block;">
+    <a href="/docs/architecture" class="nav-child active">1.1 Architecture & Build</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -188,14 +188,14 @@
     <a href="/docs/ai-integration" class="">3. AI Integration</a>
   </div>
 </div>
-<div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/application-framework" class="active">4. Application Framework</a>
+    <a href="/docs/application-framework" class="">4. Application Framework</a>
   </button>
-  <div class="nav-children" style="display: block;">
+  <div class="nav-children" style="display: none;">
     <a href="/docs/window-management" class="nav-child ">4.1 Window Manager</a>
     <a href="/docs/state-management" class="nav-child ">4.2 State Management</a>
     <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
@@ -256,31 +256,27 @@
     
     <main class="content">
       <article>
-        <h1>Application Framework</h1>
-<p>The ryOS application framework provides a unified system for building and managing desktop-style applications within the browser. It handles window rendering, state management, theming, and app lifecycle, allowing developers to focus on application logic rather than window management infrastructure.</p>
-<h2>Overview</h2>
-<p>The ryOS application framework is built around three core pillars: <strong>Window Management</strong>, <strong>State Management</strong>, and <strong>Theme System</strong>. Together, these systems enable apps to have native desktop-like behavior including multiple windows, window positioning, resizing, minimizing, and theming that adapts to different operating system aesthetics.</p>
-<p>Apps in ryOS are organized as self-contained modules in <code>src/apps/[app-name]/</code>, each exporting a standardized app definition that includes the app component, metadata, and configuration. The framework handles window lifecycle, state persistence, and theme-aware rendering automatically, while apps focus on their specific functionality.</p>
-<p>The framework supports multiple window instances per app (multi-window), allowing users to open several windows of the same application simultaneously. Window state, including position and size, is persisted across sessions. Apps can also define custom window constraints, menu bars, and help content that integrates seamlessly with the system.</p>
-<h2>Key Components</h2>
-<table><thead><tr><th>Component</th><th>Purpose</th></tr></thead><tbody><tr><td>Window Management</td><td>Handles window rendering, positioning, resizing, minimizing, maximizing, and multi-instance support through the <code>WindowFrame</code> component and <code>useWindowManager</code> hook</td></tr><tr><td>State Management</td><td>Manages app state, window instances, foreground ordering, and persistence using Zustand stores with localStorage integration</td></tr><tr><td>Theme System</td><td>Provides OS-themed appearance (macOS X, System 7, Windows XP, Windows 98) with theme-aware components, colors, fonts, and layout metadata</td></tr></tbody></table>
-<h2>App Structure</h2>
-<p>Apps follow a standardized structure and naming convention. Each app is defined in <code>src/apps/[app-name]/</code> with the following typical organization:</p>
-<ul><li><strong>Main Component</strong>: <code>[AppName]AppComponent.tsx</code> - The primary app component that receives <code>AppProps</code> and renders the app content wrapped in <code>WindowFrame</code></li></ul>
-<ul><li><strong>Menu Bar</strong>: <code>[AppName]MenuBar.tsx</code> - App-specific menu bar component (rendered outside <code>WindowFrame</code> for macOS themes, inside for Windows themes)</li></ul>
-<ul><li><strong>App Definition</strong>: <code>index.tsx</code> or <code>index.ts</code> - Exports the app definition object conforming to <code>BaseApp</code> interface, including component, metadata, help items, and window constraints</li></ul>
-<ul><li><strong>Optional Folders</strong>: <code>hooks/</code>, <code>utils/</code>, <code>types/</code>, <code>components/</code> - App-specific logic, utilities, types, and sub-components</li></ul>
-<p>Apps receive common props via the <code>AppProps</code> interface, including <code>isWindowOpen</code>, <code>onClose</code>, <code>isForeground</code>, <code>instanceId</code>, and <code>initialData</code>. The <code>WindowFrame</code> component handles all window chrome, controls, and interactions, while apps focus on their content and functionality.</p>
-<h2>Subsections</h2>
-<ul><li><a href="/docs/window-management">Window Management</a> - Window rendering, positioning, and frame components</li></ul>
-<ul><li><a href="/docs/state-management">State Management</a> - Zustand stores and data persistence</li></ul>
-<ul><li><a href="/docs/theme-system">Theme System</a> - Themes, appearance, and visual customization</li></ul>
-
+        <h1>Architecture & Build</h1>
+<p>Vite + Bun build system with multiple deployment targets.</p>
+<h2>Deployment Targets</h2>
+<ul><li><strong>Web (PWA):</strong> Deployed to Vercel</li></ul>
+<ul><li><strong>Desktop:</strong> Tauri for macOS/Windows/Linux</li></ul>
+<ul><li><strong>Development:</strong> Local with HMR</li></ul>
+<h2>Chunk Splitting</h2>
+<strong>Core Chunks (Immediate):</strong>
+<pre><code>react: ["react", "react-dom"]
+"ui-core": ["@radix-ui/react-dialog", ...]
+zustand: ["zustand"]
+motion: ["framer-motion"]</code></pre>
+<strong>Deferred Chunks:</strong>
+<table><thead><tr><th>Chunk</th><th>Contents</th><th>Trigger</th></tr></thead><tbody><tr><td><code>audio</code></td><td>tone, wavesurfer.js</td><td>Soundboard/iPod</td></tr><tr><td><code>tiptap</code></td><td>@tiptap/<em></td><td>TextEdit</td></tr><tr><td><code>three</code></td><td>three.js</td><td>PC app</td></tr><tr><td><code>ai-sdk</code></td><td>ai, @ai-sdk/</em></td><td>Chats/IE</td></tr></tbody></table>
+<h2>PWA Caching</h2>
+<table><thead><tr><th>Pattern</th><th>Strategy</th><th>TTL</th></tr></thead><tbody><tr><td>Navigation</td><td>NetworkFirst</td><td>1 day</td></tr><tr><td>JS Chunks</td><td>NetworkFirst (3s)</td><td>1 day</td></tr><tr><td>CSS</td><td>StaleWhileRevalidate</td><td>7 days</td></tr><tr><td>Images</td><td>CacheFirst</td><td>30 days</td></tr><tr><td>Fonts</td><td>CacheFirst</td><td>1 year</td></tr></tbody></table>
       </article>
       
       <nav class="nav">
-        <a href="/docs/ai-integration">← AI Integration</a>
-        <a href="/docs/window-management">Window Manager →</a>
+        <a href="/docs/overview">← Overview</a>
+        <a href="/docs/api-reference">API Reference →</a>
       </nav>
       
     </main>

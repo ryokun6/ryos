@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Application Framework - ryOS Docs</title>
+  <title>API Reference - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -166,14 +166,14 @@
     <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/api-reference" class="">2. API Reference</a>
+    <a href="/docs/api-reference" class="active">2. API Reference</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chat-api" class="nav-child ">2.1 Chat API</a>
     <a href="/docs/song-api" class="nav-child ">2.2 Song API</a>
     <a href="/docs/media-api" class="nav-child ">2.3 Media API</a>
@@ -188,14 +188,14 @@
     <a href="/docs/ai-integration" class="">3. AI Integration</a>
   </div>
 </div>
-<div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/application-framework" class="active">4. Application Framework</a>
+    <a href="/docs/application-framework" class="">4. Application Framework</a>
   </button>
-  <div class="nav-children" style="display: block;">
+  <div class="nav-children" style="display: none;">
     <a href="/docs/window-management" class="nav-child ">4.1 Window Manager</a>
     <a href="/docs/state-management" class="nav-child ">4.2 State Management</a>
     <a href="/docs/theme-system" class="nav-child ">4.3 Theme System</a>
@@ -256,31 +256,30 @@
     
     <main class="content">
       <article>
-        <h1>Application Framework</h1>
-<p>The ryOS application framework provides a unified system for building and managing desktop-style applications within the browser. It handles window rendering, state management, theming, and app lifecycle, allowing developers to focus on application logic rather than window management infrastructure.</p>
-<h2>Overview</h2>
-<p>The ryOS application framework is built around three core pillars: <strong>Window Management</strong>, <strong>State Management</strong>, and <strong>Theme System</strong>. Together, these systems enable apps to have native desktop-like behavior including multiple windows, window positioning, resizing, minimizing, and theming that adapts to different operating system aesthetics.</p>
-<p>Apps in ryOS are organized as self-contained modules in <code>src/apps/[app-name]/</code>, each exporting a standardized app definition that includes the app component, metadata, and configuration. The framework handles window lifecycle, state persistence, and theme-aware rendering automatically, while apps focus on their specific functionality.</p>
-<p>The framework supports multiple window instances per app (multi-window), allowing users to open several windows of the same application simultaneously. Window state, including position and size, is persisted across sessions. Apps can also define custom window constraints, menu bars, and help content that integrates seamlessly with the system.</p>
-<h2>Key Components</h2>
-<table><thead><tr><th>Component</th><th>Purpose</th></tr></thead><tbody><tr><td>Window Management</td><td>Handles window rendering, positioning, resizing, minimizing, maximizing, and multi-instance support through the <code>WindowFrame</code> component and <code>useWindowManager</code> hook</td></tr><tr><td>State Management</td><td>Manages app state, window instances, foreground ordering, and persistence using Zustand stores with localStorage integration</td></tr><tr><td>Theme System</td><td>Provides OS-themed appearance (macOS X, System 7, Windows XP, Windows 98) with theme-aware components, colors, fonts, and layout metadata</td></tr></tbody></table>
-<h2>App Structure</h2>
-<p>Apps follow a standardized structure and naming convention. Each app is defined in <code>src/apps/[app-name]/</code> with the following typical organization:</p>
-<ul><li><strong>Main Component</strong>: <code>[AppName]AppComponent.tsx</code> - The primary app component that receives <code>AppProps</code> and renders the app content wrapped in <code>WindowFrame</code></li></ul>
-<ul><li><strong>Menu Bar</strong>: <code>[AppName]MenuBar.tsx</code> - App-specific menu bar component (rendered outside <code>WindowFrame</code> for macOS themes, inside for Windows themes)</li></ul>
-<ul><li><strong>App Definition</strong>: <code>index.tsx</code> or <code>index.ts</code> - Exports the app definition object conforming to <code>BaseApp</code> interface, including component, metadata, help items, and window constraints</li></ul>
-<ul><li><strong>Optional Folders</strong>: <code>hooks/</code>, <code>utils/</code>, <code>types/</code>, <code>components/</code> - App-specific logic, utilities, types, and sub-components</li></ul>
-<p>Apps receive common props via the <code>AppProps</code> interface, including <code>isWindowOpen</code>, <code>onClose</code>, <code>isForeground</code>, <code>instanceId</code>, and <code>initialData</code>. The <code>WindowFrame</code> component handles all window chrome, controls, and interactions, while apps focus on their content and functionality.</p>
-<h2>Subsections</h2>
-<ul><li><a href="/docs/window-management">Window Management</a> - Window rendering, positioning, and frame components</li></ul>
-<ul><li><a href="/docs/state-management">State Management</a> - Zustand stores and data persistence</li></ul>
-<ul><li><a href="/docs/theme-system">Theme System</a> - Themes, appearance, and visual customization</li></ul>
-
+        <h1>API Reference</h1>
+<p>ryOS uses Vercel Serverless Functions with Edge runtime for all backend APIs.</p>
+<h2>Endpoint Documentation</h2>
+<table><thead><tr><th>Endpoint Group</th><th>Description</th></tr></thead><tbody><tr><td><a href="/docs/chat-api">Chat API</a></td><td>Main AI chat with streaming and tool calling</td></tr><tr><td><a href="/docs/song-api">Song API</a></td><td>Music library CRUD, lyrics, furigana, translations</td></tr><tr><td><a href="/docs/media-api">Media API</a></td><td>Text-to-speech, transcription, YouTube search</td></tr><tr><td><a href="/docs/chat-rooms-api">Chat Rooms API</a></td><td>Real-time chat rooms with Pusher/Redis</td></tr><tr><td><a href="/docs/ai-generation-apis">AI Generation APIs</a></td><td>Applet generation, IE time-travel, parse-title</td></tr><tr><td><a href="/docs/utility-apis">Utility APIs</a></td><td>Link preview, iframe check, share applet, admin</td></tr></tbody></table>
+<h2>Quick Reference</h2>
+<h3>AI Endpoints</h3>
+<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat</code></td><td>Main AI chat with tool calling</td></tr><tr><td><code>/api/applet-ai</code></td><td>Applet text + image generation</td></tr><tr><td><code>/api/ie-generate</code></td><td>Time-travel page generation</td></tr><tr><td><code>/api/parse-title</code></td><td>Music metadata extraction</td></tr></tbody></table>
+<h3>Media Endpoints</h3>
+<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/song/</code></td><td>Song library CRUD</td></tr><tr><td><code>/api/song/[id]</code></td><td>Individual song operations</td></tr><tr><td><code>/api/speech</code></td><td>Text-to-speech</td></tr><tr><td><code>/api/audio-transcribe</code></td><td>Speech-to-text</td></tr><tr><td><code>/api/youtube-search</code></td><td>YouTube music search</td></tr></tbody></table>
+<h3>Communication Endpoints</h3>
+<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat-rooms</code></td><td>Real-time chat room management</td></tr></tbody></table>
+<h3>Utility Endpoints</h3>
+<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/link-preview</code></td><td>URL metadata extraction</td></tr><tr><td><code>/api/iframe-check</code></td><td>Embeddability checking</td></tr><tr><td><code>/api/share-applet</code></td><td>Applet sharing</td></tr><tr><td><code>/api/admin</code></td><td>Admin operations</td></tr></tbody></table>
+<h2>Authentication</h2>
+<pre><code>Authorization: Bearer {token}
+X-Username: {username}</code></pre>
+<p>Token-based with 90-day expiration.</p>
+<h2>AI Providers</h2>
+<table><thead><tr><th>Provider</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td>gpt-5, gpt-5.1, gpt-4o, gpt-4.1</td></tr><tr><td>Anthropic</td><td>claude-4.5, claude-4, claude-3.7</td></tr><tr><td>Google</td><td>gemini-2.5-pro, gemini-2.5-flash</td></tr></tbody></table>
       </article>
       
       <nav class="nav">
-        <a href="/docs/ai-integration">← AI Integration</a>
-        <a href="/docs/window-management">Window Manager →</a>
+        <a href="/docs/architecture">← Architecture & Build</a>
+        <a href="/docs/chat-api">Chat API →</a>
       </nav>
       
     </main>
