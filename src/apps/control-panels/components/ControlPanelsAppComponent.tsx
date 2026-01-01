@@ -332,6 +332,19 @@ export function ControlPanelsAppComponent({
   const syncSettings = useSyncSettingsStore();
   const { syncNow, isSyncing, lastSyncAt, lastError, deviceId } = useSyncController();
 
+  const handleSyncNow = async () => {
+    const result = await syncNow();
+    if (result.ok) {
+      toast.success("Sync complete", {
+        description: `Pushed ${result.merged?.length ?? 0} snapshots`,
+      });
+    } else {
+      toast.error("Sync failed", {
+        description: result.error || "Unknown error",
+      });
+    }
+  };
+
   // Use auth hook
   const {
     username,
@@ -1951,7 +1964,7 @@ export function ControlPanelsAppComponent({
                       variant="retro"
                       className="flex-1"
                       disabled={!syncSettings.enabled || isSyncing || !authToken || !username}
-                      onClick={() => syncNow()}
+                      onClick={handleSyncNow}
                     >
                       {isSyncing ? "Syncing…" : "Sync Now"}
                     </Button>
