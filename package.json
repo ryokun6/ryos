@@ -7,7 +7,7 @@
     "dev": "NODE_OPTIONS='--max-old-space-size=4096' vite --port ${PORT:-5173}",
     "dev:vercel": "vercel dev",
     "version:bump": "bun run scripts/generate-build-version.ts --bump",
-    "prebuild": "bun run scripts/generate-build-version.ts",
+    "prebuild": "bun run scripts/generate-build-version.ts && bun run generate:docs",
     "build": "tsc -b && vite build && cp dist/sw.js dist/version.json .vercel/output/static/ && (cp dist/workbox-*.js .vercel/output/static/ 2>/dev/null || true)",
     "build:tauri": "bun run scripts/build-tauri.ts",
     "lint": "eslint .",
