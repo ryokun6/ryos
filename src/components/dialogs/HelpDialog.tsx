@@ -80,13 +80,13 @@ export function HelpDialog({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacTheme = currentTheme === "macosx";
-  const openApp = useAppStore((state) => state.openApp);
+  const launchApp = useAppStore((state) => state.launchApp);
 
   // Use localized app name if appId is provided, otherwise fall back to appName
   const displayAppName = appId ? getTranslatedAppName(appId) : appName || "";
 
   const handleViewDocs = () => {
-    openApp("internet-explorer", {
+    launchApp("internet-explorer", {
       initialUrl: "https://os.ryo.lu/docs",
       initialYear: "current",
     });
