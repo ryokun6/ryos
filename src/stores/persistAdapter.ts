@@ -12,7 +12,10 @@ export type PersistedStoreMeta = {
   _updatedAt?: number;
 };
 
-type BasePersistConfig<T> = Omit<PersistOptions<T>, "name" | "storage"> & {
+type BasePersistConfig<T, PersistedState = T> = Omit<
+  PersistOptions<T, PersistedState>,
+  "name" | "storage"
+> & {
   /** Storage key used by persist. */
   name: string;
   /** Optional custom storage provider (defaults to localStorage). */
@@ -52,9 +55,9 @@ const createSafeJSONStorage = (getStorage?: () => Storage) => {
 /**
  * Create a persisted store with a shared, safe JSON storage adapter.
  */
-export function createPersistedStore<T extends object>(
+export function createPersistedStore<T extends object, PersistedState = T>(
   config: StateCreator<T, [], [], T>,
-  options: BasePersistConfig<T>
+  options: BasePersistConfig<T, PersistedState>
 ) {
   const storage = createSafeJSONStorage(options.storage);
 
@@ -62,7 +65,9 @@ export function createPersistedStore<T extends object>(
     name: options.name,
     version: options.version,
     storage,
-    partialize: options.partialize,
+    partialize: options.partialize as
+      | ((state: T) => PersistedState)
+      | undefined,
     migrate: options.migrate,
     onRehydrateStorage: options.onRehydrateStorage,
     skipHydration: options.skipHydration,
