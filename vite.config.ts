@@ -107,6 +107,25 @@ export default defineConfig({
     ] : [],
   },
   plugins: [
+    // Serve static docs HTML files (before SPA fallback kicks in)
+    {
+      name: 'serve-static-docs',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const url = req.url || '';
+          if (url === '/docs' || url === '/docs/') {
+            res.writeHead(302, { Location: '/docs/overview.html' });
+            res.end();
+            return;
+          }
+          if (url.startsWith('/docs/') && url.endsWith('.html')) {
+            // Let Vite serve the file from public/
+            return next();
+          }
+          next();
+        });
+      },
+    },
     react(),
     tailwindcss(),
     // Only include Vercel and PWA plugins when not building for Tauri
@@ -161,7 +180,6 @@ export default defineConfig({
           /^\/api\//,  // API routes
           /^\/iframe-check/,  // iframe proxy endpoint
           /^\/404/,  // Don't intercept 404 redirects
-          /^\/docs(\/|$)/,  // Docs route - fresh load always
           // App routes handled by middleware for OG preview links
           // These need to reach the middleware first, then redirect to ?_ryo=1
           /^\/finder$/,
