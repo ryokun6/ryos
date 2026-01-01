@@ -913,7 +913,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 /* Smaller body text for System 7 toasts */
 .os-theme-system7 [data-sonner-toast] .text-sm,
 .os-theme-system7 [data-sonner-toast] [data-content] {
-  font-size: 12px !important;
+  font-size: 12px;
 }
 
 /* Retro button style for System 7 toasts */
