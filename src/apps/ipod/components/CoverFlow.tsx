@@ -347,9 +347,12 @@ function CoverImage({
         opacity: 0,
       }}
       transition={{
-        type: "spring",
-        stiffness: 500,
-        damping: 50,
+        x: { type: "spring", stiffness: 500, damping: 50 },
+        y: { type: "spring", stiffness: 500, damping: 50 },
+        rotateY: { type: "spring", stiffness: 500, damping: 50 },
+        z: { type: "spring", stiffness: 500, damping: 50 },
+        scale: { type: "spring", stiffness: 500, damping: 50 },
+        opacity: { duration: 0.2, ease: "easeOut" },
       }}
     >
       {/* CD (below the sleeve, animates up from below when shown) - only for center */}
@@ -366,9 +369,8 @@ function CoverImage({
             }}
             exit={{ opacity: 0, y: "30%" }}
             transition={{ 
-              type: "spring",
-              stiffness: 200,
-              damping: 25,
+              y: { type: "spring", stiffness: 200, damping: 25 },
+              opacity: { duration: 0.15, ease: "easeOut" },
             }}
           >
             <SpinningCD coverUrl={coverUrl} size="100%" isPlaying={isPlaying} onClick={handleDiscClick} />
@@ -405,9 +407,8 @@ function CoverImage({
               : transform.isCenter ? 0 : 0.3,
           }}
           transition={{
-            type: "spring",
-            stiffness: 200,
-            damping: 25,
+            duration: 0.2,
+            ease: "easeOut",
           }}
         />
         {coverUrl ? (
@@ -445,9 +446,8 @@ function CoverImage({
           y: isCenter && showCD ? "105%" : "0%",
         }}
         transition={{
-          type: "spring",
-          stiffness: 200,
-          damping: 25,
+          y: { type: "spring", stiffness: 200, damping: 25 },
+          opacity: { duration: 0.15, ease: "easeOut" },
         }}
       >
         <img
