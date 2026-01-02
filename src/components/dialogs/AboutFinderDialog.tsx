@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/dialog";
 import { useTranslation } from "react-i18next";
 import { getNonFinderApps } from "@/config/appRegistry";
-import { useAppContext } from "@/contexts/AppContext";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useChatsStore } from "@/stores/useChatsStore";
@@ -15,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useMemo, useState, useEffect } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getTranslatedAppName } from "@/utils/i18n";
+import type { AppId } from "@/config/appRegistry";
 
 interface AboutFinderDialogProps {
   isOpen: boolean;
@@ -32,7 +32,7 @@ export function AboutFinderDialog({
   onOpenChange,
 }: AboutFinderDialogProps) {
   const { t } = useTranslation();
-  const { appStates } = useAppContext();
+  const instances = useAppStore((state) => state.instances);
   const currentTheme = useThemeStore((state) => state.current);
   const version = useAppStore((state) => state.ryOSVersion);
   const buildNumber = useAppStore((state) => state.ryOSBuildNumber);
@@ -64,8 +64,16 @@ export function AboutFinderDialog({
     const systemUsage = 8.5; // System takes about 8.5MB
     const apps = getNonFinderApps(isAdmin);
 
+    // Derive open app IDs from instances
+    const openAppIds = new Set<AppId>();
+    Object.values(instances).forEach((instance) => {
+      if (instance.isOpen) {
+        openAppIds.add(instance.appId);
+      }
+    });
+
     // Get only open apps
-    const openApps = apps.filter((app) => appStates[app.id]?.isOpen);
+    const openApps = apps.filter((app) => openAppIds.has(app.id as AppId));
 
     // Calculate memory usage for system and open apps (limited to 4)
     const appUsages: AppMemoryUsage[] = [
@@ -85,7 +93,7 @@ export function AboutFinderDialog({
     ];
 
     return appUsages;
-  }, [appStates, isAdmin]);
+  }, [instances, isAdmin, t]);
 
   const totalUsedMemory = useMemo(() => {
     return memoryUsage.reduce((acc, app) => acc + app.memoryMB, 0);
