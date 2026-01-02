@@ -28,6 +28,7 @@ import {
   USER_EXPIRATION_TIME,
   TOKEN_GRACE_PERIOD,
   PASSWORD_MIN_LENGTH,
+  PASSWORD_MAX_LENGTH,
 } from "../_utils/auth.js";
 import type { User, CreateUserData } from "./_types.js";
 import { createErrorResponse } from "./_helpers.js";
@@ -184,6 +185,15 @@ export async function handleCreateUser(
     );
     return createErrorResponse(
       `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+      400
+    );
+  } else if (password.length > PASSWORD_MAX_LENGTH) {
+    logInfo(
+      requestId,
+      `User creation failed: Password too long: ${password.length} chars (max: ${PASSWORD_MAX_LENGTH})`
+    );
+    return createErrorResponse(
+      `Password must be ${PASSWORD_MAX_LENGTH} characters or less`,
       400
     );
   }

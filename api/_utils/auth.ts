@@ -42,6 +42,7 @@ export const TOKEN_LENGTH = 32; // 32 bytes = 256 bits
 // Password constants
 export const PASSWORD_HASH_PREFIX = "chat:password:";
 export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 128;
 export const PASSWORD_BCRYPT_ROUNDS = 10;
 
 // Re-export TTL constants from central location
@@ -376,6 +377,8 @@ export function extractAuth(request: Request): ExtractedAuth {
 /**
  * Check if an action from a specific identifier is rate limited
  * Returns true if allowed, false if rate limited
+ * 
+ * Uses atomic increment-first approach to prevent TOCTOU race conditions.
  */
 export async function checkRateLimit(
   action: string,
@@ -384,25 +387,27 @@ export async function checkRateLimit(
 ): Promise<boolean> {
   try {
     const key = `${RATE_LIMIT_PREFIX}${action}:${identifier}`;
-    const current = await redis.get<string>(key);
+    
+    // ATOMIC approach: increment first, then check
+    // This prevents race conditions where concurrent requests both see
+    // the same count and both pass the limit check
+    const newCount = await redis.incr(key);
 
-    if (!current) {
-      // First request in window
-      await redis.set(key, 1, { ex: RATE_LIMIT_WINDOW_SECONDS });
-      return true;
+    // Set TTL only if this is the first increment (count became 1)
+    // This is safe because INCR is atomic - only one request will see newCount === 1
+    if (newCount === 1) {
+      await redis.expire(key, RATE_LIMIT_WINDOW_SECONDS);
     }
 
-    const count = parseInt(current);
-    if (count >= RATE_LIMIT_ATTEMPTS) {
+    // Check if the NEW count exceeds the limit
+    if (newCount > RATE_LIMIT_ATTEMPTS) {
       logInfoFn(
         requestId,
-        `Rate limit exceeded for ${action} by ${identifier}: ${count} attempts`
+        `Rate limit exceeded for ${action} by ${identifier}: ${newCount} attempts`
       );
       return false;
     }
 
-    // Increment counter
-    await redis.incr(key);
     return true;
   } catch (error) {
     logErrorFn(
