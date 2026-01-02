@@ -578,7 +578,7 @@ async function generate() {
     const id = file.replace(/^\d+(?:\.\d+)?-/, "").replace(".md", "");
     const parentSection = getParentSection(sectionNum);
     
-    // Extract app name from filename for context
+    // Extract app name from filename for context (for relative path resolution)
     let appContext: string | undefined;
     const appNameMatch = file.match(/apps?-(.+)\.md$/);
     if (appNameMatch) {

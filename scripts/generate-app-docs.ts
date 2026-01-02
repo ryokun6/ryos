@@ -268,6 +268,7 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
 
 /**
  * Scan app directory for component, hook, and utility files
+ * Returns full paths like src/apps/{appId}/components/...
  */
 async function scanAppFiles(appId: string): Promise<{
   componentFiles: string[];
@@ -275,6 +276,7 @@ async function scanAppFiles(appId: string): Promise<{
   utilityFiles: string[];
 }> {
   const appDir = join(APPS_DIR, appId);
+  const appPrefix = `src/apps/${appId}/`;
   
   try {
     await stat(appDir);
@@ -293,6 +295,8 @@ async function scanAppFiles(appId: string): Promise<{
       const fullPath = join(dir, entry.name);
       // Normalize path separators to forward slashes for consistent matching
       const relativePath = fullPath.replace(baseDir + "/", "").replace(/\\/g, "/");
+      // Create full path with src/apps/{appId}/ prefix
+      const fullRelativePath = appPrefix + relativePath;
       
       if (entry.isDirectory()) {
         if (entry.name !== "node_modules" && entry.name !== ".git") {
@@ -301,11 +305,11 @@ async function scanAppFiles(appId: string): Promise<{
       } else if (entry.isFile()) {
         if (entry.name.endsWith(".tsx") || entry.name.endsWith(".ts")) {
           if (relativePath.includes("components/")) {
-            componentFiles.push(relativePath);
+            componentFiles.push(fullRelativePath);
           } else if (relativePath.includes("hooks/")) {
-            hookFiles.push(relativePath);
+            hookFiles.push(fullRelativePath);
           } else if (relativePath.includes("utils/") || relativePath.includes("commands/")) {
-            utilityFiles.push(relativePath);
+            utilityFiles.push(fullRelativePath);
           }
         }
       }
