@@ -129,6 +129,80 @@ let visibilityHandler: (() => void) | null = null;
 let focusHandler: (() => void) | null = null;
 let deviceChangeHandler: (() => void) | null = null;
 
+// Track whether we've unlocked audio (iOS Safari requires resume() during user gesture)
+let audioUnlocked = false;
+
+/**
+ * iOS Safari requires AudioContext.resume() to be called directly within a user
+ * gesture event handler. This function sets up one-time listeners on all user
+ * gesture events to "unlock" audio on first interaction, regardless of whether
+ * that interaction was meant to produce sound.
+ */
+function setupAudioUnlockListeners() {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return;
+  }
+
+  const unlockAudio = () => {
+    if (audioUnlocked) return;
+
+    // Get or create the AudioContext
+    const ctx = getAudioContext();
+
+    // If already running, we're good
+    if (ctx.state === "running") {
+      audioUnlocked = true;
+      removeUnlockListeners();
+      console.debug("[audioContext] Audio already unlocked (running)");
+      return;
+    }
+
+    // Try to resume - this must happen synchronously within the gesture handler
+    // Note: resume() returns a promise but the unlock happens synchronously
+    ctx.resume().then(() => {
+      if (ctx.state === "running") {
+        audioUnlocked = true;
+        removeUnlockListeners();
+        console.debug("[audioContext] Audio unlocked via user gesture");
+      }
+    }).catch((err) => {
+      console.debug("[audioContext] Audio unlock attempt failed:", err);
+    });
+
+    // Also try playing a silent buffer as a fallback for older iOS versions
+    // This technique works on iOS 6-8 where resume() alone may not work
+    try {
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start(0);
+      source.stop(0);
+    } catch {
+      // Ignore errors - this is just a fallback
+    }
+  };
+
+  // User gesture events that iOS Safari recognizes for audio unlock
+  const gestureEvents = ["touchstart", "touchend", "click", "keydown"] as const;
+
+  const removeUnlockListeners = () => {
+    gestureEvents.forEach((event) => {
+      document.removeEventListener(event, unlockAudio, true);
+    });
+  };
+
+  // Use capture phase to ensure we get the event before anything else
+  gestureEvents.forEach((event) => {
+    document.addEventListener(event, unlockAudio, { capture: true, passive: true });
+  });
+
+  // Store cleanup function for HMR
+  return removeUnlockListeners;
+}
+
+let cleanupUnlockListeners: (() => void) | undefined;
+
 function setupAudioContextListeners() {
   if (typeof document !== "undefined" && typeof window !== "undefined") {
     // Clean up any existing listeners first (for HMR)
@@ -166,6 +240,9 @@ function setupAudioContextListeners() {
         deviceChangeHandler
       );
     }
+
+    // Set up iOS Safari audio unlock listeners
+    cleanupUnlockListeners = setupAudioUnlockListeners();
   }
 }
 
@@ -189,6 +266,12 @@ if (import.meta.hot) {
       );
       deviceChangeHandler = null;
     }
+    if (cleanupUnlockListeners) {
+      cleanupUnlockListeners();
+      cleanupUnlockListeners = undefined;
+    }
+    // Reset unlock state so it can be re-established after HMR
+    audioUnlocked = false;
     console.debug("[audioContext] HMR cleanup: removed listeners");
   });
 }
