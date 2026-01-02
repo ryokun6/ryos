@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Integration - ryOS Docs</title>
+  <title>AI System - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -236,7 +236,7 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/ai-integration" class="active">4. AI Integration</a>
+    <a href="/docs/ai-system" class="active">4. AI System</a>
   </div>
 </div>
 <div class="nav-group">
@@ -289,10 +289,11 @@
     
     <main class="content">
       <article>
-        <h1>AI Integration</h1>
-<p>Multi-provider AI with tool calling support.</p>
+        <h1>AI System</h1>
+<p>Multi-provider AI with tool calling support and streaming responses.</p>
 <h2>Providers</h2>
-<table><thead><tr><th>Provider</th><th>SDK</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td><code>@ai-sdk/openai</code></td><td>gpt-5, gpt-5.1, gpt-4o</td></tr><tr><td>Anthropic</td><td><code>@ai-sdk/anthropic</code></td><td>claude-4.5, claude-4, claude-3.7</td></tr><tr><td>Google</td><td><code>@ai-sdk/google</code></td><td>gemini-2.5-pro, gemini-2.5-flash</td></tr></tbody></table>
+<table><thead><tr><th>Provider</th><th>SDK</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td><code>@ai-sdk/openai</code></td><td>gpt-5, gpt-5.1, gpt-5-mini, gpt-4o, gpt-4.1, gpt-4.1-mini</td></tr><tr><td>Anthropic</td><td><code>@ai-sdk/anthropic</code></td><td>claude-4.5, claude-4, claude-3.7, claude-3.5</td></tr><tr><td>Google</td><td><code>@ai-sdk/google</code></td><td>gemini-2.5-pro, gemini-2.5-flash, gemini-3-pro-preview</td></tr></tbody></table>
+<p>Default model: <code>gpt-5.1</code></p>
 <pre class="mermaid">graph TD
     A[User Message] --> B[Chat API]
     B --> C{Provider Selection}
@@ -305,7 +306,10 @@
     G --> H[Response Handler]
     H --> I[UI Update]</pre>
 <h2>Available Tools</h2>
-<table><thead><tr><th>Tool</th><th>Description</th></tr></thead><tbody><tr><td><code>launchApp</code></td><td>Open applications</td></tr><tr><td><code>closeApp</code></td><td>Close applications</td></tr><tr><td><code>ipodControl</code></td><td>Music playback control</td></tr><tr><td><code>karaokeControl</code></td><td>Karaoke playback</td></tr><tr><td><code>generateHtml</code></td><td>Create HTML applets</td></tr><tr><td><code>list</code></td><td>List VFS items</td></tr><tr><td><code>open</code></td><td>Open files/apps</td></tr><tr><td><code>read</code></td><td>Read file contents</td></tr><tr><td><code>write</code></td><td>Create/modify documents</td></tr><tr><td><code>edit</code></td><td>Edit existing files</td></tr><tr><td><code>searchSongs</code></td><td>YouTube music search</td></tr><tr><td><code>settings</code></td><td>System settings</td></tr></tbody></table>
+<table><thead><tr><th>Tool</th><th>Description</th></tr></thead><tbody><tr><td><code>launchApp</code></td><td>Open applications (with Internet Explorer time-travel support)</td></tr><tr><td><code>closeApp</code></td><td>Close applications</td></tr><tr><td><code>ipodControl</code></td><td>Music playback: toggle/play/pause/playKnown/addAndPlay/next/previous, video mode, fullscreen, lyrics translation</td></tr><tr><td><code>karaokeControl</code></td><td>Karaoke playback (shared library with iPod, independent playback state)</td></tr><tr><td><code>generateHtml</code></td><td>Create HTML applets with title and emoji icon</td></tr><tr><td><code>aquarium</code></td><td>Render interactive emoji aquarium in chat</td></tr><tr><td><code>list</code></td><td>List VFS items: /Applets, /Documents, /Applications, /Music, /Applets Store</td></tr><tr><td><code>open</code></td><td>Open files/apps from virtual file system</td></tr><tr><td><code>read</code></td><td>Read file contents (applets, documents, store items)</td></tr><tr><td><code>write</code></td><td>Create/modify markdown documents (overwrite/append/prepend modes)</td></tr><tr><td><code>edit</code></td><td>Edit existing files with precise text replacement</td></tr><tr><td><code>searchSongs</code></td><td>Search YouTube for songs (with API key rotation)</td></tr><tr><td><code>settings</code></td><td>Change language, theme, volume, speech, check for updates</td></tr></tbody></table>
+<h2>API Endpoints</h2>
+<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><a href="/docs/chat-api"><code>/api/chat</code></a></td><td>Main chat with streaming and tool calling</td></tr><tr><td><a href="/docs/ai-generation-apis"><code>/api/applet-ai</code></a></td><td>Applet AI assistant and image generation</td></tr><tr><td><a href="/docs/ai-generation-apis"><code>/api/ie-generate</code></a></td><td>Internet Explorer time-travel</td></tr><tr><td><a href="/docs/media-api"><code>/api/speech</code></a></td><td>Text-to-speech synthesis</td></tr><tr><td><a href="/docs/media-api"><code>/api/audio-transcribe</code></a></td><td>Audio transcription</td></tr></tbody></table>
+<h2>Architecture</h2>
 <pre class="mermaid">sequenceDiagram
     participant U as User
     participant C as Chat UI
@@ -323,6 +327,11 @@
     T-->>A: Tool result
     A-->>C: Final response
     C-->>U: Display result</pre>
+<h2>Tool Handlers</h2>
+<p>Tool handlers in <code>src/apps/chats/tools/</code> follow a registry pattern: <ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/appHandlers.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/appHandlers.ts</a></code> - Launch/close app handlers</li></ul><ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/ipodHandler.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/ipodHandler.ts</a></code> - iPod playback control with iOS detection</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/karaokeHandler.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/karaokeHandler.ts</a></code> - Karaoke playback with fuzzy search</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/settingsHandler.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/settingsHandler.ts</a></code> - System settings changes</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/helpers.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/helpers.ts</a></code> - Shared utilities (track formatting, i18n)</li></ul></p>
+<h2>System Prompts</h2>
+<p>Defined in <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/aiPrompts.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/aiPrompts.ts</a></code>: <ul><li><code>CORE_PRIORITY_INSTRUCTIONS</code> - Persona adherence rules</li></ul><ul><li><code>RYO_PERSONA_INSTRUCTIONS</code> - Ryo's identity and background</li><li><code>ANSWER_STYLE_INSTRUCTIONS</code> - Response style and tone</li><li><code>CODE_GENERATION_INSTRUCTIONS</code> - HTML applet generation rules</li><li><code>CHAT_INSTRUCTIONS</code> - Chat behavior and nudge handling</li><li><code>TOOL_USAGE_INSTRUCTIONS</code> - VFS and tool usage patterns</li></ul></p>
+
       </article>
       
       <nav class="nav">

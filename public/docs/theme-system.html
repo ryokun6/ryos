@@ -236,7 +236,7 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/ai-integration" class="">4. AI Integration</a>
+    <a href="/docs/ai-system" class="">4. AI System</a>
   </div>
 </div>
 <div class="nav-group">
@@ -292,7 +292,7 @@
         <h1>Theme System</h1>
 <p>ryOS supports 4 themes emulating classic operating systems.</p>
 <h2>Available Themes</h2>
-<table><thead><tr><th>Theme ID</th><th>Name</th><th>Platform</th><th>Key Elements</th></tr></thead><tbody><tr><td><code>macosx</code></td><td>Aqua</td><td>macOS</td><td>Glossy buttons, traffic lights, pinstripe</td></tr><tr><td><code>system7</code></td><td>System 7</td><td>Classic Mac</td><td>Black & white, dotted titlebar</td></tr><tr><td><code>xp</code></td><td>XP</td><td>Windows</td><td>Luna blue chrome, rounded corners</td></tr><tr><td><code>win98</code></td><td>98</td><td>Windows</td><td>3D face, blue titlebar</td></tr></tbody></table>
+<table><thead><tr><th>Theme ID</th><th>Name</th><th>Platform</th><th>Key Elements</th></tr></thead><tbody><tr><td><code>macosx</code></td><td>Aqua</td><td>Mac OS X</td><td>Glossy buttons, traffic lights, pinstripe, dock</td></tr><tr><td><code>system7</code></td><td>System 7</td><td>Classic Mac</td><td>Black & white, dotted titlebar pattern</td></tr><tr><td><code>xp</code></td><td>Luna</td><td>Windows XP</td><td>Blue chrome, rounded corners, taskbar</td></tr><tr><td><code>win98</code></td><td>Classic</td><td>Windows 98</td><td>3D beveled face, blue gradient titlebar</td></tr></tbody></table>
 <h3>Theme Application Flow</h3>
 <pre class="mermaid">flowchart LR
     A[User Selection] --> B[Theme Store]
@@ -324,18 +324,25 @@
         W1 --> W3[Start Menu]
     end</pre>
 <h2>CSS Custom Properties</h2>
+<p>Themes are applied via <code>data-os-theme</code> attribute on the document root. CSS custom properties provide consistent styling across components:</p>
 <pre><code>:root[data-os-theme="macosx"] {
-  --os-font-ui: "Lucida Grande", ...;
-  --os-color-window-bg: white;
-  --os-color-titlebar-active-bg: linear-gradient(...);
-  --os-metrics-radius: 0.5rem;
+  --os-font-ui: "LucidaGrande", "Lucida Grande", ...;
+  --os-font-mono: Monaco, Menlo, monospace;
+  --os-color-window-bg: #ececec;
+  --os-color-menubar-bg: linear-gradient(to bottom, #f8f8f8, #d4d4d4);
+  --os-color-titlebar-active-bg: linear-gradient(to bottom, #e8e8e8, #d0d0d0);
+  --os-color-selection-bg: rgba(39, 101, 202, 0.88);
+  --os-metrics-radius: 0.45rem;
+  --os-metrics-menubar-height: 25px;
   --os-window-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  --os-pinstripe-window: repeating-linear-gradient(...);
 }</code></pre>
+<p>Windows themes (XP, 98) dynamically load additional CSS from <code><a href="https://github.com/ryokun6/ryos/blob/main/public/css/xp-custom.css" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">public/css/xp-custom.css</a></code> or <code><a href="https://github.com/ryokun6/ryos/blob/main/public/css/98-custom.css" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">public/css/98-custom.css</a></code> for legacy widget styling.</p>
       </article>
       
       <nav class="nav">
         <a href="/docs/state-management">← State Management</a>
-        <a href="/docs/ai-integration">AI Integration →</a>
+        <a href="/docs/ai-system">AI System →</a>
       </nav>
       
     </main>

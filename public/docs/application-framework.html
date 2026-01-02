@@ -236,7 +236,7 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/ai-integration" class="">4. AI Integration</a>
+    <a href="/docs/ai-system" class="">4. AI System</a>
   </div>
 </div>
 <div class="nav-group">
@@ -319,7 +319,7 @@
     APP2 -->|registers| WM
     APP3 -->|integrates| WF</pre>
 <h2>Key Components</h2>
-<table><thead><tr><th>Component</th><th>Purpose</th></tr></thead><tbody><tr><td>Window Management</td><td>Handles window rendering, positioning, resizing, minimizing, maximizing, and multi-instance support through the <code>WindowFrame</code> component and <code>useWindowManager</code> hook</td></tr><tr><td>State Management</td><td>Manages app state, window instances, foreground ordering, and persistence using Zustand stores with localStorage integration</td></tr><tr><td>Theme System</td><td>Provides OS-themed appearance (macOS X, System 7, Windows XP, Windows 98) with theme-aware components, colors, fonts, and layout metadata</td></tr></tbody></table>
+<table><thead><tr><th>Component</th><th>Purpose</th></tr></thead><tbody><tr><td>Window Management</td><td>Handles window rendering, positioning, resizing, minimizing, maximizing, and multi-instance support through the <code>WindowFrame</code> component and <code>useWindowManager</code> hook</td></tr><tr><td>State Management</td><td>Manages app state, window instances, foreground ordering, and persistence using Zustand stores with localStorage integration</td></tr><tr><td>Theme System</td><td>Provides OS-themed appearance (Mac OS X, System 7, Windows XP, Windows 98) with theme-aware components, colors, fonts, and layout metadata</td></tr></tbody></table>
 <h2>App Structure</h2>
 <p>Apps follow a standardized structure and naming convention. Each app is defined in <code>src/apps/[app-name]/</code> with the following typical organization: <ul><li><strong>Main Component</strong>: <code>[AppName]AppComponent.tsx</code> - The primary app component that receives <code>AppProps</code> and renders the app content wrapped in <code>WindowFrame</code></li></ul><ul><li><strong>Menu Bar</strong>: <code>[AppName]MenuBar.tsx</code> - App-specific menu bar component (rendered outside <code>WindowFrame</code> for macOS themes, inside for Windows themes)</li><li><strong>App Definition</strong>: <code>index.tsx</code> or <code>index.ts</code> - Exports the app definition object conforming to <code>BaseApp</code> interface, including component, metadata, help items, and window constraints</li><li><strong>Optional Folders</strong>: <code>hooks/</code>, <code>utils/</code>, <code>types/</code>, <code>components/</code> - App-specific logic, utilities, types, and sub-components</li></ul></p>
 <p>Apps receive common props via the <code>AppProps</code> interface, including <code>isWindowOpen</code>, <code>onClose</code>, <code>isForeground</code>, <code>instanceId</code>, and <code>initialData</code>. The <code>WindowFrame</code> component handles all window chrome, controls, and interactions, while apps focus on their content and functionality.</p>

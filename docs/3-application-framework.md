@@ -42,7 +42,7 @@ graph TD
 |-----------|---------|
 | Window Management | Handles window rendering, positioning, resizing, minimizing, maximizing, and multi-instance support through the `WindowFrame` component and `useWindowManager` hook |
 | State Management | Manages app state, window instances, foreground ordering, and persistence using Zustand stores with localStorage integration |
-| Theme System | Provides OS-themed appearance (macOS X, System 7, Windows XP, Windows 98) with theme-aware components, colors, fonts, and layout metadata |
+| Theme System | Provides OS-themed appearance (Mac OS X, System 7, Windows XP, Windows 98) with theme-aware components, colors, fonts, and layout metadata |
 
 ## App Structure
 

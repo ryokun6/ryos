@@ -236,7 +236,7 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/ai-integration" class="">4. AI Integration</a>
+    <a href="/docs/ai-system" class="">4. AI System</a>
   </div>
 </div>
 <div class="nav-group">
@@ -295,17 +295,18 @@
 <pre><code>User Action → launchApp() → createAppInstance() → AppManager renders</code></pre>
 <h2>Instance State</h2>
 <pre><code>interface AppInstance {
-  instanceId: string;       // Unique numeric ID
-  appId: AppId;             // App identifier
+  instanceId: string;        // Unique numeric ID
+  appId: AppId;              // App identifier
   isOpen: boolean;
   isForeground: boolean;
-  isMinimized: boolean;
-  isLoading: boolean;       // For lazy-loaded apps
-  position: { x: number; y: number };
-  size: { width: number; height: number };
-  title?: string;
-  createdAt: number;        // For stable ordering
-  initialData?: unknown;    // App-specific data
+  isMinimized?: boolean;     // Dock/taskbar minimize state
+  isLoading?: boolean;       // For lazy-loaded apps
+  position?: { x: number; y: number };
+  size?: { width: number; height: number };
+  title?: string;            // Static title set at creation
+  displayTitle?: string;     // Dynamic title (updated by WindowFrame)
+  createdAt: number;         // For stable ordering in taskbar
+  initialData?: unknown;     // App-specific data passed at launch
 }</code></pre>
 <h3>Window State Transitions</h3>
 <pre class="mermaid">stateDiagram-v2

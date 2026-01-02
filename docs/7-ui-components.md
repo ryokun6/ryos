@@ -45,10 +45,10 @@ graph LR
 
 The UI system follows a layered approach:
 
-1. **Base Layer**: shadcn/ui components (button, dialog, input, select, etc.) provide accessible, themeable primitives
-2. **Custom Layer**: Specialized components (activity-indicator, audio-bars, dial, playback-bars) extend functionality for app-specific needs
+1. **Base Layer**: shadcn/ui components (19 components: button, dialog, input, select, etc.) provide accessible, themeable primitives
+2. **Custom Layer**: Specialized components (10 components: activity-indicator, audio-bars, dial, playback-bars, etc.) extend functionality for app-specific needs
 3. **Layout Layer**: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure
-4. **Application Layer**: Dialog and shared components provide common patterns used across multiple apps
+4. **Application Layer**: Dialog and shared components (10 components) provide common patterns used across multiple apps
 
 ```mermaid
 graph TD
@@ -69,6 +69,8 @@ graph TD
         B2[audio-bars]
         B3[dial]
         B4[playback-bars]
+        B5[volume-bar]
+        B6[audio-input-button]
     end
     
     subgraph Layer 1: Base
@@ -76,8 +78,8 @@ graph TD
         A2[button, dialog, input, select, ...]
     end
     
-    A1 --> B1 & B2 & B3 & B4
-    B1 & B2 & B3 & B4 --> C1 & C2 & C3 & C4
+    A1 --> B1 & B2 & B3 & B4 & B5 & B6
+    B1 & B2 & B3 & B4 & B5 & B6 --> C1 & C2 & C3 & C4
     C1 & C2 & C3 & C4 --> D1 & D2
 ```
 
@@ -85,5 +87,5 @@ All components are theme-aware, automatically adapting to the active system them
 
 ## Subsections
 
-- [Component Library](/docs/component-library) - Core UI component library including shadcn components and custom primitives
-- [Internationalization](/docs/i18n) - i18n hooks and translation system supporting 9 languages
+- [Component Library](/docs/component-library) - Core UI component library including 19 shadcn components, 10 custom primitives, and 10 shared components
+- [Internationalization](/docs/i18n) - i18n hooks and translation system supporting 10 languages

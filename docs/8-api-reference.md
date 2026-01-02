@@ -106,6 +106,6 @@ Token-based with 90-day expiration.
 
 | Provider | Models |
 |----------|--------|
-| OpenAI | gpt-5, gpt-5.1, gpt-4o, gpt-4.1 |
-| Anthropic | claude-4.5, claude-4, claude-3.7 |
-| Google | gemini-2.5-pro, gemini-2.5-flash |
+| OpenAI | gpt-5, gpt-5.1, gpt-5-mini, gpt-4o, gpt-4.1, gpt-4.1-mini |
+| Anthropic | claude-4.5, claude-4, claude-3.7, claude-3.5 |
+| Google | gemini-2.5-pro, gemini-2.5-flash, gemini-3-pro-preview |

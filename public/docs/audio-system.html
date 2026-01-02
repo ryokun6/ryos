@@ -236,7 +236,7 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/ai-integration" class="">4. AI Integration</a>
+    <a href="/docs/ai-system" class="">4. AI System</a>
   </div>
 </div>
 <div class="nav-group">
@@ -292,7 +292,7 @@
         <h1>Audio System</h1>
 <p>Overview of ryOS audio capabilities and architecture.</p>
 <h2>Technologies</h2>
-<table><thead><tr><th>Technology</th><th>Usage</th></tr></thead><tbody><tr><td>Web Audio API</td><td>Core audio processing, centralized AudioContext management, UI sound playback</td></tr><tr><td>Tone.js</td><td>Synthesizer app with polyphonic synthesis, effects chain, and real-time audio generation</td></tr><tr><td>WaveSurfer.js</td><td>Waveform visualization for recorded sounds in Soundboard app</td></tr><tr><td>MediaRecorder API</td><td>Audio recording functionality for Soundboard app</td></tr><tr><td>ReactPlayer</td><td>YouTube video/audio playback in iPod app</td></tr></tbody></table>
+<table><thead><tr><th>Technology</th><th>Usage</th></tr></thead><tbody><tr><td>Web Audio API</td><td>Core audio processing, centralized AudioContext management, UI sound playback, TTS audio scheduling</td></tr><tr><td>Tone.js</td><td>Synthesizer app with polyphonic synthesis, effects chain, and Chat typing synthesis</td></tr><tr><td>WaveSurfer.js</td><td>Waveform visualization for recorded sounds in Soundboard app</td></tr><tr><td>MediaRecorder API</td><td>Audio recording functionality for Soundboard app</td></tr><tr><td>ReactPlayer</td><td>YouTube video/audio playback in iPod app</td></tr></tbody></table>
 <h2>Architecture Overview</h2>
 <pre class="mermaid">graph TB
     subgraph Sources["Audio Sources"]
@@ -300,38 +300,36 @@
         Soundboard["Soundboard<br/>(HTMLAudioElement)"]
         UI["UI Sounds<br/>(useSound)"]
         Synth["Synthesizer<br/>(Tone.js)"]
+        TTS["Text-to-Speech<br/>(useTtsQueue)"]
+        ChatSynth["Chat Synth<br/>(useChatSynth)"]
     end
     
     subgraph Processing["Audio Processing"]
         GainNode["Gain Nodes<br/>(Volume Control)"]
         Effects["Effects Chain<br/>(Reverb, Delay, etc.)"]
+        Ducking["Volume Ducking<br/>(TTS Priority)"]
     end
     
     subgraph Context["Shared AudioContext"]
-        AC["AudioContext"]
+        AC["AudioContext<br/>(audioContext.ts)"]
+        Listeners["Context Change<br/>Listeners"]
     end
     
     subgraph Output["Output"]
         Dest["Audio Destination<br/>(Speakers)"]
     end
     
-    iPod --> GainNode
+    iPod --> Ducking
     Soundboard --> GainNode
     UI --> GainNode
     Synth --> Effects --> GainNode
-    GainNode --> AC --> Dest</pre>
-<h2>Audio Playback</h2>
-<p>ryOS provides multiple audio playback mechanisms: <ul><li><strong>iPod App</strong>: Uses ReactPlayer for YouTube video/audio playback with volume control, seeking, and playback state management. Supports fullscreen playback with synchronized lyrics display.</li><li><strong>Soundboard App</strong>: Plays recorded audio clips using HTMLAudioElement. Supports multiple audio formats (WebM, MP4, WAV, MPEG) with base64-encoded storage. Includes waveform visualization using WaveSurfer.js.</li><li><strong>UI Sounds</strong>: The <code>useSound</code> hook provides Web Audio API-based playback for interface feedback sounds (window operations, button clicks, menu interactions). Features include:<ul><li>AudioBuffer caching for performance</li><li>Concurrent source limiting (16 on mobile, 32 on desktop)</li><li>Volume control with master and UI volume multipliers</li><li>Fade in/out capabilities</li><li>Automatic AudioContext resumption</li></ul></li></ul></p>
-<h2>Synthesizer</h2>
-<p>The Synthesizer app (<code>src/apps/synth/</code>) provides a full-featured music synthesizer built with Tone.js: <ul><li><strong>Oscillators</strong>: Supports sine, square, triangle, and sawtooth waveforms</li></ul><ul><li><strong>Polyphonic Synthesis</strong>: Tone.PolySynth enables multiple simultaneous notes</li><li><strong>Effects Chain</strong>: <ul><li>Reverb (decay, wet mix)</li><li>Feedback Delay</li><li>Distortion</li><li>Chorus</li><li>Phaser</li><li>BitCrusher</li><li>Gain control</li></ul></li><li><strong>ADSR Envelope</strong>: Attack, Decay, Sustain, Release controls for note shaping</li><li><strong>Preset System</strong>: Save and load custom synthesizer configurations</li><li><strong>Keyboard Support</strong>: Virtual piano keyboard with octave shifting, keyboard mapping, and touch/mouse support</li><li><strong>Visualization</strong>: 3D waveform visualization using Tone.Analyser</li></ul></p>
-<p>The synthesizer uses a simplified effects chain on mobile Safari to avoid audio blocking issues, while desktop uses the full effects chain.</p>
-<h2>Sound Recording</h2>
-<p>The Soundboard app (<code>src/apps/soundboard/</code>) provides audio recording capabilities: <ul><li><strong>MediaRecorder API</strong>: Records audio from user's microphone</li></ul><ul><li><strong>Format Support</strong>: Automatically detects and uses browser-supported formats (WebM for Chrome/Firefox, MP4 for Safari)</li><li><strong>Device Selection</strong>: Supports selecting specific audio input devices</li><li><strong>Base64 Storage</strong>: Recorded audio is stored as base64-encoded data in the app's state</li><li><strong>Waveform Visualization</strong>: Uses WaveSurfer.js to display audio waveforms for recorded clips</li><li><strong>Recording State Management</strong>: Tracks recording state per sound slot with visual feedback</li></ul></p>
-<p>The <code>useAudioRecorder</code> hook manages recording lifecycle, permission handling, and format conversion.</p>
-<h2>Audio Settings</h2>
-<p>Audio settings are managed centrally via <code>useAudioSettingsStore</code>: <ul><li><strong>Volume Controls</strong>:<ul><li>Master volume (global multiplier)</li><li>UI volume (interface sounds)</li><li>Chat synth volume (text-to-speech synthesis)</li><li>Speech volume (voice input/output)</li><li>iPod volume (music player)</li></ul></li><li><strong>Feature Toggles</strong>:<ul><li>UI sounds enabled/disabled</li><li>Terminal sounds enabled/disabled</li><li>Typing synthesis enabled/disabled</li><li>Speech enabled/disabled</li><li>Keep talking mode</li></ul></li><li><strong>TTS Settings</strong>:<ul><li>TTS model selection (OpenAI, ElevenLabs, or null)</li><li>Voice selection</li><li>Synthesizer preset</li></ul></li></ul></p>
-<p>All settings are persisted to localStorage via Zustand's persist middleware.</p>
+    TTS --> Ducking --> GainNode
+    ChatSynth --> Ducking
+    Ducking --> GainNode
+    GainNode --> AC --> Dest
+    AC --> Listeners</pre>
 <h2>Audio Context Management</h2>
+<p>The audio system uses a centralized AudioContext (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/audioContext.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/audioContext.ts</a></code>) with sophisticated lifecycle management:</p>
 <pre class="mermaid">stateDiagram-v2
     [*] --> Running: Create Context
     Running --> Suspended: Tab Hidden / iOS Background
@@ -341,10 +339,115 @@
     Suspended --> Closed: Context Interrupted
     
     note right of Running: Audio plays normally
-    note right of Suspended: Audio paused, auto-resume on interaction
-    note right of Closed: Must recreate AudioContext instance</pre>
-<p>The audio system uses a centralized AudioContext (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/audioContext.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/audioContext.ts</a></code>) to: <ul><li><strong>Single Context</strong>: Maintains one shared AudioContext instance across the application</li></ul><ul><li><strong>Auto-Resume</strong>: Automatically resumes suspended contexts on user interaction, tab focus, or device changes</li><li><strong>Context Recreation</strong>: Recreates closed contexts (e.g., after iOS Safari backgrounding)</li><li><strong>State Management</strong>: Tracks context state and notifies listeners of context changes</li><li><strong>Mobile Optimization</strong>: Handles iOS Safari quirks including suspended/interrupted states</li></ul></p>
-<p>This centralized approach prevents AudioContext limit issues and ensures consistent audio behavior across all apps.</p>
+    note right of Suspended: Auto-resume on gesture
+    note right of Closed: Must recreate instance</pre>
+<h3>Key Features</h3>
+<ul><li><strong>Single Shared Instance</strong>: One AudioContext shared across all audio modules</li></ul><ul><li><strong>Lazy Initialization</strong>: Context created on first use with <code>latencyHint: "interactive"</code></li><li><strong>Context Change Notifications</strong>: Listener system (<code>onContextChange()</code>) allows modules to reset state when context is recreated</li><li><strong>Concurrency Control</strong>: Prevents race conditions during resume operations</li></ul>
+<h3>iOS Safari Handling</h3>
+<p>The audio context includes special handling for iOS Safari quirks:</p>
+<pre><code>// Gesture events that unlock audio on iOS
+const GESTURE_EVENTS = ["touchstart", "touchend", "click", "keydown"];
+
+// Silent buffer technique for older iOS versions (iOS 6-8)
+const buffer = ctx.createBuffer(1, 1, 22050);
+const source = ctx.createBufferSource();
+source.buffer = buffer;
+source.connect(ctx.destination);
+source.start(0);
+source.stop(0);</code></pre>
+<h3>Auto-Resume Triggers</h3>
+<ul><li><code>visibilitychange</code> event (tab becomes visible)</li></ul><ul><li><code>focus</code> event (window gains focus)</li><li><code>devicechange</code> event (Bluetooth/AirPlay device switching)</li><li>User gesture events (touch, click, keydown)</li></ul>
+<h2>Audio Playback</h2>
+<p>ryOS provides multiple audio playback mechanisms:</p>
+<h3>iPod App</h3>
+<p>Uses ReactPlayer for YouTube video/audio playback with: <ul><li>Volume control via <code>ipodVolume</code> setting</li><li>Seeking and playback state management</li><li>Fullscreen playback with synchronized lyrics display</li><li>Volume ducking when TTS is speaking (35% of original on non-iOS)</li></ul></p>
+<h3>Soundboard App</h3>
+<p>Plays recorded audio clips using HTMLAudioElement: <ul><li>Supports multiple formats (WebM, MP4) with automatic browser detection</li><li>Base64-encoded audio storage</li><li>Waveform visualization using WaveSurfer.js (dynamically imported)</li><li>Per-slot playback state tracking</li></ul></p>
+<h3>UI Sounds (<code>useSound</code>)</h3>
+<p>Web Audio API-based playback for interface feedback:</p>
+<pre><code>// Performance tuning by device
+const MAX_CONCURRENT_SOURCES = isMobileDevice ? 16 : 32;
+const MAX_CACHE_SIZE = isMobileDevice ? 15 : 30;</code></pre>
+<strong>Features</strong>:
+<ul><li><strong>AudioBuffer Caching</strong>: LRU-style eviction when cache is full</li><li><strong>Load Deduplication</strong>: Prevents duplicate fetches for the same sound</li><li><strong>Concurrent Source Limiting</strong>: Skips playback when limit reached</li><li><strong>Volume Control</strong>: Master × UI volume multipliers with ramping</li><li><strong>Fade In/Out</strong>: Linear ramping to target volume</li><li><strong>Auto-Resume</strong>: Ensures AudioContext is running before playback</li><li><strong>Context Change Detection</strong>: Invalidates cache when context is recreated</li></ul>
+<strong>Available Sounds</strong>:
+<ul><li>Window operations (open, close, expand, collapse, zoom, move, resize)</li><li>UI interactions (button clicks, menu open/close)</li><li>Alerts (sosumi, bonk, indigo)</li><li>App-specific (photo shutter, video tape, boot, volume change, iPod click wheel)</li></ul>
+<strong>Lazy Preloading</strong>: Sounds are preloaded after first user interaction:
+<ul><li>Mobile: Essential sounds only (button click, window open/close, menu open)</li><li>Desktop: All sounds preloaded</li></ul>
+<h2>Synthesizer</h2>
+<p>The Synthesizer app (<code>src/apps/synth/</code>) provides a full-featured music synthesizer built with Tone.js:</p>
+<h3>Audio Signal Chain</h3>
+<strong>Desktop (Full Effects)</strong>:
+<pre><code>Synth → Reverb → FeedbackDelay → Distortion → Chorus → Phaser → BitCrusher → Gain → Analyzer → Destination</code></pre>
+<strong>Mobile Safari (Simplified)</strong>:
+<pre><code>Synth → Gain → Analyzer → Destination</code></pre>
+<p>The simplified chain on mobile Safari prevents audio blocking issues that can occur with complex effects processing.</p>
+<h3>Features</h3>
+<ul><li><strong>Oscillators</strong>: Sine, square, triangle, and sawtooth waveforms</li></ul><ul><li><strong>Polyphonic Synthesis</strong>: <code>Tone.PolySynth</code> enables multiple simultaneous notes</li><li><strong>ADSR Envelope</strong>: Attack, decay, sustain, release controls</li><li><strong>Effects Chain</strong>:<ul><li>Reverb (decay 2s, configurable wet mix)</li><li>Feedback Delay (0.25s delay time)</li><li>Distortion</li><li>Chorus (4Hz, 2.5ms delay, 0.7 depth)</li><li>Phaser (0.5Hz, 3 octaves)</li><li>BitCrusher (4-16 bit resolution)</li><li>Gain control</li></ul></li><li><strong>Preset System</strong>: Save/load custom synthesizer configurations (persisted via Zustand)</li><li><strong>Keyboard Support</strong>: <ul><li>Virtual piano with touch/mouse/pointer support</li><li>Physical keyboard mapping (A-L, W-P for notes)</li><li>Octave shifting (±2 octaves via -/+ keys or buttons)</li><li>Glissando support via pointer move tracking</li></ul></li><li><strong>Visualization</strong>: 3D waveform using <code>Tone.Analyser</code> (1024 samples, 0.8 smoothing)</li><li><strong>Low Latency</strong>: <code>Tone.context.lookAhead = 0</code> for immediate note triggering</li></ul>
+<h2>Chat Typing Synthesis (<code>useChatSynth</code>)</h2>
+<p>Provides musical feedback for typing in the Chat app:</p>
+<h3>Features</h3>
+<ul><li><strong>Pentatonic Scale</strong>: Notes C4, D4, F4, G4, A4, C5, D5 for pleasant sounds</li></ul><ul><li><strong>Presets</strong>: Classic, Ethereal, Digital, Retro, Off</li><li><strong>Effects Chain</strong>: Filter → Tremolo → Reverb → PolySynth</li><li><strong>Voice Limiting</strong>: 16 voices maximum</li><li><strong>Global Instance</strong>: Synth instance persists across HMR for seamless development</li><li><strong>Volume Control</strong>: Responds to <code>chatSynthVolume</code> and <code>masterVolume</code> settings</li></ul>
+<h3>Presets</h3>
+<table><thead><tr><th>Preset</th><th>Oscillator</th><th>Character</th></tr></thead><tbody><tr><td>Classic</td><td>Triangle</td><td>Warm, balanced</td></tr><tr><td>Ethereal</td><td>Sine</td><td>Soft, dreamy</td></tr><tr><td>Digital</td><td>Square</td><td>Sharp, electronic</td></tr><tr><td>Retro</td><td>Sawtooth</td><td>Vintage, buzzy</td></tr><tr><td>Off</td><td>-</td><td>Disabled</td></tr></tbody></table>
+<h2>Text-to-Speech (<code>useTtsQueue</code>)</h2>
+<p>Provides gap-free TTS playback with intelligent queuing:</p>
+<h3>Features</h3>
+<ul><li><strong>Gap-Free Playback</strong>: Uses AudioContext timeline scheduling (<code>source.start(startTime)</code>)</li></ul><ul><li><strong>Parallel Fetching</strong>: Up to 3 concurrent TTS requests</li><li><strong>TTS Providers</strong>: OpenAI and ElevenLabs support</li><li><strong>Volume Control</strong>: Dedicated <code>speechVolume</code> with master multiplier</li><li><strong>Micro-Fades</strong>: 10ms fade-out before stopping to prevent clicks</li></ul>
+<h3>Volume Ducking</h3>
+<p>When TTS is speaking: <ul><li>iPod volume reduced to 35% (non-iOS only)</li><li>Chat synth volume reduced to 60%</li><li>Original volumes restored when speech ends</li></ul></p>
+<pre><code>// Ducking example
+if (isSpeaking &amp;&amp; ipodIsPlaying &amp;&amp; !isIOS) {
+  const duckedIpod = originalVolume * 0.35;
+  setIpodVolumeGlobal(duckedIpod);
+}</code></pre>
+<h2>Sound Recording</h2>
+<p>The Soundboard app provides audio recording via the <code>useAudioRecorder</code> hook:</p>
+<h3>Features</h3>
+<ul><li><strong>MediaRecorder API</strong>: Records from user's microphone</li></ul><ul><li><strong>Format Detection</strong>: WebM for Chrome/Firefox, MP4 for Safari</li><li><strong>Device Selection</strong>: Supports specific audio input device selection</li><li><strong>Chunk-Based Recording</strong>: 200ms intervals for streaming data</li><li><strong>Base64 Storage</strong>: Recorded audio converted for persistence</li><li><strong>Stream Cleanup</strong>: Properly stops all media tracks after recording</li></ul>
+<h3>Recording Flow</h3>
+<pre class="mermaid">sequenceDiagram
+    participant User
+    participant Hook as useAudioRecorder
+    participant API as MediaRecorder API
+    participant Store as Soundboard Store
+    
+    User->>Hook: startRecording()
+    Hook->>API: getUserMedia({audio})
+    API-->>Hook: MediaStream
+    Hook->>API: new MediaRecorder(stream)
+    API->>Hook: ondataavailable (every 200ms)
+    User->>Hook: stopRecording()
+    Hook->>API: stop()
+    API->>Hook: onstop
+    Hook->>Hook: Convert to base64
+    Hook->>Store: onRecordingComplete(base64, format)
+    Hook->>API: stream.getTracks().forEach(stop)</pre>
+<h2>Audio Settings</h2>
+<p>Audio settings are managed via <code>useAudioSettingsStore</code> (Zustand with persistence):</p>
+<h3>Volume Controls</h3>
+<table><thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>masterVolume</code></td><td>1.0</td><td>Global volume multiplier</td></tr><tr><td><code>uiVolume</code></td><td>1.0</td><td>Interface sounds volume</td></tr><tr><td><code>chatSynthVolume</code></td><td>2.0</td><td>Chat typing synthesis volume</td></tr><tr><td><code>speechVolume</code></td><td>2.0</td><td>TTS voice volume</td></tr><tr><td><code>ipodVolume</code></td><td>1.0</td><td>Music player volume</td></tr></tbody></table>
+<h3>Feature Toggles</h3>
+<table><thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>uiSoundsEnabled</code></td><td>true</td><td>Enable/disable UI sounds</td></tr><tr><td><code>terminalSoundsEnabled</code></td><td>true</td><td>Enable/disable terminal sounds</td></tr><tr><td><code>typingSynthEnabled</code></td><td>false</td><td>Enable/disable chat typing synthesis</td></tr><tr><td><code>speechEnabled</code></td><td>false</td><td>Enable/disable voice input/output</td></tr><tr><td><code>keepTalkingEnabled</code></td><td>true</td><td>Continue listening after speech</td></tr></tbody></table>
+<h3>TTS Settings</h3>
+<table><thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>ttsModel</code></td><td>null</td><td>TTS provider (openai, elevenlabs, null)</td></tr><tr><td><code>ttsVoice</code></td><td>null</td><td>Voice ID for selected provider</td></tr><tr><td><code>synthPreset</code></td><td>"classic"</td><td>Chat synth preset name</td></tr></tbody></table>
+<h3>Persistence</h3>
+<p>All settings are persisted to localStorage via Zustand's persist middleware: <ul><li>Storage key: <code>ryos:audio-settings</code></li><li>Version: 1 (for migration support)</li></ul></p>
+<h3>Convenience Selectors</h3>
+<pre><code>export const selectMasterVolume = (state) =&gt; state.masterVolume;
+export const selectUiVolume = (state) =&gt; state.uiVolume;
+export const selectUiSoundsEnabled = (state) =&gt; state.uiSoundsEnabled;</code></pre>
+<h2>Audio Utilities</h2>
+<p>Helper functions in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/utils/audio.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/utils/audio.ts</a></code>:</p>
+<h3><code>createWaveform(container, base64Data, format?)</code></h3>
+Creates a WaveSurfer instance for waveform visualization. Ensures shared AudioContext is ready first to avoid Safari's context limit issues.
+<h3><code>createAudioFromBase64(base64Data, format?)</code></h3>
+Creates an HTMLAudioElement from base64-encoded audio data.
+<h3><code>getSupportedMimeType()</code></h3>
+Returns the appropriate MIME type for the current browser:
+<ul><li>Safari: <code>audio/mp4</code></li><li>Others: <code>audio/webm</code></li></ul>
+<h3><code>base64FromBlob(blob)</code> / <code>bufferToBase64(buffer)</code></h3>
+Converts Blob/ArrayBuffer to base64 string for storage.
       </article>
       
       <nav class="nav">

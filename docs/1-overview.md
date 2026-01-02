@@ -1,6 +1,8 @@
 # Overview
 
-ryOS is a modern web-based desktop environment inspired by classic macOS and Windows, built with React, TypeScript, and AI.
+ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 17 fully-functional apps, an AI assistant, and a complete virtual file system.
+
+Whether you're exploring the retro aesthetics, building HTML applets, or chatting with Ryo (the AI assistant), ryOS offers a unique blend of nostalgia and modern web technology.
 
 ```mermaid
 graph TB
@@ -12,7 +14,6 @@ graph TB
     
     subgraph State["State Management"]
         Zustand[Zustand Stores]
-        Contexts[React Contexts]
     end
     
     subgraph Data["Data Layer"]
@@ -37,11 +38,21 @@ graph TB
     Apps --> Pusher
 ```
 
+## Key Features
+
+- **[Multi-Theme Support](/docs/theme-system):** System 7, Mac OS X (Aqua), Windows XP, Windows 98
+- **[17 Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Terminal, Chats, and more
+- **[AI Assistant (Ryo)](/docs/ai-system):** Chat, tool calling, app control, code generation
+- **[Virtual File System](/docs/file-system):** IndexedDB-backed with lazy loading
+- **[Real-time Chat](/docs/chat-rooms-api):** Pusher-powered rooms with AI integration
+- **[Audio System](/docs/audio-system):** Synthesizer, soundboard, TTS, and UI sounds
+- **[Component Library](/docs/component-library):** shadcn/ui + custom components with i18n
+
 ## Tech Stack
 
 | Category | Technologies |
 |----------|-------------|
-| Frontend | React 19, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion |
+| Frontend | React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Framer Motion |
 | State | Zustand with localStorage/IndexedDB persistence |
 | Audio | Tone.js, WaveSurfer.js, Web Audio API |
 | 3D | Three.js (shaders) |
@@ -53,45 +64,6 @@ graph TB
 | Desktop | Tauri (macOS, Windows, Linux) |
 | Deployment | Vercel |
 
-```mermaid
-graph LR
-    subgraph Client["Client (Browser/Tauri)"]
-        React[React 19]
-        Tailwind[Tailwind CSS]
-        Zustand[Zustand]
-        ToneJS[Tone.js]
-        ThreeJS[Three.js]
-    end
-    
-    subgraph Build["Build Tools"]
-        Vite[Vite]
-        Bun[Bun]
-        Tauri[Tauri]
-    end
-    
-    subgraph Backend["Backend (Vercel)"]
-        AISDK[Vercel AI SDK]
-        APIRoutes[API Routes]
-    end
-    
-    subgraph Services["Cloud Services"]
-        OpenAI[OpenAI]
-        Anthropic[Anthropic]
-        Google[Google AI]
-        PusherSvc[Pusher]
-        Upstash[Upstash Redis]
-    end
-    
-    React --> Vite
-    Vite --> Tauri
-    APIRoutes --> AISDK
-    AISDK --> OpenAI
-    AISDK --> Anthropic
-    AISDK --> Google
-    APIRoutes --> Upstash
-    React --> PusherSvc
-```
-
 ## Project Structure
 
 ```
@@ -101,23 +73,49 @@ graph LR
 │   ├── apps/         # 17 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
-│   ├── contexts/     # React contexts
 │   ├── hooks/        # 29 custom hooks
 │   ├── lib/          # Libraries
 │   ├── stores/       # 21 Zustand stores
 │   ├── styles/       # CSS
 │   ├── themes/       # 4 theme definitions
-│   └── types/        # TypeScript types
+│   ├── types/        # TypeScript types
+│   └── utils/        # Utility functions
 ├── src-tauri/        # Desktop app config
 └── scripts/          # Build scripts
 ```
 
-## Key Features
+## Quick Start
 
-- **Multi-Theme Support:** System 7, Mac OS X (Aqua), Windows XP, Windows 98
-- **17 Built-in Apps:** Finder, TextEdit, Paint, iPod, Terminal, Chats, and more
-- **AI Assistant (Ryo):** Chat, tool calling, app control, code generation
-- **Virtual File System:** IndexedDB-backed with lazy loading
-- **Real-time Chat:** Pusher-powered rooms with AI integration
-- **PWA Support:** Offline-capable with service worker caching
-- **Desktop App:** Tauri-based native app
+| I want to... | Go to |
+|--------------|-------|
+| Learn about the apps | [Apps Overview](/docs/apps) |
+| Understand the architecture | [Architecture](/docs/architecture) |
+| Build with the framework | [Application Framework](/docs/application-framework) |
+| Work with AI features | [AI System](/docs/ai-system) |
+| Use the APIs | [API Reference](/docs/api-reference) |
+
+## Documentation Guide
+
+### Core Concepts
+
+| Section | Description |
+|---------|-------------|
+| [Architecture](/docs/architecture) | System layers, data flow, and technology choices |
+| [Application Framework](/docs/application-framework) | Window management, state, and theming |
+| [File System](/docs/file-system) | Virtual file system with IndexedDB storage |
+| [Audio System](/docs/audio-system) | Audio playback, recording, and synthesis |
+
+### Apps & Features
+
+| Section | Description |
+|---------|-------------|
+| [Apps Overview](/docs/apps) | All 17 built-in applications |
+| [AI System](/docs/ai-system) | Ryo AI assistant, tool calling, providers |
+| [UI Components](/docs/ui-components) | Component library and i18n |
+
+### Developer Reference
+
+| Section | Description |
+|---------|-------------|
+| [API Reference](/docs/api-reference) | All backend endpoints |
+| [Changelog](/docs/changelog) | Version history and updates |

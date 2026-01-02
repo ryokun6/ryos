@@ -236,7 +236,7 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/ai-integration" class="">4. AI Integration</a>
+    <a href="/docs/ai-system" class="">4. AI System</a>
   </div>
 </div>
 <div class="nav-group">
@@ -292,7 +292,24 @@
         <h1>i18n & Hooks</h1>
 <p>Internationalization and 29+ custom hooks.</p>
 <h2>Supported Languages</h2>
-<table><thead><tr><th>Code</th><th>Language</th></tr></thead><tbody><tr><td><code>en</code></td><td>English (default)</td></tr><tr><td><code>zh-TW</code></td><td>Chinese Traditional</td></tr><tr><td><code>ja</code></td><td>Japanese</td></tr><tr><td><code>ko</code></td><td>Korean</td></tr><tr><td><code>fr</code></td><td>French</td></tr><tr><td><code>de</code></td><td>German</td></tr><tr><td><code>es</code></td><td>Spanish</td></tr><tr><td><code>pt</code></td><td>Portuguese</td></tr><tr><td><code>it</code></td><td>Italian</td></tr><tr><td><code>ru</code></td><td>Russian</td></tr></tbody></table>
+<table><thead><tr><th>Code</th><th>Language</th><th>Native Name</th></tr></thead><tbody><tr><td><code>en</code></td><td>English (default)</td><td>English</td></tr><tr><td><code>zh-TW</code></td><td>Chinese Traditional</td><td>中文</td></tr><tr><td><code>ja</code></td><td>Japanese</td><td>日本語</td></tr><tr><td><code>ko</code></td><td>Korean</td><td>한국어</td></tr><tr><td><code>fr</code></td><td>French</td><td>Français</td></tr><tr><td><code>de</code></td><td>German</td><td>Deutsch</td></tr><tr><td><code>es</code></td><td>Spanish</td><td>Español</td></tr><tr><td><code>pt</code></td><td>Portuguese</td><td>Português</td></tr><tr><td><code>it</code></td><td>Italian</td><td>Italiano</td></tr><tr><td><code>ru</code></td><td>Russian</td><td>Русский</td></tr></tbody></table>
+<h2>i18n Configuration</h2>
+<p>The i18n system is configured in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/i18n.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/i18n.ts</a></code>: <ul><li><strong>Library</strong>: i18next with react-i18next bindings</li></ul><ul><li><strong>Detection</strong>: Browser language auto-detection via <code>i18next-browser-languagedetector</code></li><li><strong>Storage</strong>: Language preference saved to localStorage (<code>ryos_language</code>)</li><li><strong>Fallback</strong>: English (<code>en</code>) as default fallback language</li></ul></p>
+<h3>Translation File Structure</h3>
+<p>Translations are stored in <code>src/lib/locales/{lang}/translation.json</code>:</p>
+<pre><code>src/lib/locales/
+├── en/translation.json
+├── zh-TW/translation.json
+├── ja/translation.json
+├── ko/translation.json
+├── fr/translation.json
+├── de/translation.json
+├── es/translation.json
+├── pt/translation.json
+├── it/translation.json
+└── ru/translation.json</code></pre>
+<h3>Translation Key Patterns</h3>
+<table><thead><tr><th>Pattern</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>common.<em></code></td><td>Shared UI elements (menus, dialogs, buttons)</td><td><code>common.menu.file</code></td></tr><tr><td><code>apps.{appId}.</em></code></td><td>App-specific translations</td><td><code>apps.finder.name</code></td></tr><tr><td><code>apps.{appId}.menu.<em></code></td><td>App menu items</td><td><code>apps.ipod.menu.addSong</code></td></tr><tr><td><code>apps.{appId}.help.</em></code></td><td>App help content</td><td><code>apps.chats.help.chatWithRyo</code></td></tr><tr><td><code>apps.{appId}.dialogs.<em></code></td><td>App dialog text</td><td><code>apps.videos.dialogs.clearPlaylistTitle</code></td></tr><tr><td><code>settings.</em></code></td><td>Settings panel translations</td><td><code>settings.language.title</code></td></tr><tr><td><code>components.*</code></td><td>Shared component translations</td><td><code>components.linkPreview.openIpod</code></td></tr></tbody></table>
 <h2>Key Hooks</h2>
 <strong>Window & App Management:</strong>
 <table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useLaunchApp</code></td><td>Launch apps with multi-window support</td></tr><tr><td><code>useWindowManager</code></td><td>Drag, resize, snap-to-edge</td></tr><tr><td><code>useWindowInsets</code></td><td>Theme-dependent constraints</td></tr></tbody></table>
@@ -305,9 +322,19 @@
 
 const { t } = useTranslation();
 
+// Simple key lookup
 t("common.menu.file")              // "File"
 t("apps.finder.name")              // "Finder"
-t("common.dialog.aboutApp", { appName: "Finder" })</code></pre>
+
+// With interpolation
+t("common.dialog.aboutApp", { appName: "Finder" })  // "About Finder"
+t("apps.ipod.dialogs.addedSongsToTop", { count: 5, plural: "s" })
+
+// Pluralization
+t("apps.admin.statusBar.usersCount", { count: 1 })  // "1 user"
+t("apps.admin.statusBar.usersCount_plural", { count: 5 })  // "5 users"</code></pre>
+<h2>Helper Functions (src/utils/i18n.ts)</h2>
+<table><thead><tr><th>Function</th><th>Purpose</th></tr></thead><tbody><tr><td><code>getTranslatedAppName(appId)</code></td><td>Get localized app name (theme-aware)</td></tr><tr><td><code>getTranslatedAppDescription(appId)</code></td><td>Get localized app description</td></tr><tr><td><code>getTranslatedFolderName(path)</code></td><td>Get localized folder name from path</td></tr><tr><td><code>getTranslatedHelpItems(appId)</code></td><td>Get localized help items for an app</td></tr></tbody></table>
       </article>
       
       <nav class="nav">
