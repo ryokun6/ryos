@@ -38,6 +38,16 @@ graph TB
     Apps --> Pusher
 ```
 
+## Quick Start
+
+| I want to... | Go to |
+|--------------|-------|
+| Learn about the apps | [Apps Overview](/docs/apps) |
+| Understand the architecture | [Architecture](/docs/architecture) |
+| Build with the framework | [Application Framework](/docs/application-framework) |
+| Work with AI features | [AI System](/docs/ai-system) |
+| Use the APIs | [API Reference](/docs/api-reference) |
+
 ## Key Features
 
 - **[Multi-Theme Support](/docs/theme-system):** System 7, Mac OS X (Aqua), Windows XP, Windows 98
@@ -83,39 +93,3 @@ graph TB
 ├── src-tauri/        # Desktop app config
 └── scripts/          # Build scripts
 ```
-
-## Quick Start
-
-| I want to... | Go to |
-|--------------|-------|
-| Learn about the apps | [Apps Overview](/docs/apps) |
-| Understand the architecture | [Architecture](/docs/architecture) |
-| Build with the framework | [Application Framework](/docs/application-framework) |
-| Work with AI features | [AI System](/docs/ai-system) |
-| Use the APIs | [API Reference](/docs/api-reference) |
-
-## Documentation Guide
-
-### Core Concepts
-
-| Section | Description |
-|---------|-------------|
-| [Architecture](/docs/architecture) | System layers, data flow, and technology choices |
-| [Application Framework](/docs/application-framework) | Window management, state, and theming |
-| [File System](/docs/file-system) | Virtual file system with IndexedDB storage |
-| [Audio System](/docs/audio-system) | Audio playback, recording, and synthesis |
-
-### Apps & Features
-
-| Section | Description |
-|---------|-------------|
-| [Apps Overview](/docs/apps) | All 17 built-in applications |
-| [AI System](/docs/ai-system) | Ryo AI assistant, tool calling, providers |
-| [UI Components](/docs/ui-components) | Component library and i18n |
-
-### Developer Reference
-
-| Section | Description |
-|---------|-------------|
-| [API Reference](/docs/api-reference) | All backend endpoints |
-| [Changelog](/docs/changelog) | Version history and updates |
