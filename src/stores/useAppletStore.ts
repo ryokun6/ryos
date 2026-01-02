@@ -1,21 +1,25 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { createPersistedStore, type PersistedStoreMeta } from "./persistAdapter";
 
 interface WindowDimensions {
   width: number;
   height: number;
 }
 
-interface AppletStoreState {
+interface AppletStoreState extends PersistedStoreMeta {
   appletWindowSizes: Record<string, WindowDimensions>;
   setAppletWindowSize: (path: string, dimensions: WindowDimensions) => void;
   getAppletWindowSize: (path: string) => WindowDimensions | undefined;
 }
 
+const STORE_NAME = "applet-storage";
+const STORE_VERSION = 1;
+
 export const useAppletStore = create<AppletStoreState>()(
-  persist(
+  createPersistedStore(
     (set, get) => ({
       appletWindowSizes: {},
+      _updatedAt: Date.now(),
       setAppletWindowSize: (path: string, dimensions: WindowDimensions) => {
         set((state) => {
           const prev = state.appletWindowSizes[path];
@@ -32,6 +36,7 @@ export const useAppletStore = create<AppletStoreState>()(
               ...state.appletWindowSizes,
               [path]: dimensions,
             },
+            _updatedAt: Date.now(),
           };
         });
       },
@@ -40,8 +45,12 @@ export const useAppletStore = create<AppletStoreState>()(
       },
     }),
     {
-      name: "applet-storage",
-      storage: createJSONStorage(() => localStorage),
+      name: STORE_NAME,
+      version: STORE_VERSION,
+      partialize: (state) => ({
+        appletWindowSizes: state.appletWindowSizes,
+        _updatedAt: state._updatedAt,
+      }),
     }
   )
 );

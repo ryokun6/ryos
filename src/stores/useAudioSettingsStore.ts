@@ -1,12 +1,12 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createPersistedStore, type PersistedStoreMeta } from "./persistAdapter";
 
 /**
  * Audio settings store - manages volume controls and audio preferences.
  * Extracted from useAppStore to reduce complexity and improve separation of concerns.
  */
 
-interface AudioSettingsState {
+interface AudioSettingsState extends PersistedStoreMeta {
   // Volume controls
   masterVolume: number;
   uiVolume: number;
@@ -45,7 +45,7 @@ interface AudioSettingsState {
 const STORE_VERSION = 1;
 
 export const useAudioSettingsStore = create<AudioSettingsState>()(
-  persist(
+  createPersistedStore(
     (set) => ({
       // Default values
       masterVolume: 1,
@@ -64,20 +64,22 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
       ttsVoice: null,
       synthPreset: "classic",
 
+      _updatedAt: Date.now(),
+
       // Actions
-      setMasterVolume: (v) => set({ masterVolume: v }),
-      setUiVolume: (v) => set({ uiVolume: v }),
-      setChatSynthVolume: (v) => set({ chatSynthVolume: v }),
-      setSpeechVolume: (v) => set({ speechVolume: v }),
-      setIpodVolume: (v) => set({ ipodVolume: v }),
-      setUiSoundsEnabled: (v) => set({ uiSoundsEnabled: v }),
-      setTerminalSoundsEnabled: (v) => set({ terminalSoundsEnabled: v }),
-      setTypingSynthEnabled: (v) => set({ typingSynthEnabled: v }),
-      setSpeechEnabled: (v) => set({ speechEnabled: v }),
-      setKeepTalkingEnabled: (v) => set({ keepTalkingEnabled: v }),
-      setTtsModel: (m) => set({ ttsModel: m }),
-      setTtsVoice: (v) => set({ ttsVoice: v }),
-      setSynthPreset: (v) => set({ synthPreset: v }),
+      setMasterVolume: (v) => set({ masterVolume: v, _updatedAt: Date.now() }),
+      setUiVolume: (v) => set({ uiVolume: v, _updatedAt: Date.now() }),
+      setChatSynthVolume: (v) => set({ chatSynthVolume: v, _updatedAt: Date.now() }),
+      setSpeechVolume: (v) => set({ speechVolume: v, _updatedAt: Date.now() }),
+      setIpodVolume: (v) => set({ ipodVolume: v, _updatedAt: Date.now() }),
+      setUiSoundsEnabled: (v) => set({ uiSoundsEnabled: v, _updatedAt: Date.now() }),
+      setTerminalSoundsEnabled: (v) => set({ terminalSoundsEnabled: v, _updatedAt: Date.now() }),
+      setTypingSynthEnabled: (v) => set({ typingSynthEnabled: v, _updatedAt: Date.now() }),
+      setSpeechEnabled: (v) => set({ speechEnabled: v, _updatedAt: Date.now() }),
+      setKeepTalkingEnabled: (v) => set({ keepTalkingEnabled: v, _updatedAt: Date.now() }),
+      setTtsModel: (m) => set({ ttsModel: m, _updatedAt: Date.now() }),
+      setTtsVoice: (v) => set({ ttsVoice: v, _updatedAt: Date.now() }),
+      setSynthPreset: (v) => set({ synthPreset: v, _updatedAt: Date.now() }),
     }),
     {
       name: "ryos:audio-settings",
@@ -96,6 +98,7 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
         ttsModel: state.ttsModel,
         ttsVoice: state.ttsVoice,
         synthPreset: state.synthPreset,
+        _updatedAt: state._updatedAt,
       }),
     }
   )

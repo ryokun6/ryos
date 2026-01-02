@@ -43,6 +43,8 @@ import { themes } from "@/themes";
 import { OsThemeId } from "@/themes/types";
 import { getTabStyles } from "@/utils/tabStyles";
 import { useLanguageStore, type LanguageCode } from "@/stores/useLanguageStore";
+import { useSyncSettingsStore } from "@/stores/useSyncSettingsStore";
+import { useSyncController } from "@/hooks/useSyncController";
 import { useTranslation } from "react-i18next";
 
 interface StoreItem {
@@ -327,6 +329,29 @@ export function ControlPanelsAppComponent({
   // Language state
   const { current: currentLanguage, setLanguage } = useLanguageStore();
   const { t } = useTranslation();
+  const syncSettings = useSyncSettingsStore();
+  const { syncNow, isSyncing, lastSyncAt, lastError, deviceId } = useSyncController();
+
+  const handleSyncNow = async () => {
+    const result = await syncNow();
+    if (result.ok) {
+      toast.success("Sync complete", {
+        description: `Pushed ${result.merged?.length ?? 0} snapshots`,
+      });
+    } else {
+      toast.error("Sync failed", {
+        description: result.error || "Unknown error",
+      });
+    }
+  };
+
+  const syncStatus = (() => {
+    if (!authToken || !username) return { label: "Not logged in", tone: "text-red-600" };
+    if (!syncSettings.enabled) return { label: "Disabled", tone: "text-gray-600" };
+    if (isSyncing) return { label: "Syncing…", tone: "text-blue-600" };
+    if (lastError) return { label: `Error: ${lastError}`, tone: "text-red-600" };
+    return { label: lastSyncAt ? `Last sync: ${new Date(lastSyncAt).toLocaleString()}` : "Never synced", tone: "text-green-600" };
+  })();
 
   // Use auth hook
   const {
@@ -1876,6 +1901,86 @@ export function ControlPanelsAppComponent({
                     {t("apps.control-panels.checkForUpdates")}
                   </Button>
                   <VersionDisplay />
+                </div>
+
+                <div className="space-y-3 rounded-md border border-border/60 bg-white/40 p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[13px] font-geneva-12 font-medium">Cloud Sync</span>
+                      <span className="text-[11px] text-gray-600 font-geneva-12">
+                        Sync settings and media metadata across devices (opt-in)
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <Switch
+                        checked={syncSettings.enabled && !!authToken && !!username}
+                        disabled={!authToken || !username}
+                        onCheckedChange={(v) => syncSettings.setEnabled(v)}
+                      />
+                      {!authToken || !username ? (
+                        <span className="text-[11px] text-red-600 font-geneva-12">
+                          Login required
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[12px] font-geneva-12">Auto Sync</span>
+                      <span className="text-[11px] text-gray-600 font-geneva-12">
+                        Background sync every few minutes
+                      </span>
+                    </div>
+                    <Switch
+                      checked={syncSettings.autoSync}
+                      disabled={!syncSettings.enabled || !authToken || !username}
+                      onCheckedChange={(v) => syncSettings.setAutoSync(v)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[12px] font-geneva-12">Include Media</span>
+                      <span className="text-[11px] text-gray-600 font-geneva-12">
+                        Soundboard, videos, karaoke, synth, iPod metadata
+                      </span>
+                    </div>
+                    <Switch
+                      checked={syncSettings.includeMedia}
+                      disabled={!syncSettings.enabled || !authToken || !username}
+                      onCheckedChange={(v) => syncSettings.setIncludeMedia(v)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-[12px] font-geneva-12">Include Files (metadata)</span>
+                      <span className="text-[11px] text-gray-600 font-geneva-12">
+                        Future use; currently off by default
+                      </span>
+                    </div>
+                    <Switch
+                      checked={syncSettings.includeFiles}
+                      disabled={!syncSettings.enabled || !authToken || !username}
+                      onCheckedChange={(v) => syncSettings.setIncludeFiles(v)}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="retro"
+                      className="flex-1"
+                      disabled={!syncSettings.enabled || isSyncing || !authToken || !username}
+                      onClick={handleSyncNow}
+                    >
+                      {isSyncing ? "Syncing…" : "Sync Now"}
+                    </Button>
+                    <div className={`text-[11px] font-geneva-12 ${syncStatus.tone}`}>
+                      <div className="text-gray-600">Device: {deviceId.slice(0, 8)}</div>
+                      <div>{syncStatus.label}</div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">

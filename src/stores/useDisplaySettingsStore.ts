@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createPersistedStore, type PersistedStoreMeta } from "./persistAdapter";
 import { ShaderType } from "@/types/shader";
 import { DisplayMode } from "@/utils/displayMode";
 import { checkShaderPerformance } from "@/utils/performanceCheck";
@@ -64,7 +64,7 @@ const saveCustomWallpaper = async (file: File): Promise<string> => {
   }
 };
 
-interface DisplaySettingsState {
+interface DisplaySettingsState extends PersistedStoreMeta {
   // Display mode
   displayMode: DisplayMode;
   setDisplayMode: (m: DisplayMode) => void;
@@ -104,22 +104,22 @@ const STORE_VERSION = 1;
 const initialShaderState = checkShaderPerformance();
 
 export const useDisplaySettingsStore = create<DisplaySettingsState>()(
-  persist(
+  createPersistedStore(
     (set, get) => ({
       // Display mode
       displayMode: "color",
-      setDisplayMode: (m) => set({ displayMode: m }),
+      setDisplayMode: (m) => set({ displayMode: m, _updatedAt: Date.now() }),
 
       // Shader settings
       shaderEffectEnabled: initialShaderState,
       selectedShaderType: ShaderType.AURORA,
-      setShaderEffectEnabled: (enabled) => set({ shaderEffectEnabled: enabled }),
-      setSelectedShaderType: (t) => set({ selectedShaderType: t }),
+      setShaderEffectEnabled: (enabled) => set({ shaderEffectEnabled: enabled, _updatedAt: Date.now() }),
+      setSelectedShaderType: (t) => set({ selectedShaderType: t, _updatedAt: Date.now() }),
 
       // Wallpaper
       currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
       wallpaperSource: "/wallpapers/photos/aqua/water.jpg",
-      setCurrentWallpaper: (p) => set({ currentWallpaper: p, wallpaperSource: p }),
+      setCurrentWallpaper: (p) => set({ currentWallpaper: p, wallpaperSource: p, _updatedAt: Date.now() }),
 
       setWallpaper: async (path) => {
         let wall: string;
@@ -133,10 +133,10 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         } else {
           wall = path;
         }
-        set({ currentWallpaper: wall, wallpaperSource: wall });
+        set({ currentWallpaper: wall, wallpaperSource: wall, _updatedAt: Date.now() });
         if (wall.startsWith(INDEXEDDB_PREFIX)) {
           const data = await get().getWallpaperData(wall);
-          if (data) set({ wallpaperSource: data });
+          if (data) set({ wallpaperSource: data, _updatedAt: Date.now() });
         }
         window.dispatchEvent(
           new CustomEvent("wallpaperChange", { detail: wall })
@@ -199,17 +199,19 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
       screenSaverEnabled: false,
       screenSaverType: "starfield",
       screenSaverIdleTime: 5, // 5 minutes default
-      setScreenSaverEnabled: (v) => set({ screenSaverEnabled: v }),
-      setScreenSaverType: (v) => set({ screenSaverType: v }),
-      setScreenSaverIdleTime: (v) => set({ screenSaverIdleTime: v }),
+      setScreenSaverEnabled: (v) => set({ screenSaverEnabled: v, _updatedAt: Date.now() }),
+      setScreenSaverType: (v) => set({ screenSaverType: v, _updatedAt: Date.now() }),
+      setScreenSaverIdleTime: (v) => set({ screenSaverIdleTime: v, _updatedAt: Date.now() }),
 
       // Debug mode
       debugMode: false,
-      setDebugMode: (enabled) => set({ debugMode: enabled }),
+      setDebugMode: (enabled) => set({ debugMode: enabled, _updatedAt: Date.now() }),
 
       // HTML preview
       htmlPreviewSplit: true,
-      setHtmlPreviewSplit: (v) => set({ htmlPreviewSplit: v }),
+      setHtmlPreviewSplit: (v) => set({ htmlPreviewSplit: v, _updatedAt: Date.now() }),
+
+      _updatedAt: Date.now(),
     }),
     {
       name: "ryos:display-settings",
@@ -225,7 +227,19 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         screenSaverIdleTime: state.screenSaverIdleTime,
         debugMode: state.debugMode,
         htmlPreviewSplit: state.htmlPreviewSplit,
+        _updatedAt: state._updatedAt,
       }),
+      onRehydrateStorage: () => (state, error) => {
+        if (error) {
+          console.error("[DisplaySettingsStore] Rehydrate failed:", error);
+          return;
+        }
+        if (state?.currentWallpaper) {
+          window.dispatchEvent(
+            new CustomEvent("wallpaperChange", { detail: state.currentWallpaper })
+          );
+        }
+      },
     }
   )
 );

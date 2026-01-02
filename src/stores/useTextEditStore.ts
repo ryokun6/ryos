@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createPersistedStore, type PersistedStoreMeta } from "./persistAdapter";
 import { JSONContent } from "@tiptap/core";
 import { useAppStore } from "@/stores/useAppStore";
 
@@ -10,7 +10,7 @@ export interface TextEditInstance {
   hasUnsavedChanges: boolean;
 }
 
-export interface TextEditStoreState {
+export interface TextEditStoreState extends PersistedStoreMeta {
   // Instance management
   instances: Record<string, TextEditInstance>;
 
@@ -26,10 +26,14 @@ export interface TextEditStoreState {
   getForegroundInstance: () => TextEditInstance | null;
 }
 
+const STORE_NAME = "ryos:textedit";
+const STORE_VERSION = 1;
+
 export const useTextEditStore = create<TextEditStoreState>()(
-  persist(
+  createPersistedStore(
     (set, get) => ({
       instances: {},
+      _updatedAt: Date.now(),
 
       createInstance: (instanceId) =>
         set((state) => {
@@ -47,6 +51,7 @@ export const useTextEditStore = create<TextEditStoreState>()(
                 hasUnsavedChanges: false,
               },
             },
+            _updatedAt: Date.now(),
           };
         }),
 
@@ -54,7 +59,7 @@ export const useTextEditStore = create<TextEditStoreState>()(
         set((state) => {
           const newInstances = { ...state.instances };
           delete newInstances[instanceId];
-          return { instances: newInstances };
+          return { instances: newInstances, _updatedAt: Date.now() };
         }),
 
       updateInstance: (instanceId, updates) =>
@@ -68,6 +73,7 @@ export const useTextEditStore = create<TextEditStoreState>()(
                 ...updates,
               },
             },
+            _updatedAt: Date.now(),
           };
         }),
 
@@ -98,7 +104,8 @@ export const useTextEditStore = create<TextEditStoreState>()(
       },
     }),
     {
-      name: "ryos:textedit",
+      name: STORE_NAME,
+      version: STORE_VERSION,
       partialize: (state) => ({
         instances: Object.fromEntries(
           Object.entries(state.instances).map(([id, inst]) => {
@@ -112,6 +119,7 @@ export const useTextEditStore = create<TextEditStoreState>()(
             ];
           })
         ),
+        _updatedAt: state._updatedAt,
       }),
     }
   )

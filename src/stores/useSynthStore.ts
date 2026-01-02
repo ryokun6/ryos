@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { createPersistedStore, type PersistedStoreMeta } from "./persistAdapter";
 
 export interface SynthPreset {
   id: string;
@@ -118,7 +118,7 @@ const defaultPresets: SynthPreset[] = [
   },
 ];
 
-interface SynthStoreState {
+interface SynthStoreState extends PersistedStoreMeta {
   presets: SynthPreset[];
   currentPreset: SynthPreset;
   labelType: NoteLabelType;
@@ -199,34 +199,46 @@ const getOldLabelType = (): NoteLabelType => {
   }
 };
 
+type SynthPersistedState = {
+  presets: SynthPreset[];
+  currentPreset: SynthPreset;
+  labelType: NoteLabelType;
+  _updatedAt?: number;
+};
+
 export const useSynthStore = create<SynthStoreState>()(
-  persist(
+  createPersistedStore<SynthStoreState, SynthPersistedState>(
     (set) => ({
       presets: getOldPresets(),
       currentPreset: getOldCurrentPreset(),
       labelType: getOldLabelType(),
-      setPresets: (presetsOrFn) => set(state => {
-        if (typeof presetsOrFn === 'function') {
-          return { presets: presetsOrFn(state.presets) };
-        }
-        return { presets: presetsOrFn };
-      }),
-      setCurrentPreset: (preset) => set({ currentPreset: preset }),
-      setLabelType: (type) => set({ labelType: type }),
-      reset: () => set({ 
-        presets: defaultPresets, 
-        currentPreset: defaultPresets[0],
-        labelType: "off"
-      }),
+      _updatedAt: Date.now(),
+      setPresets: (presetsOrFn) =>
+        set((state) => {
+          const newPresets =
+            typeof presetsOrFn === "function"
+              ? (presetsOrFn as (prev: SynthPreset[]) => SynthPreset[])(state.presets)
+              : presetsOrFn;
+          return { presets: newPresets, _updatedAt: Date.now() };
+        }),
+      setCurrentPreset: (preset) => set({ currentPreset: preset, _updatedAt: Date.now() }),
+      setLabelType: (type) => set({ labelType: type, _updatedAt: Date.now() }),
+      reset: () =>
+        set({
+          presets: defaultPresets,
+          currentPreset: defaultPresets[0],
+          labelType: "off",
+          _updatedAt: Date.now(),
+        }),
     }),
     {
       name: STORE_NAME,
       version: STORE_VERSION,
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
+      partialize: (state): SynthPersistedState => ({
         presets: state.presets,
         currentPreset: state.currentPreset,
         labelType: state.labelType,
+        _updatedAt: state._updatedAt,
       }),
       // Migration from old localStorage keys
       onRehydrateStorage: () => {
@@ -241,4 +253,4 @@ export const useSynthStore = create<SynthStoreState>()(
       },
     }
   )
-); 
+);
