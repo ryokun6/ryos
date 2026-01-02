@@ -431,7 +431,7 @@ data: {"type":"finish","finishReason":"stop"}</code></pre>
 <pre><code>// Priority: Query param &gt; Body param &gt; Default
 const model = queryModel || bodyModel || "gpt-5.1";</code></pre>
 <h2>Rate Limiting</h2>
-<table><thead><tr><th>User Type</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Authenticated</td><td>25 messages</td><td>5 hours</td></tr><tr><td>Anonymous</td><td>3 messages</td><td>5 hours</td></tr></tbody></table>
+<table><thead><tr><th>User Type</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Authenticated</td><td>15 messages</td><td>5 hours</td></tr><tr><td>Anonymous</td><td>3 messages</td><td>24 hours</td></tr></tbody></table>
 <p>Anonymous users are identified by IP address. The special user "ryo" (with valid token) has unlimited access.</p>
 <h2>Tool Calling</h2>
 <p>The Chat API supports extensive tool calling for controlling ryOS applications and system features.</p>

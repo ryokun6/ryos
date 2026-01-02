@@ -339,6 +339,7 @@
 <table><thead><tr><th>Header</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Image MIME type (e.g., <code>image/png</code>)</td></tr><tr><td><code>X-Image-Description</code></td><td>Optional description of generated image</td></tr></tbody></table>
 <h3>Rate Limits</h3>
 <table><thead><tr><th>User Type</th><th>Text Requests</th><th>Image Requests</th><th>Window</th></tr></thead><tbody><tr><td>Anonymous</td><td>15/hour</td><td>1/hour</td><td>1 hour</td></tr><tr><td>Authenticated</td><td>50/hour</td><td>12/hour</td><td>1 hour</td></tr></tbody></table>
+<p>Note: The main Chat API (<code>/api/chat</code>) has separate rate limits: 15 messages per 5 hours for authenticated users, 3 messages per 24 hours for anonymous users.</p>
 <p>Rate limit headers included in responses: <ul><li><code>X-RateLimit-Limit</code>: Maximum requests allowed</li></ul><ul><li><code>X-RateLimit-Remaining</code>: Requests remaining</li><li><code>X-RateLimit-Reset</code>: Seconds until reset</li><li><code>Retry-After</code>: Seconds to wait (on 429)</li></ul></p>
 <h3>Models</h3>
 <ul><li><strong>Text</strong>: <code>gemini-2.5-flash</code></li></ul><ul><li><strong>Image</strong>: <code>gemini-2.5-flash-image-preview</code></li></ul>
