@@ -47,24 +47,11 @@ async function ensureLegacyCss(theme: OsThemeId) {
   }
 }
 
-// Storage keys
-const THEME_KEY = "ryos:theme";
-const LEGACY_THEME_KEY = "os_theme";
-
-// Valid theme IDs for validation
-const VALID_THEMES: OsThemeId[] = ["system7", "macosx", "xp", "win98"];
-
-const isValidTheme = (theme: string | null): theme is OsThemeId => {
-  return theme !== null && VALID_THEMES.includes(theme as OsThemeId);
-};
-
 export const useThemeStore = create<ThemeState>((set) => ({
   current: "macosx",
   setTheme: (theme) => {
     set({ current: theme });
-    localStorage.setItem(THEME_KEY, theme);
-    // Clean up legacy key
-    localStorage.removeItem(LEGACY_THEME_KEY);
+    localStorage.setItem("os_theme", theme);
     document.documentElement.dataset.osTheme = theme;
     ensureLegacyCss(theme);
     // Note: No need to invalidate icon cache on theme switch.
@@ -72,17 +59,8 @@ export const useThemeStore = create<ThemeState>((set) => ({
     // and the service worker caches each path separately.
   },
   hydrate: () => {
-    // Try new key first, fall back to legacy
-    let saved = localStorage.getItem(THEME_KEY);
-    if (!isValidTheme(saved)) {
-      saved = localStorage.getItem(LEGACY_THEME_KEY);
-      if (isValidTheme(saved)) {
-        // Migrate to new key
-        localStorage.setItem(THEME_KEY, saved);
-        localStorage.removeItem(LEGACY_THEME_KEY);
-      }
-    }
-    const theme = isValidTheme(saved) ? saved : "macosx";
+    const saved = localStorage.getItem("os_theme") as OsThemeId | null;
+    const theme = saved || "macosx";
     set({ current: theme });
     document.documentElement.dataset.osTheme = theme;
     ensureLegacyCss(theme);
