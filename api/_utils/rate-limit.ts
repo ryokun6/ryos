@@ -8,8 +8,10 @@ const redis = new Redis({
 
 // Constants for rate limiting
 const AI_RATE_LIMIT_PREFIX = "rl:ai:";
-export const AI_LIMIT_PER_5_HOURS = 25;
-export const AI_LIMIT_ANON_PER_5_HOURS = 3;
+export const AI_LIMIT_PER_5_HOURS = 15;
+export const AI_LIMIT_ANON_PER_DAY = 3;
+export const AI_WINDOW_AUTHENTICATED = 5 * 60 * 60; // 5 hours in seconds
+export const AI_WINDOW_ANONYMOUS = 24 * 60 * 60; // 24 hours in seconds
 
 // Helper function to get rate limit key for a user
 const getAIRateLimitKey = (identifier: string): string => {
@@ -36,8 +38,9 @@ export async function checkAndIncrementAIMessageCount(
   // Determine if user is anonymous (identifier starts with "anon:")
   const isAnonymous = identifier.startsWith("anon:");
 
-  // Set limit based on authentication status
-  const limit = isAnonymous ? AI_LIMIT_ANON_PER_5_HOURS : AI_LIMIT_PER_5_HOURS;
+  // Set limit and window based on authentication status
+  const limit = isAnonymous ? AI_LIMIT_ANON_PER_DAY : AI_LIMIT_PER_5_HOURS;
+  const ttlSeconds = isAnonymous ? AI_WINDOW_ANONYMOUS : AI_WINDOW_AUTHENTICATED;
 
   // Identify privileged user (ryo)
   const isRyo = identifier === "ryo";
@@ -53,7 +56,7 @@ export async function checkAndIncrementAIMessageCount(
       return {
         allowed: false,
         count: 0,
-        limit: AI_LIMIT_ANON_PER_5_HOURS,
+        limit: AI_LIMIT_ANON_PER_DAY,
       };
     }
 
@@ -70,13 +73,12 @@ export async function checkAndIncrementAIMessageCount(
     return {
       allowed: false,
       count: 0,
-      limit: AI_LIMIT_ANON_PER_5_HOURS,
+      limit: AI_LIMIT_ANON_PER_DAY,
     };
   }
 
   // ATOMIC rate limit check: increment first, then check
   // This prevents race conditions where two requests read the same count
-  const ttlSeconds = 5 * 60 * 60; // 5 hours in seconds
   const newCount = await redis.incr(key);
 
   // Set TTL only if this is the first increment (count became 1)

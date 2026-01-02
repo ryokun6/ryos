@@ -21,6 +21,7 @@ import {
   setUserPasswordHash,
   TOKEN_GRACE_PERIOD,
   PASSWORD_MIN_LENGTH,
+  PASSWORD_MAX_LENGTH,
 } from "../_utils/auth.js";
 import { createErrorResponse } from "./_helpers.js";
 import type {
@@ -235,6 +236,15 @@ export async function handleAuthenticateWithPassword(
     return createErrorResponse("Username and password are required", 400);
   }
 
+  // Validate password length to prevent DoS via bcrypt with very long passwords
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    logInfo(
+      requestId,
+      `Auth failed: Password too long: ${password.length} chars (max: ${PASSWORD_MAX_LENGTH})`
+    );
+    return createErrorResponse("Invalid username or password", 401);
+  }
+
   const username = originalUsername.toLowerCase();
 
   if (isProfaneUsername(username)) {
@@ -319,6 +329,17 @@ export async function handleSetPassword(
     );
     return createErrorResponse(
       `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+      400
+    );
+  }
+
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    logInfo(
+      requestId,
+      `Set password failed: Password too long: ${password.length} chars (max: ${PASSWORD_MAX_LENGTH})`
+    );
+    return createErrorResponse(
+      `Password must be ${PASSWORD_MAX_LENGTH} characters or less`,
       400
     );
   }
