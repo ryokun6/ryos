@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Overview - ryOS Docs</title>
+  <title>API Architecture - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -187,11 +187,11 @@
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/overview" class="active">1. Overview</a>
+    <a href="/docs/overview" class="">1. Overview</a>
   </button>
   <div class="nav-children" style="display: block;">
     <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
-    <a href="/docs/api-architecture" class="nav-child ">1.2 API Architecture</a>
+    <a href="/docs/api-architecture" class="nav-child active">1.2 API Architecture</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -292,67 +292,352 @@
     
     <main class="content">
       <article>
-        <h1>Overview</h1>
-<p>ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 17 fully-functional apps, an AI assistant, and a complete virtual file system.</p>
-<p>Whether you're exploring the retro aesthetics, building HTML applets, or chatting with Ryo (the AI assistant), ryOS offers a unique blend of nostalgia and modern web technology.</p>
+        <h1>API Architecture</h1>
+<p>ryOS uses Vercel Edge Functions for its backend API, with AI providers, Redis caching, and real-time features.</p>
+<h2>Architecture Overview</h2>
 <pre class="mermaid">graph TB
-    subgraph Presentation["Presentation Layer"]
-        Apps[17 App Modules]
-        UI[UI Components]
-        Themes[4 Themes]
+    subgraph Client["Client Layer"]
+        UI[React UI]
+        Hooks[Custom Hooks]
     end
     
-    subgraph State["State Management"]
-        Zustand[Zustand Stores]
+    subgraph Edge["Vercel Edge Functions"]
+        ChatAPI[chat]
+        SongAPI[song]
+        SpeechAPI[speech]
+        RoomsAPI[chat-rooms]
+        IEAPI[ie-generate]
+        AppletAPI[applet-ai]
     end
     
-    subgraph Data["Data Layer"]
-        IndexedDB[(IndexedDB)]
-        LocalStorage[(LocalStorage)]
-        API[Vercel API]
+    subgraph AI["AI Providers"]
+        OpenAI[OpenAI]
+        Anthropic[Anthropic]
+        Google[Google]
     end
     
-    subgraph External["External Services"]
-        AI[AI Providers]
-        Pusher[Real-time]
+    subgraph Storage["Storage"]
         Redis[(Redis)]
+        KV[(Vercel KV)]
     end
     
-    Apps --> Zustand
-    UI --> Zustand
-    Zustand --> IndexedDB
-    Zustand --> LocalStorage
-    Zustand --> API
-    API --> AI
-    API --> Redis
-    Apps --> Pusher</pre>
-<h2>Quick Start</h2>
-<table><thead><tr><th>I want to...</th><th>Go to</th></tr></thead><tbody><tr><td>Learn about the apps</td><td><a href="/docs/apps">Apps Overview</a></td></tr><tr><td>Understand the architecture</td><td><a href="/docs/architecture">Architecture</a></td></tr><tr><td>Understand the API layer</td><td><a href="/docs/api-architecture">API Architecture</a></td></tr><tr><td>Build with the framework</td><td><a href="/docs/application-framework">Application Framework</a></td></tr><tr><td>Work with AI features</td><td><a href="/docs/ai-system">AI System</a></td></tr><tr><td>Use the APIs</td><td><a href="/docs/api-reference">API Reference</a></td></tr></tbody></table>
-<h2>Key Features</h2>
-<ul><li><strong><a href="/docs/theme-system">Multi-Theme Support</a>:</strong> System 7, Mac OS X (Aqua), Windows XP, Windows 98</li></ul><ul><li><strong><a href="/docs/apps">17 Built-in Apps</a>:</strong> Finder, TextEdit, Paint, iPod, Terminal, Chats, and more</li><li><strong><a href="/docs/ai-system">AI Assistant (Ryo)</a>:</strong> Chat, tool calling, app control, code generation</li><li><strong><a href="/docs/file-system">Virtual File System</a>:</strong> IndexedDB-backed with lazy loading</li><li><strong><a href="/docs/chat-rooms-api">Real-time Chat</a>:</strong> Pusher-powered rooms with AI integration</li><li><strong><a href="/docs/audio-system">Audio System</a>:</strong> Synthesizer, soundboard, TTS, and UI sounds</li><li><strong><a href="/docs/component-library">Component Library</a>:</strong> shadcn/ui + custom components with i18n</li></ul>
-<h2>Tech Stack</h2>
-<table><thead><tr><th>Category</th><th>Technologies</th></tr></thead><tbody><tr><td>Frontend</td><td>React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Framer Motion</td></tr><tr><td>State</td><td>Zustand with localStorage/IndexedDB persistence</td></tr><tr><td>Audio</td><td>Tone.js, WaveSurfer.js, Web Audio API</td></tr><tr><td>3D</td><td>Three.js (shaders)</td></tr><tr><td>Text Editor</td><td>TipTap</td></tr><tr><td>Storage</td><td>IndexedDB, LocalStorage, Redis (Upstash)</td></tr><tr><td>AI</td><td>OpenAI, Anthropic, Google via Vercel AI SDK</td></tr><tr><td>Real-time</td><td>Pusher</td></tr><tr><td>Build</td><td>Vite, Bun</td></tr><tr><td>Desktop</td><td>Tauri (macOS, Windows, Linux)</td></tr><tr><td>Deployment</td><td>Vercel</td></tr></tbody></table>
-<h2>Project Structure</h2>
-<pre><code>├── api/              # Vercel API endpoints
-├── public/           # Static assets
-├── src/
-│   ├── apps/         # 17 app modules
-│   ├── components/   # Shared React components
-│   ├── config/       # App registry
-│   ├── hooks/        # 29 custom hooks
-│   ├── lib/          # Libraries
-│   ├── stores/       # 21 Zustand stores
-│   ├── styles/       # CSS
-│   ├── themes/       # 4 theme definitions
-│   ├── types/        # TypeScript types
-│   └── utils/        # Utility functions
-├── src-tauri/        # Desktop app config
-└── scripts/          # Build scripts</code></pre>
+    subgraph Realtime["Real-time"]
+        Pusher[Pusher]
+    end
+    
+    UI --> Hooks
+    Hooks --> Edge
+    Edge --> AI
+    Edge --> Storage
+    Edge --> Realtime
+    RoomsAPI --> Pusher</pre>
+<h2>API Directory Structure</h2>
+<pre><code>api/
+├── _utils/                    # Shared utilities
+│   ├── aiModels.ts           # AI provider abstraction
+│   ├── aiPrompts.ts          # System prompts
+│   ├── auth-validate.ts      # Token validation
+│   ├── cors.ts               # CORS handling
+│   ├── rate-limit.ts         # Rate limiting
+│   ├── song-service.ts       # Song data service
+│   └── sse.ts                # Server-Sent Events
+├── chat-rooms/               # Multi-file module
+│   ├── index.ts              # HTTP handlers
+│   ├── _messages.ts          # Message handlers
+│   ├── _presence.ts          # Presence tracking
+│   ├── _pusher.ts            # Pusher integration
+│   └── _redis.ts             # Redis client
+├── song/                     # Multi-file module
+│   ├── index.ts              # List/batch operations
+│   ├── [id].ts               # Single song CRUD
+│   ├── _lyrics.ts            # Lyrics parsing
+│   └── _furigana.ts          # Japanese furigana
+└── [endpoint].ts             # Individual endpoints</code></pre>
+<h2>API Endpoint Inventory</h2>
+<h3>Core APIs</h3>
+<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat</code></td><td>POST</td><td>AI chat with streaming and tool calling</td></tr><tr><td><code>/api/speech</code></td><td>POST</td><td>Text-to-speech synthesis</td></tr><tr><td><code>/api/audio-transcribe</code></td><td>POST</td><td>Speech-to-text (Whisper)</td></tr></tbody></table>
+<h3>Media APIs</h3>
+<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/song</code></td><td>GET, POST, DELETE</td><td>Song list and batch operations</td></tr><tr><td><code>/api/song/[id]</code></td><td>GET, POST, DELETE</td><td>Single song CRUD + lyrics</td></tr><tr><td><code>/api/youtube-search</code></td><td>POST</td><td>YouTube video search</td></tr><tr><td><code>/api/parse-title</code></td><td>GET</td><td>YouTube title parsing</td></tr><tr><td><code>/api/cover</code></td><td>GET</td><td>Album art fetching</td></tr></tbody></table>
+<h3>AI Generation APIs</h3>
+<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/ie-generate</code></td><td>POST</td><td>Internet Explorer time-travel</td></tr><tr><td><code>/api/applet-ai</code></td><td>POST</td><td>Applet AI assistant</td></tr></tbody></table>
+<h3>Communication APIs</h3>
+<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat-rooms</code></td><td>GET, POST, DELETE</td><td>Real-time chat rooms</td></tr><tr><td><code>/api/share-applet</code></td><td>GET, POST, PATCH, DELETE</td><td>Applet sharing/store</td></tr></tbody></table>
+<h3>Utility APIs</h3>
+<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/iframe-check</code></td><td>GET</td><td>Check/proxy iframe embedding</td></tr><tr><td><code>/api/link-preview</code></td><td>GET</td><td>OpenGraph metadata extraction</td></tr><tr><td><code>/api/admin</code></td><td>Various</td><td>Admin operations</td></tr></tbody></table>
+<h2>AI Provider Abstraction</h2>
+<h3>Supported Models</h3>
+<table><thead><tr><th>Provider</th><th>Models</th><th>Use Cases</th></tr></thead><tbody><tr><td><strong>OpenAI</strong></td><td>gpt-5, gpt-5.1, gpt-5-mini, gpt-4o, gpt-4.1</td><td>Default chat, code generation</td></tr><tr><td><strong>Anthropic</strong></td><td>claude-4.5, claude-4, claude-3.7, claude-3.5</td><td>Complex reasoning</td></tr><tr><td><strong>Google</strong></td><td>gemini-2.5-pro, gemini-2.5-flash, gemini-3-pro</td><td>Image generation</td></tr></tbody></table>
+<h3>Model Selection</h3>
+<pre><code>// api/_utils/aiModels.ts
+export const getModelInstance = (model: SupportedModel): LanguageModelV2 =&gt; {
+  switch (model) {
+    case "gpt-5":
+      return openai("gpt-5");
+    case "gpt-5.1":
+      return openai("gpt-5.1");
+    case "claude-4.5":
+      return anthropic("claude-sonnet-4-5");
+    case "gemini-2.5-pro":
+      return google("gemini-2.5-pro");
+    // ... more models
+  }
+};</code></pre>
+<h2>Chat API</h2>
+<h3>Streaming Architecture</h3>
+<pre class="mermaid">sequenceDiagram
+    participant Client
+    participant API as /api/chat
+    participant AI as AI Provider
+    participant Tools as Tool Handlers
+    
+    Client->>API: POST (messages, model)
+    API->>AI: streamText()
+    
+    loop Stream Response
+        AI-->>API: Token/Tool Call
+        
+        alt Tool Call
+            API->>Tools: Execute tool
+            Tools-->>API: Tool result
+            API->>AI: Continue with result
+        else Text Token
+            API-->>Client: SSE chunk
+        end
+    end
+    
+    API-->>Client: Stream complete</pre>
+<h3>Tool Calling System</h3>
+<p>The chat API provides tools for system control:</p>
+<pre><code>tools: {
+  launchApp: {
+    description: "Launch ryOS application",
+    parameters: z.object({
+      appId: z.enum(["finder", "textedit", "ipod", ...]),
+      initialData: z.unknown().optional(),
+    }),
+  },
+  
+  ipodControl: {
+    description: "Control iPod playback",
+    parameters: z.object({
+      action: z.enum(["toggle", "play", "pause", "next", "previous", ...]),
+      title: z.string().optional(),
+      artist: z.string().optional(),
+    }),
+  },
+  
+  generateHtml: {
+    description: "Generate HTML applet",
+    parameters: z.object({
+      title: z.string(),
+      icon: z.string(),
+      code: z.string(),
+    }),
+  },
+  
+  // ... more tools
+}</code></pre>
+<h3>System Prompts</h3>
+<pre><code>// api/_utils/aiPrompts.ts
+export const CORE_PRIORITY_INSTRUCTIONS = `
+  You are Ryo, an AI assistant in ryOS...
+`;
+
+export const RYO_PERSONA_INSTRUCTIONS = `
+  Ryo's personality and background...
+`;
+
+export const CODE_GENERATION_INSTRUCTIONS = `
+  HTML applet generation rules...
+`;
+
+export const TOOL_USAGE_INSTRUCTIONS = `
+  VFS and tool usage patterns...
+`;</code></pre>
+<h2>Song API</h2>
+<h3>Split Storage Architecture</h3>
+<pre class="mermaid">flowchart TB
+    subgraph "Request"
+        REQ[API Request]
+    end
+    
+    subgraph "Redis Storage"
+        META[(song:meta:*<br/>Lightweight)]
+        CONTENT[(song:content:*<br/>Heavy Data)]
+        SET[(song:all<br/>ID Set)]
+    end
+    
+    REQ --> |List/Search| META
+    REQ --> |Full Song| META
+    META --> |UUID Lookup| CONTENT
+    REQ --> |All IDs| SET</pre>
+<h3>Endpoints</h3>
+<table><thead><tr><th>Route</th><th>Action</th><th>Description</th></tr></thead><tbody><tr><td><code>GET /api/song</code></td><td>List</td><td>Songs with filters</td></tr><tr><td><code>POST /api/song</code></td><td>Create/Import</td><td>New songs or bulk import</td></tr><tr><td><code>GET /api/song/[id]</code></td><td>Read</td><td>Song with lyrics, translations</td></tr><tr><td><code>POST /api/song/[id]?action=fetch-lyrics</code></td><td>Fetch</td><td>Get lyrics from Kugou</td></tr><tr><td><code>POST /api/song/[id]?action=translate-stream</code></td><td>Translate</td><td>AI translation (SSE)</td></tr><tr><td><code>POST /api/song/[id]?action=furigana-stream</code></td><td>Furigana</td><td>AI furigana (SSE)</td></tr><tr><td><code>DELETE /api/song/[id]</code></td><td>Delete</td><td>Remove song</td></tr></tbody></table>
+<h2>Speech APIs</h2>
+<h3>Text-to-Speech</h3>
+<pre><code>// api/speech.ts
+const providers = {
+  openai: {
+    models: ["tts-1", "tts-1-hd"],
+    voices: ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
+  },
+  elevenlabs: {
+    models: ["eleven_multilingual_v2", "eleven_turbo_v2"],
+    voices: ["custom voice IDs"],
+  },
+};
+
+// Dual provider support
+if (model === "elevenlabs") {
+  return generateElevenLabsSpeech(text, voiceId, modelId);
+} else {
+  return generateSpeech({
+    model: openai.speech("tts-1"),
+    text,
+    voice,
+  });
+}</code></pre>
+<h3>Audio Transcription</h3>
+<pre><code>// api/audio-transcribe.ts
+const transcription = await openai.audio.transcriptions.create({
+  file: audioFile,
+  model: "whisper-1",
+});</code></pre>
+<h2>Rate Limiting</h2>
+<h3>Counter-Based Limiting</h3>
+<pre><code>// api/_utils/rate-limit.ts
+export async function checkCounterLimit({
+  key,
+  windowSeconds,
+  limit,
+}: CounterLimitArgs): Promise&lt;CounterLimitResult&gt; {
+  // Atomic increment
+  const newCount = await redis.incr(key);
+  
+  // Set expiry on first request
+  if (newCount === 1) {
+    await redis.expire(key, windowSeconds);
+  }
+  
+  const ttl = await redis.ttl(key);
+  
+  if (newCount &gt; limit) {
+    return { 
+      allowed: false, 
+      count: newCount, 
+      remaining: 0,
+      resetSeconds: ttl,
+    };
+  }
+  
+  return { 
+    allowed: true, 
+    remaining: limit - newCount,
+  };
+}</code></pre>
+<h3>Rate Limit Configurations</h3>
+<table><thead><tr><th>Endpoint</th><th>Burst Limit</th><th>Daily/Budget</th><th>Window</th></tr></thead><tbody><tr><td>Chat AI (auth)</td><td>25</td><td>per 5 hours</td><td>Sliding</td></tr><tr><td>Chat AI (anon)</td><td>3</td><td>per 5 hours</td><td>Sliding</td></tr><tr><td>Speech TTS</td><td>10/min</td><td>50/day</td><td>Fixed</td></tr><tr><td>IE Generate</td><td>3/min</td><td>10/5hr</td><td>Fixed</td></tr><tr><td>Applet AI (auth)</td><td>50</td><td>per hour</td><td>Fixed</td></tr><tr><td>Applet AI (anon)</td><td>15</td><td>per hour</td><td>Fixed</td></tr><tr><td>Transcribe</td><td>10/min</td><td>50/day</td><td>Fixed</td></tr></tbody></table>
+<h2>Authentication</h2>
+<h3>Token Validation</h3>
+<pre><code>// api/_utils/auth-validate.ts
+export async function validateAuthToken(
+  redis: RedisLike,
+  username: string,
+  authToken: string,
+  options: { allowExpired?: boolean; refreshOnGrace?: boolean } = {}
+): Promise&lt;AuthValidationResult&gt; {
+  // 1. Check active token
+  const userKey = getUserTokenKey(username, authToken);
+  const exists = await redis.exists(userKey);
+  
+  if (exists) {
+    // Refresh TTL on use
+    await redis.expire(userKey, USER_TTL_SECONDS);
+    return { valid: true, expired: false };
+  }
+  
+  // 2. Check grace period for expired tokens
+  if (options.allowExpired) {
+    const lastTokenKey = getLastTokenKey(username);
+    const lastTokenData = await redis.get(lastTokenKey);
+    // ... grace period logic
+  }
+  
+  return { valid: false };
+}</code></pre>
+<h3>Auth Headers</h3>
+<table><thead><tr><th>Header</th><th>Value</th><th>Purpose</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td><code>Bearer &lt;token&gt;</code></td><td>Authentication token</td></tr><tr><td><code>X-Username</code></td><td>Username</td><td>User identification</td></tr></tbody></table>
+<h3>Token Configuration</h3>
+<table><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody><tr><td>Token TTL</td><td>90 days</td></tr><tr><td>Grace period</td><td>30 days</td></tr><tr><td>Admin bypass</td><td>User "ryo"</td></tr></tbody></table>
+<h2>CORS Handling</h2>
+<pre><code>// api/_utils/cors.ts
+export function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  
+  // Always allow Tailscale origins
+  if (isTailscaleOrigin(origin)) return true;
+  
+  const env = getRuntimeEnv();
+  
+  if (env === "production") {
+    return origin === PROD_ALLOWED_ORIGIN;
+  }
+  
+  if (env === "preview") {
+    return isVercelPreviewOrigin(origin);
+  }
+  
+  // Development
+  return isLocalhostOrigin(origin);
+}</code></pre>
+<h2>Response Patterns</h2>
+<h3>JSON Response Helper</h3>
+<pre><code>const jsonResponse = (data: unknown, status = 200, headers = {}) =&gt;
+  new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": effectiveOrigin,
+      ...headers,
+    },
+  });</code></pre>
+<h3>Error Response Pattern</h3>
+<pre><code>const errorResponse = (message: string, status = 400) =&gt; {
+  logInfo(requestId, `Response: ${status} - ${message}`);
+  return jsonResponse({ error: message }, status);
+};</code></pre>
+<h3>SSE Streaming Response</h3>
+<pre><code>const stream = new ReadableStream({
+  async start(controller) {
+    for await (const chunk of aiStream) {
+      controller.enqueue(`data: ${JSON.stringify(chunk)}\n\n`);
+    }
+    controller.enqueue("data: [DONE]\n\n");
+    controller.close();
+  },
+});
+
+return new Response(stream, {
+  headers: {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+  },
+});</code></pre>
+<h2>Edge Runtime Configuration</h2>
+<p>All APIs use Vercel Edge Runtime for low latency:</p>
+<pre><code>export const config = { runtime: "edge" };
+export const runtime = "edge";
+export const maxDuration = 60; // or 80 for AI endpoints</code></pre>
+<h2>Redis Key Patterns</h2>
+<table><thead><tr><th>Prefix</th><th>Purpose</th><th>Example</th></tr></thead><tbody><tr><td><code>rl:ai:</code></td><td>AI rate limiting</td><td><code>rl:ai:chat:user123</code></td></tr><tr><td><code>song:meta:</code></td><td>Song metadata</td><td><code>song:meta:abc123</code></td></tr><tr><td><code>song:content:</code></td><td>Song content</td><td><code>song:content:abc123</code></td></tr><tr><td><code>ie:cache:</code></td><td>IE generation cache</td><td><code>ie:cache:hash</code></td></tr><tr><td><code>applet:share:</code></td><td>Shared applets</td><td><code>applet:share:xyz</code></td></tr><tr><td><code>chat:token:user:</code></td><td>Auth tokens</td><td><code>chat:token:user:alice:tok</code></td></tr><tr><td><code>chat:room:</code></td><td>Chat room data</td><td><code>chat:room:general</code></td></tr></tbody></table>
+<h2>Related Documentation</h2>
+<ul><li><a href="/docs/chat-api">Chat API</a> - Detailed chat API documentation</li></ul><ul><li><a href="/docs/song-api">Song API</a> - Song API reference</li><li><a href="/docs/ai-generation-apis">AI Generation APIs</a> - IE and Applet AI</li></ul>
       </article>
       
       <nav class="nav">
-        <span></span>
-        <a href="/docs/architecture">Architecture & Build →</a>
+        <a href="/docs/architecture">← Architecture & Build</a>
+        <a href="/docs/apps">Apps →</a>
       </nav>
       
     </main>

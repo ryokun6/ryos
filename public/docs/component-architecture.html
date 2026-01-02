@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Component Architecture - ryOS Docs</title>
+  <link rel="icon" href="/icons/mac-192.png">
+  <style>
+    @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
+    @font-face { font-family: "Monaco"; src: url("/fonts/monacottf.woff2") format("woff2"); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Geneva", system-ui, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #fff;
+      color: #000;
+    }
+    a { color: #00f; }
+    a:hover { text-decoration: none; }
+    code, pre { font-family: "Monaco", monospace; font-size: 11px; }
+    code { background: #f0f0f0; padding: 1px 4px; }
+    pre { background: #f8f8f8; border: 1px solid #ddd; padding: 12px; overflow-x: auto; margin: 12px 0; }
+    pre code { background: none; padding: 0; }
+    
+    /* Layout */
+    .header {
+      position: sticky; top: 0; z-index: 10;
+      background: #fff; border-bottom: 1px solid #ccc;
+      padding: 0 16px; height: 40px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-left img { width: 20px; height: 20px; display: block; }
+    .header-left span { font-weight: bold; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .header-right a { text-decoration: none; color: #333; }
+    .header-right a:hover { color: #000; }
+    .header-right .github { display: flex; align-items: center; gap: 4px; }
+    .header-right .launch { background: #000; color: #fff; padding: 4px 12px; }
+    
+    .container { display: flex; max-width: 1100px; margin: 0 auto; }
+    
+    .sidebar {
+      width: 220px; flex-shrink: 0;
+      border-right: 1px solid #ccc;
+      padding: 12px;
+      position: sticky; top: 40px;
+      height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .sidebar a {
+      display: block; padding: 4px 8px; margin: 2px 0;
+      text-decoration: none; color: #333;
+      font-size: 11px;
+    }
+    .sidebar a:hover { background: #f0f0f0; }
+    .sidebar a.active { background: #000; color: #fff; }
+    
+    /* Tree hierarchy styles */
+    .nav-group { margin: 4px 0; }
+    .nav-spacer { width: 8px; flex-shrink: 0; } /* Same width as toggle arrow */
+    .nav-no-toggle { cursor: default; }
+    .nav-toggle {
+      display: flex; align-items: center; gap: 4px;
+      background: none; border: none; padding: 0; width: 100%;
+      cursor: pointer; text-align: left; font: inherit; color: inherit;
+    }
+    .nav-toggle:hover { background: #f0f0f0; }
+    .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
+    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; font-size: 11px; }
+    .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
+    .nav-child { padding-left: 8px !important; font-size: 10px !important; color: #555 !important; }
+    .nav-child:hover { color: #000 !important; }
+    .nav-child.active { color: #fff !important; }
+    
+    .content { flex: 1; padding: 24px 32px; min-width: 0; }
+    
+    /* Typography */
+    h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
+    hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
+    h2 { font-size: 14px; margin: 24px 0 12px; }
+    h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
+    p { margin: 8px 0; }
+    ul, ol { margin: 8px 0 8px 20px; }
+    li { margin: 4px 0; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    th { background: #f0f0f0; font-weight: bold; }
+    
+    /* Mermaid diagrams */
+    pre.mermaid { background: none; border: none; padding: 0; text-align: center; margin: 16px 0; }
+    .mermaid svg { max-width: 100%; height: auto; font-family: "Geneva", system-ui, sans-serif !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: #f8f8f8 !important; stroke: #ccc !important; }
+    .mermaid .edgeLabel { background: #fff !important; font-size: 10px !important; }
+    .mermaid .label { font-size: 10px !important; }
+    .mermaid .nodeLabel { font-size: 10px !important; }
+    .mermaid .cluster-label { font-size: 10px !important; }
+    .mermaid .messageText { font-size: 10px !important; }
+    .mermaid .actor { font-size: 10px !important; }
+    .mermaid .labelText { font-size: 10px !important; }
+    
+    /* Collapsible details */
+    details { margin: 8px 0; }
+    details summary { 
+      cursor: pointer; 
+      color: #666; 
+      font-size: 11px;
+      padding: 4px 0;
+      user-select: none;
+    }
+    details summary:hover { color: #000; }
+    details[open] summary { margin-bottom: 8px; }
+    details ul { margin-top: 0; }
+    
+    /* Navigation */
+    .nav { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
+    .nav a { text-decoration: none; color: #333; }
+    .nav a:hover { color: #000; }
+    
+    /* Mobile menu button */
+    .menu-btn { 
+      display: none; 
+      background: transparent; 
+      border: 0; 
+      padding: 4px; 
+      cursor: pointer; 
+      line-height: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+      color: inherit;
+    }
+    .menu-btn svg { display: block; width: 18px; height: 18px; pointer-events: none; }
+    @media screen and (max-width: 768px) {
+      .menu-btn { 
+        display: -webkit-flex !important;
+        display: flex !important; 
+        -webkit-align-items: center;
+        align-items: center; 
+        -webkit-justify-content: center;
+        justify-content: center;
+      }
+      .header-left img { display: none !important; }
+      .sidebar { 
+        position: fixed; left: -240px; top: 40px; 
+        width: 240px; height: calc(100vh - 40px);
+        background: #fff; z-index: 20;
+        transition: left 0.2s;
+      }
+      .sidebar.open { left: 0; box-shadow: 2px 0 8px rgba(0,0,0,0.1); }
+      .content { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit">
+        <img src="/icons/mac-192.png" alt="ryOS" width="20" height="20">
+        <span>ryOS</span>
+      </a>
+      <span style="color:#999">/</span>
+      <span style="color:#666">Docs</span>
+    </div>
+    <div class="header-right">
+      <a href="https://github.com/ryokun6/ryos" target="_blank" class="github">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <a href="/" class="launch">Launch</a>
+    </div>
+  </header>
+  
+  <div class="container">
+    <nav class="sidebar">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/overview" class="">1. Overview</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
+    <a href="/docs/api-architecture" class="nav-child ">1.2 API Architecture</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/apps" class="">2. Apps</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chats" class="nav-child ">2.1 Chats</a>
+    <a href="/docs/internet-explorer" class="nav-child ">2.2 Internet Explorer</a>
+    <a href="/docs/ipod" class="nav-child ">2.3 iPod</a>
+    <a href="/docs/karaoke" class="nav-child ">2.4 Karaoke</a>
+    <a href="/docs/textedit" class="nav-child ">2.5 TextEdit</a>
+    <a href="/docs/finder" class="nav-child ">2.6 Finder</a>
+    <a href="/docs/paint" class="nav-child ">2.7 Paint</a>
+    <a href="/docs/photo-booth" class="nav-child ">2.8 Photo Booth</a>
+    <a href="/docs/terminal" class="nav-child ">2.9 Terminal</a>
+    <a href="/docs/control-panels" class="nav-child ">2.10 Control Panels</a>
+    <a href="/docs/soundboard" class="nav-child ">2.11 Soundboard</a>
+    <a href="/docs/synth" class="nav-child ">2.12 Synth</a>
+    <a href="/docs/videos" class="nav-child ">2.13 Videos</a>
+    <a href="/docs/minesweeper" class="nav-child ">2.14 Minesweeper</a>
+    <a href="/docs/virtual-pc" class="nav-child ">2.15 Virtual PC</a>
+    <a href="/docs/admin" class="nav-child ">2.16 Admin</a>
+    <a href="/docs/applet-store" class="nav-child ">2.17 Applet Store</a>
+  </div>
+</div>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/application-framework" class="">3. Application Framework</a>
+  </button>
+  <div class="nav-children" style="display: block;">
+    <a href="/docs/window-management" class="nav-child ">3.1 Window Management</a>
+    <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/hooks-architecture" class="nav-child ">3.4 Hooks Architecture</a>
+    <a href="/docs/component-architecture" class="nav-child active">3.5 Component Architecture</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/ai-system" class="">4. AI System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/file-system" class="">5. File System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">6. Audio System</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/ui-components" class="">7. UI Components and Shared Systems</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/component-library" class="nav-child ">7.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">7.2 i18n & Hooks</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/api-reference" class="">8. API Reference</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
+    <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">8.4 Chat Rooms API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">8.5 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">8.6 Utility APIs</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/changelog" class="">9. Changelog</a>
+  </div>
+</div>
+    </nav>
+    
+    <main class="content">
+      <article>
+        <h1>Component Architecture</h1>
+<p>ryOS uses a layered component architecture with theme-aware rendering, organized into layout, UI, dialog, and shared component categories.</p>
+<h2>Architecture Overview</h2>
+<pre class="mermaid">graph TD
+    subgraph Layer4["Layer 4: Application"]
+        D1[Dialog Components]
+        D2[Shared Components]
+    end
+    
+    subgraph Layer3["Layer 3: Layout"]
+        C1[WindowFrame]
+        C2[MenuBar]
+        C3[Desktop]
+        C4[Dock]
+        C5[Taskbar]
+    end
+    
+    subgraph Layer2["Layer 2: Custom UI"]
+        B1[audio-bars]
+        B2[dial]
+        B3[volume-bar]
+        B4[playback-bars]
+        B5[ThemedIcon]
+        B6[TrafficLightButton]
+    end
+    
+    subgraph Layer1["Layer 1: Base (shadcn)"]
+        A1[button]
+        A2[dialog]
+        A3[dropdown-menu]
+        A4[select]
+        A5[slider]
+        A6[tabs]
+    end
+    
+    A1 --> B1 & B2 & B3
+    B1 & B2 --> C1 & C2
+    C1 & C2 --> D1 & D2</pre>
+<h2>Component Directory Structure</h2>
+<pre><code>src/components/
+├── layout/           # Desktop environment structure
+│   ├── Desktop.tsx
+│   ├── Dock.tsx
+│   ├── MenuBar.tsx
+│   ├── WindowFrame.tsx
+│   ├── AppleMenu.tsx
+│   ├── StartMenu.tsx
+│   ├── ExposeView.tsx
+│   └── AppManager.tsx
+├── ui/               # Base UI components
+│   ├── button.tsx
+│   ├── dialog.tsx
+│   ├── dropdown-menu.tsx
+│   ├── select.tsx
+│   ├── slider.tsx
+│   ├── switch.tsx
+│   ├── tabs.tsx
+│   ├── audio-bars.tsx
+│   ├── dial.tsx
+│   ├── volume-bar.tsx
+│   └── ...
+├── dialogs/          # Modal dialogs
+│   ├── AboutDialog.tsx
+│   ├── ConfirmDialog.tsx
+│   ├── HelpDialog.tsx
+│   └── ...
+└── shared/           # Cross-app utilities
+    ├── ThemedIcon.tsx
+    ├── TrafficLightButton.tsx
+    ├── EmojiAquarium.tsx
+    └── ...</code></pre>
+<h2>Layout Components</h2>
+<h3>Desktop (<code>Desktop.tsx</code>)</h3>
+<p>The root desktop surface handling wallpaper, icons, and drag-drop.</p>
+<pre><code>interface DesktopProps {
+  apps: AnyApp[];
+  appStates: AppManagerState;
+  toggleApp: (appId: AppId, initialData?: unknown) =&gt; void;
+  onClick?: () =&gt; void;
+  desktopStyles?: DesktopStyles;
+}</code></pre>
+<strong>Features:</strong>
+<ul><li>Theme-conditional icon layout (XP: left-aligned, macOS: right-aligned)</li><li>Video wallpaper support with visibility handling</li><li>Desktop shortcut management via <code>useFilesStore</code></li><li>Drag-and-drop alias creation</li><li>Long-press context menu for mobile</li></ul>
+<h3>WindowFrame (<code>WindowFrame.tsx</code>)</h3>
+<p>Window chrome with theme-specific rendering.</p>
+<pre><code>interface WindowFrameProps {
+  children: React.ReactNode;
+  title: string;
+  appId: AppId;
+  material?: "default" | "transparent" | "notitlebar";
+  windowConstraints?: WindowConstraints;
+  instanceId?: string;
+  menuBar?: React.ReactNode;
+  keepMountedWhenMinimized?: boolean;
+}</code></pre>
+<strong>Theme-Specific Rendering:</strong>
+<table><thead><tr><th>Theme</th><th>Title Bar</th><th>Controls</th><th>Position</th></tr></thead><tbody><tr><td>macOS X</td><td>Pinstripe gradient</td><td>Traffic lights</td><td>Left</td></tr><tr><td>System 7</td><td>Dotted pattern</td><td>Close box</td><td>Left</td></tr><tr><td>XP</td><td>Blue gradient</td><td>Min/Max/Close</td><td>Right</td></tr><tr><td>Win98</td><td>3D beveled</td><td>Min/Max/Close</td><td>Right</td></tr></tbody></table>
+<h3>MenuBar (<code>MenuBar.tsx</code>)</h3>
+<p>Top menu bar (Mac) or taskbar integration.</p>
+<strong>Mac Themes:</strong>
+<ul><li>Apple menu with logo</li><li>Application menu</li><li>Status area (clock, volume, battery)</li></ul>
+<strong>Windows Themes:</strong>
+<ul><li>Renders as part of taskbar</li><li>Start menu integration</li></ul>
+<h3>Dock (<code>Dock.tsx</code>)</h3>
+<p>macOS-style dock with magnification.</p>
+<strong>Features:</strong>
+<ul><li>Icon magnification on hover</li><li>Running app indicators</li><li>Pinned items management</li><li>Drag-to-reorder</li><li>Context menus</li></ul>
+<h3>Component Hierarchy</h3>
+<pre class="mermaid">graph TD
+    AM[AppManager] --> MB[MenuBar]
+    AM --> DT[Desktop]
+    AM --> WF[WindowFrame *]
+    AM --> DK[Dock]
+    AM --> EV[ExposeView]
+    
+    MB --> APM[AppleMenu]
+    MB --> STM[StartMenu]
+    MB --> VC[VolumeControl]
+    MB --> CLK[Clock]
+    
+    DT --> FI[FileIcon *]
+    DT --> RCM[RightClickMenu]
+    DT --> VW[Video Wallpaper]
+    
+    WF --> TLB[TrafficLightButton]
+    WF --> TI[ThemedIcon]
+    WF --> APP[App Content]</pre>
+<h2>UI Components</h2>
+<h3>shadcn-based Components</h3>
+<p>Standard UI primitives from shadcn/ui:</p>
+<table><thead><tr><th>Component</th><th>Base</th><th>Purpose</th></tr></thead><tbody><tr><td><code>button</code></td><td>CVA variants</td><td>Buttons with theme variants</td></tr><tr><td><code>dialog</code></td><td>Radix Dialog</td><td>Modal dialogs</td></tr><tr><td><code>dropdown-menu</code></td><td>Radix DropdownMenu</td><td>Context/dropdown menus</td></tr><tr><td><code>select</code></td><td>Radix Select</td><td>Selection dropdowns</td></tr><tr><td><code>slider</code></td><td>Radix Slider</td><td>Value sliders</td></tr><tr><td><code>switch</code></td><td>Radix Switch</td><td>Toggle switches</td></tr><tr><td><code>tabs</code></td><td>Radix Tabs</td><td>Tabbed interfaces</td></tr><tr><td><code>checkbox</code></td><td>Radix Checkbox</td><td>Checkboxes</td></tr><tr><td><code>tooltip</code></td><td>Radix Tooltip</td><td>Hover tooltips</td></tr><tr><td><code>scroll-area</code></td><td>Radix ScrollArea</td><td>Custom scrollbars</td></tr></tbody></table>
+<h3>Custom Components</h3>
+<p>ryOS-specific UI components:</p>
+<h4>audio-bars</h4>
+<p>Real-time audio visualization bars.</p>
+<pre><code>interface AudioBarsProps {
+  isPlaying: boolean;
+  barCount?: number;
+  color?: string;
+  height?: number;
+}</code></pre>
+<h4>dial</h4>
+<p>Rotary knob control for audio parameters.</p>
+<pre><code>interface DialProps {
+  value: number;
+  min: number;
+  max: number;
+  step?: number;
+  onChange: (value: number) =&gt; void;
+  size?: "sm" | "md" | "lg";
+  color?: string;
+  label?: string;
+  showValue?: boolean;
+}</code></pre>
+<strong>Features:</strong>
+<ul><li>Horizontal drag-to-adjust</li><li>Touch and mouse support</li><li>Conic gradient fill</li><li>Size variants</li></ul>
+<h4>volume-bar</h4>
+<p>Volume level indicator with animation.</p>
+<pre><code>interface VolumeBarProps {
+  level: number;
+  maxLevel?: number;
+  barCount?: number;
+  activeColor?: string;
+  inactiveColor?: string;
+}</code></pre>
+<h4>playback-bars</h4>
+<p>Animated equalizer-style bars.</p>
+<pre><code>interface PlaybackBarsProps {
+  isPlaying: boolean;
+  variant?: "small" | "medium" | "large";
+}</code></pre>
+<h3>Theme-Aware Button Pattern</h3>
+<pre><code>const Button = React.forwardRef&lt;HTMLButtonElement, ButtonProps&gt;(
+  ({ className, variant, ...props }, ref) =&gt; {
+    const currentTheme = useThemeStore((state) =&gt; state.current);
+    const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+    const isMacTheme = currentTheme === "macosx";
+
+    // macOS Aqua styling
+    if (isMacTheme &amp;&amp; variant === "default") {
+      return &lt;Comp className={cn("aqua-button primary", className)} {...props} /&gt;;
+    }
+    
+    // Windows styling
+    if (isXpTheme &amp;&amp; variant === "default") {
+      return &lt;Comp className={cn("button", className)} {...props} /&gt;;
+    }
+    
+    // Fallback
+    return &lt;Comp className={cn(buttonVariants({ variant }), className)} {...props} /&gt;;
+  }
+);</code></pre>
+<h2>Dialog Components</h2>
+<h3>Dialog Inventory</h3>
+<table><thead><tr><th>Dialog</th><th>Purpose</th><th>Has Sound</th></tr></thead><tbody><tr><td><code>AboutDialog</code></td><td>App information</td><td>No</td></tr><tr><td><code>AboutFinderDialog</code></td><td>System info</td><td>Yes</td></tr><tr><td><code>BootScreen</code></td><td>Boot animation</td><td>Yes</td></tr><tr><td><code>ConfirmDialog</code></td><td>Confirmations</td><td>Yes (Alert)</td></tr><tr><td><code>EmojiDialog</code></td><td>Emoji picker</td><td>No</td></tr><tr><td><code>HelpDialog</code></td><td>App help content</td><td>No</td></tr><tr><td><code>InputDialog</code></td><td>Text input</td><td>No</td></tr><tr><td><code>LoginDialog</code></td><td>Authentication</td><td>No</td></tr><tr><td><code>ShareItemDialog</code></td><td>Sharing options</td><td>No</td></tr><tr><td><code>SongSearchDialog</code></td><td>Song search</td><td>No</td></tr></tbody></table>
+<h3>Dialog Pattern</h3>
+<pre class="mermaid">graph TD
+    A[Dialog Component] --> B[Dialog Root]
+    B --> C[DialogContent]
+    C --> D[DialogHeader]
+    C --> E[Content Area]
+    C --> F[DialogFooter]
+    
+    D --> D1[Theme Title Bar]
+    D1 --> D1a[macOS Traffic Lights]
+    D1 --> D1b[Windows Controls]
+    
+    F --> F1[Cancel Button]
+    F --> F2[Confirm Button]</pre>
+<h3>ConfirmDialog Example</h3>
+<pre><code>export function ConfirmDialog({
+  isOpen,
+  onOpenChange,
+  onConfirm,
+  title,
+  description,
+}: ConfirmDialogProps) {
+  const { play: playAlertSound } = useSound(Sounds.ALERT_SOSUMI);
+  const currentTheme = useThemeStore((state) =&gt; state.current);
+  
+  // Play alert sound on open
+  useEffect(() =&gt; {
+    if (isOpen) {
+      playAlertSound();
+    }
+  }, [isOpen, playAlertSound]);
+
+  return (
+    &lt;Dialog open={isOpen} onOpenChange={onOpenChange}&gt;
+      &lt;DialogContent&gt;
+        &lt;DialogHeader&gt;{title}&lt;/DialogHeader&gt;
+        &lt;div className="p-4"&gt;{description}&lt;/div&gt;
+        &lt;DialogFooter&gt;
+          &lt;Button variant="outline" onClick={() =&gt; onOpenChange(false)}&gt;
+            Cancel
+          &lt;/Button&gt;
+          &lt;Button onClick={onConfirm}&gt;Confirm&lt;/Button&gt;
+        &lt;/DialogFooter&gt;
+      &lt;/DialogContent&gt;
+    &lt;/Dialog&gt;
+  );
+}</code></pre>
+<h2>Shared Components</h2>
+<h3>ThemedIcon</h3>
+<p>Theme-aware icon rendering with fallback support.</p>
+<pre><code>interface ThemedIconProps extends ImgHTMLAttributes&lt;HTMLImageElement&gt; {
+  name: string;
+  alt?: string;
+  themeOverride?: OsThemeId;
+}
+
+// Usage
+&lt;ThemedIcon name="folder.png" alt="Folder" /&gt;</code></pre>
+<strong>Features:</strong>
+<ul><li>Automatic theme path resolution</li><li>Fallback to default icons</li><li>Safari image stabilizer for themed variants</li><li>Async theme path loading</li></ul>
+<strong>Resolution Logic:</strong>
+<pre><code>1. Check /icons/{theme}/{name}
+2. If not in manifest, use /icons/default/{name}</code></pre>
+<h3>TrafficLightButton</h3>
+<p>macOS window control buttons.</p>
+<pre><code>interface TrafficLightButtonProps {
+  color: "red" | "yellow" | "green";
+  onClick: () =&gt; void;
+  isForeground?: boolean;
+  ariaLabel?: string;
+}</code></pre>
+<strong>Features:</strong>
+<ul><li>Gradient fills matching Aqua design</li><li>Inactive state styling</li><li>Enlarged clickable area</li><li>Proper accessibility labels</li></ul>
+<h3>EmojiAquarium</h3>
+<p>Decorative animated emoji display.</p>
+<pre><code>interface EmojiAquariumProps {
+  emojis: string[];
+  containerRef: RefObject&lt;HTMLDivElement&gt;;
+  speed?: number;
+}</code></pre>
+<h3>LinkPreview</h3>
+<p>URL preview card with OpenGraph data.</p>
+<pre><code>interface LinkPreviewProps {
+  url: string;
+  onLoad?: (data: OGData) =&gt; void;
+  compact?: boolean;
+}</code></pre>
+<h2>Theme Integration Pattern</h2>
+<h3>Standard Pattern</h3>
+<pre><code>function MyComponent() {
+  const currentTheme = useThemeStore((state) =&gt; state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacTheme = currentTheme === "macosx";
+
+  return (
+    &lt;div className={cn(
+      "base-styles",
+      isMacTheme &amp;&amp; "mac-specific-styles",
+      isXpTheme &amp;&amp; "windows-specific-styles",
+    )}&gt;
+      {/* content */}
+    &lt;/div&gt;
+  );
+}</code></pre>
+<h3>Theme Metadata Usage</h3>
+<pre><code>import { getThemeMetadata } from "@/themes";
+
+function ResponsiveLayout() {
+  const theme = useThemeStore((s) =&gt; s.current);
+  const metadata = getThemeMetadata(theme);
+  
+  return (
+    &lt;div style={{
+      paddingTop: metadata.menuBarHeight,
+      paddingBottom: metadata.hasDock ? metadata.baseDockHeight : metadata.taskbarHeight,
+    }}&gt;
+      {/* content */}
+    &lt;/div&gt;
+  );
+}</code></pre>
+<h2>Sound Integration Pattern</h2>
+<p>Most interactive components integrate with <code>useSound</code>:</p>
+<pre><code>import { useSound, Sounds } from "@/hooks/useSound";
+
+function InteractiveButton({ onClick, children }) {
+  const { play: playClick } = useSound(Sounds.BUTTON_CLICK);
+  
+  const handleClick = (e) =&gt; {
+    playClick();
+    onClick?.(e);
+  };
+  
+  return &lt;button onClick={handleClick}&gt;{children}&lt;/button&gt;;
+}</code></pre>
+<h2>Composition Patterns</h2>
+<h3>WindowFrame + App Content</h3>
+<pre><code>&lt;WindowFrame
+  appId="ipod"
+  title="iPod"
+  material="transparent"
+  menuBar={&lt;IpodMenuBar /&gt;}
+  keepMountedWhenMinimized={true}
+  windowConstraints={{
+    minWidth: 280,
+    minHeight: 400,
+  }}
+&gt;
+  &lt;IpodAppContent /&gt;
+&lt;/WindowFrame&gt;</code></pre>
+<h3>Dialog with Theme-Aware Content</h3>
+<pre><code>&lt;Dialog open={isOpen} onOpenChange={onOpenChange}&gt;
+  &lt;DialogContent className="max-w-[400px]"&gt;
+    &lt;DialogHeader&gt;
+      {title}
+    &lt;/DialogHeader&gt;
+    &lt;div className={isXpTheme ? "window-body" : "p-6"}&gt;
+      {content}
+    &lt;/div&gt;
+    &lt;DialogFooter&gt;
+      &lt;Button variant={isMacTheme ? "default" : "retro"}&gt;
+        Confirm
+      &lt;/Button&gt;
+    &lt;/DialogFooter&gt;
+  &lt;/DialogContent&gt;
+&lt;/Dialog&gt;</code></pre>
+<h2>Component Relationships</h2>
+<pre class="mermaid">graph TB
+    subgraph "Application Layer"
+        AM[AppManager]
+    end
+    
+    subgraph "Layout Layer"
+        MB[MenuBar]
+        DT[Desktop]
+        WF[WindowFrame]
+        DK[Dock]
+    end
+    
+    subgraph "UI Layer"
+        BTN[Button]
+        DLG[Dialog]
+        RCM[RightClickMenu]
+    end
+    
+    subgraph "Shared Layer"
+        TI[ThemedIcon]
+        TLB[TrafficLightButton]
+    end
+    
+    subgraph "State Layer"
+        TS[useThemeStore]
+        AS[useAppStore]
+    end
+    
+    AM --> MB
+    AM --> DT
+    AM --> WF
+    AM --> DK
+    
+    MB --> TI
+    DK --> TI
+    WF --> TLB
+    DLG --> TLB
+    
+    MB --> TS
+    DT --> TS
+    WF --> TS
+    DK --> AS</pre>
+<h2>Best Practices</h2>
+<ol><li><strong>Always use <code>useThemeStore</code></strong> for theme-conditional rendering</li></ol><ol><li><strong>Use <code>ThemedIcon</code></strong> for all icon rendering (handles theme paths)</li><li><strong>Integrate <code>useSound</code></strong> for interactive feedback</li><li><strong>Use <code>cn()</code> utility</strong> for conditional classNames</li><li><strong>Use shadcn components</strong> from <code>@/components/ui/</code> as base primitives</li><li><strong>Support touch and mouse</strong> for custom interactive components</li><li><strong>Provide accessibility labels</strong> for interactive elements</li></ol>
+<h2>Related Documentation</h2>
+<ul><li><a href="/docs/theme-system">Theme System</a> - Theme definitions and CSS variables</li></ul><ul><li><a href="/docs/window-management">Window Management</a> - WindowFrame details</li><li><a href="/docs/ui-components">UI Components</a> - Full component reference</li><li><a href="/docs/component-library">Component Library</a> - Detailed component API</li></ul>
+      </article>
+      
+      <nav class="nav">
+        <a href="/docs/hooks-architecture">← Hooks Architecture</a>
+        <a href="/docs/ai-system">AI System →</a>
+      </nav>
+      
+    </main>
+  </div>
+  
+  <script>
+    function toggleNavGroup(button) {
+      const group = button.closest('.nav-group');
+      const children = group.querySelector('.nav-children');
+      const svg = button.querySelector('svg');
+      const isExpanded = group.classList.contains('expanded');
+      
+      if (isExpanded) {
+        group.classList.remove('expanded');
+        children.style.display = 'none';
+        svg.style.transform = 'rotate(0deg)';
+        button.setAttribute('aria-expanded', 'false');
+      } else {
+        group.classList.add('expanded');
+        children.style.display = 'block';
+        svg.style.transform = 'rotate(90deg)';
+        button.setAttribute('aria-expanded', 'true');
+      }
+    }
+    
+    document.addEventListener('click', (e) => {
+      const sidebar = document.querySelector('.sidebar');
+      const menuBtn = document.querySelector('.menu-btn');
+      const clickedMenuBtn = menuBtn && menuBtn.contains(e.target);
+      if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
+        sidebar.classList.remove('open');
+      }
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        fontFamily: '"Geneva", system-ui, sans-serif',
+        fontSize: '10px',
+        primaryColor: '#f0f0f0',
+        primaryBorderColor: '#ccc',
+        primaryTextColor: '#000',
+        lineColor: '#666',
+        secondaryColor: '#f8f8f8',
+        tertiaryColor: '#fff'
+      },
+      flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
+      sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
+    });
+  </script>
+</body>
+</html>

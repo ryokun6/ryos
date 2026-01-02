@@ -44,6 +44,7 @@ graph TB
 |--------------|-------|
 | Learn about the apps | [Apps Overview](/docs/apps) |
 | Understand the architecture | [Architecture](/docs/architecture) |
+| Understand the API layer | [API Architecture](/docs/api-architecture) |
 | Build with the framework | [Application Framework](/docs/application-framework) |
 | Work with AI features | [AI System](/docs/ai-system) |
 | Use the APIs | [API Reference](/docs/api-reference) |

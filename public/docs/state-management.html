@@ -191,6 +191,7 @@
   </button>
   <div class="nav-children" style="display: none;">
     <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
+    <a href="/docs/api-architecture" class="nav-child ">1.2 API Architecture</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -228,9 +229,11 @@
     <a href="/docs/application-framework" class="">3. Application Framework</a>
   </button>
   <div class="nav-children" style="display: block;">
-    <a href="/docs/window-management" class="nav-child ">3.1 Window Manager</a>
+    <a href="/docs/window-management" class="nav-child ">3.1 Window Management</a>
     <a href="/docs/state-management" class="nav-child active">3.2 State Management</a>
     <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/hooks-architecture" class="nav-child ">3.4 Hooks Architecture</a>
+    <a href="/docs/component-architecture" class="nav-child ">3.5 Component Architecture</a>
   </div>
 </div>
 <div class="nav-group">
@@ -290,10 +293,65 @@
     <main class="content">
       <article>
         <h1>State Management</h1>
-<p>ryOS uses Zustand for state management with 21 stores following consistent patterns.</p>
+<p>ryOS uses Zustand for state management with 21+ stores following consistent patterns, combined with localStorage and IndexedDB for persistence.</p>
+<h2>Architecture Overview</h2>
+<pre class="mermaid">flowchart TB
+    subgraph "Presentation Layer"
+        COMP[React Components]
+    end
+    
+    subgraph "Store Layer"
+        subgraph "Core Stores"
+            APP[useAppStore<br/>Window Management]
+            FILES[useFilesStore<br/>File System]
+            THEME[useThemeStore<br/>Theming]
+        end
+        
+        subgraph "Feature Stores"
+            CHAT[useChatsStore]
+            IPOD[useIpodStore]
+            DOCK[useDockStore]
+        end
+        
+        subgraph "Settings Stores"
+            AUDIO[useAudioSettingsStore]
+            DISPLAY[useDisplaySettingsStore]
+        end
+    end
+    
+    subgraph "Persistence Layer"
+        LS[(localStorage)]
+        IDB[(IndexedDB)]
+    end
+    
+    subgraph "External"
+        API[REST APIs]
+        REDIS[(Redis Cache)]
+    end
+    
+    COMP --> APP
+    COMP --> FILES
+    COMP --> CHAT
+    COMP --> IPOD
+    
+    APP -.->|cross-store| FILES
+    IPOD -.->|auth| CHAT
+    
+    APP --> LS
+    FILES --> LS
+    FILES --> IDB
+    CHAT --> LS
+    DISPLAY --> IDB
+    
+    IPOD --> API
+    CHAT --> API
+    API --> REDIS</pre>
 <h2>Store Inventory</h2>
-<table><thead><tr><th>Store</th><th>Purpose</th><th>Persistence Key</th></tr></thead><tbody><tr><td><code>useAppStore</code></td><td>Window/instance management, boot state</td><td><code>ryos:app-store</code></td></tr><tr><td><code>useFilesStore</code></td><td>Virtual filesystem metadata</td><td><code>ryos:files</code></td></tr><tr><td><code>useChatsStore</code></td><td>Chat rooms, messages, auth</td><td><code>ryos:chats</code></td></tr><tr><td><code>useIpodStore</code></td><td>Music library, playback</td><td><code>ryos:ipod</code></td></tr><tr><td><code>useKaraokeStore</code></td><td>Karaoke session state</td><td><code>ryos:karaoke</code></td></tr><tr><td><code>useThemeStore</code></td><td>OS theme selection</td><td>Manual localStorage (<code>os_theme</code>)</td></tr><tr><td><code>useDisplaySettingsStore</code></td><td>Wallpaper, shaders</td><td><code>ryos:display-settings</code></td></tr><tr><td><code>useDockStore</code></td><td>Dock pinned items</td><td><code>dock-storage</code></td></tr><tr><td><code>useAudioSettingsStore</code></td><td>Volume, TTS settings</td><td><code>ryos:audio-settings</code></td></tr><tr><td><code>useVideoStore</code></td><td>Video library, playback</td><td><code>ryos:videos</code></td></tr><tr><td><code>useTerminalStore</code></td><td>Command history, vim state</td><td><code>ryos:terminal</code></td></tr><tr><td><code>useSynthStore</code></td><td>Synthesizer presets</td><td><code>ryos:synth</code></td></tr><tr><td><code>useAppletStore</code></td><td>Applet metadata, window sizes</td><td><code>ryos:applets</code></td></tr><tr><td><code>useSoundboardStore</code></td><td>Soundboard slots</td><td><code>ryos:soundboard</code></td></tr></tbody></table>
-<h3>Store Architecture</h3>
+<h3>Core System Stores</h3>
+<table><thead><tr><th>Store</th><th>Persistence Key</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useAppStore</code></td><td><code>ryos:app-store</code></td><td>Window/instance management, boot state, AI model selection</td></tr><tr><td><code>useFilesStore</code></td><td><code>ryos:files</code></td><td>Virtual filesystem metadata</td></tr><tr><td><code>useThemeStore</code></td><td><code>os_theme</code> (manual)</td><td>OS theme selection</td></tr><tr><td><code>useDisplaySettingsStore</code></td><td><code>ryos:display-settings</code></td><td>Wallpaper, shaders, screen saver</td></tr><tr><td><code>useDockStore</code></td><td><code>dock-storage</code></td><td>Dock pinned items, scale, visibility</td></tr><tr><td><code>useAudioSettingsStore</code></td><td><code>ryos:audio-settings</code></td><td>Volume controls, audio feature toggles</td></tr><tr><td><code>useLanguageStore</code></td><td><code>ryos:language</code></td><td>UI language preference</td></tr></tbody></table>
+<h3>App-Specific Stores</h3>
+<table><thead><tr><th>Store</th><th>Persistence Key</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useChatsStore</code></td><td><code>ryos:chats</code></td><td>Chat rooms, messages, authentication</td></tr><tr><td><code>useIpodStore</code></td><td><code>ryos:ipod</code></td><td>Music library, playback state, lyrics</td></tr><tr><td><code>useVideoStore</code></td><td><code>ryos:videos</code></td><td>Video library, playback</td></tr><tr><td><code>useKaraokeStore</code></td><td><code>ryos:karaoke</code></td><td>Karaoke session state</td></tr><tr><td><code>useTerminalStore</code></td><td><code>ryos:terminal</code></td><td>Command history, vim state</td></tr><tr><td><code>useSynthStore</code></td><td><code>ryos:synth</code></td><td>Synthesizer presets</td></tr><tr><td><code>useSoundboardStore</code></td><td><code>ryos:soundboard</code></td><td>Soundboard slots and recordings</td></tr><tr><td><code>useAppletStore</code></td><td><code>applet-storage</code></td><td>Applet window dimensions</td></tr><tr><td><code>useFinderStore</code></td><td><code>ryos:finder</code></td><td>Finder instances, view preferences</td></tr><tr><td><code>useTextEditStore</code></td><td><code>ryos:textedit</code></td><td>Recent documents</td></tr><tr><td><code>useInternetExplorerStore</code></td><td><code>ryos:ie</code></td><td>Favorites, history</td></tr><tr><td><code>usePaintStore</code></td><td><code>ryos:paint</code></td><td>Tool settings</td></tr><tr><td><code>usePhotoBoothStore</code></td><td><code>ryos:photobooth</code></td><td>Recent photos</td></tr><tr><td><code>usePcStore</code></td><td><code>ryos:pc</code></td><td>Virtual PC state</td></tr></tbody></table>
+<h3>Store Architecture Diagram</h3>
 <pre class="mermaid">graph TD
     subgraph Core["Core System"]
         AppStore[useAppStore<br/>Windows & Boot]
@@ -323,31 +381,239 @@
     AppStore --> |manages| Productivity
     ChatsStore -.-> |auth| IpodStore</pre>
 <h2>Store Pattern</h2>
+<p>All stores follow a consistent Zustand pattern with persist middleware:</p>
 <pre><code>import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 
-interface StoreState {
+interface ExampleState {
+  // State
   someValue: string;
+  items: Item[];
+  
+  // Actions
   setSomeValue: (v: string) =&gt; void;
+  addItem: (item: Item) =&gt; void;
+  removeItem: (id: string) =&gt; void;
+  
+  // Computed (via get())
+  getItemById: (id: string) =&gt; Item | undefined;
 }
 
-export const useMyStore = create&lt;StoreState&gt;()(
+export const useExampleStore = create&lt;ExampleState&gt;()(
   persist(
-    (set) =&gt; ({
+    (set, get) =&gt; ({
+      // Initial state
       someValue: "default",
+      items: [],
+      
+      // Actions
       setSomeValue: (v) =&gt; set({ someValue: v }),
+      
+      addItem: (item) =&gt; set((state) =&gt; ({
+        items: [...state.items, item],
+      })),
+      
+      removeItem: (id) =&gt; set((state) =&gt; ({
+        items: state.items.filter((item) =&gt; item.id !== id),
+      })),
+      
+      // Computed getter
+      getItemById: (id) =&gt; get().items.find((item) =&gt; item.id === id),
     }),
     {
-      name: "ryos:my-store",
-      version: 1,
+      name: "ryos:example",           // localStorage key
+      version: 1,                      // Migration version
+      storage: createJSONStorage(() =&gt; localStorage),
+      
+      // Selective persistence
       partialize: (state) =&gt; ({
         someValue: state.someValue,
+        items: state.items,
       }),
+      
+      // Version migrations
+      migrate: (persisted, version) =&gt; {
+        if (version &lt; 1) {
+          // Handle migration
+        }
+        return persisted;
+      },
+      
+      // Post-rehydration hook
+      onRehydrateStorage: () =&gt; (state, error) =&gt; {
+        if (state) {
+          // Initialize or sync after rehydration
+        }
+      },
     }
   )
 );</code></pre>
+<h2>Persistence Strategies</h2>
+<h3>localStorage Persistence (via Zustand <code>persist</code>)</h3>
+<p>Used for settings, preferences, and lightweight metadata:</p>
+<pre><code>persist(
+  (set) =&gt; ({ /* state and actions */ }),
+  {
+    name: "ryos:audio-settings",
+    version: STORE_VERSION,
+    partialize: (state) =&gt; ({
+      masterVolume: state.masterVolume,
+      uiVolume: state.uiVolume,
+      // Only persist necessary fields
+    }),
+  }
+)</code></pre>
+<h3>IndexedDB Integration</h3>
+<p>Used for large binary data (images, documents, applets):</p>
+<pre><code>// IndexedDB stores
+const STORES = {
+  DOCUMENTS: "documents",      // Text files
+  IMAGES: "images",           // Binary images
+  APPLETS: "applets",         // HTML applet content
+  TRASH: "trash",             // Deleted file content
+  CUSTOM_WALLPAPERS: "custom_wallpapers",
+};
+
+// Database: ryOS (version 7)
+interface StoredContent {
+  name: string;               // Original filename
+  content: string | Blob;     // File content
+}</code></pre>
+<h3>Hybrid Persistence (Files Store)</h3>
+<p>The <code>useFilesStore</code> demonstrates a sophisticated two-layer architecture:</p>
+<pre class="mermaid">flowchart TB
+    subgraph "Metadata Layer (localStorage)"
+        FS[File System Items<br/>path, name, type, uuid, status]
+    end
+    
+    subgraph "Content Layer (IndexedDB)"
+        DOC[documents store]
+        IMG[images store]
+        APP[applets store]
+    end
+    
+    subgraph "Lazy Loading"
+        CACHE[In-memory cache]
+        PENDING[Pending lazy load map]
+    end
+    
+    FS -->|uuid reference| DOC
+    FS -->|uuid reference| IMG
+    FS -->|uuid reference| APP
+    
+    PENDING -->|on-demand fetch| DOC
+    PENDING -->|on-demand fetch| IMG
+    
+    CACHE -.->|cached JSON| FS</pre>
+<h3>Manual localStorage (Theme Store)</h3>
+<p>Some stores use manual persistence for more control:</p>
+<pre><code>setTheme: (theme) =&gt; {
+  set({ current: theme });
+  localStorage.setItem("os_theme", theme);  // Manual save
+  document.documentElement.dataset.osTheme = theme;
+  ensureLegacyCss(theme);
+},
+
+hydrate: () =&gt; {
+  const saved = localStorage.getItem("os_theme");
+  const theme = saved || "macosx";
+  set({ current: theme });
+  document.documentElement.dataset.osTheme = theme;
+},</code></pre>
+<h2>Migration System</h2>
+<h3>Version-Based Migrations</h3>
+<pre><code>migrate: (persistedState: unknown, version: number) =&gt; {
+  const state = persistedState as StoreState;
+  
+  if (version &lt; 5) {
+    // Add status field and UUIDs
+    for (const path in state.items) {
+      state.items[path] = {
+        ...state.items[path],
+        status: state.items[path].status || "active",
+        uuid: !state.items[path].isDirectory 
+          ? state.items[path].uuid || uuidv4() 
+          : undefined,
+      };
+    }
+  }
+  
+  if (version &lt; 6) {
+    // Add timestamp fields
+    const now = Date.now();
+    for (const path in state.items) {
+      state.items[path].createdAt = state.items[path].createdAt || now;
+      state.items[path].modifiedAt = state.items[path].modifiedAt || now;
+    }
+  }
+  
+  return state;
+},</code></pre>
+<h3>Recovery Mechanisms</h3>
+<p>Critical data uses separate recovery keys to survive store resets:</p>
+<pre><code>const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
+const AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
+
+// Encode/decode for basic obfuscation
+const encode = (value: string) =&gt; btoa(value.split("").reverse().join(""));
+const decode = (encoded: string) =&gt; atob(encoded).split("").reverse().join("");
+
+// Recovery on rehydrate
+onRehydrateStorage: () =&gt; (state, error) =&gt; {
+  if (state?.username === null) {
+    const recovered = getUsernameFromRecovery();
+    if (recovered) state.username = recovered;
+  }
+}</code></pre>
 <h2>Cross-Store Communication</h2>
-<ul><li><code>useKaraokeStore</code> → reads from <code>useIpodStore</code> (shared music library)</li></ul><ul><li><code>useTextEditStore</code> → reads from <code>useAppStore</code> (foreground instance)</li><li><code>useIpodStore</code> → reads from <code>useChatsStore</code> (auth credentials)</li></ul>
+<h3>Direct Store Access</h3>
+<p>Stores can access other stores via <code>getState()</code>:</p>
+<pre><code>// In useIpodStore - accessing ChatsStore for auth
+async function saveLyricOffsetToServer(trackId: string, offset: number) {
+  const { username, authToken } = useChatsStore.getState();
+  
+  if (!username || !authToken) {
+    console.log("Skipping save - user not logged in");
+    return false;
+  }
+  
+  // Make authenticated API call
+  await fetch("/api/song/...", {
+    headers: {
+      "Authorization": `Bearer ${authToken}`,
+      "X-Username": username,
+    },
+  });
+}</code></pre>
+<h3>Store Dependency Pattern</h3>
+<pre><code>// In useAppStore - accessing AppletStore for window sizing
+createAppInstance: (appId, initialData, title) =&gt; {
+  if (appId === "applet-viewer") {
+    const path = (initialData as { path?: string })?.path;
+    if (path) {
+      const saved = useAppletStore.getState().getAppletWindowSize(path);
+      if (saved) size = saved;
+    }
+  }
+}</code></pre>
+<h3>Event-Based Communication</h3>
+<pre><code>// Window state changes broadcast via CustomEvents
+window.dispatchEvent(
+  new CustomEvent("appStateChange", {
+    detail: { appId, isOpen: true, isForeground: true },
+  })
+);
+
+window.dispatchEvent(
+  new CustomEvent("instanceStateChange", {
+    detail: { instanceId, isOpen: true, isForeground: true },
+  })
+);
+
+window.dispatchEvent(
+  new CustomEvent("wallpaperChange", { detail: wallpaperPath })
+);</code></pre>
+<h3>Cross-Store Dependencies Map</h3>
 <pre class="mermaid">flowchart LR
     subgraph Components["React Components"]
         C1[IpodApp]
@@ -380,10 +646,123 @@ export const useMyStore = create&lt;StoreState&gt;()(
     S1 --> P1
     S4 --> P2
     S5 --> P3</pre>
+<h2>State Flow Patterns</h2>
+<h3>App Instance Lifecycle</h3>
+<pre class="mermaid">stateDiagram-v2
+    [*] --> Creating: launchApp()
+    
+    Creating --> Loading: createAppInstance()
+    Loading --> Foreground: markInstanceAsLoaded()
+    
+    Foreground --> Background: bringInstanceToForeground(other)
+    Background --> Foreground: bringInstanceToForeground(this)
+    
+    Foreground --> Minimized: minimizeInstance()
+    Background --> Minimized: minimizeInstance()
+    Minimized --> Foreground: restoreInstance()
+    
+    Foreground --> [*]: closeAppInstance()
+    Background --> [*]: closeAppInstance()
+    Minimized --> [*]: closeAppInstance()</pre>
+<h3>Library Initialization Flow</h3>
+<pre class="mermaid">sequenceDiagram
+    participant R as Rehydrate
+    participant S as Store
+    participant LS as localStorage
+    participant IDB as IndexedDB
+    participant API as External API
+    
+    R->>LS: Load persisted state
+    LS-->>R: Return state (or empty)
+    R->>S: Set initial state
+    
+    alt libraryState === "uninitialized"
+        S->>API: loadDefaultFiles()
+        API-->>S: JSON data
+        S->>LS: Persist metadata
+        S->>IDB: Save text content
+        S->>S: registerFilesForLazyLoad(assets)
+    else libraryState === "loaded"
+        S->>S: syncRootDirectories()
+        S->>S: ensureDefaultDesktopShortcuts()
+    end</pre>
+<h2>Best Practices</h2>
+<h3>Selective Persistence (<code>partialize</code>)</h3>
+<pre><code>partialize: (state) =&gt; ({
+  // Only persist necessary state, exclude:
+  // - Transient UI state (isLoading, etc.)
+  // - Large computed data
+  // - Runtime-only values
+  tracks: state.tracks,
+  currentSongId: state.currentSongId,
+  // NOT: isPlaying, currentLyrics, currentFuriganaMap
+}),</code></pre>
+<h3>Optimized Selectors (<code>useShallow</code>)</h3>
+<pre><code>import { useShallow } from "zustand/react/shallow";
+
+// Prevents unnecessary re-renders when selecting multiple values
+function useAppStoreShallow&lt;T&gt;(
+  selector: (state: AppStoreState) =&gt; T
+): T {
+  return useAppStore(useShallow(selector));
+}
+
+// Usage
+const { instances, foregroundInstanceId } = useAppStoreShallow((s) =&gt; ({
+  instances: s.instances,
+  foregroundInstanceId: s.foregroundInstanceId,
+}));</code></pre>
+<h3>Debounced Server Sync</h3>
+<pre><code>const lyricOffsetSaveTimers = new Map&lt;string, NodeJS.Timeout&gt;();
+
+function debouncedSaveLyricOffset(trackId: string, offset: number): void {
+  const existing = lyricOffsetSaveTimers.get(trackId);
+  if (existing) clearTimeout(existing);
+
+  const timer = setTimeout(() =&gt; {
+    lyricOffsetSaveTimers.delete(trackId);
+    saveLyricOffsetToServer(trackId, offset);
+  }, 2000); // 2 second debounce
+
+  lyricOffsetSaveTimers.set(trackId, timer);
+}</code></pre>
+<h3>Data Caching with Deduplication</h3>
+<pre><code>let cachedFileSystemData: FileSystemData | null = null;
+let fileSystemDataPromise: Promise&lt;FileSystemData&gt; | null = null;
+
+async function loadDefaultFiles(): Promise&lt;FileSystemData&gt; {
+  if (cachedFileSystemData) return cachedFileSystemData;
+  if (fileSystemDataPromise) return fileSystemDataPromise;  // Dedup in-flight
+  
+  fileSystemDataPromise = (async () =&gt; {
+    const data = await fetch("/data/filesystem.json").then(r =&gt; r.json());
+    cachedFileSystemData = data;
+    return data;
+  })();
+  
+  return fileSystemDataPromise;
+}</code></pre>
+<h3>Immutable Updates</h3>
+<pre><code>// Array updates without mutation
+set((state) =&gt; ({
+  tracks: state.tracks.map((track, i) =&gt;
+    i === trackIndex ? { ...track, lyricOffset: newOffset } : track
+  ),
+}));
+
+// Object updates without mutation
+set((state) =&gt; ({
+  instances: {
+    ...state.instances,
+    [instanceId]: { ...state.instances[instanceId], isForeground: true },
+  },
+}));</code></pre>
+<h2>Related Documentation</h2>
+<ul><li><a href="/docs/window-management">Window Management</a> - Window state in useAppStore</li></ul><ul><li><a href="/docs/file-system">File System</a> - useFilesStore details</li><li><a href="/docs/audio-system">Audio System</a> - useAudioSettingsStore details</li></ul>
       </article>
       
       <nav class="nav">
-        <a href="/docs/window-management">← Window Manager</a>
+        <a href="/docs/window-management">← Window Management</a>
         <a href="/docs/theme-system">Theme System →</a>
       </nav>
       

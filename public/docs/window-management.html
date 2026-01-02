@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Window Manager - ryOS Docs</title>
+  <title>Window Management - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -191,6 +191,7 @@
   </button>
   <div class="nav-children" style="display: none;">
     <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
+    <a href="/docs/api-architecture" class="nav-child ">1.2 API Architecture</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -228,9 +229,11 @@
     <a href="/docs/application-framework" class="">3. Application Framework</a>
   </button>
   <div class="nav-children" style="display: block;">
-    <a href="/docs/window-management" class="nav-child active">3.1 Window Manager</a>
+    <a href="/docs/window-management" class="nav-child active">3.1 Window Management</a>
     <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
     <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/hooks-architecture" class="nav-child ">3.4 Hooks Architecture</a>
+    <a href="/docs/component-architecture" class="nav-child ">3.5 Component Architecture</a>
   </div>
 </div>
 <div class="nav-group">
@@ -289,16 +292,98 @@
     
     <main class="content">
       <article>
-        <h1>Window Manager</h1>
-<p>ryOS implements a sophisticated multi-instance window manager.</p>
-<h2>Window Creation Flow</h2>
-<pre><code>User Action → launchApp() → createAppInstance() → AppManager renders</code></pre>
-<h2>Instance State</h2>
+        <h1>Window Management</h1>
+<p>ryOS implements a sophisticated multi-instance window manager with theme-aware chrome, animations, and desktop-like behaviors.</p>
+<h2>Architecture Overview</h2>
+<pre class="mermaid">graph TB
+    subgraph "State Layer"
+        AppStore[useAppStore<br/>Zustand Store]
+    end
+    
+    subgraph "Logic Layer"
+        WM[useWindowManager<br/>Hook]
+        WI[useWindowInsets<br/>Hook]
+    end
+    
+    subgraph "Presentation Layer"
+        WF[WindowFrame<br/>Component]
+        AR[appRegistry<br/>Config]
+    end
+    
+    subgraph "App Layer"
+        App1[App Component 1]
+        App2[App Component 2]
+        AppN[App Component N]
+    end
+    
+    AppStore --> WM
+    AppStore --> WF
+    AR --> WM
+    AR --> WF
+    WI --> WM
+    WI --> WF
+    WM --> WF
+    WF --> App1
+    WF --> App2
+    WF --> AppN</pre>
+<h2>Core Components</h2>
+<h3>WindowFrame Component</h3>
+<p>The <code>WindowFrame</code> component (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/layout/WindowFrame.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/components/layout/WindowFrame.tsx</a></code>) renders window chrome, handles user interactions, and provides animations.</p>
+<h4>Props Interface</h4>
+<pre><code>interface WindowFrameProps {
+  children: React.ReactNode;
+  title: string;
+  onClose?: () =&gt; void;
+  isForeground?: boolean;
+  appId: AppId;
+  isShaking?: boolean;
+  /** Window material: "default" (opaque), "transparent", "notitlebar" (immersive) */
+  material?: "default" | "transparent" | "notitlebar";
+  skipInitialSound?: boolean;
+  windowConstraints?: {
+    minWidth?: number;
+    minHeight?: number;
+    maxWidth?: number | string;
+    maxHeight?: number | string;
+  };
+  instanceId?: string;
+  onNavigateNext?: () =&gt; void;
+  onNavigatePrevious?: () =&gt; void;
+  interceptClose?: boolean;
+  menuBar?: React.ReactNode;
+  keepMountedWhenMinimized?: boolean;
+}</code></pre>
+<h4>Material Modes</h4>
+<table><thead><tr><th>Mode</th><th>Description</th><th>Use Case</th></tr></thead><tbody><tr><td><code>default</code></td><td>Standard opaque window background</td><td>Most apps</td></tr><tr><td><code>transparent</code></td><td>Semi-transparent background</td><td>iPod, Photo Booth</td></tr><tr><td><code>notitlebar</code></td><td>Immersive mode with floating titlebar on hover</td><td>Videos, games</td></tr></tbody></table>
+<h3>useWindowManager Hook</h3>
+<p>The <code>useWindowManager</code> hook (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/hooks/useWindowManager.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/hooks/useWindowManager.ts</a></code>) manages window positioning, dragging, and resizing.</p>
+<pre><code>interface UseWindowManagerProps {
+  appId: AppId;
+  instanceId?: string;
+}
+
+// Returns
+interface UseWindowManagerReturn {
+  windowPosition: { x: number; y: number };
+  windowSize: { width: number; height: number };
+  isDragging: boolean;
+  resizeType: ResizeType;
+  handleMouseDown: (e: MouseEvent) =&gt; void;
+  handleResizeStart: (e: MouseEvent, type: ResizeType) =&gt; void;
+  setWindowSize: (size: WindowSize) =&gt; void;
+  setWindowPosition: (pos: WindowPosition) =&gt; void;
+  maximizeWindowHeight: (maxConstraint?: number) =&gt; void;
+  getSafeAreaBottomInset: () =&gt; number;
+  snapZone: "left" | "right" | null;
+  computeInsets: () =&gt; WindowInsets;
+}</code></pre>
+<h2>Window Instance State</h2>
+<p>Each window instance maintains comprehensive state:</p>
 <pre><code>interface AppInstance {
-  instanceId: string;        // Unique numeric ID
-  appId: AppId;              // App identifier
-  isOpen: boolean;
-  isForeground: boolean;
+  instanceId: string;        // Unique identifier (e.g., "finder-1")
+  appId: AppId;              // App type identifier
+  isOpen: boolean;           // Visibility state
+  isForeground: boolean;     // Focus state
   isMinimized?: boolean;     // Dock/taskbar minimize state
   isLoading?: boolean;       // For lazy-loaded apps
   position?: { x: number; y: number };
@@ -308,7 +393,8 @@
   createdAt: number;         // For stable ordering in taskbar
   initialData?: unknown;     // App-specific data passed at launch
 }</code></pre>
-<h3>Window State Transitions</h3>
+<h2>Window Lifecycle</h2>
+<h3>State Transitions</h3>
 <pre class="mermaid">stateDiagram-v2
     [*] --> Loading: launchApp()
     Loading --> Normal: App loaded
@@ -322,8 +408,40 @@
     Normal --> [*]: closeApp()
     Minimized --> [*]: closeApp()
     Maximized --> [*]: closeApp()</pre>
+<h3>Creation Flow</h3>
+<pre class="mermaid">sequenceDiagram
+    participant U as User
+    participant S as useAppStore
+    participant R as appRegistry
+    participant WF as WindowFrame
+    participant App as App Component
+    
+    U->>S: launchApp(appId)
+    S->>S: createAppInstance()
+    S->>S: Generate instanceId
+    S->>S: Calculate cascade position
+    S->>R: Get app config
+    R-->>S: Component, constraints
+    S->>WF: Render WindowFrame
+    WF->>WF: Play window open sound
+    WF->>App: Mount app component
+    App->>S: markInstanceAsLoaded()</pre>
+<h3>Cascade Positioning</h3>
+<p>New windows are automatically positioned with an offset to prevent exact overlap:</p>
+<pre><code>const computeDefaultWindowState = () =&gt; {
+  const appIndex = appIds.indexOf(appId);
+  const offsetIndex = appIndex &gt;= 0 ? appIndex : 0;
+
+  return {
+    position: {
+      x: isMobile ? 0 : 16 + offsetIndex * 32,
+      y: isMobile ? 28 : 40 + offsetIndex * 20,
+    },
+    size: isMobile ? getMobileWindowSize(appId) : config.defaultSize,
+  };
+};</code></pre>
 <h2>Z-Index Management</h2>
-<p>Z-index is calculated from position in <code>instanceOrder</code> array. The end of the array is the foreground (top) window.</p>
+<p>Z-index is calculated from position in the <code>instanceOrder</code> array. The last item in the array is the topmost window.</p>
 <pre class="mermaid">graph TB
     subgraph instanceOrder["instanceOrder Array"]
         direction TB
@@ -341,10 +459,148 @@
     end
     
     instanceOrder -.->|"z = BASE + index"| zIndex</pre>
+<h3>Bringing to Front</h3>
+<pre><code>bringInstanceToForeground: (instanceId) =&gt; {
+  set((state) =&gt; {
+    const instances = { ...state.instances };
+    let order = [...state.instanceOrder];
+    
+    // Update foreground flags
+    Object.keys(instances).forEach((id) =&gt; {
+      instances[id] = {
+        ...instances[id],
+        isForeground: id === instanceId,
+      };
+    });
+    
+    // Move to end of order array (top of stack)
+    order = [...order.filter((id) =&gt; id !== instanceId), instanceId];
+    
+    return { instances, instanceOrder: order, foregroundInstanceId: instanceId };
+  });
+}</code></pre>
 <h2>Window Constraints</h2>
-<table><thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>minSize</code></td><td><code>{ width, height }</code></td><td>Minimum window dimensions</td></tr><tr><td><code>maxSize</code></td><td><code>{ width, height }</code></td><td>Maximum window dimensions</td></tr><tr><td><code>defaultSize</code></td><td><code>{ width, height }</code></td><td>Initial window size</td></tr><tr><td><code>mobileDefaultSize</code></td><td><code>{ width, height }</code></td><td>Size on mobile devices</td></tr><tr><td><code>mobileSquare</code></td><td><code>boolean</code></td><td>If true, height = width on mobile</td></tr></tbody></table>
+<p>Apps define window constraints in the app registry:</p>
+<pre><code>interface WindowConstraints {
+  minSize?: { width: number; height: number };
+  maxSize?: { width: number; height: number };
+  defaultSize: { width: number; height: number };
+  mobileDefaultSize?: { width: number; height: number };
+  mobileSquare?: boolean;  // If true, height = width on mobile
+}</code></pre>
+<table><thead><tr><th>Property</th><th>Description</th></tr></thead><tbody><tr><td><code>minSize</code></td><td>Minimum window dimensions during resize</td></tr><tr><td><code>maxSize</code></td><td>Maximum window dimensions</td></tr><tr><td><code>defaultSize</code></td><td>Initial size on desktop</td></tr><tr><td><code>mobileDefaultSize</code></td><td>Initial size on mobile devices</td></tr><tr><td><code>mobileSquare</code></td><td>Force square aspect ratio on mobile</td></tr></tbody></table>
+<h2>Resize Behavior</h2>
+<h3>Resize Handles</h3>
+<p>WindowFrame renders 8 resize handles (N, S, E, W, NE, NW, SE, SW) as invisible hit areas:</p>
+<pre><code>// Handle positions expand during active resize for smoother tracking
+const handleClass = cn(
+  "absolute cursor-n-resize pointer-events-auto",
+  resizeType?.includes("n")
+    ? "top-[-100px] h-[200px]"  // Expanded during resize
+    : "top-1 h-2"               // Normal state
+);</code></pre>
+<h3>Double-Click Behaviors</h3>
+<table><thead><tr><th>Target</th><th>Action</th></tr></thead><tbody><tr><td>Top/bottom resize handle</td><td>Maximize height only</td></tr><tr><td>Title bar</td><td>Toggle full maximize</td></tr><tr><td>Side resize handle</td><td>No special action</td></tr></tbody></table>
+<h2>Snap-to-Edge</h2>
+<p>Windows can snap to screen edges during drag:</p>
+<pre><code>// Detect snap zones - trigger when cursor within 20px of edge
+const SNAP_THRESHOLD = 20;
+
+if (clientX &lt;= SNAP_THRESHOLD) {
+  setSnapZone("left");
+} else if (clientX &gt;= window.innerWidth - SNAP_THRESHOLD) {
+  setSnapZone("right");
+} else {
+  setSnapZone(null);
+}</code></pre>
+<p>On drag end: <ul><li>Window snaps to half-screen width</li><li>Pre-snap state saved for restore</li><li>Visual indicator shown during drag</li></ul></p>
+<h2>Theme-Specific Chrome</h2>
+<p>WindowFrame renders different title bars based on the active theme:</p>
+<h3>macOS (Aqua) Theme</h3>
+<ul><li>Traffic light buttons (close/minimize/zoom) on LEFT</li><li>Centered title text</li><li>Pinstripe background texture</li><li>Rounded corners</li></ul>
+<h3>macOS (System 7) Theme</h3>
+<ul><li>Close box only on LEFT</li><li>Left-aligned title</li><li>Dotted pattern background</li></ul>
+<h3>Windows (XP/98) Theme</h3>
+<ul><li>Title bar with icon</li><li>Minimize/maximize/close buttons on RIGHT</li><li>Gradient title bar background</li><li>System font styling</li></ul>
+<pre class="mermaid">graph LR
+    subgraph Mac["Mac Themes"]
+        M1[Traffic Lights - Left]
+        M2[Centered Title]
+        M3[Pinstripe/Pattern]
+    end
+    
+    subgraph Windows["Windows Themes"]
+        W1[System Buttons - Right]
+        W2[Icon + Left Title]
+        W3[Gradient Title Bar]
+    end</pre>
+<h2>Animations</h2>
+<p>WindowFrame uses Framer Motion for all animations:</p>
+<h3>Open Animation</h3>
+<pre><code>initial={{ scale: 0.95, opacity: 0 }}
+animate={{ scale: 1, opacity: 1 }}
+transition={{ duration: 0.15 }}</code></pre>
+<h3>Close Animation</h3>
+<pre><code>exit={{ scale: 0.95, opacity: 0 }}
+transition={{ duration: 0.15 }}</code></pre>
+<h3>Minimize Animation</h3>
+<pre><code>// Animate toward dock icon position
+exit={{
+  scale: 0.1,
+  opacity: 0,
+  x: dockIconPosition.x - windowCenter.x,
+  y: dockIconPosition.y - windowCenter.y,
+}}</code></pre>
+<h3>Shake/Nudge Animation</h3>
+<pre><code>// Horizontal shake for alerts
+animate={{
+  x: [0, -4, 4, -4, 4, -2, 2, 0],
+}}
+transition={{ duration: 0.4 }}</code></pre>
+<h2>Sound & Haptic Feedback</h2>
+<p>Every window operation has corresponding feedback:</p>
+<table><thead><tr><th>Operation</th><th>Sound</th><th>Haptic</th></tr></thead><tbody><tr><td>Open</td><td><code>WINDOW_OPEN</code></td><td>Light</td></tr><tr><td>Close</td><td><code>WINDOW_CLOSE</code></td><td>Light</td></tr><tr><td>Maximize</td><td><code>WINDOW_EXPAND</code></td><td>Medium</td></tr><tr><td>Restore</td><td><code>WINDOW_COLLAPSE</code></td><td>Medium</td></tr><tr><td>Minimize</td><td><code>WINDOW_ZOOM_MINIMIZE</code></td><td>Light</td></tr><tr><td>Start drag</td><td><code>WINDOW_MOVE_MOVING</code></td><td>None</td></tr><tr><td>End drag</td><td><code>WINDOW_MOVE_STOP</code></td><td>Light</td></tr><tr><td>Start resize</td><td><code>WINDOW_RESIZE_RESIZING</code></td><td>None</td></tr><tr><td>End resize</td><td><code>WINDOW_RESIZE_STOP</code></td><td>Light</td></tr></tbody></table>
 <h2>Multi-Instance Apps</h2>
-<ul><li><code>textedit</code> - Multiple documents</li></ul><ul><li><code>finder</code> - Multiple browser windows</li><li><code>applet-viewer</code> - Multiple applets</li></ul>
+<p>Only specific apps support multiple windows:</p>
+<pre><code>const supportsMultiWindow =
+  multiWindow ||
+  appId === "textedit" ||
+  appId === "finder" ||
+  appId === "applet-viewer";</code></pre>
+<p>When launching a multi-instance app: <ul><li>If no instance exists: Create new instance</li><li>If instance exists but minimized: Restore existing</li><li>If instance exists and visible: Create new instance (if supported)</li></ul></p>
+<h2>Expose Mode (Mission Control)</h2>
+<p>Windows can enter Expose mode for an overview:</p>
+<pre><code>const exposeTransform = useMemo(() =&gt; {
+  if (!exposeMode) return null;
+  
+  const openInstances = Object.values(instances)
+    .filter(inst =&gt; inst.isOpen &amp;&amp; !inst.isMinimized);
+  
+  const grid = calculateExposeGrid(openInstances.length);
+  return getExposeTransform(grid, myIndex, windowPosition, windowSize);
+}, [exposeMode, instances, windowPosition, windowSize]);</code></pre>
+<h2>Close Interception</h2>
+<p>Apps can intercept close to show confirmation dialogs:</p>
+<pre><code>// In app component
+useEffect(() =&gt; {
+  if (!interceptClose) return;
+
+  const handlePerformClose = () =&gt; performClose();
+  
+  window.addEventListener(
+    `closeWindow-${instanceId}`,
+    handlePerformClose
+  );
+
+  return () =&gt; {
+    window.removeEventListener(`closeWindow-${instanceId}`, handlePerformClose);
+  };
+}, [instanceId, performClose, interceptClose]);</code></pre>
+<p>Apps set <code>interceptClose={true}</code> on WindowFrame and listen for the close event to show unsaved changes dialogs.</p>
+<h2>Mobile Adaptations</h2>
+<table><thead><tr><th>Adaptation</th><th>Description</th></tr></thead><tbody><tr><td>Full-width windows</td><td>Windows stretch to screen width on mobile</td></tr><tr><td>Touch-sized handles</td><td>Larger resize handle hit areas</td></tr><tr><td>Swipe navigation</td><td>Horizontal swipe between apps (phone only)</td></tr><tr><td>Mobile default sizes</td><td>Per-app optimized dimensions</td></tr><tr><td>Simplified controls</td><td>Reduced window chrome on small screens</td></tr></tbody></table>
+<h2>Related Documentation</h2>
+<ul><li><a href="/docs/application-framework">Application Framework</a> - App structure overview</li></ul><ul><li><a href="/docs/state-management">State Management</a> - Window state persistence</li><li><a href="/docs/theme-system">Theme System</a> - Theme-specific window styling</li></ul>
       </article>
       
       <nav class="nav">

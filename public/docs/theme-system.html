@@ -191,6 +191,7 @@
   </button>
   <div class="nav-children" style="display: none;">
     <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
+    <a href="/docs/api-architecture" class="nav-child ">1.2 API Architecture</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -228,9 +229,11 @@
     <a href="/docs/application-framework" class="">3. Application Framework</a>
   </button>
   <div class="nav-children" style="display: block;">
-    <a href="/docs/window-management" class="nav-child ">3.1 Window Manager</a>
+    <a href="/docs/window-management" class="nav-child ">3.1 Window Management</a>
     <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
     <a href="/docs/theme-system" class="nav-child active">3.3 Theme System</a>
+    <a href="/docs/hooks-architecture" class="nav-child ">3.4 Hooks Architecture</a>
+    <a href="/docs/component-architecture" class="nav-child ">3.5 Component Architecture</a>
   </div>
 </div>
 <div class="nav-group">
@@ -290,59 +293,400 @@
     <main class="content">
       <article>
         <h1>Theme System</h1>
-<p>ryOS supports 4 themes emulating classic operating systems.</p>
+<p>ryOS supports 4 themes emulating classic operating systems with comprehensive CSS variable systems and platform-specific UI behaviors.</p>
 <h2>Available Themes</h2>
-<table><thead><tr><th>Theme ID</th><th>Name</th><th>Platform</th><th>Key Elements</th></tr></thead><tbody><tr><td><code>macosx</code></td><td>Aqua</td><td>Mac OS X</td><td>Glossy buttons, traffic lights, pinstripe, dock</td></tr><tr><td><code>system7</code></td><td>System 7</td><td>Classic Mac</td><td>Black & white, dotted titlebar pattern</td></tr><tr><td><code>xp</code></td><td>Luna</td><td>Windows XP</td><td>Blue chrome, rounded corners, taskbar</td></tr><tr><td><code>win98</code></td><td>Classic</td><td>Windows 98</td><td>3D beveled face, blue gradient titlebar</td></tr></tbody></table>
-<h3>Theme Application Flow</h3>
-<pre class="mermaid">flowchart LR
+<table><thead><tr><th>Theme ID</th><th>Name</th><th>Platform</th><th>Era</th><th>Key Elements</th></tr></thead><tbody><tr><td><code>macosx</code></td><td>Aqua</td><td>Mac OS X</td><td>~2001</td><td>Glossy buttons, traffic lights, pinstripe, dock</td></tr><tr><td><code>system7</code></td><td>System 7</td><td>Classic Mac</td><td>~1991</td><td>Black & white, dotted titlebar pattern</td></tr><tr><td><code>xp</code></td><td>Luna</td><td>Windows XP</td><td>~2001</td><td>Blue chrome, rounded corners, taskbar</td></tr><tr><td><code>win98</code></td><td>Classic</td><td>Windows 98</td><td>~1998</td><td>3D beveled face, blue gradient titlebar</td></tr></tbody></table>
+<h2>Theme Architecture</h2>
+<pre class="mermaid">flowchart TD
     A[User Selection] --> B[Theme Store]
     B --> C["data-os-theme attribute"]
-    C --> D[CSS Variables]
+    C --> D[CSS Variables Resolve]
     D --> E[Window Frame]
     D --> F[Menu Bar]
-    D --> G[Dock/Taskbar]</pre>
+    D --> G[Dock/Taskbar]
+    D --> H[UI Components]
+    
+    B --> I{Windows Theme?}
+    I -->|Yes| J[Load Legacy CSS]
+    I -->|No| K[Remove Legacy CSS]</pre>
 <h2>Theme Metadata</h2>
+<p>Each theme provides metadata for layout decisions:</p>
 <pre><code>interface ThemeMetadata {
+  /** Whether this is a Windows-style theme (XP, 98) */
   isWindows: boolean;
+  /** Whether this is a macOS-style theme (macOS X, System 7) */
   isMac: boolean;
-  hasDock: boolean;             // macOS X only
-  hasTaskbar: boolean;          // Windows themes
-  hasMenuBar: boolean;          // Mac themes
+  /** Whether the theme has a dock (bottom app launcher) */
+  hasDock: boolean;
+  /** Whether the theme has a taskbar (Windows-style bottom bar) */
+  hasTaskbar: boolean;
+  /** Whether the theme has a top menu bar */
+  hasMenuBar: boolean;
+  /** Title bar controls position: "left" (macOS) or "right" (Windows) */
   titleBarControlsPosition: "left" | "right";
-  menuBarHeight: number;        // 0, 25, or 30px
-  taskbarHeight: number;        // 0 or 30px
-  baseDockHeight: number;       // 0 or 56px
+  /** Default menu bar height in pixels */
+  menuBarHeight: number;
+  /** Taskbar height in pixels (0 if no taskbar) */
+  taskbarHeight: number;
+  /** Base dock height before scaling (0 if no dock) */
+  baseDockHeight: number;
 }</code></pre>
-<h3>Platform-Specific UI Components</h3>
-<pre class="mermaid">graph TD
-    subgraph Mac["Mac Themes (macOS X, System 7)"]
-        M1[Menu Bar] --> M2[Traffic Light Controls - Left]
-        M1 --> M3[Dock]
-    end
-    subgraph Win["Windows Themes (XP, 98)"]
-        W1[Taskbar] --> W2[Window Controls - Right]
-        W1 --> W3[Start Menu]
-    end</pre>
-<h2>CSS Custom Properties</h2>
-<p>Themes are applied via <code>data-os-theme</code> attribute on the document root. CSS custom properties provide consistent styling across components:</p>
+<h3>Platform Comparison</h3>
+<table><thead><tr><th>Property</th><th>System 7</th><th>macOS X</th><th>Windows XP</th><th>Windows 98</th></tr></thead><tbody><tr><td><code>isWindows</code></td><td><code>false</code></td><td><code>false</code></td><td><code>true</code></td><td><code>true</code></td></tr><tr><td><code>isMac</code></td><td><code>true</code></td><td><code>true</code></td><td><code>false</code></td><td><code>false</code></td></tr><tr><td><code>hasDock</code></td><td><code>false</code></td><td><code>true</code></td><td><code>false</code></td><td><code>false</code></td></tr><tr><td><code>hasTaskbar</code></td><td><code>false</code></td><td><code>false</code></td><td><code>true</code></td><td><code>true</code></td></tr><tr><td><code>hasMenuBar</code></td><td><code>true</code></td><td><code>true</code></td><td><code>false</code></td><td><code>false</code></td></tr><tr><td><code>titleBarControlsPosition</code></td><td><code>"left"</code></td><td><code>"left"</code></td><td><code>"right"</code></td><td><code>"right"</code></td></tr><tr><td><code>menuBarHeight</code></td><td><code>30px</code></td><td><code>25px</code></td><td><code>0px</code></td><td><code>0px</code></td></tr><tr><td><code>taskbarHeight</code></td><td><code>0px</code></td><td><code>0px</code></td><td><code>30px</code></td><td><code>30px</code></td></tr><tr><td><code>baseDockHeight</code></td><td><code>0px</code></td><td><code>56px</code></td><td><code>0px</code></td><td><code>0px</code></td></tr></tbody></table>
+<h2>Theme Definition Interface</h2>
+<pre><code>interface OsTheme {
+  id: OsThemeId;
+  name: string;
+  metadata: ThemeMetadata;
+  
+  fonts: {
+    ui: string;
+    mono?: string;
+  };
+  
+  colors: {
+    windowBg: string;
+    menubarBg: string;
+    menubarBorder: string;
+    windowBorder: string;
+    windowBorderInactive?: string;
+    
+    titleBar: {
+      activeBg: string;
+      inactiveBg: string;
+      text: string;
+      inactiveText: string;
+      border?: string;
+      borderInactive?: string;
+      pattern?: string;
+    };
+    
+    button: {
+      face: string;
+      highlight: string;
+      shadow: string;
+      activeFace?: string;
+    };
+    
+    trafficLights?: {
+      close: string;
+      minimize: string;
+      maximize: string;
+    };
+    
+    selection: {
+      bg: string;
+      text: string;
+    };
+    
+    text: {
+      primary: string;
+      secondary: string;
+      disabled: string;
+    };
+  };
+  
+  metrics: {
+    borderWidth: string;
+    radius: string;
+    titleBarHeight: string;
+    windowShadow: string;
+  };
+  
+  wallpaperDefaults?: {
+    photo?: string;
+    tile?: string;
+  };
+}</code></pre>
+<h2>CSS Variable System</h2>
+<p>Themes are applied via the <code>data-os-theme</code> attribute on the document root:</p>
 <pre><code>:root[data-os-theme="macosx"] {
+  /* Typography */
   --os-font-ui: "LucidaGrande", "Lucida Grande", ...;
   --os-font-mono: Monaco, Menlo, monospace;
+  
+  /* Window */
   --os-color-window-bg: #ececec;
-  --os-color-menubar-bg: linear-gradient(to bottom, #f8f8f8, #d4d4d4);
-  --os-color-titlebar-active-bg: linear-gradient(to bottom, #e8e8e8, #d0d0d0);
-  --os-color-selection-bg: rgba(39, 101, 202, 0.88);
-  --os-metrics-radius: 0.45rem;
-  --os-metrics-menubar-height: 25px;
+  --os-color-window-border: rgba(0, 0, 0, 0.4);
   --os-window-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  
+  /* Menu Bar */
+  --os-color-menubar-bg: linear-gradient(to bottom, #f8f8f8, #d4d4d4);
+  --os-color-menubar-border: rgba(0, 0, 0, 0.44);
+  --os-color-menubar-text: #000000;
+  
+  /* Title Bar */
+  --os-color-titlebar-active-bg: linear-gradient(to bottom, #e8e8e8, #d0d0d0);
+  --os-color-titlebar-inactive-bg: #f6f6f6;
+  --os-color-titlebar-text: #000000;
+  
+  /* Selection */
+  --os-color-selection-bg: rgba(39, 101, 202, 0.88);
+  --os-color-selection-text: #ffffff;
+  
+  /* Metrics */
+  --os-metrics-border-width: 1px;
+  --os-metrics-radius: 0.45rem;
+  --os-metrics-titlebar-height: 22px;
+  --os-metrics-menubar-height: 25px;
+  
+  /* Textures */
   --os-pinstripe-window: repeating-linear-gradient(...);
+  --os-pinstripe-titlebar: linear-gradient(...);
 }</code></pre>
-<p>Windows themes (XP, 98) dynamically load additional CSS from <code><a href="https://github.com/ryokun6/ryos/blob/main/public/css/xp-custom.css" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">public/css/xp-custom.css</a></code> or <code><a href="https://github.com/ryokun6/ryos/blob/main/public/css/98-custom.css" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">public/css/98-custom.css</a></code> for legacy widget styling.</p>
+<h3>Variable Categories</h3>
+<table><thead><tr><th>Category</th><th>Variables</th><th>Description</th></tr></thead><tbody><tr><td>Typography</td><td><code>--os-font-ui</code>, <code>--os-font-mono</code></td><td>UI and monospace fonts</td></tr><tr><td>Window</td><td><code>--os-color-window-bg</code>, <code>--os-window-shadow</code></td><td>Window appearance</td></tr><tr><td>Menu Bar</td><td><code>--os-color-menubar-bg</code>, <code>--os-color-menubar-text</code></td><td>Menu bar styling</td></tr><tr><td>Title Bar</td><td><code>--os-color-titlebar-<em></code></td><td>Window title bar</td></tr><tr><td>Selection</td><td><code>--os-color-selection-bg</code>, <code>--os-color-selection-text</code></td><td>Selected items</td></tr><tr><td>Text</td><td><code>--os-color-text-primary</code>, <code>--os-color-text-secondary</code></td><td>Text colors</td></tr><tr><td>Metrics</td><td><code>--os-metrics-radius</code>, <code>--os-metrics-border-width</code></td><td>Dimensions</td></tr><tr><td>Textures</td><td><code>--os-pinstripe-</em></code>, <code>--os-texture-*</code></td><td>Background patterns</td></tr></tbody></table>
+<h2>Theme State Management</h2>
+<pre><code>// src/stores/useThemeStore.ts
+export const useThemeStore = create&lt;ThemeState&gt;((set) =&gt; ({
+  current: "macosx",
+  
+  setTheme: (theme) =&gt; {
+    set({ current: theme });
+    localStorage.setItem("os_theme", theme);
+    document.documentElement.dataset.osTheme = theme;
+    ensureLegacyCss(theme);
+  },
+  
+  hydrate: () =&gt; {
+    const saved = localStorage.getItem("os_theme") as OsThemeId | null;
+    const theme = saved || "macosx";
+    set({ current: theme });
+    document.documentElement.dataset.osTheme = theme;
+    ensureLegacyCss(theme);
+  },
+}));</code></pre>
+<h3>Legacy CSS Loading</h3>
+<p>Windows themes dynamically load additional CSS:</p>
+<pre><code>async function ensureLegacyCss(theme: OsThemeId) {
+  // Only XP and Win98 use legacy CSS
+  if (theme !== "xp" &amp;&amp; theme !== "win98") {
+    if (legacyCssLink) {
+      legacyCssLink.remove();
+      legacyCssLink = null;
+    }
+    return;
+  }
+
+  const href = theme === "xp" 
+    ? "/css/xp-custom.css" 
+    : "/css/98-custom.css";
+
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  
+  if (legacyCssLink) {
+    legacyCssLink.replaceWith(link);
+  } else {
+    document.head.appendChild(link);
+  }
+  legacyCssLink = link;
+}</code></pre>
+<h2>Theme Switching Flow</h2>
+<pre class="mermaid">sequenceDiagram
+    participant User
+    participant ControlPanel
+    participant ThemeStore
+    participant DOM
+    participant CSS
+    
+    User->>ControlPanel: Select theme
+    ControlPanel->>ThemeStore: setTheme("xp")
+    ThemeStore->>ThemeStore: Update state
+    ThemeStore->>localStorage: Save preference
+    ThemeStore->>DOM: Set data-os-theme="xp"
+    ThemeStore->>DOM: Load xp-custom.css
+    DOM->>CSS: CSS selectors match
+    CSS->>CSS: Variables resolve
+    Note over DOM,CSS: Components re-render with new styles</pre>
+<h2>Platform-Specific UI</h2>
+<h3>macOS Themes (System 7 & macOS X)</h3>
+<pre class="mermaid">graph TD
+    subgraph Mac["Mac Theme Layout"]
+        MB[Menu Bar - Top]
+        WIN[Window with Traffic Lights]
+        DOCK[Dock - Bottom<br/>macOS X only]
+    end
+    
+    MB --> |Apple Menu| AM[Apple Logo Menu]
+    MB --> |App Menu| APP[Application Menu]
+    WIN --> |Controls - Left| TL[Traffic Light Buttons]</pre>
+<strong>Characteristics:</strong>
+<ul><li>Top menu bar with Apple logo</li><li>Traffic light buttons (close/minimize/zoom) on LEFT</li><li>Dock (macOS X only)</li><li>Aqua button styling with gradients</li><li>Pinstripe textures</li></ul>
+<h3>Windows Themes (XP & 98)</h3>
+<pre class="mermaid">graph TD
+    subgraph Win["Windows Theme Layout"]
+        WIN[Window with Title Bar Controls]
+        TB[Taskbar - Bottom]
+    end
+    
+    WIN --> |Controls - Right| CTRL[Min/Max/Close]
+    TB --> |Start| SM[Start Menu]
+    TB --> |Tasks| TASKS[Running Apps]
+    TB --> |Tray| TRAY[System Tray]</pre>
+<strong>Characteristics:</strong>
+<ul><li>Bottom taskbar with Start button</li><li>Title bar buttons on RIGHT</li><li>Legacy CSS from xp.css/98.css</li><li>3D border effects</li></ul>
+<h2>Theme-Aware Component Pattern</h2>
+<p>Components use the theme store to adapt their rendering:</p>
+<pre><code>import { useThemeStore } from "@/stores/useThemeStore";
+
+function MyComponent() {
+  const currentTheme = useThemeStore((state) =&gt; state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacTheme = currentTheme === "macosx";
+
+  if (isMacTheme) {
+    return &lt;AquaButton&gt;Click me&lt;/AquaButton&gt;;
+  }
+  
+  if (isXpTheme) {
+    return &lt;button className="button"&gt;Click me&lt;/button&gt;;
+  }
+  
+  return &lt;ClassicButton&gt;Click me&lt;/ClassicButton&gt;;
+}</code></pre>
+<h3>Theme Helper Functions</h3>
+<pre><code>// Check theme platform
+export function isWindowsTheme(theme: OsThemeId): boolean {
+  return theme === "xp" || theme === "win98";
+}
+
+export function isMacTheme(theme: OsThemeId): boolean {
+  return theme === "macosx" || theme === "system7";
+}
+
+// Get theme metadata
+export function getThemeMetadata(theme: OsThemeId): ThemeMetadata {
+  return themes[theme].metadata;
+}</code></pre>
+<h2>Theme-Aware Icon System</h2>
+<p>Icons are resolved based on the current theme:</p>
+<pre><code>// src/utils/icons.ts
+export function pickIconPath(
+  name: string,
+  { theme, fallbackTheme = "default" }: GetIconPathOptions = {}
+): string {
+  // No theme: use fallback
+  if (!theme) {
+    return `/icons/${fallbackTheme}/${name}`;
+  }
+  
+  // Check if theme has this icon
+  if (manifest.themes[theme]?.includes(name)) {
+    return `/icons/${theme}/${name}`;
+  }
+  
+  // Fallback to default
+  return `/icons/${fallbackTheme}/${name}`;
+}</code></pre>
+<strong>Directory Structure:</strong>
+<pre><code>public/icons/
+├── default/          # Fallback icons
+├── macosx/           # macOS X specific
+├── system7/          # System 7 specific
+├── xp/               # Windows XP specific
+└── win98/            # Windows 98 specific</code></pre>
+<h2>Aqua Styling (macOS X)</h2>
+<h3>Aqua Buttons</h3>
+<pre><code>.aqua-button {
+  height: 28px;
+  padding: 0 16px;
+  border-radius: 14px;
+  background: linear-gradient(
+    to bottom,
+    #fff 0%,
+    #f0f0f0 50%,
+    #e0e0e0 50%,
+    #f5f5f5 100%
+  );
+  box-shadow: 
+    inset 0 1px 0 rgba(255,255,255,0.8),
+    0 1px 2px rgba(0,0,0,0.2);
+}
+
+.aqua-button.primary {
+  background: linear-gradient(
+    to bottom,
+    #6cb3fa 0%,
+    #1f7cf5 50%,
+    #1066e5 50%,
+    #58b0fa 100%
+  );
+  color: white;
+}
+
+/* Top shine effect */
+.aqua-button:before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 10%;
+  right: 10%;
+  height: 40%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.8),
+    rgba(255,255,255,0)
+  );
+  border-radius: 50%;
+}</code></pre>
+<h3>Traffic Light Buttons</h3>
+<pre><code>.traffic-light {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.2);
+}
+
+.traffic-light.close {
+  background: linear-gradient(#ff6059, #e33e32);
+}
+
+.traffic-light.minimize {
+  background: linear-gradient(#ffbd2e, #e5a000);
+}
+
+.traffic-light.maximize {
+  background: linear-gradient(#29c941, #19a82e);
+}</code></pre>
+<h3>Pinstripe Textures</h3>
+<pre><code>--os-pinstripe-window: repeating-linear-gradient(
+  0deg,
+  transparent 0px,
+  transparent 1.5px,
+  rgba(255, 255, 255, 0.85) 1.5px,
+  rgba(255, 255, 255, 0.85) 4px
+),
+linear-gradient(to bottom, #ececec 0%, #ececec 100%);</code></pre>
+<h2>Inactive Window Handling</h2>
+<p>Each theme handles inactive windows differently:</p>
+<pre><code>/* System 7 - Gray selection */
+:root[data-os-theme="system7"] .window:not(.is-foreground) {
+  --os-color-selection-bg: #cfcfcf;
+  --os-color-selection-text: #000000;
+}
+
+/* macOS X - Lighter border */
+:root[data-os-theme="macosx"] .window:not(.is-foreground) {
+  --os-color-window-border: rgba(0, 0, 0, 0.08);
+  --os-color-titlebar-border: rgba(0, 0, 0, 0.2);
+}
+
+/* Windows - Standard inactive styling */
+:root[data-os-theme="xp"] .window:not(.is-foreground) .title-bar {
+  background: linear-gradient(#8ca8ce, #a0b8da);
+}</code></pre>
+<h2>Wallpaper Defaults</h2>
+<p>Each theme has default wallpaper suggestions:</p>
+<table><thead><tr><th>Theme</th><th>Photo Default</th><th>Tile Default</th></tr></thead><tbody><tr><td>macOS X</td><td>Aqua Blue</td><td>-</td></tr><tr><td>System 7</td><td>-</td><td>Desktop Pattern</td></tr><tr><td>XP</td><td>Bliss</td><td>-</td></tr><tr><td>Win98</td><td>-</td><td>Teal</td></tr></tbody></table>
+<h2>Related Documentation</h2>
+<ul><li><a href="/docs/application-framework">Application Framework</a> - Theme integration in apps</li></ul><ul><li><a href="/docs/window-management">Window Management</a> - Theme-specific window chrome</li><li><a href="/docs/ui-components">UI Components</a> - Theme-aware components</li></ul>
       </article>
       
       <nav class="nav">
         <a href="/docs/state-management">← State Management</a>
-        <a href="/docs/ai-system">AI System →</a>
+        <a href="/docs/hooks-architecture">Hooks Architecture →</a>
       </nav>
       
     </main>

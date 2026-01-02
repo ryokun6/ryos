@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hooks Architecture - ryOS Docs</title>
+  <link rel="icon" href="/icons/mac-192.png">
+  <style>
+    @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
+    @font-face { font-family: "Monaco"; src: url("/fonts/monacottf.woff2") format("woff2"); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Geneva", system-ui, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #fff;
+      color: #000;
+    }
+    a { color: #00f; }
+    a:hover { text-decoration: none; }
+    code, pre { font-family: "Monaco", monospace; font-size: 11px; }
+    code { background: #f0f0f0; padding: 1px 4px; }
+    pre { background: #f8f8f8; border: 1px solid #ddd; padding: 12px; overflow-x: auto; margin: 12px 0; }
+    pre code { background: none; padding: 0; }
+    
+    /* Layout */
+    .header {
+      position: sticky; top: 0; z-index: 10;
+      background: #fff; border-bottom: 1px solid #ccc;
+      padding: 0 16px; height: 40px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-left img { width: 20px; height: 20px; display: block; }
+    .header-left span { font-weight: bold; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .header-right a { text-decoration: none; color: #333; }
+    .header-right a:hover { color: #000; }
+    .header-right .github { display: flex; align-items: center; gap: 4px; }
+    .header-right .launch { background: #000; color: #fff; padding: 4px 12px; }
+    
+    .container { display: flex; max-width: 1100px; margin: 0 auto; }
+    
+    .sidebar {
+      width: 220px; flex-shrink: 0;
+      border-right: 1px solid #ccc;
+      padding: 12px;
+      position: sticky; top: 40px;
+      height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .sidebar a {
+      display: block; padding: 4px 8px; margin: 2px 0;
+      text-decoration: none; color: #333;
+      font-size: 11px;
+    }
+    .sidebar a:hover { background: #f0f0f0; }
+    .sidebar a.active { background: #000; color: #fff; }
+    
+    /* Tree hierarchy styles */
+    .nav-group { margin: 4px 0; }
+    .nav-spacer { width: 8px; flex-shrink: 0; } /* Same width as toggle arrow */
+    .nav-no-toggle { cursor: default; }
+    .nav-toggle {
+      display: flex; align-items: center; gap: 4px;
+      background: none; border: none; padding: 0; width: 100%;
+      cursor: pointer; text-align: left; font: inherit; color: inherit;
+    }
+    .nav-toggle:hover { background: #f0f0f0; }
+    .nav-toggle svg { flex-shrink: 0; opacity: 0.6; transition: transform 0.2s; }
+    .nav-toggle a { flex: 1; padding: 4px 8px; margin: 0; pointer-events: auto; font-size: 11px; }
+    .nav-children { margin-left: 12px; overflow: hidden; transition: height 0.2s ease-out; }
+    .nav-child { padding-left: 8px !important; font-size: 10px !important; color: #555 !important; }
+    .nav-child:hover { color: #000 !important; }
+    .nav-child.active { color: #fff !important; }
+    
+    .content { flex: 1; padding: 24px 32px; min-width: 0; }
+    
+    /* Typography */
+    h1 { font-size: 18px; border-bottom: 1px solid #ccc; padding-bottom: 8px; margin-bottom: 16px; }
+    hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
+    h2 { font-size: 14px; margin: 24px 0 12px; }
+    h3 { font-size: 12px; margin: 16px 0 8px; }
+    h4 { font-size: 11px; margin: 12px 0 6px; font-weight: bold; }
+    p { margin: 8px 0; }
+    ul, ol { margin: 8px 0 8px 20px; }
+    li { margin: 4px 0; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+    th { background: #f0f0f0; font-weight: bold; }
+    
+    /* Mermaid diagrams */
+    pre.mermaid { background: none; border: none; padding: 0; text-align: center; margin: 16px 0; }
+    .mermaid svg { max-width: 100%; height: auto; font-family: "Geneva", system-ui, sans-serif !important; }
+    .mermaid .node rect, .mermaid .node circle, .mermaid .node polygon { fill: #f8f8f8 !important; stroke: #ccc !important; }
+    .mermaid .edgeLabel { background: #fff !important; font-size: 10px !important; }
+    .mermaid .label { font-size: 10px !important; }
+    .mermaid .nodeLabel { font-size: 10px !important; }
+    .mermaid .cluster-label { font-size: 10px !important; }
+    .mermaid .messageText { font-size: 10px !important; }
+    .mermaid .actor { font-size: 10px !important; }
+    .mermaid .labelText { font-size: 10px !important; }
+    
+    /* Collapsible details */
+    details { margin: 8px 0; }
+    details summary { 
+      cursor: pointer; 
+      color: #666; 
+      font-size: 11px;
+      padding: 4px 0;
+      user-select: none;
+    }
+    details summary:hover { color: #000; }
+    details[open] summary { margin-bottom: 8px; }
+    details ul { margin-top: 0; }
+    
+    /* Navigation */
+    .nav { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
+    .nav a { text-decoration: none; color: #333; }
+    .nav a:hover { color: #000; }
+    
+    /* Mobile menu button */
+    .menu-btn { 
+      display: none; 
+      background: transparent; 
+      border: 0; 
+      padding: 4px; 
+      cursor: pointer; 
+      line-height: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+      color: inherit;
+    }
+    .menu-btn svg { display: block; width: 18px; height: 18px; pointer-events: none; }
+    @media screen and (max-width: 768px) {
+      .menu-btn { 
+        display: -webkit-flex !important;
+        display: flex !important; 
+        -webkit-align-items: center;
+        align-items: center; 
+        -webkit-justify-content: center;
+        justify-content: center;
+      }
+      .header-left img { display: none !important; }
+      .sidebar { 
+        position: fixed; left: -240px; top: 40px; 
+        width: 240px; height: calc(100vh - 40px);
+        background: #fff; z-index: 20;
+        transition: left 0.2s;
+      }
+      .sidebar.open { left: 0; box-shadow: 2px 0 8px rgba(0,0,0,0.1); }
+      .content { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit">
+        <img src="/icons/mac-192.png" alt="ryOS" width="20" height="20">
+        <span>ryOS</span>
+      </a>
+      <span style="color:#999">/</span>
+      <span style="color:#666">Docs</span>
+    </div>
+    <div class="header-right">
+      <a href="https://github.com/ryokun6/ryos" target="_blank" class="github">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <a href="/" class="launch">Launch</a>
+    </div>
+  </header>
+  
+  <div class="container">
+    <nav class="sidebar">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/overview" class="">1. Overview</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
+    <a href="/docs/api-architecture" class="nav-child ">1.2 API Architecture</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/apps" class="">2. Apps</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chats" class="nav-child ">2.1 Chats</a>
+    <a href="/docs/internet-explorer" class="nav-child ">2.2 Internet Explorer</a>
+    <a href="/docs/ipod" class="nav-child ">2.3 iPod</a>
+    <a href="/docs/karaoke" class="nav-child ">2.4 Karaoke</a>
+    <a href="/docs/textedit" class="nav-child ">2.5 TextEdit</a>
+    <a href="/docs/finder" class="nav-child ">2.6 Finder</a>
+    <a href="/docs/paint" class="nav-child ">2.7 Paint</a>
+    <a href="/docs/photo-booth" class="nav-child ">2.8 Photo Booth</a>
+    <a href="/docs/terminal" class="nav-child ">2.9 Terminal</a>
+    <a href="/docs/control-panels" class="nav-child ">2.10 Control Panels</a>
+    <a href="/docs/soundboard" class="nav-child ">2.11 Soundboard</a>
+    <a href="/docs/synth" class="nav-child ">2.12 Synth</a>
+    <a href="/docs/videos" class="nav-child ">2.13 Videos</a>
+    <a href="/docs/minesweeper" class="nav-child ">2.14 Minesweeper</a>
+    <a href="/docs/virtual-pc" class="nav-child ">2.15 Virtual PC</a>
+    <a href="/docs/admin" class="nav-child ">2.16 Admin</a>
+    <a href="/docs/applet-store" class="nav-child ">2.17 Applet Store</a>
+  </div>
+</div>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/application-framework" class="">3. Application Framework</a>
+  </button>
+  <div class="nav-children" style="display: block;">
+    <a href="/docs/window-management" class="nav-child ">3.1 Window Management</a>
+    <a href="/docs/state-management" class="nav-child ">3.2 State Management</a>
+    <a href="/docs/theme-system" class="nav-child ">3.3 Theme System</a>
+    <a href="/docs/hooks-architecture" class="nav-child active">3.4 Hooks Architecture</a>
+    <a href="/docs/component-architecture" class="nav-child ">3.5 Component Architecture</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/ai-system" class="">4. AI System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/file-system" class="">5. File System</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/audio-system" class="">6. Audio System</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/ui-components" class="">7. UI Components and Shared Systems</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/component-library" class="nav-child ">7.1 Components</a>
+    <a href="/docs/i18n" class="nav-child ">7.2 i18n & Hooks</a>
+  </div>
+</div>
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
+    <a href="/docs/api-reference" class="">8. API Reference</a>
+  </button>
+  <div class="nav-children" style="display: none;">
+    <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
+    <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
+    <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">8.4 Chat Rooms API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">8.5 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">8.6 Utility APIs</a>
+  </div>
+</div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/changelog" class="">9. Changelog</a>
+  </div>
+</div>
+    </nav>
+    
+    <main class="content">
+      <article>
+        <h1>Hooks Architecture</h1>
+<p>ryOS provides 29 custom hooks organized by functionality, enabling audio playback, window management, media handling, and more.</p>
+<h2>Hook Categories Overview</h2>
+<pre class="mermaid">graph TB
+    subgraph Audio["Audio Hooks"]
+        US[useSound]
+        UTT[useTtsQueue]
+        UCS[useChatSynth]
+        UAR[useAudioRecorder]
+        USB[useSoundboard]
+        UTS[useTerminalSounds]
+        UAT[useAudioTranscription]
+        UV[useVibration]
+    end
+    
+    subgraph Window["App/Window Hooks"]
+        UWM[useWindowManager]
+        ULA[useLaunchApp]
+        UAS[useActivityState]
+        UAL[useActivityLabel]
+        UWI[useWindowInsets]
+    end
+    
+    subgraph Media["Media Hooks"]
+        UL[useLyrics]
+        USC[useSongCover]
+        UF[useFurigana]
+        ULE[useLyricsErrorToast]
+    end
+    
+    subgraph Utility["Utility Hooks"]
+        UIM[useIsMobile]
+        UIP[useIsPhone]
+        UMQ[useMediaQuery]
+        UT[useToast]
+        UO[useOffline]
+        ULP[useLongPress]
+        USN[useSwipeNavigation]
+        UW[useWallpaper]
+        UCB[useCacheBustTrigger]
+        USF[useStreamingFetch]
+        UTH[useTranslatedHelpItems]
+    end
+    
+    subgraph Auth["Auth Hooks"]
+        UA[useAuth]
+    end</pre>
+<h2>Audio Hooks</h2>
+<h3>useSound</h3>
+<p>Web Audio API-based playback for UI sounds with caching and volume control.</p>
+<pre><code>interface UseSoundReturn {
+  play: (options?: { volume?: number; fadeIn?: boolean }) =&gt; Promise&lt;void&gt;;
+  stop: () =&gt; void;
+  isPlaying: boolean;
+}
+
+// Usage
+const { play: playClick } = useSound(Sounds.BUTTON_CLICK);
+playClick({ volume: 0.8 });</code></pre>
+<strong>Features:</strong>
+<ul><li>AudioBuffer caching with LRU eviction</li><li>Load deduplication (prevents duplicate fetches)</li><li>Concurrent source limiting (16 mobile, 32 desktop)</li><li>Volume ramping to prevent clicks</li><li>Context change detection (re-caches when AudioContext recreated)</li></ul>
+<strong>Available Sound Categories:</strong>
+<table><thead><tr><th>Category</th><th>Sounds</th></tr></thead><tbody><tr><td>Window</td><td><code>WINDOW_OPEN</code>, <code>WINDOW_CLOSE</code>, <code>WINDOW_EXPAND</code>, <code>WINDOW_COLLAPSE</code></td></tr><tr><td>Interaction</td><td><code>BUTTON_CLICK</code>, <code>MENU_OPEN</code>, <code>MENU_CLOSE</code></td></tr><tr><td>Alerts</td><td><code>ALERT_SOSUMI</code>, <code>ALERT_BONK</code>, <code>ALERT_INDIGO</code></td></tr><tr><td>App-specific</td><td><code>PHOTO_SHUTTER</code>, <code>VIDEO_TAPE</code>, <code>IPOD_CLICK_WHEEL</code></td></tr></tbody></table>
+<h3>useTtsQueue</h3>
+<p>Gap-free text-to-speech with intelligent queuing and volume ducking.</p>
+<pre><code>interface UseTtsQueueReturn {
+  speak: (text: string, options?: TtsOptions) =&gt; Promise&lt;void&gt;;
+  stop: () =&gt; void;
+  isSpeaking: boolean;
+  queue: TtsQueueItem[];
+}
+
+// Usage
+const { speak, stop, isSpeaking } = useTtsQueue();
+await speak("Hello, world!", { provider: "openai", voice: "nova" });</code></pre>
+<strong>Features:</strong>
+<ul><li>AudioContext timeline scheduling for gap-free playback</li><li>Parallel fetching (up to 3 concurrent TTS requests)</li><li>Volume ducking: iPod reduced to 35%, chat synth to 60% during speech</li><li>Micro-fades (10ms) to prevent audio clicks</li></ul>
+<h3>useChatSynth</h3>
+<p>Musical feedback for typing using Tone.js synthesis.</p>
+<pre><code>interface UseChatSynthReturn {
+  playNote: () =&gt; void;
+  setPreset: (preset: SynthPreset) =&gt; void;
+  currentPreset: SynthPreset;
+}
+
+// Usage
+const { playNote, setPreset } = useChatSynth();
+setPreset("ethereal");</code></pre>
+<strong>Presets:</strong>
+<table><thead><tr><th>Preset</th><th>Oscillator</th><th>Character</th></tr></thead><tbody><tr><td>Classic</td><td>Triangle</td><td>Warm, balanced</td></tr><tr><td>Ethereal</td><td>Sine</td><td>Soft, dreamy</td></tr><tr><td>Digital</td><td>Square</td><td>Sharp, electronic</td></tr><tr><td>Retro</td><td>Sawtooth</td><td>Vintage, buzzy</td></tr><tr><td>Off</td><td>-</td><td>Disabled</td></tr></tbody></table>
+<strong>Features:</strong>
+<ul><li>Pentatonic scale (C4, D4, F4, G4, A4, C5, D5)</li><li>Effects chain: Filter → Tremolo → Reverb → PolySynth</li><li>16 voice polyphony limit</li><li>Global instance persists across HMR</li></ul>
+<h3>useAudioRecorder</h3>
+<p>Microphone recording with format detection.</p>
+<pre><code>interface UseAudioRecorderReturn {
+  startRecording: () =&gt; Promise&lt;void&gt;;
+  stopRecording: () =&gt; Promise&lt;string&gt;; // Returns base64
+  isRecording: boolean;
+  error: string | null;
+}
+
+// Usage
+const { startRecording, stopRecording, isRecording } = useAudioRecorder();
+await startRecording();
+const base64Audio = await stopRecording();</code></pre>
+<strong>Features:</strong>
+<ul><li>MediaRecorder API with 200ms chunk intervals</li><li>Format detection: WebM (Chrome/Firefox), MP4 (Safari)</li><li>Base64 encoding for storage</li><li>Proper stream cleanup</li></ul>
+<h3>useAudioTranscription</h3>
+<p>Voice-to-text with silence detection.</p>
+<pre><code>interface UseAudioTranscriptionReturn {
+  startListening: () =&gt; Promise&lt;void&gt;;
+  stopListening: () =&gt; Promise&lt;void&gt;;
+  transcript: string;
+  isListening: boolean;
+  silenceLevel: number;
+}
+
+// Usage
+const { startListening, transcript, isListening } = useAudioTranscription({
+  onTranscript: (text) =&gt; console.log(text),
+  silenceThreshold: 0.01,
+  silenceDuration: 2000,
+});</code></pre>
+<strong>Features:</strong>
+<ul><li>Adaptive silence detection</li><li>Auto-stop on silence</li><li>Volume level monitoring</li><li>Whisper API integration</li></ul>
+<h2>App/Window Hooks</h2>
+<h3>useWindowManager</h3>
+<p>Window positioning, dragging, resizing, and snap-to-edge.</p>
+<pre><code>interface UseWindowManagerReturn {
+  windowPosition: { x: number; y: number };
+  windowSize: { width: number; height: number };
+  isDragging: boolean;
+  resizeType: ResizeType;
+  handleMouseDown: (e: MouseEvent) =&gt; void;
+  handleResizeStart: (e: MouseEvent, type: ResizeType) =&gt; void;
+  setWindowSize: (size: WindowSize) =&gt; void;
+  setWindowPosition: (pos: WindowPosition) =&gt; void;
+  maximizeWindowHeight: () =&gt; void;
+  snapZone: "left" | "right" | null;
+  computeInsets: () =&gt; WindowInsets;
+}
+
+// Usage
+const { windowPosition, handleMouseDown, snapZone } = useWindowManager({
+  appId: "finder",
+  instanceId: "finder-1",
+});</code></pre>
+<strong>Features:</strong>
+<ul><li>Cascade positioning for new windows</li><li>Snap-to-edge (50% screen width)</li><li>Mobile-aware constraints</li><li>Sound integration for drag/resize</li></ul>
+<h3>useLaunchApp</h3>
+<p>App launching with instance management.</p>
+<pre><code>interface UseLaunchAppReturn {
+  launchApp: (appId: AppId, initialData?: unknown) =&gt; string;
+  launchOrFocusApp: (appId: AppId) =&gt; void;
+  closeApp: (instanceId: string) =&gt; void;
+}
+
+// Usage
+const { launchApp, launchOrFocusApp } = useLaunchApp();
+const instanceId = launchApp("textedit", { filePath: "/Documents/note.md" });</code></pre>
+<strong>Features:</strong>
+<ul><li>Multi-instance support for eligible apps</li><li>Restore minimized instances</li><li>Initial data passing</li><li>Instance ID generation</li></ul>
+<h3>useWindowInsets</h3>
+<p>Theme-aware safe area calculation.</p>
+<pre><code>interface WindowInsets {
+  top: number;      // Menu bar height
+  bottom: number;   // Dock/taskbar height
+  left: number;
+  right: number;
+}
+
+// Usage
+const insets = useWindowInsets();
+const availableHeight = window.innerHeight - insets.top - insets.bottom;</code></pre>
+<h2>Media Hooks</h2>
+<h3>useLyrics</h3>
+<p>Lyrics fetching with translation support.</p>
+<pre><code>interface UseLyricsReturn {
+  lyrics: LyricLine[];
+  isLoading: boolean;
+  error: string | null;
+  hasLyrics: boolean;
+  translation: LyricTranslation | null;
+  refetch: () =&gt; void;
+}
+
+// Usage
+const { lyrics, isLoading, translation } = useLyrics({
+  songId: "abc123",
+  title: "Song Title",
+  artist: "Artist Name",
+  enableTranslation: true,
+});</code></pre>
+<strong>Features:</strong>
+<ul><li>Multiple lyrics sources (Kugou, etc.)</li><li>AI translation with streaming</li><li>Furigana/soramimi prefetch</li><li>Cache bust trigger support</li></ul>
+<h3>useFurigana</h3>
+<p>Japanese text annotation (furigana and soramimi).</p>
+<pre><code>interface UseFuriganaReturn {
+  furiganaMap: Map&lt;string, FuriganaSegment[]&gt;;
+  soramimiMap: Map&lt;string, SoramimiSegment[]&gt;;
+  furiganaProgress: number;
+  soramimiProgress: number;
+  isLoadingFurigana: boolean;
+  isLoadingSoramimi: boolean;
+}
+
+// Usage
+const { furiganaMap, soramimiMap, furiganaProgress } = useFurigana({
+  songId: "abc123",
+  lines: lyricsLines,
+  enabled: true,
+});</code></pre>
+<strong>Features:</strong>
+<ul><li>Progressive SSE streaming</li><li>Ordered loading (furigana before soramimi for Japanese)</li><li>Real-time progress updates</li></ul>
+<h3>useSongCover</h3>
+<p>Album art fetching with caching.</p>
+<pre><code>interface UseSongCoverReturn {
+  coverUrl: string | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+// Usage
+const { coverUrl, isLoading } = useSongCover({
+  title: "Song Title",
+  artist: "Artist Name",
+  fallbackUrl: "/default-cover.png",
+});</code></pre>
+<strong>Features:</strong>
+<ul><li>In-memory cache</li><li>YouTube thumbnail fallback</li><li>Error handling with fallback</li></ul>
+<h2>Utility Hooks</h2>
+<h3>useIsMobile / useIsPhone</h3>
+<p>Device detection hooks.</p>
+<pre><code>// useIsMobile: Touch OR small screen
+const isMobile = useIsMobile(); // Default breakpoint: 768px
+
+// useIsPhone: Touch AND small screen  
+const isPhone = useIsPhone();   // Default breakpoint: 640px</code></pre>
+<h3>useOffline</h3>
+<p>Network status detection with polling.</p>
+<pre><code>interface UseOfflineReturn {
+  isOffline: boolean;
+  lastOnline: Date | null;
+}
+
+// Usage
+const { isOffline } = useOffline();
+if (isOffline) {
+  showOfflineIndicator();
+}</code></pre>
+<strong>Features:</strong>
+<ul><li><code>navigator.onLine</code> monitoring</li><li>Periodic polling (5s intervals)</li><li>Last online timestamp</li></ul>
+<h3>useLongPress</h3>
+<p>Touch long-press detection.</p>
+<pre><code>interface UseLongPressReturn {
+  onTouchStart: (e: TouchEvent) =&gt; void;
+  onTouchEnd: () =&gt; void;
+  onTouchMove: () =&gt; void;
+}
+
+// Usage
+const longPressHandlers = useLongPress({
+  onLongPress: () =&gt; showContextMenu(),
+  delay: 500, // ms
+});
+
+&lt;div {...longPressHandlers} /&gt;</code></pre>
+<h3>useSwipeNavigation</h3>
+<p>Horizontal swipe gesture detection.</p>
+<pre><code>interface UseSwipeNavigationReturn {
+  handlers: {
+    onTouchStart: (e: TouchEvent) =&gt; void;
+    onTouchMove: (e: TouchEvent) =&gt; void;
+    onTouchEnd: () =&gt; void;
+  };
+  isSwiping: boolean;
+  swipeDirection: "left" | "right" | null;
+}
+
+// Usage
+const { handlers, swipeDirection } = useSwipeNavigation({
+  onSwipeLeft: () =&gt; nextApp(),
+  onSwipeRight: () =&gt; prevApp(),
+  threshold: 50,
+});</code></pre>
+<h3>useStreamingFetch</h3>
+<p>Generic SSE streaming with lifecycle management.</p>
+<pre><code>interface UseStreamingFetchReturn&lt;T&gt; {
+  data: T | null;
+  isLoading: boolean;
+  error: string | null;
+  progress: number;
+}
+
+// Usage
+const { data, progress, isLoading } = useStreamingFetch&lt;TranslationResult&gt;({
+  url: "/api/translate",
+  body: { text, targetLang },
+  onProgress: (p) =&gt; setProgress(p),
+  onComplete: (result) =&gt; handleResult(result),
+});</code></pre>
+<strong>Features:</strong>
+<ul><li>Abort controller integration</li><li>Stale request prevention</li><li>Offline detection</li><li>Progress tracking</li></ul>
+<h3>useCacheBustTrigger</h3>
+<p>Force refresh detection for shared state.</p>
+<pre><code>interface UseCacheBustTriggerReturn {
+  currentTrigger: number;
+  isForceRequest: boolean;
+  markHandled: () =&gt; void;
+}
+
+// Usage
+const { isForceRequest, markHandled } = useCacheBustTrigger();
+
+useEffect(() =&gt; {
+  if (isForceRequest) {
+    refetchData();
+    markHandled();
+  }
+}, [isForceRequest]);</code></pre>
+<h2>Auth Hook</h2>
+<h3>useAuth</h3>
+<p>Complete authentication flow management.</p>
+<pre><code>interface UseAuthReturn {
+  username: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (username: string, password: string) =&gt; Promise&lt;boolean&gt;;
+  logout: () =&gt; Promise&lt;void&gt;;
+  verifyToken: () =&gt; Promise&lt;boolean&gt;;
+  showPasswordDialog: boolean;
+  setShowPasswordDialog: (show: boolean) =&gt; void;
+}
+
+// Usage
+const { username, isAuthenticated, login, logout } = useAuth();
+
+if (!isAuthenticated) {
+  await login("alice", "password123");
+}</code></pre>
+<h2>Common Patterns</h2>
+<h3>Global AudioContext Management</h3>
+<p>Audio hooks share a global context:</p>
+<pre><code>import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
+
+// Always resume before playback
+await resumeAudioContext();
+const ctx = getAudioContext();</code></pre>
+<h3>Store Integration</h3>
+<p>Hooks use fine-grained Zustand selectors:</p>
+<pre><code>const speechVolume = useAudioSettingsStore((s) =&gt; s.speechVolume);
+const masterVolume = useAudioSettingsStore((s) =&gt; s.masterVolume);</code></pre>
+<h3>Stale Request Prevention</h3>
+<pre><code>const currentIdRef = useRef(id);
+
+useEffect(() =&gt; {
+  currentIdRef.current = id;
+  const controller = new AbortController();
+  
+  fetchData(id, controller.signal).then((data) =&gt; {
+    // Check if still current
+    if (id !== currentIdRef.current) return;
+    setData(data);
+  });
+  
+  return () =&gt; controller.abort();
+}, [id]);</code></pre>
+<h3>Volume Ramping</h3>
+<pre><code>const targetVolume = volume * uiVolume * masterVolume;
+const now = audioContext.currentTime;
+
+gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+gainNode.gain.linearRampToValueAtTime(targetVolume, now + 0.01);</code></pre>
+<h2>Hook Dependencies</h2>
+<pre class="mermaid">graph TD
+    subgraph "Stores"
+        AS[useAudioSettingsStore]
+        IS[useIpodStore]
+        CS[useChatsStore]
+        APS[useAppStore]
+    end
+    
+    subgraph "Audio Hooks"
+        US[useSound] --> AS
+        UTT[useTtsQueue] --> AS
+        UTT --> IS
+        UCS[useChatSynth] --> AS
+        UCS --> UV[useVibration]
+    end
+    
+    subgraph "Media Hooks"
+        UL[useLyrics] --> IS
+        UL --> UCB[useCacheBustTrigger]
+        UF[useFurigana] --> UCB
+    end
+    
+    subgraph "Window Hooks"
+        UWM[useWindowManager] --> US
+        UWM --> APS
+    end</pre>
+<h2>Usage Recommendations</h2>
+<table><thead><tr><th>Hook</th><th>Use When</th><th>Notes</th></tr></thead><tbody><tr><td><code>useSound</code></td><td>UI feedback</td><td>Use <code>Sounds</code> enum for paths</td></tr><tr><td><code>useTtsQueue</code></td><td>Long-form speech</td><td>Auto-queues for seamless playback</td></tr><tr><td><code>useChatSynth</code></td><td>Typing feedback</td><td>Configurable presets</td></tr><tr><td><code>useWindowManager</code></td><td>Any draggable window</td><td>Handles snap-to-edge</td></tr><tr><td><code>useLaunchApp</code></td><td>Opening apps</td><td>Handles multi-instance</td></tr><tr><td><code>useLyrics</code></td><td>Synced lyrics</td><td>Includes translation support</td></tr><tr><td><code>useFurigana</code></td><td>Japanese text</td><td>Wait for furigana before soramimi</td></tr><tr><td><code>useIsMobile</code></td><td>Touch/small screen</td><td>Use for layout decisions</td></tr><tr><td><code>useIsPhone</code></td><td>Phones specifically</td><td>More restrictive than isMobile</td></tr><tr><td><code>useOffline</code></td><td>Network-dependent features</td><td>Includes periodic polling</td></tr></tbody></table>
+<h2>Related Documentation</h2>
+<ul><li><a href="/docs/audio-system">Audio System</a> - Audio architecture details</li></ul><ul><li><a href="/docs/window-management">Window Management</a> - Window hook integration</li><li><a href="/docs/state-management">State Management</a> - Store patterns</li></ul>
+      </article>
+      
+      <nav class="nav">
+        <a href="/docs/theme-system">← Theme System</a>
+        <a href="/docs/component-architecture">Component Architecture →</a>
+      </nav>
+      
+    </main>
+  </div>
+  
+  <script>
+    function toggleNavGroup(button) {
+      const group = button.closest('.nav-group');
+      const children = group.querySelector('.nav-children');
+      const svg = button.querySelector('svg');
+      const isExpanded = group.classList.contains('expanded');
+      
+      if (isExpanded) {
+        group.classList.remove('expanded');
+        children.style.display = 'none';
+        svg.style.transform = 'rotate(0deg)';
+        button.setAttribute('aria-expanded', 'false');
+      } else {
+        group.classList.add('expanded');
+        children.style.display = 'block';
+        svg.style.transform = 'rotate(90deg)';
+        button.setAttribute('aria-expanded', 'true');
+      }
+    }
+    
+    document.addEventListener('click', (e) => {
+      const sidebar = document.querySelector('.sidebar');
+      const menuBtn = document.querySelector('.menu-btn');
+      const clickedMenuBtn = menuBtn && menuBtn.contains(e.target);
+      if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && !clickedMenuBtn) {
+        sidebar.classList.remove('open');
+      }
+    });
+  </script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      securityLevel: 'loose',
+      themeVariables: {
+        fontFamily: '"Geneva", system-ui, sans-serif',
+        fontSize: '10px',
+        primaryColor: '#f0f0f0',
+        primaryBorderColor: '#ccc',
+        primaryTextColor: '#000',
+        lineColor: '#666',
+        secondaryColor: '#f8f8f8',
+        tertiaryColor: '#fff'
+      },
+      flowchart: { curve: 'basis', padding: 8, nodeSpacing: 30, rankSpacing: 30 },
+      sequence: { actorFontSize: 10, messageFontSize: 10, noteFontSize: 10 }
+    });
+  </script>
+</body>
+</html>
