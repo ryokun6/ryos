@@ -2,6 +2,8 @@
 
 A modern web-based desktop environment inspired by classic macOS and Windows, built with React, TypeScript, and AI. Features multiple built-in applications, a familiar desktop interface, and a system-aware AI assistant. Works on all devices—desktop, tablet, and mobile.
 
+**[Read ryOS Docs](https://os.ryo.lu/docs)** — Architecture, API reference, and developer guides
+
 ## Features
 
 ### Desktop Environment

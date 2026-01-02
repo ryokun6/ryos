@@ -304,7 +304,7 @@
 <strong>Headers:</strong>
 <table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Yes</td><td><code>application/json</code></td></tr><tr><td><code>Authorization</code></td><td>No</td><td><code>Bearer {token}</code> for authenticated requests</td></tr><tr><td><code>X-Username</code></td><td>No</td><td>Username for rate limit tracking</td></tr></tbody></table>
 <strong>Body (JSON):</strong>
-<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>text</code></td><td><code>string</code></td><td>Yes</td><td>Text to convert to speech</td></tr><tr><td><code>model</code></td><td><code>"openai" \</td><td>"elevenlabs"</code></td><td>No</td><td>TTS provider (default: <code>"elevenlabs"</code>)</td></tr></tbody></table>
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>text</code></td><td><code>string</code></td><td>Yes</td><td>Text to convert to speech</td></tr><tr><td><code>model</code></td><td><code>"openai", "elevenlabs"</code></td><td>No</td><td>TTS provider (default: <code>"elevenlabs"</code>)</td></tr></tbody></table>
 <strong>OpenAI Options:</strong>
 <table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>voice</code></td><td><code>string</code></td><td><code>"alloy"</code></td><td>OpenAI voice name</td></tr><tr><td><code>speed</code></td><td><code>number</code></td><td><code>1.1</code></td><td>Speech speed multiplier</td></tr></tbody></table>
 <strong>ElevenLabs Options:</strong>
