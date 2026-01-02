@@ -370,6 +370,27 @@ export function FileList({
     return false;
   };
 
+  // Add a helper function to detect music files
+  const isMusicFile = (file: FileItem): boolean => {
+    // Check by extension first
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (["mp3", "m4a", "wav", "aac", "flac", "ogg"].includes(ext || "")) {
+      return true;
+    }
+
+    // Then check by type
+    if (file.type === "Music") {
+      return true;
+    }
+
+    return false;
+  };
+
+  // Helper to check if file should show a thumbnail (image or music with cover)
+  const shouldShowThumbnail = (file: FileItem): boolean => {
+    return isImageFile(file) || (isMusicFile(file) && !!file.contentUrl);
+  };
+
   // Helper to resolve icon path (legacy-aware names, works with ThemedIcon)
   const getIconPath = (file: FileItem) => {
     if (file.icon) return file.icon;
@@ -499,12 +520,12 @@ export function FileList({
             >
               {file.icon}
             </span>
-          ) : file.contentUrl && isImageFile(file) ? (
+          ) : file.contentUrl && shouldShowThumbnail(file) ? (
             <img
               src={file.contentUrl}
               alt={file.name}
-              className="w-4 h-4 object-contain"
-              style={{ imageRendering: "pixelated" }}
+              className="w-4 h-4 object-cover rounded-sm"
+              style={{ imageRendering: isImageFile(file) ? "pixelated" : "auto" }}
               onError={(e) => {
                 console.error(`Error loading thumbnail for ${file.name}`);
                 (e.target as HTMLImageElement).style.display = "none";
@@ -586,7 +607,7 @@ export function FileList({
           isDirectory={file.isDirectory}
           icon={file.icon}
           content={isImageFile(file) ? file.content : undefined}
-          contentUrl={isImageFile(file) ? file.contentUrl : undefined}
+          contentUrl={shouldShowThumbnail(file) ? file.contentUrl : undefined}
           onDoubleClick={() => handleFileOpen(file)}
           onClick={() => handleFileSelect(file)}
           isSelected={selectedFile?.path === file.path}

@@ -17,6 +17,7 @@ import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { migrateIndexedDBToUUIDs } from "@/utils/indexedDBMigration";
 import { useFinderStore } from "@/stores/useFinderStore";
+import { formatKugouImageUrl } from "@/apps/ipod/constants";
 
 // STORES is now imported from @/utils/indexedDB to avoid duplication
 
@@ -605,6 +606,7 @@ export function useFileSystem(
           appId: "ipod",
           type: "Music",
           data: { songId: track.id },
+          contentUrl: formatKugouImageUrl(track.cover, 100) ?? undefined,
         }));
       } else if (currentPath === "/Videos") {
         // At root videos directory, show artist folders
@@ -815,6 +817,7 @@ export function useFileSystem(
           data: track,
           icon: "/icons/file-music.png",
           modifiedAt: undefined, // Virtual files don't have timestamps
+          contentUrl: formatKugouImageUrl(track.cover, 100) ?? undefined,
         }));
       }
       // b. Video Library (Virtual)

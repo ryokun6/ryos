@@ -109,6 +109,11 @@ export function FileIcon({
     return ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(ext || "");
   };
 
+  const isMusicFile = () => {
+    const ext = name.split(".").pop()?.toLowerCase();
+    return ["mp3", "m4a", "wav", "aac", "flac", "ogg"].includes(ext || "");
+  };
+
   const getIconPath = () => {
     if (icon) return icon;
     if (isDirectory) return "/icons/directory.png"; // legacy logical path
@@ -186,7 +191,8 @@ export function FileIcon({
   };
 
   const renderIcon = () => {
-    if (isImage() && imgSrc && !fallbackToIcon) {
+    // Show thumbnail for images or music files with cover art
+    if ((isImage() || isMusicFile()) && imgSrc && !fallbackToIcon) {
       return (
         <div
           className={`relative ${sizes.icon} flex items-center justify-center`}
