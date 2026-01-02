@@ -312,7 +312,7 @@ export function AppManager({ apps }: AppManagerProps) {
 
       // Store initialPath if provided
       if (initialPath) {
-        localStorage.setItem(`app_${appId}_initialPath`, initialPath);
+        localStorage.setItem(`ryos:app:${appId}:initial-path`, initialPath);
       }
 
       // If there was an existing instance and we have initialData, dispatch updateApp event

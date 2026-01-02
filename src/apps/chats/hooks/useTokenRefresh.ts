@@ -61,8 +61,18 @@ export function useTokenAge() {
     }
 
     const calculateAge = () => {
-      const key = `_token_refresh_time_${username}`;
-      const refreshTimeStr = localStorage.getItem(key);
+      const key = `ryos:token-refresh-time:${username}`;
+      const legacyKey = `_token_refresh_time_${username}`;
+      let refreshTimeStr = localStorage.getItem(key);
+
+      // Try legacy key and migrate if found
+      if (!refreshTimeStr) {
+        refreshTimeStr = localStorage.getItem(legacyKey);
+        if (refreshTimeStr) {
+          localStorage.setItem(key, refreshTimeStr);
+          localStorage.removeItem(legacyKey);
+        }
+      }
 
       if (!refreshTimeStr) {
         setAgeInDays(null);

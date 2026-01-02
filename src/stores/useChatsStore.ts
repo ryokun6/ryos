@@ -11,12 +11,16 @@ import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
 
 // Recovery mechanism - uses different prefix to avoid reset
-const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
-const AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
+const USERNAME_RECOVERY_KEY = "ryos:usr-recovery-key";
+const AUTH_TOKEN_RECOVERY_KEY = "ryos:auth-recovery-key";
+// Legacy keys for migration
+const LEGACY_USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
+const LEGACY_AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
 
 // Token constants
 const TOKEN_REFRESH_THRESHOLD = 83 * 24 * 60 * 60 * 1000; // 83 days in ms (refresh 7 days before 90-day expiry)
-const TOKEN_LAST_REFRESH_KEY = "_token_refresh_time_";
+const TOKEN_LAST_REFRESH_KEY = "ryos:token-refresh-time:";
+const LEGACY_TOKEN_LAST_REFRESH_KEY = "_token_refresh_time_";
 
 // API Response Types
 interface ApiMessage {
@@ -54,13 +58,27 @@ const decodeUsername = (encoded: string): string | null => decode(encoded);
 const saveUsernameToRecovery = (username: string | null) => {
   if (username) {
     localStorage.setItem(USERNAME_RECOVERY_KEY, encodeUsername(username));
+    // Clean up legacy key
+    localStorage.removeItem(LEGACY_USERNAME_RECOVERY_KEY);
   }
 };
 
 const getUsernameFromRecovery = (): string | null => {
-  const encoded = localStorage.getItem(USERNAME_RECOVERY_KEY);
+  // Try new key first
+  let encoded = localStorage.getItem(USERNAME_RECOVERY_KEY);
   if (encoded) {
     return decodeUsername(encoded);
+  }
+  // Try legacy key and migrate
+  encoded = localStorage.getItem(LEGACY_USERNAME_RECOVERY_KEY);
+  if (encoded) {
+    const username = decodeUsername(encoded);
+    if (username) {
+      // Migrate to new key
+      localStorage.setItem(USERNAME_RECOVERY_KEY, encoded);
+      localStorage.removeItem(LEGACY_USERNAME_RECOVERY_KEY);
+    }
+    return username;
   }
   return null;
 };
@@ -72,12 +90,26 @@ const saveAuthTokenToRecovery = (token: string | null) => {
   } else {
     localStorage.removeItem(AUTH_TOKEN_RECOVERY_KEY);
   }
+  // Clean up legacy key
+  localStorage.removeItem(LEGACY_AUTH_TOKEN_RECOVERY_KEY);
 };
 
 const getAuthTokenFromRecovery = (): string | null => {
-  const encoded = localStorage.getItem(AUTH_TOKEN_RECOVERY_KEY);
+  // Try new key first
+  let encoded = localStorage.getItem(AUTH_TOKEN_RECOVERY_KEY);
   if (encoded) {
     return decode(encoded);
+  }
+  // Try legacy key and migrate
+  encoded = localStorage.getItem(LEGACY_AUTH_TOKEN_RECOVERY_KEY);
+  if (encoded) {
+    const token = decode(encoded);
+    if (token) {
+      // Migrate to new key
+      localStorage.setItem(AUTH_TOKEN_RECOVERY_KEY, encoded);
+      localStorage.removeItem(LEGACY_AUTH_TOKEN_RECOVERY_KEY);
+    }
+    return token;
   }
   return null;
 };
@@ -101,8 +133,19 @@ const saveTokenRefreshTime = (username: string) => {
 // Get token refresh time
 const getTokenRefreshTime = (username: string): number | null => {
   const key = `${TOKEN_LAST_REFRESH_KEY}${username}`;
-  const time = localStorage.getItem(key);
-  return time ? parseInt(time, 10) : null;
+  let time = localStorage.getItem(key);
+  if (time) {
+    return parseInt(time, 10);
+  }
+  // Try legacy key and migrate
+  const legacyKey = `${LEGACY_TOKEN_LAST_REFRESH_KEY}${username}`;
+  time = localStorage.getItem(legacyKey);
+  if (time) {
+    localStorage.setItem(key, time);
+    localStorage.removeItem(legacyKey);
+    return parseInt(time, 10);
+  }
+  return null;
 };
 
 // API request wrapper with automatic token refresh
@@ -928,14 +971,18 @@ export const useChatsStore = create<ChatsStoreState>()(
             track(APP_ANALYTICS.USER_LOGOUT, { username: currentUsername });
           }
 
-          // Clear recovery keys from localStorage
+          // Clear recovery keys from localStorage (both new and legacy)
           localStorage.removeItem(USERNAME_RECOVERY_KEY);
           localStorage.removeItem(AUTH_TOKEN_RECOVERY_KEY);
+          localStorage.removeItem(LEGACY_USERNAME_RECOVERY_KEY);
+          localStorage.removeItem(LEGACY_AUTH_TOKEN_RECOVERY_KEY);
 
-          // Clear token refresh time for current user
+          // Clear token refresh time for current user (both new and legacy)
           if (currentUsername) {
             const tokenRefreshKey = `${TOKEN_LAST_REFRESH_KEY}${currentUsername}`;
+            const legacyTokenRefreshKey = `${LEGACY_TOKEN_LAST_REFRESH_KEY}${currentUsername}`;
             localStorage.removeItem(tokenRefreshKey);
+            localStorage.removeItem(legacyTokenRefreshKey);
           }
 
           // Reset only user-specific data, preserve rooms and messages

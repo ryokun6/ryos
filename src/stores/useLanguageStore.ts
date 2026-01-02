@@ -8,6 +8,12 @@ import {
 
 export type LanguageCode = SupportedLanguage;
 
+// Storage keys
+const LANGUAGE_KEY = "ryos:language";
+const LANGUAGE_INITIALIZED_KEY = "ryos:language-initialized";
+const LEGACY_LANGUAGE_KEY = "ryos_language";
+const LEGACY_LANGUAGE_INITIALIZED_KEY = "ryos_language_initialized";
+
 interface LanguageState {
   current: LanguageCode;
   setLanguage: (language: LanguageCode) => void;
@@ -18,14 +24,38 @@ export const useLanguageStore = create<LanguageState>((set) => ({
   current: "en",
   setLanguage: (language) => {
     set({ current: language });
-    localStorage.setItem("ryos_language", language);
+    localStorage.setItem(LANGUAGE_KEY, language);
     // Mark as initialized when user manually sets language
-    localStorage.setItem("ryos_language_initialized", "true");
+    localStorage.setItem(LANGUAGE_INITIALIZED_KEY, "true");
+    // Clean up legacy keys
+    localStorage.removeItem(LEGACY_LANGUAGE_KEY);
+    localStorage.removeItem(LEGACY_LANGUAGE_INITIALIZED_KEY);
     changeLanguage(language);
   },
   hydrate: () => {
-    const saved = localStorage.getItem("ryos_language") as LanguageCode | null;
-    const isInitialized = localStorage.getItem("ryos_language_initialized");
+    // Try new keys first, fall back to legacy
+    let saved = localStorage.getItem(LANGUAGE_KEY) as LanguageCode | null;
+    let isInitialized = localStorage.getItem(LANGUAGE_INITIALIZED_KEY);
+
+    // Check legacy keys if new ones don't exist
+    if (!saved) {
+      const legacySaved = localStorage.getItem(LEGACY_LANGUAGE_KEY) as LanguageCode | null;
+      if (legacySaved) {
+        saved = legacySaved;
+        // Migrate to new key
+        localStorage.setItem(LANGUAGE_KEY, saved);
+        localStorage.removeItem(LEGACY_LANGUAGE_KEY);
+      }
+    }
+    if (!isInitialized) {
+      const legacyInitialized = localStorage.getItem(LEGACY_LANGUAGE_INITIALIZED_KEY);
+      if (legacyInitialized) {
+        isInitialized = legacyInitialized;
+        // Migrate to new key
+        localStorage.setItem(LANGUAGE_INITIALIZED_KEY, isInitialized);
+        localStorage.removeItem(LEGACY_LANGUAGE_INITIALIZED_KEY);
+      }
+    }
 
     let language: LanguageCode;
 
@@ -35,8 +65,8 @@ export const useLanguageStore = create<LanguageState>((set) => ({
     } else if (!isInitialized) {
       // First initialization: auto-detect from browser locale
       language = autoDetectLanguage();
-      localStorage.setItem("ryos_language", language);
-      localStorage.setItem("ryos_language_initialized", "true");
+      localStorage.setItem(LANGUAGE_KEY, language);
+      localStorage.setItem(LANGUAGE_INITIALIZED_KEY, "true");
     } else {
       // Fallback to English
       language = "en";

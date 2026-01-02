@@ -16,9 +16,9 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
 
   useEffect(() => {
     // Only show on mobile devices and if not previously dismissed
-    const hasSeenInstructions = localStorage.getItem(
-      "hasSeenSwipeInstructions"
-    );
+    // Check both new and legacy keys
+    const hasSeenInstructions = localStorage.getItem("ryos:has-seen-swipe-instructions") || 
+                                localStorage.getItem("hasSeenSwipeInstructions");
     const shouldShow = isMobile && !hasSeenInstructions;
 
     if (shouldShow) {
@@ -36,7 +36,9 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
 
   const handleDismiss = () => {
     setIsVisible(false);
-    localStorage.setItem("hasSeenSwipeInstructions", "true");
+    localStorage.setItem("ryos:has-seen-swipe-instructions", "true");
+    // Clean up legacy key
+    localStorage.removeItem("hasSeenSwipeInstructions");
 
     // Remove from DOM after animation completes
     setTimeout(() => setShouldRender(false), 300);

@@ -69,7 +69,7 @@ export function useDragAndDrop({
     if (hasUnsavedChanges) {
       // Store the dropped file temporarily
       localStorage.setItem(
-        "pending_file_open",
+        "ryos:pending-file-open",
         JSON.stringify({
           path: filePath,
           content: content,

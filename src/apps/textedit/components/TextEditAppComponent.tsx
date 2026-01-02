@@ -314,7 +314,9 @@ function TextEditContent({
       setCurrentFilePath(null);
       setHasUnsavedChanges(false);
 
-      const pendingFileOpen = localStorage.getItem("pending_file_open");
+      // Check both new and legacy keys
+      const pendingFileOpen = localStorage.getItem("ryos:pending-file-open") || 
+                              localStorage.getItem("pending_file_open");
       if (pendingFileOpen) {
         try {
           const { path, content } = JSON.parse(pendingFileOpen);
@@ -330,6 +332,7 @@ function TextEditContent({
         } catch (e) {
           console.error("Failed to parse pending file open data:", e);
         } finally {
+          localStorage.removeItem("ryos:pending-file-open");
           localStorage.removeItem("pending_file_open");
         }
       }
