@@ -265,6 +265,28 @@
   box-shadow: none !important;
 }
 
+/* Reset XP/Win98 button styles for title bar controls - they use background-image icons */
+:root[data-os-theme="xp"] .title-bar-controls button,
+:root[data-os-theme="win98"] .title-bar-controls button {
+  background-color: transparent !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+:root[data-os-theme="xp"] .title-bar-controls button:hover,
+:root[data-os-theme="xp"] .title-bar-controls button:active,
+:root[data-os-theme="xp"] .title-bar-controls button:focus,
+:root[data-os-theme="win98"] .title-bar-controls button:hover,
+:root[data-os-theme="win98"] .title-bar-controls button:active,
+:root[data-os-theme="win98"] .title-bar-controls button:focus {
+  background-color: transparent !important;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 /* Reset XP/Win98 button styles for iPod/Karaoke fullscreen toolbar buttons */
 :root[data-os-theme="xp"] .ipod-force-font button,
 :root[data-os-theme="xp"] .karaoke-force-font button,
@@ -281,6 +303,31 @@
 :root[data-os-theme="win98"] .ipod-force-font button:active,
 :root[data-os-theme="win98"] .karaoke-force-font button:active {
   background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+}
+
+/* Reset XP/Win98 button styles for ghost variant buttons (toolbar buttons, etc.) */
+:root[data-os-theme="xp"] button.\!bg-transparent,
+:root[data-os-theme="xp"] button.\[background\:transparent\!important\],
+:root[data-os-theme="win98"] button.\!bg-transparent,
+:root[data-os-theme="win98"] button.\[background\:transparent\!important\] {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-os-theme="xp"] button.\!bg-transparent:hover,
+:root[data-os-theme="xp"] button.\!bg-transparent:active,
+:root[data-os-theme="xp"] button.\[background\:transparent\!important\]:hover,
+:root[data-os-theme="xp"] button.\[background\:transparent\!important\]:active,
+:root[data-os-theme="win98"] button.\!bg-transparent:hover,
+:root[data-os-theme="win98"] button.\!bg-transparent:active,
+:root[data-os-theme="win98"] button.\[background\:transparent\!important\]:hover,
+:root[data-os-theme="win98"] button.\[background\:transparent\!important\]:active {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
   box-shadow: none !important;
 }
 

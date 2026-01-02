@@ -47,11 +47,17 @@ async function ensureLegacyCss(theme: OsThemeId) {
   }
 }
 
+// Storage keys
+const THEME_KEY = "ryos:theme";
+const LEGACY_THEME_KEY = "os_theme";
+
 export const useThemeStore = create<ThemeState>((set) => ({
   current: "macosx",
   setTheme: (theme) => {
     set({ current: theme });
-    localStorage.setItem("os_theme", theme);
+    localStorage.setItem(THEME_KEY, theme);
+    // Clean up legacy key
+    localStorage.removeItem(LEGACY_THEME_KEY);
     document.documentElement.dataset.osTheme = theme;
     ensureLegacyCss(theme);
     // Note: No need to invalidate icon cache on theme switch.
@@ -59,7 +65,16 @@ export const useThemeStore = create<ThemeState>((set) => ({
     // and the service worker caches each path separately.
   },
   hydrate: () => {
-    const saved = localStorage.getItem("os_theme") as OsThemeId | null;
+    // Try new key first, fall back to legacy
+    let saved = localStorage.getItem(THEME_KEY) as OsThemeId | null;
+    if (!saved) {
+      saved = localStorage.getItem(LEGACY_THEME_KEY) as OsThemeId | null;
+      if (saved) {
+        // Migrate to new key
+        localStorage.setItem(THEME_KEY, saved);
+        localStorage.removeItem(LEGACY_THEME_KEY);
+      }
+    }
     const theme = saved || "macosx";
     set({ current: theme });
     document.documentElement.dataset.osTheme = theme;
