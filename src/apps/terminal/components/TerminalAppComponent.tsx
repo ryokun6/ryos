@@ -16,7 +16,6 @@ import { STORES } from "@/utils/indexedDB";
 import { useTerminalStore } from "@/stores/useTerminalStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAiChat } from "@/apps/chats/hooks/useAiChat";
-import { useAppContext } from "@/contexts/AppContext";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 import { track } from "@vercel/analytics";
@@ -403,7 +402,7 @@ export function TerminalAppComponent({
     useFileSystem(storedPath);
 
   const launchApp = useLaunchApp();
-  const { bringToForeground } = useAppContext();
+  const bringToForeground = useAppStore((state) => state.bringToForeground);
 
   const {
     playCommandSound,

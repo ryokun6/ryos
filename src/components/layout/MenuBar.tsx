@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { AppleMenu } from "./AppleMenu";
-import { useAppContext } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,8 +25,9 @@ import { Slider } from "@/components/ui/slider";
 import { Volume1, Volume2, VolumeX, Settings, ChevronUp, MoreHorizontal } from "lucide-react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { getAppIconPath } from "@/config/appRegistry";
+import { getAppIconPath, appRegistry } from "@/config/appRegistry";
 import type { AppId } from "@/config/appRegistry";
+import type { AnyApp } from "@/apps/base/types";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useFilesStore } from "@/stores/useFilesStore";
 import type { AppInstance } from "@/stores/useAppStore";
@@ -792,7 +792,8 @@ function VolumeControl() {
 }
 
 export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
-  const { apps } = useAppContext();
+  // Get apps from registry
+  const apps: AnyApp[] = useMemo(() => Object.values(appRegistry), []);
   const {
     getForegroundInstance,
     instances,

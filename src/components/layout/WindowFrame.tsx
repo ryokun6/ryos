@@ -1,6 +1,5 @@
 import { useWindowManager } from "@/hooks/useWindowManager";
 import { ResizeType } from "@/types/types";
-import { useAppContext } from "@/contexts/AppContext";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
 import { useWindowInsets } from "@/hooks/useWindowInsets";
@@ -88,8 +87,8 @@ export function WindowFrame({
   const exitAnimationRef = useRef<'close' | 'minimize'>('minimize');
   // Track if close was triggered via external event (menu bar, dock, etc.)
   const closeViaEventRef = useRef(false);
-  const { bringToForeground } = useAppContext();
   const {
+    bringToForeground,
     bringInstanceToForeground,
     updateWindowState,
     updateInstanceWindowState,
@@ -99,6 +98,7 @@ export function WindowFrame({
     updateInstanceTitle,
     exposeMode,
   } = useAppStoreShallow((state) => ({
+    bringToForeground: state.bringToForeground,
     bringInstanceToForeground: state.bringInstanceToForeground,
     updateWindowState: state.updateWindowState,
     updateInstanceWindowState: state.updateInstanceWindowState,

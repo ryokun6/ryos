@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AnyApp, AppState } from "./types";
-import { AppContext } from "@/contexts/AppContext";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { Desktop } from "@/components/layout/Desktop";
 import { Dock } from "@/components/layout/Dock";
@@ -58,9 +57,9 @@ export function AppManager({ apps }: AppManagerProps) {
   const [isExposeViewOpen, setIsExposeViewOpen] = useState(false);
 
 
-  // Create legacy-compatible appStates from instances for AppContext
+  // Create legacy-compatible appStates from instances for Desktop component
   // NOTE: There can be multiple open instances for the same appId. We need to
-  // aggregate their state so that legacy consumers (e.g. AboutFinderDialog)
+  // aggregate their state so that legacy consumers (e.g. Desktop)
   // still receive correct information. In particular, `isOpen` should be true
   // if ANY instance is open, and `isForeground` should reflect the foreground
   // instance. We also prefer the foreground instance for position/size data.
@@ -99,24 +98,6 @@ export function AppManager({ apps }: AppManagerProps) {
     const index = instanceOrder.indexOf(instanceId);
     if (index === -1) return BASE_Z_INDEX;
     return BASE_Z_INDEX + index + 1;
-  };
-
-  // Wrapper: legacy appId -> instance focus using instanceOrder (end = foreground).
-  const bringAppToForeground = (appId: AppId) => {
-    // Find the most recently focused/open instance for the given appId.
-    for (let i = instanceOrder.length - 1; i >= 0; i--) {
-      const id = instanceOrder[i];
-      const instance = instances[id];
-      if (instance && instance.appId === appId && instance.isOpen) {
-        bringInstanceToForeground(id);
-        return;
-      }
-    }
-
-    // Fallback: If no open instance found, do nothing but log (helps debug)
-    console.warn(
-      `[AppManager] bringAppToForeground: No open instance found for ${appId}`,
-    );
   };
 
   // Set isInitialMount to false after a short delay
@@ -376,16 +357,7 @@ export function AppManager({ apps }: AppManagerProps) {
   }, []);
 
   return (
-    <AppContext.Provider
-      value={{
-        appStates: legacyAppStates,
-        toggleApp: launchApp,
-        bringToForeground: bringAppToForeground,
-        apps,
-        navigateToNextApp: navigateToNextInstance,
-        navigateToPreviousApp: navigateToPreviousInstance,
-      }}
-    >
+    <>
       {/* MenuBar: For XP/Win98, this is the taskbar (always shown).
           For Mac/System7, hide when a foreground app is loaded since 
           the app renders its own MenuBar. */}
@@ -450,6 +422,6 @@ export function AppManager({ apps }: AppManagerProps) {
         isOpen={isExposeViewOpen}
         onClose={() => setIsExposeViewOpen(false)}
       />
-    </AppContext.Provider>
+    </>
   );
 }
