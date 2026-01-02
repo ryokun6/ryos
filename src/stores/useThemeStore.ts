@@ -51,6 +51,13 @@ async function ensureLegacyCss(theme: OsThemeId) {
 const THEME_KEY = "ryos:theme";
 const LEGACY_THEME_KEY = "os_theme";
 
+// Valid theme IDs for validation
+const VALID_THEMES: OsThemeId[] = ["system7", "macosx", "xp", "win98"];
+
+const isValidTheme = (theme: string | null): theme is OsThemeId => {
+  return theme !== null && VALID_THEMES.includes(theme as OsThemeId);
+};
+
 export const useThemeStore = create<ThemeState>((set) => ({
   current: "macosx",
   setTheme: (theme) => {
@@ -66,16 +73,16 @@ export const useThemeStore = create<ThemeState>((set) => ({
   },
   hydrate: () => {
     // Try new key first, fall back to legacy
-    let saved = localStorage.getItem(THEME_KEY) as OsThemeId | null;
-    if (!saved) {
-      saved = localStorage.getItem(LEGACY_THEME_KEY) as OsThemeId | null;
-      if (saved) {
+    let saved = localStorage.getItem(THEME_KEY);
+    if (!isValidTheme(saved)) {
+      saved = localStorage.getItem(LEGACY_THEME_KEY);
+      if (isValidTheme(saved)) {
         // Migrate to new key
         localStorage.setItem(THEME_KEY, saved);
         localStorage.removeItem(LEGACY_THEME_KEY);
       }
     }
-    const theme = saved || "macosx";
+    const theme = isValidTheme(saved) ? saved : "macosx";
     set({ current: theme });
     document.documentElement.dataset.osTheme = theme;
     ensureLegacyCss(theme);
