@@ -413,7 +413,7 @@ export function Desktop({
 
   const handleFinderOpen = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    localStorage.setItem("app_finder_initialPath", "/");
+    localStorage.setItem("ryos:app:finder:initial-path", "/");
     const finderApp = apps.find((app) => app.id === "finder");
     if (finderApp) {
       toggleApp(finderApp.id);
@@ -452,7 +452,7 @@ export function Desktop({
 
   const handleOpenApp = (appId: string) => {
     if (appId === "macintosh-hd") {
-      localStorage.setItem("app_finder_initialPath", "/");
+      localStorage.setItem("ryos:app:finder:initial-path", "/");
       const finderApp = apps.find((app) => app.id === "finder");
       if (finderApp) {
         toggleApp(finderApp.id);
@@ -549,7 +549,7 @@ export function Desktop({
             type: "item",
             label: t("apps.finder.contextMenu.open"),
             onSelect: () => {
-              localStorage.setItem("app_finder_initialPath", "/Trash");
+              localStorage.setItem("ryos:app:finder:initial-path", "/Trash");
               const finderApp = apps.find((app) => app.id === "finder");
               if (finderApp) {
                 toggleApp(finderApp.id);
@@ -826,7 +826,7 @@ export function Desktop({
               }}
               onDoubleClick={(e) => {
                 e.stopPropagation();
-                localStorage.setItem("app_finder_initialPath", "/Trash");
+                localStorage.setItem("ryos:app:finder:initial-path", "/Trash");
                 const finderApp = apps.find((app) => app.id === "finder");
                 if (finderApp) {
                   toggleApp(finderApp.id);

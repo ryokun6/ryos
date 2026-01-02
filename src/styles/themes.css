@@ -265,6 +265,10 @@
   box-shadow: none !important;
 }
 
+/* XP/Win98 title bar controls get their styles from xp-custom.css and 98-custom.css.
+   Those stylesheets handle the button icons via background-image.
+   No override needed here - CSS specificity handles it. */
+
 /* Reset XP/Win98 button styles for iPod/Karaoke fullscreen toolbar buttons */
 :root[data-os-theme="xp"] .ipod-force-font button,
 :root[data-os-theme="xp"] .karaoke-force-font button,
@@ -281,6 +285,24 @@
 :root[data-os-theme="win98"] .ipod-force-font button:active,
 :root[data-os-theme="win98"] .karaoke-force-font button:active {
   background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+}
+
+/* Reset XP/Win98 button styles for ghost variant buttons (toolbar buttons, etc.)
+   These buttons want to be fully transparent - no background at all */
+:root[data-os-theme="xp"] button.\!bg-transparent,
+:root[data-os-theme="win98"] button.\!bg-transparent {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-os-theme="xp"] button.\!bg-transparent:hover,
+:root[data-os-theme="xp"] button.\!bg-transparent:active,
+:root[data-os-theme="win98"] button.\!bg-transparent:hover,
+:root[data-os-theme="win98"] button.\!bg-transparent:active {
+  background: transparent !important;
+  border: none !important;
   box-shadow: none !important;
 }
 

@@ -21,7 +21,8 @@ import i18n from "@/lib/i18n";
 import { getApiUrl, isTauri } from "@/utils/platform";
 
 // Storage key for manifest timestamp (for cache invalidation)
-const MANIFEST_KEY = 'ryos-manifest-timestamp';
+const MANIFEST_KEY = 'ryos:manifest-timestamp';
+const LEGACY_MANIFEST_KEY = 'ryos-manifest-timestamp';
 
 // Periodic update check interval (5 minutes)
 const UPDATE_CHECK_INTERVAL = 5 * 60 * 1000;
@@ -103,6 +104,7 @@ async function reloadPage(version?: string, buildNumber?: string): Promise<void>
 export function clearPrefetchFlag(): void {
   try {
     localStorage.removeItem(MANIFEST_KEY);
+    localStorage.removeItem(LEGACY_MANIFEST_KEY);
     console.log('[Prefetch] Flag cleared, will re-prefetch on next boot');
   } catch {
     // localStorage might not be available
