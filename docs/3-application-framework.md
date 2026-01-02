@@ -90,3 +90,5 @@ graph TD
 - [Window Management](/docs/window-management) - Window rendering, positioning, and frame components
 - [State Management](/docs/state-management) - Zustand stores and data persistence
 - [Theme System](/docs/theme-system) - Themes, appearance, and visual customization
+- [Hooks Architecture](/docs/hooks-architecture) - Custom React hooks for audio, media, and utilities
+- [Component Architecture](/docs/component-architecture) - UI component organization and patterns
