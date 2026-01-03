@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import type { PipPlayerProps } from "../types";
+import { SkipBack, SkipForward, Play, Pause, MusicNote } from "@phosphor-icons/react";
 
 export function PipPlayer({
   currentTrack,
@@ -59,7 +60,7 @@ export function PipPlayer({
       transition={{ duration: 0.2, ease: "easeOut" }}
       className={cn(
         // Keep PiP below normal application windows (AppManager windows start at z-index 2+)
-        "fixed z-[1] flex items-center gap-3 bg-black/40 backdrop-blur-xl rounded-xl shadow-2xl p-2 pr-3 cursor-pointer select-none",
+        "fixed z-[1] flex items-center gap-3 bg-black/40 backdrop-blur-xl rounded-xl shadow-2xl p-2 cursor-pointer select-none",
         shouldCenter ? "left-1/2" : "right-3"
       )}
       style={{
@@ -78,8 +79,7 @@ export function PipPlayer({
     >
       {/* Thumbnail */}
       <div
-        className="relative w-14 h-14 flex-shrink-0 overflow-hidden"
-        style={{ borderRadius: "8px" }}
+        className="relative w-12 h-12 flex-shrink-0 overflow-hidden rounded"
       >
         {thumbnailUrl ? (
           <img
@@ -89,15 +89,7 @@ export function PipPlayer({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-white/10 text-white/40">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-            </svg>
+            <MusicNote size={24} weight="fill" />
           </div>
         )}
         {/* Playing indicator overlay */}
@@ -148,7 +140,7 @@ export function PipPlayer({
           className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors touch-manipulation"
           aria-label={t("apps.ipod.ariaLabels.previousTrack")}
         >
-          <span className="text-sm font-chicago">⏮</span>
+          <SkipBack size={16} weight="fill" />
         </button>
 
         <button
@@ -158,9 +150,7 @@ export function PipPlayer({
           className="w-9 h-9 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50 touch-manipulation"
           aria-label={t("apps.ipod.ariaLabels.playPause")}
         >
-          <span className="text-base font-chicago">
-            {isPlaying ? "⏸" : "▶"}
-          </span>
+          {isPlaying ? <Pause size={18} weight="fill" /> : <Play size={18} weight="fill" />}
         </button>
 
         <button
@@ -169,7 +159,7 @@ export function PipPlayer({
           className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors touch-manipulation"
           aria-label={t("apps.ipod.ariaLabels.nextTrack")}
         >
-          <span className="text-sm font-chicago">⏭</span>
+          <SkipForward size={16} weight="fill" />
         </button>
       </div>
     </motion.div>,
