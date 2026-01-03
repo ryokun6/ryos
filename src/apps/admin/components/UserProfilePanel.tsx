@@ -289,9 +289,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         <div className="p-3 space-y-4">
           {/* Stats */}
           <div className="grid grid-cols-2 gap-2">
-            <div className="px-3 py-2 bg-gray-50 rounded border border-gray-200">
-              <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 mb-1">
-                <ChatCircle className="h-3 w-3" weight="bold" />
+            <div className="py-1.5">
+              <div className="flex items-start gap-1.5 text-[10px] text-neutral-500 mb-1">
+                <ChatCircle className="h-3 w-3 mt-px" weight="bold" />
                 {t("apps.admin.profile.messages")}
               </div>
               {isLoading ? (
@@ -300,9 +300,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                 <span className="text-[14px] font-medium">{profile?.messageCount || 0}</span>
               )}
             </div>
-            <div className="px-3 py-2 bg-gray-50 rounded border border-gray-200">
-              <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 mb-1">
-                <Hash className="h-3 w-3" weight="bold" />
+            <div className="py-1.5">
+              <div className="flex items-start gap-1.5 text-[10px] text-neutral-500 mb-1">
+                <Hash className="h-3 w-3 mt-px" weight="bold" />
                 {t("apps.admin.profile.rooms")}
               </div>
               {isLoading ? (
@@ -316,8 +316,8 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           {/* Ban Info */}
           {!isLoading && profile?.banned && (
             <div className="p-2 bg-red-50 rounded border border-red-200">
-              <div className="flex items-center gap-1.5 text-[10px] text-red-600 mb-1">
-                <Prohibit className="h-3 w-3" weight="bold" />
+              <div className="flex items-start gap-1.5 text-[10px] text-red-600 mb-1">
+                <Prohibit className="h-3 w-3 mt-px" weight="bold" />
                 {t("apps.admin.profile.banDetails")}
               </div>
               <div className="text-[11px] space-y-1">

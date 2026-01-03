@@ -609,8 +609,8 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
             </div>
             <div className="space-y-2">
               {/* Title */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
-                <MusicNote className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" weight="bold" />
+              <div className="flex items-start gap-2 py-1.5">
+                <MusicNote className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.tableHeaders.title", "Title")}</div>
                   {isLoading ? (
@@ -655,8 +655,8 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
               </div>
 
               {/* Artist */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
-                <User className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" weight="bold" />
+              <div className="flex items-start gap-2 py-1.5">
+                <User className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.tableHeaders.artist", "Artist")}</div>
                   {isLoading ? (
@@ -701,8 +701,8 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
               </div>
 
               {/* Album */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
-                <VinylRecord className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" weight="bold" />
+              <div className="flex items-start gap-2 py-1.5">
+                <VinylRecord className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.album", "Album")}</div>
                   {isLoading ? (
@@ -747,8 +747,8 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
               </div>
 
               {/* Lyric Offset */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
-                <Clock className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" weight="bold" />
+              <div className="flex items-start gap-2 py-1.5">
+                <Clock className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.lyricsOffset", "Lyrics Offset")}</div>
                   {isLoading ? (
@@ -795,8 +795,8 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
               </div>
 
               {/* YouTube ID */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
-                <Hash className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" weight="bold" />
+              <div className="flex items-start gap-2 py-1.5">
+                <Hash className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.youtubeId", "YouTube ID")}</div>
                   {isLoading ? (
@@ -826,8 +826,8 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
             </div>
             <div className="space-y-2">
               {/* Lyrics Source */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
-                <FileText className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" weight="bold" />
+              <div className="flex items-start gap-2 py-1.5">
+                <FileText className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.lyricsSource", "Lyrics")}</div>
                   {isLoading ? (
@@ -865,8 +865,8 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
               </div>
 
               {/* Furigana */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
-                <TextT className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" weight="bold" />
+              <div className="flex items-start gap-2 py-1.5">
+                <TextT className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.furigana", "Furigana")}</div>
                   {isLoading ? (
@@ -894,8 +894,8 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
               </div>
 
               {/* Translations */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
-                <Translate className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" weight="bold" />
+              <div className="flex items-start gap-2 py-1.5">
+                <Translate className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.translations", "Translations")}</div>
                   {isLoading ? (
@@ -925,8 +925,8 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
               </div>
 
               {/* Soramimi */}
-              <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded border border-gray-200">
-                <Ear className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" weight="bold" />
+              <div className="flex items-start gap-2 py-1.5">
+                <Ear className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0 mt-0.5" weight="bold" />
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.soramimi", "Soramimi (空耳)")}</div>
                   {isLoading ? (
