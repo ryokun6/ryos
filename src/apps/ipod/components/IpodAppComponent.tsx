@@ -1682,6 +1682,7 @@ export function IpodAppComponent({
         onNavigatePrevious={onNavigatePrevious}
         menuBar={isXpTheme ? menuBar : undefined}
         keepMountedWhenMinimized
+        onFullscreenToggle={toggleFullScreen}
       >
         <div
           ref={containerRef}

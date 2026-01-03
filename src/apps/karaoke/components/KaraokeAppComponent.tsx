@@ -993,6 +993,7 @@ export function KaraokeAppComponent({
         onNavigateNext={onNavigateNext}
         onNavigatePrevious={onNavigatePrevious}
         menuBar={isXpTheme ? menuBar : undefined}
+        onFullscreenToggle={toggleFullScreen}
       >
         <div
           className="relative w-full h-full bg-black select-none overflow-hidden @container"

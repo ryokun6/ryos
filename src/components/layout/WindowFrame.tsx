@@ -19,6 +19,7 @@ import { TrafficLightButton } from "@/components/shared/TrafficLightButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { calculateExposeGrid, getExposeTransform } from "./exposeUtils";
 import { useTranslation } from "react-i18next";
+import { ArrowsOutSimple } from "@phosphor-icons/react";
 
 interface WindowFrameProps {
   children: React.ReactNode;
@@ -45,6 +46,8 @@ interface WindowFrameProps {
   menuBar?: React.ReactNode; // Add menuBar prop
   // Keep content mounted when minimized (useful for audio/video apps)
   keepMountedWhenMinimized?: boolean;
+  // Fullscreen toggle callback (for apps like iPod and Karaoke that support fullscreen)
+  onFullscreenToggle?: () => void;
 }
 
 export function WindowFrame({
@@ -63,6 +66,7 @@ export function WindowFrame({
   interceptClose = false,
   menuBar, // Add menuBar to destructured props
   keepMountedWhenMinimized = false,
+  onFullscreenToggle,
 }: WindowFrameProps) {
   const { t } = useTranslation();
   const config = getWindowConfig(appId);
@@ -1192,6 +1196,18 @@ export function WindowFrame({
                 {title}
               </div>
               <div className="title-bar-controls" data-titlebar-controls>
+                {onFullscreenToggle && (
+                  <button
+                    aria-label={t("common.window.fullscreen")}
+                    data-action="fullscreen"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onFullscreenToggle();
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                  />
+                )}
                 <button
                   aria-label={t("common.window.minimize")}
                   data-action="minimize"
@@ -1349,8 +1365,38 @@ export function WindowFrame({
                 <span className="truncate">{title}</span>
               </span>
 
-              {/* Spacer to balance the traffic lights */}
-              <div className="mr-2 w-12 h-4" />
+{/* Fullscreen button (or spacer to balance the traffic lights) */}
+                              <div className="flex items-center justify-end mr-1" style={{ width: 52 }}>
+                                {onFullscreenToggle && (
+                                  <button
+                                    aria-label={t("common.window.fullscreen")}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onFullscreenToggle();
+                                    }}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onTouchStart={(e) => e.stopPropagation()}
+                                    data-titlebar-controls
+                                    className={cn(
+                                      "w-5 h-5 flex items-center justify-center",
+                                      isNoTitlebar
+                                        ? "text-white/80"
+                                        : isForeground
+                                        ? "text-gray-500"
+                                        : "text-gray-400"
+                                    )}
+                                    style={{
+                                      filter: isNoTitlebar
+                                        ? "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))"
+                                        : isForeground
+                                        ? "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2))"
+                                        : "none",
+                                    }}
+                                  >
+                                    <ArrowsOutSimple size={14} weight="bold" />
+                                  </button>
+                                )}
+                              </div>
             </div>
           ) : (
             // Original Mac theme title bar (for System 7)
@@ -1421,10 +1467,31 @@ export function WindowFrame({
                 )}
                 onTouchMove={(e) => e.preventDefault()}
               >
-                <span className="truncate">{title}</span>
-              </span>
-              <div className="mr-2 w-4 h-4" />
-            </div>
+<span className="truncate">{title}</span>
+                              </span>
+                              {onFullscreenToggle ? (
+                                <button
+                                  aria-label={t("common.window.fullscreen")}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onFullscreenToggle();
+                                  }}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onTouchStart={(e) => e.stopPropagation()}
+                                  data-titlebar-controls
+                                  className={cn(
+                                    "mr-2 w-5 h-5 flex items-center justify-center",
+                                    isForeground
+                                      ? "text-gray-600"
+                                      : "text-gray-400"
+                                  )}
+                                >
+                                  <ArrowsOutSimple size={12} weight="bold" />
+                                </button>
+                              ) : (
+                                <div className="mr-2 w-4 h-4" />
+                              )}
+                            </div>
           )}
 
           {/* For XP/98 themes, render the menuBar inside the window */}

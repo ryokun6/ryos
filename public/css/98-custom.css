@@ -618,6 +618,11 @@ pre {
   background-repeat: no-repeat;
   background-position: top 3px left 4px;
 }
+.title-bar-controls button[data-action="fullscreen"] {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg width='9' height='9' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%23000' d='M0 0h3v1H1v2H0zM6 0h3v3H8V1H6zM0 6h1v2h2v1H0zM8 6v2H6v1h3V6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: top 2px left 3px;
+}
 input[type="checkbox"] + label:before {
   box-shadow: inset -1px -1px #fff, inset 1px 1px grey, inset -2px -2px #dfdfdf,
     inset 2px 2px #0a0a0a;

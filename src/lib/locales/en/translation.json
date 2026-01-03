@@ -132,7 +132,8 @@
     "window": {
       "minimize": "Minimize",
       "maximize": "Maximize",
-      "close": "Close"
+      "close": "Close",
+      "fullscreen": "Full Screen"
     },
     "keys": {
       "escape": "Escape",
