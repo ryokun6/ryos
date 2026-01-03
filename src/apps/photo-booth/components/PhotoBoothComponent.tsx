@@ -1301,43 +1301,73 @@ export function PhotoBoothComponent({
               </button>
             </div>
 
-            <Button
-              onClick={
-                isMultiPhotoMode
-                  ? () => {}
-                  : () => {
-                      const event = new CustomEvent("webcam-capture");
-                      window.dispatchEvent(event);
+            {/* Camera button segment */}
+            <div
+              className={cn(
+                "relative",
+                isMacTheme && "overflow-hidden rounded-full shadow-lg"
+              )}
+              style={
+                isMacTheme
+                  ? {
+                      background:
+                        "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
+                      boxShadow:
+                        "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+                      padding: "4px",
                     }
+                  : undefined
               }
-              className={`rounded-full h-14 w-14 [&_svg]:size-5 ${
-                isMultiPhotoMode
-                  ? `bg-gray-500 cursor-not-allowed`
-                  : `bg-red-500 hover:bg-red-600`
-              }`}
-              style={{
-                background: isXpTheme
-                  ? isMultiPhotoMode
-                    ? "#6b7280"
-                    : "#dc2626"
-                  : undefined,
-                border: isXpTheme ? "none" : undefined,
-                cursor: isMultiPhotoMode ? "not-allowed" : "pointer",
-              }}
-              onMouseEnter={(e) => {
-                if (isXpTheme && !isMultiPhotoMode) {
-                  e.currentTarget.style.background = "#b91c1c";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (isXpTheme && !isMultiPhotoMode) {
-                  e.currentTarget.style.background = "#dc2626";
-                }
-              }}
-              disabled={isMultiPhotoMode}
             >
-              <Camera stroke="white" />
-            </Button>
+              {isMacTheme && <AquaShineOverlay />}
+              <Button
+                onClick={
+                  isMultiPhotoMode
+                    ? () => {}
+                    : () => {
+                        const event = new CustomEvent("webcam-capture");
+                        window.dispatchEvent(event);
+                      }
+                }
+                className={cn(
+                  "rounded-full h-14 w-14 [&_svg]:size-5 transition-colors focus:outline-none",
+                  isMacTheme && "z-10 relative",
+                  isMultiPhotoMode
+                    ? "bg-gray-500 cursor-not-allowed"
+                    : "bg-red-500 hover:bg-red-600"
+                )}
+                style={{
+                  background: isXpTheme
+                    ? isMultiPhotoMode
+                      ? "#6b7280"
+                      : "#dc2626"
+                    : undefined,
+                  border: isXpTheme ? "none" : undefined,
+                  cursor: isMultiPhotoMode ? "not-allowed" : "pointer",
+                }}
+                onMouseEnter={(e) => {
+                  if (isXpTheme && !isMultiPhotoMode) {
+                    e.currentTarget.style.background = "#b91c1c";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (isXpTheme && !isMultiPhotoMode) {
+                    e.currentTarget.style.background = "#dc2626";
+                  }
+                }}
+                disabled={isMultiPhotoMode}
+              >
+                <Camera
+                  fill="white"
+                  stroke="white"
+                  className={
+                    isMacTheme
+                      ? "drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
+                      : ""
+                  }
+                />
+              </Button>
+            </div>
 
             {/* Effects button segment */}
             <div
