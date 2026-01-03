@@ -16,6 +16,26 @@ import { usePhotoBoothStore } from "@/stores/usePhotoBoothStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
+
+// Aqua-style shine overlay for macOS X theme (dark glass style)
+function AquaShineOverlay() {
+  return (
+    <div
+      className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+      style={{
+        top: "2px",
+        height: "35%",
+        width: "calc(100% - 16px)",
+        borderRadius: "100px",
+        background:
+          "linear-gradient(rgba(255,255,255,0.06), rgba(255,255,255,0.01))",
+        filter: "blur(0.5px)",
+        zIndex: 2,
+      }}
+    />
+  );
+}
 
 interface Effect {
   name: string;
@@ -195,6 +215,7 @@ export function PhotoBoothComponent({
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacTheme = currentTheme === "macosx";
 
   const handleClearPhotos = () => {
     clearPhotos();
@@ -1148,7 +1169,25 @@ export function PhotoBoothComponent({
 
           {/* Fixed bottom control bar that always takes full width without overflowing */}
           <div className="flex-shrink-0 w-full bg-black/70 backdrop-blur-md px-6 py-4 flex justify-between items-center z-[60]">
-            <div className="flex space-x-3 relative">
+            <div
+              className={cn(
+                "flex relative",
+                isMacTheme
+                  ? "relative overflow-hidden rounded-full shadow-lg px-1 py-1 gap-1"
+                  : "space-x-3"
+              )}
+              style={
+                isMacTheme
+                  ? {
+                      background:
+                        "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
+                      boxShadow:
+                        "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+                    }
+                  : undefined
+              }
+            >
+              {isMacTheme && <AquaShineOverlay />}
               {/* Thumbnail animation */}
               <AnimatePresence>
                 {showThumbnail && lastPhoto && !showPhotoStrip && (
@@ -1190,11 +1229,11 @@ export function PhotoBoothComponent({
               </AnimatePresence>
 
               <button
-                className={`h-10 w-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white relative overflow-hidden ${
-                  validPhotos.length === 0
-                    ? "opacity-50 cursor-not-allowed"
-                    : ""
-                }`}
+                className={cn(
+                  "h-10 w-10 rounded-full flex items-center justify-center text-white relative overflow-hidden transition-colors focus:outline-none",
+                  isMacTheme ? "z-10" : "bg-white/10 hover:bg-white/20",
+                  validPhotos.length === 0 && "opacity-50 cursor-not-allowed"
+                )}
                 style={{
                   background: isXpTheme
                     ? "rgba(255, 255, 255, 0.1)"
@@ -1216,10 +1255,20 @@ export function PhotoBoothComponent({
                 onClick={togglePhotoStrip}
                 disabled={validPhotos.length === 0}
               >
-                <Images size={18} />
+                <Images
+                  size={18}
+                  className={
+                    isMacTheme
+                      ? "text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
+                      : ""
+                  }
+                />
               </button>
               <button
-                className="h-10 w-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white"
+                className={cn(
+                  "h-10 w-10 rounded-full flex items-center justify-center text-white transition-colors focus:outline-none",
+                  isMacTheme ? "z-10" : "bg-white/10 hover:bg-white/20"
+                )}
                 style={{
                   background: isXpTheme
                     ? "rgba(255, 255, 255, 0.1)"
@@ -1241,7 +1290,14 @@ export function PhotoBoothComponent({
                 onClick={startMultiPhotoSequence}
                 disabled={isMultiPhotoMode}
               >
-                <Timer size={18} />
+                <Timer
+                  size={18}
+                  className={
+                    isMacTheme
+                      ? "text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
+                      : ""
+                  }
+                />
               </button>
             </div>
 
@@ -1283,26 +1339,62 @@ export function PhotoBoothComponent({
               <Camera stroke="white" />
             </Button>
 
-            <Button
-              onClick={toggleEffects}
-              className="h-10 px-5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[16px]"
-              style={{
-                background: isXpTheme ? "rgba(255, 255, 255, 0.1)" : undefined,
-                border: isXpTheme ? "none" : undefined,
-              }}
-              onMouseEnter={(e) => {
-                if (isXpTheme) {
-                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (isXpTheme) {
-                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
-                }
-              }}
+            {/* Effects button segment */}
+            <div
+              className={cn(
+                "relative",
+                isMacTheme && "overflow-hidden rounded-full shadow-lg px-1 py-1"
+              )}
+              style={
+                isMacTheme
+                  ? {
+                      background:
+                        "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
+                      boxShadow:
+                        "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+                    }
+                  : undefined
+              }
             >
-              {t("apps.photo-booth.buttons.effects")}
-            </Button>
+              {isMacTheme && <AquaShineOverlay />}
+              <Button
+                onClick={toggleEffects}
+                className={cn(
+                  "h-10 px-5 py-1.5 rounded-full text-white text-[16px] transition-colors focus:outline-none",
+                  isMacTheme
+                    ? "z-10 relative bg-transparent hover:bg-transparent"
+                    : "bg-white/10 hover:bg-white/20"
+                )}
+                style={{
+                  background: isXpTheme
+                    ? "rgba(255, 255, 255, 0.1)"
+                    : undefined,
+                  border: isXpTheme ? "none" : undefined,
+                }}
+                onMouseEnter={(e) => {
+                  if (isXpTheme) {
+                    e.currentTarget.style.background =
+                      "rgba(255, 255, 255, 0.2)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (isXpTheme) {
+                    e.currentTarget.style.background =
+                      "rgba(255, 255, 255, 0.1)";
+                  }
+                }}
+              >
+                <span
+                  className={
+                    isMacTheme
+                      ? "text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
+                      : ""
+                  }
+                >
+                  {t("apps.photo-booth.buttons.effects")}
+                </span>
+              </Button>
+            </div>
           </div>
 
           <HelpDialog
