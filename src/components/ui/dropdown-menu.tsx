@@ -76,7 +76,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
     <DropdownMenuPrimitive.SubTrigger
       ref={ref}
       className={cn(
-        "flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+        "flex cursor-default gap-2 select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent [&_svg]:pointer-events-none [&_svg]:shrink-0",
         inset && "pl-8",
         className
       )}
@@ -104,7 +104,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
       {...props}
     >
       {children}
-      <CaretRight className="ml-auto" weight="bold" />
+      <CaretRight className="ml-auto" size={12} weight="bold" />
     </DropdownMenuPrimitive.SubTrigger>
   );
 });
@@ -288,7 +288,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     >
       <span className="absolute left-3 flex h-3.5 w-3.5 items-center justify-center">
         <DropdownMenuPrimitive.ItemIndicator>
-          <Check className="h-4 w-4" weight="bold" />
+          <Check size={12} weight="bold" />
         </DropdownMenuPrimitive.ItemIndicator>
       </span>
       {children}
@@ -327,7 +327,7 @@ const DropdownMenuRadioItem = React.forwardRef<
     >
       <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
         <DropdownMenuPrimitive.ItemIndicator>
-          <Circle className="h-2 w-2 fill-current" />
+          <Circle size={8} weight="fill" />
         </DropdownMenuPrimitive.ItemIndicator>
       </span>
       {children}

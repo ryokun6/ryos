@@ -116,7 +116,7 @@ const SelectTrigger = React.forwardRef<
       {children}
       {!isMacOSTheme && (
         <SelectPrimitive.Icon asChild>
-          <CaretDown className="h-4 w-4 opacity-50" weight="bold" />
+          <CaretDown size={12} className="opacity-50" weight="bold" />
         </SelectPrimitive.Icon>
       )}
     </SelectPrimitive.Trigger>
@@ -136,7 +136,7 @@ const SelectScrollUpButton = React.forwardRef<
     )}
     {...props}
   >
-    <CaretUp className="h-4 w-4" weight="bold" />
+    <CaretUp size={12} weight="bold" />
   </SelectPrimitive.ScrollUpButton>
 ));
 SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName;
@@ -153,7 +153,7 @@ const SelectScrollDownButton = React.forwardRef<
     )}
     {...props}
   >
-    <CaretDown className="h-4 w-4" weight="bold" />
+    <CaretDown size={12} weight="bold" />
   </SelectPrimitive.ScrollDownButton>
 ));
 SelectScrollDownButton.displayName =
@@ -283,7 +283,7 @@ const SelectItem = React.forwardRef<
     >
       <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <Check className="h-4 w-4" weight="bold" />
+          <Check size={12} weight="bold" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
@@ -341,7 +341,7 @@ const SelectItemWithDescription = React.forwardRef<
     >
       <span className="absolute right-2 top-2 flex h-3.5 w-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <Check className="h-4 w-4" weight="bold" />
+          <Check size={12} weight="bold" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <div className="flex flex-col gap-0.5">

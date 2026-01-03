@@ -122,7 +122,7 @@ const MenubarSubTrigger = React.forwardRef<
     <MenubarPrimitive.SubTrigger
       ref={ref}
       className={cn(
-        "flex cursor-default gap-2 select-none items-center px-2 py-1.5 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+        "flex cursor-default gap-2 select-none items-center px-2 py-1.5 text-sm outline-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
         // Theme-specific hover/focus styles
         isSystem7 && "rounded-none focus:bg-black focus:text-white data-[state=open]:bg-black data-[state=open]:text-white mx-0",
         isMacOSTheme && "rounded-none focus:bg-[rgba(39,101,202,0.88)] focus:text-white data-[state=open]:bg-[rgba(39,101,202,0.88)] data-[state=open]:text-white",
@@ -156,7 +156,7 @@ const MenubarSubTrigger = React.forwardRef<
       {...props}
     >
       {children}
-      <CaretRight className="ml-auto" weight="bold" />
+      <CaretRight className="ml-auto" size={12} weight="bold" />
     </MenubarPrimitive.SubTrigger>
   )
 })
@@ -354,7 +354,7 @@ const MenubarCheckboxItem = React.forwardRef<
     >
       <span className="absolute left-3 flex h-3.5 w-3.5 items-center justify-center">
         <MenubarPrimitive.ItemIndicator>
-          <Check className="h-4 w-4" weight="bold" />
+          <Check size={12} weight="bold" />
         </MenubarPrimitive.ItemIndicator>
       </span>
       {children}
@@ -415,7 +415,7 @@ const MenubarRadioItem = React.forwardRef<
     >
       <span className="absolute left-3 flex h-3.5 w-3.5 items-center justify-center">
         <MenubarPrimitive.ItemIndicator>
-          <Circle className="h-2 w-2" weight="fill" />
+          <Circle size={6} weight="fill" />
         </MenubarPrimitive.ItemIndicator>
       </span>
       {children}
