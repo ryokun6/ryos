@@ -336,6 +336,16 @@
   font-smooth: auto;
 }
 
+/* Aqua button pulse animation - classic Mac OS X pulsing effect */
+@keyframes aqua-pulse {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.12);
+  }
+}
+
 .aqua-button.primary {
   background: linear-gradient(
     rgba(0, 65, 184, 0.625),
@@ -345,13 +355,14 @@
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 78, 187, 0.5),
     inset 0 1px 3px rgba(0, 17, 49, 0.8),
     inset 0 2px 3px 1px rgba(0, 78, 187, 0.75);
+  animation: aqua-pulse 1.5s ease-in-out infinite;
 }
 
-.aqua-button.primary:focus,
 .aqua-button.primary:active {
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(0, 78, 187, 0.5),
     inset 0 1px 3px rgba(0, 17, 49, 0.8),
     inset 0 2px 3px 1px rgba(0, 78, 187, 0.75), 0 0 3px rgba(52, 106, 227, 0.5);
+  animation: none;
 }
 
 .aqua-button.secondary {
