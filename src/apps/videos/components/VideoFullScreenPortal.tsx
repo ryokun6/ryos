@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
-import ReactPlayer, { ReactPlayerProps } from "react-player";
+import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { LyricsAlignment, LyricsFont } from "@/types/lyrics";
