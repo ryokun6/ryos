@@ -185,10 +185,17 @@ export const resumeAudioContext = async (): Promise<void> => {
 let visibilityHandler: (() => void) | null = null;
 let focusHandler: (() => void) | null = null;
 let deviceChangeHandler: (() => void) | null = null;
+let pageShowHandler: ((e: PageTransitionEvent) => void) | null = null;
+let pageHideHandler: ((e: PageTransitionEvent) => void) | null = null;
 let healthCheckInterval: ReturnType<typeof setInterval> | null = null;
 
 // Track whether unlock listeners are currently attached
 let unlockListenersAttached = false;
+
+// After returning from background on iOS Safari, AudioContext can report "running"
+// but still fail to output audio until a new user gesture "re-unlocks" playback.
+// We use this flag to force a resume + silent buffer kick on the next gesture.
+let needsGestureReunlock = false;
 
 // Detect Safari for Safari-specific workarounds
 const isSafari = typeof navigator !== "undefined" &&
@@ -203,49 +210,50 @@ const GESTURE_EVENTS = ["touchstart", "touchend", "click", "keydown"] as const;
  * This handler stays attached and will re-unlock audio after returning from background.
  */
 const unlockAudioHandler = () => {
-  const ctx = audioContext;
-  if (!ctx) return;
+  // Ensure we have a context to unlock. Creating/resuming inside the gesture
+  // handler is critical for iOS Safari reliability.
+  let ctx = getAudioContext();
 
-  const state = ctx.state as AudioContextState | "interrupted";
-
-  // If already running, nothing to do
-  if (state === "running") return;
-
-  // If context is closed, we need a new one
-  if (state === "closed") {
+  // If context is closed, we need a new one (create it inside this gesture)
+  if (ctx.state === "closed") {
     audioContext = null;
-    const newCtx = getAudioContext();
-    // Try to resume the new context within this gesture
-    newCtx.resume().then(() => {
-      if (newCtx.state === "running") {
-        console.debug("[audioContext] Audio unlocked with new context via user gesture");
-      }
-    }).catch((err) => {
-      console.debug("[audioContext] Failed to resume new context:", err);
-    });
-    return;
+    ctx = getAudioContext();
   }
 
-  // Try to resume - must happen synchronously within the gesture handler
-  ctx.resume().then(() => {
-    if (ctx.state === "running") {
-      console.debug("[audioContext] Audio unlocked/resumed via user gesture");
-    }
-  }).catch((err) => {
-    console.debug("[audioContext] Audio unlock attempt failed:", err);
-  });
+  // Try to resume - iOS Safari requires this to be invoked within the gesture handler.
+  // We also do this when `needsGestureReunlock` is set because Safari can get into a
+  // "looks running but doesn't output" situation after backgrounding.
+  const shouldAttemptResume = ctx.state !== "running" || needsGestureReunlock;
+  if (shouldAttemptResume) {
+    ctx
+      .resume()
+      .then(() => {
+        if (ctx.state === "running") {
+          needsGestureReunlock = false;
+          console.debug("[audioContext] Audio unlocked/resumed via user gesture");
+        }
+      })
+      .catch((err) => {
+        console.debug("[audioContext] Audio unlock attempt failed:", err);
+      });
+  }
 
   // Also try playing a silent buffer as a fallback for older iOS versions
   // This technique works on iOS 6-8 where resume() alone may not work
-  try {
-    const buffer = ctx.createBuffer(1, 1, 22050);
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    source.start(0);
-    source.stop(0);
-  } catch {
-    // Ignore errors - this is just a fallback
+  // Additionally, after backgrounding we may need to "kick" audio output again
+  // even if the context reports "running".
+  if (shouldAttemptResume) {
+    try {
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start(0);
+      source.stop(0);
+      needsGestureReunlock = false;
+    } catch {
+      // Ignore errors - this is just a fallback
+    }
   }
 };
 
@@ -287,6 +295,8 @@ function setupAudioContextListeners() {
     if (focusHandler) {
       window.removeEventListener("focus", focusHandler);
     }
+    if (pageShowHandler) window.removeEventListener("pageshow", pageShowHandler);
+    if (pageHideHandler) window.removeEventListener("pagehide", pageHideHandler);
     if (healthCheckInterval) {
       clearInterval(healthCheckInterval);
       healthCheckInterval = null;
@@ -294,10 +304,15 @@ function setupAudioContextListeners() {
 
     visibilityHandler = () => {
       if (document.visibilityState === "visible") {
+        // When returning to the foreground, Safari may require a fresh user gesture
+        // to re-unlock audio output even if resume() succeeds.
+        if (isSafari) needsGestureReunlock = true;
         void resumeAudioContext();
       }
     };
     focusHandler = () => void resumeAudioContext();
+    pageHideHandler = null;
+    pageShowHandler = null;
     
     document.addEventListener("visibilitychange", visibilityHandler);
     window.addEventListener("focus", focusHandler);
@@ -320,8 +335,32 @@ function setupAudioContextListeners() {
       );
     }
 
-    // Set up iOS Safari audio unlock listeners (persistent, not one-time)
-    attachUnlockListeners();
+    // Safari-specific lifecycle + unlock listeners
+    if (isSafari) {
+      pageHideHandler = () => {
+        // iOS Safari commonly suspends/interupts audio on pagehide/background.
+        // Mark that we should re-unlock audio on the next user gesture.
+        needsGestureReunlock = true;
+      };
+      pageShowHandler = (e: PageTransitionEvent) => {
+        // pageshow fires reliably on Safari when returning from background and
+        // also when restoring from bfcache (`persisted === true`).
+        if (document.visibilityState === "visible") {
+          needsGestureReunlock = true;
+          void resumeAudioContext();
+        }
+        if (e.persisted) needsGestureReunlock = true;
+      };
+
+      window.addEventListener("pagehide", pageHideHandler);
+      window.addEventListener("pageshow", pageShowHandler);
+
+      // iOS Safari requires gesture-based resume/unlock (persistent, not one-time)
+      attachUnlockListeners();
+    } else {
+      // Keep non-Safari lean: no persistent gesture listeners.
+      detachUnlockListeners();
+    }
 
     // Safari-specific: periodic health check for stuck audio context
     // Safari can get into states where the context appears suspended but won't resume
@@ -369,6 +408,14 @@ if (import.meta.hot) {
     if (focusHandler) {
       window.removeEventListener("focus", focusHandler);
       focusHandler = null;
+    }
+    if (pageHideHandler) {
+      window.removeEventListener("pagehide", pageHideHandler);
+      pageHideHandler = null;
+    }
+    if (pageShowHandler) {
+      window.removeEventListener("pageshow", pageShowHandler);
+      pageShowHandler = null;
     }
     if (deviceChangeHandler && navigator.mediaDevices) {
       navigator.mediaDevices.removeEventListener(
