@@ -492,9 +492,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         isOpen={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onConfirm={handleDelete}
-        title={t("apps.admin.dialogs.deleteTitle", { type: "user" })}
+        title={t("apps.admin.dialogs.deleteTitle", { type: t("apps.admin.user.user") })}
         description={t("apps.admin.dialogs.deleteDescription", {
-          type: "user",
+          type: t("apps.admin.user.user"),
           name: username,
         })}
       />

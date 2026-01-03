@@ -1364,8 +1364,33 @@ export function AdminAppComponent({
           isOpen={isDeleteDialogOpen}
           onOpenChange={setIsDeleteDialogOpen}
           onConfirm={handleDeleteConfirm}
-          title={t("apps.admin.dialogs.deleteTitle", { type: deleteTarget?.type })}
-          description={t("apps.admin.dialogs.deleteDescription", { type: deleteTarget?.type, name: deleteTarget?.name })}
+          title={t("apps.admin.dialogs.deleteTitle", { 
+            type: deleteTarget?.type === "allSongs" 
+              ? t("apps.admin.songs.allSongs", "all songs") 
+              : deleteTarget?.type === "song"
+              ? t("common.dialog.share.itemTypes.song")
+              : deleteTarget?.type === "user"
+              ? t("apps.admin.user.user")
+              : deleteTarget?.type === "room"
+              ? t("apps.admin.profile.room")
+              : deleteTarget?.type === "message"
+              ? t("apps.admin.tableHeaders.message")
+              : deleteTarget?.type 
+          })}
+          description={t("apps.admin.dialogs.deleteDescription", { 
+            type: deleteTarget?.type === "allSongs" 
+              ? t("apps.admin.songs.allSongs", "all songs") 
+              : deleteTarget?.type === "song"
+              ? t("common.dialog.share.itemTypes.song")
+              : deleteTarget?.type === "user"
+              ? t("apps.admin.user.user")
+              : deleteTarget?.type === "room"
+              ? t("apps.admin.profile.room")
+              : deleteTarget?.type === "message"
+              ? t("apps.admin.tableHeaders.message")
+              : deleteTarget?.type, 
+            name: deleteTarget?.name 
+          })}
         />
       </WindowFrame>
     </>

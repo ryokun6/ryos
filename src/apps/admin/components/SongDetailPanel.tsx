@@ -1001,9 +1001,9 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
         isOpen={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onConfirm={handleDelete}
-        title={t("apps.admin.dialogs.deleteTitle", { type: "song" })}
+        title={t("apps.admin.dialogs.deleteTitle", { type: t("common.dialog.share.itemTypes.song") })}
         description={t("apps.admin.dialogs.deleteDescription", {
-          type: "song",
+          type: t("common.dialog.share.itemTypes.song"),
           name: song?.title || youtubeId,
         })}
       />

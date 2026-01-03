@@ -130,9 +130,10 @@ interface AppStoreState extends AppManagerState {
 const CURRENT_APP_STORE_VERSION = 3; // bump for instanceOrder unification
 
 // ---------------- Store ---------------------------------------------------------
-export const useAppStore = create<AppStoreState>()(
-  persist(
-    (set, get) => ({
+const createUseAppStore = () =>
+  create<AppStoreState>()(
+    persist(
+      (set, get) => ({
       ...getInitialState(),
       version: CURRENT_APP_STORE_VERSION,
 
@@ -818,11 +819,11 @@ export const useAppStore = create<AppStoreState>()(
           return { instanceOrder: [...filtered, ...missing] };
         });
       },
-    }),
-    {
-      name: "ryos:app-store",
-      version: CURRENT_APP_STORE_VERSION,
-      partialize: (state): Partial<AppStoreState> => ({
+      }),
+      {
+        name: "ryos:app-store",
+        version: CURRENT_APP_STORE_VERSION,
+        partialize: (state): Partial<AppStoreState> => ({
         // Core app/window state
         windowOrder: state.windowOrder,
         apps: state.apps,
@@ -867,8 +868,8 @@ export const useAppStore = create<AppStoreState>()(
         ),
         foregroundInstanceId: state.foregroundInstanceId,
         nextInstanceId: state.nextInstanceId,
-      }),
-      migrate: (persisted: unknown, version: number) => {
+        }),
+        migrate: (persisted: unknown, version: number) => {
         const prev = persisted as AppStoreState & {
           instanceStackOrder?: string[];
           instanceWindowOrder?: string[];
@@ -892,8 +893,8 @@ export const useAppStore = create<AppStoreState>()(
         }
         prev.version = CURRENT_APP_STORE_VERSION;
         return prev;
-      },
-      onRehydrateStorage: () => (state) => {
+        },
+        onRehydrateStorage: () => (state) => {
         if (!state) return;
         // Clean instanceOrder after rehydrate
         if (
@@ -965,10 +966,22 @@ export const useAppStore = create<AppStoreState>()(
           });
           state.windowOrder = [];
         }
-      },
-    }
-  )
-);
+        },
+      }
+    )
+  );
+
+// Preserve store across Vite HMR to prevent "split-brain" instances.
+let useAppStore = createUseAppStore();
+if (import.meta.hot) {
+  const data = import.meta.hot.data as { useAppStore?: typeof useAppStore };
+  if (data.useAppStore) {
+    useAppStore = data.useAppStore;
+  } else {
+    data.useAppStore = useAppStore;
+  }
+}
+export { useAppStore };
 
 // Global helpers ---------------------------------------------------------------
 export const clearAllAppStates = (): void => {

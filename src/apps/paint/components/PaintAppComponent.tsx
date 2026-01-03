@@ -153,7 +153,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
 
         try {
           const blob = await canvasRef.current.exportCanvas();
-          const fileName = currentFilePath.split("/").pop() || "untitled.png";
+          const fileName = currentFilePath.split("/").pop() || `${t("apps.paint.untitled")}.png`;
 
           saveFile({
             name: fileName,
@@ -219,7 +219,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
       // Existing file - save directly
       try {
         const blob = await canvasRef.current.exportCanvas();
-        const fileName = currentFilePath.split("/").pop() || "untitled.png";
+        const fileName = currentFilePath.split("/").pop() || `${t("apps.paint.untitled")}.png`;
 
         await saveFile({
           name: fileName,
@@ -229,10 +229,10 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
         });
 
         setHasUnsavedChanges(false);
-        toast.success("Image saved successfully");
+        toast.success(t("apps.paint.dialogs.imageSavedSuccessfully"));
       } catch (err) {
         console.error("Error saving image:", err);
-        toast.error("Failed to save image");
+        toast.error(t("apps.paint.dialogs.failedToSaveImage"));
       }
     }
   };
@@ -282,7 +282,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
     try {
       const blob = await canvasRef.current.exportCanvas();
       const blobUrl = URL.createObjectURL(blob);
-      const fileName = currentFilePath?.split("/").pop() || "untitled.png";
+      const fileName = currentFilePath?.split("/").pop() || `${t("apps.paint.untitled")}.png`;
 
       const link = document.createElement("a");
       link.download = fileName;
@@ -453,8 +453,8 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
       <WindowFrame
         title={
           currentFilePath
-            ? currentFilePath.split("/").pop() || "Untitled"
-            : `Untitled${hasUnsavedChanges ? " •" : ""}`
+            ? currentFilePath.split("/").pop() || t("apps.paint.untitled")
+            : `${t("apps.paint.untitled")}${hasUnsavedChanges ? " •" : ""}`
         }
         onClose={onClose}
         isForeground={isForeground}
@@ -577,8 +577,8 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
           setHasUnsavedChanges(false);
           setIsConfirmNewDialogOpen(false);
         }}
-        title="Discard Changes"
-        description="You have unsaved changes. Create new file anyway?"
+        title={t("apps.paint.dialogs.discardChanges")}
+        description={t("apps.paint.dialogs.discardChangesDescription")}
       />
     </>
   );
