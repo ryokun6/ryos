@@ -722,7 +722,7 @@ function ChatMessagesContent({
                       opacity: hoveredMessageId === messageKey ? 1 : 0,
                       scale: 1,
                     }}
-                    className="h-3 w-3 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
                     onClick={() => copyMessage(message)}
                     aria-label={t("apps.chats.ariaLabels.copyMessage")}
                   >
@@ -774,7 +774,7 @@ function ChatMessagesContent({
                       opacity: hoveredMessageId === messageKey ? 1 : 0,
                       scale: 1,
                     }}
-                    className="h-3 w-3 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
                     onClick={() => copyMessage(message)}
                     aria-label={t("apps.chats.ariaLabels.copyMessage")}
                   >
@@ -791,7 +791,7 @@ function ChatMessagesContent({
                         opacity: hoveredMessageId === messageKey ? 1 : 0,
                         scale: 1,
                       }}
-                      className="h-3 w-3 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
                       onClick={() => {
                         if (playingMessageId === messageKey) {
                           // Stop current playback

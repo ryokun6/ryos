@@ -6,7 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { SpeakerHigh, MusicNote, CursorClick, WaveSquare, ChatCircleDots } from "@phosphor-icons/react";
+import { SpeakerHigh, MusicNote, Cursor, WaveSquare, ChatsCircle } from "@phosphor-icons/react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useTranslation } from "react-i18next";
 
@@ -94,7 +94,7 @@ export function VolumeMixer({
               <p>{t("apps.control-panels.masterVolume")}</p>
             </TooltipContent>
           </Tooltip>
-          <p className="text-[10px] font-geneva-12 text-gray-600">{t("apps.control-panels.master")}</p>
+          <p className="text-[10px] font-geneva-12 text-neutral-600">{t("apps.control-panels.master")}</p>
         </div>
 
         {/* UI Volume */}
@@ -122,14 +122,14 @@ export function VolumeMixer({
                 onClick={handleUiMuteToggle}
                 className={`h-8 w-8 ${uiVolume === 0 ? "opacity-40" : ""}`}
               >
-                <CursorClick size={14} weight="fill" />
+                <Cursor size={14} weight="fill" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
               <p>{t("apps.control-panels.uiVolume")}</p>
             </TooltipContent>
           </Tooltip>
-          <p className="text-[10px] font-geneva-12 text-gray-600">{t("apps.control-panels.ui")}</p>
+          <p className="text-[10px] font-geneva-12 text-neutral-600">{t("apps.control-panels.ui")}</p>
         </div>
 
         {/* Speech Volume */}
@@ -157,14 +157,14 @@ export function VolumeMixer({
                 onClick={handleSpeechMuteToggle}
                 className={`h-8 w-8 ${speechVolume === 0 ? "opacity-40" : ""}`}
               >
-                <ChatCircleDots size={14} weight="fill" />
+                <ChatsCircle size={14} weight="fill" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
               <p>{t("apps.control-panels.speechVolume")}</p>
             </TooltipContent>
           </Tooltip>
-          <p className="text-[10px] font-geneva-12 text-gray-600">{t("apps.control-panels.speech")}</p>
+          <p className="text-[10px] font-geneva-12 text-neutral-600">{t("apps.control-panels.speech")}</p>
         </div>
 
         {/* Chat Synth Volume */}
@@ -201,7 +201,7 @@ export function VolumeMixer({
               <p>{t("apps.control-panels.chatSynthVolume")}</p>
             </TooltipContent>
           </Tooltip>
-          <p className="text-[10px] font-geneva-12 text-gray-600">{t("apps.control-panels.synth")}</p>
+          <p className="text-[10px] font-geneva-12 text-neutral-600">{t("apps.control-panels.synth")}</p>
         </div>
 
         {/* iPod Volume */}
@@ -248,12 +248,12 @@ export function VolumeMixer({
               <p>{t("apps.control-panels.ipodVolume")}</p>
             </TooltipContent>
           </Tooltip>
-          <p className="text-[10px] font-geneva-12 text-gray-600">{t("apps.control-panels.ipod")}</p>
+          <p className="text-[10px] font-geneva-12 text-neutral-600">{t("apps.control-panels.ipod")}</p>
         </div>
       </div>
       {isIOS && (
         <div className="flex justify-center">
-          <p className="text-[10px] text-center text-gray-600 font-geneva-12">
+          <p className="text-[10px] text-center text-neutral-600 font-geneva-12">
             On iOS, use hardware buttons to control media volume.
           </p>
         </div>

@@ -214,7 +214,7 @@ function VersionDisplay() {
   const displayBuild = ryOSBuildNumber ? ` (Build ${ryOSBuildNumber})` : "";
   
   return (
-    <p className="text-[11px] text-gray-600 font-geneva-12">
+    <p className="text-[11px] text-neutral-600 font-geneva-12">
       ryOS {displayVersion}{displayBuild}
       {isMac && desktopVersion && (
         <>
@@ -1606,7 +1606,7 @@ export function ControlPanelsAppComponent({
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex flex-col gap-1">
                     <Label>{t("apps.control-panels.theme")}</Label>
-                    <Label className="text-[11px] text-gray-600 font-geneva-12">
+                    <Label className="text-[11px] text-neutral-600 font-geneva-12">
                       {t("apps.control-panels.themeDescription")}
                     </Label>
                   </div>
@@ -1633,7 +1633,7 @@ export function ControlPanelsAppComponent({
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex flex-col gap-1">
                     <Label>{t("settings.language.title")}</Label>
-                    <Label className="text-[11px] text-gray-600 font-geneva-12">
+                    <Label className="text-[11px] text-neutral-600 font-geneva-12">
                       {t("settings.language.description")}
                     </Label>
                   </div>
@@ -1785,7 +1785,7 @@ export function ControlPanelsAppComponent({
                           <span className="text-[13px] font-geneva-12 font-medium">
                             @{username}
                           </span>
-                          <span className="text-[11px] text-gray-600 font-geneva-12">
+                          <span className="text-[11px] text-neutral-600 font-geneva-12">
                             {t("apps.control-panels.loggedInToRyOS")}
                           </span>
                         </div>
@@ -1844,7 +1844,7 @@ export function ControlPanelsAppComponent({
                           <span className="text-[13px] font-geneva-12 font-medium">
                             {t("apps.control-panels.ryOSAccount")}
                           </span>
-                          <span className="text-[11px] text-gray-600 font-geneva-12">
+                          <span className="text-[11px] text-neutral-600 font-geneva-12">
                             {t("apps.control-panels.loginToSendMessages")}
                           </span>
                         </div>
@@ -1902,7 +1902,7 @@ export function ControlPanelsAppComponent({
                       className="hidden"
                     />
                   </div>
-                  <p className="text-[11px] text-gray-600 font-geneva-12">
+                  <p className="text-[11px] text-neutral-600 font-geneva-12">
                     {t("apps.control-panels.backupRestoreDescription")}
                   </p>
                 </div>
@@ -1915,7 +1915,7 @@ export function ControlPanelsAppComponent({
                   >
                     {t("apps.control-panels.resetAllSettings")}
                   </Button>
-                  <p className="text-[11px] text-gray-600 font-geneva-12">
+                  <p className="text-[11px] text-neutral-600 font-geneva-12">
                     {t("apps.control-panels.resetAllSettingsDescription")}
                   </p>
                 </div>
@@ -1930,7 +1930,7 @@ export function ControlPanelsAppComponent({
                   >
                     {t("apps.control-panels.formatFileSystem")}
                   </Button>
-                  <p className="text-[11px] text-gray-600 font-geneva-12">
+                  <p className="text-[11px] text-neutral-600 font-geneva-12">
                     {t("apps.control-panels.formatFileSystemDescription")}
                   </p>
                 </div>
@@ -1943,7 +1943,7 @@ export function ControlPanelsAppComponent({
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
                     <Label>{t("apps.control-panels.debugMode")}</Label>
-                    <Label className="text-[11px] text-gray-600 font-geneva-12">
+                    <Label className="text-[11px] text-neutral-600 font-geneva-12">
                       {t("apps.control-panels.debugModeDescription")}
                     </Label>
                   </div>
@@ -1958,7 +1958,7 @@ export function ControlPanelsAppComponent({
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <Label>{t("apps.control-panels.shaderEffect")}</Label>
-                      <Label className="text-[11px] text-gray-600 font-geneva-12">
+                      <Label className="text-[11px] text-neutral-600 font-geneva-12">
                         {t("apps.control-panels.shaderEffectDescription")}
                       </Label>
                     </div>
@@ -1974,7 +1974,7 @@ export function ControlPanelsAppComponent({
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <Label>{t("apps.control-panels.aiModel")}</Label>
-                      <Label className="text-[11px] text-gray-600 font-geneva-12">
+                      <Label className="text-[11px] text-neutral-600 font-geneva-12">
                         {t("apps.control-panels.aiModelDescription")}
                       </Label>
                     </div>
@@ -2007,7 +2007,7 @@ export function ControlPanelsAppComponent({
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <Label>{t("apps.control-panels.ttsModel")}</Label>
-                      <Label className="text-[11px] text-gray-600 font-geneva-12">
+                      <Label className="text-[11px] text-neutral-600 font-geneva-12">
                         {t("apps.control-panels.ttsModelDescription")}
                       </Label>
                     </div>
@@ -2039,7 +2039,7 @@ export function ControlPanelsAppComponent({
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <Label>{t("apps.control-panels.ttsVoice")}</Label>
-                      <Label className="text-[11px] text-gray-600 font-geneva-12">
+                      <Label className="text-[11px] text-neutral-600 font-geneva-12">
                         {ttsModel === "elevenlabs"
                           ? t("apps.control-panels.elevenlabsVoiceId")
                           : t("apps.control-panels.openaiVoice")}
@@ -2106,7 +2106,7 @@ export function ControlPanelsAppComponent({
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <Label>{t("apps.control-panels.bootScreen")}</Label>
-                      <Label className="text-[11px] text-gray-600 font-geneva-12">
+                      <Label className="text-[11px] text-neutral-600 font-geneva-12">
                         {t("apps.control-panels.bootScreenDescription")}
                       </Label>
                     </div>

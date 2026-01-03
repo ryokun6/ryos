@@ -421,7 +421,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
         <style>{appletIconStyles}</style>
         <div className="h-full w-full flex items-center justify-center">
           <div className="text-center">
-            <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">{t("apps.applet-viewer.dialogs.loading")}</p>
+            <p className="text-sm text-neutral-600 font-geneva-12 shimmer-gray">{t("apps.applet-viewer.dialogs.loading")}</p>
           </div>
         </div>
       </>
@@ -574,7 +574,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
         <style>{appletIconStyles}</style>
         <div className="h-full w-full flex items-center justify-center">
           <div className="text-center px-6 font-geneva-12">
-            <p className="text-[11px] text-gray-600 font-geneva-12">
+            <p className="text-[11px] text-neutral-600 font-geneva-12">
               {t("apps.applet-viewer.dialogs.noAppletsAvailable")}
             </p>
           </div>
@@ -667,7 +667,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
             ) : (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
-                  <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">{t("apps.applet-viewer.dialogs.loading")}</p>
+                  <p className="text-sm text-neutral-600 font-geneva-12 shimmer-gray">{t("apps.applet-viewer.dialogs.loading")}</p>
                 </div>
               </div>
             )}
@@ -782,7 +782,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
               <div className="space-y-1">
                 {filteredApplets.length === 0 ? (
                   <div className="px-3 py-4 text-center">
-                    <p className="text-[11px] text-gray-600 font-geneva-12">
+                    <p className="text-[11px] text-neutral-600 font-geneva-12">
                       {t("apps.applet-viewer.dialogs.noAppletsFound", { query: searchQuery })}
                     </p>
                   </div>

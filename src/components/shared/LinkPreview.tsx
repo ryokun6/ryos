@@ -615,7 +615,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
 
               {metadata.description && (
                 <p
-                  className={`text-[10px] text-gray-600 ${
+                  className={`text-[10px] text-neutral-600 ${
                     metadata.image ? "" : "mb-2"
                   }`}
                   style={{

@@ -246,7 +246,7 @@ export function ScreenSaverPicker({ onPreview }: ScreenSaverPickerProps) {
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <Label>{t("apps.control-panels.screenSaver")}</Label>
-          <Label className="text-[11px] text-gray-600 font-geneva-12">
+          <Label className="text-[11px] text-neutral-600 font-geneva-12">
             {t("apps.control-panels.screenSaverDescription")}
           </Label>
         </div>
@@ -298,7 +298,7 @@ export function ScreenSaverPicker({ onPreview }: ScreenSaverPickerProps) {
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <Label className="text-[11px]">{t("apps.control-panels.startAfter")}</Label>
-                  <span className="text-[11px] text-gray-600 font-geneva-12">
+                  <span className="text-[11px] text-neutral-600 font-geneva-12">
                     {screenSaverIdleTime} {screenSaverIdleTime === 1 ? t("apps.control-panels.minute") : t("apps.control-panels.minutes")}
                   </span>
                 </div>

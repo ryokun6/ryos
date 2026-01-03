@@ -132,7 +132,7 @@ function AnimatedTitle({
             }
             className={cn(
               "shrink-0 font-geneva-12 text-xl px-2 transition-colors duration-300 -mt-1 animated-title-text",
-              isPlaying ? "text-[#ff00ff]" : "text-gray-600",
+              isPlaying ? "text-[#ff00ff]" : "text-neutral-600",
               !isPlaying && "opacity-50"
             )}
           >
@@ -155,7 +155,7 @@ function AnimatedTitle({
             }
             className={cn(
               "shrink-0 font-geneva-12 text-xl px-2 transition-colors duration-300 -mt-1 animated-title-text",
-              isPlaying ? "text-[#ff00ff]" : "text-gray-600",
+              isPlaying ? "text-[#ff00ff]" : "text-neutral-600",
               !isPlaying && "opacity-50"
             )}
             aria-hidden
@@ -1187,7 +1187,7 @@ export function VideosAppComponent({
                 <div
                   className={cn(
                     "font-geneva-12 text-[10px] transition-colors duration-300",
-                    isPlaying ? "text-[#ff00ff]" : "text-gray-600"
+                    isPlaying ? "text-[#ff00ff]" : "text-neutral-600"
                   )}
                 >
                   <div>{t("apps.videos.status.track")}</div>
@@ -1198,7 +1198,7 @@ export function VideosAppComponent({
                 <div
                   className={cn(
                     "font-geneva-12 text-[10px] transition-colors duration-300",
-                    isPlaying ? "text-[#ff00ff]" : "text-gray-600"
+                    isPlaying ? "text-[#ff00ff]" : "text-neutral-600"
                   )}
                 >
                   <div>{t("apps.videos.status.time")}</div>
@@ -1213,7 +1213,7 @@ export function VideosAppComponent({
                 <div
                   className={cn(
                     "font-geneva-12 text-[10px] transition-colors duration-300 mb-[3px] pl-2",
-                    isPlaying ? "text-[#ff00ff]" : "text-gray-600"
+                    isPlaying ? "text-[#ff00ff]" : "text-neutral-600"
                   )}
                 >
                   {t("apps.videos.status.title")}

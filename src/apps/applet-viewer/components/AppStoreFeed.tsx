@@ -405,7 +405,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
     return (
       <div className="h-full w-full flex items-center justify-center">
         <div className="text-center">
-          <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">{t("apps.applet-viewer.dialogs.loading")}</p>
+          <p className="text-sm text-neutral-600 font-geneva-12 shimmer-gray">{t("apps.applet-viewer.dialogs.loading")}</p>
         </div>
       </div>
     );
@@ -415,7 +415,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
     return (
       <div className="h-full w-full flex items-center justify-center">
         <div className="text-center px-6 font-geneva-12">
-          <p className="text-[11px] text-gray-600 font-geneva-12">
+          <p className="text-[11px] text-neutral-600 font-geneva-12">
             {t("apps.applet-viewer.dialogs.noAppletsAvailable")}
           </p>
         </div>
@@ -510,7 +510,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
           ) : isLoadingContent ? (
             <div className="flex items-center justify-center h-full bg-gray-50">
               <div className="text-center">
-                <p className="text-sm text-gray-600 font-geneva-12 shimmer-gray">{t("apps.applet-viewer.dialogs.loading")}</p>
+                <p className="text-sm text-neutral-600 font-geneva-12 shimmer-gray">{t("apps.applet-viewer.dialogs.loading")}</p>
               </div>
             </div>
           ) : (

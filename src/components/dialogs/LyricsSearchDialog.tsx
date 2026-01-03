@@ -347,7 +347,7 @@ export function LyricsSearchDialog({
                   <div className="font-semibold">{result.title}</div>
                   <div
                     className={cn(
-                      selectedIndex === index ? "opacity-80" : "text-gray-600"
+                      selectedIndex === index ? "opacity-80" : "text-neutral-600"
                     )}
                   >
                     {result.artist}

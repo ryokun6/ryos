@@ -430,7 +430,7 @@ export function ToolInvocationMessage({
       return (
         <div
           key={partKey}
-          className="mb-0 px-1 py-0.5 text-xs italic text-gray-600 flex items-center gap-1"
+          className="mb-0 px-1 py-0.5 text-xs italic text-neutral-600 flex items-center gap-1"
         >
           <ActivityIndicator size="xs" className="text-gray-500" />
           <span className="shimmer">{t("apps.chats.toolCalls.generating")}</span>

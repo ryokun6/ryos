@@ -384,7 +384,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
 
       <div className="flex-1">
         <div
-          className={`grid gap-2 p-1 ${
+          className={`grid gap-2 py-1 ${
             selectedCategory === "tiles" ? "grid-cols-8" : "grid-cols-3"
           }`}
         >
