@@ -270,6 +270,7 @@ export function PcAppComponent({
         isForeground={isForeground}
         appId="pc"
         material="notitlebar"
+        disableTitlebarAutoHide={true}
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         onNavigateNext={onNavigateNext}
@@ -278,8 +279,8 @@ export function PcAppComponent({
       >
         <div className="flex flex-col h-full w-full bg-black">
           {/* Top clearance so the translucent/hover titlebar doesn't overlap the header.
-              Keep it black to match the Virtual PC header styling. */}
-          {!isXpTheme && <div className="h-6 shrink-0 bg-black" />}
+              Keep it black to match the Virtual PC header styling. Only show for macOS theme. */}
+          {currentTheme === "macosx" && <div className="h-6 shrink-0 bg-black" />}
 
           <div className="flex-1 relative h-full bg-[#1a1a1a]">
             {/* Always keep the DOSBox container in DOM but hide when not in use */}

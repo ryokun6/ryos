@@ -48,6 +48,8 @@ interface WindowFrameProps {
   keepMountedWhenMinimized?: boolean;
   // Fullscreen toggle callback (for apps like iPod and Karaoke that support fullscreen)
   onFullscreenToggle?: () => void;
+  // Disable auto-hide for notitlebar material (keeps titlebar always visible)
+  disableTitlebarAutoHide?: boolean;
 }
 
 export function WindowFrame({
@@ -67,6 +69,7 @@ export function WindowFrame({
   menuBar, // Add menuBar to destructured props
   keepMountedWhenMinimized = false,
   onFullscreenToggle,
+  disableTitlebarAutoHide = false,
 }: WindowFrameProps) {
   const { t } = useTranslation();
   const config = getWindowConfig(appId);
@@ -158,25 +161,28 @@ export function WindowFrame({
     currentTheme === "macosx" ? true : isTransparent;
   
   // Hover state for notitlebar material (shows titlebar on hover/interaction)
-  const [isTitlebarHovered, setIsTitlebarHovered] = useState(false);
+  // If auto-hide is disabled, keep titlebar always visible
+  const [isTitlebarHovered, setIsTitlebarHovered] = useState(disableTitlebarAutoHide && isNoTitlebar);
   const titlebarHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Start auto-hide timer for notitlebar windows
+  // Start auto-hide timer for notitlebar windows (only if auto-hide is enabled)
   const startTitlebarAutoHideTimer = useCallback(() => {
     if (titlebarHideTimeoutRef.current) {
       clearTimeout(titlebarHideTimeoutRef.current);
     }
-    if (isNoTitlebar) {
+    if (isNoTitlebar && !disableTitlebarAutoHide) {
       titlebarHideTimeoutRef.current = setTimeout(() => {
         setIsTitlebarHovered(false);
       }, 3000);
     }
-  }, [isNoTitlebar]);
+  }, [isNoTitlebar, disableTitlebarAutoHide]);
 
-  // Show titlebar and start auto-hide timer
+  // Show titlebar and start auto-hide timer (only if auto-hide is enabled)
   const showTitlebarWithAutoHide = useCallback(() => {
     setIsTitlebarHovered(true);
-    startTitlebarAutoHideTimer();
-  }, [startTitlebarAutoHideTimer]);
+    if (!disableTitlebarAutoHide) {
+      startTitlebarAutoHideTimer();
+    }
+  }, [startTitlebarAutoHideTimer, disableTitlebarAutoHide]);
 
   // Cleanup titlebar hide timeout
   useEffect(() => {
@@ -1117,9 +1123,9 @@ export function WindowFrame({
           style={{
             ...(!isXpTheme ? getSwipeStyle() : undefined),
           }}
-          onMouseEnter={isNoTitlebar ? showTitlebarWithAutoHide : undefined}
-          onMouseMove={isNoTitlebar ? showTitlebarWithAutoHide : undefined}
-          onMouseLeave={isNoTitlebar ? () => {
+          onMouseEnter={isNoTitlebar && !disableTitlebarAutoHide ? showTitlebarWithAutoHide : undefined}
+          onMouseMove={isNoTitlebar && !disableTitlebarAutoHide ? showTitlebarWithAutoHide : undefined}
+          onMouseLeave={isNoTitlebar && !disableTitlebarAutoHide ? () => {
             setIsTitlebarHovered(false);
             if (titlebarHideTimeoutRef.current) {
               clearTimeout(titlebarHideTimeoutRef.current);
@@ -1289,8 +1295,8 @@ export function WindowFrame({
                 handleFullMaximize(e);
               }}
               onTouchStart={(e: React.TouchEvent<HTMLElement>) => {
-                // For notitlebar: show title bar when tapping the top area
-                if (isNoTitlebar) {
+                // For notitlebar: show title bar when tapping the top area (only if auto-hide is enabled)
+                if (isNoTitlebar && !disableTitlebarAutoHide) {
                   showTitlebarWithAutoHide();
                 }
                 if (isFromTitlebarControls(e.target)) {
