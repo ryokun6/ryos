@@ -961,6 +961,8 @@ export function PhotoBoothComponent({
         onClose={onClose}
         isForeground={isForeground}
         appId="photo-booth"
+        material="notitlebar"
+        disableTitlebarAutoHide
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         onNavigateNext={onNavigateNext}
