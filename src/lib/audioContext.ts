@@ -65,6 +65,44 @@ export const getAudioContext = (): AudioContext => {
 };
 
 /**
+ * Safari-specific: wait for the AudioContext state to actually change after resume().
+ * Safari sometimes has a delay between the resume() promise resolving and the state updating.
+ */
+const waitForRunningState = async (
+  ctx: AudioContext,
+  timeoutMs = 100
+): Promise<boolean> => {
+  if (ctx.state === "running") return true;
+
+  return new Promise((resolve) => {
+    const start = Date.now();
+
+    // Listen for state change
+    const onStateChange = () => {
+      if (ctx.state === "running") {
+        ctx.removeEventListener("statechange", onStateChange);
+        resolve(true);
+      }
+    };
+    ctx.addEventListener("statechange", onStateChange);
+
+    // Also poll in case the event doesn't fire (Safari quirk)
+    const checkState = () => {
+      if (ctx.state === "running") {
+        ctx.removeEventListener("statechange", onStateChange);
+        resolve(true);
+      } else if (Date.now() - start < timeoutMs) {
+        setTimeout(checkState, 10);
+      } else {
+        ctx.removeEventListener("statechange", onStateChange);
+        resolve(false);
+      }
+    };
+    setTimeout(checkState, 10);
+  });
+};
+
+/**
  * Ensure the global `AudioContext` is in the `running` state. If it is
  * `suspended`/`interrupted`, attempt `resume()`. If that fails, recreate a
  * brand-new context so that subsequent playback succeeds.
@@ -88,7 +126,12 @@ export const resumeAudioContext = async (): Promise<void> => {
     if (state === "suspended" || state === "interrupted") {
       try {
         await ctx.resume();
-        console.debug("[audioContext] Resumed AudioContext");
+        // Safari may need a moment for the state to actually update
+        const resumed = await waitForRunningState(ctx);
+        if (resumed) {
+          console.debug("[audioContext] Resumed AudioContext");
+          return; // Successfully resumed, exit early
+        }
       } catch (err) {
         console.error("[audioContext] Failed to resume AudioContext:", err);
       }
@@ -108,6 +151,20 @@ export const resumeAudioContext = async (): Promise<void> => {
       audioContext = null; // Force getAudioContext() to make a new one
       ctx = getAudioContext();
       // Note: getAudioContext() already calls notifyContextChange when creating new context
+
+      // The new context may also start suspended on Safari - try to resume it
+      if (ctx.state !== "running") {
+        try {
+          await ctx.resume();
+          await waitForRunningState(ctx);
+          console.debug("[audioContext] Resumed newly created AudioContext");
+        } catch (err) {
+          console.debug(
+            "[audioContext] Could not resume new context (may need user gesture):",
+            err
+          );
+        }
+      }
     }
   })();
 
@@ -128,9 +185,14 @@ export const resumeAudioContext = async (): Promise<void> => {
 let visibilityHandler: (() => void) | null = null;
 let focusHandler: (() => void) | null = null;
 let deviceChangeHandler: (() => void) | null = null;
+let healthCheckInterval: ReturnType<typeof setInterval> | null = null;
 
 // Track whether unlock listeners are currently attached
 let unlockListenersAttached = false;
+
+// Detect Safari for Safari-specific workarounds
+const isSafari = typeof navigator !== "undefined" &&
+  /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
 // User gesture events that iOS Safari recognizes for audio unlock
 const GESTURE_EVENTS = ["touchstart", "touchend", "click", "keydown"] as const;
@@ -144,8 +206,25 @@ const unlockAudioHandler = () => {
   const ctx = audioContext;
   if (!ctx) return;
 
+  const state = ctx.state as AudioContextState | "interrupted";
+
   // If already running, nothing to do
-  if (ctx.state === "running") return;
+  if (state === "running") return;
+
+  // If context is closed, we need a new one
+  if (state === "closed") {
+    audioContext = null;
+    const newCtx = getAudioContext();
+    // Try to resume the new context within this gesture
+    newCtx.resume().then(() => {
+      if (newCtx.state === "running") {
+        console.debug("[audioContext] Audio unlocked with new context via user gesture");
+      }
+    }).catch((err) => {
+      console.debug("[audioContext] Failed to resume new context:", err);
+    });
+    return;
+  }
 
   // Try to resume - must happen synchronously within the gesture handler
   ctx.resume().then(() => {
@@ -208,6 +287,10 @@ function setupAudioContextListeners() {
     if (focusHandler) {
       window.removeEventListener("focus", focusHandler);
     }
+    if (healthCheckInterval) {
+      clearInterval(healthCheckInterval);
+      healthCheckInterval = null;
+    }
 
     visibilityHandler = () => {
       if (document.visibilityState === "visible") {
@@ -239,6 +322,38 @@ function setupAudioContextListeners() {
 
     // Set up iOS Safari audio unlock listeners (persistent, not one-time)
     attachUnlockListeners();
+
+    // Safari-specific: periodic health check for stuck audio context
+    // Safari can get into states where the context appears suspended but won't resume
+    // without user interaction. This check helps detect and log such states.
+    if (isSafari) {
+      healthCheckInterval = setInterval(() => {
+        if (!audioContext) return;
+        
+        const state = audioContext.state as AudioContextState | "interrupted";
+        
+        // If context is interrupted or suspended while tab is visible, try to resume
+        if (
+          (state === "interrupted" || state === "suspended") &&
+          document.visibilityState === "visible"
+        ) {
+          console.debug(
+            `[audioContext] Health check: context in "${state}" state while visible, attempting resume`
+          );
+          // Don't await - just trigger the resume attempt
+          void resumeAudioContext();
+        }
+        
+        // If context is closed while tab is visible, try to recreate
+        if (state === "closed" && document.visibilityState === "visible") {
+          console.debug(
+            "[audioContext] Health check: context closed while visible, recreating"
+          );
+          audioContext = null;
+          getAudioContext();
+        }
+      }, 5000); // Check every 5 seconds
+    }
   }
 }
 
@@ -261,6 +376,10 @@ if (import.meta.hot) {
         deviceChangeHandler
       );
       deviceChangeHandler = null;
+    }
+    if (healthCheckInterval) {
+      clearInterval(healthCheckInterval);
+      healthCheckInterval = null;
     }
     detachUnlockListeners();
     console.debug("[audioContext] HMR cleanup: removed listeners");
