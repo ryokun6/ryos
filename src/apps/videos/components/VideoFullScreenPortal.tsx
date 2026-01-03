@@ -241,13 +241,13 @@ export function VideoFullScreenPortal({
         )}
       </AnimatePresence>
 
-      <div className="flex-1 min-h-0 relative">
-        <div className="w-full h-full relative">
+      <div className="flex-1 min-h-0 relative overflow-hidden">
+        <div className="absolute inset-0 w-full h-full">
           <div
-            className="w-full relative"
+            className="w-full absolute"
             style={{
               height: "calc(100% + clamp(480px, 60dvh, 800px))",
-              transform: "translateY(-240px)",
+              top: "calc(-1 * clamp(240px, 30dvh, 400px))",
             }}
           >
             <div className="w-full h-full pointer-events-none">

@@ -1490,14 +1490,15 @@ export function KaraokeAppComponent({
         >
           {({ controlsVisible }) => (
             <div className="flex flex-col w-full h-full">
-              <div className="relative w-full h-full overflow-visible">
-                <div
-                  className="w-full relative"
-                  style={{
-                    height: "calc(100% + clamp(480px, 60dvh, 800px))",
-                    transform: "translateY(-240px)",
-                  }}
-                >
+              <div className="relative w-full h-full overflow-hidden">
+                <div className="absolute inset-0 w-full h-full">
+                  <div
+                    className="w-full absolute"
+                    style={{
+                      height: "calc(100% + clamp(480px, 60dvh, 800px))",
+                      top: "calc(clamp(120px, 15dvh, 200px) * -1)",
+                    }}
+                  >
                     {currentTrack && (
                       <div className="w-full h-full pointer-events-none">
                         <ReactPlayer
@@ -1536,12 +1537,13 @@ export function KaraokeAppComponent({
                       </div>
                     )}
                   </div>
+                </div>
 
-                  {/* Paused cover overlay */}
+                {/* Paused cover overlay */}
                   <AnimatePresence>
                     {currentTrack && !isPlaying && coverUrl && (
                       <motion.div
-                        className="absolute inset-0 z-15"
+                        className="fixed inset-0 z-15"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -1629,7 +1631,7 @@ export function KaraokeAppComponent({
                           paddingRight: "env(safe-area-inset-right, 0px)",
                         }}
                         interactive={true}
-                        bottomPaddingClass={controlsVisible ? "pb-16" : "pb-6"}
+                        bottomPaddingClass={controlsVisible ? "pb-28" : "pb-16"}
                         furiganaMap={furiganaMap}
                         soramimiMap={soramimiMap}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}

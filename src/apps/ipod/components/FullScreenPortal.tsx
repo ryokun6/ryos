@@ -491,14 +491,6 @@ export function FullScreenPortal({
           : children}
       </div>
 
-      {/* Spacer for fixed toolbar */}
-      <div 
-        className="flex-shrink-0"
-        style={{
-          height: "calc(env(safe-area-inset-bottom, 0px) + 48px)",
-        }}
-      />
-
       {/* Inline toolbar */}
       <div
         data-toolbar

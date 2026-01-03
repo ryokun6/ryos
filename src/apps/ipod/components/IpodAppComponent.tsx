@@ -1958,60 +1958,62 @@ export function IpodAppComponent({
           >
             {({ controlsVisible }) => (
               <div className="flex flex-col w-full h-full">
-                <div className="relative w-full h-full overflow-visible">
-                  <div
-                    className="w-full relative"
-                    style={{
-                      height: "calc(100% + clamp(480px, 60dvh, 800px))",
-                      transform: "translateY(-240px)",
-                    }}
-                  >
-                    {tracks[currentIndex] && (
-                      <div className="w-full h-full pointer-events-none">
-                        <ReactPlayer
-                          ref={fullScreenPlayerRef}
-                          url={tracks[currentIndex].url}
-                          playing={isPlaying && isFullScreen}
-                          controls
-                          width="100%"
-                          height="100%"
-                          volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
-                          loop={loopCurrent}
-                          onEnded={handleTrackEnd}
-                          onProgress={handleProgress}
-                          progressInterval={100}
-                          onDuration={handleDuration}
-                          onPlay={handlePlay}
-                          onPause={handlePause}
-                          onReady={handleReady}
-                          config={{
-                            youtube: {
-                              playerVars: {
-                                modestbranding: 1,
-                                rel: 0,
-                                showinfo: 0,
-                                iv_load_policy: 3,
-                                cc_load_policy: 0,
-                                fs: 1,
-                                playsinline: 1,
-                                enablejsapi: 1,
-                                origin: window.location.origin,
+                <div className="relative w-full h-full overflow-hidden">
+                  <div className="absolute inset-0 w-full h-full">
+                    <div
+                      className="w-full absolute"
+                      style={{
+                        height: "calc(100% + clamp(480px, 60dvh, 800px))",
+                        top: "calc(clamp(120px, 15dvh, 200px) * -1)",
+                      }}
+                    >
+                      {tracks[currentIndex] && (
+                        <div className="w-full h-full pointer-events-none">
+                          <ReactPlayer
+                            ref={fullScreenPlayerRef}
+                            url={tracks[currentIndex].url}
+                            playing={isPlaying && isFullScreen}
+                            controls
+                            width="100%"
+                            height="100%"
+                            volume={ipodVolume * useAudioSettingsStore.getState().masterVolume}
+                            loop={loopCurrent}
+                            onEnded={handleTrackEnd}
+                            onProgress={handleProgress}
+                            progressInterval={100}
+                            onDuration={handleDuration}
+                            onPlay={handlePlay}
+                            onPause={handlePause}
+                            onReady={handleReady}
+                            config={{
+                              youtube: {
+                                playerVars: {
+                                  modestbranding: 1,
+                                  rel: 0,
+                                  showinfo: 0,
+                                  iv_load_policy: 3,
+                                  cc_load_policy: 0,
+                                  fs: 1,
+                                  playsinline: 1,
+                                  enablejsapi: 1,
+                                  origin: window.location.origin,
+                                },
+                                embedOptions: {
+                                  referrerPolicy: "strict-origin-when-cross-origin",
+                                },
                               },
-                              embedOptions: {
-                                referrerPolicy: "strict-origin-when-cross-origin",
-                              },
-                            },
-                          }}
-                        />
-                      </div>
-                    )}
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Paused cover overlay */}
                   <AnimatePresence>
                     {tracks[currentIndex] && !isPlaying && fullscreenCoverUrl && (
                       <motion.div
-                        className="absolute inset-0 z-15"
+                        className="fixed inset-0 z-15"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
