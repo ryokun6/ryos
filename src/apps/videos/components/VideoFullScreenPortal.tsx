@@ -198,7 +198,7 @@ export function VideoFullScreenPortal({
   return createPortal(
     <div
       ref={containerRef}
-      className="fixed inset-0 z-[9999] bg-black select-none flex flex-col"
+      className="ipod-force-font fixed inset-0 z-[9999] bg-black select-none flex flex-col"
       onClick={() => {
         if (isPlaying) {
           onPause();
@@ -226,11 +226,11 @@ export function VideoFullScreenPortal({
               }}
             >
               <div className="relative">
-                <div className="font-geneva-12 text-white text-[min(5vw,5vh)] relative z-10">
+                <div className="font-chicago text-white text-[min(5vw,5vh)] relative z-10">
                   {statusMessage}
                 </div>
                 <div
-                  className="font-geneva-12 text-black text-[min(5vw,5vh)] absolute inset-0"
+                  className="font-chicago text-black text-[min(5vw,5vh)] absolute inset-0"
                   style={{ WebkitTextStroke: "5px black", textShadow: "none" }}
                 >
                   {statusMessage}
