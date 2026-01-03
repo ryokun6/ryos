@@ -1496,7 +1496,7 @@ export function KaraokeAppComponent({
                     className="w-full absolute"
                     style={{
                       height: "calc(100% + clamp(480px, 60dvh, 800px))",
-                      top: "calc(clamp(120px, 15dvh, 200px) * -1)",
+                      top: "calc(clamp(240px, 30dvh, 400px) * -1)",
                     }}
                   >
                     {currentTrack && (
