@@ -152,11 +152,6 @@ export function FullscreenPlayerControls({
       ? "w-8 h-8"
       : "w-9 h-9 md:w-12 md:h-12";
 
-  const iconSize =
-    variant === "compact"
-      ? "text-base"
-      : "text-[18px] md:text-[22px]";
-
   const smallIconSize =
     variant === "compact"
       ? "text-sm"
