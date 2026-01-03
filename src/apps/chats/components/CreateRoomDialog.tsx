@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
-import { X } from "lucide-react";
+import { X } from "@phosphor-icons/react";
 import { type User } from "@/types/chat";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
@@ -313,7 +313,7 @@ export function CreateRoomDialog({
                         className="ml-1 hover:bg-gray-300 rounded-sm p-0.5"
                         disabled={isLoading}
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-3 w-3" weight="bold" />
                       </button>
                     </Badge>
                   ))}

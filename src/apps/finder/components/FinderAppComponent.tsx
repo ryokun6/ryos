@@ -13,7 +13,7 @@ import {
 } from "../hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
 import { appMetadata, helpItems } from "../index";
 import { calculateStorageSpace } from "@/stores/useFinderStore";
@@ -1102,7 +1102,7 @@ export function FinderAppComponent({
                   disabled={!canNavigateBack()}
                   className="h-8 w-8"
                 >
-                  <ArrowLeft className="h-4 w-4" />
+                  <ArrowLeft className="h-4 w-4" weight="bold" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -1111,7 +1111,7 @@ export function FinderAppComponent({
                   disabled={!canNavigateForward()}
                   className="h-8 w-8"
                 >
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4" weight="bold" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -1162,7 +1162,7 @@ export function FinderAppComponent({
                     }
                   }}
                 >
-                  <ArrowLeft className="h-4 w-4 rotate-90" />
+                  <ArrowLeft className="h-4 w-4 rotate-90" weight="bold" />
                 </Button>
               </div>
               <Input

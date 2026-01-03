@@ -25,7 +25,7 @@ import {
 } from "@/types/chat";
 import { Button } from "@/components/ui/button";
 import { useRyoChat } from "../hooks/useRyoChat";
-import { ChevronDown } from "lucide-react";
+import { CaretDown } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
@@ -675,7 +675,7 @@ export function ChatsAppComponent({
                           : `#${currentRoom.name}`
                         : "@ryo"}
                     </h2>
-                    <ChevronDown className="h-3 w-3 transform transition-transform duration-200 text-neutral-400" />
+                    <CaretDown className="h-2.5 w-2.5 transform transition-transform duration-200 text-neutral-400" weight="bold" />
                   </Button>
 
                   {currentRoom &&

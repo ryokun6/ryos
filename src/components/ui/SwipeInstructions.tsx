@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -60,7 +60,7 @@ export function SwipeInstructions({ className }: SwipeInstructionsProps) {
           onClick={handleDismiss}
           className="bg-transparent p-1 rounded-full hover:bg-gray-100"
         >
-          <X size={18} />
+          <X size={18} weight="bold" />
         </button>
       </div>
 

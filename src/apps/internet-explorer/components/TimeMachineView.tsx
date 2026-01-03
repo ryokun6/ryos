@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Blend, Share } from "lucide-react";
+import { X, Stack, Export } from "@phosphor-icons/react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import { Button } from "@/components/ui/button";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
@@ -674,7 +674,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
               className="absolute top-4 right-4 text-neutral-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10 z-20"
               aria-label={t("apps.internet-explorer.closeTimeMachine")}
             >
-              <X size={24} />
+              <X size={24} weight="bold" />
             </button>
 
             {/* Main Content Area - Make this grow and handle overflow */}
@@ -1060,7 +1060,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                   onClick={handleSharePage}
                   aria-label={t("apps.internet-explorer.shareThisPageAndTime")}
                 >
-                  <Share size={16} className="text-neutral-300" />
+                  <Export size={16} className="text-neutral-300" weight="bold" />
                 </Button>
               </div>
               {/* Removed outer left spacer */}
@@ -1103,7 +1103,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                       size="icon"
                       className="h-7 w-7 rounded-full hover:bg-white/10 opacity-60 hover:opacity-100 transition-opacity"
                     >
-                      <Blend size={16} className="text-neutral-300" />
+                      <Stack size={16} className="text-neutral-300" weight="bold" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent

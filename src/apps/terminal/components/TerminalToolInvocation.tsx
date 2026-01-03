@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check } from "@phosphor-icons/react";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { useTranslation } from "react-i18next";
 import type { ToolInvocationData } from "../types";
@@ -275,7 +275,7 @@ export function TerminalToolInvocation({
     >
       {state === "output-available" && displayResultMessage ? (
         <>
-          <Check className="h-3 w-3 text-green-400 flex-shrink-0" />
+          <Check className="h-3 w-3 text-green-400 flex-shrink-0" weight="bold" />
           <span className="italic">{displayResultMessage}</span>
         </>
       ) : state === "output-error" ? (

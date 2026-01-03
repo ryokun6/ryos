@@ -1,16 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
-import {
-  Maximize,
-  Minimize,
-  Copy,
-  Check,
-  ArrowDownToLine,
-  Code,
-  Share,
-  GripVertical,
-  Plus,
-} from "lucide-react";
+import { ArrowsOut, ArrowsIn, Copy, Check, DownloadSimple, Code, Export, DotsSixVertical, Plus } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
 import {
   loadHtmlPreviewSplit,
@@ -1171,7 +1161,7 @@ export default function HtmlPreview({
               aria-label={t("common.htmlPreview.saveApplet")}
               disabled={isStreaming}
             >
-              <ArrowDownToLine
+              <DownloadSimple
                 size={16}
                 className="text-neutral-400/50 group-hover:text-neutral-300"
               />
@@ -1183,7 +1173,7 @@ export default function HtmlPreview({
               aria-label={t("common.htmlPreview.downloadHtml")}
               disabled={isStreaming}
             >
-              <Share
+              <Export
                 size={16}
                 className="text-neutral-400/50 group-hover:text-neutral-300"
               />
@@ -1219,12 +1209,12 @@ export default function HtmlPreview({
               disabled={isStreaming}
             >
               {isFullScreen ? (
-                <Minimize
+                <ArrowsIn
                   size={16}
                   className="text-neutral-400/50 group-hover:text-neutral-300"
                 />
               ) : (
-                <Maximize
+                <ArrowsOut
                   size={16}
                   className="text-neutral-400/50 group-hover:text-neutral-300"
                 />
@@ -1556,7 +1546,7 @@ export default function HtmlPreview({
                             toggleToolbarCollapse(e);
                           }}
                         >
-                          <GripVertical
+                          <DotsSixVertical
                             size={18}
                             className="text-white/70 group-hover:text-white"
                           />
@@ -1609,7 +1599,7 @@ export default function HtmlPreview({
                           className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
                           aria-label={t("common.htmlPreview.saveApplet")}
                         >
-                          <ArrowDownToLine
+                          <DownloadSimple
                             size={20}
                             className="text-white/70 group-hover:text-white"
                           />
@@ -1619,7 +1609,7 @@ export default function HtmlPreview({
                           className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
                           aria-label={t("common.htmlPreview.downloadHtml")}
                         >
-                          <Share
+                          <Export
                             size={20}
                             className="text-white/70 group-hover:text-white"
                           />
@@ -1650,7 +1640,7 @@ export default function HtmlPreview({
                           className="flex items-center justify-center w-8 h-8 hover:bg-white/10 rounded-full group"
                           aria-label={t("common.htmlPreview.exitFullscreen")}
                         >
-                          <Minimize
+                          <ArrowsIn
                             size={20}
                             className="text-white/70 group-hover:text-white"
                           />

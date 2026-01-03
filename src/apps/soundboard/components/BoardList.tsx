@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus } from "@phosphor-icons/react";
 import { Soundboard } from "@/types/types";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -58,7 +58,7 @@ export function BoardList({
             onClick={onNewBoard}
             className="flex items-center text-xs hover:bg-black/5 w-[24px] h-[24px]"
           >
-            <Plus className="w-3 h-3" />
+            <Plus className="w-3 h-3" weight="bold" />
           </Button>
         </div>
         <div

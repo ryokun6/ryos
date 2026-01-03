@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
-import { Globe, Maximize2, X, Clock } from "lucide-react";
+import { Globe, CornersOut, X, ClockClockwise, SkipBack, SkipForward, Play, Pause } from "@phosphor-icons/react";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -173,9 +173,9 @@ export function FullscreenPlayerControls({
 
   // Common styles for each island segment
   const segmentClasses = isMacTheme
-    ? "relative overflow-hidden rounded-full shadow-lg flex items-center gap-1 px-1 py-1 font-geneva-12"
+    ? "relative overflow-hidden rounded-full shadow-lg flex items-center gap-1 px-1 py-1"
     : cn(
-        "border border-white/10 backdrop-blur-sm rounded-full shadow-lg flex items-center gap-1 px-1 py-1 font-geneva-12",
+        "border border-white/10 backdrop-blur-sm rounded-full shadow-lg flex items-center gap-1 px-1 py-1",
         variant === "responsive" && "md:gap-2",
         bgOpacity === "35" ? "bg-neutral-800/35" : "bg-neutral-800/60"
       );
@@ -224,7 +224,7 @@ export function FullscreenPlayerControls({
           className={buttonClasses}
           title={t("apps.ipod.menu.previous")}
         >
-          <span className={cn(iconSize, iconClasses)}>⏮</span>
+          <SkipBack weight="fill" size={svgSize} className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)} />
         </button>
 
         {/* Play/Pause */}
@@ -235,7 +235,11 @@ export function FullscreenPlayerControls({
           className={buttonClasses}
           title={t("apps.ipod.ariaLabels.playPause")}
         >
-          <span className={cn(iconSize, iconClasses)}>{isPlaying ? "⏸" : "▶"}</span>
+          {isPlaying ? (
+            <Pause weight="fill" size={svgSize} className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)} />
+          ) : (
+            <Play weight="fill" size={svgSize} className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)} />
+          )}
         </button>
 
         {/* Next */}
@@ -246,7 +250,7 @@ export function FullscreenPlayerControls({
           className={buttonClasses}
           title={t("apps.ipod.menu.next")}
         >
-          <span className={cn(iconSize, iconClasses)}>⏭</span>
+          <SkipForward weight="fill" size={svgSize} className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)} />
         </button>
       </div>
 
@@ -262,7 +266,7 @@ export function FullscreenPlayerControls({
             className={buttonClasses}
             title={t("apps.ipod.syncMode.title", "Sync Lyrics")}
           >
-            <Clock className={cn(variant === "compact" ? "w-3.5 h-3.5" : "w-4 h-4", svgClasses())} />
+            <ClockClockwise weight="fill" className={cn(variant === "compact" ? "w-3.5 h-3.5" : "w-4 h-4", svgClasses())} />
           </button>
         )}
 
@@ -375,6 +379,7 @@ export function FullscreenPlayerControls({
                 </span>
               ) : (
                 <Globe
+                  weight="fill"
                   size={svgSize}
                   className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
                 />
@@ -556,7 +561,8 @@ export function FullscreenPlayerControls({
               aria-label={t("apps.ipod.ariaLabels.enterFullscreen")}
               title={t("apps.ipod.ariaLabels.enterFullscreen")}
             >
-              <Maximize2
+              <CornersOut
+                weight="bold"
                 size={svgSize}
                 className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
               />
@@ -573,6 +579,7 @@ export function FullscreenPlayerControls({
               title={t("common.dialog.close")}
             >
               <X
+                weight="bold"
                 size={svgSize}
                 className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
               />

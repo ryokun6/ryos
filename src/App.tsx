@@ -14,7 +14,7 @@ import { useOffline } from "./hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { isTauri } from "./utils/platform";
 import { checkDesktopUpdate, onDesktopUpdate, DesktopUpdateResult } from "./utils/prefetch";
-import { Download } from "lucide-react";
+import { DownloadSimple } from "@phosphor-icons/react";
 import { ScreenSaverOverlay } from "./components/screensavers/ScreenSaverOverlay";
 
 // Convert registry to array
@@ -108,7 +108,7 @@ export function App() {
         // New version available - show update toast (both web and Tauri)
         toast(`ryOS ${result.version} for Mac is available`, {
           id: 'desktop-update',
-          icon: <Download className="h-4 w-4" />,
+          icon: <DownloadSimple className="h-4 w-4" weight="bold" />,
           duration: Infinity,
           action: {
             label: "Download",
@@ -126,7 +126,7 @@ export function App() {
         // First time user on web - show initial download toast (not in Tauri)
         toast("ryOS is available as a Mac app", {
           id: 'desktop-update',
-          icon: <Download className="h-4 w-4" />,
+          icon: <DownloadSimple className="h-4 w-4" weight="bold" />,
           duration: Infinity,
           action: {
             label: "Download",

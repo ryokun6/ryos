@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check } from "@phosphor-icons/react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { useTranslation } from "react-i18next";
@@ -482,7 +482,7 @@ export function ToolInvocationMessage({
         )}
       {state === "output-available" && (
         <div className="flex items-center gap-1 text-gray-700">
-          <Check className="h-3 w-3 text-blue-600" />
+          <Check className="h-3 w-3 text-blue-600" weight="bold" />
           {displayResultMessage ? (
             <span>{displayResultMessage}</span>
           ) : (

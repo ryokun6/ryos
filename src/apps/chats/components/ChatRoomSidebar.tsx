@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus, Trash, ChevronRight } from "lucide-react";
+import { Plus, Trash, CaretRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { type ChatRoom } from "@/types/chat";
@@ -135,7 +135,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
                 room.type === "private" ? t("apps.chats.ariaLabels.leaveConversation") : t("apps.chats.ariaLabels.deleteRoom")
               }
             >
-              <Trash className="w-3 h-3 text-black/30" />
+              <Trash className="w-3 h-3 text-black/30" weight="bold" />
             </button>
           )}
       </div>
@@ -182,7 +182,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
                   onClick={onAddRoom}
                   className="flex items-center text-xs hover:bg-black/5 w-[24px] h-[24px]"
                 >
-                  <Plus className="w-3 h-3" />
+                  <Plus className="w-3 h-3" weight="bold" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -258,9 +258,9 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
                             <span>{t("apps.chats.sidebar.rooms")}</span>
                             {hasPrivate && (
                               <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <ChevronRight
+                                <CaretRight
                                   className={cn(
-                                    "w-3 h-3 text-black/50 transition-transform",
+                                    "w-2.5 h-2.5 text-black/50 transition-transform",
                                     isChannelsOpen ? "rotate-90" : "rotate-0"
                                   )}
                                 />
@@ -285,9 +285,9 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
                           >
                             <span>{t("apps.chats.sidebar.private")}</span>
                             <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <ChevronRight
+                              <CaretRight
                                 className={cn(
-                                  "w-3 h-3 text-black/50 transition-transform",
+                                  "w-2.5 h-2.5 text-black/50 transition-transform",
                                   isPrivateOpen ? "rotate-90" : "rotate-0"
                                 )}
                               />

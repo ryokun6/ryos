@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardR
 import { motion, AnimatePresence, PanInfo, useMotionValue, animate } from "framer-motion";
 import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import type { Track } from "@/stores/useIpodStore";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, VinylRecord } from "@phosphor-icons/react";
 import { useThemeStore } from "@/stores/useThemeStore";
 
 // Long press delay in milliseconds
@@ -775,9 +775,9 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
               >
                 {isMacTheme && <AquaShineOverlay />}
                 {isPlaying && selectedIndex === currentIndex ? (
-                  <Pause className="w-full h-full relative z-10" fill="currentColor" strokeWidth={0} />
+                  <Pause className="w-full h-full relative z-10" weight="fill" />
                 ) : (
-                  <Play className="w-full h-full relative z-10" fill="currentColor" strokeWidth={0} />
+                  <Play className="w-full h-full relative z-10" weight="fill" />
                 )}
               </button>
             )}
@@ -825,17 +825,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                 title={showCD ? "Hide Media" : "Show Media"}
               >
                 {isMacTheme && <AquaShineOverlay />}
-                <svg
-                  className="w-full h-full relative z-10"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 7a3 3 0 100 6 3 3 0 000-6z"
-                  />
-                </svg>
+                <VinylRecord className="w-full h-full relative z-10" weight="fill" />
               </button>
             )}
           </motion.div>

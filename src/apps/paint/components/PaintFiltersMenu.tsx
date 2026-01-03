@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Sliders } from "lucide-react";
+import { Sliders } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 
 export interface Filter {
@@ -157,7 +157,7 @@ export const PaintFiltersMenu: React.FC<PaintFiltersMenuProps> = ({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="h-8 w-8">
-          <Sliders className="h-4 w-4" />
+          <Sliders className="h-4 w-4" weight="bold" />
           <span className="sr-only">{t("apps.paint.filtersMenu.openFiltersMenu")}</span>
         </Button>
       </DropdownMenuTrigger>

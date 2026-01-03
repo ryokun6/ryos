@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { AlertCircle, Music, ExternalLink, Mic } from "lucide-react";
+import { WarningCircle, MusicNote, ArrowSquareOut, Microphone } from "@phosphor-icons/react";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -285,7 +285,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
         className={`flex items-center gap-2 p-3 bg-red-50 border border-red-200 text-sm font-geneva-12 max-w-[420px] ${className}`}
         style={{ borderRadius: "3px" }}
       >
-        <AlertCircle className="h-4 w-4 text-red-500" />
+        <WarningCircle className="h-4 w-4 text-red-500" weight="bold" />
         <span className="text-red-600">{error}</span>
       </motion.div>
     );
@@ -459,7 +459,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     title={t("components.linkPreview.openIpod")}
                     data-link-preview
                   >
-                    {theme !== "macosx" && <Music className="h-3 w-3" />}
+                    {theme !== "macosx" && <MusicNote className="h-3 w-3" weight="bold" />}
                     <span>{t("components.linkPreview.openIpod")}</span>
                   </button>
                   <button
@@ -473,7 +473,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     title={t("components.linkPreview.openYouTube")}
                     data-link-preview
                   >
-                    {theme !== "macosx" && <ExternalLink className="h-3 w-3" />}
+                    {theme !== "macosx" && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
                     <span>{t("components.linkPreview.openYouTube")}</span>
                   </button>
                 </div>
@@ -490,7 +490,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     title={t("components.linkPreview.openKaraoke")}
                     data-link-preview
                   >
-                    {theme !== "macosx" && <Mic className="h-3 w-3" />}
+                    {theme !== "macosx" && <Microphone className="h-3 w-3" weight="bold" />}
                     <span>{t("components.linkPreview.openKaraoke")}</span>
                   </button>
                   <button
@@ -504,7 +504,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     title={t("components.linkPreview.openYouTube")}
                     data-link-preview
                   >
-                    {theme !== "macosx" && <ExternalLink className="h-3 w-3" />}
+                    {theme !== "macosx" && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
                     <span>{t("components.linkPreview.openYouTube")}</span>
                   </button>
                 </div>
@@ -521,7 +521,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     title={t("components.linkPreview.addToIpod")}
                     data-link-preview
                   >
-                    {theme !== "macosx" && <Music className="h-3 w-3" />}
+                    {theme !== "macosx" && <MusicNote className="h-3 w-3" weight="bold" />}
                     <span>{t("components.linkPreview.addToIpod")}</span>
                   </button>
                   <button
@@ -535,7 +535,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     title={t("components.linkPreview.openYouTube")}
                     data-link-preview
                   >
-                    {theme !== "macosx" && <ExternalLink className="h-3 w-3" />}
+                    {theme !== "macosx" && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
                     <span>{t("components.linkPreview.openYouTube")}</span>
                   </button>
                 </div>
@@ -553,7 +553,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                   title="Open Externally"
                   data-link-preview
                 >
-                  {theme !== "macosx" && <ExternalLink className="h-3 w-3" />}
+                  {theme !== "macosx" && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
                   <span>Open Externally</span>
                 </button>
               </div>
@@ -674,7 +674,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       title={t("components.linkPreview.openIpod")}
                       data-link-preview
                     >
-                      {theme !== "macosx" && <Music className="h-3 w-3" />}
+                      {theme !== "macosx" && <MusicNote className="h-3 w-3" weight="bold" />}
                       <span>{t("components.linkPreview.openIpod")}</span>
                     </button>
                     <button
@@ -689,7 +689,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       data-link-preview
                     >
                       {theme !== "macosx" && (
-                        <ExternalLink className="h-3 w-3" />
+                        <ArrowSquareOut className="h-3 w-3" weight="bold" />
                       )}
                       <span>{t("components.linkPreview.openYouTube")}</span>
                     </button>
@@ -707,7 +707,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       title={t("components.linkPreview.openKaraoke")}
                       data-link-preview
                     >
-                      {theme !== "macosx" && <Mic className="h-3 w-3" />}
+                      {theme !== "macosx" && <Microphone className="h-3 w-3" weight="bold" />}
                       <span>{t("components.linkPreview.openKaraoke")}</span>
                     </button>
                     <button
@@ -722,7 +722,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       data-link-preview
                     >
                       {theme !== "macosx" && (
-                        <ExternalLink className="h-3 w-3" />
+                        <ArrowSquareOut className="h-3 w-3" weight="bold" />
                       )}
                       <span>{t("components.linkPreview.openYouTube")}</span>
                     </button>
@@ -740,7 +740,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       title={t("components.linkPreview.addToIpod")}
                       data-link-preview
                     >
-                      {theme !== "macosx" && <Music className="h-3 w-3" />}
+                      {theme !== "macosx" && <MusicNote className="h-3 w-3" weight="bold" />}
                       <span>{t("components.linkPreview.addToIpod")}</span>
                     </button>
                     <button
@@ -755,7 +755,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                       data-link-preview
                     >
                       {theme !== "macosx" && (
-                        <ExternalLink className="h-3 w-3" />
+                        <ArrowSquareOut className="h-3 w-3" weight="bold" />
                       )}
                       <span>{t("components.linkPreview.openYouTube")}</span>
                     </button>
@@ -774,7 +774,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
                     title="Open Externally"
                     data-link-preview
                   >
-                    {theme !== "macosx" && <ExternalLink className="h-3 w-3" />}
+                    {theme !== "macosx" && <ArrowSquareOut className="h-3 w-3" weight="bold" />}
                     <span>Open Externally</span>
                   </button>
                 </div>

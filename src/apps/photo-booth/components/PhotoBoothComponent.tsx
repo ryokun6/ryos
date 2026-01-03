@@ -7,8 +7,7 @@ import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { PhotoBoothMenuBar } from "./PhotoBoothMenuBar";
 import { AppProps } from "../../base/types";
-import { Images, Timer } from "lucide-react";
-import { Camera } from "@phosphor-icons/react";
+import { Camera, Images, Timer } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { Webcam } from "@/components/Webcam";
@@ -1261,6 +1260,7 @@ export function PhotoBoothComponent({
               >
                 <Images
                   size={18}
+                  weight="fill"
                   className={
                     isMacTheme
                       ? "text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
@@ -1296,6 +1296,7 @@ export function PhotoBoothComponent({
               >
                 <Timer
                   size={18}
+                  weight="fill"
                   className={
                     isMacTheme
                       ? "text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"

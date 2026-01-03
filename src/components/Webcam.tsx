@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { CameraOff } from "lucide-react";
+import { CameraSlash } from "@phosphor-icons/react";
 import { runFilter, mapCssFilterStringToUniforms } from "@/lib/webglFilterRunner";
 import fragSrc from "@/lib/shaders/basicFilter.frag?raw";
 
@@ -309,7 +309,7 @@ export function Webcam({
           className="w-full h-full flex items-center justify-center"
           onClick={startCamera}
         >
-          <CameraOff size={48} className="text-white/30 cursor-pointer" />
+          <CameraSlash size={48} className="text-white/30 cursor-pointer" weight="bold" />
         </div>
       ) : (
         <>

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, Hand, AtSign, Mic } from "lucide-react";
+import { ArrowUp, Square, Hand, At, Microphone } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AudioInputButton } from "@/components/ui/audio-input-button";
 import { useChatSynth } from "@/hooks/useChatSynth";
@@ -536,7 +536,7 @@ export function ChatInput({
                               disabled={isLoading}
                               aria-label={t("apps.chats.ariaLabels.sendNudge")}
                             >
-                              <Hand className="h-4 w-4 -rotate-40" />
+                              <Hand className="h-4 w-4 -rotate-40" weight="bold" />
                             </button>
                           </div>
                         </TooltipTrigger>
@@ -562,7 +562,7 @@ export function ChatInput({
                               disabled={isLoading}
                               aria-label={t("apps.chats.ariaLabels.mentionRyo")}
                             >
-                              <AtSign className="h-4 w-4" />
+                              <At className="h-4 w-4" weight="bold" />
                             </button>
                           </div>
                         </TooltipTrigger>
@@ -586,7 +586,7 @@ export function ChatInput({
                           disabled={isTranscribing}
                           aria-label={t("apps.chats.ariaLabels.pushToTalk")}
                         >
-                          <Mic className="h-4 w-4" />
+                          <Microphone className="h-4 w-4" weight="bold" />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -679,7 +679,7 @@ export function ChatInput({
                         ? "text-black"
                         : ""
                     }`}
-                    fill="currentColor"
+                    weight="fill"
                   />
                 </Button>
               </motion.div>
@@ -755,6 +755,7 @@ export function ChatInput({
                         ? "text-black"
                         : ""
                     }`}
+                    weight="bold"
                   />
                 </Button>
               </motion.div>

@@ -22,7 +22,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { StartMenu } from "./StartMenu";
 import { useAppStoreShallow, useAudioSettingsStoreShallow, useDisplaySettingsStoreShallow } from "@/stores/helpers";
 import { Slider } from "@/components/ui/slider";
-import { Volume1, Volume2, VolumeX, Settings, ChevronUp, MoreHorizontal } from "lucide-react";
+import { SpeakerSimpleLow, SpeakerSimpleHigh, SpeakerSimpleSlash, Gear, CaretUp, DotsThree } from "@phosphor-icons/react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getAppIconPath, appRegistry } from "@/config/appRegistry";
@@ -33,7 +33,7 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { useOffline } from "@/hooks/useOffline";
-import { WifiOff } from "lucide-react";
+import { WifiSlash } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName } from "@/utils/i18n";
@@ -730,12 +730,12 @@ function VolumeControl() {
 
   const getVolumeIcon = () => {
     if (masterVolume === 0) {
-      return <VolumeX className="h-5 w-5" />;
+      return <SpeakerSimpleSlash className="h-5 w-5" weight="fill" />;
     }
     if (masterVolume < 0.5) {
-      return <Volume1 className="h-5 w-5" />;
+      return <SpeakerSimpleLow className="h-5 w-5" weight="fill" />;
     }
-    return <Volume2 className="h-5 w-5" />;
+    return <SpeakerSimpleHigh className="h-5 w-5" weight="fill" />;
   };
 
   return (
@@ -784,7 +784,7 @@ function VolumeControl() {
             setIsDropdownOpen(false);
           }}
         >
-          <Settings className="h-4 w-4" />
+          <Gear className="h-4 w-4" weight="bold" />
         </Button>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -1209,7 +1209,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                       }
                     }}
                   >
-                    <ChevronUp className="h-4 w-4" />
+                    <CaretUp className="h-4 w-4" weight="bold" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -1431,8 +1431,9 @@ function OfflineIndicator() {
       }}
       title="You are currently offline"
     >
-      <WifiOff
+      <WifiSlash
         className={isXpTheme ? "h-3 w-3" : "h-4 w-4"}
+        weight="bold"
         style={{
           opacity: 0.7,
         }}
@@ -1463,7 +1464,7 @@ function ExposeButton() {
       title="Mission Control (F3)"
       aria-label="Mission Control (F3)"
     >
-      <MoreHorizontal aria-hidden="true" className="h-4 w-4" />
+      <DotsThree aria-hidden="true" className="h-4 w-4" weight="bold" />
     </button>
   );
 }

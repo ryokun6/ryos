@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { createRoot } from "react-dom/client";
 import { useState, useEffect } from "react";
-import { Check } from "lucide-react";
+import { Check } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 
 interface CommandItem {
@@ -103,7 +103,7 @@ const SlashMenuContent = ({
           {getTranslatedTitle(item)}
           {isActive(item) && (
             <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
-              <Check className="h-4 w-4" />
+              <Check className="h-4 w-4" weight="bold" />
             </span>
           )}
         </button>

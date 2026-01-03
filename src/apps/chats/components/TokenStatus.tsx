@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
-import { CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { CheckCircle, Clock, WarningCircle } from "@phosphor-icons/react";
 import { useTokenAge } from "../hooks/useTokenRefresh";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
@@ -109,7 +109,7 @@ export function TokenStatus() {
                 </span>
               ) : (
                 <>
-                  <Clock className={`h-3 w-3 ${statusColor}`} />
+                  <Clock className={`h-3 w-3 ${statusColor}`} weight="bold" />
                   <span className={`font-geneva-12 text-[11px] ${statusColor}`}>
                     {t("apps.chats.tokenStatus.daysOld", { days: tokenAgeDisplay })}
                   </span>
@@ -127,7 +127,7 @@ export function TokenStatus() {
 
         {refreshError && (
           <span className="font-geneva-12 text-[11px] text-red-500 flex items-center gap-1">
-            <AlertCircle className="h-3 w-3" />
+            <WarningCircle className="h-3 w-3" weight="bold" />
             {refreshError}
           </span>
         )}
@@ -151,7 +151,7 @@ export function TokenStatus() {
 
   return (
     <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100/80 text-green-700 rounded-md animate-fade-in">
-      <CheckCircle className="h-3 w-3" />
+      <CheckCircle className="h-3 w-3" weight="bold" />
       <span className="font-geneva-12 text-[11px]">{t("apps.chats.tokenStatus.tokenRefreshed")}</span>
     </div>
   );

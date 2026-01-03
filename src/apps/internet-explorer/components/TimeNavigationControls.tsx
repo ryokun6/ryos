@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  ChevronUp,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Dot,
-} from "lucide-react";
+import { CaretUp, CaretDown, CaretLeft, CaretRight, Circle } from "@phosphor-icons/react";
 import {
   Tooltip,
   TooltipContent,
@@ -43,8 +37,8 @@ const TimeNavigationControls: React.FC<TimeNavigationControlsProps> = ({
   playClickSound,
 }) => {
   const { t } = useTranslation();
-  const OlderIcon = layout === "vertical" ? ChevronDown : ChevronRight;
-  const NewerIcon = layout === "vertical" ? ChevronUp : ChevronLeft;
+  const OlderIcon = layout === "vertical" ? CaretDown : CaretRight;
+  const NewerIcon = layout === "vertical" ? CaretUp : CaretLeft;
 
   const handleOlderClick = () => {
     playClickSound();
@@ -110,7 +104,7 @@ const TimeNavigationControls: React.FC<TimeNavigationControlsProps> = ({
               disabled={isNowDisabled}
               aria-label={t("apps.internet-explorer.goToNow")}
             >
-              <Dot size={24} />
+              <Circle size={24} weight="fill" />
             </button>
           </TooltipTrigger>
           <TooltipContent side={layout === "vertical" ? "right" : "bottom"}>

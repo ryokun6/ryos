@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { Trash2, Star, ArrowLeft, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trash, Star, ArrowLeft, Sparkle, CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useAppletActions, type Applet } from "../utils/appletActions";
 import { AppStoreFeed, type AppStoreFeedRef } from "./AppStoreFeed";
 import { useTranslation } from "react-i18next";
@@ -519,7 +519,8 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                   title={applet.featured ? t("apps.applet-viewer.labels.removeFromFeatured") : t("apps.applet-viewer.labels.addToFeatured")}
                 >
                   <Star
-                    className={`h-4 w-4 ${applet.featured ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`}
+                    className={`h-4 w-4 ${applet.featured ? "text-yellow-400" : "text-gray-400"}`}
+                    weight={applet.featured ? "fill" : "bold"}
                   />
                 </button>
                 <button
@@ -530,7 +531,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                   className="p-1 hover:bg-gray-200 rounded transition-all text-gray-400 inline-flex md:hidden md:group-hover:inline-flex"
                   title={t("apps.applet-viewer.labels.deleteApplet")}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash className="h-4 w-4" weight="bold" />
                 </button>
               </div>
             )}
@@ -702,7 +703,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                 }`}
                 style={{ height: "28px", width: "28px" }}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <CaretLeft className="h-4 w-4" weight="bold" />
               </Button>
               <Button
                 variant={isMacTheme ? "aqua" : "default"}
@@ -721,7 +722,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                 }`}
                 style={{ height: "28px", width: "28px" }}
               >
-                <ChevronRight className="h-4 w-4" />
+                <CaretRight className="h-4 w-4" weight="bold" />
               </Button>
             </div>
           </div>
@@ -773,7 +774,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                 onClick={() => setShowListView(false)}
                 className="flex items-center gap-1 px-1"
               >
-                <Sparkles className="h-4 w-4" />
+                <Sparkle className="h-4 w-4" weight="fill" />
                 <span className="text-xs font-geneva-12">{t("apps.applet-viewer.labels.discover")}</span>
               </Button>
             </div>

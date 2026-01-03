@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Search, Trash2, RefreshCw, AlertTriangle, Ban, Music, Upload, Download, WifiOff } from "lucide-react";
+import { MagnifyingGlass, Trash, ArrowsClockwise, Warning, Prohibit, MusicNote, UploadSimple, DownloadSimple, WifiSlash } from "@phosphor-icons/react";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
   Table,
@@ -838,7 +838,7 @@ export function AdminAppComponent({
           menuBar={isXpTheme ? menuBar : undefined}
         >
           <div className="flex flex-col items-center justify-center h-full gap-3 p-8 text-center bg-white">
-            <AlertTriangle className="h-10 w-10 text-neutral-400" />
+            <Warning className="h-10 w-10 text-neutral-400" weight="bold" />
             <h2 className="text-sm font-bold">{t("apps.admin.accessDenied.title")}</h2>
             <p className="text-xs text-neutral-500 max-w-xs">
               {t("apps.admin.accessDenied.description")}
@@ -871,7 +871,7 @@ export function AdminAppComponent({
           menuBar={isXpTheme ? menuBar : undefined}
         >
           <div className="flex flex-col items-center justify-center h-full gap-3 p-8 text-center bg-white">
-            <WifiOff className="h-10 w-10 text-neutral-400" />
+            <WifiSlash className="h-10 w-10 text-neutral-400" weight="bold" />
             <h2 className="text-sm font-bold">{t("apps.admin.offline.title", "Offline")}</h2>
             <p className="text-xs text-neutral-500 max-w-xs">
               {t("apps.admin.offline.description", "Admin requires an internet connection to manage data.")}
@@ -931,7 +931,7 @@ export function AdminAppComponent({
               >
                 {activeSection === "users" && !selectedRoomId && (
                   <div className="relative flex-1">
-                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
+                    <MagnifyingGlass className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" weight="bold" />
                     <Input
                       placeholder={t("apps.admin.search.placeholder")}
                       value={userSearch}
@@ -944,7 +944,7 @@ export function AdminAppComponent({
                 {activeSection === "songs" && !selectedRoomId && (
                   <>
                     <div className="relative flex-1">
-                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
+                      <MagnifyingGlass className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" weight="bold" />
                       <Input
                         placeholder={t("apps.admin.search.songsPlaceholder", "Search songs...")}
                         value={songSearch}
@@ -971,7 +971,7 @@ export function AdminAppComponent({
                       {isImporting ? (
                         <ActivityIndicator size={14} />
                       ) : (
-                        <Download className="h-3.5 w-3.5" />
+                        <DownloadSimple className="h-3.5 w-3.5" weight="bold" />
                       )}
                     </Button>
                     {/* Export button */}
@@ -986,7 +986,7 @@ export function AdminAppComponent({
                       {isExporting ? (
                         <ActivityIndicator size={14} />
                       ) : (
-                        <Upload className="h-3.5 w-3.5" />
+                        <UploadSimple className="h-3.5 w-3.5" weight="bold" />
                       )}
                     </Button>
                     {/* Delete all button */}
@@ -1001,7 +1001,7 @@ export function AdminAppComponent({
                       {isDeletingAll ? (
                         <ActivityIndicator size={14} />
                       ) : (
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash className="h-3.5 w-3.5" weight="bold" />
                       )}
                     </Button>
                   </>
@@ -1026,7 +1026,7 @@ export function AdminAppComponent({
                     onClick={() => promptDelete("room", selectedRoomId, selectedRoom?.name || "")}
                     className="h-7 w-7 p-0"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash className="h-3.5 w-3.5" weight="bold" />
                   </Button>
                 )}
 
@@ -1039,7 +1039,7 @@ export function AdminAppComponent({
                   {isLoading ? (
                     <ActivityIndicator size={14} />
                   ) : (
-                    <RefreshCw className="h-3.5 w-3.5" />
+                    <ArrowsClockwise className="h-3.5 w-3.5" weight="bold" />
                   )}
                 </Button>
               </div>
@@ -1076,7 +1076,7 @@ export function AdminAppComponent({
                 <div className="font-geneva-12">
                   {users.length === 0 && !isLoading ? (
                     <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
-                      <Search className="h-8 w-8 mb-2 opacity-50" />
+                      <MagnifyingGlass className="h-8 w-8 mb-2 opacity-50" weight="bold" />
                       <span className="text-[11px]">
                         {t("apps.admin.search.noResults")}
                       </span>
@@ -1122,7 +1122,7 @@ export function AdminAppComponent({
                               <TableCell>
                                 {user.banned ? (
                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] bg-red-100 text-red-700 rounded">
-                                    <Ban className="h-2.5 w-2.5" />
+                                    <Prohibit className="h-2.5 w-2.5" weight="bold" />
                                     {t("apps.admin.user.banned")}
                                   </span>
                                 ) : user.username.toLowerCase() === "ryo" ? (
@@ -1149,7 +1149,7 @@ export function AdminAppComponent({
                                     }}
                                     className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
                                   >
-                                    <Trash2 className="h-3 w-3" />
+                                    <Trash className="h-3 w-3" weight="bold" />
                                   </Button>
                                 )}
                               </TableCell>
@@ -1179,7 +1179,7 @@ export function AdminAppComponent({
                 <div className="font-geneva-12">
                   {songs.length === 0 && !isLoading ? (
                     <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
-                      <Music className="h-8 w-8 mb-2 opacity-50" />
+                      <MusicNote className="h-8 w-8 mb-2 opacity-50" weight="bold" />
                       <span className="text-[11px]">
                         {t("apps.admin.songs.noSongs", "No songs in cache")}
                       </span>
@@ -1234,7 +1234,7 @@ export function AdminAppComponent({
                                 }}
                                 className="h-6 w-6 p-0 flex-shrink-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <Trash className="h-3.5 w-3.5" weight="bold" />
                               </Button>
                             </div>
                           ))}
@@ -1318,7 +1318,7 @@ export function AdminAppComponent({
                                 }}
                                 className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
                               >
-                                <Trash2 className="h-3 w-3" />
+                                <Trash className="h-3 w-3" weight="bold" />
                               </Button>
                             </TableCell>
                           </TableRow>

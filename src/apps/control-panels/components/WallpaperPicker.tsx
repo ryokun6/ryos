@@ -10,7 +10,7 @@ import {
 import { useWallpaper } from "@/hooks/useWallpaper";
 import { useSound, Sounds } from "@/hooks/useSound";
 import type { DisplayMode } from "@/utils/displayMode";
-import { Plus } from "lucide-react";
+import { Plus } from "@phosphor-icons/react";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { loadWallpaperManifest } from "@/utils/wallpapers";
 import type { WallpaperManifest as WallpaperManifestType } from "@/utils/wallpapers";
@@ -421,7 +421,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
                   }
                 }}
               >
-                <Plus className="h-5 w-5 text-gray-500" />
+                <Plus className="h-5 w-5 text-gray-500" weight="bold" />
               </button>
               {customWallpaperRefs.length > 0 ? (
                 customWallpaperRefs.map((path) => (

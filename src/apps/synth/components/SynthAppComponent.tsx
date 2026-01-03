@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as Tone from "tone";
 import { cn } from "@/lib/utils";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { AppProps } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { SynthMenuBar } from "./SynthMenuBar";
@@ -1242,7 +1243,7 @@ export function SynthAppComponent({
                       "select-none"
                     )}
                   >
-                    &lt;
+                    <CaretLeft weight="bold" className="h-3 w-3" />
                   </Button>
                   <Button
                     variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
@@ -1259,7 +1260,7 @@ export function SynthAppComponent({
                       "select-none"
                     )}
                   >
-                    &gt;
+                    <CaretRight weight="bold" className="h-3 w-3" />
                   </Button>
                   <Button
                     variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}

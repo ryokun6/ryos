@@ -11,15 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import {
-  ArrowLeft,
-  Ban,
-  Check,
-  Trash2,
-  MessageSquare,
-  Hash,
-  AlertTriangle,
-} from "lucide-react";
+import { ArrowLeft, Prohibit, Check, Trash, ChatCircle, Hash, Warning } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -226,10 +218,10 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   if (!isLoading && !profile) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2">
-        <AlertTriangle className="h-8 w-8 text-neutral-400" />
+        <Warning className="h-8 w-8 text-neutral-400" weight="bold" />
         <span className="text-[11px] text-neutral-500">{t("apps.admin.profile.notFound")}</span>
         <Button variant="ghost" size="sm" onClick={onBack} className="text-[11px]">
-          <ArrowLeft className="h-3 w-3 mr-1" />
+          <ArrowLeft className="h-3 w-3 mr-1" weight="bold" />
           {t("apps.admin.profile.back")}
         </Button>
       </div>
@@ -253,7 +245,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           onClick={onBack}
           className="h-6 w-6 p-0"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
+          <ArrowLeft className="h-3.5 w-3.5" weight="bold" />
         </Button>
         <div className="flex items-center gap-2">
           <div className={cn(
@@ -299,7 +291,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           <div className="grid grid-cols-2 gap-2">
             <div className="px-3 py-2 bg-gray-50 rounded border border-gray-200">
               <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 mb-1">
-                <MessageSquare className="h-3 w-3" />
+                <ChatCircle className="h-3 w-3" weight="bold" />
                 {t("apps.admin.profile.messages")}
               </div>
               {isLoading ? (
@@ -310,7 +302,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             </div>
             <div className="px-3 py-2 bg-gray-50 rounded border border-gray-200">
               <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 mb-1">
-                <Hash className="h-3 w-3" />
+                <Hash className="h-3 w-3" weight="bold" />
                 {t("apps.admin.profile.rooms")}
               </div>
               {isLoading ? (
@@ -325,7 +317,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           {!isLoading && profile?.banned && (
             <div className="p-2 bg-red-50 rounded border border-red-200">
               <div className="flex items-center gap-1.5 text-[10px] text-red-600 mb-1">
-                <Ban className="h-3 w-3" />
+                <Prohibit className="h-3 w-3" weight="bold" />
                 {t("apps.admin.profile.banDetails")}
               </div>
               <div className="text-[11px] space-y-1">
@@ -361,7 +353,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                       onClick={handleUnban}
                       className="aqua-button primary h-7 px-3 text-[11px] flex items-center gap-1"
                     >
-                      <Check className="h-3 w-3" />
+                      <Check className="h-3 w-3" weight="bold" />
                       <span>{t("apps.admin.profile.unban")}</span>
                     </button>
                   ) : (
@@ -397,7 +389,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                           className="aqua-button orange h-7 px-3 text-[11px] flex items-center gap-1"
                           style={{ color: "#000", textShadow: "none" }}
                         >
-                          <Ban className="h-3 w-3" style={{ color: "#000" }} />
+                          <Prohibit className="h-3 w-3" style={{ color: "#000" }} weight="bold" />
                           <span style={{ color: "#000" }}>{t("apps.admin.profile.ban")}</span>
                         </button>
                       )}
@@ -407,7 +399,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                     onClick={() => setIsDeleteDialogOpen(true)}
                     className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash className="h-3 w-3" weight="bold" />
                     <span>{t("apps.admin.profile.delete")}</span>
                   </button>
                 </div>

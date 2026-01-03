@@ -1,7 +1,7 @@
 import { useEffect, useRef, useMemo, useCallback, memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { Minus, Plus, ChevronsDown, Search } from "lucide-react";
+import { Minus, Plus, CaretDoubleDown, MagnifyingGlass } from "@phosphor-icons/react";
 import type { LyricLine, RomanizationSettings } from "@/types/lyrics";
 import { convert as romanizeKorean } from "hangul-romanization";
 import { pinyin } from "pinyin-pro";
@@ -330,7 +330,7 @@ export function LyricsSyncMode({
               className="p-1.5 rounded-full hover:bg-white/10 active:bg-white/20 text-white"
               aria-label={t("apps.ipod.syncMode.decreaseOffset", "Decrease offset")}
             >
-              <Minus className="w-4 h-4" />
+              <Minus className="w-4 h-4" weight="bold" />
             </button>
             <div className="text-white text-sm font-medium min-w-[70px] text-center">
               {formatOffset(currentOffset)}
@@ -341,7 +341,7 @@ export function LyricsSyncMode({
               className="p-1.5 rounded-full hover:bg-white/10 active:bg-white/20 text-white"
               aria-label={t("apps.ipod.syncMode.increaseOffset", "Increase offset")}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4" weight="bold" />
             </button>
           </div>
 
@@ -356,7 +356,7 @@ export function LyricsSyncMode({
               className="p-2 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-white"
               aria-label={t("apps.ipod.syncMode.syncScroll", "Sync Scroll")}
             >
-              <ChevronsDown className="w-4 h-4" />
+              <CaretDoubleDown className="w-4 h-4" weight="bold" />
             </button>
           )}
 
@@ -368,7 +368,7 @@ export function LyricsSyncMode({
               className="p-2 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-white"
               aria-label={t("apps.ipod.syncMode.searchLyrics", "Search Lyrics")}
             >
-              <Search className="w-4 h-4" />
+              <MagnifyingGlass className="w-4 h-4" weight="bold" />
             </button>
           )}
 

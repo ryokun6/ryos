@@ -15,18 +15,7 @@ import {
 } from "@/components/ui/select";
 import { AudioInputButton } from "@/components/ui/audio-input-button";
 import { PlaybackBars } from "@/components/ui/playback-bars";
-import {
-  ChevronDown,
-  Volume2,
-  Bold as BoldIcon,
-  Italic as ItalicIcon,
-  Underline as UnderlineIcon,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  List as ListIcon,
-  ListOrdered,
-} from "lucide-react";
+import { CaretDown, SpeakerHigh, TextB as BoldIcon, TextItalic as ItalicIcon, TextUnderline as UnderlineIcon, TextAlignLeft as AlignLeft, TextAlignCenter as AlignCenter, TextAlignRight as AlignRight, List as ListIcon, ListNumbers as ListOrdered } from "@phosphor-icons/react";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useTranslation } from "react-i18next";
@@ -148,7 +137,7 @@ export function EditorToolbar({
                     : getCurrentHeading() === "h3"
                     ? "H3"
                     : t("apps.textedit.text")}
-                  <ChevronDown className="ml-1 h-3 w-3" />
+                  <CaretDown className="ml-1 h-3 w-3" weight="bold" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-[80px]">
@@ -301,7 +290,7 @@ export function EditorToolbar({
                 ) : isSpeaking ? (
                   <PlaybackBars color="black" />
                 ) : (
-                  <Volume2 className="h-4 w-4" />
+                  <SpeakerHigh className="h-4 w-4" weight="bold" />
                 )}
               </button>
             )}
@@ -344,6 +333,7 @@ export function EditorToolbar({
                 ? "text-black"
                 : "text-neutral-500"
             }`}
+            weight="bold"
           />
         </Button>
         <Button
@@ -359,6 +349,7 @@ export function EditorToolbar({
                 ? "text-black"
                 : "text-neutral-500"
             }`}
+            weight="bold"
           />
         </Button>
         <Button
@@ -376,6 +367,7 @@ export function EditorToolbar({
                 ? "text-black"
                 : "text-neutral-500"
             }`}
+            weight="bold"
           />
         </Button>
       </div>
@@ -411,7 +403,7 @@ export function EditorToolbar({
                   : getCurrentHeading() === "h3"
                   ? "H3"
                   : t("apps.textedit.text")}
-                <ChevronDown className="ml-1 h-3 w-3" />
+                <CaretDown className="ml-1 h-3 w-3" weight="bold" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-[120px]">
@@ -449,6 +441,7 @@ export function EditorToolbar({
                 ? "text-black"
                 : "text-neutral-500"
             }`}
+            weight="bold"
           />
         </Button>
         <Button
@@ -466,6 +459,7 @@ export function EditorToolbar({
                 ? "text-black"
                 : "text-neutral-500"
             }`}
+            weight="bold"
           />
         </Button>
         <Button
@@ -483,6 +477,7 @@ export function EditorToolbar({
                 ? "text-black"
                 : "text-neutral-500"
             }`}
+            weight="bold"
           />
         </Button>
       </div>
@@ -504,6 +499,7 @@ export function EditorToolbar({
                 ? "text-black"
                 : "text-neutral-500"
             }`}
+            weight="bold"
           />
         </Button>
         <Button
@@ -521,6 +517,7 @@ export function EditorToolbar({
                 ? "text-black"
                 : "text-neutral-500"
             }`}
+            weight="bold"
           />
         </Button>
       </div>
@@ -547,7 +544,7 @@ export function EditorToolbar({
             ) : isSpeaking ? (
               <PlaybackBars color="black" />
             ) : (
-              <Volume2 className="h-4 w-4 text-neutral-500" />
+              <SpeakerHigh className="h-4 w-4 text-neutral-500" weight="bold" />
             )}
           </Button>
         )}

@@ -1,4 +1,4 @@
-import { Mic } from "lucide-react";
+import { Microphone } from "@phosphor-icons/react";
 import { useAudioTranscription } from "@/hooks/useAudioTranscription";
 import { AudioBars } from "./audio-bars";
 import { ActivityIndicator } from "./activity-indicator";
@@ -84,7 +84,7 @@ export const AudioInputButton = forwardRef<
               isSilent={isSilent}
             />
           ) : (
-            <Mic className="h-4 w-4" />
+            <Microphone className="h-4 w-4" weight="bold" />
           )}
         </button>
       </div>

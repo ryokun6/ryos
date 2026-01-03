@@ -25,7 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, ArrowRight, History, Search, Share } from "lucide-react";
+import { ArrowLeft, ArrowRight, ClockCounterClockwise, MagnifyingGlass, Export } from "@phosphor-icons/react";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -2042,7 +2042,7 @@ export function InternetExplorerAppComponent({
                     disabled={isOffline || historyIndex >= history.length - 1}
                     className="h-8 w-8"
                   >
-                    <ArrowLeft className="h-4 w-4" />
+                    <ArrowLeft className="h-4 w-4" weight="bold" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -2051,7 +2051,7 @@ export function InternetExplorerAppComponent({
                     disabled={isOffline || historyIndex <= 0}
                     className="h-8 w-8"
                   >
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4" weight="bold" />
                   </Button>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -2062,7 +2062,7 @@ export function InternetExplorerAppComponent({
                         className="h-8 w-8 focus-visible:ring-0 focus-visible:ring-offset-0"
                         aria-label="Share this page"
                       >
-                        <Share className="h-4 w-4" />
+                        <Export className="h-4 w-4" weight="bold" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
@@ -2287,7 +2287,7 @@ export function InternetExplorerAppComponent({
                             data-dropdown-item
                           >
                             {suggestion.type === "search" ? (
-                              <Search className="w-4 h-4 text-neutral-400" />
+                              <MagnifyingGlass className="w-4 h-4 text-neutral-400" weight="bold" />
                             ) : suggestion.favicon && !isOffline ? (
                               <img
                                 src={suggestion.favicon}
@@ -2349,12 +2349,13 @@ export function InternetExplorerAppComponent({
                             cachedYears.length <= 1 ? "none" : "auto",
                         }}
                       >
-                        <History
+                        <ClockCounterClockwise
                           className={`h-4 w-4 ${
                             cachedYears.length > 1
                               ? "text-orange-500"
                               : "text-neutral-400"
                           }`}
+                          weight="bold"
                         />
                       </Button>
                     </TooltipTrigger>

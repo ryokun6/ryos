@@ -1,15 +1,5 @@
 import { UIMessage as VercelMessage } from "@ai-sdk/react";
-import {
-  AlertCircle,
-  MessageSquare,
-  Copy,
-  Check,
-  ChevronDown,
-  Trash,
-  Volume2,
-  Pause,
-  Send,
-} from "lucide-react";
+import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
@@ -329,10 +319,11 @@ function ScrollToBottomButton() {
               />
             </>
           )}
-          <ChevronDown
-            className={`h-4 w-4 ${
+          <CaretDown
+            className={`h-2.5 w-2.5 ${
               isMacTheme ? "text-black/70 relative z-10" : "text-neutral-800"
             }`}
+            weight="bold"
           />
         </motion.button>
       )}
@@ -578,7 +569,7 @@ function ChatMessagesContent({
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-2 text-gray-500 font-['Geneva-9'] text-[16px] antialiased h-[12px]"
         >
-          <MessageSquare className="h-3 w-3" />
+          <ChatCircle className="h-3 w-3" weight="bold" />
           <span>{t("apps.chats.status.startNewConversation")}</span>
           {onClear && (
             <Button
@@ -716,7 +707,7 @@ function ChatMessagesContent({
                             onClick={() => deleteMessage(message)}
                             aria-label={t("apps.chats.ariaLabels.deleteMessage")}
                           >
-                            <Trash className="h-3 w-3" />
+                            <Trash className="h-3 w-3" weight="bold" />
                           </motion.button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -736,9 +727,9 @@ function ChatMessagesContent({
                     aria-label={t("apps.chats.ariaLabels.copyMessage")}
                   >
                     {copiedMessageId === messageKey ? (
-                      <Check className="h-3 w-3" />
+                      <Check className="h-3 w-3" weight="bold" />
                     ) : (
-                      <Copy className="h-3 w-3" />
+                      <Copy className="h-3 w-3" weight="bold" />
                     )}
                   </motion.button>
                 </>
@@ -788,9 +779,9 @@ function ChatMessagesContent({
                     aria-label={t("apps.chats.ariaLabels.copyMessage")}
                   >
                     {copiedMessageId === messageKey ? (
-                      <Check className="h-3 w-3" />
+                      <Check className="h-3 w-3" weight="bold" />
                     ) : (
-                      <Copy className="h-3 w-3" />
+                      <Copy className="h-3 w-3" weight="bold" />
                     )}
                   </motion.button>
                   {speechEnabled && (
@@ -893,10 +884,10 @@ function ChatMessagesContent({
                         speechLoadingId === messageKey ? (
                           <ActivityIndicator size="xs" />
                         ) : (
-                          <Pause className="h-3 w-3" />
+                          <Pause className="h-3 w-3" weight="bold" />
                         )
                       ) : (
-                        <Volume2 className="h-3 w-3" />
+                        <SpeakerHigh className="h-3 w-3" weight="bold" />
                       )}
                     </motion.button>
                   )}
@@ -919,7 +910,7 @@ function ChatMessagesContent({
                           onClick={() => onSendMessage(message.username!)}
                           aria-label={t("apps.chats.ariaLabels.messageUser", { username: message.username })}
                         >
-                          <Send className="h-3 w-3" />
+                          <PaperPlaneRight className="h-3 w-3" weight="bold" />
                         </motion.button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -942,7 +933,7 @@ function ChatMessagesContent({
                         onClick={() => deleteMessage(message)}
                         aria-label={t("apps.chats.ariaLabels.deleteMessage")}
                       >
-                        <Trash className="h-3 w-3" />
+                        <Trash className="h-3 w-3" weight="bold" />
                       </motion.button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -1349,7 +1340,7 @@ function ChatMessagesContent({
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center gap-2 text-gray-500 font-['Geneva-9'] text-[16px] antialiased h-[12px]"
               >
-                <MessageSquare className="h-3 w-3" />
+                <ChatCircle className="h-3 w-3" weight="bold" />
                 <span>{errorMessage}</span>
               </motion.div>
             );
@@ -1363,7 +1354,7 @@ function ChatMessagesContent({
               exit={{ opacity: 0 }}
               className="flex items-start gap-2 text-red-600 font-['Geneva-9'] text-[16px] antialiased pl-1 py-1"
             >
-              <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+              <WarningCircle className="h-3 w-3 mt-0.5 flex-shrink-0" weight="bold" />
               <div className="flex-1 flex flex-row items-start justify-between gap-1">
                 <span className="leading-none">{errorMessage}</span>
                 {onRetry && (

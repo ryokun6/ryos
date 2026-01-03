@@ -6,17 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Volume2,
-  // VolumeX, // Removed
-  // Speaker, // Removed
-  // Mic, // Removed
-  Music,
-  // Headphones, // Removed
-  MousePointerClick,
-  MessageCircle,
-  Speech as SpeechIcon,
-} from "lucide-react";
+import { SpeakerHigh, MusicNote, CursorClick, WaveSquare, ChatCircleDots } from "@phosphor-icons/react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useTranslation } from "react-i18next";
 
@@ -97,7 +87,7 @@ export function VolumeMixer({
                 onClick={handleMasterMuteToggle}
                 className={`h-8 w-8 ${masterVolume === 0 ? "opacity-40" : ""}`}
               >
-                <Volume2 size={20} />
+                <SpeakerHigh size={20} weight="fill" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
@@ -132,7 +122,7 @@ export function VolumeMixer({
                 onClick={handleUiMuteToggle}
                 className={`h-8 w-8 ${uiVolume === 0 ? "opacity-40" : ""}`}
               >
-                <MousePointerClick size={20} />
+                <CursorClick size={20} weight="fill" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
@@ -167,7 +157,7 @@ export function VolumeMixer({
                 onClick={handleSpeechMuteToggle}
                 className={`h-8 w-8 ${speechVolume === 0 ? "opacity-40" : ""}`}
               >
-                <SpeechIcon size={20} />
+                <ChatCircleDots size={20} weight="fill" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
@@ -204,7 +194,7 @@ export function VolumeMixer({
                   chatSynthVolume === 0 ? "opacity-40" : ""
                 }`}
               >
-                <MessageCircle size={20} />
+                <WaveSquare size={20} weight="fill" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
@@ -251,7 +241,7 @@ export function VolumeMixer({
                   !isIOS && ipodVolume === 0 ? "opacity-40" : ""
                 }`}
               >
-                <Music size={20} />
+                <MusicNote size={20} weight="fill" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { SoundSlot as SoundSlotType } from "@/types/types";
-import { Trash2 } from "lucide-react";
+import { Trash } from "@phosphor-icons/react";
 import { Waveform } from "./Waveform";
 import { useTranslation } from "react-i18next";
 
@@ -67,7 +67,7 @@ export function SoundSlot({
                   onDelete();
                 }}
               >
-                <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
+                <Trash className="w-3 h-3 md:w-4 md:h-4" weight="bold" />
               </div>
             </div>
           </>
