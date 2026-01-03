@@ -194,6 +194,7 @@ export function PhotoBoothComponent({
     []
   );
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
+  const [isBackCamera, setIsBackCamera] = useState(false);
   const { photos, addPhoto, addPhotos, clearPhotos } = usePhotoBoothStore();
   const [isMultiPhotoMode, setIsMultiPhotoMode] = useState(false);
   const [multiPhotoCount, setMultiPhotoCount] = useState(0);
@@ -216,6 +217,19 @@ export function PhotoBoothComponent({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacTheme = currentTheme === "macosx";
+
+  // Helper function to detect if a camera is a back/rear camera
+  const detectIsBackCamera = useCallback((label: string, facingMode?: string): boolean => {
+    // Check facingMode first (most reliable)
+    if (facingMode === "environment") return true;
+    if (facingMode === "user") return false;
+    
+    // Fall back to label detection
+    const lowerLabel = label.toLowerCase();
+    return lowerLabel.includes("back") || 
+           lowerLabel.includes("rear") || 
+           lowerLabel.includes("environment");
+  }, []);
 
   const handleClearPhotos = () => {
     clearPhotos();
@@ -382,12 +396,23 @@ export function PhotoBoothComponent({
             console.log("Track settings:", settings);
             activeCameraIdRef.current =
               settings.deviceId ?? selectedCameraId ?? null;
+            
+            // Detect if this is a back camera
+            const isBack = detectIsBackCamera(
+              videoTrack.label,
+              settings.facingMode as string | undefined
+            );
+            setIsBackCamera(isBack);
+            console.log("Camera facing:", isBack ? "back/environment" : "front/user");
           } catch (e) {
             console.warn("Couldn't read track settings:", e);
             activeCameraIdRef.current = selectedCameraId;
+            // Try to detect from label only
+            setIsBackCamera(detectIsBackCamera(videoTrack.label));
           }
         } else {
           activeCameraIdRef.current = selectedCameraId;
+          setIsBackCamera(false);
         }
 
         const shouldKeepStream =
@@ -442,7 +467,7 @@ export function PhotoBoothComponent({
           }
         }
       }
-    }, [selectedCameraId, stopCamera]);
+    }, [selectedCameraId, stopCamera, detectIsBackCamera]);
 
     useEffect(() => {
       if (isWindowOpen && isForeground) {
@@ -964,6 +989,7 @@ export function PhotoBoothComponent({
                   selectedCameraId={selectedCameraId}
                   stream={stream}
                   autoStart={false}
+                  isBackCamera={isBackCamera}
                 />
 
               {/* Camera flash effect */}
@@ -1048,6 +1074,7 @@ export function PhotoBoothComponent({
                             className="w-full h-full"
                             sharedStream={stream}
                             autoStart={false}
+                            isBackCamera={isBackCamera}
                           />
                           <div
                             className="absolute bottom-0 left-0 right-0 text-center py-1.5 text-white font-geneva-12 text-[12px]"

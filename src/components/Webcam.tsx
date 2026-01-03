@@ -13,6 +13,7 @@ interface WebcamProps {
   selectedCameraId?: string | null;
   stream?: MediaStream | null;
   autoStart?: boolean;
+  isBackCamera?: boolean;
 }
 
 export function Webcam({
@@ -24,6 +25,7 @@ export function Webcam({
   selectedCameraId,
   stream: controlledStream,
   autoStart = true,
+  isBackCamera = false,
 }: WebcamProps) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -199,16 +201,26 @@ export function Webcam({
       const ctx = captureCanvas.getContext("2d");
       if (!ctx) return;
 
-      // Apply the horizontal flip using Canvas 2D first
+      // Apply the horizontal flip using Canvas 2D first (only for front cameras)
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(
-        video,
-        -captureCanvas.width,
-        0,
-        captureCanvas.width,
-        captureCanvas.height
-      );
+      if (!isBackCamera) {
+        ctx.scale(-1, 1);
+        ctx.drawImage(
+          video,
+          -captureCanvas.width,
+          0,
+          captureCanvas.width,
+          captureCanvas.height
+        );
+      } else {
+        ctx.drawImage(
+          video,
+          0,
+          0,
+          captureCanvas.width,
+          captureCanvas.height
+        );
+      }
 
       let finalCanvas: HTMLCanvasElement = captureCanvas;
 
@@ -246,7 +258,7 @@ export function Webcam({
       return () =>
         window.removeEventListener("webcam-capture", handleCapture as EventListener);
     }
-  }, [activeStream, onPhoto, isPreview, filter]);
+  }, [activeStream, onPhoto, isPreview, filter, isBackCamera]);
 
   const startCamera = async () => {
     try {
@@ -319,13 +331,13 @@ export function Webcam({
             playsInline
             muted
             className="w-full h-full object-cover"
-            style={{ filter: needsWebGLPreview ? "none" : filter, transform: "scaleX(-1)" }}
+            style={{ filter: needsWebGLPreview ? "none" : filter, transform: isBackCamera ? "none" : "scaleX(-1)" }}
           />
           {needsWebGLPreview && (
             <canvas
               ref={previewCanvasRef}
               className="absolute inset-0 w-full h-full object-cover"
-              style={{ transform: "scaleX(-1)" }}
+              style={{ transform: isBackCamera ? "none" : "scaleX(-1)" }}
             />
           )}
         </>
