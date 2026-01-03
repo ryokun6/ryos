@@ -645,6 +645,14 @@
   font-size: 10px !important;
 }
 
+:root[data-os-theme="macosx"] p.text-\[10px\].text-gray-700.font-geneva-12,
+:root[data-os-theme="macosx"]
+  .text-\[10px\].text-gray-700.font-geneva-12:not(
+    .ipod-force-font .font-geneva-12
+  ):not(.videos-lcd .font-geneva-12) {
+  font-size: 11px !important;
+}
+
 /* Preserve LCD display styling in Videos app - keep original pixel fonts */
 /* But use Aqua Kana for player control buttons */
 :root[data-os-theme="macosx"] .videos-player-controls button.font-geneva-12 {
