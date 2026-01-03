@@ -7,7 +7,7 @@ import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { PhotoBoothMenuBar } from "./PhotoBoothMenuBar";
 import { AppProps } from "../../base/types";
-import { Images, Timer, Camera } from "lucide-react";
+import { Images, Timer, Circle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { Webcam } from "@/components/Webcam";
@@ -1169,26 +1169,9 @@ export function PhotoBoothComponent({
 
           {/* Fixed bottom control bar that always takes full width without overflowing */}
           <div className="flex-shrink-0 w-full bg-black/70 backdrop-blur-md px-6 py-4 flex justify-between items-center z-[60]">
-            <div
-              className={cn(
-                "flex relative",
-                isMacTheme
-                  ? "relative overflow-hidden rounded-full shadow-lg px-1 py-1 gap-1"
-                  : "space-x-3"
-              )}
-              style={
-                isMacTheme
-                  ? {
-                      background:
-                        "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
-                      boxShadow:
-                        "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                    }
-                  : undefined
-              }
-            >
-              {isMacTheme && <AquaShineOverlay />}
-              {/* Thumbnail animation */}
+            {/* Left buttons wrapper - contains thumbnail animation and button segment */}
+            <div className="relative">
+              {/* Thumbnail animation - outside the overflow-hidden segment */}
               <AnimatePresence>
                 {showThumbnail && lastPhoto && !showPhotoStrip && (
                   <motion.div
@@ -1228,7 +1211,27 @@ export function PhotoBoothComponent({
                 )}
               </AnimatePresence>
 
-              <button
+              {/* Button segment */}
+              <div
+                className={cn(
+                  "flex relative",
+                  isMacTheme
+                    ? "overflow-hidden rounded-full shadow-lg px-1 py-1 gap-1"
+                    : "space-x-3"
+                )}
+                style={
+                  isMacTheme
+                    ? {
+                        background:
+                          "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
+                        boxShadow:
+                          "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+                      }
+                    : undefined
+                }
+              >
+                {isMacTheme && <AquaShineOverlay />}
+                <button
                 className={cn(
                   "h-10 w-10 rounded-full flex items-center justify-center text-white relative overflow-hidden transition-colors focus:outline-none",
                   isMacTheme ? "z-10" : "bg-white/10 hover:bg-white/20",
@@ -1299,75 +1302,68 @@ export function PhotoBoothComponent({
                   }
                 />
               </button>
+              </div>
             </div>
 
-            {/* Camera button segment */}
-            <div
-              className={cn(
-                "relative",
-                isMacTheme && "overflow-hidden rounded-full shadow-lg"
-              )}
-              style={
-                isMacTheme
-                  ? {
-                      background:
-                        "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
-                      boxShadow:
-                        "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
-                      padding: "4px",
+            {/* Camera capture button */}
+            <Button
+              onClick={
+                isMultiPhotoMode
+                  ? () => {}
+                  : () => {
+                      const event = new CustomEvent("webcam-capture");
+                      window.dispatchEvent(event);
                     }
-                  : undefined
               }
-            >
-              {isMacTheme && <AquaShineOverlay />}
-              <Button
-                onClick={
-                  isMultiPhotoMode
-                    ? () => {}
-                    : () => {
-                        const event = new CustomEvent("webcam-capture");
-                        window.dispatchEvent(event);
-                      }
+              className={cn(
+                "rounded-full h-14 w-14 [&_svg]:size-6 transition-colors focus:outline-none relative overflow-hidden",
+                isMultiPhotoMode
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-red-500 hover:bg-red-600"
+              )}
+              style={{
+                background: isXpTheme
+                  ? isMultiPhotoMode
+                    ? "#6b7280"
+                    : "#dc2626"
+                  : undefined,
+                border: isXpTheme ? "none" : undefined,
+                cursor: isMultiPhotoMode ? "not-allowed" : "pointer",
+              }}
+              onMouseEnter={(e) => {
+                if (isXpTheme && !isMultiPhotoMode) {
+                  e.currentTarget.style.background = "#b91c1c";
                 }
-                className={cn(
-                  "rounded-full h-14 w-14 [&_svg]:size-5 transition-colors focus:outline-none",
-                  isMacTheme && "z-10 relative",
-                  isMultiPhotoMode
-                    ? "bg-gray-500 cursor-not-allowed"
-                    : "bg-red-500 hover:bg-red-600"
-                )}
-                style={{
-                  background: isXpTheme
-                    ? isMultiPhotoMode
-                      ? "#6b7280"
-                      : "#dc2626"
-                    : undefined,
-                  border: isXpTheme ? "none" : undefined,
-                  cursor: isMultiPhotoMode ? "not-allowed" : "pointer",
-                }}
-                onMouseEnter={(e) => {
-                  if (isXpTheme && !isMultiPhotoMode) {
-                    e.currentTarget.style.background = "#b91c1c";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (isXpTheme && !isMultiPhotoMode) {
-                    e.currentTarget.style.background = "#dc2626";
-                  }
-                }}
-                disabled={isMultiPhotoMode}
-              >
-                <Camera
-                  fill="white"
-                  stroke="white"
-                  className={
-                    isMacTheme
-                      ? "drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
-                      : ""
-                  }
+              }}
+              onMouseLeave={(e) => {
+                if (isXpTheme && !isMultiPhotoMode) {
+                  e.currentTarget.style.background = "#dc2626";
+                }
+              }}
+              disabled={isMultiPhotoMode}
+            >
+              {isMacTheme && (
+                <div
+                  className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+                  style={{
+                    top: "3px",
+                    height: "40%",
+                    width: "calc(100% - 12px)",
+                    borderRadius: "100px",
+                    background:
+                      "linear-gradient(rgba(255,255,255,0.25), rgba(255,255,255,0.05))",
+                    filter: "blur(0.5px)",
+                    zIndex: 2,
+                  }}
                 />
-              </Button>
-            </div>
+              )}
+              <Circle
+                fill="white"
+                stroke="white"
+                strokeWidth={0}
+                className="relative z-10"
+              />
+            </Button>
 
             {/* Effects button segment */}
             <div
