@@ -13,6 +13,7 @@ interface VideoFullScreenPortalProps {
   isPlaying: boolean;
   onPlay: () => void;
   onPause: () => void;
+  onTogglePlay: () => void; // User-initiated toggle (bypasses transition guards)
   onEnded: () => void;
   onProgress: (state: { playedSeconds: number }) => void;
   onDuration: (duration: number) => void;
@@ -25,7 +26,6 @@ interface VideoFullScreenPortalProps {
   onPrevious?: () => void;
   showStatus?: (message: string) => void;
   statusMessage?: string | null;
-  initialTime?: number;
 }
 
 export function VideoFullScreenPortal({
@@ -35,6 +35,7 @@ export function VideoFullScreenPortal({
   isPlaying,
   onPlay,
   onPause,
+  onTogglePlay,
   onEnded,
   onProgress,
   onDuration,
@@ -47,23 +48,14 @@ export function VideoFullScreenPortal({
   onPrevious,
   showStatus,
   statusMessage,
-  initialTime,
 }: VideoFullScreenPortalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(true);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const hideControlsTimeoutRef = useRef<number | null>(null);
-
-  // Sync player time when entering fullscreen
-  useEffect(() => {
-    if (isOpen && initialTime !== undefined && playerRef.current) {
-      // Small delay to ensure player is ready
-      const timeoutId = setTimeout(() => {
-        playerRef.current?.seekTo(initialTime, "seconds");
-      }, 100);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [isOpen, initialTime, playerRef]);
+  
+  // Note: Player time sync is handled by the parent component (VideosAppComponent)
+  // which waits for the player to be ready before seeking
 
   // Helper function to restart the auto-hide timer
   const restartAutoHideTimer = useCallback(() => {
@@ -157,11 +149,8 @@ export function VideoFullScreenPortal({
         onClose();
       } else if (e.key === " ") {
         e.preventDefault();
-        if (isPlaying) {
-          onPause();
-        } else {
-          onPlay();
-        }
+        // Use toggle for user-initiated actions (bypasses transition guards)
+        onTogglePlay();
         restartAutoHideTimer();
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
@@ -191,7 +180,7 @@ export function VideoFullScreenPortal({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isPlaying, onClose, onPlay, onPause, onSeek, onNext, onPrevious, showStatus, playerRef, restartAutoHideTimer]);
+  }, [isOpen, isPlaying, onClose, onTogglePlay, onSeek, onNext, onPrevious, showStatus, playerRef, restartAutoHideTimer]);
 
   if (!isOpen) return null;
 
@@ -200,11 +189,8 @@ export function VideoFullScreenPortal({
       ref={containerRef}
       className="ipod-force-font fixed inset-0 z-[9999] bg-black select-none flex flex-col"
       onClick={() => {
-        if (isPlaying) {
-          onPause();
-        } else {
-          onPlay();
-        }
+        // Use toggle for user-initiated actions (bypasses transition guards)
+        onTogglePlay();
         restartAutoHideTimer();
       }}
     >
@@ -312,13 +298,7 @@ export function VideoFullScreenPortal({
         <FullscreenPlayerControls
           isPlaying={isPlaying}
           onPrevious={onPrevious || (() => {})}
-          onPlayPause={() => {
-            if (isPlaying) {
-              onPause();
-            } else {
-              onPlay();
-            }
-          }}
+          onPlayPause={onTogglePlay}
           onNext={onNext || (() => {})}
           currentAlignment={LyricsAlignment.Center}
           onAlignmentCycle={() => {}}

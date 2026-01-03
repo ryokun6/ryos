@@ -359,6 +359,23 @@ export function VideosAppComponent({
   const playerRef = useRef<ReactPlayer | null>(null);
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+
+  // Track switching state to prevent race conditions during fullscreen transitions
+  // Similar pattern used in iPod/Karaoke apps to handle mobile Safari issues
+  const isTrackSwitchingRef = useRef(false);
+  const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper to mark track/fullscreen switch start and schedule end
+  const startTrackSwitch = useCallback(() => {
+    isTrackSwitchingRef.current = true;
+    if (trackSwitchTimeoutRef.current) {
+      clearTimeout(trackSwitchTimeoutRef.current);
+    }
+    // Allow 2 seconds for YouTube to load before accepting play/pause events
+    trackSwitchTimeoutRef.current = setTimeout(() => {
+      isTrackSwitchingRef.current = false;
+    }, 2000);
+  }, []);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -528,6 +545,7 @@ export function VideosAppComponent({
   const nextVideo = () => {
     if (videos.length === 0) return;
     playButtonClick();
+    startTrackSwitch(); // Guard against race conditions during track switch
 
     const currentIndex = getCurrentIndex();
     if (currentIndex === videos.length - 1) {
@@ -546,6 +564,7 @@ export function VideosAppComponent({
   const previousVideo = () => {
     if (videos.length === 0) return;
     playButtonClick();
+    startTrackSwitch(); // Guard against race conditions during track switch
 
     const currentIndex = getCurrentIndex();
     if (currentIndex === 0) {
@@ -903,14 +922,14 @@ export function VideosAppComponent({
     }
   };
 
-  const handleProgress = (state: { playedSeconds: number }) => {
+  const handleProgress = useCallback((state: { playedSeconds: number }) => {
     setPlayedSeconds(state.playedSeconds);
     setElapsedTime(Math.floor(state.playedSeconds));
-  };
+  }, []);
 
-  const handleDuration = (duration: number) => {
+  const handleDuration = useCallback((duration: number) => {
     setDuration(duration);
-  };
+  }, []);
 
   const handleSeek = (time: number) => {
     const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
@@ -920,13 +939,31 @@ export function VideosAppComponent({
   };
 
   // Add new handlers for YouTube player state sync
-  const handlePlay = () => {
+  // These respect the track switching guard to prevent race conditions on mobile Safari
+  const handlePlay = useCallback(() => {
+    // Don't update state if we're in the middle of a track/fullscreen switch
+    if (isTrackSwitchingRef.current) {
+      return;
+    }
     setIsPlaying(true);
-  };
+  }, [setIsPlaying]);
 
-  const handlePause = () => {
+  const handlePause = useCallback(() => {
+    // Don't update state if we're in the middle of a track/fullscreen switch
+    if (isTrackSwitchingRef.current) {
+      return;
+    }
     setIsPlaying(false);
-  };
+  }, [setIsPlaying]);
+
+  // Main player pause handler - ignore pause when switching to fullscreen
+  const handleMainPlayerPause = useCallback(() => {
+    // Don't set isPlaying to false if we're in fullscreen mode or switching tracks
+    // (the pause was triggered by switching players, not user action)
+    if (!isFullScreen && !isTrackSwitchingRef.current) {
+      setIsPlaying(false);
+    }
+  }, [isFullScreen, setIsPlaying]);
 
   const handleReady = () => {
     // Always start from beginning but don't auto-play
@@ -935,16 +972,27 @@ export function VideosAppComponent({
   };
 
   const handleFullScreen = () => {
+    // Mark as track switching to prevent spurious play/pause events during sync
+    startTrackSwitch();
     setIsFullScreen(true);
     showStatus(t("apps.videos.status.fullscreen"));
   };
 
   const handleCloseFullScreen = () => {
+    // Mark as track switching to prevent spurious play/pause events during sync
+    startTrackSwitch();
     setIsFullScreen(false);
     // Sync time from fullscreen player to regular player
     if (fullScreenPlayerRef.current && playerRef.current) {
       const currentTime = fullScreenPlayerRef.current.getCurrentTime();
+      const wasPlaying = isPlaying;
       playerRef.current.seekTo(currentTime, "seconds");
+      // Ensure playback state is preserved after sync
+      if (wasPlaying) {
+        setTimeout(() => {
+          setIsPlaying(true);
+        }, 100);
+      }
     }
     // Exit browser fullscreen if active
     if (document.fullscreenElement) {
@@ -974,15 +1022,57 @@ export function VideosAppComponent({
     return `${window.location.origin}/videos/${videoId}`;
   };
 
-  // Cleanup timeout on unmount
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (statusTimeoutRef.current) {
         clearTimeout(statusTimeoutRef.current);
         statusTimeoutRef.current = null;
       }
+      if (trackSwitchTimeoutRef.current) {
+        clearTimeout(trackSwitchTimeoutRef.current);
+        trackSwitchTimeoutRef.current = null;
+      }
     };
   }, []);
+
+  // Sync playback position when entering fullscreen (similar to Karaoke app)
+  const prevFullScreenRef = useRef(isFullScreen);
+  useEffect(() => {
+    if (isFullScreen && !prevFullScreenRef.current) {
+      // Just entered fullscreen - sync position from main player to fullscreen player
+      const currentTime = playerRef.current?.getCurrentTime() || playedSeconds;
+      const wasPlaying = isPlaying;
+
+      // Wait for fullscreen player to be ready before seeking
+      const checkAndSync = () => {
+        const internalPlayer = fullScreenPlayerRef.current?.getInternalPlayer?.();
+        if (internalPlayer && typeof internalPlayer.getPlayerState === "function") {
+          const playerState = internalPlayer.getPlayerState();
+          // YouTube player states: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (video cued)
+          // Wait until player is past the unstarted state
+          if (playerState !== -1) {
+            fullScreenPlayerRef.current?.seekTo(currentTime, "seconds");
+            if (wasPlaying && typeof internalPlayer.playVideo === "function") {
+              internalPlayer.playVideo();
+            }
+            // End track switch guard after sync complete
+            if (trackSwitchTimeoutRef.current) {
+              clearTimeout(trackSwitchTimeoutRef.current);
+            }
+            trackSwitchTimeoutRef.current = setTimeout(() => {
+              isTrackSwitchingRef.current = false;
+            }, 500);
+            return;
+          }
+        }
+        // Player not ready yet, retry
+        setTimeout(checkAndSync, 100);
+      };
+      setTimeout(checkAndSync, 100);
+    }
+    prevFullScreenRef.current = isFullScreen;
+  }, [isFullScreen, playedSeconds, isPlaying]);
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -1057,7 +1147,7 @@ export function VideosAppComponent({
                     <ReactPlayer
                       ref={playerRef}
                       url={getCurrentVideo()?.url || ""}
-                      playing={isPlaying}
+                      playing={isPlaying && !isFullScreen}
                       controls={false}
                       width="calc(100% + 1px)"
                       height="calc(100% + 1px)"
@@ -1065,7 +1155,7 @@ export function VideosAppComponent({
                       onProgress={handleProgress}
                       onDuration={handleDuration}
                       onPlay={handlePlay}
-                      onPause={handlePause}
+                      onPause={handleMainPlayerPause}
                       onReady={handleReady}
                       loop={loopCurrent}
                       playsinline
@@ -1477,6 +1567,7 @@ export function VideosAppComponent({
           isPlaying={isPlaying}
           onPlay={handlePlay}
           onPause={handlePause}
+          onTogglePlay={togglePlay}
           onEnded={handleVideoEnd}
           onProgress={handleProgress}
           onDuration={handleDuration}
@@ -1489,7 +1580,6 @@ export function VideosAppComponent({
           onPrevious={previousVideo}
           showStatus={showStatus}
           statusMessage={statusMessage}
-          initialTime={playedSeconds}
         />
       )}
     </>
