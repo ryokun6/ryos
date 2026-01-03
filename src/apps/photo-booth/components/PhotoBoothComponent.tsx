@@ -7,7 +7,7 @@ import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { PhotoBoothMenuBar } from "./PhotoBoothMenuBar";
 import { AppProps } from "../../base/types";
-import { Images, Timer, Circle } from "lucide-react";
+import { Images, Timer, Camera } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { Webcam } from "@/components/Webcam";
@@ -1388,10 +1388,9 @@ export function PhotoBoothComponent({
                   />
                 </>
               )}
-              <Circle
+              <Camera
                 fill="white"
                 stroke="white"
-                strokeWidth={0}
                 className={isMacTheme ? "relative z-10" : ""}
               />
             </Button>
