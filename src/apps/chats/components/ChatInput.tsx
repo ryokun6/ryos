@@ -748,7 +748,7 @@ export function ChatInput({
                     </>
                   )}
                   <ArrowUp
-                    className={`h-6 w-6 ${
+                    className={`h-4 w-4 ${
                       isMacTheme
                         ? "text-black/70 relative z-10"
                         : isXpTheme
