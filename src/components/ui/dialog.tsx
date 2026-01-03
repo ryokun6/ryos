@@ -156,7 +156,7 @@ const DialogHeader = ({
         <div className="title-bar-text">{children}</div>
         <div className="title-bar-controls">
           <DialogPrimitive.Close asChild>
-            <button aria-label={t("common.dialog.close")} />
+            <button aria-label={t("common.dialog.close")} data-action="close" />
           </DialogPrimitive.Close>
         </div>
       </div>

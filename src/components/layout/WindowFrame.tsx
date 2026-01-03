@@ -1194,6 +1194,7 @@ export function WindowFrame({
               <div className="title-bar-controls" data-titlebar-controls>
                 <button
                   aria-label={t("common.window.minimize")}
+                  data-action="minimize"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleMinimize();
@@ -1203,6 +1204,7 @@ export function WindowFrame({
                 />
                 <button
                   aria-label={t("common.window.maximize")}
+                  data-action="maximize"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleFullMaximize(e);
@@ -1212,6 +1214,7 @@ export function WindowFrame({
                 />
                 <button
                   aria-label={t("common.window.close")}
+                  data-action="close"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleClose();
