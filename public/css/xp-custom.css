@@ -132,6 +132,19 @@ button:focus {
   outline-offset: -4px;
 }
 
+/* Switch toggle - reset button styles */
+button.os-switch {
+  background: none;
+  box-shadow: none;
+  border-radius: 9999px;
+}
+
+button.os-switch:active,
+button.os-switch:focus {
+  box-shadow: none;
+  outline: none;
+}
+
 label {
   display: inline-flex;
   align-items: center;

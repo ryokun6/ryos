@@ -166,7 +166,7 @@ function ScreenSaverPreview({ type, onClick, disabled, label }: ScreenSaverPrevi
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="py-2 relative group cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
+      className="preview-button relative group cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
     >
       {useEmbeddedPreview ? (
         <div
@@ -261,7 +261,7 @@ export function ScreenSaverPicker({ onPreview }: ScreenSaverPickerProps) {
         <>
           {/* Screen Saver Type Selection and Slider */}
           <div className="flex gap-6">
-            <div className="flex-shrink-0 flex flex-col">
+            <div className="flex-shrink-0 flex flex-col justify-center items-start">
               <ScreenSaverPreview
                 type={screenSaverType}
                 onClick={handlePreview}

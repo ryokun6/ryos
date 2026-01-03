@@ -74,8 +74,8 @@ function WallpaperItem({
     return (
       <button
         type="button"
-        className={`w-full aspect-video cursor-pointer hover:opacity-90 ${
-          isSelected ? "border-2 ring-2 ring-black border-white" : "border-0"
+        className={`preview-button w-full aspect-video cursor-pointer hover:opacity-90 ${
+          isSelected ? "!border-2 ring-2 ring-black !border-white" : ""
         } relative overflow-hidden`}
         onClick={handleClick}
         onKeyDown={(e) => {
@@ -118,10 +118,10 @@ function WallpaperItem({
   return (
     <button
       type="button"
-      className={`w-full ${
+      className={`preview-button w-full ${
         isTile ? "aspect-square" : "aspect-video"
       } cursor-pointer hover:opacity-90 ${
-        isSelected ? "border-2 ring-2 ring-black border-white" : "border-0"
+        isSelected ? "!border-2 ring-2 ring-black !border-white" : ""
       }`}
       style={{
         backgroundImage: `url(${displayUrl})`,
@@ -412,7 +412,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
             <>
               <button
                 type="button"
-                className="w-full aspect-video border-[2px] border-dotted border-gray-400 cursor-pointer hover:opacity-90 flex items-center justify-center"
+                className="preview-button w-full aspect-video !border-[2px] !border-dotted !border-gray-400 cursor-pointer hover:opacity-90 flex items-center justify-center"
                 onClick={() => fileInputRef.current?.click()}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {

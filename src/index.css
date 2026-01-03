@@ -509,6 +509,26 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     -ms-touch-action: none !important;
     -webkit-touch-callout: none !important;
   }
+
+  /* Preview button reset - removes XP/98 theme button styling for image/canvas preview buttons */
+  button.preview-button {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    outline: none !important;
+    outline-offset: 0 !important;
+  }
+
+  button.preview-button:focus,
+  button.preview-button:active,
+  button.preview-button:hover {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
 }
 
 @keyframes highlight-bg-opacity {
