@@ -1317,19 +1317,33 @@ export function PhotoBoothComponent({
               }
               className={cn(
                 "rounded-full h-14 w-14 [&_svg]:size-6 transition-colors focus:outline-none relative overflow-hidden",
-                isMultiPhotoMode
+                isMacTheme
+                  ? "transition-transform hover:scale-105"
+                  : isMultiPhotoMode
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-red-500 hover:bg-red-600"
               )}
-              style={{
-                background: isXpTheme
-                  ? isMultiPhotoMode
-                    ? "#6b7280"
-                    : "#dc2626"
-                  : undefined,
-                border: isXpTheme ? "none" : undefined,
-                cursor: isMultiPhotoMode ? "not-allowed" : "pointer",
-              }}
+              style={
+                isMacTheme
+                  ? {
+                      background: isMultiPhotoMode
+                        ? "linear-gradient(rgba(156, 163, 175, 0.9), rgba(107, 114, 128, 0.9))"
+                        : "linear-gradient(rgba(254, 150, 150, 0.95), rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95))",
+                      boxShadow: isMultiPhotoMode
+                        ? "0 2px 3px rgba(0,0,0,0.2), 0 1px 1px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(0,0,0,0.3), inset 0 1px 2px rgba(0,0,0,0.4), inset 0 2px 3px 1px rgba(156, 163, 175, 0.5)"
+                        : "0 2px 3px rgba(0,0,0,0.2), 0 1px 1px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(0,0,0,0.3), inset 0 1px 2px rgba(0,0,0,0.4), inset 0 2px 3px 1px rgba(254, 150, 150, 0.5)",
+                      cursor: isMultiPhotoMode ? "not-allowed" : "pointer",
+                    }
+                  : isXpTheme
+                  ? {
+                      background: isMultiPhotoMode ? "#6b7280" : "#dc2626",
+                      border: "none",
+                      cursor: isMultiPhotoMode ? "not-allowed" : "pointer",
+                    }
+                  : {
+                      cursor: isMultiPhotoMode ? "not-allowed" : "pointer",
+                    }
+              }
               onMouseEnter={(e) => {
                 if (isXpTheme && !isMultiPhotoMode) {
                   e.currentTarget.style.background = "#b91c1c";
@@ -1343,25 +1357,42 @@ export function PhotoBoothComponent({
               disabled={isMultiPhotoMode}
             >
               {isMacTheme && (
-                <div
-                  className="pointer-events-none absolute left-1/2 -translate-x-1/2"
-                  style={{
-                    top: "3px",
-                    height: "40%",
-                    width: "calc(100% - 12px)",
-                    borderRadius: "100px",
-                    background:
-                      "linear-gradient(rgba(255,255,255,0.25), rgba(255,255,255,0.05))",
-                    filter: "blur(0.5px)",
-                    zIndex: 2,
-                  }}
-                />
+                <>
+                  {/* Top shine */}
+                  <div
+                    className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+                    style={{
+                      top: "3px",
+                      height: "30%",
+                      width: "calc(100% - 20px)",
+                      borderRadius: "12px 12px 4px 4px",
+                      background:
+                        "linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.25))",
+                      filter: "blur(0.2px)",
+                      zIndex: 2,
+                    }}
+                  />
+                  {/* Bottom glow */}
+                  <div
+                    className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+                    style={{
+                      bottom: "2px",
+                      height: "38%",
+                      width: "calc(100% - 6px)",
+                      borderRadius: "4px 4px 100% 100%",
+                      background:
+                        "linear-gradient(rgba(255,255,255,0.15), rgba(255,255,255,0.55))",
+                      filter: "blur(0.3px)",
+                      zIndex: 1,
+                    }}
+                  />
+                </>
               )}
               <Circle
                 fill="white"
                 stroke="white"
                 strokeWidth={0}
-                className="relative z-10"
+                className={isMacTheme ? "relative z-10" : ""}
               />
             </Button>
 
