@@ -7,7 +7,8 @@ import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { PhotoBoothMenuBar } from "./PhotoBoothMenuBar";
 import { AppProps } from "../../base/types";
-import { Images, Timer, Camera } from "lucide-react";
+import { Images, Timer } from "lucide-react";
+import { Camera } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { Webcam } from "@/components/Webcam";
@@ -1362,12 +1363,12 @@ export function PhotoBoothComponent({
                   <div
                     className="pointer-events-none absolute left-1/2 -translate-x-1/2"
                     style={{
-                      top: "3px",
+                      top: "2px",
                       height: "30%",
-                      width: "calc(100% - 20px)",
-                      borderRadius: "12px 12px 4px 4px",
+                      width: "calc(100% - 28px)",
+                      borderRadius: "12px 12px 6px 6px",
                       background:
-                        "linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.25))",
+                        "linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.15))",
                       filter: "blur(0.2px)",
                       zIndex: 2,
                     }}
@@ -1376,12 +1377,12 @@ export function PhotoBoothComponent({
                   <div
                     className="pointer-events-none absolute left-1/2 -translate-x-1/2"
                     style={{
-                      bottom: "2px",
+                      bottom: "0px",
                       height: "38%",
                       width: "calc(100% - 6px)",
-                      borderRadius: "4px 4px 100% 100%",
+                      borderRadius: "6px 6px 100% 100%",
                       background:
-                        "linear-gradient(rgba(255,255,255,0.15), rgba(255,255,255,0.55))",
+                        "linear-gradient(rgba(255,255,255,0), rgba(255,255,255,0.35))",
                       filter: "blur(0.3px)",
                       zIndex: 1,
                     }}
@@ -1389,8 +1390,8 @@ export function PhotoBoothComponent({
                 </>
               )}
               <Camera
-                fill="white"
-                stroke="white"
+                weight="fill"
+                color="white"
                 className={isMacTheme ? "relative z-10" : ""}
               />
             </Button>
