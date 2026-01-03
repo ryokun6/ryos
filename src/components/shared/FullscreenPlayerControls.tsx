@@ -4,7 +4,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
-import { Translate, CornersOut, X, ClockClockwise, SkipBack, SkipForward, Play, Pause } from "@phosphor-icons/react";
+import { Translate, ArrowsOutSimple, X, ClockClockwise, SkipBack, SkipForward, Play, Pause } from "@phosphor-icons/react";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -559,7 +559,7 @@ export function FullscreenPlayerControls({
               aria-label={t("apps.ipod.ariaLabels.enterFullscreen")}
               title={t("apps.ipod.ariaLabels.enterFullscreen")}
             >
-              <CornersOut
+              <ArrowsOutSimple
                 weight="bold"
                 size={svgSize}
                 className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
