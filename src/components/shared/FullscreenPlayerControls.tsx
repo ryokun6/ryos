@@ -4,7 +4,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
-import { Globe, CornersOut, X, ClockClockwise, SkipBack, SkipForward, Play, Pause } from "@phosphor-icons/react";
+import { Translate, CornersOut, X, ClockClockwise, SkipBack, SkipForward, Play, Pause } from "@phosphor-icons/react";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -376,8 +376,8 @@ export function FullscreenPlayerControls({
                   {translationBadge}
                 </span>
               ) : (
-                <Globe
-                  weight="fill"
+                <Translate
+                  weight="bold"
                   size={svgSize}
                   className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
                 />

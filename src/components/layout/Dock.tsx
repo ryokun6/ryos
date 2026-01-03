@@ -338,10 +338,10 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
                 x: "-50%",
                 transition: { duration: isSwapping ? 0 : 0.15 }
               }}
-              className="absolute bottom-full mb-3 left-1/2 px-3 py-1 bg-gray-800 text-white/90 text-sm font-medium rounded-full shadow-xl whitespace-nowrap pointer-events-none z-50"
+              className="absolute bottom-full mb-3 left-1/2 px-3 py-1 bg-neutral-800 text-white/90 text-sm font-medium rounded-full shadow-xl whitespace-nowrap pointer-events-none z-50"
             >
               {label}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-[5px] border-x-transparent border-t-[5px] border-t-gray-800" />
+              <div className="absolute top-full left-1/2 -translate-x-1/2 w-[10px] h-[5px] bg-neutral-800" style={{ clipPath: "polygon(50% 100%, 0% 0%, 100% 0%)" }} />
             </motion.div>
           )}
         </AnimatePresence>
