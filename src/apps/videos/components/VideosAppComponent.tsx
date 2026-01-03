@@ -22,6 +22,8 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
+import { VideoFullScreenPortal } from "./VideoFullScreenPortal";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 
 interface Video {
   id: string;
@@ -355,6 +357,8 @@ export function VideosAppComponent({
   const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
   const [isAddingVideo, setIsAddingVideo] = useState(false);
   const playerRef = useRef<ReactPlayer | null>(null);
+  const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -909,8 +913,9 @@ export function VideosAppComponent({
   };
 
   const handleSeek = (time: number) => {
-    if (playerRef.current) {
-      playerRef.current.seekTo(time, "seconds");
+    const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+    if (activePlayer) {
+      activePlayer.seekTo(time, "seconds");
     }
   };
 
@@ -930,40 +935,30 @@ export function VideosAppComponent({
   };
 
   const handleFullScreen = () => {
-    try {
-      // First try to get the iframe element
-      const playerElement = playerRef.current?.getInternalPlayer();
+    setIsFullScreen(true);
+    showStatus(t("apps.videos.status.fullscreen"));
+  };
 
-      // For YouTube videos, the player is inside an iframe
-      if (playerElement) {
-        // Try to find the iframe element
-        const iframe = playerElement.getIframe
-          ? playerElement.getIframe()
-          : playerElement;
+  const handleCloseFullScreen = () => {
+    setIsFullScreen(false);
+    // Sync time from fullscreen player to regular player
+    if (fullScreenPlayerRef.current && playerRef.current) {
+      const currentTime = fullScreenPlayerRef.current.getCurrentTime();
+      playerRef.current.seekTo(currentTime, "seconds");
+    }
+    // Exit browser fullscreen if active
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch((err) => {
+        console.error("Error exiting fullscreen:", err);
+      });
+    }
+  };
 
-        if (iframe && iframe.requestFullscreen) {
-          iframe.requestFullscreen();
-          showStatus(t("apps.videos.status.fullscreen"));
-          return;
-        }
-      }
-
-      // Fallback: try to find the iframe directly in the DOM
-      const playerContainer = document.querySelector(".react-player iframe");
-      if (playerContainer && playerContainer.requestFullscreen) {
-        playerContainer.requestFullscreen();
-        showStatus(t("apps.videos.status.fullscreen"));
-        return;
-      }
-
-      // Last resort: make the container fullscreen
-      const container = document.querySelector(".react-player");
-      if (container && container.requestFullscreen) {
-        container.requestFullscreen();
-        showStatus(t("apps.videos.status.fullscreen"));
-      }
-    } catch (error) {
-      console.error("Fullscreen error:", error);
+  const toggleFullScreen = () => {
+    if (isFullScreen) {
+      handleCloseFullScreen();
+    } else {
+      handleFullScreen();
     }
   };
 
@@ -992,6 +987,7 @@ export function VideosAppComponent({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacOSTheme = currentTheme === "macosx";
+  const masterVolume = useAudioSettingsStore((state) => state.masterVolume);
 
   const menuBar = (
     <VideosMenuBar
@@ -1046,6 +1042,7 @@ export function VideosAppComponent({
         onNavigateNext={onNavigateNext}
         onNavigatePrevious={onNavigatePrevious}
         menuBar={isXpTheme ? menuBar : undefined}
+        onFullscreenToggle={toggleFullScreen}
       >
         <div className="flex flex-col w-full h-full bg-[#1a1a1a] text-white">
           <div className="flex-1 relative overflow-hidden">
@@ -1056,21 +1053,22 @@ export function VideosAppComponent({
                 onMouseLeave={() => setIsVideoHovered(false)}
               >
                 <div className="w-full h-[calc(100%+300px)] mt-[-150px] relative">
-                  <ReactPlayer
-                    ref={playerRef}
-                    url={getCurrentVideo()?.url || ""}
-                    playing={isPlaying}
-                    controls={false}
-                    width="calc(100% + 1px)"
-                    height="calc(100% + 1px)"
-                    onEnded={handleVideoEnd}
-                    onProgress={handleProgress}
-                    onDuration={handleDuration}
-                    onPlay={handlePlay}
-                    onPause={handlePause}
-                    onReady={handleReady}
-                    loop={loopCurrent}
-                    playsinline
+                  {!isFullScreen && (
+                    <ReactPlayer
+                      ref={playerRef}
+                      url={getCurrentVideo()?.url || ""}
+                      playing={isPlaying}
+                      controls={false}
+                      width="calc(100% + 1px)"
+                      height="calc(100% + 1px)"
+                      onEnded={handleVideoEnd}
+                      onProgress={handleProgress}
+                      onDuration={handleDuration}
+                      onPlay={handlePlay}
+                      onPause={handlePause}
+                      onReady={handleReady}
+                      loop={loopCurrent}
+                      playsinline
                                 config={{
                                       youtube: {
                                         playerVars: {
@@ -1093,7 +1091,8 @@ export function VideosAppComponent({
                                         },
                                       },
                                     }}
-                  />
+                    />
+                  )}
                   {/* White noise effect (z-10) */}
                   <AnimatePresence>
                     {!isPlaying && (
@@ -1470,6 +1469,29 @@ export function VideosAppComponent({
           generateShareUrl={videosGenerateShareUrl}
         />
       </WindowFrame>
+      {isFullScreen && getCurrentVideo() && (
+        <VideoFullScreenPortal
+          isOpen={isFullScreen}
+          onClose={handleCloseFullScreen}
+          url={getCurrentVideo()?.url || ""}
+          isPlaying={isPlaying}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onEnded={handleVideoEnd}
+          onProgress={handleProgress}
+          onDuration={handleDuration}
+          onReady={handleReady}
+          loop={loopCurrent}
+          volume={masterVolume}
+          playerRef={fullScreenPlayerRef as React.RefObject<ReactPlayer>}
+          onSeek={handleSeek}
+          onNext={nextVideo}
+          onPrevious={previousVideo}
+          showStatus={showStatus}
+          statusMessage={statusMessage}
+          initialTime={playedSeconds}
+        />
+      )}
     </>
   );
 }

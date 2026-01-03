@@ -91,6 +91,9 @@ export interface FullscreenPlayerControlsProps {
 
   // Portal container for fullscreen mode (dropdown menus need to render inside the fullscreen element)
   portalContainer?: HTMLElement | null;
+
+  // Hide lyrics controls island (for video players without lyrics)
+  hideLyricsControls?: boolean;
 }
 
 export function FullscreenPlayerControls({
@@ -118,6 +121,7 @@ export function FullscreenPlayerControls({
   bgOpacity = "35",
   onInteraction,
   portalContainer,
+  hideLyricsControls = false,
 }: FullscreenPlayerControlsProps) {
   const { t, i18n } = useTranslation();
   const currentTheme = useThemeStore((s) => s.current);
@@ -253,7 +257,8 @@ export function FullscreenPlayerControls({
       </div>
 
       {/* Lyrics controls island */}
-      <div className={segmentClasses} style={aquaSegmentStyle}>
+      {!hideLyricsControls && (
+        <div className={segmentClasses} style={aquaSegmentStyle}>
         {isMacTheme && <AquaShineOverlays variant={variant} />}
         {/* Sync mode (lyrics timing) */}
         {onSyncMode && (
@@ -544,7 +549,8 @@ export function FullscreenPlayerControls({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-      </div>
+        </div>
+      )}
 
       {/* Close/Expand island */}
       {(onFullscreen || onClose) && (
