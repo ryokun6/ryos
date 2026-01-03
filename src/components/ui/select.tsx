@@ -6,21 +6,21 @@ import { useThemeStore } from "@/stores/useThemeStore";
 
 import { cn } from "@/lib/utils";
 
-const Select = ({ children, ...props }: SelectPrimitive.SelectProps) => {
+const Select = ({ children, onOpenChange, ...props }: SelectPrimitive.SelectProps) => {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
   const { play: playMenuClose } = useSound(Sounds.MENU_CLOSE);
 
   return (
     <SelectPrimitive.Root
+      {...props}
       onOpenChange={(open) => {
         if (open) {
           playMenuOpen();
         } else {
           playMenuClose();
         }
-        props.onOpenChange?.(open);
+        onOpenChange?.(open);
       }}
-      {...props}
     >
       {children}
     </SelectPrimitive.Root>

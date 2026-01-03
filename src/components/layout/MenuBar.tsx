@@ -730,12 +730,12 @@ function VolumeControl() {
 
   const getVolumeIcon = () => {
     if (masterVolume === 0) {
-      return <SpeakerSimpleSlash className="h-5 w-5" weight="fill" />;
+      return <SpeakerSimpleSlash size={12} weight="fill" />;
     }
     if (masterVolume < 0.5) {
-      return <SpeakerSimpleLow className="h-5 w-5" weight="fill" />;
+      return <SpeakerSimpleLow size={12} weight="fill" />;
     }
-    return <SpeakerSimpleHigh className="h-5 w-5" weight="fill" />;
+    return <SpeakerSimpleHigh size={12} weight="fill" />;
   };
 
   return (

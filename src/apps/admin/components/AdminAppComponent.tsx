@@ -971,7 +971,7 @@ export function AdminAppComponent({
                       {isImporting ? (
                         <ActivityIndicator size={14} />
                       ) : (
-                        <DownloadSimple className="h-3.5 w-3.5" weight="bold" />
+                        <DownloadSimple size={14} weight="bold" />
                       )}
                     </Button>
                     {/* Export button */}
@@ -986,7 +986,7 @@ export function AdminAppComponent({
                       {isExporting ? (
                         <ActivityIndicator size={14} />
                       ) : (
-                        <UploadSimple className="h-3.5 w-3.5" weight="bold" />
+                        <UploadSimple size={14} weight="bold" />
                       )}
                     </Button>
                     {/* Delete all button */}
@@ -1001,7 +1001,7 @@ export function AdminAppComponent({
                       {isDeletingAll ? (
                         <ActivityIndicator size={14} />
                       ) : (
-                        <Trash className="h-3.5 w-3.5" weight="bold" />
+                        <Trash size={14} weight="bold" />
                       )}
                     </Button>
                   </>
@@ -1026,7 +1026,7 @@ export function AdminAppComponent({
                     onClick={() => promptDelete("room", selectedRoomId, selectedRoom?.name || "")}
                     className="h-7 w-7 p-0"
                   >
-                    <Trash className="h-3.5 w-3.5" weight="bold" />
+                    <Trash size={14} weight="bold" />
                   </Button>
                 )}
 
@@ -1039,7 +1039,7 @@ export function AdminAppComponent({
                   {isLoading ? (
                     <ActivityIndicator size={14} />
                   ) : (
-                    <ArrowsClockwise className="h-3.5 w-3.5" weight="bold" />
+                    <ArrowsClockwise size={14} weight="bold" />
                   )}
                 </Button>
               </div>
@@ -1149,7 +1149,7 @@ export function AdminAppComponent({
                                     }}
                                     className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
                                   >
-                                    <Trash className="h-3 w-3" weight="bold" />
+                                    <Trash size={14} weight="bold" />
                                   </Button>
                                 )}
                               </TableCell>
@@ -1234,7 +1234,7 @@ export function AdminAppComponent({
                                 }}
                                 className="h-6 w-6 p-0 flex-shrink-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
                               >
-                                <Trash className="h-3.5 w-3.5" weight="bold" />
+                                <Trash size={14} weight="bold" />
                               </Button>
                             </div>
                           ))}
@@ -1318,7 +1318,7 @@ export function AdminAppComponent({
                                 }}
                                 className="h-5 w-5 p-0 md:opacity-0 md:group-hover:opacity-100 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-100"
                               >
-                                <Trash className="h-3 w-3" weight="bold" />
+                                <Trash size={14} weight="bold" />
                               </Button>
                             </TableCell>
                           </TableRow>

@@ -1102,7 +1102,7 @@ export function FinderAppComponent({
                   disabled={!canNavigateBack()}
                   className="h-8 w-8"
                 >
-                  <ArrowLeft className="h-4 w-4" weight="bold" />
+                  <ArrowLeft size={14} weight="bold" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -1111,7 +1111,7 @@ export function FinderAppComponent({
                   disabled={!canNavigateForward()}
                   className="h-8 w-8"
                 >
-                  <ArrowRight className="h-4 w-4" weight="bold" />
+                  <ArrowRight size={14} weight="bold" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -1162,7 +1162,7 @@ export function FinderAppComponent({
                     }
                   }}
                 >
-                  <ArrowLeft className="h-4 w-4 rotate-90" weight="bold" />
+                  <ArrowLeft size={14} className="rotate-90" weight="bold" />
                 </Button>
               </div>
               <Input

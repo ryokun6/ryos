@@ -9,8 +9,9 @@ import {
   DropdownMenuSubContent,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { useSound, Sounds } from "@/hooks/useSound";
 
 // ------------------ Types ------------------
 export type MenuItem =
@@ -154,6 +155,15 @@ export function RightClickMenu({
   items,
   align = "start",
 }: RightClickMenuProps) {
+  const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
+
+  // Play open sound when menu appears
+  useEffect(() => {
+    if (position) {
+      playMenuOpen();
+    }
+  }, [position, playMenuOpen]);
+
   if (!position) return null;
 
   return (

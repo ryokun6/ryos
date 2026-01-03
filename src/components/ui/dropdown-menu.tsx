@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 const DropdownMenu = ({
   children,
+  onOpenChange,
   ...props
 }: DropdownMenuPrimitive.DropdownMenuProps) => {
   const { play: playMenuOpen } = useSound(Sounds.MENU_OPEN);
@@ -16,15 +17,15 @@ const DropdownMenu = ({
 
   return (
     <DropdownMenuPrimitive.Root
+      {...props}
       onOpenChange={(open) => {
         if (open) {
           playMenuOpen();
         } else {
           playMenuClose();
         }
-        props.onOpenChange?.(open);
+        onOpenChange?.(open);
       }}
-      {...props}
     >
       {children}
     </DropdownMenuPrimitive.Root>

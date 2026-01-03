@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { useSound, Sounds } from "@/hooks/useSound";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
@@ -121,6 +122,7 @@ export function FullscreenPlayerControls({
   const { t, i18n } = useTranslation();
   const currentTheme = useThemeStore((s) => s.current);
   const isMacTheme = currentTheme === "macosx";
+  const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
 
   const translationBadge = getTranslationBadge(currentTranslationCode);
 
@@ -162,6 +164,7 @@ export function FullscreenPlayerControls({
 
   const handleClick = (handler: () => void) => (e: React.MouseEvent) => {
     e.stopPropagation();
+    playClick();
     onInteraction?.();
     handler();
   };

@@ -2042,7 +2042,7 @@ export function InternetExplorerAppComponent({
                     disabled={isOffline || historyIndex >= history.length - 1}
                     className="h-8 w-8"
                   >
-                    <ArrowLeft className="h-4 w-4" weight="bold" />
+                    <ArrowLeft size={14} weight="bold" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -2051,7 +2051,7 @@ export function InternetExplorerAppComponent({
                     disabled={isOffline || historyIndex <= 0}
                     className="h-8 w-8"
                   >
-                    <ArrowRight className="h-4 w-4" weight="bold" />
+                    <ArrowRight size={14} weight="bold" />
                   </Button>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -2062,7 +2062,7 @@ export function InternetExplorerAppComponent({
                         className="h-8 w-8 focus-visible:ring-0 focus-visible:ring-offset-0"
                         aria-label="Share this page"
                       >
-                        <Export className="h-4 w-4" weight="bold" />
+                        <Export size={14} weight="bold" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">

@@ -87,7 +87,7 @@ export function VolumeMixer({
                 onClick={handleMasterMuteToggle}
                 className={`h-8 w-8 ${masterVolume === 0 ? "opacity-40" : ""}`}
               >
-                <SpeakerHigh size={20} weight="fill" />
+                <SpeakerHigh size={14} weight="fill" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
@@ -122,7 +122,7 @@ export function VolumeMixer({
                 onClick={handleUiMuteToggle}
                 className={`h-8 w-8 ${uiVolume === 0 ? "opacity-40" : ""}`}
               >
-                <CursorClick size={20} weight="fill" />
+                <CursorClick size={14} weight="fill" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
@@ -157,7 +157,7 @@ export function VolumeMixer({
                 onClick={handleSpeechMuteToggle}
                 className={`h-8 w-8 ${speechVolume === 0 ? "opacity-40" : ""}`}
               >
-                <ChatCircleDots size={20} weight="fill" />
+                <ChatCircleDots size={14} weight="fill" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
@@ -194,7 +194,7 @@ export function VolumeMixer({
                   chatSynthVolume === 0 ? "opacity-40" : ""
                 }`}
               >
-                <WaveSquare size={20} weight="fill" />
+                <WaveSquare size={14} weight="fill" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
@@ -241,7 +241,7 @@ export function VolumeMixer({
                   !isIOS && ipodVolume === 0 ? "opacity-40" : ""
                 }`}
               >
-                <MusicNote size={20} weight="fill" />
+                <MusicNote size={14} weight="fill" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
