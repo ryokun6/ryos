@@ -132,17 +132,48 @@ button:focus {
   outline-offset: -4px;
 }
 
-/* Switch toggle - reset button styles */
+/* Switch toggle - XP themed */
 button.os-switch {
-  background: none;
-  box-shadow: none;
-  border-radius: 9999px;
+  height: 16px !important;
+  width: 28px !important;
+  border-radius: 8px !important;
+  border: 1px solid #848484 !important;
+  background: linear-gradient(180deg, #fff 0%, #ece9d8 100%) !important;
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.15) !important;
+  padding: 0 1px !important;
+}
+
+button.os-switch[data-state="checked"] {
+  background: linear-gradient(180deg, #2361a6 0%, #3d8fcc 100%) !important;
+  border-color: #1a4a7c !important;
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.15) !important;
+}
+
+button.os-switch:hover:not(:disabled) {
+  border-color: #f8b636 !important;
 }
 
 button.os-switch:active,
 button.os-switch:focus {
-  box-shadow: none;
-  outline: none;
+  outline: none !important;
+}
+
+button.os-switch:disabled {
+  opacity: 0.6 !important;
+}
+
+/* Switch thumb */
+button.os-switch .os-switch-thumb {
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 6px !important;
+  background: linear-gradient(180deg, #fff 0%, #ece9d8 100%) !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+  transform: translateX(0) !important;
+}
+
+button.os-switch[data-state="checked"] .os-switch-thumb {
+  transform: translateX(2px) !important;
 }
 
 label {
