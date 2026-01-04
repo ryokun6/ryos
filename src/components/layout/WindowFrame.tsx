@@ -185,14 +185,15 @@ export function WindowFrame({
   }, [startTitlebarAutoHideTimer, disableTitlebarAutoHide]);
 
   // On mobile browsers, taps can generate "emulated" mouse events that bubble up and
-  // repeatedly retrigger notitlebar auto-hide. Ignore those to prevent the titlebar
-  // from continuously reappearing without real mouse interaction.
-  const isEmulatedMouseEventFromTouch = (e: React.MouseEvent) => {
-    const ne = e.nativeEvent as unknown as {
-      sourceCapabilities?: { firesTouchEvents?: boolean };
-    };
-    return Boolean(ne?.sourceCapabilities?.firesTouchEvents);
-  };
+  // repeatedly retrigger notitlebar auto-hide. Avoid this by only revealing the
+  // titlebar for real mouse pointers (trackpad/mouse), not touch pointers.
+  const handleNoTitlebarPointerHover = useCallback(
+    (e: React.PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      showTitlebarWithAutoHide();
+    },
+    [showTitlebarWithAutoHide]
+  );
 
   // Cleanup titlebar hide timeout
   useEffect(() => {
@@ -1133,20 +1134,14 @@ export function WindowFrame({
           style={{
             ...(!isXpTheme ? getSwipeStyle() : undefined),
           }}
-          onMouseEnter={
+          onPointerEnter={
             isNoTitlebar && !disableTitlebarAutoHide
-              ? (e) => {
-                  if (isEmulatedMouseEventFromTouch(e)) return;
-                  showTitlebarWithAutoHide();
-                }
+              ? handleNoTitlebarPointerHover
               : undefined
           }
-          onMouseMove={
+          onPointerMove={
             isNoTitlebar && !disableTitlebarAutoHide
-              ? (e) => {
-                  if (isEmulatedMouseEventFromTouch(e)) return;
-                  showTitlebarWithAutoHide();
-                }
+              ? handleNoTitlebarPointerHover
               : undefined
           }
           onMouseLeave={isNoTitlebar && !disableTitlebarAutoHide ? () => {
