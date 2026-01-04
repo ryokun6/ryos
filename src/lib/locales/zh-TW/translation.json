@@ -73,7 +73,7 @@
       "loadMore": "載入更多（剩餘 {{remaining}} 個）",
       "menu": {
         "aboutAdmin": "關於管理員",
-        "adminHelp": "管理員說明",
+        "adminHelp": "管理員輔助說明",
         "refreshData": "重新整理資料",
         "showSidebar": "顯示側邊欄"
       },
@@ -313,7 +313,7 @@
       "menu": {
         "aboutApplets": "關於小程式",
         "appletStore": "小程式商店",
-        "appletsHelp": "小程式說明",
+        "appletsHelp": "小程式輔助說明",
         "checkForUpdates": "檢查更新",
         "createAccount": "建立帳號...",
         "exportAs": "匯出為...",
@@ -1406,7 +1406,7 @@
         "aboutKaraoke": "關於卡拉OK",
         "controls": "控制",
         "file": "檔案",
-        "karaokeHelp": "卡拉OK說明",
+        "karaokeHelp": "卡拉OK輔助說明",
         "next": "下一首",
         "playPause": "播放/暫停",
         "previous": "上一首",
@@ -1450,7 +1450,7 @@
       },
       "menu": {
         "aboutMinesweeper": "關於踩地雷",
-        "minesweeperHelp": "踩地雷說明",
+        "minesweeperHelp": "踩地雷輔助說明",
         "newGame": "新遊戲"
       },
       "name": "踩地雷"
@@ -1525,7 +1525,7 @@
         "importFromDevice": "從裝置匯入...",
         "newFile": "開新檔案",
         "open": "開啟...",
-        "paintHelp": "小畫家說明",
+        "paintHelp": "小畫家輔助說明",
         "save": "儲存",
         "saveEllipsis": "儲存..."
       },
