@@ -67,7 +67,7 @@ export const useFinderStore = create<FinderStoreState>()(
         if (path.startsWith("/Applets")) return "large";
         if (path.startsWith("/Trash")) return "large";
         if (path.startsWith("/Documents")) return "list";
-        if (path.startsWith("/Music")) return "list";
+        if (path.startsWith("/Music")) return "large";
         return "list";
       },
 
