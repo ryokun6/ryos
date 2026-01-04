@@ -263,7 +263,7 @@ export function FullscreenPlayerControls({
             type="button"
             onClick={handleClick(onToggleShuffle)}
             aria-label={t("apps.ipod.menu.shuffle", "Shuffle")}
-            className={cn(buttonClasses, "relative")}
+            className={cn(buttonClasses, "relative hidden md:flex")}
             title={t("apps.ipod.menu.shuffle", "Shuffle")}
           >
             <Shuffle
