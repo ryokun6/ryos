@@ -1020,6 +1020,7 @@ export function LyricsDisplay({
   soramimiMap = new Map(),
   currentTimeMs,
   onSeekToTime,
+  highlightedWordFullOpacity = false,
 }: LyricsDisplayProps) {
   const { t } = useTranslation();
 
