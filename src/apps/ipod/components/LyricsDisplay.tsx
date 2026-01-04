@@ -547,7 +547,10 @@ function StaticWordRendering({
           <span
             key={item.key}
             className={`lyrics-word-highlight ${onSeekToTime ? "cursor-pointer" : ""}`}
-            onClick={onSeekToTime ? (e) => { e.stopPropagation(); handleWordClick(item.startTimeMs); } : undefined}
+            onClick={onSeekToTime ? (e) => { 
+              e.stopPropagation(); 
+              handleWordClick(item.startTimeMs); 
+            } : undefined}
           >
             <span 
               className={`lyrics-word-layer ${isOldSchoolKaraoke ? "" : "opacity-55"}`} 
@@ -832,7 +835,10 @@ function WordTimingHighlight({
         <span
           key={item.key}
           className={`lyrics-word-highlight ${onSeekToTime ? "cursor-pointer" : ""}`}
-          onClick={onSeekToTime ? (e) => { e.stopPropagation(); handleWordClick(item.word.startTimeMs); } : undefined}
+          onClick={onSeekToTime ? (e) => { 
+            e.stopPropagation(); 
+            handleWordClick(item.word.startTimeMs); 
+          } : undefined}
         >
           {/* Base layer: dimmed or old-school white with black outline */}
           <span 
@@ -1398,6 +1404,8 @@ export function LyricsDisplay({
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    // Stop propagation to prevent WindowFrame titlebar autohide from triggering
+    e.stopPropagation();
     if (!interactive) return;
     if (e.touches.length === 1) {
       touchStartRef.current = {
@@ -1411,6 +1419,8 @@ export function LyricsDisplay({
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    // Stop propagation to prevent WindowFrame titlebar autohide from triggering
+    e.stopPropagation();
     // Guard against missing touch data (e.g., multi-touch where first finger was lifted)
     if (!interactive || !touchStartRef.current || e.touches.length === 0) return;
     
@@ -1438,6 +1448,8 @@ export function LyricsDisplay({
   };
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    // Stop propagation to prevent WindowFrame titlebar autohide from triggering
+    e.stopPropagation();
     if (!interactive || !touchStartRef.current || hasTriggeredSwipeRef.current) {
       touchStartRef.current = null;
       return;
@@ -1644,7 +1656,10 @@ export function LyricsDisplay({
                                     } as React.CSSProperties
                                   : undefined
                               }
-                              onClick={onSeekToTime && !hasWordTimings ? (e) => { e.stopPropagation(); onSeekToTime(parseInt(line.startTimeMs, 10)); } : undefined}
+                              onClick={onSeekToTime && !hasWordTimings ? (e) => { 
+                                e.stopPropagation(); 
+                                onSeekToTime(parseInt(line.startTimeMs, 10)); 
+                              } : undefined}
                             >
                               {shouldUseAnimatedWordTiming ? (
                   <WordTimingHighlight

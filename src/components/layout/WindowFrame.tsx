@@ -1123,8 +1123,84 @@ export function WindowFrame({
           style={{
             ...(!isXpTheme ? getSwipeStyle() : undefined),
           }}
-          onMouseEnter={isNoTitlebar && !disableTitlebarAutoHide ? showTitlebarWithAutoHide : undefined}
-          onMouseMove={isNoTitlebar && !disableTitlebarAutoHide ? showTitlebarWithAutoHide : undefined}
+          onMouseEnter={isNoTitlebar && !disableTitlebarAutoHide ? (e: React.MouseEvent<HTMLElement>) => {
+            // Skip autohide if mouse event originated from lyrics display
+            // On mobile Safari, Framer Motion animations can trigger synthetic mouse events
+            const target = e.target as HTMLElement;
+            // Check multiple ways to detect lyrics elements
+            let isFromLyrics = false;
+            if (target) {
+              // Check if target or any parent has data-lyrics attribute
+              isFromLyrics = !!target.closest('[data-lyrics]');
+              // Check for lyrics-specific classes
+              if (!isFromLyrics) {
+                isFromLyrics = !!(
+                  target.closest('.lyrics-word-highlight') ||
+                  target.closest('.lyrics-line-clickable') ||
+                  target.classList.contains('lyrics-word-highlight') ||
+                  target.classList.contains('lyrics-line-clickable') ||
+                  target.classList.contains('lyrics-word-layer')
+                );
+              }
+              // Check if SPAN element (likely a lyric word) - traverse up to find lyrics container
+              if (!isFromLyrics && target.tagName === 'SPAN') {
+                let parent = target.parentElement;
+                let depth = 0;
+                while (parent && depth < 10) {
+                  if (parent.hasAttribute('data-lyrics') || 
+                      parent.classList.contains('lyrics-word-highlight') ||
+                      parent.classList.contains('lyrics-line-clickable')) {
+                    isFromLyrics = true;
+                    break;
+                  }
+                  parent = parent.parentElement;
+                  depth++;
+                }
+              }
+            }
+            if (!isFromLyrics) {
+              showTitlebarWithAutoHide();
+            }
+          } : undefined}
+          onMouseMove={isNoTitlebar && !disableTitlebarAutoHide ? (e: React.MouseEvent<HTMLElement>) => {
+            // Skip autohide if mouse event originated from lyrics display
+            // On mobile Safari, Framer Motion animations can trigger synthetic mouse events
+            const target = e.target as HTMLElement;
+            // Check multiple ways to detect lyrics elements
+            let isFromLyrics = false;
+            if (target) {
+              // Check if target or any parent has data-lyrics attribute
+              isFromLyrics = !!target.closest('[data-lyrics]');
+              // Check for lyrics-specific classes
+              if (!isFromLyrics) {
+                isFromLyrics = !!(
+                  target.closest('.lyrics-word-highlight') ||
+                  target.closest('.lyrics-line-clickable') ||
+                  target.classList.contains('lyrics-word-highlight') ||
+                  target.classList.contains('lyrics-line-clickable') ||
+                  target.classList.contains('lyrics-word-layer')
+                );
+              }
+              // Check if SPAN element (likely a lyric word) - traverse up to find lyrics container
+              if (!isFromLyrics && target.tagName === 'SPAN') {
+                let parent = target.parentElement;
+                let depth = 0;
+                while (parent && depth < 10) {
+                  if (parent.hasAttribute('data-lyrics') || 
+                      parent.classList.contains('lyrics-word-highlight') ||
+                      parent.classList.contains('lyrics-line-clickable')) {
+                    isFromLyrics = true;
+                    break;
+                  }
+                  parent = parent.parentElement;
+                  depth++;
+                }
+              }
+            }
+            if (!isFromLyrics) {
+              showTitlebarWithAutoHide();
+            }
+          } : undefined}
           onMouseLeave={isNoTitlebar && !disableTitlebarAutoHide ? () => {
             setIsTitlebarHovered(false);
             if (titlebarHideTimeoutRef.current) {
