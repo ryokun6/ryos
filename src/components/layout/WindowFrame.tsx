@@ -187,12 +187,31 @@ export function WindowFrame({
   // For notitlebar: only treat real mouse hover/move as "interaction".
   // Mobile browsers can emit synthetic mouse events during/after touch/scroll, which
   // would otherwise keep re-triggering the titlebar auto-hide.
+  const lastTouchTitlebarInteractionAtRef = useRef<number>(0);
   const handleNoTitlebarPointerActivity = useCallback(
     (e: React.PointerEvent<HTMLElement>) => {
       if (disableTitlebarAutoHide) return;
       if (!isNoTitlebar) return;
+      // Only treat mouse movement as hover activity; ignore synthetic mouse events
+      // that can follow real touch interactions on mobile.
       if (e.pointerType !== "mouse") return;
+      if (Date.now() - lastTouchTitlebarInteractionAtRef.current < 2000) return;
       showTitlebarWithAutoHide();
+    },
+    [disableTitlebarAutoHide, isNoTitlebar, showTitlebarWithAutoHide]
+  );
+
+  const handleNoTitlebarPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      if (disableTitlebarAutoHide) return;
+      if (!isNoTitlebar) return;
+
+      // Touch/pen should still show the titlebar, but only on actual user press/tap.
+      // This avoids repeatedly re-triggering from scroll/other synthetic events.
+      if (e.pointerType !== "mouse") {
+        lastTouchTitlebarInteractionAtRef.current = Date.now();
+        showTitlebarWithAutoHide();
+      }
     },
     [disableTitlebarAutoHide, isNoTitlebar, showTitlebarWithAutoHide]
   );
@@ -1146,6 +1165,7 @@ export function WindowFrame({
           }}
           onPointerEnter={handleNoTitlebarPointerActivity}
           onPointerMove={handleNoTitlebarPointerActivity}
+          onPointerDown={handleNoTitlebarPointerDown}
           onPointerLeave={handleNoTitlebarPointerLeave}
         >
           {/* Title bar */}
