@@ -184,6 +184,49 @@ export function WindowFrame({
     }
   }, [startTitlebarAutoHideTimer, disableTitlebarAutoHide]);
 
+  // For notitlebar: only treat real mouse hover/move as "interaction".
+  // Mobile browsers can emit synthetic mouse events during/after touch/scroll, which
+  // would otherwise keep re-triggering the titlebar auto-hide.
+  const lastTouchTitlebarInteractionAtRef = useRef<number>(0);
+  const handleNoTitlebarPointerActivity = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      if (disableTitlebarAutoHide) return;
+      if (!isNoTitlebar) return;
+      // Only treat mouse movement as hover activity; ignore synthetic mouse events
+      // that can follow real touch interactions on mobile.
+      if (e.pointerType !== "mouse") return;
+      if (Date.now() - lastTouchTitlebarInteractionAtRef.current < 2000) return;
+      showTitlebarWithAutoHide();
+    },
+    [disableTitlebarAutoHide, isNoTitlebar, showTitlebarWithAutoHide]
+  );
+
+  const handleNoTitlebarPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLElement>) => {
+      if (disableTitlebarAutoHide) return;
+      if (!isNoTitlebar) return;
+
+      // Touch/pen should still show the titlebar, but only on actual user press/tap.
+      // This avoids repeatedly re-triggering from scroll/other synthetic events.
+      if (e.pointerType !== "mouse") {
+        lastTouchTitlebarInteractionAtRef.current = Date.now();
+        showTitlebarWithAutoHide();
+      }
+    },
+    [disableTitlebarAutoHide, isNoTitlebar, showTitlebarWithAutoHide]
+  );
+
+  const handleNoTitlebarPointerLeave = useCallback((e: React.PointerEvent<HTMLElement>) => {
+    // On touch devices, pointerleave commonly fires on finger-up, which would
+    // immediately hide the titlebar. Only hide immediately for real mouse hover.
+    if (e.pointerType !== "mouse") return;
+    if (!isNoTitlebar || disableTitlebarAutoHide) return;
+    setIsTitlebarHovered(false);
+    if (titlebarHideTimeoutRef.current) {
+      clearTimeout(titlebarHideTimeoutRef.current);
+    }
+  }, [isNoTitlebar, disableTitlebarAutoHide]);
+
   // Cleanup titlebar hide timeout
   useEffect(() => {
     return () => {
@@ -1123,14 +1166,10 @@ export function WindowFrame({
           style={{
             ...(!isXpTheme ? getSwipeStyle() : undefined),
           }}
-          onMouseEnter={isNoTitlebar && !disableTitlebarAutoHide ? showTitlebarWithAutoHide : undefined}
-          onMouseMove={isNoTitlebar && !disableTitlebarAutoHide ? showTitlebarWithAutoHide : undefined}
-          onMouseLeave={isNoTitlebar && !disableTitlebarAutoHide ? () => {
-            setIsTitlebarHovered(false);
-            if (titlebarHideTimeoutRef.current) {
-              clearTimeout(titlebarHideTimeoutRef.current);
-            }
-          } : undefined}
+          onPointerEnter={handleNoTitlebarPointerActivity}
+          onPointerMove={handleNoTitlebarPointerActivity}
+          onPointerDown={handleNoTitlebarPointerDown}
+          onPointerLeave={handleNoTitlebarPointerLeave}
         >
           {/* Title bar */}
           {isXpTheme ? (
@@ -1265,6 +1304,10 @@ export function WindowFrame({
                       background: "linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0) 100%)",
                       borderBottom: "none",
                       opacity: isTitlebarHovered ? 1 : 0,
+                      // When visually hidden, allow interactions to pass through to the app content.
+                      // (Opacity 0 alone still intercepts pointer events.)
+                      pointerEvents:
+                        disableTitlebarAutoHide || isTitlebarHovered ? "auto" : "none",
                     }
                   : isForeground
                   ? {
