@@ -189,10 +189,14 @@ export function WindowFrame({
   // titlebar for real mouse pointers (trackpad/mouse), not touch pointers.
   const handleNoTitlebarPointerHover = useCallback(
     (e: React.PointerEvent) => {
+      // On mobile, disable hover-driven titlebar reveal entirely.
+      // Mobile browsers can synthesize mouse/pointer move events during/after taps,
+      // which would otherwise keep retriggering the auto-hide timer.
+      if (isMobile) return;
       if (e.pointerType !== "mouse") return;
       showTitlebarWithAutoHide();
     },
-    [showTitlebarWithAutoHide]
+    [showTitlebarWithAutoHide, isMobile]
   );
 
   // Cleanup titlebar hide timeout
@@ -1135,12 +1139,12 @@ export function WindowFrame({
             ...(!isXpTheme ? getSwipeStyle() : undefined),
           }}
           onPointerEnter={
-            isNoTitlebar && !disableTitlebarAutoHide
+            isNoTitlebar && !disableTitlebarAutoHide && !isMobile
               ? handleNoTitlebarPointerHover
               : undefined
           }
           onPointerMove={
-            isNoTitlebar && !disableTitlebarAutoHide
+            isNoTitlebar && !disableTitlebarAutoHide && !isMobile
               ? handleNoTitlebarPointerHover
               : undefined
           }
