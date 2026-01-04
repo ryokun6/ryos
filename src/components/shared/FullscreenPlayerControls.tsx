@@ -83,9 +83,6 @@ export interface FullscreenPlayerControlsProps {
   // Optional close button (for fullscreen mode)
   onClose?: () => void;
 
-  // Optional fullscreen button (for non-fullscreen mode)
-  onFullscreen?: () => void;
-
   // Styling variants
   variant?: "compact" | "responsive";
   bgOpacity?: "35" | "60";
@@ -122,7 +119,6 @@ export function FullscreenPlayerControls({
   isLangMenuOpen,
   setIsLangMenuOpen,
   onClose,
-  onFullscreen,
   variant = "responsive",
   bgOpacity = "35",
   onInteraction,
