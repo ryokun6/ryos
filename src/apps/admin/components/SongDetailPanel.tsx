@@ -73,6 +73,8 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   const launchApp = useLaunchApp();
   const [song, setSong] = useState<SongDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [youtubeOembedTitle, setYoutubeOembedTitle] = useState<string | null>(null);
+  const [isYoutubeOembedLoading, setIsYoutubeOembedLoading] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isUnshareDialogOpen, setIsUnshareDialogOpen] = useState(false);
   const [isUnsharing, setIsUnsharing] = useState(false);
@@ -328,6 +330,32 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
   useEffect(() => {
     fetchSong();
   }, [fetchSong]);
+
+  useEffect(() => {
+    let isCancelled = false;
+    const fetchOembedTitle = async () => {
+      setIsYoutubeOembedLoading(true);
+      try {
+        const url = `https://www.youtube.com/watch?v=${youtubeId}`;
+        const response = await fetch(
+          getApiUrl(`/api/link-preview?url=${encodeURIComponent(url)}`),
+          { headers: { "Content-Type": "application/json" } }
+        );
+        if (!response.ok) return;
+        const data = (await response.json()) as { title?: string };
+        const title = data.title?.trim();
+        if (!isCancelled) setYoutubeOembedTitle(title && title.length > 0 ? title : null);
+      } catch {
+        if (!isCancelled) setYoutubeOembedTitle(null);
+      } finally {
+        if (!isCancelled) setIsYoutubeOembedLoading(false);
+      }
+    };
+    fetchOembedTitle();
+    return () => {
+      isCancelled = true;
+    };
+  }, [youtubeId]);
 
   const handleDelete = async () => {
     if (!username || !authToken) return;
@@ -800,19 +828,31 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="text-[10px] text-neutral-500">{t("apps.admin.song.youtubeId", "YouTube ID")}</div>
                   {isLoading ? (
-                    <Skeleton className="h-4 w-28 mt-1" />
-                  ) : (
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <span className="text-[11px] font-mono">{song?.id}</span>
-                      <a
-                        href={`https://www.youtube.com/watch?v=${song?.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:text-blue-600"
-                      >
-                        <ArrowSquareOut className="h-3 w-3" weight="bold" />
-                      </a>
+                    <div className="space-y-1 mt-1">
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-4 w-28" />
                     </div>
+                  ) : (
+                    <>
+                      {isYoutubeOembedLoading ? (
+                        <Skeleton className="h-4 w-48 mt-0.5" />
+                      ) : youtubeOembedTitle ? (
+                        <div className="text-[11px] mt-0.5 truncate" title={youtubeOembedTitle}>
+                          {youtubeOembedTitle}
+                        </div>
+                      ) : null}
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="text-[11px] font-mono">{song?.id}</span>
+                        <a
+                          href={`https://www.youtube.com/watch?v=${song?.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:text-blue-600"
+                        >
+                          <ArrowSquareOut className="h-3 w-3" weight="bold" />
+                        </a>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>

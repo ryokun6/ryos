@@ -307,7 +307,6 @@ function generatePage(doc: DocEntry, allDocs: DocEntry[], currentIndex: number):
   const next = currentIndex < allDocs.length - 1 ? allDocs[currentIndex + 1] : null;
 
   const sidebar = generateSidebar(doc, allDocs);
-  const displayTitle = doc.sectionNum ? `${doc.sectionNum}. ${doc.title}` : doc.title;
 
   return `<!DOCTYPE html>
 <html lang="en">
