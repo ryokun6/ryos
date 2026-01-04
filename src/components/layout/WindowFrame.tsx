@@ -216,7 +216,10 @@ export function WindowFrame({
     [disableTitlebarAutoHide, isNoTitlebar, showTitlebarWithAutoHide]
   );
 
-  const handleNoTitlebarPointerLeave = useCallback(() => {
+  const handleNoTitlebarPointerLeave = useCallback((e: React.PointerEvent<HTMLElement>) => {
+    // On touch devices, pointerleave commonly fires on finger-up, which would
+    // immediately hide the titlebar. Only hide immediately for real mouse hover.
+    if (e.pointerType !== "mouse") return;
     if (!isNoTitlebar || disableTitlebarAutoHide) return;
     setIsTitlebarHovered(false);
     if (titlebarHideTimeoutRef.current) {
@@ -1301,6 +1304,10 @@ export function WindowFrame({
                       background: "linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0) 100%)",
                       borderBottom: "none",
                       opacity: isTitlebarHovered ? 1 : 0,
+                      // When visually hidden, allow interactions to pass through to the app content.
+                      // (Opacity 0 alone still intercepts pointer events.)
+                      pointerEvents:
+                        disableTitlebarAutoHide || isTitlebarHovered ? "auto" : "none",
                     }
                   : isForeground
                   ? {
