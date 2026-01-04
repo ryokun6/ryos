@@ -1304,6 +1304,8 @@ export function KaraokeAppComponent({
               onPrevious={handlePrevious}
               onPlayPause={handlePlayPause}
               onNext={handleNext}
+              isShuffled={isShuffled}
+              onToggleShuffle={toggleShuffle}
               onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
               currentAlignment={lyricsAlignment}
               onAlignmentCycle={cycleAlignment}
@@ -1318,7 +1320,6 @@ export function KaraokeAppComponent({
               translationLanguages={translationLanguages}
               isLangMenuOpen={isLangMenuOpen}
               setIsLangMenuOpen={setIsLangMenuOpen}
-              onFullscreen={toggleFullScreen}
               variant="compact"
               bgOpacity="60"
               onInteraction={restartAutoHideTimer}

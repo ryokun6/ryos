@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { useShallow } from "zustand/react/shallow";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { isMobileSafari } from "@/utils/device";
@@ -55,6 +56,12 @@ export function FullScreenPortal({
   const [showControls, setShowControls] = useState(true);
   const hideControlsTimeoutRef = useRef<number | null>(null);
   const isOffline = useOffline();
+  const { isShuffled, toggleShuffle } = useIpodStore(
+    useShallow((s) => ({
+      isShuffled: s.isShuffled,
+      toggleShuffle: s.toggleShuffle,
+    }))
+  );
 
   // Track if user has interacted to enable gesture handling after first interaction
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
@@ -514,6 +521,8 @@ export function FullScreenPortal({
           onPrevious={handlePrevious}
           onPlayPause={handlePlayPause}
           onNext={handleNext}
+          isShuffled={isShuffled}
+          onToggleShuffle={toggleShuffle}
           onSyncMode={onSyncMode}
           currentAlignment={currentAlignment}
           onAlignmentCycle={onCycleAlignment}

@@ -1580,6 +1580,8 @@ export function VideosAppComponent({
           onPrevious={previousVideo}
           showStatus={showStatus}
           statusMessage={statusMessage}
+          isShuffled={isShuffled}
+          onToggleShuffle={toggleShuffle}
         />
       )}
     </>

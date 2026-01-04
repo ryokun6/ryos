@@ -4,7 +4,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
-import { Translate, ArrowsOutSimple, X, ClockClockwise, SkipBack, SkipForward, Play, Pause } from "@phosphor-icons/react";
+import { Translate, X, ClockClockwise, SkipBack, SkipForward, Play, Pause, Shuffle } from "@phosphor-icons/react";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -51,6 +51,10 @@ export interface FullscreenPlayerControlsProps {
   onPrevious: () => void;
   onPlayPause: () => void;
   onNext: () => void;
+  
+  // Shuffle
+  isShuffled?: boolean;
+  onToggleShuffle?: () => void;
 
   // Sync mode (lyrics timing)
   onSyncMode?: () => void;
@@ -101,6 +105,8 @@ export function FullscreenPlayerControls({
   onPrevious,
   onPlayPause,
   onNext,
+  isShuffled,
+  onToggleShuffle,
   onSyncMode,
   currentAlignment,
   onAlignmentCycle,
@@ -254,6 +260,35 @@ export function FullscreenPlayerControls({
         >
           <SkipForward weight="fill" size={svgSize} className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)} />
         </button>
+
+        {/* Shuffle */}
+        {onToggleShuffle && (
+          <button
+            type="button"
+            onClick={handleClick(onToggleShuffle)}
+            aria-label={t("apps.ipod.menu.shuffle", "Shuffle")}
+            className={cn(buttonClasses, "relative")}
+            title={t("apps.ipod.menu.shuffle", "Shuffle")}
+          >
+            <Shuffle
+              weight="bold"
+              size={svgSize}
+              className={cn(
+                svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined),
+                isShuffled && "text-white"
+              )}
+            />
+            {isShuffled && (
+              <span
+                className={cn(
+                  "absolute rounded-full left-1/2 -translate-x-1/2",
+                  variant === "compact" ? "w-0.5 h-0.5 bottom-1" : "w-0.5 h-0.5 bottom-1 md:w-1 md:h-1 md:bottom-1",
+                  isMacTheme ? "bg-white/90" : "bg-white"
+                )}
+              />
+            )}
+          </button>
+        )}
       </div>
 
       {/* Lyrics controls island */}
@@ -552,43 +587,24 @@ export function FullscreenPlayerControls({
         </div>
       )}
 
-      {/* Close/Expand island */}
-      {(onFullscreen || onClose) && (
+      {/* Close island (only shown in fullscreen mode) */}
+      {onClose && (
         <div className={segmentClasses} style={aquaSegmentStyle}>
           {isMacTheme && <AquaShineOverlays variant={variant} />}
-          {/* Fullscreen button (for non-fullscreen mode) */}
-          {onFullscreen && (
-            <button
-              type="button"
-              onClick={handleClick(onFullscreen)}
-              className={buttonClasses}
-              aria-label={t("apps.ipod.ariaLabels.enterFullscreen")}
-              title={t("apps.ipod.ariaLabels.enterFullscreen")}
-            >
-              <ArrowsOutSimple
-                weight="bold"
-                size={svgSize}
-                className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
-              />
-            </button>
-          )}
-
           {/* Close button (for fullscreen mode) */}
-          {onClose && (
-            <button
-              type="button"
-              onClick={handleClick(onClose)}
-              className={buttonClasses}
-              aria-label={t("apps.ipod.ariaLabels.closeFullscreen")}
-              title={t("common.dialog.close")}
-            >
-              <X
-                weight="bold"
-                size={svgSize}
-                className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
-              />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleClick(onClose)}
+            className={buttonClasses}
+            aria-label={t("apps.ipod.ariaLabels.closeFullscreen")}
+            title={t("common.dialog.close")}
+          >
+            <X
+              weight="bold"
+              size={svgSize}
+              className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
+            />
+          </button>
         </div>
       )}
     </div>

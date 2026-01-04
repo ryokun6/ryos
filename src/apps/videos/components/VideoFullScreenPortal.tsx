@@ -26,6 +26,8 @@ interface VideoFullScreenPortalProps {
   onPrevious?: () => void;
   showStatus?: (message: string) => void;
   statusMessage?: string | null;
+  isShuffled?: boolean;
+  onToggleShuffle?: () => void;
 }
 
 export function VideoFullScreenPortal({
@@ -48,6 +50,8 @@ export function VideoFullScreenPortal({
   onPrevious,
   showStatus,
   statusMessage,
+  isShuffled,
+  onToggleShuffle,
 }: VideoFullScreenPortalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showControls, setShowControls] = useState(true);
@@ -300,6 +304,8 @@ export function VideoFullScreenPortal({
           onPrevious={onPrevious || (() => {})}
           onPlayPause={onTogglePlay}
           onNext={onNext || (() => {})}
+          isShuffled={isShuffled}
+          onToggleShuffle={onToggleShuffle}
           currentAlignment={LyricsAlignment.Center}
           onAlignmentCycle={() => {}}
           currentFont={LyricsFont.SansSerif}
