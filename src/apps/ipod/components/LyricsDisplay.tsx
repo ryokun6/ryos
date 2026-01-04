@@ -76,6 +76,11 @@ interface LyricsDisplayProps {
   currentTimeMs?: number;
   /** Callback to seek to a specific time in ms */
   onSeekToTime?: (timeMs: number) => void;
+  /**
+   * When enabled, the *currently active word* (word-timed lyrics) is rendered at full opacity white.
+   * Intended for iPod lyrics where the highlighted word should not appear dimmed.
+   */
+  highlightedWordFullOpacity?: boolean;
 }
 
 const ANIMATION_CONFIG = {
@@ -605,6 +610,7 @@ function WordTimingHighlight({
   soramimiTargetLanguage,
   onSeekToTime,
   isOldSchoolKaraoke = false,
+  highlightedWordFullOpacity = false,
 }: {
   wordTimings: LyricWord[];
   lineStartTimeMs: number;
@@ -621,6 +627,8 @@ function WordTimingHighlight({
   onSeekToTime?: (timeMs: number) => void;
   /** Use old-school karaoke styling (black outline white text -> white outline blue text) */
   isOldSchoolKaraoke?: boolean;
+  /** If true, active word's base layer is full opacity (non-old-school only). */
+  highlightedWordFullOpacity?: boolean;
 }): ReactNode {
   // Refs for direct DOM manipulation (bypasses React reconciliation)
   const overlayRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -826,6 +834,7 @@ function WordTimingHighlight({
   };
 
   // Render once - DOM updates happen via refs using CSS custom properties
+  const timeIntoLineForBaseOpacity = currentTimeMs - lineStartTimeMs;
   return (
     <>
       {renderItems.map((item, idx) => (
@@ -836,7 +845,15 @@ function WordTimingHighlight({
         >
           {/* Base layer: dimmed or old-school white with black outline */}
           <span 
-            className={`lyrics-word-layer ${isOldSchoolKaraoke ? "" : "opacity-55"}`} 
+            className={`lyrics-word-layer ${
+              isOldSchoolKaraoke
+                ? ""
+                : highlightedWordFullOpacity &&
+                  timeIntoLineForBaseOpacity >= item.word.startTimeMs &&
+                  timeIntoLineForBaseOpacity < (item.word.startTimeMs + item.word.durationMs + item.extraDurationMs)
+                ? "opacity-100"
+                : "opacity-55"
+            }`} 
             style={{ 
               textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW, 
               paddingTop: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_TOP : undefined,
@@ -1659,6 +1676,7 @@ export function LyricsDisplay({
                     soramimiTargetLanguage={soramimiSegments ? romanization.soramamiTargetLanguage : undefined}
                     onSeekToTime={onSeekToTime}
                     isOldSchoolKaraoke={isOldSchoolKaraoke}
+                  highlightedWordFullOpacity={highlightedWordFullOpacity ?? false}
                   />
                 ) : hasWordTimings ? (
                   <StaticWordRendering

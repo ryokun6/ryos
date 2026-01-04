@@ -2055,6 +2055,7 @@ export function IpodAppComponent({
                         koreanDisplay={koreanDisplay}
                         japaneseFurigana={japaneseFurigana}
                         fontClassName={lyricsFontClassName}
+                        highlightedWordFullOpacity={true}
                         onAdjustOffset={(delta) => {
                           useIpodStore.getState().adjustLyricOffset(currentIndex, delta);
                           const newOffset = (tracks[currentIndex]?.lyricOffset ?? 0) + delta;
