@@ -366,7 +366,7 @@ export function IpodScreen({
             </AnimatePresence>
 
             {/* Lyrics Overlay */}
-            <div className="absolute inset-0 z-20 pointer-events-none">
+            <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 35 }}>
             <LyricsDisplay
               lines={lyricsControls.lines}
               originalLines={lyricsControls.originalLines}

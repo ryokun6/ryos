@@ -869,7 +869,8 @@ function WordTimingHighlight({
               ref={(el) => { overlayRefs.current[idx] = el; }}
               style={{ 
                 display: "block",
-                color: isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_COLOR : "#fff",
+                color: isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_COLOR : "rgba(255, 255, 255, 1)",
+                opacity: isOldSchoolKaraoke ? undefined : 1,
                 textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW,
                 WebkitTextStroke: isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_STROKE : undefined,
                 paintOrder: isOldSchoolKaraoke ? "stroke fill" : undefined,
