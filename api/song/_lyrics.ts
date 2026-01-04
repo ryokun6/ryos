@@ -4,11 +4,9 @@
  * Handles parsing LRC/KRC formats and translating lyrics via AI.
  */
 
-import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
-import { generateObject } from "ai";
 import { Converter } from "opencc-js";
-import { SKIP_PREFIXES, AiTranslatedTextsSchema } from "./_constants.js";
+import { SKIP_PREFIXES } from "./_constants.js";
 import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { LyricsContent, ParsedLyricLine, WordTiming } from "../_utils/song-service.js";
 

@@ -334,7 +334,7 @@ export default async function handler(req: Request) {
           const lyricsValue = getFieldValue<{ lrc?: string; krc?: string; cover?: string }>(songData.lyrics);
           
           // Cover: prefer from lyrics data (backwards compat), otherwise from existing, otherwise fetch later
-          let cover = lyricsValue?.cover || existing?.cover;
+          const cover = lyricsValue?.cover || existing?.cover;
 
           // Build metadata (cover is now in metadata, not lyrics)
           // For imports, respect the original createdBy from the export file
