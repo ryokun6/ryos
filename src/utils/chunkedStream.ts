@@ -197,6 +197,7 @@ export async function processTranslationSSE(
                 break;
 
               case "cached":
+              {
                 const cachedTranslations = parseLrcToTranslations(eventData.translation);
                 finalResult = { 
                   data: cachedTranslations,
@@ -208,6 +209,7 @@ export async function processTranslationSSE(
                   console.warn("SSE: Callback error:", callbackErr);
                 }
                 break;
+              }
 
               case "complete":
                 finalResult = {

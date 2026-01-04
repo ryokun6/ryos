@@ -36,7 +36,6 @@ import {
   canModifySong,
   type LyricsSource,
   type LyricsContent,
-  type FuriganaSegment,
 } from "../_utils/song-service.js";
 
 // Import from split modules
@@ -72,16 +71,13 @@ import {
   isChineseTraditional,
   parseLyricsContent,
   buildChineseTranslationFromKrc,
-  streamTranslation,
   getTranslationSystemPrompt,
 } from "./_lyrics.js";
 
 import {
   lyricsAreMostlyChinese,
-  streamFurigana,
   containsKanji,
   parseRubyMarkup,
-  FURIGANA_SYSTEM_PROMPT,
 } from "./_furigana.js";
 
 import {
@@ -1289,7 +1285,7 @@ Output:
                   // parseSoramimiRubyMarkup handles: extracting {text|reading} patterns,
                   // stripping furigana annotations from output, cleaning readings
                   const rawSegments = parseSoramimiRubyMarkup(content);
-                  let segments = fillMissingReadings(rawSegments);
+                  const segments = fillMissingReadings(rawSegments);
                   
                   
                   if (segments.length > 0) {

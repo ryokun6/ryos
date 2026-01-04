@@ -1100,7 +1100,7 @@ export const useIpodStore = create<IpodState>()(
           let tracksUpdated = 0;
 
           // Process existing tracks: update metadata if track exists on server
-          let updatedTracks = current.tracks.map((currentTrack) => {
+          const updatedTracks = current.tracks.map((currentTrack) => {
             const serverTrack = serverTrackMap.get(currentTrack.id);
             if (serverTrack) {
               // Track exists on server, check if metadata needs updating

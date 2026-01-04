@@ -335,7 +335,8 @@ export function SynthAppComponent({
 
   // Initialize synth and effects - extracted so it can be called on demand
   const createSynthNodes = useCallback(async () => {
-    if (synthRef.current && (synthRef.current as any)?.disposed) {
+    const currentSynth = synthRef.current as unknown as { disposed?: boolean } | null;
+    if (currentSynth?.disposed) {
       synthRef.current = null;
       synthInitializedRef.current = false;
     }
@@ -595,7 +596,8 @@ export function SynthAppComponent({
     if (toneStartedRef.current && synthRef.current) return true;
     if (initPromiseRef.current) {
       const ctxState = Tone.context?.state ?? null;
-      const rawCtxState = (Tone.context as any)?.rawContext?.state ?? null;
+      const rawCtxState =
+        (Tone.context as unknown as { rawContext?: { state?: string } })?.rawContext?.state ?? null;
       const isRunning = ctxState === "running" || rawCtxState === "running";
       if (!isRunning) {
         initPromiseRef.current = null;
