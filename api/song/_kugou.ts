@@ -16,8 +16,9 @@ import {
 } from "./_utils.js";
 import type { LyricsSource, LyricsContent } from "../_utils/song-service.js";
 
-// Simplified Chinese to Traditional Chinese converter
+// Chinese character converters
 const simplifiedToTraditional = Converter({ from: "cn", to: "tw" });
+const traditionalToSimplified = Converter({ from: "tw", to: "cn" });
 
 /**
  * Normalize artist separator from Chinese comma to " & "
@@ -120,13 +121,17 @@ const KUGOU_SEARCH_TIMEOUT_MS = 15000;
 
 /**
  * Search for songs on Kugou
+ * Converts query to Simplified Chinese for better search results
+ * (Kugou is a Chinese service that works best with Simplified Chinese)
  */
 export async function searchKugou(
   query: string,
   title: string,
   artist: string
 ): Promise<KugouSearchResult[]> {
-  const keyword = encodeURIComponent(query);
+  // Convert query to Simplified Chinese for better Kugou search results
+  const simplifiedQuery = traditionalToSimplified(query);
+  const keyword = encodeURIComponent(simplifiedQuery);
   const searchUrl = `http://mobilecdn.kugou.com/api/v3/search/song?format=json&keyword=${keyword}&page=1&pagesize=20&showtype=1`;
 
   let searchRes: Response;
