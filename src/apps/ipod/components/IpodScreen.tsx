@@ -379,6 +379,7 @@ export function IpodScreen({
               koreanDisplay={koreanDisplay}
               japaneseFurigana={japaneseFurigana}
               isTranslating={lyricsControls.isTranslating}
+              highlightedWordFullOpacity={true}
               onAdjustOffset={(deltaMs) => {
                 adjustLyricOffset(deltaMs);
                 const newOffset = lyricOffset + deltaMs;
