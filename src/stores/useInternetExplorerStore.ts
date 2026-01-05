@@ -726,18 +726,46 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
         }),
 
       handleNavigationError: (errorData, targetUrlOnError) =>
-        set(() => {
+        set((state) => {
           const newErrorDetails: ErrorResponse = {
             ...errorData,
             targetUrl: targetUrlOnError,
             hostname: getHostname(targetUrlOnError),
           };
-          return {
+
+          const newState: Partial<InternetExplorerStore> = {
             status: "error",
             error: newErrorDetails.message.split(".")[0] || "Navigation Error",
             errorDetails: newErrorDetails,
             aiGeneratedHtml: null,
           };
+
+          // Add errored page to history so back button works
+          if (targetUrlOnError && !state.isNavigatingHistory) {
+            const normalizedUrl = normalizeUrlForHistory(targetUrlOnError);
+            const errorTitle = `Error: ${getHostname(targetUrlOnError)}`;
+            const newEntry: HistoryEntry = {
+              url: normalizedUrl,
+              title: errorTitle,
+              favicon: `https://www.google.com/s2/favicons?domain=${getHostname(targetUrlOnError)}&sz=32`,
+              year: state.year,
+              timestamp: Date.now(),
+            };
+
+            const mostRecentEntry = state.history[0];
+            // Check for duplicates
+            const isDuplicate =
+              mostRecentEntry &&
+              normalizeUrlForHistory(mostRecentEntry.url) === newEntry.url &&
+              mostRecentEntry.year === newEntry.year;
+
+            if (!isDuplicate) {
+              newState.history = [newEntry, ...state.history].slice(0, 100);
+              newState.historyIndex = 0;
+            }
+          }
+
+          return newState;
         }),
 
       cancel: () => set({ status: "idle", errorDetails: null }),

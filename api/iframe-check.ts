@@ -824,81 +824,243 @@ export default async function handler(req: Request) {
 <style>img{image-rendering:pixelated!important}body,div,span,p,h1,h2,h3,h4,h5,h6,button,input,select,textarea,[style*="font-family"],[style*="sans-serif"],[style*="SF Pro Text"],[style*="-apple-system"],[style*="BlinkMacSystemFont"],[style*="Segoe UI"],[style*="Roboto"],[style*="Oxygen"],[style*="Ubuntu"],[style*="Cantarell"],[style*="Fira Sans"],[style*="Droid Sans"],[style*="Helvetica Neue"],[style*="Helvetica"],[style*="Arial"],[style*="Verdana"],[style*="Geneva"],[style*="Inter"],[style*="Hiragino Sans"],[style*="Hiragino Kaku Gothic"],[style*="Yu Gothic"],[style*="Meiryo"],[style*="MS PGothic"],[style*="MS Gothic"],[style*="Microsoft YaHei"],[style*="PingFang"],[style*="Noto Sans"],[style*="Source Han Sans"],[style*="WenQuanYi"]{font-family:"Geneva-12","ArkPixel","SerenityOS-Emoji",sans-serif!important}[style*="serif"],[style*="Georgia"],[style*="Times New Roman"],[style*="Times"],[style*="Palatino"],[style*="Bookman"],[style*="Garamond"],[style*="Cambria"],[style*="Constantia"],[style*="Hiragino Mincho"],[style*="Yu Mincho"],[style*="MS Mincho"],[style*="SimSun"],[style*="NSimSun"],[style*="Source Han Serif"],[style*="Noto Serif CJK"]{font-family:"Mondwest","Yu Mincho","Hiragino Mincho Pro","Songii TC","Georgia","Palatino","SerenityOS-Emoji",serif!important}code,pre,[style*="monospace"],[style*="Courier New"],[style*="Courier"],[style*="Lucida Console"],[style*="Monaco"],[style*="Consolas"],[style*="Inconsolata"],[style*="Source Code Pro"],[style*="Menlo"],[style*="Andale Mono"],[style*="Ubuntu Mono"]{font-family:"Monaco","ArkPixel","SerenityOS-Emoji",monospace!important}*{font-family:"Geneva-12","ArkPixel","SerenityOS-Emoji",sans-serif}</style>`
           : "";
 
-        const clickInterceptorScript = `
+        // Comprehensive navigation interceptor script - injected in head for early execution
+        const navigationInterceptorScript = `
 <script>
-  document.addEventListener('click', function(event) {
-    var targetElement = event.target.closest('a');
-    if (targetElement && targetElement.href) {
-      event.preventDefault();
-      event.stopPropagation();
-      try {
-        const absoluteUrl = new URL(targetElement.getAttribute('href'), document.baseURI || window.location.href).href;
-        window.parent.postMessage({ type: 'iframeNavigation', url: absoluteUrl }, '*');
-      } catch (e) { console.error("Error resolving/posting URL:", e); }
-    }
-  }, true);
-</script>
-`;
-        // Patch history API to avoid cross-origin SecurityError (e.g. Next.js apps inside proxy)
-        const historyPatchScript = `
-<script>
-  (function() {
-    const makeRelative = function(url) {
-      try {
-        if (!url) return url;
-        const parsed = new URL(url, document.baseURI);
-        if (parsed.origin !== window.location.origin) {
-          return parsed.pathname + parsed.search + parsed.hash;
-        }
-      } catch (e) {}
-      return url;
-    };
-    ['pushState', 'replaceState'].forEach(function(fn) {
-      const original = history[fn];
-      if (typeof original === 'function') {
-        history[fn] = function(state, title, url) {
-          try {
-            return original.call(this, state, title, makeRelative(url));
-          } catch (err) {
-            console.warn('[IE Proxy] history.' + fn + ' blocked URL', url, err);
-            return original.call(this, state, title, null);
-          }
-        };
+(function() {
+  'use strict';
+  
+  // Helper to resolve and post navigation URL to parent
+  function postNavigation(url, source) {
+    try {
+      var absoluteUrl = new URL(url, document.baseURI || window.location.href).href;
+      // Skip javascript: URLs, anchors, and blob/data URLs
+      if (absoluteUrl.startsWith('javascript:') || 
+          absoluteUrl.startsWith('blob:') || 
+          absoluteUrl.startsWith('data:') ||
+          (absoluteUrl.indexOf('#') !== -1 && absoluteUrl.split('#')[0] === window.location.href.split('#')[0])) {
+        return false;
       }
-    });
-  })();
+      window.parent.postMessage({ type: 'iframeNavigation', url: absoluteUrl, source: source }, '*');
+      return true;
+    } catch (e) {
+      console.error('[IE Proxy] Error posting navigation:', e);
+      return false;
+    }
+  }
+  
+  // Click interceptor - capture phase for highest priority
+  function handleClick(event) {
+    // Skip if modifier keys are pressed (let browser handle new tab/window)
+    if (event.ctrlKey || event.metaKey || event.shiftKey) return;
+    // Only handle left clicks
+    if (event.button !== 0) return;
+    
+    var target = event.target;
+    var anchor = null;
+    
+    // Walk up the DOM tree to find an anchor element
+    while (target && target !== document.documentElement) {
+      if (target.tagName === 'A' && target.href) {
+        anchor = target;
+        break;
+      }
+      // Check for elements with onclick that navigate
+      target = target.parentElement;
+    }
+    
+    if (anchor && anchor.href) {
+      var href = anchor.getAttribute('href');
+      // Skip if target is _blank or similar
+      var linkTarget = anchor.getAttribute('target');
+      if (linkTarget === '_blank' || linkTarget === '_top' || linkTarget === '_parent') {
+        // Still intercept but let parent decide
+      }
+      
+      if (postNavigation(href, 'click')) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+      }
+    }
+  }
+  
+  // Form submission interceptor
+  function handleSubmit(event) {
+    var form = event.target;
+    if (form && form.tagName === 'FORM') {
+      var action = form.getAttribute('action') || window.location.href;
+      var method = (form.getAttribute('method') || 'GET').toUpperCase();
+      
+      if (method === 'GET') {
+        // For GET forms, construct the URL with query params
+        var formData = new FormData(form);
+        var params = new URLSearchParams();
+        formData.forEach(function(value, key) {
+          params.append(key, value);
+        });
+        var url = action + (action.indexOf('?') === -1 ? '?' : '&') + params.toString();
+        if (postNavigation(url, 'form-get')) {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+        }
+      }
+      // For POST forms, let them go through (they'll be blocked by CORS anyway)
+    }
+  }
+  
+  // Mousedown interceptor for middle-click
+  function handleMouseDown(event) {
+    if (event.button === 1) { // Middle click
+      var target = event.target;
+      while (target && target !== document.documentElement) {
+        if (target.tagName === 'A' && target.href) {
+          var href = target.getAttribute('href');
+          if (postNavigation(href, 'middle-click')) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+          }
+          break;
+        }
+        target = target.parentElement;
+      }
+    }
+  }
+  
+  // Add event listeners with capture phase for highest priority
+  document.addEventListener('click', handleClick, true);
+  document.addEventListener('submit', handleSubmit, true);
+  document.addEventListener('mousedown', handleMouseDown, true);
+  
+  // Also listen on window in case document listeners are removed
+  window.addEventListener('click', handleClick, true);
+  
+  // Re-add listeners periodically in case site removes them
+  setInterval(function() {
+    document.removeEventListener('click', handleClick, true);
+    document.addEventListener('click', handleClick, true);
+  }, 2000);
+  
+  // Patch window.location assignments
+  var locationDescriptor = Object.getOwnPropertyDescriptor(window, 'location');
+  if (locationDescriptor && locationDescriptor.configurable !== false) {
+    try {
+      var originalLocation = window.location;
+      Object.defineProperty(window, 'location', {
+        get: function() { return originalLocation; },
+        set: function(url) {
+          if (postNavigation(url, 'location-set')) {
+            return;
+          }
+          originalLocation.href = url;
+        },
+        configurable: true
+      });
+    } catch (e) {
+      // Location override failed, continue without it
+    }
+  }
+  
+  // Patch location.href, location.assign, location.replace
+  try {
+    var loc = window.location;
+    var originalAssign = loc.assign;
+    var originalReplace = loc.replace;
+    
+    if (originalAssign) {
+      loc.assign = function(url) {
+        if (!postNavigation(url, 'location-assign')) {
+          originalAssign.call(loc, url);
+        }
+      };
+    }
+    
+    if (originalReplace) {
+      loc.replace = function(url) {
+        if (!postNavigation(url, 'location-replace')) {
+          originalReplace.call(loc, url);
+        }
+      };
+    }
+    
+    // Try to intercept href setter
+    var hrefDescriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(loc), 'href');
+    if (hrefDescriptor && hrefDescriptor.set) {
+      var originalHrefSetter = hrefDescriptor.set;
+      Object.defineProperty(loc, 'href', {
+        get: function() { return loc.href; },
+        set: function(url) {
+          if (!postNavigation(url, 'location-href')) {
+            originalHrefSetter.call(loc, url);
+          }
+        },
+        configurable: true
+      });
+    }
+  } catch (e) {
+    // Location patching failed, continue without it
+  }
+  
+  // Patch history API to avoid cross-origin SecurityError (e.g. Next.js apps inside proxy)
+  var makeRelative = function(url) {
+    try {
+      if (!url) return url;
+      var parsed = new URL(url, document.baseURI);
+      if (parsed.origin !== window.location.origin) {
+        return parsed.pathname + parsed.search + parsed.hash;
+      }
+    } catch (e) {}
+    return url;
+  };
+  
+  ['pushState', 'replaceState'].forEach(function(fn) {
+    var original = history[fn];
+    if (typeof original === 'function') {
+      history[fn] = function(state, title, url) {
+        try {
+          return original.call(this, state, title, makeRelative(url));
+        } catch (err) {
+          console.warn('[IE Proxy] history.' + fn + ' blocked URL', url, err);
+          return original.call(this, state, title, null);
+        }
+      };
+    }
+  });
+  
+  // Intercept window.open
+  var originalOpen = window.open;
+  window.open = function(url, target, features) {
+    if (url && postNavigation(url, 'window-open')) {
+      return null;
+    }
+    return originalOpen ? originalOpen.call(window, url, target, features) : null;
+  };
+})();
 </script>
 `;
         const headIndex = html.search(/<head[^>]*>/i);
         if (headIndex !== -1) {
           const insertPos = headIndex + html.match(/<head[^>]*>/i)![0].length;
+          // Inject navigation interceptor as early as possible in head
           html =
             html.slice(0, insertPos) +
             baseTag +
             titleMetaTag +
+            navigationInterceptorScript +
             fontOverrideStyles +
-            historyPatchScript +
-            html.slice(insertPos); // Add styles and history patch
+            html.slice(insertPos);
         } else {
-          // Fallback: Prepend if no <head>
+          // Fallback: Prepend if no <head> - wrap in head tag
           html =
+            '<head>' +
             baseTag +
             titleMetaTag +
+            navigationInterceptorScript +
             fontOverrideStyles +
-            historyPatchScript +
+            '</head>' +
             html;
-        }
-
-        // Inject script right before </body> (case‑insensitive)
-        const bodyEndIndex = html.search(/<\/body>/i);
-        if (bodyEndIndex !== -1) {
-          html =
-            html.slice(0, bodyEndIndex) +
-            clickInterceptorScript +
-            html.slice(bodyEndIndex);
-        } else {
-          // Fallback: Append script if no </body>
-          html += clickInterceptorScript;
         }
 
         // Add the extracted title to a custom header (URL-encoded)
