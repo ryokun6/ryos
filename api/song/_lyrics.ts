@@ -133,6 +133,17 @@ export function shouldSkipLine(text: string, title?: string, artist?: string): b
     }
   }
   
+  // Also match artist alone (for metadata lines that only show the artist name)
+  // Use minimum length to avoid false positives with short names
+  const MIN_LENGTH = 3;
+  
+  if (artist && artist.length >= MIN_LENGTH) {
+    const artistSimplified = traditionalToSimplified(artist);
+    if (trimmed === artist || trimmed === artistSimplified) {
+      return true;
+    }
+  }
+  
   return false;
 }
 

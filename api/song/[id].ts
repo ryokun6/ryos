@@ -524,7 +524,9 @@ export default async function handler(req: Request) {
         const lyrics: LyricsContent = kugouResult.lyrics;
 
         // Save to song document (lyrics + cover in metadata)
-        const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource, kugouResult.cover);
+        // Clear annotations (translations, furigana, soramimi) when source changed or force refresh
+        const shouldClearAnnotations = force || lyricsSourceChanged;
+        const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource, kugouResult.cover, shouldClearAnnotations);
         logInfo(requestId, `Lyrics saved to song document`, { 
           songId,
           hasLyricsStored: !!savedSong.lyrics,
