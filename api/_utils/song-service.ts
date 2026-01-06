@@ -529,13 +529,15 @@ export async function listSongs(
  * the specific lyrics content.
  * 
  * @param cover - Cover image URL (stored in metadata, not lyrics content)
+ * @param clearAnnotations - Force clear all cached annotations (translations, furigana, soramimi)
  */
 export async function saveLyrics(
   redis: Redis,
   id: string,
   lyrics: LyricsContent,
   lyricsSource?: LyricsSource,
-  cover?: string
+  cover?: string,
+  clearAnnotations?: boolean
 ): Promise<SongDocument> {
   const metaKey = getSongMetaKey(id);
   const contentKey = getSongContentKey(id);
@@ -552,6 +554,9 @@ export async function saveLyrics(
   const lyricsSourceChanged = lyricsSource?.hash && 
     existingMeta?.lyricsSource?.hash && 
     lyricsSource.hash !== existingMeta.lyricsSource.hash;
+  
+  // Clear annotations if source changed OR if explicitly requested (e.g., force refresh)
+  const shouldClearAnnotations = clearAnnotations || lyricsSourceChanged;
 
   // Build/update metadata
   const meta: SongMetadata = {
@@ -569,14 +574,14 @@ export async function saveLyrics(
   };
 
   // Build content
-  // If lyrics source changed, clear annotations (they're tied to specific lyrics)
+  // Clear annotations if source changed or explicitly requested (e.g., force refresh)
   // Otherwise preserve existing translations, furigana, soramimi
   const content: SongContent = {
     lyrics,
-    translations: lyricsSourceChanged ? undefined : existingContent?.translations,
-    furigana: lyricsSourceChanged ? undefined : existingContent?.furigana,
-    soramimi: lyricsSourceChanged ? undefined : existingContent?.soramimi,
-    soramimiByLang: lyricsSourceChanged ? undefined : existingContent?.soramimiByLang,
+    translations: shouldClearAnnotations ? undefined : existingContent?.translations,
+    furigana: shouldClearAnnotations ? undefined : existingContent?.furigana,
+    soramimi: shouldClearAnnotations ? undefined : existingContent?.soramimi,
+    soramimiByLang: shouldClearAnnotations ? undefined : existingContent?.soramimiByLang,
   };
 
   // Save both keys
