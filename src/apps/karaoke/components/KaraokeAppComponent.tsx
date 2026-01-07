@@ -428,21 +428,47 @@ export function KaraokeAppComponent({
 
   // Reset elapsed time on track change and set track switching guard
   // This catches track changes from any source (AI tools, shared URLs, menu selections, etc.)
-  const prevCurrentIndexRef = useRef(currentIndex);
+  // Using null as initial value ensures first render triggers the auto-skip check
+  const prevCurrentIndexRef = useRef<number | null>(null);
   useEffect(() => {
-    setElapsedTime(0);
-    // Only trigger track switch guard if index actually changed (not on initial render)
+    // Check if track changed or this is initial render (prevCurrentIndexRef.current is null)
     if (prevCurrentIndexRef.current !== currentIndex) {
       isTrackSwitchingRef.current = true;
       if (trackSwitchTimeoutRef.current) {
         clearTimeout(trackSwitchTimeoutRef.current);
       }
-      trackSwitchTimeoutRef.current = setTimeout(() => {
-        isTrackSwitchingRef.current = false;
-      }, 2000);
+      
+      // Check if new track has a negative offset - if so, auto-skip to where lyrics start at 0
+      const newTrack = tracks[currentIndex];
+      const lyricOffset = newTrack?.lyricOffset ?? 0;
+      
+      if (lyricOffset < 0) {
+        // For negative offset, seek to the position where lyrics time = 0
+        // Formula: lyricsTime = playerTime + (lyricOffset / 1000)
+        // When lyricsTime = 0: playerTime = -lyricOffset / 1000
+        const seekTarget = -lyricOffset / 1000;
+        setElapsedTime(seekTarget);
+        
+        trackSwitchTimeoutRef.current = setTimeout(() => {
+          isTrackSwitchingRef.current = false;
+          // Seek to the position where lyrics start at 0
+          const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+          if (activePlayer) {
+            activePlayer.seekTo(seekTarget);
+            // Show status message for auto-skip
+            showStatus(`▶ ${Math.floor(seekTarget / 60)}:${String(Math.floor(seekTarget % 60)).padStart(2, "0")}`);
+          }
+        }, 2000);
+      } else {
+        // Normal case: start from beginning
+        setElapsedTime(0);
+        trackSwitchTimeoutRef.current = setTimeout(() => {
+          isTrackSwitchingRef.current = false;
+        }, 2000);
+      }
     }
     prevCurrentIndexRef.current = currentIndex;
-  }, [currentIndex]);
+  }, [currentIndex, tracks, isFullScreen, showStatus]);
 
   // Cleanup
   useEffect(() => {
