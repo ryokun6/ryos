@@ -428,9 +428,10 @@ export function KaraokeAppComponent({
 
   // Reset elapsed time on track change and set track switching guard
   // This catches track changes from any source (AI tools, shared URLs, menu selections, etc.)
-  const prevCurrentIndexRef = useRef(currentIndex);
+  // Using null as initial value ensures first render triggers the auto-skip check
+  const prevCurrentIndexRef = useRef<number | null>(null);
   useEffect(() => {
-    // Only trigger track switch guard if index actually changed (not on initial render)
+    // Check if track changed or this is initial render (prevCurrentIndexRef.current is null)
     if (prevCurrentIndexRef.current !== currentIndex) {
       isTrackSwitchingRef.current = true;
       if (trackSwitchTimeoutRef.current) {
@@ -465,9 +466,6 @@ export function KaraokeAppComponent({
           isTrackSwitchingRef.current = false;
         }, 2000);
       }
-    } else {
-      // Initial render - just reset elapsed time
-      setElapsedTime(0);
     }
     prevCurrentIndexRef.current = currentIndex;
   }, [currentIndex, tracks, isFullScreen, showStatus]);
