@@ -529,14 +529,20 @@
   z-index: 2;
 }
 
+
 :root[data-os-theme="macosx"] .title-bar {
   font-size: 13px !important;
   font-weight: 500 !important;
 }
 
-:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab) {
+:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger) {
   font-size: 13px !important;
   font-weight: normal !important;
+}
+
+/* App Menu trigger should be bold in macOS theme */
+:root[data-os-theme="macosx"] button.app-menu-trigger {
+  font-weight: bold !important;
 }
 
 :root[data-os-theme="macosx"] input,

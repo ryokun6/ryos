@@ -2124,6 +2124,14 @@
       "furigana": "ふりがな",
       "soramimi": "空耳"
     },
+    "appMenu": {
+      "aboutApp": "{{appName}}について",
+      "appHelp": "{{appName}} ヘルプ",
+      "hideApp": "{{appName}}を隠す",
+      "hideOthers": "他を隠す",
+      "quitApp": "{{appName}}を終了",
+      "showAll": "すべてを表示"
+    },
     "appleMenu": {
       "aboutThisComputer": "このコンピュータについて",
       "appletStore": "アプレットストア…",
@@ -2178,7 +2186,6 @@
       "enterFilenameToSave": "保存するファイル名を入力するか、閉じる前に削除してください。",
       "help": "ヘルプ",
       "informationAboutApp": "アプリケーションについての情報",
-      "viewDocs": "ドキュメント",
       "keepNewDocument": "新規書類を保持",
       "madeBy": "作成者：",
       "openInGitHub": "GitHubで開く",
@@ -2211,6 +2218,7 @@
         "shareLinkOrScanToOpen": "リンクを共有するか、スキャンしてこの {{itemType}} を開く"
       },
       "version": "バージョン",
+      "viewDocs": "ドキュメント",
       "welcomeTo": "{{appName}}へようこそ"
     },
     "dock": {
@@ -2347,6 +2355,7 @@
     },
     "window": {
       "close": "閉じる",
+      "fullscreen": "フルスクリーン",
       "maximize": "最大化",
       "minimize": "最小化"
     }

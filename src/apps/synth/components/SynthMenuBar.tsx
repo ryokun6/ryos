@@ -46,6 +46,7 @@ export function SynthMenuBar({
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacOsxTheme = currentTheme === "macosx";
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
@@ -146,19 +147,23 @@ export function SynthMenuBar({
           >
             {t("apps.synth.menu.synthHelp")}
           </MenubarItem>
-          <MenubarItem
-            onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3"
-          >
-            {t("common.menu.shareApp")}
-          </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
-            onClick={onShowAbout}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.synth.menu.aboutSynth")}
-          </MenubarItem>
+          {!isMacOsxTheme && (
+            <>
+              <MenubarItem
+                onSelect={() => setIsShareDialogOpen(true)}
+                className="text-md h-6 px-3"
+              >
+                {t("common.menu.shareApp")}
+              </MenubarItem>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarItem
+                onClick={onShowAbout}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.synth.menu.aboutSynth")}
+              </MenubarItem>
+            </>
+          )}
         </MenubarContent>
       </MenubarMenu>
       <ShareItemDialog

@@ -2124,6 +2124,14 @@
       "furigana": "Furigana",
       "soramimi": "Verhörer"
     },
+    "appMenu": {
+      "aboutApp": "Über {{appName}}",
+      "appHelp": "{{appName}}-Hilfe",
+      "hideApp": "{{appName}} ausblenden",
+      "hideOthers": "Andere ausblenden",
+      "quitApp": "{{appName}} beenden",
+      "showAll": "Alle einblenden"
+    },
     "appleMenu": {
       "aboutThisComputer": "Über diesen Computer",
       "appletStore": "Applet Store…",
@@ -2178,7 +2186,6 @@
       "enterFilenameToSave": "Geben Sie einen Dateinamen zum Sichern ein oder löschen Sie ihn vor dem Schließen.",
       "help": "Hilfe",
       "informationAboutApp": "Informationen zur Anwendung",
-      "viewDocs": "Dokumentation anzeigen",
       "keepNewDocument": "Neues Dokument behalten",
       "madeBy": "Erstellt von",
       "openInGitHub": "In GitHub öffnen",
@@ -2211,6 +2218,7 @@
         "shareLinkOrScanToOpen": "Link teilen oder scannen, um diesen {{itemType}} zu öffnen"
       },
       "version": "Version",
+      "viewDocs": "Dokumentation anzeigen",
       "welcomeTo": "Willkommen bei {{appName}}"
     },
     "dock": {
@@ -2347,6 +2355,7 @@
     },
     "window": {
       "close": "Schließen",
+      "fullscreen": "Vollbild",
       "maximize": "Maximieren",
       "minimize": "Minimieren"
     }

@@ -53,6 +53,7 @@ export function PhotoBoothMenuBar({
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
   const currentTheme = useThemeStore((s) => s.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacOsxTheme = currentTheme === "macosx";
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
@@ -125,6 +126,7 @@ export function PhotoBoothMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
+      {/* Help Menu */}
       <MenubarMenu>
         <MenubarTrigger className="px-2 py-1 text-md focus-visible:ring-0">
           {t("common.menu.help")}
@@ -136,19 +138,23 @@ export function PhotoBoothMenuBar({
           >
             {t("apps.photo-booth.menu.photoBoothHelp")}
           </MenubarItem>
-          <MenubarItem
-            onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3"
-          >
-            {t("common.menu.shareApp")}
-          </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
-            onClick={onShowAbout}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.photo-booth.menu.aboutPhotoBooth")}
-          </MenubarItem>
+          {!isMacOsxTheme && (
+            <>
+              <MenubarItem
+                onSelect={() => setIsShareDialogOpen(true)}
+                className="text-md h-6 px-3"
+              >
+                {t("common.menu.shareApp")}
+              </MenubarItem>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarItem
+                onClick={onShowAbout}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.photo-booth.menu.aboutPhotoBooth")}
+              </MenubarItem>
+            </>
+          )}
         </MenubarContent>
       </MenubarMenu>
       <ShareItemDialog

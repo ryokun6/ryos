@@ -51,6 +51,7 @@ export function TextEditMenuBar({
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacOsxTheme = currentTheme === "macosx";
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -285,6 +286,7 @@ export function TextEditMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
+      {/* Help Menu */}
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.help")}
@@ -296,19 +298,23 @@ export function TextEditMenuBar({
           >
             {t("apps.textedit.menu.texteditHelp")}
           </MenubarItem>
-          <MenubarItem
-            onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3"
-          >
-            {t("common.menu.shareApp")}
-          </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
-            onClick={onShowAbout}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.textedit.menu.aboutTextEdit")}
-          </MenubarItem>
+          {!isMacOsxTheme && (
+            <>
+              <MenubarItem
+                onSelect={() => setIsShareDialogOpen(true)}
+                className="text-md h-6 px-3"
+              >
+                {t("common.menu.shareApp")}
+              </MenubarItem>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarItem
+                onClick={onShowAbout}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.textedit.menu.aboutTextEdit")}
+              </MenubarItem>
+            </>
+          )}
         </MenubarContent>
       </MenubarMenu>
       <ShareItemDialog

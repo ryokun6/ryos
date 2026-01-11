@@ -62,6 +62,7 @@ export function AppletViewerMenuBar({
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
   const currentTheme = useThemeStore((s) => s.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacOsxTheme = currentTheme === "macosx";
   const launchApp = useLaunchApp();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const bringInstanceToForeground = useAppStore(
@@ -252,19 +253,23 @@ export function AppletViewerMenuBar({
           >
             {t("apps.applet-viewer.menu.appletsHelp")}
           </MenubarItem>
-          <MenubarItem
-            onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3"
-          >
-            {t("common.menu.shareApp")}
-          </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
-            onClick={onShowAbout}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.applet-viewer.menu.aboutApplets")}
-          </MenubarItem>
+          {!isMacOsxTheme && (
+            <>
+              <MenubarItem
+                onSelect={() => setIsShareDialogOpen(true)}
+                className="text-md h-6 px-3"
+              >
+                {t("common.menu.shareApp")}
+              </MenubarItem>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarItem
+                onClick={onShowAbout}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.applet-viewer.menu.aboutApplets")}
+              </MenubarItem>
+            </>
+          )}
         </MenubarContent>
       </MenubarMenu>
       <ShareItemDialog

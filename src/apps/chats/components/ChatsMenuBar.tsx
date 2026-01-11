@@ -89,6 +89,7 @@ export function ChatsMenuBar({
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacOsxTheme = currentTheme === "macosx";
 
   const {
     speechEnabled,
@@ -332,19 +333,23 @@ export function ChatsMenuBar({
             >
               {t("apps.chats.menu.chatsHelp")}
             </MenubarItem>
-            <MenubarItem
-              onSelect={() => setIsShareDialogOpen(true)}
-              className="text-md h-6 px-3"
-            >
-              {t("common.menu.shareApp")}
-            </MenubarItem>
-            <MenubarSeparator className="h-[2px] bg-black my-1" />
-            <MenubarItem
-              onClick={onShowAbout}
-              className="text-md h-6 px-3"
-            >
-              {t("apps.chats.menu.aboutChats")}
-            </MenubarItem>
+            {!isMacOsxTheme && (
+              <>
+                <MenubarItem
+                  onSelect={() => setIsShareDialogOpen(true)}
+                  className="text-md h-6 px-3"
+                >
+                  {t("common.menu.shareApp")}
+                </MenubarItem>
+                <MenubarSeparator className="h-[2px] bg-black my-1" />
+                <MenubarItem
+                  onClick={onShowAbout}
+                  className="text-md h-6 px-3"
+                >
+                  {t("apps.chats.menu.aboutChats")}
+                </MenubarItem>
+              </>
+            )}
           </MenubarContent>
         </MenubarMenu>
       </MenuBar>

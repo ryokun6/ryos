@@ -148,6 +148,7 @@ export function IpodMenuBar({
 
   const appTheme = useThemeStore((state) => state.current);
   const isXpTheme = appTheme === "xp" || appTheme === "win98";
+  const isMacOsxTheme = appTheme === "macosx";
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
   const username = useChatsStore((state) => state.username);
   const isAdmin = username?.toLowerCase() === "ryo";
@@ -709,19 +710,23 @@ export function IpodMenuBar({
           >
             {t("apps.ipod.menu.ipodHelp")}
           </MenubarItem>
-          <MenubarItem
-            onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.ipod.menu.shareApp")}
-          </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
-            onClick={onShowAbout}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.ipod.menu.aboutIpod")}
-          </MenubarItem>
+          {!isMacOsxTheme && (
+            <>
+              <MenubarItem
+                onSelect={() => setIsShareDialogOpen(true)}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.shareApp")}
+              </MenubarItem>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarItem
+                onClick={onShowAbout}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.ipod.menu.aboutIpod")}
+              </MenubarItem>
+            </>
+          )}
         </MenubarContent>
       </MenubarMenu>
       <ShareItemDialog

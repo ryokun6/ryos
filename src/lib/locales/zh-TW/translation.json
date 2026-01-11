@@ -2124,6 +2124,14 @@
       "furigana": "振假名",
       "soramimi": "空耳"
     },
+    "appMenu": {
+      "aboutApp": "關於{{appName}}",
+      "appHelp": "{{appName}}輔助說明",
+      "hideApp": "隱藏{{appName}}",
+      "hideOthers": "隱藏其他",
+      "quitApp": "結束{{appName}}",
+      "showAll": "全部顯示"
+    },
     "appleMenu": {
       "aboutThisComputer": "關於此電腦",
       "appletStore": "小程式商店…",
@@ -2178,7 +2186,6 @@
       "enterFilenameToSave": "輸入要儲存的檔案名稱，或在關閉前刪除。",
       "help": "輔助說明",
       "informationAboutApp": "應用程式資訊",
-      "viewDocs": "查看文檔",
       "keepNewDocument": "保留新檔案",
       "madeBy": "製作：",
       "openInGitHub": "在 GitHub 開啟",
@@ -2211,6 +2218,7 @@
         "shareLinkOrScanToOpen": "分享連結或掃描以開啟此{{itemType}}"
       },
       "version": "版本",
+      "viewDocs": "查看文檔",
       "welcomeTo": "歡迎使用{{appName}}"
     },
     "dock": {
@@ -2347,6 +2355,7 @@
     },
     "window": {
       "close": "關閉",
+      "fullscreen": "全螢幕",
       "maximize": "最大化",
       "minimize": "最小化"
     }

@@ -160,6 +160,14 @@
       "login": "Login…",
       "logOut": "Log Out {{username}}…"
     },
+    "appMenu": {
+      "aboutApp": "About {{appName}}",
+      "appHelp": "{{appName}} Help",
+      "hideApp": "Hide {{appName}}",
+      "hideOthers": "Hide Others",
+      "showAll": "Show All",
+      "quitApp": "Quit {{appName}}"
+    },
     "aboutThisMac": {
       "title": "About This Computer",
       "description": "Information about ryOS on this computer",

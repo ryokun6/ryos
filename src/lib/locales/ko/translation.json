@@ -2124,6 +2124,14 @@
       "furigana": "후리가나",
       "soramimi": "소라미미"
     },
+    "appMenu": {
+      "aboutApp": "{{appName}} 정보",
+      "appHelp": "{{appName}} 도움말",
+      "hideApp": "{{appName}} 가리기",
+      "hideOthers": "다른 항목 가리기",
+      "quitApp": "{{appName}} 종료",
+      "showAll": "모두 보기"
+    },
     "appleMenu": {
       "aboutThisComputer": "이 컴퓨터에 관하여",
       "appletStore": "애플릿 스토어…",
@@ -2178,7 +2186,6 @@
       "enterFilenameToSave": "저장할 파일 이름을 입력하거나 닫기 전에 삭제하세요.",
       "help": "도움말",
       "informationAboutApp": "응용 프로그램 정보",
-      "viewDocs": "문서 보기",
       "keepNewDocument": "새 문서 유지",
       "madeBy": "제작:",
       "openInGitHub": "GitHub에서 열기",
@@ -2211,6 +2218,7 @@
         "shareLinkOrScanToOpen": "링크를 공유하거나 스캔하여 이 {{itemType}}을(를) 여세요."
       },
       "version": "버전",
+      "viewDocs": "문서 보기",
       "welcomeTo": "{{appName}}에 오신 것을 환영합니다"
     },
     "dock": {
@@ -2347,6 +2355,7 @@
     },
     "window": {
       "close": "닫기",
+      "fullscreen": "전체 화면",
       "maximize": "최대화",
       "minimize": "최소화"
     }

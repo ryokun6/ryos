@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { AppleMenu } from "./AppleMenu";
+import { AppMenu } from "./AppMenu";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -1371,6 +1372,14 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           className="flex items-stretch border-none bg-transparent space-x-0 p-0 rounded-none h-full"
         >
           <AppleMenu />
+          {/* App Menu - only shown in macOS X theme when an app is active */}
+          {currentTheme === "macosx" && hasActiveApp && foregroundInstance && (
+            <AppMenu
+              appId={foregroundInstance.appId}
+              appName={appRegistry[foregroundInstance.appId]?.name || foregroundInstance.appId}
+              instanceId={foregroundInstance.instanceId}
+            />
+          )}
           {hasActiveApp && children ? children : <DefaultMenuItems />}
         </Menubar>
       </ScrollableMenuWrapper>

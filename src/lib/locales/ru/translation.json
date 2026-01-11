@@ -2124,6 +2124,14 @@
       "furigana": "Фуригана",
       "soramimi": "Ослышка"
     },
+    "appMenu": {
+      "aboutApp": "О программе {{appName}}",
+      "appHelp": "Справка {{appName}}",
+      "hideApp": "Скрыть {{appName}}",
+      "hideOthers": "Скрыть другие",
+      "quitApp": "Завершить {{appName}}",
+      "showAll": "Показать все"
+    },
     "appleMenu": {
       "aboutThisComputer": "Об этом компьютере",
       "appletStore": "Applet Store…",
@@ -2178,7 +2186,6 @@
       "enterFilenameToSave": "Введите имя файла для сохранения или удалите его перед закрытием.",
       "help": "Справка",
       "informationAboutApp": "Информация о приложении",
-      "viewDocs": "Смотреть документацию",
       "keepNewDocument": "Сохранить новый документ",
       "madeBy": "Разработано",
       "openInGitHub": "Открыть в GitHub",
@@ -2211,6 +2218,7 @@
         "shareLinkOrScanToOpen": "Поделитесь ссылкой или отсканируйте, чтобы открыть этот {{itemType}}"
       },
       "version": "Версия",
+      "viewDocs": "Смотреть документацию",
       "welcomeTo": "Добро пожаловать в {{appName}}"
     },
     "dock": {
@@ -2332,6 +2340,7 @@
     },
     "window": {
       "close": "Закрыть",
+      "fullscreen": "На весь экран",
       "maximize": "Развернуть",
       "minimize": "Свернуть"
     }

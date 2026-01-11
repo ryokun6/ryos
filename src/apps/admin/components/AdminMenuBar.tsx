@@ -36,6 +36,7 @@ export function AdminMenuBar({
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacOsxTheme = currentTheme === "macosx";
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
@@ -113,10 +114,14 @@ export function AdminMenuBar({
           <MenubarItem onClick={onShowHelp} className="text-md h-6 px-3">
             {t("apps.admin.menu.adminHelp")}
           </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem onClick={onShowAbout} className="text-md h-6 px-3">
-            {t("apps.admin.menu.aboutAdmin")}
-          </MenubarItem>
+          {!isMacOsxTheme && (
+            <>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarItem onClick={onShowAbout} className="text-md h-6 px-3">
+                {t("apps.admin.menu.aboutAdmin")}
+              </MenubarItem>
+            </>
+          )}
         </MenubarContent>
       </MenubarMenu>
     </MenuBar>

@@ -48,6 +48,7 @@ export function ControlPanelsMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
+      {/* Help Menu */}
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.help")}
@@ -57,25 +58,25 @@ export function ControlPanelsMenuBar({
             onClick={onShowHelp}
             className="text-md h-6 px-3"
           >
-            {isMacOsxTheme 
-              ? t("apps.control-panels.menu.controlPanelsHelpForMacosX") 
-              : t("apps.control-panels.menu.controlPanelsHelp")}
+            {t("apps.control-panels.menu.controlPanelsHelp")}
           </MenubarItem>
-          <MenubarItem
-            onSelect={() => setIsShareDialogOpen(true)}
-            className="text-md h-6 px-3"
-          >
-            {t("common.menu.shareApp")}
-          </MenubarItem>
-          <MenubarSeparator className="h-[2px] bg-black my-1" />
-          <MenubarItem
-            onClick={onShowAbout}
-            className="text-md h-6 px-3"
-          >
-            {isMacOsxTheme 
-              ? t("apps.control-panels.menu.aboutControlPanelsForMacosX") 
-              : t("apps.control-panels.menu.aboutControlPanels")}
-          </MenubarItem>
+          {!isMacOsxTheme && (
+            <>
+              <MenubarItem
+                onSelect={() => setIsShareDialogOpen(true)}
+                className="text-md h-6 px-3"
+              >
+                {t("common.menu.shareApp")}
+              </MenubarItem>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarItem
+                onClick={onShowAbout}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.control-panels.menu.aboutControlPanels")}
+              </MenubarItem>
+            </>
+          )}
         </MenubarContent>
       </MenubarMenu>
       <ShareItemDialog

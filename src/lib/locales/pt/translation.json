@@ -2124,6 +2124,14 @@
       "furigana": "Furigana",
       "soramimi": "Mondegreen"
     },
+    "appMenu": {
+      "aboutApp": "Sobre {{appName}}",
+      "appHelp": "Ajuda do {{appName}}",
+      "hideApp": "Ocultar {{appName}}",
+      "hideOthers": "Ocultar Outros",
+      "quitApp": "Sair de {{appName}}",
+      "showAll": "Mostrar Tudo"
+    },
     "appleMenu": {
       "aboutThisComputer": "Sobre Este Computador",
       "appletStore": "Applet Store…",
@@ -2178,7 +2186,6 @@
       "enterFilenameToSave": "Insira um nome de arquivo para salvar, ou exclua-o antes de fechar.",
       "help": "Ajuda",
       "informationAboutApp": "Informações do aplicativo",
-      "viewDocs": "Ver documentação",
       "keepNewDocument": "Manter Novo Documento",
       "madeBy": "Feito por",
       "openInGitHub": "Abrir no GitHub",
@@ -2211,6 +2218,7 @@
         "shareLinkOrScanToOpen": "Compartilhe o link ou escaneie para abrir este {{itemType}}"
       },
       "version": "Versão",
+      "viewDocs": "Ver documentação",
       "welcomeTo": "Bem-vindo ao {{appName}}"
     },
     "dock": {
@@ -2332,6 +2340,7 @@
     },
     "window": {
       "close": "Fechar",
+      "fullscreen": "Tela Cheia",
       "maximize": "Maximizar",
       "minimize": "Minimizar"
     }
