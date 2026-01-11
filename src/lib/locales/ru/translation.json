@@ -2127,6 +2127,7 @@
     "appMenu": {
       "aboutApp": "О программе {{appName}}",
       "appHelp": "Справка {{appName}}",
+      "fullScreen": "На весь экран",
       "hideApp": "Скрыть {{appName}}",
       "hideOthers": "Скрыть другие",
       "quitApp": "Завершить {{appName}}",

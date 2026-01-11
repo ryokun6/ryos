@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/menubar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
+import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
+import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { StartMenu } from "./StartMenu";
 import { useAppStoreShallow, useAudioSettingsStoreShallow, useDisplaySettingsStoreShallow } from "@/stores/helpers";
@@ -419,6 +421,126 @@ function Clock({ enableExposeToggle = false }: ClockProps) {
     >
       {displayTime}
     </div>
+  );
+}
+
+// Finder App Menu for desktop (macOS X theme only, when no app is active)
+function FinderAppMenu() {
+  const { t } = useTranslation();
+  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
+  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+
+  const {
+    instances,
+    minimizeInstance,
+    restoreInstance,
+  } = useAppStoreShallow((s) => ({
+    instances: s.instances,
+    minimizeInstance: s.minimizeInstance,
+    restoreInstance: s.restoreInstance,
+  }));
+
+  // Get translated Finder name
+  const translatedFinderName = getTranslatedAppName("finder");
+
+  // Check if there are any minimized instances
+  const hasMinimizedInstances = Object.values(instances).some(
+    (inst) => inst.isOpen && inst.isMinimized
+  );
+
+  // Hide others - minimize all open app instances
+  const handleHideOthers = () => {
+    Object.values(instances).forEach((inst) => {
+      if (inst.isOpen && !inst.isMinimized) {
+        minimizeInstance(inst.instanceId);
+      }
+    });
+  };
+
+  // Show all - restore all minimized instances
+  const handleShowAll = () => {
+    Object.values(instances).forEach((inst) => {
+      if (inst.isOpen && inst.isMinimized) {
+        restoreInstance(inst.instanceId);
+      }
+    });
+  };
+
+  return (
+    <>
+      <MenubarMenu>
+        <MenubarTrigger
+          className="text-md px-2 py-1 border-none focus-visible:ring-0 app-menu-trigger"
+          style={{ fontWeight: "bold" }}
+        >
+          {translatedFinderName}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          {/* About Finder */}
+          <MenubarItem
+            onClick={() => setIsAboutDialogOpen(true)}
+            className="text-md h-6 px-3"
+          >
+            {t("common.appMenu.aboutApp", { appName: translatedFinderName })}
+          </MenubarItem>
+
+          {/* Share App */}
+          <MenubarItem
+            onSelect={() => setIsShareDialogOpen(true)}
+            className="text-md h-6 px-3"
+          >
+            {t("common.menu.shareApp")}
+          </MenubarItem>
+
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+
+          {/* Hide Others */}
+          <MenubarItem
+            onClick={handleHideOthers}
+            className="text-md h-6 px-3"
+          >
+            {t("common.appMenu.hideOthers")}
+          </MenubarItem>
+
+          {/* Show All - only when there are minimized windows */}
+          {hasMinimizedInstances && (
+            <MenubarItem
+              onClick={handleShowAll}
+              className="text-md h-6 px-3"
+            >
+              {t("common.appMenu.showAll")}
+            </MenubarItem>
+          )}
+        </MenubarContent>
+      </MenubarMenu>
+
+      {/* Help Dialog */}
+      <HelpDialog
+        isOpen={isHelpDialogOpen}
+        onOpenChange={setIsHelpDialogOpen}
+        appId="finder"
+        helpItems={finderHelpItems}
+      />
+
+      {/* About Dialog */}
+      <AboutDialog
+        isOpen={isAboutDialogOpen}
+        onOpenChange={setIsAboutDialogOpen}
+        metadata={finderMetadata}
+        appId="finder"
+      />
+
+      {/* Share Dialog */}
+      <ShareItemDialog
+        isOpen={isShareDialogOpen}
+        onClose={() => setIsShareDialogOpen(false)}
+        itemType="App"
+        itemIdentifier="finder"
+        title="Finder"
+        generateShareUrl={generateAppShareUrl}
+      />
+    </>
   );
 }
 
@@ -1372,13 +1494,17 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           className="flex items-stretch border-none bg-transparent space-x-0 p-0 rounded-none h-full"
         >
           <AppleMenu />
-          {/* App Menu - only shown in macOS X theme when an app is active */}
+          {/* App Menu - only shown in macOS X theme */}
           {currentTheme === "macosx" && hasActiveApp && foregroundInstance && (
             <AppMenu
               appId={foregroundInstance.appId}
               appName={appRegistry[foregroundInstance.appId]?.name || foregroundInstance.appId}
               instanceId={foregroundInstance.instanceId}
             />
+          )}
+          {/* Finder App Menu - shown in macOS X theme when no app is active (desktop) */}
+          {currentTheme === "macosx" && !hasActiveApp && (
+            <FinderAppMenu />
           )}
           {hasActiveApp && children ? children : <DefaultMenuItems />}
         </Menubar>

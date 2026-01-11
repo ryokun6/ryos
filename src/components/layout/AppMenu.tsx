@@ -18,11 +18,13 @@ import { getTranslatedAppName } from "@/utils/i18n";
 // Apps that support multiple windows
 const MULTI_INSTANCE_APPS: AppId[] = ["textedit", "finder", "applet-viewer"];
 
+// Apps that support fullscreen mode
+const FULLSCREEN_APPS: AppId[] = ["ipod", "karaoke", "videos", "pc"];
+
 interface AppMenuProps {
   appId: AppId;
   appName: string;
   instanceId: string;
-  onShowHelp?: () => void;
   onShowAbout?: () => void;
 }
 
@@ -30,7 +32,6 @@ export function AppMenu({
   appId,
   appName,
   instanceId,
-  onShowHelp,
   onShowAbout,
 }: AppMenuProps) {
   const { t } = useTranslation();
@@ -60,6 +61,9 @@ export function AppMenu({
 
   // Check if this app supports multiple instances
   const supportsMultiInstance = MULTI_INSTANCE_APPS.includes(appId);
+
+  // Check if this app supports fullscreen
+  const supportsFullScreen = FULLSCREEN_APPS.includes(appId);
 
   // Get all open instances of this app
   const appInstances = Object.values(instances).filter(
@@ -92,13 +96,11 @@ export function AppMenu({
     });
   };
 
-  // Handle showing help - use provided handler or fallback to dialog
-  const handleShowHelp = () => {
-    if (onShowHelp) {
-      onShowHelp();
-    } else {
-      setIsHelpDialogOpen(true);
-    }
+  // Toggle fullscreen - dispatch event for app to handle
+  const handleFullScreen = () => {
+    window.dispatchEvent(new CustomEvent("toggleAppFullScreen", { 
+      detail: { appId, instanceId } 
+    }));
   };
 
   // Handle showing about - use provided handler or fallback to dialog
@@ -166,6 +168,16 @@ export function AppMenu({
               className="text-md h-6 px-3"
             >
               {t("common.appMenu.showAll")}
+            </MenubarItem>
+          )}
+
+          {/* Full Screen - only for apps that support it */}
+          {supportsFullScreen && (
+            <MenubarItem
+              onClick={handleFullScreen}
+              className="text-md h-6 px-3"
+            >
+              {t("common.appMenu.fullScreen")}
             </MenubarItem>
           )}
 

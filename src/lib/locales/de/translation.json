@@ -2127,6 +2127,7 @@
     "appMenu": {
       "aboutApp": "Über {{appName}}",
       "appHelp": "{{appName}}-Hilfe",
+      "fullScreen": "Vollbild",
       "hideApp": "{{appName}} ausblenden",
       "hideOthers": "Andere ausblenden",
       "quitApp": "{{appName}} beenden",

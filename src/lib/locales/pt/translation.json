@@ -2127,6 +2127,7 @@
     "appMenu": {
       "aboutApp": "Sobre {{appName}}",
       "appHelp": "Ajuda do {{appName}}",
+      "fullScreen": "Tela Cheia",
       "hideApp": "Ocultar {{appName}}",
       "hideOthers": "Ocultar Outros",
       "quitApp": "Sair de {{appName}}",

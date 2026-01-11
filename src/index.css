@@ -94,6 +94,13 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* CJK typography improvements for Chinese and Japanese */
+  html:lang(zh-TW) *,
+  html:lang(ja) * {
+    word-break: auto-phrase;
+    text-autospace: normal;
+  }
+
   .no-touch-callout {
     -webkit-touch-callout: none;
   }

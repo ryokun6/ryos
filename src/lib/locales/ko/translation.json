@@ -2127,6 +2127,7 @@
     "appMenu": {
       "aboutApp": "{{appName}} 정보",
       "appHelp": "{{appName}} 도움말",
+      "fullScreen": "전체 화면",
       "hideApp": "{{appName}} 가리기",
       "hideOthers": "다른 항목 가리기",
       "quitApp": "{{appName}} 종료",

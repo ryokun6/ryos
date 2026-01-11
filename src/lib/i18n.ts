@@ -156,12 +156,14 @@ const getInitialLanguage = (): string => {
   return "en";
 };
 
+const initialLanguage = getInitialLanguage();
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
-    lng: getInitialLanguage(),
+    lng: initialLanguage,
     fallbackLng: "en",
     defaultNS: "translation",
     ns: ["translation"],
@@ -175,9 +177,14 @@ i18n
     },
   });
 
+// Set initial HTML lang attribute for CSS :lang() selectors
+document.documentElement.lang = initialLanguage;
+
 // Sync i18n language when store changes
 export const changeLanguage = (language: string) => {
   i18n.changeLanguage(language);
+  // Update HTML lang attribute for CSS :lang() selectors
+  document.documentElement.lang = language;
 };
 
 export default i18n;

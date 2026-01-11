@@ -97,6 +97,24 @@ export function PcAppComponent({
     }
   }, [isScriptLoaded, pendingGame]);
 
+  // Listen for App Menu fullscreen toggle
+  useEffect(() => {
+    const handleAppMenuFullScreen = (e: CustomEvent<{ appId: string; instanceId: string }>) => {
+      if (e.detail.instanceId === instanceId) {
+        setIsFullScreen((prev) => {
+          const newValue = !prev;
+          if (dosPropsRef.current) {
+            dosPropsRef.current.setFullScreen(newValue);
+          }
+          return newValue;
+        });
+      }
+    };
+
+    window.addEventListener("toggleAppFullScreen", handleAppMenuFullScreen as EventListener);
+    return () => window.removeEventListener("toggleAppFullScreen", handleAppMenuFullScreen as EventListener);
+  }, [instanceId]);
+
   const handleSetMouseCapture = (capture: boolean) => {
     setIsMouseCaptured(capture);
     if (dosPropsRef.current) {

@@ -497,6 +497,18 @@ export function KaraokeAppComponent({
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, [isFullScreen, setFullScreen]);
 
+  // Listen for App Menu fullscreen toggle
+  useEffect(() => {
+    const handleAppMenuFullScreen = (e: CustomEvent<{ appId: string; instanceId: string }>) => {
+      if (e.detail.instanceId === instanceId) {
+        toggleFullScreen();
+      }
+    };
+
+    window.addEventListener("toggleAppFullScreen", handleAppMenuFullScreen as EventListener);
+    return () => window.removeEventListener("toggleAppFullScreen", handleAppMenuFullScreen as EventListener);
+  }, [instanceId, toggleFullScreen]);
+
   // Sync playback position between main and fullscreen player
   const prevFullScreenRef = useRef(isFullScreen);
 

@@ -2127,6 +2127,7 @@
     "appMenu": {
       "aboutApp": "{{appName}}について",
       "appHelp": "{{appName}} ヘルプ",
+      "fullScreen": "フルスクリーン",
       "hideApp": "{{appName}}を隠す",
       "hideOthers": "他を隠す",
       "quitApp": "{{appName}}を終了",

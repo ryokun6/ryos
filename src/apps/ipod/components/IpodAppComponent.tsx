@@ -1673,6 +1673,18 @@ export function IpodAppComponent({
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, [isFullScreen, toggleFullScreen]);
 
+  // Listen for App Menu fullscreen toggle
+  useEffect(() => {
+    const handleAppMenuFullScreen = (e: CustomEvent<{ appId: string; instanceId: string }>) => {
+      if (e.detail.instanceId === instanceId) {
+        toggleFullScreen();
+      }
+    };
+
+    window.addEventListener("toggleAppFullScreen", handleAppMenuFullScreen as EventListener);
+    return () => window.removeEventListener("toggleAppFullScreen", handleAppMenuFullScreen as EventListener);
+  }, [instanceId, toggleFullScreen]);
+
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 

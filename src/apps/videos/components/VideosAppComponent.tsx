@@ -1074,6 +1074,18 @@ export function VideosAppComponent({
     prevFullScreenRef.current = isFullScreen;
   }, [isFullScreen, playedSeconds, isPlaying]);
 
+  // Listen for App Menu fullscreen toggle
+  useEffect(() => {
+    const handleAppMenuFullScreen = (e: CustomEvent<{ appId: string; instanceId: string }>) => {
+      if (e.detail.instanceId === instanceId) {
+        toggleFullScreen();
+      }
+    };
+
+    window.addEventListener("toggleAppFullScreen", handleAppMenuFullScreen as EventListener);
+    return () => window.removeEventListener("toggleAppFullScreen", handleAppMenuFullScreen as EventListener);
+  }, [instanceId, toggleFullScreen]);
+
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacOSTheme = currentTheme === "macosx";

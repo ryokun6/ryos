@@ -166,6 +166,7 @@
       "hideApp": "Hide {{appName}}",
       "hideOthers": "Hide Others",
       "showAll": "Show All",
+      "fullScreen": "Full Screen",
       "quitApp": "Quit {{appName}}"
     },
     "aboutThisMac": {
