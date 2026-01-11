@@ -136,6 +136,7 @@ export function BootScreen({
                 src={getSplashImage()}
                 alt={currentTheme === "system7" ? "Hello" : "macOS"}
                 className="w-64 h-32"
+                style={currentTheme === "system7" ? { filter: "invert(1)" } : undefined}
               />
               <h1 className="text-[36px] font-mondwest mt-4 mb-0">
                 <span className="text-blue-500">ry</span>OS
