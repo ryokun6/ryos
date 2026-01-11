@@ -1,6 +1,5 @@
 {
-  "snapshot": "snapshot-20251222-6132cf00-3226-46d1-8658-94e8a20acc84",
-  "terminals": [],
+  "snapshot": "snapshot-20260111-b05ef3a1-2a2e-4022-8df9-afbae4e32f4c",
   "install": "bun install",
-  "start": "vercel dev"
+  "start": "bun run dev"
 }
