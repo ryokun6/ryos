@@ -2128,8 +2128,8 @@
       "aboutApp": "{{appName}}について",
       "appHelp": "{{appName}} ヘルプ",
       "fullScreen": "フルスクリーン",
-      "hideApp": "{{appName}}を隠す",
-      "hideOthers": "他を隠す",
+      "hideApp": "{{appName}}を非表示",
+      "hideOthers": "ほかを非表示",
       "quitApp": "{{appName}}を終了",
       "showAll": "すべてを表示"
     },
@@ -2223,22 +2223,22 @@
       "welcomeTo": "{{appName}}へようこそ"
     },
     "dock": {
-      "addToDock": "ドックに追加",
+      "addToDock": "Dockに追加",
       "appletStore": "アプレットストア",
       "applications": "アプリケーション",
       "folderContents": "フォルダの内容",
-      "hide": "隠す",
+      "hide": "非表示",
       "minimized": "(最小化)",
-      "newWindow": "新規ウィンドウ",
+      "newWindow": "新規ウインドウ",
       "open": "開く",
       "quit": "終了",
-      "removeFromDock": "ドックから削除",
-      "showAllWindows": "すべてのウィンドウを表示",
+      "removeFromDock": "Dockから削除",
+      "showAllWindows": "すべてのウインドウを表示",
       "trash": "ゴミ箱",
-      "turnHidingOff": "自動的に隠すをオフ",
-      "turnHidingOn": "自動的に隠すをオン",
-      "turnMagnificationOff": "拡大をオフ",
-      "turnMagnificationOn": "拡大をオン"
+      "turnHidingOff": "「自動的に非表示」をオフにする",
+      "turnHidingOn": "「自動的に非表示」をオンにする",
+      "turnMagnificationOff": "「拡大」機能をオフにする",
+      "turnMagnificationOn": "「拡大」機能をオンにする"
     },
     "errors": {
       "failedToFetchFurigana": "フリガナの取得に失敗しました",
