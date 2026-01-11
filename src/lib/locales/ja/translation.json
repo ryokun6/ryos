@@ -2213,7 +2213,7 @@
         "linkCopiedToClipboard": "{{itemType}} のリンクをクリップボードにコピーしました",
         "pleaseTryAgainLater": "後でもう一度お試しください",
         "qrCode": "QRコード",
-        "shareItem": "{{itemType}} を共有",
+        "shareItem": "{{itemType}}を共有",
         "shareItemViaLinkOrQrCode": "この {{itemType}} をリンクまたはQRコードで共有",
         "shareLinkFor": "{{itemType}} の共有リンク",
         "shareLinkOrScanToOpen": "リンクを共有するか、スキャンしてこの {{itemType}} を開く"
