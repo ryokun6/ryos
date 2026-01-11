@@ -83,6 +83,12 @@ export default defineConfig({
       "tailwind-merge",
       // framer-motion is used on initial load for animations
       "framer-motion",
+      // Pre-bundle AI SDK to avoid ESM/CJS compatibility issues with @vercel/oidc
+      "ai",
+      "@ai-sdk/react",
+      "@ai-sdk/openai",
+      "@ai-sdk/anthropic",
+      "@ai-sdk/google",
     ],
     // Exclude heavy deps from initial pre-bundling to reduce memory
     // These will be bundled on-demand when their apps are opened
@@ -98,12 +104,8 @@ export default defineConfig({
       "@tiptap/react",
       "@tiptap/starter-kit",
       "@tiptap/pm",
-      // AI SDK - only needed when Chats/IE opens
-      "ai",
-      "@ai-sdk/anthropic",
-      "@ai-sdk/google",
-      "@ai-sdk/openai",
-      "@ai-sdk/react",
+      // Note: AI SDK packages are NOT excluded - they need to be pre-bundled
+      // to avoid ESM/CJS compatibility issues with @vercel/oidc browser export
     ] : [],
   },
   plugins: [
