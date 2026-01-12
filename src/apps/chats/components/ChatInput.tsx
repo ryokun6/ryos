@@ -429,35 +429,66 @@ export function ChatInput({
               transition={{ duration: 0.15 }}
               className="overflow-visible"
             >
-              <div className="relative inline-block pt-1.5 pr-1.5">
+              <div className="relative inline-block">
+                {/* Container with aqua bubble styling for macOS */}
                 <div
                   className={`relative overflow-hidden ${
                     isMacTheme 
-                      ? "chat-bubble rounded-xl bg-gray-100" 
+                      ? "chat-bubble macosx-link-preview rounded-[16px] bg-gray-100" 
                       : isXpTheme 
                       ? "rounded-none border border-[#7f9db9] bg-white" 
                       : "rounded-md border border-gray-200 bg-white"
                   }`}
                 >
-                  <img
-                    src={selectedImage}
-                    alt={t("apps.chats.ariaLabels.selectedImage") || "Selected image"}
-                    className="h-16 w-auto object-cover block relative z-[2]"
-                    style={{ maxWidth: "120px" }}
-                  />
+                  {/* Full bleed image for macOS */}
+                  <div
+                    className={`relative overflow-hidden ${
+                      isMacTheme ? "-mx-3 -mt-[6px] -mb-[6px] rounded-[14px]" : ""
+                    }`}
+                  >
+                    <img
+                      src={selectedImage}
+                      alt={t("apps.chats.ariaLabels.selectedImage") || "Selected image"}
+                      className="h-16 w-auto object-cover block"
+                      style={{ maxWidth: "120px" }}
+                    />
+                  </div>
                 </div>
-                {/* X button - positioned at top right corner shooting out */}
+                {/* X button - positioned at top right corner */}
                 <button
                   type="button"
                   onClick={handleImageClear}
-                  className={`absolute -top-0.5 -right-0.5 w-5 h-5 flex items-center justify-center z-20 ${
+                  className={`absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center z-20 ${
                     isMacTheme 
-                      ? "rounded-full chat-bubble bg-gray-200" 
+                      ? "rounded-full overflow-hidden" 
                       : "rounded-sm bg-black/40 backdrop-blur-sm hover:bg-black/60"
                   } transition-colors`}
+                  style={
+                    isMacTheme
+                      ? {
+                          background: "linear-gradient(rgba(160, 160, 160, 0.9), rgba(255, 255, 255, 0.9))",
+                          boxShadow: "0 1px 2px rgba(0, 0, 0, 0.2), 0 0.5px 0.5px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(0, 0, 0, 0.2), inset 0 1px 2px 0.5px rgba(187, 187, 187, 0.8)",
+                        }
+                      : undefined
+                  }
                   aria-label={t("apps.chats.ariaLabels.clearImage") || "Clear image"}
                 >
-                  <X className={`h-3 w-3 relative z-[3] ${isMacTheme ? "text-gray-700" : "text-white"}`} weight="bold" />
+                  {/* Top shine for macOS */}
+                  {isMacTheme && (
+                    <div
+                      className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+                      style={{
+                        top: "1px",
+                        height: "40%",
+                        width: "70%",
+                        borderRadius: "9999px",
+                        background: "linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.3))",
+                        filter: "blur(0.3px)",
+                        zIndex: 2,
+                      }}
+                    />
+                  )}
+                  <X className={`h-2.5 w-2.5 relative z-[3] ${isMacTheme ? "text-gray-600" : "text-white"}`} weight="bold" />
                 </button>
               </div>
             </motion.div>

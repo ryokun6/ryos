@@ -32,29 +32,35 @@ export function ImageAttachment({
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         "relative overflow-visible font-geneva-12 max-w-[280px]",
-        // Add padding to allow X button to shoot out
-        showRemoveButton && "pt-1.5 pr-1.5",
         className
       )}
     >
-      {/* Image container with aqua bubble styling for macOS */}
+      {/* Container with aqua bubble styling for macOS */}
       <div
         className={cn(
           "relative overflow-hidden",
           isMacTheme
-            ? "chat-bubble rounded-[14px] bg-gray-100"
+            ? "chat-bubble macosx-link-preview rounded-[16px] bg-gray-100"
             : "bg-white border border-gray-200 rounded"
         )}
       >
-        <img
-          src={src}
-          alt={alt}
-          className="w-full h-auto object-cover max-h-[200px] relative z-[2]"
-          style={{ display: "block" }}
-        />
+        {/* Full bleed image for macOS */}
+        <div
+          className={cn(
+            "relative overflow-hidden",
+            isMacTheme && "-mx-3 -mt-[6px] -mb-[6px] rounded-[14px]"
+          )}
+        >
+          <img
+            src={src}
+            alt={alt}
+            className="w-full h-auto object-cover max-h-[200px]"
+            style={{ display: "block" }}
+          />
+        </div>
       </div>
 
-      {/* Remove button - positioned at top right corner shooting out */}
+      {/* Remove button - positioned at top right corner */}
       {showRemoveButton && onRemove && (
         <button
           type="button"
@@ -63,18 +69,41 @@ export function ImageAttachment({
             onRemove();
           }}
           className={cn(
-            "absolute -top-0.5 -right-0.5 w-5 h-5 flex items-center justify-center z-20",
+            "absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center z-20",
             isMacTheme
-              ? "rounded-full chat-bubble bg-gray-200"
+              ? "rounded-full overflow-hidden"
               : "rounded-sm bg-black/40 backdrop-blur-sm hover:bg-black/60",
             "transition-colors"
           )}
+          style={
+            isMacTheme
+              ? {
+                  background: "linear-gradient(rgba(160, 160, 160, 0.9), rgba(255, 255, 255, 0.9))",
+                  boxShadow: "0 1px 2px rgba(0, 0, 0, 0.2), 0 0.5px 0.5px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(0, 0, 0, 0.2), inset 0 1px 2px 0.5px rgba(187, 187, 187, 0.8)",
+                }
+              : undefined
+          }
           aria-label="Remove image"
         >
+          {/* Top shine for macOS */}
+          {isMacTheme && (
+            <div
+              className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+              style={{
+                top: "1px",
+                height: "40%",
+                width: "70%",
+                borderRadius: "9999px",
+                background: "linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.3))",
+                filter: "blur(0.3px)",
+                zIndex: 2,
+              }}
+            />
+          )}
           <X
             className={cn(
-              "h-3 w-3 relative z-[3]",
-              isMacTheme ? "text-gray-700" : "text-white"
+              "h-2.5 w-2.5 relative z-[3]",
+              isMacTheme ? "text-gray-600" : "text-white"
             )}
             weight="bold"
           />
