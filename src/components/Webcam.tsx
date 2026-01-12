@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { CameraSlash } from "@phosphor-icons/react";
 import { runFilter, mapCssFilterStringToUniforms } from "@/lib/webglFilterRunner";
 import fragSrc from "@/lib/shaders/basicFilter.frag?raw";
+import { useCustomEventListener } from "@/hooks/useEventListener";
+import { useLatestRef } from "@/hooks/useLatestRef";
 
 interface WebcamProps {
   onPhoto?: (photoDataUrl: string) => void;
@@ -46,6 +48,12 @@ export function Webcam({
   const activeStream = !isPreview
     ? controlledStream ?? internalStream
     : sharedStream ?? controlledStream ?? internalStream;
+
+  const activeStreamRef = useLatestRef(activeStream);
+  const isPreviewRef = useLatestRef(isPreview);
+  const filterRef = useLatestRef(filter);
+  const isBackCameraRef = useLatestRef(isBackCamera);
+  const onPhotoRef = useLatestRef(onPhoto);
 
   // Start camera when component mounts or shared stream changes
   useEffect(() => {
@@ -186,79 +194,74 @@ export function Webcam({
     };
   }, [needsWebGLPreview, filter]);
 
-  // Listen for webcam-capture events
-  useEffect(() => {
-    const handleCapture = async () => {
-      if (!videoRef.current || !activeStream) return;
+  const handleCapture = useCallback(async () => {
+    if (isPreviewRef.current) return;
+    if (!videoRef.current || !activeStreamRef.current) return;
 
-      const video = videoRef.current;
+    const video = videoRef.current;
 
-      // Use the video element directly as the source for WebGL
-      // Set canvas dimensions to match video
-      const captureCanvas = document.createElement("canvas");
-      captureCanvas.width = video.videoWidth;
-      captureCanvas.height = video.videoHeight;
-      const ctx = captureCanvas.getContext("2d");
-      if (!ctx) return;
+    // Use the video element directly as the source for WebGL
+    // Set canvas dimensions to match video
+    const captureCanvas = document.createElement("canvas");
+    captureCanvas.width = video.videoWidth;
+    captureCanvas.height = video.videoHeight;
+    const ctx = captureCanvas.getContext("2d");
+    if (!ctx) return;
 
-      // Apply the horizontal flip using Canvas 2D first (only for front cameras)
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      if (!isBackCamera) {
-        ctx.scale(-1, 1);
-        ctx.drawImage(
-          video,
-          -captureCanvas.width,
-          0,
-          captureCanvas.width,
-          captureCanvas.height
-        );
-      } else {
-        ctx.drawImage(
-          video,
-          0,
-          0,
-          captureCanvas.width,
-          captureCanvas.height
-        );
-      }
-
-      let finalCanvas: HTMLCanvasElement = captureCanvas;
-
-      // Apply filter using WebGL if a filter is selected
-      if (filter !== "none") {
-        try {
-          const uniforms = mapCssFilterStringToUniforms(filter);
-          // Use the canvas with the flip applied as the source for the GL filter
-          finalCanvas = await runFilter(captureCanvas, uniforms, fragSrc);
-        } catch (error) {
-          console.error("WebGL filtering failed, falling back to no filter:", error);
-          // If WebGL fails, use the canvas with just the flip
-          finalCanvas = captureCanvas;
-        }
-      }
-
-      // Convert the final canvas (with flip and potentially WebGL filter) to JPEG data URL
-      const photoDataUrl = finalCanvas.toDataURL("image/jpeg", 0.85);
-
-      // Call the onPhoto callback
-      onPhoto?.(photoDataUrl);
-
-      // Dispatch a custom event with the photo data URL for other components to use
-      const photoTakenEvent = new CustomEvent("photo-taken", {
-        detail: photoDataUrl,
-      });
-      window.dispatchEvent(photoTakenEvent);
-
-      // Clean up temporary canvas
-      // No explicit cleanup needed for canvas elements, they are garbage collected
-    };
-
-    if (!isPreview) {
-      window.addEventListener("webcam-capture", handleCapture as EventListener);
-      return () =>
-        window.removeEventListener("webcam-capture", handleCapture as EventListener);
+    // Apply the horizontal flip using Canvas 2D first (only for front cameras)
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (!isBackCameraRef.current) {
+      ctx.scale(-1, 1);
+      ctx.drawImage(
+        video,
+        -captureCanvas.width,
+        0,
+        captureCanvas.width,
+        captureCanvas.height
+      );
+    } else {
+      ctx.drawImage(
+        video,
+        0,
+        0,
+        captureCanvas.width,
+        captureCanvas.height
+      );
     }
-  }, [activeStream, onPhoto, isPreview, filter, isBackCamera]);
+
+    let finalCanvas: HTMLCanvasElement = captureCanvas;
+
+    // Apply filter using WebGL if a filter is selected
+    if (filterRef.current !== "none") {
+      try {
+        const uniforms = mapCssFilterStringToUniforms(filterRef.current);
+        // Use the canvas with the flip applied as the source for the GL filter
+        finalCanvas = await runFilter(captureCanvas, uniforms, fragSrc);
+      } catch (error) {
+        console.error("WebGL filtering failed, falling back to no filter:", error);
+        // If WebGL fails, use the canvas with just the flip
+        finalCanvas = captureCanvas;
+      }
+    }
+
+    // Convert the final canvas (with flip and potentially WebGL filter) to JPEG data URL
+    const photoDataUrl = finalCanvas.toDataURL("image/jpeg", 0.85);
+
+    // Call the onPhoto callback
+    onPhotoRef.current?.(photoDataUrl);
+
+    // Dispatch a custom event with the photo data URL for other components to use
+    const photoTakenEvent = new CustomEvent("photo-taken", {
+      detail: photoDataUrl,
+    });
+    window.dispatchEvent(photoTakenEvent);
+
+    // Clean up temporary canvas
+    // No explicit cleanup needed for canvas elements, they are garbage collected
+  }, [activeStreamRef, filterRef, isBackCameraRef, isPreviewRef, onPhotoRef]);
+
+  // Listen for webcam-capture events
+  useCustomEventListener("webcam-capture", handleCapture);
 
   const startCamera = async () => {
     try {
