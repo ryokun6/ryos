@@ -1218,24 +1218,6 @@ function ChatMessagesContent({
                   </motion.div>
                 ) : (
                   <>
-                    {/* Render image attachments for user messages */}
-                    {message.role === "user" && (() => {
-                      const imageUrls = extractImageParts(message as { parts?: Array<{ type: string; url?: string; mediaType?: string }> });
-                      if (imageUrls.length === 0) return null;
-                      
-                      return (
-                        <div className="flex flex-col gap-2 mb-2">
-                          {imageUrls.map((url, idx) => (
-                            <ImageAttachment
-                              key={`${messageKey}-img-${idx}`}
-                              src={url}
-                              alt={`Attached image ${idx + 1}`}
-                              showRemoveButton={false}
-                            />
-                          ))}
-                        </div>
-                      );
-                    })()}
                     {displayContent && (
                       <span
                         className={`select-text whitespace-pre-wrap ${
@@ -1304,6 +1286,30 @@ function ChatMessagesContent({
                 )}
               </motion.div>
             )}
+
+            {/* Image Attachments - Rendered after the message bubble as separate bubbles */}
+            {message.role === "user" && (() => {
+              const imageUrls = extractImageParts(message as { parts?: Array<{ type: string; url?: string; mediaType?: string }> });
+              if (imageUrls.length === 0) return null;
+              
+              return (
+                <div
+                  className={`flex flex-col gap-2 w-full mt-2 ${
+                    message.role === "user" ? "items-end" : "items-start"
+                  }`}
+                >
+                  {imageUrls.map((url, idx) => (
+                    <ImageAttachment
+                      key={`${messageKey}-img-${idx}`}
+                      src={url}
+                      alt={`Attached image ${idx + 1}`}
+                      showRemoveButton={false}
+                      className="max-w-[280px]"
+                    />
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* Link Previews - Rendered after the message bubble */}
             {(() => {
