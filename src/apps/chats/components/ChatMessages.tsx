@@ -965,6 +965,30 @@ function ChatMessagesContent({
             {/* Render aquarium tool(s) as their own element; component styles itself as a chat bubble */}
             {hasAquarium && <EmojiAquarium />}
 
+            {/* Image Attachments - Rendered BEFORE the text message bubble */}
+            {message.role === "user" && (() => {
+              const imageUrls = extractImageParts(message as { parts?: Array<{ type: string; url?: string; mediaType?: string }> });
+              if (imageUrls.length === 0) return null;
+              
+              return (
+                <div
+                  className={`flex flex-col gap-2 w-full mb-1 ${
+                    message.role === "user" ? "items-end" : "items-start"
+                  }`}
+                >
+                  {imageUrls.map((url, idx) => (
+                    <ImageAttachment
+                      key={`${messageKey}-img-${idx}`}
+                      src={url}
+                      alt={`Attached image ${idx + 1}`}
+                      showRemoveButton={false}
+                      className="max-w-[280px]"
+                    />
+                  ))}
+                </div>
+              );
+            })()}
+
             {/* Show the standard message bubble if it's not URL-only (even if aquarium exists) */}
             {!isUrlOnly(displayContent) && (
               <motion.div
@@ -1286,30 +1310,6 @@ function ChatMessagesContent({
                 )}
               </motion.div>
             )}
-
-            {/* Image Attachments - Rendered after the message bubble as separate bubbles */}
-            {message.role === "user" && (() => {
-              const imageUrls = extractImageParts(message as { parts?: Array<{ type: string; url?: string; mediaType?: string }> });
-              if (imageUrls.length === 0) return null;
-              
-              return (
-                <div
-                  className={`flex flex-col gap-2 w-full mt-2 ${
-                    message.role === "user" ? "items-end" : "items-start"
-                  }`}
-                >
-                  {imageUrls.map((url, idx) => (
-                    <ImageAttachment
-                      key={`${messageKey}-img-${idx}`}
-                      src={url}
-                      alt={`Attached image ${idx + 1}`}
-                      showRemoveButton={false}
-                      className="max-w-[280px]"
-                    />
-                  ))}
-                </div>
-              );
-            })()}
 
             {/* Link Previews - Rendered after the message bubble */}
             {(() => {
