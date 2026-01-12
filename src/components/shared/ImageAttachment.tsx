@@ -32,46 +32,54 @@ export function ImageAttachment({
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         "relative overflow-visible font-geneva-12 max-w-[280px]",
-        isMacTheme
-          ? "chat-bubble macosx-link-preview bg-gray-100 border-none shadow-none"
-          : "bg-white border border-gray-200 rounded",
+        // Add padding to allow X button to shoot out
+        showRemoveButton && "pt-1.5 pr-1.5",
         className
       )}
     >
-      {/* Image container */}
+      {/* Image container with aqua bubble styling for macOS */}
       <div
         className={cn(
           "relative overflow-hidden",
-          isMacTheme && "-mx-3 -mt-[6px] -mb-[6px] rounded-[14px]"
+          isMacTheme
+            ? "chat-bubble rounded-[14px] bg-gray-100"
+            : "bg-white border border-gray-200 rounded"
         )}
       >
         <img
           src={src}
           alt={alt}
-          className="w-full h-auto object-cover max-h-[200px]"
+          className="w-full h-auto object-cover max-h-[200px] relative z-[2]"
           style={{ display: "block" }}
         />
-
-        {/* Remove button - positioned at top right of the image */}
-        {showRemoveButton && onRemove && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove();
-            }}
-            className={cn(
-              "absolute top-2 right-2 w-5 h-5 flex items-center justify-center z-10",
-              "bg-black/40 backdrop-blur-sm",
-              isMacTheme ? "rounded-full" : "rounded-sm",
-              "hover:bg-black/60 transition-colors"
-            )}
-            aria-label="Remove image"
-          >
-            <X className="h-3 w-3 text-white" weight="bold" />
-          </button>
-        )}
       </div>
+
+      {/* Remove button - positioned at top right corner shooting out */}
+      {showRemoveButton && onRemove && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          className={cn(
+            "absolute -top-0.5 -right-0.5 w-5 h-5 flex items-center justify-center z-20",
+            isMacTheme
+              ? "rounded-full chat-bubble bg-gray-200"
+              : "rounded-sm bg-black/40 backdrop-blur-sm hover:bg-black/60",
+            "transition-colors"
+          )}
+          aria-label="Remove image"
+        >
+          <X
+            className={cn(
+              "h-3 w-3 relative z-[3]",
+              isMacTheme ? "text-gray-700" : "text-white"
+            )}
+            weight="bold"
+          />
+        </button>
+      )}
     </motion.div>
   );
 }

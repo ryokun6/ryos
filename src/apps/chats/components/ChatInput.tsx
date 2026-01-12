@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, Hand, At, Microphone, Image as ImageIcon, X } from "@phosphor-icons/react";
+import { ArrowUp, Square, Hand, At, Microphone, ImageSquare, X } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AudioInputButton } from "@/components/ui/audio-input-button";
 import { useChatSynth } from "@/hooks/useChatSynth";
@@ -429,11 +429,11 @@ export function ChatInput({
               transition={{ duration: 0.15 }}
               className="overflow-visible"
             >
-              <div className="relative inline-block">
+              <div className="relative inline-block pt-1.5 pr-1.5">
                 <div
-                  className={`overflow-hidden ${
+                  className={`relative overflow-hidden ${
                     isMacTheme 
-                      ? "rounded-xl bg-gray-100" 
+                      ? "chat-bubble rounded-xl bg-gray-100" 
                       : isXpTheme 
                       ? "rounded-none border border-[#7f9db9] bg-white" 
                       : "rounded-md border border-gray-200 bg-white"
@@ -442,21 +442,23 @@ export function ChatInput({
                   <img
                     src={selectedImage}
                     alt={t("apps.chats.ariaLabels.selectedImage") || "Selected image"}
-                    className="h-16 w-auto object-cover block"
+                    className="h-16 w-auto object-cover block relative z-[2]"
                     style={{ maxWidth: "120px" }}
                   />
-                  {/* X button - positioned at top right inside the thumbnail */}
-                  <button
-                    type="button"
-                    onClick={handleImageClear}
-                    className={`absolute top-1 right-1 w-5 h-5 flex items-center justify-center z-10 bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors ${
-                      isMacTheme ? "rounded-full" : "rounded-sm"
-                    }`}
-                    aria-label={t("apps.chats.ariaLabels.clearImage") || "Clear image"}
-                  >
-                    <X className="h-3 w-3 text-white" weight="bold" />
-                  </button>
                 </div>
+                {/* X button - positioned at top right corner shooting out */}
+                <button
+                  type="button"
+                  onClick={handleImageClear}
+                  className={`absolute -top-0.5 -right-0.5 w-5 h-5 flex items-center justify-center z-20 ${
+                    isMacTheme 
+                      ? "rounded-full chat-bubble bg-gray-200" 
+                      : "rounded-sm bg-black/40 backdrop-blur-sm hover:bg-black/60"
+                  } transition-colors`}
+                  aria-label={t("apps.chats.ariaLabels.clearImage") || "Clear image"}
+                >
+                  <X className={`h-3 w-3 relative z-[3] ${isMacTheme ? "text-gray-700" : "text-white"}`} weight="bold" />
+                </button>
               </div>
             </motion.div>
           )}
@@ -679,11 +681,11 @@ export function ChatInput({
                               isMacTheme
                                 ? "text-neutral-400 hover:text-neutral-800 transition-colors"
                                 : ""
-                            } ${selectedImage ? "text-blue-500" : ""}`}
+                            }`}
                             disabled={isLoading}
                             aria-label={t("apps.chats.ariaLabels.attachImage") || "Attach image"}
                           >
-                            <ImageIcon className="h-4 w-4" weight={selectedImage ? "fill" : "bold"} />
+                            <ImageSquare className="h-4 w-4" weight="bold" />
                           </button>
                         </TooltipTrigger>
                         <TooltipContent>
