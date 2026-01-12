@@ -91,10 +91,10 @@ export function ImageAttachment({
               className="pointer-events-none absolute left-1/2 -translate-x-1/2"
               style={{
                 top: "1px",
-                height: "40%",
-                width: "70%",
+                height: "35%",
+                width: "50%",
                 borderRadius: "9999px",
-                background: "linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.3))",
+                background: "linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.2))",
                 filter: "blur(0.3px)",
                 zIndex: 2,
               }}
@@ -103,7 +103,7 @@ export function ImageAttachment({
           <X
             className={cn(
               "h-2.5 w-2.5 relative z-[3]",
-              isMacTheme ? "text-gray-600" : "text-white"
+              isMacTheme ? "text-neutral-500" : "text-white"
             )}
             weight="bold"
           />
