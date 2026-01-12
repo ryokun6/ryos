@@ -10,6 +10,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useSound, Sounds } from "./useSound";
 import { getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
 import { useWindowInsets } from "./useWindowInsets";
+import { useEventListener } from "@/hooks/useEventListener";
 
 interface UseWindowManagerProps {
   appId: AppId;
@@ -196,8 +197,8 @@ export const useWindowManager = ({
     [windowPosition]
   );
 
-  useEffect(() => {
-    const handleMove = (e: MouseEvent | TouchEvent) => {
+  const handleMove = useCallback(
+    (e: MouseEvent | TouchEvent) => {
       if (isDragging) {
         const clientX =
           "touches" in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
@@ -226,12 +227,12 @@ export const useWindowManager = ({
         } else {
           // Allow dragging past edges, but keep at least 80px of window visible
           const minX = -(windowSize.width - 80); // Can drag left, keeping 80px visible on right
-          const maxX = window.innerWidth - 80;    // Can drag right, keeping 80px visible on left
-          const maxY = window.innerHeight - 80;   // Can drag down, keeping 80px visible at top
+          const maxX = window.innerWidth - 80; // Can drag right, keeping 80px visible on left
+          const maxY = window.innerHeight - 80; // Can drag down, keeping 80px visible at top
           const x = Math.min(Math.max(minX, newX), maxX);
           const y = Math.min(Math.max(menuBarHeight, newY), Math.max(0, maxY));
           setWindowPosition({ x, y });
-          
+
           // Detect snap zones - trigger when cursor is within 20px of screen edge
           const SNAP_THRESHOLD = 20;
           if (clientX <= SNAP_THRESHOLD) {
@@ -323,7 +324,10 @@ export const useWindowManager = ({
         setWindowPosition({ x: newLeft, y: Math.max(menuBarHeight, newTop) });
 
         // Start playing resize sound when movement begins (non-looping, plays repeatedly)
-        if (!isResizePlayingRef.current && (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2)) {
+        if (
+          !isResizePlayingRef.current &&
+          (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2)
+        ) {
           playResizeSound();
           isResizePlayingRef.current = true;
           // Play sound repeatedly while resizing (not looping the audio file)
@@ -332,94 +336,142 @@ export const useWindowManager = ({
           }, 100); // Play every 100ms while resizing
         }
       }
-    };
+    },
+    [
+      isDragging,
+      dragOffset,
+      resizeType,
+      resizeStart,
+      windowPosition,
+      windowSize,
+      appId,
+      isMobile,
+      playMoveSound,
+      playMoveStop,
+      stopMoveMoving,
+      playResizeSound,
+      playResizeStop,
+      stopResizeResizing,
+      config,
+      updateWindowState,
+      updateInstanceWindowState,
+      instanceId,
+      computeInsets,
+      snapZone,
+    ]
+  );
 
-    const handleEnd = () => {
-      if (isDragging) {
-        setIsDragging(false);
-        
-        // Handle snap to edge
-        if (snapZone && !isMobile) {
-          const { topInset, bottomInset } = computeInsets();
-          const snapHeight = window.innerHeight - topInset - bottomInset;
-          const snapWidth = Math.floor(window.innerWidth / 2);
-          
-          // Save current state before snapping (for potential restore later)
-          preSnapStateRef.current = {
-            position: { ...windowPosition },
-            size: { ...windowSize },
-          };
-          
-          const newSize = { width: snapWidth, height: snapHeight };
-          const newPosition = {
-            x: snapZone === "left" ? 0 : snapWidth,
-            y: topInset,
-          };
-          
-          setWindowSize(newSize);
-          setWindowPosition(newPosition);
-          
-          if (instanceId) {
-            updateInstanceWindowState(instanceId, newPosition, newSize);
-          } else {
-            updateWindowState(appId, newPosition, newSize);
-          }
-          
-          setSnapZone(null);
+  const handleEnd = useCallback(() => {
+    if (isDragging) {
+      setIsDragging(false);
+
+      // Handle snap to edge
+      if (snapZone && !isMobile) {
+        const { topInset, bottomInset } = computeInsets();
+        const snapHeight = window.innerHeight - topInset - bottomInset;
+        const snapWidth = Math.floor(window.innerWidth / 2);
+
+        // Save current state before snapping (for potential restore later)
+        preSnapStateRef.current = {
+          position: { ...windowPosition },
+          size: { ...windowSize },
+        };
+
+        const newSize = { width: snapWidth, height: snapHeight };
+        const newPosition = {
+          x: snapZone === "left" ? 0 : snapWidth,
+          y: topInset,
+        };
+
+        setWindowSize(newSize);
+        setWindowPosition(newPosition);
+
+        if (instanceId) {
+          updateInstanceWindowState(instanceId, newPosition, newSize);
         } else {
-          if (instanceId) {
-            updateInstanceWindowState(instanceId, windowPosition, windowSize);
-          } else {
-            updateWindowState(appId, windowPosition, windowSize);
-          }
+          updateWindowState(appId, newPosition, newSize);
         }
-        
-        // Stop move sound immediately and play stop sound
-        if (isMovePlayingRef.current) {
-          // Clear the interval that was playing the sound repeatedly
-          if (moveSoundIntervalRef.current) {
-            clearInterval(moveSoundIntervalRef.current);
-            moveSoundIntervalRef.current = null;
-          }
-          stopMoveMoving();
-          isMovePlayingRef.current = false;
-          playMoveStop();
-        }
-      }
-      if (resizeType) {
-        setResizeType("");
+
+        setSnapZone(null);
+      } else {
         if (instanceId) {
           updateInstanceWindowState(instanceId, windowPosition, windowSize);
         } else {
           updateWindowState(appId, windowPosition, windowSize);
         }
-        // Stop resize sound immediately and play stop sound
-        if (isResizePlayingRef.current) {
-          // Clear the interval that was playing the sound repeatedly
-          if (resizeSoundIntervalRef.current) {
-            clearInterval(resizeSoundIntervalRef.current);
-            resizeSoundIntervalRef.current = null;
-          }
-          stopResizeResizing();
-          isResizePlayingRef.current = false;
-          playResizeStop();
-        }
       }
-    };
 
-    if (isDragging || resizeType) {
-      document.addEventListener("mousemove", handleMove);
-      document.addEventListener("mouseup", handleEnd);
-      document.addEventListener("touchmove", handleMove);
-      document.addEventListener("touchend", handleEnd);
+      // Stop move sound immediately and play stop sound
+      if (isMovePlayingRef.current) {
+        // Clear the interval that was playing the sound repeatedly
+        if (moveSoundIntervalRef.current) {
+          clearInterval(moveSoundIntervalRef.current);
+          moveSoundIntervalRef.current = null;
+        }
+        stopMoveMoving();
+        isMovePlayingRef.current = false;
+        playMoveStop();
+      }
     }
+    if (resizeType) {
+      setResizeType("");
+      if (instanceId) {
+        updateInstanceWindowState(instanceId, windowPosition, windowSize);
+      } else {
+        updateWindowState(appId, windowPosition, windowSize);
+      }
+      // Stop resize sound immediately and play stop sound
+      if (isResizePlayingRef.current) {
+        // Clear the interval that was playing the sound repeatedly
+        if (resizeSoundIntervalRef.current) {
+          clearInterval(resizeSoundIntervalRef.current);
+          resizeSoundIntervalRef.current = null;
+        }
+        stopResizeResizing();
+        isResizePlayingRef.current = false;
+        playResizeStop();
+      }
+    }
+  }, [
+    isDragging,
+    snapZone,
+    isMobile,
+    computeInsets,
+    windowPosition,
+    windowSize,
+    instanceId,
+    updateInstanceWindowState,
+    updateWindowState,
+    appId,
+    stopMoveMoving,
+    playMoveStop,
+    resizeType,
+    stopResizeResizing,
+    playResizeStop,
+  ]);
 
+  const shouldListen = isDragging || resizeType;
+  const eventTarget = shouldListen ? document : null;
+
+  const handleMouseMove = useCallback(
+    (event: MouseEvent) => handleMove(event),
+    [handleMove]
+  );
+  const handleTouchMove = useCallback(
+    (event: TouchEvent) => handleMove(event),
+    [handleMove]
+  );
+  const handleMouseUp = useCallback(() => handleEnd(), [handleEnd]);
+  const handleTouchEnd = useCallback(() => handleEnd(), [handleEnd]);
+
+  useEventListener("mousemove", handleMouseMove, eventTarget);
+  useEventListener("mouseup", handleMouseUp, eventTarget);
+  useEventListener("touchmove", handleTouchMove, eventTarget);
+  useEventListener("touchend", handleTouchEnd, eventTarget);
+
+  // Clean up intervals on unmount
+  useEffect(() => {
     return () => {
-      document.removeEventListener("mousemove", handleMove);
-      document.removeEventListener("mouseup", handleEnd);
-      document.removeEventListener("touchmove", handleMove);
-      document.removeEventListener("touchend", handleEnd);
-      // Clean up intervals if they exist
       if (moveSoundIntervalRef.current) {
         clearInterval(moveSoundIntervalRef.current);
         moveSoundIntervalRef.current = null;
@@ -429,28 +481,7 @@ export const useWindowManager = ({
         resizeSoundIntervalRef.current = null;
       }
     };
-  }, [
-    isDragging,
-    dragOffset,
-    resizeType,
-    resizeStart,
-    windowPosition,
-    windowSize,
-    appId,
-    isMobile,
-    playMoveSound,
-    playMoveStop,
-    stopMoveMoving,
-    playResizeSound,
-    playResizeStop,
-    stopResizeResizing,
-    config,
-    updateWindowState,
-    updateInstanceWindowState,
-    instanceId,
-    computeInsets,
-    snapZone,
-  ]);
+  }, []);
 
   return {
     windowPosition,
