@@ -24,7 +24,7 @@ type EventMap = WindowEventMap & DocumentEventMap & HTMLElementEventMap;
 export function useEventListener<K extends keyof EventMap>(
   eventName: K,
   handler: (event: EventMap[K]) => void,
-  element?: Window | Document | HTMLElement | React.RefObject<HTMLElement> | null,
+  element?: Window | Document | HTMLElement | React.RefObject<HTMLElement | null> | null,
   options?: boolean | AddEventListenerOptions
 ): void {
   // Store handler in ref to avoid re-subscribing on handler change
