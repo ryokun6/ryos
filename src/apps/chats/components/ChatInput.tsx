@@ -19,6 +19,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { CHAT_ANALYTICS } from "@/utils/analytics";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { useTranslation } from "react-i18next";
+import { preprocessImage } from "@/utils/imagePreprocessing";
 
 // Number of frequency bands for the full-width waveform
 const WAVEFORM_BANDS = 48;
@@ -107,6 +108,7 @@ export function ChatInput({
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [lastTypingTime, setLastTypingTime] = useState(0);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [waveformFrequencies, setWaveformFrequencies] = useState<number[]>(
     Array(WAVEFORM_BANDS).fill(0)
   );
@@ -335,7 +337,7 @@ export function ChatInput({
   };
 
   // Handle image selection
-  const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -352,16 +354,33 @@ export function ChatInput({
       return;
     }
 
-    // Read file as base64
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      onImageChange?.(base64);
-    };
-    reader.readAsDataURL(file);
-
     // Reset the input so the same file can be selected again
     e.target.value = "";
+
+    setIsProcessingImage(true);
+
+    try {
+      // Read file as base64
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("Failed to read file"));
+      });
+      reader.readAsDataURL(file);
+      const rawBase64 = await base64Promise;
+
+      // Preprocess the image (resize and compress)
+      const processedImage = await preprocessImage(rawBase64, {
+        maxDimension: 1280,
+        quality: 0.85,
+      });
+
+      onImageChange?.(processedImage);
+    } catch (error) {
+      console.error("Failed to process image:", error);
+    } finally {
+      setIsProcessingImage(false);
+    }
   }, [onImageChange]);
 
   // Handle image clear
@@ -712,15 +731,15 @@ export function ChatInput({
                               isMacTheme
                                 ? "text-neutral-400 hover:text-neutral-800 transition-colors"
                                 : ""
-                            }`}
-                            disabled={isLoading}
+                            } ${isProcessingImage ? "animate-pulse" : ""}`}
+                            disabled={isLoading || isProcessingImage}
                             aria-label={t("apps.chats.ariaLabels.attachImage") || "Attach image"}
                           >
                             <ImageSquare className="h-4 w-4" weight="bold" />
                           </button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>{t("apps.chats.ariaLabels.attachImage") || "Attach image"}</p>
+                          <p>{isProcessingImage ? (t("apps.chats.status.processingImage") || "Processing image...") : (t("apps.chats.ariaLabels.attachImage") || "Attach image")}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
