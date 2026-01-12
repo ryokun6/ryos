@@ -115,7 +115,7 @@ export function BootScreen({
             }}
           />
           <DialogPrimitive.Content
-            className="fixed inset-0 z-[80] bg-black p-0 w-full h-full max-w-none border-none shadow-none outline-none rounded-none m-0 relative"
+            className="fixed inset-0 z-[80] bg-black p-0 w-full h-full max-w-none border-none shadow-none outline-none rounded-none m-0"
             style={{ 
               position: "fixed",
               top: 0,
@@ -134,21 +134,14 @@ export function BootScreen({
             <VisuallyHidden>
               <DialogTitle>{localizedTitle}</DialogTitle>
             </VisuallyHidden>
-            {/* Debug mode done button */}
-            {debugMode && (
-              <button
-                onClick={handleDone}
-                className="absolute top-4 right-4 z-10 px-6 py-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded"
-              >
-                Done
-              </button>
-            )}
             <div 
               className="flex flex-col items-center justify-center w-full h-full bg-black"
+              onClick={debugMode ? handleDone : undefined}
               style={{
                 width: "100%",
                 height: "100%",
-                backgroundColor: "#000000"
+                backgroundColor: "#000000",
+                cursor: debugMode ? "pointer" : undefined
               }}
             >
               <img
@@ -181,7 +174,7 @@ export function BootScreen({
             }}
           />
           <DialogContent
-            className="p-0 w-[calc(100%-24px)] border-none shadow-xl max-w-lg z-[80] outline-none macosx-dialog rounded-none relative"
+            className="p-0 w-[calc(100%-24px)] border-none shadow-xl max-w-lg z-[80] outline-none macosx-dialog rounded-none"
             style={{ 
               position: "fixed", 
               zIndex: 80,
@@ -193,19 +186,11 @@ export function BootScreen({
             <VisuallyHidden>
               <DialogTitle>{localizedTitle}</DialogTitle>
             </VisuallyHidden>
-            {/* Debug mode done button - inside dialog content */}
-            {debugMode && (
-              <div className="absolute top-2 right-2 z-10">
-                <button
-                  onClick={handleDone}
-                  className="aqua-button primary"
-                  style={{ fontFamily: "LucidaGrande, 'Lucida Grande', sans-serif" }}
-                >
-                  <span>Done</span>
-                </button>
-              </div>
-            )}
-            <div className="flex flex-col items-center justify-center pt-2 pb-12 px-16 min-h-[280px] w-full">
+            <div 
+              className="flex flex-col items-center justify-center pt-2 pb-12 px-16 min-h-[280px] w-full"
+              onClick={debugMode ? handleDone : undefined}
+              style={debugMode ? { cursor: "pointer" } : undefined}
+            >
               {/* Apple logo */}
               <img
                 src="/icons/macosx/apple.png"
@@ -258,22 +243,17 @@ export function BootScreen({
           style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
         />
         <DialogContent
-          className="bg-neutral-100 p-0 w-[calc(100%-24px)] border-none shadow-xl max-w-lg z-[80] outline-none rounded-none relative"
+          className="bg-neutral-100 p-0 w-[calc(100%-24px)] border-none shadow-xl max-w-lg z-[80] outline-none rounded-none"
           style={{ position: "fixed", zIndex: 80 }}
         >
           <VisuallyHidden>
             <DialogTitle>{localizedTitle}</DialogTitle>
           </VisuallyHidden>
-          {/* Debug mode done button */}
-          {debugMode && (
-            <button
-              onClick={handleDone}
-              className="absolute top-2 right-2 px-6 py-1 bg-white border-2 border-black font-chicago text-sm hover:bg-gray-100"
-            >
-              Done
-            </button>
-          )}
-          <div className="flex flex-col items-center justify-center p-8 min-h-[300px] w-full">
+          <div 
+            className="flex flex-col items-center justify-center p-8 min-h-[300px] w-full"
+            onClick={debugMode ? handleDone : undefined}
+            style={debugMode ? { cursor: "pointer" } : undefined}
+          >
             <div className="flex flex-col items-center justify-center border border-neutral-200 bg-white p-8 w-full pb-4">
               <img
                 src={getSplashImage()}
