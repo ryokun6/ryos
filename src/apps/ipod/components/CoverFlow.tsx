@@ -4,6 +4,7 @@ import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import type { Track } from "@/stores/useIpodStore";
 import { Play, Pause, VinylRecord } from "@phosphor-icons/react";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useEventListener } from "@/hooks/useEventListener";
 
 // Long press delay in milliseconds
 const LONG_PRESS_DELAY = 500;
@@ -562,10 +563,8 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   }), [navigateNext, navigatePrevious, selectCurrent]);
 
   // Handle keyboard navigation
-  useEffect(() => {
-    if (!isVisible) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
       switch (e.key) {
         case "ArrowRight":
           e.preventDefault();
@@ -585,11 +584,11 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
           onExit();
           break;
       }
-    };
+    },
+    [navigateNext, navigatePrevious, onSelectTrack, onExit, selectedIndex]
+  );
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isVisible, selectedIndex, navigateNext, navigatePrevious, onSelectTrack, onExit]);
+  useEventListener("keydown", handleKeyDown, isVisible ? window : null);
 
   // Handle swipe/pan gestures
   const handlePanStart = useCallback((_: unknown, info: PanInfo) => {
