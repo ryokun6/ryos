@@ -86,6 +86,8 @@ export function ChatsAppComponent({
     highlightSegment,
     rateLimitError,
     needsUsername,
+    selectedImage,
+    handleImageChange,
   } = useAiChat(promptSetUsername); // Pass promptSetUsername to useAiChat
 
   // Destructure auth properties from authResult
@@ -836,6 +838,8 @@ export function ChatsAppComponent({
                           rateLimitError={rateLimitError}
                           isOffline={isOffline}
                           needsUsername={needsUsername && !username}
+                          selectedImage={selectedImage}
+                          onImageChange={handleImageChange}
                         />
                       );
                     })()

@@ -525,6 +525,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   // Local input state (SDK v5 no longer provides this)
   const { t } = useTranslation();
   const [input, setInput] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const handleInputChange = useCallback(
     (
       e:
@@ -535,6 +536,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     },
     [],
   );
+  const handleImageChange = useCallback((imageData: string | null) => {
+    setSelectedImage(imageData);
+  }, []);
 
   // Track how many characters of each assistant message have already been sent to TTS
   const speechProgressRef = useRef<Record<string, number>>({});
@@ -1950,7 +1954,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       const messageContent = input; // Capture input before clearing
-      if (!messageContent.trim()) return; // Don't submit empty messages
+      const imageContent = selectedImage; // Capture image before clearing
+      if (!messageContent.trim() && !imageContent) return; // Don't submit empty messages
 
       // Check if user needs to set username before submitting
       if (needsUsername && !username) {
@@ -1983,25 +1988,59 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // Proceed with the actual submission using useChat v5
       const freshSystemState = getSystemState();
       console.log("Submitting AI chat with system state:", freshSystemState);
-      sendMessage(
-        {
-          text: messageContent,
-          metadata: {
-            createdAt: new Date(),
+
+      // Build message content - text and optionally image
+      if (imageContent) {
+        // Extract media type from data URL (e.g., "data:image/png;base64,..." -> "image/png")
+        const mediaTypeMatch = imageContent.match(/^data:([^;]+);base64,/);
+        const mediaType = mediaTypeMatch ? mediaTypeMatch[1] : "image/png";
+        
+        // Send message with image attachment using files array
+        sendMessage(
+          {
+            text: messageContent.trim() || "Describe this image",
+            files: [
+              {
+                type: "file" as const,
+                mediaType,
+                url: imageContent, // Data URL is accepted
+              },
+            ],
+            metadata: {
+              createdAt: new Date(),
+            },
           },
-        },
-        {
-          body: {
-            systemState: freshSystemState,
-            model: aiModel,
+          {
+            body: {
+              systemState: freshSystemState,
+              model: aiModel,
+            },
           },
-        },
-      );
+        );
+      } else {
+        // Send text-only message
+        sendMessage(
+          {
+            text: messageContent,
+            metadata: {
+              createdAt: new Date(),
+            },
+          },
+          {
+            body: {
+              systemState: freshSystemState,
+              model: aiModel,
+            },
+          },
+        );
+      }
       setInput(""); // Clear input after sending
+      setSelectedImage(null); // Clear image after sending
     },
     [
       sendMessage,
       input,
+      selectedImage,
       needsUsername,
       username,
       authToken,
@@ -2237,6 +2276,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     handleNudge,
     clearChats, // Expose the action
     handleSaveTranscript, // Expose the action
+
+    // Image attachment state
+    selectedImage,
+    handleImageChange,
 
     // Rate limit state
     rateLimitError,

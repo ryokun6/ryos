@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, Square, Hand, At, Microphone } from "@phosphor-icons/react";
+import { ArrowUp, Square, Hand, At, Microphone, Image as ImageIcon, X } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AudioInputButton } from "@/components/ui/audio-input-button";
 import { useChatSynth } from "@/hooks/useChatSynth";
@@ -71,6 +71,10 @@ interface ChatInputProps {
   isOffline?: boolean;
   /** Called when manual stop is triggered (to cancel keep talking mode) */
   onManualStop?: () => void;
+  /** Currently selected image data (base64) */
+  selectedImage?: string | null;
+  /** Callback when an image is selected or cleared */
+  onImageChange?: (imageData: string | null) => void;
 }
 
 export function ChatInput({
@@ -90,6 +94,8 @@ export function ChatInput({
   needsUsername = false,
   isOffline = false,
   onManualStop,
+  selectedImage,
+  onImageChange,
 }: ChatInputProps) {
   const { t } = useTranslation();
   const [isFocused, setIsFocused] = useState(false);
@@ -112,6 +118,7 @@ export function ChatInput({
   const prevIsSpeechPlayingRef = useRef(isSpeechPlaying);
   const inputRef = useRef<HTMLInputElement>(null);
   const audioButtonRef = useRef<HTMLButtonElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const { playNote } = useChatSynth();
   const { play: playNudgeSound } = useSound(Sounds.MSN_NUDGE);
   // Audio settings
@@ -327,6 +334,41 @@ export function ChatInput({
     }, 0);
   };
 
+  // Handle image selection
+  const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      console.error("Invalid file type - must be an image");
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      console.error("Image too large - max 10MB");
+      return;
+    }
+
+    // Read file as base64
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      onImageChange?.(base64);
+    };
+    reader.readAsDataURL(file);
+
+    // Reset the input so the same file can be selected again
+    e.target.value = "";
+  }, [onImageChange]);
+
+  // Handle image clear
+  const handleImageClear = useCallback(() => {
+    onImageChange?.(null);
+  }, [onImageChange]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -366,6 +408,51 @@ export function ChatInput({
         transition={{ duration: 0.2, ease: "easeOut" }}
         className="w-full"
       >
+        {/* Hidden file input for image selection */}
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageSelect}
+          className="hidden"
+          aria-hidden="true"
+        />
+
+        {/* Image preview thumbnail */}
+        <AnimatePresence>
+          {selectedImage && !isInChatRoom && (
+            <motion.div
+              key="image-preview"
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: "auto", marginBottom: 8 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              transition={{ duration: 0.15 }}
+              className="overflow-hidden"
+            >
+              <div className="relative inline-block">
+                <img
+                  src={selectedImage}
+                  alt={t("apps.chats.ariaLabels.selectedImage") || "Selected image"}
+                  className={`h-16 w-auto object-cover ${
+                    isMacTheme ? "rounded-lg" : isXpTheme ? "rounded-none border border-[#7f9db9]" : "rounded-md border border-gray-800"
+                  }`}
+                  style={{ maxWidth: "120px" }}
+                />
+                <button
+                  type="button"
+                  onClick={handleImageClear}
+                  className={`absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center bg-red-500 text-white ${
+                    isMacTheme ? "rounded-full" : "rounded-sm"
+                  } hover:bg-red-600 transition-colors shadow-sm`}
+                  aria-label={t("apps.chats.ariaLabels.clearImage") || "Clear image"}
+                >
+                  <X className="h-3 w-3" weight="bold" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <form
           onSubmit={(e) => {
             if (isOffline) {
@@ -572,6 +659,30 @@ export function ChatInput({
                       </Tooltip>
                     </TooltipProvider>
                   )}
+                  {!isInChatRoom && onImageChange && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => imageInputRef.current?.click()}
+                            className={`w-[22px] h-[22px] flex items-center justify-center ${
+                              isMacTheme
+                                ? "text-neutral-400 hover:text-neutral-800 transition-colors"
+                                : ""
+                            } ${selectedImage ? "text-blue-500" : ""}`}
+                            disabled={isLoading}
+                            aria-label={t("apps.chats.ariaLabels.attachImage") || "Attach image"}
+                          >
+                            <ImageIcon className="h-4 w-4" weight={selectedImage ? "fill" : "bold"} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{t("apps.chats.ariaLabels.attachImage") || "Attach image"}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -683,7 +794,7 @@ export function ChatInput({
                   />
                 </Button>
               </motion.div>
-            ) : input.trim() !== "" ? (
+            ) : input.trim() !== "" || selectedImage ? (
               <motion.div
                 key="send"
                 initial={{ scale: 0.8, opacity: 0 }}
