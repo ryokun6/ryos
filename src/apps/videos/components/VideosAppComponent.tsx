@@ -215,14 +215,15 @@ function WhiteNoiseEffect() {
     };
 
     resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
     drawNoise();
+
+    window.addEventListener("resize", resizeCanvas);
 
     return () => {
       window.removeEventListener("resize", resizeCanvas);
-        if (animationFrameRef.current !== null) {
-          cancelAnimationFrame(animationFrameRef.current);
-          animationFrameRef.current = null;
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
     };
   }, [brightness]);
