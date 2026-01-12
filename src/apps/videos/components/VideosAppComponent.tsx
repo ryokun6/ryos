@@ -24,6 +24,7 @@ import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { VideoFullScreenPortal } from "./VideoFullScreenPortal";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import { useCustomEventListener } from "@/hooks/useEventListener";
 
 interface Video {
   id: string;
@@ -214,14 +215,15 @@ function WhiteNoiseEffect() {
     };
 
     resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
     drawNoise();
+
+    window.addEventListener("resize", resizeCanvas);
 
     return () => {
       window.removeEventListener("resize", resizeCanvas);
-        if (animationFrameRef.current !== null) {
-          cancelAnimationFrame(animationFrameRef.current);
-          animationFrameRef.current = null;
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
     };
   }, [brightness]);
@@ -857,10 +859,9 @@ export function VideosAppComponent({
   ]);
 
   // --- NEW: Effect for updateApp event (when app is already open) ---
-  useEffect(() => {
-    const handleUpdateApp = (
-      event: CustomEvent<{ appId: string; initialData?: { videoId?: string } }>
-    ) => {
+  useCustomEventListener<{ appId: string; initialData?: { videoId?: string } }>(
+    "updateApp",
+    (event) => {
       if (
         event.detail.appId === "videos" &&
         event.detail.initialData?.videoId
@@ -894,13 +895,8 @@ export function VideosAppComponent({
         // Mark this videoId as processed
         lastProcessedVideoIdRef.current = event.detail.initialData.videoId;
       }
-    };
-
-    window.addEventListener("updateApp", handleUpdateApp as EventListener);
-    return () => {
-      window.removeEventListener("updateApp", handleUpdateApp as EventListener);
-    };
-  }, [processVideoId, bringToForeground]);
+    }
+  );
 
   const togglePlay = () => {
     togglePlayStore();
@@ -1075,16 +1071,14 @@ export function VideosAppComponent({
   }, [isFullScreen, playedSeconds, isPlaying]);
 
   // Listen for App Menu fullscreen toggle
-  useEffect(() => {
-    const handleAppMenuFullScreen = (e: CustomEvent<{ appId: string; instanceId: string }>) => {
-      if (e.detail.instanceId === instanceId) {
+  useCustomEventListener<{ appId: string; instanceId: string }>(
+    "toggleAppFullScreen",
+    (event) => {
+      if (event.detail.instanceId === instanceId) {
         toggleFullScreen();
       }
-    };
-
-    window.addEventListener("toggleAppFullScreen", handleAppMenuFullScreen as EventListener);
-    return () => window.removeEventListener("toggleAppFullScreen", handleAppMenuFullScreen as EventListener);
-  }, [instanceId, toggleFullScreen]);
+    }
+  );
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";

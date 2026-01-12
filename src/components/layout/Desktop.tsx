@@ -1,7 +1,7 @@
 import { AnyApp } from "@/apps/base/types";
 import { AppManagerState } from "@/apps/base/types";
 import { AppId } from "@/config/appRegistry";
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { FileIcon } from "@/apps/finder/components/FileIcon";
 import { getAppIconPath } from "@/config/appRegistry";
 import { useWallpaper } from "@/hooks/useWallpaper";
@@ -16,6 +16,7 @@ import { STORES } from "@/utils/indexedDB";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { useEventListener } from "@/hooks/useEventListener";
 
 interface DesktopStyles {
   backgroundImage?: string;
@@ -314,76 +315,68 @@ export function Desktop({
     setContextMenuAppId(null);
   });
 
-  // Add visibility change and focus handlers to resume video playback
-  useEffect(() => {
-    if (!isVideoWallpaper || !videoRef.current) return;
-
-    const resumeVideoPlayback = async () => {
-      const video = videoRef.current;
-      if (!video) return;
-
-      try {
-        // If video has ended, reset it to the beginning
-        if (video.ended) {
-          video.currentTime = 0;
-        }
-
-        // Only attempt to play if the video is ready
-        if (video.readyState >= 3) {
-          // HAVE_FUTURE_DATA or better
-          await video.play();
-        } else {
-          // If video isn't ready, wait for it to be ready
-          const handleCanPlay = () => {
-            video.play().catch((err) => {
-              console.warn("Could not resume video playback:", err);
-            });
-            video.removeEventListener("canplay", handleCanPlay);
-          };
-          video.addEventListener("canplay", handleCanPlay);
-        }
-      } catch (err) {
-        console.warn("Could not resume video playback:", err);
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        resumeVideoPlayback();
-      }
-    };
-
-    const handleFocus = () => {
-      resumeVideoPlayback();
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("focus", handleFocus);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("focus", handleFocus);
-    };
-  }, [isVideoWallpaper]);
-
-  // Add video ready state handling
-  useEffect(() => {
+  const resumeVideoPlayback = useCallback(async () => {
     if (!isVideoWallpaper || !videoRef.current) return;
 
     const video = videoRef.current;
-    const handleCanPlayThrough = () => {
-      if (video.paused) {
-        video.play().catch((err) => {
-          console.warn("Could not start video playback:", err);
-        });
-      }
-    };
+    if (!video) return;
 
-    video.addEventListener("canplaythrough", handleCanPlayThrough);
-    return () => {
-      video.removeEventListener("canplaythrough", handleCanPlayThrough);
-    };
+    try {
+      // If video has ended, reset it to the beginning
+      if (video.ended) {
+        video.currentTime = 0;
+      }
+
+      // Only attempt to play if the video is ready
+      if (video.readyState >= 3) {
+        // HAVE_FUTURE_DATA or better
+        await video.play();
+      } else {
+        // If video isn't ready, wait for it to be ready
+        const handleCanPlay = () => {
+          video.play().catch((err) => {
+            console.warn("Could not resume video playback:", err);
+          });
+          video.removeEventListener("canplay", handleCanPlay);
+        };
+        video.addEventListener("canplay", handleCanPlay);
+      }
+    } catch (err) {
+      console.warn("Could not resume video playback:", err);
+    }
   }, [isVideoWallpaper]);
+
+  const handleVisibilityChange = useCallback(() => {
+    if (document.visibilityState === "visible") {
+      resumeVideoPlayback();
+    }
+  }, [resumeVideoPlayback]);
+
+  const handleFocus = useCallback(() => {
+    resumeVideoPlayback();
+  }, [resumeVideoPlayback]);
+
+  const handleCanPlayThrough = useCallback(() => {
+    if (!isVideoWallpaper || !videoRef.current) return;
+
+    const video = videoRef.current;
+    if (video.paused) {
+      video.play().catch((err) => {
+        console.warn("Could not start video playback:", err);
+      });
+    }
+  }, [isVideoWallpaper]);
+
+  // Add visibility change and focus handlers to resume video playback
+  useEventListener("visibilitychange", handleVisibilityChange, isVideoWallpaper ? document : null);
+  useEventListener("focus", handleFocus, isVideoWallpaper ? window : null);
+
+  // Add video ready state handling
+  useEventListener(
+    "canplaythrough",
+    handleCanPlayThrough,
+    isVideoWallpaper ? videoRef : null
+  );
 
   const getWallpaperStyles = (path: string): DesktopStyles => {
     if (!path || isVideoWallpaper) return {};

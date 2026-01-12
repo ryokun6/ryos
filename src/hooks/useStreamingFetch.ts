@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useLatestRef } from "@/hooks/useLatestRef";
 import { useCacheBustTrigger } from "@/hooks/useCacheBustTrigger";
 import { isOffline } from "@/utils/offline";
 
@@ -110,12 +111,9 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
   const requestRef = useRef<{ controller: AbortController; requestId: string } | null>(null);
 
   // Stable refs for callbacks
-  const onLineRef = useRef(onLine);
-  onLineRef.current = onLine;
-  const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
-  const onErrorRef = useRef(onError);
-  onErrorRef.current = onError;
+  const onLineRef = useLatestRef(onLine);
+  const onCompleteRef = useLatestRef(onComplete);
+  const onErrorRef = useLatestRef(onError);
 
   // Manual refetch trigger
   const [refetchCounter, setRefetchCounter] = useState(0);
@@ -266,7 +264,22 @@ export function useStreamingFetch<TResult, TLineData = unknown>({
       setIsLoading(false);
       setProgress(undefined);
     };
-  }, [resourceId, enabled, cacheKey, lyricsCacheBustTrigger, prefetchedData, fetchFn, auth, debugLabel, refetchCounter]);
+  }, [
+    resourceId,
+    enabled,
+    cacheKey,
+    lyricsCacheBustTrigger,
+    prefetchedData,
+    fetchFn,
+    auth,
+    debugLabel,
+    refetchCounter,
+    isCacheBustRequest,
+    markCacheBustHandled,
+    onLineRef,
+    onCompleteRef,
+    onErrorRef,
+  ]);
 
   return {
     data,

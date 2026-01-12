@@ -1,4 +1,5 @@
 import { useRef, useEffect, useCallback, useState } from "react";
+import { useLatestRef } from "@/hooks/useLatestRef";
 import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
@@ -48,12 +49,16 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const gainNodeRef = useRef<GainNode | null>(null);
   const speechVolume = useAudioSettingsStore((s) => s.speechVolume);
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
+  const speechVolumeRef = useLatestRef(speechVolume);
+  const masterVolumeRef = useLatestRef(masterVolume);
   const setIpodVolumeGlobal = useAudioSettingsStore((s) => s.setIpodVolume);
   const setChatSynthVolumeGlobal = useAudioSettingsStore((s) => s.setChatSynthVolume);
 
   // Get TTS settings from audio settings store
   const ttsModel = useAudioSettingsStore((s) => s.ttsModel);
   const ttsVoice = useAudioSettingsStore((s) => s.ttsVoice);
+  const ttsModelRef = useLatestRef(ttsModel);
+  const ttsVoiceRef = useLatestRef(ttsVoice);
 
   // Keep track of iPod and chat synth volumes for duck/restore
   const originalIpodVolumeRef = useRef<number | null>(null);
@@ -89,7 +94,8 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
         }
       }
       gainNodeRef.current = ctxRef.current.createGain();
-      gainNodeRef.current.gain.value = speechVolume * masterVolume;
+      gainNodeRef.current.gain.value =
+        speechVolumeRef.current * masterVolumeRef.current;
       gainNodeRef.current.connect(ctxRef.current.destination);
     }
     return ctxRef.current;
@@ -125,15 +131,15 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
             };
           } = {
             text: request.text,
-            model: ttsModel, // Send null if null, let server decide
+            model: ttsModelRef.current, // Send null if null, let server decide
           };
 
           // Add model-specific settings
-          if (ttsModel === "elevenlabs") {
-            requestBody.voice_id = ttsVoice; // Send null if null
-          } else if (ttsModel === "openai") {
+          if (ttsModelRef.current === "elevenlabs") {
+            requestBody.voice_id = ttsVoiceRef.current; // Send null if null
+          } else if (ttsModelRef.current === "openai") {
             // OpenAI settings
-            requestBody.voice = ttsVoice; // Send null if null
+            requestBody.voice = ttsVoiceRef.current; // Send null if null
           }
           // If ttsModel is null, don't add voice settings - let server decide
 
@@ -175,7 +181,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
 
       executeRequest();
     }
-  }, [endpoint, ttsModel, ttsVoice]);
+  }, [endpoint]);
 
   /**
    * Queue a fetch request with parallel limit enforcement

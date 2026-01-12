@@ -37,6 +37,7 @@ import { getTranslatedAppName } from "@/utils/i18n";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
+import { useCustomEventListener, useEventListener } from "@/hooks/useEventListener";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { BACKLIGHT_TIMEOUT_MS, SEEK_AMOUNT_SECONDS, getYouTubeVideoId, formatKugouImageUrl } from "../constants";
@@ -896,10 +897,9 @@ export function IpodAppComponent({
   }, [isWindowOpen, initialData, processVideoId, clearIpodInitialData, instanceId]);
 
   // Update app event handling
-  useEffect(() => {
-    const handleUpdateApp = (
-      event: CustomEvent<{ appId: string; initialData?: { videoId?: string } }>
-    ) => {
+  useCustomEventListener<{ appId: string; initialData?: { videoId?: string } }>(
+    "updateApp",
+    (event) => {
       if (event.detail.appId === "ipod" && event.detail.initialData?.videoId) {
         if (lastProcessedInitialDataRef.current === event.detail.initialData) return;
 
@@ -907,15 +907,14 @@ export function IpodAppComponent({
         bringToForeground("ipod");
         processVideoId(videoId).catch((error) => {
           console.error(`Error processing videoId ${videoId}:`, error);
-          toast.error("Failed to load shared track", { description: `Video ID: ${videoId}` });
+          toast.error("Failed to load shared track", {
+            description: `Video ID: ${videoId}`,
+          });
         });
         lastProcessedInitialDataRef.current = event.detail.initialData;
       }
-    };
-
-    window.addEventListener("updateApp", handleUpdateApp as EventListener);
-    return () => window.removeEventListener("updateApp", handleUpdateApp as EventListener);
-  }, [processVideoId, bringToForeground]);
+    }
+  );
 
   // Handle closing sync mode - flush pending offset saves
   const closeSyncMode = useCallback(async () => {
@@ -1662,28 +1661,25 @@ export function IpodAppComponent({
   const lyricsFontClassName = getLyricsFontClassName(lyricsFont);
 
   // Fullscreen change handler
-  useEffect(() => {
-    const handleFullscreenChange = () => {
+  useEventListener(
+    "fullscreenchange",
+    () => {
       if (!document.fullscreenElement && isFullScreen) {
         toggleFullScreen();
       }
-    };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, [isFullScreen, toggleFullScreen]);
+    },
+    document
+  );
 
   // Listen for App Menu fullscreen toggle
-  useEffect(() => {
-    const handleAppMenuFullScreen = (e: CustomEvent<{ appId: string; instanceId: string }>) => {
-      if (e.detail.instanceId === instanceId) {
+  useCustomEventListener<{ appId: string; instanceId: string }>(
+    "toggleAppFullScreen",
+    (event) => {
+      if (event.detail.instanceId === instanceId) {
         toggleFullScreen();
       }
-    };
-
-    window.addEventListener("toggleAppFullScreen", handleAppMenuFullScreen as EventListener);
-    return () => window.removeEventListener("toggleAppFullScreen", handleAppMenuFullScreen as EventListener);
-  }, [instanceId, toggleFullScreen]);
+    }
+  );
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";

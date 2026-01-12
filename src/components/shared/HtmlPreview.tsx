@@ -21,6 +21,7 @@ import {
   APPLET_AUTH_MESSAGE_TYPE,
 } from "@/utils/appletAuthBridge";
 import { useTranslation } from "react-i18next";
+import { useEventListener } from "@/hooks/useEventListener";
 
 // Check if a string is a HTML code block
 export const isHtmlCodeBlock = (
@@ -250,8 +251,8 @@ export default function HtmlPreview({
     saveHtmlPreviewSplit(isSplitView);
   }, [isSplitView]);
 
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
+  const handleMessage = useCallback(
+    (event: MessageEvent) => {
       const data = event?.data;
       if (
         !data ||
@@ -279,13 +280,11 @@ export default function HtmlPreview({
       }
 
       sendAuthPayload(sourceWindow);
-    };
+    },
+    [sendAuthPayload]
+  );
 
-    window.addEventListener("message", handleMessage);
-    return () => {
-      window.removeEventListener("message", handleMessage);
-    };
-  }, [sendAuthPayload]);
+  useEventListener("message", handleMessage);
 
   useEffect(() => {
     sendAuthPayload(iframeRef.current?.contentWindow);
@@ -301,37 +300,28 @@ export default function HtmlPreview({
     }
   }, [isFullScreen, originalHeight]);
 
-  // Check for mobile viewport
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-
-    return () => {
-      window.removeEventListener("resize", checkMobile);
-    };
+  const checkMobile = useCallback(() => {
+    setIsMobile(window.innerWidth < 768);
   }, []);
 
-  // Listen for ESC key to exit fullscreen
+  // Check for mobile viewport
   useEffect(() => {
-    const handleEscKey = (e: KeyboardEvent) => {
+    checkMobile();
+  }, [checkMobile]);
+
+  useEventListener("resize", checkMobile);
+
+  // Listen for ESC key to exit fullscreen
+  useEventListener(
+    "keydown",
+    (e: KeyboardEvent) => {
       if (e.key === "Escape" && isFullScreen) {
         minimizeSound.play();
         setIsFullScreen(false);
       }
-    };
-
-    if (isFullScreen) {
-      document.addEventListener("keydown", handleEscKey);
-    }
-
-    return () => {
-      document.removeEventListener("keydown", handleEscKey);
-    };
-  }, [isFullScreen, minimizeSound]);
+    },
+    isFullScreen ? document : null
+  );
 
   // Helper function to generate HTML content with specific font preference
   const generateProcessedHtmlContent = (useFallbackFonts: boolean) => {

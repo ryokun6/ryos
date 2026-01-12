@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useInterval } from "@/hooks/useInterval";
+import { useEventListener } from "@/hooks/useEventListener";
 import { AppleMenu } from "./AppleMenu";
 import { AppMenu } from "./AppMenu";
 import { Button } from "@/components/ui/button";
@@ -298,27 +300,11 @@ function Clock({ enableExposeToggle = false }: ClockProps) {
     }
   };
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  // Update time every second using useInterval
+  useInterval(() => setTime(new Date()), 1000);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setViewportWidth(window.innerWidth);
-    };
-
-    // Initial check
-    handleResize();
-
-    // Add resize event listener
-    window.addEventListener("resize", handleResize);
-
-    // Cleanup
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  // Handle viewport resize using useEventListener
+  useEventListener("resize", () => setViewportWidth(window.innerWidth));
 
   // Helper function to format time without leading zeros for 24h format
   const formatTime24h = (date: Date): string => {

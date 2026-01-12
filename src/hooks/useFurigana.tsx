@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useLatestRef } from "@/hooks/useLatestRef";
 import type { LyricLine, RomanizationSettings } from "@/types/lyrics";
 import { useCacheBustTrigger } from "@/hooks/useCacheBustTrigger";
 import { isOffline } from "@/utils/offline";
@@ -96,12 +97,10 @@ export function useFurigana({
   const furiganaCacheKeyRef = useRef<string>("");
   const soramimiCacheKeyRef = useRef<string>("");
   // Track current songId for race condition prevention
-  const currentSongIdRef = useRef(songId);
-  currentSongIdRef.current = songId;
+  const currentSongIdRef = useLatestRef(songId);
   
   // Track current lines for callback access
-  const linesRef = useRef(lines);
-  linesRef.current = lines;
+  const linesRef = useLatestRef(lines);
   
   // Separate cache bust triggers for furigana and soramimi
   // This prevents one completing first from skipping the other's force-refresh
@@ -114,14 +113,13 @@ export function useFurigana({
   const soramimiForceRequestRef = useRef<{ controller: AbortController; requestId: string } | null>(null);
   
   // Stable refs for callbacks to avoid effect re-runs
-  const onLoadingChangeRef = useRef(onLoadingChange);
-  onLoadingChangeRef.current = onLoadingChange;
+  const onLoadingChangeRef = useLatestRef(onLoadingChange);
 
   // Notify parent when loading state changes (use ref to avoid effect dependency)
   // Depends on both individual states since isFetching is derived
   useEffect(() => {
     onLoadingChangeRef.current?.(isFetchingFurigana || isFetchingSoramimi);
-  }, [isFetchingFurigana, isFetchingSoramimi]);
+  }, [isFetchingFurigana, isFetchingSoramimi, onLoadingChangeRef]);
 
   // Compute cache key outside effect - only when lines actually change
   const cacheKey = useMemo(() => {
@@ -370,8 +368,7 @@ export function useFurigana({
   
   // Keep a ref to furiganaMap so we can access it in the effect without adding it as a dependency
   // This prevents the soramimi effect from re-running during furigana streaming
-  const furiganaMapRef = useRef(furiganaMap);
-  furiganaMapRef.current = furiganaMap;
+  const furiganaMapRef = useLatestRef(furiganaMap);
 
   // Fetch soramimi for lyrics when enabled using line-by-line streaming
   // For Japanese songs, waits for furigana to complete first so we can pass readings to the AI

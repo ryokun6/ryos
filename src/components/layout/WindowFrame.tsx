@@ -184,11 +184,14 @@ export function WindowFrame({
     }
   }, [startTitlebarAutoHideTimer, disableTitlebarAutoHide]);
 
-  // Cleanup titlebar hide timeout
+  // Cleanup timeouts on unmount (titlebar hide + double tap)
   useEffect(() => {
     return () => {
       if (titlebarHideTimeoutRef.current) {
         clearTimeout(titlebarHideTimeoutRef.current);
+      }
+      if (doubleTapTimeoutRef.current) {
+        clearTimeout(doubleTapTimeoutRef.current);
       }
     };
   }, []);
@@ -705,14 +708,6 @@ export function WindowFrame({
     [handleFullMaximize]
   );
 
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (doubleTapTimeoutRef.current) {
-        clearTimeout(doubleTapTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Calculate dynamic style for swipe animation feedback
   const getSwipeStyle = () => {

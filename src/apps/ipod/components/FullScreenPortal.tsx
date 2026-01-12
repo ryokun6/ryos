@@ -6,6 +6,7 @@ import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-w
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useShallow } from "zustand/react/shallow";
 import { useOffline } from "@/hooks/useOffline";
+import { useEventListener } from "@/hooks/useEventListener";
 import { useTranslation } from "react-i18next";
 import { isMobileSafari } from "@/utils/device";
 import {
@@ -16,6 +17,8 @@ import {
 } from "../constants";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import type { FullScreenPortalProps } from "../types";
+
+const passiveActivityOptions: AddEventListenerOptions = { passive: true };
 
 export function FullScreenPortal({
   children,
@@ -272,55 +275,44 @@ export function FullScreenPortal({
     handlersRef.current.nextTrack();
   }, [registerActivity]);
 
-  // Set up touch event listeners
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    container.addEventListener("touchstart", handleTouchStart);
-    container.addEventListener("touchend", handleTouchEnd);
-
-    return () => {
-      container.removeEventListener("touchstart", handleTouchStart);
-      container.removeEventListener("touchend", handleTouchEnd);
-    };
-  }, [handleTouchStart, handleTouchEnd]);
+  useEventListener("touchstart", handleTouchStart, containerRef);
+  useEventListener("touchend", handleTouchEnd, containerRef);
 
   // Auto-hide controls after inactivity
   const anyMenuOpen = isLangMenuOpen || isPronunciationMenuOpen;
-  
-  useEffect(() => {
-    const handleActivity = () => {
-      if (!hasUserInteracted) {
-        setHasUserInteracted(true);
-      }
 
-      const actuallyPlaying = getActualPlayerState();
-      const shouldSkipActivity =
-        isMobileSafariDevice && !actuallyPlaying && hasUserInteracted;
-
-      if (!shouldSkipActivity) {
-        handlersRef.current.registerActivity();
-      }
-
-      setShowControls(true);
-      if (hideControlsTimeoutRef.current) {
-        clearTimeout(hideControlsTimeoutRef.current);
-      }
-      if (actuallyPlaying && !anyMenuOpen) {
-        hideControlsTimeoutRef.current = window.setTimeout(() => {
-          setShowControls(false);
-        }, 2000);
-      }
-    };
+  const handleActivity = useCallback(() => {
+    if (!hasUserInteracted) {
+      setHasUserInteracted(true);
+    }
 
     const actuallyPlaying = getActualPlayerState();
-    if (anyMenuOpen || !actuallyPlaying) setShowControls(true);
+    const shouldSkipActivity =
+      isMobileSafariDevice && !actuallyPlaying && hasUserInteracted;
 
-    window.addEventListener("mousemove", handleActivity, { passive: true });
-    window.addEventListener("keydown", handleActivity);
-    window.addEventListener("touchstart", handleActivity, { passive: true });
-    window.addEventListener("click", handleActivity, { passive: true });
+    if (!shouldSkipActivity) {
+      handlersRef.current.registerActivity();
+    }
+
+    setShowControls(true);
+    if (hideControlsTimeoutRef.current) {
+      clearTimeout(hideControlsTimeoutRef.current);
+    }
+    if (actuallyPlaying && !anyMenuOpen) {
+      hideControlsTimeoutRef.current = window.setTimeout(() => {
+        setShowControls(false);
+      }, 2000);
+    }
+  }, [anyMenuOpen, getActualPlayerState, hasUserInteracted, isMobileSafariDevice]);
+
+  useEventListener("mousemove", handleActivity, window, passiveActivityOptions);
+  useEventListener("keydown", handleActivity);
+  useEventListener("touchstart", handleActivity, window, passiveActivityOptions);
+  useEventListener("click", handleActivity, window, passiveActivityOptions);
+
+  useEffect(() => {
+    const actuallyPlaying = getActualPlayerState();
+    if (anyMenuOpen || !actuallyPlaying) setShowControls(true);
 
     const actuallyPlayingOnMount = getActualPlayerState() || isPlaying;
     if (actuallyPlayingOnMount && !anyMenuOpen) {
@@ -330,26 +322,15 @@ export function FullScreenPortal({
     }
 
     return () => {
-      window.removeEventListener("mousemove", handleActivity as EventListener);
-      window.removeEventListener("keydown", handleActivity as EventListener);
-      window.removeEventListener("touchstart", handleActivity as EventListener);
-      window.removeEventListener("click", handleActivity as EventListener);
       if (hideControlsTimeoutRef.current) {
         clearTimeout(hideControlsTimeoutRef.current);
         hideControlsTimeoutRef.current = null;
       }
     };
-  }, [
-    anyMenuOpen,
-    isPlaying,
-    hasUserInteracted,
-    isMobileSafariDevice,
-    getActualPlayerState,
-  ]);
+  }, [anyMenuOpen, getActualPlayerState, isPlaying]);
 
-  // Close full screen with Escape key and other keyboard controls
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
       const handlers = handlersRef.current;
       handlers.registerActivity();
 
@@ -377,24 +358,26 @@ export function FullScreenPortal({
         // Offset adjustment: [ = lyrics earlier (negative), ] = lyrics later (positive)
         const delta = e.key === "[" ? -50 : 50;
         const store = useIpodStore.getState();
-        const currentTrack = store.currentSongId 
-          ? store.tracks.find((t) => t.id === store.currentSongId) 
+        const currentTrack = store.currentSongId
+          ? store.tracks.find((t) => t.id === store.currentSongId)
           : store.tracks[0];
-        const currentTrackIndex = currentTrack 
+        const currentTrackIndex = currentTrack
           ? store.tracks.findIndex((t) => t.id === currentTrack.id)
           : -1;
         if (currentTrackIndex >= 0) {
           store.adjustLyricOffset(currentTrackIndex, delta);
           const newOffset = (currentTrack?.lyricOffset ?? 0) + delta;
           const sign = newOffset > 0 ? "+" : newOffset < 0 ? "" : "";
-          handlers.showStatus(`${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`);
+          handlers.showStatus(
+            `${t("apps.ipod.status.offset")} ${sign}${(newOffset / 1000).toFixed(2)}s`
+          );
         }
       }
-    };
+    },
+    [isOffline, isPlaying, showOfflineStatus, t]
+  );
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isPlaying, isOffline, showOfflineStatus, t]);
+  useEventListener("keydown", handleKeyDown);
 
   return createPortal(
     <div

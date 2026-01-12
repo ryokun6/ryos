@@ -17,6 +17,8 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { useLatestRef } from "@/hooks/useLatestRef";
+import { useTimeout } from "@/hooks/useTimeout";
 
 // Aqua-style shine overlay for macOS X theme (dark glass style)
 function AquaShineOverlay() {
@@ -210,8 +212,6 @@ export function PhotoBoothComponent({
   const streamRef = useRef<MediaStream | null>(null);
   const cameraRequestTokenRef = useRef<symbol | null>(null);
   const isMountedRef = useRef(true);
-  const isWindowOpenRef = useRef(isWindowOpen);
-  const isForegroundRef = useRef(isForeground);
   const activeCameraIdRef = useRef<string | null>(null);
 
   const currentTheme = useThemeStore((state) => state.current);
@@ -268,23 +268,15 @@ export function PhotoBoothComponent({
 
   // Add a small delay before showing photo strip to prevent flickering
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  useEffect(() => {
-    if (showPhotoStrip && isInitialLoad) {
-      // Let the component fully mount before showing photostrip
-      const timer = setTimeout(() => {
-        setIsInitialLoad(false);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [showPhotoStrip, isInitialLoad]);
+  useTimeout(
+    () => {
+      setIsInitialLoad(false);
+    },
+    showPhotoStrip && isInitialLoad ? 300 : null
+  );
 
-    useEffect(() => {
-      isWindowOpenRef.current = isWindowOpen;
-    }, [isWindowOpen]);
-
-    useEffect(() => {
-      isForegroundRef.current = isForeground;
-    }, [isForeground]);
+  const isWindowOpenRef = useLatestRef(isWindowOpen);
+  const isForegroundRef = useLatestRef(isForeground);
 
     const stopCamera = useCallback(
       (options?: { skipState?: boolean }) => {
