@@ -18,6 +18,7 @@ import {
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
+import { useEventListener } from "@/hooks/useEventListener";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import TimeNavigationControls from "./TimeNavigationControls";
 import { useTranslation } from "react-i18next";
@@ -158,24 +159,43 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
     });
   }, []); // Empty dependency array, relies on timelineRef.current
 
-  // Effect to setup scroll listeners and initial check
-  useEffect(() => {
-    const element = timelineRef.current;
-    if (isOpen && element) {
-      // Delay slightly to ensure layout is stable after opening animation/resize
-      const timer = setTimeout(() => {
-        handleScroll(); // Initial check
-        element.addEventListener("scroll", handleScroll, { passive: true });
-        window.addEventListener("resize", handleScroll);
-      }, 100); // Increased delay slightly
+  const [scrollListenersActive, setScrollListenersActive] = useState(false);
 
-      return () => {
-        clearTimeout(timer);
-        element.removeEventListener("scroll", handleScroll);
-        window.removeEventListener("resize", handleScroll);
-      };
+  // Delay setup to ensure layout is stable after opening animation/resize
+  useEffect(() => {
+    if (!isOpen) {
+      setScrollListenersActive(false);
+      return;
     }
+
+    const element = timelineRef.current;
+    if (!element) {
+      return;
+    }
+
+    setScrollListenersActive(false);
+    const timer = window.setTimeout(() => {
+      handleScroll(); // Initial check
+      setScrollListenersActive(true);
+    }, 100); // Increased delay slightly
+
+    return () => {
+      clearTimeout(timer);
+      setScrollListenersActive(false);
+    };
   }, [isOpen, handleScroll, cachedYears]); // Re-run if cachedYears changes height or component opens/closes
+
+  useEventListener(
+    "scroll",
+    handleScroll,
+    scrollListenersActive ? timelineRef : null,
+    { passive: true }
+  );
+  useEventListener(
+    "resize",
+    handleScroll,
+    scrollListenersActive ? window : null
+  );
   // --- End Scroll Mask Logic ---
 
   // Initialize index and preview year when opening
@@ -328,16 +348,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
     ]
   ); // Add changeActiveYearIndex to dependencies
 
-  useEffect(() => {
-    if (isOpen) {
-      window.addEventListener("keydown", handleKeyDown);
-    } else {
-      window.removeEventListener("keydown", handleKeyDown);
-    }
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, handleKeyDown]);
+  useEventListener("keydown", handleKeyDown, isOpen ? window : null);
 
   // --- Concurrency handling for preview fetches ---
   // Each time we start resolving a preview source we increment this counter.
