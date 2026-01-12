@@ -11,6 +11,7 @@ interface BootScreenProps {
   onOpenChange: (open: boolean) => void;
   onBootComplete?: () => void;
   title?: string;
+  debugMode?: boolean;
 }
 
 export function BootScreen({
@@ -18,6 +19,7 @@ export function BootScreen({
   onOpenChange,
   onBootComplete,
   title,
+  debugMode = false,
 }: BootScreenProps) {
   const { play } = useSound(Sounds.BOOT, 0.5);
   const [progress, setProgress] = useState(0);
@@ -26,6 +28,12 @@ export function BootScreen({
   const localizedTitle = title ?? t("common.system.systemRestoring");
   
   const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacOSX = currentTheme === "macosx";
+
+  const handleDone = () => {
+    onBootComplete?.();
+    onOpenChange(false);
+  };
 
   useEffect(() => {
     let interval: number;
@@ -33,10 +41,12 @@ export function BootScreen({
     let soundTimer: number;
 
     if (isOpen) {
-      // Play boot sound with a delay
-      soundTimer = window.setTimeout(() => {
-        play();
-      }, 100);
+      // Play boot sound with a delay (skip in debug mode)
+      if (!debugMode) {
+        soundTimer = window.setTimeout(() => {
+          play();
+        }, 100);
+      }
 
       // Simulate boot progress
       interval = window.setInterval(() => {
@@ -46,19 +56,21 @@ export function BootScreen({
         });
       }, 100);
 
-      // Close after boot completes (2 seconds)
-      timer = window.setTimeout(() => {
-        window.clearInterval(interval);
-        setProgress(100);
+      // Close after boot completes (2 seconds) - skip in debug mode
+      if (!debugMode) {
+        timer = window.setTimeout(() => {
+          window.clearInterval(interval);
+          setProgress(100);
 
-        // Wait a moment at 100% before completing
-        const completeTimer = window.setTimeout(() => {
-          onBootComplete?.();
-          onOpenChange(false);
-        }, 500);
+          // Wait a moment at 100% before completing
+          const completeTimer = window.setTimeout(() => {
+            onBootComplete?.();
+            onOpenChange(false);
+          }, 500);
 
-        return () => window.clearTimeout(completeTimer);
-      }, 2000);
+          return () => window.clearTimeout(completeTimer);
+        }, 2000);
+      }
     } else {
       setProgress(0);
     }
@@ -68,7 +80,7 @@ export function BootScreen({
       window.clearTimeout(timer);
       window.clearTimeout(soundTimer);
     };
-  }, [isOpen, play, onBootComplete, onOpenChange]);
+  }, [isOpen, play, onBootComplete, onOpenChange, debugMode]);
 
   if (!isOpen) return null;
 
@@ -103,7 +115,7 @@ export function BootScreen({
             }}
           />
           <DialogPrimitive.Content
-            className="fixed inset-0 z-[80] bg-black p-0 w-full h-full max-w-none border-none shadow-none outline-none rounded-none m-0"
+            className="fixed inset-0 z-[80] bg-black p-0 w-full h-full max-w-none border-none shadow-none outline-none rounded-none m-0 relative"
             style={{ 
               position: "fixed",
               top: 0,
@@ -122,6 +134,15 @@ export function BootScreen({
             <VisuallyHidden>
               <DialogTitle>{localizedTitle}</DialogTitle>
             </VisuallyHidden>
+            {/* Debug mode done button */}
+            {debugMode && (
+              <button
+                onClick={handleDone}
+                className="absolute top-4 right-4 z-10 px-6 py-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded"
+              >
+                Done
+              </button>
+            )}
             <div 
               className="flex flex-col items-center justify-center w-full h-full bg-black"
               style={{
@@ -143,7 +164,92 @@ export function BootScreen({
     );
   }
 
-  // Mac themes (macOS X and System 7)
+  // macOS X boot screen - classic Aqua style
+  if (isMacOSX) {
+    return (
+      <Dialog open={isOpen} onOpenChange={() => {}} modal>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay
+            className="fixed inset-0 z-[75] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+            style={{ 
+              position: "fixed", 
+              top: 0, 
+              left: 0, 
+              right: 0, 
+              bottom: 0,
+              backgroundColor: "#4566a0"
+            }}
+          />
+          <DialogContent
+            className="p-0 w-[calc(100%-24px)] border-none shadow-xl max-w-lg z-[80] outline-none macosx-dialog rounded-none relative"
+            style={{ 
+              position: "fixed", 
+              zIndex: 80,
+              borderRadius: 0,
+              backgroundImage: "var(--os-pinstripe-window)",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
+            }}
+          >
+            <VisuallyHidden>
+              <DialogTitle>{localizedTitle}</DialogTitle>
+            </VisuallyHidden>
+            {/* Debug mode done button - inside dialog content */}
+            {debugMode && (
+              <div className="absolute top-2 right-2 z-10">
+                <button
+                  onClick={handleDone}
+                  className="aqua-button primary"
+                  style={{ fontFamily: "LucidaGrande, 'Lucida Grande', sans-serif" }}
+                >
+                  <span>Done</span>
+                </button>
+              </div>
+            )}
+            <div className="flex flex-col items-center justify-center pt-2 pb-12 px-16 min-h-[280px] w-full">
+              {/* Apple logo */}
+              <img
+                src="/icons/macosx/apple.png"
+                alt="Apple"
+                className="w-[154px] h-[154px] object-contain"
+                style={{ marginBottom: "-40px" }}
+              />
+              {/* ryOS X text */}
+              <h1 
+                className="text-[52px] mb-8"
+                style={{ 
+                  color: "#333333",
+                  fontFamily: "AppleGaramond, 'Apple Garamond', 'Times New Roman', serif",
+                  letterSpacing: "1px",
+                  textShadow: "0 1px 2px rgba(0, 0, 0, 0.15)"
+                }}
+              >
+                ryOS X
+              </h1>
+              {/* Progress bar - using aqua-progress classes */}
+              <div className="aqua-progress w-[220px] h-[20px] rounded-none" style={{ borderRadius: 0 }}>
+                <div
+                  className="aqua-progress-fill transition-all duration-200 rounded-none"
+                  style={{ width: `${progress}%`, borderRadius: 0 }}
+                />
+              </div>
+              {/* Status text */}
+              <p 
+                className="text-[12px] mt-5"
+                style={{ 
+                  color: "#000000",
+                  fontFamily: "LucidaGrande, 'Lucida Grande', sans-serif"
+                }}
+              >
+                {localizedTitle}
+              </p>
+            </div>
+          </DialogContent>
+        </DialogPrimitive.Portal>
+      </Dialog>
+    );
+  }
+
+  // System 7 boot screen
   return (
     <Dialog open={isOpen} onOpenChange={() => {}} modal>
       <DialogPrimitive.Portal>
@@ -152,19 +258,28 @@ export function BootScreen({
           style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
         />
         <DialogContent
-          className="bg-neutral-100 p-0 w-[calc(100%-24px)] border-none shadow-xl max-w-lg z-[80] outline-none rounded-none"
+          className="bg-neutral-100 p-0 w-[calc(100%-24px)] border-none shadow-xl max-w-lg z-[80] outline-none rounded-none relative"
           style={{ position: "fixed", zIndex: 80 }}
         >
           <VisuallyHidden>
             <DialogTitle>{localizedTitle}</DialogTitle>
           </VisuallyHidden>
+          {/* Debug mode done button */}
+          {debugMode && (
+            <button
+              onClick={handleDone}
+              className="absolute top-2 right-2 px-6 py-1 bg-white border-2 border-black font-chicago text-sm hover:bg-gray-100"
+            >
+              Done
+            </button>
+          )}
           <div className="flex flex-col items-center justify-center p-8 min-h-[300px] w-full">
             <div className="flex flex-col items-center justify-center border border-neutral-200 bg-white p-8 w-full pb-4">
               <img
                 src={getSplashImage()}
-                alt={currentTheme === "system7" ? "Hello" : "macOS"}
+                alt="Hello"
                 className="w-64 h-32"
-                style={currentTheme === "system7" ? { filter: "invert(1)" } : undefined}
+                style={{ filter: "invert(1)" }}
               />
               <h1 className="text-[36px] font-mondwest mt-4 mb-0">
                 <span className="text-blue-500">ry</span>OS

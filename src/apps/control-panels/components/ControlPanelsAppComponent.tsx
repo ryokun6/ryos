@@ -2113,7 +2113,7 @@ export function ControlPanelsAppComponent({
                     <Button
                       variant="retro"
                       onClick={() => {
-                        setNextBootMessage(t("common.system.debugBootScreenTest"));
+                        setNextBootMessage(t("common.system.debugBootScreenTest"), true);
                         window.location.reload();
                       }}
                       className="w-fit"

@@ -6,7 +6,7 @@ import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { useAppStoreShallow, useDisplaySettingsStoreShallow } from "@/stores/helpers";
 import { BootScreen } from "./components/dialogs/BootScreen";
-import { getNextBootMessage, clearNextBootMessage } from "./utils/bootMessage";
+import { getNextBootMessage, clearNextBootMessage, isBootDebugMode } from "./utils/bootMessage";
 import { AnyApp } from "./apps/base/types";
 import { useThemeStore } from "./stores/useThemeStore";
 import { useIsMobile } from "./hooks/useIsMobile";
@@ -70,6 +70,7 @@ export function App() {
     null
   );
   const [showBootScreen, setShowBootScreen] = useState(false);
+  const [bootDebugMode, setBootDebugMode] = useState(false);
 
   useEffect(() => {
     applyDisplayMode(displayMode);
@@ -80,6 +81,7 @@ export function App() {
     const persistedMessage = getNextBootMessage();
     if (persistedMessage) {
       setBootScreenMessage(persistedMessage);
+      setBootDebugMode(isBootDebugMode());
       setShowBootScreen(true);
     }
 
@@ -162,6 +164,7 @@ export function App() {
         isOpen={true}
         onOpenChange={() => {}}
         title={bootScreenMessage || t("common.system.systemRestoring")}
+        debugMode={bootDebugMode}
         onBootComplete={() => {
           clearNextBootMessage();
           setShowBootScreen(false);
