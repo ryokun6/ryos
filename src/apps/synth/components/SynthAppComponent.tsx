@@ -18,6 +18,7 @@ import {
 } from "@/stores/useSynthStore";
 import { Button } from "@/components/ui/button";
 import { useSound, Sounds } from "@/hooks/useSound";
+import { useLatestRef } from "@/hooks/useLatestRef";
 import {
   Select,
   SelectContent,
@@ -179,8 +180,6 @@ export function SynthAppComponent({
   const pendingInitNoteRef = useRef<string | null>(null);
   // Track notes released before synth was ready
   const releasedBeforeInitRef = useRef<Set<string>>(new Set());
-  // Always read the latest octave offset inside keyboard handlers
-  const octaveOffsetRef = useRef(0);
   // Ref for the keyboard container to scope pointermove
   const keyboardContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -193,15 +192,11 @@ export function SynthAppComponent({
   const [statusMessage, setStatusMessage] = useState("");
   const [isControlsVisible, setIsControlsVisible] = useState(false);
   const [octaveOffset, setOctaveOffset] = useState(0);
-  useEffect(() => {
-    octaveOffsetRef.current = octaveOffset;
-  }, [octaveOffset]);
+  // Always read the latest octave offset inside keyboard handlers
+  const octaveOffsetRef = useLatestRef(octaveOffset);
 
   // Ref to keep the latest foreground state for global event handlers
-  const isForegroundRef = useRef(isForeground);
-  useEffect(() => {
-    isForegroundRef.current = isForeground;
-  }, [isForeground]);
+  const isForegroundRef = useLatestRef(isForeground);
 
   // Default presets are now defined in the store
 
