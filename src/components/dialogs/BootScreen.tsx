@@ -76,9 +76,9 @@ export function BootScreen({
   const getSplashImage = () => {
     switch (currentTheme) {
       case "xp":
-        return "/assets/splash/xp.png";
+        return "/assets/splash/xp-boot.gif";
       case "win98":
-        return "/assets/splash/win98.png";
+        return "/assets/splash/win98.gif";
       case "system7":
         return "/assets/splash/hello.svg";
       default:
@@ -93,23 +93,51 @@ export function BootScreen({
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay
             className="fixed inset-0 z-[75] bg-black data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-            style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
+            style={{ 
+              position: "fixed", 
+              top: 0, 
+              left: 0, 
+              right: 0, 
+              bottom: 0,
+              backgroundColor: "#000000"
+            }}
           />
-          <DialogContent
-            className="bg-black p-0 w-full h-full max-w-none border-none shadow-none z-[80] outline-none rounded-none"
-            style={{ position: "fixed", zIndex: 80 }}
+          <DialogPrimitive.Content
+            className="fixed inset-0 z-[80] bg-black p-0 w-full h-full max-w-none border-none shadow-none outline-none rounded-none m-0"
+            style={{ 
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "#000000",
+              zIndex: 80,
+              margin: 0,
+              padding: 0,
+              border: "none",
+              boxShadow: "none",
+              borderRadius: 0
+            }}
           >
             <VisuallyHidden>
               <DialogTitle>{localizedTitle}</DialogTitle>
             </VisuallyHidden>
-            <div className="flex flex-col items-center justify-center w-full h-full">
+            <div 
+              className="flex flex-col items-center justify-center w-full h-full bg-black"
+              style={{
+                width: "100%",
+                height: "100%",
+                backgroundColor: "#000000"
+              }}
+            >
               <img
                 src={getSplashImage()}
                 alt={currentTheme === "xp" ? "Windows XP" : "Windows 98"}
-                className="max-w-full max-h-full object-contain"
+                className={currentTheme === "win98" ? "w-full h-full object-fill" : "max-w-full max-h-full object-contain"}
+                style={{ display: "block" }}
               />
             </div>
-          </DialogContent>
+          </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
       </Dialog>
     );

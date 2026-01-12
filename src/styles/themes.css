@@ -937,6 +937,22 @@
   outline-offset: -2px;
 }
 
+/* System 7 Switch styling - ensure proper knob alignment */
+:root[data-os-theme="system7"] .os-switch {
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+:root[data-os-theme="system7"] .os-switch-thumb {
+  flex-shrink: 0 !important;
+  align-self: center !important;
+  transform: translateX(-1px) !important;
+}
+
+:root[data-os-theme="system7"] .os-switch[data-state="checked"] .os-switch-thumb {
+  transform: translateX(1px) !important;
+}
+
 /* Yosemite-style traffic lights - clean and simple */
 
 /* macOS Titlebar Border Styling */
