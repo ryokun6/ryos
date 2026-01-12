@@ -427,27 +427,38 @@ export function ChatInput({
               animate={{ opacity: 1, height: "auto", marginBottom: 8 }}
               exit={{ opacity: 0, height: 0, marginBottom: 0 }}
               transition={{ duration: 0.15 }}
-              className="overflow-hidden"
+              className="overflow-visible"
             >
-              <div className="relative inline-block">
-                <img
-                  src={selectedImage}
-                  alt={t("apps.chats.ariaLabels.selectedImage") || "Selected image"}
-                  className={`h-16 w-auto object-cover ${
-                    isMacTheme ? "rounded-lg" : isXpTheme ? "rounded-none border border-[#7f9db9]" : "rounded-md border border-gray-800"
-                  }`}
-                  style={{ maxWidth: "120px" }}
-                />
-                <button
-                  type="button"
-                  onClick={handleImageClear}
-                  className={`absolute -top-1.5 -right-1.5 w-5 h-5 flex items-center justify-center bg-red-500 text-white ${
-                    isMacTheme ? "rounded-full" : "rounded-sm"
-                  } hover:bg-red-600 transition-colors shadow-sm`}
-                  aria-label={t("apps.chats.ariaLabels.clearImage") || "Clear image"}
-                >
-                  <X className="h-3 w-3" weight="bold" />
-                </button>
+              {/* Wrapper with padding to prevent X button clipping */}
+              <div className="pt-2 pr-2">
+                <div className="relative inline-block">
+                  <div
+                    className={`overflow-hidden ${
+                      isMacTheme 
+                        ? "rounded-xl bg-gray-100" 
+                        : isXpTheme 
+                        ? "rounded-none border border-[#7f9db9] bg-white" 
+                        : "rounded-md border border-gray-200 bg-white"
+                    }`}
+                  >
+                    <img
+                      src={selectedImage}
+                      alt={t("apps.chats.ariaLabels.selectedImage") || "Selected image"}
+                      className="h-16 w-auto object-cover block"
+                      style={{ maxWidth: "120px" }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleImageClear}
+                    className={`absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center bg-white border border-gray-300 shadow-sm z-10 ${
+                      isMacTheme ? "rounded-full" : "rounded-sm"
+                    } hover:bg-gray-100 transition-colors`}
+                    aria-label={t("apps.chats.ariaLabels.clearImage") || "Clear image"}
+                  >
+                    <X className="h-3 w-3 text-gray-600" weight="bold" />
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}
