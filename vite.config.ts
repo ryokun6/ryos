@@ -86,6 +86,7 @@ export default defineConfig({
     ],
     // Exclude heavy deps from initial pre-bundling to reduce memory
     // These will be bundled on-demand when their apps are opened
+    // Note: AI SDK removed from exclude to fix ESM/CJS compatibility with @vercel/oidc
     exclude: isDev ? [
       // Audio libs - only needed when Soundboard/iPod/Synth/Karaoke opens
       "tone",
@@ -98,12 +99,6 @@ export default defineConfig({
       "@tiptap/react",
       "@tiptap/starter-kit",
       "@tiptap/pm",
-      // AI SDK - only needed when Chats/IE opens
-      "ai",
-      "@ai-sdk/anthropic",
-      "@ai-sdk/google",
-      "@ai-sdk/openai",
-      "@ai-sdk/react",
     ] : [],
   },
   plugins: [

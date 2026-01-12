@@ -24,10 +24,28 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { LinkPreview } from "@/components/shared/LinkPreview";
+import { ImageAttachment } from "@/components/shared/ImageAttachment";
 import { useThemeStore } from "@/stores/useThemeStore";
 import EmojiAquarium from "@/components/shared/EmojiAquarium";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
+
+// Helper to extract image URLs from message parts
+const extractImageParts = (message: {
+  parts?: Array<{ type: string; url?: string; mediaType?: string }>;
+}): string[] => {
+  if (!message.parts) return [];
+  
+  return message.parts
+    .filter((p) => {
+      // Check for file parts with image media types
+      if (p.type === "file" && p.mediaType?.startsWith("image/") && p.url) {
+        return true;
+      }
+      return false;
+    })
+    .map((p) => p.url as string);
+};
 
 // --- Color Hashing for Usernames ---
 const userColors = [
@@ -947,6 +965,30 @@ function ChatMessagesContent({
             {/* Render aquarium tool(s) as their own element; component styles itself as a chat bubble */}
             {hasAquarium && <EmojiAquarium />}
 
+            {/* Image Attachments - Rendered BEFORE the text message bubble */}
+            {message.role === "user" && (() => {
+              const imageUrls = extractImageParts(message as { parts?: Array<{ type: string; url?: string; mediaType?: string }> });
+              if (imageUrls.length === 0) return null;
+              
+              return (
+                <div
+                  className={`flex flex-col gap-2 w-full mb-1 ${
+                    message.role === "user" ? "items-end" : "items-start"
+                  }`}
+                >
+                  {imageUrls.map((url, idx) => (
+                    <ImageAttachment
+                      key={`${messageKey}-img-${idx}`}
+                      src={url}
+                      alt={`Attached image ${idx + 1}`}
+                      showRemoveButton={false}
+                      className="max-w-[280px]"
+                    />
+                  ))}
+                </div>
+              );
+            })()}
+
             {/* Show the standard message bubble if it's not URL-only (even if aquarium exists) */}
             {!isUrlOnly(displayContent) && (
               <motion.div
@@ -1200,68 +1242,70 @@ function ChatMessagesContent({
                   </motion.div>
                 ) : (
                   <>
-                    <span
-                      className={`select-text whitespace-pre-wrap ${
-                        isEmojiOnly(displayContent) ? "text-[24px]" : ""
-                      }`}
-                      style={{
-                        userSelect: "text",
-                        fontSize: isEmojiOnly(displayContent)
-                          ? undefined
-                          : `${fontSize}px`,
-                      }} // Apply font size via style prop
-                    >
-                      {(() => {
-                        const tokens = segmentText(displayContent);
-                        let charPos2 = 0;
-                        return tokens.map((segment, idx) => {
-                          const start2 = charPos2;
-                          const end2 = charPos2 + segment.content.length;
-                          charPos2 = end2;
-                          const isHighlight =
-                            highlightActive &&
-                            start2 < (combinedHighlightSeg?.end ?? 0) &&
-                            end2 > (combinedHighlightSeg?.start ?? 0);
-                          const contentNode =
-                            segment.type === "link" && segment.url ? (
-                              <a
-                                href={segment.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline"
-                                style={{
-                                  color: isUrgent ? "inherit" : undefined,
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {segment.content}
-                              </a>
-                            ) : (
-                              segment.content
-                            );
-                          return (
-                            <span
-                              key={`${messageKey}-segment-${idx}`}
-                              className={`${
-                                segment.type === "bold"
-                                  ? "font-bold"
-                                  : segment.type === "italic"
-                                  ? "italic"
-                                  : ""
-                              }`}
-                            >
-                              {isHighlight ? (
-                                <span className="bg-yellow-200 animate-highlight">
-                                  {contentNode}
-                                </span>
+                    {displayContent && (
+                      <span
+                        className={`select-text whitespace-pre-wrap ${
+                          isEmojiOnly(displayContent) ? "text-[24px]" : ""
+                        }`}
+                        style={{
+                          userSelect: "text",
+                          fontSize: isEmojiOnly(displayContent)
+                            ? undefined
+                            : `${fontSize}px`,
+                        }} // Apply font size via style prop
+                      >
+                        {(() => {
+                          const tokens = segmentText(displayContent);
+                          let charPos2 = 0;
+                          return tokens.map((segment, idx) => {
+                            const start2 = charPos2;
+                            const end2 = charPos2 + segment.content.length;
+                            charPos2 = end2;
+                            const isHighlight =
+                              highlightActive &&
+                              start2 < (combinedHighlightSeg?.end ?? 0) &&
+                              end2 > (combinedHighlightSeg?.start ?? 0);
+                            const contentNode =
+                              segment.type === "link" && segment.url ? (
+                                <a
+                                  href={segment.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline"
+                                  style={{
+                                    color: isUrgent ? "inherit" : undefined,
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {segment.content}
+                                </a>
                               ) : (
-                                contentNode
-                              )}
-                            </span>
-                          );
-                        });
-                      })()}
-                    </span>
+                                segment.content
+                              );
+                            return (
+                              <span
+                                key={`${messageKey}-segment-${idx}`}
+                                className={`${
+                                  segment.type === "bold"
+                                    ? "font-bold"
+                                    : segment.type === "italic"
+                                    ? "italic"
+                                    : ""
+                                }`}
+                              >
+                                {isHighlight ? (
+                                  <span className="bg-yellow-200 animate-highlight">
+                                    {contentNode}
+                                  </span>
+                                ) : (
+                                  contentNode
+                                )}
+                              </span>
+                            );
+                          });
+                        })()}
+                      </span>
+                    )}
                   </>
                 )}
               </motion.div>
