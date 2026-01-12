@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as Tone from "tone";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import { useEventListener } from "@/hooks/useEventListener";
 
 type SoundType = "command" | "error" | "aiResponse";
 type TimeMode = "past" | "future" | "now";
@@ -813,18 +814,12 @@ export function useTerminalSounds() {
     return true;
   };
 
-  // Initialize Tone.js on first user interaction
-  useEffect(() => {
-    const handleFirstInteraction = () => {
-      initializeToneOnce();
-      window.removeEventListener("click", handleFirstInteraction);
-    };
-    window.addEventListener("click", handleFirstInteraction);
+  const handleFirstInteraction = useCallback(() => {
+    initializeToneOnce();
+  }, [initializeToneOnce]);
 
-    return () => {
-      window.removeEventListener("click", handleFirstInteraction);
-    };
-  }, []);
+  // Initialize Tone.js on first user interaction
+  useEventListener("click", handleFirstInteraction, window, { once: true });
 
   const playSound = useCallback(
     async (type: SoundType) => {
