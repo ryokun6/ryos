@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { useLatestRef } from "@/hooks/useLatestRef";
 
 // =============================================================================
 // Types
@@ -61,8 +62,7 @@ export function useLyricsErrorToast({
   const lastErrorToastSongRef = useRef<string | null>(null);
   
   // Stable ref for callback to avoid effect re-runs when callers pass inline functions
-  const onSearchClickRef = useRef(onSearchClick);
-  onSearchClickRef.current = onSearchClick;
+  const onSearchClickRef = useLatestRef(onSearchClick);
 
   useEffect(() => {
     // Only show toast for "no lyrics" type errors
@@ -87,5 +87,5 @@ export function useLyricsErrorToast({
     if (songId !== lastErrorToastSongRef.current && !error) {
       lastErrorToastSongRef.current = null;
     }
-  }, [error, songId, t, appId]);
+  }, [error, songId, t, appId, onSearchClickRef]);
 }

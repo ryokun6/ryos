@@ -3,6 +3,7 @@ import * as Tone from "tone";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useVibration } from "./useVibration";
 import { resumeAudioContext } from "@/lib/audioContext";
+import { useEventListener } from "@/hooks/useEventListener";
 
 // Global synth instance and state
 let globalSynthRef: {
@@ -359,31 +360,16 @@ export function useChatSynth() {
   }, [isAudioReady, currentPresetKey]); // Add currentPresetKey dependency
 
   // Effect to handle initial audio setup via user interaction
-  useEffect(() => {
-    // NOTE: Do NOT call initializeAudio() directly here without a user gesture.
-    // On Safari/iOS, audio context creation will fail silently without user interaction.
+  // NOTE: Do NOT call initializeAudio() directly here without a user gesture.
+  // On Safari/iOS, audio context creation will fail silently without user interaction.
+  const handleInteraction = useCallback(() => {
+    initializeAudio();
+  }, [initializeAudio]);
 
-    const handleInteraction = () => {
-      initializeAudio();
-      // Clean up listeners after first interaction
-      window.removeEventListener("click", handleInteraction);
-      window.removeEventListener("keydown", handleInteraction);
-      window.removeEventListener("touchstart", handleInteraction);
-    };
-
-    // Add listeners if not already initialized
-    if (!isAudioReady) {
-      window.addEventListener("click", handleInteraction, { once: true });
-      window.addEventListener("keydown", handleInteraction, { once: true });
-      window.addEventListener("touchstart", handleInteraction, { once: true });
-    }
-
-    return () => {
-      window.removeEventListener("click", handleInteraction);
-      window.removeEventListener("keydown", handleInteraction);
-      window.removeEventListener("touchstart", handleInteraction);
-    };
-  }, [initializeAudio, isAudioReady]); // Depend on initializeAudio and isAudioReady
+  const interactionTarget = isAudioReady ? null : window;
+  useEventListener("click", handleInteraction, interactionTarget, { once: true });
+  useEventListener("keydown", handleInteraction, interactionTarget, { once: true });
+  useEventListener("touchstart", handleInteraction, interactionTarget, { once: true });
 
   // NOTE: Visibility/focus handlers are handled centrally by @/lib/audioContext
   // to prevent race conditions. Do not add duplicate listeners here.

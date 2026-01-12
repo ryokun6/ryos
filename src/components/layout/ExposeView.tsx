@@ -1,4 +1,6 @@
-import { useEffect, useCallback, useMemo, useRef } from "react";
+import { useEffect, useCallback, useMemo } from "react";
+import { useEventListener, useCustomEventListener } from "@/hooks/useEventListener";
+import { usePrevious } from "@/hooks/useLatestRef";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { getAppIconPath } from "@/config/appRegistry";
@@ -46,7 +48,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   const { play: playCloseSound } = useSound(Sounds.WINDOW_ZOOM_MINIMIZE, 0.5);
 
   // Track previous isOpen state to detect changes
-  const prevIsOpenRef = useRef(isOpen);
+  const prevIsOpen = usePrevious(isOpen);
 
   // Get all open instances (excluding minimized)
   const openInstances = useMemo(() => {
@@ -60,15 +62,14 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
 
   // Play sounds when expose view opens/closes
   useEffect(() => {
-    if (isOpen !== prevIsOpenRef.current) {
+    if (isOpen !== prevIsOpen) {
       if (isOpen) {
         playOpenSound();
       } else {
         playCloseSound();
       }
-      prevIsOpenRef.current = isOpen;
     }
-  }, [isOpen, playOpenSound, playCloseSound]);
+  }, [isOpen, prevIsOpen, playOpenSound, playCloseSound]);
 
   // Helper to get applet info (icon and name) from instance
   const getAppletInfo = useCallback(
@@ -133,36 +134,18 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   );
 
   // Expose the handleWindowSelect for AppManager
-  useEffect(() => {
-    const handler = (e: CustomEvent<{ instanceId: string }>) => {
-      handleWindowSelect(e.detail.instanceId);
-    };
-    window.addEventListener(
-      "exposeWindowSelect",
-      handler as EventListener
-    );
-    return () => {
-      window.removeEventListener(
-        "exposeWindowSelect",
-        handler as EventListener
-      );
-    };
-  }, [handleWindowSelect]);
+  useCustomEventListener<{ instanceId: string }>(
+    "exposeWindowSelect",
+    (e) => handleWindowSelect(e.detail.instanceId)
+  );
 
-  // Handle keyboard navigation
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  // Handle keyboard navigation - escape to close
+  useEventListener("keydown", (e) => {
+    if (isOpen && e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+    }
+  });
 
   // Calculate grid for label positioning
   const grid = useMemo(() => {
