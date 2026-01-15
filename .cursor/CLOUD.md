@@ -15,7 +15,7 @@ This project uses **Bun** as the package manager and runtime. The environment is
 ```bash
 # Development
 bun run dev              # Start Vite dev server (port 5173)
-vercel dev --token $VERCEL_TOKEN               # Start Vercel dev server (recommended for API testing)
+vercel dev               # Start Vercel dev server (recommended for API testing)
 
 # Build & Production
 bun run build            # TypeScript compile + Vite build
@@ -32,7 +32,7 @@ bun run test             # Run all API tests (requires server running)
 
 For **full functionality** including API endpoints:
 ```bash
-vercel dev --token $VERCEL_TOKEN
+vercel dev
 ```
 
 For **frontend-only** development:
@@ -79,13 +79,19 @@ The following environment variables are required for full functionality:
 
 Tests require a running server. Start the server first:
 ```bash
-vercel dev --token $VERCEL_TOKEN
+vercel dev
 ```
 
 Then in another terminal:
 ```bash
 bun run test
 ```
+
+### Manual Testing Guidelines
+
+- **Skip computer use / GUI-driven testing** unless the user explicitly requests it
+- Prefer terminal-based testing (running test scripts, curl commands, checking build output)
+- Only use the `computerUse` subagent for manual browser testing when the user specifically asks for visual verification or UI testing
 
 ## Important Notes
 
