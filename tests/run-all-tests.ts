@@ -12,6 +12,7 @@ import { runParseTitleTests } from "./test-parse-title";
 import { runSpeechTests } from "./test-speech";
 import { runShareAppletTests } from "./test-share-applet";
 import { runSongTests } from "./test-song";
+import { runNewApiTests } from "./test-new-api";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -74,6 +75,7 @@ async function runAllTests(): Promise<void> {
 
   // Define test suites
   const testSuites: { name: string; run: () => Promise<{ passed: number; failed: number }> }[] = [
+    { name: "new-api", run: runNewApiTests },
     { name: "chat-rooms", run: runChatRoomsTests },
     { name: "admin", run: runAdminTests },
     { name: "iframe-check", run: runIframeCheckTests },
