@@ -139,14 +139,10 @@ export default async function handler(req: Request): Promise<Response> {
       return withCors(response, origin);
     }
 
-    // Build messages for context
-    const messages = [
-      { role: "system" as const, content: RYO_SYSTEM_PROMPT },
-    ];
-
-    // Add system state context if provided
+    // Build system prompt with optional state context
+    let systemPrompt = RYO_SYSTEM_PROMPT;
     if (systemState) {
-      let contextParts: string[] = [];
+      const contextParts: string[] = [];
       if (systemState.currentApp) {
         contextParts.push(`Current app: ${systemState.currentApp}`);
       }
@@ -157,21 +153,16 @@ export default async function handler(req: Request): Promise<Response> {
         contextParts.push(`Time: ${systemState.systemTime}`);
       }
       if (contextParts.length > 0) {
-        messages.push({
-          role: "system" as const,
-          content: `<system_state>${contextParts.join("; ")}</system_state>`,
-        });
+        systemPrompt += `\n\n<system_state>${contextParts.join("; ")}</system_state>`;
       }
     }
-
-    // Add user prompt
-    messages.push({ role: "user" as const, content: prompt });
 
     // Generate reply using Google's Gemini
     const { text: reply } = await generateText({
       model: google("gemini-2.0-flash"),
-      messages,
-      maxTokens: 300,
+      system: systemPrompt,
+      prompt,
+      maxOutputTokens: 300,
       temperature: 0.8,
     });
 
