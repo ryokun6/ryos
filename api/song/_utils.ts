@@ -5,7 +5,7 @@
 import { z } from "zod";
 import pako from "pako";
 import { google } from "@ai-sdk/google";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { KRC_DECRYPTION_KEY, YOUTUBE_VIDEO_ID_REGEX } from "./_constants.js";
 
 // =============================================================================
@@ -272,11 +272,14 @@ export async function parseYouTubeTitleWithAI(
   const timeoutId = setTimeout(() => abortController.abort(), AI_TITLE_PARSE_TIMEOUT_MS);
   
   try {
-    const { object: parsedData } = await generateObject({
+    const { output: parsedData } = await generateText({
       model: google("gemini-2.0-flash"),
-      schema: z.object({
-        title: z.string().optional().nullable(),
-        artist: z.string().optional().nullable(),
+      output: Output.object({
+        schema: z.object({
+          title: z.string().nullable(),
+          artist: z.string().nullable(),
+        }),
+        name: "parsed_song_metadata",
       }),
       messages: [
         {
@@ -309,8 +312,8 @@ Examples:
     clearTimeout(timeoutId);
 
     const result = {
-      title: parsedData.title || cleanTitle,
-      artist: parsedData.artist || "",
+      title: parsedData.title ?? cleanTitle,
+      artist: parsedData.artist ?? "",
     };
     
     if (!isValidParsedResult(result, cleanTitle)) {

@@ -3,6 +3,7 @@ import {
   smoothStream,
   convertToModelMessages,
   stepCountIs,
+  type UIMessage,
 } from "ai";
 import { geolocation } from "@vercel/functions";
 import {
@@ -28,6 +29,36 @@ import { getEffectiveOrigin, isAllowedOrigin } from "./_utils/cors.js";
 
 // Central list of supported theme IDs for tool validation
 const themeIds = ["system7", "macosx", "xp", "win98"] as const;
+
+// Helper to ensure messages are in UIMessage format for AI SDK v6
+// Handles both simple { role, content } format and UIMessage format with parts
+type SimpleMessage = { id?: string; role: string; content?: string; parts?: Array<{ type: string; text?: string }> };
+const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
+  return messages.map((msg, index) => {
+    // If message already has parts, it's in UIMessage format
+    if (msg.parts && Array.isArray(msg.parts)) {
+      return {
+        id: msg.id || `msg-${index}`,
+        role: msg.role as UIMessage['role'],
+        parts: msg.parts,
+      } as UIMessage;
+    }
+    // Convert simple { role, content } format to UIMessage format
+    return {
+      id: msg.id || `msg-${index}`,
+      role: msg.role as UIMessage['role'],
+      parts: [{ type: 'text', text: msg.content || '' }],
+    } as UIMessage;
+  });
+};
+
+const normalizeOptionalString = (value: unknown) => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length === 0 ? undefined : trimmed;
+  }
+  return value;
+};
 
 // Shared media control schema validation refinement
 const mediaControlRefinement = (data: { action: string; id?: string; title?: string; artist?: string }, ctx: z.RefinementCtx) => {
@@ -142,14 +173,14 @@ interface SystemState {
   userOS?: string;
   /** User's system locale (e.g., "en", "zh-TW", "ja", "ko", "fr", "de", "es", "pt", "it", "ru") */
   locale?: string;
-  internetExplorer: {
+  internetExplorer?: {
     url: string;
     year: string;
     currentPageTitle: string | null;
     /** Markdown form of the AI generated HTML (more token-efficient than raw HTML) */
     aiGeneratedMarkdown?: string | null;
   };
-  video: {
+  video?: {
     currentVideo: {
       id: string;
       title: string;
@@ -344,7 +375,7 @@ Background: None`;
   // Media Section
   let hasMedia = false;
 
-  if (systemState.video.currentVideo && systemState.video.isPlaying) {
+  if (systemState.video?.currentVideo && systemState.video.isPlaying) {
     if (!hasMedia) {
       prompt += `\n\n## MEDIA PLAYBACK`;
       hasMedia = true;
@@ -413,7 +444,7 @@ Karaoke: ${systemState.karaoke.currentTrack.title}${karaokeTrackArtist} (${karao
       (app) => app.appId === "internet-explorer"
     );
 
-  if (hasOpenInternetExplorer && systemState.internetExplorer.url) {
+  if (hasOpenInternetExplorer && systemState.internetExplorer?.url) {
     prompt += `\n\n## INTERNET EXPLORER
 URL: ${systemState.internetExplorer.url}
 Time Travel Year: ${systemState.internetExplorer.year}`;
@@ -713,7 +744,9 @@ export default async function handler(req: Request) {
     };
 
     // Convert UIMessages to ModelMessages for the AI model
-    const modelMessages = convertToModelMessages(messages);
+    // Ensure messages are in UIMessage format (handles both simple and parts-based formats)
+    const uiMessages = ensureUIMessageFormat(messages);
+    const modelMessages = await convertToModelMessages(uiMessages);
 
     // Merge all messages: static sys → dynamic sys → user/assistant turns
     const enrichedMessages = [
@@ -742,14 +775,12 @@ export default async function handler(req: Request) {
             .object({
               id: z.enum(appIds).describe("The app id to launch"),
               url: z
-                .string()
-                .optional()
+                .preprocess(normalizeOptionalString, z.string().optional())
                 .describe(
                   "For internet-explorer only: The URL to load in Internet Explorer. Omit https:// and www. from the URL."
                 ),
               year: z
-                .string()
-                .optional()
+                .preprocess(normalizeOptionalString, z.string().optional())
                 .describe(
                   "For internet-explorer only: The year for the Wayback Machine or AI generation. Allowed values: 'current', '1000 BC', '1 CE', '500', '800', '1000', '1200', '1400', '1600', '1700', '1800', years from 1900-1989, 1990-1995, any year from 1991 to current year-1, '2030', '2040', '2050', '2060', '2070', '2080', '2090', '2100', '2150', '2200', '2250', '2300', '2400', '2500', '2750', '3000'. Used only with Internet Explorer."
                 )

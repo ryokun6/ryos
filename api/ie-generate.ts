@@ -59,6 +59,12 @@ const generateRequestId = (): string =>
   Math.random().toString(36).substring(2, 10);
 
 type IncomingUIMessage = Omit<UIMessage, "id">;
+type SimpleMessage = {
+  id?: string;
+  role: string;
+  content?: string;
+  parts?: Array<{ type: string; text?: string }>;
+};
 
 interface IEGenerateRequestBody {
   url?: string;
@@ -71,6 +77,24 @@ interface IEGenerateRequestBody {
 
 const isValidOrigin = (origin: string | null): boolean =>
   isAllowedOrigin(origin);
+
+const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
+  return messages.map((msg, index) => {
+    const id = msg.id || `ie-msg-${index}`;
+    if (msg.parts && Array.isArray(msg.parts)) {
+      return {
+        id,
+        role: msg.role as UIMessage["role"],
+        parts: msg.parts,
+      } as UIMessage;
+    }
+    return {
+      id,
+      role: msg.role as UIMessage["role"],
+      parts: [{ type: "text", text: msg.content ?? "" }],
+    } as UIMessage;
+  });
+};
 
 // --- Edge Runtime Config --------------------------------------------------
 
@@ -318,8 +342,9 @@ export default async function handler(req: Request) {
       content: systemPrompt,
     };
 
-    // Convert UIMessages to ModelMessages for the AI model (AI SDK v5)
-    const modelMessages = convertToModelMessages(incomingMessages);
+    // Convert UIMessages to ModelMessages for the AI model (AI SDK v6)
+    const uiMessages = ensureUIMessageFormat(incomingMessages);
+    const modelMessages = await convertToModelMessages(uiMessages);
 
     const enrichedMessages: ModelMessage[] = [
       staticSystemMessage,
