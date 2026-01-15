@@ -72,6 +72,7 @@ import {
   parseLyricsContent,
   buildChineseTranslationFromKrc,
   getTranslationSystemPrompt,
+  streamTranslation,
 } from "./_lyrics.js";
 
 import {
@@ -161,8 +162,11 @@ export default async function handler(req: Request) {
     return errorResponse("Song ID is required", 400);
   }
 
-  // Validate YouTube video ID format
+  // Validate YouTube video ID format (allow GET to return 404 for unknown IDs)
   if (!isValidYouTubeVideoId(songId)) {
+    if (req.method === "GET") {
+      return errorResponse("Song not found", 404);
+    }
     return errorResponse("Invalid song ID format. Expected YouTube video ID (11 characters, alphanumeric with - and _)", 400);
   }
 
@@ -322,16 +326,20 @@ export default async function handler(req: Request) {
         // Permission check: changing lyrics source or force refresh requires auth
         // First-time fetch (no existing lyrics source) is allowed for anyone
         if ((force || lyricsSourceChanged) && song?.lyricsSource) {
-          if (!username || !authToken) {
-            return errorResponse("Unauthorized - authentication required to change lyrics source or force refresh", 401);
-          }
-          const authResult = await validateAuthToken(redis, username, authToken);
-          if (!authResult.valid) {
-            return errorResponse("Unauthorized - invalid credentials", 401);
-          }
-          const permission = canModifySong(song, username);
-          if (!permission.canModify) {
-            return errorResponse(permission.reason || "Only the song owner can change lyrics source", 403);
+          const isPublicSong = !song.createdBy;
+          const allowAnonymousRefresh = isPublicSong && !username && !authToken;
+          if (!allowAnonymousRefresh) {
+            if (!username || !authToken) {
+              return errorResponse("Unauthorized - authentication required to change lyrics source or force refresh", 401);
+            }
+            const authResult = await validateAuthToken(redis, username, authToken);
+            if (!authResult.valid) {
+              return errorResponse("Unauthorized - invalid credentials", 401);
+            }
+            const permission = canModifySong(song, username);
+            if (!permission.canModify) {
+              return errorResponse(permission.reason || "Only the song owner can change lyrics source", 403);
+            }
           }
         }
 
@@ -372,7 +380,11 @@ export default async function handler(req: Request) {
           
           // Build response with optional translation/furigana info
           const response: Record<string, unknown> = {
-            lyrics: { parsedLines },
+            lyrics: {
+              lrc: song.lyrics.lrc,
+              krc: song.lyrics.krc,
+              parsedLines,
+            },
             cached: true,
           };
           
@@ -537,7 +549,11 @@ export default async function handler(req: Request) {
         
         // Build response with optional translation/furigana info
         const response: Record<string, unknown> = {
-          lyrics: { parsedLines },
+          lyrics: {
+            lrc: lyrics.lrc,
+            krc: lyrics.krc,
+            parsedLines,
+          },
           cached: false,
         };
         
@@ -604,6 +620,110 @@ export default async function handler(req: Request) {
         }
         
         return jsonResponse(response);
+      }
+
+      // =======================================================================
+      // Handle translate action - non-streaming translation response
+      // Returns full LRC translation in JSON
+      // =======================================================================
+      if (action === "translate") {
+        const language =
+          typeof body.language === "string" ? body.language.trim() : "";
+        const force = body.force === true;
+
+        if (!language) {
+          return errorResponse("Invalid request body", 400);
+        }
+
+        const song = await getSong(redis, songId, {
+          includeMetadata: true,
+          includeLyrics: true,
+          includeTranslations: [language],
+        });
+
+        if (!song) {
+          return errorResponse("Song not found", 404);
+        }
+
+        if (!song.lyrics?.lrc) {
+          return errorResponse("Song has no lyrics", 404);
+        }
+
+        // Permission check: force refresh requires auth when translation already exists
+        if (force && song.translations?.[language]) {
+          if (!username || !authToken) {
+            return errorResponse("Unauthorized - authentication required to force refresh translation", 401);
+          }
+          const authResult = await validateAuthToken(redis, username, authToken);
+          if (!authResult.valid) {
+            return errorResponse("Unauthorized - invalid credentials", 401);
+          }
+          const permission = canModifySong(song, username);
+          if (!permission.canModify) {
+            return errorResponse(permission.reason || "Only the song owner can force refresh", 403);
+          }
+        }
+
+        // Generate parsedLines on-demand (not stored in Redis)
+        const parsedLines = parseLyricsContent(
+          { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
+          song.lyricsSource?.title || song.title,
+          song.lyricsSource?.artist || song.artist
+        );
+
+        if (parsedLines.length === 0) {
+          return errorResponse("Song has no lyrics", 404);
+        }
+
+        // Return cached translation when available (and not forcing)
+        if (!force && song.translations?.[language]) {
+          return jsonResponse({
+            translation: song.translations[language],
+            cached: true,
+          });
+        }
+
+        // For Chinese Traditional: use KRC source directly if available (skip AI)
+        if (isChineseTraditional(language) && song.lyrics.krc) {
+          const krcDerivedLrc = buildChineseTranslationFromKrc(
+            song.lyrics,
+            song.lyricsSource?.title || song.title,
+            song.lyricsSource?.artist || song.artist
+          );
+          if (krcDerivedLrc) {
+            await saveTranslation(redis, songId, language, krcDerivedLrc);
+            logInfo(requestId, "Using KRC-derived Traditional Chinese translation (non-stream)");
+            return jsonResponse({
+              translation: krcDerivedLrc,
+              cached: false,
+            });
+          }
+        }
+
+        const { translations, success } = await streamTranslation(
+          parsedLines,
+          language,
+          requestId,
+          () => {}
+        );
+
+        if (!success) {
+          return errorResponse("Failed to translate lyrics", 404);
+        }
+
+        const translatedLrc = parsedLines
+          .map(
+            (line, index) =>
+              `${msToLrcTime(line.startTimeMs)}${translations[index] || line.words}`
+          )
+          .join("\n");
+
+        await saveTranslation(redis, songId, language, translatedLrc);
+
+        return jsonResponse({
+          translation: translatedLrc,
+          cached: false,
+        });
       }
 
       // =======================================================================
