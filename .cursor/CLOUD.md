@@ -15,7 +15,7 @@ This project uses **Bun** as the package manager and runtime. The environment is
 ```bash
 # Development
 bun run dev              # Start Vite dev server (port 5173)
-vercel dev               # Start Vercel dev server (recommended for API testing)
+vercel dev --token $VERCEL_TOKEN               # Start Vercel dev server (recommended for API testing)
 
 # Build & Production
 bun run build            # TypeScript compile + Vite build

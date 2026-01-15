@@ -1,5 +1,0 @@
-{
-  "snapshot": "snapshot-20260111-b05ef3a1-2a2e-4022-8df9-afbae4e32f4c",
-  "install": "bun install",
-  "start": "bun run dev"
-}
