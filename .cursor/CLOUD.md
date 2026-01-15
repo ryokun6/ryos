@@ -32,7 +32,7 @@ bun run test             # Run all API tests (requires server running)
 
 For **full functionality** including API endpoints:
 ```bash
-vercel dev
+vercel dev --token $VERCEL_TOKEN
 ```
 
 For **frontend-only** development:
@@ -79,7 +79,7 @@ The following environment variables are required for full functionality:
 
 Tests require a running server. Start the server first:
 ```bash
-vercel dev
+vercel dev --token $VERCEL_TOKEN
 ```
 
 Then in another terminal:
