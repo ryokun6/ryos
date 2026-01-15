@@ -55,6 +55,9 @@ export interface RoomWithUsers extends Room {
   users: string[];
 }
 
+// Re-export for services
+export type { RoomWithUsers as RoomDetailed };
+
 // =============================================================================
 // Message Types
 // =============================================================================
