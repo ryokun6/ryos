@@ -382,7 +382,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           );
           try {
             const response = await fetch(
-              "/api/chat-rooms?action=checkPassword",
+              "/api/auth/password",
               {
                 method: "GET",
                 headers: {
@@ -430,7 +430,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await fetch(getApiUrl("/api/chat-rooms?action=setPassword"), {
+            const response = await fetch(getApiUrl("/api/auth/password"), {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -702,20 +702,18 @@ export const useChatsStore = create<ChatsStoreState>()(
           );
 
           try {
+            // Legacy token generation - use refresh endpoint instead
             const response = await fetch(
-              "/api/chat-rooms?action=generateToken",
+              "/api/auth/refresh",
               {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  ...(currentToken
-                    ? {
-                        Authorization: `Bearer ${currentToken}`,
-                        "X-Username": currentUsername,
-                      }
-                    : {}),
                 },
-                body: JSON.stringify({ username: currentUsername }),
+                body: JSON.stringify({ 
+                  username: currentUsername,
+                  token: currentToken || "",
+                }),
               }
             );
 
@@ -778,7 +776,7 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           try {
             const response = await fetch(
-              "/api/chat-rooms?action=refreshToken",
+              "/api/auth/refresh",
               {
                 method: "POST",
                 headers: {
@@ -786,7 +784,7 @@ export const useChatsStore = create<ChatsStoreState>()(
                 },
                 body: JSON.stringify({
                   username: currentUsername,
-                  oldToken: currentToken,
+                  token: currentToken,
                 }),
               }
             );
@@ -906,14 +904,14 @@ export const useChatsStore = create<ChatsStoreState>()(
           // Inform server to invalidate current token if we have auth
           if (currentUsername && currentToken) {
             try {
-              await fetch(getApiUrl("/api/chat-rooms?action=logoutCurrent"), {
+              await fetch(getApiUrl("/api/auth/logout"), {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${currentToken}`,
                   "X-Username": currentUsername,
                 },
-                body: JSON.stringify({}),
+                body: JSON.stringify({ all: false }),
               });
             } catch (err) {
               console.warn(
@@ -965,14 +963,15 @@ export const useChatsStore = create<ChatsStoreState>()(
           const currentUsername = get().username;
 
           try {
-            const queryParams = new URLSearchParams({ action: "getRooms" });
+            const queryParams = new URLSearchParams();
             if (currentUsername) {
               queryParams.append("username", currentUsername);
             }
 
-            const response = await fetch(
-              `/api/chat-rooms?${queryParams.toString()}`
-            );
+            const url = queryParams.toString() 
+              ? `/api/rooms?${queryParams.toString()}`
+              : `/api/rooms`;
+            const response = await fetch(url);
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
                 error: `HTTP error! status: ${response.status}`,
@@ -984,9 +983,11 @@ export const useChatsStore = create<ChatsStoreState>()(
             }
 
             const data = await response.json();
-            if (data.rooms && Array.isArray(data.rooms)) {
+            // Handle both old format {rooms: [...]} and new format {success: true, data: {rooms: [...]}}
+            const rooms = data.data?.rooms || data.rooms;
+            if (rooms && Array.isArray(rooms)) {
               // Normalize ordering via setRooms to enforce alphabetical sections
-              get().setRooms(data.rooms);
+              get().setRooms(rooms);
               return { ok: true };
             }
 
@@ -1002,13 +1003,8 @@ export const useChatsStore = create<ChatsStoreState>()(
           console.log(`[ChatsStore] Fetching messages for room ${roomId}...`);
 
           try {
-            const queryParams = new URLSearchParams({
-              action: "getMessages",
-              roomId,
-            });
-
             const response = await fetch(
-              `/api/chat-rooms?${queryParams.toString()}`
+              `/api/rooms/${roomId}/messages`
             );
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
@@ -1021,8 +1017,10 @@ export const useChatsStore = create<ChatsStoreState>()(
             }
 
             const data = await response.json();
-            if (data.messages) {
-              const fetchedMessages: ChatMessage[] = (data.messages || [])
+            // Handle both old format {messages: [...]} and new format {success: true, data: {messages: [...]}}
+            const messages = data.data?.messages || data.messages;
+            if (messages) {
+              const fetchedMessages: ChatMessage[] = (messages || [])
                 .map((msg: ApiMessage) => ({
                   ...msg,
                   content: decodeHtmlEntities(String(msg.content || "")),
@@ -1133,31 +1131,32 @@ export const useChatsStore = create<ChatsStoreState>()(
           );
 
           try {
-            const queryParams = new URLSearchParams({
-              action: "getBulkMessages",
-              roomIds: roomIds.join(","),
+            // Fetch messages for each room in parallel
+            const messagesPromises = roomIds.map(async (roomId) => {
+              try {
+                const response = await fetch(`/api/rooms/${roomId}/messages`);
+                if (response.ok) {
+                  const data = await response.json();
+                  return { roomId, messages: data.data?.messages || [] };
+                }
+                return { roomId, messages: [] };
+              } catch {
+                return { roomId, messages: [] };
+              }
             });
 
-            const response = await fetch(
-              `/api/chat-rooms?${queryParams.toString()}`
-            );
-            if (!response.ok) {
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
-              return {
-                ok: false,
-                error: errorData.error || "Failed to fetch messages",
-              };
+            const results = await Promise.all(messagesPromises);
+            const messagesMap: Record<string, ApiMessage[]> = {};
+            for (const { roomId, messages } of results) {
+              messagesMap[roomId] = messages;
             }
 
-            const data = await response.json();
-            if (data.messagesMap) {
+            if (Object.keys(messagesMap).length > 0) {
               // Process and sort messages for each room like fetchMessagesForRoom does
               set((state) => {
                 const nextRoomMessages = { ...state.roomMessages };
 
-                Object.entries(data.messagesMap).forEach(
+                Object.entries(messagesMap).forEach(
                   ([roomId, messages]) => {
                     const processed: ChatMessage[] = (messages as ApiMessage[])
                       .map((msg) => ({
@@ -1270,40 +1269,43 @@ export const useChatsStore = create<ChatsStoreState>()(
           // If switching to a real room and we have a username, handle the API call
           if (username) {
             try {
-              const response = await fetch(
-                "/api/chat-rooms?action=switchRoom",
-                {
+              // Leave previous room
+              if (currentRoomId) {
+                await fetch(`/api/rooms/${currentRoomId}/leave`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    previousRoomId: currentRoomId,
-                    nextRoomId: newRoomId,
-                    username,
-                  }),
-                }
-              );
+                  body: JSON.stringify({ username }),
+                }).catch(() => {
+                  // Ignore leave errors
+                });
+              }
 
-              if (!response.ok) {
-                const errorData = await response.json().catch(() => ({
-                  error: `HTTP error! status: ${response.status}`,
-                }));
-                console.error("[ChatsStore] Error switching rooms:", errorData);
-                // Don't revert the room change on API error, just log it
-              } else {
-                console.log("[ChatsStore] Room switch API call successful");
-                // Immediately refresh rooms to show updated presence counts
-                // This ensures the UI reflects the change immediately rather than waiting for Pusher
-                setTimeout(() => {
-                  console.log("[ChatsStore] Refreshing rooms after switch");
-                  get().fetchRooms();
-                }, 50); // Small delay to let the server finish processing
+              // Join new room
+              if (newRoomId) {
+                const response = await fetch(`/api/rooms/${newRoomId}/join`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ username }),
+                });
+
+                if (!response.ok) {
+                  const errorData = await response.json().catch(() => ({
+                    error: `HTTP error! status: ${response.status}`,
+                  }));
+                  console.error("[ChatsStore] Error joining room:", errorData);
+                } else {
+                  console.log("[ChatsStore] Room join API call successful");
+                  setTimeout(() => {
+                    console.log("[ChatsStore] Refreshing rooms after switch");
+                    get().fetchRooms();
+                  }, 50);
+                }
               }
             } catch (error) {
               console.error(
                 "[ChatsStore] Network error switching rooms:",
                 error
               );
-              // Don't revert the room change on network error, just log it
             }
           }
 
@@ -1352,7 +1354,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             };
 
             const response = await makeAuthenticatedRequest(
-              "/api/chat-rooms?action=createRoom",
+              "/api/rooms",
               {
                 method: "POST",
                 headers,
@@ -1372,9 +1374,11 @@ export const useChatsStore = create<ChatsStoreState>()(
             }
 
             const data = await response.json();
-            if (data.room) {
+            // Handle both old format {room: {...}} and new format {success: true, data: {room: {...}}}
+            const room = data.data?.room || data.room;
+            if (room) {
               // Room will be added via Pusher update, so we don't need to manually add it
-              return { ok: true, roomId: data.room.id };
+              return { ok: true, roomId: room.id };
             }
 
             return { ok: false, error: "Invalid response format" };
@@ -1399,7 +1403,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             };
 
             const response = await makeAuthenticatedRequest(
-              `/api/chat-rooms?action=deleteRoom&roomId=${roomId}`,
+              `/api/rooms/${roomId}`,
               {
                 method: "DELETE",
                 headers,
@@ -1462,30 +1466,24 @@ export const useChatsStore = create<ChatsStoreState>()(
               headers["X-Username"] = username;
             }
 
+            const messagePayload = JSON.stringify({
+              content: content.trim(),
+            });
+
             const response = authToken
               ? await makeAuthenticatedRequest(
-                  "/api/chat-rooms?action=sendMessage",
+                  `/api/rooms/${roomId}/messages`,
                   {
                     method: "POST",
                     headers,
-                    body: JSON.stringify({
-                      roomId,
-                      username,
-                      content: content.trim(),
-                      clientId: optimisticMessage.clientId, // include for server echo if supported
-                    }),
+                    body: messagePayload,
                   },
                   get().refreshAuthToken
                 )
-              : await fetch(getApiUrl("/api/chat-rooms?action=sendMessage"), {
+              : await fetch(getApiUrl(`/api/rooms/${roomId}/messages`), {
                   method: "POST",
                   headers,
-                  body: JSON.stringify({
-                    roomId,
-                    username,
-                    content: content.trim(),
-                    clientId: optimisticMessage.clientId,
-                  }),
+                  body: messagePayload,
                 });
 
             if (!response.ok) {
@@ -1540,7 +1538,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await fetch(getApiUrl("/api/chat-rooms?action=createUser"), {
+            const response = await fetch(getApiUrl("/api/auth/register"), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ username: trimmedUsername, password }),
@@ -1557,25 +1555,27 @@ export const useChatsStore = create<ChatsStoreState>()(
             }
 
             const data = await response.json();
-            if (data.user) {
-              set({ username: data.user.username });
+            // Handle both old format {user: {...}, token: ...} and new format {success: true, data: {user: {...}, token: ...}}
+            const responseData = data.data || data;
+            if (responseData.user) {
+              set({ username: responseData.user.username });
 
-              if (data.token) {
-                set({ authToken: data.token });
-                saveAuthTokenToRecovery(data.token);
+              if (responseData.token) {
+                set({ authToken: responseData.token });
+                saveAuthTokenToRecovery(responseData.token);
                 // Save initial token creation time
-                saveTokenRefreshTime(data.user.username);
+                saveTokenRefreshTime(responseData.user.username);
               }
 
               // Check password status after user creation
-              if (data.token) {
+              if (responseData.token) {
                 setTimeout(() => {
                   get().checkHasPassword();
                 }, 100); // Small delay to ensure token is set
               }
 
               // Track user creation analytics
-              track(APP_ANALYTICS.USER_CREATE, { username: data.user.username });
+              track(APP_ANALYTICS.USER_CREATE, { username: responseData.user.username });
 
               return { ok: true };
             }

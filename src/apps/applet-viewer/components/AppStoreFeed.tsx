@@ -199,9 +199,11 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       return shuffled;
     };
     try {
-      const response = await fetch(getApiUrl("/api/share-applet?list=true"));
+      const response = await fetch(getApiUrl("/api/applets?list=true"));
       if (response.ok) {
-        const data = await response.json();
+        const responseData = await response.json();
+        // Handle both old format and new format {success: true, data: {...}}
+        const data = responseData.data || responseData;
         const allApplets = data.applets || [];
         
         // Categorize applets by priority
@@ -262,7 +264,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       setLoadingContents((prev) => new Set(prev).add(appletId));
 
       try {
-        const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`));
+        const response = await fetch(getApiUrl(`/api/applets/${encodeURIComponent(appletId)}`));
         if (response.ok) {
           const data = await response.json();
           loadedRef.current.add(appletId);

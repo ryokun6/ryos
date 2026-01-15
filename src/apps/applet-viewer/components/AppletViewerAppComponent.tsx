@@ -95,10 +95,12 @@ export function AppletViewerAppComponent({
   // Check for update for a specific applet by shareId
   const checkForAppletUpdate = useCallback(async (shareId: string) => {
     try {
-      const response = await fetch(getApiUrl("/api/share-applet?list=true"));
+      const response = await fetch(getApiUrl("/api/applets?list=true"));
       if (!response.ok) return null;
       
-      const data = await response.json();
+      const responseData = await response.json();
+      // Handle both old format and new format {success: true, data: {...}}
+      const data = responseData.data || responseData;
       const applet = (data.applets || []).find((a: Applet) => a.id === shareId);
       
       if (!applet) return null;
@@ -316,7 +318,7 @@ export function AppletViewerAppComponent({
 
       try {
         const response = await fetch(
-          `/api/share-applet?id=${encodeURIComponent(shareId)}`
+          `/api/applets/${encodeURIComponent(shareId)}`
         );
 
         if (!response.ok) {
@@ -1146,7 +1148,7 @@ export function AppletViewerAppComponent({
       // Get current window dimensions to include in share
       const windowDimensions = currentWindowState?.size;
       
-      const response = await fetch(getApiUrl("/api/share-applet"), {
+      const response = await fetch(getApiUrl("/api/applets"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1226,7 +1228,7 @@ export function AppletViewerAppComponent({
       
       const fetchSharedApplet = async () => {
         try {
-          const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareCode)}`));
+          const response = await fetch(getApiUrl(`/api/applets/${encodeURIComponent(shareCode)}`));
           
           if (!response.ok) {
             if (response.status === 404) {

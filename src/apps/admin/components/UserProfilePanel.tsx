@@ -60,7 +60,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     if (!currentUser || !authToken) return;
     try {
       const response = await fetch(
-        `/api/admin?action=getUserProfile&username=${encodeURIComponent(username)}`,
+        `/api/admin/users/${encodeURIComponent(username)}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
@@ -69,7 +69,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         }
       );
       if (response.ok) {
-        const data = await response.json();
+        const responseData = await response.json();
+        // Handle both old format and new format {success: true, data: {...}}
+        const data = responseData.data?.user || responseData.data || responseData;
         setProfile(data);
       }
     } catch (error) {
@@ -81,19 +83,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const fetchMessages = useCallback(async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await fetch(
-        `/api/admin?action=getUserMessages&username=${encodeURIComponent(username)}&limit=50`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "x-username": currentUser,
-          },
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data.messages || []);
-      }
+      // TODO: Add /api/admin/users/:username/messages endpoint
+      // For now, messages are not loaded in the new API structure
+      setMessages([]);
     } catch (error) {
       console.error("Failed to fetch messages:", error);
     }
@@ -109,16 +101,15 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const handleBan = async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await fetch(`/api/admin`, {
-        method: "POST",
+      const response = await fetch(`/api/admin/users/${encodeURIComponent(username)}`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
           "x-username": currentUser,
         },
         body: JSON.stringify({
-          action: "banUser",
-          targetUsername: username,
+          banned: true,
           reason: banReason || undefined,
         }),
       });
@@ -142,16 +133,15 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const handleUnban = async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await fetch(`/api/admin`, {
-        method: "POST",
+      const response = await fetch(`/api/admin/users/${encodeURIComponent(username)}`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
           "x-username": currentUser,
         },
         body: JSON.stringify({
-          action: "unbanUser",
-          targetUsername: username,
+          banned: false,
         }),
       });
 
@@ -171,17 +161,12 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const handleDelete = async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await fetch(`/api/admin`, {
-        method: "POST",
+      const response = await fetch(`/api/admin/users/${encodeURIComponent(username)}`, {
+        method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
           "x-username": currentUser,
         },
-        body: JSON.stringify({
-          action: "deleteUser",
-          targetUsername: username,
-        }),
       });
 
       if (response.ok) {

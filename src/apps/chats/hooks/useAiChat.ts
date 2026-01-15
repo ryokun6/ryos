@@ -605,7 +605,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   const chatTransport = useMemo(() => {
     return new DefaultChatTransport({
-      api: getApiUrl("/api/chat"),
+      api: getApiUrl("/api/agents/chat"),
       headers: async () => {
         const { username: currentUsername, authToken: currentToken } =
           useChatsStore.getState();
@@ -799,7 +799,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   ? Math.min(Math.max(limit, 1), 100)
                   : 50;
 
-                const response = await fetch(getApiUrl("/api/share-applet?list=true"));
+                const response = await fetch(getApiUrl("/api/applets?list=true"));
                 if (!response.ok) {
                   throw new Error(`Failed to list shared applets (HTTP ${response.status})`);
                 }
@@ -990,7 +990,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 // Fetch applet metadata to get the name
                 let appletName = shareId;
                 try {
-                  const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareId)}`));
+                  const response = await fetch(getApiUrl(`/api/applets/${encodeURIComponent(shareId)}`));
                   if (response.ok) {
                     const data = await response.json();
                     appletName = data.title || data.name || shareId;
@@ -1145,7 +1145,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               if (path.startsWith("/Applets Store/")) {
                 // Fetch shared applet content
                 const shareId = path.replace("/Applets Store/", "");
-                const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareId)}`));
+                const response = await fetch(getApiUrl(`/api/applets/${encodeURIComponent(shareId)}`));
 
                 if (!response.ok) {
                   throw new Error(`Failed to fetch shared applet (HTTP ${response.status})`);

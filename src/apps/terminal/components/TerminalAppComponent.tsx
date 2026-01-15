@@ -1775,7 +1775,7 @@ export function TerminalAppComponent({
               // If password provided, attempt authentication first
               if (passwordArg) {
                 const authResp = await fetch(
-                  "/api/chat-rooms?action=authenticateWithPassword",
+                  "/api/auth/login",
                   {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -1787,9 +1787,11 @@ export function TerminalAppComponent({
                 );
 
                 if (authResp.ok) {
-                  const data = await authResp.json();
+                  const responseData = await authResp.json();
+                  // Handle both old format and new format
+                  const data = responseData.data || responseData;
                   if (data.token) {
-                    const uname = data.username || targetUsername;
+                    const uname = data.user?.username || data.username || targetUsername;
                     store.setUsername(uname);
                     store.setAuthToken(data.token);
                     this.updateOutput(`logged in as ${uname}`);
