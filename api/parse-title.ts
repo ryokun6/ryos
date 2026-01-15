@@ -1,5 +1,5 @@
 import { openai } from "@ai-sdk/openai";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 import * as RateLimit from "./_utils/rate-limit.js";
 import {
@@ -19,9 +19,9 @@ interface ParseTitleRequest {
 
 // Define a Zod schema for the expected output structure
 const ParsedTitleSchema = z.object({
-  title: z.string().optional().nullable(),
-  artist: z.string().optional().nullable(),
-  album: z.string().optional().nullable(),
+  title: z.string().nullable(),
+  artist: z.string().nullable(),
+  album: z.string().nullable(),
 });
 
 export default async function handler(req: Request) {
@@ -116,10 +116,13 @@ export default async function handler(req: Request) {
       });
     }
 
-    // Use generateObject from the AI SDK v5
-    const { object: parsedData } = await generateObject({
+    // Use generateText with structured output (AI SDK v6)
+    const { output: parsedData } = await generateText({
       model: openai("gpt-4.1-mini"),
-      schema: ParsedTitleSchema, // Provide the Zod schema
+      output: Output.object({
+        schema: ParsedTitleSchema,
+        name: "parsed_title",
+      }),
       messages: [
         {
           role: "system",
@@ -140,9 +143,9 @@ export default async function handler(req: Request) {
 
     // Return the parsed data, filling missing fields with the original title if needed
     const result = {
-      title: parsedData.title || rawTitle, // Default to raw title if parsing fails for title
-      artist: parsedData.artist || undefined, // Default to undefined if no artist found
-      album: parsedData.album || undefined, // Default to undefined if no album found
+      title: parsedData.title ?? rawTitle, // Default to raw title if parsing fails for title
+      artist: parsedData.artist ?? undefined, // Default to undefined if no artist found
+      album: parsedData.album ?? undefined, // Default to undefined if no album found
     };
 
     return new Response(JSON.stringify(result), {
