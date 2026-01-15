@@ -138,7 +138,7 @@ export default async function handler(req: Request) {
       temperature: 0.2,
     });
 
-    // The AI SDK's generateObject handles parsing and validation against the schema
+    // The AI SDK's structured output parsing validates against the schema
     // If it reaches here, parsedData conforms to ParsedTitleSchema
 
     // Return the parsed data, filling missing fields with the original title if needed
