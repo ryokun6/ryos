@@ -140,6 +140,22 @@ async function testAdminGetUserDetails(): Promise<void> {
   assert(user.username === testUsername.toLowerCase(), "Expected matching username");
 }
 
+async function testAdminGetUserMessages(): Promise<void> {
+  if (!adminToken || !testUsername) throw new Error("Test setup incomplete");
+
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/admin/users/${encodeURIComponent(testUsername)}/messages?limit=10`,
+    adminToken,
+    ADMIN_USERNAME,
+    { method: "GET" }
+  );
+
+  assertEq(res.status, 200, `Expected 200, got ${res.status}`);
+  const payload = await res.json();
+  const data = payload.data || payload;
+  assert(Array.isArray(data.messages), "Expected messages array");
+}
+
 async function testAdminBanUser(): Promise<void> {
   if (!adminToken || !testUsername) throw new Error("Test setup incomplete");
 
@@ -225,6 +241,7 @@ export async function runAdminTests(): Promise<{ passed: number; failed: number 
   await runTest("GET /api/admin/stats", testAdminGetStats);
   await runTest("GET /api/admin/users", testAdminGetAllUsers);
   await runTest("GET /api/admin/users/:username", testAdminGetUserDetails);
+  await runTest("GET /api/admin/users/:username/messages", testAdminGetUserMessages);
   await runTest("PATCH /api/admin/users/:username (ban)", testAdminBanUser);
   await runTest("PATCH /api/admin/users/:username (unban)", testAdminUnbanUser);
   await runTest("DELETE /api/admin/users/:username", testAdminDeleteUser);
