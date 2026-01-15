@@ -34,6 +34,7 @@ For **full functionality** including API endpoints:
 ```bash
 vercel dev
 ```
+**Note:** `vercel dev` requires Vercel CLI authentication. Run `vercel login` first or use `--token` flag.
 
 For **frontend-only** development:
 ```bash
