@@ -5,26 +5,28 @@
  */
 
 import { z } from "zod";
-import { getRedis } from "../../_lib/redis.js";
-import { REDIS_KEYS, ADMIN_USERNAME, API_CONFIG } from "../../_lib/constants.js";
-import { 
-  validationError, 
+import { getRedis } from "../../../_lib/redis.js";
+import { REDIS_KEYS, ADMIN_USERNAME, API_CONFIG } from "../../../_lib/constants.js";
+import {
+  validationError,
   notFound,
   forbidden,
   internalError,
-} from "../../_lib/errors.js";
-import { jsonSuccess, jsonError, withCors } from "../../_lib/response.js";
-import { generateRequestId, logInfo, logError, logComplete } from "../../_lib/logging.js";
+} from "../../../_lib/errors.js";
+import { jsonSuccess, jsonError, withCors } from "../../../_lib/response.js";
+import {
+  generateRequestId,
+  logInfo,
+  logError,
+  logComplete,
+} from "../../../_lib/logging.js";
 import {
   getEffectiveOrigin,
   isAllowedOrigin,
   handleCorsPreflightIfNeeded,
-} from "../../_middleware/cors.js";
-import {
-  getAuthContext,
-  deleteAllUserTokens,
-} from "../../_middleware/auth.js";
-import type { User, UserProfile } from "../../_lib/types.js";
+} from "../../../_middleware/cors.js";
+import { getAuthContext, deleteAllUserTokens } from "../../../_middleware/auth.js";
+import type { User, UserProfile } from "../../../_lib/types.js";
 
 // =============================================================================
 // Configuration
@@ -49,12 +51,17 @@ const BanUserSchema = z.object({
 export default async function handler(req: Request): Promise<Response> {
   const requestId = generateRequestId();
   const startTime = performance.now();
-  
+
   // CORS handling
   const origin = getEffectiveOrigin(req);
-  const preflightResponse = handleCorsPreflightIfNeeded(req, ["GET", "DELETE", "PATCH", "OPTIONS"]);
+  const preflightResponse = handleCorsPreflightIfNeeded(req, [
+    "GET",
+    "DELETE",
+    "PATCH",
+    "OPTIONS",
+  ]);
   if (preflightResponse) return preflightResponse;
-  
+
   if (!isAllowedOrigin(origin)) {
     return jsonError(validationError("Unauthorized origin"));
   }
@@ -133,7 +140,10 @@ export default async function handler(req: Request): Promise<Response> {
       // Delete all tokens
       const deletedTokens = await deleteAllUserTokens(targetUsername);
 
-      logInfo(requestId, `User deleted: ${targetUsername}, tokens revoked: ${deletedTokens}`);
+      logInfo(
+        requestId,
+        `User deleted: ${targetUsername}, tokens revoked: ${deletedTokens}`
+      );
       logComplete(requestId, startTime, 200);
 
       const response = jsonSuccess({
@@ -157,7 +167,9 @@ export default async function handler(req: Request): Promise<Response> {
         const rawBody = await req.json();
         const parsed = BanUserSchema.safeParse(rawBody);
         if (!parsed.success) {
-          const response = jsonError(validationError("Invalid request body", parsed.error.format()));
+          const response = jsonError(
+            validationError("Invalid request body", parsed.error.format())
+          );
           return withCors(response, origin);
         }
         body = parsed.data;
@@ -166,7 +178,10 @@ export default async function handler(req: Request): Promise<Response> {
         return withCors(response, origin);
       }
 
-      logInfo(requestId, `${body.banned ? "Banning" : "Unbanning"} user: ${targetUsername}`);
+      logInfo(
+        requestId,
+        `${body.banned ? "Banning" : "Unbanning"} user: ${targetUsername}`
+      );
 
       const userData = await redis.get<User | string>(userKey);
       if (!userData) {
@@ -204,7 +219,6 @@ export default async function handler(req: Request): Promise<Response> {
     // Method not allowed
     const response = jsonError(validationError("Method not allowed"));
     return withCors(response, origin);
-
   } catch (error) {
     logError(requestId, "Admin user error", error);
     logComplete(requestId, startTime, 500);

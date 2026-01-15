@@ -83,9 +83,20 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const fetchMessages = useCallback(async () => {
     if (!currentUser || !authToken) return;
     try {
-      // TODO: Add /api/admin/users/:username/messages endpoint
-      // For now, messages are not loaded in the new API structure
-      setMessages([]);
+      const response = await fetch(
+        `/api/admin/users/${encodeURIComponent(username)}/messages?limit=50`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "x-username": currentUser,
+          },
+        }
+      );
+      if (response.ok) {
+        const responseData = await response.json();
+        const data = responseData.data || responseData;
+        setMessages(data.messages || []);
+      }
     } catch (error) {
       console.error("Failed to fetch messages:", error);
     }

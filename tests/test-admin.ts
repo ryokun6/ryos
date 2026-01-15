@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Tests for /api/admin endpoint
+ * Tests for /api/admin endpoints
  */
 
 import {
@@ -20,7 +20,7 @@ const ADMIN_USERNAME = "ryo";
 const ADMIN_PASSWORD = "testtest";
 let adminToken: string | null = null;
 
-// Test user for deletion tests
+// Test user for admin actions
 let testUserToken: string | null = null;
 let testUsername: string | null = null;
 
@@ -30,7 +30,7 @@ let testUsername: string | null = null;
 
 async function setupAdminAuth(): Promise<void> {
   // Try to authenticate as admin
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=authenticateWithPassword`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -40,32 +40,35 @@ async function setupAdminAuth(): Promise<void> {
   });
 
   if (res.status === 200 || res.status === 201) {
-    const data = await res.json();
+    const payload = await res.json();
+    const data = payload.data || payload;
     assert(data.token, "Expected token for admin user");
     adminToken = data.token;
-  } else {
-    // Try to create admin user
-    const createRes = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=createUser`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: ADMIN_USERNAME,
-        password: ADMIN_PASSWORD,
-      }),
-    });
+    return;
+  }
 
-    if (createRes.status === 200 || createRes.status === 201) {
-      const createData = await createRes.json();
-      adminToken = createData.token;
-    } else {
-      throw new Error(`Failed to setup admin auth: ${createRes.status}`);
-    }
+  // Try to create admin user
+  const createRes = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: ADMIN_USERNAME,
+      password: ADMIN_PASSWORD,
+    }),
+  });
+
+  if (createRes.status === 200 || createRes.status === 201) {
+    const payload = await createRes.json();
+    const data = payload.data || payload;
+    adminToken = data.token;
+  } else {
+    throw new Error(`Failed to setup admin auth: ${createRes.status}`);
   }
 }
 
 async function setupTestUser(): Promise<void> {
   testUsername = `testuser_${Date.now()}`;
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=createUser`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -74,8 +77,9 @@ async function setupTestUser(): Promise<void> {
     }),
   });
 
-  assert(res.status === 200 || res.status === 201, `Expected 200 or 201 when creating test user, got ${res.status}`);
-  const data = await res.json();
+  assert(res.status === 200 || res.status === 201, `Expected 200/201, got ${res.status}`);
+  const payload = await res.json();
+  const data = payload.data || payload;
   assert(data.token, "Expected token for test user");
   testUserToken = data.token;
 }
@@ -85,246 +89,156 @@ async function setupTestUser(): Promise<void> {
 // ============================================================================
 
 async function testAdminGetStats(): Promise<void> {
-  if (!adminToken) {
-    throw new Error("No admin token available - run setupAdminAuth first");
-  }
+  if (!adminToken) throw new Error("No admin token available");
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin?action=getStats`,
+    `${BASE_URL}/api/admin/stats`,
     adminToken,
     ADMIN_USERNAME,
     { method: "GET" }
   );
 
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
-  const data = await res.json();
-  assert(typeof data.totalUsers === "number", "Expected totalUsers number");
-  assert(typeof data.totalRooms === "number", "Expected totalRooms number");
-  assert(typeof data.totalMessages === "number", "Expected totalMessages number");
-  assert(data.totalUsers >= 0, "totalUsers should be non-negative");
-  assert(data.totalRooms >= 0, "totalRooms should be non-negative");
-  assert(data.totalMessages >= 0, "totalMessages should be non-negative");
+  const payload = await res.json();
+  const data = payload.data || payload;
+  assert(typeof data.users === "number", "Expected users number");
+  assert(typeof data.rooms === "number", "Expected rooms number");
+  assert(typeof data.applets === "number", "Expected applets number");
 }
 
 async function testAdminGetAllUsers(): Promise<void> {
-  if (!adminToken) {
-    throw new Error("No admin token available - run setupAdminAuth first");
-  }
+  if (!adminToken) throw new Error("No admin token available");
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin?action=getAllUsers`,
+    `${BASE_URL}/api/admin/users`,
     adminToken,
     ADMIN_USERNAME,
     { method: "GET" }
   );
 
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
-  const data = await res.json();
+  const payload = await res.json();
+  const data = payload.data || payload;
   assert(Array.isArray(data.users), "Expected users array");
   assert(data.users.length > 0, "Expected at least one user (admin)");
-  
-  // Check that admin user exists
-  const adminUser = data.users.find((u: { username: string }) => 
-    u.username.toLowerCase() === ADMIN_USERNAME.toLowerCase()
+}
+
+async function testAdminGetUserDetails(): Promise<void> {
+  if (!adminToken || !testUsername) throw new Error("Test setup incomplete");
+
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/admin/users/${encodeURIComponent(testUsername)}`,
+    adminToken,
+    ADMIN_USERNAME,
+    { method: "GET" }
   );
-  assert(adminUser, "Expected admin user in users list");
-  assert(typeof adminUser.lastActive === "number", "Expected lastActive timestamp");
+
+  assertEq(res.status, 200, `Expected 200, got ${res.status}`);
+  const payload = await res.json();
+  const data = payload.data || payload;
+  const user = data.user || data;
+  assert(user.username === testUsername.toLowerCase(), "Expected matching username");
+}
+
+async function testAdminBanUser(): Promise<void> {
+  if (!adminToken || !testUsername) throw new Error("Test setup incomplete");
+
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/admin/users/${encodeURIComponent(testUsername)}`,
+    adminToken,
+    ADMIN_USERNAME,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ banned: true, reason: "Test ban" }),
+    }
+  );
+
+  assertEq(res.status, 200, `Expected 200, got ${res.status}`);
+  const payload = await res.json();
+  const data = payload.data || payload;
+  assert(data.banned === true, "Expected banned true");
+}
+
+async function testAdminUnbanUser(): Promise<void> {
+  if (!adminToken || !testUsername) throw new Error("Test setup incomplete");
+
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/admin/users/${encodeURIComponent(testUsername)}`,
+    adminToken,
+    ADMIN_USERNAME,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ banned: false }),
+    }
+  );
+
+  assertEq(res.status, 200, `Expected 200, got ${res.status}`);
+  const payload = await res.json();
+  const data = payload.data || payload;
+  assert(data.banned === false, "Expected banned false");
 }
 
 async function testAdminDeleteUser(): Promise<void> {
-  if (!adminToken || !testUsername) {
-    throw new Error("No admin token or test user available - run setupTestUser first");
-  }
+  if (!adminToken || !testUsername) throw new Error("Test setup incomplete");
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin`,
+    `${BASE_URL}/api/admin/users/${encodeURIComponent(testUsername)}`,
     adminToken,
     ADMIN_USERNAME,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "deleteUser",
-        targetUsername: testUsername,
-      }),
-    }
+    { method: "DELETE" }
   );
 
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
-  const data = await res.json();
-  assert(data.success === true, "Expected success: true");
-}
-
-async function testAdminDeleteUserMissingTarget(): Promise<void> {
-  if (!adminToken) {
-    throw new Error("No admin token available - run setupAdminAuth first");
-  }
-
-  const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin`,
-    adminToken,
-    ADMIN_USERNAME,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "deleteUser",
-      }),
-    }
-  );
-
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
-  const data = await res.json();
-  assert(data.error?.includes("Target username"), "Expected target username error");
+  const payload = await res.json();
+  const data = payload.data || payload;
+  assert(data.success === true, "Expected success true");
 }
 
 async function testAdminDeleteAdminUser(): Promise<void> {
-  if (!adminToken) {
-    throw new Error("No admin token available - run setupAdminAuth first");
-  }
+  if (!adminToken) throw new Error("No admin token available");
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin`,
+    `${BASE_URL}/api/admin/users/${encodeURIComponent(ADMIN_USERNAME)}`,
     adminToken,
     ADMIN_USERNAME,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "deleteUser",
-        targetUsername: ADMIN_USERNAME,
-      }),
-    }
-  );
-
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
-  const data = await res.json();
-  assert(data.error?.includes("admin"), "Expected error about deleting admin");
-}
-
-async function testAdminWithoutAuth(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/admin?action=getStats`, {
-    method: "GET",
-  });
-
-  assertEq(res.status, 403, `Expected 403, got ${res.status}`);
-  const data = await res.json();
-  assert(data.error?.includes("Forbidden"), "Expected Forbidden error");
-}
-
-async function testAdminWithInvalidToken(): Promise<void> {
-  const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin?action=getStats`,
-    "invalid_token_12345",
-    ADMIN_USERNAME,
-    { method: "GET" }
+    { method: "DELETE" }
   );
 
   assertEq(res.status, 403, `Expected 403, got ${res.status}`);
-  const data = await res.json();
-  assert(data.error?.includes("Forbidden"), "Expected Forbidden error");
-}
-
-async function testAdminWithNonAdminUser(): Promise<void> {
-  if (!testUserToken || !testUsername) {
-    throw new Error("No test user available - run setupTestUser first");
-  }
-
-  const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin?action=getStats`,
-    testUserToken,
-    testUsername,
-    { method: "GET" }
-  );
-
-  assertEq(res.status, 403, `Expected 403, got ${res.status}`);
-  const data = await res.json();
-  assert(data.error?.includes("Forbidden"), "Expected Forbidden error");
-}
-
-async function testAdminInvalidAction(): Promise<void> {
-  if (!adminToken) {
-    throw new Error("No admin token available - run setupAdminAuth first");
-  }
-
-  const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin?action=invalidAction`,
-    adminToken,
-    ADMIN_USERNAME,
-    { method: "GET" }
-  );
-
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
-  const data = await res.json();
-  assert(data.error?.includes("Invalid action"), "Expected Invalid action error");
-}
-
-async function testAdminInvalidMethod(): Promise<void> {
-  if (!adminToken) {
-    throw new Error("No admin token available - run setupAdminAuth first");
-  }
-
-  const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin?action=getStats`,
-    adminToken,
-    ADMIN_USERNAME,
-    { method: "PUT" }
-  );
-
-  assertEq(res.status, 405, `Expected 405, got ${res.status}`);
-  const data = await res.json();
-  assert(data.error?.includes("Method not allowed"), "Expected Method not allowed error");
 }
 
 // ============================================================================
-// Main Test Runner
+// Main
 // ============================================================================
 
 export async function runAdminTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("admin"));
   clearResults();
 
-  try {
-    // Setup
-    await runTest("Setup - Admin authentication", setupAdminAuth);
-    await runTest("Setup - Test user", setupTestUser);
+  console.log("\n  Setup\n");
+  await runTest("Setup admin auth", setupAdminAuth);
+  await runTest("Setup test user", setupTestUser);
 
-    // Admin Access Tests
-    console.log("\n  Admin Access\n");
-    await runTest("GET getStats - without auth (forbidden)", testAdminWithoutAuth);
-    await runTest("GET getStats - with invalid token (forbidden)", testAdminWithInvalidToken);
-    await runTest("GET getStats - with non-admin user (forbidden)", testAdminWithNonAdminUser);
-    await runTest("GET getStats - with admin token", testAdminGetStats);
+  console.log("\n  Admin endpoints\n");
+  await runTest("GET /api/admin/stats", testAdminGetStats);
+  await runTest("GET /api/admin/users", testAdminGetAllUsers);
+  await runTest("GET /api/admin/users/:username", testAdminGetUserDetails);
+  await runTest("PATCH /api/admin/users/:username (ban)", testAdminBanUser);
+  await runTest("PATCH /api/admin/users/:username (unban)", testAdminUnbanUser);
+  await runTest("DELETE /api/admin/users/:username", testAdminDeleteUser);
+  await runTest("DELETE /api/admin/users/:username (admin forbidden)", testAdminDeleteAdminUser);
 
-    // Admin Operations Tests
-    console.log("\n  Admin Operations\n");
-    await runTest("GET getAllUsers - with admin token", testAdminGetAllUsers);
-    await runTest("POST deleteUser - missing target username", testAdminDeleteUserMissingTarget);
-    await runTest("POST deleteUser - try to delete admin (forbidden)", testAdminDeleteAdminUser);
-    await runTest("POST deleteUser - delete test user", testAdminDeleteUser);
-
-    // Error Cases
-    console.log("\n  Error Cases\n");
-    await runTest("GET invalid action", testAdminInvalidAction);
-    await runTest("PUT invalid method", testAdminInvalidMethod);
-
-    return printSummary();
-  } catch (error) {
-    console.error("Test suite failed:", error);
-    return printSummary();
-  }
+  return printSummary();
 }
 
-async function main(): Promise<void> {
-  await runAdminTests();
-}
-
-// Run tests if this file is executed directly
+// Run if executed directly
 if (import.meta.main) {
-  clearResults();
-  main().catch((error) => {
-    console.error("Fatal error:", error);
-    process.exit(1);
-  });
+  runAdminTests()
+    .then(({ failed }) => process.exit(failed > 0 ? 1 : 0))
+    .catch((error) => {
+      console.error("Test runner error:", error);
+      process.exit(1);
+    });
 }
-

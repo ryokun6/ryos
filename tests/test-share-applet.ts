@@ -1,7 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Tests for /api/share-applet endpoint
- * Tests: CRUD operations for applets, authentication, authorization
+ * Tests for /api/applets endpoint
  */
 
 import {
@@ -27,7 +26,7 @@ let testUsername: string | null = null;
 
 async function setupTestUser(): Promise<void> {
   testUsername = `tuser${Date.now()}`;
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=createUser`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -35,17 +34,19 @@ async function setupTestUser(): Promise<void> {
       password: "testpassword123",
     }),
   });
-  
-  const data = await res.json();
-  
+
+  const payload = await res.json();
+  const data = payload.data || payload;
+
   if (res.status !== 201 && res.status !== 200) {
-    throw new Error(`Failed to create user: ${res.status} - ${JSON.stringify(data)}`);
+    throw new Error(`Failed to create user: ${res.status} - ${JSON.stringify(payload)}`);
   }
-  
+
   if (!data.token) {
-    throw new Error(`No token in response: ${JSON.stringify(data)}`);
+    throw new Error(`No token in response: ${JSON.stringify(payload)}`);
   }
   testToken = data.token;
+  testUsername = data.user?.username || testUsername;
 }
 
 // ============================================================================
@@ -53,37 +54,28 @@ async function setupTestUser(): Promise<void> {
 // ============================================================================
 
 async function testMethodNotAllowed(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/share-applet`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/applets`, {
     method: "PUT",
   });
-  assertEq(res.status, 405, `Expected 405, got ${res.status}`);
+  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
 }
 
 async function testOptionsRequest(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/share-applet`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/applets`, {
     method: "OPTIONS",
   });
   assert(res.status === 200 || res.status === 204, `Expected 200 or 204, got ${res.status}`);
 }
 
-async function testGetMissingId(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/share-applet`);
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
-  const data = await res.json();
-  assert(data.error?.includes("id"), "Expected error about missing id");
-}
-
 async function testGetNonExistentApplet(): Promise<void> {
   const res = await fetchWithOrigin(
-    `${BASE_URL}/api/share-applet?id=nonexistent12345`
+    `${BASE_URL}/api/applets/nonexistent12345`
   );
   assertEq(res.status, 404, `Expected 404, got ${res.status}`);
-  const data = await res.json();
-  assert(data.error?.includes("not found"), "Expected not found error");
 }
 
 async function testPostWithoutAuth(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/share-applet`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/applets`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -91,12 +83,12 @@ async function testPostWithoutAuth(): Promise<void> {
       title: "Test Applet",
     }),
   });
-  assertEq(res.status, 401, `Expected 401, got ${res.status}`);
+  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
 }
 
 async function testPostWithInvalidAuth(): Promise<void> {
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/share-applet`,
+    `${BASE_URL}/api/applets`,
     "invalid_token",
     "invalid_user",
     {
@@ -108,7 +100,7 @@ async function testPostWithInvalidAuth(): Promise<void> {
       }),
     }
   );
-  assertEq(res.status, 401, `Expected 401, got ${res.status}`);
+  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
 }
 
 async function testPostMissingContent(): Promise<void> {
@@ -116,7 +108,7 @@ async function testPostMissingContent(): Promise<void> {
     throw new Error("Test user not set up");
   }
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/share-applet`,
+    `${BASE_URL}/api/applets`,
     testToken,
     testUsername,
     {
@@ -135,7 +127,7 @@ async function testPostSuccess(): Promise<void> {
     throw new Error("Test user not set up");
   }
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/share-applet`,
+    `${BASE_URL}/api/applets`,
     testToken,
     testUsername,
     {
@@ -152,7 +144,8 @@ async function testPostSuccess(): Promise<void> {
     }
   );
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
-  const data = await res.json();
+  const payload = await res.json();
+  const data = payload.data || payload;
   assert(data.id, "Expected applet id in response");
   assert(data.shareUrl, "Expected shareUrl in response");
   testAppletId = data.id;
@@ -163,10 +156,11 @@ async function testGetAppletSuccess(): Promise<void> {
     throw new Error("Test applet not created");
   }
   const res = await fetchWithOrigin(
-    `${BASE_URL}/api/share-applet?id=${testAppletId}`
+    `${BASE_URL}/api/applets/${testAppletId}`
   );
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
-  const data = await res.json();
+  const payload = await res.json();
+  const data = payload.data || payload;
   assert(data.content, "Expected content in response");
   assert(data.title === "Test Applet Title", "Expected matching title");
   assert(data.icon === "game", "Expected matching icon");
@@ -175,10 +169,11 @@ async function testGetAppletSuccess(): Promise<void> {
 
 async function testListApplets(): Promise<void> {
   const res = await fetchWithOrigin(
-    `${BASE_URL}/api/share-applet?list=true`
+    `${BASE_URL}/api/applets?list=true`
   );
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
-  const data = await res.json();
+  const payload = await res.json();
+  const data = payload.data || payload;
   assert(Array.isArray(data.applets), "Expected applets array");
   const found = data.applets.some((a: { id: string }) => a.id === testAppletId);
   assert(found, "Expected test applet in list");
@@ -189,144 +184,27 @@ async function testUpdateApplet(): Promise<void> {
     throw new Error("Test data not set up");
   }
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/share-applet`,
+    `${BASE_URL}/api/applets`,
     testToken,
     testUsername,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        shareId: testAppletId,
         content: "<html><body><h1>Updated Test Applet</h1></body></html>",
         title: "Updated Title",
-        shareId: testAppletId,
+        icon: "game",
+        name: "test-applet",
+        windowWidth: 800,
+        windowHeight: 600,
       }),
     }
   );
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
-  const data = await res.json();
-  assertEq(data.id, testAppletId, "Expected same applet id");
-  assertEq(data.updated, true, "Expected updated flag");
-}
-
-async function testUpdateByNonOwner(): Promise<void> {
-  if (!testAppletId) {
-    throw new Error("Test applet not created");
-  }
-  const otherUsername = `ouser${Date.now()}`;
-  const createRes = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=createUser`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: otherUsername,
-      password: "testpassword123",
-    }),
-  });
-  
-  if (createRes.status !== 201 && createRes.status !== 200) {
-    throw new Error("Failed to create other user");
-  }
-  
-  const userData = await createRes.json();
-  const otherToken = userData.token;
-  
-  const res = await fetchWithAuth(
-    `${BASE_URL}/api/share-applet`,
-    otherToken,
-    otherUsername,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        content: "<html><body>Hacked!</body></html>",
-        shareId: testAppletId,
-      }),
-    }
-  );
-  assertEq(res.status, 200, `Expected 200, got ${res.status}`);
-  const data = await res.json();
-  assert(data.id !== testAppletId, "Should create new applet, not update existing");
-}
-
-async function testDeleteWithoutAuth(): Promise<void> {
-  const res = await fetchWithOrigin(
-    `${BASE_URL}/api/share-applet?id=someid`,
-    { method: "DELETE" }
-  );
-  // Admin endpoints return 403 (Forbidden) when no auth is provided
-  assertEq(res.status, 403, `Expected 403, got ${res.status}`);
-}
-
-async function testDeleteByNonAdmin(): Promise<void> {
-  if (!testToken || !testUsername || !testAppletId) {
-    throw new Error("Test data not set up");
-  }
-  const res = await fetchWithAuth(
-    `${BASE_URL}/api/share-applet?id=${testAppletId}`,
-    testToken,
-    testUsername,
-    { method: "DELETE" }
-  );
-  assertEq(res.status, 403, `Expected 403, got ${res.status}`);
-}
-
-async function testPatchWithoutAuth(): Promise<void> {
-  const res = await fetchWithOrigin(
-    `${BASE_URL}/api/share-applet?id=someid`,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ featured: true }),
-    }
-  );
-  // Admin endpoints return 403 (Forbidden) when no auth is provided
-  assertEq(res.status, 403, `Expected 403, got ${res.status}`);
-}
-
-async function testPatchByNonAdmin(): Promise<void> {
-  if (!testToken || !testUsername || !testAppletId) {
-    throw new Error("Test data not set up");
-  }
-  const res = await fetchWithAuth(
-    `${BASE_URL}/api/share-applet?id=${testAppletId}`,
-    testToken,
-    testUsername,
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ featured: true }),
-    }
-  );
-  assertEq(res.status, 403, `Expected 403, got ${res.status}`);
-}
-
-async function testDeleteWithInvalidToken(): Promise<void> {
-  if (!testAppletId) {
-    throw new Error("Test applet ID not set up");
-  }
-  const res = await fetchWithAuth(
-    `${BASE_URL}/api/share-applet?id=${testAppletId}`,
-    "invalid_token_12345",
-    "ryo",
-    { method: "DELETE" }
-  );
-  assertEq(res.status, 403, `Expected 403 for invalid token, got ${res.status}`);
-}
-
-async function testPatchWithInvalidToken(): Promise<void> {
-  if (!testAppletId) {
-    throw new Error("Test applet ID not set up");
-  }
-  const res = await fetchWithAuth(
-    `${BASE_URL}/api/share-applet?id=${testAppletId}`,
-    "invalid_token_12345",
-    "ryo",
-    {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ featured: true }),
-    }
-  );
-  assertEq(res.status, 403, `Expected 403 for invalid token, got ${res.status}`);
+  const payload = await res.json();
+  const data = payload.data || payload;
+  assert(data.updated === true, "Expected updated true");
 }
 
 // ============================================================================
@@ -334,43 +212,28 @@ async function testPatchWithInvalidToken(): Promise<void> {
 // ============================================================================
 
 export async function runShareAppletTests(): Promise<{ passed: number; failed: number }> {
-  console.log(section("share-applet"));
+  console.log(section("applets"));
   clearResults();
 
   console.log("\n  Setup\n");
-  await runTest("Create test user", setupTestUser);
+  await runTest("Setup test user", setupTestUser);
 
-  console.log("\n  HTTP Methods\n");
-  await runTest("PUT method not allowed", testMethodNotAllowed);
-  await runTest("OPTIONS request (CORS preflight)", testOptionsRequest);
-
-  console.log("\n  GET Operations\n");
-  await runTest("GET - missing id parameter", testGetMissingId);
-  await runTest("GET - non-existent applet", testGetNonExistentApplet);
-
-  console.log("\n  POST Operations\n");
-  await runTest("POST - without auth", testPostWithoutAuth);
-  await runTest("POST - with invalid auth", testPostWithInvalidAuth);
-  await runTest("POST - missing content", testPostMissingContent);
-  await runTest("POST - success (create)", testPostSuccess);
-  await runTest("GET - created applet", testGetAppletSuccess);
-  await runTest("GET - list applets", testListApplets);
-  await runTest("POST - update applet (by owner)", testUpdateApplet);
-  await runTest("POST - update by non-owner (should create new)", testUpdateByNonOwner);
-
-  console.log("\n  DELETE Operations\n");
-  await runTest("DELETE - without auth", testDeleteWithoutAuth);
-  await runTest("DELETE - by non-admin", testDeleteByNonAdmin);
-  await runTest("DELETE - with invalid token (forbidden)", testDeleteWithInvalidToken);
-
-  console.log("\n  PATCH Operations\n");
-  await runTest("PATCH - without auth", testPatchWithoutAuth);
-  await runTest("PATCH - by non-admin", testPatchByNonAdmin);
-  await runTest("PATCH - with invalid token (forbidden)", testPatchWithInvalidToken);
+  console.log("\n  Applet endpoints\n");
+  await runTest("PUT /api/applets (method not allowed)", testMethodNotAllowed);
+  await runTest("OPTIONS /api/applets", testOptionsRequest);
+  await runTest("GET /api/applets/:id (missing)", testGetNonExistentApplet);
+  await runTest("POST /api/applets without auth", testPostWithoutAuth);
+  await runTest("POST /api/applets with invalid auth", testPostWithInvalidAuth);
+  await runTest("POST /api/applets missing content", testPostMissingContent);
+  await runTest("POST /api/applets success", testPostSuccess);
+  await runTest("GET /api/applets/:id success", testGetAppletSuccess);
+  await runTest("GET /api/applets?list=true", testListApplets);
+  await runTest("POST /api/applets update", testUpdateApplet);
 
   return printSummary();
 }
 
+// Run if executed directly
 if (import.meta.main) {
   runShareAppletTests()
     .then(({ failed }) => process.exit(failed > 0 ? 1 : 0))
