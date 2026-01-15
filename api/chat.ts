@@ -3,6 +3,7 @@ import {
   smoothStream,
   convertToModelMessages,
   stepCountIs,
+  type UIMessage,
 } from "ai";
 import { geolocation } from "@vercel/functions";
 import {
@@ -28,6 +29,28 @@ import { getEffectiveOrigin, isAllowedOrigin } from "./_utils/cors.js";
 
 // Central list of supported theme IDs for tool validation
 const themeIds = ["system7", "macosx", "xp", "win98"] as const;
+
+// Helper to ensure messages are in UIMessage format for AI SDK v6
+// Handles both simple { role, content } format and UIMessage format with parts
+type SimpleMessage = { id?: string; role: string; content?: string; parts?: Array<{ type: string; text?: string }> };
+const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
+  return messages.map((msg, index) => {
+    // If message already has parts, it's in UIMessage format
+    if (msg.parts && Array.isArray(msg.parts)) {
+      return {
+        id: msg.id || `msg-${index}`,
+        role: msg.role as UIMessage['role'],
+        parts: msg.parts,
+      } as UIMessage;
+    }
+    // Convert simple { role, content } format to UIMessage format
+    return {
+      id: msg.id || `msg-${index}`,
+      role: msg.role as UIMessage['role'],
+      parts: [{ type: 'text', text: msg.content || '' }],
+    } as UIMessage;
+  });
+};
 
 // Shared media control schema validation refinement
 const mediaControlRefinement = (data: { action: string; id?: string; title?: string; artist?: string }, ctx: z.RefinementCtx) => {
@@ -142,14 +165,14 @@ interface SystemState {
   userOS?: string;
   /** User's system locale (e.g., "en", "zh-TW", "ja", "ko", "fr", "de", "es", "pt", "it", "ru") */
   locale?: string;
-  internetExplorer: {
+  internetExplorer?: {
     url: string;
     year: string;
     currentPageTitle: string | null;
     /** Markdown form of the AI generated HTML (more token-efficient than raw HTML) */
     aiGeneratedMarkdown?: string | null;
   };
-  video: {
+  video?: {
     currentVideo: {
       id: string;
       title: string;
@@ -344,7 +367,7 @@ Background: None`;
   // Media Section
   let hasMedia = false;
 
-  if (systemState.video.currentVideo && systemState.video.isPlaying) {
+  if (systemState.video?.currentVideo && systemState.video.isPlaying) {
     if (!hasMedia) {
       prompt += `\n\n## MEDIA PLAYBACK`;
       hasMedia = true;
@@ -413,7 +436,7 @@ Karaoke: ${systemState.karaoke.currentTrack.title}${karaokeTrackArtist} (${karao
       (app) => app.appId === "internet-explorer"
     );
 
-  if (hasOpenInternetExplorer && systemState.internetExplorer.url) {
+  if (hasOpenInternetExplorer && systemState.internetExplorer?.url) {
     prompt += `\n\n## INTERNET EXPLORER
 URL: ${systemState.internetExplorer.url}
 Time Travel Year: ${systemState.internetExplorer.year}`;
@@ -713,7 +736,9 @@ export default async function handler(req: Request) {
     };
 
     // Convert UIMessages to ModelMessages for the AI model
-    const modelMessages = convertToModelMessages(messages);
+    // Ensure messages are in UIMessage format (handles both simple and parts-based formats)
+    const uiMessages = ensureUIMessageFormat(messages);
+    const modelMessages = await convertToModelMessages(uiMessages);
 
     // Merge all messages: static sys → dynamic sys → user/assistant turns
     const enrichedMessages = [

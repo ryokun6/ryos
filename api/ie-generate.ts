@@ -319,7 +319,7 @@ export default async function handler(req: Request) {
     };
 
     // Convert UIMessages to ModelMessages for the AI model (AI SDK v5)
-    const modelMessages = convertToModelMessages(incomingMessages);
+    const modelMessages = await convertToModelMessages(incomingMessages);
 
     const enrichedMessages: ModelMessage[] = [
       staticSystemMessage,
