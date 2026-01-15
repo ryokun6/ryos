@@ -147,7 +147,7 @@ export const useAppletActions = () => {
     try {
       const isUpdate = isAppletInstalled(applet.id);
       
-      const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(applet.id)}`));
+      const response = await fetch(getApiUrl(`/api/applets/${encodeURIComponent(applet.id)}`));
       if (!response.ok) {
         throw new Error("Failed to fetch applet");
       }

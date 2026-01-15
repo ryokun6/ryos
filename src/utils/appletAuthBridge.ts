@@ -104,7 +104,7 @@ export const APPLET_AUTH_BRIDGE_SCRIPT = `
           var shouldAugment = function (url) {
             try {
               var resolved = new URL(url, document.baseURI || window.location.origin);
-              return resolved.pathname === "/api/applet-ai";
+              return resolved.pathname === "/api/agents/applet";
             } catch (err) {
               return false;
             }

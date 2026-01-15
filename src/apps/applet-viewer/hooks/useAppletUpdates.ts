@@ -15,9 +15,11 @@ export function useAppletUpdates() {
     }
     setIsLoading(true);
     try {
-      const response = await fetch(getApiUrl("/api/share-applet?list=true"));
+      const response = await fetch(getApiUrl("/api/applets?list=true"));
       if (response.ok) {
-        const data = await response.json();
+        const responseData = await response.json();
+        // Handle both old format and new format {success: true, data: {...}}
+        const data = responseData.data || responseData;
         // Sort by createdAt descending (latest first)
         const sortedApplets = (data.applets || []).sort((a: Applet, b: Applet) => {
           return (b.createdAt || 0) - (a.createdAt || 0);

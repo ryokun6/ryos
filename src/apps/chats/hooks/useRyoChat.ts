@@ -127,7 +127,7 @@ export function useRyoChat({
     stop: stopRyo,
   } = useChat({
     transport: new DefaultChatTransport({
-      api: getApiUrl("/api/chat"),
+      api: getApiUrl("/api/agents/chat"),
       body: {
         systemState: getSystemState(),
       },
@@ -163,7 +163,7 @@ export function useRyoChat({
         headers["X-Username"] = username;
       }
 
-      await fetch(getApiUrl(`/api/chat-rooms?action=generateRyoReply`), {
+      await fetch(getApiUrl(`/api/agents/reply`), {
         method: "POST",
         headers,
         body: JSON.stringify({

@@ -418,13 +418,14 @@ export function ControlPanelsAppComponent({
         return;
       }
 
-      const response = await fetch(getApiUrl("/api/chat-rooms?action=logoutAllDevices"), {
+      const response = await fetch(getApiUrl("/api/auth/logout"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
           "X-Username": username,
         },
+        body: JSON.stringify({ all: true }),
       });
 
       const data = await response.json();

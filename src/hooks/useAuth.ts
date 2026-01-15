@@ -132,7 +132,7 @@ export function useAuth() {
 
           // Authenticate with password
           const response = await fetch(
-            "/api/chat-rooms?action=authenticateWithPassword",
+            "/api/auth/login",
             {
               method: "POST",
               headers: {
@@ -154,15 +154,18 @@ export function useAuth() {
           }
 
           const result = await response.json();
-          if (result.token) {
-            setAuthToken(result.token);
+          // Handle both old format {token: ...} and new format {success: true, data: {token: ...}}
+          const responseData = result.data || result;
+          if (responseData.token) {
+            setAuthToken(responseData.token);
             // Set username from the response to ensure it's properly stored
-            if (result.username) {
-              setUsername(result.username);
+            const responseUsername = responseData.username || responseData.user?.username;
+            if (responseUsername) {
+              setUsername(responseUsername);
             }
             // Track password login analytics
             track(APP_ANALYTICS.USER_LOGIN_PASSWORD, {
-              username: result.username || targetUsername,
+              username: responseUsername || targetUsername,
             });
             toast.success("Success", {
               description: "Logged in successfully with password",
@@ -183,14 +186,14 @@ export function useAuth() {
 
           // Test the token using the dedicated verification endpoint
           const testResponse = await fetch(
-            "/api/chat-rooms?action=verifyToken",
+            "/api/auth/verify",
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${input.trim()}`,
+                "X-Username": verifyUsernameInput.trim() || "",
               },
-              body: JSON.stringify({}),
             }
           );
 
@@ -207,19 +210,21 @@ export function useAuth() {
 
           // Parse the response to get validation details
           const result = await testResponse.json();
-          console.log("[useAuth] Token validation successful:", result);
+          // Handle both old format and new format {success: true, data: {...}}
+          const responseData = result.data || result;
+          console.log("[useAuth] Token validation successful:", responseData);
 
           // Token is valid, set it in the store
           setAuthToken(input.trim());
 
           // Set username from the response to ensure it's properly stored
-          if (result.username) {
-            setUsername(result.username);
+          if (responseData.username) {
+            setUsername(responseData.username);
           }
 
           // Track token login analytics
           track(APP_ANALYTICS.USER_LOGIN_TOKEN, {
-            username: result.username || "",
+            username: responseData.username || "",
           });
 
           toast.success("Success", {

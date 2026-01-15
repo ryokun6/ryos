@@ -87,10 +87,12 @@ export function CreateRoomDialog({
     setIsSearching(true);
     try {
       const response = await fetch(
-        `/api/chat-rooms?action=getUsers&search=${encodeURIComponent(query)}`
+        `/api/users?search=${encodeURIComponent(query)}`
       );
       if (response.ok) {
-        const data = await response.json();
+        const responseData = await response.json();
+        // Handle both old format and new format {success: true, data: {...}}
+        const data = responseData.data || responseData;
         const usersList = data.users || [];
         // Filter out current user
         const filteredUsers = usersList.filter(

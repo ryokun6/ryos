@@ -449,7 +449,7 @@ export function useFileSystem(
 
       try {
         const response = await fetch(
-          `/api/share-applet?id=${encodeURIComponent(shareId)}`
+          `/api/applets/${encodeURIComponent(shareId)}`
         );
 
         if (!response.ok) {
