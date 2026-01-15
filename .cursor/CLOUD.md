@@ -19,10 +19,6 @@ vercel dev               # Start Vercel dev server (recommended for API testing)
 
 # Build & Production
 bun run build            # TypeScript compile + Vite build
-bun run preview          # Preview production build
-
-# Code Quality
-bun run lint             # Run ESLint (note: existing linter warnings are expected)
 
 # Testing
 bun run test             # Run all API tests (requires server running)
