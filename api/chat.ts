@@ -52,6 +52,14 @@ const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
   });
 };
 
+const normalizeOptionalString = (value: unknown) => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length === 0 ? undefined : trimmed;
+  }
+  return value;
+};
+
 // Shared media control schema validation refinement
 const mediaControlRefinement = (data: { action: string; id?: string; title?: string; artist?: string }, ctx: z.RefinementCtx) => {
   const { action, id, title, artist } = data;
@@ -767,14 +775,12 @@ export default async function handler(req: Request) {
             .object({
               id: z.enum(appIds).describe("The app id to launch"),
               url: z
-                .string()
-                .optional()
+                .preprocess(normalizeOptionalString, z.string().optional())
                 .describe(
                   "For internet-explorer only: The URL to load in Internet Explorer. Omit https:// and www. from the URL."
                 ),
               year: z
-                .string()
-                .optional()
+                .preprocess(normalizeOptionalString, z.string().optional())
                 .describe(
                   "For internet-explorer only: The year for the Wayback Machine or AI generation. Allowed values: 'current', '1000 BC', '1 CE', '500', '800', '1000', '1200', '1400', '1600', '1700', '1800', years from 1900-1989, 1990-1995, any year from 1991 to current year-1, '2030', '2040', '2050', '2060', '2070', '2080', '2090', '2100', '2150', '2200', '2250', '2300', '2400', '2500', '2750', '3000'. Used only with Internet Explorer."
                 )
