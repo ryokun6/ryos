@@ -9,6 +9,11 @@ const isMobileDevice =
     navigator.userAgent
   );
 
+// Track whether the user has interacted with the document (required for
+// user-initiated sound policies).
+let hasUserInteracted = false;
+export const hasUserInteractedYet = () => hasUserInteracted;
+
 // Mobile Safari handles 8-16 concurrent sources efficiently, desktop can handle more
 const MAX_CONCURRENT_SOURCES = isMobileDevice ? 16 : 32;
 // Limit cache size to prevent memory issues on mobile
@@ -299,6 +304,7 @@ export const Sounds = {
 // Lazily preload sounds after the first user interaction (click or touch)
 if (typeof document !== "undefined") {
   const handleFirstInteraction = () => {
+    hasUserInteracted = true;
     // On mobile, only preload essential sounds to conserve memory
     const soundsToPreload = isMobileDevice
       ? [
