@@ -77,20 +77,21 @@ The following environment variables are required for full functionality:
 
 ## Testing
 
-Tests require a running server. Start the server first:
+For simple tests (build verification):
 ```bash
-vercel dev
+bun run build
 ```
 
-Then in another terminal:
+For running live server (when API or UI testing is needed):
 ```bash
-bun run test
+vercel dev
 ```
 
 ### Manual Testing Guidelines
 
 - **Skip computer use / GUI-driven testing** unless the user explicitly requests it
-- Prefer terminal-based testing (running test scripts, curl commands, checking build output)
+- For most changes, `bun run build` is sufficient to verify the code compiles correctly
+- Only start `vercel dev` when you need to test API endpoints or run the live application
 - Only use the `computerUse` subagent for manual browser testing when the user specifically asks for visual verification or UI testing
 
 ## Important Notes
