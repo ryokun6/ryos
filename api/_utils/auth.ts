@@ -6,11 +6,12 @@
 import { Redis } from "@upstash/redis";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
-import {
-  USER_EXPIRATION_TIME,
-  USER_TTL_SECONDS,
-  TOKEN_GRACE_PERIOD,
-} from "../chat-rooms/_constants.js";
+import { TTL } from "../_lib/constants.js";
+
+// Map old constant names to new
+const USER_EXPIRATION_TIME = TTL.USER_EXPIRATION;
+const USER_TTL_SECONDS = TTL.USER_EXPIRATION;
+const TOKEN_GRACE_PERIOD = TTL.TOKEN_GRACE_PERIOD;
 
 // ============================================================================
 // Types
