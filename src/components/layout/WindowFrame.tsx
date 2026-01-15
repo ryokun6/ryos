@@ -230,7 +230,9 @@ export function WindowFrame({
   });
 
   useEffect(() => {
-    if (!skipInitialSound && !isRestoredFromStorage && hasUserInteractedYet()) {
+    const shouldPlaySound = !skipInitialSound && !isRestoredFromStorage && hasUserInteractedYet();
+    console.log(`[WindowFrame] Window open sound check - skipInitialSound: ${skipInitialSound}, isRestoredFromStorage: ${isRestoredFromStorage}, hasUserInteracted: ${hasUserInteractedYet()}, shouldPlaySound: ${shouldPlaySound}`);
+    if (shouldPlaySound) {
       playWindowOpen();
     }
     // Remove initial mount state after animation
