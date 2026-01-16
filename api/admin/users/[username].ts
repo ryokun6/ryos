@@ -5,28 +5,28 @@
  */
 
 import { z } from "zod";
-import { getRedis } from "../../../_lib/redis.js";
-import { REDIS_KEYS, ADMIN_USERNAME, API_CONFIG } from "../../../_lib/constants.js";
+import { getRedis } from "../../_lib/redis.js";
+import { REDIS_KEYS, ADMIN_USERNAME, API_CONFIG } from "../../_lib/constants.js";
 import {
   validationError,
   notFound,
   forbidden,
   internalError,
-} from "../../../_lib/errors.js";
-import { jsonSuccess, jsonError, withCors } from "../../../_lib/response.js";
+} from "../../_lib/errors.js";
+import { jsonSuccess, jsonError, withCors } from "../../_lib/response.js";
 import {
   generateRequestId,
   logInfo,
   logError,
   logComplete,
-} from "../../../_lib/logging.js";
+} from "../../_lib/logging.js";
 import {
   getEffectiveOrigin,
   isAllowedOrigin,
   handleCorsPreflightIfNeeded,
-} from "../../../_middleware/cors.js";
-import { getAuthContext, deleteAllUserTokens } from "../../../_middleware/auth.js";
-import type { User, UserProfile } from "../../../_lib/types.js";
+} from "../../_middleware/cors.js";
+import { getAuthContext, deleteAllUserTokens } from "../../_middleware/auth.js";
+import type { User, UserProfile } from "../../_lib/types.js";
 
 // =============================================================================
 // Configuration
