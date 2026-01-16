@@ -266,7 +266,9 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       try {
         const response = await fetch(getApiUrl(`/api/applets/${encodeURIComponent(appletId)}`));
         if (response.ok) {
-          const data = await response.json();
+          const responseData = await response.json();
+          // Handle both old format and new format {success: true, data: {applet: {...}}}
+          const data = responseData.data?.applet || responseData;
           loadedRef.current.add(appletId);
           setAppletContents((prev) => {
             const next = new Map(prev);

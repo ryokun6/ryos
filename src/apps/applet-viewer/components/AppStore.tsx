@@ -182,7 +182,9 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
         try {
           const response = await fetch(getApiUrl(`/api/applets/${encodeURIComponent(sharedAppletId)}`));
           if (response.ok) {
-            const data = await response.json();
+            const responseData = await response.json();
+            // Handle both old format and new format {success: true, data: {applet: {...}}}
+            const data = responseData.data?.applet || responseData;
             const applet: Applet = {
               id: sharedAppletId,
               title: data.title,
@@ -231,7 +233,9 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
           }
           throw new Error("Failed to fetch applet content");
         })
-        .then((data) => {
+        .then((responseData) => {
+          // Handle both old format and new format {success: true, data: {applet: {...}}}
+          const data = responseData.data?.applet || responseData;
           setSelectedAppletContent(data.content || "");
         })
         .catch((error) => {

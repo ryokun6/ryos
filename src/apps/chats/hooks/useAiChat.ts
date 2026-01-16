@@ -804,7 +804,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   throw new Error(`Failed to list shared applets (HTTP ${response.status})`);
                 }
 
-                const data = await response.json();
+                const responseData = await response.json();
+                // Handle both old format and new format {success: true, data: {...}}
+                const data = responseData.data || responseData;
                 const allApplets: Array<{
                   id: string;
                   title?: string;
@@ -992,8 +994,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 try {
                   const response = await fetch(getApiUrl(`/api/applets/${encodeURIComponent(shareId)}`));
                   if (response.ok) {
-                    const data = await response.json();
-                    appletName = data.title || data.name || shareId;
+                    const responseData = await response.json();
+                    // Handle both old format and new format {success: true, data: {applet: {...}}}
+                    const appletData = responseData.data?.applet || responseData;
+                    appletName = appletData.title || appletData.name || shareId;
                   }
                 } catch {
                   // Fall back to shareId if fetch fails
@@ -1151,7 +1155,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   throw new Error(`Failed to fetch shared applet (HTTP ${response.status})`);
                 }
 
-                const data = await response.json();
+                const responseData = await response.json();
+                // Handle both old format and new format {success: true, data: {applet: {...}}}
+                const data = responseData.data?.applet || responseData;
                 const filesStore = useFilesStore.getState();
                 const installedEntry = Object.values(filesStore.items).find(
                   (item) =>

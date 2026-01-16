@@ -149,7 +149,9 @@ export function useAuth() {
 
           if (!response.ok) {
             const data = await response.json();
-            setVerifyError(data.error || "Invalid username or password");
+            // Handle both old format {error: "..."} and new format {success: false, error: {message: "..."}}
+            const errorMessage = typeof data.error === 'string' ? data.error : data.error?.message || "Invalid username or password";
+            setVerifyError(errorMessage);
             return;
           }
 

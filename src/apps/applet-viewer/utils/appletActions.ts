@@ -152,7 +152,9 @@ export const useAppletActions = () => {
         throw new Error("Failed to fetch applet");
       }
 
-      const data = await response.json();
+      const responseData = await response.json();
+      // Handle both old format and new format {success: true, data: {applet: {...}}}
+      const data = responseData.data?.applet || responseData;
       
       let defaultName = data.name || data.title || "shared-applet";
       const { remainingText } = extractEmojiIcon(defaultName);

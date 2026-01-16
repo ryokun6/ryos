@@ -399,7 +399,9 @@ export const useChatsStore = create<ChatsStoreState>()(
             if (response.ok) {
               const data = await response.json();
               console.log("[ChatsStore] checkHasPassword: Result", data);
-              set({ hasPassword: data.hasPassword });
+              // Handle both old format {hasPassword: bool} and new format {success: true, data: {hasPassword: bool}}
+              const hasPassword = data.data?.hasPassword ?? data.hasPassword;
+              set({ hasPassword });
               return { ok: true };
             } else {
               console.log(
@@ -718,11 +720,13 @@ export const useChatsStore = create<ChatsStoreState>()(
             );
 
             const data = await response.json();
+            // Handle both old format {token: ...} and new format {success: true, data: {token: ...}}
+            const token = data.data?.token || data.token;
 
-            if (response.ok && data.token) {
+            if (response.ok && token) {
               console.log("[ChatsStore] Auth token generated successfully");
-              set({ authToken: data.token });
-              saveAuthTokenToRecovery(data.token);
+              set({ authToken: token });
+              saveAuthTokenToRecovery(token);
               // Save token creation time
               saveTokenRefreshTime(currentUsername);
               return { ok: true };
@@ -736,13 +740,14 @@ export const useChatsStore = create<ChatsStoreState>()(
               );
               return { ok: false, error: "Token already exists on server" };
             } else {
+              const errorMsg = data.error?.message || data.error || "Failed to generate auth token";
               console.error(
                 "[ChatsStore] Failed to generate auth token:",
-                data.error
+                errorMsg
               );
               return {
                 ok: false,
-                error: data.error || "Failed to generate auth token",
+                error: errorMsg,
               };
             }
           } catch (error) {
@@ -801,13 +806,15 @@ export const useChatsStore = create<ChatsStoreState>()(
             }
 
             const data = await response.json();
-            if (data.token) {
+            // Handle both old format {token: ...} and new format {success: true, data: {token: ...}}
+            const token = data.data?.token || data.token;
+            if (token) {
               console.log("[ChatsStore] Auth token refreshed successfully");
-              set({ authToken: data.token });
-              saveAuthTokenToRecovery(data.token);
+              set({ authToken: token });
+              saveAuthTokenToRecovery(token);
               // Save token refresh time
               saveTokenRefreshTime(currentUsername);
-              return { ok: true, token: data.token };
+              return { ok: true, token };
             } else {
               console.error(
                 "[ChatsStore] Invalid response format for token refresh"

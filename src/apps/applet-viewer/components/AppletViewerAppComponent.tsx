@@ -1168,10 +1168,14 @@ export function AppletViewerAppComponent({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to share applet");
+        // Handle both old format {error: "..."} and new format {error: {message: "..."}}
+        const errorMessage = typeof errorData.error === 'string' ? errorData.error : errorData.error?.message || "Failed to share applet";
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      const responseData = await response.json();
+      // Handle both old format and new format {success: true, data: {...}}
+      const data = responseData.data || responseData;
       setShareId(data.id);
       setIsShareDialogOpen(true);
 
@@ -1241,7 +1245,9 @@ export function AppletViewerAppComponent({
             return;
           }
 
-          const data = await response.json();
+          const responseData = await response.json();
+          // Handle both old format and new format {success: true, data: {applet: {...}}}
+          const data = responseData.data?.applet || responseData;
           setSharedContent(data.content);
           setSharedName(data.name);
           setSharedTitle(data.title);
