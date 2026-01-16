@@ -110,7 +110,7 @@ async function testAdminGetAllUsers(): Promise<void> {
   if (!adminToken) throw new Error("No admin token available");
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin/users`,
+    `${BASE_URL}/api/admin/user`,
     adminToken,
     ADMIN_USERNAME,
     { method: "GET" }
@@ -127,7 +127,7 @@ async function testAdminGetUserDetails(): Promise<void> {
   if (!adminToken || !testUsername) throw new Error("Test setup incomplete");
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin/users/${encodeURIComponent(testUsername)}`,
+    `${BASE_URL}/api/admin/user/${encodeURIComponent(testUsername)}`,
     adminToken,
     ADMIN_USERNAME,
     { method: "GET" }
@@ -160,7 +160,7 @@ async function testAdminBanUser(): Promise<void> {
   if (!adminToken || !testUsername) throw new Error("Test setup incomplete");
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin/users/${encodeURIComponent(testUsername)}`,
+    `${BASE_URL}/api/admin/user/${encodeURIComponent(testUsername)}`,
     adminToken,
     ADMIN_USERNAME,
     {
@@ -180,7 +180,7 @@ async function testAdminUnbanUser(): Promise<void> {
   if (!adminToken || !testUsername) throw new Error("Test setup incomplete");
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin/users/${encodeURIComponent(testUsername)}`,
+    `${BASE_URL}/api/admin/user/${encodeURIComponent(testUsername)}`,
     adminToken,
     ADMIN_USERNAME,
     {
@@ -200,7 +200,7 @@ async function testAdminDeleteUser(): Promise<void> {
   if (!adminToken || !testUsername) throw new Error("Test setup incomplete");
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin/users/${encodeURIComponent(testUsername)}`,
+    `${BASE_URL}/api/admin/user/${encodeURIComponent(testUsername)}`,
     adminToken,
     ADMIN_USERNAME,
     { method: "DELETE" }
@@ -216,7 +216,7 @@ async function testAdminDeleteAdminUser(): Promise<void> {
   if (!adminToken) throw new Error("No admin token available");
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin/users/${encodeURIComponent(ADMIN_USERNAME)}`,
+    `${BASE_URL}/api/admin/user/${encodeURIComponent(ADMIN_USERNAME)}`,
     adminToken,
     ADMIN_USERNAME,
     { method: "DELETE" }
@@ -239,13 +239,13 @@ export async function runAdminTests(): Promise<{ passed: number; failed: number 
 
   console.log("\n  Admin endpoints\n");
   await runTest("GET /api/admin/stats", testAdminGetStats);
-  await runTest("GET /api/admin/users", testAdminGetAllUsers);
-  await runTest("GET /api/admin/users/:username", testAdminGetUserDetails);
+  await runTest("GET /api/admin/user", testAdminGetAllUsers);
+  await runTest("GET /api/admin/user/:username", testAdminGetUserDetails);
   await runTest("GET /api/admin/user-messages/:username", testAdminGetUserMessages);
-  await runTest("PATCH /api/admin/users/:username (ban)", testAdminBanUser);
-  await runTest("PATCH /api/admin/users/:username (unban)", testAdminUnbanUser);
-  await runTest("DELETE /api/admin/users/:username", testAdminDeleteUser);
-  await runTest("DELETE /api/admin/users/:username (admin forbidden)", testAdminDeleteAdminUser);
+  await runTest("PATCH /api/admin/user/:username (ban)", testAdminBanUser);
+  await runTest("PATCH /api/admin/user/:username (unban)", testAdminUnbanUser);
+  await runTest("DELETE /api/admin/user/:username", testAdminDeleteUser);
+  await runTest("DELETE /api/admin/user/:username (admin forbidden)", testAdminDeleteAdminUser);
 
   return printSummary();
 }

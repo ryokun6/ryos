@@ -334,7 +334,7 @@ async function testAdminListUsers(): Promise<void> {
     return;
   }
   
-  const res = await fetchWithOrigin(`${BASE_URL}/api/admin/users`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/admin/user`, {
     headers: {
       Authorization: `Bearer ${adminToken}`,
       "X-Username": ADMIN_USERNAME,
@@ -420,7 +420,7 @@ export async function runNewApiTests(): Promise<{ passed: number; failed: number
   // Admin tests
   section("Admin API");
   await runTest("GET /api/admin/stats - system stats", testAdminStats);
-  await runTest("GET /api/admin/users - list users", testAdminListUsers);
+  await runTest("GET /api/admin/user - list users", testAdminListUsers);
 
   // Applet tests
   section("Applets API");

@@ -60,7 +60,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     if (!currentUser || !authToken) return;
     try {
       const response = await fetch(
-        `/api/admin/users/${encodeURIComponent(username)}`,
+        `/api/admin/user/${encodeURIComponent(username)}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
@@ -112,7 +112,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const handleBan = async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await fetch(`/api/admin/users/${encodeURIComponent(username)}`, {
+      const response = await fetch(`/api/admin/user/${encodeURIComponent(username)}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -144,7 +144,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const handleUnban = async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await fetch(`/api/admin/users/${encodeURIComponent(username)}`, {
+      const response = await fetch(`/api/admin/user/${encodeURIComponent(username)}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -172,7 +172,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const handleDelete = async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await fetch(`/api/admin/users/${encodeURIComponent(username)}`, {
+      const response = await fetch(`/api/admin/user/${encodeURIComponent(username)}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${authToken}`,

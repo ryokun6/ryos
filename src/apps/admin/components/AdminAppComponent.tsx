@@ -168,7 +168,7 @@ export function AdminAppComponent({
 
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/admin/users`, {
+      const response = await fetch(`/api/admin/user`, {
         headers: {
           Authorization: `Bearer ${authToken}`,
           "x-username": username,
@@ -285,7 +285,7 @@ export function AdminAppComponent({
       if (!username || !authToken) return;
 
       try {
-        const response = await fetch(`/api/admin/users/${encodeURIComponent(targetUsername)}`, {
+        const response = await fetch(`/api/admin/user/${encodeURIComponent(targetUsername)}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${authToken}`,
