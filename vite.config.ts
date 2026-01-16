@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
-import vercel from "vite-plugin-vercel";
+// import vercel from "vite-plugin-vercel"; // Disabled - let Vercel handle API routes natively
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -133,10 +133,10 @@ export default defineConfig({
     },
     react(),
     tailwindcss(),
-    // Only include Vercel and PWA plugins when not building for Tauri
+    // Only include PWA plugin when not building for Tauri
     // Skip PWA plugin entirely in dev mode to save ~50MB memory (Workbox config is heavy)
-    ...(process.env.TAURI_ENV ? [] : isDev ? [vercel()] : [
-      vercel(),
+    // Note: API routes are handled natively by Vercel's @vercel/node builder
+    ...(process.env.TAURI_ENV ? [] : isDev ? [] : [
       VitePWA({
       registerType: "autoUpdate",
       manifestFilename: "manifest.json",
@@ -396,9 +396,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  vercel: {
-    defaultSupportsResponseStreaming: true,
-  },
+  // vercel config removed - API routes handled natively by Vercel
   // esbuild options for faster dev transforms
   esbuild: {
     // Remove legal comments to reduce memory overhead
