@@ -1,6 +1,5 @@
 {
-  "buildCommand": "bun run build",
-  "outputDirectory": "dist",
+  "framework": "vite",
   "devCommand": "bun run dev",
   "cleanUrls": true,
   "trailingSlash": false,
