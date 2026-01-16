@@ -1,26 +1,26 @@
 /**
- * GET /api/admin/users/:username/messages - Get recent messages by user
+ * GET /api/admin/user-messages/:username - Get recent messages by user
  */
 
 import { z } from "zod";
-import { API_CONFIG } from "../../../_lib/constants.js";
-import { validationError, internalError } from "../../../_lib/errors.js";
-import { jsonSuccess, jsonError, withCors } from "../../../_lib/response.js";
+import { API_CONFIG } from "../../_lib/constants.js";
+import { validationError, internalError } from "../../_lib/errors.js";
+import { jsonSuccess, jsonError, withCors } from "../../_lib/response.js";
 import {
   generateRequestId,
   logInfo,
   logError,
   logComplete,
-} from "../../../_lib/logging.js";
+} from "../../_lib/logging.js";
 import {
   getEffectiveOrigin,
   isAllowedOrigin,
   handleCorsPreflightIfNeeded,
-} from "../../../_middleware/cors.js";
-import { getAuthContext } from "../../../_middleware/auth.js";
-import { getAllRooms } from "../../../_services/rooms.js";
-import { getMessages } from "../../../_services/messages.js";
-import type { Message } from "../../../_lib/types.js";
+} from "../../_middleware/cors.js";
+import { getAuthContext } from "../../_middleware/auth.js";
+import { getAllRooms } from "../../_services/rooms.js";
+import { getMessages } from "../../_services/messages.js";
+import type { Message } from "../../_lib/types.js";
 
 // =============================================================================
 // Configuration
@@ -75,7 +75,8 @@ export default async function handler(req: Request): Promise<Response> {
 
   const url = new URL(req.url);
   const pathParts = url.pathname.split("/").filter(Boolean);
-  const targetUsername = pathParts[pathParts.length - 2]?.toLowerCase();
+  // Route is /api/admin/user-messages/:username
+  const targetUsername = pathParts[pathParts.length - 1]?.toLowerCase();
 
   if (!targetUsername) {
     const response = jsonError(validationError("Username is required"));

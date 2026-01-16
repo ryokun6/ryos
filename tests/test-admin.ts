@@ -144,7 +144,7 @@ async function testAdminGetUserMessages(): Promise<void> {
   if (!adminToken || !testUsername) throw new Error("Test setup incomplete");
 
   const res = await fetchWithAuth(
-    `${BASE_URL}/api/admin/users/${encodeURIComponent(testUsername)}/messages?limit=10`,
+    `${BASE_URL}/api/admin/user-messages/${encodeURIComponent(testUsername)}?limit=10`,
     adminToken,
     ADMIN_USERNAME,
     { method: "GET" }
@@ -241,7 +241,7 @@ export async function runAdminTests(): Promise<{ passed: number; failed: number 
   await runTest("GET /api/admin/stats", testAdminGetStats);
   await runTest("GET /api/admin/users", testAdminGetAllUsers);
   await runTest("GET /api/admin/users/:username", testAdminGetUserDetails);
-  await runTest("GET /api/admin/users/:username/messages", testAdminGetUserMessages);
+  await runTest("GET /api/admin/user-messages/:username", testAdminGetUserMessages);
   await runTest("PATCH /api/admin/users/:username (ban)", testAdminBanUser);
   await runTest("PATCH /api/admin/users/:username (unban)", testAdminUnbanUser);
   await runTest("DELETE /api/admin/users/:username", testAdminDeleteUser);

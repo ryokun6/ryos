@@ -84,7 +84,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     if (!currentUser || !authToken) return;
     try {
       const response = await fetch(
-        `/api/admin/users/${encodeURIComponent(username)}/messages?limit=50`,
+        `/api/admin/user-messages/${encodeURIComponent(username)}?limit=50`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
