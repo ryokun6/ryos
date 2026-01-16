@@ -1,5 +1,12 @@
 {
+  "buildCommand": "bun run build",
+  "outputDirectory": "dist",
   "devCommand": "bun run dev",
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "@vercel/node@3"
+    }
+  },
   "cleanUrls": true,
   "trailingSlash": false,
   "headers": [
