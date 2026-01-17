@@ -77,6 +77,7 @@ export function useIrcChat(isWindowOpen: boolean) {
   const reconnectAttemptRef = useRef(0);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const allowReconnectRef = useRef(true);
+  const currentRoomIdRef = useRef<string | null>(null);
 
   const rooms = useMemo(() => channels.map(mapChannelToRoom), [channels]);
 
@@ -198,7 +199,8 @@ export function useIrcChat(isWindowOpen: boolean) {
             [chatMessage.roomId]: [...existing, chatMessage],
           };
         });
-        if (currentRoomId && chatMessage.roomId !== currentRoomId) {
+        const activeRoom = currentRoomIdRef.current;
+        if (!activeRoom || chatMessage.roomId !== activeRoom) {
           incrementUnread(chatMessage.roomId);
         }
       }
@@ -242,10 +244,13 @@ export function useIrcChat(isWindowOpen: boolean) {
   }, [
     isWindowOpen,
     sessionId,
-    currentRoomId,
     incrementUnread,
     refreshChannels,
   ]);
+
+  useEffect(() => {
+    currentRoomIdRef.current = currentRoomId;
+  }, [currentRoomId]);
 
   useEffect(() => {
     if (username && lastNickRef.current && username !== lastNickRef.current) {
