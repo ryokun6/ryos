@@ -24,6 +24,8 @@ interface ChatRoomSidebarProps {
   onDeleteRoom?: (room: ChatRoom) => void;
   isVisible: boolean;
   isAdmin: boolean;
+  /** Allow leaving public channels for IRC */
+  allowPublicLeave?: boolean;
   /** When rendered inside mobile/overlay mode, occupies full width and hides right border */
   isOverlay?: boolean;
   username?: string | null;
@@ -37,6 +39,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
   onDeleteRoom,
   isVisible,
   isAdmin,
+  allowPublicLeave = false,
   isOverlay = false,
   username,
 }) => {
@@ -65,6 +68,9 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
     const unreadCount = unreadCounts[room.id] || 0;
     const hasUnread = unreadCount > 0;
     const isSelected = currentRoom?.id === room.id;
+
+    const canLeave =
+      room.type !== "private" ? isAdmin || allowPublicLeave : true;
 
     return (
       <div
@@ -114,7 +120,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
             </span>
           )}
         </div>
-        {((isAdmin && room.type !== "private") || room.type === "private") &&
+        {canLeave &&
           onDeleteRoom && (
             <button
               className={cn(
