@@ -4,6 +4,8 @@
 
 import { Redis } from "@upstash/redis";
 import {
+  getUser,
+  createUserIfNotExists,
   getCurrentTimestamp,
 } from "./_redis.js";
 import { CHAT_USERS_PREFIX } from "./_constants.js";
