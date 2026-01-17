@@ -61,6 +61,7 @@ export function useIrcChat(isWindowOpen: boolean) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [connectionState, setConnectionState] =
     useState<IrcConnectionState | null>(null);
+  const [connectionError, setConnectionError] = useState(false);
   const [channels, setChannels] = useState<IrcChannel[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [messagesByRoom, setMessagesByRoom] = useState<
@@ -72,6 +73,8 @@ export function useIrcChat(isWindowOpen: boolean) {
 
   const eventSourceRef = useRef<EventSource | null>(null);
   const lastNickRef = useRef<string | null>(null);
+  const reconnectAttemptRef = useRef(0);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const rooms = useMemo(() => channels.map(mapChannelToRoom), [channels]);
 
@@ -96,26 +99,33 @@ export function useIrcChat(isWindowOpen: boolean) {
     lastNickRef.current = nick;
 
     try {
+      const channelsToJoin =
+        channels.length > 0 ? channels.map((channel) => channel.name) : [DEFAULT_CHANNEL];
       const response = await fetch("/api/irc/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nick, channels: [DEFAULT_CHANNEL] }),
+        body: JSON.stringify({ nick, channels: channelsToJoin }),
       });
       if (!response.ok) {
         throw new Error("Failed to connect to IRC");
       }
       const data = await response.json();
       setSessionId(data.sessionId);
-      if (data.channels?.length > 0) {
-        setCurrentRoomId(data.channels[0]);
-      }
+      const nextRoom =
+        currentRoomId && channelsToJoin.includes(currentRoomId)
+          ? currentRoomId
+          : data.channels?.[0] || null;
+      setCurrentRoomId(nextRoom);
+      setConnectionError(false);
+      reconnectAttemptRef.current = 0;
     } catch (error) {
       toast.error("IRC Connection Failed", {
         description: "Unable to connect to the IRC server.",
       });
+      setConnectionError(true);
       console.error("[IRC] Connection error:", error);
     }
-  }, [username]);
+  }, [username, channels, currentRoomId]);
 
   useEffect(() => {
     if (!isWindowOpen) return;
@@ -133,14 +143,24 @@ export function useIrcChat(isWindowOpen: boolean) {
       eventSourceRef.current.close();
     }
 
-    const eventSource = new EventSource(`/api/irc/stream?sessionId=${sessionId}`);
+    const eventSource = new EventSource(
+      `/api/irc/stream?sessionId=${sessionId}`
+    );
     eventSourceRef.current = eventSource;
+
+    eventSource.onopen = () => {
+      setConnectionError(false);
+      reconnectAttemptRef.current = 0;
+    };
 
     eventSource.onmessage = (event) => {
       const payload = JSON.parse(event.data) as IrcStreamEvent;
       if (payload.type === "state") {
         const statePayload = payload.payload as { state: IrcConnectionState };
         setConnectionState(statePayload.state);
+        if (statePayload.state.connected) {
+          setConnectionError(false);
+        }
         refreshChannels();
         return;
       }
@@ -172,10 +192,28 @@ export function useIrcChat(isWindowOpen: boolean) {
       setConnectionState((prev) =>
         prev ? { ...prev, connected: false } : prev
       );
+      setConnectionError(true);
+      eventSource.close();
+      if (!reconnectTimeoutRef.current) {
+        reconnectAttemptRef.current += 1;
+        const delay = Math.min(
+          30000,
+          1000 * 2 ** reconnectAttemptRef.current
+        );
+        reconnectTimeoutRef.current = setTimeout(() => {
+          reconnectTimeoutRef.current = null;
+          setConnectionState(null);
+          setSessionId(null);
+        }, delay);
+      }
     };
 
     return () => {
       eventSource.close();
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
     };
   }, [
     isWindowOpen,
@@ -191,6 +229,7 @@ export function useIrcChat(isWindowOpen: boolean) {
       setChannels([]);
       setMessagesByRoom({});
       setCurrentRoomId(null);
+      setConnectionState(null);
     }
   }, [username]);
 
@@ -297,6 +336,8 @@ export function useIrcChat(isWindowOpen: boolean) {
 
   const isConnected = connectionState?.connected ?? false;
   const ircNick = connectionState?.nick ?? lastNickRef.current ?? username ?? null;
+  const connectionStatus: "connected" | "connecting" | "disconnected" =
+    isConnected ? "connected" : connectionError ? "disconnected" : "connecting";
 
   return {
     username,
@@ -309,6 +350,7 @@ export function useIrcChat(isWindowOpen: boolean) {
     isSidebarVisible,
     isAdmin: false,
     isConnected,
+    connectionStatus,
     handleRoomSelect,
     sendRoomMessage,
     toggleSidebarVisibility,

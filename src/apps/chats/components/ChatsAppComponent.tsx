@@ -129,6 +129,7 @@ export function ChatsAppComponent({
     isSidebarVisible,
     isAdmin,
     ircNick,
+    connectionStatus,
     handleRoomSelect,
     sendRoomMessage,
     toggleSidebarVisibility,
@@ -566,6 +567,7 @@ export function ChatsAppComponent({
                     isVisible={true} // Always visible when overlay is shown
                     isAdmin={isAdmin}
                   allowPublicLeave={true}
+                  connectionStatus={connectionStatus}
                     username={username}
                     isOverlay={true}
                   />
@@ -590,6 +592,7 @@ export function ChatsAppComponent({
                 isVisible={sidebarVisibleBool}
                 isAdmin={isAdmin}
                 allowPublicLeave={true}
+                connectionStatus={connectionStatus}
                 username={username}
               />
             </div>
