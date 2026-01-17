@@ -458,7 +458,7 @@ export const getModelInstance = (model: SupportedModel): LanguageModel =&gt; {
   // ... more tools
 }</code></pre>
 <h3>System Prompts</h3>
-<pre><code>// _api/_utils/aiPrompts.ts
+<pre><code>// api/_utils/_aiPrompts.ts
 export const CORE_PRIORITY_INSTRUCTIONS = `
   You are Ryo, an AI assistant in ryOS...
 `;
@@ -492,7 +492,7 @@ export const TOOL_USAGE_INSTRUCTIONS = `
     META --> |UUID Lookup| CONTENT
     REQ --> |All IDs| SET</pre>
 <h3>Endpoints</h3>
-<table><thead><tr><th>Route</th><th>Action</th><th>Description</th></tr></thead><tbody><tr><td><code>GET /api/song</code></td><td>List</td><td>Songs with filters</td></tr><tr><td><code>POST /api/song</code></td><td>Create/Import</td><td>New songs or bulk import</td></tr><tr><td><code>GET /api/song/[id]</code></td><td>Read</td><td>Song with lyrics, translations</td></tr><tr><td><code>POST /api/song/[id]?action=fetch-lyrics</code></td><td>Fetch</td><td>Get lyrics from Kugou</td></tr><tr><td><code>POST /api/song/[id]?action=translate-stream</code></td><td>Translate</td><td>AI translation (SSE)</td></tr><tr><td><code>POST /api/song/[id]?action=furigana-stream</code></td><td>Furigana</td><td>AI furigana (SSE)</td></tr><tr><td><code>DELETE /api/song/[id]</code></td><td>Delete</td><td>Remove song</td></tr></tbody></table>
+<table><thead><tr><th>Route</th><th>Action</th><th>Description</th></tr></thead><tbody><tr><td><code>GET /api/song</code></td><td>List</td><td>Songs with filters</td></tr><tr><td><code>POST /api/song</code></td><td>Create/Import</td><td>New songs or bulk import</td></tr><tr><td><code>GET /api/song/[id]</code></td><td>Read</td><td>Song with lyrics, translations</td></tr><tr><td><code>POST /api/song/[id]</code></td><td>Fetch</td><td>Body: <code>{ action: "fetch-lyrics" }</code></td></tr><tr><td><code>POST /api/song/[id]</code></td><td>Translate</td><td>Body: <code>{ action: "translate-stream" }</code></td></tr><tr><td><code>POST /api/song/[id]</code></td><td>Furigana</td><td>Body: <code>{ action: "furigana-stream" }</code></td></tr><tr><td><code>DELETE /api/song/[id]</code></td><td>Delete</td><td>Remove song</td></tr></tbody></table>
 <h2>Speech APIs</h2>
 <h3>Text-to-Speech</h3>
 <pre><code>// api/speech.ts
@@ -525,7 +525,7 @@ const transcription = await openai.audio.transcriptions.create({
 });</code></pre>
 <h2>Rate Limiting</h2>
 <h3>Counter-Based Limiting</h3>
-<pre><code>// _api/_utils/rate-limit.ts
+<pre><code>// api/_utils/_rate-limit.ts
 export async function checkCounterLimit({
   key,
   windowSeconds,
@@ -559,7 +559,7 @@ export async function checkCounterLimit({
 <table><thead><tr><th>Endpoint</th><th>Burst Limit</th><th>Daily/Budget</th><th>Window</th></tr></thead><tbody><tr><td>Chat AI (auth)</td><td>25</td><td>per 5 hours</td><td>Sliding</td></tr><tr><td>Chat AI (anon)</td><td>3</td><td>per 5 hours</td><td>Sliding</td></tr><tr><td>Speech TTS</td><td>10/min</td><td>50/day</td><td>Fixed</td></tr><tr><td>IE Generate</td><td>3/min</td><td>10/5hr</td><td>Fixed</td></tr><tr><td>Applet AI (auth)</td><td>50</td><td>per hour</td><td>Fixed</td></tr><tr><td>Applet AI (anon)</td><td>15</td><td>per hour</td><td>Fixed</td></tr><tr><td>Transcribe</td><td>10/min</td><td>50/day</td><td>Fixed</td></tr></tbody></table>
 <h2>Authentication</h2>
 <h3>Token Validation</h3>
-<pre><code>// _api/_utils/auth-validate.ts
+<pre><code>// api/_utils/_auth-validate.ts
 export async function validateAuthToken(
   redis: RedisLike,
   username: string,
@@ -590,7 +590,7 @@ export async function validateAuthToken(
 <h3>Token Configuration</h3>
 <table><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody><tr><td>Token TTL</td><td>90 days</td></tr><tr><td>Grace period</td><td>30 days</td></tr><tr><td>Admin bypass</td><td>User "ryo"</td></tr></tbody></table>
 <h2>CORS Handling</h2>
-<pre><code>// _api/_utils/cors.ts
+<pre><code>// api/_utils/_cors.ts
 export function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
   
