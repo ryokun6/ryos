@@ -635,7 +635,7 @@ export function ChatInput({
                       : t("apps.chats.status.typeOrPushSpace")
                   }
                   className={`w-full border-1 border-gray-800 text-xs font-geneva-12 h-9 ${
-                    isMacTheme ? "pl-3 pr-16 rounded-full" : "pl-2 pr-16"
+                    isMacTheme ? "pl-3 pr-[88px] rounded-full" : "pl-2 pr-[88px]"
                   } backdrop-blur-lg bg-white/80 ${
                     isFocused ? "input--focused" : ""
                   } ${isTypingRyoMention ? "border-blue-600 bg-blue-50" : ""} ${
