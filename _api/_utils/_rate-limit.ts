@@ -163,7 +163,7 @@ export async function checkCounterLimit({
 }
 
 /**
- * Extract a best-effort client IP from common proxy headers.
+ * Extract a best-effort client IP from common proxy headers (Web Request API).
  */
 export function getClientIp(req: Request): string {
   try {
@@ -173,6 +173,46 @@ export function getClientIp(req: Request): string {
     const xForwarded = h.get("x-forwarded-for");
     const xRealIp = h.get("x-real-ip");
     const cfIp = h.get("cf-connecting-ip");
+    const raw = xVercel || xForwarded || xRealIp || cfIp || "";
+    let ip = raw.split(",")[0].trim();
+
+    if (!ip) ip = "unknown-ip";
+
+    // Normalize IPv6-mapped IPv4 and loopback variants
+    ip = ip.replace(/^::ffff:/i, "");
+    const lower = ip.toLowerCase();
+    const isLocalOrigin = /^http:\/\/localhost(?::\d+)?$/.test(origin);
+    if (
+      isLocalOrigin ||
+      lower === "::1" ||
+      lower === "0:0:0:0:0:0:0:1" ||
+      lower === "127.0.0.1"
+    ) {
+      return "localhost-dev";
+    }
+
+    return ip;
+  } catch {
+    return "unknown-ip";
+  }
+}
+
+/**
+ * Extract client IP from Vercel request (IncomingMessage-style headers).
+ */
+export function getClientIpFromVercel(req: { headers: Record<string, string | string[] | undefined> }): string {
+  try {
+    const h = req.headers;
+    const getHeader = (name: string): string => {
+      const val = h[name];
+      return Array.isArray(val) ? val[0] : val || "";
+    };
+    
+    const origin = getHeader("origin");
+    const xVercel = getHeader("x-vercel-forwarded-for");
+    const xForwarded = getHeader("x-forwarded-for");
+    const xRealIp = getHeader("x-real-ip");
+    const cfIp = getHeader("cf-connecting-ip");
     const raw = xVercel || xForwarded || xRealIp || cfIp || "";
     let ip = raw.split(",")[0].trim();
 

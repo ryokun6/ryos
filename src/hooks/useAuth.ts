@@ -132,7 +132,7 @@ export function useAuth() {
 
           // Authenticate with password
           const response = await fetch(
-            "/api/chat-rooms?action=authenticateWithPassword",
+            "/api/auth/login",
             {
               method: "POST",
               headers: {
@@ -183,14 +183,14 @@ export function useAuth() {
 
           // Test the token using the dedicated verification endpoint
           const testResponse = await fetch(
-            "/api/chat-rooms?action=verifyToken",
+            "/api/auth/token/verify",
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${input.trim()}`,
+                "X-Username": verifyUsernameInput.trim() || "",
               },
-              body: JSON.stringify({}),
             }
           );
 

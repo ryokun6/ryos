@@ -29,7 +29,7 @@ import {
   TOKEN_GRACE_PERIOD,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
-} from "../_utils/_auth.js";
+} from "../_utils/auth/index.js";
 import type { User, CreateUserData } from "./_types.js";
 import { createErrorResponse } from "./_helpers.js";
 
@@ -229,7 +229,7 @@ export async function handleCreateUser(
         );
 
         try {
-          const passwordHash = await getUserPasswordHash(username);
+          const passwordHash = await getUserPasswordHash(redis, username);
 
           if (passwordHash) {
             const isValid = await verifyPassword(password, passwordHash);
@@ -241,8 +241,9 @@ export async function handleCreateUser(
               );
 
               const authToken = generateAuthToken();
-              await storeToken(username, authToken);
+              await storeToken(redis, username, authToken);
               await storeLastValidToken(
+                redis,
                 username,
                 authToken,
                 Date.now() + USER_EXPIRATION_TIME * 1000,
@@ -289,14 +290,15 @@ export async function handleCreateUser(
 
     // Hash and store password
     const passwordHash = await hashPassword(password);
-    await setUserPasswordHash(username, passwordHash);
+    await setUserPasswordHash(redis, username, passwordHash);
     logInfo(requestId, `Password hash stored for user: ${username}`);
 
     // Generate authentication token
     const authToken = generateAuthToken();
-    await storeToken(username, authToken);
+    await storeToken(redis, username, authToken);
 
     await storeLastValidToken(
+      redis,
       username,
       authToken,
       Date.now() + USER_EXPIRATION_TIME * 1000,

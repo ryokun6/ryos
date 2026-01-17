@@ -22,7 +22,7 @@ import {
   TOKEN_GRACE_PERIOD,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
-} from "../_utils/_auth.js";
+} from "../_utils/auth/index.js";
 import { createErrorResponse } from "./_helpers.js";
 import type {
   GenerateTokenData,
@@ -65,7 +65,7 @@ export async function handleGenerateToken(
     }
 
     const authToken = generateAuthToken();
-    await storeToken(username, authToken);
+    await storeToken(redis, username, authToken);
 
     logInfo(requestId, `Token generated successfully for user ${username}`);
 
@@ -109,10 +109,10 @@ export async function handleRefreshToken(
     }
 
     const validationResult = await validateAuth(
+      redis,
       username,
       oldToken,
-      requestId,
-      true
+      { allowExpired: true }
     );
 
     if (!validationResult.valid) {
@@ -121,6 +121,7 @@ export async function handleRefreshToken(
     }
 
     await storeLastValidToken(
+      redis,
       username,
       oldToken,
       Date.now(),
@@ -131,10 +132,10 @@ export async function handleRefreshToken(
       `Stored old token for future grace period use for user: ${username}`
     );
 
-    await deleteToken(oldToken);
+    await deleteToken(redis, oldToken);
 
     const authToken = generateAuthToken();
-    await storeToken(username, authToken);
+    await storeToken(redis, username, authToken);
 
     logInfo(
       requestId,
@@ -190,10 +191,10 @@ export async function handleVerifyToken(
 
     // Direct O(1) lookup using validateAuth
     const validationResult = await validateAuth(
+      redis,
       username,
       authToken,
-      requestId,
-      true // allow expired tokens within grace period
+      { allowExpired: true } // allow expired tokens within grace period
     );
 
     if (!validationResult.valid) {
@@ -265,7 +266,7 @@ export async function handleAuthenticateWithPassword(
       return createErrorResponse("Invalid username or password", 401);
     }
 
-    const passwordHash = await getUserPasswordHash(username);
+    const passwordHash = await getUserPasswordHash(redis, username);
 
     if (!passwordHash) {
       logInfo(requestId, `No password set for user: ${username}`);
@@ -280,8 +281,9 @@ export async function handleAuthenticateWithPassword(
     }
 
     if (oldToken) {
-      await deleteToken(oldToken);
+      await deleteToken(redis, oldToken);
       await storeLastValidToken(
+        redis,
         username,
         oldToken,
         Date.now(),
@@ -290,7 +292,7 @@ export async function handleAuthenticateWithPassword(
     }
 
     const authToken = generateAuthToken();
-    await storeToken(username, authToken);
+    await storeToken(redis, username, authToken);
 
     logInfo(
       requestId,
@@ -347,7 +349,7 @@ export async function handleSetPassword(
   logInfo(requestId, `Setting password for user: ${username}`);
   try {
     const passwordHash = await hashPassword(password);
-    await setUserPasswordHash(username!, passwordHash);
+    await setUserPasswordHash(redis, username!, passwordHash);
 
     logInfo(requestId, `Password set successfully for user ${username}`);
 
@@ -371,7 +373,7 @@ export async function handleCheckPassword(
   logInfo(requestId, `Checking if password is set for user: ${username}`);
 
   try {
-    const passwordHash = await getUserPasswordHash(username!);
+    const passwordHash = await getUserPasswordHash(redis, username!);
     const hasPassword = !!passwordHash;
 
     return new Response(
@@ -400,7 +402,7 @@ export async function handleListTokens(
   logInfo(requestId, `Listing active tokens for user: ${username}`);
 
   try {
-    const tokens = await getUserTokens(username!);
+    const tokens = await getUserTokens(redis, username!);
     const { token: currentToken } = extractAuth(request);
 
     const tokenList = tokens.map((t) => ({
@@ -475,7 +477,7 @@ export async function handleLogoutCurrent(
   logInfo(requestId, `Logging out current session for user: ${username}`);
 
   try {
-    await deleteToken(token!);
+    await deleteToken(redis, token!);
 
     logInfo(requestId, `Current session logged out for user: ${username}`);
 

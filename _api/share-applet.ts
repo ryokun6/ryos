@@ -6,11 +6,21 @@ import {
 } from "./_utils/_cors.js";
 import { z } from "zod";
 import { validateAuthToken, generateToken } from "./_utils/_auth-validate.js";
+import * as RateLimit from "./_utils/_rate-limit.js";
 
 // Vercel Edge Function configuration
 export const edge = true;
 export const config = {
   runtime: "edge",
+};
+
+// Rate limiting configuration
+const RATE_LIMITS = {
+  list: { windowSeconds: 60, limit: 30 },      // 30/min for listing
+  get: { windowSeconds: 60, limit: 60 },       // 60/min for getting
+  save: { windowSeconds: 60, limit: 10 },      // 10/min for saving
+  delete: { windowSeconds: 60, limit: 10 },    // 10/min for delete (admin)
+  patch: { windowSeconds: 60, limit: 10 },     // 10/min for patch (admin)
 };
 
 // Applet sharing key prefix
@@ -80,6 +90,34 @@ export default async function handler(req: Request) {
     if (req.method === "GET") {
       const url = new URL(req.url);
       const listParam = url.searchParams.get("list");
+      
+      // Rate limiting for GET requests
+      const ip = RateLimit.getClientIp(req);
+      const rlConfig = listParam === "true" ? RATE_LIMITS.list : RATE_LIMITS.get;
+      const rlKey = RateLimit.makeKey(["rl", "applet", listParam === "true" ? "list" : "get", "ip", ip]);
+      const rlResult = await RateLimit.checkCounterLimit({
+        key: rlKey,
+        windowSeconds: rlConfig.windowSeconds,
+        limit: rlConfig.limit,
+      });
+      
+      if (!rlResult.allowed) {
+        return new Response(
+          JSON.stringify({
+            error: "rate_limit_exceeded",
+            limit: rlResult.limit,
+            retryAfter: rlResult.resetSeconds,
+          }),
+          {
+            status: 429,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+              "Retry-After": String(rlResult.resetSeconds),
+            },
+          }
+        );
+      }
       
       // If list=true, return all applets
       if (listParam === "true") {
@@ -238,6 +276,32 @@ export default async function handler(req: Request) {
             headers: {
               "Content-Type": "application/json",
               "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      // Rate limiting for POST (save) - by user
+      const rlKey = RateLimit.makeKey(["rl", "applet", "save", "user", username || "unknown"]);
+      const rlResult = await RateLimit.checkCounterLimit({
+        key: rlKey,
+        windowSeconds: RATE_LIMITS.save.windowSeconds,
+        limit: RATE_LIMITS.save.limit,
+      });
+      
+      if (!rlResult.allowed) {
+        return new Response(
+          JSON.stringify({
+            error: "rate_limit_exceeded",
+            limit: rlResult.limit,
+            retryAfter: rlResult.resetSeconds,
+          }),
+          {
+            status: 429,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+              "Retry-After": String(rlResult.resetSeconds),
             },
           }
         );
@@ -420,6 +484,32 @@ export default async function handler(req: Request) {
         );
       }
 
+      // Rate limiting for DELETE - by admin user
+      const rlKey = RateLimit.makeKey(["rl", "applet", "delete", "user", username || "unknown"]);
+      const rlResult = await RateLimit.checkCounterLimit({
+        key: rlKey,
+        windowSeconds: RATE_LIMITS.delete.windowSeconds,
+        limit: RATE_LIMITS.delete.limit,
+      });
+      
+      if (!rlResult.allowed) {
+        return new Response(
+          JSON.stringify({
+            error: "rate_limit_exceeded",
+            limit: rlResult.limit,
+            retryAfter: rlResult.resetSeconds,
+          }),
+          {
+            status: 429,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+              "Retry-After": String(rlResult.resetSeconds),
+            },
+          }
+        );
+      }
+
       const url = new URL(req.url);
       const id = url.searchParams.get("id");
 
@@ -482,6 +572,32 @@ export default async function handler(req: Request) {
             headers: {
               "Content-Type": "application/json",
               "Access-Control-Allow-Origin": effectiveOrigin!,
+            },
+          }
+        );
+      }
+
+      // Rate limiting for PATCH - by admin user
+      const rlKey = RateLimit.makeKey(["rl", "applet", "patch", "user", username || "unknown"]);
+      const rlResult = await RateLimit.checkCounterLimit({
+        key: rlKey,
+        windowSeconds: RATE_LIMITS.patch.windowSeconds,
+        limit: RATE_LIMITS.patch.limit,
+      });
+      
+      if (!rlResult.allowed) {
+        return new Response(
+          JSON.stringify({
+            error: "rate_limit_exceeded",
+            limit: rlResult.limit,
+            retryAfter: rlResult.resetSeconds,
+          }),
+          {
+            status: 429,
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": effectiveOrigin!,
+              "Retry-After": String(rlResult.resetSeconds),
             },
           }
         );

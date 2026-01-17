@@ -26,6 +26,7 @@ import {
   preflightIfNeeded,
 } from "../_utils/_cors.js";
 import { validateAuthToken } from "../_utils/_auth-validate.js";
+import * as RateLimit from "../_utils/_rate-limit.js";
 import {
   listSongs,
   saveSong,
@@ -46,6 +47,14 @@ import { fetchCoverUrl } from "./_kugou.js";
 export const edge = true;
 export const config = {
   runtime: "edge",
+};
+
+// Rate limiting configuration
+const RATE_LIMITS = {
+  list: { windowSeconds: 60, limit: 60 },      // 60/min for listing
+  create: { windowSeconds: 60, limit: 10 },    // 10/min for creating songs
+  import: { windowSeconds: 300, limit: 3 },    // 3/5min for bulk import (admin)
+  delete: { windowSeconds: 300, limit: 3 },    // 3/5min for delete all (admin)
 };
 
 // =============================================================================
@@ -231,6 +240,23 @@ export default async function handler(req: Request) {
     // GET: List songs
     // =========================================================================
     if (req.method === "GET") {
+      // Rate limiting for GET
+      const ip = RateLimit.getClientIp(req);
+      const rlKey = RateLimit.makeKey(["rl", "song", "list", "ip", ip]);
+      const rlResult = await RateLimit.checkCounterLimit({
+        key: rlKey,
+        windowSeconds: RATE_LIMITS.list.windowSeconds,
+        limit: RATE_LIMITS.list.limit,
+      });
+      
+      if (!rlResult.allowed) {
+        return jsonResponse({
+          error: "rate_limit_exceeded",
+          limit: rlResult.limit,
+          retryAfter: rlResult.resetSeconds,
+        }, 429, { "Retry-After": String(rlResult.resetSeconds) });
+      }
+      
       const url = new URL(req.url);
       const createdBy = url.searchParams.get("createdBy") || undefined;
       const idsParam = url.searchParams.get("ids");
@@ -295,6 +321,22 @@ export default async function handler(req: Request) {
         // Only admin can bulk import
         if (username?.toLowerCase() !== "ryo") {
           return errorResponse("Forbidden - admin access required for bulk import", 403);
+        }
+
+        // Rate limiting for bulk import - by admin user
+        const rlKey = RateLimit.makeKey(["rl", "song", "import", "user", username || "unknown"]);
+        const rlResult = await RateLimit.checkCounterLimit({
+          key: rlKey,
+          windowSeconds: RATE_LIMITS.import.windowSeconds,
+          limit: RATE_LIMITS.import.limit,
+        });
+        
+        if (!rlResult.allowed) {
+          return jsonResponse({
+            error: "rate_limit_exceeded",
+            limit: rlResult.limit,
+            retryAfter: rlResult.resetSeconds,
+          }, 429, { "Retry-After": String(rlResult.resetSeconds) });
         }
 
         const parsed = BulkImportSchema.safeParse(body);
@@ -464,6 +506,22 @@ export default async function handler(req: Request) {
         });
       }
 
+      // Rate limiting for single song creation - by user
+      const createRlKey = RateLimit.makeKey(["rl", "song", "create", "user", username || "unknown"]);
+      const createRlResult = await RateLimit.checkCounterLimit({
+        key: createRlKey,
+        windowSeconds: RATE_LIMITS.create.windowSeconds,
+        limit: RATE_LIMITS.create.limit,
+      });
+      
+      if (!createRlResult.allowed) {
+        return jsonResponse({
+          error: "rate_limit_exceeded",
+          limit: createRlResult.limit,
+          retryAfter: createRlResult.resetSeconds,
+        }, 429, { "Retry-After": String(createRlResult.resetSeconds) });
+      }
+
       // Single song creation
       const parsed = CreateSongSchema.safeParse(body);
       if (!parsed.success) {
@@ -539,6 +597,22 @@ export default async function handler(req: Request) {
       // Only admin can delete all songs
       if (username?.toLowerCase() !== "ryo") {
         return errorResponse("Forbidden - admin access required", 403);
+      }
+
+      // Rate limiting for delete all - by admin user
+      const rlKey = RateLimit.makeKey(["rl", "song", "delete", "user", username || "unknown"]);
+      const rlResult = await RateLimit.checkCounterLimit({
+        key: rlKey,
+        windowSeconds: RATE_LIMITS.delete.windowSeconds,
+        limit: RATE_LIMITS.delete.limit,
+      });
+      
+      if (!rlResult.allowed) {
+        return jsonResponse({
+          error: "rate_limit_exceeded",
+          limit: rlResult.limit,
+          retryAfter: rlResult.resetSeconds,
+        }, 429, { "Retry-After": String(rlResult.resetSeconds) });
       }
 
       logInfo(requestId, "Deleting all songs");

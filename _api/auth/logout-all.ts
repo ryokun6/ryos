@@ -1,0 +1,53 @@
+/**
+ * POST /api/auth/logout-all
+ * 
+ * Logout all sessions (invalidate all tokens for user)
+ */
+
+import { Redis } from "@upstash/redis";
+import { deleteAllUserTokens } from "../_utils/auth/index.js";
+import {
+  jsonResponse,
+  errorResponse,
+  handleCors,
+  requireAuth,
+} from "../_utils/middleware.js";
+
+export const runtime = "edge";
+export const maxDuration = 15;
+
+export async function POST(request: Request): Promise<Response> {
+  // Handle CORS
+  const cors = handleCors(request, ["POST", "OPTIONS"]);
+  if (cors.preflight) return cors.preflight;
+  if (!cors.allowed) {
+    return errorResponse("Unauthorized", 403);
+  }
+
+  const redis = new Redis({
+    url: process.env.REDIS_KV_REST_API_URL!,
+    token: process.env.REDIS_KV_REST_API_TOKEN!,
+  });
+
+  // Require authentication
+  const auth = await requireAuth(request, redis, cors.origin);
+  if (auth.error) return auth.error;
+
+  // Delete all tokens for user
+  const deletedCount = await deleteAllUserTokens(redis, auth.user!.username);
+
+  return jsonResponse(
+    {
+      success: true,
+      message: `Logged out from ${deletedCount} devices`,
+      deletedCount,
+    },
+    200,
+    cors.origin
+  );
+}
+
+export async function OPTIONS(request: Request): Promise<Response> {
+  const cors = handleCors(request, ["POST", "OPTIONS"]);
+  return cors.preflight || new Response(null, { status: 204 });
+}

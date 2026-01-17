@@ -36,7 +36,7 @@ import {
   assertValidUsername,
   assertValidRoomId,
 } from "../_utils/_validation.js";
-import { validateAuth } from "../_utils/_auth.js";
+import { validateAuth } from "../_utils/auth/index.js";
 import { createErrorResponse } from "./_helpers.js";
 import { ensureUserExists } from "./_users.js";
 import type { Room, CreateRoomData, JoinLeaveRoomData, SwitchRoomData } from "./_types.js";
@@ -48,12 +48,12 @@ import type { Room, CreateRoomData, JoinLeaveRoomData, SwitchRoomData } from "./
 async function isAdmin(
   username: string | null,
   token: string | null,
-  requestId: string
+  _requestId: string
 ): Promise<boolean> {
   if (!username || !token) return false;
   if (username.toLowerCase() !== "ryo") return false;
 
-  const authResult = await validateAuth(username, token, requestId);
+  const authResult = await validateAuth(redis, username, token);
   return authResult.valid;
 }
 

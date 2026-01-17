@@ -10,8 +10,9 @@ import {
   validateAuth,
   deleteAllUserTokens,
   PASSWORD_HASH_PREFIX,
-} from "./_utils/_auth.js";
+} from "./_utils/auth/index.js";
 import { logInfo, logError, generateRequestId } from "./_utils/_logging.js";
+import * as RateLimit from "./_utils/_rate-limit.js";
 
 // ============================================================================
 // Configuration
@@ -19,6 +20,10 @@ import { logInfo, logError, generateRequestId } from "./_utils/_logging.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
+
+// Rate limit: 30 requests per minute for admin endpoints
+const ADMIN_RATE_LIMIT_WINDOW = 60;
+const ADMIN_RATE_LIMIT_MAX = 30;
 
 const redis = new Redis({
   url: process.env.REDIS_KV_REST_API_URL,
@@ -456,6 +461,25 @@ export default async function handler(
   if (!adminAccess) {
     logInfo(requestId, "Admin access denied");
     return createErrorResponse(res, "Forbidden - Admin access required", 403);
+  }
+
+  // Rate limiting for admin endpoints
+  const ip = RateLimit.getClientIpFromVercel(req);
+  const rateLimitKey = RateLimit.makeKey(["rl", "admin", "user", username || ip]);
+  const rateLimitResult = await RateLimit.checkCounterLimit({
+    key: rateLimitKey,
+    windowSeconds: ADMIN_RATE_LIMIT_WINDOW,
+    limit: ADMIN_RATE_LIMIT_MAX,
+  });
+
+  if (!rateLimitResult.allowed) {
+    logInfo(requestId, `Admin rate limit exceeded for ${username || ip}`);
+    return res.status(429).json({
+      error: "rate_limit_exceeded",
+      limit: rateLimitResult.limit,
+      windowSeconds: rateLimitResult.windowSeconds,
+      retryAfter: rateLimitResult.resetSeconds,
+    });
   }
 
   // Handle GET requests
