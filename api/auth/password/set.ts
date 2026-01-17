@@ -1,54 +1,69 @@
 /**
  * POST /api/auth/password/set
  * 
- * Set or update user's password
+ * Set or update user's password (Node.js runtime for bcrypt)
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import {
   hashPassword,
   setUserPasswordHash,
   validateAuth,
-  extractAuth,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
 } from "../../_utils/auth/index.js";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../../_utils/_cors.js";
 
-export const edge = true;
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
+export const maxDuration = 15;
 
 interface SetPasswordRequest {
   password: string;
 }
 
-export default async function handler(req: Request) {
-  const origin = getEffectiveOrigin(req);
+function extractAuth(req: VercelRequest): { username: string | null; token: string | null } {
+  const authHeader = req.headers.authorization;
+  const usernameHeader = req.headers["x-username"];
   
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+  let token: string | null = null;
+  if (authHeader && typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+    token = authHeader.slice(7);
   }
+  
+  const username = typeof usernameHeader === "string" ? usernameHeader : null;
+  
+  return { username, token };
+}
+
+function setCorsHeaders(res: VercelResponse, origin: string | undefined): void {
+  res.setHeader("Content-Type", "application/json");
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+}
+
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const origin = req.headers.origin as string | undefined;
+  
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    setCorsHeaders(res, origin);
+    res.status(204).end();
+    return;
+  }
+
+  setCorsHeaders(res, origin);
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { 
-      status: 405, 
-      headers: { "Content-Type": "application/json" },
-    });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
-
-  if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
   const redis = new Redis({
     url: process.env.REDIS_KV_REST_API_URL!,
@@ -58,44 +73,44 @@ export default async function handler(req: Request) {
   // Extract and validate auth
   const { username, token } = extractAuth(req);
   if (!username || !token) {
-    return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
+    res.status(401).json({ error: "Unauthorized - missing credentials" });
+    return;
   }
 
   const authResult = await validateAuth(redis, username, token, { allowExpired: true });
   if (!authResult.valid) {
-    return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
+    res.status(401).json({ error: "Unauthorized - invalid token" });
+    return;
   }
 
   // Parse body
-  let body: SetPasswordRequest;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers });
-  }
-
-  const { password } = body;
+  const body = req.body as SetPasswordRequest;
+  const { password } = body || {};
 
   // Validate password
   if (!password || typeof password !== "string") {
-    return new Response(JSON.stringify({ error: "Password is required" }), { status: 400, headers });
+    res.status(400).json({ error: "Password is required" });
+    return;
   }
 
   if (password.length < PASSWORD_MIN_LENGTH) {
-    return new Response(JSON.stringify({ 
-      error: `Password must be at least ${PASSWORD_MIN_LENGTH} characters` 
-    }), { status: 400, headers });
+    res.status(400).json({ error: `Password must be at least ${PASSWORD_MIN_LENGTH} characters` });
+    return;
   }
 
   if (password.length > PASSWORD_MAX_LENGTH) {
-    return new Response(JSON.stringify({ 
-      error: `Password must be ${PASSWORD_MAX_LENGTH} characters or less` 
-    }), { status: 400, headers });
+    res.status(400).json({ error: `Password must be ${PASSWORD_MAX_LENGTH} characters or less` });
+    return;
   }
 
-  // Hash and store password
-  const passwordHash = await hashPassword(password);
-  await setUserPasswordHash(redis, username.toLowerCase(), passwordHash);
+  try {
+    // Hash and store password
+    const passwordHash = await hashPassword(password);
+    await setUserPasswordHash(redis, username.toLowerCase(), passwordHash);
 
-  return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error setting password:", error);
+    res.status(500).json({ error: "Failed to set password" });
+  }
 }

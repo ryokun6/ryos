@@ -1,9 +1,10 @@
 /**
  * POST /api/auth/register
  * 
- * Create a new user account with password
+ * Create a new user account with password (Node.js runtime for bcrypt)
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import {
   generateAuthToken,
@@ -14,115 +15,118 @@ import {
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
 } from "../_utils/auth/index.js";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../_utils/_cors.js";
 import { isProfaneUsername, assertValidUsername } from "../_utils/_validation.js";
-import * as RateLimit from "../_utils/_rate-limit.js";
 
-export const edge = true;
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
+export const maxDuration = 15;
 
 interface RegisterRequest {
   username: string;
   password: string;
 }
 
-export default async function handler(req: Request) {
-  const origin = getEffectiveOrigin(req);
-  
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+function getClientIp(req: VercelRequest): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
   }
+  if (Array.isArray(forwarded)) {
+    return forwarded[0];
+  }
+  return req.headers["x-real-ip"] as string || "unknown";
+}
+
+function setCorsHeaders(res: VercelResponse, origin: string | undefined): void {
+  res.setHeader("Content-Type", "application/json");
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+}
+
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const origin = req.headers.origin as string | undefined;
+  
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    setCorsHeaders(res, origin);
+    res.status(204).end();
+    return;
+  }
+
+  setCorsHeaders(res, origin);
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { 
-      status: 405, 
-      headers: { "Content-Type": "application/json" },
-    });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
-
-  if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
   const redis = new Redis({
     url: process.env.REDIS_KV_REST_API_URL!,
     token: process.env.REDIS_KV_REST_API_TOKEN!,
   });
 
-  // Rate limiting: 5/min per IP
-  const ip = RateLimit.getClientIp(req);
-  const blockKey = `rl:block:createUser:ip:${ip}`;
+  // Rate limiting: 5/min per IP with 24h block on exceed
+  const ip = getClientIp(req);
+  const blockKey = `rl:block:register:ip:${ip}`;
   const blocked = await redis.get(blockKey);
   if (blocked) {
-    return new Response(JSON.stringify({ 
-      error: "Too many registration attempts. Please try again later." 
-    }), { status: 429, headers });
+    res.status(429).json({ error: "Too many registration attempts. Please try again later." });
+    return;
   }
 
-  const rlKey = RateLimit.makeKey(["rl", "auth:register", "ip", ip]);
-  const rlResult = await RateLimit.checkCounterLimit({
-    key: rlKey,
-    windowSeconds: 60,
-    limit: 5,
-  });
-
-  if (!rlResult.allowed) {
+  const rlKey = `rl:auth:register:ip:${ip}`;
+  const current = await redis.incr(rlKey);
+  if (current === 1) {
+    await redis.expire(rlKey, 60);
+  }
+  if (current > 5) {
     await redis.set(blockKey, "1", { ex: 86400 });
-    return new Response(JSON.stringify({ 
-      error: "Too many registration attempts. Please try again later." 
-    }), { status: 429, headers });
+    res.status(429).json({ error: "Too many registration attempts. Please try again later." });
+    return;
   }
 
   // Parse body
-  let body: RegisterRequest;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers });
-  }
-
-  const { username: rawUsername, password } = body;
+  const body = req.body as RegisterRequest;
+  const { username: rawUsername, password } = body || {};
 
   // Validate username
   if (!rawUsername || typeof rawUsername !== "string") {
-    return new Response(JSON.stringify({ error: "Username is required" }), { status: 400, headers });
+    res.status(400).json({ error: "Username is required" });
+    return;
   }
 
   try {
     assertValidUsername(rawUsername, "register");
   } catch (e) {
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Invalid username" }), { status: 400, headers });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Invalid username" });
+    return;
   }
 
   if (isProfaneUsername(rawUsername)) {
-    return new Response(JSON.stringify({ error: "Username contains inappropriate language" }), { status: 400, headers });
+    res.status(400).json({ error: "Username contains inappropriate language" });
+    return;
   }
 
   // Validate password
   if (!password || typeof password !== "string") {
-    return new Response(JSON.stringify({ error: "Password is required" }), { status: 400, headers });
+    res.status(400).json({ error: "Password is required" });
+    return;
   }
 
   if (password.length < PASSWORD_MIN_LENGTH) {
-    return new Response(JSON.stringify({ 
-      error: `Password must be at least ${PASSWORD_MIN_LENGTH} characters` 
-    }), { status: 400, headers });
+    res.status(400).json({ error: `Password must be at least ${PASSWORD_MIN_LENGTH} characters` });
+    return;
   }
 
   if (password.length > PASSWORD_MAX_LENGTH) {
-    return new Response(JSON.stringify({ 
-      error: `Password must be ${PASSWORD_MAX_LENGTH} characters or less` 
-    }), { status: 400, headers });
+    res.status(400).json({ error: `Password must be ${PASSWORD_MAX_LENGTH} characters or less` });
+    return;
   }
 
   const username = rawUsername.toLowerCase();
@@ -131,7 +135,8 @@ export default async function handler(req: Request) {
   // Check if user already exists
   const existingUser = await redis.get(userKey);
   if (existingUser) {
-    return new Response(JSON.stringify({ error: "Username already taken" }), { status: 409, headers });
+    res.status(409).json({ error: "Username already taken" });
+    return;
   }
 
   try {
@@ -151,12 +156,9 @@ export default async function handler(req: Request) {
     const token = generateAuthToken();
     await storeToken(redis, username, token);
 
-    return new Response(JSON.stringify({ 
-      token,
-      user: { username },
-    }), { status: 201, headers });
+    res.status(201).json({ token, user: { username } });
   } catch (error) {
     console.error("Error creating user:", error);
-    return new Response(JSON.stringify({ error: "Failed to create user" }), { status: 500, headers });
+    res.status(500).json({ error: "Failed to create user" });
   }
 }

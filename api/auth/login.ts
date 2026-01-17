@@ -1,9 +1,10 @@
 /**
  * POST /api/auth/login
  * 
- * Authenticate user with password
+ * Authenticate user with password (Node.js runtime for bcrypt)
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import {
   generateAuthToken,
@@ -15,13 +16,9 @@ import {
   CHAT_USERS_PREFIX,
   TOKEN_GRACE_PERIOD,
 } from "../_utils/auth/index.js";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../_utils/_cors.js";
-import * as RateLimit from "../_utils/_rate-limit.js";
 
-export const edge = true;
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
+export const maxDuration = 15;
 
 interface LoginRequest {
   username: string;
@@ -29,31 +26,46 @@ interface LoginRequest {
   oldToken?: string;
 }
 
-export default async function handler(req: Request) {
-  const origin = getEffectiveOrigin(req);
-  
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+function getClientIp(req: VercelRequest): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
   }
+  if (Array.isArray(forwarded)) {
+    return forwarded[0];
+  }
+  return req.headers["x-real-ip"] as string || "unknown";
+}
+
+function setCorsHeaders(res: VercelResponse, origin: string | undefined): void {
+  res.setHeader("Content-Type", "application/json");
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+}
+
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const origin = req.headers.origin as string | undefined;
+  
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    setCorsHeaders(res, origin);
+    res.status(204).end();
+    return;
+  }
+
+  setCorsHeaders(res, origin);
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { 
-      status: 405, 
-      headers: { "Content-Type": "application/json" },
-    });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
-
-  if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
   const redis = new Redis({
     url: process.env.REDIS_KV_REST_API_URL!,
@@ -61,36 +73,29 @@ export default async function handler(req: Request) {
   });
 
   // Rate limiting: 10/min per IP
-  const ip = RateLimit.getClientIp(req);
-  const rlKey = RateLimit.makeKey(["rl", "auth:login", "ip", ip]);
-  const rlResult = await RateLimit.checkCounterLimit({
-    key: rlKey,
-    windowSeconds: 60,
-    limit: 10,
-  });
-
-  if (!rlResult.allowed) {
-    return new Response(JSON.stringify({ 
-      error: "Too many login attempts. Please try again later." 
-    }), { status: 429, headers });
+  const ip = getClientIp(req);
+  const rlKey = `rl:auth:login:ip:${ip}`;
+  const current = await redis.incr(rlKey);
+  if (current === 1) {
+    await redis.expire(rlKey, 60);
+  }
+  if (current > 10) {
+    res.status(429).json({ error: "Too many login attempts. Please try again later." });
+    return;
   }
 
   // Parse body
-  let body: LoginRequest;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers });
-  }
-
-  const { username: rawUsername, password, oldToken } = body;
+  const body = req.body as LoginRequest;
+  const { username: rawUsername, password, oldToken } = body || {};
 
   if (!rawUsername || typeof rawUsername !== "string") {
-    return new Response(JSON.stringify({ error: "Username is required" }), { status: 400, headers });
+    res.status(400).json({ error: "Username is required" });
+    return;
   }
 
   if (!password || typeof password !== "string") {
-    return new Response(JSON.stringify({ error: "Password is required" }), { status: 400, headers });
+    res.status(400).json({ error: "Password is required" });
+    return;
   }
 
   const username = rawUsername.toLowerCase();
@@ -99,18 +104,21 @@ export default async function handler(req: Request) {
   // Check if user exists
   const userData = await redis.get(userKey);
   if (!userData) {
-    return new Response(JSON.stringify({ error: "Invalid credentials" }), { status: 401, headers });
+    res.status(401).json({ error: "Invalid credentials" });
+    return;
   }
 
   // Get and verify password
   const passwordHash = await getUserPasswordHash(redis, username);
   if (!passwordHash) {
-    return new Response(JSON.stringify({ error: "Invalid credentials" }), { status: 401, headers });
+    res.status(401).json({ error: "Invalid credentials" });
+    return;
   }
 
   const passwordValid = await verifyPassword(password, passwordHash);
   if (!passwordValid) {
-    return new Response(JSON.stringify({ error: "Invalid credentials" }), { status: 401, headers });
+    res.status(401).json({ error: "Invalid credentials" });
+    return;
   }
 
   try {
@@ -124,12 +132,9 @@ export default async function handler(req: Request) {
     const token = generateAuthToken();
     await storeToken(redis, username, token);
 
-    return new Response(JSON.stringify({ 
-      token,
-      username,
-    }), { status: 200, headers });
+    res.status(200).json({ token, username });
   } catch (error) {
     console.error("Error during login:", error);
-    return new Response(JSON.stringify({ error: "Login failed" }), { status: 500, headers });
+    res.status(500).json({ error: "Login failed" });
   }
 }
