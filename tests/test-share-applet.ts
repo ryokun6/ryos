@@ -27,7 +27,7 @@ let testUsername: string | null = null;
 
 async function setupTestUser(): Promise<void> {
   testUsername = `tuser${Date.now()}`;
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=createUser`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -38,7 +38,7 @@ async function setupTestUser(): Promise<void> {
   
   const data = await res.json();
   
-  if (res.status !== 201 && res.status !== 200) {
+  if (res.status !== 201) {
     throw new Error(`Failed to create user: ${res.status} - ${JSON.stringify(data)}`);
   }
   
@@ -97,8 +97,8 @@ async function testPostWithoutAuth(): Promise<void> {
 async function testPostWithInvalidAuth(): Promise<void> {
   const res = await fetchWithAuth(
     `${BASE_URL}/api/share-applet`,
-    "invalid_token",
     "invalid_user",
+    "invalid_token",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -117,8 +117,8 @@ async function testPostMissingContent(): Promise<void> {
   }
   const res = await fetchWithAuth(
     `${BASE_URL}/api/share-applet`,
-    testToken,
     testUsername,
+    testToken,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -136,8 +136,8 @@ async function testPostSuccess(): Promise<void> {
   }
   const res = await fetchWithAuth(
     `${BASE_URL}/api/share-applet`,
-    testToken,
     testUsername,
+    testToken,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -190,8 +190,8 @@ async function testUpdateApplet(): Promise<void> {
   }
   const res = await fetchWithAuth(
     `${BASE_URL}/api/share-applet`,
-    testToken,
     testUsername,
+    testToken,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -213,7 +213,7 @@ async function testUpdateByNonOwner(): Promise<void> {
     throw new Error("Test applet not created");
   }
   const otherUsername = `ouser${Date.now()}`;
-  const createRes = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=createUser`, {
+  const createRes = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -222,7 +222,7 @@ async function testUpdateByNonOwner(): Promise<void> {
     }),
   });
   
-  if (createRes.status !== 201 && createRes.status !== 200) {
+  if (createRes.status !== 201) {
     throw new Error("Failed to create other user");
   }
   
@@ -231,8 +231,8 @@ async function testUpdateByNonOwner(): Promise<void> {
   
   const res = await fetchWithAuth(
     `${BASE_URL}/api/share-applet`,
-    otherToken,
     otherUsername,
+    otherToken,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -262,8 +262,8 @@ async function testDeleteByNonAdmin(): Promise<void> {
   }
   const res = await fetchWithAuth(
     `${BASE_URL}/api/share-applet?id=${testAppletId}`,
-    testToken,
     testUsername,
+    testToken,
     { method: "DELETE" }
   );
   assertEq(res.status, 403, `Expected 403, got ${res.status}`);
@@ -288,8 +288,8 @@ async function testPatchByNonAdmin(): Promise<void> {
   }
   const res = await fetchWithAuth(
     `${BASE_URL}/api/share-applet?id=${testAppletId}`,
-    testToken,
     testUsername,
+    testToken,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -305,8 +305,8 @@ async function testDeleteWithInvalidToken(): Promise<void> {
   }
   const res = await fetchWithAuth(
     `${BASE_URL}/api/share-applet?id=${testAppletId}`,
-    "invalid_token_12345",
     "ryo",
+    "invalid_token_12345",
     { method: "DELETE" }
   );
   assertEq(res.status, 403, `Expected 403 for invalid token, got ${res.status}`);
@@ -318,8 +318,8 @@ async function testPatchWithInvalidToken(): Promise<void> {
   }
   const res = await fetchWithAuth(
     `${BASE_URL}/api/share-applet?id=${testAppletId}`,
-    "invalid_token_12345",
     "ryo",
+    "invalid_token_12345",
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
