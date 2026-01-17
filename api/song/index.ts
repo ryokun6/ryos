@@ -51,10 +51,10 @@ export const config = {
 
 // Rate limiting configuration
 const RATE_LIMITS = {
-  list: { windowSeconds: 60, limit: 60 },      // 60/min for listing
-  create: { windowSeconds: 60, limit: 10 },    // 10/min for creating songs
-  import: { windowSeconds: 300, limit: 3 },    // 3/5min for bulk import (admin)
-  delete: { windowSeconds: 300, limit: 3 },    // 3/5min for delete all (admin)
+  list: { windowSeconds: 60, limit: 120 },     // 120/min for listing
+  create: { windowSeconds: 60, limit: 30 },    // 30/min for creating songs
+  import: { windowSeconds: 60, limit: 5 },     // 5/min for bulk import (admin)
+  delete: { windowSeconds: 60, limit: 5 },     // 5/min for delete all (admin)
 };
 
 // =============================================================================
