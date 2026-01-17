@@ -27,8 +27,10 @@ const IRC_PORT = 6667;
 const MAX_NICK_ATTEMPTS = 5;
 const SYSTEM_NICK = "irc";
 
-const normalizeChannelName = (name: string) =>
-  name.startsWith("#") ? name : `#${name}`;
+const normalizeChannelName = (name: string) => {
+  if (!name) return "";
+  return name.startsWith("#") ? name : `#${name}`;
+};
 
 const parsePrefixNick = (prefix?: string) => {
   if (!prefix) return null;
@@ -277,7 +279,9 @@ export class IrcConnection extends EventEmitter {
     }
 
     if (parsed.command === "JOIN") {
-      const channel = normalizeChannelName(parsed.trailing || parsed.params[0]);
+      const channel = normalizeChannelName(
+        parsed.trailing || parsed.params[0] || ""
+      );
       const nick = parsePrefixNick(parsed.prefix) || SYSTEM_NICK;
       if (!channel) return;
       this.addUserToChannel(channel, nick);
