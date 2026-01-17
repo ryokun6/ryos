@@ -62,6 +62,7 @@ export function useIrcChat(isWindowOpen: boolean) {
   const [connectionState, setConnectionState] =
     useState<IrcConnectionState | null>(null);
   const [connectionError, setConnectionError] = useState(false);
+  const pendingReconnectToastRef = useRef(false);
   const [channels, setChannels] = useState<IrcChannel[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [messagesByRoom, setMessagesByRoom] = useState<
@@ -117,6 +118,10 @@ export function useIrcChat(isWindowOpen: boolean) {
           : data.channels?.[0] || null;
       setCurrentRoomId(nextRoom);
       setConnectionError(false);
+      if (pendingReconnectToastRef.current) {
+        toast.success("IRC reconnected");
+        pendingReconnectToastRef.current = false;
+      }
       reconnectAttemptRef.current = 0;
     } catch (error) {
       toast.error("IRC Connection Failed", {
@@ -193,6 +198,10 @@ export function useIrcChat(isWindowOpen: boolean) {
         prev ? { ...prev, connected: false } : prev
       );
       setConnectionError(true);
+      if (!pendingReconnectToastRef.current) {
+        toast("Reconnecting to IRC…");
+        pendingReconnectToastRef.current = true;
+      }
       eventSource.close();
       if (!reconnectTimeoutRef.current) {
         reconnectAttemptRef.current += 1;
