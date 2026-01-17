@@ -10,8 +10,8 @@ import {
   validateAuth,
   deleteAllUserTokens,
   PASSWORD_HASH_PREFIX,
-} from "./_utils/auth.js";
-import { logInfo, logError, generateRequestId } from "./_utils/logging.js";
+} from "./_utils/_auth.js";
+import { logInfo, logError, generateRequestId } from "./_utils/_logging.js";
 
 // ============================================================================
 // Configuration

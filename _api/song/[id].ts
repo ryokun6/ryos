@@ -23,8 +23,8 @@ import {
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
-} from "../_utils/cors.js";
-import { validateAuthToken } from "../_utils/auth-validate.js";
+} from "../_utils/_cors.js";
+import { validateAuthToken } from "../_utils/_auth-validate.js";
 import {
   getSong,
   saveSong,
@@ -36,7 +36,7 @@ import {
   canModifySong,
   type LyricsSource,
   type LyricsContent,
-} from "../_utils/song-service.js";
+} from "../_utils/_song-service.js";
 
 // Import from split modules
 import {
