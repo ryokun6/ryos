@@ -96,6 +96,12 @@ export function useIrcChat(isWindowOpen: boolean) {
     }
   }, [sessionId]);
 
+  const handleSessionMissing = useCallback(() => {
+    toast("IRC session expired. Reconnecting...");
+    setConnectionError(true);
+    setSessionId(null);
+  }, []);
+
   const connect = useCallback(async () => {
     const nick = buildNick(username);
     lastNickRef.current = nick;
@@ -276,12 +282,16 @@ export function useIrcChat(isWindowOpen: boolean) {
         }),
       });
       if (!response.ok) {
-        toast.error("Failed to send message", {
-          description: "The IRC server did not accept the message.",
-        });
+        if (response.status === 404) {
+          handleSessionMissing();
+        } else {
+          toast.error("Failed to send message", {
+            description: "The IRC server did not accept the message.",
+          });
+        }
       }
     },
-    [sessionId, currentRoomId]
+    [sessionId, currentRoomId, handleSessionMissing]
   );
 
   const handleAddRoom = useCallback(
@@ -302,6 +312,9 @@ export function useIrcChat(isWindowOpen: boolean) {
         }),
       });
       if (!response.ok) {
+        if (response.status === 404) {
+          handleSessionMissing();
+        }
         return { ok: false, error: "Failed to join channel." };
       }
       await refreshChannels();
@@ -309,7 +322,7 @@ export function useIrcChat(isWindowOpen: boolean) {
       setCurrentRoomId(normalized);
       return { ok: true };
     },
-    [sessionId, refreshChannels]
+    [sessionId, refreshChannels, handleSessionMissing]
   );
 
   const promptAddRoom = useCallback(() => {
@@ -339,9 +352,19 @@ export function useIrcChat(isWindowOpen: boolean) {
       setRoomToDelete(null);
       refreshChannels();
     } else {
-      toast.error("Failed to leave channel");
+      if (response.status === 404) {
+        handleSessionMissing();
+      } else {
+        toast.error("Failed to leave channel");
+      }
     }
-  }, [roomToDelete, sessionId, currentRoomId, refreshChannels]);
+  }, [
+    roomToDelete,
+    sessionId,
+    currentRoomId,
+    refreshChannels,
+    handleSessionMissing,
+  ]);
 
   const currentRoomMessages = currentRoomId
     ? messagesByRoom[currentRoomId] || []
