@@ -100,7 +100,7 @@ async function tryAuthenticate(
 ): Promise<{ success: boolean; token?: string; status: number }> {
   try {
     const res = await fetch(
-      `${BASE_URL}/api/chat-rooms?action=authenticateWithPassword`,
+      `${BASE_URL}/api/auth/login`,
       {
         method: "POST",
         headers: {
@@ -129,7 +129,7 @@ async function createUser(
   password: string
 ): Promise<{ success: boolean; message: string; token?: string }> {
   try {
-    const res = await fetch(`${BASE_URL}/api/chat-rooms?action=createUser`, {
+    const res = await fetch(`${BASE_URL}/api/auth/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -140,7 +140,7 @@ async function createUser(
 
     const data = await res.json();
 
-    if (res.status === 201 || res.status === 200) {
+    if (res.status === 201) {
       return { success: true, message: "created", token: data.token };
     }
     return { success: false, message: data.error || `status ${res.status}` };
