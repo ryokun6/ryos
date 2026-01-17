@@ -30,7 +30,7 @@ let testUsername: string | null = null;
 
 async function setupAdminAuth(): Promise<void> {
   // Try to authenticate as admin
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=authenticateWithPassword`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -39,13 +39,13 @@ async function setupAdminAuth(): Promise<void> {
     }),
   });
 
-  if (res.status === 200 || res.status === 201) {
+  if (res.status === 200) {
     const data = await res.json();
     assert(data.token, "Expected token for admin user");
     adminToken = data.token;
   } else {
     // Try to create admin user
-    const createRes = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=createUser`, {
+    const createRes = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -54,7 +54,7 @@ async function setupAdminAuth(): Promise<void> {
       }),
     });
 
-    if (createRes.status === 200 || createRes.status === 201) {
+    if (createRes.status === 201) {
       const createData = await createRes.json();
       adminToken = createData.token;
     } else {
@@ -65,7 +65,7 @@ async function setupAdminAuth(): Promise<void> {
 
 async function setupTestUser(): Promise<void> {
   testUsername = `testuser_${Date.now()}`;
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat-rooms?action=createUser`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -74,7 +74,7 @@ async function setupTestUser(): Promise<void> {
     }),
   });
 
-  assert(res.status === 200 || res.status === 201, `Expected 200 or 201 when creating test user, got ${res.status}`);
+  assertEq(res.status, 201, `Expected 201 when creating test user, got ${res.status}`);
   const data = await res.json();
   assert(data.token, "Expected token for test user");
   testUserToken = data.token;
@@ -91,8 +91,8 @@ async function testAdminGetStats(): Promise<void> {
 
   const res = await fetchWithAuth(
     `${BASE_URL}/api/admin?action=getStats`,
-    adminToken,
     ADMIN_USERNAME,
+    adminToken,
     { method: "GET" }
   );
 
@@ -113,8 +113,8 @@ async function testAdminGetAllUsers(): Promise<void> {
 
   const res = await fetchWithAuth(
     `${BASE_URL}/api/admin?action=getAllUsers`,
-    adminToken,
     ADMIN_USERNAME,
+    adminToken,
     { method: "GET" }
   );
 
@@ -138,8 +138,8 @@ async function testAdminDeleteUser(): Promise<void> {
 
   const res = await fetchWithAuth(
     `${BASE_URL}/api/admin`,
-    adminToken,
     ADMIN_USERNAME,
+    adminToken,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -162,8 +162,8 @@ async function testAdminDeleteUserMissingTarget(): Promise<void> {
 
   const res = await fetchWithAuth(
     `${BASE_URL}/api/admin`,
-    adminToken,
     ADMIN_USERNAME,
+    adminToken,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -185,8 +185,8 @@ async function testAdminDeleteAdminUser(): Promise<void> {
 
   const res = await fetchWithAuth(
     `${BASE_URL}/api/admin`,
-    adminToken,
     ADMIN_USERNAME,
+    adminToken,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -215,8 +215,8 @@ async function testAdminWithoutAuth(): Promise<void> {
 async function testAdminWithInvalidToken(): Promise<void> {
   const res = await fetchWithAuth(
     `${BASE_URL}/api/admin?action=getStats`,
-    "invalid_token_12345",
     ADMIN_USERNAME,
+    "invalid_token_12345",
     { method: "GET" }
   );
 
@@ -232,8 +232,8 @@ async function testAdminWithNonAdminUser(): Promise<void> {
 
   const res = await fetchWithAuth(
     `${BASE_URL}/api/admin?action=getStats`,
-    testUserToken,
     testUsername,
+    testUserToken,
     { method: "GET" }
   );
 
@@ -249,8 +249,8 @@ async function testAdminInvalidAction(): Promise<void> {
 
   const res = await fetchWithAuth(
     `${BASE_URL}/api/admin?action=invalidAction`,
-    adminToken,
     ADMIN_USERNAME,
+    adminToken,
     { method: "GET" }
   );
 
@@ -266,8 +266,8 @@ async function testAdminInvalidMethod(): Promise<void> {
 
   const res = await fetchWithAuth(
     `${BASE_URL}/api/admin?action=getStats`,
-    adminToken,
     ADMIN_USERNAME,
+    adminToken,
     { method: "PUT" }
   );
 
