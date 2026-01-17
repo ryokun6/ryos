@@ -92,6 +92,7 @@ export class IrcConnection extends EventEmitter {
   private channels = new Set<string>();
   private channelTopics = new Map<string, string>();
   private usersByChannel = new Map<string, Set<string>>();
+  private pendingJoins = new Set<string>();
 
   constructor(initialNick: string) {
     super();
@@ -149,7 +150,11 @@ export class IrcConnection extends EventEmitter {
     if (!this.usersByChannel.has(normalized)) {
       this.usersByChannel.set(normalized, new Set());
     }
-    this.sendRaw(`JOIN ${normalized}`);
+    if (this.registered) {
+      this.sendRaw(`JOIN ${normalized}`);
+    } else {
+      this.pendingJoins.add(normalized);
+    }
     this.emitState();
   }
 
@@ -252,6 +257,10 @@ export class IrcConnection extends EventEmitter {
       this.connected = true;
       this.registered = true;
       this.nick = this.requestedNick;
+      this.pendingJoins.forEach((channel) => {
+        this.sendRaw(`JOIN ${channel}`);
+      });
+      this.pendingJoins.clear();
       this.emitSystem("IRC registration successful");
       this.emitState();
       return;
