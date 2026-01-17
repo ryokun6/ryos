@@ -16,9 +16,9 @@ export const config = {
 
 // Rate limiting configuration
 const RATE_LIMITS = {
-  list: { windowSeconds: 60, limit: 30 },      // 30/min for listing
-  get: { windowSeconds: 60, limit: 60 },       // 60/min for getting
-  save: { windowSeconds: 60, limit: 10 },      // 10/min for saving
+  list: { windowSeconds: 60, limit: 60 },      // 60/min for listing
+  get: { windowSeconds: 60, limit: 120 },      // 120/min for getting
+  save: { windowSeconds: 60, limit: 20 },      // 20/min for saving
   delete: { windowSeconds: 60, limit: 10 },    // 10/min for delete (admin)
   patch: { windowSeconds: 60, limit: 10 },     // 10/min for patch (admin)
 };
