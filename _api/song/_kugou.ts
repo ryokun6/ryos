@@ -14,7 +14,7 @@ import {
   logInfo,
   logError,
 } from "./_utils.js";
-import type { LyricsSource, LyricsContent } from "../_utils/song-service.js";
+import type { LyricsSource, LyricsContent } from "../_utils/_song-service.js";
 
 // Chinese character converters
 const simplifiedToTraditional = Converter({ from: "cn", to: "tw" });

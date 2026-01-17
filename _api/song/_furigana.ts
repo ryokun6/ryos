@@ -7,7 +7,7 @@
 import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { logInfo, logError, type LyricLine } from "./_utils.js";
-import type { FuriganaSegment } from "../_utils/song-service.js";
+import type { FuriganaSegment } from "../_utils/_song-service.js";
 
 // =============================================================================
 // Language Detection

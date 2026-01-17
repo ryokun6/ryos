@@ -45,7 +45,7 @@ export default defineConfig({
         "**/dist/**",
         "**/.vercel/**",
         "**/src-tauri/**",
-        "**/api/**",
+        "**/_api/**",
         "**/public/**", // 500+ static files don't need HMR watching
         "**/node_modules/**",
         "**/.git/**",
@@ -398,6 +398,13 @@ export default defineConfig({
   },
   vercel: {
     defaultSupportsResponseStreaming: true,
+    // Fix routing for subdirectory index files
+    rewrites: [
+      // Route /api/song to /api/song/index
+      { source: "/api/song", destination: "/api/song/index" },
+      // Route /api/chat-rooms to /api/chat-rooms/index  
+      { source: "/api/chat-rooms", destination: "/api/chat-rooms/index" },
+    ],
   },
   // esbuild options for faster dev transforms
   esbuild: {

@@ -9,14 +9,14 @@ import {
   getCurrentTimestamp,
 } from "./_redis.js";
 import { CHAT_USERS_PREFIX } from "./_constants.js";
-import { logInfo, logError } from "../_utils/logging.js";
+import { logInfo, logError } from "../_utils/_logging.js";
 import {
   isProfaneUsername,
   assertValidUsername,
   MAX_USERNAME_LENGTH,
   MIN_USERNAME_LENGTH,
   USERNAME_REGEX,
-} from "../_utils/validation.js";
+} from "../_utils/_validation.js";
 import {
   hashPassword,
   verifyPassword,
@@ -29,7 +29,7 @@ import {
   TOKEN_GRACE_PERIOD,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
-} from "../_utils/auth.js";
+} from "../_utils/_auth.js";
 import type { User, CreateUserData } from "./_types.js";
 import { createErrorResponse } from "./_helpers.js";
 

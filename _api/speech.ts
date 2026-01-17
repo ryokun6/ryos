@@ -1,9 +1,9 @@
 import { experimental_generateSpeech as generateSpeech } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./_utils/cors.js";
-import * as RateLimit from "./_utils/rate-limit.js";
+import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./_utils/_cors.js";
+import * as RateLimit from "./_utils/_rate-limit.js";
 import { Redis } from "@upstash/redis";
-import { validateAuthToken } from "./_utils/auth-validate.js";
+import { validateAuthToken } from "./_utils/_auth-validate.js";
 
 // --- Default Configuration -----------------------------------------------
 
@@ -53,6 +53,7 @@ const redis = new Redis({
   token: process.env.REDIS_KV_REST_API_TOKEN,
 });
 
+export const edge = true;
 export const runtime = "edge";
 export const maxDuration = 60;
 export const config = {

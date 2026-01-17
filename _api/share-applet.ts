@@ -3,11 +3,12 @@ import {
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
-} from "./_utils/cors.js";
+} from "./_utils/_cors.js";
 import { z } from "zod";
-import { validateAuthToken, generateToken } from "./_utils/auth-validate.js";
+import { validateAuthToken, generateToken } from "./_utils/_auth-validate.js";
 
 // Vercel Edge Function configuration
+export const edge = true;
 export const config = {
   runtime: "edge",
 };

@@ -78,7 +78,7 @@ graph TB
 ## Project Structure
 
 ```
-├── api/              # Vercel API endpoints
+├── _api/             # Vercel API endpoints (underscore prefix avoids double compilation)
 ├── public/           # Static assets
 ├── src/
 │   ├── apps/         # 17 app modules

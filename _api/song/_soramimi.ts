@@ -5,7 +5,7 @@
  * Provides prompts and parsing utilities for soramimi generation.
  */
 
-import type { FuriganaSegment } from "../_utils/song-service.js";
+import type { FuriganaSegment } from "../_utils/_song-service.js";
 
 // =============================================================================
 // Language Detection Helpers

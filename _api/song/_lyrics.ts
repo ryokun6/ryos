@@ -8,7 +8,7 @@ import { openai } from "@ai-sdk/openai";
 import { Converter } from "opencc-js";
 import { SKIP_PREFIXES } from "./_constants.js";
 import { logInfo, logError, type LyricLine } from "./_utils.js";
-import type { LyricsContent, ParsedLyricLine, WordTiming } from "../_utils/song-service.js";
+import type { LyricsContent, ParsedLyricLine, WordTiming } from "../_utils/_song-service.js";
 
 // Chinese character converters
 const simplifiedToTraditional = Converter({ from: "cn", to: "tw" });
