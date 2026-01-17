@@ -696,8 +696,8 @@
         "newChatDescription": "Create a public chat room or start a private conversation",
         "newChatDescriptionPrivate": "Start a private conversation",
         "public": "Public",
-        "roomName": "Room Name",
-        "roomNamePlaceholder": "general",
+        "roomName": "Channel Name",
+        "roomNamePlaceholder": "ryos",
         "addUsersToPrivateChat": "Add Users to Private Chat",
         "searchUsernamePlaceholder": "Search username...",
         "creating": "Creating...",
@@ -751,7 +751,7 @@
       },
       "sidebar": {
         "chats": "Chats",
-        "rooms": "Rooms",
+        "rooms": "Channels",
         "private": "Private",
         "new": "new",
         "online": "online"
