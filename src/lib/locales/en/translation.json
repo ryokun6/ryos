@@ -745,7 +745,7 @@
         "speakMessage": "Speak message",
         "stopSpeech": "Stop speech",
         "messageUser": "Message {{username}}",
-        "newChat": "New Chat",
+        "newChat": "Join channel",
         "leaveConversation": "Leave conversation",
         "deleteRoom": "Leave channel"
       },
