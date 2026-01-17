@@ -5,9 +5,13 @@
  * POST - Send a message to a room
  */
 
-import { Redis } from "@upstash/redis";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../../_utils/_cors.js";
-import { validateAuthToken } from "../../_utils/_auth-validate.js";
+import {
+  createRedis,
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+} from "../../_utils/middleware.js";
+import { validateAuthToken } from "../../_utils/auth/index.js";
 import {
   isProfaneUsername,
   assertValidRoomId,
@@ -31,7 +35,6 @@ import {
 import { ensureUserExists } from "../../chat-rooms/_users.js";
 import type { Message, Room, User } from "../../chat-rooms/_types.js";
 
-export const edge = true;
 export const config = {
   runtime: "edge",
 };
@@ -39,13 +42,6 @@ export const config = {
 // ============================================================================
 // Local Redis helpers (avoid importing from _redis.ts to prevent bundler issues)
 // ============================================================================
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
 
 function generateId(): string {
   const bytes = new Uint8Array(16);

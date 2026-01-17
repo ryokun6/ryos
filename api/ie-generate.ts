@@ -100,7 +100,7 @@ const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
 
 export const maxDuration = 80;
 export const runtime = "edge";
-export const edge = true;
+
 export const stream = true;
 export const config = { runtime: "edge" };
 

@@ -5,11 +5,17 @@
 
 import { Redis } from "@upstash/redis";
 import { CHAT_USERS_PREFIX } from "./chat-rooms/_constants.js";
-import { validateAuth, deleteAllUserTokens, PASSWORD_HASH_PREFIX } from "./_utils/auth/index.js";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./_utils/_cors.js";
+import { deleteAllUserTokens, PASSWORD_HASH_PREFIX } from "./_utils/auth/index.js";
+import {
+  isAdmin,
+  createRedis,
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  getClientIp,
+} from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 
-export const edge = true;
 export const config = {
   runtime: "edge",
 };
@@ -31,13 +37,6 @@ interface UserProfile {
   bannedAt?: number;
   messageCount?: number;
   rooms?: { id: string; name: string }[];
-}
-
-async function isAdmin(redis: Redis, username: string | null, token: string | null): Promise<boolean> {
-  if (!username || !token) return false;
-  if (username.toLowerCase() !== "ryo") return false;
-  const authResult = await validateAuth(redis, username, token, { allowExpired: false });
-  return authResult.valid;
 }
 
 async function deleteUser(redis: Redis, targetUsername: string): Promise<{ success: boolean; error?: string }> {
@@ -275,7 +274,7 @@ export default async function handler(req: Request) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
-  const redis = new Redis({ url: process.env.REDIS_KV_REST_API_URL!, token: process.env.REDIS_KV_REST_API_TOKEN! });
+  const redis = createRedis();
 
   const authHeader = req.headers.get("authorization");
   const usernameHeader = req.headers.get("x-username");
@@ -287,7 +286,7 @@ export default async function handler(req: Request) {
     return new Response(JSON.stringify({ error: "Forbidden - Admin access required" }), { status: 403, headers });
   }
 
-  const ip = RateLimit.getClientIp(req);
+  const ip = getClientIp(req);
   const rateLimitKey = RateLimit.makeKey(["rl", "admin", "user", username || ip]);
   const rateLimitResult = await RateLimit.checkCounterLimit({ key: rateLimitKey, windowSeconds: ADMIN_RATE_LIMIT_WINDOW, limit: ADMIN_RATE_LIMIT_MAX });
 

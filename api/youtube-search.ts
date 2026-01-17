@@ -7,7 +7,7 @@ import {
 } from "./_utils/_cors.js";
 
 // Vercel Edge Function configuration
-export const edge = true;
+
 export const config = {
   runtime: "edge",
 };

@@ -14,7 +14,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export const edge = true;
+
 export const config = {
   runtime: "edge",
 };

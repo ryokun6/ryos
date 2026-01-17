@@ -11,7 +11,7 @@ import { getRoom, setRoom } from "../chat-rooms/_redis.js";
 import { setRoomPresence, removeRoomPresence, refreshRoomUserCount } from "../chat-rooms/_presence.js";
 import { ensureUserExists } from "../chat-rooms/_users.js";
 
-export const edge = true;
+
 export const config = {
   runtime: "edge",
 };

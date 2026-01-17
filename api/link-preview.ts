@@ -1,10 +1,17 @@
-export const edge = true;
 export const config = {
   runtime: "edge",
 };
 
+import {
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  getClientIp,
+  jsonResponse,
+  errorResponse,
+  rateLimitResponse,
+} from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./_utils/_cors.js";
 interface LinkMetadata {
   title?: string;
   description?: string;
@@ -71,7 +78,7 @@ export default async function handler(req: Request) {
   try {
     // Burst limiter: 10/min per IP; optional per-host 5/min per IP
     try {
-      const ip = RateLimit.getClientIp(req);
+      const ip = getClientIp(req);
       const BURST_WINDOW = 60;
       const GLOBAL_LIMIT = 10;
 
@@ -85,10 +92,7 @@ export default async function handler(req: Request) {
         limit: GLOBAL_LIMIT,
       });
       if (!global.allowed) {
-        return new Response(
-          JSON.stringify({ error: "rate_limit_exceeded", scope: "global" }),
-          { status: 429, headers: { "Retry-After": String(global.resetSeconds ?? BURST_WINDOW), "Content-Type": "application/json", ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }) } }
-        );
+        return rateLimitResponse(effectiveOrigin, GLOBAL_LIMIT, global.resetSeconds ?? BURST_WINDOW, "global");
       }
 
       if (url) {
@@ -101,10 +105,7 @@ export default async function handler(req: Request) {
             limit: 5,
           });
           if (!host.allowed) {
-            return new Response(
-              JSON.stringify({ error: "rate_limit_exceeded", scope: "host", host: hostname }),
-              { status: 429, headers: { "Retry-After": String(host.resetSeconds ?? BURST_WINDOW), "Content-Type": "application/json", ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }) } }
-            );
+            return rateLimitResponse(effectiveOrigin, 5, host.resetSeconds ?? BURST_WINDOW, "host");
           }
         } catch (e) {
           // Ignore invalid URL parse or missing hostname
@@ -118,18 +119,8 @@ export default async function handler(req: Request) {
     const { searchParams } = new URL(req.url);
     const url = searchParams.get("url");
 
-    // Helper for consistent error responses with CORS
-    const errorResponseWithCors = (message: string, status: number = 400) =>
-      new Response(JSON.stringify({ error: message }), {
-        status,
-        headers: {
-          "Content-Type": "application/json",
-          ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-        },
-      });
-
     if (!url || typeof url !== "string") {
-      return errorResponseWithCors("No URL provided");
+      return errorResponse("No URL provided", 400, effectiveOrigin);
     }
 
     // Validate URL format
@@ -137,12 +128,12 @@ export default async function handler(req: Request) {
     try {
       parsedUrl = new URL(url);
     } catch {
-      return errorResponseWithCors("Invalid URL format");
+      return errorResponse("Invalid URL format", 400, effectiveOrigin);
     }
 
     // Only allow HTTP and HTTPS URLs
     if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      return errorResponseWithCors("Only HTTP and HTTPS URLs are allowed");
+      return errorResponse("Only HTTP and HTTPS URLs are allowed", 400, effectiveOrigin);
     }
 
     // Handle YouTube URLs using oEmbed API
@@ -176,7 +167,7 @@ export default async function handler(req: Request) {
     });
 
     if (!response.ok) {
-      return errorResponseWithCors(`HTTP error! status: ${response.status}`, response.status);
+      return errorResponse(`HTTP error! status: ${response.status}`, response.status, effectiveOrigin);
     }
 
     const html = await response.text();
@@ -310,14 +301,6 @@ export default async function handler(req: Request) {
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        error: errorMessage,
-      }),
-      {
-        status: status,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": effectiveOrigin ?? "" },
-      }
-    );
+    return errorResponse(errorMessage, status, effectiveOrigin);
   }
 }

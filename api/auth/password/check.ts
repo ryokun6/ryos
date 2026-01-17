@@ -8,7 +8,7 @@ import { Redis } from "@upstash/redis";
 import { userHasPassword, validateAuth, extractAuth } from "../../_utils/auth/index.js";
 import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../../_utils/_cors.js";
 
-export const edge = true;
+
 export const config = {
   runtime: "edge",
 };

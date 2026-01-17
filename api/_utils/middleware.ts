@@ -2,6 +2,7 @@
  * Middleware utilities for API endpoints
  * 
  * Provides reusable middleware for auth, rate limiting, and response handling.
+ * This module consolidates common patterns used across all API endpoints.
  */
 
 import type { Redis } from "@upstash/redis";
@@ -9,21 +10,41 @@ import { extractAuth, validateAuth, validateAdminAuth } from "./auth/index.js";
 import type { AuthenticatedUser } from "./auth/index.js";
 import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./_cors.js";
 import * as RateLimit from "./_rate-limit.js";
+import { createRedis } from "./redis.js";
+
+// Re-export commonly used utilities for convenience
+export { createRedis } from "./redis.js";
+export { getClientIp, getClientIpFromVercel } from "./_rate-limit.js";
+export { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./_cors.js";
+export { extractAuth, extractAuthNormalized } from "./auth/index.js";
+export type { AuthenticatedUser } from "./auth/index.js";
+
+// Re-export constants
+export {
+  REDIS_PREFIXES,
+  TTL,
+  RATE_LIMIT_TIERS,
+  PASSWORD,
+  VALIDATION,
+  TOKEN,
+} from "./constants.js";
 
 // ============================================================================
 // Response Helpers
 // ============================================================================
 
 /**
- * Create a JSON response with optional CORS headers
+ * Create a JSON response with optional CORS headers and additional headers
  */
 export function jsonResponse(
   data: unknown,
   status = 200,
-  origin?: string | null
+  origin?: string | null,
+  extraHeaders?: Record<string, string>
 ): Response {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...extraHeaders,
   };
   if (origin) {
     headers["Access-Control-Allow-Origin"] = origin;
@@ -32,14 +53,19 @@ export function jsonResponse(
 }
 
 /**
- * Create an error response
+ * Create an error response with optional error code
  */
 export function errorResponse(
   message: string,
   status = 400,
-  origin?: string | null
+  origin?: string | null,
+  code?: string,
+  details?: unknown
 ): Response {
-  return jsonResponse({ error: message }, status, origin);
+  const data: Record<string, unknown> = { error: message };
+  if (code) data.code = code;
+  if (details !== undefined) data.details = details;
+  return jsonResponse(data, status, origin);
 }
 
 /**
@@ -51,6 +77,27 @@ export function successResponse(
   origin?: string | null
 ): Response {
   return jsonResponse({ success: true, ...data }, status, origin);
+}
+
+/**
+ * Create a rate limit exceeded response
+ */
+export function rateLimitResponse(
+  origin: string | null,
+  limit: number,
+  resetSeconds: number,
+  scope?: string
+): Response {
+  const data: Record<string, unknown> = {
+    error: "rate_limit_exceeded",
+    limit,
+    retryAfter: resetSeconds,
+  };
+  if (scope) data.scope = scope;
+  
+  return jsonResponse(data, 429, origin, {
+    "Retry-After": String(resetSeconds),
+  });
 }
 
 // ============================================================================
@@ -192,6 +239,22 @@ export async function requireAdmin(
     isAdmin: true,
     error: null,
   };
+}
+
+/**
+ * Check if a user is admin (ryo) with a valid token
+ * Standalone helper for simple admin checks without full middleware pipeline
+ */
+export async function isAdmin(
+  redis: Redis,
+  username: string | null,
+  token: string | null
+): Promise<boolean> {
+  if (!username || !token) return false;
+  if (username.toLowerCase() !== "ryo") return false;
+  
+  const authResult = await validateAuth(redis, username, token, { allowExpired: false });
+  return authResult.valid;
 }
 
 // ============================================================================
@@ -355,4 +418,104 @@ export function getQueryParams(req: Request): URLSearchParams {
 export function getQueryParam(req: Request, name: string): string | null {
   const url = new URL(req.url);
   return url.searchParams.get(name);
+}
+
+// ============================================================================
+// Request Context
+// ============================================================================
+
+/**
+ * Request context containing common data extracted from a request
+ */
+export interface RequestContext {
+  /** Unique request ID for logging */
+  requestId: string;
+  /** Effective origin from request */
+  origin: string | null;
+  /** Whether origin is allowed */
+  originAllowed: boolean;
+  /** Client IP address */
+  ip: string;
+  /** Authenticated user (if any) */
+  user: AuthenticatedUser | null;
+  /** Redis client */
+  redis: ReturnType<typeof createRedis>;
+  /** Log helper with request ID prefix */
+  log: (message: string, data?: unknown) => void;
+  /** Error log helper with request ID prefix */
+  logError: (message: string, error?: unknown) => void;
+}
+
+/**
+ * Generate a unique request ID
+ */
+export function generateRequestId(): string {
+  return Math.random().toString(36).substring(2, 10);
+}
+
+/**
+ * Create a request context from a request
+ * 
+ * This extracts common data from a request and provides helpers for logging.
+ * Use this to reduce boilerplate in handlers.
+ * 
+ * @example
+ * ```ts
+ * export default async function handler(req: Request) {
+ *   const ctx = await createRequestContext(req);
+ *   if (!ctx.originAllowed) {
+ *     return errorResponse("Unauthorized", 403, ctx.origin);
+ *   }
+ *   ctx.log("Processing request");
+ *   // ... handler logic
+ * }
+ * ```
+ */
+export async function createRequestContext(
+  req: Request,
+  options: {
+    /** Whether to validate auth (default: false) */
+    requireAuth?: boolean;
+    /** Whether to allow expired tokens (default: true) */
+    allowExpired?: boolean;
+  } = {}
+): Promise<RequestContext> {
+  const { requireAuth = false, allowExpired = true } = options;
+  
+  const requestId = generateRequestId();
+  const origin = getEffectiveOrigin(req);
+  const originAllowed = isAllowedOrigin(origin);
+  const ip = RateLimit.getClientIp(req);
+  const redis = createRedis();
+  
+  // Create logging helpers
+  const log = (message: string, data?: unknown) => {
+    console.log(`[${requestId}] ${message}`, data ?? "");
+  };
+  const logError = (message: string, error?: unknown) => {
+    console.error(`[${requestId}] ERROR: ${message}`, error ?? "");
+  };
+  
+  // Extract and validate auth if needed
+  let user: AuthenticatedUser | null = null;
+  if (requireAuth || req.headers.get("authorization")) {
+    const { username, token } = extractAuth(req);
+    if (username && token) {
+      const result = await validateAuth(redis, username, token, { allowExpired });
+      if (result.valid) {
+        user = { username: username.toLowerCase(), token, expired: result.expired };
+      }
+    }
+  }
+  
+  return {
+    requestId,
+    origin,
+    originAllowed,
+    ip,
+    user,
+    redis,
+    log,
+    logError,
+  };
 }

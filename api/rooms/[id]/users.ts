@@ -4,11 +4,14 @@
  * Get active users in a room
  */
 
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../../_utils/_cors.js";
+import {
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+} from "../../_utils/middleware.js";
 import { assertValidRoomId } from "../../_utils/_validation.js";
 import { getActiveUsersAndPrune } from "../../chat-rooms/_presence.js";
 
-export const edge = true;
 export const config = {
   runtime: "edge",
 };

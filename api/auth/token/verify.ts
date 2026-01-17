@@ -4,12 +4,18 @@
  * Verify if a token is valid
  */
 
-import { Redis } from "@upstash/redis";
-import { validateAuth, extractAuth } from "../../_utils/auth/index.js";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../../_utils/_cors.js";
+import {
+  createRedis,
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  extractAuth,
+  jsonResponse,
+  errorResponse,
+} from "../../_utils/middleware.js";
+import { validateAuth } from "../../_utils/auth/index.js";
 import { isProfaneUsername } from "../../_utils/_validation.js";
 
-export const edge = true;
 export const config = {
   runtime: "edge",
 };
@@ -40,10 +46,7 @@ export default async function handler(req: Request) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
-  const redis = new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
+  const redis = createRedis();
 
   // Extract auth from headers
   const { username, token } = extractAuth(req);

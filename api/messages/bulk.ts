@@ -9,7 +9,7 @@ import { ROOM_ID_REGEX } from "../_utils/_validation.js";
 import { roomExists, getMessages } from "../chat-rooms/_redis.js";
 import type { Message } from "../chat-rooms/_types.js";
 
-export const edge = true;
+
 export const config = {
   runtime: "edge",
 };

@@ -5,17 +5,14 @@
  * POST - Create a new room
  */
 
-import { Redis } from "@upstash/redis";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../_utils/_cors.js";
-import { validateAuthToken } from "../_utils/_auth-validate.js";
+import {
+  createRedis,
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+} from "../_utils/middleware.js";
+import { validateAuthToken } from "../_utils/auth/index.js";
 import { isProfaneUsername } from "../_utils/_validation.js";
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
 
 // Import from existing chat-rooms modules
 import { getRoomsWithCountsFast } from "../chat-rooms/_presence.js";
@@ -28,7 +25,6 @@ import {
 import { setRoomPresence } from "../chat-rooms/_presence.js";
 import type { Room } from "../chat-rooms/_types.js";
 
-export const edge = true;
 export const config = {
   runtime: "edge",
 };

@@ -17,7 +17,6 @@ import {
 import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../../_utils/_cors.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
 
-export const edge = true;
 export const config = {
   runtime: "edge",
 };

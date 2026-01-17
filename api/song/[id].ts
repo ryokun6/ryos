@@ -18,13 +18,14 @@
  * - POST with action=search-lyrics: Search for lyrics matches
  */
 
-import { Redis } from "@upstash/redis";
 import {
+  createRedis,
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
-} from "../_utils/_cors.js";
-import { validateAuthToken } from "../_utils/_auth-validate.js";
+  getClientIp,
+} from "../_utils/middleware.js";
+import { validateAuthToken } from "../_utils/auth/index.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import {
   getSong,
@@ -101,12 +102,9 @@ import {
 import { openai } from "@ai-sdk/openai";
 
 // Vercel Edge Function configuration
-export const edge = true;
 export const config = {
   runtime: "edge",
 };
-
-// Extended timeout for AI streaming (increased for line-by-line streaming)
 export const maxDuration = 120;
 
 // Rate limiting configuration
@@ -165,10 +163,7 @@ export default async function handler(req: Request) {
   }
 
   // Create Redis client
-  const redis = new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
+  const redis = createRedis();
 
   if (!songId || songId === "[id]") {
     return errorResponse("Song ID is required", 400);
@@ -187,7 +182,7 @@ export default async function handler(req: Request) {
     // GET: Retrieve song data
     // =========================================================================
     if (req.method === "GET") {
-      const ip = RateLimit.getClientIp(req);
+      const ip = getClientIp(req);
       const rlKey = RateLimit.makeKey(["rl", "song", "get", "ip", ip]);
       const rlResult = await RateLimit.checkCounterLimit({
         key: rlKey,
@@ -269,7 +264,7 @@ export default async function handler(req: Request) {
       const usernameHeader = req.headers.get("X-Username");
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
-      const requestIp = RateLimit.getClientIp(req);
+      const requestIp = getClientIp(req);
       const rateLimitUser = username?.toLowerCase() || requestIp;
 
       // Handle search-lyrics action (no auth required)

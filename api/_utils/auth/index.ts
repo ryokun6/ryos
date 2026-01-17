@@ -49,6 +49,7 @@ export {
   getUserTokenPattern,
   getLastTokenKey,
   generateAuthToken,
+  generateToken, // Alias for backwards compatibility
   storeToken,
   deleteToken,
   deleteAllUserTokens,
@@ -75,10 +76,12 @@ export {
   validateAuth,
   validateAdminAuth,
   tokenExists,
+  validateAuthToken, // Alias for backwards compatibility
 } from "./_validate.js";
 
 // Request extraction (Edge compatible)
 export {
   extractAuth,
   extractAuthNormalized,
+  extractAuthFromRequest, // Alias for backwards compatibility
 } from "./_extract.js";

@@ -7,7 +7,7 @@
 import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../_utils/_cors.js";
 import { handleGetUsers } from "../chat-rooms/_users.js";
 
-export const edge = true;
+
 export const config = {
   runtime: "edge",
 };

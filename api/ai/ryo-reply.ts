@@ -4,25 +4,21 @@
  * Generate an AI reply as Ryo in chat rooms
  */
 
-import { Redis } from "@upstash/redis";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../_utils/_cors.js";
-import { validateAuthToken } from "../_utils/_auth-validate.js";
+import {
+  createRedis,
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  getClientIp,
+} from "../_utils/middleware.js";
+import { validateAuthToken } from "../_utils/auth/index.js";
 import { assertValidRoomId, escapeHTML, filterProfanityPreservingUrls } from "../_utils/_validation.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
-
 import { roomExists, addMessage, generateId, getCurrentTimestamp } from "../chat-rooms/_redis.js";
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
 import type { Message } from "../chat-rooms/_types.js";
 
-export const edge = true;
 export const config = {
   runtime: "edge",
 };
