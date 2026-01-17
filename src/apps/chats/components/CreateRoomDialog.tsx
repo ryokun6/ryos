@@ -53,6 +53,11 @@ export function CreateRoomDialog({
   const [activeTab, setActiveTab] = useState<"public" | "private">("private");
   const [isSearching, setIsSearching] = useState(false);
   const isIrcMode = mode === "irc";
+  const dialogDescription = isIrcMode
+    ? t("apps.chats.dialogs.newChatDescription")
+    : isAdmin
+    ? t("apps.chats.dialogs.newChatDescription")
+    : t("apps.chats.dialogs.newChatDescriptionPrivate");
 
   // Theme detection
   const currentTheme = useThemeStore((state) => state.current);
@@ -467,9 +472,7 @@ export function CreateRoomDialog({
                 {t("apps.chats.dialogs.newChatTitle")}
               </DialogTitle>
               <DialogDescription className="sr-only">
-                {isAdmin
-                  ? t("apps.chats.dialogs.newChatDescription")
-                  : t("apps.chats.dialogs.newChatDescriptionPrivate")}
+                {dialogDescription}
               </DialogDescription>
             </DialogHeader>
             {dialogContent}
