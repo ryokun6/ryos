@@ -62,6 +62,8 @@ interface ChatInputProps {
   isInChatRoom?: boolean;
   /** Whether TTS speech is currently playing */
   isSpeechPlaying?: boolean;
+  /** Whether to show the @mention button in chat rooms */
+  showMentionButton?: boolean;
   rateLimitError?: {
     isAuthenticated: boolean;
     count: number;
@@ -91,6 +93,7 @@ export function ChatInput({
   showNudgeButton = true,
   isInChatRoom = false,
   isSpeechPlaying = false,
+  showMentionButton = true,
   rateLimitError,
   needsUsername = false,
   isOffline = false,
@@ -694,7 +697,7 @@ export function ChatInput({
                       </Tooltip>
                     </TooltipProvider>
                   )}
-                  {isInChatRoom && (
+                  {isInChatRoom && showMentionButton && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>

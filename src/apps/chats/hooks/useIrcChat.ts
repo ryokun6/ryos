@@ -194,11 +194,13 @@ export function useIrcChat(isWindowOpen: boolean) {
 
   const handleRoomSelect = useCallback(
     async (roomId: string | null) => {
+      const { unreadCounts } = useChatsStore.getState();
+      const hadUnreads = roomId ? (unreadCounts[roomId] || 0) > 0 : false;
       setCurrentRoomId(roomId);
       if (roomId) {
         clearUnread(roomId);
       }
-      return { hadUnreads: false };
+      return { hadUnreads };
     },
     [clearUnread]
   );

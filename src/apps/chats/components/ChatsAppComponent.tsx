@@ -128,6 +128,7 @@ export function ChatsAppComponent({
     currentRoomMessagesLimited,
     isSidebarVisible,
     isAdmin,
+    ircNick,
     handleRoomSelect,
     sendRoomMessage,
     toggleSidebarVisibility,
@@ -175,6 +176,8 @@ export function ChatsAppComponent({
     displayNames.join(", ") +
     (remainingCount > 0 ? `, ${remainingCount}+` : "");
 
+  const activeNick = username ?? ircNick ?? null;
+
 
   // Wrapper for room selection that handles unread scroll triggering
   const handleRoomSelectWithScroll = useCallback(
@@ -216,7 +219,7 @@ export function ChatsAppComponent({
         return;
       }
 
-      if (currentRoomId && username) {
+      if (currentRoomId) {
         // Regular IRC room message
         sendRoomMessage(input);
         handleInputChange({
@@ -233,7 +236,6 @@ export function ChatsAppComponent({
     },
     [
       currentRoomId,
-      username,
       sendRoomMessage,
       handleAiSubmit,
       input,
@@ -243,13 +245,13 @@ export function ChatsAppComponent({
 
   const handleDirectSubmit = useCallback(
     (message: string) => {
-      if (currentRoomId && username) {
+      if (currentRoomId) {
         sendRoomMessage(message);
       } else {
         handleDirectMessageSubmit(message);
       }
     },
-    [currentRoomId, username, sendRoomMessage, handleDirectMessageSubmit]
+    [currentRoomId, sendRoomMessage, handleDirectMessageSubmit]
   );
 
   const handleNudgeClick = useCallback(() => {
@@ -458,7 +460,7 @@ export function ChatsAppComponent({
         // For room messages, use clientId (if present) for stable rendering key
         id: msg.clientId || msg.id,
         serverId: msg.id,
-        role: msg.username === username ? "user" : "human",
+        role: msg.username === activeNick ? "user" : "human",
         parts: [{ type: "text" as const, text: msg.content }], // Convert to v5 parts format
         metadata: {
           createdAt: new Date(msg.timestamp),
@@ -705,7 +707,7 @@ export function ChatsAppComponent({
                     isRoomView={!!currentRoomId}
                     roomId={currentRoomId ?? undefined}
                     isAdmin={isAdmin}
-                    username={username || undefined}
+                    username={activeNick || undefined}
                     onMessageDeleted={(deletedId) => {
                       if (currentRoomId) {
                         // Optimistically remove locally; realtime event will reconcile
@@ -728,8 +730,7 @@ export function ChatsAppComponent({
                   {/* Show "Create Account" button in two cases:
                       1. In a chat room without username
                       2. In @ryo chat when rate limit is hit for anonymous users */}
-                  {(currentRoomId && !username) ||
-                  (!currentRoomId && needsUsername && !username) ? (
+                  {!currentRoomId && needsUsername && !username ? (
                     isMacTheme ? (
                       <Button
                         variant="secondary"
@@ -788,6 +789,7 @@ export function ChatsAppComponent({
                           onNudge={handleNudgeClick}
                           previousMessages={prevMessagesContent}
                           showNudgeButton={!currentRoomId}
+                          showMentionButton={!currentRoomId}
                           isInChatRoom={!!currentRoomId}
                           rateLimitError={rateLimitError}
                           isOffline={isOffline}
