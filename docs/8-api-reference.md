@@ -26,7 +26,7 @@ graph LR
 | [Song API](/docs/song-api) | Music library CRUD, lyrics, furigana, translations |
 | [Media API](/docs/media-api) | Text-to-speech, transcription, YouTube search |
 | [Chat Rooms API](/docs/chat-rooms-api) | Real-time chat rooms with Pusher/Redis |
-| IRC Gateway API | IRC channels via `/api/irc/*` endpoints |
+| [IRC Gateway API](/docs/irc-api) | IRC channels via `/api/irc/*` endpoints |
 | [AI Generation APIs](/docs/ai-generation-apis) | Applet generation, IE time-travel, parse-title |
 | [Utility APIs](/docs/utility-apis) | Link preview, iframe check, share applet, admin |
 
