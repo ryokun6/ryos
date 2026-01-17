@@ -13,7 +13,7 @@ import {
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
 } from "../_utils/auth/index.js";
-import { hashPassword, setUserPasswordHash } from "../_utils/auth/_password.js";
+import { hashPassword, setUserPasswordHash, verifyPassword, getUserPasswordHash } from "../_utils/auth/_password.js";
 import { isProfaneUsername, assertValidUsername } from "../_utils/_validation.js";
 
 export const runtime = "nodejs";
@@ -134,6 +134,23 @@ export default async function handler(
   // Check if user already exists
   const existingUser = await redis.get(userKey);
   if (existingUser) {
+    // User exists - try to log them in with provided password
+    try {
+      const storedHash = await getUserPasswordHash(redis, username);
+      if (storedHash) {
+        const passwordValid = await verifyPassword(password, storedHash);
+        if (passwordValid) {
+          // Password matches - log them in
+          const token = generateAuthToken();
+          await storeToken(redis, username, token);
+          res.status(200).json({ token, user: { username } });
+          return;
+        }
+      }
+    } catch (loginError) {
+      console.error("Error attempting login for existing user:", loginError);
+    }
+    // Password doesn't match or no password set
     res.status(409).json({ error: "Username already taken" });
     return;
   }
