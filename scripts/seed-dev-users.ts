@@ -12,7 +12,7 @@ import { Redis } from "@upstash/redis";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
-// Redis key prefixes (must match api/chat-rooms/_constants.ts and api/utils/auth.ts)
+// Redis key prefixes (must match api/chat-rooms/_constants.ts and api/_utils/auth)
 const CHAT_USERS_PREFIX = "chat:users:";
 const PASSWORD_HASH_PREFIX = "chat:password:";
 const AUTH_TOKEN_PREFIX = "chat:token:";
