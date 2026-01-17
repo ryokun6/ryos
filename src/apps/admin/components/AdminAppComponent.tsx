@@ -206,7 +206,7 @@ export function AdminAppComponent({
     setIsLoading(true);
     try {
       const response = await fetch(
-        `/api/chat-rooms?action=getRooms&username=${encodeURIComponent(username)}`,
+        `/api/rooms?username=${encodeURIComponent(username)}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
@@ -233,7 +233,7 @@ export function AdminAppComponent({
       setIsLoading(true);
       try {
         const response = await fetch(
-          `/api/chat-rooms?action=getMessages&roomId=${encodeURIComponent(roomId)}&limit=200`,
+          `/api/rooms/${encodeURIComponent(roomId)}/messages?limit=200`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -312,11 +312,7 @@ export function AdminAppComponent({
       if (!username || !authToken) return;
 
       try {
-        const params = new URLSearchParams({
-          action: "deleteRoom",
-          roomId,
-        });
-        const response = await fetch(`/api/chat-rooms?${params}`, {
+        const response = await fetch(`/api/rooms/${encodeURIComponent(roomId)}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${authToken}`,
@@ -348,12 +344,9 @@ export function AdminAppComponent({
       if (!username || !authToken) return;
 
       try {
-        const params = new URLSearchParams({
-          action: "deleteMessage",
-          roomId,
-          messageId,
-        });
-        const response = await fetch(`/api/chat-rooms?${params}`, {
+        const response = await fetch(
+          `/api/rooms/${encodeURIComponent(roomId)}/messages/${encodeURIComponent(messageId)}`,
+          {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${authToken}`,
