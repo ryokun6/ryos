@@ -10,12 +10,11 @@ import {
   generateAuthToken,
   storeToken,
   deleteToken,
-  verifyPassword,
-  getUserPasswordHash,
   storeLastValidToken,
   CHAT_USERS_PREFIX,
   TOKEN_GRACE_PERIOD,
 } from "../_utils/auth/index.js";
+import { verifyPassword, getUserPasswordHash } from "../_utils/auth/_password.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;

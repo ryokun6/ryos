@@ -4,8 +4,6 @@
 
 import { Redis } from "@upstash/redis";
 import {
-  getUser,
-  createUserIfNotExists,
   getCurrentTimestamp,
 } from "./_redis.js";
 import { CHAT_USERS_PREFIX } from "./_constants.js";
@@ -17,19 +15,8 @@ import {
   MIN_USERNAME_LENGTH,
   USERNAME_REGEX,
 } from "../_utils/_validation.js";
-import {
-  hashPassword,
-  verifyPassword,
-  setUserPasswordHash,
-  getUserPasswordHash,
-  generateAuthToken,
-  storeToken,
-  storeLastValidToken,
-  USER_EXPIRATION_TIME,
-  TOKEN_GRACE_PERIOD,
-  PASSWORD_MIN_LENGTH,
-  PASSWORD_MAX_LENGTH,
-} from "../_utils/auth/index.js";
+// NOTE: Auth imports removed to keep this module Edge-compatible.
+// handleCreateUser is DEPRECATED - use POST /api/auth/register instead.
 import type { User, CreateUserData } from "./_types.js";
 import { createErrorResponse } from "./_helpers.js";
 
@@ -137,193 +124,17 @@ export async function ensureUserExists(
 
 /**
  * Handle create user request
+ * @deprecated Use POST /api/auth/register instead. This function is kept for type compatibility only.
  */
 export async function handleCreateUser(
-  data: CreateUserData,
+  _data: CreateUserData,
   requestId: string
 ): Promise<Response> {
-  const redis = getRedis();
-  const { username: originalUsername, password } = data;
-
-  if (!originalUsername) {
-    logInfo(requestId, "User creation failed: Username is required");
-    return createErrorResponse("Username is required", 400);
-  }
-
-  // Check for profanity in username
-  if (isProfaneUsername(originalUsername)) {
-    logInfo(
-      requestId,
-      `User creation failed: Username contains inappropriate language: ${originalUsername}`
-    );
-    return createErrorResponse("Username contains inappropriate language", 400);
-  }
-
-  // Check username length
-  if (originalUsername.length > MAX_USERNAME_LENGTH) {
-    logInfo(
-      requestId,
-      `User creation failed: Username too long: ${originalUsername.length} chars (max: ${MAX_USERNAME_LENGTH})`
-    );
-    return createErrorResponse(
-      `Username must be ${MAX_USERNAME_LENGTH} characters or less`,
-      400
-    );
-  }
-
-  // Check minimum username length
-  if (originalUsername.length < MIN_USERNAME_LENGTH) {
-    logInfo(
-      requestId,
-      `User creation failed: Username too short: ${originalUsername.length} chars (min: ${MIN_USERNAME_LENGTH})`
-    );
-    return createErrorResponse(
-      `Username must be at least ${MIN_USERNAME_LENGTH} characters`,
-      400
-    );
-  }
-
-  // Require password for new user creation and validate length
-  if (!password) {
-    logInfo(requestId, "User creation failed: Password is required");
-    return createErrorResponse("Password is required", 400);
-  } else if (password.length < PASSWORD_MIN_LENGTH) {
-    logInfo(
-      requestId,
-      `User creation failed: Password too short: ${password.length} chars (min: ${PASSWORD_MIN_LENGTH})`
-    );
-    return createErrorResponse(
-      `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
-      400
-    );
-  } else if (password.length > PASSWORD_MAX_LENGTH) {
-    logInfo(
-      requestId,
-      `User creation failed: Password too long: ${password.length} chars (max: ${PASSWORD_MAX_LENGTH})`
-    );
-    return createErrorResponse(
-      `Password must be ${PASSWORD_MAX_LENGTH} characters or less`,
-      400
-    );
-  }
-
-  // Normalize username to lowercase
-  const username = originalUsername.toLowerCase();
-
-  // Validate username format strictly
-  try {
-    assertValidUsername(username, requestId);
-  } catch (e) {
-    return createErrorResponse(
-      e instanceof Error ? e.message : "Invalid username",
-      400
-    );
-  }
-
-  logInfo(requestId, `Creating user: ${username} with password`);
-  try {
-    const user: User = {
-      username,
-      lastActive: getCurrentTimestamp(),
-    };
-
-    const created = await createUserIfNotExists(username, user);
-
-    if (!created) {
-      // User already exists - attempt login if password provided
-      if (password) {
-        logInfo(
-          requestId,
-          `Username ${username} exists, attempting authentication with provided password`
-        );
-
-        try {
-          const passwordHash = await getUserPasswordHash(redis, username);
-
-          if (passwordHash) {
-            const isValid = await verifyPassword(password, passwordHash);
-
-            if (isValid) {
-              logInfo(
-                requestId,
-                `Password correct for existing user ${username}, logging in`
-              );
-
-              const authToken = generateAuthToken();
-              await storeToken(redis, username, authToken);
-              await storeLastValidToken(
-                redis,
-                username,
-                authToken,
-                Date.now() + USER_EXPIRATION_TIME * 1000,
-                USER_EXPIRATION_TIME + TOKEN_GRACE_PERIOD
-              );
-
-              const existingUserData = await getUser(username);
-              const existingUser = existingUserData || {
-                username,
-                lastActive: getCurrentTimestamp(),
-              };
-
-              logInfo(
-                requestId,
-                `User ${username} authenticated via signup form with correct password`
-              );
-
-              return new Response(
-                JSON.stringify({ user: existingUser, token: authToken }),
-                {
-                  status: 200,
-                  headers: { "Content-Type": "application/json" },
-                }
-              );
-            }
-          }
-
-          logInfo(
-            requestId,
-            `Authentication failed for existing user ${username} - incorrect password`
-          );
-        } catch (authError) {
-          logError(
-            requestId,
-            `Error during authentication attempt for ${username}:`,
-            authError
-          );
-        }
-      }
-
-      logInfo(requestId, `Username already taken: ${username}`);
-      return createErrorResponse("Username already taken", 409);
-    }
-
-    // Hash and store password
-    const passwordHash = await hashPassword(password);
-    await setUserPasswordHash(redis, username, passwordHash);
-    logInfo(requestId, `Password hash stored for user: ${username}`);
-
-    // Generate authentication token
-    const authToken = generateAuthToken();
-    await storeToken(redis, username, authToken);
-
-    await storeLastValidToken(
-      redis,
-      username,
-      authToken,
-      Date.now() + USER_EXPIRATION_TIME * 1000,
-      USER_EXPIRATION_TIME + TOKEN_GRACE_PERIOD
-    );
-
-    logInfo(requestId, `User created with auth token: ${username}`);
-
-    return new Response(JSON.stringify({ user, token: authToken }), {
-      status: 201,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    logError(requestId, `Error creating user ${username}:`, error);
-    return createErrorResponse("Failed to create user", 500);
-  }
+  logError(requestId, "handleCreateUser is deprecated - use POST /api/auth/register");
+  return createErrorResponse(
+    "This endpoint is deprecated. Use POST /api/auth/register instead.",
+    410 // Gone
+  );
 }
 
 /**

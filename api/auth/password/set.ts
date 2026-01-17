@@ -7,12 +7,11 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import {
-  hashPassword,
-  setUserPasswordHash,
   validateAuth,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
 } from "../../_utils/auth/index.js";
+import { hashPassword, setUserPasswordHash } from "../../_utils/auth/_password.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;

@@ -57,15 +57,17 @@ export {
   refreshTokenTTL,
 } from "./_tokens.js";
 
-// Password operations (Node.js only - uses bcrypt)
+// Password storage operations (Edge-compatible - no bcrypt)
 export {
-  hashPassword,
-  verifyPassword,
   setUserPasswordHash,
   getUserPasswordHash,
   deleteUserPasswordHash,
   userHasPassword,
-} from "./_password.js";
+} from "./_password-storage.js";
+
+// NOTE: hashPassword and verifyPassword use bcrypt and are NOT exported here.
+// Import directly from "./_password.js" in Node.js endpoints:
+//   import { hashPassword, verifyPassword } from "../_utils/auth/_password.js";
 
 // Validation (Edge compatible)
 export type { ValidateAuthOptions } from "./_validate.js";

@@ -9,12 +9,11 @@ import { Redis } from "@upstash/redis";
 import {
   generateAuthToken,
   storeToken,
-  hashPassword,
-  setUserPasswordHash,
   CHAT_USERS_PREFIX,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
 } from "../_utils/auth/index.js";
+import { hashPassword, setUserPasswordHash } from "../_utils/auth/_password.js";
 import { isProfaneUsername, assertValidUsername } from "../_utils/_validation.js";
 
 export const runtime = "nodejs";
