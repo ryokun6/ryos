@@ -25,6 +25,7 @@ import {
   preflightIfNeeded,
 } from "../_utils/_cors.js";
 import { validateAuthToken } from "../_utils/_auth-validate.js";
+import * as RateLimit from "../_utils/_rate-limit.js";
 import {
   getSong,
   saveSong,
@@ -108,6 +109,16 @@ export const config = {
 // Extended timeout for AI streaming (increased for line-by-line streaming)
 export const maxDuration = 120;
 
+// Rate limiting configuration
+const RATE_LIMITS = {
+  get: { windowSeconds: 60, limit: 300 },           // 300/min for GET
+  fetchLyrics: { windowSeconds: 60, limit: 30 },    // 30/min for fetch-lyrics
+  searchLyrics: { windowSeconds: 60, limit: 60 },   // 60/min for search-lyrics
+  translateStream: { windowSeconds: 60, limit: 10 },// 10/min for translate-stream
+  furiganaStream: { windowSeconds: 60, limit: 10 }, // 10/min for furigana-stream
+  soramimiStream: { windowSeconds: 60, limit: 10 }, // 10/min for soramimi-stream
+};
+
 // =============================================================================
 // Main Handler
 // =============================================================================
@@ -176,6 +187,26 @@ export default async function handler(req: Request) {
     // GET: Retrieve song data
     // =========================================================================
     if (req.method === "GET") {
+      const ip = RateLimit.getClientIp(req);
+      const rlKey = RateLimit.makeKey(["rl", "song", "get", "ip", ip]);
+      const rlResult = await RateLimit.checkCounterLimit({
+        key: rlKey,
+        windowSeconds: RATE_LIMITS.get.windowSeconds,
+        limit: RATE_LIMITS.get.limit,
+      });
+
+      if (!rlResult.allowed) {
+        return jsonResponse(
+          {
+            error: "rate_limit_exceeded",
+            limit: rlResult.limit,
+            retryAfter: rlResult.resetSeconds,
+          },
+          429,
+          { "Retry-After": String(rlResult.resetSeconds) }
+        );
+      }
+
       const includeParam = url.searchParams.get("include") || "metadata";
       const includes = includeParam.split(",").map((s) => s.trim());
 
@@ -238,9 +269,30 @@ export default async function handler(req: Request) {
       const usernameHeader = req.headers.get("X-Username");
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
+      const requestIp = RateLimit.getClientIp(req);
+      const rateLimitUser = username?.toLowerCase() || requestIp;
 
       // Handle search-lyrics action (no auth required)
       if (action === "search-lyrics") {
+        const rlKey = RateLimit.makeKey(["rl", "song", "search-lyrics", "ip", requestIp]);
+        const rlResult = await RateLimit.checkCounterLimit({
+          key: rlKey,
+          windowSeconds: RATE_LIMITS.searchLyrics.windowSeconds,
+          limit: RATE_LIMITS.searchLyrics.limit,
+        });
+
+        if (!rlResult.allowed) {
+          return jsonResponse(
+            {
+              error: "rate_limit_exceeded",
+              limit: rlResult.limit,
+              retryAfter: rlResult.resetSeconds,
+            },
+            429,
+            { "Retry-After": String(rlResult.resetSeconds) }
+          );
+        }
+
         const parsed = SearchLyricsSchema.safeParse(body);
         if (!parsed.success) {
           return errorResponse("Invalid request body");
@@ -284,6 +336,25 @@ export default async function handler(req: Request) {
       // - First time fetch (no existing lyrics): anyone can do it
       // - Changing lyrics source or force refresh: requires auth + canModifySong
       if (action === "fetch-lyrics") {
+        const rlKey = RateLimit.makeKey(["rl", "song", "fetch-lyrics", "user", rateLimitUser]);
+        const rlResult = await RateLimit.checkCounterLimit({
+          key: rlKey,
+          windowSeconds: RATE_LIMITS.fetchLyrics.windowSeconds,
+          limit: RATE_LIMITS.fetchLyrics.limit,
+        });
+
+        if (!rlResult.allowed) {
+          return jsonResponse(
+            {
+              error: "rate_limit_exceeded",
+              limit: rlResult.limit,
+              retryAfter: rlResult.resetSeconds,
+            },
+            429,
+            { "Retry-After": String(rlResult.resetSeconds) }
+          );
+        }
+
         const parsed = FetchLyricsSchema.safeParse(body);
         if (!parsed.success) {
           return errorResponse("Invalid request body");
@@ -734,6 +805,25 @@ export default async function handler(req: Request) {
       // - Force refresh: requires auth + canModifySong
       // =======================================================================
       if (action === "translate-stream") {
+        const rlKey = RateLimit.makeKey(["rl", "song", "translate-stream", "user", rateLimitUser]);
+        const rlResult = await RateLimit.checkCounterLimit({
+          key: rlKey,
+          windowSeconds: RATE_LIMITS.translateStream.windowSeconds,
+          limit: RATE_LIMITS.translateStream.limit,
+        });
+
+        if (!rlResult.allowed) {
+          return jsonResponse(
+            {
+              error: "rate_limit_exceeded",
+              limit: rlResult.limit,
+              retryAfter: rlResult.resetSeconds,
+            },
+            429,
+            { "Retry-After": String(rlResult.resetSeconds) }
+          );
+        }
+
         const parsed = TranslateStreamSchema.safeParse(body);
         if (!parsed.success) {
           return errorResponse("Invalid request body");
@@ -954,6 +1044,25 @@ export default async function handler(req: Request) {
       // - Force refresh: requires auth + canModifySong
       // =======================================================================
       if (action === "furigana-stream") {
+        const rlKey = RateLimit.makeKey(["rl", "song", "furigana-stream", "user", rateLimitUser]);
+        const rlResult = await RateLimit.checkCounterLimit({
+          key: rlKey,
+          windowSeconds: RATE_LIMITS.furiganaStream.windowSeconds,
+          limit: RATE_LIMITS.furiganaStream.limit,
+        });
+
+        if (!rlResult.allowed) {
+          return jsonResponse(
+            {
+              error: "rate_limit_exceeded",
+              limit: rlResult.limit,
+              retryAfter: rlResult.resetSeconds,
+            },
+            429,
+            { "Retry-After": String(rlResult.resetSeconds) }
+          );
+        }
+
         const parsed = FuriganaStreamSchema.safeParse(body);
         if (!parsed.success) {
           return errorResponse("Invalid request body");
@@ -1183,6 +1292,25 @@ Output:
       // - Force refresh: requires auth + canModifySong
       // =======================================================================
       if (action === "soramimi-stream") {
+        const rlKey = RateLimit.makeKey(["rl", "song", "soramimi-stream", "user", rateLimitUser]);
+        const rlResult = await RateLimit.checkCounterLimit({
+          key: rlKey,
+          windowSeconds: RATE_LIMITS.soramimiStream.windowSeconds,
+          limit: RATE_LIMITS.soramimiStream.limit,
+        });
+
+        if (!rlResult.allowed) {
+          return jsonResponse(
+            {
+              error: "rate_limit_exceeded",
+              limit: rlResult.limit,
+              retryAfter: rlResult.resetSeconds,
+            },
+            429,
+            { "Retry-After": String(rlResult.resetSeconds) }
+          );
+        }
+
         const parsed = SoramimiStreamSchema.safeParse(body);
         if (!parsed.success) {
           return errorResponse("Invalid request body");
