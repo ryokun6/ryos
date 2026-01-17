@@ -146,7 +146,9 @@ export function ChatInput({
 
   // Check if user is typing @ryo
   const isTypingRyoMention =
-    isInChatRoom && (input.startsWith("@ryo ") || input === "@ryo");
+    showMentionButton &&
+    isInChatRoom &&
+    (input.startsWith("@ryo ") || input === "@ryo");
 
   useEffect(() => {
     // Check if device has touch capability
