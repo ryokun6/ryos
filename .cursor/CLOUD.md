@@ -66,7 +66,7 @@ The following environment variables are required for full functionality:
 
 ## Project Structure
 
-- `api/` - Vercel serverless API endpoints (Edge runtime)
+- `_api/` - Vercel serverless API endpoints (Edge runtime, uses underscore prefix to avoid Vercel double compilation)
 - `src/apps/` - Individual application modules (Finder, TextEdit, Chats, etc.)
 - `public/` - Static assets (fonts, icons, wallpapers, sounds)
 - `scripts/` - Build and maintenance scripts
