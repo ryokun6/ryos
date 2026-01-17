@@ -5,6 +5,7 @@
  * POST - Send a message to a room
  */
 
+import { Redis } from "@upstash/redis";
 import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../../_utils/_cors.js";
 import { validateAuthToken } from "../../_utils/_auth-validate.js";
 import {
@@ -14,27 +15,10 @@ import {
   filterProfanityPreservingUrls,
   MAX_MESSAGE_LENGTH,
 } from "../../_utils/_validation.js";
-
-import { Redis } from "@upstash/redis";
 import {
-  roomExists,
-  getRoom,
-  getMessages,
-  addMessage,
-  getLastMessage,
-  generateId,
-  getCurrentTimestamp,
-  setUser,
-} from "../../chat-rooms/_redis.js";
-
-// Create Redis client for rate limiting operations
-function getRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
-import {
+  CHAT_ROOM_PREFIX,
+  CHAT_MESSAGES_PREFIX,
+  CHAT_USERS_PREFIX,
   CHAT_BURST_PREFIX,
   CHAT_BURST_SHORT_WINDOW_SECONDS,
   CHAT_BURST_SHORT_LIMIT,
@@ -42,15 +26,97 @@ import {
   CHAT_BURST_LONG_LIMIT,
   CHAT_MIN_INTERVAL_SECONDS,
   USER_EXPIRATION_TIME,
+  CHAT_ROOM_PRESENCE_ZSET_PREFIX,
 } from "../../chat-rooms/_constants.js";
-import { refreshRoomPresence } from "../../chat-rooms/_presence.js";
 import { ensureUserExists } from "../../chat-rooms/_users.js";
-import type { Message } from "../../chat-rooms/_types.js";
+import type { Message, Room, User } from "../../chat-rooms/_types.js";
 
 export const edge = true;
 export const config = {
   runtime: "edge",
 };
+
+// ============================================================================
+// Local Redis helpers (avoid importing from _redis.ts to prevent bundler issues)
+// ============================================================================
+
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL!,
+    token: process.env.REDIS_KV_REST_API_TOKEN!,
+  });
+}
+
+function generateId(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function getCurrentTimestamp(): number {
+  return Date.now();
+}
+
+function parseJSON<T>(data: unknown): T | null {
+  if (!data) return null;
+  if (typeof data === "object") return data as T;
+  if (typeof data === "string") {
+    try { return JSON.parse(data) as T; }
+    catch { return null; }
+  }
+  return null;
+}
+
+async function roomExists(roomId: string): Promise<boolean> {
+  const redis = createRedis();
+  const exists = await redis.exists(`${CHAT_ROOM_PREFIX}${roomId}`);
+  return exists === 1;
+}
+
+async function getRoom(roomId: string): Promise<Room | null> {
+  const redis = createRedis();
+  const data = await redis.get(`${CHAT_ROOM_PREFIX}${roomId}`);
+  return parseJSON<Room>(data);
+}
+
+async function getMessages(roomId: string, limit: number = 20): Promise<Message[]> {
+  const redis = createRedis();
+  const messagesKey = `${CHAT_MESSAGES_PREFIX}${roomId}`;
+  const rawMessages = await redis.lrange<(Message | string)[]>(messagesKey, 0, limit - 1);
+  return (rawMessages || [])
+    .map((item) => parseJSON<Message>(item))
+    .filter((msg): msg is Message => msg !== null);
+}
+
+async function addMessage(roomId: string, message: Message): Promise<void> {
+  const redis = createRedis();
+  const messagesKey = `${CHAT_MESSAGES_PREFIX}${roomId}`;
+  await redis.lpush(messagesKey, JSON.stringify(message));
+  await redis.ltrim(messagesKey, 0, 99);
+}
+
+async function getLastMessage(roomId: string): Promise<Message | null> {
+  const redis = createRedis();
+  const messagesKey = `${CHAT_MESSAGES_PREFIX}${roomId}`;
+  const lastMessages = await redis.lrange<(Message | string)[]>(messagesKey, 0, 0);
+  if (!lastMessages || lastMessages.length === 0) return null;
+  return parseJSON<Message>(lastMessages[0]);
+}
+
+async function setUser(username: string, user: User): Promise<void> {
+  const redis = createRedis();
+  await redis.set(`${CHAT_USERS_PREFIX}${username}`, JSON.stringify(user));
+}
+
+async function refreshRoomPresence(roomId: string, username: string): Promise<void> {
+  const redis = createRedis();
+  const zkey = `${CHAT_ROOM_PRESENCE_ZSET_PREFIX}${roomId}`;
+  await redis.zadd(zkey, { score: Date.now(), member: username });
+}
+
+// ============================================================================
+// Route Handler
+// ============================================================================
 
 function getRoomId(req: Request): string | null {
   const url = new URL(req.url);
@@ -121,7 +187,7 @@ export default async function handler(req: Request) {
       return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
     }
 
-    const authResult = await validateAuthToken(usernameHeader, token, "send-message");
+    const authResult = await validateAuthToken(createRedis(), usernameHeader, token, {});
     if (!authResult.valid) {
       return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
     }
@@ -156,7 +222,7 @@ export default async function handler(req: Request) {
     // Burst rate limiting for public rooms
     if (isPublicRoom) {
       try {
-        const redis = getRedis();
+        const redis = createRedis();
         const shortKey = `${CHAT_BURST_PREFIX}s:${roomId}:${username}`;
         const longKey = `${CHAT_BURST_PREFIX}l:${roomId}:${username}`;
         const lastKey = `${CHAT_BURST_PREFIX}last:${roomId}:${username}`;
@@ -222,7 +288,7 @@ export default async function handler(req: Request) {
 
       const updatedUser = { ...userData, lastActive: getCurrentTimestamp() };
       await setUser(username, updatedUser);
-      await getRedis().expire(`chat:users:${username}`, USER_EXPIRATION_TIME);
+      await createRedis().expire(`chat:users:${username}`, USER_EXPIRATION_TIME);
       await refreshRoomPresence(roomId, username);
 
       return new Response(JSON.stringify({ message }), { status: 201, headers });
