@@ -76,6 +76,7 @@ export function useIrcChat(isWindowOpen: boolean) {
   const lastNickRef = useRef<string | null>(null);
   const reconnectAttemptRef = useRef(0);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const allowReconnectRef = useRef(true);
 
   const rooms = useMemo(() => channels.map(mapChannelToRoom), [channels]);
 
@@ -144,6 +145,8 @@ export function useIrcChat(isWindowOpen: boolean) {
   useEffect(() => {
     if (!isWindowOpen || !sessionId) return;
 
+    allowReconnectRef.current = true;
+
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
@@ -194,6 +197,9 @@ export function useIrcChat(isWindowOpen: boolean) {
     };
 
     eventSource.onerror = () => {
+      if (!allowReconnectRef.current) {
+        return;
+      }
       setConnectionState((prev) =>
         prev ? { ...prev, connected: false } : prev
       );
@@ -218,6 +224,7 @@ export function useIrcChat(isWindowOpen: boolean) {
     };
 
     return () => {
+      allowReconnectRef.current = false;
       eventSource.close();
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
