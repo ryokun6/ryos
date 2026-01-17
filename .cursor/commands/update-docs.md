@@ -13,14 +13,14 @@ These are the manually-written docs that this command updates (app docs 2.1-2.17
 
 | Section | Files | Related Code |
 |---------|-------|--------------|
-| Overview | `1-overview.md`, `1.1-architecture.md` | `src/`, `_api/`, `package.json` |
+| Overview | `1-overview.md`, `1.1-architecture.md` | `src/`, `api/`, `package.json` |
 | Apps Index | `2-apps.md` | `src/apps/*/index.ts`, `src/config/appRegistry.tsx` |
 | Framework | `3-application-framework.md`, `3.1-window-management.md`, `3.2-state-management.md`, `3.3-theme-system.md` | `src/components/layout/`, `src/stores/`, `src/themes/`, `src/contexts/` |
-| AI System | `4-ai-system.md` | `_api/chat.ts`, `src/apps/chats/tools/`, `_api/_utils/aiPrompts.ts` |
+| AI System | `4-ai-system.md` | `api/chat.ts`, `src/apps/chats/tools/`, `api/_utils/_aiPrompts.ts` |
 | File System | `5-file-system.md` | `src/stores/useFileSystemStore.ts`, `src/apps/finder/` |
 | Audio System | `6-audio-system.md` | `src/lib/audioContext.ts`, `src/hooks/useSound.ts`, `src/stores/useAudioSettingsStore.ts`, `src/apps/synth/`, `src/apps/soundboard/` |
 | UI Components | `7-ui-components.md`, `7.1-component-library.md`, `7.2-i18n.md` | `src/components/ui/`, `src/components/shared/`, `src/lib/locales/`, `src/utils/i18n.ts` |
-| API Reference | `8-api-reference.md`, `8.1-chat-api.md`, `8.2-song-api.md`, `8.3-media-api.md`, `8.4-chat-rooms-api.md`, `8.5-ai-generation-apis.md`, `8.6-utility-apis.md` | `_api/*.ts` |
+| API Reference | `8-api-reference.md`, `8.1-chat-api.md`, `8.2-song-api.md`, `8.3-media-api.md`, `8.4-chat-rooms-api.md`, `8.5-ai-generation-apis.md`, `8.6-utility-apis.md` | `api/*.ts` |
 
 ## Workflow
 
@@ -47,7 +47,7 @@ Use these prompts for each section. Launch all applicable sub-agents in parallel
 You are updating ryOS documentation. Focus on the Overview section.
 
 1. Read docs/1-overview.md and docs/1.1-architecture.md
-2. Review: package.json (dependencies), src/ folder structure, _api/ folder
+2. Review: package.json (dependencies), src/ folder structure, api/ folder
 3. Update:
    - Tech stack table if dependencies changed
    - Project structure if folders added/removed
@@ -95,8 +95,8 @@ You are updating ryOS documentation. Focus on AI System.
 
 1. Read docs/4-ai-system.md
 2. Review:
-   - _api/chat.ts (main chat endpoint)
-   - _api/_utils/aiPrompts.ts (system prompts)
+   - api/chat.ts (main chat endpoint)
+   - api/_utils/_aiPrompts.ts (system prompts)
    - src/apps/chats/tools/*.ts (tool handlers)
 3. Update:
    - Available AI models and providers
@@ -167,13 +167,13 @@ You are updating ryOS documentation. Focus on UI Components.
 You are updating ryOS documentation. Focus on API Reference.
 
 1. Read: docs/8-api-reference.md and all docs/8.*.md files
-2. Review: _api/*.ts files
+2. Review: api/*.ts files
 3. Update:
    - Endpoint list and descriptions
    - Request/response formats
    - Authentication requirements
    - Rate limiting or usage notes
-4. Ensure all API endpoints in _api/ folder are documented
+4. Ensure all API endpoints in api/ folder are documented
 5. Report what you updated
 ```
 

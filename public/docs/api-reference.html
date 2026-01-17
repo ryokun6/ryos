@@ -277,7 +277,7 @@
     <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
     <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
     <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
-    <a href="/docs/chat-rooms-api" class="nav-child ">8.4 Chat Rooms API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">8.4 Chat Rooms API (REST)</a>
     <a href="/docs/ai-generation-apis" class="nav-child ">8.5 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.6 Utility APIs</a>
   </div>
@@ -307,14 +307,14 @@
     Edge --> Response[JSON Response]
     Response --> Client</pre>
 <h2>Endpoint Documentation</h2>
-<table><thead><tr><th>Endpoint Group</th><th>Description</th></tr></thead><tbody><tr><td><a href="/docs/chat-api">Chat API</a></td><td>Main AI chat with streaming and tool calling</td></tr><tr><td><a href="/docs/song-api">Song API</a></td><td>Music library CRUD, lyrics, furigana, translations</td></tr><tr><td><a href="/docs/media-api">Media API</a></td><td>Text-to-speech, transcription, YouTube search</td></tr><tr><td><a href="/docs/chat-rooms-api">Chat Rooms API</a></td><td>Real-time chat rooms with Pusher/Redis</td></tr><tr><td><a href="/docs/ai-generation-apis">AI Generation APIs</a></td><td>Applet generation, IE time-travel, parse-title</td></tr><tr><td><a href="/docs/utility-apis">Utility APIs</a></td><td>Link preview, iframe check, share applet, admin</td></tr></tbody></table>
+<table><thead><tr><th>Endpoint Group</th><th>Description</th></tr></thead><tbody><tr><td><a href="/docs/chat-api">Chat API</a></td><td>Main AI chat with streaming and tool calling</td></tr><tr><td><a href="/docs/song-api">Song API</a></td><td>Music library CRUD, lyrics, furigana, translations</td></tr><tr><td><a href="/docs/media-api">Media API</a></td><td>Text-to-speech, transcription, YouTube search</td></tr><tr><td><a href="/docs/chat-rooms-api">Chat Rooms API</a></td><td>Real-time chat rooms (REST)</td></tr><tr><td><a href="/docs/ai-generation-apis">AI Generation APIs</a></td><td>Applet generation, IE time-travel, parse-title</td></tr><tr><td><a href="/docs/utility-apis">Utility APIs</a></td><td>Link preview, iframe check, share applet, admin</td></tr></tbody></table>
 <h2>Quick Reference</h2>
 <h3>AI Endpoints</h3>
 <table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat</code></td><td>Main AI chat with tool calling</td></tr><tr><td><code>/api/applet-ai</code></td><td>Applet text + image generation</td></tr><tr><td><code>/api/ie-generate</code></td><td>Time-travel page generation</td></tr><tr><td><code>/api/parse-title</code></td><td>Music metadata extraction</td></tr></tbody></table>
 <h3>Media Endpoints</h3>
 <table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/song/</code></td><td>Song library CRUD</td></tr><tr><td><code>/api/song/[id]</code></td><td>Individual song operations</td></tr><tr><td><code>/api/speech</code></td><td>Text-to-speech</td></tr><tr><td><code>/api/audio-transcribe</code></td><td>Speech-to-text</td></tr><tr><td><code>/api/youtube-search</code></td><td>YouTube music search</td></tr></tbody></table>
 <h3>Communication Endpoints</h3>
-<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat-rooms</code></td><td>Real-time chat room management</td></tr></tbody></table>
+<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/rooms</code></td><td>Room list + create</td></tr><tr><td><code>/api/rooms/[id]</code></td><td>Room detail + delete</td></tr><tr><td><code>/api/rooms/[id]/messages</code></td><td>List/send messages</td></tr><tr><td><code>/api/rooms/[id]/messages/[msgId]</code></td><td>Delete message (admin)</td></tr><tr><td><code>/api/messages/bulk</code></td><td>Bulk message fetch</td></tr><tr><td><code>/api/presence/switch</code></td><td>Presence switching</td></tr><tr><td><code>/api/users</code></td><td>User search</td></tr><tr><td><code>/api/ai/ryo-reply</code></td><td>AI reply in rooms</td></tr></tbody></table>
 <h3>Utility Endpoints</h3>
 <table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/link-preview</code></td><td>URL metadata extraction</td></tr><tr><td><code>/api/iframe-check</code></td><td>Embeddability checking</td></tr><tr><td><code>/api/share-applet</code></td><td>Applet sharing</td></tr><tr><td><code>/api/admin</code></td><td>Admin operations</td></tr></tbody></table>
 <h3>Endpoint Categories Overview</h3>
@@ -335,7 +335,11 @@
     Media --> transcribe["/audio-transcribe"]
     Media --> yt["/youtube-search"]
     
-    Comm --> rooms["/chat-rooms"]
+    Comm --> rooms["/rooms"]
+    Comm --> messages["/messages/bulk"]
+    Comm --> presence["/presence/switch"]
+    Comm --> users["/users"]
+    Comm --> ryo["/ai/ryo-reply"]
     
     Util --> preview["/link-preview"]
     Util --> iframe["/iframe-check"]

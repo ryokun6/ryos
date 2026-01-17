@@ -382,7 +382,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           );
           try {
             const response = await fetch(
-              "/api/chat-rooms?action=checkPassword",
+              "/api/auth/password/check",
               {
                 method: "GET",
                 headers: {
@@ -430,7 +430,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await fetch(getApiUrl("/api/chat-rooms?action=setPassword"), {
+            const response = await fetch(getApiUrl("/api/auth/password/set"), {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -701,59 +701,14 @@ export const useChatsStore = create<ChatsStoreState>()(
             currentUsername
           );
 
-          try {
-            const response = await fetch(
-              "/api/chat-rooms?action=generateToken",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  ...(currentToken
-                    ? {
-                        Authorization: `Bearer ${currentToken}`,
-                        "X-Username": currentUsername,
-                      }
-                    : {}),
-                },
-                body: JSON.stringify({ username: currentUsername }),
-              }
-            );
-
-            const data = await response.json();
-
-            if (response.ok && data.token) {
-              console.log("[ChatsStore] Auth token generated successfully");
-              set({ authToken: data.token });
-              saveAuthTokenToRecovery(data.token);
-              // Save token creation time
-              saveTokenRefreshTime(currentUsername);
-              return { ok: true };
-            } else if (response.status === 401) {
-              return { ok: false, error: "Authentication required" };
-            } else if (response.status === 409) {
-              // Token already exists on server, this shouldn't happen but handle it
-              console.warn(
-                "[ChatsStore] Token already exists on server for user:",
-                currentUsername
-              );
-              return { ok: false, error: "Token already exists on server" };
-            } else {
-              console.error(
-                "[ChatsStore] Failed to generate auth token:",
-                data.error
-              );
-              return {
-                ok: false,
-                error: data.error || "Failed to generate auth token",
-              };
-            }
-          } catch (error) {
-            console.error("[ChatsStore] Error generating auth token:", error);
-            return {
-              ok: false,
-              error: "Network error while generating auth token",
-            };
-          }
+          // Legacy scenario: user has username but no token. 
+          // This is rare - modern auth flows (register, login) return tokens directly.
+          // For now, return error and require re-authentication
+          console.warn(
+            "[ChatsStore] User has username but no token - requires re-authentication:",
+            currentUsername
+          );
+          return { ok: false, error: "Please log in again to continue" };
         },
         refreshAuthToken: async () => {
           const currentUsername = get().username;
@@ -778,7 +733,7 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           try {
             const response = await fetch(
-              "/api/chat-rooms?action=refreshToken",
+              "/api/auth/token/refresh",
               {
                 method: "POST",
                 headers: {
@@ -906,14 +861,13 @@ export const useChatsStore = create<ChatsStoreState>()(
           // Inform server to invalidate current token if we have auth
           if (currentUsername && currentToken) {
             try {
-              await fetch(getApiUrl("/api/chat-rooms?action=logoutCurrent"), {
+              await fetch(getApiUrl("/api/auth/logout"), {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${currentToken}`,
                   "X-Username": currentUsername,
                 },
-                body: JSON.stringify({}),
               });
             } catch (err) {
               console.warn(
@@ -965,14 +919,16 @@ export const useChatsStore = create<ChatsStoreState>()(
           const currentUsername = get().username;
 
           try {
-            const queryParams = new URLSearchParams({ action: "getRooms" });
+            const queryParams = new URLSearchParams();
             if (currentUsername) {
               queryParams.append("username", currentUsername);
             }
 
-            const response = await fetch(
-              `/api/chat-rooms?${queryParams.toString()}`
-            );
+            const url = queryParams.toString() 
+              ? `/api/rooms?${queryParams.toString()}`
+              : "/api/rooms";
+            
+            const response = await fetch(url);
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
                 error: `HTTP error! status: ${response.status}`,
@@ -1002,13 +958,8 @@ export const useChatsStore = create<ChatsStoreState>()(
           console.log(`[ChatsStore] Fetching messages for room ${roomId}...`);
 
           try {
-            const queryParams = new URLSearchParams({
-              action: "getMessages",
-              roomId,
-            });
-
             const response = await fetch(
-              `/api/chat-rooms?${queryParams.toString()}`
+              `/api/rooms/${encodeURIComponent(roomId)}/messages`
             );
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
@@ -1134,12 +1085,11 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           try {
             const queryParams = new URLSearchParams({
-              action: "getBulkMessages",
               roomIds: roomIds.join(","),
             });
 
             const response = await fetch(
-              `/api/chat-rooms?${queryParams.toString()}`
+              `/api/messages/bulk?${queryParams.toString()}`
             );
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
@@ -1271,7 +1221,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           if (username) {
             try {
               const response = await fetch(
-                "/api/chat-rooms?action=switchRoom",
+                "/api/presence/switch",
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -1352,7 +1302,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             };
 
             const response = await makeAuthenticatedRequest(
-              "/api/chat-rooms?action=createRoom",
+              "/api/rooms",
               {
                 method: "POST",
                 headers,
@@ -1399,7 +1349,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             };
 
             const response = await makeAuthenticatedRequest(
-              `/api/chat-rooms?action=deleteRoom&roomId=${roomId}`,
+              `/api/rooms/${encodeURIComponent(roomId)}`,
               {
                 method: "DELETE",
                 headers,
@@ -1462,30 +1412,25 @@ export const useChatsStore = create<ChatsStoreState>()(
               headers["X-Username"] = username;
             }
 
+            const messageUrl = `/api/rooms/${encodeURIComponent(roomId)}/messages`;
+            const messageBody = JSON.stringify({
+              content: content.trim(),
+            });
+
             const response = authToken
               ? await makeAuthenticatedRequest(
-                  "/api/chat-rooms?action=sendMessage",
+                  messageUrl,
                   {
                     method: "POST",
                     headers,
-                    body: JSON.stringify({
-                      roomId,
-                      username,
-                      content: content.trim(),
-                      clientId: optimisticMessage.clientId, // include for server echo if supported
-                    }),
+                    body: messageBody,
                   },
                   get().refreshAuthToken
                 )
-              : await fetch(getApiUrl("/api/chat-rooms?action=sendMessage"), {
+              : await fetch(getApiUrl(messageUrl), {
                   method: "POST",
                   headers,
-                  body: JSON.stringify({
-                    roomId,
-                    username,
-                    content: content.trim(),
-                    clientId: optimisticMessage.clientId,
-                  }),
+                  body: messageBody,
                 });
 
             if (!response.ok) {
@@ -1540,7 +1485,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await fetch(getApiUrl("/api/chat-rooms?action=createUser"), {
+            const response = await fetch(getApiUrl("/api/auth/register"), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ username: trimmedUsername, password }),

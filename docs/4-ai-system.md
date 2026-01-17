@@ -88,7 +88,7 @@ Tool handlers in `src/apps/chats/tools/` follow a registry pattern:
 
 ## System Prompts
 
-Defined in `_api/_utils/aiPrompts.ts`:
+Defined in `api/_utils/_aiPrompts.ts`:
 
 - `CORE_PRIORITY_INSTRUCTIONS` - Persona adherence rules
 - `RYO_PERSONA_INSTRUCTIONS` - Ryo's identity and background
