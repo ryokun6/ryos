@@ -22,9 +22,9 @@ export const helpItems = [
   },
   {
     icon: "#️⃣",
-    title: "Join Chat Rooms",
+    title: "Join IRC Channels",
     description:
-      "Connect with others in public chat rooms. Mention @ryo for AI responses.",
+      "Connect with others in IRC channels hosted on irc.pieter.com.",
   },
   {
     icon: "🎤",
