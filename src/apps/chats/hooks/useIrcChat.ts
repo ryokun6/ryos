@@ -139,12 +139,14 @@ export function useIrcChat(isWindowOpen: boolean) {
     eventSource.onmessage = (event) => {
       const payload = JSON.parse(event.data) as IrcStreamEvent;
       if (payload.type === "state") {
-        setConnectionState(payload.payload.state);
+        const statePayload = payload.payload as { state: IrcConnectionState };
+        setConnectionState(statePayload.state);
         refreshChannels();
         return;
       }
       if (payload.type === "system") {
-        const text = payload.payload.text;
+        const systemPayload = payload.payload as { text: string };
+        const text = systemPayload.text;
         if (text) {
           toast(text);
         }
