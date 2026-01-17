@@ -205,8 +205,8 @@ export async function fetchWithOrigin(
  */
 export async function fetchWithAuth(
   url: string,
-  token: string,
   username: string,
+  token: string,
   options: RequestInit = {}
 ): Promise<Response> {
   const headers = new Headers(options.headers);
