@@ -277,7 +277,7 @@
     <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
     <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
     <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
-    <a href="/docs/chat-rooms-api" class="nav-child ">8.4 Chat Rooms API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">8.4 Chat Rooms API (REST)</a>
     <a href="/docs/ai-generation-apis" class="nav-child ">8.5 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.6 Utility APIs</a>
   </div>
@@ -305,7 +305,10 @@
         ChatAPI[chat]
         SongAPI[song]
         SpeechAPI[speech]
-        RoomsAPI[chat-rooms]
+        RoomsAPI[rooms]
+        MessagesAPI[rooms/messages]
+        PresenceAPI[presence]
+        UsersAPI[users]
         IEAPI[ie-generate]
         AppletAPI[applet-ai]
     end
@@ -334,19 +337,36 @@
 <h2>API Directory Structure</h2>
 <pre><code>api/
 ├── _utils/                    # Shared utilities
-│   ├── aiModels.ts           # AI provider abstraction
-│   ├── aiPrompts.ts          # System prompts
-│   ├── auth-validate.ts      # Token validation
-│   ├── cors.ts               # CORS handling
-│   ├── rate-limit.ts         # Rate limiting
-│   ├── song-service.ts       # Song data service
-│   └── sse.ts                # Server-Sent Events
-├── chat-rooms/               # Multi-file module
-│   ├── index.ts              # HTTP handlers
-│   ├── _messages.ts          # Message handlers
-│   ├── _presence.ts          # Presence tracking
-│   ├── _pusher.ts            # Pusher integration
-│   └── _redis.ts             # Redis client
+│   ├── _aiModels.ts          # AI provider abstraction
+│   ├── _aiPrompts.ts         # System prompts
+│   ├── _auth-validate.ts     # Token validation
+│   ├── _cors.ts              # CORS handling
+│   ├── _rate-limit.ts        # Rate limiting
+│   ├── _song-service.ts      # Song data service
+│   └── auth/                 # Auth helpers (tokens/passwords)
+├── auth/                      # Auth endpoints
+│   ├── register.ts
+│   ├── login.ts
+│   └── token/
+├── rooms/                     # Room endpoints
+│   ├── index.ts
+│   └── [id]/
+│       ├── index.ts
+│       ├── join.ts
+│       ├── leave.ts
+│       ├── users.ts
+│       └── messages/
+│           ├── index.ts
+│           └── [msgId].ts
+├── messages/
+│   └── bulk.ts
+├── presence/
+│   └── switch.ts
+├── users/
+│   └── index.ts
+├── ai/
+│   └── ryo-reply.ts
+├── chat-rooms/               # Shared chat helpers (Redis/presence)
 ├── song/                     # Multi-file module
 │   ├── index.ts              # List/batch operations
 │   ├── [id].ts               # Single song CRUD
@@ -361,15 +381,15 @@
 <h3>AI Generation APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/ie-generate</code></td><td>POST</td><td>Internet Explorer time-travel</td></tr><tr><td><code>/api/applet-ai</code></td><td>POST</td><td>Applet AI assistant</td></tr></tbody></table>
 <h3>Communication APIs</h3>
-<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat-rooms</code></td><td>GET, POST, DELETE</td><td>Real-time chat rooms</td></tr><tr><td><code>/api/share-applet</code></td><td>GET, POST, PATCH, DELETE</td><td>Applet sharing/store</td></tr></tbody></table>
+<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/rooms</code></td><td>GET, POST</td><td>Rooms list + create</td></tr><tr><td><code>/api/rooms/[id]</code></td><td>GET, DELETE</td><td>Room detail + delete</td></tr><tr><td><code>/api/rooms/[id]/messages</code></td><td>GET, POST</td><td>Messages</td></tr><tr><td><code>/api/rooms/[id]/messages/[msgId]</code></td><td>DELETE</td><td>Delete message (admin)</td></tr><tr><td><code>/api/messages/bulk</code></td><td>GET</td><td>Bulk messages</td></tr><tr><td><code>/api/presence/switch</code></td><td>POST</td><td>Presence switching</td></tr><tr><td><code>/api/users</code></td><td>GET</td><td>User search</td></tr><tr><td><code>/api/ai/ryo-reply</code></td><td>POST</td><td>AI reply in rooms</td></tr><tr><td><code>/api/share-applet</code></td><td>GET, POST, PATCH, DELETE</td><td>Applet sharing/store</td></tr></tbody></table>
 <h3>Utility APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/iframe-check</code></td><td>GET</td><td>Check/proxy iframe embedding</td></tr><tr><td><code>/api/link-preview</code></td><td>GET</td><td>OpenGraph metadata extraction</td></tr><tr><td><code>/api/admin</code></td><td>Various</td><td>Admin operations</td></tr></tbody></table>
 <h2>AI Provider Abstraction</h2>
 <h3>Supported Models</h3>
 <table><thead><tr><th>Provider</th><th>Models</th><th>Use Cases</th></tr></thead><tbody><tr><td><strong>OpenAI</strong></td><td>gpt-5, gpt-5.1, gpt-5-mini, gpt-4o, gpt-4.1</td><td>Default chat, code generation</td></tr><tr><td><strong>Anthropic</strong></td><td>claude-4.5, claude-4, claude-3.7, claude-3.5</td><td>Complex reasoning</td></tr><tr><td><strong>Google</strong></td><td>gemini-2.5-pro, gemini-2.5-flash, gemini-3-pro</td><td>Image generation</td></tr></tbody></table>
 <h3>Model Selection</h3>
-<pre><code>// api/_utils/aiModels.ts
-export const getModelInstance = (model: SupportedModel): LanguageModelV2 =&gt; {
+<pre><code>// api/_utils/_aiModels.ts
+export const getModelInstance = (model: SupportedModel): LanguageModel =&gt; {
   switch (model) {
     case "gpt-5":
       return openai("gpt-5");
@@ -438,7 +458,7 @@ export const getModelInstance = (model: SupportedModel): LanguageModelV2 =&gt; {
   // ... more tools
 }</code></pre>
 <h3>System Prompts</h3>
-<pre><code>// api/_utils/aiPrompts.ts
+<pre><code>// _api/_utils/aiPrompts.ts
 export const CORE_PRIORITY_INSTRUCTIONS = `
   You are Ryo, an AI assistant in ryOS...
 `;
@@ -505,7 +525,7 @@ const transcription = await openai.audio.transcriptions.create({
 });</code></pre>
 <h2>Rate Limiting</h2>
 <h3>Counter-Based Limiting</h3>
-<pre><code>// api/_utils/rate-limit.ts
+<pre><code>// _api/_utils/rate-limit.ts
 export async function checkCounterLimit({
   key,
   windowSeconds,
@@ -539,7 +559,7 @@ export async function checkCounterLimit({
 <table><thead><tr><th>Endpoint</th><th>Burst Limit</th><th>Daily/Budget</th><th>Window</th></tr></thead><tbody><tr><td>Chat AI (auth)</td><td>25</td><td>per 5 hours</td><td>Sliding</td></tr><tr><td>Chat AI (anon)</td><td>3</td><td>per 5 hours</td><td>Sliding</td></tr><tr><td>Speech TTS</td><td>10/min</td><td>50/day</td><td>Fixed</td></tr><tr><td>IE Generate</td><td>3/min</td><td>10/5hr</td><td>Fixed</td></tr><tr><td>Applet AI (auth)</td><td>50</td><td>per hour</td><td>Fixed</td></tr><tr><td>Applet AI (anon)</td><td>15</td><td>per hour</td><td>Fixed</td></tr><tr><td>Transcribe</td><td>10/min</td><td>50/day</td><td>Fixed</td></tr></tbody></table>
 <h2>Authentication</h2>
 <h3>Token Validation</h3>
-<pre><code>// api/_utils/auth-validate.ts
+<pre><code>// _api/_utils/auth-validate.ts
 export async function validateAuthToken(
   redis: RedisLike,
   username: string,
@@ -570,7 +590,7 @@ export async function validateAuthToken(
 <h3>Token Configuration</h3>
 <table><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody><tr><td>Token TTL</td><td>90 days</td></tr><tr><td>Grace period</td><td>30 days</td></tr><tr><td>Admin bypass</td><td>User "ryo"</td></tr></tbody></table>
 <h2>CORS Handling</h2>
-<pre><code>// api/_utils/cors.ts
+<pre><code>// _api/_utils/cors.ts
 export function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
   

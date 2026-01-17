@@ -25,7 +25,7 @@ graph LR
 | [Chat API](/docs/chat-api) | Main AI chat with streaming and tool calling |
 | [Song API](/docs/song-api) | Music library CRUD, lyrics, furigana, translations |
 | [Media API](/docs/media-api) | Text-to-speech, transcription, YouTube search |
-| [Chat Rooms API](/docs/chat-rooms-api) | Real-time chat rooms with Pusher/Redis |
+| [Chat Rooms API](/docs/chat-rooms-api) | Real-time chat rooms (REST) |
 | [AI Generation APIs](/docs/ai-generation-apis) | Applet generation, IE time-travel, parse-title |
 | [Utility APIs](/docs/utility-apis) | Link preview, iframe check, share applet, admin |
 
@@ -54,7 +54,14 @@ graph LR
 
 | Endpoint | Purpose |
 |----------|---------|
-| `/api/chat-rooms` | Real-time chat room management |
+| `/api/rooms` | Room list + create |
+| `/api/rooms/[id]` | Room detail + delete |
+| `/api/rooms/[id]/messages` | List/send messages |
+| `/api/rooms/[id]/messages/[msgId]` | Delete message (admin) |
+| `/api/messages/bulk` | Bulk message fetch |
+| `/api/presence/switch` | Presence switching |
+| `/api/users` | User search |
+| `/api/ai/ryo-reply` | AI reply in rooms |
 
 ### Utility Endpoints
 
@@ -85,7 +92,11 @@ graph TD
     Media --> transcribe["/audio-transcribe"]
     Media --> yt["/youtube-search"]
     
-    Comm --> rooms["/chat-rooms"]
+    Comm --> rooms["/rooms"]
+    Comm --> messages["/messages/bulk"]
+    Comm --> presence["/presence/switch"]
+    Comm --> users["/users"]
+    Comm --> ryo["/ai/ryo-reply"]
     
     Util --> preview["/link-preview"]
     Util --> iframe["/iframe-check"]

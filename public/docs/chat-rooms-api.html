@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat Rooms API - ryOS Docs</title>
+  <title>Chat Rooms API (REST) - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -277,7 +277,7 @@
     <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
     <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
     <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
-    <a href="/docs/chat-rooms-api" class="nav-child active">8.4 Chat Rooms API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child active">8.4 Chat Rooms API (REST)</a>
     <a href="/docs/ai-generation-apis" class="nav-child ">8.5 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.6 Utility APIs</a>
   </div>
@@ -292,265 +292,55 @@
     
     <main class="content">
       <article>
-        <h1>Chat Rooms API</h1>
-<p>Real-time chat rooms API powered by Pusher WebSockets and Redis (Upstash). Supports public and private rooms with presence tracking, token-based authentication, and AI-powered replies.</p>
-<h2>Endpoints</h2>
-<p>All actions are performed on a single endpoint using the <code>action</code> query parameter.</p>
-<table><thead><tr><th>Method</th><th>Action</th><th>Description</th><th>Auth Required</th></tr></thead><tbody><tr><td>GET</td><td><code>getRooms</code></td><td>List all accessible rooms</td><td>No</td></tr><tr><td>GET</td><td><code>getRoom</code></td><td>Get a single room by ID</td><td>Yes</td></tr><tr><td>GET</td><td><code>getMessages</code></td><td>Get messages for a room</td><td>No</td></tr><tr><td>GET</td><td><code>getBulkMessages</code></td><td>Get messages for multiple rooms</td><td>No</td></tr><tr><td>GET</td><td><code>getRoomUsers</code></td><td>Get active users in a room</td><td>Yes</td></tr><tr><td>GET</td><td><code>getUsers</code></td><td>Search users by username</td><td>No</td></tr><tr><td>GET</td><td><code>checkPassword</code></td><td>Check if user has password set</td><td>Yes</td></tr><tr><td>GET</td><td><code>cleanupPresence</code></td><td>Clean up expired presence (admin)</td><td>Yes (admin)</td></tr><tr><td>GET</td><td><code>debugPresence</code></td><td>Debug presence data (admin)</td><td>Yes (admin)</td></tr><tr><td>POST</td><td><code>createRoom</code></td><td>Create a new room</td><td>Yes</td></tr><tr><td>POST</td><td><code>joinRoom</code></td><td>Join a room</td><td>No</td></tr><tr><td>POST</td><td><code>leaveRoom</code></td><td>Leave a room</td><td>No</td></tr><tr><td>POST</td><td><code>switchRoom</code></td><td>Switch between rooms</td><td>No</td></tr><tr><td>POST</td><td><code>sendMessage</code></td><td>Send a message to a room</td><td>Yes</td></tr><tr><td>POST</td><td><code>generateRyoReply</code></td><td>Generate AI reply from Ryo</td><td>Yes</td></tr><tr><td>POST</td><td><code>createUser</code></td><td>Create a new user account</td><td>No</td></tr><tr><td>POST</td><td><code>generateToken</code></td><td>Generate auth token for user</td><td>Yes</td></tr><tr><td>POST</td><td><code>refreshToken</code></td><td>Refresh an existing token</td><td>No</td></tr><tr><td>POST</td><td><code>verifyToken</code></td><td>Verify token validity</td><td>No</td></tr><tr><td>POST</td><td><code>authenticateWithPassword</code></td><td>Login with username/password</td><td>No</td></tr><tr><td>POST</td><td><code>setPassword</code></td><td>Set user password</td><td>Yes</td></tr><tr><td>POST</td><td><code>clearAllMessages</code></td><td>Clear all messages (admin)</td><td>Yes (admin)</td></tr><tr><td>POST</td><td><code>resetUserCounts</code></td><td>Reset all user counts (admin)</td><td>Yes (admin)</td></tr><tr><td>POST</td><td><code>listTokens</code></td><td>List user's active tokens</td><td>Yes</td></tr><tr><td>POST</td><td><code>logoutAllDevices</code></td><td>Logout from all devices</td><td>Yes</td></tr><tr><td>POST</td><td><code>logoutCurrent</code></td><td>Logout current session</td><td>Yes</td></tr><tr><td>DELETE</td><td><code>deleteRoom</code></td><td>Delete a room</td><td>Yes</td></tr><tr><td>DELETE</td><td><code>deleteMessage</code></td><td>Delete a message (admin)</td><td>Yes (admin)</td></tr></tbody></table>
+        <h1>Chat Rooms API (REST)</h1>
+<p>Real-time chat rooms API powered by Redis (Upstash) with optional Pusher broadcasts. The API is RESTful and no longer uses the legacy <code>?action=</code> query parameter.</p>
 <h2>Authentication</h2>
-<p>The API uses token-based authentication with the following headers:</p>
-<pre><code>X-Username: &lt;username&gt;
-Authorization: Bearer &lt;token&gt;</code></pre>
-<h3>Token Lifecycle</h3>
-<ul><li><strong>Generation</strong>: Tokens are generated on user creation or via <code>generateToken</code></li></ul><ul><li><strong>Expiration</strong>: Tokens expire after 90 days (<code>USER_EXPIRATION_TIME</code>)</li><li><strong>Grace Period</strong>: Expired tokens can be refreshed within 30 days (<code>TOKEN_GRACE_PERIOD</code>)</li><li><strong>Refresh</strong>: Use <code>refreshToken</code> to get a new token before/after expiration</li></ul>
-<h3>Password Authentication</h3>
-<p>Users can optionally set a password for account recovery:</p>
-<pre><code>// Set password (requires auth)
-POST /api/chat-rooms?action=setPassword
-Body: { password: "min8chars" }
-
-// Login with password
-POST /api/chat-rooms?action=authenticateWithPassword
-Body: { username: "alice", password: "min8chars" }</code></pre>
-<p>Minimum password length: 8 characters</p>
-<h2>TypeScript Types</h2>
-<h3>Room Types</h3>
-<pre><code>type RoomType = "public" | "private";
-
-interface Room {
-  id: string;
-  name: string;
-  type: RoomType;
-  createdAt: number;
-  userCount: number;
-  members?: string[]; // Only for private rooms
-}
-
-interface RoomWithUsers extends Room {
-  users: string[];
-}</code></pre>
-<h3>Message Types</h3>
-<pre><code>interface Message {
-  id: string;
-  roomId: string;
-  username: string;
-  content: string;
-  timestamp: number;
-}
-
-interface BulkMessagesResult {
-  messagesMap: Record&lt;string, Message[]&gt;;
-  validRoomIds: string[];
-  invalidRoomIds: string[];
-}</code></pre>
-<h3>User Types</h3>
-<pre><code>interface User {
-  username: string;
-  lastActive: number;
-}</code></pre>
-<h2>Room Management</h2>
-<h3>Creating Rooms</h3>
-<strong>Public Rooms</strong> (admin only):
-<pre><code>POST /api/chat-rooms?action=createRoom
-Headers: { X-Username: "ryo", Authorization: "Bearer &lt;token&gt;" }
-Body: { name: "general", type: "public" }</code></pre>
-<strong>Private Rooms</strong> (any authenticated user):
-<pre><code>POST /api/chat-rooms?action=createRoom
-Headers: { X-Username: "alice", Authorization: "Bearer &lt;token&gt;" }
-Body: { type: "private", members: ["alice", "bob"] }</code></pre>
-<p>Private room names are auto-generated as <code>@alice, @bob</code>.</p>
-<h3>Listing Rooms</h3>
-<pre><code>GET /api/chat-rooms?action=getRooms&amp;username=alice
+<p>Authenticated endpoints require:</p>
+<pre><code>Authorization: Bearer {token}
+X-Username: {username}</code></pre>
+<p>Tokens are issued by <code>/api/auth/register</code> and <code>/api/auth/login</code>.</p>
+<h2>Endpoint Summary</h2>
+<h3>Auth</h3>
+<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/auth/register</code></td><td>Create user + issue token</td></tr><tr><td>POST</td><td><code>/api/auth/login</code></td><td>Login with password</td></tr><tr><td>POST</td><td><code>/api/auth/logout</code></td><td>Logout current session</td></tr><tr><td>POST</td><td><code>/api/auth/logout-all</code></td><td>Logout all sessions</td></tr><tr><td>POST</td><td><code>/api/auth/token/verify</code></td><td>Verify token</td></tr><tr><td>POST</td><td><code>/api/auth/token/refresh</code></td><td>Refresh token</td></tr><tr><td>GET</td><td><code>/api/auth/password/check</code></td><td>Check if password set</td></tr><tr><td>POST</td><td><code>/api/auth/password/set</code></td><td>Set password</td></tr><tr><td>GET</td><td><code>/api/auth/tokens</code></td><td>List active tokens</td></tr></tbody></table>
+<h3>Rooms</h3>
+<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/rooms</code></td><td>List rooms (public + private membership)</td><td>No</td></tr><tr><td>POST</td><td><code>/api/rooms</code></td><td>Create room</td><td>Yes</td></tr><tr><td>GET</td><td><code>/api/rooms/{id}</code></td><td>Get room by ID</td><td>No</td></tr><tr><td>DELETE</td><td><code>/api/rooms/{id}</code></td><td>Delete room</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/join</code></td><td>Join room</td><td>No</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/leave</code></td><td>Leave room</td><td>No</td></tr><tr><td>GET</td><td><code>/api/rooms/{id}/users</code></td><td>List active users</td><td>No</td></tr></tbody></table>
+<h3>Messages</h3>
+<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/rooms/{id}/messages</code></td><td>List messages</td><td>No</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/messages</code></td><td>Send message</td><td>Yes</td></tr><tr><td>DELETE</td><td><code>/api/rooms/{id}/messages/{messageId}</code></td><td>Delete message (admin)</td><td>Yes (admin)</td></tr><tr><td>GET</td><td><code>/api/messages/bulk?roomIds=...</code></td><td>Bulk messages</td><td>No</td></tr></tbody></table>
+<h3>Presence + Users</h3>
+<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/presence/switch</code></td><td>Switch rooms (presence tracking)</td></tr><tr><td>GET</td><td><code>/api/users?search=...</code></td><td>Search users</td></tr></tbody></table>
+<h3>AI Reply</h3>
+<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/ai/ryo-reply</code></td><td>Generate Ryo reply in a room (auth required)</td></tr></tbody></table>
+<h2>Examples</h2>
+<h3>Create user</h3>
+<pre><code>POST /api/auth/register
+Body: { "username": "alice", "password": "testpassword123" }
 
 // Response
-{
-  "rooms": [
-    { "id": "abc123", "name": "general", "type": "public", "userCount": 5, ... },
-    { "id": "def456", "name": "@alice, @bob", "type": "private", "userCount": 2, "members": ["alice", "bob"], ... }
-  ]
-}</code></pre>
-<p>Users only see public rooms and private rooms they're members of.</p>
-<h3>Joining/Leaving Rooms</h3>
-<pre><code>// Join
-POST /api/chat-rooms?action=joinRoom
-Body: { roomId: "abc123", username: "alice" }
-
-// Leave
-POST /api/chat-rooms?action=leaveRoom
-Body: { roomId: "abc123", username: "alice" }
-
-// Switch (optimized for changing rooms)
-POST /api/chat-rooms?action=switchRoom
-Body: { previousRoomId: "abc123", nextRoomId: "def456", username: "alice" }</code></pre>
-<h3>Deleting Rooms</h3>
-<ul><li><strong>Public rooms</strong>: Admin only</li></ul><ul><li><strong>Private rooms</strong>: Any member can leave; room is deleted when ≤1 member remains</li></ul>
-<pre><code>DELETE /api/chat-rooms?action=deleteRoom&amp;roomId=abc123
-Headers: { X-Username: "ryo", Authorization: "Bearer &lt;token&gt;" }</code></pre>
-<h2>Messages</h2>
-<h3>Sending Messages</h3>
-<pre><code>POST /api/chat-rooms?action=sendMessage
-Headers: { X-Username: "alice", Authorization: "Bearer &lt;token&gt;" }
-Body: { roomId: "abc123", username: "alice", content: "Hello world!" }</code></pre>
-<strong>Rate Limiting</strong> (public rooms only):
-<ul><li>Short burst: 3 messages per 10 seconds</li><li>Long burst: 20 messages per 60 seconds</li><li>Minimum interval: 2 seconds between messages</li></ul>
-<strong>Content Validation</strong>:
-<ul><li>Maximum length: Configured via <code>MAX_MESSAGE_LENGTH</code></li><li>Profanity filtering with URL preservation</li><li>HTML escaping for XSS prevention</li><li>Duplicate message detection</li></ul>
-<h3>Getting Messages</h3>
-<pre><code>// Single room (default limit: 20, max: 500)
-GET /api/chat-rooms?action=getMessages&amp;roomId=abc123&amp;limit=50
-
-// Multiple rooms
-GET /api/chat-rooms?action=getBulkMessages&amp;roomIds=abc123,def456</code></pre>
-<h3>AI-Powered Replies (Ryo)</h3>
-<p>Generate responses from the AI assistant "Ryo":</p>
-<pre><code>POST /api/chat-rooms?action=generateRyoReply
-Headers: { X-Username: "alice", Authorization: "Bearer &lt;token&gt;" }
-Body: {
-  roomId: "abc123",
-  prompt: "@ryo what do you think?",
-  systemState: {
-    chatRoomContext: {
-      recentMessages: "alice: Hello\nbob: Hi there",
-      mentionedMessage: "What's the weather like?"
-    }
-  }
-}</code></pre>
-<p>Uses Google's Gemini 2.5 Flash model.</p>
-<h2>Real-time Events</h2>
-<p>The API uses Pusher for real-time WebSocket communication.</p>
-<h3>Channels</h3>
-<table><thead><tr><th>Channel Pattern</th><th>Description</th></tr></thead><tbody><tr><td><code>chats-public</code></td><td>Public room events (all users)</td></tr><tr><td><code>chats-{username}</code></td><td>Private events for specific user</td></tr><tr><td><code>room-{roomId}</code></td><td>Room-specific message events</td></tr></tbody></table>
-<h3>Events</h3>
-<table><thead><tr><th>Event</th><th>Payload</th><th>Description</th></tr></thead><tbody><tr><td><code>room-created</code></td><td><code>{ room: Room }</code></td><td>New room created</td></tr><tr><td><code>room-updated</code></td><td><code>{ room: Room }</code></td><td>Room data changed (user count, etc.)</td></tr><tr><td><code>room-deleted</code></td><td><code>{ roomId: string }</code></td><td>Room deleted</td></tr><tr><td><code>room-message</code></td><td><code>{ roomId: string, message: Message }</code></td><td>New message in room</td></tr><tr><td><code>message-deleted</code></td><td><code>{ roomId: string, messageId: string }</code></td><td>Message deleted</td></tr><tr><td><code>rooms-updated</code></td><td><code>{ rooms: Room[] }</code></td><td>Batch room updates</td></tr></tbody></table>
-<h3>Subscribing to Events</h3>
-<pre><code>import Pusher from 'pusher-js';
-
-const pusher = new Pusher(PUSHER_KEY, { cluster: PUSHER_CLUSTER });
-
-// Subscribe to public rooms
-const publicChannel = pusher.subscribe('chats-public');
-publicChannel.bind('room-created', (data) =&gt; console.log('New room:', data.room));
-
-// Subscribe to room messages
-const roomChannel = pusher.subscribe('room-abc123');
-roomChannel.bind('room-message', (data) =&gt; console.log('New message:', data.message));
-
-// Subscribe to private updates (for logged-in user)
-const userChannel = pusher.subscribe('chats-alice');
-userChannel.bind('room-created', (data) =&gt; console.log('Invited to room:', data.room));</code></pre>
-<h2>Redis Data Structure</h2>
-<h3>Key Prefixes</h3>
-<table><thead><tr><th>Prefix</th><th>Description</th></tr></thead><tbody><tr><td><code>chat:room:{roomId}</code></td><td>Room object (JSON)</td></tr><tr><td><code>chat:messages:{roomId}</code></td><td>Message list (Redis List, max 100)</td></tr><tr><td><code>chat:users:{username}</code></td><td>User object (JSON)</td></tr><tr><td><code>chat:room:users:{roomId}</code></td><td>Room user set (deprecated, use presence)</td></tr><tr><td><code>chat:presence:{roomId}:{username}</code></td><td>Individual presence key</td></tr><tr><td><code>chat:presencez:{roomId}</code></td><td>Room presence ZSET (score = timestamp)</td></tr><tr><td><code>chat:rooms</code></td><td>Set of all room IDs</td></tr></tbody></table>
-<h3>TTL Values</h3>
-<table><thead><tr><th>Key Type</th><th>TTL</th></tr></thead><tbody><tr><td>Room presence</td><td>24 hours (86400s)</td></tr><tr><td>User/Token</td><td>90 days (7776000s)</td></tr><tr><td>Token grace period</td><td>30 days (2592000s)</td></tr></tbody></table>
-<h3>Rate Limiting Keys</h3>
-<table><thead><tr><th>Prefix</th><th>Description</th></tr></thead><tbody><tr><td><code>rl:chat:b:s:{roomId}:{username}</code></td><td>Short burst counter (10s window)</td></tr><tr><td><code>rl:chat:b:l:{roomId}:{username}</code></td><td>Long burst counter (60s window)</td></tr><tr><td><code>rl:chat:b:last:{roomId}:{username}</code></td><td>Last message timestamp</td></tr><tr><td><code>rl:block:{action}:{identifier}</code></td><td>Rate limit block (24h)</td></tr></tbody></table>
-<h2>Presence</h2>
-<p>User presence is tracked using Redis Sorted Sets (ZSETs) with timestamps as scores.</p>
-<h3>How It Works</h3>
-<ol><li>When a user joins/sends a message, their presence is updated:</li></ol>
-   <pre><code>   ZADD chat:presencez:{roomId} {timestamp} {username}</code></pre>
-<ol><li>Active users are retrieved by pruning expired entries:</li></ol>
-   <pre><code>   ZREMRANGEBYSCORE chat:presencez:{roomId} 0 {cutoffTimestamp}
-   ZRANGE chat:presencez:{roomId} 0 -1</code></pre>
-<ol><li>Users are considered "offline" after 24 hours of inactivity</li></ol>
-<h3>Presence Operations</h3>
-<pre><code>// Set/refresh presence
-await setRoomPresence(roomId, username);
-await refreshRoomPresence(roomId, username);
-
-// Remove presence
-await removeRoomPresence(roomId, username);
-
-// Get active users
-const users = await getActiveUsersInRoom(roomId);
-
-// Refresh room user count
-const count = await refreshRoomUserCount(roomId);</code></pre>
-<h3>Admin Cleanup</h3>
-<pre><code>GET /api/chat-rooms?action=cleanupPresence
-Headers: { X-Username: "ryo", Authorization: "Bearer &lt;token&gt;" }</code></pre>
-<h2>Example Usage</h2>
-<h3>Complete Flow: Create User and Send Message</h3>
-<pre><code>// 1. Create user
-const createRes = await fetch('/api/chat-rooms?action=createUser', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ username: 'alice', password: 'securepass123' })
-});
-const { user, token } = await createRes.json();
-
-// 2. Get rooms
-const roomsRes = await fetch('/api/chat-rooms?action=getRooms&amp;username=alice');
-const { rooms } = await roomsRes.json();
-
-// 3. Join a room
-await fetch('/api/chat-rooms?action=joinRoom', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ roomId: rooms[0].id, username: 'alice' })
-});
-
-// 4. Send a message
-const msgRes = await fetch('/api/chat-rooms?action=sendMessage', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-Username': 'alice',
-    'Authorization': `Bearer ${token}`
-  },
-  body: JSON.stringify({
-    roomId: rooms[0].id,
-    username: 'alice',
-    content: 'Hello everyone!'
-  })
-});
-const { message } = await msgRes.json();
-
-// 5. Subscribe to real-time updates
-const pusher = new Pusher(PUSHER_KEY, { cluster: PUSHER_CLUSTER });
-const channel = pusher.subscribe(`room-${rooms[0].id}`);
-channel.bind('room-message', (data) =&gt; {
-  console.log('New message:', data.message);
-});</code></pre>
-<h3>Creating a Private Room</h3>
-<pre><code>const res = await fetch('/api/chat-rooms?action=createRoom', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-Username': 'alice',
-    'Authorization': `Bearer ${token}`
-  },
-  body: JSON.stringify({
-    type: 'private',
-    members: ['alice', 'bob', 'charlie']
-  })
-});
-const { room } = await res.json();
-// room.name = "@alice, @bob, @charlie"</code></pre>
-<h3>Token Refresh Flow</h3>
-<pre><code>// When token is about to expire or has expired (within grace period)
-const res = await fetch('/api/chat-rooms?action=refreshToken', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    username: 'alice',
-    oldToken: expiredToken
-  })
-});
-const { token: newToken } = await res.json();</code></pre>
-<h2>Error Responses</h2>
-<p>All errors return JSON with an <code>error</code> field:</p>
-<pre><code>{ "error": "Error message" }</code></pre>
-<table><thead><tr><th>Status</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td>Bad request (missing/invalid parameters)</td></tr><tr><td>401</td><td>Unauthorized (invalid/missing token)</td></tr><tr><td>403</td><td>Forbidden (insufficient permissions)</td></tr><tr><td>404</td><td>Not found (room/user doesn't exist)</td></tr><tr><td>409</td><td>Conflict (username already taken)</td></tr><tr><td>429</td><td>Too many requests (rate limited)</td></tr><tr><td>500</td><td>Internal server error</td></tr></tbody></table>
-<h2>Configuration</h2>
-<h3>Environment Variables</h3>
-<table><thead><tr><th>Variable</th><th>Description</th></tr></thead><tbody><tr><td><code>REDIS_KV_REST_API_URL</code></td><td>Upstash Redis REST URL</td></tr><tr><td><code>REDIS_KV_REST_API_TOKEN</code></td><td>Upstash Redis REST token</td></tr><tr><td><code>PUSHER_APP_ID</code></td><td>Pusher application ID</td></tr><tr><td><code>PUSHER_KEY</code></td><td>Pusher public key</td></tr><tr><td><code>PUSHER_SECRET</code></td><td>Pusher secret key</td></tr><tr><td><code>PUSHER_CLUSTER</code></td><td>Pusher cluster region</td></tr></tbody></table>
-<h3>Runtime Configuration</h3>
-<pre><code>export const runtime = "nodejs";
-export const maxDuration = 15; // seconds</code></pre>
-<h2>Related</h2>
-<ul><li><a href="/docs/overview">ryOS Overview</a> - Main documentation</li></ul><ul><li><a href="/docs/chat-api">Chat API</a> - AI chat endpoint</li><li><a href="https://pusher.com/docs">Pusher Documentation</a></li><li><a href="https://upstash.com/docs/redis/overall/getstarted">Upstash Redis</a></li></ul>
+{ "user": { "username": "alice" }, "token": "..." }</code></pre>
+<h3>Create room</h3>
+<pre><code>POST /api/rooms
+Headers: { Authorization: "Bearer ...", "X-Username": "alice" }
+Body: { "type": "private", "members": ["alice", "bob"] }</code></pre>
+<h3>List rooms</h3>
+<pre><code>GET /api/rooms?username=alice</code></pre>
+<h3>Send message</h3>
+<pre><code>POST /api/rooms/{roomId}/messages
+Headers: { Authorization: "Bearer ...", "X-Username": "alice" }
+Body: { "content": "Hello world" }</code></pre>
+<h3>Delete message (admin)</h3>
+<pre><code>DELETE /api/rooms/{roomId}/messages/{messageId}
+Headers: { Authorization: "Bearer ...", "X-Username": "ryo" }</code></pre>
+<h3>Presence switch</h3>
+<pre><code>POST /api/presence/switch
+Body: { "previousRoomId": "oldId", "nextRoomId": "newId", "username": "alice" }</code></pre>
+<h3>AI reply</h3>
+<pre><code>POST /api/ai/ryo-reply
+Headers: { Authorization: "Bearer ...", "X-Username": "alice" }
+Body: { "roomId": "abc123", "prompt": "what's up?" }</code></pre>
+<h2>Rate Limits (high level)</h2>
+<ul><li><strong>Messages</strong>: burst protection in public rooms (short + long window, min interval)</li></ul><ul><li><strong>Ryo reply</strong>: 5/min per user</li></ul>
+<h2>Legacy Note</h2>
+<p>The legacy <code>/api/chat-rooms?action=...</code> endpoint has been removed. Use the REST endpoints listed above.</p>
       </article>
       
       <nav class="nav">

@@ -277,7 +277,7 @@
     <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
     <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
     <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
-    <a href="/docs/chat-rooms-api" class="nav-child ">8.4 Chat Rooms API</a>
+    <a href="/docs/chat-rooms-api" class="nav-child ">8.4 Chat Rooms API (REST)</a>
     <a href="/docs/ai-generation-apis" class="nav-child ">8.5 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.6 Utility APIs</a>
   </div>
@@ -333,7 +333,7 @@
 <h2>Tool Handlers</h2>
 <p>Tool handlers in <code>src/apps/chats/tools/</code> follow a registry pattern: <ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/appHandlers.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/appHandlers.ts</a></code> - Launch/close app handlers</li></ul><ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/ipodHandler.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/ipodHandler.ts</a></code> - iPod playback control with iOS detection</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/karaokeHandler.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/karaokeHandler.ts</a></code> - Karaoke playback with fuzzy search</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/settingsHandler.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/settingsHandler.ts</a></code> - System settings changes</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/helpers.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/helpers.ts</a></code> - Shared utilities (track formatting, i18n)</li></ul></p>
 <h2>System Prompts</h2>
-<p>Defined in <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/aiPrompts.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/aiPrompts.ts</a></code>: <ul><li><code>CORE_PRIORITY_INSTRUCTIONS</code> - Persona adherence rules</li></ul><ul><li><code>RYO_PERSONA_INSTRUCTIONS</code> - Ryo's identity and background</li><li><code>ANSWER_STYLE_INSTRUCTIONS</code> - Response style and tone</li><li><code>CODE_GENERATION_INSTRUCTIONS</code> - HTML applet generation rules</li><li><code>CHAT_INSTRUCTIONS</code> - Chat behavior and nudge handling</li><li><code>TOOL_USAGE_INSTRUCTIONS</code> - VFS and tool usage patterns</li></ul></p>
+<p>Defined in <code>_<a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/aiPrompts.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/aiPrompts.ts</a></code>: <ul><li><code>CORE_PRIORITY_INSTRUCTIONS</code> - Persona adherence rules</li></ul><ul><li><code>RYO_PERSONA_INSTRUCTIONS</code> - Ryo's identity and background</li><li><code>ANSWER_STYLE_INSTRUCTIONS</code> - Response style and tone</li><li><code>CODE_GENERATION_INSTRUCTIONS</code> - HTML applet generation rules</li><li><code>CHAT_INSTRUCTIONS</code> - Chat behavior and nudge handling</li><li><code>TOOL_USAGE_INSTRUCTIONS</code> - VFS and tool usage patterns</li></ul></p>
 
       </article>
       
