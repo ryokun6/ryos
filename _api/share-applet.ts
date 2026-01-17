@@ -8,6 +8,7 @@ import { z } from "zod";
 import { validateAuthToken, generateToken } from "./_utils/_auth-validate.js";
 
 // Vercel Edge Function configuration
+export const edge = true;
 export const config = {
   runtime: "edge",
 };

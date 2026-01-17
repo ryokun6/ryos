@@ -4,6 +4,7 @@ import { Redis } from "@upstash/redis"; // Use direct import
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getEffectiveOrigin, isAllowedOrigin } from "./_utils/_cors.js";
 
+export const edge = true;
 export const config = {
   runtime: "edge",
 };

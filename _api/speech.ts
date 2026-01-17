@@ -53,6 +53,7 @@ const redis = new Redis({
   token: process.env.REDIS_KV_REST_API_TOKEN,
 });
 
+export const edge = true;
 export const runtime = "edge";
 export const maxDuration = 60;
 export const config = {

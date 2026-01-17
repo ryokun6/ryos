@@ -100,6 +100,7 @@ import {
 import { openai } from "@ai-sdk/openai";
 
 // Vercel Edge Function configuration
+export const edge = true;
 export const config = {
   runtime: "edge",
 };

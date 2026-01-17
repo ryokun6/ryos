@@ -43,6 +43,7 @@ import {
 import { fetchCoverUrl } from "./_kugou.js";
 
 // Vercel Edge Function configuration
+export const edge = true;
 export const config = {
   runtime: "edge",
 };

@@ -1,3 +1,4 @@
+export const edge = true;
 export const config = {
   runtime: "edge",
 };

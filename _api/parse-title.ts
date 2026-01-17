@@ -8,6 +8,7 @@ import {
   preflightIfNeeded,
 } from "./_utils/_cors.js";
 
+export const edge = true;
 export const config = {
   runtime: "edge",
 };
