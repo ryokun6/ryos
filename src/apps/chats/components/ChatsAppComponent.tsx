@@ -10,7 +10,7 @@ import { InputDialog } from "@/components/dialogs/InputDialog";
 import { CreateRoomDialog } from "./CreateRoomDialog";
 import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useChatRoom } from "../hooks/useChatRoom";
+import { useIrcChat } from "../hooks/useIrcChat";
 import { useAiChat } from "../hooks/useAiChat";
 import { useAuth } from "@/hooks/useAuth";
 import React from "react";
@@ -24,7 +24,6 @@ import {
   type ChatRoom,
 } from "@/types/chat";
 import { Button } from "@/components/ui/button";
-import { useRyoChat } from "../hooks/useRyoChat";
 import { CaretDown } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
@@ -59,8 +58,8 @@ export function ChatsAppComponent({
   const authResult = useAuth();
   const { promptSetUsername } = authResult;
 
-  // Get room functionality from useChatRoom
-  const chatRoomResult = useChatRoom(isWindowOpen ?? false, promptSetUsername);
+  // IRC chat integration (replaces public chat rooms)
+  const chatRoomResult = useIrcChat(isWindowOpen ?? false);
 
   const {
     messages,
@@ -159,8 +158,6 @@ export function ChatsAppComponent({
   const [isSettingPassword, setIsSettingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
-  // Send message dialog state
-  const [prefilledUser, setPrefilledUser] = useState<string>("");
 
   // Safety check: ensure rooms is an array before finding
   const currentRoom =
@@ -178,18 +175,6 @@ export function ChatsAppComponent({
     displayNames.join(", ") +
     (remainingCount > 0 ? `, ${remainingCount}+` : "");
 
-  // Use the @ryo chat hook
-  const { isRyoLoading, stopRyo, handleRyoMention, detectAndProcessMention } =
-    useRyoChat({
-      currentRoomId,
-      onScrollToBottom: () => setScrollToBottomTrigger((prev) => prev + 1),
-      roomMessages: currentRoomMessages?.map((msg: AppChatMessage) => ({
-        username: msg.username,
-        content: msg.content,
-        userId: msg.id,
-        timestamp: new Date(msg.timestamp).toISOString(),
-      })),
-    });
 
   // Wrapper for room selection that handles unread scroll triggering
   const handleRoomSelectWithScroll = useCallback(
@@ -232,35 +217,13 @@ export function ChatsAppComponent({
       }
 
       if (currentRoomId && username) {
-        const trimmedInput = input.trim();
-
-        // Detect if this is an @ryo mention
-        const { isMention, messageContent } =
-          detectAndProcessMention(trimmedInput);
-
-        if (isMention) {
-          // Clear input immediately
-          handleInputChange({
-            target: { value: "" },
-          } as React.ChangeEvent<HTMLInputElement>);
-
-          // Send the user's message to the chat room first (showing @ryo)
-          sendRoomMessage(input);
-
-          // Then send to AI (doesn't affect input clearing)
-          handleRyoMention(messageContent);
-
-          // Trigger scroll
-          setScrollToBottomTrigger((prev) => prev + 1);
-        } else {
-          // Regular room message
-          sendRoomMessage(input);
-          handleInputChange({
-            target: { value: "" },
-          } as React.ChangeEvent<HTMLInputElement>);
-          // Trigger scroll after sending room message
-          setScrollToBottomTrigger((prev) => prev + 1);
-        }
+        // Regular IRC room message
+        sendRoomMessage(input);
+        handleInputChange({
+          target: { value: "" },
+        } as React.ChangeEvent<HTMLInputElement>);
+        // Trigger scroll after sending room message
+        setScrollToBottomTrigger((prev) => prev + 1);
       } else {
         // AI chat when not in a room
         handleAiSubmit(e);
@@ -275,8 +238,6 @@ export function ChatsAppComponent({
       handleAiSubmit,
       input,
       handleInputChange,
-      handleRyoMention,
-      detectAndProcessMention,
     ]
   );
 
@@ -302,8 +263,7 @@ export function ChatsAppComponent({
   // Combined stop function for both AI chat and @ryo mentions
   const handleStop = useCallback(() => {
     stop(); // Stop regular AI chat
-    stopRyo(); // Stop @ryo chat
-  }, [stop, stopRyo]);
+  }, [stop]);
 
   // Font size handlers using store action
   const handleIncreaseFontSize = useCallback(() => {
@@ -449,12 +409,6 @@ export function ChatsAppComponent({
     setPasswordInput("");
     setPasswordError(null);
     setIsPasswordDialogOpen(true);
-  }, []);
-
-  // Function to handle send message button click
-  const handleSendMessage = useCallback((username: string) => {
-    setPrefilledUser(username);
-    setIsNewRoomDialogOpen(true);
   }, []);
 
   const currentTheme = useThemeStore((state) => state.current);
@@ -609,6 +563,7 @@ export function ChatsAppComponent({
                     onDeleteRoom={(room) => promptDeleteRoom(room)}
                     isVisible={true} // Always visible when overlay is shown
                     isAdmin={isAdmin}
+                  allowPublicLeave={true}
                     username={username}
                     isOverlay={true}
                   />
@@ -632,6 +587,7 @@ export function ChatsAppComponent({
                 onDeleteRoom={(room) => promptDeleteRoom(room)}
                 isVisible={sidebarVisibleBool}
                 isAdmin={isAdmin}
+                allowPublicLeave={true}
                 username={username}
               />
             </div>
@@ -741,8 +697,7 @@ export function ChatsAppComponent({
                     key={currentRoomId || "ryo"}
                     messages={currentMessagesToDisplay}
                     isLoading={
-                      (isLoading && !currentRoomId) ||
-                      (!!currentRoomId && isRyoLoading)
+                      isLoading && !currentRoomId
                     }
                     error={!currentRoomId ? error : undefined}
                     onRetry={reload}
@@ -763,7 +718,6 @@ export function ChatsAppComponent({
                     scrollToBottomTrigger={scrollToBottomTrigger}
                     highlightSegment={highlightSegment}
                     isSpeaking={isSpeaking}
-                    onSendMessage={handleSendMessage}
                   />
                 </div>
                 {/* Input Area or Create Account Prompt */}
@@ -824,7 +778,7 @@ export function ChatsAppComponent({
                       return (
                         <ChatInput
                           input={input}
-                          isLoading={isLoading || isRyoLoading}
+                            isLoading={isLoading}
                           isForeground={isForeground}
                           onInputChange={handleInputChange}
                           onSubmit={handleSubmit}
@@ -908,15 +862,12 @@ export function ChatsAppComponent({
         <CreateRoomDialog
           isOpen={isNewRoomDialogOpen}
           onOpenChange={(open) => {
-            if (!open) {
-              setPrefilledUser(""); // Reset prefilled user when dialog closes
-            }
             setIsNewRoomDialogOpen(open);
           }}
           onSubmit={handleAddRoom}
           isAdmin={isAdmin}
           currentUsername={username}
-          initialUsers={prefilledUser ? [prefilledUser] : []}
+          mode="irc"
         />
         <ConfirmDialog
           isOpen={isDeleteRoomDialogOpen}

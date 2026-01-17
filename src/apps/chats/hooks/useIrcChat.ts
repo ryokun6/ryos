@@ -292,9 +292,11 @@ export function useIrcChat(isWindowOpen: boolean) {
     : [];
 
   const isConnected = connectionState?.connected ?? false;
+  const ircNick = connectionState?.nick ?? lastNickRef.current ?? username ?? null;
 
   return {
     username,
+    ircNick,
     authToken: null,
     rooms,
     currentRoomId,
