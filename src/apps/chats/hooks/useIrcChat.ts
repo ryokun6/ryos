@@ -101,6 +101,7 @@ export function useIrcChat(isWindowOpen: boolean) {
     lastNickRef.current = nick;
 
     try {
+      setConnectionError(false);
       const channelsToJoin =
         channels.length > 0 ? channels.map((channel) => channel.name) : [DEFAULT_CHANNEL];
       const response = await fetch("/api/irc/connect", {
