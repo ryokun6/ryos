@@ -99,6 +99,7 @@ export function useIrcChat(isWindowOpen: boolean) {
   const handleSessionMissing = useCallback(() => {
     toast("IRC session expired. Reconnecting...");
     setConnectionError(true);
+    setConnectionState(null);
     setSessionId(null);
   }, []);
 
