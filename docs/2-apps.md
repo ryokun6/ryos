@@ -16,7 +16,7 @@ ryOS includes 17 built-in applications, each designed to replicate classic deskt
 | [Soundboard](/docs/soundboard) | Record and play sound effects | Audio |
 | [Synth](/docs/synth) | Virtual synthesizer with 3D waveform visualization | Audio |
 | [Terminal](/docs/terminal) | Command line interface with AI integration | Development |
-| [Chats](/docs/chats) | Chat with Ryo AI assistant and join chat rooms | Communication |
+| [Chats](/docs/chats) | Chat with Ryo AI assistant and join IRC channels | Communication |
 | [Internet Explorer](/docs/internet-explorer) | Web browser with AI-powered content generation | Web |
 | [Applet Store](/docs/applet-store) | Browse and run user-created HTML applets | Utilities |
 | [Control Panels](/docs/control-panels) | System settings for themes, wallpapers, and audio | System |

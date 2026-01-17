@@ -31,7 +31,7 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 - **Synth** — Virtual synthesizer with multiple waveforms, effects, and MIDI support
 - **Photo Booth** — Camera app with real-time filters and photo gallery
 - **Internet Explorer** — Time Machine that explores web history via Wayback Machine; AI generates sites for years before 1996 or in the future
-- **Chats** — AI chat with Ryo, public/private chat rooms, voice messages, and tool calling
+- **Chats** — AI chat with Ryo, IRC channels, voice messages, and tool calling
 - **Control Panels** — System preferences: appearance, sounds, backup/restore, and file system management
 - **Minesweeper** — Classic puzzle game
 - **Virtual PC** — DOS emulator for classic games (Doom, SimCity, etc.)

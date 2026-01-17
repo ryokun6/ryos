@@ -204,7 +204,7 @@
       "loggingIn": "Logging in...",
       "creatingAccount": "Creating...",
       "loginDescription": "Log in to your account",
-      "signupDescription": "Create an account to access chat rooms and save your settings",
+      "signupDescription": "Create an account to access chat channels and save your settings",
       "setPasswordRequired": "Set Password Required",
       "setPasswordRequiredDescription": "You need to set a password before logging out to ensure you can recover your account. Would you like to set a password now?",
       "logOut": "Log Out",
@@ -638,7 +638,7 @@
         "createAccount": "Create Account...",
         "login": "Login...",
         "chats": "Chats",
-        "newChat": "New Chat...",
+        "newChat": "Join Channel...",
         "sound": "Sound",
         "chatSpeech": "Chat Speech",
         "typingSynth": "Typing Synth",
@@ -646,7 +646,7 @@
         "increaseFontSize": "Increase Font Size",
         "decreaseFontSize": "Decrease Font Size",
         "resetFontSize": "Reset Font Size",
-        "showRooms": "Show Rooms",
+        "showRooms": "Show Channels",
         "chatsHelp": "Chats Help",
         "aboutChats": "About Chats"
       },
@@ -664,8 +664,8 @@
           "description": "Ask Ryo to launch or close apps, switch themes, or control iPod playback."
         },
         "joinChatRooms": {
-          "title": "Join Chat Rooms",
-          "description": "Connect with others in public chat rooms. Mention @ryo for AI responses."
+          "title": "Join IRC Channels",
+          "description": "Connect with others in IRC channels hosted on irc.pieter.com."
         },
         "pushToTalk": {
           "title": "Push to Talk",
@@ -682,9 +682,9 @@
         "saveTranscriptTitle": "Save Transcript",
         "saveTranscriptDescription": "Enter a name for your chat transcript file",
         "leaveConversationTitle": "Leave Conversation",
-        "deleteChatRoomTitle": "Delete Chat Room",
+        "deleteChatRoomTitle": "Leave Channel",
         "leaveConversationDescription": "Are you sure you want to leave \"{{name}}\"? You will no longer see messages in this conversation.",
-        "deleteChatRoomDescription": "Are you sure you want to delete the room \"{{name}}\"? This action cannot be undone.",
+        "deleteChatRoomDescription": "Are you sure you want to leave the channel \"{{name}}\"?",
         "setPasswordTitle": "Set Password",
         "setPasswordDescription": "Set a password to enable account recovery. You can use this password to get a new token if you lose access.",
         "setPasswordButton": "Set Password",
@@ -692,18 +692,18 @@
         "passwordSetSuccessDescription": "You can now use your password to recover your account",
         "passwordMinLengthError": "Password must be at least 8 characters",
         "passwordSetFailed": "Failed to set password",
-        "newChatTitle": "New Chat",
-        "newChatDescription": "Create a public chat room or start a private conversation",
+        "newChatTitle": "Join Channel",
+        "newChatDescription": "Join an IRC channel to chat with others.",
         "newChatDescriptionPrivate": "Start a private conversation",
         "public": "Public",
-        "roomName": "Room Name",
-        "roomNamePlaceholder": "general",
+        "roomName": "Channel Name",
+        "roomNamePlaceholder": "ryos",
         "addUsersToPrivateChat": "Add Users to Private Chat",
         "searchUsernamePlaceholder": "Search username...",
         "creating": "Creating...",
         "cancel": "Cancel",
-        "create": "Create",
-        "failedToCreateRoom": "Failed to create room"
+        "create": "Join",
+        "failedToCreateRoom": "Failed to join channel"
       },
       "status": {
         "loginToRyOS": "Login to ryOS",
@@ -745,13 +745,13 @@
         "speakMessage": "Speak message",
         "stopSpeech": "Stop speech",
         "messageUser": "Message {{username}}",
-        "newChat": "New Chat",
+        "newChat": "Join channel",
         "leaveConversation": "Leave conversation",
-        "deleteRoom": "Delete room"
+        "deleteRoom": "Leave channel"
       },
       "sidebar": {
         "chats": "Chats",
-        "rooms": "Rooms",
+        "rooms": "Channels",
         "private": "Private",
         "new": "new",
         "online": "online"

@@ -24,6 +24,9 @@ interface ChatRoomSidebarProps {
   onDeleteRoom?: (room: ChatRoom) => void;
   isVisible: boolean;
   isAdmin: boolean;
+  connectionStatus?: "connected" | "connecting" | "disconnected";
+  /** Allow leaving public channels for IRC */
+  allowPublicLeave?: boolean;
   /** When rendered inside mobile/overlay mode, occupies full width and hides right border */
   isOverlay?: boolean;
   username?: string | null;
@@ -37,6 +40,8 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
   onDeleteRoom,
   isVisible,
   isAdmin,
+  connectionStatus,
+  allowPublicLeave = false,
   isOverlay = false,
   username,
 }) => {
@@ -65,6 +70,9 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
     const unreadCount = unreadCounts[room.id] || 0;
     const hasUnread = unreadCount > 0;
     const isSelected = currentRoom?.id === room.id;
+
+    const canLeave =
+      room.type !== "private" ? isAdmin || allowPublicLeave : true;
 
     return (
       <div
@@ -114,7 +122,7 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
             </span>
           )}
         </div>
-        {((isAdmin && room.type !== "private") || room.type === "private") &&
+        {canLeave &&
           onDeleteRoom && (
             <button
               className={cn(
@@ -141,6 +149,18 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
       </div>
     );
   };
+
+  const statusStyles = (() => {
+    switch (connectionStatus) {
+      case "connected":
+        return "bg-emerald-500";
+      case "disconnected":
+        return "bg-red-500";
+      case "connecting":
+      default:
+        return "bg-amber-500";
+    }
+  })();
 
   return (
     <div
@@ -170,8 +190,17 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
         )}
       >
         <div className="flex justify-between items-center mb-2 flex-shrink-0 px-3">
-          <div className="flex items-baseline gap-1.5">
+          <div className="flex items-center gap-2">
             <h2 className="text-[14px] pl-1">{t("apps.chats.sidebar.chats")}</h2>
+            {connectionStatus && (
+              <div
+                className="flex items-center gap-1 text-[10px] text-black/50"
+                title={`IRC ${connectionStatus}`}
+              >
+                <span className={`h-2 w-2 rounded-full ${statusStyles}`} />
+                <span className="uppercase tracking-wide">IRC</span>
+              </div>
+            )}
           </div>
           <TooltipProvider>
             <Tooltip>

@@ -31,6 +31,7 @@ interface CreateRoomDialogProps {
   isAdmin: boolean;
   currentUsername: string | null;
   initialUsers?: string[]; // Optional prop to prefill users
+  mode?: "rooms" | "irc";
 }
 
 export function CreateRoomDialog({
@@ -40,6 +41,7 @@ export function CreateRoomDialog({
   isAdmin,
   currentUsername,
   initialUsers = [],
+  mode = "rooms",
 }: CreateRoomDialogProps) {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
@@ -50,6 +52,12 @@ export function CreateRoomDialog({
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"public" | "private">("private");
   const [isSearching, setIsSearching] = useState(false);
+  const isIrcMode = mode === "irc";
+  const dialogDescription = isIrcMode
+    ? t("apps.chats.dialogs.newChatDescription")
+    : isAdmin
+    ? t("apps.chats.dialogs.newChatDescription")
+    : t("apps.chats.dialogs.newChatDescriptionPrivate");
 
   // Theme detection
   const currentTheme = useThemeStore((state) => state.current);
@@ -65,12 +73,13 @@ export function CreateRoomDialog({
       setSearchTerm("");
       setUsers([]);
       // Reset to private tab when opening
-      setActiveTab("private");
+      setActiveTab(isIrcMode ? "public" : "private");
     }
-  }, [isOpen, initialUsers]);
+  }, [isOpen, initialUsers, isIrcMode]);
 
   // Search for users when search term changes (with debouncing)
   useEffect(() => {
+    if (isIrcMode) return;
     if (searchTerm.length < 2) {
       setUsers([]);
       return;
@@ -81,7 +90,7 @@ export function CreateRoomDialog({
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+  }, [searchTerm, isIrcMode]);
 
   const searchUsers = async (query: string) => {
     setIsSearching(true);
@@ -110,7 +119,9 @@ export function CreateRoomDialog({
     setError(null);
 
     try {
-      const result = await onSubmit(roomName, activeTab, selectedUsers);
+      const submitType = isIrcMode ? "public" : activeTab;
+      const submitMembers = isIrcMode ? [] : selectedUsers;
+      const result = await onSubmit(roomName, submitType, submitMembers);
 
       if (result.ok) {
         onOpenChange(false);
@@ -136,7 +147,8 @@ export function CreateRoomDialog({
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as "public" | "private")}
       >
-        {isAdmin &&
+        {!isIrcMode &&
+          isAdmin &&
           (isXpTheme ? (
             <TabsList asChild>
               <menu
@@ -164,7 +176,7 @@ export function CreateRoomDialog({
             </TabsList>
           ))}
 
-        {isAdmin && (
+        {(isIrcMode || isAdmin) && (
           <TabsContent
             value="public"
             className={cn(
@@ -235,40 +247,20 @@ export function CreateRoomDialog({
           </TabsContent>
         )}
 
-        <TabsContent
-          value="private"
-          className={cn(
-            "mt-0",
-            isXpTheme ? "bg-white border border-[#919b9c] p-4" : ""
-          )}
-        >
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label
-                htmlFor="search-users"
-                className={cn(
-                  "text-gray-700",
-                  isXpTheme
-                    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                    : "font-geneva-12 text-[12px]"
-                )}
-                style={{
-                  fontFamily: isXpTheme
-                    ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                    : undefined,
-                  fontSize: isXpTheme ? "11px" : undefined,
-                }}
-              >
-                {t("apps.chats.dialogs.addUsersToPrivateChat")}
-              </Label>
-              <div className="relative">
-                <Input
-                  id="search-users"
-                  placeholder={t("apps.chats.dialogs.searchUsernamePlaceholder")}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+        {!isIrcMode && (
+          <TabsContent
+            value="private"
+            className={cn(
+              "mt-0",
+              isXpTheme ? "bg-white border border-[#919b9c] p-4" : ""
+            )}
+          >
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="search-users"
                   className={cn(
-                    "shadow-none h-8 pr-8",
+                    "text-gray-700",
                     isXpTheme
                       ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                       : "font-geneva-12 text-[12px]"
@@ -279,84 +271,106 @@ export function CreateRoomDialog({
                       : undefined,
                     fontSize: isXpTheme ? "11px" : undefined,
                   }}
-                  disabled={isLoading}
-                />
-                {isSearching && searchTerm.length >= 2 && (
-                  <ActivityIndicator size="sm" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500" />
+                >
+                  {t("apps.chats.dialogs.addUsersToPrivateChat")}
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="search-users"
+                    placeholder={t("apps.chats.dialogs.searchUsernamePlaceholder")}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className={cn(
+                      "shadow-none h-8 pr-8",
+                      isXpTheme
+                        ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+                        : "font-geneva-12 text-[12px]"
+                    )}
+                    style={{
+                      fontFamily: isXpTheme
+                        ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+                        : undefined,
+                      fontSize: isXpTheme ? "11px" : undefined,
+                    }}
+                    disabled={isLoading}
+                  />
+                  {isSearching && searchTerm.length >= 2 && (
+                    <ActivityIndicator size="sm" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500" />
+                  )}
+                </div>
+
+                {/* Selected users tokens */}
+                {selectedUsers.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {selectedUsers.map((username) => (
+                      <Badge
+                        key={username}
+                        variant="secondary"
+                        className={cn(
+                          "py-0.5 pl-2 pr-1 bg-gray-100 hover:bg-gray-200 border-gray-300",
+                          isXpTheme
+                            ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
+                            : "font-geneva-12 text-[11px]"
+                        )}
+                        style={{
+                          fontFamily: isXpTheme
+                            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+                            : undefined,
+                          fontSize: isXpTheme ? "10px" : undefined,
+                        }}
+                      >
+                        @{username}
+                        <button
+                          type="button"
+                          onClick={() => toggleUserSelection(username)}
+                          className="ml-1 hover:bg-gray-300 rounded-sm p-0.5"
+                          disabled={isLoading}
+                        >
+                          <X className="h-3 w-3" weight="bold" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
                 )}
               </div>
 
-              {/* Selected users tokens */}
-              {selectedUsers.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {selectedUsers.map((username) => (
-                    <Badge
-                      key={username}
-                      variant="secondary"
-                      className={cn(
-                        "py-0.5 pl-2 pr-1 bg-gray-100 hover:bg-gray-200 border-gray-300",
-                        isXpTheme
-                          ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
-                          : "font-geneva-12 text-[11px]"
-                      )}
-                      style={{
-                        fontFamily: isXpTheme
-                          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                          : undefined,
-                        fontSize: isXpTheme ? "10px" : undefined,
-                      }}
-                    >
-                      @{username}
-                      <button
-                        type="button"
-                        onClick={() => toggleUserSelection(username)}
-                        className="ml-1 hover:bg-gray-300 rounded-sm p-0.5"
-                        disabled={isLoading}
+              {/* Show results */}
+              {!isSearching && searchTerm.length >= 2 && users.length > 0 && (
+                <div className="border border-gray-300 rounded max-h-[180px] overflow-y-auto bg-white">
+                  <div className="p-1">
+                    {users.map((user) => (
+                      <label
+                        key={user.username}
+                        className={cn(
+                          "flex items-center p-2 hover:bg-gray-100 cursor-pointer rounded",
+                          isXpTheme
+                            ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+                            : "font-geneva-12 text-[12px]"
+                        )}
+                        style={{
+                          fontFamily: isXpTheme
+                            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+                            : undefined,
+                          fontSize: isXpTheme ? "11px" : undefined,
+                        }}
                       >
-                        <X className="h-3 w-3" weight="bold" />
-                      </button>
-                    </Badge>
-                  ))}
+                        <Checkbox
+                          checked={selectedUsers.includes(user.username)}
+                          onCheckedChange={() =>
+                            toggleUserSelection(user.username)
+                          }
+                          className="h-4 w-4"
+                          disabled={isLoading}
+                        />
+                        <span className="ml-2">@{user.username}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
-
-            {/* Show results */}
-            {!isSearching && searchTerm.length >= 2 && users.length > 0 && (
-              <div className="border border-gray-300 rounded max-h-[180px] overflow-y-auto bg-white">
-                <div className="p-1">
-                  {users.map((user) => (
-                    <label
-                      key={user.username}
-                      className={cn(
-                        "flex items-center p-2 hover:bg-gray-100 cursor-pointer rounded",
-                        isXpTheme
-                          ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                          : "font-geneva-12 text-[12px]"
-                      )}
-                      style={{
-                        fontFamily: isXpTheme
-                          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                          : undefined,
-                        fontSize: isXpTheme ? "11px" : undefined,
-                      }}
-                    >
-                      <Checkbox
-                        checked={selectedUsers.includes(user.username)}
-                        onCheckedChange={() =>
-                          toggleUserSelection(user.username)
-                        }
-                        className="h-4 w-4"
-                        disabled={isLoading}
-                      />
-                      <span className="ml-2">@{user.username}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </TabsContent>
+          </TabsContent>
+        )}
       </Tabs>
 
       {error && (
@@ -403,8 +417,11 @@ export function CreateRoomDialog({
           onClick={handleSubmit}
           disabled={
             isLoading ||
-            (activeTab === "public" && !roomName.trim()) ||
-            (activeTab === "private" && selectedUsers.length === 0)
+            (isIrcMode
+              ? !roomName.trim()
+              : activeTab === "public"
+              ? !roomName.trim()
+              : selectedUsers.length === 0)
           }
           className={cn(
             "h-7",
@@ -455,9 +472,7 @@ export function CreateRoomDialog({
                 {t("apps.chats.dialogs.newChatTitle")}
               </DialogTitle>
               <DialogDescription className="sr-only">
-                {isAdmin
-                  ? t("apps.chats.dialogs.newChatDescription")
-                  : t("apps.chats.dialogs.newChatDescriptionPrivate")}
+                {dialogDescription}
               </DialogDescription>
             </DialogHeader>
             {dialogContent}

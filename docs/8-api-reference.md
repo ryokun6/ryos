@@ -26,6 +26,7 @@ graph LR
 | [Song API](/docs/song-api) | Music library CRUD, lyrics, furigana, translations |
 | [Media API](/docs/media-api) | Text-to-speech, transcription, YouTube search |
 | [Chat Rooms API](/docs/chat-rooms-api) | Real-time chat rooms with Pusher/Redis |
+| [IRC Gateway API](/docs/irc-api) | IRC channels via `/api/irc/*` endpoints |
 | [AI Generation APIs](/docs/ai-generation-apis) | Applet generation, IE time-travel, parse-title |
 | [Utility APIs](/docs/utility-apis) | Link preview, iframe check, share applet, admin |
 
@@ -55,6 +56,12 @@ graph LR
 | Endpoint | Purpose |
 |----------|---------|
 | `/api/chat-rooms` | Real-time chat room management |
+| `/api/irc/connect` | Connect to IRC server |
+| `/api/irc/stream` | Stream IRC events (SSE) |
+| `/api/irc/send` | Send IRC channel message |
+| `/api/irc/join` | Join IRC channel |
+| `/api/irc/part` | Leave IRC channel |
+| `/api/irc/channels` | List joined IRC channels |
 
 ### Utility Endpoints
 
@@ -86,6 +93,7 @@ graph TD
     Media --> yt["/youtube-search"]
     
     Comm --> rooms["/chat-rooms"]
+    Comm --> irc["/irc/*"]
     
     Util --> preview["/link-preview"]
     Util --> iframe["/iframe-check"]
