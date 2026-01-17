@@ -305,7 +305,7 @@ async function testLogout(): Promise<void> {
 // Main
 // ============================================================================
 
-async function main(): Promise<void> {
+export async function runNewApiTests(): Promise<{ passed: number; failed: number }> {
   clearResults();
 
   console.log("\n🧪 New API Tests\n");
@@ -346,7 +346,14 @@ async function main(): Promise<void> {
   section("Logout Tests");
   await runTest("Logout", testLogout);
 
-  printSummary();
+  return printSummary();
 }
 
-main().catch(console.error);
+if (import.meta.main) {
+  runNewApiTests()
+    .then(({ failed }) => process.exit(failed > 0 ? 1 : 0))
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    });
+}

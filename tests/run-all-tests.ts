@@ -4,7 +4,7 @@
  * Run with: bun run tests/run-all-tests.ts
  */
 
-import { runChatRoomsTests } from "./test-chat-rooms";
+import { runNewApiTests } from "./test-new-api";
 import { runAdminTests } from "./test-admin";
 import { runIframeCheckTests } from "./test-iframe-check";
 import { runLinkPreviewTests } from "./test-link-preview";
@@ -74,7 +74,7 @@ async function runAllTests(): Promise<void> {
 
   // Define test suites
   const testSuites: { name: string; run: () => Promise<{ passed: number; failed: number }> }[] = [
-    { name: "chat-rooms", run: runChatRoomsTests },
+    { name: "new-api", run: runNewApiTests },
     { name: "admin", run: runAdminTests },
     { name: "iframe-check", run: runIframeCheckTests },
     { name: "link-preview", run: runLinkPreviewTests },
