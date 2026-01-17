@@ -5,9 +5,17 @@
  * POST - Create a new room
  */
 
+import { Redis } from "@upstash/redis";
 import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../_utils/_cors.js";
 import { validateAuthToken } from "../_utils/_auth-validate.js";
 import { isProfaneUsername } from "../_utils/_validation.js";
+
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL!,
+    token: process.env.REDIS_KV_REST_API_TOKEN!,
+  });
+}
 
 // Import from existing chat-rooms modules
 import { getRoomsWithCountsFast } from "../chat-rooms/_presence.js";
@@ -78,7 +86,7 @@ export default async function handler(req: Request) {
       return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
     }
 
-    const authResult = await validateAuthToken(usernameHeader, token, "create-room");
+    const authResult = await validateAuthToken(createRedis(), usernameHeader, token, {});
     if (!authResult.valid) {
       return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
     }

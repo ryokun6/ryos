@@ -1,7 +1,7 @@
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
-import { LanguageModelV2 } from "@ai-sdk/provider";
+import type { LanguageModel } from "ai";
 import {
   SupportedModel as ImportedSupportedModel,
   DEFAULT_AI_MODEL,
@@ -12,8 +12,8 @@ export type SupportedModel = ImportedSupportedModel;
 
 export const DEFAULT_MODEL = DEFAULT_AI_MODEL;
 
-// Factory that returns a LanguageModelV2 instance for the requested model
-export const getModelInstance = (model: SupportedModel): LanguageModelV2 => {
+// Factory that returns a LanguageModel instance for the requested model
+export const getModelInstance = (model: SupportedModel): LanguageModel => {
   const modelToUse: SupportedModel = model ?? DEFAULT_MODEL;
 
   switch (modelToUse) {

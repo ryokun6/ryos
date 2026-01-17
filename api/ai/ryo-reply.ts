@@ -4,6 +4,7 @@
  * Generate an AI reply as Ryo in chat rooms
  */
 
+import { Redis } from "@upstash/redis";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
 import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../_utils/_cors.js";
@@ -12,6 +13,13 @@ import { assertValidRoomId, escapeHTML, filterProfanityPreservingUrls } from "..
 import * as RateLimit from "../_utils/_rate-limit.js";
 
 import { roomExists, addMessage, generateId, getCurrentTimestamp } from "../chat-rooms/_redis.js";
+
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL!,
+    token: process.env.REDIS_KV_REST_API_TOKEN!,
+  });
+}
 import type { Message } from "../chat-rooms/_types.js";
 
 export const edge = true;
@@ -85,7 +93,7 @@ export default async function handler(req: Request) {
     return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
   }
 
-  const authResult = await validateAuthToken(usernameHeader, token, "ryo-reply");
+  const authResult = await validateAuthToken(createRedis(), usernameHeader, token, {});
   if (!authResult.valid) {
     return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
   }

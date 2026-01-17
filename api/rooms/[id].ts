@@ -101,7 +101,7 @@ export default async function handler(req: Request) {
       return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
     }
 
-    const authResult = await validateAuthToken(usernameHeader, token, "delete-room");
+    const authResult = await validateAuthToken(getRedis(), usernameHeader, token, {});
     if (!authResult.valid) {
       return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
     }
