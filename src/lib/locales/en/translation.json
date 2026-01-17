@@ -682,9 +682,9 @@
         "saveTranscriptTitle": "Save Transcript",
         "saveTranscriptDescription": "Enter a name for your chat transcript file",
         "leaveConversationTitle": "Leave Conversation",
-        "deleteChatRoomTitle": "Delete Chat Room",
+        "deleteChatRoomTitle": "Leave Channel",
         "leaveConversationDescription": "Are you sure you want to leave \"{{name}}\"? You will no longer see messages in this conversation.",
-        "deleteChatRoomDescription": "Are you sure you want to delete the room \"{{name}}\"? This action cannot be undone.",
+        "deleteChatRoomDescription": "Are you sure you want to leave the channel \"{{name}}\"?",
         "setPasswordTitle": "Set Password",
         "setPasswordDescription": "Set a password to enable account recovery. You can use this password to get a new token if you lose access.",
         "setPasswordButton": "Set Password",
@@ -747,7 +747,7 @@
         "messageUser": "Message {{username}}",
         "newChat": "New Chat",
         "leaveConversation": "Leave conversation",
-        "deleteRoom": "Delete room"
+        "deleteRoom": "Leave channel"
       },
       "sidebar": {
         "chats": "Chats",
