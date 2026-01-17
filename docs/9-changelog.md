@@ -6,6 +6,7 @@ A summary of changes and updates to ryOS, organized by month.
 
 ## January 2026
 
+- Replaced public chat rooms with IRC channels (irc.pieter.com) and added IRC gateway APIs.
 - Restructured documentation with hierarchical DeepWiki-style navigation and clean URLs.
 - Enhanced documentation generation with skip and force options.
 - Improved documentation navigation and routing.
