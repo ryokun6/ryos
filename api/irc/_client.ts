@@ -249,6 +249,7 @@ export class IrcConnection extends EventEmitter {
     if (parsed.command === "001") {
       this.connected = true;
       this.registered = true;
+      this.nick = this.requestedNick;
       this.emitSystem("IRC registration successful");
       this.emitState();
       return;
