@@ -106,15 +106,18 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
     return waveformCamera;
   }, []);
 
-  const renderer = useMemo(
-    () =>
-      new THREE.WebGLRenderer({
+  const renderer = useMemo(() => {
+    try {
+      return new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
         powerPreference: "high-performance",
-      }),
-    []
-  );
+      });
+    } catch (error) {
+      console.warn("[Waveform3D] WebGL unavailable, skipping renderer", error);
+      return null;
+    }
+  }, []);
 
   // Effect to handle window resize and mobile detection
   useEffect(() => {
@@ -135,7 +138,7 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
   }, [analyzer]);
 
   useEffect(() => {
-    if (!containerRef.current || isMobile) return;
+    if (!containerRef.current || isMobile || !renderer) return;
 
     const container = containerRef.current;
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -223,7 +226,7 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
-      if (container.contains(renderer.domElement)) {
+      if (renderer && container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
     };
@@ -231,7 +234,7 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
 
   useEffect(() => {
     return () => {
-      renderer.dispose();
+      renderer?.dispose();
       material.dispose();
       geometry.dispose();
     };
