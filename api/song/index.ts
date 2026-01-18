@@ -26,7 +26,7 @@ import {
   preflightIfNeeded,
   getClientIp,
 } from "../_utils/middleware.js";
-import { validateAuthToken } from "../_utils/auth/index.js";
+import { validateAuth } from "../_utils/auth/index.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import {
   listSongs,
@@ -296,7 +296,7 @@ export default async function handler(req: Request) {
       const username = usernameHeader || null;
 
       // Validate authentication
-      const authResult = await validateAuthToken(redis, username, authToken);
+      const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
         return errorResponse("Unauthorized - authentication required", 401);
       }
@@ -586,7 +586,7 @@ export default async function handler(req: Request) {
       const username = usernameHeader || null;
 
       // Validate authentication
-      const authResult = await validateAuthToken(redis, username, authToken);
+      const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
         return errorResponse("Unauthorized - authentication required", 401);
       }

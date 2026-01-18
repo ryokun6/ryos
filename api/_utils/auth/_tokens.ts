@@ -56,12 +56,6 @@ export function generateAuthToken(): string {
   ).join("");
 }
 
-/**
- * Alias for generateAuthToken - for backwards compatibility
- * @deprecated Use generateAuthToken instead
- */
-export const generateToken = generateAuthToken;
-
 // ============================================================================
 // Token CRUD Operations
 // ============================================================================

@@ -13,7 +13,7 @@ import {
   preflightIfNeeded,
   getClientIp,
 } from "../_utils/middleware.js";
-import { validateAuthToken } from "../_utils/auth/index.js";
+import { validateAuth } from "../_utils/auth/index.js";
 import { assertValidRoomId, escapeHTML, filterProfanityPreservingUrls } from "../_utils/_validation.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import { roomExists, addMessage, generateId, getCurrentTimestamp } from "../rooms/_helpers/_redis.js";
@@ -89,7 +89,7 @@ export default async function handler(req: Request) {
     return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
   }
 
-  const authResult = await validateAuthToken(createRedis(), usernameHeader, token, {});
+  const authResult = await validateAuth(createRedis(), usernameHeader, token, {});
   if (!authResult.valid) {
     return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
   }

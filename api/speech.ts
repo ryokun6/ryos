@@ -7,7 +7,7 @@ import {
   preflightIfNeeded,
   getClientIp,
 } from "./_utils/middleware.js";
-import { validateAuthToken } from "./_utils/auth/index.js";
+import { validateAuth } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 
 // --- Default Configuration -----------------------------------------------
@@ -169,7 +169,7 @@ export default async function handler(req: Request) {
   const authToken: string | undefined = headerAuthToken || undefined;
 
   // Validate authentication
-  const validationResult = await validateAuthToken(redis, username, authToken);
+  const validationResult = await validateAuth(redis, username, authToken);
   const isAuthenticated = validationResult.valid;
   const identifier = username ? username.toLowerCase() : null;
 

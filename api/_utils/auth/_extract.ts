@@ -34,9 +34,3 @@ export function extractAuthNormalized(request: Request): ExtractedAuth {
     token,
   };
 }
-
-/**
- * Alias for extractAuth - for backwards compatibility with _auth-validate.ts
- * @deprecated Use extractAuth instead
- */
-export const extractAuthFromRequest = extractAuth;

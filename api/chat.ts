@@ -28,7 +28,7 @@ import {
   getEffectiveOrigin,
   isAllowedOrigin,
 } from "./_utils/middleware.js";
-import { validateAuthToken } from "./_utils/auth/index.js";
+import { validateAuth } from "./_utils/auth/index.js";
 
 // Central list of supported theme IDs for tool validation
 const themeIds = ["system7", "macosx", "xp", "win98"] as const;
@@ -610,7 +610,7 @@ export default async function handler(req: Request) {
     // ---------------------------
     // Validate authentication (all users, including "ryo", must present a valid token)
     // Enable grace period for expired tokens (client is responsible for token refresh)
-    const validationResult = await validateAuthToken(redis, username, authToken, {
+    const validationResult = await validateAuth(redis, username, authToken, {
       allowExpired: true,
       refreshOnGrace: false,
     });

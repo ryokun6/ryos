@@ -11,7 +11,7 @@ import {
   isAllowedOrigin,
   preflightIfNeeded,
 } from "../_utils/middleware.js";
-import { validateAuthToken } from "../_utils/auth/index.js";
+import { validateAuth } from "../_utils/auth/index.js";
 import { assertValidRoomId } from "../_utils/_validation.js";
 
 // Import from existing chat-rooms modules
@@ -97,7 +97,7 @@ export default async function handler(req: Request) {
       return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
     }
 
-    const authResult = await validateAuthToken(createRedis(), usernameHeader, token, {});
+    const authResult = await validateAuth(createRedis(), usernameHeader, token, {});
     if (!authResult.valid) {
       return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
     }

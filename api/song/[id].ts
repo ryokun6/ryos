@@ -25,7 +25,7 @@ import {
   preflightIfNeeded,
   getClientIp,
 } from "../_utils/middleware.js";
-import { validateAuthToken } from "../_utils/auth/index.js";
+import { validateAuth } from "../_utils/auth/index.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import {
   getSong,
@@ -399,7 +399,7 @@ export default async function handler(req: Request) {
             if (!username || !authToken) {
               return errorResponse("Unauthorized - authentication required to change lyrics source or force refresh", 401);
             }
-            const authResult = await validateAuthToken(redis, username, authToken);
+            const authResult = await validateAuth(redis, username, authToken);
             if (!authResult.valid) {
               return errorResponse("Unauthorized - invalid credentials", 401);
             }
@@ -721,7 +721,7 @@ export default async function handler(req: Request) {
           if (!username || !authToken) {
             return errorResponse("Unauthorized - authentication required to force refresh translation", 401);
           }
-          const authResult = await validateAuthToken(redis, username, authToken);
+          const authResult = await validateAuth(redis, username, authToken);
           if (!authResult.valid) {
             return errorResponse("Unauthorized - invalid credentials", 401);
           }
@@ -842,7 +842,7 @@ export default async function handler(req: Request) {
           if (!username || !authToken) {
             return errorResponse("Unauthorized - authentication required to force refresh translation", 401);
           }
-          const authResult = await validateAuthToken(redis, username, authToken);
+          const authResult = await validateAuth(redis, username, authToken);
           if (!authResult.valid) {
             return errorResponse("Unauthorized - invalid credentials", 401);
           }
@@ -1081,7 +1081,7 @@ export default async function handler(req: Request) {
           if (!username || !authToken) {
             return errorResponse("Unauthorized - authentication required to force refresh furigana", 401);
           }
-          const authResult = await validateAuthToken(redis, username, authToken);
+          const authResult = await validateAuth(redis, username, authToken);
           if (!authResult.valid) {
             return errorResponse("Unauthorized - invalid credentials", 401);
           }
@@ -1331,7 +1331,7 @@ Output:
           if (!username || !authToken) {
             return errorResponse("Unauthorized - authentication required to force refresh soramimi", 401);
           }
-          const authResult = await validateAuthToken(redis, username, authToken);
+          const authResult = await validateAuth(redis, username, authToken);
           if (!authResult.valid) {
             return errorResponse("Unauthorized - invalid credentials", 401);
           }
@@ -1670,7 +1670,7 @@ Output:
         }
 
         // Validate auth
-        const authResult = await validateAuthToken(redis, username, authToken);
+        const authResult = await validateAuth(redis, username, authToken);
         if (!authResult.valid) {
           return errorResponse("Unauthorized - authentication required", 401);
         }
@@ -1706,7 +1706,7 @@ Output:
       }
 
       // Default POST: Update song metadata (requires auth)
-      const authResult = await validateAuthToken(redis, username, authToken);
+      const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
         return errorResponse("Unauthorized - authentication required", 401);
       }
@@ -1787,7 +1787,7 @@ Output:
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
-      const authResult = await validateAuthToken(redis, username, authToken);
+      const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
         return errorResponse("Unauthorized - authentication required", 401);
       }

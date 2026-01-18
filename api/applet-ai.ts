@@ -14,7 +14,7 @@ import {
   preflightIfNeeded,
   getClientIp,
 } from "./_utils/middleware.js";
-import { validateAuthToken } from "./_utils/auth/index.js";
+import { validateAuth } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 
 export const config = {
@@ -387,7 +387,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   // Validate authentication (all users, including "ryo", must present a valid token)
   if (usernameHeader) {
-    const validationResult = await validateAuthToken(redis, usernameHeader, authToken);
+    const validationResult = await validateAuth(redis, usernameHeader, authToken);
     if (!validationResult.valid) {
       logError("Authentication failed – invalid or missing token");
       return jsonResponse(

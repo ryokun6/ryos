@@ -7,7 +7,7 @@ import {
   preflightIfNeeded,
   getClientIp,
 } from "./_utils/middleware.js";
-import { validateAuthToken, generateToken } from "./_utils/auth/index.js";
+import { validateAuth, generateAuthToken } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 
 // Vercel Edge Function configuration
@@ -28,7 +28,7 @@ const RATE_LIMITS = {
 const APPLET_SHARE_PREFIX = "applet:share:";
 
 // Generate unique ID for applets (uses shared token generator)
-const generateId = (): string => generateToken().substring(0, 32);
+const generateId = (): string => generateAuthToken().substring(0, 32);
 
 // Request schemas
 const SaveAppletRequestSchema = z.object({
@@ -252,7 +252,7 @@ export default async function handler(req: Request) {
       const username = usernameHeader || null;
 
       // Validate authentication
-      const authResult = await validateAuthToken(redis, username, authToken);
+      const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
         return new Response(
           JSON.stringify({ error: "Unauthorized" }),

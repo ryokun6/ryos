@@ -121,12 +121,3 @@ export async function tokenExists(
   return exists > 0;
 }
 
-// ============================================================================
-// Backwards Compatibility Alias
-// ============================================================================
-
-/**
- * Alias for validateAuth - for backwards compatibility with _auth-validate.ts
- * @deprecated Use validateAuth instead
- */
-export const validateAuthToken = validateAuth;
