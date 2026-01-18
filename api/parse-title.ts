@@ -1,14 +1,17 @@
 import { openai } from "@ai-sdk/openai";
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import * as RateLimit from "./_utils/_rate-limit.js";
 import {
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
-} from "./_utils/_cors.js";
+  getClientIp,
+  errorResponse,
+  jsonResponse,
+} from "./_utils/middleware.js";
+import * as RateLimit from "./_utils/_rate-limit.js";
 
-export const edge = true;
+
 export const config = {
   runtime: "edge",
 };
@@ -44,7 +47,7 @@ export default async function handler(req: Request) {
 
     // Rate limits: burst 15/min/IP + daily 500/IP
     try {
-      const ip = RateLimit.getClientIp(req);
+      const ip = getClientIp(req);
       const BURST_WINDOW = 60;
       const BURST_LIMIT = 15;
       const DAILY_WINDOW = 60 * 60 * 24;

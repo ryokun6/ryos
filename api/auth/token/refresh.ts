@@ -4,7 +4,15 @@
  * Refresh an existing token
  */
 
-import { Redis } from "@upstash/redis";
+import {
+  createRedis,
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  getClientIp,
+  errorResponse,
+  jsonResponse,
+} from "../../_utils/middleware.js";
 import {
   generateAuthToken,
   storeToken,
@@ -14,10 +22,8 @@ import {
   CHAT_USERS_PREFIX,
   TOKEN_GRACE_PERIOD,
 } from "../../_utils/auth/index.js";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../../_utils/_cors.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
 
-export const edge = true;
 export const config = {
   runtime: "edge",
 };
@@ -53,13 +59,10 @@ export default async function handler(req: Request) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
-  const redis = new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
+  const redis = createRedis();
 
   // Rate limiting: 10/min per IP
-  const ip = RateLimit.getClientIp(req);
+  const ip = getClientIp(req);
   const rlKey = RateLimit.makeKey(["rl", "auth:refresh", "ip", ip]);
   const rlResult = await RateLimit.checkCounterLimit({
     key: rlKey,

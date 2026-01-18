@@ -4,8 +4,8 @@
 
 import { Redis } from "@upstash/redis";
 import { CHAT_USERS_PREFIX } from "./_constants.js";
-import { logInfo, logError } from "../_utils/_logging.js";
-import { isProfaneUsername } from "../_utils/_validation.js";
+import { logInfo, logError } from "../../_utils/_logging.js";
+import { isProfaneUsername } from "../../_utils/_validation.js";
 import {
   generateAuthToken,
   storeToken,
@@ -22,7 +22,7 @@ import {
   TOKEN_GRACE_PERIOD,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
-} from "../_utils/auth/index.js";
+} from "../../_utils/auth/index.js";
 import { createErrorResponse } from "./_helpers.js";
 import type {
   GenerateTokenData,

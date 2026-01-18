@@ -4,14 +4,20 @@
  * Switch between rooms (leave previous, join next)
  */
 
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../_utils/_cors.js";
+import {
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  errorResponse,
+  jsonResponse,
+} from "../_utils/middleware.js";
 import { isProfaneUsername, assertValidRoomId } from "../_utils/_validation.js";
 
-import { getRoom, setRoom } from "../chat-rooms/_redis.js";
-import { setRoomPresence, removeRoomPresence, refreshRoomUserCount } from "../chat-rooms/_presence.js";
-import { ensureUserExists } from "../chat-rooms/_users.js";
+import { getRoom, setRoom } from "../rooms/_helpers/_redis.js";
+import { setRoomPresence, removeRoomPresence, refreshRoomUserCount } from "../rooms/_helpers/_presence.js";
+import { ensureUserExists } from "../rooms/_helpers/_users.js";
 
-export const edge = true;
+
 export const config = {
   runtime: "edge",
 };

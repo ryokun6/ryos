@@ -17,15 +17,16 @@
  * { action: "import", songs: [...] }
  */
 
-import { Redis } from "@upstash/redis";
 import { z } from "zod";
 import pako from "pako";
 import {
+  createRedis,
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
-} from "../_utils/_cors.js";
-import { validateAuthToken } from "../_utils/_auth-validate.js";
+  getClientIp,
+} from "../_utils/middleware.js";
+import { validateAuth } from "../_utils/auth/index.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import {
   listSongs,
@@ -44,7 +45,6 @@ import {
 import { fetchCoverUrl } from "./_kugou.js";
 
 // Vercel Edge Function configuration
-export const edge = true;
 export const config = {
   runtime: "edge",
 };
@@ -214,10 +214,7 @@ export default async function handler(req: Request) {
   }
 
   // Create Redis client
-  const redis = new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
+  const redis = createRedis();
 
   // Helper for JSON responses
   const jsonResponse = (data: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -241,7 +238,7 @@ export default async function handler(req: Request) {
     // =========================================================================
     if (req.method === "GET") {
       // Rate limiting for GET
-      const ip = RateLimit.getClientIp(req);
+      const ip = getClientIp(req);
       const rlKey = RateLimit.makeKey(["rl", "song", "list", "ip", ip]);
       const rlResult = await RateLimit.checkCounterLimit({
         key: rlKey,
@@ -299,7 +296,7 @@ export default async function handler(req: Request) {
       const username = usernameHeader || null;
 
       // Validate authentication
-      const authResult = await validateAuthToken(redis, username, authToken);
+      const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
         return errorResponse("Unauthorized - authentication required", 401);
       }
@@ -589,7 +586,7 @@ export default async function handler(req: Request) {
       const username = usernameHeader || null;
 
       // Validate authentication
-      const authResult = await validateAuthToken(redis, username, authToken);
+      const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
         return errorResponse("Unauthorized - authentication required", 401);
       }

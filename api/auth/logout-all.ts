@@ -4,11 +4,18 @@
  * Logout all sessions (invalidate all tokens for user)
  */
 
-import { Redis } from "@upstash/redis";
-import { deleteAllUserTokens, validateAuth, extractAuth } from "../_utils/auth/index.js";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../_utils/_cors.js";
+import {
+  createRedis,
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  extractAuth,
+  errorResponse,
+  successResponse,
+} from "../_utils/middleware.js";
+import { deleteAllUserTokens, validateAuth } from "../_utils/auth/index.js";
 
-export const edge = true;
+
 export const config = {
   runtime: "edge",
 };
@@ -39,10 +46,7 @@ export default async function handler(req: Request) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
-  const redis = new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
+  const redis = createRedis();
 
   // Extract and validate auth
   const { username, token } = extractAuth(req);

@@ -8,20 +8,19 @@ import {
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import {
+  createRedis,
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
-} from "./_utils/_cors.js";
+  getClientIp,
+} from "./_utils/middleware.js";
+import { validateAuth } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
-import { Redis } from "@upstash/redis";
-import { validateAuthToken } from "./_utils/_auth-validate.js";
 
-export const runtime = "edge";
-export const edge = true;
-export const maxDuration = 60;
 export const config = {
   runtime: "edge",
 };
+export const maxDuration = 60;
 
 const APPLET_SYSTEM_PROMPT = `
 <applet_ai>
@@ -364,10 +363,7 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   // Initialize Redis for auth token validation
-  const redis = new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
+  const redis = createRedis();
 
   // Extract auth headers
   const authHeader = req.headers.get("authorization");
@@ -391,7 +387,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   // Validate authentication (all users, including "ryo", must present a valid token)
   if (usernameHeader) {
-    const validationResult = await validateAuthToken(redis, usernameHeader, authToken);
+    const validationResult = await validateAuth(redis, usernameHeader, authToken);
     if (!validationResult.valid) {
       logError("Authentication failed – invalid or missing token");
       return jsonResponse(
@@ -405,7 +401,7 @@ export default async function handler(req: Request): Promise<Response> {
     }
   }
 
-  const ip = RateLimit.getClientIp(req);
+  const ip = getClientIp(req);
   log("Request received", {
     origin: effectiveOrigin ?? "unknown",
     host,

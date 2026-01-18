@@ -4,10 +4,16 @@
  * Search for users
  */
 
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../_utils/_cors.js";
-import { handleGetUsers } from "../chat-rooms/_users.js";
+import {
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  errorResponse,
+  jsonResponse,
+} from "../_utils/middleware.js";
+import { handleGetUsers } from "../rooms/_helpers/_users.js";
 
-export const edge = true;
+
 export const config = {
   runtime: "edge",
 };

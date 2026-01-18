@@ -1,9 +1,14 @@
 import { experimental_generateSpeech as generateSpeech } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./_utils/_cors.js";
+import {
+  createRedis,
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  getClientIp,
+} from "./_utils/middleware.js";
+import { validateAuth } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
-import { Redis } from "@upstash/redis";
-import { validateAuthToken } from "./_utils/_auth-validate.js";
 
 // --- Default Configuration -----------------------------------------------
 
@@ -48,17 +53,12 @@ const generateRequestId = (): string =>
   Math.random().toString(36).substring(2, 10);
 
 // Redis client setup
-const redis = new Redis({
-  url: process.env.REDIS_KV_REST_API_URL,
-  token: process.env.REDIS_KV_REST_API_TOKEN,
-});
+const redis = createRedis();
 
-export const edge = true;
-export const runtime = "edge";
-export const maxDuration = 60;
 export const config = {
   runtime: "edge",
 };
+export const maxDuration = 60;
 
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 
@@ -169,7 +169,7 @@ export default async function handler(req: Request) {
   const authToken: string | undefined = headerAuthToken || undefined;
 
   // Validate authentication
-  const validationResult = await validateAuthToken(redis, username, authToken);
+  const validationResult = await validateAuth(redis, username, authToken);
   const isAuthenticated = validationResult.valid;
   const identifier = username ? username.toLowerCase() : null;
 
@@ -182,7 +182,7 @@ export default async function handler(req: Request) {
   try {
     // Skip rate limiting for authenticated ryo user
     if (!isAuthenticatedRyo) {
-      const ip = RateLimit.getClientIp(req);
+      const ip = getClientIp(req);
       // Use identifier (username or anon:ip) like chat.ts does
       const rateLimitIdentifier = isAuthenticated && identifier ? identifier : `anon:${ip}`;
       

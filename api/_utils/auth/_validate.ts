@@ -120,3 +120,4 @@ export async function tokenExists(
   const exists = await redis.exists(key);
   return exists > 0;
 }
+

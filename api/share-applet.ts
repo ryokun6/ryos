@@ -1,15 +1,16 @@
-import { Redis } from "@upstash/redis";
+import { z } from "zod";
 import {
+  isAdmin,
+  createRedis,
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
-} from "./_utils/_cors.js";
-import { z } from "zod";
-import { validateAuthToken, generateToken } from "./_utils/_auth-validate.js";
+  getClientIp,
+} from "./_utils/middleware.js";
+import { validateAuth, generateAuthToken } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 
 // Vercel Edge Function configuration
-export const edge = true;
 export const config = {
   runtime: "edge",
 };
@@ -27,20 +28,7 @@ const RATE_LIMITS = {
 const APPLET_SHARE_PREFIX = "applet:share:";
 
 // Generate unique ID for applets (uses shared token generator)
-const generateId = (): string => generateToken().substring(0, 32);
-
-// Helper function to check if user is admin (ryo) with valid token
-async function isAdmin(
-  redis: Redis,
-  username: string | null,
-  token: string | null
-): Promise<boolean> {
-  if (!username || !token) return false;
-  if (username.toLowerCase() !== "ryo") return false;
-
-  const authResult = await validateAuthToken(redis, username, token);
-  return authResult.valid;
-}
+const generateId = (): string => generateAuthToken().substring(0, 32);
 
 // Request schemas
 const SaveAppletRequestSchema = z.object({
@@ -68,11 +56,8 @@ export default async function handler(req: Request) {
     return new Response("Method not allowed", { status: 405 });
   }
 
-  // Create Redis client inside handler (like lyrics.ts does)
-  const redis = new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
+  // Create Redis client
+  const redis = createRedis();
 
   // Parse and validate request
   let effectiveOrigin: string | null;
@@ -92,7 +77,7 @@ export default async function handler(req: Request) {
       const listParam = url.searchParams.get("list");
       
       // Rate limiting for GET requests
-      const ip = RateLimit.getClientIp(req);
+      const ip = getClientIp(req);
       const rlConfig = listParam === "true" ? RATE_LIMITS.list : RATE_LIMITS.get;
       const rlKey = RateLimit.makeKey(["rl", "applet", listParam === "true" ? "list" : "get", "ip", ip]);
       const rlResult = await RateLimit.checkCounterLimit({
@@ -267,7 +252,7 @@ export default async function handler(req: Request) {
       const username = usernameHeader || null;
 
       // Validate authentication
-      const authResult = await validateAuthToken(redis, username, authToken);
+      const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
         return new Response(
           JSON.stringify({ error: "Unauthorized" }),

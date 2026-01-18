@@ -71,14 +71,7 @@ export {
 
 // Validation (Edge compatible)
 export type { ValidateAuthOptions } from "./_validate.js";
-export {
-  validateAuth,
-  validateAdminAuth,
-  tokenExists,
-} from "./_validate.js";
+export { validateAuth, validateAdminAuth, tokenExists } from "./_validate.js";
 
 // Request extraction (Edge compatible)
-export {
-  extractAuth,
-  extractAuthNormalized,
-} from "./_extract.js";
+export { extractAuth, extractAuthNormalized } from "./_extract.js";

@@ -38,13 +38,13 @@ import {
   broadcastRoomDeleted,
   broadcastToSpecificUsers,
 } from "./_pusher.js";
-import { logInfo, logError } from "../_utils/_logging.js";
+import { logInfo, logError } from "../../_utils/_logging.js";
 import {
   isProfaneUsername,
   assertValidUsername,
   assertValidRoomId,
-} from "../_utils/_validation.js";
-import { validateAuth } from "../_utils/auth/index.js";
+} from "../../_utils/_validation.js";
+import { validateAuth } from "../../_utils/auth/index.js";
 import { createErrorResponse } from "./_helpers.js";
 import { ensureUserExists } from "./_users.js";
 import type { Room, CreateRoomData, JoinLeaveRoomData, SwitchRoomData } from "./_types.js";

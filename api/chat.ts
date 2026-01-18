@@ -23,9 +23,12 @@ import { z } from "zod";
 import { SUPPORTED_AI_MODELS } from "../src/types/aiModels.js";
 import { appIds } from "../src/config/appIds.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
-import { Redis } from "@upstash/redis";
-import { validateAuthToken } from "./_utils/_auth-validate.js";
-import { getEffectiveOrigin, isAllowedOrigin } from "./_utils/_cors.js";
+import {
+  createRedis,
+  getEffectiveOrigin,
+  isAllowedOrigin,
+} from "./_utils/middleware.js";
+import { validateAuth } from "./_utils/auth/index.js";
 
 // Central list of supported theme IDs for tool validation
 const themeIds = ["system7", "macosx", "xp", "win98"] as const;
@@ -257,14 +260,11 @@ interface SystemState {
 }
 
 
-// Allow streaming responses up to 60 seconds
-export const maxDuration = 80;
-export const runtime = "edge";
-export const edge = true;
-export const stream = true;
+// Edge runtime configuration
 export const config = {
   runtime: "edge",
 };
+export const maxDuration = 80;
 
 // Unified static prompt with all instructions
 const STATIC_SYSTEM_PROMPT = [
@@ -515,10 +515,7 @@ const buildContextAwarePrompts = () => {
 };
 
 // Add Redis client for auth validation
-const redis = new Redis({
-  url: process.env.REDIS_KV_REST_API_URL,
-  token: process.env.REDIS_KV_REST_API_TOKEN,
-});
+const redis = createRedis();
 
 export default async function handler(req: Request) {
   // Check origin before processing request
@@ -613,7 +610,7 @@ export default async function handler(req: Request) {
     // ---------------------------
     // Validate authentication (all users, including "ryo", must present a valid token)
     // Enable grace period for expired tokens (client is responsible for token refresh)
-    const validationResult = await validateAuthToken(redis, username, authToken, {
+    const validationResult = await validateAuth(redis, username, authToken, {
       allowExpired: true,
       refreshOnGrace: false,
     });

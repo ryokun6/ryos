@@ -4,23 +4,18 @@
  * Leave a room
  */
 
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../../_utils/_cors.js";
+import {
+  createRedis,
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+} from "../../_utils/middleware.js";
 import { isProfaneUsername, assertValidRoomId, assertValidUsername } from "../../_utils/_validation.js";
+import { getRoom, setRoom } from "../_helpers/_redis.js";
+import { CHAT_ROOM_PREFIX, CHAT_ROOM_USERS_PREFIX } from "../_helpers/_constants.js";
+import { removeRoomPresence, refreshRoomUserCount } from "../_helpers/_presence.js";
+import type { Room } from "../_helpers/_types.js";
 
-import { Redis } from "@upstash/redis";
-import { getRoom, setRoom } from "../../chat-rooms/_redis.js";
-
-function getRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
-import { CHAT_ROOM_PREFIX, CHAT_ROOM_USERS_PREFIX } from "../../chat-rooms/_constants.js";
-import { removeRoomPresence, refreshRoomUserCount } from "../../chat-rooms/_presence.js";
-import type { Room } from "../../chat-rooms/_types.js";
-
-export const edge = true;
 export const config = {
   runtime: "edge",
 };
@@ -100,7 +95,7 @@ export default async function handler(req: Request) {
         const updatedMembers = roomData.members ? roomData.members.filter((m) => m !== username) : [];
 
         if (updatedMembers.length <= 1) {
-          const pipeline = getRedis().pipeline();
+          const pipeline = createRedis().pipeline();
           pipeline.del(`${CHAT_ROOM_PREFIX}${roomId}`);
           pipeline.del(`chat:messages:${roomId}`);
           pipeline.del(`${CHAT_ROOM_USERS_PREFIX}${roomId}`);
