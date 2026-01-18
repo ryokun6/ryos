@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/api-design-guide" class="">ryOS API Design Guide</a>
+  </div>
+</div>
+<div class="nav-group expanded">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
@@ -336,19 +342,43 @@
     RoomsAPI --> Pusher</pre>
 <h2>API Directory Structure</h2>
 <pre><code>api/
-├── _utils/                    # Shared utilities
+├── _utils/                    # Shared utilities (global)
+│   ├── middleware.ts          # Main middleware (consolidated utilities)
+│   ├── redis.ts               # Redis client factory
+│   ├── constants.ts           # Centralized constants
 │   ├── _aiModels.ts          # AI provider abstraction
 │   ├── _aiPrompts.ts         # System prompts
-│   ├── _auth-validate.ts     # Token validation
 │   ├── _cors.ts              # CORS handling
 │   ├── _rate-limit.ts        # Rate limiting
 │   ├── _song-service.ts      # Song data service
-│   └── auth/                 # Auth helpers (tokens/passwords)
+│   └── auth/                 # Auth utilities
+│       ├── index.ts          # Main auth exports
+│       ├── _validate.ts      # Token validation
+│       ├── _tokens.ts        # Token management
+│       ├── _extract.ts       # Request auth extraction
+│       ├── _constants.ts     # Auth-specific constants
+│       └── _types.ts         # TypeScript types
 ├── auth/                      # Auth endpoints
 │   ├── register.ts
 │   ├── login.ts
-│   └── token/
+│   ├── logout.ts
+│   ├── logout-all.ts
+│   ├── token/
+│   │   ├── refresh.ts
+│   │   └── verify.ts
+│   ├── password/
+│   │   ├── check.ts
+│   │   └── set.ts
+│   └── tokens.ts
 ├── rooms/                     # Room endpoints
+│   ├── _helpers/              # Room-specific helpers
+│   │   ├── _constants.ts
+│   │   ├── _presence.ts
+│   │   ├── _redis.ts
+│   │   ├── _messages.ts
+│   │   ├── _rooms.ts
+│   │   ├── _users.ts
+│   │   └── _types.ts
 │   ├── index.ts
 │   └── [id]/
 │       ├── index.ts
@@ -366,7 +396,6 @@
 │   └── index.ts
 ├── ai/
 │   └── ryo-reply.ts
-├── chat-rooms/               # Shared chat helpers (Redis/presence)
 ├── song/                     # Multi-file module
 │   ├── index.ts              # List/batch operations
 │   ├── [id].ts               # Single song CRUD
@@ -385,8 +414,10 @@
 <h3>Utility APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/iframe-check</code></td><td>GET</td><td>Check/proxy iframe embedding</td></tr><tr><td><code>/api/link-preview</code></td><td>GET</td><td>OpenGraph metadata extraction</td></tr><tr><td><code>/api/admin</code></td><td>Various</td><td>Admin operations</td></tr></tbody></table>
 <h2>AI Provider Abstraction</h2>
-<h3>Supported Models</h3>
-<table><thead><tr><th>Provider</th><th>Models</th><th>Use Cases</th></tr></thead><tbody><tr><td><strong>OpenAI</strong></td><td>gpt-5, gpt-5.1, gpt-5-mini, gpt-4o, gpt-4.1</td><td>Default chat, code generation</td></tr><tr><td><strong>Anthropic</strong></td><td>claude-4.5, claude-4, claude-3.7, claude-3.5</td><td>Complex reasoning</td></tr><tr><td><strong>Google</strong></td><td>gemini-2.5-pro, gemini-2.5-flash, gemini-3-pro</td><td>Image generation</td></tr></tbody></table>
+<h3>Supported Models (AI SDK 6.0)</h3>
+<p>The API uses Vercel AI SDK 6.0 with structured outputs for type-safe responses.</p>
+<table><thead><tr><th>Provider</th><th>Models</th><th>Use Cases</th></tr></thead><tbody><tr><td><strong>OpenAI</strong></td><td>gpt-5, gpt-5.1, gpt-5-mini, gpt-4o, gpt-4.1</td><td>Default chat, code generation</td></tr><tr><td><strong>Anthropic</strong></td><td>claude-4.5, claude-4, claude-3.7, claude-3.5</td><td>Complex reasoning</td></tr><tr><td><strong>Google</strong></td><td>gemini-2.5-pro, gemini-2.5-flash, gemini-3-pro</td><td>Image generation, title parsing</td></tr></tbody></table>
+<strong>Structured Outputs:</strong> Used for deterministic responses like song title parsing (<code>/api/parse-title</code>).
 <h3>Model Selection</h3>
 <pre><code>// api/_utils/_aiModels.ts
 export const getModelInstance = (model: SupportedModel): LanguageModel =&gt; {
