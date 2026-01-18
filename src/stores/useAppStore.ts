@@ -18,6 +18,11 @@ export interface AppInstance extends AppState {
   createdAt: number; // stable ordering for taskbar (creation time)
   isLoading?: boolean;
   isMinimized?: boolean;
+  /**
+   * True when this instance was loaded from persisted storage (rehydration).
+   * Used to suppress sounds/animations that should only happen on user-triggered opens.
+   */
+  restoredFromStorage?: boolean;
 }
 
 export interface RecentApp {
@@ -437,6 +442,7 @@ const createUseAppStore = () =>
               position,
               size,
               createdAt: Date.now(),
+              restoredFromStorage: false,
             },
           } as typeof state.instances;
 
@@ -896,6 +902,12 @@ const createUseAppStore = () =>
         },
         onRehydrateStorage: () => (state) => {
         if (!state) return;
+        // Mark all currently restored instances as coming from storage so we can
+        // avoid user-only effects (e.g. window open sounds) during app load.
+        Object.keys(state.instances || {}).forEach((id) => {
+          const inst = state.instances[id];
+          if (inst) inst.restoredFromStorage = true;
+        });
         // Clean instanceOrder after rehydrate
         if (
           (state as unknown as { instanceOrder?: string[] }).instanceOrder &&
