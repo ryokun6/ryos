@@ -12,7 +12,7 @@ import {
 } from "../../../_utils/middleware.js";
 import { validateAuthToken } from "../../../_utils/auth/index.js";
 import { assertValidRoomId } from "../../../_utils/_validation.js";
-import { roomExists, deleteMessage as deleteMessageFromRedis } from "../../../chat-rooms/_redis.js";
+import { roomExists, deleteMessage as deleteMessageFromRedis } from "../../_helpers/_redis.js";
 
 export const config = {
   runtime: "edge",

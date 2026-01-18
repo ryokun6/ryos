@@ -9,14 +9,14 @@ import {
   getCurrentTimestamp,
 } from "./_redis.js";
 import { CHAT_USERS_PREFIX } from "./_constants.js";
-import { logInfo, logError } from "../_utils/_logging.js";
+import { logInfo, logError } from "../../_utils/_logging.js";
 import {
   isProfaneUsername,
   assertValidUsername,
   MAX_USERNAME_LENGTH,
   MIN_USERNAME_LENGTH,
   USERNAME_REGEX,
-} from "../_utils/_validation.js";
+} from "../../_utils/_validation.js";
 // NOTE: Auth imports removed to keep this module Edge-compatible.
 // handleCreateUser is DEPRECATED - use POST /api/auth/register instead.
 import type { User, CreateUserData } from "./_types.js";

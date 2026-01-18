@@ -15,15 +15,15 @@ import { validateAuthToken } from "../_utils/auth/index.js";
 import { isProfaneUsername } from "../_utils/_validation.js";
 
 // Import from existing chat-rooms modules
-import { getRoomsWithCountsFast } from "../chat-rooms/_presence.js";
+import { getRoomsWithCountsFast } from "./_helpers/_presence.js";
 import {
   generateId,
   getCurrentTimestamp,
   setRoom,
   registerRoom,
-} from "../chat-rooms/_redis.js";
-import { setRoomPresence } from "../chat-rooms/_presence.js";
-import type { Room } from "../chat-rooms/_types.js";
+} from "./_helpers/_redis.js";
+import { setRoomPresence } from "./_helpers/_presence.js";
+import type { Room } from "./_helpers/_types.js";
 
 export const config = {
   runtime: "edge",

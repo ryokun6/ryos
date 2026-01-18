@@ -11,9 +11,9 @@ import {
   preflightIfNeeded,
 } from "../../_utils/middleware.js";
 import { isProfaneUsername, assertValidRoomId, assertValidUsername } from "../../_utils/_validation.js";
-import { getRoom, setRoom } from "../../chat-rooms/_redis.js";
-import { setRoomPresence, refreshRoomUserCount } from "../../chat-rooms/_presence.js";
-import type { Room } from "../../chat-rooms/_types.js";
+import { getRoom, setRoom } from "../_helpers/_redis.js";
+import { setRoomPresence, refreshRoomUserCount } from "../_helpers/_presence.js";
+import type { Room } from "../_helpers/_types.js";
 
 export const config = {
   runtime: "edge",

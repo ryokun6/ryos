@@ -4,7 +4,7 @@
  */
 
 import { Redis } from "@upstash/redis";
-import { CHAT_USERS_PREFIX } from "./chat-rooms/_constants.js";
+import { CHAT_USERS_PREFIX } from "./rooms/_helpers/_constants.js";
 import { deleteAllUserTokens, PASSWORD_HASH_PREFIX } from "./_utils/auth/index.js";
 import {
   isAdmin,

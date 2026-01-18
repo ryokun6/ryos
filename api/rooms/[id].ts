@@ -18,17 +18,17 @@ import { assertValidRoomId } from "../_utils/_validation.js";
 import {
   getRoom,
   setRoom,
-} from "../chat-rooms/_redis.js";
+} from "./_helpers/_redis.js";
 import {
   CHAT_ROOM_PREFIX,
   CHAT_ROOM_USERS_PREFIX,
   CHAT_ROOMS_SET,
-} from "../chat-rooms/_constants.js";
+} from "./_helpers/_constants.js";
 import {
   refreshRoomUserCount,
   deleteRoomPresence,
-} from "../chat-rooms/_presence.js";
-import type { Room } from "../chat-rooms/_types.js";
+} from "./_helpers/_presence.js";
+import type { Room } from "./_helpers/_types.js";
 
 export const config = {
   runtime: "edge",

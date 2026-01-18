@@ -5,7 +5,7 @@
  */
 
 import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../_utils/_cors.js";
-import { handleGetUsers } from "../chat-rooms/_users.js";
+import { handleGetUsers } from "../rooms/_helpers/_users.js";
 
 
 export const config = {

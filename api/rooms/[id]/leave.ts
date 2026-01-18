@@ -11,10 +11,10 @@ import {
   preflightIfNeeded,
 } from "../../_utils/middleware.js";
 import { isProfaneUsername, assertValidRoomId, assertValidUsername } from "../../_utils/_validation.js";
-import { getRoom, setRoom } from "../../chat-rooms/_redis.js";
-import { CHAT_ROOM_PREFIX, CHAT_ROOM_USERS_PREFIX } from "../../chat-rooms/_constants.js";
-import { removeRoomPresence, refreshRoomUserCount } from "../../chat-rooms/_presence.js";
-import type { Room } from "../../chat-rooms/_types.js";
+import { getRoom, setRoom } from "../_helpers/_redis.js";
+import { CHAT_ROOM_PREFIX, CHAT_ROOM_USERS_PREFIX } from "../_helpers/_constants.js";
+import { removeRoomPresence, refreshRoomUserCount } from "../_helpers/_presence.js";
+import type { Room } from "../_helpers/_types.js";
 
 export const config = {
   runtime: "edge",

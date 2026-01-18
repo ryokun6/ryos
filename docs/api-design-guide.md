@@ -12,7 +12,7 @@ The API uses Vercel serverless functions with two runtimes:
 
 ```
 api/
-├── _utils/                    # Shared utilities
+├── _utils/                    # Shared utilities (global)
 │   ├── middleware.ts          # Main middleware (consolidated utilities)
 │   ├── redis.ts               # Redis client factory
 │   ├── constants.ts           # Centralized constants
@@ -28,10 +28,28 @@ api/
 │       └── _types.ts          # TypeScript types
 ├── auth/                      # Authentication endpoints
 ├── rooms/                     # Chat room endpoints
+│   ├── _helpers/              # Room-specific helpers (moved from chat-rooms/)
+│   │   ├── _constants.ts
+│   │   ├── _presence.ts
+│   │   ├── _redis.ts
+│   │   ├── _types.ts
+│   │   └── ...
+│   ├── [id]/                  # Dynamic room routes
+│   └── index.ts               # Room list endpoint
 ├── song/                      # Music library endpoints
-├── chat-rooms/                # Chat room helpers (internal)
+│   ├── _*.ts                  # Song-specific helpers
+│   ├── [id].ts                # Single song endpoint
+│   └── index.ts               # Song list endpoint
 └── ...                        # Other endpoints
 ```
+
+### Naming Conventions
+
+- `_helpers/` - Domain-specific helper modules (internal to a feature)
+- `_utils/` - Global shared utilities
+- `_*.ts` - Internal/private helper files (prefixed with underscore)
+- `index.ts` - Main entry point for a feature
+- `[param].ts` - Dynamic route handlers
 
 ## Common Patterns
 

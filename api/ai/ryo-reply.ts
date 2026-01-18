@@ -16,8 +16,8 @@ import {
 import { validateAuthToken } from "../_utils/auth/index.js";
 import { assertValidRoomId, escapeHTML, filterProfanityPreservingUrls } from "../_utils/_validation.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
-import { roomExists, addMessage, generateId, getCurrentTimestamp } from "../chat-rooms/_redis.js";
-import type { Message } from "../chat-rooms/_types.js";
+import { roomExists, addMessage, generateId, getCurrentTimestamp } from "../rooms/_helpers/_redis.js";
+import type { Message } from "../rooms/_helpers/_types.js";
 
 export const config = {
   runtime: "edge",

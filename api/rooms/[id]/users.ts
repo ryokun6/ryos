@@ -10,7 +10,7 @@ import {
   preflightIfNeeded,
 } from "../../_utils/middleware.js";
 import { assertValidRoomId } from "../../_utils/_validation.js";
-import { getActiveUsersAndPrune } from "../../chat-rooms/_presence.js";
+import { getActiveUsersAndPrune } from "../_helpers/_presence.js";
 
 export const config = {
   runtime: "edge",

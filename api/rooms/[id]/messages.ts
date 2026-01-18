@@ -31,9 +31,9 @@ import {
   CHAT_MIN_INTERVAL_SECONDS,
   USER_EXPIRATION_TIME,
   CHAT_ROOM_PRESENCE_ZSET_PREFIX,
-} from "../../chat-rooms/_constants.js";
-import { ensureUserExists } from "../../chat-rooms/_users.js";
-import type { Message, Room, User } from "../../chat-rooms/_types.js";
+} from "../_helpers/_constants.js";
+import { ensureUserExists } from "../_helpers/_users.js";
+import type { Message, Room, User } from "../_helpers/_types.js";
 
 export const config = {
   runtime: "edge",
