@@ -1,6 +1,12 @@
 import OpenAI from "openai";
+import {
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  getClientIp,
+  errorResponse,
+} from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./_utils/_cors.js";
 
 interface OpenAIError {
   status: number;
@@ -40,7 +46,7 @@ export default async function handler(req: Request) {
   try {
     // Rate limiting (burst + daily) before reading form data
     try {
-      const ip = RateLimit.getClientIp(req);
+      const ip = getClientIp(req);
       const BURST_WINDOW = 60; // 1 minute
       const BURST_LIMIT = 10;
       const DAILY_WINDOW = 60 * 60 * 24; // 1 day

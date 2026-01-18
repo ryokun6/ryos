@@ -1,8 +1,12 @@
 // No Next.js types needed – omit unused import to keep file framework‑agnostic.
 
-import { Redis } from "@upstash/redis"; // Use direct import
+import {
+  createRedis,
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  getClientIp,
+} from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
-import { getEffectiveOrigin, isAllowedOrigin } from "./_utils/_cors.js";
 
 
 export const config = {
@@ -202,7 +206,7 @@ export default async function handler(req: Request) {
   // Rate limiting (mode-specific)
   // ---------------------------
   try {
-    const ip = RateLimit.getClientIp(req);
+    const ip = getClientIp(req);
     const BURST_WINDOW = 60; // 1 minute
     const burstKeyBase = ["rl", "iframe", mode, "ip", ip];
 
@@ -331,10 +335,7 @@ export default async function handler(req: Request) {
     }
 
     try {
-      const redis = new Redis({
-        url: process.env.REDIS_KV_REST_API_URL as string,
-        token: process.env.REDIS_KV_REST_API_TOKEN as string,
-      });
+      const redis = createRedis();
       const key = `${IE_CACHE_PREFIX}${encodeURIComponent(
         normalizedUrlForKey
       )}:${year}`;
@@ -383,10 +384,7 @@ export default async function handler(req: Request) {
     }
 
     try {
-      const redis = new Redis({
-        url: process.env.REDIS_KV_REST_API_URL as string,
-        token: process.env.REDIS_KV_REST_API_TOKEN as string,
-      });
+      const redis = createRedis();
 
       const uniqueYears = new Set<string>();
 
@@ -560,10 +558,7 @@ export default async function handler(req: Request) {
         requestId,
         `Initializing Wayback cache check for ${normalizedUrl} (${waybackYear}/${waybackMonth})`
       );
-      const redis = new Redis({
-        url: process.env.REDIS_KV_REST_API_URL as string,
-        token: process.env.REDIS_KV_REST_API_TOKEN as string,
-      });
+      const redis = createRedis();
       const normalizedUrlForKey = normalizeUrlForCacheKey(normalizedUrl);
       if (normalizedUrlForKey) {
         const cacheKey = `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(

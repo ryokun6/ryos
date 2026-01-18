@@ -4,9 +4,16 @@
  * List all active tokens for the authenticated user
  */
 
-import { Redis } from "@upstash/redis";
-import { getUserTokens, validateAuth, extractAuth } from "../_utils/auth/index.js";
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../_utils/_cors.js";
+import {
+  createRedis,
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  extractAuth,
+  errorResponse,
+  jsonResponse,
+} from "../_utils/middleware.js";
+import { getUserTokens, validateAuth } from "../_utils/auth/index.js";
 
 
 export const config = {
@@ -39,10 +46,7 @@ export default async function handler(req: Request) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
-  const redis = new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
+  const redis = createRedis();
 
   // Extract and validate auth
   const { username, token: currentToken } = extractAuth(req);

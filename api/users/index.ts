@@ -4,7 +4,13 @@
  * Search for users
  */
 
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../_utils/_cors.js";
+import {
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  errorResponse,
+  jsonResponse,
+} from "../_utils/middleware.js";
 import { handleGetUsers } from "../rooms/_helpers/_users.js";
 
 

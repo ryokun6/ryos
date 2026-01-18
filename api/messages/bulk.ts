@@ -4,7 +4,13 @@
  * Get messages for multiple rooms at once
  */
 
-import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "../_utils/_cors.js";
+import {
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  errorResponse,
+  jsonResponse,
+} from "../_utils/middleware.js";
 import { ROOM_ID_REGEX } from "../_utils/_validation.js";
 import { roomExists, getMessages } from "../rooms/_helpers/_redis.js";
 import type { Message } from "../rooms/_helpers/_types.js";

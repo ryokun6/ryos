@@ -5,18 +5,19 @@ import {
   type ModelMessage,
   type UIMessage,
 } from "ai";
-import * as RateLimit from "./_utils/_rate-limit.js";
 import {
+  createRedis,
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
-} from "./_utils/_cors.js";
+  getClientIp,
+} from "./_utils/middleware.js";
+import * as RateLimit from "./_utils/_rate-limit.js";
 import {
   SupportedModel,
   DEFAULT_MODEL,
   getModelInstance,
-  } from "./_utils/_aiModels.js";
-import { Redis } from "@upstash/redis";
+} from "./_utils/_aiModels.js";
 import { normalizeUrlForCacheKey } from "./_utils/_url.js";
 import {
   CORE_PRIORITY_INSTRUCTIONS,
@@ -29,10 +30,7 @@ import { SUPPORTED_AI_MODELS } from "../src/types/aiModels.js";
 
 // After ALLOWED_ORIGINS const block, add Redis setup and cache prefix
 
-const redis = new Redis({
-  url: process.env.REDIS_KV_REST_API_URL as string,
-  token: process.env.REDIS_KV_REST_API_TOKEN as string,
-});
+const redis = createRedis();
 
 const IE_CACHE_PREFIX = "ie:cache:"; // Key prefix for stored generated pages
 
@@ -202,7 +200,7 @@ export default async function handler(req: Request) {
     // Rate limiting (burst + budget per IP)
     // ---------------------------
     try {
-      const ip = RateLimit.getClientIp(req);
+      const ip = getClientIp(req);
       const BURST_WINDOW = 60; // 1 minute
       const BURST_LIMIT = 3;
       const BUDGET_WINDOW = 5 * 60 * 60; // 5 hours

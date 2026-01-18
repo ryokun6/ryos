@@ -1,10 +1,13 @@
 import { z } from "zod";
-import * as RateLimit from "./_utils/_rate-limit.js";
 import {
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
-} from "./_utils/_cors.js";
+  getClientIp,
+  errorResponse,
+  jsonResponse,
+} from "./_utils/middleware.js";
+import * as RateLimit from "./_utils/_rate-limit.js";
 
 // Vercel Edge Function configuration
 
@@ -130,7 +133,7 @@ export default async function handler(req: Request) {
 
   // Rate limiting: 20 searches/min/IP, 200/day/IP
   try {
-    const ip = RateLimit.getClientIp(req);
+    const ip = getClientIp(req);
     const BURST_WINDOW = 60;
     const BURST_LIMIT = 20;
     const DAILY_WINDOW = 60 * 60 * 24;
