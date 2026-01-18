@@ -6,20 +6,30 @@ A summary of changes and updates to ryOS, organized by month.
 
 ## January 2026
 
-- Restructured documentation with hierarchical DeepWiki-style navigation and clean URLs.
-- Enhanced documentation generation with skip and force options.
-- Improved documentation navigation and routing.
+- Restructured API with modular REST design, unified auth middleware, and consolidated imports.
+- Migrated to Vercel AI SDK 6.0 with structured outputs for song title parsing and normalized tool inputs.
+- Added image upload and display support in Chats app with AI image analysis capability.
+- Introduced reusable effect hooks architecture: useEventListener, useLatestRef, useInterval, useTimeout, and useResizeObserver.
+- Added CoverFlow album browser to Karaoke app with long-press gestures, responsive sizing, and pan navigation.
+- Enhanced Apple Menu with Recent Items submenu, System Preferences, and login/logout options.
 
 <details>
-<summary>Minor changes (7)</summary>
+<summary>Minor changes (14)</summary>
 
-- Added a 'View Docs' button to the Help Dialog and updated IE bookmarks, linking to app-specific documentation.
-- Fixed issues with documentation routing and rendering, including h4 headers and Vercel deployment problems.
-- Updated documentation translations to use 'documentation' instead of 'document'.
-- Made the documentation page mobile-friendly with vertical scrolling and System 7-inspired styling.
-- Added comprehensive documentation for utility, AI, Media, and Chat API endpoints, including Chat Rooms.
-- Fixed coverflow styles and improved media display and animations.
-- Updated prebuild script to include documentation generation and bump version information.
+- Restructured documentation with hierarchical DeepWiki-style navigation and clean URLs.
+- Enhanced documentation generation with skip and force options.
+- Added a 'View Docs' button to the Help Dialog and updated IE bookmarks linking to app-specific documentation.
+- Implemented theme-aware boot screens with official Windows logos and System 7 hello.svg fix.
+- Refactored multiple components to use shared event listener hooks for better cleanup and performance.
+- Added image preprocessing (resize/compress) before sending to AI model.
+- Fixed drag/resize sounds to play once instead of repeatedly.
+- Implemented auto-skip to lyrics start for tracks with negative offset.
+- Enhanced CoverFlow with iPod mode styling, container queries, and enter/exit animations.
+- Added theme-aware translations for Control Panels in multiple languages.
+- Updated localization for Japanese, Traditional Chinese, German, Spanish, and Portuguese.
+- Improved Apple Menu document icon detection and Recent Items tracking.
+- Fixed debug mode functionality in BootScreen component.
+- Updated API design guide with comprehensive patterns and best practices.
 
 </details>
 
@@ -320,4 +330,4 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
-*This changelog is automatically generated and summarized from git history. Last updated: 2026-01-01*
+*This changelog is automatically generated and summarized from git history. Last updated: 2026-01-18*

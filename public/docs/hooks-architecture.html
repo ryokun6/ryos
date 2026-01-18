@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/api-design-guide" class="">ryOS API Design Guide</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -293,7 +299,7 @@
     <main class="content">
       <article>
         <h1>Hooks Architecture</h1>
-<p>ryOS provides 29 custom hooks organized by functionality, enabling audio playback, window management, media handling, and more.</p>
+<p>ryOS provides 33 custom hooks organized by functionality, enabling audio playback, window management, media handling, effect management, and more.</p>
 <h2>Hook Categories Overview</h2>
 <pre class="mermaid">graph TB
     subgraph Audio["Audio Hooks"]
@@ -334,6 +340,14 @@
         UCB[useCacheBustTrigger]
         USF[useStreamingFetch]
         UTH[useTranslatedHelpItems]
+    end
+    
+    subgraph Effect["Effect Hooks"]
+        UEL[useEventListener]
+        ULR[useLatestRef]
+        UIT[useInterval]
+        UTO[useTimeout]
+        URO[useResizeObserver]
     end
     
     subgraph Auth["Auth Hooks"]
@@ -632,6 +646,68 @@ const { username, isAuthenticated, login, logout } = useAuth();
 if (!isAuthenticated) {
   await login("alice", "password123");
 }</code></pre>
+<h2>Effect Hooks</h2>
+<h3>useEventListener</h3>
+<p>Type-safe event listener management with automatic cleanup.</p>
+<pre><code>// Window event
+useEventListener("resize", handleResize);
+
+// Document event
+useEventListener("visibilitychange", handleVisibility, document);
+
+// Element event via ref
+const buttonRef = useRef&lt;HTMLButtonElement&gt;(null);
+useEventListener("click", handleClick, buttonRef);</code></pre>
+<strong>Features:</strong>
+<ul><li>Automatic cleanup on unmount</li><li>Ref-based handler to avoid stale closures</li><li>Supports window, document, and element targets</li><li>TypeScript-safe event types</li></ul>
+<p>Also exports <code>useCustomEventListener</code> for custom events with typed payloads.</p>
+<h3>useLatestRef</h3>
+<p>Keeps a ref updated with the latest value without triggering re-renders.</p>
+<pre><code>const [count, setCount] = useState(0);
+const countRef = useLatestRef(count);
+
+// In callbacks - always gets current value
+const handleClick = useCallback(() =&gt; {
+  console.log('Current count:', countRef.current);
+}, []); // No need to include count in deps</code></pre>
+<strong>Use cases:</strong>
+<ul><li>Avoiding stale closures in callbacks</li><li>Event handlers that need current state</li><li>Animation frame callbacks</li></ul>
+<p>Also exports <code>usePrevious</code> for tracking previous render values.</p>
+<h3>useInterval</h3>
+<p>Declarative interval management with automatic cleanup.</p>
+<pre><code>// Basic usage - runs every second
+useInterval(() =&gt; setCount(c =&gt; c + 1), 1000);
+
+// Conditional interval - pauses when delay is null
+useInterval(() =&gt; tick(), isRunning ? 1000 : null);
+
+// Immediate execution on mount
+useInterval(() =&gt; fetchData(), 5000, { immediate: true });</code></pre>
+<h3>useTimeout</h3>
+<p>Declarative timeout with manual control.</p>
+<pre><code>// Basic usage
+useTimeout(() =&gt; setVisible(false), 3000);
+
+// Conditional timeout
+useTimeout(() =&gt; hideMessage(), showMessage ? 5000 : null);
+
+// Manual control
+const { clear, reset } = useTimeout(() =&gt; autoSave(), 10000);
+// Later: clear() to cancel, reset() to restart</code></pre>
+<h3>useResizeObserver</h3>
+<p>Element size observation with automatic cleanup.</p>
+<pre><code>// Basic usage - returns ref to attach
+const ref = useResizeObserver&lt;HTMLDivElement&gt;((entry) =&gt; {
+  setWidth(entry.contentRect.width);
+});
+return &lt;div ref={ref}&gt;...&lt;/div&gt;;
+
+// With debouncing
+const ref = useResizeObserver&lt;HTMLDivElement&gt;(
+  (entry) =&gt; setDimensions(entry.contentRect),
+  { debounce: 100 }
+);</code></pre>
+<p>Also exports: <ul><li><code>useResizeObserverWithRef</code> - for existing refs</li><li><code>useElementSize</code> - simple hook returning <code>[ref, { width, height }]</code></li></ul></p>
 <h2>Common Patterns</h2>
 <h3>Global AudioContext Management</h3>
 <p>Audio hooks share a global context:</p>
@@ -693,7 +769,7 @@ gainNode.gain.linearRampToValueAtTime(targetVolume, now + 0.01);</code></pre>
         UWM --> APS
     end</pre>
 <h2>Usage Recommendations</h2>
-<table><thead><tr><th>Hook</th><th>Use When</th><th>Notes</th></tr></thead><tbody><tr><td><code>useSound</code></td><td>UI feedback</td><td>Use <code>Sounds</code> enum for paths</td></tr><tr><td><code>useTtsQueue</code></td><td>Long-form speech</td><td>Auto-queues for seamless playback</td></tr><tr><td><code>useChatSynth</code></td><td>Typing feedback</td><td>Configurable presets</td></tr><tr><td><code>useWindowManager</code></td><td>Any draggable window</td><td>Handles snap-to-edge</td></tr><tr><td><code>useLaunchApp</code></td><td>Opening apps</td><td>Handles multi-instance</td></tr><tr><td><code>useLyrics</code></td><td>Synced lyrics</td><td>Includes translation support</td></tr><tr><td><code>useFurigana</code></td><td>Japanese text</td><td>Wait for furigana before soramimi</td></tr><tr><td><code>useIsMobile</code></td><td>Touch/small screen</td><td>Use for layout decisions</td></tr><tr><td><code>useIsPhone</code></td><td>Phones specifically</td><td>More restrictive than isMobile</td></tr><tr><td><code>useOffline</code></td><td>Network-dependent features</td><td>Includes periodic polling</td></tr></tbody></table>
+<table><thead><tr><th>Hook</th><th>Use When</th><th>Notes</th></tr></thead><tbody><tr><td><code>useSound</code></td><td>UI feedback</td><td>Use <code>Sounds</code> enum for paths</td></tr><tr><td><code>useTtsQueue</code></td><td>Long-form speech</td><td>Auto-queues for seamless playback</td></tr><tr><td><code>useChatSynth</code></td><td>Typing feedback</td><td>Configurable presets</td></tr><tr><td><code>useWindowManager</code></td><td>Any draggable window</td><td>Handles snap-to-edge</td></tr><tr><td><code>useLaunchApp</code></td><td>Opening apps</td><td>Handles multi-instance</td></tr><tr><td><code>useLyrics</code></td><td>Synced lyrics</td><td>Includes translation support</td></tr><tr><td><code>useFurigana</code></td><td>Japanese text</td><td>Wait for furigana before soramimi</td></tr><tr><td><code>useIsMobile</code></td><td>Touch/small screen</td><td>Use for layout decisions</td></tr><tr><td><code>useIsPhone</code></td><td>Phones specifically</td><td>More restrictive than isMobile</td></tr><tr><td><code>useOffline</code></td><td>Network-dependent features</td><td>Includes periodic polling</td></tr><tr><td><code>useEventListener</code></td><td>DOM event handlers</td><td>Auto-cleanup, avoids stale closures</td></tr><tr><td><code>useLatestRef</code></td><td>Callbacks needing current state</td><td>Eliminates manual ref sync</td></tr><tr><td><code>useInterval</code></td><td>Polling, animations</td><td>Pass <code>null</code> to pause</td></tr><tr><td><code>useTimeout</code></td><td>Delayed actions</td><td>Returns <code>clear</code>/<code>reset</code> controls</td></tr><tr><td><code>useResizeObserver</code></td><td>Responsive components</td><td>Optional debouncing</td></tr></tbody></table>
 <h2>Related Documentation</h2>
 <ul><li><a href="/docs/audio-system">Audio System</a> - Audio architecture details</li></ul><ul><li><a href="/docs/window-management">Window Management</a> - Window hook integration</li><li><a href="/docs/state-management">State Management</a> - Store patterns</li></ul>
       </article>

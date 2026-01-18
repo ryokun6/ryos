@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/api-design-guide" class="">ryOS API Design Guide</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -296,10 +302,10 @@
 <p>A summary of changes and updates to ryOS, organized by month.</p>
 <hr>
 <h2>January 2026</h2>
-<ul><li>Restructured documentation with hierarchical DeepWiki-style navigation and clean URLs.</li></ul><ul><li>Enhanced documentation generation with skip and force options.</li><li>Improved documentation navigation and routing.</li></ul>
+<ul><li>Restructured API with modular REST design, unified auth middleware, and consolidated imports.</li></ul><ul><li>Migrated to Vercel AI SDK 6.0 with structured outputs for song title parsing and normalized tool inputs.</li><li>Added image upload and display support in Chats app with AI image analysis capability.</li><li>Introduced reusable effect hooks architecture: useEventListener, useLatestRef, useInterval, useTimeout, and useResizeObserver.</li><li>Added CoverFlow album browser to Karaoke app with long-press gestures, responsive sizing, and pan navigation.</li><li>Enhanced Apple Menu with Recent Items submenu, System Preferences, and login/logout options.</li></ul>
 <details>
-<summary>Minor changes (7)</summary>
-<ul><li>Added a 'View Docs' button to the Help Dialog and updated IE bookmarks, linking to app-specific documentation.</li></ul><ul><li>Fixed issues with documentation routing and rendering, including h4 headers and Vercel deployment problems.</li><li>Updated documentation translations to use 'documentation' instead of 'document'.</li><li>Made the documentation page mobile-friendly with vertical scrolling and System 7-inspired styling.</li><li>Added comprehensive documentation for utility, AI, Media, and Chat API endpoints, including Chat Rooms.</li><li>Fixed coverflow styles and improved media display and animations.</li><li>Updated prebuild script to include documentation generation and bump version information.</li></ul>
+<summary>Minor changes (14)</summary>
+<ul><li>Restructured documentation with hierarchical DeepWiki-style navigation and clean URLs.</li></ul><ul><li>Enhanced documentation generation with skip and force options.</li><li>Added a 'View Docs' button to the Help Dialog and updated IE bookmarks linking to app-specific documentation.</li><li>Implemented theme-aware boot screens with official Windows logos and System 7 hello.svg fix.</li><li>Refactored multiple components to use shared event listener hooks for better cleanup and performance.</li><li>Added image preprocessing (resize/compress) before sending to AI model.</li><li>Fixed drag/resize sounds to play once instead of repeatedly.</li><li>Implemented auto-skip to lyrics start for tracks with negative offset.</li><li>Enhanced CoverFlow with iPod mode styling, container queries, and enter/exit animations.</li><li>Added theme-aware translations for Control Panels in multiple languages.</li><li>Updated localization for Japanese, Traditional Chinese, German, Spanish, and Portuguese.</li><li>Improved Apple Menu document icon detection and Recent Items tracking.</li><li>Fixed debug mode functionality in BootScreen component.</li><li>Updated API design guide with comprehensive patterns and best practices.</li></ul>
 </details>
 <h2>December 2025</h2>
 <ul><li>Added Karaoke app, a windowed full-screen iPod player with lyrics synchronization and customizable font options.</li></ul><ul><li>Enhanced iPod app with Cover Flow album browser, PIP player, YouTube search, and improved lyrics handling including furigana, soramimi, and translations.</li><li>Implemented Admin app with user and song management, enhanced authentication, and Redis sync for song metadata.</li><li>Introduced screen saver functionality with bouncing logo and i18n support.</li><li>Enhanced lyrics display with old-school karaoke styling, romaji support, and improved Chinese and Korean text rendering.</li><li>Unified song API endpoint and client refactoring for improved song metadata handling and lyrics processing.</li></ul>
@@ -374,7 +380,7 @@
 <ul><li>Enhanced UI components with styling and formatting improvements, including dialogs, menus, and buttons.</li></ul><ul><li>Improved chat message styling with sender and timestamp details, animations, and text selection support.</li><li>Refactored several components for better modularity and maintainability, including App, MenuBar, and dialogs.</li><li>Added sound effects to UI components and interactions using Tone.js.</li><li>Updated default favorites in Internet Explorer and added new fonts.</li><li>Improved audio device selection and permission handling for sound recording.</li><li>Added window resizing and draggable functionality with persistent size and position.</li><li>Updated README with comprehensive project features and structure.</li><li>Added help and about dialogs to apps with metadata and help items.</li></ul>
 </details>
 <hr>
-<em>This changelog is automatically generated and summarized from git history. Last updated: 2026-01-01</em>
+<em>This changelog is automatically generated and summarized from git history. Last updated: 2026-01-18</em>
       </article>
       
       <nav class="nav">

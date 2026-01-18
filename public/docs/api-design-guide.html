@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>File System - ryOS Docs</title>
+  <title>ryOS API Design Guide - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -185,7 +185,7 @@
       <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/api-design-guide" class="">ryOS API Design Guide</a>
+    <a href="/docs/api-design-guide" class="active">ryOS API Design Guide</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -251,7 +251,7 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/file-system" class="active">5. File System</a>
+    <a href="/docs/file-system" class="">5. File System</a>
   </div>
 </div>
 <div class="nav-group">
@@ -298,238 +298,250 @@
     
     <main class="content">
       <article>
-        <h1>File System</h1>
-<p>Browser-based hierarchical virtual file system with two-layer architecture for metadata and content separation.</p>
-<h2>Two-Layer Architecture</h2>
-<ul><li><strong>Metadata Layer</strong> (Zustand + localStorage): File paths, names, types, UUIDs, timestamps, and status</li></ul><ul><li><strong>Content Layer</strong> (IndexedDB): Actual file content indexed by UUID for efficient storage</li></ul>
-<pre class="mermaid">graph TB
-    subgraph Application["Application Layer"]
-        App[React Components]
-        Hook[useFileSystem Hook]
-    end
-    
-    subgraph Metadata["Metadata Layer"]
-        FilesStore[(useFilesStore)]
-        FinderStore[(useFinderStore)]
-        LocalStorage[(localStorage)]
-    end
-    
-    subgraph Content["Content Layer"]
-        IDB[(IndexedDB)]
-        subgraph Stores["Object Stores"]
-            Docs[documents]
-            Imgs[images]
-            Apps[applets]
-            Trash[trash]
-            Wall[custom_wallpapers]
-        end
-    end
-    
-    App --> Hook
-    Hook --> FilesStore
-    Hook --> FinderStore
-    FilesStore <--> LocalStorage
-    FinderStore <--> LocalStorage
-    Hook -->|"UUID lookup"| IDB
-    IDB --> Stores</pre>
-<h2>Key Stores</h2>
-<table><thead><tr><th>Store</th><th>Purpose</th><th>Persistence</th></tr></thead><tbody><tr><td><code>useFilesStore</code></td><td>File/folder metadata, paths, UUIDs, status</td><td>localStorage</td></tr><tr><td><code>useFinderStore</code></td><td>Finder window instances, navigation history, view preferences</td><td>localStorage</td></tr><tr><td>IndexedDB</td><td>File content (text, images, applets)</td><td>Browser storage</td></tr></tbody></table>
-<h2>Directory Structure</h2>
-<table><thead><tr><th>Path</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>/</code></td><td>Root</td><td>Root directory</td></tr><tr><td><code>/Applications</code></td><td>Virtual</td><td>Apps from registry (non-Finder apps)</td></tr><tr><td><code>/Documents</code></td><td>Physical</td><td>User text documents (.txt, .md)</td></tr><tr><td><code>/Images</code></td><td>Physical</td><td>User images (PNG, JPG, GIF, WebP, BMP)</td></tr><tr><td><code>/Music</code></td><td>Virtual</td><td>iPod library (organized by artist)</td></tr><tr><td><code>/Videos</code></td><td>Virtual</td><td>Video library (organized by artist)</td></tr><tr><td><code>/Sites</code></td><td>Virtual</td><td>Internet Explorer favorites</td></tr><tr><td><code>/Applets</code></td><td>Physical</td><td>HTML applets (.app, .html files)</td></tr><tr><td><code>/Trash</code></td><td>Special</td><td>Deleted items (restorable)</td></tr><tr><td><code>/Desktop</code></td><td>Physical</td><td>Shortcuts and aliases</td></tr></tbody></table>
-<pre class="mermaid">graph TD
-    Root["/"] --> Apps["/Applications<br/>Virtual"]
-    Root --> Docs["/Documents<br/>Physical"]
-    Root --> Imgs["/Images<br/>Physical"]
-    Root --> Music["/Music<br/>Virtual"]
-    Root --> Videos["/Videos<br/>Virtual"]
-    Root --> Sites["/Sites<br/>Virtual"]
-    Root --> Applets["/Applets<br/>Physical"]
-    Root --> Trash["/Trash<br/>Special"]
-    Root --> Desktop["/Desktop<br/>Physical"]
-    
-    Apps -.->|"from appRegistry"| AppReg[(App Registry)]
-    Music -.->|"from useIpodStore"| iPod[(iPod Library)]
-    Videos -.->|"from useVideoStore"| VidLib[(Video Library)]
-    Sites -.->|"from useInternetExplorerStore"| IEFav[(IE Favorites)]
-    
-    Docs -->|"stored in"| IDB[(IndexedDB)]
-    Imgs -->|"stored in"| IDB
-    Applets -->|"stored in"| IDB</pre>
-<h2>File Metadata</h2>
-<pre><code>interface FileSystemItem {
-  // Core properties
-  path: string;           // Full path, unique identifier (e.g., "/Documents/note.md")
-  name: string;           // File/folder name
-  isDirectory: boolean;
-  type?: string;          // File type (markdown, text, png, jpg, html, etc.)
-  icon?: string;          // Icon path or emoji
-  appId?: string;         // Associated application ID
-  
-  // Content reference
-  uuid?: string;          // UUID for IndexedDB content lookup (files only)
-  
-  // File properties
-  size?: number;          // File size in bytes
-  createdAt?: number;     // Creation timestamp
-  modifiedAt?: number;    // Last modified timestamp
-  
-  // Status
-  status: "active" | "trashed";
-  originalPath?: string;  // Path before moving to trash
-  deletedAt?: number;     // When moved to trash
-  
-  // Applet sharing
-  shareId?: string;       // Share ID for shared applets (from Redis)
-  createdBy?: string;     // Creator username
-  storeCreatedAt?: number;
-  
-  // Window dimensions
-  windowWidth?: number;
-  windowHeight?: number;
-  
-  // Alias/shortcut properties
-  aliasTarget?: string;   // Target path or appId
-  aliasType?: "file" | "app";
-  hiddenOnThemes?: OsThemeId[];  // Hide on specific OS themes
-}</code></pre>
-<h2>IndexedDB Storage</h2>
-<p>Database: <code>ryOS</code> (version 7)</p>
-<table><thead><tr><th>Object Store</th><th>Content Type</th><th>Key</th></tr></thead><tbody><tr><td><code>documents</code></td><td>Text files (strings)</td><td>UUID</td></tr><tr><td><code>images</code></td><td>Binary images (Blobs)</td><td>UUID</td></tr><tr><td><code>applets</code></td><td>HTML applet content</td><td>UUID</td></tr><tr><td><code>trash</code></td><td>Deleted file content</td><td>UUID</td></tr><tr><td><code>custom_wallpapers</code></td><td>User wallpapers</td><td>UUID</td></tr></tbody></table>
-<p>Content structure stored in IndexedDB: <pre><code>interface StoredContent {
-  name: string;               // Original filename
-  content: string | Blob;     // File content
-}</code></pre></p>
-<h2>CRUD Operations</h2>
-<h3>File Operations</h3>
-<pre><code>// useFileSystem hook provides these operations
-const {
-  // Navigation
-  currentPath,
-  navigateToPath,
-  navigateUp,
-  navigateBack,
-  navigateForward,
-  
-  // File listing
-  files,
-  isLoading,
-  error,
-  
-  // Selection
-  selectedFile,
-  handleFileSelect,
-  handleFileOpen,
-  
-  // File operations
-  saveFile,        // Create or update file
-  renameFile,      // Rename file/folder
-  createFolder,    // Create new folder
-  moveFile,        // Move file to different folder
-  
-  // Trash operations
-  moveToTrash,
-  restoreFromTrash,
-  emptyTrash,
-  trashItemsCount,
-  
-  // System
-  formatFileSystem,  // Reset entire filesystem
-} = useFileSystem(initialPath, options);</code></pre>
-<h3>Save File Example</h3>
-<pre><code>await saveFile({
-  path: "/Documents/note.md",
-  name: "note.md",
-  content: "# My Note\nContent here",
-  type: "markdown",
-  icon: "/icons/file-text.png",
-});</code></pre>
-<h3>Move to Trash Flow</h3>
-<ol><li>Mark item as <code>status: "trashed"</code> in metadata</li><li>Store <code>originalPath</code> and <code>deletedAt</code> timestamp</li><li>Move content from original store to <code>trash</code> store in IndexedDB</li><li>Update Trash folder icon (<code>trash-full.png</code>)</li></ol>
-<h3>Restore from Trash Flow</h3>
-<ol><li>Reset <code>status</code> to <code>"active"</code>, clear <code>originalPath</code> and <code>deletedAt</code></li><li>Move content back from <code>trash</code> store to original store</li><li>Update Trash folder icon if empty</li></ol>
-<h2>Lazy Loading</h2>
-<p>Default file content is lazy-loaded on first access:</p>
-<pre><code>// Register files for lazy loading during initialization
-registerFilesForLazyLoad(files, items);
+        <h1>ryOS API Design Guide</h1>
+<p>This document outlines the patterns and conventions used in the ryOS API.</p>
+<h2>Architecture Overview</h2>
+<p>The API uses Vercel serverless functions with two runtimes: <ul><li><strong>Edge Runtime</strong>: Most endpoints (default, faster cold starts)</li><li><strong>Node.js Runtime</strong>: Endpoints requiring <code>bcrypt</code> (auth/login, auth/register, auth/password/set)</li></ul></p>
+<h2>File Structure</h2>
+<pre><code>api/
+├── _utils/                    # Shared utilities (global)
+│   ├── middleware.ts          # Main middleware (consolidated utilities)
+│   ├── redis.ts               # Redis client factory
+│   ├── constants.ts           # Centralized constants
+│   ├── _cors.ts               # CORS handling
+│   ├── _rate-limit.ts         # Rate limiting
+│   ├── _validation.ts         # Input validation
+│   └── auth/                  # Authentication utilities
+│       ├── index.ts           # Main auth exports
+│       ├── _validate.ts       # Token validation
+│       ├── _tokens.ts         # Token management
+│       ├── _extract.ts        # Request auth extraction
+│       ├── _constants.ts      # Auth-specific constants
+│       └── _types.ts          # TypeScript types
+├── auth/                      # Authentication endpoints
+├── rooms/                     # Chat room endpoints
+│   ├── _helpers/              # Room-specific helpers (moved from chat-rooms/)
+│   │   ├── _constants.ts
+│   │   ├── _presence.ts
+│   │   ├── _redis.ts
+│   │   ├── _types.ts
+│   │   └── ...
+│   ├── [id]/                  # Dynamic room routes
+│   └── index.ts               # Room list endpoint
+├── song/                      # Music library endpoints
+│   ├── _*.ts                  # Song-specific helpers
+│   ├── [id].ts                # Single song endpoint
+│   └── index.ts               # Song list endpoint
+└── ...                        # Other endpoints</code></pre>
+<h3>Naming Conventions</h3>
+<ul><li><code>_helpers/</code> - Domain-specific helper modules (internal to a feature)</li></ul><ul><li><code>_utils/</code> - Global shared utilities</li><li><code>_*.ts</code> - Internal/private helper files (prefixed with underscore)</li><li><code>index.ts</code> - Main entry point for a feature</li><li><code>[param].ts</code> - Dynamic route handlers</li></ul>
+<h2>Common Patterns</h2>
+<h3>1. Runtime Declaration</h3>
+<pre><code>// Edge runtime (default)
+export const config = {
+  runtime: "edge",
+};
+export const maxDuration = 60; // optional
 
-// Load content when file is opened
-await ensureFileContentLoaded(filePath, uuid);</code></pre>
-<p>Files with <code>assetPath</code> in <code><a href="https://github.com/ryokun6/ryos/blob/main/public/data/filesystem.js" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">public/data/filesystem.js</a>on</code> are fetched on-demand, not during app initialization. This improves startup performance.</p>
-<h2>Finder App Integration</h2>
-<h3>Multi-Window Support</h3>
-<p>Each Finder window is an instance with its own state:</p>
-<pre><code>interface FinderInstance {
-  instanceId: string;
-  currentPath: string;
-  navigationHistory: string[];
-  navigationIndex: number;
-  viewType: ViewType;        // "small" | "large" | "list"
-  sortType: SortType;        // "name" | "date" | "size" | "kind"
-  selectedFile: string | null;
-}</code></pre>
-<h3>View Type Preferences</h3>
-<p>Per-path view type preferences persist across sessions:</p>
-<pre><code>// Default view types by path
-getDefaultViewTypeForPath(path) {
-  if (path === "/" || path.startsWith("/Images") || 
-      path.startsWith("/Applications") || path.startsWith("/Applets"))
-    return "large";
-  if (path.startsWith("/Documents") || path.startsWith("/Music"))
-    return "list";
-  return "list";
-}</code></pre>
-<h3>File Type Detection</h3>
-<pre><code>function getFileTypeFromExtension(fileName: string): string {
-  const ext = fileName.split(".").pop()?.toLowerCase();
-  switch (ext) {
-    case "md": return "markdown";
-    case "txt": return "text";
-    case "png": case "jpg": case "gif": case "webp": case "bmp": return ext;
-    case "app": return "application";
-    default: return "unknown";
+// Node.js runtime (when bcrypt needed)
+export const runtime = "nodejs";
+export const maxDuration = 15;</code></pre>
+<h3>2. Imports from Middleware</h3>
+<pre><code>import {
+  // Redis
+  createRedis,
+  
+  // CORS
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  
+  // Auth
+  extractAuth,
+  extractAuthNormalized,
+  
+  // Response helpers
+  jsonResponse,
+  errorResponse,
+  successResponse,
+  rateLimitResponse,
+  
+  // Rate limiting
+  getClientIp,
+  checkRateLimit,
+  RATE_LIMITS,
+  
+  // Request helpers
+  parseJsonBody,
+  getQueryParam,
+  
+  // Request context (reduces boilerplate)
+  createRequestContext,
+  
+  // Constants
+  REDIS_PREFIXES,
+  TTL,
+  RATE_LIMIT_TIERS,
+} from "./_utils/middleware.js";</code></pre>
+<h3>3. Basic Handler Structure</h3>
+<pre><code>export default async function handler(req: Request) {
+  const origin = getEffectiveOrigin(req);
+  
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    const preflight = preflightIfNeeded(req, ["GET", "POST", "OPTIONS"], origin);
+    if (preflight) return preflight;
+    return new Response(null, { status: 204 });
+  }
+
+  // Check origin
+  if (!isAllowedOrigin(origin)) {
+    return errorResponse("Unauthorized", 403, origin);
+  }
+
+  // Method check
+  if (req.method !== "GET" &amp;&amp; req.method !== "POST") {
+    return errorResponse("Method not allowed", 405, origin);
+  }
+
+  // Create Redis client
+  const redis = createRedis();
+
+  try {
+    // Handler logic here
+    return jsonResponse({ data: "example" }, 200, origin);
+  } catch (error) {
+    console.error("Error:", error);
+    return errorResponse("Internal server error", 500, origin);
   }
 }</code></pre>
-<h2>Supported File Types</h2>
-<table><thead><tr><th>Extension</th><th>Type</th><th>Opens With</th><th>Storage</th></tr></thead><tbody><tr><td><code>.md</code></td><td>Markdown</td><td>TextEdit</td><td>IndexedDB (documents)</td></tr><tr><td><code>.txt</code></td><td>Plain text</td><td>TextEdit</td><td>IndexedDB (documents)</td></tr><tr><td><code>.png</code>, <code>.jpg</code>, <code>.gif</code>, <code>.webp</code>, <code>.bmp</code></td><td>Image</td><td>Paint</td><td>IndexedDB (images)</td></tr><tr><td><code>.app</code>, <code>.html</code></td><td>HTML Applet</td><td>Applet Viewer</td><td>IndexedDB (applets)</td></tr><tr><td><code>.mp3</code></td><td>Audio</td><td>iPod</td><td>Virtual (iPod store)</td></tr><tr><td><code>.mov</code></td><td>Video</td><td>Videos</td><td>Virtual (Video store)</td></tr><tr><td><code>.webloc</code></td><td>Web link</td><td>Internet Explorer</td><td>Virtual (IE store)</td></tr></tbody></table>
-<h2>Desktop Shortcuts</h2>
-<p>Aliases/shortcuts on Desktop:</p>
-<pre><code>// Create alias from context menu or drag
-fileStore.createAlias(
-  targetPath,      // Original file path or app ID
-  aliasName,       // Display name
-  aliasType,       // "file" | "app"
-  targetAppId      // For app shortcuts
-);</code></pre>
-<p>Desktop shortcuts support: <ul><li>App shortcuts (launches the app)</li><li>File shortcuts (opens the target file)</li><li>Theme-specific visibility (<code>hiddenOnThemes</code>)</li></ul></p>
-<h2>Migration System</h2>
-<p>Store version migrations handle schema changes:</p>
-<pre><code>// Version history
-// v5: Added UUID-based content keys
-// v6: Added timestamps (createdAt, modifiedAt)
-// v7: Added file size tracking
-// v8: One-time sync for existing file sizes/timestamps
-// v10: Updated Applets folder icon</code></pre>
-<h2>Events</h2>
-<p>File system changes emit custom events:</p>
-<pre><code>// File saved/updated
-window.dispatchEvent(new CustomEvent("fileUpdated", {
-  detail: { name, path }
-}));
+<h3>4. Using Request Context (Recommended for Complex Handlers)</h3>
+<pre><code>export default async function handler(req: Request) {
+  const ctx = await createRequestContext(req, { requireAuth: true });
+  
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    const preflight = preflightIfNeeded(req, ["POST", "OPTIONS"], ctx.origin);
+    if (preflight) return preflight;
+    return new Response(null, { status: 204 });
+  }
 
-// File renamed
-window.dispatchEvent(new CustomEvent("fileRenamed", {
-  detail: { oldPath, newPath, oldName, newName }
-}));
+  if (!ctx.originAllowed) {
+    return errorResponse("Unauthorized", 403, ctx.origin);
+  }
 
-// File saved (for applets)
-window.dispatchEvent(new CustomEvent("saveFile", {
-  detail: { name, path, content, icon }
-}));</code></pre>
+  if (!ctx.user) {
+    return errorResponse("Authentication required", 401, ctx.origin);
+  }
+
+  ctx.log("Processing request for user", { username: ctx.user.username });
+
+  // Handler logic using ctx.redis, ctx.user, etc.
+}</code></pre>
+<h3>5. Authentication</h3>
+<pre><code>import { validateAuthToken } from "./_utils/auth/index.js";
+
+// Extract and validate auth
+const authHeader = req.headers.get("authorization");
+const usernameHeader = req.headers.get("x-username");
+const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+const authResult = await validateAuthToken(redis, usernameHeader, token, {
+  allowExpired: true,  // Allow tokens within grace period
+});
+
+if (!authResult.valid) {
+  return errorResponse("Unauthorized", 401, origin);
+}</code></pre>
+<h3>6. Rate Limiting</h3>
+<pre><code>import { checkRateLimit, RATE_LIMITS } from "./_utils/middleware.js";
+
+// Using preset configurations
+const rlResult = await checkRateLimit(
+  req,
+  RATE_LIMITS.burst("my-endpoint"),
+  user,  // optional authenticated user
+  origin
+);
+
+if (!rlResult.allowed) {
+  return rlResult.error!;
+}
+
+// Or use rateLimitResponse helper
+const ip = getClientIp(req);
+const rlKey = RateLimit.makeKey(["rl", "endpoint", "ip", ip]);
+const result = await RateLimit.checkCounterLimit({
+  key: rlKey,
+  windowSeconds: 60,
+  limit: 30,
+});
+
+if (!result.allowed) {
+  return rateLimitResponse(origin, 30, result.resetSeconds ?? 60);
+}</code></pre>
+<h3>7. Response Helpers</h3>
+<pre><code>// Success with data
+return jsonResponse({ items: data }, 200, origin);
+
+// Success response with "success: true"
+return successResponse({ message: "Created" }, 201, origin);
+
+// Error response
+return errorResponse("Not found", 404, origin);
+
+// Error with code and details
+return errorResponse(
+  "Validation failed",
+  400,
+  origin,
+  "VALIDATION_ERROR",
+  { field: "email", issue: "invalid format" }
+);
+
+// Rate limit response
+return rateLimitResponse(origin, limit, resetSeconds, "burst");</code></pre>
+<h3>8. Admin Check</h3>
+<pre><code>import { isAdmin } from "./_utils/middleware.js";
+
+// Check if user is admin (ryo) with valid token
+const adminAccess = await isAdmin(redis, username, token);
+if (!adminAccess) {
+  return errorResponse("Forbidden - admin access required", 403, origin);
+}</code></pre>
+<h2>Constants</h2>
+<p>Use centralized constants from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/constants.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/constants.ts</a></code>:</p>
+<pre><code>import { REDIS_PREFIXES, TTL, RATE_LIMIT_TIERS } from "./_utils/constants.js";
+
+// Redis keys
+const userKey = `${REDIS_PREFIXES.users}${username}`;
+
+// TTLs
+await redis.set(key, value, { ex: TTL.user });
+
+// Rate limit tiers
+const limit = RATE_LIMIT_TIERS.burst.authenticated.limit;</code></pre>
+<h2>Best Practices</h2>
+<ol><li><strong>Always validate origin</strong> before processing requests</li></ol><ol><li><strong>Use response helpers</strong> for consistent error formats</li><li><strong>Implement rate limiting</strong> on all public endpoints</li><li><strong>Log with request IDs</strong> for easier debugging</li><li><strong>Use createRedis()</strong> instead of instantiating Redis directly</li><li><strong>Keep runtime declarations simple</strong> - just <code>config.runtime</code> and <code>maxDuration</code></li><li><strong>Validate all user input</strong> using the validation utilities</li><li><strong>Handle errors gracefully</strong> with try/catch blocks</li></ol>
+<h2>Error Response Format</h2>
+<p>All error responses follow this format:</p>
+<pre><code>{
+  "error": "Human-readable error message",
+  "code": "MACHINE_READABLE_CODE",  // optional
+  "details": { ... }                // optional validation errors
+}</code></pre>
+<p>Rate limit errors include additional fields:</p>
+<pre><code>{
+  "error": "rate_limit_exceeded",
+  "limit": 30,
+  "retryAfter": 45,
+  "scope": "burst"  // optional
+}</code></pre>
       </article>
       
       <nav class="nav">
-        <a href="/docs/ai-system">← AI System</a>
-        <a href="/docs/audio-system">Audio System →</a>
+        <span></span>
+        <a href="/docs/overview">Overview →</a>
       </nav>
       
     </main>
