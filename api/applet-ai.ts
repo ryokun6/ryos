@@ -596,7 +596,7 @@ export default async function handler(req: Request): Promise<Response> {
     try {
       const imageResult = await generateText({
         model: google("gemini-2.5-flash-image-preview"),
-        prompt: [
+        messages: [
           {
             role: "user",
             content: promptParts,
