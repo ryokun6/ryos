@@ -118,6 +118,7 @@ export function KaraokeAppComponent({
     handlePlay,
     handlePause,
     handleMainPlayerPause,
+    handleReady,
     seekTime,
     seekToTime,
     cycleAlignment,
@@ -301,6 +302,7 @@ export function KaraokeAppComponent({
                   progressInterval={100}
                   onPlay={handlePlay}
                   onPause={handleMainPlayerPause}
+                  onReady={!isFullScreen ? handleReady : undefined}
                   style={{ pointerEvents: "none" }}
                   config={{
                     youtube: {
@@ -708,6 +710,7 @@ export function KaraokeAppComponent({
                           progressInterval={100}
                           onPlay={handlePlay}
                           onPause={handlePause}
+                          onReady={isFullScreen ? handleReady : undefined}
                           config={{
                             youtube: {
                               playerVars: {

@@ -437,29 +437,30 @@ export function useKaraokeLogic({
         clearTimeout(trackSwitchTimeoutRef.current);
       }
       
-      // Check if new track has a negative offset - if so, auto-skip to where lyrics start at 0
+      // Get the new track's offset
       const newTrack = tracks[currentIndex];
-      const lyricOffset = newTrack?.lyricOffset ?? 0;
+      const newLyricOffset = newTrack?.lyricOffset ?? 0;
       
-      if (lyricOffset < 0) {
-        // For negative offset, seek to the position where lyrics time = 0
-        // Formula: lyricsTime = playerTime + (lyricOffset / 1000)
-        // When lyricsTime = 0: playerTime = -lyricOffset / 1000
-        const seekTarget = -lyricOffset / 1000;
+      // For negative offset, auto-skip to where lyrics time = 0
+      // Formula: lyricsTime = playerTime + (lyricOffset / 1000)
+      // When lyricsTime = 0: playerTime = -lyricOffset / 1000
+      // Only seek if offset is negative (produces positive seek target)
+      // and the seek target is reasonable (at least 1 second)
+      const seekTarget = -newLyricOffset / 1000;
+      
+      if (newLyricOffset < 0 && seekTarget >= 1) {
         setElapsedTime(seekTarget);
         
         trackSwitchTimeoutRef.current = setTimeout(() => {
           isTrackSwitchingRef.current = false;
-          // Seek to the position where lyrics start at 0
           const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
           if (activePlayer) {
             activePlayer.seekTo(seekTarget);
-            // Show status message for auto-skip
             showStatus(`▶ ${Math.floor(seekTarget / 60)}:${String(Math.floor(seekTarget % 60)).padStart(2, "0")}`);
           }
         }, 2000);
       } else {
-        // Normal case: start from beginning
+        // Start from beginning for positive/zero offset or small negative offset
         setElapsedTime(0);
         trackSwitchTimeoutRef.current = setTimeout(() => {
           isTrackSwitchingRef.current = false;
@@ -617,6 +618,9 @@ export function useKaraokeLogic({
       setIsPlaying(false);
     }
   }, [isFullScreen]);
+
+  // Handle player ready
+  const handleReady = useCallback(() => {}, []);
 
   // Watchdog for blocked autoplay on iOS Safari
   // If isPlaying is true but elapsed time hasn't changed, the player needs user interaction
@@ -1077,6 +1081,7 @@ export function useKaraokeLogic({
     handlePlay,
     handlePause,
     handleMainPlayerPause,
+    handleReady,
     seekTime,
     seekToTime,
     cycleAlignment,
