@@ -122,9 +122,19 @@ interface SynthStoreState {
   presets: SynthPreset[];
   currentPreset: SynthPreset;
   labelType: NoteLabelType;
-  setPresets: (presets: SynthPreset[] | ((prev: SynthPreset[]) => SynthPreset[])) => void;
+  currentOctave: number;
+  currentVolume: number;
+  sustainedNotes: Set<string>;
+  setPresets: (
+    presets: SynthPreset[] | ((prev: SynthPreset[]) => SynthPreset[])
+  ) => void;
   setCurrentPreset: (preset: SynthPreset) => void;
   setLabelType: (type: NoteLabelType) => void;
+  setCurrentOctave: (octave: number | ((prev: number) => number)) => void;
+  setCurrentVolume: (volume: number | ((prev: number) => number)) => void;
+  setSustainedNotes: (
+    notes: Set<string> | ((prev: Set<string>) => Set<string>)
+  ) => void;
   reset: () => void;
 }
 
@@ -205,19 +215,47 @@ export const useSynthStore = create<SynthStoreState>()(
       presets: getOldPresets(),
       currentPreset: getOldCurrentPreset(),
       labelType: getOldLabelType(),
-      setPresets: (presetsOrFn) => set(state => {
-        if (typeof presetsOrFn === 'function') {
-          return { presets: presetsOrFn(state.presets) };
-        }
-        return { presets: presetsOrFn };
-      }),
+      currentOctave: 0,
+      currentVolume: 1,
+      sustainedNotes: new Set(),
+      setPresets: (presetsOrFn) =>
+        set((state) => {
+          if (typeof presetsOrFn === "function") {
+            return { presets: presetsOrFn(state.presets) };
+          }
+          return { presets: presetsOrFn };
+        }),
       setCurrentPreset: (preset) => set({ currentPreset: preset }),
       setLabelType: (type) => set({ labelType: type }),
-      reset: () => set({ 
-        presets: defaultPresets, 
-        currentPreset: defaultPresets[0],
-        labelType: "off"
-      }),
+      setCurrentOctave: (octave) =>
+        set((state) => ({
+          currentOctave:
+            typeof octave === "function" ? octave(state.currentOctave) : octave,
+        })),
+      setCurrentVolume: (volume) =>
+        set((state) => ({
+          currentVolume:
+            typeof volume === "function" ? volume(state.currentVolume) : volume,
+        })),
+      setSustainedNotes: (notesOrFn) =>
+        set((state) => {
+          const nextNotes =
+            typeof notesOrFn === "function"
+              ? (notesOrFn as (prev: Set<string>) => Set<string>)(
+                  state.sustainedNotes
+                )
+              : notesOrFn;
+          return { sustainedNotes: nextNotes };
+        }),
+      reset: () =>
+        set({
+          presets: defaultPresets,
+          currentPreset: defaultPresets[0],
+          labelType: "off",
+          currentOctave: 0,
+          currentVolume: 1,
+          sustainedNotes: new Set(),
+        }),
     }),
     {
       name: STORE_NAME,

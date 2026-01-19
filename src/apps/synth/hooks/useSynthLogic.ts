@@ -76,7 +76,22 @@ export const useSynthLogic = ({
   const [presetName, setPresetName] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [isControlsVisible, setIsControlsVisible] = useState(false);
-  const [octaveOffset, setOctaveOffset] = useState(0);
+
+  // Use labelType and preset state from persisted store
+  const {
+    labelType,
+    setLabelType,
+    presets,
+    setPresets,
+    currentPreset,
+    setCurrentPreset,
+    currentOctave,
+    setCurrentOctave,
+    currentVolume,
+    setSustainedNotes,
+  } = useSynthStore();
+  const octaveOffset = currentOctave;
+  const setOctaveOffset = setCurrentOctave;
   // Always read the latest octave offset inside keyboard handlers
   const octaveOffsetRef = useLatestRef(octaveOffset);
 
@@ -198,14 +213,6 @@ export const useSynthLogic = ({
   // Determine default label type based on screen size
   const isMobile = useMediaQuery("(max-width: 768px)");
   // Use labelType from persisted store
-  const {
-    labelType,
-    setLabelType,
-    presets,
-    setPresets,
-    currentPreset,
-    setCurrentPreset,
-  } = useSynthStore();
 
   // Update label type when screen size changes - now using store
   useEffect(() => {
@@ -248,7 +255,7 @@ export const useSynthLogic = ({
       const distortion = new Tone.Distortion({
         distortion: currentPreset.effects.distortion,
       });
-      const gain = new Tone.Gain(currentPreset.effects.gain);
+      const gain = new Tone.Gain(currentPreset.effects.gain * currentVolume);
       const chorus = new Tone.Chorus({
         frequency: 4,
         delayTime: 2.5,
@@ -339,7 +346,7 @@ export const useSynthLogic = ({
     } finally {
       synthInitPromiseRef.current = null;
     }
-  }, [currentPreset]);
+  }, [currentPreset, currentVolume]);
 
   // Initialize synth and effects on window open
   useEffect(() => {
@@ -439,7 +446,7 @@ export const useSynthLogic = ({
     reverbRef.current.wet.value = preset.effects.reverb;
     delayRef.current.feedback.value = preset.effects.delay;
     distortionRef.current.distortion = preset.effects.distortion;
-    gainRef.current.gain.value = preset.effects.gain;
+    gainRef.current.gain.value = preset.effects.gain * currentVolume;
 
     // Update chorus parameters safely
     if (chorusRef.current.wet) {
@@ -456,6 +463,11 @@ export const useSynthLogic = ({
       bits: Math.floor(4 + (1 - (preset.effects.bitcrusher ?? 0)) * 12),
     });
   };
+
+  useEffect(() => {
+    if (!gainRef.current) return;
+    gainRef.current.gain.value = currentPreset.effects.gain * currentVolume;
+  }, [currentPreset.effects.gain, currentVolume]);
 
   // Keyboard event handlers - extended mapping
   const keyToNoteMap: Record<string, string> = {
@@ -574,6 +586,11 @@ export const useSynthLogic = ({
 
       pressedNotesRef.current[note] = true;
       setPressedNotes((prev) => ({ ...prev, [note]: true }));
+      setSustainedNotes((prev) => {
+        const next = new Set(prev);
+        next.add(note);
+        return next;
+      });
 
       // Start Tone.js AudioContext on first interaction (required for Safari)
       // This also creates synth nodes if they were deferred
@@ -603,12 +620,17 @@ export const useSynthLogic = ({
       // If the user released before init finished, play a short tap for feedback
       synthRef.current.triggerAttackRelease(shiftedNote, 0.08, now);
     },
-    [ensureToneStarted]
+    [ensureToneStarted, setSustainedNotes]
   );
 
   const releaseNote = useCallback((note: string) => {
     pressedNotesRef.current[note] = false;
     setPressedNotes((prev) => ({ ...prev, [note]: false }));
+    setSustainedNotes((prev) => {
+      const next = new Set(prev);
+      next.delete(note);
+      return next;
+    });
 
     if (!synthRef.current) {
       releasedBeforeInitRef.current.add(note);
@@ -623,11 +645,12 @@ export const useSynthLogic = ({
       synthRef.current.triggerRelease(shiftedNote, now);
     }
     delete activeShiftedNotesRef.current[note];
-  }, []);
+  }, [setSustainedNotes]);
 
   // Release all currently active notes regardless of current octave or sources
   const releaseAllNotes = useCallback(() => {
     pressedNotesRef.current = {};
+    setSustainedNotes(new Set());
 
     if (!synthRef.current) {
       activeShiftedNotesRef.current = {};
@@ -647,7 +670,7 @@ export const useSynthLogic = ({
     activeShiftedNotesRef.current = {};
     setPressedNotes({});
     setActivePointers({});
-  }, []);
+  }, [setSustainedNotes]);
 
   // Status message display
   const showStatus = (message: string) => {
