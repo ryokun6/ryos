@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat API - ryOS Docs</title>
+  <title>Rooms API - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -274,11 +274,11 @@
     <a href="/docs/api-reference" class="">8. API Reference</a>
   </button>
   <div class="nav-children" style="display: block;">
-    <a href="/docs/chat-api" class="nav-child active">8.1 Chat API</a>
+    <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
     <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
     <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
     <a href="/docs/auth-api" class="nav-child ">8.4 Auth API</a>
-    <a href="/docs/rooms-api" class="nav-child ">8.5 Rooms API</a>
+    <a href="/docs/rooms-api" class="nav-child active">8.5 Rooms API</a>
     <a href="/docs/messages-api" class="nav-child ">8.6 Messages API</a>
     <a href="/docs/presence-api" class="nav-child ">8.7 Presence API</a>
     <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
@@ -296,363 +296,141 @@
     
     <main class="content">
       <article>
-        <h1>Chat API</h1>
-<p>The main AI chat endpoint for ryOS that powers the Chats application. This endpoint handles conversational AI interactions with the "Ryo" persona, supports multiple AI providers, and includes extensive tool calling capabilities for controlling the ryOS system.</p>
-<h2>Endpoint</h2>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/chat</code></td><td>Main AI chat with streaming responses and tool calling</td></tr></tbody></table>
-<h2>Request</h2>
-<h3>Headers</h3>
-<table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>Yes<em></td><td>Bearer token for authentication (<code>Bearer {token}</code>)</td></tr><tr><td><code>X-Username</code></td><td>Yes</em></td><td>Username for the authenticated user</td></tr><tr><td><code>Content-Type</code></td><td>Yes</td><td>Must be <code>application/json</code></td></tr></tbody></table>
-<p>*Required for authenticated users. Anonymous users are allowed with reduced rate limits.</p>
-<h3>Query Parameters</h3>
-<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>model</code></td><td>string</td><td>No</td><td>Override the AI model (takes precedence over body parameter)</td></tr></tbody></table>
-<h3>Body</h3>
-<pre><code>interface ChatRequest {
-  // Array of conversation messages
-  messages: UIMessage[];
-  
-  // AI model to use (optional, defaults to "gpt-5.1")
-  model?: SupportedModel;
-  
-  // System state context (optional but recommended)
-  systemState?: SystemState;
-}
-
-interface UIMessage {
-  role: "user" | "assistant" | "system";
-  content: string | MessageContent[];
-}
-
-interface MessageContent {
-  type: "text" | "image";
-  text?: string;
-  image?: string; // base64 or URL
-}
-
-interface SystemState {
-  // User identity
-  username?: string | null;
-  userOS?: string; // e.g., "iOS", "Android", "macOS", "Windows", "Linux"
-  locale?: string; // e.g., "en", "zh-TW", "ja", "ko"
-  
-  // User's local time (from browser)
-  userLocalTime?: {
-    timeString: string;
-    dateString: string;
-    timeZone: string;
-  };
-  
-  // Running applications context
-  runningApps?: {
-    foreground: AppInstance | null;
-    background: AppInstance[];
-  };
-  
-  // Internet Explorer state
-  internetExplorer: {
-    url: string;
-    year: string;
-    currentPageTitle: string | null;
-    aiGeneratedMarkdown?: string | null;
-  };
-  
-  // Video player state
-  video: {
-    currentVideo: TrackInfo | null;
-    isPlaying: boolean;
-  };
-  
-  // iPod state (optional)
-  ipod?: {
-    currentTrack: TrackInfo | null;
-    isPlaying: boolean;
-    currentLyrics?: {
-      lines: Array&lt;{ startTimeMs: string; words: string }&gt;;
-    } | null;
-  };
-  
-  // Karaoke state (optional)
-  karaoke?: {
-    currentTrack: TrackInfo | null;
-    isPlaying: boolean;
-  };
-  
-  // TextEdit state (optional)
-  textEdit?: {
-    instances: Array&lt;{
-      instanceId: string;
-      filePath: string | null;
-      title: string;
-      contentMarkdown?: string | null;
-      hasUnsavedChanges: boolean;
-    }&gt;;
-  };
-  
-  // Chat room context (for chat room @mentions)
-  chatRoomContext?: {
-    roomId: string;
-    recentMessages: string;
-    mentionedMessage: string;
-  };
-}
-
-interface AppInstance {
-  instanceId: string;
-  appId: string;
-  title?: string;
-  appletPath?: string;
-  appletId?: string;
-}
-
-interface TrackInfo {
-  id: string;
-  title: string;
-  artist?: string;
-}</code></pre>
-<h2>Response</h2>
-<p>The endpoint returns a <strong>Server-Sent Events (SSE)</strong> stream using the Vercel AI SDK's UI message stream format.</p>
-<h3>Stream Format</h3>
-<p>The response uses <code>Content-Type: text/event-stream</code> and streams data in the following format:</p>
-<pre><code>data: {"type":"text-delta","textDelta":"Hello"}
-data: {"type":"text-delta","textDelta":" there"}
-data: {"type":"tool-call","toolCallId":"...","toolName":"launchApp","args":{...}}
-data: {"type":"tool-result","toolCallId":"...","result":{...}}
-data: {"type":"finish","finishReason":"stop"}</code></pre>
-<h3>Error Responses</h3>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid messages format</code></td><td>Messages array is missing or malformed</td></tr><tr><td>400</td><td><code>Unsupported model</code></td><td>Requested model is not supported</td></tr><tr><td>400</td><td><code>Invalid JSON</code></td><td>Request body is not valid JSON</td></tr><tr><td>401</td><td><code>authentication_failed</code></td><td>Invalid or missing authentication token</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Request origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Only POST requests are accepted</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Rate limit exceeded for the user</td></tr><tr><td>500</td><td><code>Internal Server Error</code></td><td>Server-side error</td></tr></tbody></table>
-<h4>Rate Limit Error Response</h4>
-<pre><code>interface RateLimitError {
-  error: "rate_limit_exceeded";
-  isAuthenticated: boolean;
-  count: number;
-  limit: number;
-  message: string;
-}</code></pre>
-<h2>AI Models</h2>
-<h3>Supported Models</h3>
-<table><thead><tr><th>Model ID</th><th>Provider</th><th>Underlying Model</th></tr></thead><tbody><tr><td><code>gpt-5.1</code></td><td>OpenAI</td><td>gpt-5.1 (default)</td></tr><tr><td><code>gpt-5</code></td><td>OpenAI</td><td>gpt-5</td></tr><tr><td><code>gpt-5-mini</code></td><td>OpenAI</td><td>gpt-5-mini</td></tr><tr><td><code>gpt-4o</code></td><td>OpenAI</td><td>gpt-4o</td></tr><tr><td><code>gpt-4.1</code></td><td>OpenAI</td><td>gpt-4.1</td></tr><tr><td><code>gpt-4.1-mini</code></td><td>OpenAI</td><td>gpt-4.1-mini</td></tr><tr><td><code>claude-4.5</code></td><td>Anthropic</td><td>claude-sonnet-4-5</td></tr><tr><td><code>claude-4</code></td><td>Anthropic</td><td>claude-4-sonnet-20250514</td></tr><tr><td><code>claude-3.7</code></td><td>Anthropic</td><td>claude-3-7-sonnet-20250219</td></tr><tr><td><code>claude-3.5</code></td><td>Anthropic</td><td>claude-3-5-sonnet-20241022</td></tr><tr><td><code>gemini-2.5-pro</code></td><td>Google</td><td>gemini-2.5-pro</td></tr><tr><td><code>gemini-2.5-flash</code></td><td>Google</td><td>gemini-2.5-flash</td></tr><tr><td><code>gemini-3-pro-preview</code></td><td>Google</td><td>gemini-3-pro-preview</td></tr></tbody></table>
-<h3>Model Selection</h3>
-<pre><code>// Priority: Query param &gt; Body param &gt; Default
-const model = queryModel || bodyModel || "gpt-5.1";</code></pre>
-<h2>Rate Limiting</h2>
-<table><thead><tr><th>User Type</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Authenticated</td><td>15 messages</td><td>5 hours</td></tr><tr><td>Anonymous</td><td>3 messages</td><td>24 hours</td></tr></tbody></table>
-<p>Anonymous users are identified by IP address. The special user "ryo" (with valid token) has unlimited access.</p>
-<h2>Tool Calling</h2>
-<p>The Chat API supports extensive tool calling for controlling ryOS applications and system features.</p>
-<h3>Application Control</h3>
-<h4><code>launchApp</code></h4>
-Launch an application in ryOS.
+        <h1>Rooms API</h1>
+<p>Endpoints for creating, listing, and managing chat rooms.</p>
+<h2>Overview</h2>
+<p>Chat rooms are either <strong>public</strong> (visible to all users) or <strong>private</strong> (visible only to members). Users can create, join, leave, and delete rooms.</p>
+<h2>Endpoint Summary</h2>
+<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/rooms</code></td><td>List rooms (public + private membership)</td><td>No</td></tr><tr><td>POST</td><td><code>/api/rooms</code></td><td>Create room</td><td>Yes</td></tr><tr><td>GET</td><td><code>/api/rooms/{id}</code></td><td>Get room by ID</td><td>No</td></tr><tr><td>DELETE</td><td><code>/api/rooms/{id}</code></td><td>Delete room</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/join</code></td><td>Join room</td><td>No</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/leave</code></td><td>Leave room</td><td>No</td></tr><tr><td>GET</td><td><code>/api/rooms/{id}/users</code></td><td>List active users</td><td>No</td></tr></tbody></table>
+<h2>Endpoints</h2>
+<h3>List Rooms</h3>
+<p>Get all public rooms and private rooms where the user is a member.</p>
+<pre><code>GET /api/rooms?username=alice</code></pre>
+<strong>Query Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>username</code></td><td>string</td><td>No</td><td>Filter to include user's private rooms</td></tr></tbody></table>
+<strong>Response (200):</strong>
 <pre><code>{
-  id: AppId;           // Required: App to launch
-  url?: string;        // For internet-explorer: URL to load
-  year?: string;       // For internet-explorer: Time-travel year
-}
-
-// Available AppIds:
-type AppId = 
-  | "finder" | "soundboard" | "internet-explorer" | "chats"
-  | "textedit" | "paint" | "photo-booth" | "minesweeper"
-  | "videos" | "ipod" | "karaoke" | "synth" | "pc"
-  | "terminal" | "applet-viewer" | "control-panels" | "admin";</code></pre>
-<h4><code>closeApp</code></h4>
-Close an application.
-<pre><code>{
-  id: AppId;  // App to close
-}</code></pre>
-<h3>Media Control</h3>
-<h4><code>ipodControl</code></h4>
-Control iPod playback.
-<pre><code>{
-  action: "toggle" | "play" | "pause" | "playKnown" | "addAndPlay" | "next" | "previous";
-  id?: string;              // YouTube ID or URL (for addAndPlay/playKnown)
-  title?: string;           // Track title (for playKnown)
-  artist?: string;          // Artist name (for playKnown)
-  enableVideo?: boolean;    // Enable video playback
-  enableFullscreen?: boolean;
-  enableTranslation?: string; // Language code for lyrics translation
-}</code></pre>
-<h4><code>karaokeControl</code></h4>
-Control Karaoke playback (same schema as iPod, without <code>enableVideo</code>).
-<pre><code>{
-  action: "toggle" | "play" | "pause" | "playKnown" | "addAndPlay" | "next" | "previous";
-  id?: string;
-  title?: string;
-  artist?: string;
-  enableFullscreen?: boolean;
-  enableTranslation?: string;
-}</code></pre>
-<h4><code>searchSongs</code></h4>
-Search for songs on YouTube.
-<pre><code>// Input
-{
-  query: string;       // Search query (1-200 chars)
-  maxResults?: number; // 1-10, default 5
-}
-
-// Output
-{
-  results: Array&lt;{
-    videoId: string;
-    title: string;
-    channelTitle: string;
-    publishedAt: string;
-  }&gt;;
-  message: string;
-  hint: string;
-}</code></pre>
-<h3>Virtual File System</h3>
-<h4><code>list</code></h4>
-List items from the virtual file system.
-<pre><code>{
-  path: "/Applets" | "/Documents" | "/Applications" | "/Music" | "/Applets Store";
-  query?: string;  // Search filter (for Applets Store)
-  limit?: number;  // Max results 1-50 (for Applets Store)
-}</code></pre>
-<h4><code>open</code></h4>
-Open a file or launch an app.
-<pre><code>{
-  path: string;  // e.g., "/Applets/Calculator.app", "/Documents/notes.md"
-}</code></pre>
-<h4><code>read</code></h4>
-Read file contents.
-<pre><code>{
-  path: string;  // Path to file in /Applets, /Documents, or /Applets Store
-}</code></pre>
-<h4><code>write</code></h4>
-Create or modify documents.
-<pre><code>{
-  path: string;     // e.g., "/Documents/notes.md"
-  content: string;  // Document content
-  mode?: "overwrite" | "append" | "prepend";
-}</code></pre>
-<h4><code>edit</code></h4>
-Make targeted edits to existing files.
-<pre><code>{
-  path: string;       // File path
-  old_string: string; // Text to replace (must be unique)
-  new_string: string; // Replacement text
-}</code></pre>
-<h3>HTML/Applet Generation</h3>
-<h4><code>generateHtml</code></h4>
-Generate an HTML applet for ryOS.
-<pre><code>// Input
-{
-  html: string;    // HTML content (body only)
-  title?: string;  // Applet title
-  icon?: string;   // Emoji icon
-}
-
-// Output (executed server-side)
-{
-  html: string;
-  title: string;
-  icon: string;
-}</code></pre>
-<h3>System Settings</h3>
-<h4><code>settings</code></h4>
-Change system preferences.
-<pre><code>{
-  language?: "en" | "zh-TW" | "ja" | "ko" | "fr" | "de" | "es" | "pt" | "it" | "ru";
-  theme?: "system7" | "macosx" | "xp" | "win98";
-  masterVolume?: number;     // 0-1
-  speechEnabled?: boolean;   // Text-to-speech
-  checkForUpdates?: boolean; // Trigger update check
-}</code></pre>
-<h3>Special Tools</h3>
-<h4><code>aquarium</code></h4>
-Render an emoji aquarium in the chat bubble.
-<pre><code>{}  // No parameters</code></pre>
-<h2>Example Usage</h2>
-<h3>Basic Chat Request</h3>
-<pre><code>const response = await fetch('/api/chat', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${authToken}`,
-    'X-Username': 'myusername'
-  },
-  body: JSON.stringify({
-    messages: [
-      { role: 'user', content: 'Hello, Ryo!' }
-    ],
-    model: 'claude-4',
-    systemState: {
-      username: 'myusername',
-      locale: 'en',
-      internetExplorer: { url: '', year: 'current', currentPageTitle: null },
-      video: { currentVideo: null, isPlaying: false }
-    }
-  })
-});
-
-// Handle SSE stream
-const reader = response.body.getReader();
-const decoder = new TextDecoder();
-
-while (true) {
-  const { done, value } = await reader.read();
-  if (done) break;
-  
-  const chunk = decoder.decode(value);
-  // Process SSE events...
-}</code></pre>
-<h3>Using with Vercel AI SDK</h3>
-<pre><code>import { useChat } from 'ai/react';
-
-function ChatComponent() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat({
-    api: '/api/chat',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'X-Username': username
+  "rooms": [
+    {
+      "id": "general",
+      "name": "General Chat",
+      "type": "public",
+      "createdAt": 1704067200000,
+      "createdBy": "ryo",
+      "memberCount": 15
     },
-    body: {
-      model: 'gpt-5.1',
-      systemState: { /* ... */ }
+    {
+      "id": "abc123",
+      "name": "Private Room",
+      "type": "private",
+      "members": ["alice", "bob"],
+      "createdAt": 1704153600000,
+      "createdBy": "alice"
     }
-  });
-
-  return (
-    &lt;form onSubmit={handleSubmit}&gt;
-      &lt;input value={input} onChange={handleInputChange} /&gt;
-      &lt;button type="submit"&gt;Send&lt;/button&gt;
-    &lt;/form&gt;
-  );
+  ]
 }</code></pre>
-<h3>Playing a Song via Tool Calling</h3>
-<p>The AI will automatically use tools when appropriate:</p>
-<pre><code>// User message: "Play Never Gonna Give You Up"
+<h3>Create Room</h3>
+<p>Create a new chat room. Requires authentication.</p>
+<pre><code>POST /api/rooms
+Authorization: Bearer {token}
+X-Username: alice
+Content-Type: application/json
 
-// AI will:
-// 1. Call list({ path: "/Music" }) to check library
-// 2. If not found, call searchSongs({ query: "Never Gonna Give You Up" })
-// 3. Call ipodControl({ action: "addAndPlay", id: "dQw4w9WgXcQ" })</code></pre>
-<h2>Configuration</h2>
-<h3>Runtime Settings</h3>
-<pre><code>export const maxDuration = 80;  // Max streaming duration (seconds)
-export const runtime = "edge";  // Edge runtime
-export const stream = true;     // Enable streaming</code></pre>
-<h3>Model Configuration</h3>
-<pre><code>const result = streamText({
-  model: selectedModel,
-  messages: enrichedMessages,
-  tools: { /* ... */ },
-  temperature: 0.7,
-  maxOutputTokens: 48000,
-  stopWhen: stepCountIs(10),  // Max 10 tool-calling steps
-  experimental_transform: smoothStream({
-    chunking: /[\u4E00-\u9FFF]|\S+\s+/,  // CJK-aware chunking
-  })
-});</code></pre>
-<h2>Related Endpoints</h2>
-<table><thead><tr><th>Endpoint</th><th>Documentation</th><th>Description</th></tr></thead><tbody><tr><td><code>/api/applet-ai</code></td><td>-</td><td>Applet text + image generation</td></tr><tr><td><code>/api/ie-generate</code></td><td>-</td><td>Time-travel page generation</td></tr><tr><td><code>/api/speech</code></td><td>-</td><td>Text-to-speech synthesis</td></tr><tr><td><code>/api/audio-transcribe</code></td><td>-</td><td>Speech-to-text transcription</td></tr><tr><td><code>/api/youtube-search</code></td><td>-</td><td>YouTube music search</td></tr><tr><td><code>/api/song/</code></td><td>-</td><td>Song library CRUD operations</td></tr></tbody></table>
-<h2>System Prompt Structure</h2>
-<p>The Chat API uses a layered system prompt approach: <ol><li><strong>Static System Prompt</strong> (cached for performance):<ul><li>Core priority instructions</li><li>Ryo persona instructions</li><li>Answer style guidelines</li><li>Chat instructions</li><li>Tool usage instructions</li><li>Code generation instructions</li></ul></li><li><strong>Dynamic System Prompt</strong> (per-request):<ul><li>User context (username, OS, locale)</li><li>Time information (Ryo's time + user's local time)</li><li>Running applications</li><li>Media playback state</li><li>Browser state</li><li>TextEdit documents</li><li>Chat room context (if applicable)</li></ul></li></ol></p>
+{
+  "type": "private",
+  "members": ["alice", "bob"],
+  "name": "Project Discussion"  // optional
+}</code></pre>
+<strong>Request Body:</strong>
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>type</code></td><td>string</td><td>Yes</td><td><code>"public"</code> or <code>"private"</code></td></tr><tr><td><code>members</code></td><td>string[]</td><td>For private</td><td>List of usernames</td></tr><tr><td><code>name</code></td><td>string</td><td>No</td><td>Room display name</td></tr></tbody></table>
+<strong>Response (200):</strong>
+<pre><code>{
+  "room": {
+    "id": "abc123def456",
+    "name": "Project Discussion",
+    "type": "private",
+    "members": ["alice", "bob"],
+    "createdAt": 1704067200000,
+    "createdBy": "alice"
+  }
+}</code></pre>
+<h3>Get Room</h3>
+<p>Get details for a specific room.</p>
+<pre><code>GET /api/rooms/{id}</code></pre>
+<strong>Response (200):</strong>
+<pre><code>{
+  "room": {
+    "id": "general",
+    "name": "General Chat",
+    "type": "public",
+    "createdAt": 1704067200000,
+    "createdBy": "ryo",
+    "memberCount": 15
+  }
+}</code></pre>
+<h3>Delete Room</h3>
+<p>Delete a room. Only the room creator or admin can delete.</p>
+<pre><code>DELETE /api/rooms/{id}
+Authorization: Bearer {token}
+X-Username: alice</code></pre>
+<strong>Response (200):</strong>
+<pre><code>{
+  "success": true
+}</code></pre>
+<h3>Join Room</h3>
+<p>Join a room to participate in chat.</p>
+<pre><code>POST /api/rooms/{id}/join
+Content-Type: application/json
+
+{
+  "username": "alice"
+}</code></pre>
+<strong>Response (200):</strong>
+<pre><code>{
+  "success": true
+}</code></pre>
+<h3>Leave Room</h3>
+<p>Leave a room.</p>
+<pre><code>POST /api/rooms/{id}/leave
+Content-Type: application/json
+
+{
+  "username": "alice"
+}</code></pre>
+<strong>Response (200):</strong>
+<pre><code>{
+  "success": true
+}</code></pre>
+<h3>List Active Users</h3>
+<p>Get list of users currently active in a room.</p>
+<pre><code>GET /api/rooms/{id}/users</code></pre>
+<strong>Response (200):</strong>
+<pre><code>{
+  "users": [
+    {
+      "username": "alice",
+      "joinedAt": 1704067200000
+    },
+    {
+      "username": "bob",
+      "joinedAt": 1704153600000
+    }
+  ]
+}</code></pre>
+<h2>Room Types</h2>
+<h3>Public Rooms</h3>
+<ul><li>Visible to all users in room listings</li></ul><ul><li>Anyone can join without invitation</li><li>Default room type for general discussions</li></ul>
+<h3>Private Rooms</h3>
+<ul><li>Only visible to members</li></ul><ul><li>Created with a specific member list</li><li>Ideal for direct messages or group chats</li></ul>
+<h2>Error Responses</h2>
+<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>Authentication required</code></td><td>Token missing or invalid</td></tr><tr><td>403</td><td><code>Forbidden</code></td><td>Not authorized to perform action</td></tr><tr><td>404</td><td><code>Room not found</code></td><td>Room ID doesn't exist</td></tr><tr><td>429</td><td><code>Rate limit exceeded</code></td><td>Too many requests</td></tr></tbody></table>
+<h2>Related</h2>
+<ul><li><a href="/docs/auth-api">Auth API</a> - Authentication endpoints</li></ul><ul><li><a href="/docs/messages-api">Messages API</a> - Message endpoints</li><li><a href="/docs/presence-api">Presence API</a> - Presence tracking</li></ul>
       </article>
       
       <nav class="nav">
-        <a href="/docs/api-reference">← API Reference</a>
-        <a href="/docs/song-api">Song API →</a>
+        <a href="/docs/auth-api">← Auth API</a>
+        <a href="/docs/messages-api">Messages API →</a>
       </nav>
       
     </main>

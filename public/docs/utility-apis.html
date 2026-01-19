@@ -182,13 +182,7 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group">
-  <div class="nav-toggle nav-no-toggle">
-    <span class="nav-spacer"></span>
-    <a href="/docs/api-design-guide" class="">ryOS API Design Guide</a>
-  </div>
-</div>
-<div class="nav-group ">
+      <div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -283,9 +277,13 @@
     <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
     <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
     <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
-    <a href="/docs/chat-rooms-api" class="nav-child ">8.4 Chat Rooms API (REST)</a>
-    <a href="/docs/ai-generation-apis" class="nav-child ">8.5 AI Endpoints</a>
-    <a href="/docs/utility-apis" class="nav-child active">8.6 Utility APIs</a>
+    <a href="/docs/auth-api" class="nav-child ">8.4 Auth API</a>
+    <a href="/docs/rooms-api" class="nav-child ">8.5 Rooms API</a>
+    <a href="/docs/messages-api" class="nav-child ">8.6 Messages API</a>
+    <a href="/docs/presence-api" class="nav-child ">8.7 Presence API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child active">8.9 Utility APIs</a>
+    <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
   </div>
 </div>
 <div class="nav-group">
@@ -665,12 +663,12 @@ await fetch('/api/admin', {
 <h2>CORS</h2>
 <p>All utility APIs implement CORS with origin validation. Allowed origins are configured server-side. Requests from unauthorized origins receive <code>403 Forbidden</code>.</p>
 <h2>Related</h2>
-<ul><li><a href="/docs/api-reference">API Reference</a> - General API architecture</li></ul><ul><li><a href="/docs/chat-rooms-api">Chat Rooms API</a> - Real-time chat room APIs (REST)</li><li><a href="/docs/ai-system">AI System</a> - AI-powered features</li></ul>
+<ul><li><a href="/docs/api-reference">API Reference</a> - General API architecture</li></ul><ul><li><a href="/docs/rooms-api">Rooms API</a> - Chat room management</li><li><a href="/docs/messages-api">Messages API</a> - Chat messaging</li><li><a href="/docs/ai-system">AI System</a> - AI-powered features</li></ul>
       </article>
       
       <nav class="nav">
         <a href="/docs/ai-generation-apis">← AI Endpoints</a>
-        <a href="/docs/changelog">Changelog →</a>
+        <a href="/docs/api-design-guide">ryOS API Design Guide →</a>
       </nav>
       
     </main>
