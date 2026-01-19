@@ -417,7 +417,6 @@ export function useIpodLogic({
   // Using null as initial value ensures first render triggers the auto-skip check
   const prevCurrentIndexRef = useRef<number | null>(null);
   useEffect(() => {
-    useIpodStore.setState({ currentLyrics: null });
     // Check if track changed or this is initial render (prevCurrentIndexRef.current is null)
     if (prevCurrentIndexRef.current !== currentIndex) {
       isTrackSwitchingRef.current = true;
