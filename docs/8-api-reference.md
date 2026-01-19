@@ -25,9 +25,13 @@ graph LR
 | [Chat API](/docs/chat-api) | Main AI chat with streaming and tool calling |
 | [Song API](/docs/song-api) | Music library CRUD, lyrics, furigana, translations |
 | [Media API](/docs/media-api) | Text-to-speech, transcription, YouTube search |
-| [Chat Rooms API](/docs/chat-rooms-api) | Real-time chat rooms (REST) |
+| [Auth API](/docs/auth-api) | User registration, login, token management |
+| [Rooms API](/docs/rooms-api) | Chat room creation and management |
+| [Messages API](/docs/messages-api) | Send and retrieve chat messages |
+| [Presence API](/docs/presence-api) | Presence tracking, user search, AI replies |
 | [AI Generation APIs](/docs/ai-generation-apis) | Applet generation, IE time-travel, parse-title |
 | [Utility APIs](/docs/utility-apis) | Link preview, iframe check, share applet, admin |
+| [API Design Guide](/docs/api-design-guide) | Patterns and conventions for API development |
 
 ## Quick Reference
 

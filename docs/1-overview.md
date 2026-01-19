@@ -55,7 +55,7 @@ graph TB
 - **[17 Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Terminal, Chats, and more
 - **[AI Assistant (Ryo)](/docs/ai-system):** Chat, tool calling, app control, code generation
 - **[Virtual File System](/docs/file-system):** IndexedDB-backed with lazy loading
-- **[Real-time Chat](/docs/chat-rooms-api):** RESTful rooms with AI integration
+- **[Real-time Chat](/docs/rooms-api):** RESTful rooms with AI integration
 - **[Audio System](/docs/audio-system):** Synthesizer, soundboard, TTS, and UI sounds
 - **[Component Library](/docs/component-library):** shadcn/ui + custom components with i18n
 
