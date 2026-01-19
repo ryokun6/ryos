@@ -35,7 +35,8 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
 
   const handleLoadGame = useCallback(
     async (game: Game) => {
-      setSelectedGame(game);
+      const targetGame = game;
+      setSelectedGame(targetGame);
       setIsGameRunning(true);
       if (!containerRef.current) {
         console.error("Container ref is null");
@@ -95,11 +96,11 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
               setIsLoading(false);
             } else if (event === "bnd-play") {
               console.log("Play button clicked");
-            } else if (event === "exit") {
+          } else if (event === "exit") {
               console.log("Program terminated:", arg);
               if (containerRef.current) {
                 containerRef.current.innerHTML = "";
-                handleLoadGame(selectedGame);
+              handleLoadGame(targetGame);
               }
             }
           },
@@ -120,7 +121,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
         setIsLoading(false);
       }
     },
-    [currentRenderAspect, isMouseCaptured, isScriptLoaded, mouseSensitivity, selectedGame]
+    [currentRenderAspect, isMouseCaptured, isScriptLoaded, mouseSensitivity]
   );
 
   useEffect(() => {
