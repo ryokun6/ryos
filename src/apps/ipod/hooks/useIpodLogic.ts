@@ -224,6 +224,9 @@ export function useIpodLogic({
   // Track switching state to prevent race conditions
   const isTrackSwitchingRef = useRef(false);
   const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Pending seek for negative offset tracks (seek performed in onReady callback)
+  const pendingSeekRef = useRef<number | null>(null);
 
   // Menu state
   const initialMenuMode = useMemo(() => {
@@ -435,15 +438,11 @@ export function useIpodLogic({
         const seekTarget = -newLyricOffset / 1000;
         setElapsedTime(seekTarget);
         
+        // Store pending seek target - will be performed in onReady callback
+        pendingSeekRef.current = seekTarget;
+        
         trackSwitchTimeoutRef.current = setTimeout(() => {
           isTrackSwitchingRef.current = false;
-          // Seek to the position where lyrics start at 0
-          const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
-          if (activePlayer) {
-            activePlayer.seekTo(seekTarget);
-            // Show status message for auto-skip
-            showStatus(`▶ ${Math.floor(seekTarget / 60)}:${String(Math.floor(seekTarget % 60)).padStart(2, "0")}`);
-          }
         }, 2000);
       } else {
         // Normal case: start from beginning
@@ -980,7 +979,19 @@ export function useIpodLogic({
     showStatus("⏸︎");
   }, [setIsPlaying, showStatus]);
 
-  const handleReady = useCallback(() => {}, []);
+  const handleReady = useCallback(() => {
+    // Perform pending seek for negative offset tracks
+    if (pendingSeekRef.current !== null) {
+      const seekTarget = pendingSeekRef.current;
+      const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+      if (activePlayer) {
+        activePlayer.seekTo(seekTarget);
+        // Show status message for auto-skip
+        showStatus(`▶ ${Math.floor(seekTarget / 60)}:${String(Math.floor(seekTarget % 60)).padStart(2, "0")}`);
+      }
+      pendingSeekRef.current = null;
+    }
+  }, [isFullScreen, showStatus]);
 
   // Watchdog for blocked autoplay
   useEffect(() => {

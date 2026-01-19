@@ -205,6 +205,9 @@ export function useKaraokeLogic({
   // Track switching state to prevent race conditions
   const isTrackSwitchingRef = useRef(false);
   const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Pending seek for negative offset tracks (seek performed in onReady callback)
+  const pendingSeekRef = useRef<number | null>(null);
 
   // Volume from audio settings store
   const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
@@ -448,15 +451,11 @@ export function useKaraokeLogic({
         const seekTarget = -lyricOffset / 1000;
         setElapsedTime(seekTarget);
         
+        // Store pending seek target - will be performed in onReady callback
+        pendingSeekRef.current = seekTarget;
+        
         trackSwitchTimeoutRef.current = setTimeout(() => {
           isTrackSwitchingRef.current = false;
-          // Seek to the position where lyrics start at 0
-          const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
-          if (activePlayer) {
-            activePlayer.seekTo(seekTarget);
-            // Show status message for auto-skip
-            showStatus(`▶ ${Math.floor(seekTarget / 60)}:${String(Math.floor(seekTarget % 60)).padStart(2, "0")}`);
-          }
         }, 2000);
       } else {
         // Normal case: start from beginning
@@ -617,6 +616,20 @@ export function useKaraokeLogic({
       setIsPlaying(false);
     }
   }, [isFullScreen]);
+
+  // Handle player ready - perform pending seek for negative offset tracks
+  const handleReady = useCallback(() => {
+    if (pendingSeekRef.current !== null) {
+      const seekTarget = pendingSeekRef.current;
+      const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+      if (activePlayer) {
+        activePlayer.seekTo(seekTarget);
+        // Show status message for auto-skip
+        showStatus(`▶ ${Math.floor(seekTarget / 60)}:${String(Math.floor(seekTarget % 60)).padStart(2, "0")}`);
+      }
+      pendingSeekRef.current = null;
+    }
+  }, [isFullScreen, showStatus]);
 
   // Watchdog for blocked autoplay on iOS Safari
   // If isPlaying is true but elapsed time hasn't changed, the player needs user interaction
@@ -1077,6 +1090,7 @@ export function useKaraokeLogic({
     handlePlay,
     handlePause,
     handleMainPlayerPause,
+    handleReady,
     seekTime,
     seekToTime,
     cycleAlignment,
