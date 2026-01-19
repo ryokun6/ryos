@@ -428,12 +428,13 @@ export function useIpodLogic({
       const newTrack = tracks[currentIndex];
       const newLyricOffset = newTrack?.lyricOffset ?? 0;
       
-      // For positive offset, auto-skip to where lyrics time = 0
-      // seekTarget = -lyricOffset / 1000, but we use absolute value since offset is positive
-      // For negative offsets, starting from 0 avoids playback issues
-      if (newLyricOffset > 0) {
-        // Positive offset - auto-skip forward
-        const seekTarget = newLyricOffset / 1000;
+      // For negative offset, auto-skip to where lyrics time = 0
+      // Formula: lyricsTime = playerTime + (lyricOffset / 1000)
+      // When lyricsTime = 0: playerTime = -lyricOffset / 1000
+      // For positive offsets, starting from 0 avoids playback issues
+      if (newLyricOffset < 0) {
+        // Negative offset - auto-skip forward
+        const seekTarget = -newLyricOffset / 1000;
         setElapsedTime(seekTarget);
         
         trackSwitchTimeoutRef.current = setTimeout(() => {
@@ -447,7 +448,7 @@ export function useIpodLogic({
           }
         }, 2000);
       } else {
-        // For negative or zero offset: start from beginning (no auto-skip)
+        // For positive or zero offset: start from beginning (no auto-skip)
         setElapsedTime(0);
         trackSwitchTimeoutRef.current = setTimeout(() => {
           isTrackSwitchingRef.current = false;
