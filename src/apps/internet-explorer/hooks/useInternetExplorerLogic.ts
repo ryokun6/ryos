@@ -1650,9 +1650,8 @@ export function useInternetExplorerLogic({
           `[IE] Received navigation request from AI HTML preview: ${event.data.url}`
         );
         // Fetch the most up-to-date HTML from the store in case the closure is stale
-        const latestAiHtml =
+        const contextHtml =
           useInternetExplorerStore.getState().aiGeneratedHtml;
-        const contextHtml = generatedHtml || latestAiHtml;
 
         handleNavigate(event.data.url, year, false, contextHtml);
       }
@@ -1661,7 +1660,7 @@ export function useInternetExplorerLogic({
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [year, handleNavigate, handleGoBack, generatedHtml]); // Added generatedHtml to dependencies
+  }, [year, handleNavigate, handleGoBack]);
 
   useEffect(() => {
     if (!isWindowOpen) {
