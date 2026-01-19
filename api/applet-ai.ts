@@ -603,6 +603,11 @@ export default async function handler(req: Request): Promise<Response> {
           },
         ],
         ...(typeof temperature === "number" ? { temperature } : {}),
+        providerOptions: {
+          google: {
+            responseModalities: ["IMAGE", "TEXT"],
+          },
+        },
       });
 
       const imageFile = imageResult.files?.find((file) =>
@@ -653,6 +658,14 @@ export default async function handler(req: Request): Promise<Response> {
       });
     } catch (error) {
       logError("Image generation failed:", error);
+      // Log more details if available
+      if (error instanceof Error) {
+        logError("Error details:", {
+          name: error.name,
+          message: error.message,
+          cause: error.cause,
+        });
+      }
       return jsonResponse(
         { error: "Failed to generate image" },
         500,
