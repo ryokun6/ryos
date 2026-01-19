@@ -61,7 +61,7 @@ graph TD
         INDEX[index.tsx<br/>App Definition]
         MAIN["[AppName]AppComponent.tsx"]
         MENU["[AppName]MenuBar.tsx"]
-        HOOKS[hooks/]
+        HOOKS[hooks/<br/>use*Logic.ts]
         UTILS[utils/]
         COMPS[components/]
     end
@@ -84,6 +84,129 @@ graph TD
     PROPS -->|isForeground| P3[ ]
     PROPS -->|instanceId| P4[ ]
 ```
+
+### App-Specific Hooks Pattern
+
+Each app typically has a **main logic hook** that encapsulates most of the app's state and behavior. This pattern separates UI concerns from business logic and makes apps easier to test and maintain.
+
+**Location:** `src/apps/[app-name]/hooks/use[AppName]Logic.ts`
+
+**Pattern Overview:**
+
+| Aspect | Description |
+|--------|-------------|
+| Input | Options object with `isWindowOpen`, `isForeground`, `initialData`, `instanceId` |
+| Output | Unified object containing state, actions, and UI state |
+| Composition | Combines global hooks (useSound, useLyrics, etc.) with Zustand store state |
+
+**Example: iPod Logic Hook**
+
+```typescript
+// src/apps/ipod/hooks/useIpodLogic.ts
+
+export interface UseIpodLogicOptions {
+  isWindowOpen: boolean;
+  isForeground: boolean | undefined;
+  initialData: IpodInitialData | undefined;
+  instanceId: string | undefined;
+}
+
+export function useIpodLogic({
+  isWindowOpen,
+  isForeground,
+  initialData,
+  instanceId,
+}: UseIpodLogicOptions) {
+  // 1. Global hooks for cross-cutting concerns
+  const { play: playClickSound } = useSound(Sounds.BUTTON_CLICK);
+  const { play: playScrollSound } = useSound(Sounds.IPOD_CLICK_WHEEL);
+  const vibrate = useVibration(100, 50);
+  const isOffline = useOffline();
+  
+  // 2. Store state (fine-grained selectors)
+  const { tracks, currentSongId, isPlaying, loopCurrent } = useIpodStore(
+    useShallow((s) => ({
+      tracks: s.tracks,
+      currentSongId: s.currentSongId,
+      isPlaying: s.isPlaying,
+      loopCurrent: s.loopCurrent,
+    }))
+  );
+  
+  // 3. Media hooks for specialized functionality
+  const { lyrics, isLoading: lyricsLoading } = useLyrics({
+    songId: currentSongId,
+    title: currentTrack?.title,
+    artist: currentTrack?.artist,
+  });
+  
+  const { furiganaMap, soramimiMap } = useFurigana({
+    songId: currentSongId,
+    lines: lyrics,
+    enabled: showFurigana,
+  });
+  
+  // 4. Local state for UI concerns
+  const [menuPath, setMenuPath] = useState<string[]>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // 5. Handlers that combine state and actions
+  const playTrack = useCallback((track: Track) => {
+    playClickSound();
+    vibrate();
+    useIpodStore.getState().setCurrentSongId(track.id);
+    useIpodStore.getState().setIsPlaying(true);
+  }, [playClickSound, vibrate]);
+  
+  // 6. Return unified interface for component
+  return {
+    // State
+    tracks,
+    currentTrack,
+    isPlaying,
+    lyrics,
+    furiganaMap,
+    
+    // Actions
+    playTrack,
+    pauseTrack,
+    nextTrack,
+    previousTrack,
+    
+    // UI state
+    menuPath,
+    setMenuPath,
+    isFullscreen,
+    setIsFullscreen,
+    
+    // Status
+    isOffline,
+    lyricsLoading,
+  };
+}
+```
+
+**Benefits of this pattern:**
+
+1. **Separation of concerns** - UI component focuses on rendering, logic hook handles state
+2. **Composability** - Logic hooks compose global hooks and store state cleanly
+3. **Testability** - Logic can be tested independently of UI
+4. **Reusability** - Same logic can power multiple UI variations (e.g., iPod and Karaoke share patterns)
+
+**Apps using this pattern:**
+
+| App | Logic Hook | Key Responsibilities |
+|-----|------------|---------------------|
+| iPod | `useIpodLogic` | Playback, lyrics, navigation, fullscreen |
+| Finder | `useFinderLogic` | File navigation, selection, operations |
+| Chats | `useAiChat` | AI chat, message handling, tool execution |
+| Terminal | `useTerminalLogic` | Command execution, history, Vim mode |
+| Paint | `usePaintLogic` | Canvas operations, tools, filters |
+| Karaoke | `useKaraokeLogic` | Karaoke playback, lyrics sync |
+| TextEdit | `useTextEditState` | Document state, file operations |
+| Photo Booth | `usePhotoBoothLogic` | Camera, effects, capture |
+| Soundboard | `useSoundboardLogic` | Audio recording, playback, boards |
+| Synth | `useSynthLogic` | Synthesis, presets, waveform |
 
 ## Subsections
 

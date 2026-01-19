@@ -84,7 +84,7 @@ graph TB
 │   ├── apps/         # 17 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
-│   ├── hooks/        # 29 custom hooks
+│   ├── hooks/        # 34 custom hooks
 │   ├── lib/          # Libraries
 │   ├── stores/       # 21 Zustand stores
 │   ├── styles/       # CSS
