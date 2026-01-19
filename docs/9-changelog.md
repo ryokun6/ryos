@@ -17,6 +17,7 @@ A summary of changes and updates to ryOS, organized by month.
 <summary>Minor changes (14)</summary>
 
 - Restructured documentation with hierarchical DeepWiki-style navigation and clean URLs.
+- Split Chat Rooms API documentation into separate Auth, Rooms, Messages, and Presence API docs.
 - Enhanced documentation generation with skip and force options.
 - Added a 'View Docs' button to the Help Dialog and updated IE bookmarks linking to app-specific documentation.
 - Implemented theme-aware boot screens with official Windows logos and System 7 hello.svg fix.
