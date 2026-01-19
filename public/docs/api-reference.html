@@ -182,13 +182,7 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group">
-  <div class="nav-toggle nav-no-toggle">
-    <span class="nav-spacer"></span>
-    <a href="/docs/api-design-guide" class="">ryOS API Design Guide</a>
-  </div>
-</div>
-<div class="nav-group ">
+      <div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -283,9 +277,13 @@
     <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
     <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
     <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
-    <a href="/docs/chat-rooms-api" class="nav-child ">8.4 Chat Rooms API (REST)</a>
-    <a href="/docs/ai-generation-apis" class="nav-child ">8.5 AI Endpoints</a>
-    <a href="/docs/utility-apis" class="nav-child ">8.6 Utility APIs</a>
+    <a href="/docs/auth-api" class="nav-child ">8.4 Auth API</a>
+    <a href="/docs/rooms-api" class="nav-child ">8.5 Rooms API</a>
+    <a href="/docs/messages-api" class="nav-child ">8.6 Messages API</a>
+    <a href="/docs/presence-api" class="nav-child ">8.7 Presence API</a>
+    <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
+    <a href="/docs/utility-apis" class="nav-child ">8.9 Utility APIs</a>
+    <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
   </div>
 </div>
 <div class="nav-group">
@@ -313,7 +311,7 @@
     Edge --> Response[JSON Response]
     Response --> Client</pre>
 <h2>Endpoint Documentation</h2>
-<table><thead><tr><th>Endpoint Group</th><th>Description</th></tr></thead><tbody><tr><td><a href="/docs/chat-api">Chat API</a></td><td>Main AI chat with streaming and tool calling</td></tr><tr><td><a href="/docs/song-api">Song API</a></td><td>Music library CRUD, lyrics, furigana, translations</td></tr><tr><td><a href="/docs/media-api">Media API</a></td><td>Text-to-speech, transcription, YouTube search</td></tr><tr><td><a href="/docs/chat-rooms-api">Chat Rooms API</a></td><td>Real-time chat rooms (REST)</td></tr><tr><td><a href="/docs/ai-generation-apis">AI Generation APIs</a></td><td>Applet generation, IE time-travel, parse-title</td></tr><tr><td><a href="/docs/utility-apis">Utility APIs</a></td><td>Link preview, iframe check, share applet, admin</td></tr></tbody></table>
+<table><thead><tr><th>Endpoint Group</th><th>Description</th></tr></thead><tbody><tr><td><a href="/docs/chat-api">Chat API</a></td><td>Main AI chat with streaming and tool calling</td></tr><tr><td><a href="/docs/song-api">Song API</a></td><td>Music library CRUD, lyrics, furigana, translations</td></tr><tr><td><a href="/docs/media-api">Media API</a></td><td>Text-to-speech, transcription, YouTube search</td></tr><tr><td><a href="/docs/auth-api">Auth API</a></td><td>User registration, login, token management</td></tr><tr><td><a href="/docs/rooms-api">Rooms API</a></td><td>Chat room creation and management</td></tr><tr><td><a href="/docs/messages-api">Messages API</a></td><td>Send and retrieve chat messages</td></tr><tr><td><a href="/docs/presence-api">Presence API</a></td><td>Presence tracking, user search, AI replies</td></tr><tr><td><a href="/docs/ai-generation-apis">AI Generation APIs</a></td><td>Applet generation, IE time-travel, parse-title</td></tr><tr><td><a href="/docs/utility-apis">Utility APIs</a></td><td>Link preview, iframe check, share applet, admin</td></tr><tr><td><a href="/docs/api-design-guide">API Design Guide</a></td><td>Patterns and conventions for API development</td></tr></tbody></table>
 <h2>Quick Reference</h2>
 <h3>AI Endpoints</h3>
 <table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat</code></td><td>Main AI chat with tool calling</td></tr><tr><td><code>/api/applet-ai</code></td><td>Applet text + image generation</td></tr><tr><td><code>/api/ie-generate</code></td><td>Time-travel page generation</td></tr><tr><td><code>/api/parse-title</code></td><td>Music metadata extraction</td></tr></tbody></table>
