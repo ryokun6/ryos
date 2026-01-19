@@ -33,6 +33,7 @@ import { parseCommand } from "../utils/commandParser";
 import { commands, AVAILABLE_COMMANDS } from "../commands";
 import { helpItems } from "../index";
 import { useVimLogic } from "./useVimLogic";
+import type { AIChatMessage } from "@/types/chat";
 
 interface UseTerminalLogicOptions {
   isForeground?: boolean;
@@ -1165,127 +1166,139 @@ export const useTerminalLogic = ({
     playAiResponseSound();
   }, [playAiResponseSound]);
 
-  // Watch for changes in the AI messages to update the terminal display
-  useEffect(() => {
-    if (!isInAiMode || aiMessages.length <= 1) return;
+  const handleAiMessagesUpdate = useCallback(
+    (messages: AIChatMessage[]) => {
+      if (!isInAiMode || messages.length <= 1) return;
 
-    const lastMessage = aiMessages[aiMessages.length - 1];
-    if (lastMessage.role !== "assistant") return;
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role !== "assistant") return;
 
-    const messageKey = `${lastMessage.id}-${JSON.stringify(
-      (lastMessage as { parts?: unknown[] }).parts ??
-        (lastMessage as { text?: string }).text
-    )}`;
-    if (messageKey === lastProcessedMessageIdRef.current) return;
+      const messageKey = `${lastMessage.id}-${JSON.stringify(
+        (lastMessage as { parts?: unknown[] }).parts ??
+          (lastMessage as { text?: string }).text
+      )}`;
+      if (messageKey === lastProcessedMessageIdRef.current) return;
 
-    const parts = (lastMessage as { parts?: unknown[] }).parts as
-      | unknown[]
-      | undefined;
-    const lines: string[] = [];
-    let hasAquarium = false;
-    const toolInvocations: ToolInvocationData[] = [];
+      const parts = (lastMessage as { parts?: unknown[] }).parts as
+        | unknown[]
+        | undefined;
+      const lines: string[] = [];
+      let hasAquarium = false;
+      const toolInvocations: ToolInvocationData[] = [];
 
-    if (parts && parts.length > 0) {
-      parts.forEach((part) => {
-        const partType = (part as { type: string }).type;
-        if (partType === "text") {
-          const processed = processMessageContent(
-            (part as { text: string }).text
-          );
-          if (processed) lines.push(processed);
-        } else if (partType.startsWith("tool-")) {
-          // AI SDK v5 tool parts have type like "tool-launchApp", "tool-ipodControl", etc.
-          const toolName = partType.slice(5); // Remove "tool-" prefix
-          const toolPart = part as {
-            type: string;
-            toolCallId: string;
-            state:
-              | "input-streaming"
-              | "input-available"
-              | "output-available"
-              | "output-error";
-            input?: Record<string, unknown>;
-            output?: unknown;
-          };
+      if (parts && parts.length > 0) {
+        parts.forEach((part) => {
+          const partType = (part as { type: string }).type;
+          if (partType === "text") {
+            const processed = processMessageContent(
+              (part as { text: string }).text
+            );
+            if (processed) lines.push(processed);
+          } else if (partType.startsWith("tool-")) {
+            // AI SDK v5 tool parts have type like "tool-launchApp", "tool-ipodControl", etc.
+            const toolName = partType.slice(5); // Remove "tool-" prefix
+            const toolPart = part as {
+              type: string;
+              toolCallId: string;
+              state:
+                | "input-streaming"
+                | "input-available"
+                | "output-available"
+                | "output-error";
+              input?: Record<string, unknown>;
+              output?: unknown;
+            };
 
-          if (toolName === "aquarium") {
-            hasAquarium = true;
-          } else {
-            // Store tool invocation for visual rendering
-            toolInvocations.push({
-              toolName,
-              state: toolPart.state,
-              input: toolPart.input,
-              output: toolPart.output,
-            });
+            if (toolName === "aquarium") {
+              hasAquarium = true;
+            } else {
+              // Store tool invocation for visual rendering
+              toolInvocations.push({
+                toolName,
+                state: toolPart.state,
+                input: toolPart.input,
+                output: toolPart.output,
+              });
+            }
           }
-        }
-      });
-    } else {
-      lines.push(
-        processMessageContent((lastMessage as { text?: string }).text || "")
-      );
-    }
-
-    const cleanedContent = lines.join("\n");
-    if (isClearingTerminal) return;
-
-    setCommandHistory((prev) => {
-      const filteredHistory = prev.filter(
-        (item) => item.path !== "ai-thinking"
-      );
-      const existingIndex = filteredHistory.findIndex(
-        (item) =>
-          item.path === "ai-assistant" && item.messageId === lastMessage.id
-      );
-
-      if (existingIndex !== -1) {
-        const existing = filteredHistory[existingIndex];
-        if (
-          existing.output === cleanedContent &&
-          existing.hasAquarium === hasAquarium &&
-          JSON.stringify(existing.toolInvocations) ===
-            JSON.stringify(toolInvocations)
-        )
-          return prev;
-
-        const updated = [...filteredHistory];
-        updated[existingIndex] = {
-          command: "",
-          output: cleanedContent,
-          path: "ai-assistant",
-          messageId: lastMessage.id,
-          hasAquarium,
-          toolInvocations:
-            toolInvocations.length > 0 ? toolInvocations : undefined,
-        };
-        return updated;
+        });
+      } else {
+        lines.push(
+          processMessageContent((lastMessage as { text?: string }).text || "")
+        );
       }
 
-      playAiResponseSoundMemoized();
+      const cleanedContent = lines.join("\n");
+      if (isClearingTerminal) return;
 
-      return [
-        ...filteredHistory,
-        {
-          command: "",
-          output: cleanedContent,
-          path: "ai-assistant",
-          messageId: lastMessage.id,
-          hasAquarium,
-          toolInvocations:
-            toolInvocations.length > 0 ? toolInvocations : undefined,
-        },
-      ];
+      setCommandHistory((prev) => {
+        const filteredHistory = prev.filter(
+          (item) => item.path !== "ai-thinking"
+        );
+        const existingIndex = filteredHistory.findIndex(
+          (item) =>
+            item.path === "ai-assistant" && item.messageId === lastMessage.id
+        );
+
+        if (existingIndex !== -1) {
+          const existing = filteredHistory[existingIndex];
+          if (
+            existing.output === cleanedContent &&
+            existing.hasAquarium === hasAquarium &&
+            JSON.stringify(existing.toolInvocations) ===
+              JSON.stringify(toolInvocations)
+          )
+            return prev;
+
+          const updated = [...filteredHistory];
+          updated[existingIndex] = {
+            command: "",
+            output: cleanedContent,
+            path: "ai-assistant",
+            messageId: lastMessage.id,
+            hasAquarium,
+            toolInvocations:
+              toolInvocations.length > 0 ? toolInvocations : undefined,
+          };
+          return updated;
+        }
+
+        playAiResponseSoundMemoized();
+
+        return [
+          ...filteredHistory,
+          {
+            command: "",
+            output: cleanedContent,
+            path: "ai-assistant",
+            messageId: lastMessage.id,
+            hasAquarium,
+            toolInvocations:
+              toolInvocations.length > 0 ? toolInvocations : undefined,
+          },
+        ];
+      });
+
+      lastProcessedMessageIdRef.current = messageKey;
+    },
+    [
+      isInAiMode,
+      isClearingTerminal,
+      processMessageContent,
+      playAiResponseSoundMemoized,
+    ]
+  );
+
+  useEffect(() => {
+    const unsubscribe = useChatsStore.subscribe((state, prevState) => {
+      if (state.aiMessages === prevState.aiMessages) return;
+      handleAiMessagesUpdate(state.aiMessages);
     });
 
-    lastProcessedMessageIdRef.current = messageKey;
-  }, [
-    aiMessages,
-    isInAiMode,
-    isClearingTerminal,
-    processMessageContent,
-    playAiResponseSoundMemoized,
-  ]);
+    handleAiMessagesUpdate(useChatsStore.getState().aiMessages);
+
+    return unsubscribe;
+  }, [handleAiMessagesUpdate]);
 
   // Function to handle AI mode commands
   const handleAiCommand = (command: string) => {
