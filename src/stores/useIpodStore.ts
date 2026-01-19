@@ -367,7 +367,7 @@ async function saveLyricOffsetToServer(
   console.log(`[iPod Store] Saving lyric offset for ${trackId}: ${lyricOffset}ms...`);
   
   try {
-    const response = await fetch(getApiUrl(`/api/song/${encodeURIComponent(trackId)}`), {
+    const response = await fetch(getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -477,7 +477,7 @@ async function saveLyricsSourceToServer(
   }
 
   try {
-    const response = await fetch(getApiUrl(`/api/song/${encodeURIComponent(trackId)}`), {
+    const response = await fetch(getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -755,7 +755,7 @@ export const useIpodStore = create<IpodState>()(
         
         // Clear server-side cache for translations, furigana, and soramimi
         if (currentTrack?.id) {
-          fetch(getApiUrl(`/api/song/${currentTrack.id}`), {
+          fetch(getApiUrl(`/api/songs/${currentTrack.id}`), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -1032,7 +1032,7 @@ export const useIpodStore = create<IpodState>()(
         // Single call to fetch-lyrics with returnMetadata: searches Kugou, fetches lyrics+cover, returns metadata
         // This consolidates search + fetch into one call
         try {
-          const fetchResponse = await fetch(getApiUrl(`/api/song/${videoId}`), {
+          const fetchResponse = await fetch(getApiUrl(`/api/songs/${videoId}`), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -1201,7 +1201,7 @@ export const useIpodStore = create<IpodState>()(
               // Batch fetch metadata for tracks not in default library
               const idsToFetch = tracksNotInDefaultLibrary.map((t) => t.id).join(",");
               const response = await fetch(
-                getApiUrl(`/api/song?ids=${encodeURIComponent(idsToFetch)}&include=metadata`),
+                getApiUrl(`/api/songs?ids=${encodeURIComponent(idsToFetch)}&include=metadata`),
                 {
                   method: "GET",
                   headers: { "Content-Type": "application/json" },

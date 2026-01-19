@@ -4,7 +4,7 @@
  * Provides functions to save and retrieve song metadata from Redis cache.
  * Used by iPod and Karaoke apps to share song metadata between users.
  * 
- * Uses the unified /api/song endpoint.
+ * Uses the unified /api/songs endpoint.
  */
 
 import { getApiUrl } from "./platform";
@@ -41,7 +41,7 @@ export interface CachedSongMetadata {
 }
 
 /**
- * Unified song document from /api/song endpoint
+ * Unified song document from /api/songs endpoint
  */
 interface UnifiedSongDocument {
   id: string;
@@ -58,7 +58,7 @@ interface UnifiedSongDocument {
 }
 
 /**
- * Response from unified /api/song list endpoint
+ * Response from unified /api/songs list endpoint
  */
 interface UnifiedSongListResponse {
   songs: UnifiedSongDocument[];
@@ -113,7 +113,7 @@ export async function getCachedSongMetadata(
 ): Promise<CachedSongMetadata | null> {
   try {
     const response = await fetch(
-      getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}?include=metadata`),
+      getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}?include=metadata`),
       {
         method: "GET",
         headers: {
@@ -149,7 +149,7 @@ export async function getCachedSongMetadata(
  */
 export async function listAllCachedSongMetadata(createdBy?: string): Promise<CachedSongMetadata[]> {
   try {
-    let url = "/api/song?include=metadata";
+    let url = "/api/songs?include=metadata";
     if (createdBy) {
       url += `&createdBy=${encodeURIComponent(createdBy)}`;
     }
@@ -193,7 +193,7 @@ export async function deleteSongMetadata(
 ): Promise<boolean> {
   try {
     const response = await fetch(
-      getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}`),
+      getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
       {
         method: "DELETE",
         headers: {
@@ -246,7 +246,7 @@ export async function deleteAllSongMetadata(
   try {
     console.log(`[SongMetadataCache] Deleting all songs...`);
 
-    const response = await fetch(getApiUrl("/api/song"), {
+    const response = await fetch(getApiUrl("/api/songs"), {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -302,7 +302,7 @@ export async function saveSongMetadata(
   options?: { isShare?: boolean }
 ): Promise<boolean> {
   try {
-    const response = await fetch(getApiUrl(`/api/song/${encodeURIComponent(metadata.youtubeId)}`), {
+    const response = await fetch(getApiUrl(`/api/songs/${encodeURIComponent(metadata.youtubeId)}`), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -373,7 +373,7 @@ export async function bulkImportSongMetadata(
   auth: SongMetadataAuthCredentials
 ): Promise<{ success: boolean; imported: number; updated: number; total: number; error?: string }> {
   try {
-    const response = await fetch(getApiUrl("/api/song"), {
+    const response = await fetch(getApiUrl("/api/songs"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

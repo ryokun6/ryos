@@ -400,8 +400,8 @@ export default defineConfig({
     defaultSupportsResponseStreaming: true,
     // Fix routing for subdirectory index files
     rewrites: [
-      // Route /api/song to /api/song/index
-      { source: "/api/song", destination: "/api/song/index" },
+      // Route /api/songs to /api/songs/index
+      { source: "/api/songs", destination: "/api/songs/index" },
       // Route /api/rooms to /api/rooms/index
       { source: "/api/rooms", destination: "/api/rooms/index" },
       // Route /api/users to /api/users/index

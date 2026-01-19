@@ -512,7 +512,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       // Fetch full song data including content (lyrics, translations, furigana, soramimi)
       const response = await fetch(
         getApiUrl(
-          "/api/song?include=metadata,lyrics,translations,furigana,soramimi"
+          "/api/songs?include=metadata,lyrics,translations,furigana,soramimi"
         ),
         {
           method: "GET",

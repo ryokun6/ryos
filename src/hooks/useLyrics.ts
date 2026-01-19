@@ -215,7 +215,7 @@ export function useLyrics({
       headers["X-Username"] = auth.username;
     }
 
-    abortableFetch(getApiUrl(`/api/song/${effectSongId}`), {
+    abortableFetch(getApiUrl(`/api/songs/${effectSongId}`), {
       method: "POST",
       headers,
       body: JSON.stringify(requestBody),

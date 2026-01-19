@@ -302,7 +302,7 @@
 <p>Songs are identified by their YouTube video ID (11 characters). The API stores: <ul><li><strong>Metadata</strong> (lightweight ~300 bytes): title, artist, album, cover, timestamps</li><li><strong>Content</strong> (heavy ~5-50KB): lyrics, translations, furigana, soramimi annotations</li></ul></p>
 <p>Data is stored in Redis (Upstash) with split storage to avoid exceeding request size limits when listing songs.</p>
 <h2>Endpoints</h2>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/song</code></td><td>List songs with optional filtering</td></tr><tr><td>POST</td><td><code>/api/song</code></td><td>Create song or bulk import</td></tr><tr><td>DELETE</td><td><code>/api/song</code></td><td>Delete all songs (admin only)</td></tr><tr><td>GET</td><td><code>/api/song/{id}</code></td><td>Get song by ID</td></tr><tr><td>POST</td><td><code>/api/song/{id}</code></td><td>Update song or perform action</td></tr><tr><td>DELETE</td><td><code>/api/song/{id}</code></td><td>Delete song (admin only)</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/songs</code></td><td>List songs with optional filtering</td></tr><tr><td>POST</td><td><code>/api/songs</code></td><td>Create song or bulk import</td></tr><tr><td>DELETE</td><td><code>/api/songs</code></td><td>Delete all songs (admin only)</td></tr><tr><td>GET</td><td><code>/api/songs/{id}</code></td><td>Get song by ID</td></tr><tr><td>POST</td><td><code>/api/songs/{id}</code></td><td>Update song or perform action</td></tr><tr><td>DELETE</td><td><code>/api/songs/{id}</code></td><td>Delete song (admin only)</td></tr></tbody></table>
 <h2>Authentication</h2>
 <p>Authentication uses a combination of Bearer token and username header:</p>
 <pre><code>Authorization: Bearer &lt;auth_token&gt;
@@ -312,7 +312,7 @@ X-Username: &lt;username&gt;</code></pre>
 <p>The admin user is <code>ryo</code> (case-insensitive).</p>
 <hr>
 <h2>Collection Endpoints</h2>
-<h3>GET /api/song</h3>
+<h3>GET /api/songs</h3>
 <p>List all songs or filter by specific criteria.</p>
 <h4>Query Parameters</h4>
 <table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>createdBy</code></td><td>string</td><td>Filter by creator username</td></tr><tr><td><code>ids</code></td><td>string</td><td>Comma-separated list of song IDs for batch fetch</td></tr><tr><td><code>include</code></td><td>string</td><td>Comma-separated: <code>metadata</code>, <code>lyrics</code>, <code>translations</code>, <code>furigana</code>, <code>soramimi</code> (default: <code>metadata</code>)</td></tr></tbody></table>
@@ -340,7 +340,7 @@ X-Username: &lt;username&gt;</code></pre>
     }
   ]
 }</code></pre>
-<h3>POST /api/song</h3>
+<h3>POST /api/songs</h3>
 <p>Create a single song or perform bulk import.</p>
 <h4>Single Song Creation</h4>
 <pre><code>{
@@ -394,7 +394,7 @@ X-Username: &lt;username&gt;</code></pre>
   "withContent": 15,
   "total": 15
 }</code></pre>
-<h3>DELETE /api/song</h3>
+<h3>DELETE /api/songs</h3>
 <p>Delete all songs (admin only).</p>
 <h4>Response</h4>
 <pre><code>{
@@ -403,7 +403,7 @@ X-Username: &lt;username&gt;</code></pre>
 }</code></pre>
 <hr>
 <h2>Individual Song Endpoints</h2>
-<h3>GET /api/song/{id}</h3>
+<h3>GET /api/songs/{id}</h3>
 <p>Retrieve a song by its YouTube video ID.</p>
 <h4>Query Parameters</h4>
 <table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>include</code></td><td>string</td><td>Comma-separated: <code>metadata</code>, <code>lyrics</code>, <code>translations</code>, <code>furigana</code>, <code>soramimi</code> (default: <code>metadata</code>)</td></tr></tbody></table>
@@ -440,7 +440,7 @@ X-Username: &lt;username&gt;</code></pre>
     "en": [[{ "text": "歌詞", "reading": "ka shi" }]]
   }
 }</code></pre>
-<h3>POST /api/song/{id}</h3>
+<h3>POST /api/songs/{id}</h3>
 <p>Update song metadata or perform an action.</p>
 <h4>Actions</h4>
 <table><thead><tr><th>Action</th><th>Description</th><th>Auth Required</th></tr></thead><tbody><tr><td>(none)</td><td>Update metadata</td><td>Yes (owner)</td></tr><tr><td><code>search-lyrics</code></td><td>Search KuGou for lyrics</td><td>No</td></tr><tr><td><code>fetch-lyrics</code></td><td>Fetch lyrics from KuGou</td><td>First fetch: No, Force refresh: Yes</td></tr><tr><td><code>translate-stream</code></td><td>Generate translation (SSE)</td><td>First: No, Force: Yes</td></tr><tr><td><code>furigana-stream</code></td><td>Generate furigana (SSE)</td><td>First: No, Force: Yes</td></tr><tr><td><code>soramimi-stream</code></td><td>Generate soramimi (SSE)</td><td>First: No, Force: Yes</td></tr><tr><td><code>clear-cached-data</code></td><td>Clear cached annotations</td><td>No</td></tr><tr><td><code>unshare</code></td><td>Clear createdBy field</td><td>Admin only</td></tr></tbody></table>
@@ -606,7 +606,7 @@ X-Username: &lt;username&gt;</code></pre>
   "createdBy": "username"
 }</code></pre>
 <hr>
-<h2>DELETE /api/song/{id}</h2>
+<h2>DELETE /api/songs/{id}</h2>
 <p>Delete a song (admin only).</p>
 <h4>Response</h4>
 <pre><code>{
@@ -705,7 +705,7 @@ interface WordTiming {
 <h2>Example Usage</h2>
 <h3>Create a song and fetch lyrics</h3>
 <pre><code>// 1. Create the song
-const createRes = await fetch('/api/song', {
+const createRes = await fetch('/api/songs', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -720,7 +720,7 @@ const createRes = await fetch('/api/song', {
 });
 
 // 2. Search for lyrics
-const searchRes = await fetch('/api/song/dQw4w9WgXcQ', {
+const searchRes = await fetch('/api/songs/dQw4w9WgXcQ', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -731,7 +731,7 @@ const searchRes = await fetch('/api/song/dQw4w9WgXcQ', {
 const { results } = await searchRes.json();
 
 // 3. Fetch lyrics with the best match
-const lyricsRes = await fetch('/api/song/dQw4w9WgXcQ', {
+const lyricsRes = await fetch('/api/songs/dQw4w9WgXcQ', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -741,7 +741,7 @@ const lyricsRes = await fetch('/api/song/dQw4w9WgXcQ', {
   })
 });</code></pre>
 <h3>Stream translation with SSE</h3>
-<pre><code>const response = await fetch('/api/song/dQw4w9WgXcQ', {
+<pre><code>const response = await fetch('/api/songs/dQw4w9WgXcQ', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -772,11 +772,11 @@ while (true) {
 }</code></pre>
 <h3>Bulk export and import</h3>
 <pre><code>// Export all songs with full content
-const exportRes = await fetch('/api/song?include=metadata,lyrics,translations,furigana,soramimi');
+const exportRes = await fetch('/api/songs?include=metadata,lyrics,translations,furigana,soramimi');
 const { songs } = await exportRes.json();
 
 // Import songs (admin only)
-const importRes = await fetch('/api/song', {
+const importRes = await fetch('/api/songs', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',

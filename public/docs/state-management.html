@@ -582,7 +582,7 @@ async function saveLyricOffsetToServer(trackId: string, offset: number) {
   }
   
   // Make authenticated API call
-  await fetch("/api/song/...", {
+  await fetch("/api/songs/...", {
     headers: {
       "Authorization": `Bearer ${authToken}`,
       "X-Username": username,

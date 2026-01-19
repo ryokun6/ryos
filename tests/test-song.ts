@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Tests for /api/song endpoints (unified song API)
+ * Tests for /api/songs endpoints (unified song API)
  * Tests: GET song, fetch-lyrics, translate, furigana, search-lyrics
  */
 
@@ -30,18 +30,18 @@ let cachedLyricsSource: {
 } | null = null;
 
 // ============================================================================
-// GET /api/song/{id} Tests
+// GET /api/songs/{id} Tests
 // ============================================================================
 
 async function testGetNonexistentSong(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/nonexistent123xyz`);
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/nonexistent123xyz`);
   assertEq(res.status, 404, `Expected 404 for non-existent song, got ${res.status}`);
   const data = await res.json();
   assert(data.error, "Expected error in response");
 }
 
 async function testGetOptionsRequest(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
     method: "OPTIONS",
   });
   assert(res.status === 200 || res.status === 204, `Expected 200 or 204, got ${res.status}`);
@@ -49,17 +49,17 @@ async function testGetOptionsRequest(): Promise<void> {
 
 async function testGetMissingId(): Promise<void> {
   // The index endpoint should handle this
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song`);
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs`);
   // This could return 405 (method not allowed for GET on index) or list songs
   assert(res.status === 200 || res.status === 405, `Expected 200 or 405, got ${res.status}`);
 }
 
 // ============================================================================
-// POST /api/song/{id} action: fetch-lyrics Tests
+// POST /api/songs/{id} action: fetch-lyrics Tests
 // ============================================================================
 
 async function testFetchLyricsInvalidBody(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: "invalid json",
@@ -69,7 +69,7 @@ async function testFetchLyricsInvalidBody(): Promise<void> {
 
 async function testFetchLyricsMissingSource(): Promise<void> {
   // When song doesn't exist and no lyricsSource provided, should return 400
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/nonexistent_no_source`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/nonexistent_no_source`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -82,7 +82,7 @@ async function testFetchLyricsMissingSource(): Promise<void> {
 
 async function testFetchLyricsWithSearchedSource(): Promise<void> {
   // First, search for lyrics to get a valid hash/albumId
-  const searchRes = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+  const searchRes = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -98,7 +98,7 @@ async function testFetchLyricsWithSearchedSource(): Promise<void> {
   cachedLyricsSource = searchData.results[0];
   
   // Now fetch lyrics using the search result
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -118,7 +118,7 @@ async function testFetchLyricsResponseStructure(): Promise<void> {
   // Use cached source if available, otherwise skip
   if (!cachedLyricsSource) {
     // Try to fetch without source (will auto-search if song has title/artist)
-    const res = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+    const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -135,7 +135,7 @@ async function testFetchLyricsResponseStructure(): Promise<void> {
     return;
   }
   
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -156,7 +156,7 @@ async function testFetchLyricsCacheHit(): Promise<void> {
   if (!cachedLyricsSource) return; // Skip if no source available
   
   // First request
-  const res1 = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+  const res1 = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -167,7 +167,7 @@ async function testFetchLyricsCacheHit(): Promise<void> {
 
   if (res1.status === 200) {
     // Second request should hit cache (check via 'cached' field in response)
-    const res2 = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+    const res2 = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -185,7 +185,7 @@ async function testFetchLyricsCacheHit(): Promise<void> {
 async function testFetchLyricsForceRefresh(): Promise<void> {
   if (!cachedLyricsSource) return; // Skip if no source available
   
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -202,13 +202,13 @@ async function testFetchLyricsForceRefresh(): Promise<void> {
 }
 
 // ============================================================================
-// POST /api/song/{id} action: search-lyrics Tests
+// POST /api/songs/{id} action: search-lyrics Tests
 // ============================================================================
 
 async function testSearchLyricsMissingQuery(): Promise<void> {
   // When no query is provided but song exists with title/artist, API auto-generates query
   // Test with a non-existent song that has no metadata
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/nonexistent_empty_song`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/nonexistent_empty_song`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -220,7 +220,7 @@ async function testSearchLyricsMissingQuery(): Promise<void> {
 }
 
 async function testSearchLyricsBasic(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -234,7 +234,7 @@ async function testSearchLyricsBasic(): Promise<void> {
 }
 
 async function testSearchLyricsResultStructure(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -254,11 +254,11 @@ async function testSearchLyricsResultStructure(): Promise<void> {
 }
 
 // ============================================================================
-// POST /api/song/{id} action: translate Tests
+// POST /api/songs/{id} action: translate Tests
 // ============================================================================
 
 async function testTranslateMissingLanguage(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -271,7 +271,7 @@ async function testTranslateMissingLanguage(): Promise<void> {
 
 async function testTranslateNoLyrics(): Promise<void> {
   // Test with a song that has no lyrics stored
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/nonexistentsong123`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/nonexistentsong123`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -287,7 +287,7 @@ async function testTranslateBasic(): Promise<void> {
   // Skip if no cached source (lyrics weren't fetched)
   if (!cachedLyricsSource) {
     // Try to translate without prior lyrics fetch - expect 404
-    const res = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+    const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -301,7 +301,7 @@ async function testTranslateBasic(): Promise<void> {
   }
 
   // Ensure lyrics are fetched first
-  await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+  await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -311,7 +311,7 @@ async function testTranslateBasic(): Promise<void> {
   });
 
   // Now request translation
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -333,7 +333,7 @@ async function testTranslateBasic(): Promise<void> {
 
 async function testTranslateCacheHit(): Promise<void> {
   // First request
-  const res1 = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+  const res1 = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -344,7 +344,7 @@ async function testTranslateCacheHit(): Promise<void> {
 
   if (res1.status === 200) {
     // Second request should hit cache (check via 'cached' field in response)
-    const res2 = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`, {
+    const res2 = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -360,11 +360,11 @@ async function testTranslateCacheHit(): Promise<void> {
 }
 
 // ============================================================================
-// POST /api/song/{id} action: furigana Tests
+// POST /api/songs/{id} action: furigana Tests
 // ============================================================================
 
 async function testFuriganaNoLyrics(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/nonexistentsong456`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/nonexistentsong456`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -380,7 +380,7 @@ async function testFuriganaResponseStructure(): Promise<void> {
   const japaneseSongId = "test_japanese_song";
   
   // First, try to fetch lyrics for a Japanese song
-  await fetchWithOrigin(`${BASE_URL}/api/song/${japaneseSongId}`, {
+  await fetchWithOrigin(`${BASE_URL}/api/songs/${japaneseSongId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -392,7 +392,7 @@ async function testFuriganaResponseStructure(): Promise<void> {
     }),
   });
 
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/${japaneseSongId}`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${japaneseSongId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -412,11 +412,11 @@ async function testFuriganaResponseStructure(): Promise<void> {
 }
 
 // ============================================================================
-// POST /api/song (index) Tests
+// POST /api/songs (index) Tests
 // ============================================================================
 
 async function testIndexGetAllowed(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs`, {
     method: "GET",
   });
   // GET lists all songs (200)
@@ -427,7 +427,7 @@ async function testIndexGetAllowed(): Promise<void> {
 
 async function testIndexPostRequiresAuth(): Promise<void> {
   // POST to index requires authentication
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -441,7 +441,7 @@ async function testIndexPostRequiresAuth(): Promise<void> {
 
 async function testIndexInvalidBodyReturnsError(): Promise<void> {
   // Even with invalid JSON, should return auth error first (401) since auth is checked before body parsing
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: "invalid json",
@@ -451,14 +451,14 @@ async function testIndexInvalidBodyReturnsError(): Promise<void> {
 }
 
 // ============================================================================
-// GET /api/song/{id} Tests (using existing song)
+// GET /api/songs/{id} Tests (using existing song)
 // ============================================================================
 
 async function testGetSongWithLyrics(): Promise<void> {
   // If we've fetched lyrics for TEST_SONG_ID, we should be able to get it
   if (!cachedLyricsSource) return; // Skip if no lyrics were fetched
   
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/${TEST_SONG_ID}`);
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`);
   // May or may not exist depending on prior tests
   if (res.status === 200) {
     const data = await res.json();
@@ -469,14 +469,14 @@ async function testGetSongWithLyrics(): Promise<void> {
 
 async function testGetSongResponseStructure(): Promise<void> {
   // Try to get any existing song from the index
-  const indexRes = await fetchWithOrigin(`${BASE_URL}/api/song`);
+  const indexRes = await fetchWithOrigin(`${BASE_URL}/api/songs`);
   if (indexRes.status !== 200) return;
   
   const indexData = await indexRes.json();
   if (!indexData.songs || indexData.songs.length === 0) return;
   
   const existingSong = indexData.songs[0];
-  const res = await fetchWithOrigin(`${BASE_URL}/api/song/${existingSong.id}`);
+  const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${existingSong.id}`);
   if (res.status === 200) {
     const data = await res.json();
     assert("id" in data, "Response should have id");
@@ -492,18 +492,18 @@ export async function runSongTests(): Promise<{ passed: number; failed: number }
   console.log(section("song (unified API)"));
   clearResults();
 
-  console.log("\n  GET /api/song/{id}\n");
+  console.log("\n  GET /api/songs/{id}\n");
   await runTest("GET non-existent song returns 404", testGetNonexistentSong);
   await runTest("OPTIONS request (CORS preflight)", testGetOptionsRequest);
   await runTest("GET without ID (index)", testGetMissingId);
 
-  console.log("\n  POST /api/song/{id} action: search-lyrics\n");
+  console.log("\n  POST /api/songs/{id} action: search-lyrics\n");
   // Run search first to populate cachedLyricsSource
   await runTest("Missing query", testSearchLyricsMissingQuery);
   await runTest("Basic search", testSearchLyricsBasic);
   await runTest("Result structure", testSearchLyricsResultStructure);
 
-  console.log("\n  POST /api/song/{id} action: fetch-lyrics\n");
+  console.log("\n  POST /api/songs/{id} action: fetch-lyrics\n");
   await runTest("Invalid JSON body", testFetchLyricsInvalidBody);
   await runTest("Missing lyricsSource (non-existent song)", testFetchLyricsMissingSource);
   await runTest("Fetch lyrics with searched source", testFetchLyricsWithSearchedSource);
@@ -511,22 +511,22 @@ export async function runSongTests(): Promise<{ passed: number; failed: number }
   await runTest("Cache hit", testFetchLyricsCacheHit);
   await runTest("Force refresh", testFetchLyricsForceRefresh);
 
-  console.log("\n  POST /api/song/{id} action: translate\n");
+  console.log("\n  POST /api/songs/{id} action: translate\n");
   await runTest("Missing language", testTranslateMissingLanguage);
   await runTest("Translate non-existent song", testTranslateNoLyrics);
   await runTest("Basic translation", testTranslateBasic);
   await runTest("Translation cache hit", testTranslateCacheHit);
 
-  console.log("\n  POST /api/song/{id} action: furigana\n");
+  console.log("\n  POST /api/songs/{id} action: furigana\n");
   await runTest("Furigana non-existent song", testFuriganaNoLyrics);
   await runTest("Furigana response structure", testFuriganaResponseStructure);
 
-  console.log("\n  POST /api/song (index)\n");
+  console.log("\n  POST /api/songs (index)\n");
   await runTest("GET method returns songs list", testIndexGetAllowed);
   await runTest("POST requires authentication", testIndexPostRequiresAuth);
   await runTest("Invalid body returns auth error", testIndexInvalidBodyReturnsError);
 
-  console.log("\n  GET /api/song/{id} (existing songs)\n");
+  console.log("\n  GET /api/songs/{id} (existing songs)\n");
   await runTest("Get song with lyrics", testGetSongWithLyrics);
   await runTest("Response structure", testGetSongResponseStructure);
 

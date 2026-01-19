@@ -48,8 +48,8 @@ graph LR
 
 | Endpoint | Purpose |
 |----------|---------|
-| `/api/song/` | Song library CRUD |
-| `/api/song/[id]` | Individual song operations |
+| `/api/songs/` | Song library CRUD |
+| `/api/songs/[id]` | Individual song operations |
 | `/api/speech` | Text-to-speech |
 | `/api/audio-transcribe` | Speech-to-text |
 | `/api/youtube-search` | YouTube music search |

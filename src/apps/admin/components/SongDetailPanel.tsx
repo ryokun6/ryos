@@ -97,7 +97,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     try {
       // Include lyrics, translations, furigana, soramimi to get full song data
       const response = await fetch(
-        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}?include=metadata,lyrics,translations,furigana,soramimi`),
+        getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}?include=metadata,lyrics,translations,furigana,soramimi`),
         {
           headers: {
             "Content-Type": "application/json",
@@ -129,7 +129,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     setIsForceRefreshing(true);
     try {
       const response = await fetch(
-        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}`),
+        getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
         {
           method: "POST",
           headers: {
@@ -172,7 +172,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     try {
       // First, fetch lyrics with the new source
       const lyricsResponse = await fetch(
-        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}`),
+        getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
         {
           method: "POST",
           headers: {
@@ -202,7 +202,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
       // Then, update song metadata with title/artist/album from the search result
       const metadataResponse = await fetch(
-        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}`),
+        getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
         {
           method: "POST",
           headers: {
@@ -242,7 +242,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
     try {
       const response = await fetch(
-        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}`),
+        getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
         {
           method: "POST",
           headers: {
@@ -383,7 +383,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     setIsUnsharing(true);
     try {
       const response = await fetch(
-        getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}`),
+        getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
         {
           method: "POST",
           headers: {

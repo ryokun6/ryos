@@ -1,9 +1,9 @@
 /**
  * Song List/Batch API Endpoint
  *
- * GET /api/song - List all songs
- * POST /api/song - Create new song or bulk import
- * DELETE /api/song - Delete all songs (admin only)
+ * GET /api/songs - List all songs
+ * POST /api/songs - Create new song or bulk import
+ * DELETE /api/songs - Delete all songs (admin only)
  *
  * Query params for GET:
  * - createdBy: Filter by creator username
@@ -198,7 +198,7 @@ export default async function handler(req: Request) {
   const requestId = generateRequestId();
   const startTime = Date.now();
 
-  console.log(`[${requestId}] ${req.method} /api/song`);
+  console.log(`[${requestId}] ${req.method} /api/songs`);
 
   // Handle CORS preflight
   if (req.method === "OPTIONS") {

@@ -1,9 +1,9 @@
 /**
  * Unified Song API Endpoint
  *
- * GET /api/song/{id} - Retrieve song data
- * POST /api/song/{id} - Update song metadata
- * DELETE /api/song/{id} - Delete song (admin only)
+ * GET /api/songs/{id} - Retrieve song data
+ * POST /api/songs/{id} - Update song metadata
+ * DELETE /api/songs/{id} - Delete song (admin only)
  *
  * Query params for GET:
  * - include: Comma-separated list of: metadata,lyrics,translations,furigana
@@ -130,7 +130,7 @@ export default async function handler(req: Request) {
   const pathParts = url.pathname.split("/");
   const songId = pathParts[pathParts.length - 1];
 
-  console.log(`[${requestId}] ${req.method} /api/song/${songId}`);
+  console.log(`[${requestId}] ${req.method} /api/songs/${songId}`);
 
   // Handle CORS preflight
   if (req.method === "OPTIONS") {

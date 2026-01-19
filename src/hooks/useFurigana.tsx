@@ -66,7 +66,7 @@ interface UseFuriganaReturn {
  * Hook for fetching and managing Japanese furigana annotations and other romanization
  * 
  * Handles:
- * - Fetching furigana from unified /api/song/{id} endpoint
+ * - Fetching furigana from unified /api/songs/{id} endpoint
  * - Rendering with furigana (hiragana over kanji)
  * - Converting furigana to romaji when enabled
  * - Korean romanization for mixed content
