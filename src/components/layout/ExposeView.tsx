@@ -62,6 +62,10 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
 
   // Play sounds when expose view opens/closes
   useEffect(() => {
+    if (prevIsOpen === undefined) {
+      return;
+    }
+
     if (isOpen !== prevIsOpen) {
       if (isOpen) {
         playOpenSound();
