@@ -437,13 +437,34 @@ export function useKaraokeLogic({
         clearTimeout(trackSwitchTimeoutRef.current);
       }
       
-      // Always start from the beginning (position 0)
-      // For tracks with negative lyrics offset, the lyrics will sync correctly
-      // since lyricsTime = playerTime + (lyricOffset / 1000)
-      setElapsedTime(0);
-      trackSwitchTimeoutRef.current = setTimeout(() => {
-        isTrackSwitchingRef.current = false;
-      }, 2000);
+      // Check if new track has an offset that requires auto-skip
+      const newTrack = tracks[currentIndex];
+      const lyricOffset = newTrack?.lyricOffset ?? 0;
+      
+      // For positive offset, auto-skip to where lyrics time = 0
+      // For negative offsets, starting from 0 avoids playback issues
+      if (lyricOffset > 0) {
+        // Positive offset - auto-skip forward
+        const seekTarget = lyricOffset / 1000;
+        setElapsedTime(seekTarget);
+        
+        trackSwitchTimeoutRef.current = setTimeout(() => {
+          isTrackSwitchingRef.current = false;
+          // Seek to the position where lyrics start at 0
+          const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
+          if (activePlayer) {
+            activePlayer.seekTo(seekTarget);
+            // Show status message for auto-skip
+            showStatus(`▶ ${Math.floor(seekTarget / 60)}:${String(Math.floor(seekTarget % 60)).padStart(2, "0")}`);
+          }
+        }, 2000);
+      } else {
+        // For negative or zero offset: start from beginning (no auto-skip)
+        setElapsedTime(0);
+        trackSwitchTimeoutRef.current = setTimeout(() => {
+          isTrackSwitchingRef.current = false;
+        }, 2000);
+      }
     }
     prevCurrentIndexRef.current = currentIndex;
   }, [currentIndex, tracks, isFullScreen, showStatus]);
