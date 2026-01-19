@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, type RefObject } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
@@ -9,29 +9,13 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { helpItems, appMetadata } from "..";
-import { useVideoStore, DEFAULT_VIDEOS } from "@/stores/useVideoStore";
+import { appMetadata } from "..";
 import { Button } from "@/components/ui/button";
-import { useSound, Sounds } from "@/hooks/useSound";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { toast } from "sonner";
-import { useAppStore } from "@/stores/useAppStore";
-import { getApiUrl } from "@/utils/platform";
 import { SeekBar } from "./SeekBar";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { getTranslatedAppName } from "@/utils/i18n";
-import { useTranslation } from "react-i18next";
-import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { VideoFullScreenPortal } from "./VideoFullScreenPortal";
-import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
-import { useCustomEventListener } from "@/hooks/useEventListener";
-
-interface Video {
-  id: string;
-  url: string;
-  title: string;
-  artist?: string;
-}
+import { useVideosLogic } from "../hooks/useVideosLogic";
 
 function AnimatedDigit({
   digit,
@@ -297,793 +281,86 @@ export function VideosAppComponent({
   onNavigateNext,
   onNavigatePrevious,
 }: AppProps<VideosInitialData>) {
-  const { t } = useTranslation();
-  const translatedHelpItems = useTranslatedHelpItems("videos", helpItems);
-  const { play: playVideoTape } = useSound(Sounds.VIDEO_TAPE);
-  const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
-  const videos = useVideoStore((s) => s.videos);
-  const setVideos = useVideoStore((s) => s.setVideos);
-  const currentVideoId = useVideoStore((s) => s.currentVideoId);
-  const setCurrentVideoId = useVideoStore((s) => s.setCurrentVideoId);
-  const getCurrentIndex = useVideoStore((s) => s.getCurrentIndex);
-  const getCurrentVideo = useVideoStore((s) => s.getCurrentVideo);
-
-  // Safe setter that ensures currentVideoId is valid
-  const safeSetCurrentVideoId = (videoId: string | null) => {
-    // Get fresh state from store to avoid stale closure issues
-    const currentVideos = useVideoStore.getState().videos;
-    console.log(
-      `[Videos] safeSetCurrentVideoId called with: ${videoId}. Videos in store: ${currentVideos.length}`
-    );
-
-    if (!videoId || currentVideos.length === 0) {
-      const fallbackId = currentVideos.length > 0 ? currentVideos[0].id : null;
-      console.log(
-        `[Videos] No videoId or empty videos, setting to fallback: ${fallbackId}`
-      );
-      setCurrentVideoId(fallbackId);
-      return;
-    }
-
-    const validVideo = currentVideos.find((v) => v.id === videoId);
-    const resultId = validVideo
-      ? videoId
-      : currentVideos.length > 0
-      ? currentVideos[0].id
-      : null;
-    console.log(
-      `[Videos] Video ${videoId} ${
-        validVideo ? "found" : "NOT FOUND"
-      } in store. Setting currentVideoId to: ${resultId}`
-    );
-    setCurrentVideoId(resultId);
-  };
-  const loopCurrent = useVideoStore((s) => s.loopCurrent);
-  const setLoopCurrent = useVideoStore((s) => s.setLoopCurrent);
-  const loopAll = useVideoStore((s) => s.loopAll);
-  const setLoopAll = useVideoStore((s) => s.setLoopAll);
-  const isShuffled = useVideoStore((s) => s.isShuffled);
-  const setIsShuffled = useVideoStore((s) => s.setIsShuffled);
-  const isPlaying = useVideoStore((s) => s.isPlaying);
-  const togglePlayStore = useVideoStore((s) => s.togglePlay);
-  const setIsPlaying = useVideoStore((s) => s.setIsPlaying);
-  const [animationDirection, setAnimationDirection] = useState<"next" | "prev">(
-    "next"
-  );
-  const [originalOrder, setOriginalOrder] = useState<Video[]>(videos);
-  const [urlInput, setUrlInput] = useState("");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
-  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
-  const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
-  const [isConfirmResetOpen, setIsConfirmResetOpen] = useState(false);
-  const [isAddingVideo, setIsAddingVideo] = useState(false);
-  const playerRef = useRef<ReactPlayer | null>(null);
-  const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
-  const [isFullScreen, setIsFullScreen] = useState(false);
-
-  // Track switching state to prevent race conditions during fullscreen transitions
-  // Similar pattern used in iPod/Karaoke apps to handle mobile Safari issues
-  const isTrackSwitchingRef = useRef(false);
-  const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Helper to mark track/fullscreen switch start and schedule end
-  const startTrackSwitch = useCallback(() => {
-    isTrackSwitchingRef.current = true;
-    if (trackSwitchTimeoutRef.current) {
-      clearTimeout(trackSwitchTimeoutRef.current);
-    }
-    // Allow 2 seconds for YouTube to load before accepting play/pause events
-    trackSwitchTimeoutRef.current = setTimeout(() => {
-      isTrackSwitchingRef.current = false;
-    }, 2000);
-  }, []);
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [playedSeconds, setPlayedSeconds] = useState(0);
-  const [isVideoHovered, setIsVideoHovered] = useState(false);
-  const [isDraggingSeek, setIsDraggingSeek] = useState(false);
-  const [dragSeekTime, setDragSeekTime] = useState(0);
-
-  // Ref to detect paused -> playing transitions so we can auto-show the SeekBar
-  const prevIsPlayingRef = useRef(isPlaying);
-  const autoShowHoverResetRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    const wasPlaying = prevIsPlayingRef.current;
-    if (!wasPlaying && isPlaying) {
-      // Just started playing -> force-show SeekBar briefly
-      setIsVideoHovered(true);
-      if (autoShowHoverResetRef.current) {
-        clearTimeout(autoShowHoverResetRef.current);
-      }
-      // Release the hover flag shortly after so auto-dismiss can take over
-      autoShowHoverResetRef.current = setTimeout(() => {
-        setIsVideoHovered(false);
-      }, 150); // small delay; SeekBar sets its own auto-dismiss timer on show
-    }
-    prevIsPlayingRef.current = isPlaying;
-    return () => {
-      if (autoShowHoverResetRef.current) {
-        clearTimeout(autoShowHoverResetRef.current);
-        autoShowHoverResetRef.current = null;
-      }
-    };
-  }, [isPlaying]);
-
-  // Track pointer/touch interactions on the video area so we can distinguish tap vs swipe on mobile.
-  // If the user swipes (moves more than a small threshold), we'll reveal the SeekBar but NOT toggle play/pause.
-  // If the user taps (no significant movement), we'll toggle play/pause as before.
-  const touchGestureRef = useRef<{
-    startX: number;
-    startY: number;
-    moved: boolean;
-    pointerId: number | null;
-  } | null>(null);
-  const SWIPE_MOVE_THRESHOLD = 10; // px
-
-  const handleOverlayPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "touch") {
-      touchGestureRef.current = {
-        startX: e.clientX,
-        startY: e.clientY,
-        moved: false,
-        pointerId: e.pointerId,
-      };
-      // Show the seekbar immediately on touch start (user intent to interact)
-      setIsVideoHovered(true);
-    }
-  };
-
-  const handleOverlayPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== "touch" || !touchGestureRef.current) return;
-    const dx = Math.abs(e.clientX - touchGestureRef.current.startX);
-    const dy = Math.abs(e.clientY - touchGestureRef.current.startY);
-    if (
-      !touchGestureRef.current.moved &&
-      (dx > SWIPE_MOVE_THRESHOLD || dy > SWIPE_MOVE_THRESHOLD)
-    ) {
-      touchGestureRef.current.moved = true;
-      // Ensure seekbar visible while swiping
-      setIsVideoHovered(true);
-    }
-  };
-
-  const handleOverlayPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "touch") {
-      // Prevent the synthetic mouse click that usually follows a touch so we don't double-trigger.
-      e.preventDefault();
-      e.stopPropagation();
-      const wasSwipe = touchGestureRef.current?.moved;
-      touchGestureRef.current = null;
-      // Hide hover flag (SeekBar will auto-dismiss on its own timer)
-      setIsVideoHovered(false);
-      if (!wasSwipe) {
-        // Treat as tap -> toggle play/pause
-        togglePlay();
-      } else {
-        // Swipe: just show seekbar (already shown); do not toggle play/pause
-        // No-op here.
-      }
-      return;
-    }
-
-    // Mouse / pen: behave like a normal click toggle
-    togglePlay();
-  };
-
-  const handleOverlayPointerCancel = () => {
-    // Reset and allow SeekBar to dismiss
-    touchGestureRef.current = null;
-    setIsVideoHovered(false);
-  };
-
-  // --- App Store hooks ---
-  const bringToForeground = useAppStore((state) => state.bringToForeground);
-  const clearInstanceInitialData = useAppStore(
-    (state) => state.clearInstanceInitialData
-  );
-
-  // --- Prevent unwanted autoplay on Mobile Safari ---
-  const hasAutoplayCheckedRef = useRef(false);
-  // Track the last processed videoId to avoid duplicates
-  const lastProcessedVideoIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (hasAutoplayCheckedRef.current) return;
-
-    const ua = navigator.userAgent;
-    const isIOS = /iP(hone|od|ad)/.test(ua);
-    const isSafari =
-      /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
-
-    if (isPlaying && (isIOS || isSafari)) {
-      setIsPlaying(false);
-    }
-
-    hasAutoplayCheckedRef.current = true;
-    // dependency array intentionally empty to run once
-  }, [isPlaying, setIsPlaying]);
-
-  // Ensure currentVideoId is valid when videos change
-  useEffect(() => {
-    if (
-      videos.length > 0 &&
-      currentVideoId &&
-      !videos.find((v) => v.id === currentVideoId)
-    ) {
-      console.warn(
-        `[Videos] currentVideoId ${currentVideoId} not found in videos, resetting to first video`
-      );
-      safeSetCurrentVideoId(videos[0].id);
-    } else if (videos.length > 0 && !currentVideoId) {
-      safeSetCurrentVideoId(videos[0].id);
-    }
-  }, [videos, currentVideoId, safeSetCurrentVideoId]);
-
-  // Function to show status message
-  const showStatus = (message: string) => {
-    setStatusMessage(message);
-    if (statusTimeoutRef.current) {
-      clearTimeout(statusTimeoutRef.current);
-      statusTimeoutRef.current = null;
-    }
-    statusTimeoutRef.current = setTimeout(() => {
-      setStatusMessage(null);
-    }, 2000);
-  };
-
-  // Update animation direction before changing currentVideoId
-  const updateCurrentVideoId = (
-    videoId: string | null,
-    direction: "next" | "prev"
-  ) => {
-    setAnimationDirection(direction);
-    safeSetCurrentVideoId(videoId);
-  };
-
-  const nextVideo = () => {
-    if (videos.length === 0) return;
-    playButtonClick();
-    startTrackSwitch(); // Guard against race conditions during track switch
-
-    const currentIndex = getCurrentIndex();
-    if (currentIndex === videos.length - 1) {
-      if (loopAll) {
-        showStatus(t("apps.videos.status.repeatingPlaylist"));
-        updateCurrentVideoId(videos[0].id, "next");
-      }
-      // If not looping, stay on current video
-    } else {
-      showStatus(t("apps.videos.status.next"));
-      updateCurrentVideoId(videos[currentIndex + 1].id, "next");
-    }
-    setIsPlaying(true);
-  };
-
-  const previousVideo = () => {
-    if (videos.length === 0) return;
-    playButtonClick();
-    startTrackSwitch(); // Guard against race conditions during track switch
-
-    const currentIndex = getCurrentIndex();
-    if (currentIndex === 0) {
-      if (loopAll) {
-        showStatus(t("apps.videos.status.repeatingPlaylist"));
-        updateCurrentVideoId(videos[videos.length - 1].id, "prev");
-      }
-      // If not looping, stay on current video
-    } else {
-      showStatus(t("apps.videos.status.prev"));
-      updateCurrentVideoId(videos[currentIndex - 1].id, "prev");
-    }
-    setIsPlaying(true);
-  };
-
-  // Reset elapsed time when changing tracks
-  useEffect(() => {
-    setElapsedTime(0);
-  }, [currentVideoId]);
-
-  // Replace the existing useEffect for shuffle initialization
-  useEffect(() => {
-    if (isShuffled) {
-      const shuffled = [...videos].sort(() => Math.random() - 0.5);
-      setVideos(shuffled);
-    } else {
-      setVideos([...originalOrder]);
-    }
-  }, [isShuffled]); // Run when shuffle state changes
-
-  // Keep original order in sync with new additions
-  useEffect(() => {
-    if (!isShuffled) {
-      setOriginalOrder(videos);
-    }
-  }, [videos, isShuffled]);
-
-  const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${String(minutes).padStart(2, "0")}:${String(
-      remainingSeconds
-    ).padStart(2, "0")}`;
-  };
-
-  const extractVideoId = (url: string): string | null => {
-    const regExp =
-      /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-    const match = url.match(regExp);
-    return match && match[7].length === 11 ? match[7] : null;
-  };
-
-  const addVideo = async (url: string) => {
-    setIsAddingVideo(true);
-    try {
-      const videoId = extractVideoId(url);
-      if (!videoId) {
-        throw new Error("Invalid YouTube URL");
-      }
-
-      // 1. Fetch initial info from oEmbed
-      const oembedResponse = await fetch(
-        `https://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=${videoId}&format=json`
-      );
-      if (!oembedResponse.ok) {
-        throw new Error(
-          `Failed to fetch video info (${oembedResponse.status}). Please check the YouTube URL.`
-        );
-      }
-      const oembedData = await oembedResponse.json();
-      const rawTitle = oembedData.title || `Video ID: ${videoId}`;
-      const authorName = oembedData.author_name;
-
-      const videoInfo: Partial<Video> = {
-        title: rawTitle,
-        artist: undefined,
-      };
-
-      try {
-        // 2. Call our API to parse the title using AI
-        const parseResponse = await fetch(getApiUrl("/api/parse-title"), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: rawTitle,
-            author_name: authorName,
-          }),
-        });
-
-        if (parseResponse.ok) {
-          const parsedData = await parseResponse.json();
-          videoInfo.title = parsedData.title || rawTitle;
-          videoInfo.artist = parsedData.artist;
-        } else {
-          console.warn(
-            "Failed to parse title with AI, using raw title:",
-            await parseResponse.text()
-          );
-        }
-      } catch (parseError) {
-        console.warn(
-          "Error calling parse-title API, using raw title:",
-          parseError
-        );
-      }
-
-      const newVideo: Video = {
-        id: videoId,
-        url,
-        title: videoInfo.title!,
-        artist: videoInfo.artist,
-      };
-
-      // Add video to store
-      const currentVideos = useVideoStore.getState().videos;
-      const newVideos = [...currentVideos, newVideo];
-      console.log(
-        `[Videos] Adding video ${newVideo.id} (${newVideo.title}). Videos count: ${currentVideos.length} -> ${newVideos.length}`
-      );
-      setVideos(newVideos);
-
-      // Update original order if not shuffled
-      if (!isShuffled) {
-        setOriginalOrder(newVideos);
-      }
-
-      // Set current video to the newly added video
-      console.log(
-        `[Videos] Setting current video to newly added: ${newVideo.id}`
-      );
-      safeSetCurrentVideoId(newVideo.id);
-      setIsPlaying(true);
-      console.log(
-        `[Videos] Video added successfully. Current video should be: ${newVideo.id}`
-      );
-
-      showStatus(t("apps.videos.status.videoAdded"));
-
-      setUrlInput("");
-      setIsAddDialogOpen(false);
-    } catch (error) {
-      console.error("Failed to add video:", error);
-      showStatus(
-        t("apps.videos.status.errorAdding", {
-          error: error instanceof Error ? error.message : t("apps.videos.status.unknownError"),
-        })
-      );
-      // Reset state on error to prevent inconsistent state
-      if (videos.length > 0) {
-        safeSetCurrentVideoId(videos[videos.length - 1].id);
-      }
-      setIsPlaying(false);
-    } finally {
-      setIsAddingVideo(false);
-    }
-  };
-
-  // --- Simplified: Function to add and play video by ID ---
-  const handleAddAndPlayVideoById = async (videoId: string) => {
-    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    try {
-      await addVideo(youtubeUrl); // addVideo sets current index and plays
-
-      // Check if on iOS Safari and show appropriate status message
-      const ua = navigator.userAgent;
-      const isIOS = /iP(hone|od|ad)/.test(ua);
-      const isSafari =
-        /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
-
-      if (isIOS && isSafari) {
-        showStatus(t("apps.videos.status.pressToPlay"));
-      }
-    } catch (error) {
-      console.error(
-        `[Videos] Error adding video for videoId ${videoId}:`,
-        error
-      );
-      showStatus(t("apps.videos.status.failedToAddVideo"));
-      throw error; // Re-throw to let caller handle
-    }
-  };
-
-  // --- Simplified: Function to process video ID (find or add/play) ---
-  const processVideoId = useCallback(
-    async (videoId: string) => {
-      try {
-        // Validate videoId format
-        if (!videoId || typeof videoId !== "string" || videoId.length !== 11) {
-          throw new Error(`Invalid video ID format: ${videoId}`);
-        }
-
-        const currentVideos = useVideoStore.getState().videos;
-        const existingVideoIndex = currentVideos.findIndex(
-          (video) => video.id === videoId
-        );
-
-        // --- Check for mobile Safari BEFORE setting playing state ---
-        const ua = navigator.userAgent;
-        const isIOS = /iP(hone|od|ad)/.test(ua);
-        const isSafari =
-          /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua);
-        const shouldAutoplay = !(isIOS || isSafari);
-        // --- End check ---
-
-        if (existingVideoIndex !== -1) {
-          console.log(
-            `[Videos] Video ID ${videoId} found in playlist. Playing.`
-          );
-          safeSetCurrentVideoId(videoId);
-          // --- Only set playing if allowed ---
-          if (shouldAutoplay) {
-            setIsPlaying(true);
-          }
-          // Optionally show status
-          showStatus(t("apps.videos.status.playing", { title: currentVideos[existingVideoIndex].title }));
-        } else {
-          console.log(
-            `[Videos] Video ID ${videoId} not found. Adding and playing.`
-          );
-          await handleAddAndPlayVideoById(videoId);
-          // Note: handleAddAndPlayVideoById already sets isPlaying to true
-          // Only need to handle mobile Safari case here
-          if (!shouldAutoplay) {
-            setIsPlaying(false);
-          }
-        }
-      } catch (error) {
-        console.error(`[Videos] Error processing video ID ${videoId}:`, error);
-        showStatus(t("apps.videos.status.failedToProcessVideo", { videoId }));
-        throw error; // Re-throw to let caller handle
-      }
-    },
-    [safeSetCurrentVideoId, setIsPlaying, handleAddAndPlayVideoById, showStatus, t]
-  );
-
-  // --- Simplified: Effect for initial data on mount ---
-  useEffect(() => {
-    if (
-      isWindowOpen &&
-      initialData?.videoId &&
-      typeof initialData.videoId === "string"
-    ) {
-      // Skip if this videoId has already been processed
-      if (lastProcessedVideoIdRef.current === initialData.videoId) return;
-      const videoIdToProcess = initialData.videoId;
-      console.log(
-        `[Videos] Processing initialData.videoId on mount: ${videoIdToProcess}`
-      );
-
-      toast.info(
-        <>
-          {t("apps.videos.dialogs.openedSharedVideo")}{" "}
-          <span className="font-chicago">⏯</span>{" "}
-          {t("apps.videos.dialogs.toStartPlaying")}
-        </>
-      );
-
-      // Process immediately without delay and with better error handling
-      processVideoId(videoIdToProcess)
-        .then(() => {
-          // Use instanceId if available (new system), otherwise fallback to appId (legacy)
-          if (instanceId) {
-            clearInstanceInitialData(instanceId);
-          }
-          console.log(
-            `[Videos] Successfully processed and cleared initialData for ${videoIdToProcess}`
-          );
-        })
-        .catch((error) => {
-          console.error(
-            `[Videos] Error processing initial videoId ${videoIdToProcess}:`,
-            error
-          );
-          toast.error(t("apps.videos.dialogs.failedToLoadSharedVideo"), {
-            description: t("apps.videos.dialogs.videoId", { videoId: videoIdToProcess }),
-          });
-        });
-
-      // Mark this videoId as processed
-      lastProcessedVideoIdRef.current = initialData.videoId;
-    }
-  }, [
+  const {
+    t,
+    translatedHelpItems,
+    videos,
+    setVideos,
+    currentVideoId,
+    safeSetCurrentVideoId,
+    getCurrentIndex,
+    getCurrentVideo,
+    loopCurrent,
+    setLoopCurrent,
+    loopAll,
+    setLoopAll,
+    isShuffled,
+    isPlaying,
+    setIsPlaying,
+    animationDirection,
+    setOriginalOrder,
+    urlInput,
+    setUrlInput,
+    isAddDialogOpen,
+    setIsAddDialogOpen,
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+    isConfirmClearOpen,
+    setIsConfirmClearOpen,
+    isConfirmResetOpen,
+    setIsConfirmResetOpen,
+    isAddingVideo,
+    isFullScreen,
+    elapsedTime,
+    statusMessage,
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+    duration,
+    playedSeconds,
+    isVideoHovered,
+    setIsVideoHovered,
+    isDraggingSeek,
+    setIsDraggingSeek,
+    dragSeekTime,
+    setDragSeekTime,
+    playerRef,
+    fullScreenPlayerRef,
+    isXpTheme,
+    isMacOSTheme,
+    masterVolume,
+    nextVideo,
+    previousVideo,
+    togglePlay,
+    toggleShuffle,
+    handleVideoEnd,
+    handleProgress,
+    handleDuration,
+    handleSeek,
+    handlePlay,
+    handlePause,
+    handleMainPlayerPause,
+    handleReady,
+    handleFullScreen,
+    handleCloseFullScreen,
+    toggleFullScreen,
+    handleShareVideo,
+    videosGenerateShareUrl,
+    addVideo,
+    showStatus,
+    formatTime,
+    handleOverlayPointerDown,
+    handleOverlayPointerMove,
+    handleOverlayPointerUp,
+    handleOverlayPointerCancel,
+    DEFAULT_VIDEOS,
+  } = useVideosLogic({
     isWindowOpen,
+    isForeground,
     initialData,
-    processVideoId,
-    clearInstanceInitialData,
     instanceId,
-  ]);
-
-  // --- NEW: Effect for updateApp event (when app is already open) ---
-  useCustomEventListener<{ appId: string; initialData?: { videoId?: string } }>(
-    "updateApp",
-    (event) => {
-      if (
-        event.detail.appId === "videos" &&
-        event.detail.initialData?.videoId
-      ) {
-        // Skip if this videoId has already been processed
-        if (
-          lastProcessedVideoIdRef.current === event.detail.initialData.videoId
-        )
-          return;
-        const videoId = event.detail.initialData.videoId;
-        console.log(
-          `[Videos] Received updateApp event with videoId: ${videoId}`
-        );
-        bringToForeground("videos");
-        toast.info(
-          <>
-            {t("apps.videos.dialogs.openedSharedVideo")}{" "}
-            <span className="font-chicago">⏯</span>{" "}
-            {t("apps.videos.dialogs.toStartPlaying")}
-          </>
-        );
-        processVideoId(videoId).catch((error) => {
-          console.error(
-            `[Videos] Error processing videoId ${videoId} from updateApp event:`,
-            error
-          );
-          toast.error(t("apps.videos.dialogs.failedToLoadSharedVideo"), {
-            description: t("apps.videos.dialogs.videoId", { videoId }),
-          });
-        });
-        // Mark this videoId as processed
-        lastProcessedVideoIdRef.current = event.detail.initialData.videoId;
-      }
-    }
-  );
-
-  const togglePlay = () => {
-    togglePlayStore();
-    showStatus(!isPlaying ? t("apps.videos.status.play") : t("apps.videos.status.paused"));
-    playVideoTape();
-  };
-
-  const toggleShuffle = () => {
-    setIsShuffled(!isShuffled);
-    showStatus(isShuffled ? t("apps.videos.status.shuffleOff") : t("apps.videos.status.shuffleOn"));
-  };
-
-  const handleVideoEnd = () => {
-    if (loopCurrent) {
-      playerRef.current?.seekTo(0);
-      setIsPlaying(true);
-    } else {
-      nextVideo();
-    }
-  };
-
-  const handleProgress = useCallback((state: { playedSeconds: number }) => {
-    setPlayedSeconds(state.playedSeconds);
-    setElapsedTime(Math.floor(state.playedSeconds));
-  }, []);
-
-  const handleDuration = useCallback((duration: number) => {
-    setDuration(duration);
-  }, []);
-
-  const handleSeek = (time: number) => {
-    const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
-    if (activePlayer) {
-      activePlayer.seekTo(time, "seconds");
-    }
-  };
-
-  // Add new handlers for YouTube player state sync
-  // These respect the track switching guard to prevent race conditions on mobile Safari
-  const handlePlay = useCallback(() => {
-    // Don't update state if we're in the middle of a track/fullscreen switch
-    if (isTrackSwitchingRef.current) {
-      return;
-    }
-    setIsPlaying(true);
-  }, [setIsPlaying]);
-
-  const handlePause = useCallback(() => {
-    // Don't update state if we're in the middle of a track/fullscreen switch
-    if (isTrackSwitchingRef.current) {
-      return;
-    }
-    setIsPlaying(false);
-  }, [setIsPlaying]);
-
-  // Main player pause handler - ignore pause when switching to fullscreen
-  const handleMainPlayerPause = useCallback(() => {
-    // Don't set isPlaying to false if we're in fullscreen mode or switching tracks
-    // (the pause was triggered by switching players, not user action)
-    if (!isFullScreen && !isTrackSwitchingRef.current) {
-      setIsPlaying(false);
-    }
-  }, [isFullScreen, setIsPlaying]);
-
-  const handleReady = () => {
-    // Always start from beginning but don't auto-play
-    playerRef.current?.seekTo(0);
-    // setIsPlaying(false);
-  };
-
-  const handleFullScreen = () => {
-    // Mark as track switching to prevent spurious play/pause events during sync
-    startTrackSwitch();
-    setIsFullScreen(true);
-    showStatus(t("apps.videos.status.fullscreen"));
-  };
-
-  const handleCloseFullScreen = () => {
-    // Mark as track switching to prevent spurious play/pause events during sync
-    startTrackSwitch();
-    setIsFullScreen(false);
-    // Sync time from fullscreen player to regular player
-    if (fullScreenPlayerRef.current && playerRef.current) {
-      const currentTime = fullScreenPlayerRef.current.getCurrentTime();
-      const wasPlaying = isPlaying;
-      playerRef.current.seekTo(currentTime, "seconds");
-      // Ensure playback state is preserved after sync
-      if (wasPlaying) {
-        setTimeout(() => {
-          setIsPlaying(true);
-        }, 100);
-      }
-    }
-    // Exit browser fullscreen if active
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch((err) => {
-        console.error("Error exiting fullscreen:", err);
-      });
-    }
-  };
-
-  const toggleFullScreen = () => {
-    if (isFullScreen) {
-      handleCloseFullScreen();
-    } else {
-      handleFullScreen();
-    }
-  };
-
-  // --- NEW: Handler to open share dialog ---
-  const handleShareVideo = () => {
-    if (videos.length > 0 && currentVideoId) {
-      setIsShareDialogOpen(true);
-    }
-  };
-
-  // --- NEW: Generate share URL function ---
-  const videosGenerateShareUrl = (videoId: string): string => {
-    return `${window.location.origin}/videos/${videoId}`;
-  };
-
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (statusTimeoutRef.current) {
-        clearTimeout(statusTimeoutRef.current);
-        statusTimeoutRef.current = null;
-      }
-      if (trackSwitchTimeoutRef.current) {
-        clearTimeout(trackSwitchTimeoutRef.current);
-        trackSwitchTimeoutRef.current = null;
-      }
-    };
-  }, []);
-
-  // Sync playback position when entering fullscreen (similar to Karaoke app)
-  const prevFullScreenRef = useRef(isFullScreen);
-  useEffect(() => {
-    if (isFullScreen && !prevFullScreenRef.current) {
-      // Just entered fullscreen - sync position from main player to fullscreen player
-      const currentTime = playerRef.current?.getCurrentTime() || playedSeconds;
-      const wasPlaying = isPlaying;
-
-      // Wait for fullscreen player to be ready before seeking
-      const checkAndSync = () => {
-        const internalPlayer = fullScreenPlayerRef.current?.getInternalPlayer?.();
-        if (internalPlayer && typeof internalPlayer.getPlayerState === "function") {
-          const playerState = internalPlayer.getPlayerState();
-          // YouTube player states: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (video cued)
-          // Wait until player is past the unstarted state
-          if (playerState !== -1) {
-            fullScreenPlayerRef.current?.seekTo(currentTime, "seconds");
-            if (wasPlaying && typeof internalPlayer.playVideo === "function") {
-              internalPlayer.playVideo();
-            }
-            // End track switch guard after sync complete
-            if (trackSwitchTimeoutRef.current) {
-              clearTimeout(trackSwitchTimeoutRef.current);
-            }
-            trackSwitchTimeoutRef.current = setTimeout(() => {
-              isTrackSwitchingRef.current = false;
-            }, 500);
-            return;
-          }
-        }
-        // Player not ready yet, retry
-        setTimeout(checkAndSync, 100);
-      };
-      setTimeout(checkAndSync, 100);
-    }
-    prevFullScreenRef.current = isFullScreen;
-  }, [isFullScreen, playedSeconds, isPlaying]);
-
-  // Listen for App Menu fullscreen toggle
-  useCustomEventListener<{ appId: string; instanceId: string }>(
-    "toggleAppFullScreen",
-    (event) => {
-      if (event.detail.instanceId === instanceId) {
-        toggleFullScreen();
-      }
-    }
-  );
-
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOSTheme = currentTheme === "macosx";
-  const masterVolume = useAudioSettingsStore((state) => state.masterVolume);
+  });
 
   const menuBar = (
     <VideosMenuBar
@@ -1165,28 +442,28 @@ export function VideosAppComponent({
                       onReady={handleReady}
                       loop={loopCurrent}
                       playsinline
-                                config={{
-                                      youtube: {
-                                        playerVars: {
-                                          modestbranding: 1,
-                                          rel: 0,
-                                          showinfo: 0,
-                                          iv_load_policy: 3,
-                                          fs: 0,
-                                          disablekb: 1,
-                                          playsinline: 1,
-                                          autoplay: 0,
-                                          enablejsapi: 1,
-                                          // Origin for YouTube postMessage communication
-                                          // With tauri-plugin-localhost, Tauri now uses http://localhost which YouTube accepts
-                                          origin: window.location.origin,
-                                        },
-                                        // Required for Tauri: sets referrer policy on iframe to prevent YouTube Error 153
-                                        embedOptions: {
-                                          referrerPolicy: "strict-origin-when-cross-origin",
-                                        },
-                                      },
-                                    }}
+                      config={{
+                        youtube: {
+                          playerVars: {
+                            modestbranding: 1,
+                            rel: 0,
+                            showinfo: 0,
+                            iv_load_policy: 3,
+                            fs: 0,
+                            disablekb: 1,
+                            playsinline: 1,
+                            autoplay: 0,
+                            enablejsapi: 1,
+                            // Origin for YouTube postMessage communication
+                            // With tauri-plugin-localhost, Tauri now uses http://localhost which YouTube accepts
+                            origin: window.location.origin,
+                          },
+                          // Required for Tauri: sets referrer policy on iframe to prevent YouTube Error 153
+                          embedOptions: {
+                            referrerPolicy: "strict-origin-when-cross-origin",
+                          },
+                        },
+                      }}
                     />
                   )}
                   {/* White noise effect (z-10) */}
@@ -1218,7 +495,11 @@ export function VideosAppComponent({
                   {/* Pointer-interaction overlay for play/pause + swipe-to-show-seekbar (z-20) */}
                   <div
                     className="absolute inset-0 cursor-pointer z-20"
-                    aria-label={isPlaying ? t("apps.videos.menu.pause") : t("apps.videos.menu.play")}
+                    aria-label={
+                      isPlaying
+                        ? t("apps.videos.menu.pause")
+                        : t("apps.videos.menu.play")
+                    }
                     onPointerDown={handleOverlayPointerDown}
                     onPointerMove={handleOverlayPointerMove}
                     onPointerUp={handleOverlayPointerUp}
@@ -1356,7 +637,9 @@ export function VideosAppComponent({
                       disabled={videos.length === 0}
                       className="aqua-compact-wide font-chicago"
                     >
-                      <span className="translate-y-[2px] inline-block">{isPlaying ? "⏸" : "▶"}</span>
+                      <span className="translate-y-[2px] inline-block">
+                        {isPlaying ? "⏸" : "▶"}
+                      </span>
                     </Button>
                     <Button
                       onClick={nextVideo}
@@ -1399,7 +682,11 @@ export function VideosAppComponent({
                             ? "/assets/videos/pause.png"
                             : "/assets/videos/play.png"
                         }
-                        alt={isPlaying ? t("apps.videos.menu.pause") : t("apps.videos.menu.play")}
+                        alt={
+                          isPlaying
+                            ? t("apps.videos.menu.pause")
+                            : t("apps.videos.menu.play")
+                        }
                         width={50}
                         height={22}
                         className="pointer-events-none"
@@ -1580,7 +867,7 @@ export function VideosAppComponent({
           onReady={handleReady}
           loop={loopCurrent}
           volume={masterVolume}
-          playerRef={fullScreenPlayerRef as React.RefObject<ReactPlayer>}
+          playerRef={fullScreenPlayerRef as RefObject<ReactPlayer>}
           onSeek={handleSeek}
           onNext={nextVideo}
           onPrevious={previousVideo}
