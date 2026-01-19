@@ -205,6 +205,7 @@ export function useKaraokeLogic({
   // Track switching state to prevent race conditions
   const isTrackSwitchingRef = useRef(false);
   const trackSwitchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSeekTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Volume from audio settings store
   const { ipodVolume } = useAudioSettingsStoreShallow((state) => ({ ipodVolume: state.ipodVolume }));
@@ -436,34 +437,81 @@ export function useKaraokeLogic({
       if (trackSwitchTimeoutRef.current) {
         clearTimeout(trackSwitchTimeoutRef.current);
       }
+      if (autoSeekTimeoutRef.current) {
+        clearTimeout(autoSeekTimeoutRef.current);
+        autoSeekTimeoutRef.current = null;
+      }
       
       // Check if new track has a negative offset - if so, auto-skip to where lyrics start at 0
       const newTrack = tracks[currentIndex];
       const lyricOffset = newTrack?.lyricOffset ?? 0;
+      const endTrackSwitch = (delayMs: number) => {
+        if (trackSwitchTimeoutRef.current) {
+          clearTimeout(trackSwitchTimeoutRef.current);
+        }
+        if (delayMs <= 0) {
+          isTrackSwitchingRef.current = false;
+          return;
+        }
+        trackSwitchTimeoutRef.current = setTimeout(() => {
+          isTrackSwitchingRef.current = false;
+        }, delayMs);
+      };
       
       if (lyricOffset < 0) {
         // For negative offset, seek to the position where lyrics time = 0
         // Formula: lyricsTime = playerTime + (lyricOffset / 1000)
         // When lyricsTime = 0: playerTime = -lyricOffset / 1000
-        const seekTarget = -lyricOffset / 1000;
-        setElapsedTime(seekTarget);
-        
-        trackSwitchTimeoutRef.current = setTimeout(() => {
-          isTrackSwitchingRef.current = false;
-          // Seek to the position where lyrics start at 0
+        const seekTarget = Math.max(0, -lyricOffset / 1000);
+        const targetTrackId = newTrack?.id;
+        const startTime = Date.now();
+        const AUTO_SEEK_MAX_WAIT_MS = 8000;
+        const AUTO_SEEK_POLL_MS = 100;
+        setElapsedTime(0);
+
+        const attemptSeek = () => {
+          const currentTrackId = useKaraokeStore.getState().currentSongId;
+          if (targetTrackId && currentTrackId !== targetTrackId) return;
+
           const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
-          if (activePlayer) {
-            activePlayer.seekTo(seekTarget);
-            // Show status message for auto-skip
-            showStatus(`▶ ${Math.floor(seekTarget / 60)}:${String(Math.floor(seekTarget % 60)).padStart(2, "0")}`);
+          if (!activePlayer) {
+            if (Date.now() - startTime < AUTO_SEEK_MAX_WAIT_MS) {
+              autoSeekTimeoutRef.current = setTimeout(attemptSeek, AUTO_SEEK_POLL_MS);
+            } else {
+              endTrackSwitch(0);
+            }
+            return;
           }
-        }, 2000);
+
+          const internalPlayer = activePlayer.getInternalPlayer?.();
+          const playerState =
+            internalPlayer && typeof internalPlayer.getPlayerState === "function"
+              ? internalPlayer.getPlayerState()
+              : null;
+          const isReady = playerState === null || (playerState !== -1 && playerState !== 3 && playerState !== 5);
+          if (!isReady) {
+            if (Date.now() - startTime < AUTO_SEEK_MAX_WAIT_MS) {
+              autoSeekTimeoutRef.current = setTimeout(attemptSeek, AUTO_SEEK_POLL_MS);
+            } else {
+              endTrackSwitch(0);
+            }
+            return;
+          }
+
+          activePlayer.seekTo(seekTarget);
+          setElapsedTime(seekTarget);
+          // Show status message for auto-skip
+          showStatus(
+            `▶ ${Math.floor(seekTarget / 60)}:${String(Math.floor(seekTarget % 60)).padStart(2, "0")}`
+          );
+          endTrackSwitch(500);
+        };
+
+        attemptSeek();
       } else {
         // Normal case: start from beginning
         setElapsedTime(0);
-        trackSwitchTimeoutRef.current = setTimeout(() => {
-          isTrackSwitchingRef.current = false;
-        }, 2000);
+        endTrackSwitch(2000);
       }
     }
     prevCurrentIndexRef.current = currentIndex;
@@ -480,6 +528,9 @@ export function useKaraokeLogic({
       }
       if (trackSwitchTimeoutRef.current) {
         clearTimeout(trackSwitchTimeoutRef.current);
+      }
+      if (autoSeekTimeoutRef.current) {
+        clearTimeout(autoSeekTimeoutRef.current);
       }
     };
   }, []);
