@@ -7,7 +7,6 @@ import {
 } from "@/stores/useSynthStore";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useLatestRef } from "@/hooks/useLatestRef";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -210,19 +209,7 @@ export const useSynthLogic = ({
   const whiteKeys = allWhiteKeys.slice(startIndex, endIndex);
   const blackKeys = allBlackKeys.slice(startIndex, endIndex);
 
-  // Determine default label type based on screen size
-  const isMobile = useMediaQuery("(max-width: 768px)");
   // Use labelType from persisted store
-
-  // Update label type when screen size changes - now using store
-  useEffect(() => {
-    if (!isWindowOpen) return;
-
-    // Only update to default on mobile if no existing preference
-    if (isMobile) {
-      setLabelType("off");
-    }
-  }, [isMobile, isWindowOpen]);
 
   // Track if synth nodes have been created (needed for deferred init on iOS)
   const synthInitializedRef = useRef(false);
