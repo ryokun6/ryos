@@ -109,7 +109,6 @@ export function KaraokeAppComponent({
     showOfflineStatus,
     restartAutoHideTimer,
     registerActivity,
-    startTrackSwitch,
     handlePrevious,
     handlePlayPause,
     handleNext,

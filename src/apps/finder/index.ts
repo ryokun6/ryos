@@ -1,4 +1,4 @@
-import { BaseApp } from "../base/types";
+import { BaseApp, FinderInitialData } from "../base/types";
 import { FinderAppComponent } from "./components/FinderAppComponent";
 
 export const appMetadata = {
@@ -48,7 +48,7 @@ export const helpItems = [
   },
 ];
 
-export const FinderApp: BaseApp = {
+export const FinderApp: BaseApp<FinderInitialData> = {
   id: "finder",
   name: "Finder",
   description: "Browse and manage files",
