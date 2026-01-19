@@ -123,7 +123,7 @@ export async function processTranslationSSE(
         headers["X-Username"] = auth.username;
       }
 
-      const response = await fetch(getApiUrl(`/api/song/${songId}`), {
+      const response = await fetch(getApiUrl(`/api/songs/${songId}`), {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -358,7 +358,7 @@ export async function processFuriganaSSE(
         furiganaHeaders["X-Username"] = auth.username;
       }
 
-      const response = await fetch(getApiUrl(`/api/song/${songId}`), {
+      const response = await fetch(getApiUrl(`/api/songs/${songId}`), {
         method: "POST",
         headers: furiganaHeaders,
         body: JSON.stringify({
@@ -623,7 +623,7 @@ export async function processSoramimiSSE(
         soramimiHeaders["X-Username"] = auth.username;
       }
 
-      const response = await fetch(getApiUrl(`/api/song/${songId}`), {
+      const response = await fetch(getApiUrl(`/api/songs/${songId}`), {
         method: "POST",
         headers: soramimiHeaders,
         body: JSON.stringify(requestBody),

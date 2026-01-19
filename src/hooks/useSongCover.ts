@@ -68,7 +68,7 @@ export function useSongCover(
     (async () => {
       try {
         const response = await fetch(
-          getApiUrl(`/api/song/${encodeURIComponent(youtubeId)}?include=metadata`),
+          getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}?include=metadata`),
           {
             method: "GET",
             headers: {

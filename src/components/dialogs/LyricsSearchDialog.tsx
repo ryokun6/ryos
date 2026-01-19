@@ -88,7 +88,7 @@ export function LyricsSearchDialog({
     setSelectedIndex(-1);
 
     try {
-      const response = await fetch(getApiUrl(`/api/song/${encodeURIComponent(trackId)}`), {
+      const response = await fetch(getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
