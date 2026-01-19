@@ -5,143 +5,30 @@ import {
   getEffectiveOrigin,
   isAllowedOrigin,
   getClientIp,
+  jsonResponse,
+  REDIS_PREFIXES,
+  RATE_LIMIT_TIERS,
 } from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
-
+import { normalizeUrlForCacheKey } from "./_utils/_url.js";
+import {
+  logRequest,
+  logInfo,
+  logError,
+  generateRequestId,
+} from "./_utils/_logging.js";
+import {
+  generateRandomBrowserHeaders,
+  shouldAutoProxy,
+} from "./_utils/_browser-headers.js";
 
 export const config = {
   runtime: "edge",
 };
 
-import { normalizeUrlForCacheKey } from "./_utils/_url.js"; // Import the function
-
-// --- Logging Utilities ---------------------------------------------------
-
-const logRequest = (
-  method: string,
-  url: string,
-  action: string | null,
-  id: string
-) => {
-  console.log(`[${id}] ${method} ${url} - Action: ${action || "none"}`);
-};
-
-const logInfo = (id: string, message: string, data?: unknown) => {
-  console.log(`[${id}] INFO: ${message}`, data ?? "");
-};
-
-const logError = (id: string, message: string, error: unknown) => {
-  console.error(`[${id}] ERROR: ${message}`, error);
-};
-
-const generateRequestId = (): string =>
-  Math.random().toString(36).substring(2, 10);
-
-// --- Utility Functions ----------------------------------------------------
-
-/**
- * List of domains that should be automatically proxied.
- * Domains should be lowercase and without protocol.
- */
-const AUTO_PROXY_DOMAINS = [
-  "wikipedia.org",
-  "wikimedia.org",
-  "wikipedia.com",
-  "cursor.com",
-  // Add more domains as needed
-];
-
-/**
- * Check if a URL's domain matches or is a subdomain of any auto-proxy domain
- */
-const shouldAutoProxy = (url: string): boolean => {
-  try {
-    const hostname = new URL(url).hostname.toLowerCase();
-    return AUTO_PROXY_DOMAINS.some(
-      (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
-    );
-  } catch {
-    // Return false if URL parsing fails
-    return false;
-  }
-};
-
-// ------------------------------------------------------------------------
-// Dynamic browser header generation
-// ------------------------------------------------------------------------
-/** A curated list of realistic desktop browser fingerprints to rotate through. */
-const USER_AGENT_SAMPLES = [
-  {
-    ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    secChUa: '"Not_A Brand";v="8", "Chromium";v="122", "Google Chrome";v="122"',
-    platform: '"Windows"',
-  },
-  {
-    ua: "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
-    // Safari does not currently send Sec-CH-UA headers
-    secChUa: "",
-    platform: '"macOS"',
-  },
-  {
-    ua: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-    secChUa: '"Not_A Brand";v="8", "Chromium";v="121", "Google Chrome";v="121"',
-    platform: '"Linux"',
-  },
-  {
-    ua: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
-    // Firefox also omits Sec-CH-UA headers
-    secChUa: "",
-    platform: '"Windows"',
-  },
-];
-
-const ACCEPT_LANGUAGE_SAMPLES = [
-  "en-US,en;q=0.9",
-  "en-GB,en;q=0.8",
-  "en-US,en;q=0.8,fr;q=0.6",
-  "en-US,en;q=0.8,de;q=0.6",
-];
-
-const SEC_FETCH_SITE_SAMPLES = ["none", "same-origin", "cross-site"];
-
-// Generic helper to pick a random member of an array
-const pickRandom = <T>(arr: T[]): T =>
-  arr[Math.floor(Math.random() * arr.length)];
-
-/**
- * Builds a pseudo-random, yet realistic, browser header set.
- * We purposefully limit the pool to a handful of common fingerprints so that
- * the generated headers stay coherent and pass basic heuristics.
- */
-const generateRandomBrowserHeaders = (): Record<string, string> => {
-  const fp = pickRandom(USER_AGENT_SAMPLES);
-
-  const headers: Record<string, string> = {
-    "User-Agent": fp.ua,
-    Accept:
-      "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-    "Accept-Language": pickRandom(ACCEPT_LANGUAGE_SAMPLES),
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": pickRandom(SEC_FETCH_SITE_SAMPLES),
-    "Sec-Fetch-User": "?1",
-    "Upgrade-Insecure-Requests": "1",
-  };
-
-  // Only attach Client-Hint headers if present in the selected fingerprint
-  if (fp.secChUa) {
-    headers["Sec-Ch-Ua"] = fp.secChUa;
-    headers["Sec-Ch-Ua-Mobile"] = "?0";
-    headers["Sec-Ch-Ua-Platform"] = fp.platform;
-  }
-
-  return headers;
-};
-
-// --- Constants ---
-const IE_CACHE_PREFIX = "ie:cache:";
-const WAYBACK_CACHE_PREFIX = "wayback:cache:";
-// --- End Constants ---
+// Use shared constants for cache prefixes
+const IE_CACHE_PREFIX = REDIS_PREFIXES.ieCache;
+const WAYBACK_CACHE_PREFIX = REDIS_PREFIXES.waybackCache;
 
 /**
  * Edge function that checks if a remote website allows itself to be embedded in an iframe.
@@ -181,13 +68,7 @@ export default async function handler(req: Request) {
 
   // Helper for consistent error responses with CORS
   const errorResponseWithCors = (message: string, status: number = 400) =>
-    new Response(JSON.stringify({ error: message }), {
-      status,
-      headers: {
-        "Content-Type": "application/json",
-        ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-      },
-    });
+    jsonResponse({ error: message }, status, effectiveOrigin);
 
   if (!urlParam) {
     logError(requestId, "Missing 'url' query parameter", null);
@@ -207,7 +88,7 @@ export default async function handler(req: Request) {
   // ---------------------------
   try {
     const ip = getClientIp(req);
-    const BURST_WINDOW = 60; // 1 minute
+    const { iframeCheck: rateLimits } = RATE_LIMIT_TIERS;
     const burstKeyBase = ["rl", "iframe", mode, "ip", ip];
 
     if (mode === "proxy" || mode === "check") {
@@ -215,24 +96,15 @@ export default async function handler(req: Request) {
       const globalKey = RateLimit.makeKey(burstKeyBase);
       const global = await RateLimit.checkCounterLimit({
         key: globalKey,
-        windowSeconds: BURST_WINDOW,
-        limit: 300, // Relaxed global limit for proxy/check
+        windowSeconds: rateLimits.global.window,
+        limit: rateLimits.global.limit,
       });
       if (!global.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            scope: "global",
-            mode,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Retry-After": String(global.resetSeconds ?? BURST_WINDOW),
-              "Content-Type": "application/json",
-              ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-            },
-          }
+        return jsonResponse(
+          { error: "rate_limit_exceeded", scope: "global", mode },
+          429,
+          effectiveOrigin,
+          { "Retry-After": String(global.resetSeconds ?? rateLimits.global.window) }
         );
       }
 
@@ -252,25 +124,15 @@ export default async function handler(req: Request) {
         ]);
         const host = await RateLimit.checkCounterLimit({
           key: hostKey,
-          windowSeconds: BURST_WINDOW,
-          limit: 100, // Relaxed per-host limit for proxy/check
+          windowSeconds: rateLimits.perHost.window,
+          limit: rateLimits.perHost.limit,
         });
         if (!host.allowed) {
-          return new Response(
-            JSON.stringify({
-              error: "rate_limit_exceeded",
-              scope: "host",
-              host: hostname,
-              mode,
-            }),
-            {
-              status: 429,
-              headers: {
-                "Retry-After": String(host.resetSeconds ?? BURST_WINDOW),
-                "Content-Type": "application/json",
-                ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-              },
-            }
+          return jsonResponse(
+            { error: "rate_limit_exceeded", scope: "host", host: hostname, mode },
+            429,
+            effectiveOrigin,
+            { "Retry-After": String(host.resetSeconds ?? rateLimits.perHost.window) }
           );
         }
       } catch (e) {
@@ -281,20 +143,15 @@ export default async function handler(req: Request) {
       const key = RateLimit.makeKey(burstKeyBase);
       const res = await RateLimit.checkCounterLimit({
         key,
-        windowSeconds: BURST_WINDOW,
-        limit: 120, // Relaxed limits for cached lookups/listing
+        windowSeconds: rateLimits.cache.window,
+        limit: rateLimits.cache.limit,
       });
       if (!res.allowed) {
-        return new Response(
-          JSON.stringify({ error: "rate_limit_exceeded", scope: mode }),
-          {
-            status: 429,
-            headers: {
-              "Retry-After": String(res.resetSeconds ?? BURST_WINDOW),
-              "Content-Type": "application/json",
-              ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-            },
-          }
+        return jsonResponse(
+          { error: "rate_limit_exceeded", scope: mode },
+          429,
+          effectiveOrigin,
+          { "Retry-After": String(res.resetSeconds ?? rateLimits.cache.window) }
         );
       }
     }
@@ -1076,10 +933,7 @@ export default async function handler(req: Request) {
               requestId,
               `Attempting to cache Wayback content for ${normalizedUrl} (${waybackYear}/${waybackMonth})`
             );
-            const redis = new Redis({
-              url: process.env.REDIS_KV_REST_API_URL as string,
-              token: process.env.REDIS_KV_REST_API_TOKEN as string,
-            });
+            const cacheRedis = createRedis();
             const normalizedUrlForKey = normalizeUrlForCacheKey(normalizedUrl);
             if (normalizedUrlForKey) {
               const cacheKey = `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(
@@ -1090,7 +944,7 @@ export default async function handler(req: Request) {
                 `Writing to Wayback cache key: ${cacheKey} (content length: ${html.length})`
               );
               // Use SET with expiration for Wayback cache (e.g., 30 days)
-              await redis.set(cacheKey, html, { ex: 60 * 60 * 24 * 30 });
+              await cacheRedis.set(cacheKey, html, { ex: 60 * 60 * 24 * 30 });
               logInfo(
                 requestId,
                 `Successfully cached Wayback content for ${cacheKey}`
