@@ -193,7 +193,7 @@ export const useSynthLogic = ({
     return () => {
       resizeObserver.disconnect();
     };
-  }, [isWindowOpen, appContainerRef.current]);
+  }, [isWindowOpen]);
 
   // Get visible keys based on container width
   // Start with a base of 8 keys (C4-C5) and add more keys on both sides as container gets wider
