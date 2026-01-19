@@ -600,6 +600,8 @@ export const useIpodStore = create<IpodState>()(
         set((state) => ({
           tracks: [track, ...state.tracks],
           currentSongId: track.id,
+          currentLyrics: null,
+          currentFuriganaMap: null,
           isPlaying: true,
           libraryState: "loaded",
           playbackHistory: [], // Clear playback history when adding new tracks
@@ -609,6 +611,8 @@ export const useIpodStore = create<IpodState>()(
         set({
           tracks: [],
           currentSongId: null,
+          currentLyrics: null,
+          currentFuriganaMap: null,
           isPlaying: false,
           libraryState: "cleared",
           playbackHistory: [], // Clear playback history when clearing library
@@ -619,6 +623,8 @@ export const useIpodStore = create<IpodState>()(
         set({
           tracks,
           currentSongId: tracks[0]?.id ?? null,
+          currentLyrics: null,
+          currentFuriganaMap: null,
           isPlaying: false,
           libraryState: "loaded",
           lastKnownVersion: version,
@@ -629,7 +635,11 @@ export const useIpodStore = create<IpodState>()(
       nextTrack: () =>
         set((state) => {
           if (state.tracks.length === 0)
-            return { currentSongId: null };
+            return {
+              currentSongId: null,
+              currentLyrics: null,
+              currentFuriganaMap: null,
+            };
 
           // Add current track to history before moving to next
           let newPlaybackHistory = state.playbackHistory;
@@ -659,16 +669,24 @@ export const useIpodStore = create<IpodState>()(
 
             // If we've reached the end and loop all is off, stop
             if (!state.loopAll && nextIndex === 0 && currentIndex !== -1) {
+              const lastSongId =
+                state.tracks[state.tracks.length - 1]?.id ?? null;
+              const isSameTrack = lastSongId === state.currentSongId;
               return {
-                currentSongId: state.tracks[state.tracks.length - 1]?.id ?? null,
+                currentSongId: lastSongId,
+                currentLyrics: isSameTrack ? state.currentLyrics : null,
+                currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
                 isPlaying: false,
               };
             }
             nextSongId = state.tracks[nextIndex]?.id ?? null;
           }
 
+          const isSameTrack = nextSongId === state.currentSongId;
           return {
             currentSongId: nextSongId,
+            currentLyrics: isSameTrack ? state.currentLyrics : null,
+            currentFuriganaMap: isSameTrack ? state.currentFuriganaMap : null,
             isPlaying: true,
             playbackHistory: newPlaybackHistory,
             historyPosition: -1, // Always reset to end when moving forward
@@ -677,7 +695,11 @@ export const useIpodStore = create<IpodState>()(
       previousTrack: () =>
         set((state) => {
           if (state.tracks.length === 0)
-            return { currentSongId: null };
+            return {
+              currentSongId: null,
+              currentLyrics: null,
+              currentFuriganaMap: null,
+            };
 
           let prevSongId: string | null;
           let newPlaybackHistory = state.playbackHistory;
@@ -711,6 +733,9 @@ export const useIpodStore = create<IpodState>()(
 
           return {
             currentSongId: prevSongId,
+            currentLyrics: prevSongId === state.currentSongId ? state.currentLyrics : null,
+            currentFuriganaMap:
+              prevSongId === state.currentSongId ? state.currentFuriganaMap : null,
             isPlaying: true,
             playbackHistory: newPlaybackHistory,
             historyPosition: -1,
@@ -829,6 +854,8 @@ export const useIpodStore = create<IpodState>()(
           set({
             tracks: importedTracks,
             currentSongId: importedTracks[0]?.id ?? null,
+            currentLyrics: null,
+            currentFuriganaMap: null,
             isPlaying: false,
             libraryState: "loaded",
             playbackHistory: [], // Clear playback history when importing library
@@ -851,6 +878,8 @@ export const useIpodStore = create<IpodState>()(
           set({
             tracks,
             currentSongId: tracks[0]?.id ?? null,
+            currentLyrics: null,
+            currentFuriganaMap: null,
             libraryState: "loaded",
             lastKnownVersion: version,
             playbackHistory: [], // Clear playback history when initializing library
@@ -915,8 +944,14 @@ export const useIpodStore = create<IpodState>()(
         if (existingTrack) {
           console.log(`[iPod Store] Track ${videoId} already exists in library, skipping metadata fetch`);
           // Set as current track and optionally autoplay
+          const currentState = get();
+          const isSameTrack = currentState.currentSongId === videoId;
           set({
             currentSongId: videoId,
+            currentLyrics: isSameTrack ? currentState.currentLyrics : null,
+            currentFuriganaMap: isSameTrack
+              ? currentState.currentFuriganaMap
+              : null,
             isPlaying: autoPlay,
           });
           return existingTrack;
@@ -1236,15 +1271,19 @@ export const useIpodStore = create<IpodState>()(
 
           // Update store if there were any changes
           if (newTracksAdded > 0 || tracksUpdated > 0) {
+            const nextCurrentSongId =
+              wasEmpty && finalTracks.length > 0
+                ? finalTracks[0]?.id ?? null
+                : current.currentSongId;
+            const isSameTrack = nextCurrentSongId === current.currentSongId;
             set({
               tracks: finalTracks,
               lastKnownVersion: serverVersion,
               libraryState: "loaded",
               // If library was empty and we added tracks, set first song as current
-              currentSongId:
-                wasEmpty && finalTracks.length > 0 
-                  ? finalTracks[0]?.id ?? null 
-                  : current.currentSongId,
+              currentSongId: nextCurrentSongId,
+              currentLyrics: isSameTrack ? current.currentLyrics : null,
+              currentFuriganaMap: isSameTrack ? current.currentFuriganaMap : null,
               // Reset playing state if we're setting a new current track
               isPlaying:
                 wasEmpty && finalTracks.length > 0 ? false : current.isPlaying,
