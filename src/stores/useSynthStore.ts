@@ -265,6 +265,8 @@ export const useSynthStore = create<SynthStoreState>()(
         presets: state.presets,
         currentPreset: state.currentPreset,
         labelType: state.labelType,
+        currentOctave: state.currentOctave,
+        currentVolume: state.currentVolume,
       }),
       // Migration from old localStorage keys
       onRehydrateStorage: () => {
