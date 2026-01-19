@@ -337,7 +337,7 @@
         INDEX[index.tsx<br/>App Definition]
         MAIN["[AppName]AppComponent.tsx"]
         MENU["[AppName]MenuBar.tsx"]
-        HOOKS[hooks/]
+        HOOKS[hooks/<br/>use*Logic.ts]
         UTILS[utils/]
         COMPS[components/]
     end
@@ -359,6 +359,98 @@
     PROPS -->|onClose| P2[ ]
     PROPS -->|isForeground| P3[ ]
     PROPS -->|instanceId| P4[ ]</pre>
+<h3>App-Specific Hooks Pattern</h3>
+<p>Each app typically has a <strong>main logic hook</strong> that encapsulates most of the app's state and behavior. This pattern separates UI concerns from business logic and makes apps easier to test and maintain.</p>
+<strong>Location:</strong> <code>src/apps/[app-name]/hooks/use[AppName]Logic.ts</code>
+<strong>Pattern Overview:</strong>
+<table><thead><tr><th>Aspect</th><th>Description</th></tr></thead><tbody><tr><td>Input</td><td>Options object with <code>isWindowOpen</code>, <code>isForeground</code>, <code>initialData</code>, <code>instanceId</code></td></tr><tr><td>Output</td><td>Unified object containing state, actions, and UI state</td></tr><tr><td>Composition</td><td>Combines global hooks (useSound, useLyrics, etc.) with Zustand store state</td></tr></tbody></table>
+<strong>Example: iPod Logic Hook</strong>
+<pre><code>// src/apps/ipod/hooks/useIpodLogic.ts
+
+export interface UseIpodLogicOptions {
+  isWindowOpen: boolean;
+  isForeground: boolean | undefined;
+  initialData: IpodInitialData | undefined;
+  instanceId: string | undefined;
+}
+
+export function useIpodLogic({
+  isWindowOpen,
+  isForeground,
+  initialData,
+  instanceId,
+}: UseIpodLogicOptions) {
+  // 1. Global hooks for cross-cutting concerns
+  const { play: playClickSound } = useSound(Sounds.BUTTON_CLICK);
+  const { play: playScrollSound } = useSound(Sounds.IPOD_CLICK_WHEEL);
+  const vibrate = useVibration(100, 50);
+  const isOffline = useOffline();
+  
+  // 2. Store state (fine-grained selectors)
+  const { tracks, currentSongId, isPlaying, loopCurrent } = useIpodStore(
+    useShallow((s) =&gt; ({
+      tracks: s.tracks,
+      currentSongId: s.currentSongId,
+      isPlaying: s.isPlaying,
+      loopCurrent: s.loopCurrent,
+    }))
+  );
+  
+  // 3. Media hooks for specialized functionality
+  const { lyrics, isLoading: lyricsLoading } = useLyrics({
+    songId: currentSongId,
+    title: currentTrack?.title,
+    artist: currentTrack?.artist,
+  });
+  
+  const { furiganaMap, soramimiMap } = useFurigana({
+    songId: currentSongId,
+    lines: lyrics,
+    enabled: showFurigana,
+  });
+  
+  // 4. Local state for UI concerns
+  const [menuPath, setMenuPath] = useState&lt;string[]&gt;([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // 5. Handlers that combine state and actions
+  const playTrack = useCallback((track: Track) =&gt; {
+    playClickSound();
+    vibrate();
+    useIpodStore.getState().setCurrentSongId(track.id);
+    useIpodStore.getState().setIsPlaying(true);
+  }, [playClickSound, vibrate]);
+  
+  // 6. Return unified interface for component
+  return {
+    // State
+    tracks,
+    currentTrack,
+    isPlaying,
+    lyrics,
+    furiganaMap,
+    
+    // Actions
+    playTrack,
+    pauseTrack,
+    nextTrack,
+    previousTrack,
+    
+    // UI state
+    menuPath,
+    setMenuPath,
+    isFullscreen,
+    setIsFullscreen,
+    
+    // Status
+    isOffline,
+    lyricsLoading,
+  };
+}</code></pre>
+<strong>Benefits of this pattern:</strong>
+<ol><li><strong>Separation of concerns</strong> - UI component focuses on rendering, logic hook handles state</li></ol><ol><li><strong>Composability</strong> - Logic hooks compose global hooks and store state cleanly</li><li><strong>Testability</strong> - Logic can be tested independently of UI</li><li><strong>Reusability</strong> - Same logic can power multiple UI variations (e.g., iPod and Karaoke share patterns)</li></ol>
+<strong>Apps using this pattern:</strong>
+<table><thead><tr><th>App</th><th>Logic Hook</th><th>Key Responsibilities</th></tr></thead><tbody><tr><td>iPod</td><td><code>useIpodLogic</code></td><td>Playback, lyrics, navigation, fullscreen</td></tr><tr><td>Finder</td><td><code>useFinderLogic</code></td><td>File navigation, selection, operations</td></tr><tr><td>Chats</td><td><code>useAiChat</code></td><td>AI chat, message handling, tool execution</td></tr><tr><td>Terminal</td><td><code>useTerminalLogic</code></td><td>Command execution, history, Vim mode</td></tr><tr><td>Paint</td><td><code>usePaintLogic</code></td><td>Canvas operations, tools, filters</td></tr><tr><td>Karaoke</td><td><code>useKaraokeLogic</code></td><td>Karaoke playback, lyrics sync</td></tr><tr><td>TextEdit</td><td><code>useTextEditState</code></td><td>Document state, file operations</td></tr><tr><td>Photo Booth</td><td><code>usePhotoBoothLogic</code></td><td>Camera, effects, capture</td></tr><tr><td>Soundboard</td><td><code>useSoundboardLogic</code></td><td>Audio recording, playback, boards</td></tr><tr><td>Synth</td><td><code>useSynthLogic</code></td><td>Synthesis, presets, waveform</td></tr></tbody></table>
 <h2>Subsections</h2>
 <ul><li><a href="/docs/window-management">Window Management</a> - Window rendering, positioning, and frame components</li></ul><ul><li><a href="/docs/state-management">State Management</a> - Zustand stores and data persistence</li><li><a href="/docs/theme-system">Theme System</a> - Themes, appearance, and visual customization</li><li><a href="/docs/hooks-architecture">Hooks Architecture</a> - Custom React hooks for audio, media, and utilities</li><li><a href="/docs/component-architecture">Component Architecture</a> - UI component organization and patterns</li></ul>
       </article>

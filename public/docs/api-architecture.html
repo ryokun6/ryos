@@ -343,19 +343,26 @@
 <h2>API Directory Structure</h2>
 <pre><code>api/
 ├── _utils/                    # Shared utilities (global)
-│   ├── middleware.ts          # Main middleware (consolidated utilities)
+│   ├── middleware.ts          # Main middleware (consolidated utilities) ★
 │   ├── redis.ts               # Redis client factory
-│   ├── constants.ts           # Centralized constants
+│   ├── constants.ts           # Centralized constants (REDIS_PREFIXES, TTL, etc.)
 │   ├── _aiModels.ts          # AI provider abstraction
 │   ├── _aiPrompts.ts         # System prompts
 │   ├── _cors.ts              # CORS handling
+│   ├── _hash.ts              # Hashing utilities
+│   ├── _logging.ts           # Logging utilities
 │   ├── _rate-limit.ts        # Rate limiting
 │   ├── _song-service.ts      # Song data service
-│   └── auth/                 # Auth utilities
-│       ├── index.ts          # Main auth exports
+│   ├── _sse.ts               # SSE streaming helpers
+│   ├── _url.ts               # URL utilities
+│   ├── _validation.ts        # Input validation
+│   └── auth/                 # Auth utilities (modular)
+│       ├── index.ts          # Main auth exports (Edge compatible)
 │       ├── _validate.ts      # Token validation
 │       ├── _tokens.ts        # Token management
 │       ├── _extract.ts       # Request auth extraction
+│       ├── _password.ts      # Password hashing (Node.js only - bcrypt)
+│       ├── _password-storage.ts # Password storage (Edge compatible)
 │       ├── _constants.ts     # Auth-specific constants
 │       └── _types.ts         # TypeScript types
 ├── auth/                      # Auth endpoints
@@ -402,6 +409,94 @@
 │   ├── _lyrics.ts            # Lyrics parsing
 │   └── _furigana.ts          # Japanese furigana
 └── [endpoint].ts             # Individual endpoints</code></pre>
+<h2>Middleware Utilities</h2>
+<p>The <code>middleware.ts</code> file consolidates common utilities and re-exports them for convenient importing. This reduces boilerplate and ensures consistent patterns across all endpoints.</p>
+<h3>Consolidated Imports</h3>
+<pre><code>import {
+  // Redis
+  createRedis,
+  
+  // CORS
+  getEffectiveOrigin,
+  isAllowedOrigin,
+  preflightIfNeeded,
+  
+  // Auth middleware
+  requireAuth,
+  optionalAuth,
+  requireAdmin,
+  isAdmin,
+  extractAuth,
+  
+  // Response helpers
+  jsonResponse,
+  errorResponse,
+  successResponse,
+  rateLimitResponse,
+  
+  // Rate limiting
+  checkRateLimit,
+  RATE_LIMITS,
+  getClientIp,
+  
+  // Request helpers
+  parseJsonBody,
+  getQueryParam,
+  getQueryParams,
+  
+  // Request context
+  createRequestContext,
+  
+  // Constants
+  REDIS_PREFIXES,
+  TTL,
+  RATE_LIMIT_TIERS,
+} from "./_utils/middleware.js";</code></pre>
+<h3>Request Context Pattern</h3>
+<p>For complex handlers, <code>createRequestContext()</code> reduces boilerplate by extracting common data from requests:</p>
+<pre><code>export default async function handler(req: Request) {
+  const ctx = await createRequestContext(req, { requireAuth: true });
+  
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    const preflight = preflightIfNeeded(req, ["POST", "OPTIONS"], ctx.origin);
+    if (preflight) return preflight;
+    return new Response(null, { status: 204 });
+  }
+
+  if (!ctx.originAllowed) {
+    return errorResponse("Unauthorized", 403, ctx.origin);
+  }
+
+  if (!ctx.user) {
+    return errorResponse("Authentication required", 401, ctx.origin);
+  }
+
+  // Use ctx.log for request-scoped logging
+  ctx.log("Processing request", { username: ctx.user.username });
+
+  // Access Redis via ctx.redis
+  const data = await ctx.redis.get("key");
+  
+  return jsonResponse({ data }, 200, ctx.origin);
+}</code></pre>
+<strong>RequestContext interface:</strong>
+<table><thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>requestId</code></td><td>string</td><td>Unique ID for logging</td></tr><tr><td><code>origin</code></td><td>string \</td><td>null</td><td>Effective origin from request</td></tr><tr><td><code>originAllowed</code></td><td>boolean</td><td>Whether origin is allowed</td></tr><tr><td><code>ip</code></td><td>string</td><td>Client IP address</td></tr><tr><td><code>user</code></td><td>AuthenticatedUser \</td><td>null</td><td>Authenticated user (if any)</td></tr><tr><td><code>redis</code></td><td>Redis</td><td>Redis client instance</td></tr><tr><td><code>log</code></td><td>function</td><td>Logging helper with request ID</td></tr><tr><td><code>logError</code></td><td>function</td><td>Error logging helper</td></tr></tbody></table>
+<h3>Auth Middleware Functions</h3>
+<table><thead><tr><th>Function</th><th>Description</th></tr></thead><tbody><tr><td><code>requireAuth(req, redis, origin)</code></td><td>Returns user or 401 error</td></tr><tr><td><code>optionalAuth(req, redis)</code></td><td>Returns user or null</td></tr><tr><td><code>requireAdmin(req, redis, origin)</code></td><td>Returns user + isAdmin or 403 error</td></tr><tr><td><code>isAdmin(redis, username, token)</code></td><td>Simple admin check (boolean)</td></tr></tbody></table>
+<h3>Rate Limit Presets</h3>
+<pre><code>// Built-in rate limit configurations
+const RATE_LIMITS = {
+  burst: (prefix) =&gt; ({ prefix, windowSeconds: 60, limit: 10, byIp: true }),
+  daily: (prefix, limit = 100) =&gt; ({ prefix, windowSeconds: 86400, limit, byIp: true }),
+  hourly: (prefix, limit = 60) =&gt; ({ prefix, windowSeconds: 3600, limit, byIp: false }),
+  budget5h: (prefix, limit = 15) =&gt; ({ prefix, windowSeconds: 18000, limit, byIp: false }),
+};
+
+// Usage
+const rlResult = await checkRateLimit(req, RATE_LIMITS.burst("my-endpoint"), user, origin);
+if (!rlResult.allowed) return rlResult.error;</code></pre>
+<p>> <strong>See Also:</strong> <a href="/docs/api-design-guide">API Design Guide</a> for comprehensive patterns and examples.</p>
 <h2>API Endpoint Inventory</h2>
 <h3>Core APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat</code></td><td>POST</td><td>AI chat with streaming and tool calling</td></tr><tr><td><code>/api/speech</code></td><td>POST</td><td>Text-to-speech synthesis</td></tr><tr><td><code>/api/audio-transcribe</code></td><td>POST</td><td>Speech-to-text (Whisper)</td></tr></tbody></table>
@@ -642,21 +737,45 @@ export function isAllowedOrigin(origin: string | null): boolean {
   return isLocalhostOrigin(origin);
 }</code></pre>
 <h2>Response Patterns</h2>
-<h3>JSON Response Helper</h3>
-<pre><code>const jsonResponse = (data: unknown, status = 200, headers = {}) =&gt;
-  new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": effectiveOrigin,
-      ...headers,
-    },
-  });</code></pre>
-<h3>Error Response Pattern</h3>
-<pre><code>const errorResponse = (message: string, status = 400) =&gt; {
-  logInfo(requestId, `Response: ${status} - ${message}`);
-  return jsonResponse({ error: message }, status);
-};</code></pre>
+<h3>Response Helpers</h3>
+<p>The middleware provides standardized response helpers for consistent API responses:</p>
+<pre><code>// JSON response with optional CORS and extra headers
+jsonResponse(data, status = 200, origin?, extraHeaders?)
+
+// Error response with optional code and details
+errorResponse(message, status = 400, origin?, code?, details?)
+
+// Success response (includes { success: true })
+successResponse(data = {}, status = 200, origin?)
+
+// Rate limit response with retry headers
+rateLimitResponse(origin, limit, resetSeconds, scope?)</code></pre>
+<strong>Example Usage:</strong>
+<pre><code>// Success with data
+return jsonResponse({ items: data }, 200, origin);
+
+// Success response
+return successResponse({ message: "Created" }, 201, origin);
+
+// Error with code
+return errorResponse("Validation failed", 400, origin, "VALIDATION_ERROR", { field: "email" });
+
+// Rate limit exceeded
+return rateLimitResponse(origin, 30, 60, "burst");</code></pre>
+<h3>Error Response Format</h3>
+<p>All error responses follow a consistent format:</p>
+<pre><code>{
+  "error": "Human-readable error message",
+  "code": "MACHINE_READABLE_CODE",
+  "details": { "field": "value" }
+}</code></pre>
+<p>Rate limit errors include additional fields:</p>
+<pre><code>{
+  "error": "rate_limit_exceeded",
+  "limit": 30,
+  "retryAfter": 45,
+  "scope": "burst"
+}</code></pre>
 <h3>SSE Streaming Response</h3>
 <pre><code>const stream = new ReadableStream({
   async start(controller) {
@@ -683,7 +802,7 @@ export const maxDuration = 60; // or 80 for AI endpoints</code></pre>
 <h2>Redis Key Patterns</h2>
 <table><thead><tr><th>Prefix</th><th>Purpose</th><th>Example</th></tr></thead><tbody><tr><td><code>rl:ai:</code></td><td>AI rate limiting</td><td><code>rl:ai:chat:user123</code></td></tr><tr><td><code>song:meta:</code></td><td>Song metadata</td><td><code>song:meta:abc123</code></td></tr><tr><td><code>song:content:</code></td><td>Song content</td><td><code>song:content:abc123</code></td></tr><tr><td><code>ie:cache:</code></td><td>IE generation cache</td><td><code>ie:cache:hash</code></td></tr><tr><td><code>applet:share:</code></td><td>Shared applets</td><td><code>applet:share:xyz</code></td></tr><tr><td><code>chat:token:user:</code></td><td>Auth tokens</td><td><code>chat:token:user:alice:tok</code></td></tr><tr><td><code>chat:room:</code></td><td>Chat room data</td><td><code>chat:room:general</code></td></tr></tbody></table>
 <h2>Related Documentation</h2>
-<ul><li><a href="/docs/chat-api">Chat API</a> - Detailed chat API documentation</li></ul><ul><li><a href="/docs/song-api">Song API</a> - Song API reference</li><li><a href="/docs/ai-generation-apis">AI Generation APIs</a> - IE and Applet AI</li></ul>
+<ul><li><a href="/docs/api-design-guide">API Design Guide</a> - Implementation patterns and best practices</li></ul><ul><li><a href="/docs/chat-api">Chat API</a> - Detailed chat API documentation</li><li><a href="/docs/song-api">Song API</a> - Song API reference</li><li><a href="/docs/ai-generation-apis">AI Generation APIs</a> - IE and Applet AI</li><li><a href="/docs/chat-rooms-api">Chat Rooms API</a> - Real-time chat rooms (REST)</li><li><a href="/docs/utility-apis">Utility APIs</a> - Link preview, iframe check, share applet</li></ul>
       </article>
       
       <nav class="nav">
