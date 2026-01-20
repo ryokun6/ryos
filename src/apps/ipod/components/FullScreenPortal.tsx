@@ -32,6 +32,7 @@ export function FullScreenPortal({
   registerActivity,
   isPlaying,
   statusMessage,
+  disableTapToPlayPause = false,
   currentTranslationCode,
   onSelectTranslation,
   currentAlignment,
@@ -397,10 +398,15 @@ export function FullScreenPortal({
           setHasUserInteracted(true);
         }
 
-        const actuallyPlaying = getActualPlayerState();
         const handlers = handlersRef.current;
         handlers.registerActivity();
-        
+
+        if (disableTapToPlayPause) {
+          restartAutoHideTimer();
+          return;
+        }
+
+        const actuallyPlaying = getActualPlayerState();
         if (isOffline) {
           showOfflineStatus();
         } else {

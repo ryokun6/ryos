@@ -276,12 +276,7 @@ export function KaraokeAppComponent({
             }
             // Mark user interaction for autoplay guard
             userHasInteractedRef.current = true;
-            if (isOffline) {
-              showOfflineStatus();
-            } else if (currentTrack && !isCoverFlowOpen) {
-              togglePlay();
-              showStatus(isPlaying ? "⏸" : "▶");
-            }
+            restartAutoHideTimer();
           }}
         >
           {/* Video Player - container clips YouTube UI by extending height and using negative margin */}
@@ -343,7 +338,8 @@ export function KaraokeAppComponent({
                 transition={{ duration: 0.3 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  togglePlay();
+                  userHasInteractedRef.current = true;
+                  restartAutoHideTimer();
                 }}
               >
                 <motion.img
@@ -639,6 +635,7 @@ export function KaraokeAppComponent({
           registerActivity={registerActivity}
           isPlaying={isPlaying}
           statusMessage={statusMessage}
+          disableTapToPlayPause
           currentTranslationCode={lyricsTranslationLanguage}
           onSelectTranslation={setLyricsTranslationLanguage}
           currentAlignment={lyricsAlignment}
@@ -746,7 +743,7 @@ export function KaraokeAppComponent({
                       transition={{ duration: 0.3 }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        togglePlay();
+                        registerActivity();
                       }}
                     >
                       <motion.img
