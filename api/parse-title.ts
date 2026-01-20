@@ -8,9 +8,9 @@ import {
   getClientIp,
   errorResponse,
   jsonResponse,
+  RATE_LIMIT_TIERS,
 } from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
-
 
 export const config = {
   runtime: "edge",
@@ -29,80 +29,56 @@ const ParsedTitleSchema = z.object({
 });
 
 export default async function handler(req: Request) {
+  const effectiveOrigin = getEffectiveOrigin(req);
+  
   if (req.method === "OPTIONS") {
-    const effectiveOrigin = getEffectiveOrigin(req);
     const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
     if (resp) return resp;
   }
 
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    return errorResponse("Method not allowed", 405, effectiveOrigin);
+  }
+
+  if (!isAllowedOrigin(effectiveOrigin)) {
+    return errorResponse("Unauthorized", 403, effectiveOrigin);
   }
 
   try {
-    const effectiveOrigin = getEffectiveOrigin(req);
-    if (!isAllowedOrigin(effectiveOrigin)) {
-      return new Response("Unauthorized", { status: 403 });
-    }
 
-    // Rate limits: burst 15/min/IP + daily 500/IP
+    // Rate limits: burst + daily per IP
     try {
       const ip = getClientIp(req);
-      const BURST_WINDOW = 60;
-      const BURST_LIMIT = 15;
-      const DAILY_WINDOW = 60 * 60 * 24;
-      const DAILY_LIMIT = 500;
+      const { parseTitle: rateLimits } = RATE_LIMIT_TIERS;
 
-      const burstKey = RateLimit.makeKey([
-        "rl",
-        "parse-title",
-        "burst",
-        "ip",
-        ip,
-      ]);
-      const dailyKey = RateLimit.makeKey([
-        "rl",
-        "parse-title",
-        "daily",
-        "ip",
-        ip,
-      ]);
+      const burstKey = RateLimit.makeKey(["rl", "parse-title", "burst", "ip", ip]);
+      const dailyKey = RateLimit.makeKey(["rl", "parse-title", "daily", "ip", ip]);
 
       const burst = await RateLimit.checkCounterLimit({
         key: burstKey,
-        windowSeconds: BURST_WINDOW,
-        limit: BURST_LIMIT,
+        windowSeconds: rateLimits.burst.window,
+        limit: rateLimits.burst.limit,
       });
       if (!burst.allowed) {
-        return new Response(
-          JSON.stringify({ error: "rate_limit_exceeded", scope: "burst" }),
-          {
-            status: 429,
-            headers: {
-              "Retry-After": String(burst.resetSeconds ?? BURST_WINDOW),
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
+        return jsonResponse(
+          { error: "rate_limit_exceeded", scope: "burst" },
+          429,
+          effectiveOrigin,
+          { "Retry-After": String(burst.resetSeconds ?? rateLimits.burst.window) }
         );
       }
 
       const daily = await RateLimit.checkCounterLimit({
         key: dailyKey,
-        windowSeconds: DAILY_WINDOW,
-        limit: DAILY_LIMIT,
+        windowSeconds: rateLimits.daily.window,
+        limit: rateLimits.daily.limit,
       });
       if (!daily.allowed) {
-        return new Response(
-          JSON.stringify({ error: "rate_limit_exceeded", scope: "daily" }),
-          {
-            status: 429,
-            headers: {
-              "Retry-After": String(daily.resetSeconds ?? DAILY_WINDOW),
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
+        return jsonResponse(
+          { error: "rate_limit_exceeded", scope: "daily" },
+          429,
+          effectiveOrigin,
+          { "Retry-After": String(daily.resetSeconds ?? rateLimits.daily.window) }
         );
       }
     } catch (e) {
@@ -114,10 +90,7 @@ export default async function handler(req: Request) {
       (await req.json()) as ParseTitleRequest;
 
     if (!rawTitle || typeof rawTitle !== "string") {
-      return new Response(JSON.stringify({ error: "No title provided" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return errorResponse("No title provided", 400, effectiveOrigin);
     }
 
     // Use generateText with structured output (AI SDK v6)
@@ -152,28 +125,19 @@ export default async function handler(req: Request) {
       album: parsedData.album ?? undefined, // Default to undefined if no album found
     };
 
-    return new Response(JSON.stringify(result), {
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": effectiveOrigin!,
-      },
-    });
+    return jsonResponse(result, 200, effectiveOrigin);
   } catch (error: unknown) {
     console.error("Error parsing title:", error);
 
-    // Simplified error handling for now, can be enhanced based on AI SDK specifics if needed
+    // Simplified error handling
     let status = 500;
     let errorMessage = "Error parsing title";
-    let errorDetails: string | undefined;
 
     if (error instanceof Error) {
       errorMessage = error.message;
-      // Potentially check for specific AI SDK error types here
-      // For example, if the SDK throws structured errors
     }
 
-    // Attempt to get status code if available (might differ with AI SDK)
-    // This part might need adjustment depending on how AI SDK surfaces errors
+    // Attempt to get status code if available
     if (
       typeof error === "object" &&
       error !== null &&
@@ -183,15 +147,6 @@ export default async function handler(req: Request) {
       status = error.status;
     }
 
-    return new Response(
-      JSON.stringify({ error: errorMessage, details: errorDetails }),
-      {
-        status,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      }
-    );
+    return errorResponse(errorMessage, status, effectiveOrigin);
   }
 }

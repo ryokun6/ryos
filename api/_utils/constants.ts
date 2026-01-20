@@ -37,6 +37,10 @@ export const REDIS_PREFIXES = {
   songMeta: "song:meta:",
   songContent: "song:content:",
   songsSet: "songs",
+  
+  // Internet Explorer / iframe-check cache
+  ieCache: "ie:cache:",
+  waybackCache: "wayback:cache:",
 } as const;
 
 // ============================================================================
@@ -89,6 +93,31 @@ export const RATE_LIMIT_TIERS = {
   ai: {
     authenticated: { window: 5 * 3600, limit: 15 },  // 15 per 5 hours
     anonymous: { window: 86400, limit: 3 },          // 3 per day
+  },
+  
+  // Applet AI (hourly limits)
+  appletAi: {
+    text: {
+      anonymous: { window: 3600, limit: 15 },       // 15/hour for anonymous
+      authenticated: { window: 3600, limit: 50 },   // 50/hour for authenticated
+    },
+    image: {
+      anonymous: { window: 3600, limit: 1 },        // 1/hour for anonymous
+      authenticated: { window: 3600, limit: 12 },   // 12/hour for authenticated
+    },
+  },
+  
+  // Parse title
+  parseTitle: {
+    burst: { window: 60, limit: 15 },               // 15/minute
+    daily: { window: 86400, limit: 500 },           // 500/day
+  },
+  
+  // iframe-check / Internet Explorer
+  iframeCheck: {
+    global: { window: 60, limit: 300 },             // 300/minute global
+    perHost: { window: 60, limit: 100 },            // 100/minute per host
+    cache: { window: 60, limit: 120 },              // 120/minute for cache ops
   },
   
   // Chat/messaging
