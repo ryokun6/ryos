@@ -54,6 +54,7 @@ export interface FullScreenPortalProps {
   registerActivity: () => void;
   isPlaying: boolean;
   statusMessage: string | null;
+  disableTapToPlayPause?: boolean;
   // Fullscreen lyrics controls
   currentTranslationCode: string | null;
   onSelectTranslation: (code: string | null) => void;
