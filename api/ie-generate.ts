@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   streamText,
   smoothStream,
@@ -6,12 +7,10 @@ import {
   type UIMessage,
 } from "ai";
 import {
-  wrapHandler,
   createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
+  isOriginAllowed,
+  getOriginFromVercel,
+  getClientIpFromRequest,
 } from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import {
@@ -26,8 +25,6 @@ import {
   IE_HTML_GENERATION_INSTRUCTIONS,
   } from "./_utils/_aiPrompts.js";
 import { SUPPORTED_AI_MODELS } from "../src/types/aiModels.js";
-
-// CORS handled via shared utils
 
 // After ALLOWED_ORIGINS const block, add Redis setup and cache prefix
 
@@ -74,8 +71,8 @@ interface IEGenerateRequestBody {
 
 // --- Utility Functions ----------------------------------------------------
 
-const isValidOrigin = (origin: string | null): boolean =>
-  isAllowedOrigin(origin);
+const isValidOrigin = (origin: string | undefined): boolean =>
+  isOriginAllowed(origin);
 
 const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
   return messages.map((msg, index) => {
@@ -181,19 +178,29 @@ ${RYO_PERSONA_INSTRUCTIONS}`;
   return finalPrompt;
 };
 
-async function webHandler(req: Request) {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
   // CORS / Origin validation
-  const effectiveOrigin = getEffectiveOrigin(req);
+  const origin = getOriginFromVercel(req);
+  
   if (req.method === "OPTIONS") {
-    const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    res.setHeader("Access-Control-Allow-Origin", origin || "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
+    res.status(204).end();
+    return;
   }
-  if (!isValidOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+  
+  if (!isValidOrigin(origin)) {
+    res.status(403).send("Unauthorized");
+    return;
   }
 
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    res.status(405).send("Method not allowed");
+    return;
   }
 
   try {
@@ -201,7 +208,7 @@ async function webHandler(req: Request) {
     // Rate limiting (burst + budget per IP)
     // ---------------------------
     try {
-      const ip = getClientIp(req);
+      const ip = getClientIpFromRequest(req);
       const BURST_WINDOW = 60; // 1 minute
       const BURST_LIMIT = 3;
       const BUDGET_WINDOW = 5 * 60 * 60; // 5 hours
@@ -216,22 +223,20 @@ async function webHandler(req: Request) {
         limit: BURST_LIMIT,
       });
       if (!burst.allowed) {
-        const headers = new Headers({
-          "Retry-After": String(burst.resetSeconds ?? BURST_WINDOW),
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin,
+        res.setHeader("Retry-After", String(burst.resetSeconds ?? BURST_WINDOW));
+        res.setHeader("Content-Type", "application/json");
+        if (origin) {
+          res.setHeader("Access-Control-Allow-Origin", origin);
+        }
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          scope: "burst",
+          limit: burst.limit,
+          windowSeconds: burst.windowSeconds,
+          resetSeconds: burst.resetSeconds,
+          identifier: `ip:${ip}`,
         });
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            scope: "burst",
-            limit: burst.limit,
-            windowSeconds: burst.windowSeconds,
-            resetSeconds: burst.resetSeconds,
-            identifier: `ip:${ip}`,
-          }),
-          { status: 429, headers }
-        );
+        return;
       }
 
       const budget = await RateLimit.checkCounterLimit({
@@ -240,22 +245,20 @@ async function webHandler(req: Request) {
         limit: BUDGET_LIMIT,
       });
       if (!budget.allowed) {
-        const headers = new Headers({
-          "Retry-After": String(budget.resetSeconds ?? BUDGET_WINDOW),
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin,
+        res.setHeader("Retry-After", String(budget.resetSeconds ?? BUDGET_WINDOW));
+        res.setHeader("Content-Type", "application/json");
+        if (origin) {
+          res.setHeader("Access-Control-Allow-Origin", origin);
+        }
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          scope: "budget",
+          limit: budget.limit,
+          windowSeconds: budget.windowSeconds,
+          resetSeconds: budget.resetSeconds,
+          identifier: `ip:${ip}`,
         });
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            scope: "budget",
-            limit: budget.limit,
-            windowSeconds: budget.windowSeconds,
-            resetSeconds: budget.resetSeconds,
-            identifier: `ip:${ip}`,
-          }),
-          { status: 429, headers }
-        );
+        return;
       }
     } catch (e) {
       // Fail open on limiter error to avoid blocking
@@ -265,19 +268,14 @@ async function webHandler(req: Request) {
     const requestId = generateRequestId();
     const startTime =
       typeof performance !== "undefined" ? performance.now() : Date.now();
-    const urlObj = new URL(req.url);
+    
+    // Get query params from request
+    const queryModel = req.query.model as SupportedModel | null;
+    const targetUrl = req.query.url as string | undefined;
+    const targetYear = req.query.year as string | undefined;
 
-    const queryModel = urlObj.searchParams.get(
-      "model"
-    ) as SupportedModel | null;
-    // Extract caching parameters from query string
-    const targetUrl = urlObj.searchParams.get("url");
-    const targetYear = urlObj.searchParams.get("year");
-
-    // Parse JSON body once
-    const bodyData = (await req
-      .json()
-      .catch(() => ({}))) as IEGenerateRequestBody;
+    // Parse JSON body
+    const bodyData = (req.body || {}) as IEGenerateRequestBody;
 
     const bodyUrl = bodyData.url;
     const bodyYear = bodyData.year;
@@ -293,8 +291,8 @@ async function webHandler(req: Request) {
     const normalizedUrlForKey = normalizeUrlForCacheKey(rawUrl);
 
     logRequest(
-      req.method,
-      req.url,
+      req.method || "POST",
+      req.url || "/api/ie-generate",
       `${rawUrl} (${effectiveYearStr || "N/A"})`,
       requestId
     ); // Log original requested URL
@@ -318,11 +316,13 @@ async function webHandler(req: Request) {
     const model = queryModel || bodyModel || DEFAULT_MODEL;
 
     if (!Array.isArray(incomingMessages)) {
-      return new Response("Invalid messages format", { status: 400 });
+      res.status(400).send("Invalid messages format");
+      return;
     }
 
     if (model !== null && !SUPPORTED_AI_MODELS.includes(model)) {
-      return new Response(`Unsupported model: ${model}`, { status: 400 });
+      res.status(400).send(`Unsupported model: ${model}`);
+      return;
     }
 
     const selectedModel = getModelInstance(model as SupportedModel);
@@ -410,29 +410,42 @@ async function webHandler(req: Request) {
       },
     });
 
+    // Get the response from the AI SDK
     const response = result.toUIMessageStreamResponse();
 
-    const headers = new Headers(response.headers);
-    headers.set("Access-Control-Allow-Origin", effectiveOrigin!);
+    // Set headers for streaming
+    res.setHeader("Content-Type", response.headers.get("Content-Type") || "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    if (origin) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+    }
 
-    const resp = new Response(response.body, {
-      status: response.status,
-      headers,
-    });
+    // Stream the response body
+    if (response.body) {
+      const reader = response.body.getReader();
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(value);
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    }
 
-    return resp;
+    res.end();
   } catch (error) {
     const requestId = generateRequestId(); // fallback id
     logError(requestId, "IE Generate API error", error);
 
     if (error instanceof SyntaxError) {
-      return new Response(`Bad Request: Invalid JSON - ${error.message}`, {
-        status: 400,
-      });
+      res.status(400).send(`Bad Request: Invalid JSON - ${error.message}`);
+      return;
     }
 
-    return new Response("Internal Server Error", { status: 500 });
+    res.status(500).send("Internal Server Error");
   }
 }
-
-export default wrapHandler(webHandler);
