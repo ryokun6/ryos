@@ -5,11 +5,13 @@
  * POST - Create a new room
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   createRedis,
-  getEffectiveOrigin,
+  getEffectiveOriginNode,
   isAllowedOrigin,
-  preflightIfNeeded,
+  setCorsHeadersNode,
+  handlePreflightNode,
 } from "../_utils/middleware.js";
 import { validateAuth } from "../_utils/auth/index.js";
 import { isProfaneUsername } from "../_utils/_validation.js";
@@ -25,35 +27,37 @@ import {
 import { setRoomPresence } from "./_helpers/_presence.js";
 import type { Room } from "./_helpers/_types.js";
 
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
+export const maxDuration = 30;
 
-export default async function handler(req: Request) {
-  const origin = getEffectiveOrigin(req);
+function getHeader(req: VercelRequest, name: string): string | null {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) return value[0] || null;
+  return value || null;
+}
+
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const origin = getEffectiveOriginNode(req);
   
   // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["GET", "POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+  if (handlePreflightNode(req, res, ["GET", "POST", "OPTIONS"])) {
+    return;
   }
+
+  setCorsHeadersNode(res, origin, ["GET", "POST", "OPTIONS"]);
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
-
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
   // GET - List rooms
   if (req.method === "GET") {
     try {
-      const url = new URL(req.url);
-      const username = url.searchParams.get("username")?.toLowerCase() || null;
+      const username = (req.query.username as string)?.toLowerCase() || null;
 
       const allRooms = await getRoomsWithCountsFast();
 
@@ -65,59 +69,62 @@ export default async function handler(req: Request) {
         return false;
       });
 
-      return new Response(JSON.stringify({ rooms: visibleRooms }), { status: 200, headers });
+      res.status(200).json({ rooms: visibleRooms });
+      return;
     } catch (error) {
       console.error("Error fetching rooms:", error);
-      return new Response(JSON.stringify({ error: "Failed to fetch rooms" }), { status: 500, headers });
+      res.status(500).json({ error: "Failed to fetch rooms" });
+      return;
     }
   }
 
   // POST - Create room
   if (req.method === "POST") {
-    const authHeader = req.headers.get("authorization");
-    const usernameHeader = req.headers.get("x-username");
+    const authHeader = getHeader(req, "authorization");
+    const usernameHeader = getHeader(req, "x-username");
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
     if (!token || !usernameHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
+      res.status(401).json({ error: "Unauthorized - missing credentials" });
+      return;
     }
 
     const authResult = await validateAuth(createRedis(), usernameHeader, token, {});
     if (!authResult.valid) {
-      return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
+      res.status(401).json({ error: "Unauthorized - invalid token" });
+      return;
     }
 
     const username = usernameHeader.toLowerCase();
     
-    let body;
-    try {
-      body = await req.json();
-    } catch {
-      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers });
-    }
-
-    const { name: originalName, type = "public", members = [] } = body || {};
+    const body = req.body || {};
+    const { name: originalName, type = "public", members = [] } = body;
 
     if (!["public", "private"].includes(type)) {
-      return new Response(JSON.stringify({ error: "Invalid room type" }), { status: 400, headers });
+      res.status(400).json({ error: "Invalid room type" });
+      return;
     }
 
     if (type === "public") {
       if (!originalName) {
-        return new Response(JSON.stringify({ error: "Room name is required for public rooms" }), { status: 400, headers });
+        res.status(400).json({ error: "Room name is required for public rooms" });
+        return;
       }
       if (username !== "ryo") {
-        return new Response(JSON.stringify({ error: "Forbidden - Only admin can create public rooms" }), { status: 403, headers });
+        res.status(403).json({ error: "Forbidden - Only admin can create public rooms" });
+        return;
       }
       if (isProfaneUsername(originalName)) {
-        return new Response(JSON.stringify({ error: "Room name contains inappropriate language" }), { status: 400, headers });
+        res.status(400).json({ error: "Room name contains inappropriate language" });
+        return;
       }
     }
 
     let normalizedMembers = [...(members || [])];
     if (type === "private") {
       if (!members || members.length === 0) {
-        return new Response(JSON.stringify({ error: "At least one member is required for private rooms" }), { status: 400, headers });
+        res.status(400).json({ error: "At least one member is required for private rooms" });
+        return;
       }
       normalizedMembers = members.map((m: string) => m.toLowerCase());
       if (!normalizedMembers.includes(username)) {
@@ -151,15 +158,14 @@ export default async function handler(req: Request) {
         await Promise.all(normalizedMembers.map((member: string) => setRoomPresence(roomId, member)));
       }
 
-      // Note: Pusher broadcast is handled separately (not Edge-compatible)
-      // The frontend polls for updates or uses client-side Pusher
-
-      return new Response(JSON.stringify({ room }), { status: 201, headers });
+      res.status(201).json({ room });
+      return;
     } catch (error) {
       console.error("Error creating room:", error);
-      return new Response(JSON.stringify({ error: "Failed to create room" }), { status: 500, headers });
+      res.status(500).json({ error: "Failed to create room" });
+      return;
     }
   }
 
-  return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+  res.status(405).json({ error: "Method not allowed" });
 }

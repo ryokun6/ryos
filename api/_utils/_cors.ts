@@ -1,4 +1,7 @@
 // Shared CORS utilities for API routes
+// Supports both Edge (Request/Response) and Node.js (VercelRequest/VercelResponse) runtimes
+
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 type VercelEnv = "production" | "preview" | "development";
 
@@ -118,4 +121,117 @@ export function preflightIfNeeded(
     "Access-Control-Allow-Credentials": "true",
   };
   return new Response(null, { headers });
+}
+
+// ============================================================================
+// Node.js (VercelRequest/VercelResponse) Helpers
+// ============================================================================
+
+/**
+ * Get header value from VercelRequest (handles string or string[] types)
+ */
+function getVercelHeader(req: VercelRequest, name: string): string | null {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) {
+    return value[0] || null;
+  }
+  return value || null;
+}
+
+/**
+ * Get effective origin from VercelRequest headers
+ */
+export function getEffectiveOriginNode(req: VercelRequest): string | null {
+  try {
+    const origin = getVercelHeader(req, "origin");
+    if (origin) return origin;
+    const referer = getVercelHeader(req, "referer");
+    if (!referer) return null;
+    return new URL(referer).origin;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Set CORS headers on VercelResponse
+ */
+export function setCorsHeadersNode(
+  res: VercelResponse,
+  origin: string | null | undefined,
+  methods: string[] = ["GET", "POST", "DELETE", "OPTIONS"]
+): void {
+  res.setHeader("Content-Type", "application/json");
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", methods.join(", "));
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username, User-Agent");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+}
+
+/**
+ * Handle CORS preflight for VercelRequest/VercelResponse
+ * Returns true if preflight was handled, false otherwise
+ */
+export function handlePreflightNode(
+  req: VercelRequest,
+  res: VercelResponse,
+  allowedMethods: string[] = ["GET", "POST", "DELETE", "OPTIONS"]
+): boolean {
+  if (req.method !== "OPTIONS") return false;
+  
+  const origin = getEffectiveOriginNode(req);
+  if (!origin || !isAllowedOrigin(origin)) {
+    res.status(403).json({ error: "Unauthorized" });
+    return true;
+  }
+  
+  // Echo back requested headers when provided
+  const requestedHeaders = getVercelHeader(req, "access-control-request-headers");
+  const allowHeaders =
+    requestedHeaders && requestedHeaders.trim().length > 0
+      ? requestedHeaders
+      : "Content-Type, Authorization, X-Username, User-Agent";
+  
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Access-Control-Allow-Methods", allowedMethods.join(", "));
+  res.setHeader("Access-Control-Allow-Headers", allowHeaders);
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.status(204).end();
+  return true;
+}
+
+/**
+ * Get client IP from VercelRequest
+ */
+export function getClientIpNode(req: VercelRequest): string {
+  try {
+    const origin = getVercelHeader(req, "origin") || "";
+    const xVercel = getVercelHeader(req, "x-vercel-forwarded-for");
+    const xForwarded = getVercelHeader(req, "x-forwarded-for");
+    const xRealIp = getVercelHeader(req, "x-real-ip");
+    const cfIp = getVercelHeader(req, "cf-connecting-ip");
+    const raw = xVercel || xForwarded || xRealIp || cfIp || "";
+    let ip = raw.split(",")[0].trim();
+
+    if (!ip) ip = "unknown-ip";
+
+    // Normalize IPv6-mapped IPv4 and loopback variants
+    ip = ip.replace(/^::ffff:/i, "");
+    const lower = ip.toLowerCase();
+    const isLocalOrigin = /^http:\/\/localhost(?::\d+)?$/.test(origin);
+    if (
+      isLocalOrigin ||
+      lower === "::1" ||
+      lower === "0:0:0:0:0:0:0:1" ||
+      lower === "127.0.0.1"
+    ) {
+      return "localhost-dev";
+    }
+
+    return ip;
+  } catch {
+    return "unknown-ip";
+  }
 }

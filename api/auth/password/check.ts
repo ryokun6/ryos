@@ -4,66 +4,71 @@
  * Check if user has a password set
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   createRedis,
-  getEffectiveOrigin,
+  getEffectiveOriginNode,
   isAllowedOrigin,
-  preflightIfNeeded,
-  extractAuth,
-  errorResponse,
-  jsonResponse,
+  setCorsHeadersNode,
+  handlePreflightNode,
 } from "../../_utils/middleware.js";
 import { userHasPassword, validateAuth } from "../../_utils/auth/index.js";
 
+export const runtime = "nodejs";
+export const maxDuration = 15;
 
-export const config = {
-  runtime: "edge",
-};
+function getHeader(req: VercelRequest, name: string): string | null {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) return value[0] || null;
+  return value || null;
+}
 
-export default async function handler(req: Request) {
-  const origin = getEffectiveOrigin(req);
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const origin = getEffectiveOriginNode(req);
   
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["GET", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+  // Handle CORS preflight
+  if (handlePreflightNode(req, res, ["GET", "OPTIONS"])) {
+    return;
   }
 
+  setCorsHeadersNode(res, origin, ["GET", "OPTIONS"]);
+
   if (req.method !== "GET") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { 
-      status: 405, 
-      headers: { "Content-Type": "application/json" },
-    });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
-
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
   const redis = createRedis();
 
   // Extract and validate auth
-  const { username, token } = extractAuth(req);
+  const authHeader = getHeader(req, "authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const username = getHeader(req, "x-username");
+
   if (!username || !token) {
-    return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
+    res.status(401).json({ error: "Unauthorized - missing credentials" });
+    return;
   }
 
   const authResult = await validateAuth(redis, username, token, { allowExpired: true });
   if (!authResult.valid) {
-    return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
+    res.status(401).json({ error: "Unauthorized - invalid token" });
+    return;
   }
 
   // Check if password is set
   const hasPassword = await userHasPassword(redis, username.toLowerCase());
 
-  return new Response(JSON.stringify({ 
+  res.status(200).json({ 
     hasPassword,
     username: username.toLowerCase(),
-  }), { status: 200, headers });
+  });
 }
