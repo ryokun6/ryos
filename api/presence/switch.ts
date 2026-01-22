@@ -10,6 +10,7 @@ import {
   preflightIfNeeded,
   errorResponse,
   jsonResponse,
+  wrapHandler,
 } from "../_utils/middleware.js";
 import { isProfaneUsername, assertValidRoomId } from "../_utils/_validation.js";
 
@@ -28,7 +29,7 @@ interface SwitchRequest {
   username: string;
 }
 
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   const origin = getEffectiveOrigin(req);
   
   if (req.method === "OPTIONS") {
@@ -110,3 +111,5 @@ export default async function handler(req: Request) {
     return new Response(JSON.stringify({ error: "Failed to switch room" }), { status: 500, headers });
   }
 }
+
+export default wrapHandler(webHandler);

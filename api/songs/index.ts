@@ -25,6 +25,7 @@ import {
   isAllowedOrigin,
   preflightIfNeeded,
   getClientIp,
+  wrapHandler,
 } from "../_utils/middleware.js";
 import { validateAuth } from "../_utils/auth/index.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
@@ -194,7 +195,7 @@ function getFieldValue<T>(value: unknown): T | undefined {
 // Main Handler
 // =============================================================================
 
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   const requestId = generateRequestId();
   const startTime = Date.now();
 
@@ -634,3 +635,5 @@ export default async function handler(req: Request) {
     return errorResponse(errorMessage, 500);
   }
 }
+
+export default wrapHandler(webHandler);

@@ -10,6 +10,7 @@ import {
   preflightIfNeeded,
   errorResponse,
   jsonResponse,
+  wrapHandler,
 } from "../_utils/middleware.js";
 import { ROOM_ID_REGEX } from "../_utils/_validation.js";
 import { roomExists, getMessages } from "../rooms/_helpers/_redis.js";
@@ -20,7 +21,7 @@ export const config = {
   runtime: "nodejs",
 };
 
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   const origin = getEffectiveOrigin(req);
   
   if (req.method === "OPTIONS") {
@@ -86,3 +87,5 @@ export default async function handler(req: Request) {
     return new Response(JSON.stringify({ error: "Failed to fetch bulk messages" }), { status: 500, headers });
   }
 }
+
+export default wrapHandler(webHandler);

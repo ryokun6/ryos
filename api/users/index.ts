@@ -10,6 +10,7 @@ import {
   preflightIfNeeded,
   errorResponse,
   jsonResponse,
+  wrapHandler,
 } from "../_utils/middleware.js";
 import { handleGetUsers } from "../rooms/_helpers/_users.js";
 
@@ -18,7 +19,7 @@ export const config = {
   runtime: "nodejs",
 };
 
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   const origin = getEffectiveOrigin(req);
   
   if (req.method === "OPTIONS") {
@@ -53,3 +54,5 @@ export default async function handler(req: Request) {
     return new Response(JSON.stringify({ error: "Failed to search users" }), { status: 500, headers });
   }
 }
+
+export default wrapHandler(webHandler);

@@ -12,6 +12,7 @@ import {
   isAllowedOrigin,
   preflightIfNeeded,
   getClientIp,
+  wrapHandler,
 } from "../_utils/middleware.js";
 import { validateAuth } from "../_utils/auth/index.js";
 import { assertValidRoomId, escapeHTML, filterProfanityPreservingUrls } from "../_utils/_validation.js";
@@ -58,7 +59,7 @@ respond in the user's language. comment on the recent conversation and mentioned
 when user asks for an aquarium, fish tank, fishes, or sam's aquarium, include the special token [[AQUARIUM]] in your response.
 </chat_instructions>`;
 
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   const origin = getEffectiveOrigin(req);
   
   if (req.method === "OPTIONS") {
@@ -170,3 +171,5 @@ export default async function handler(req: Request) {
 
   return new Response(JSON.stringify({ message }), { status: 201, headers });
 }
+
+export default wrapHandler(webHandler);
