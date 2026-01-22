@@ -3,6 +3,7 @@ export const config = {
 };
 
 import {
+  wrapHandler,
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
@@ -60,7 +61,7 @@ async function getYouTubeMetadata(url: string): Promise<LinkMetadata> {
   };
 }
 
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   const effectiveOrigin = getEffectiveOrigin(req);
   if (!isAllowedOrigin(effectiveOrigin)) {
     return new Response("Unauthorized", { status: 403 });
@@ -304,3 +305,5 @@ export default async function handler(req: Request) {
     return errorResponse(errorMessage, status, effectiveOrigin);
   }
 }
+
+export default wrapHandler(webHandler);
