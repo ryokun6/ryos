@@ -17,7 +17,7 @@ import { validateAuth } from "../../_utils/auth/index.js";
 import { isProfaneUsername } from "../../_utils/_validation.js";
 
 export const config = {
-  runtime: "edge",
+  runtime: "bun",
 };
 
 export default async function handler(req: Request) {

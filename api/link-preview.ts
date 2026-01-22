@@ -1,5 +1,5 @@
 export const config = {
-  runtime: "edge",
+  runtime: "bun",
 };
 
 import {

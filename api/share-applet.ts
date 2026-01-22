@@ -10,9 +10,9 @@ import {
 import { validateAuth, generateAuthToken } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 
-// Vercel Edge Function configuration
+// Vercel Bun Function configuration
 export const config = {
-  runtime: "edge",
+  runtime: "bun",
 };
 
 // Rate limiting configuration

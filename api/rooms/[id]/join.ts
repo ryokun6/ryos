@@ -16,7 +16,7 @@ import { setRoomPresence, refreshRoomUserCount } from "../_helpers/_presence.js"
 import type { Room } from "../_helpers/_types.js";
 
 export const config = {
-  runtime: "edge",
+  runtime: "bun",
 };
 
 function getRoomId(req: Request): string | null {

@@ -19,7 +19,7 @@ import { ensureUserExists } from "../rooms/_helpers/_users.js";
 
 
 export const config = {
-  runtime: "edge",
+  runtime: "bun",
 };
 
 interface SwitchRequest {

@@ -44,9 +44,9 @@ import {
 } from "../_utils/_song-service.js";
 import { fetchCoverUrl } from "./_kugou.js";
 
-// Vercel Edge Function configuration
+// Vercel Bun Function configuration
 export const config = {
-  runtime: "edge",
+  runtime: "bun",
 };
 
 // Rate limiting configuration

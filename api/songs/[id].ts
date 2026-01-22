@@ -101,9 +101,9 @@ import {
 } from "ai";
 import { openai } from "@ai-sdk/openai";
 
-// Vercel Edge Function configuration
+// Vercel Bun Function configuration
 export const config = {
-  runtime: "edge",
+  runtime: "bun",
 };
 export const maxDuration = 120;
 

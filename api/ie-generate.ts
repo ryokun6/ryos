@@ -94,13 +94,13 @@ const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
   });
 };
 
-// --- Edge Runtime Config --------------------------------------------------
+// --- Bun Runtime Config --------------------------------------------------
 
 export const maxDuration = 80;
-export const runtime = "edge";
+export const runtime = "bun";
 
 export const stream = true;
-export const config = { runtime: "edge" };
+export const config = { runtime: "bun" };
 
 // --- Handler --------------------------------------------------------------
 

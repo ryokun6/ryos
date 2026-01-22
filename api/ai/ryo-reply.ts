@@ -20,7 +20,7 @@ import { roomExists, addMessage, generateId, getCurrentTimestamp } from "../room
 import type { Message } from "../rooms/_helpers/_types.js";
 
 export const config = {
-  runtime: "edge",
+  runtime: "bun",
 };
 
 interface RyoReplyRequest {

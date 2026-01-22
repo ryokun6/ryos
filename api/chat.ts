@@ -260,9 +260,9 @@ interface SystemState {
 }
 
 
-// Edge runtime configuration
+// Bun runtime configuration
 export const config = {
-  runtime: "edge",
+  runtime: "bun",
 };
 export const maxDuration = 80;
 

@@ -36,7 +36,7 @@ import { ensureUserExists } from "../_helpers/_users.js";
 import type { Message, Room, User } from "../_helpers/_types.js";
 
 export const config = {
-  runtime: "edge",
+  runtime: "bun",
 };
 
 // ============================================================================

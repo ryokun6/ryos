@@ -13,7 +13,7 @@ import {
 } from "../../_utils/auth/index.js";
 import { hashPassword, setUserPasswordHash } from "../../_utils/auth/_password.js";
 
-export const runtime = "nodejs";
+export const runtime = "bun";
 export const maxDuration = 15;
 
 interface SetPasswordRequest {

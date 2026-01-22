@@ -56,7 +56,7 @@ const generateRequestId = (): string =>
 const redis = createRedis();
 
 export const config = {
-  runtime: "edge",
+  runtime: "bun",
 };
 export const maxDuration = 60;
 

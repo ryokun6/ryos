@@ -8,7 +8,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import Pusher from "pusher";
 
-export const runtime = "nodejs";
+export const runtime = "bun";
 export const maxDuration = 15;
 
 const pusher = new Pusher({

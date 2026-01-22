@@ -31,7 +31,7 @@ import {
 import type { Room } from "./_helpers/_types.js";
 
 export const config = {
-  runtime: "edge",
+  runtime: "bun",
 };
 
 function getRoomId(req: Request): string | null {

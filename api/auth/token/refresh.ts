@@ -25,7 +25,7 @@ import {
 import * as RateLimit from "../../_utils/_rate-limit.js";
 
 export const config = {
-  runtime: "edge",
+  runtime: "bun",
 };
 
 interface RefreshRequest {
