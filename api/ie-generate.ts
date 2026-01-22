@@ -94,13 +94,10 @@ const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
   });
 };
 
-// --- Edge Runtime Config --------------------------------------------------
+// --- Node.js Runtime Config --------------------------------------------------
 
+export const runtime = "nodejs";
 export const maxDuration = 80;
-export const runtime = "edge";
-
-export const stream = true;
-export const config = { runtime: "edge" };
 
 // --- Handler --------------------------------------------------------------
 

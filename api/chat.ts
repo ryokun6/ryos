@@ -260,10 +260,8 @@ interface SystemState {
 }
 
 
-// Edge runtime configuration
-export const config = {
-  runtime: "edge",
-};
+// Node.js runtime configuration
+export const runtime = "nodejs";
 export const maxDuration = 80;
 
 // Unified static prompt with all instructions

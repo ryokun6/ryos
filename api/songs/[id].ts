@@ -101,10 +101,8 @@ import {
 } from "ai";
 import { openai } from "@ai-sdk/openai";
 
-// Vercel Edge Function configuration
-export const config = {
-  runtime: "edge",
-};
+// Vercel Node.js Function configuration
+export const runtime = "nodejs";
 export const maxDuration = 120;
 
 // Rate limiting configuration

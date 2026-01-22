@@ -1,14 +1,25 @@
+/**
+ * POST /api/speech
+ * 
+ * Text-to-speech using OpenAI or ElevenLabs
+ */
+
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { experimental_generateSpeech as generateSpeech } from "ai";
 import { openai } from "@ai-sdk/openai";
 import {
   createRedis,
-  getEffectiveOrigin,
+  getEffectiveOriginNode,
   isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
+  setCorsHeadersNode,
+  handlePreflightNode,
+  getClientIpNode,
 } from "./_utils/middleware.js";
 import { validateAuth } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 // --- Default Configuration -----------------------------------------------
 
@@ -32,15 +43,6 @@ const DEFAULT_ELEVENLABS_VOICE_SETTINGS = {
 
 // --- Logging Utilities ---------------------------------------------------
 
-const logRequest = (
-  method: string,
-  url: string,
-  action: string | null,
-  id: string
-) => {
-  console.log(`[${id}] ${method} ${url} - Action: ${action || "none"}`);
-};
-
 const logInfo = (id: string, message: string, data?: unknown) => {
   console.log(`[${id}] INFO: ${message}`, data ?? "");
 };
@@ -54,11 +56,6 @@ const generateRequestId = (): string =>
 
 // Redis client setup
 const redis = createRedis();
-
-export const config = {
-  runtime: "edge",
-};
-export const maxDuration = 60;
 
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 
@@ -84,6 +81,12 @@ interface SpeechRequest {
     use_speaker_boost?: boolean;
     speed?: number;
   };
+}
+
+function getHeader(req: VercelRequest, name: string): string | null {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) return value[0] || null;
+  return value || null;
 }
 
 // ElevenLabs API function
@@ -130,40 +133,45 @@ const generateElevenLabsSpeech = async (
   return await response.arrayBuffer();
 };
 
-export default async function handler(req: Request) {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
   // Generate a request ID and log the incoming request
   const requestId = generateRequestId();
-  const startTime =
-    typeof performance !== "undefined" ? performance.now() : Date.now();
+  const startTime = Date.now();
 
-  logRequest(req.method, req.url, "speech", requestId);
+  console.log(`[${requestId}] ${req.method} /api/speech`);
 
-  const effectiveOrigin = getEffectiveOrigin(req);
+  const effectiveOrigin = getEffectiveOriginNode(req);
 
-  // Handle CORS pre-flight request
-  if (req.method === "OPTIONS") {
-    const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+  // Handle CORS preflight
+  if (handlePreflightNode(req, res, ["POST", "OPTIONS"])) {
+    return;
   }
 
+  setCorsHeadersNode(res, effectiveOrigin, ["POST", "OPTIONS"]);
+
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
   if (!isAllowedOrigin(effectiveOrigin)) {
     logError(requestId, "Unauthorized origin", effectiveOrigin);
-    return new Response("Unauthorized", { status: 403 });
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
 
   // ---------------------------
   // Authentication extraction
   // ---------------------------
-  const authHeaderInitial = req.headers.get("authorization");
+  const authHeaderInitial = getHeader(req, "authorization");
   const headerAuthToken =
     authHeaderInitial && authHeaderInitial.startsWith("Bearer ")
       ? authHeaderInitial.substring(7)
       : null;
-  const headerUsername = req.headers.get("x-username");
+  const headerUsername = getHeader(req, "x-username");
 
   const username = headerUsername || null;
   const authToken: string | undefined = headerAuthToken || undefined;
@@ -182,7 +190,7 @@ export default async function handler(req: Request) {
   try {
     // Skip rate limiting for authenticated ryo user
     if (!isAuthenticatedRyo) {
-      const ip = getClientIp(req);
+      const ip = getClientIpNode(req);
       // Use identifier (username or anon:ip) like chat.ts does
       const rateLimitIdentifier = isAuthenticated && identifier ? identifier : `anon:${ip}`;
       
@@ -201,27 +209,19 @@ export default async function handler(req: Request) {
       });
 
       if (!burst.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            scope: "burst",
-            limit: burst.limit,
-            windowSeconds: burst.windowSeconds,
-            resetSeconds: burst.resetSeconds,
-            identifier: rateLimitIdentifier,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Retry-After": String(burst.resetSeconds ?? BURST_WINDOW),
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-              "X-RateLimit-Limit": String(burst.limit),
-              "X-RateLimit-Remaining": String(Math.max(0, burst.limit - burst.count)),
-              "X-RateLimit-Reset": String(burst.resetSeconds ?? BURST_WINDOW),
-            },
-          }
-        );
+        res.setHeader("Retry-After", String(burst.resetSeconds ?? BURST_WINDOW));
+        res.setHeader("X-RateLimit-Limit", String(burst.limit));
+        res.setHeader("X-RateLimit-Remaining", String(Math.max(0, burst.limit - burst.count)));
+        res.setHeader("X-RateLimit-Reset", String(burst.resetSeconds ?? BURST_WINDOW));
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          scope: "burst",
+          limit: burst.limit,
+          windowSeconds: burst.windowSeconds,
+          resetSeconds: burst.resetSeconds,
+          identifier: rateLimitIdentifier,
+        });
+        return;
       }
 
       const daily = await RateLimit.checkCounterLimit({
@@ -231,27 +231,19 @@ export default async function handler(req: Request) {
       });
 
       if (!daily.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            scope: "daily",
-            limit: daily.limit,
-            windowSeconds: daily.windowSeconds,
-            resetSeconds: daily.resetSeconds,
-            identifier: rateLimitIdentifier,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Retry-After": String(daily.resetSeconds ?? DAILY_WINDOW),
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-              "X-RateLimit-Limit": String(daily.limit),
-              "X-RateLimit-Remaining": String(Math.max(0, daily.limit - daily.count)),
-              "X-RateLimit-Reset": String(daily.resetSeconds ?? DAILY_WINDOW),
-            },
-          }
-        );
+        res.setHeader("Retry-After", String(daily.resetSeconds ?? DAILY_WINDOW));
+        res.setHeader("X-RateLimit-Limit", String(daily.limit));
+        res.setHeader("X-RateLimit-Remaining", String(Math.max(0, daily.limit - daily.count)));
+        res.setHeader("X-RateLimit-Reset", String(daily.resetSeconds ?? DAILY_WINDOW));
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          scope: "daily",
+          limit: daily.limit,
+          windowSeconds: daily.windowSeconds,
+          resetSeconds: daily.resetSeconds,
+          identifier: rateLimitIdentifier,
+        });
+        return;
       }
     } else {
       logInfo(requestId, "Rate limit bypassed for authenticated ryo user");
@@ -262,6 +254,7 @@ export default async function handler(req: Request) {
   }
 
   try {
+    const body = req.body as SpeechRequest;
     const {
       text,
       voice,
@@ -271,7 +264,7 @@ export default async function handler(req: Request) {
       model_id,
       output_format,
       voice_settings,
-    } = (await req.json()) as SpeechRequest;
+    } = body || {};
 
     logInfo(requestId, "Parsed request body", {
       textLength: text?.length,
@@ -286,7 +279,8 @@ export default async function handler(req: Request) {
 
     if (!text || typeof text !== "string" || text.trim().length === 0) {
       logError(requestId, "'text' is required", null);
-      return new Response("'text' is required", { status: 400 });
+      res.status(400).json({ error: "'text' is required" });
+      return;
     }
 
     let audioData: ArrayBuffer;
@@ -328,36 +322,18 @@ export default async function handler(req: Request) {
       });
     }
 
-    // Convert ArrayBuffer to Uint8Array for streaming
-    const uint8Array = new Uint8Array(audioData);
+    // Send audio response
+    res.setHeader("Content-Type", mimeType);
+    res.setHeader("Content-Length", audioData.byteLength.toString());
+    res.setHeader("Cache-Control", "no-store");
+    res.status(200).send(Buffer.from(audioData));
 
-    // Create a ReadableStream for streaming back to the client
-    const stream = new ReadableStream({
-      start(controller) {
-        controller.enqueue(uint8Array);
-        controller.close();
-      },
-    });
-
-    const response = new Response(stream, {
-      headers: {
-        "Content-Type": mimeType,
-        "Content-Length": audioData.byteLength.toString(),
-        "Access-Control-Allow-Origin": effectiveOrigin!,
-        "Cache-Control": "no-store",
-      },
-    });
-
-    const duration =
-      (typeof performance !== "undefined" ? performance.now() : Date.now()) -
-      startTime;
+    const duration = Date.now() - startTime;
     logInfo(requestId, `Request completed in ${duration.toFixed(2)}ms`);
-
-    return response;
   } catch (error: unknown) {
     logError(requestId, "Speech API error", error);
     const message =
       error instanceof Error ? error.message : "Failed to generate speech";
-    return new Response(message, { status: 500 });
+    res.status(500).json({ error: message });
   }
 }

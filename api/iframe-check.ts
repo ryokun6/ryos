@@ -1,4 +1,9 @@
-// No Next.js types needed – omit unused import to keep file framework‑agnostic.
+/**
+ * /api/iframe-check
+ * 
+ * Edge function that checks if a remote website allows itself to be embedded in an iframe.
+ * Also supports proxy mode, AI cache mode, and list-cache mode.
+ */
 
 import {
   createRedis,
@@ -8,10 +13,8 @@ import {
 } from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 
-
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 import { normalizeUrlForCacheKey } from "./_utils/_url.js"; // Import the function
 

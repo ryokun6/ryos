@@ -17,9 +17,7 @@ import {
 import { validateAuth } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const APPLET_SYSTEM_PROMPT = `

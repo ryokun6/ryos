@@ -44,10 +44,9 @@ import {
 } from "../_utils/_song-service.js";
 import { fetchCoverUrl } from "./_kugou.js";
 
-// Vercel Edge Function configuration
-export const config = {
-  runtime: "edge",
-};
+// Vercel Node.js Function configuration
+export const runtime = "nodejs";
+export const maxDuration = 120;
 
 // Rate limiting configuration
 const RATE_LIMITS = {
