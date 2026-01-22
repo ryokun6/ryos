@@ -10,7 +10,7 @@ import * as RateLimit from "./_utils/_rate-limit.js";
 
 
 export const config = {
-  runtime: "bun",
+  runtime: "nodejs",
 };
 
 import { normalizeUrlForCacheKey } from "./_utils/_url.js"; // Import the function

@@ -10,9 +10,9 @@ import {
 import { validateAuth, generateAuthToken } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 
-// Vercel Bun Function configuration
+// Vercel Function configuration (runs on Bun via bunVersion in vercel.json)
 export const config = {
-  runtime: "bun",
+  runtime: "nodejs",
 };
 
 // Rate limiting configuration

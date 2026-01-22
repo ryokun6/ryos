@@ -13,7 +13,7 @@ import { assertValidRoomId } from "../../_utils/_validation.js";
 import { getActiveUsersAndPrune } from "../_helpers/_presence.js";
 
 export const config = {
-  runtime: "bun",
+  runtime: "nodejs",
 };
 
 function getRoomId(req: Request): string | null {

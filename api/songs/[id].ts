@@ -101,9 +101,9 @@ import {
 } from "ai";
 import { openai } from "@ai-sdk/openai";
 
-// Vercel Bun Function configuration
+// Vercel Function configuration (runs on Bun via bunVersion in vercel.json)
 export const config = {
-  runtime: "bun",
+  runtime: "nodejs",
 };
 export const maxDuration = 120;
 

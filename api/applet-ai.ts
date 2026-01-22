@@ -18,7 +18,7 @@ import { validateAuth } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 
 export const config = {
-  runtime: "bun",
+  runtime: "nodejs",
 };
 export const maxDuration = 60;
 

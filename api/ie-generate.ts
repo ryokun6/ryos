@@ -94,13 +94,13 @@ const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
   });
 };
 
-// --- Bun Runtime Config --------------------------------------------------
+// --- Runtime Config (runs on Bun via bunVersion in vercel.json) ----------
 
 export const maxDuration = 80;
-export const runtime = "bun";
+export const runtime = "nodejs";
 
 export const stream = true;
-export const config = { runtime: "bun" };
+export const config = { runtime: "nodejs" };
 
 // --- Handler --------------------------------------------------------------
 

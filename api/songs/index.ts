@@ -44,9 +44,9 @@ import {
 } from "../_utils/_song-service.js";
 import { fetchCoverUrl } from "./_kugou.js";
 
-// Vercel Bun Function configuration
+// Vercel Function configuration (runs on Bun via bunVersion in vercel.json)
 export const config = {
-  runtime: "bun",
+  runtime: "nodejs",
 };
 
 // Rate limiting configuration

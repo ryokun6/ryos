@@ -17,7 +17,7 @@ import { removeRoomPresence, refreshRoomUserCount } from "../_helpers/_presence.
 import type { Room } from "../_helpers/_types.js";
 
 export const config = {
-  runtime: "bun",
+  runtime: "nodejs",
 };
 
 function getRoomId(req: Request): string | null {

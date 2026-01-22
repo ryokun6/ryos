@@ -15,7 +15,7 @@ import { assertValidRoomId } from "../../../_utils/_validation.js";
 import { roomExists, deleteMessage as deleteMessageFromRedis } from "../../_helpers/_redis.js";
 
 export const config = {
-  runtime: "bun",
+  runtime: "nodejs",
 };
 
 function getIds(req: Request): { roomId: string | null; messageId: string | null } {

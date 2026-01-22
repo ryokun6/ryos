@@ -44,6 +44,6 @@ export const CHAT_MIN_INTERVAL_SECONDS = 2;
 // API Configuration
 // ============================================================================
 
-export const runtime = "bun";
+export const runtime = "nodejs";
 export const maxDuration = 15;
 

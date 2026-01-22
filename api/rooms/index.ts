@@ -26,7 +26,7 @@ import { setRoomPresence } from "./_helpers/_presence.js";
 import type { Room } from "./_helpers/_types.js";
 
 export const config = {
-  runtime: "bun",
+  runtime: "nodejs",
 };
 
 export default async function handler(req: Request) {

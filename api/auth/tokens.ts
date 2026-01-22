@@ -17,7 +17,7 @@ import { getUserTokens, validateAuth } from "../_utils/auth/index.js";
 
 
 export const config = {
-  runtime: "bun",
+  runtime: "nodejs",
 };
 
 export default async function handler(req: Request) {

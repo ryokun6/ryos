@@ -22,7 +22,7 @@ const openai = new OpenAI({
 
 
 export const config = {
-  runtime: "bun",
+  runtime: "nodejs",
 };
 
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB limit imposed by OpenAI

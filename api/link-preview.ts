@@ -1,5 +1,5 @@
 export const config = {
-  runtime: "bun",
+  runtime: "nodejs",
 };
 
 import {

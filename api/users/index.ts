@@ -15,7 +15,7 @@ import { handleGetUsers } from "../rooms/_helpers/_users.js";
 
 
 export const config = {
-  runtime: "bun",
+  runtime: "nodejs",
 };
 
 export default async function handler(req: Request) {

@@ -16,7 +16,7 @@ import {
 import { hashPassword, setUserPasswordHash, verifyPassword, getUserPasswordHash } from "../_utils/auth/_password.js";
 import { isProfaneUsername, assertValidUsername } from "../_utils/_validation.js";
 
-export const runtime = "bun";
+export const runtime = "nodejs";
 export const maxDuration = 15;
 
 interface RegisterRequest {

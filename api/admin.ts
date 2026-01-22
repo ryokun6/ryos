@@ -17,7 +17,7 @@ import {
 import * as RateLimit from "./_utils/_rate-limit.js";
 
 export const config = {
-  runtime: "bun",
+  runtime: "nodejs",
 };
 
 const ADMIN_RATE_LIMIT_WINDOW = 60;
