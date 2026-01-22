@@ -1,12 +1,10 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import {
-  wrapHandler,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
-  errorResponse,
-  jsonResponse,
+  getOriginFromVercel,
+  isOriginAllowed,
+  handlePreflight,
+  getClientIpFromRequest,
 } from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 
@@ -91,11 +89,11 @@ const generateRequestId = (): string =>
 /**
  * Main handler
  */
-async function webHandler(req: Request) {
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const requestId = generateRequestId();
-  logRequest(req.method, req.url, requestId);
+  logRequest(req.method || "GET", req.url || "", requestId);
 
-  const effectiveOrigin = getEffectiveOrigin(req);
+  const effectiveOrigin = getOriginFromVercel(req);
   logInfo(requestId, "Request details", { 
     method: req.method, 
     effectiveOrigin,
@@ -104,37 +102,33 @@ async function webHandler(req: Request) {
   });
 
   if (req.method === "OPTIONS") {
-    const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    const handled = handlePreflight(req, res, ["POST", "OPTIONS"]);
+    if (handled) return;
   }
 
   if (req.method !== "POST") {
     logError(requestId, "Method not allowed", null);
-    return new Response("Method not allowed", { status: 405 });
+    res.status(405).end("Method not allowed");
+    return;
   }
 
   // Check origin - be more permissive in development
   const vercelEnv = process.env.VERCEL_ENV;
   const isDev = !vercelEnv || vercelEnv === "development";
   
-  if (!isDev && !isAllowedOrigin(effectiveOrigin)) {
+  if (!isDev && !isOriginAllowed(effectiveOrigin)) {
     logError(requestId, "Origin not allowed", { effectiveOrigin, vercelEnv });
-    return new Response(
-      JSON.stringify({ error: "Origin not allowed" }),
-      {
-        status: 403,
-        headers: {
-          "Content-Type": "application/json",
-          // Still include CORS header so client can read the error
-          ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-        },
-      }
-    );
+    res.setHeader("Content-Type", "application/json");
+    if (effectiveOrigin) {
+      res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
+    }
+    res.status(403).json({ error: "Origin not allowed" });
+    return;
   }
 
   // Rate limiting: 20 searches/min/IP, 200/day/IP
   try {
-    const ip = getClientIp(req);
+    const ip = getClientIpFromRequest(req);
     const BURST_WINDOW = 60;
     const BURST_LIMIT = 20;
     const DAILY_WINDOW = 60 * 60 * 24;
@@ -150,17 +144,11 @@ async function webHandler(req: Request) {
     });
     if (!burst.allowed) {
       logInfo(requestId, "Rate limit exceeded (burst)", { ip });
-      return new Response(
-        JSON.stringify({ error: "rate_limit_exceeded", scope: "burst" }),
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(burst.resetSeconds ?? BURST_WINDOW),
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin || "*",
-          },
-        }
-      );
+      res.setHeader("Retry-After", String(burst.resetSeconds ?? BURST_WINDOW));
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", effectiveOrigin || "*");
+      res.status(429).json({ error: "rate_limit_exceeded", scope: "burst" });
+      return;
     }
 
     const daily = await RateLimit.checkCounterLimit({
@@ -170,17 +158,11 @@ async function webHandler(req: Request) {
     });
     if (!daily.allowed) {
       logInfo(requestId, "Rate limit exceeded (daily)", { ip });
-      return new Response(
-        JSON.stringify({ error: "rate_limit_exceeded", scope: "daily" }),
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(daily.resetSeconds ?? DAILY_WINDOW),
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin || "*",
-          },
-        }
-      );
+      res.setHeader("Retry-After", String(daily.resetSeconds ?? DAILY_WINDOW));
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", effectiveOrigin || "*");
+      res.status(429).json({ error: "rate_limit_exceeded", scope: "daily" });
+      return;
     }
   } catch (err) {
     // Log but don't block if rate limit check fails
@@ -197,19 +179,13 @@ async function webHandler(req: Request) {
     logError(requestId, "No YOUTUBE_API_KEY configured", { 
       envKeys: Object.keys(process.env).filter(k => k.includes("YOUTUBE") || k.includes("API")).join(", ") || "none found"
     });
-    return new Response(
-      JSON.stringify({ 
-        error: "YouTube API is not configured",
-        hint: "Add YOUTUBE_API_KEY to your .env.local file and restart vercel dev"
-      }),
-      {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin || "*",
-        },
-      }
-    );
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Access-Control-Allow-Origin", effectiveOrigin || "*");
+    res.status(500).json({ 
+      error: "YouTube API is not configured",
+      hint: "Add YOUTUBE_API_KEY to your .env.local file and restart vercel dev"
+    });
+    return;
   }
 
   logInfo(requestId, "Available API keys", { count: apiKeys.length });
@@ -217,19 +193,13 @@ async function webHandler(req: Request) {
   // Parse and validate request body
   let body: YouTubeSearchRequest;
   try {
-    body = YouTubeSearchRequestSchema.parse(await req.json());
+    body = YouTubeSearchRequestSchema.parse(req.body);
   } catch (err) {
     logError(requestId, "Invalid request body", err);
-    return new Response(
-      JSON.stringify({ error: "Invalid request body" }),
-      {
-        status: 400,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin!,
-        },
-      }
-    );
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+    res.status(400).json({ error: "Invalid request body" });
+    return;
   }
 
   const { query, maxResults } = body;
@@ -288,22 +258,16 @@ async function webHandler(req: Request) {
             ? "Check if YouTube Data API v3 is enabled in Google Cloud Console and API key has no restrictive referrer settings" 
             : undefined
         });
-        return new Response(
-          JSON.stringify({ 
-            error: errorMessage,
-            code: errorCode,
-            hint: errorCode === 403 
-              ? "YouTube API access denied. Ensure the API key is valid and YouTube Data API v3 is enabled in Google Cloud Console."
-              : undefined
-          }),
-          {
-            status: response.status,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin || "*",
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin || "*");
+        res.status(response.status).json({ 
+          error: errorMessage,
+          code: errorCode,
+          hint: errorCode === 403 
+            ? "YouTube API access denied. Ensure the API key is valid and YouTube Data API v3 is enabled in Google Cloud Console."
+            : undefined
+        });
+        return;
       }
 
       // Transform results
@@ -322,15 +286,10 @@ async function webHandler(req: Request) {
 
       logInfo(requestId, "Search completed", { resultsCount: results.length, keyLabel });
 
-      return new Response(
-        JSON.stringify({ results }),
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
-        }
-      );
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+      res.status(200).json({ results });
+      return;
     } catch (error) {
       logError(requestId, `Error with ${keyLabel} key`, error);
       // If we have more keys, try the next one
@@ -339,35 +298,20 @@ async function webHandler(req: Request) {
         continue;
       }
       // No more keys to try
-      return new Response(
-        JSON.stringify({ error: "Failed to search YouTube" }),
-        {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
-        }
-      );
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+      res.status(500).json({ error: "Failed to search YouTube" });
+      return;
     }
   }
 
   // All keys exhausted (quota exceeded on all)
   logError(requestId, "All API keys exhausted", { lastError });
-  return new Response(
-    JSON.stringify({ 
-      error: lastError?.message || "All YouTube API keys have exceeded their quota",
-      code: lastError?.code || 403,
-      hint: "All configured API keys have exceeded their quota. Please try again later."
-    }),
-    {
-      status: lastError?.status || 403,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": effectiveOrigin || "*",
-      },
-    }
-  );
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Access-Control-Allow-Origin", effectiveOrigin || "*");
+  res.status(lastError?.status || 403).json({ 
+    error: lastError?.message || "All YouTube API keys have exceeded their quota",
+    code: lastError?.code || 403,
+    hint: "All configured API keys have exceeded their quota. Please try again later."
+  });
 }
-
-export default wrapHandler(webHandler);
