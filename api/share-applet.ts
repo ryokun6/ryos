@@ -1,18 +1,19 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import {
   isAdmin,
   createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
+  getOriginFromVercel,
+  isOriginAllowed,
+  handlePreflight,
+  getClientIpFromRequest,
 } from "./_utils/middleware.js";
 import { validateAuth, generateAuthToken } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 
-// Vercel Edge Function configuration
+// Vercel Function configuration (runs on Bun via bunVersion in vercel.json)
 export const config = {
-  runtime: "edge",
+  runtime: "nodejs",
 };
 
 // Rate limiting configuration
@@ -44,40 +45,41 @@ const SaveAppletRequestSchema = z.object({
 /**
  * Main handler
  */
-export default async function handler(req: Request) {
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    const effectiveOrigin = getEffectiveOrigin(req);
-    const resp = preflightIfNeeded(req, ["GET", "POST", "DELETE", "PATCH", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    const handled = handlePreflight(req, res, ["GET", "POST", "DELETE", "PATCH", "OPTIONS"]);
+    if (handled) return;
   }
 
   if (req.method !== "GET" && req.method !== "POST" && req.method !== "DELETE" && req.method !== "PATCH" && req.method !== "OPTIONS") {
-    return new Response("Method not allowed", { status: 405 });
+    res.status(405).end("Method not allowed");
+    return;
   }
 
   // Create Redis client
   const redis = createRedis();
 
   // Parse and validate request
-  let effectiveOrigin: string | null;
+  let effectiveOrigin: string | undefined;
   try {
-    effectiveOrigin = getEffectiveOrigin(req);
-    if (!isAllowedOrigin(effectiveOrigin)) {
-      return new Response("Unauthorized", { status: 403 });
+    effectiveOrigin = getOriginFromVercel(req);
+    if (!isOriginAllowed(effectiveOrigin)) {
+      res.status(403).end("Unauthorized");
+      return;
     }
   } catch {
-    return new Response("Unauthorized", { status: 403 });
+    res.status(403).end("Unauthorized");
+    return;
   }
 
   try {
     // GET: Retrieve applet by ID or list featured applets
     if (req.method === "GET") {
-      const url = new URL(req.url);
-      const listParam = url.searchParams.get("list");
+      const listParam = req.query.list as string | undefined;
       
       // Rate limiting for GET requests
-      const ip = getClientIp(req);
+      const ip = getClientIpFromRequest(req);
       const rlConfig = listParam === "true" ? RATE_LIMITS.list : RATE_LIMITS.get;
       const rlKey = RateLimit.makeKey(["rl", "applet", listParam === "true" ? "list" : "get", "ip", ip]);
       const rlResult = await RateLimit.checkCounterLimit({
@@ -87,21 +89,15 @@ export default async function handler(req: Request) {
       });
       
       if (!rlResult.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            limit: rlResult.limit,
-            retryAfter: rlResult.resetSeconds,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-              "Retry-After": String(rlResult.resetSeconds),
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.setHeader("Retry-After", String(rlResult.resetSeconds));
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          limit: rlResult.limit,
+          retryAfter: rlResult.resetSeconds,
+        });
+        return;
       }
       
       // If list=true, return all applets
@@ -173,44 +169,30 @@ export default async function handler(req: Request) {
           });
         }
         
-        return new Response(JSON.stringify({ applets }), {
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
-        });
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(200).json({ applets });
+        return;
       }
       
       // Otherwise, retrieve by ID
-      const id = url.searchParams.get("id");
+      const id = req.query.id as string | undefined;
 
       if (!id) {
-        return new Response(
-          JSON.stringify({ error: "Missing id parameter" }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(400).json({ error: "Missing id parameter" });
+        return;
       }
 
       const key = `${APPLET_SHARE_PREFIX}${id}`;
       const appletData = await redis.get(key);
 
       if (!appletData) {
-        return new Response(
-          JSON.stringify({ error: "Applet not found" }),
-          {
-            status: 404,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(404).json({ error: "Applet not found" });
+        return;
       }
 
       // Parse stored data (could be string or object)
@@ -222,31 +204,23 @@ export default async function handler(req: Request) {
             : appletData;
       } catch (e) {
         console.error("Error parsing applet data:", e);
-        return new Response(
-          JSON.stringify({ error: "Invalid applet data" }),
-          {
-            status: 500,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(500).json({ error: "Invalid applet data" });
+        return;
       }
 
-      return new Response(JSON.stringify(parsed), {
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin!,
-        },
-      });
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+      res.status(200).json(parsed);
+      return;
     }
 
     // POST: Save applet
     if (req.method === "POST") {
       // Extract authentication from headers
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
+      const authHeader = req.headers["authorization"] as string | undefined;
+      const usernameHeader = req.headers["x-username"] as string | undefined;
 
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
@@ -254,16 +228,10 @@ export default async function handler(req: Request) {
       // Validate authentication
       const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
-        return new Response(
-          JSON.stringify({ error: "Unauthorized" }),
-          {
-            status: 401,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(401).json({ error: "Unauthorized" });
+        return;
       }
 
       // Rate limiting for POST (save) - by user
@@ -275,56 +243,38 @@ export default async function handler(req: Request) {
       });
       
       if (!rlResult.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            limit: rlResult.limit,
-            retryAfter: rlResult.resetSeconds,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-              "Retry-After": String(rlResult.resetSeconds),
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.setHeader("Retry-After", String(rlResult.resetSeconds));
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          limit: rlResult.limit,
+          retryAfter: rlResult.resetSeconds,
+        });
+        return;
       }
 
       // Parse and validate request body
       let body;
       try {
-        body = await req.json();
+        body = req.body;
       } catch {
-        return new Response(
-          JSON.stringify({ error: "Invalid JSON in request body" }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(400).json({ error: "Invalid JSON in request body" });
+        return;
       }
 
       const validation = SaveAppletRequestSchema.safeParse(body);
 
       if (!validation.success) {
-        return new Response(
-          JSON.stringify({
-            error: "Invalid request body",
-            details: validation.error.format(),
-          }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(400).json({
+          error: "Invalid request body",
+          details: validation.error.format(),
+        });
+        return;
       }
       const { content, title, icon, name, windowWidth, windowHeight, shareId } = validation.data;
 
@@ -414,42 +364,30 @@ export default async function handler(req: Request) {
         await redis.set(key, JSON.stringify(appletData));
       } catch (redisError) {
         console.error("Redis write error:", redisError);
-        return new Response(
-          JSON.stringify({ error: "Failed to save applet" }),
-          {
-            status: 500,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(500).json({ error: "Failed to save applet" });
+        return;
       }
 
       // Generate share URL
       const shareUrl = `${effectiveOrigin}/applet-viewer/${id}`;
 
-      return new Response(
-        JSON.stringify({
-          id,
-          shareUrl,
-          updated: isUpdate,
-          createdAt: appletData.createdAt, // Return createdAt so client can update local metadata
-        }),
-        {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin || "*",
-          },
-        }
-      );
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", effectiveOrigin || "*");
+      res.status(200).json({
+        id,
+        shareUrl,
+        updated: isUpdate,
+        createdAt: appletData.createdAt, // Return createdAt so client can update local metadata
+      });
+      return;
     }
 
     // DELETE: Delete applet (admin only - ryo)
     if (req.method === "DELETE") {
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
+      const authHeader = req.headers["authorization"] as string | undefined;
+      const usernameHeader = req.headers["x-username"] as string | undefined;
 
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
@@ -457,16 +395,10 @@ export default async function handler(req: Request) {
       // Check if user is admin (ryo) with valid token
       const adminAccess = await isAdmin(redis, username, authToken);
       if (!adminAccess) {
-        return new Response(
-          JSON.stringify({ error: "Forbidden" }),
-          {
-            status: 403,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(403).json({ error: "Forbidden" });
+        return;
       }
 
       // Rate limiting for DELETE - by admin user
@@ -478,71 +410,46 @@ export default async function handler(req: Request) {
       });
       
       if (!rlResult.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            limit: rlResult.limit,
-            retryAfter: rlResult.resetSeconds,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-              "Retry-After": String(rlResult.resetSeconds),
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.setHeader("Retry-After", String(rlResult.resetSeconds));
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          limit: rlResult.limit,
+          retryAfter: rlResult.resetSeconds,
+        });
+        return;
       }
 
-      const url = new URL(req.url);
-      const id = url.searchParams.get("id");
+      const id = req.query.id as string | undefined;
 
       if (!id) {
-        return new Response(
-          JSON.stringify({ error: "Missing id parameter" }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(400).json({ error: "Missing id parameter" });
+        return;
       }
 
       const key = `${APPLET_SHARE_PREFIX}${id}`;
       const deleted = await redis.del(key);
 
       if (deleted === 0) {
-        return new Response(
-          JSON.stringify({ error: "Applet not found" }),
-          {
-            status: 404,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(404).json({ error: "Applet not found" });
+        return;
       }
 
-      return new Response(
-        JSON.stringify({ success: true }),
-        {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
-        }
-      );
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+      res.status(200).json({ success: true });
+      return;
     }
 
     // PATCH: Update applet (admin only - ryo) - for setting featured status
     if (req.method === "PATCH") {
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
+      const authHeader = req.headers["authorization"] as string | undefined;
+      const usernameHeader = req.headers["x-username"] as string | undefined;
 
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
@@ -550,16 +457,10 @@ export default async function handler(req: Request) {
       // Check if user is admin (ryo) with valid token
       const adminAccess = await isAdmin(redis, username, authToken);
       if (!adminAccess) {
-        return new Response(
-          JSON.stringify({ error: "Forbidden" }),
-          {
-            status: 403,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(403).json({ error: "Forbidden" });
+        return;
       }
 
       // Rate limiting for PATCH - by admin user
@@ -571,84 +472,53 @@ export default async function handler(req: Request) {
       });
       
       if (!rlResult.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            limit: rlResult.limit,
-            retryAfter: rlResult.resetSeconds,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-              "Retry-After": String(rlResult.resetSeconds),
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.setHeader("Retry-After", String(rlResult.resetSeconds));
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          limit: rlResult.limit,
+          retryAfter: rlResult.resetSeconds,
+        });
+        return;
       }
 
-      const url = new URL(req.url);
-      const id = url.searchParams.get("id");
+      const id = req.query.id as string | undefined;
 
       if (!id) {
-        return new Response(
-          JSON.stringify({ error: "Missing id parameter" }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(400).json({ error: "Missing id parameter" });
+        return;
       }
 
       // Parse request body
       let body;
       try {
-        body = await req.json();
+        body = req.body;
       } catch {
-        return new Response(
-          JSON.stringify({ error: "Invalid JSON in request body" }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(400).json({ error: "Invalid JSON in request body" });
+        return;
       }
 
       const { featured } = body;
       if (typeof featured !== "boolean") {
-        return new Response(
-          JSON.stringify({ error: "Invalid request body: featured must be boolean" }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(400).json({ error: "Invalid request body: featured must be boolean" });
+        return;
       }
 
       const key = `${APPLET_SHARE_PREFIX}${id}`;
       const appletData = await redis.get(key);
 
       if (!appletData) {
-        return new Response(
-          JSON.stringify({ error: "Applet not found" }),
-          {
-            status: 404,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        res.status(404).json({ error: "Applet not found" });
+        return;
       }
 
       // Parse and update
@@ -660,40 +530,23 @@ export default async function handler(req: Request) {
 
       await redis.set(key, JSON.stringify(parsed));
 
-      return new Response(
-        JSON.stringify({ success: true, featured }),
-        {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
-        }
-      );
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+      res.status(200).json({ success: true, featured });
+      return;
     }
 
     // Method not allowed (shouldn't reach here due to early return)
-    return new Response("Method not allowed", {
-      status: 405,
-      headers: {
-        "Access-Control-Allow-Origin": effectiveOrigin!,
-        "Allow": "GET, POST, DELETE, PATCH, OPTIONS",
-      },
-    });
+    res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+    res.setHeader("Allow", "GET, POST, DELETE, PATCH, OPTIONS");
+    res.status(405).end("Method not allowed");
   } catch (error: unknown) {
     console.error("Error in share-applet API:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Internal server error";
 
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin!,
-        },
-      }
-    );
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+    res.status(500).json({ error: errorMessage });
   }
 }

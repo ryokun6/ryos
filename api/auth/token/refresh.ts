@@ -4,14 +4,14 @@
  * Refresh an existing token
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
-  errorResponse,
-  jsonResponse,
+  getOriginFromVercel,
+  isOriginAllowed,
+  handlePreflight,
+  setCorsHeaders,
+  getClientIpFromRequest,
 } from "../../_utils/middleware.js";
 import {
   generateAuthToken,
@@ -25,7 +25,7 @@ import {
 import * as RateLimit from "../../_utils/_rate-limit.js";
 
 export const config = {
-  runtime: "edge",
+  runtime: "nodejs",
 };
 
 interface RefreshRequest {
@@ -33,36 +33,29 @@ interface RefreshRequest {
   oldToken: string;
 }
 
-export default async function handler(req: Request) {
-  const origin = getEffectiveOrigin(req);
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const origin = getOriginFromVercel(req);
   
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+  if (handlePreflight(req, res, ["POST", "OPTIONS"])) {
+    return;
   }
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { 
-      status: 405, 
-      headers: { "Content-Type": "application/json" },
-    });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
-  if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
+  if (!isOriginAllowed(origin)) {
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
 
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
+  setCorsHeaders(res, origin, ["POST", "OPTIONS"]);
 
   const redis = createRedis();
 
   // Rate limiting: 10/min per IP
-  const ip = getClientIp(req);
+  const ip = getClientIpFromRequest(req);
   const rlKey = RateLimit.makeKey(["rl", "auth:refresh", "ip", ip]);
   const rlResult = await RateLimit.checkCounterLimit({
     key: rlKey,
@@ -71,27 +64,30 @@ export default async function handler(req: Request) {
   });
 
   if (!rlResult.allowed) {
-    return new Response(JSON.stringify({ 
+    res.status(429).json({ 
       error: "Too many refresh attempts. Please try again later." 
-    }), { status: 429, headers });
+    });
+    return;
   }
 
   // Parse body
-  let body: RefreshRequest;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers });
+  const body = req.body as RefreshRequest | undefined;
+
+  if (!body) {
+    res.status(400).json({ error: "Invalid JSON body" });
+    return;
   }
 
   const { username: rawUsername, oldToken } = body;
 
   if (!rawUsername || typeof rawUsername !== "string") {
-    return new Response(JSON.stringify({ error: "Username is required" }), { status: 400, headers });
+    res.status(400).json({ error: "Username is required" });
+    return;
   }
 
   if (!oldToken || typeof oldToken !== "string") {
-    return new Response(JSON.stringify({ error: "Old token is required" }), { status: 400, headers });
+    res.status(400).json({ error: "Old token is required" });
+    return;
   }
 
   const username = rawUsername.toLowerCase();
@@ -100,13 +96,15 @@ export default async function handler(req: Request) {
   const userKey = `${CHAT_USERS_PREFIX}${username}`;
   const userData = await redis.get(userKey);
   if (!userData) {
-    return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers });
+    res.status(404).json({ error: "User not found" });
+    return;
   }
 
   // Validate old token (allow expired for grace period refresh)
   const validationResult = await validateAuth(redis, username, oldToken, { allowExpired: true });
   if (!validationResult.valid) {
-    return new Response(JSON.stringify({ error: "Invalid authentication token" }), { status: 401, headers });
+    res.status(401).json({ error: "Invalid authentication token" });
+    return;
   }
 
   // Store old token for grace period
@@ -119,5 +117,5 @@ export default async function handler(req: Request) {
   const newToken = generateAuthToken();
   await storeToken(redis, username, newToken);
 
-  return new Response(JSON.stringify({ token: newToken }), { status: 201, headers });
+  res.status(201).json({ token: newToken });
 }

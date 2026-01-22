@@ -4,66 +4,63 @@
  * Logout current session (invalidate current token)
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  extractAuth,
-  errorResponse,
-  successResponse,
+  getOriginFromVercel,
+  isOriginAllowed,
+  handlePreflight,
+  setCorsHeaders,
 } from "../_utils/middleware.js";
 import { deleteToken, validateAuth } from "../_utils/auth/index.js";
 
 
 export const config = {
-  runtime: "edge",
+  runtime: "nodejs",
 };
 
-export default async function handler(req: Request) {
-  const origin = getEffectiveOrigin(req);
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const origin = getOriginFromVercel(req);
   
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+  if (handlePreflight(req, res, ["POST", "OPTIONS"])) {
+    return;
   }
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { 
-      status: 405, 
-      headers: { "Content-Type": "application/json" },
-    });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
-  if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
+  if (!isOriginAllowed(origin)) {
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
 
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
+  setCorsHeaders(res, origin, ["POST", "OPTIONS"]);
 
   const redis = createRedis();
 
-  // Extract and validate auth
-  const { username, token } = extractAuth(req);
+  // Extract auth from headers
+  const authHeader = req.headers.authorization as string | undefined;
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const username = req.headers["x-username"] as string | undefined || null;
+
   if (!username || !token) {
-    return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
+    res.status(401).json({ error: "Unauthorized - missing credentials" });
+    return;
   }
 
   const authResult = await validateAuth(redis, username, token, { allowExpired: true });
   if (!authResult.valid) {
-    return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
+    res.status(401).json({ error: "Unauthorized - invalid token" });
+    return;
   }
 
   // Delete current token
   await deleteToken(redis, token);
 
-  return new Response(JSON.stringify({ 
+  res.status(200).json({ 
     success: true,
     message: "Logged out successfully",
-  }), { status: 200, headers });
+  });
 }

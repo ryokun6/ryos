@@ -17,14 +17,15 @@
  * { action: "import", songs: [...] }
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import pako from "pako";
 import {
   createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
+  getOriginFromVercel,
+  isOriginAllowed,
+  handlePreflight,
+  getClientIpFromRequest,
 } from "../_utils/middleware.js";
 import { validateAuth } from "../_utils/auth/index.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
@@ -44,9 +45,9 @@ import {
 } from "../_utils/_song-service.js";
 import { fetchCoverUrl } from "./_kugou.js";
 
-// Vercel Edge Function configuration
+// Vercel Function configuration (runs on Bun via bunVersion in vercel.json)
 export const config = {
-  runtime: "edge",
+  runtime: "nodejs",
 };
 
 // Rate limiting configuration
@@ -194,7 +195,7 @@ function getFieldValue<T>(value: unknown): T | undefined {
 // Main Handler
 // =============================================================================
 
-export default async function handler(req: Request) {
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const requestId = generateRequestId();
   const startTime = Date.now();
 
@@ -202,34 +203,33 @@ export default async function handler(req: Request) {
 
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    const effectiveOrigin = getEffectiveOrigin(req);
-    const resp = preflightIfNeeded(req, ["GET", "POST", "DELETE", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    const handled = handlePreflight(req, res, ["GET", "POST", "DELETE", "OPTIONS"]);
+    if (handled) return;
   }
 
   // Validate origin
-  const effectiveOrigin = getEffectiveOrigin(req);
-  if (!isAllowedOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+  const effectiveOrigin = getOriginFromVercel(req);
+  if (!isOriginAllowed(effectiveOrigin)) {
+    res.status(403).end("Unauthorized");
+    return;
   }
 
   // Create Redis client
   const redis = createRedis();
 
   // Helper for JSON responses
-  const jsonResponse = (data: unknown, status = 200, headers: Record<string, string> = {}) =>
-    new Response(JSON.stringify(data), {
-      status,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": effectiveOrigin!,
-        ...headers,
-      },
-    });
+  const jsonResponse = (data: unknown, status = 200, headers: Record<string, string> = {}) => {
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+    for (const [key, value] of Object.entries(headers)) {
+      res.setHeader(key, value);
+    }
+    res.status(status).json(data);
+  };
 
   const errorResponse = (message: string, status = 400) => {
     logInfo(requestId, `Response: ${status} - ${message}`);
-    return jsonResponse({ error: message }, status);
+    jsonResponse({ error: message }, status);
   };
 
   try {
@@ -238,7 +238,7 @@ export default async function handler(req: Request) {
     // =========================================================================
     if (req.method === "GET") {
       // Rate limiting for GET
-      const ip = getClientIp(req);
+      const ip = getClientIpFromRequest(req);
       const rlKey = RateLimit.makeKey(["rl", "song", "list", "ip", ip]);
       const rlResult = await RateLimit.checkCounterLimit({
         key: rlKey,
@@ -247,18 +247,18 @@ export default async function handler(req: Request) {
       });
       
       if (!rlResult.allowed) {
-        return jsonResponse({
+        jsonResponse({
           error: "rate_limit_exceeded",
           limit: rlResult.limit,
           retryAfter: rlResult.resetSeconds,
         }, 429, { "Retry-After": String(rlResult.resetSeconds) });
+        return;
       }
       
-      const url = new URL(req.url);
-      const createdBy = url.searchParams.get("createdBy") || undefined;
-      const idsParam = url.searchParams.get("ids");
+      const createdBy = (req.query.createdBy as string) || undefined;
+      const idsParam = req.query.ids as string | undefined;
       const ids = idsParam ? idsParam.split(",").map((s) => s.trim()).filter(Boolean) : undefined;
-      const includeParam = url.searchParams.get("include") || "metadata";
+      const includeParam = (req.query.include as string) || "metadata";
       const includes = includeParam.split(",").map((s) => s.trim());
 
       logInfo(requestId, "Listing songs", { createdBy, idsCount: ids?.length, includes });
@@ -282,7 +282,8 @@ export default async function handler(req: Request) {
         duration: `${Date.now() - startTime}ms`,
       });
 
-      return jsonResponse({ songs });
+      jsonResponse({ songs });
+      return;
     }
 
     // =========================================================================
@@ -290,23 +291,25 @@ export default async function handler(req: Request) {
     // =========================================================================
     if (req.method === "POST") {
       // Extract auth credentials
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
+      const authHeader = req.headers["authorization"] as string | undefined;
+      const usernameHeader = req.headers["x-username"] as string | undefined;
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
       // Validate authentication
       const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
-        return errorResponse("Unauthorized - authentication required", 401);
+        errorResponse("Unauthorized - authentication required", 401);
+        return;
       }
 
       let body: Record<string, unknown>;
       try {
-        body = await req.json();
+        body = req.body;
       } catch (parseError) {
         logError(requestId, "Failed to parse request body", parseError);
-        return errorResponse("Invalid JSON body", 400);
+        errorResponse("Invalid JSON body", 400);
+        return;
       }
       logInfo(requestId, `POST action=${body.action || "create"}`, { 
         hasId: !!body.id,
@@ -317,7 +320,8 @@ export default async function handler(req: Request) {
       if (body.action === "import") {
         // Only admin can bulk import
         if (username?.toLowerCase() !== "ryo") {
-          return errorResponse("Forbidden - admin access required for bulk import", 403);
+          errorResponse("Forbidden - admin access required for bulk import", 403);
+          return;
         }
 
         // Rate limiting for bulk import - by admin user
@@ -329,19 +333,21 @@ export default async function handler(req: Request) {
         });
         
         if (!rlResult.allowed) {
-          return jsonResponse({
+          jsonResponse({
             error: "rate_limit_exceeded",
             limit: rlResult.limit,
             retryAfter: rlResult.resetSeconds,
           }, 429, { "Retry-After": String(rlResult.resetSeconds) });
+          return;
         }
 
         const parsed = BulkImportSchema.safeParse(body);
         if (!parsed.success) {
-          return jsonResponse(
+          jsonResponse(
             { error: "Invalid request body", details: parsed.error.format() },
             400
           );
+          return;
         }
 
         const { songs } = parsed.data;
@@ -494,13 +500,14 @@ export default async function handler(req: Request) {
           duration: `${Date.now() - startTime}ms`,
         });
 
-        return jsonResponse({
+        jsonResponse({
           success: true,
           imported,
           updated,
           withContent: contentCount,
           total: songs.length,
         });
+        return;
       }
 
       // Rate limiting for single song creation - by user
@@ -512,20 +519,22 @@ export default async function handler(req: Request) {
       });
       
       if (!createRlResult.allowed) {
-        return jsonResponse({
+        jsonResponse({
           error: "rate_limit_exceeded",
           limit: createRlResult.limit,
           retryAfter: createRlResult.resetSeconds,
         }, 429, { "Retry-After": String(createRlResult.resetSeconds) });
+        return;
       }
 
       // Single song creation
       const parsed = CreateSongSchema.safeParse(body);
       if (!parsed.success) {
-        return jsonResponse(
+        jsonResponse(
           { error: "Invalid request body", details: parsed.error.format() },
           400
         );
+        return;
       }
 
       const songData = parsed.data;
@@ -536,7 +545,7 @@ export default async function handler(req: Request) {
       if (!permission.canModify) {
         // For create, return success but indicate it was skipped
         if (existing) {
-          return jsonResponse({
+          jsonResponse({
             success: true,
             id: songData.id,
             isUpdate: false,
@@ -544,8 +553,10 @@ export default async function handler(req: Request) {
             createdBy: existing.createdBy,
             message: "Song already exists, created by another user",
           });
+          return;
         }
-        return errorResponse(permission.reason || "Permission denied", 403);
+        errorResponse(permission.reason || "Permission denied", 403);
+        return;
       }
 
       const song = await saveSong(
@@ -567,12 +578,13 @@ export default async function handler(req: Request) {
         duration: `${Date.now() - startTime}ms`,
       });
 
-      return jsonResponse({
+      jsonResponse({
         success: true,
         id: song.id,
         isUpdate: !!existing,
         createdBy: song.createdBy,
       });
+      return;
     }
 
     // =========================================================================
@@ -580,20 +592,22 @@ export default async function handler(req: Request) {
     // =========================================================================
     if (req.method === "DELETE") {
       // Extract auth credentials
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
+      const authHeader = req.headers["authorization"] as string | undefined;
+      const usernameHeader = req.headers["x-username"] as string | undefined;
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
       // Validate authentication
       const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
-        return errorResponse("Unauthorized - authentication required", 401);
+        errorResponse("Unauthorized - authentication required", 401);
+        return;
       }
 
       // Only admin can delete all songs
       if (username?.toLowerCase() !== "ryo") {
-        return errorResponse("Forbidden - admin access required", 403);
+        errorResponse("Forbidden - admin access required", 403);
+        return;
       }
 
       // Rate limiting for delete all - by admin user
@@ -605,11 +619,12 @@ export default async function handler(req: Request) {
       });
       
       if (!rlResult.allowed) {
-        return jsonResponse({
+        jsonResponse({
           error: "rate_limit_exceeded",
           limit: rlResult.limit,
           retryAfter: rlResult.resetSeconds,
         }, 429, { "Retry-After": String(rlResult.resetSeconds) });
+        return;
       }
 
       logInfo(requestId, "Deleting all songs");
@@ -621,16 +636,17 @@ export default async function handler(req: Request) {
         duration: `${Date.now() - startTime}ms`,
       });
 
-      return jsonResponse({
+      jsonResponse({
         success: true,
         deleted: deletedCount,
       });
+      return;
     }
 
-    return errorResponse("Method not allowed", 405);
+    errorResponse("Method not allowed", 405);
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
     logError(requestId, "Song list API error", error);
-    return errorResponse(errorMessage, 500);
+    errorResponse(errorMessage, 500);
   }
 }

@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   streamText,
   smoothStream,
@@ -25,8 +26,8 @@ import { appIds } from "../src/config/appIds.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import {
   createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
+  isOriginAllowed,
+  getOriginFromVercel,
 } from "./_utils/middleware.js";
 import { validateAuth } from "./_utils/auth/index.js";
 
@@ -260,9 +261,9 @@ interface SystemState {
 }
 
 
-// Edge runtime configuration
+// Runtime configuration (runs on Bun via bunVersion in vercel.json)
 export const config = {
-  runtime: "edge",
+  runtime: "nodejs",
 };
 export const maxDuration = 80;
 
@@ -517,40 +518,42 @@ const buildContextAwarePrompts = () => {
 // Add Redis client for auth validation
 const redis = createRedis();
 
-export default async function handler(req: Request) {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
   // Check origin before processing request
-  const effectiveOrigin = getEffectiveOrigin(req);
-  if (!isAllowedOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+  const origin = getOriginFromVercel(req);
+  if (!isOriginAllowed(origin)) {
+    res.status(403).send("Unauthorized");
+    return;
   }
 
   // At this point origin is guaranteed to be a valid string
-  const validOrigin = effectiveOrigin as string;
+  const validOrigin = origin as string;
 
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: {
-        "Access-Control-Allow-Origin": validOrigin,
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    });
+    res.setHeader("Access-Control-Allow-Origin", validOrigin);
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.status(204).end();
+    return;
   }
 
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    res.status(405).send("Method not allowed");
+    return;
   }
 
   try {
     // Parse query string to get model parameter
-    const url = new URL(req.url);
-    const queryModel = url.searchParams.get("model") as SupportedModel | null;
+    const queryModel = req.query.model as SupportedModel | null;
 
     const {
       messages,
       systemState: incomingSystemState, // still passed for dynamic prompt generation but NOT for auth
       model: bodyModel = DEFAULT_MODEL,
-    } = await req.json();
+    } = req.body;
 
     // Use query parameter if available, otherwise use body parameter, otherwise use default
     const model = queryModel || bodyModel || DEFAULT_MODEL;
@@ -559,12 +562,12 @@ export default async function handler(req: Request) {
     // Extract auth headers FIRST so we can use username for logging
     // ---------------------------
 
-    const authHeaderInitial = req.headers.get("authorization");
+    const authHeaderInitial = req.headers["authorization"] as string | undefined;
     const headerAuthTokenInitial =
       authHeaderInitial && authHeaderInitial.startsWith("Bearer ")
         ? authHeaderInitial.substring(7)
         : null;
-    const headerUsernameInitial = req.headers.get("x-username");
+    const headerUsernameInitial = req.headers["x-username"] as string | undefined;
 
     // Helper: prefix log lines with username (for easier tracing)
     const usernameForLogs = headerUsernameInitial ?? "unknown";
@@ -584,10 +587,14 @@ export default async function handler(req: Request) {
       ip = "localhost-dev";
     } else {
       // For Vercel deployments, prefer x-vercel-forwarded-for which is more reliable
+      const xVercelForwardedFor = req.headers["x-vercel-forwarded-for"];
+      const xForwardedFor = req.headers["x-forwarded-for"];
+      const xRealIp = req.headers["x-real-ip"];
+      
       ip =
-        req.headers.get("x-vercel-forwarded-for") ||
-        req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-        req.headers.get("x-real-ip") ||
+        (typeof xVercelForwardedFor === "string" ? xVercelForwardedFor : undefined) ||
+        (typeof xForwardedFor === "string" ? xForwardedFor.split(",")[0].trim() : undefined) ||
+        (typeof xRealIp === "string" ? xRealIp : undefined) ||
         "unknown-ip";
     }
 
@@ -620,19 +627,13 @@ export default async function handler(req: Request) {
       console.log(
         `[User: ${username}] Authentication failed – invalid or missing token`
       );
-      return new Response(
-        JSON.stringify({
-          error: "authentication_failed",
-          message: "Invalid or missing authentication token",
-        }),
-        {
-          status: 401,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": validOrigin,
-          },
-        }
-      );
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", validOrigin);
+      res.status(401).json({
+        error: "authentication_failed",
+        message: "Invalid or missing authentication token",
+      });
+      return;
     }
 
     // Use validated auth status for rate limiting
@@ -664,13 +665,10 @@ export default async function handler(req: Request) {
           message: `You've hit your limit of ${rateLimitResult.limit} messages in this 5-hour window. Please wait a few hours and try again.`,
         };
 
-        return new Response(JSON.stringify(errorResponse), {
-          status: 429,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": validOrigin,
-          },
-        });
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", validOrigin);
+        res.status(429).json(errorResponse);
+        return;
       }
 
       log(
@@ -688,17 +686,31 @@ export default async function handler(req: Request) {
       logError(
         `400 Error: Invalid messages format - ${JSON.stringify({ messages })}`
       );
-      return new Response("Invalid messages format", { status: 400 });
+      res.status(400).send("Invalid messages format");
+      return;
     }
 
     // Additional validation for model
     if (model !== null && !SUPPORTED_AI_MODELS.includes(model)) {
       logError(`400 Error: Unsupported model - ${model}`);
-      return new Response(`Unsupported model: ${model}`, { status: 400 });
+      res.status(400).send(`Unsupported model: ${model}`);
+      return;
     }
 
     // --- Geolocation (available only on deployed environment) ---
-    const geo = geolocation(req);
+    // For Node.js runtime, we need to construct a Request-like object for geolocation
+    const requestUrl = `https://${req.headers.host}${req.url}`;
+    const geoRequest = new Request(requestUrl, {
+      headers: Object.entries(req.headers).reduce((acc, [key, value]) => {
+        if (typeof value === "string") {
+          acc[key] = value;
+        } else if (Array.isArray(value)) {
+          acc[key] = value[0];
+        }
+        return acc;
+      }, {} as Record<string, string>),
+    });
+    const geo = geolocation(geoRequest);
 
     // Attach geolocation info to system state that will be sent to the prompt
     const systemState: SystemState | undefined = incomingSystemState
@@ -1209,39 +1221,47 @@ export default async function handler(req: Request) {
       },
     });
 
+    // Get the response from the AI SDK
     const response = result.toUIMessageStreamResponse();
 
-    // Add CORS headers to the response
-    const headers = new Headers(response.headers);
-    headers.set("Access-Control-Allow-Origin", validOrigin);
+    // Set headers for streaming
+    res.setHeader("Content-Type", response.headers.get("Content-Type") || "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("Access-Control-Allow-Origin", validOrigin);
 
-    return new Response(response.body, {
-      status: response.status,
-      headers,
-    });
+    // Stream the response body
+    if (response.body) {
+      const reader = response.body.getReader();
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(value);
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    }
+
+    res.end();
   } catch (error) {
     console.error("Chat API error:", error);
 
     // Ensure CORS headers are included on error responses so clients can read them
-    const corsHeaders: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (validOrigin) {
-      corsHeaders["Access-Control-Allow-Origin"] = validOrigin;
+    res.setHeader("Content-Type", "application/json");
+    if (origin) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
     }
 
     // Check if error is a SyntaxError (likely from parsing JSON)
     if (error instanceof SyntaxError) {
       console.error(`400 Error: Invalid JSON - ${error.message}`);
-      return new Response(
-        JSON.stringify({ error: "Bad Request", message: `Invalid JSON - ${error.message}` }),
-        { status: 400, headers: corsHeaders }
-      );
+      res.status(400).json({ error: "Bad Request", message: `Invalid JSON - ${error.message}` });
+      return;
     }
 
-    return new Response(
-      JSON.stringify({ error: "Internal Server Error" }),
-      { status: 500, headers: corsHeaders }
-    );
+    res.status(500).json({ error: "Internal Server Error" });
   }
 }

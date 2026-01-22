@@ -1,19 +1,16 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { openai } from "@ai-sdk/openai";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import {
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
-  errorResponse,
-  jsonResponse,
+  setCorsHeaders,
+  isOriginAllowed,
+  getClientIpFromRequest,
 } from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 
-
 export const config = {
-  runtime: "edge",
+  runtime: "nodejs",
 };
 
 interface ParseTitleRequest {
@@ -28,26 +25,35 @@ const ParsedTitleSchema = z.object({
   album: z.string().nullable(),
 });
 
-export default async function handler(req: Request) {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const origin = req.headers.origin as string | undefined;
+
+  // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    const effectiveOrigin = getEffectiveOrigin(req);
-    const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    setCorsHeaders(res, origin, ["POST", "OPTIONS"]);
+    res.status(204).end();
+    return;
   }
 
+  setCorsHeaders(res, origin, ["POST", "OPTIONS"]);
+
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    res.status(405).end("Method not allowed");
+    return;
   }
 
   try {
-    const effectiveOrigin = getEffectiveOrigin(req);
-    if (!isAllowedOrigin(effectiveOrigin)) {
-      return new Response("Unauthorized", { status: 403 });
+    if (!isOriginAllowed(origin)) {
+      res.status(403).end("Unauthorized");
+      return;
     }
 
     // Rate limits: burst 15/min/IP + daily 500/IP
     try {
-      const ip = getClientIp(req);
+      const ip = getClientIpFromRequest(req);
       const BURST_WINDOW = 60;
       const BURST_LIMIT = 15;
       const DAILY_WINDOW = 60 * 60 * 24;
@@ -74,17 +80,12 @@ export default async function handler(req: Request) {
         limit: BURST_LIMIT,
       });
       if (!burst.allowed) {
-        return new Response(
-          JSON.stringify({ error: "rate_limit_exceeded", scope: "burst" }),
-          {
-            status: 429,
-            headers: {
-              "Retry-After": String(burst.resetSeconds ?? BURST_WINDOW),
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Retry-After", String(burst.resetSeconds ?? BURST_WINDOW));
+        if (origin) {
+          res.setHeader("Access-Control-Allow-Origin", origin);
+        }
+        res.status(429).json({ error: "rate_limit_exceeded", scope: "burst" });
+        return;
       }
 
       const daily = await RateLimit.checkCounterLimit({
@@ -93,31 +94,23 @@ export default async function handler(req: Request) {
         limit: DAILY_LIMIT,
       });
       if (!daily.allowed) {
-        return new Response(
-          JSON.stringify({ error: "rate_limit_exceeded", scope: "daily" }),
-          {
-            status: 429,
-            headers: {
-              "Retry-After": String(daily.resetSeconds ?? DAILY_WINDOW),
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Retry-After", String(daily.resetSeconds ?? DAILY_WINDOW));
+        if (origin) {
+          res.setHeader("Access-Control-Allow-Origin", origin);
+        }
+        res.status(429).json({ error: "rate_limit_exceeded", scope: "daily" });
+        return;
       }
     } catch (e) {
       // Fail open but log
       console.error("Rate limit check failed (parse-title)", e);
     }
 
-    const { title: rawTitle, author_name } =
-      (await req.json()) as ParseTitleRequest;
+    const { title: rawTitle, author_name } = req.body as ParseTitleRequest;
 
     if (!rawTitle || typeof rawTitle !== "string") {
-      return new Response(JSON.stringify({ error: "No title provided" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      res.status(400).json({ error: "No title provided" });
+      return;
     }
 
     // Use generateText with structured output (AI SDK v6)
@@ -152,19 +145,16 @@ export default async function handler(req: Request) {
       album: parsedData.album ?? undefined, // Default to undefined if no album found
     };
 
-    return new Response(JSON.stringify(result), {
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": effectiveOrigin!,
-      },
-    });
+    if (origin) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+    }
+    res.status(200).json(result);
   } catch (error: unknown) {
     console.error("Error parsing title:", error);
 
     // Simplified error handling for now, can be enhanced based on AI SDK specifics if needed
     let status = 500;
     let errorMessage = "Error parsing title";
-    let errorDetails: string | undefined;
 
     if (error instanceof Error) {
       errorMessage = error.message;
@@ -183,15 +173,7 @@ export default async function handler(req: Request) {
       status = error.status;
     }
 
-    return new Response(
-      JSON.stringify({ error: errorMessage, details: errorDetails }),
-      {
-        status,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      }
-    );
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.status(status).json({ error: errorMessage });
   }
 }

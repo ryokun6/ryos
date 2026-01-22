@@ -18,12 +18,13 @@
  * - POST with action=search-lyrics: Search for lyrics matches
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
+  getOriginFromVercel,
+  isOriginAllowed,
+  handlePreflight,
+  getClientIpFromRequest,
 } from "../_utils/middleware.js";
 import { validateAuth } from "../_utils/auth/index.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
@@ -101,9 +102,9 @@ import {
 } from "ai";
 import { openai } from "@ai-sdk/openai";
 
-// Vercel Edge Function configuration
+// Vercel Function configuration (runs on Bun via bunVersion in vercel.json)
 export const config = {
-  runtime: "edge",
+  runtime: "nodejs",
 };
 export const maxDuration = 120;
 
@@ -121,60 +122,60 @@ const RATE_LIMITS = {
 // Main Handler
 // =============================================================================
 
-export default async function handler(req: Request) {
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const requestId = generateRequestId();
   const startTime = Date.now();
 
-  // Extract song ID from URL
-  const url = new URL(req.url);
-  const pathParts = url.pathname.split("/");
-  const songId = pathParts[pathParts.length - 1];
+  // Extract song ID from URL path
+  const songId = req.query.id as string;
 
   console.log(`[${requestId}] ${req.method} /api/songs/${songId}`);
 
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    const effectiveOrigin = getEffectiveOrigin(req);
-    const resp = preflightIfNeeded(req, ["GET", "POST", "DELETE", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    const handled = handlePreflight(req, res, ["GET", "POST", "DELETE", "OPTIONS"]);
+    if (handled) return;
   }
 
   // Validate origin
-  const effectiveOrigin = getEffectiveOrigin(req);
+  const effectiveOrigin = getOriginFromVercel(req);
 
   // Helper for JSON responses (defined early for use in origin validation)
-  const jsonResponse = (data: unknown, status = 200, headers: Record<string, string> = {}) =>
-    new Response(JSON.stringify(data), {
-      status,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": effectiveOrigin!,
-        ...headers,
-      },
-    });
+  const jsonResponse = (data: unknown, status = 200, headers: Record<string, string> = {}) => {
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+    for (const [key, value] of Object.entries(headers)) {
+      res.setHeader(key, value);
+    }
+    res.status(status).json(data);
+  };
 
   const errorResponse = (message: string, status = 400) => {
     logInfo(requestId, `Response: ${status} - ${message}`);
-    return jsonResponse({ error: message }, status);
+    jsonResponse({ error: message }, status);
   };
 
-  if (!isAllowedOrigin(effectiveOrigin)) {
-    return errorResponse("Unauthorized", 403);
+  if (!isOriginAllowed(effectiveOrigin)) {
+    errorResponse("Unauthorized", 403);
+    return;
   }
 
   // Create Redis client
   const redis = createRedis();
 
   if (!songId || songId === "[id]") {
-    return errorResponse("Song ID is required", 400);
+    errorResponse("Song ID is required", 400);
+    return;
   }
 
   // Validate YouTube video ID format (allow GET to return 404 for unknown IDs)
   if (!isValidYouTubeVideoId(songId)) {
     if (req.method === "GET") {
-      return errorResponse("Song not found", 404);
+      errorResponse("Song not found", 404);
+      return;
     }
-    return errorResponse("Invalid song ID format. Expected YouTube video ID (11 characters, alphanumeric with - and _)", 400);
+    errorResponse("Invalid song ID format. Expected YouTube video ID (11 characters, alphanumeric with - and _)", 400);
+    return;
   }
 
   try {
@@ -182,7 +183,7 @@ export default async function handler(req: Request) {
     // GET: Retrieve song data
     // =========================================================================
     if (req.method === "GET") {
-      const ip = getClientIp(req);
+      const ip = getClientIpFromRequest(req);
       const rlKey = RateLimit.makeKey(["rl", "song", "get", "ip", ip]);
       const rlResult = await RateLimit.checkCounterLimit({
         key: rlKey,
@@ -191,7 +192,7 @@ export default async function handler(req: Request) {
       });
 
       if (!rlResult.allowed) {
-        return jsonResponse(
+        jsonResponse(
           {
             error: "rate_limit_exceeded",
             limit: rlResult.limit,
@@ -200,9 +201,10 @@ export default async function handler(req: Request) {
           429,
           { "Retry-After": String(rlResult.resetSeconds) }
         );
+        return;
       }
 
-      const includeParam = url.searchParams.get("include") || "metadata";
+      const includeParam = (req.query.include as string) || "metadata";
       const includes = includeParam.split(",").map((s) => s.trim());
 
       logInfo(requestId, "GET song", { songId, includes });
@@ -217,7 +219,8 @@ export default async function handler(req: Request) {
       });
 
       if (!song) {
-        return errorResponse("Song not found", 404);
+        errorResponse("Song not found", 404);
+        return;
       }
 
       // Generate parsedLines on-demand (not stored in Redis)
@@ -237,7 +240,8 @@ export default async function handler(req: Request) {
         hasSoramimi: !!song.soramimi || !!song.soramimiByLang,
         duration: `${Date.now() - startTime}ms` 
       });
-      return jsonResponse(song);
+      jsonResponse(song);
+      return;
     }
 
     // =========================================================================
@@ -246,10 +250,11 @@ export default async function handler(req: Request) {
     if (req.method === "POST") {
       let body: Record<string, unknown>;
       try {
-        body = await req.json();
+        body = req.body;
       } catch (parseError) {
         logError(requestId, "Failed to parse request body", parseError);
-        return errorResponse("Invalid JSON body", 400);
+        errorResponse("Invalid JSON body", 400);
+        return;
       }
       const action = body.action;
       logInfo(requestId, `POST action=${action || "update-metadata"}`, {
@@ -260,11 +265,11 @@ export default async function handler(req: Request) {
       });
 
       // Extract auth credentials
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
+      const authHeader = req.headers["authorization"] as string | undefined;
+      const usernameHeader = req.headers["x-username"] as string | undefined;
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
-      const requestIp = getClientIp(req);
+      const requestIp = getClientIpFromRequest(req);
       const rateLimitUser = username?.toLowerCase() || requestIp;
 
       // Handle search-lyrics action (no auth required)
@@ -277,7 +282,7 @@ export default async function handler(req: Request) {
         });
 
         if (!rlResult.allowed) {
-          return jsonResponse(
+          jsonResponse(
             {
               error: "rate_limit_exceeded",
               limit: rlResult.limit,
@@ -286,11 +291,13 @@ export default async function handler(req: Request) {
             429,
             { "Retry-After": String(rlResult.resetSeconds) }
           );
+          return;
         }
 
         const parsed = SearchLyricsSchema.safeParse(body);
         if (!parsed.success) {
-          return errorResponse("Invalid request body");
+          errorResponse("Invalid request body");
+          return;
         }
 
         // Get song for title/artist context
@@ -318,13 +325,15 @@ export default async function handler(req: Request) {
         }
 
         if (!query) {
-          return errorResponse("Search query is required");
+          errorResponse("Search query is required");
+          return;
         }
 
         logInfo(requestId, "Searching lyrics", { query });
         const results = await searchKugou(query, searchTitle, searchArtist);
         logInfo(requestId, `Response: 200 OK - Found ${results.length} results`);
-        return jsonResponse({ results });
+        jsonResponse({ results });
+        return;
       }
 
       // Handle fetch-lyrics action
@@ -339,7 +348,7 @@ export default async function handler(req: Request) {
         });
 
         if (!rlResult.allowed) {
-          return jsonResponse(
+          jsonResponse(
             {
               error: "rate_limit_exceeded",
               limit: rlResult.limit,
@@ -348,14 +357,16 @@ export default async function handler(req: Request) {
             429,
             { "Retry-After": String(rlResult.resetSeconds) }
           );
+          return;
         }
 
         const parsed = FetchLyricsSchema.safeParse(body);
         if (!parsed.success) {
-          return errorResponse("Invalid request body");
+          errorResponse("Invalid request body");
+          return;
         }
 
-        const force = parsed.data.force || false;
+        const force: boolean = parsed.data.force ?? false;
         let lyricsSource: LyricsSource | undefined = parsed.data.lyricsSource as LyricsSource | undefined;
         
         // Client can pass title/artist directly (useful when song not in Redis yet)
@@ -386,9 +397,9 @@ export default async function handler(req: Request) {
         }
 
         // Check if lyrics source changed (user picked different search result)
-        const lyricsSourceChanged = lyricsSource?.hash && 
+        const lyricsSourceChanged = !!(lyricsSource?.hash && 
           song?.lyricsSource?.hash && 
-          lyricsSource.hash !== song.lyricsSource.hash;
+          lyricsSource.hash !== song.lyricsSource.hash);
 
         // Permission check: changing lyrics source or force refresh requires auth
         // First-time fetch (no existing lyrics source) is allowed for anyone
@@ -397,15 +408,18 @@ export default async function handler(req: Request) {
           const allowAnonymousRefresh = isPublicSong && !username && !authToken;
           if (!allowAnonymousRefresh) {
             if (!username || !authToken) {
-              return errorResponse("Unauthorized - authentication required to change lyrics source or force refresh", 401);
+              errorResponse("Unauthorized - authentication required to change lyrics source or force refresh", 401);
+              return;
             }
             const authResult = await validateAuth(redis, username, authToken);
             if (!authResult.valid) {
-              return errorResponse("Unauthorized - invalid credentials", 401);
+              errorResponse("Unauthorized - invalid credentials", 401);
+              return;
             }
             const permission = canModifySong(song, username);
             if (!permission.canModify) {
-              return errorResponse(permission.reason || "Only the song owner can change lyrics source", 403);
+              errorResponse(permission.reason || "Only the song owner can change lyrics source", 403);
+              return;
             }
           }
         }
@@ -538,7 +552,8 @@ export default async function handler(req: Request) {
             };
           }
           
-          return jsonResponse(response);
+          jsonResponse(response);
+          return;
         }
 
         // Determine title/artist for auto-search
@@ -581,14 +596,16 @@ export default async function handler(req: Request) {
         }
 
         if (!lyricsSource) {
-          return errorResponse("No lyrics source available");
+          errorResponse("No lyrics source available");
+          return;
         }
 
         logInfo(requestId, "Fetching lyrics from Kugou", { source: lyricsSource });
         const kugouResult = await fetchLyricsFromKugou(lyricsSource, requestId);
 
         if (!kugouResult) {
-          return errorResponse("Failed to fetch lyrics", 404);
+          errorResponse("Failed to fetch lyrics", 404);
+          return;
         }
 
         // Parse lyrics with consistent filtering (single source of truth)
@@ -604,8 +621,8 @@ export default async function handler(req: Request) {
 
         // Save to song document (lyrics + cover in metadata)
         // Clear annotations (translations, furigana, soramimi) when source changed or force refresh
-        const shouldClearAnnotations = force || lyricsSourceChanged;
-        const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource, kugouResult.cover, shouldClearAnnotations);
+        const shouldClearAnnotations = Boolean(force || lyricsSourceChanged);
+        const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource, kugouResult.cover, shouldClearAnnotations as boolean);
         logInfo(requestId, `Lyrics saved to song document`, { 
           songId,
           hasLyricsStored: !!savedSong.lyrics,
@@ -686,7 +703,8 @@ export default async function handler(req: Request) {
           };
         }
         
-        return jsonResponse(response);
+        jsonResponse(response);
+        return;
       }
 
       // =======================================================================
@@ -699,7 +717,8 @@ export default async function handler(req: Request) {
         const force = body.force === true;
 
         if (!language) {
-          return errorResponse("Invalid request body", 400);
+          errorResponse("Invalid request body", 400);
+          return;
         }
 
         const song = await getSong(redis, songId, {
@@ -709,25 +728,30 @@ export default async function handler(req: Request) {
         });
 
         if (!song) {
-          return errorResponse("Song not found", 404);
+          errorResponse("Song not found", 404);
+          return;
         }
 
         if (!song.lyrics?.lrc) {
-          return errorResponse("Song has no lyrics", 404);
+          errorResponse("Song has no lyrics", 404);
+          return;
         }
 
         // Permission check: force refresh requires auth when translation already exists
         if (force && song.translations?.[language]) {
           if (!username || !authToken) {
-            return errorResponse("Unauthorized - authentication required to force refresh translation", 401);
+            errorResponse("Unauthorized - authentication required to force refresh translation", 401);
+            return;
           }
           const authResult = await validateAuth(redis, username, authToken);
           if (!authResult.valid) {
-            return errorResponse("Unauthorized - invalid credentials", 401);
+            errorResponse("Unauthorized - invalid credentials", 401);
+            return;
           }
           const permission = canModifySong(song, username);
           if (!permission.canModify) {
-            return errorResponse(permission.reason || "Only the song owner can force refresh", 403);
+            errorResponse(permission.reason || "Only the song owner can force refresh", 403);
+            return;
           }
         }
 
@@ -739,15 +763,17 @@ export default async function handler(req: Request) {
         );
 
         if (parsedLines.length === 0) {
-          return errorResponse("Song has no lyrics", 404);
+          errorResponse("Song has no lyrics", 404);
+          return;
         }
 
         // Return cached translation when available (and not forcing)
         if (!force && song.translations?.[language]) {
-          return jsonResponse({
+          jsonResponse({
             translation: song.translations[language],
             cached: true,
           });
+          return;
         }
 
         // For Chinese Traditional: use KRC source directly if available (skip AI)
@@ -760,10 +786,11 @@ export default async function handler(req: Request) {
           if (krcDerivedLrc) {
             await saveTranslation(redis, songId, language, krcDerivedLrc);
             logInfo(requestId, "Using KRC-derived Traditional Chinese translation (non-stream)");
-            return jsonResponse({
+            jsonResponse({
               translation: krcDerivedLrc,
               cached: false,
             });
+            return;
           }
         }
 
@@ -775,7 +802,8 @@ export default async function handler(req: Request) {
         );
 
         if (!success) {
-          return errorResponse("Failed to translate lyrics", 404);
+          errorResponse("Failed to translate lyrics", 404);
+          return;
         }
 
         const translatedLrc = parsedLines
@@ -787,10 +815,11 @@ export default async function handler(req: Request) {
 
         await saveTranslation(redis, songId, language, translatedLrc);
 
-        return jsonResponse({
+        jsonResponse({
           translation: translatedLrc,
           cached: false,
         });
+        return;
       }
 
       // =======================================================================
@@ -808,7 +837,7 @@ export default async function handler(req: Request) {
         });
 
         if (!rlResult.allowed) {
-          return jsonResponse(
+          jsonResponse(
             {
               error: "rate_limit_exceeded",
               limit: rlResult.limit,
@@ -817,11 +846,13 @@ export default async function handler(req: Request) {
             429,
             { "Retry-After": String(rlResult.resetSeconds) }
           );
+          return;
         }
 
         const parsed = TranslateStreamSchema.safeParse(body);
         if (!parsed.success) {
-          return errorResponse("Invalid request body");
+          errorResponse("Invalid request body");
+          return;
         }
 
         const { language, force } = parsed.data;
@@ -834,21 +865,25 @@ export default async function handler(req: Request) {
         });
 
         if (!song?.lyrics?.lrc) {
-          return errorResponse("Song has no lyrics", 404);
+          errorResponse("Song has no lyrics", 404);
+          return;
         }
 
         // Permission check: force refresh requires auth when translation already exists
         if (force && song.translations?.[language]) {
           if (!username || !authToken) {
-            return errorResponse("Unauthorized - authentication required to force refresh translation", 401);
+            errorResponse("Unauthorized - authentication required to force refresh translation", 401);
+            return;
           }
           const authResult = await validateAuth(redis, username, authToken);
           if (!authResult.valid) {
-            return errorResponse("Unauthorized - invalid credentials", 401);
+            errorResponse("Unauthorized - invalid credentials", 401);
+            return;
           }
           const permission = canModifySong(song, username);
           if (!permission.canModify) {
-            return errorResponse(permission.reason || "Only the song owner can force refresh", 403);
+            errorResponse(permission.reason || "Only the song owner can force refresh", 403);
+            return;
           }
         }
 
@@ -863,25 +898,17 @@ export default async function handler(req: Request) {
         // Check if already cached in main document (and not forcing regeneration)
         if (!force && song.translations?.[language]) {
           logInfo(requestId, "Returning cached translation via SSE");
-          const encoder = new TextEncoder();
-          const stream = new ReadableStream({
-            start(controller) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                type: "cached",
-                translation: song.translations![language],
-              })}\n\n`));
-              controller.close();
-            },
-          });
-          return new Response(stream, {
-            headers: {
-              "Content-Type": "text/event-stream",
-              "Cache-Control": "no-cache, no-transform",
-              "Connection": "keep-alive",
-              "X-Accel-Buffering": "no",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          });
+          res.setHeader("Content-Type", "text/event-stream");
+          res.setHeader("Cache-Control", "no-cache, no-transform");
+          res.setHeader("Connection", "keep-alive");
+          res.setHeader("X-Accel-Buffering", "no");
+          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+          res.write(`data: ${JSON.stringify({
+            type: "cached",
+            translation: song.translations![language],
+          })}\n\n`);
+          res.end();
+          return;
         }
 
         // For Chinese Traditional: use KRC source directly if available (skip AI)
@@ -894,25 +921,17 @@ export default async function handler(req: Request) {
           if (krcDerivedLrc) {
             await saveTranslation(redis, songId, language, krcDerivedLrc);
             logInfo(requestId, "Using KRC-derived Traditional Chinese translation (skipping AI)");
-            const encoder = new TextEncoder();
-            const stream = new ReadableStream({
-              start(controller) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                  type: "cached",
-                  translation: krcDerivedLrc,
-                })}\n\n`));
-                controller.close();
-              },
-            });
-            return new Response(stream, {
-              headers: {
-                "Content-Type": "text/event-stream",
-                "Cache-Control": "no-cache, no-transform",
-                "Connection": "keep-alive",
-                "X-Accel-Buffering": "no",
-                "Access-Control-Allow-Origin": effectiveOrigin!,
-              },
-            });
+            res.setHeader("Content-Type", "text/event-stream");
+            res.setHeader("Cache-Control", "no-cache, no-transform");
+            res.setHeader("Connection", "keep-alive");
+            res.setHeader("X-Accel-Buffering", "no");
+            res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+            res.write(`data: ${JSON.stringify({
+              type: "cached",
+              translation: krcDerivedLrc,
+            })}\n\n`);
+            res.end();
+            return;
           }
         }
 
@@ -1020,16 +1039,34 @@ export default async function handler(req: Request) {
         });
 
         // Use createUIMessageStreamResponse for proper streaming
-        const response = createUIMessageStreamResponse({ stream: uiStream });
+        const streamResponse = createUIMessageStreamResponse({ stream: uiStream });
         
-        // Add CORS header
-        const headers = new Headers(response.headers);
-        headers.set("Access-Control-Allow-Origin", effectiveOrigin!);
+        // Copy headers and stream the response
+        res.setHeader("Content-Type", streamResponse.headers.get("Content-Type") || "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache, no-transform");
+        res.setHeader("Connection", "keep-alive");
+        res.setHeader("X-Accel-Buffering", "no");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
         
-        return new Response(response.body, {
-          status: response.status,
-          headers,
-        });
+        // Pipe the stream body to the response
+        if (streamResponse.body) {
+          const reader = streamResponse.body.getReader();
+          const pump = async () => {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              res.write(value);
+            }
+            res.end();
+          };
+          pump().catch(err => {
+            logError(requestId, "Stream error", err);
+            res.end();
+          });
+        } else {
+          res.end();
+        }
+        return;
       }
 
       // =======================================================================
@@ -1047,7 +1084,7 @@ export default async function handler(req: Request) {
         });
 
         if (!rlResult.allowed) {
-          return jsonResponse(
+          jsonResponse(
             {
               error: "rate_limit_exceeded",
               limit: rlResult.limit,
@@ -1056,11 +1093,13 @@ export default async function handler(req: Request) {
             429,
             { "Retry-After": String(rlResult.resetSeconds) }
           );
+          return;
         }
 
         const parsed = FuriganaStreamSchema.safeParse(body);
         if (!parsed.success) {
-          return errorResponse("Invalid request body");
+          errorResponse("Invalid request body");
+          return;
         }
 
         const { force } = parsed.data;
@@ -1073,21 +1112,25 @@ export default async function handler(req: Request) {
         });
 
         if (!song?.lyrics?.lrc) {
-          return errorResponse("Song has no lyrics", 404);
+          errorResponse("Song has no lyrics", 404);
+          return;
         }
 
         // Permission check: force refresh requires auth when furigana already exists
         if (force && song.furigana && song.furigana.length > 0) {
           if (!username || !authToken) {
-            return errorResponse("Unauthorized - authentication required to force refresh furigana", 401);
+            errorResponse("Unauthorized - authentication required to force refresh furigana", 401);
+            return;
           }
           const authResult = await validateAuth(redis, username, authToken);
           if (!authResult.valid) {
-            return errorResponse("Unauthorized - invalid credentials", 401);
+            errorResponse("Unauthorized - invalid credentials", 401);
+            return;
           }
           const permission = canModifySong(song, username);
           if (!permission.canModify) {
-            return errorResponse(permission.reason || "Only the song owner can force refresh", 403);
+            errorResponse(permission.reason || "Only the song owner can force refresh", 403);
+            return;
           }
         }
 
@@ -1102,25 +1145,17 @@ export default async function handler(req: Request) {
         // Check if already cached in main document
         if (!force && song.furigana && song.furigana.length > 0) {
           logInfo(requestId, "Returning cached furigana via SSE");
-          const encoder = new TextEncoder();
-          const stream = new ReadableStream({
-            start(controller) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                type: "cached",
-                furigana: song.furigana,
-              })}\n\n`));
-              controller.close();
-            },
-          });
-          return new Response(stream, {
-            headers: {
-              "Content-Type": "text/event-stream",
-              "Cache-Control": "no-cache, no-transform",
-              "Connection": "keep-alive",
-              "X-Accel-Buffering": "no",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          });
+          res.setHeader("Content-Type", "text/event-stream");
+          res.setHeader("Cache-Control", "no-cache, no-transform");
+          res.setHeader("Connection", "keep-alive");
+          res.setHeader("X-Accel-Buffering", "no");
+          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+          res.write(`data: ${JSON.stringify({
+            type: "cached",
+            furigana: song.furigana,
+          })}\n\n`);
+          res.end();
+          return;
         }
 
         const totalLines = parsedLinesFurigana.length;
@@ -1268,16 +1303,34 @@ Output:
         });
 
         // Use createUIMessageStreamResponse for proper streaming
-        const response = createUIMessageStreamResponse({ stream: uiStream });
+        const streamResponse = createUIMessageStreamResponse({ stream: uiStream });
         
-        // Add CORS header
-        const headers = new Headers(response.headers);
-        headers.set("Access-Control-Allow-Origin", effectiveOrigin!);
+        // Copy headers and stream the response
+        res.setHeader("Content-Type", streamResponse.headers.get("Content-Type") || "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache, no-transform");
+        res.setHeader("Connection", "keep-alive");
+        res.setHeader("X-Accel-Buffering", "no");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
         
-        return new Response(response.body, {
-          status: response.status,
-          headers,
-        });
+        // Pipe the stream body to the response
+        if (streamResponse.body) {
+          const reader = streamResponse.body.getReader();
+          const pump = async () => {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              res.write(value);
+            }
+            res.end();
+          };
+          pump().catch(err => {
+            logError(requestId, "Stream error", err);
+            res.end();
+          });
+        } else {
+          res.end();
+        }
+        return;
       }
 
       // =======================================================================
@@ -1295,7 +1348,7 @@ Output:
         });
 
         if (!rlResult.allowed) {
-          return jsonResponse(
+          jsonResponse(
             {
               error: "rate_limit_exceeded",
               limit: rlResult.limit,
@@ -1304,11 +1357,13 @@ Output:
             429,
             { "Retry-After": String(rlResult.resetSeconds) }
           );
+          return;
         }
 
         const parsed = SoramimiStreamSchema.safeParse(body);
         if (!parsed.success) {
-          return errorResponse("Invalid request body");
+          errorResponse("Invalid request body");
+          return;
         }
 
         const { force, furigana: clientFurigana, targetLanguage = "zh-TW" } = parsed.data;
@@ -1321,7 +1376,8 @@ Output:
         });
 
         if (!song?.lyrics?.lrc) {
-          return errorResponse("Song has no lyrics", 404);
+          errorResponse("Song has no lyrics", 404);
+          return;
         }
 
         // Permission check: force refresh requires auth when soramimi already exists
@@ -1329,15 +1385,18 @@ Output:
           ?? (targetLanguage === "zh-TW" ? song.soramimi : undefined);
         if (force && existingSoramimi && existingSoramimi.length > 0) {
           if (!username || !authToken) {
-            return errorResponse("Unauthorized - authentication required to force refresh soramimi", 401);
+            errorResponse("Unauthorized - authentication required to force refresh soramimi", 401);
+            return;
           }
           const authResult = await validateAuth(redis, username, authToken);
           if (!authResult.valid) {
-            return errorResponse("Unauthorized - invalid credentials", 401);
+            errorResponse("Unauthorized - invalid credentials", 401);
+            return;
           }
           const permission = canModifySong(song, username);
           if (!permission.canModify) {
-            return errorResponse(permission.reason || "Only the song owner can force refresh", 403);
+            errorResponse(permission.reason || "Only the song owner can force refresh", 403);
+            return;
           }
         }
 
@@ -1353,10 +1412,11 @@ Output:
         // But English soramimi should still work for Chinese lyrics
         if (targetLanguage === "zh-TW" && lyricsAreMostlyChinese(parsedLinesSoramimi)) {
           logInfo(requestId, "Skipping Chinese soramimi stream - lyrics are already Chinese");
-          return jsonResponse({
+          jsonResponse({
             skipped: true,
             skipReason: "chinese_lyrics",
           });
+          return;
         }
 
         // Check if already cached in main document (and not forcing regeneration)
@@ -1391,25 +1451,17 @@ Output:
               })
           );
           
-          const encoder = new TextEncoder();
-          const stream = new ReadableStream({
-            start(controller) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-                type: "cached",
-                soramimi: cleanedSoramimi,
-              })}\n\n`));
-              controller.close();
-            },
-          });
-          return new Response(stream, {
-            headers: {
-              "Content-Type": "text/event-stream",
-              "Cache-Control": "no-cache, no-transform",
-              "Connection": "keep-alive",
-              "X-Accel-Buffering": "no",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          });
+          res.setHeader("Content-Type", "text/event-stream");
+          res.setHeader("Cache-Control", "no-cache, no-transform");
+          res.setHeader("Connection", "keep-alive");
+          res.setHeader("X-Accel-Buffering", "no");
+          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+          res.write(`data: ${JSON.stringify({
+            type: "cached",
+            soramimi: cleanedSoramimi,
+          })}\n\n`);
+          res.end();
+          return;
         }
 
         const totalLines = parsedLinesSoramimi.length;
@@ -1592,16 +1644,34 @@ Output:
         });
 
         // Use createUIMessageStreamResponse for proper streaming
-        const response = createUIMessageStreamResponse({ stream: uiStream });
+        const streamResponse = createUIMessageStreamResponse({ stream: uiStream });
         
-        // Add CORS header
-        const headers = new Headers(response.headers);
-        headers.set("Access-Control-Allow-Origin", effectiveOrigin!);
+        // Copy headers and stream the response
+        res.setHeader("Content-Type", streamResponse.headers.get("Content-Type") || "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache, no-transform");
+        res.setHeader("Connection", "keep-alive");
+        res.setHeader("X-Accel-Buffering", "no");
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
         
-        return new Response(response.body, {
-          status: response.status,
-          headers,
-        });
+        // Pipe the stream body to the response
+        if (streamResponse.body) {
+          const reader = streamResponse.body.getReader();
+          const pump = async () => {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              res.write(value);
+            }
+            res.end();
+          };
+          pump().catch(err => {
+            logError(requestId, "Stream error", err);
+            res.end();
+          });
+        } else {
+          res.end();
+        }
+        return;
       }
 
       // =======================================================================
@@ -1610,7 +1680,8 @@ Output:
       if (action === "clear-cached-data") {
         const parsed = ClearCachedDataSchema.safeParse(body);
         if (!parsed.success) {
-          return errorResponse("Invalid request body");
+          errorResponse("Invalid request body");
+          return;
         }
 
         const { clearTranslations: shouldClearTranslations, clearFurigana: shouldClearFurigana, clearSoramimi: shouldClearSoramimi } = parsed.data;
@@ -1625,7 +1696,8 @@ Output:
         });
 
         if (!song) {
-          return errorResponse("Song not found", 404);
+          errorResponse("Song not found", 404);
+          return;
         }
 
         const cleared: string[] = [];
@@ -1657,7 +1729,8 @@ Output:
         }
 
         logInfo(requestId, `Cleared cached data: ${cleared.length > 0 ? cleared.join(", ") : "nothing to clear"}`);
-        return jsonResponse({ success: true, cleared });
+        jsonResponse({ success: true, cleared });
+        return;
       }
 
       // =======================================================================
@@ -1666,24 +1739,28 @@ Output:
       if (action === "unshare") {
         const parsed = UnshareSongSchema.safeParse(body);
         if (!parsed.success) {
-          return errorResponse("Invalid request body");
+          errorResponse("Invalid request body");
+          return;
         }
 
         // Validate auth
         const authResult = await validateAuth(redis, username, authToken);
         if (!authResult.valid) {
-          return errorResponse("Unauthorized - authentication required", 401);
+          errorResponse("Unauthorized - authentication required", 401);
+          return;
         }
 
         // Only admin can unshare
         if (username?.toLowerCase() !== "ryo") {
-          return errorResponse("Forbidden - admin access required", 403);
+          errorResponse("Forbidden - admin access required", 403);
+          return;
         }
 
         // Get existing song
         const existingSong = await getSong(redis, songId, { includeMetadata: true });
         if (!existingSong) {
-          return errorResponse("Song not found", 404);
+          errorResponse("Song not found", 404);
+          return;
         }
 
         // Clear createdBy by explicitly setting to undefined
@@ -1698,29 +1775,33 @@ Output:
         );
 
         logInfo(requestId, "Song unshared (createdBy cleared)", { duration: `${Date.now() - startTime}ms` });
-        return jsonResponse({
+        jsonResponse({
           success: true,
           id: updatedSong.id,
           createdBy: updatedSong.createdBy,
         });
+        return;
       }
 
       // Default POST: Update song metadata (requires auth)
       const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
-        return errorResponse("Unauthorized - authentication required", 401);
+        errorResponse("Unauthorized - authentication required", 401);
+        return;
       }
 
       const parsed = UpdateSongSchema.safeParse(body);
       if (!parsed.success) {
-        return errorResponse("Invalid request body");
+        errorResponse("Invalid request body");
+        return;
       }
 
       // Check permission
       const existingSong = await getSong(redis, songId, { includeMetadata: true });
       const permission = canModifySong(existingSong, username);
       if (!permission.canModify) {
-        return errorResponse(permission.reason || "Permission denied", 403);
+        errorResponse(permission.reason || "Permission denied", 403);
+        return;
       }
 
       // Update song
@@ -1770,46 +1851,51 @@ Output:
       const updatedSong = await saveSong(redis, updateData, preserveOptions);
 
       logInfo(requestId, isUpdate ? "Song updated" : "Song created", { duration: `${Date.now() - startTime}ms` });
-      return jsonResponse({
+      jsonResponse({
         success: true,
         id: updatedSong.id,
         isUpdate,
         createdBy: updatedSong.createdBy,
       });
+      return;
     }
 
     // =========================================================================
     // DELETE: Delete song (admin only)
     // =========================================================================
     if (req.method === "DELETE") {
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
+      const authHeader = req.headers["authorization"] as string | undefined;
+      const usernameHeader = req.headers["x-username"] as string | undefined;
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
       const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
-        return errorResponse("Unauthorized - authentication required", 401);
+        errorResponse("Unauthorized - authentication required", 401);
+        return;
       }
 
       // Only admin can delete
       if (username?.toLowerCase() !== "ryo") {
-        return errorResponse("Forbidden - admin access required", 403);
+        errorResponse("Forbidden - admin access required", 403);
+        return;
       }
 
       const deleted = await deleteSong(redis, songId);
       if (!deleted) {
-        return errorResponse("Song not found", 404);
+        errorResponse("Song not found", 404);
+        return;
       }
 
       logInfo(requestId, "Song deleted", { duration: `${Date.now() - startTime}ms` });
-      return jsonResponse({ success: true, deleted: true });
+      jsonResponse({ success: true, deleted: true });
+      return;
     }
 
-    return errorResponse("Method not allowed", 405);
+    errorResponse("Method not allowed", 405);
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
     logError(requestId, "Song API error", error);
-    return errorResponse(errorMessage, 500);
+    errorResponse(errorMessage, 500);
   }
 }

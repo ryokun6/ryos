@@ -1,17 +1,21 @@
-export const config = {
-  runtime: "edge",
-};
+/**
+ * GET /api/link-preview
+ * 
+ * Fetch metadata for a URL (title, description, image, etc.)
+ */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
-  jsonResponse,
-  errorResponse,
-  rateLimitResponse,
+  setCorsHeaders,
+  isOriginAllowed,
+  getClientIpFromRequest,
 } from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
+
+export const config = {
+  runtime: "nodejs",
+};
+
 interface LinkMetadata {
   title?: string;
   description?: string;
@@ -38,11 +42,10 @@ async function getYouTubeMetadata(url: string): Promise<LinkMetadata> {
     throw new Error("Invalid YouTube URL");
   }
 
-  // Use YouTube oEmbed API
   const oembedUrl = `https://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=${videoId}&format=json`;
   
   const response = await fetch(oembedUrl, {
-    signal: AbortSignal.timeout(10000), // 10 second timeout
+    signal: AbortSignal.timeout(10000),
   });
 
   if (!response.ok) {
@@ -60,67 +63,97 @@ async function getYouTubeMetadata(url: string): Promise<LinkMetadata> {
   };
 }
 
-export default async function handler(req: Request) {
-  const effectiveOrigin = getEffectiveOrigin(req);
-  if (!isAllowedOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+// Decode HTML entities
+function decodeHtml(text: string): string {
+  return text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_match, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_match, dec) => String.fromCharCode(parseInt(dec, 10)));
+}
+
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const origin = req.headers.origin as string | undefined;
+
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    setCorsHeaders(res, origin, ["GET", "OPTIONS"]);
+    res.status(204).end();
+    return;
   }
 
-  if (req.method === "OPTIONS") {
-    const resp = preflightIfNeeded(req, ["GET", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+  setCorsHeaders(res, origin, ["GET", "OPTIONS"]);
+
+  if (!isOriginAllowed(origin)) {
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
 
   if (req.method !== "GET") {
-    return new Response("Method not allowed", { status: 405 });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
   try {
-    // Burst limiter: 10/min per IP; optional per-host 5/min per IP
-    try {
-      const ip = getClientIp(req);
-      const BURST_WINDOW = 60;
-      const GLOBAL_LIMIT = 10;
+    // Rate limiting
+    const ip = getClientIpFromRequest(req);
+    const BURST_WINDOW = 60;
+    const GLOBAL_LIMIT = 10;
 
-      const { searchParams } = new URL(req.url);
-      const url = searchParams.get("url");
+    const url = req.query.url as string | undefined;
 
-      const globalKey = RateLimit.makeKey(["rl", "preview", "ip", ip]);
-      const global = await RateLimit.checkCounterLimit({
-        key: globalKey,
-        windowSeconds: BURST_WINDOW,
+    const globalKey = RateLimit.makeKey(["rl", "preview", "ip", ip]);
+    const global = await RateLimit.checkCounterLimit({
+      key: globalKey,
+      windowSeconds: BURST_WINDOW,
+      limit: GLOBAL_LIMIT,
+    });
+
+    if (!global.allowed) {
+      res.setHeader("Retry-After", String(global.resetSeconds ?? BURST_WINDOW));
+      res.status(429).json({
+        error: "rate_limit_exceeded",
         limit: GLOBAL_LIMIT,
+        retryAfter: global.resetSeconds ?? BURST_WINDOW,
+        scope: "global",
       });
-      if (!global.allowed) {
-        return rateLimitResponse(effectiveOrigin, GLOBAL_LIMIT, global.resetSeconds ?? BURST_WINDOW, "global");
-      }
-
-      if (url) {
-        try {
-          const hostname = new URL(url).hostname.toLowerCase();
-          const hostKey = RateLimit.makeKey(["rl", "preview", "ip", ip, "host", hostname]);
-          const host = await RateLimit.checkCounterLimit({
-            key: hostKey,
-            windowSeconds: BURST_WINDOW,
-            limit: 5,
-          });
-          if (!host.allowed) {
-            return rateLimitResponse(effectiveOrigin, 5, host.resetSeconds ?? BURST_WINDOW, "host");
-          }
-        } catch (e) {
-          // Ignore invalid URL parse or missing hostname
-          void e;
-        }
-      }
-    } catch (e) {
-      console.error("Rate limit check failed (link-preview)", e);
+      return;
     }
 
-    const { searchParams } = new URL(req.url);
-    const url = searchParams.get("url");
+    if (url) {
+      try {
+        const hostname = new URL(url).hostname.toLowerCase();
+        const hostKey = RateLimit.makeKey(["rl", "preview", "ip", ip, "host", hostname]);
+        const host = await RateLimit.checkCounterLimit({
+          key: hostKey,
+          windowSeconds: BURST_WINDOW,
+          limit: 5,
+        });
+        if (!host.allowed) {
+          res.setHeader("Retry-After", String(host.resetSeconds ?? BURST_WINDOW));
+          res.status(429).json({
+            error: "rate_limit_exceeded",
+            limit: 5,
+            retryAfter: host.resetSeconds ?? BURST_WINDOW,
+            scope: "host",
+          });
+          return;
+        }
+      } catch {
+        // Ignore invalid URL parse
+      }
+    }
 
     if (!url || typeof url !== "string") {
-      return errorResponse("No URL provided", 400, effectiveOrigin);
+      res.status(400).json({ error: "No URL provided" });
+      return;
     }
 
     // Validate URL format
@@ -128,27 +161,26 @@ export default async function handler(req: Request) {
     try {
       parsedUrl = new URL(url);
     } catch {
-      return errorResponse("Invalid URL format", 400, effectiveOrigin);
+      res.status(400).json({ error: "Invalid URL format" });
+      return;
     }
 
     // Only allow HTTP and HTTPS URLs
     if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      return errorResponse("Only HTTP and HTTPS URLs are allowed", 400, effectiveOrigin);
+      res.status(400).json({ error: "Only HTTP and HTTPS URLs are allowed" });
+      return;
     }
 
     // Handle YouTube URLs using oEmbed API
     if (isYouTubeUrl(url)) {
       try {
         const metadata = await getYouTubeMetadata(url);
-        return new Response(JSON.stringify(metadata), {
-          headers: { 
-            "Content-Type": "application/json",
-            "Cache-Control": "public, max-age=3600" // Cache for 1 hour
-          },
-        });
+        res.setHeader("Cache-Control", "public, max-age=3600");
+        res.status(200).json(metadata);
+        return;
       } catch (error) {
         console.error("Error fetching YouTube metadata:", error);
-        // Fall back to general scraping if YouTube API fails
+        // Fall back to general scraping
       }
     }
 
@@ -162,20 +194,18 @@ export default async function handler(req: Request) {
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
       },
-      // Add timeout to prevent hanging
-      signal: AbortSignal.timeout(10000), // 10 second timeout
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
-      return errorResponse(`HTTP error! status: ${response.status}`, response.status, effectiveOrigin);
+      res.status(response.status).json({ error: `HTTP error! status: ${response.status}` });
+      return;
     }
 
     const html = await response.text();
     
     // Extract metadata from HTML
-    const metadata: LinkMetadata = {
-      url: url,
-    };
+    const metadata: LinkMetadata = { url };
 
     // Extract title
     const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/is);
@@ -185,102 +215,61 @@ export default async function handler(req: Request) {
 
     // Extract Open Graph tags
     const ogTitleMatch = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-    if (ogTitleMatch) {
-      metadata.title = ogTitleMatch[1].trim();
-    }
+    if (ogTitleMatch) metadata.title = ogTitleMatch[1].trim();
 
     const ogDescriptionMatch = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-    if (ogDescriptionMatch) {
-      metadata.description = ogDescriptionMatch[1].trim();
-    }
+    if (ogDescriptionMatch) metadata.description = ogDescriptionMatch[1].trim();
 
     const ogImageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i);
     if (ogImageMatch) {
-      const imageUrl = ogImageMatch[1].trim();
-      // Make relative URLs absolute
       try {
-        metadata.image = new URL(imageUrl, url).href;
+        metadata.image = new URL(ogImageMatch[1].trim(), url).href;
       } catch {
-        metadata.image = imageUrl;
+        metadata.image = ogImageMatch[1].trim();
       }
     }
 
     const ogSiteNameMatch = html.match(/<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-    if (ogSiteNameMatch) {
-      metadata.siteName = ogSiteNameMatch[1].trim();
-    }
+    if (ogSiteNameMatch) metadata.siteName = ogSiteNameMatch[1].trim();
 
-    // Extract Twitter Card tags as fallback
+    // Twitter Card fallbacks
     if (!metadata.title) {
       const twitterTitleMatch = html.match(/<meta[^>]*name=["']twitter:title["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-      if (twitterTitleMatch) {
-        metadata.title = twitterTitleMatch[1].trim();
-      }
+      if (twitterTitleMatch) metadata.title = twitterTitleMatch[1].trim();
     }
 
     if (!metadata.description) {
       const twitterDescriptionMatch = html.match(/<meta[^>]*name=["']twitter:description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-      if (twitterDescriptionMatch) {
-        metadata.description = twitterDescriptionMatch[1].trim();
-      }
+      if (twitterDescriptionMatch) metadata.description = twitterDescriptionMatch[1].trim();
     }
 
     if (!metadata.image) {
       const twitterImageMatch = html.match(/<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["'][^>]*>/i);
       if (twitterImageMatch) {
-        const imageUrl = twitterImageMatch[1].trim();
         try {
-          metadata.image = new URL(imageUrl, url).href;
+          metadata.image = new URL(twitterImageMatch[1].trim(), url).href;
         } catch {
-          metadata.image = imageUrl;
+          metadata.image = twitterImageMatch[1].trim();
         }
       }
     }
 
-    // Extract standard meta description as fallback
+    // Meta description fallback
     if (!metadata.description) {
       const metaDescriptionMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-      if (metaDescriptionMatch) {
-        metadata.description = metaDescriptionMatch[1].trim();
-      }
+      if (metaDescriptionMatch) metadata.description = metaDescriptionMatch[1].trim();
     }
 
     // Use hostname as fallback site name
-    if (!metadata.siteName) {
-      metadata.siteName = parsedUrl.hostname;
-    }
+    if (!metadata.siteName) metadata.siteName = parsedUrl.hostname;
 
     // Decode HTML entities
-    const decodeHtml = (text: string) => {
-      return text
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&apos;/g, "'")
-        .replace(/&#x([0-9a-fA-F]+);/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)))
-        .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(parseInt(dec, 10)));
-    };
+    if (metadata.title) metadata.title = decodeHtml(metadata.title);
+    if (metadata.description) metadata.description = decodeHtml(metadata.description);
+    if (metadata.siteName) metadata.siteName = decodeHtml(metadata.siteName);
 
-    // Clean up extracted text
-    if (metadata.title) {
-      metadata.title = decodeHtml(metadata.title);
-    }
-    if (metadata.description) {
-      metadata.description = decodeHtml(metadata.description);
-    }
-    if (metadata.siteName) {
-      metadata.siteName = decodeHtml(metadata.siteName);
-    }
-
-    return new Response(JSON.stringify(metadata), {
-      headers: { 
-        "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=3600", // Cache for 1 hour
-        ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-      },
-    });
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.status(200).json(metadata);
 
   } catch (error: unknown) {
     console.error("Error fetching link preview:", error);
@@ -290,8 +279,6 @@ export default async function handler(req: Request) {
 
     if (error instanceof Error) {
       errorMessage = error.message;
-      
-      // Handle specific error types
       if (error.name === 'AbortError') {
         errorMessage = "Request timeout";
         status = 408;
@@ -301,6 +288,6 @@ export default async function handler(req: Request) {
       }
     }
 
-    return errorResponse(errorMessage, status, effectiveOrigin);
+    res.status(status).json({ error: errorMessage });
   }
 }
