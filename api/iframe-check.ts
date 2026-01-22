@@ -1079,10 +1079,7 @@ export default async function handler(req: Request) {
               requestId,
               `Attempting to cache Wayback content for ${normalizedUrl} (${waybackYear}/${waybackMonth})`
             );
-            const redis = new Redis({
-              url: process.env.REDIS_KV_REST_API_URL as string,
-              token: process.env.REDIS_KV_REST_API_TOKEN as string,
-            });
+            const redis = createRedis();
             const normalizedUrlForKey = normalizeUrlForCacheKey(normalizedUrl);
             if (normalizedUrlForKey) {
               const cacheKey = `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(
