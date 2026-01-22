@@ -282,7 +282,7 @@ export default async function handler(req: Request) {
       const res = await RateLimit.checkCounterLimit({
         key,
         windowSeconds: BURST_WINDOW,
-        limit: 120, // Relaxed limits for cached lookups/listing
+        limit: 300, // Increased limit for cached lookups/listing (no AI generation cost)
       });
       if (!res.allowed) {
         return new Response(
