@@ -1,20 +1,17 @@
-// No Next.js types needed – omit unused import to keep file framework‑agnostic.
-
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { Redis } from "@upstash/redis";
 import {
-  wrapHandler,
   createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  getClientIp,
+  setCorsHeaders,
+  isOriginAllowed,
+  getClientIpFromRequest,
 } from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
-
+import { normalizeUrlForCacheKey } from "./_utils/_url.js";
 
 export const config = {
   runtime: "nodejs",
 };
-
-import { normalizeUrlForCacheKey } from "./_utils/_url.js"; // Import the function
 
 // --- Logging Utilities ---------------------------------------------------
 
@@ -162,37 +159,45 @@ const WAYBACK_CACHE_PREFIX = "wayback:cache:";
  * blocked accidentally (the front‑end still has its own error handling for actual iframe errors).
  */
 
-async function webHandler(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const urlParam = searchParams.get("url");
-  let mode = searchParams.get("mode") || "proxy"; // "check" | "proxy" | "ai" | "list-cache"
-  const year = searchParams.get("year");
-  const month = searchParams.get("month");
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const urlParam = req.query.url as string | undefined;
+  let mode = (req.query.mode as string) || "proxy"; // "check" | "proxy" | "ai" | "list-cache"
+  const year = req.query.year as string | undefined;
+  const month = req.query.month as string | undefined;
   const requestId = generateRequestId(); // Generate request ID
-  const effectiveOrigin = getEffectiveOrigin(req);
-  if (!isAllowedOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+  const origin = req.headers.origin as string | undefined;
+
+  if (!isOriginAllowed(origin)) {
+    res.status(403).end("Unauthorized");
+    return;
+  }
+
+  setCorsHeaders(res, origin, ["GET", "OPTIONS"]);
+
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    res.status(204).end();
+    return;
   }
 
   // Generate a fresh, randomized browser header set for this request
   const BROWSER_HEADERS = generateRandomBrowserHeaders();
 
   // Log incoming request
-  logRequest(req.method, req.url, mode, requestId);
+  logRequest(req.method || "GET", req.url || "", mode, requestId);
 
   // Helper for consistent error responses with CORS
-  const errorResponseWithCors = (message: string, status: number = 400) =>
-    new Response(JSON.stringify({ error: message }), {
-      status,
-      headers: {
-        "Content-Type": "application/json",
-        ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-      },
-    });
+  const errorResponseWithCors = (message: string, status: number = 400) => {
+    res.status(status).json({ error: message });
+  };
 
   if (!urlParam) {
     logError(requestId, "Missing 'url' query parameter", null);
-    return errorResponseWithCors("Missing 'url' query parameter");
+    errorResponseWithCors("Missing 'url' query parameter");
+    return;
   }
 
   // Ensure the URL starts with a protocol for fetch()
@@ -207,7 +212,7 @@ async function webHandler(req: Request) {
   // Rate limiting (mode-specific)
   // ---------------------------
   try {
-    const ip = getClientIp(req);
+    const ip = getClientIpFromRequest(req);
     const BURST_WINDOW = 60; // 1 minute
     const burstKeyBase = ["rl", "iframe", mode, "ip", ip];
 
@@ -220,21 +225,13 @@ async function webHandler(req: Request) {
         limit: 300, // Relaxed global limit for proxy/check
       });
       if (!global.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            scope: "global",
-            mode,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Retry-After": String(global.resetSeconds ?? BURST_WINDOW),
-              "Content-Type": "application/json",
-              ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-            },
-          }
-        );
+        res.setHeader("Retry-After", String(global.resetSeconds ?? BURST_WINDOW));
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          scope: "global",
+          mode,
+        });
+        return;
       }
 
       // Per-host anti-scrape if URL present
@@ -257,22 +254,14 @@ async function webHandler(req: Request) {
           limit: 100, // Relaxed per-host limit for proxy/check
         });
         if (!host.allowed) {
-          return new Response(
-            JSON.stringify({
-              error: "rate_limit_exceeded",
-              scope: "host",
-              host: hostname,
-              mode,
-            }),
-            {
-              status: 429,
-              headers: {
-                "Retry-After": String(host.resetSeconds ?? BURST_WINDOW),
-                "Content-Type": "application/json",
-                ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-              },
-            }
-          );
+          res.setHeader("Retry-After", String(host.resetSeconds ?? BURST_WINDOW));
+          res.status(429).json({
+            error: "rate_limit_exceeded",
+            scope: "host",
+            host: hostname,
+            mode,
+          });
+          return;
         }
       } catch (e) {
         // Ignore invalid URL parse or missing hostname
@@ -280,23 +269,15 @@ async function webHandler(req: Request) {
       }
     } else if (mode === "ai" || mode === "list-cache") {
       const key = RateLimit.makeKey(burstKeyBase);
-      const res = await RateLimit.checkCounterLimit({
+      const rateLimitRes = await RateLimit.checkCounterLimit({
         key,
         windowSeconds: BURST_WINDOW,
         limit: 120, // Relaxed limits for cached lookups/listing
       });
-      if (!res.allowed) {
-        return new Response(
-          JSON.stringify({ error: "rate_limit_exceeded", scope: mode }),
-          {
-            status: 429,
-            headers: {
-              "Retry-After": String(res.resetSeconds ?? BURST_WINDOW),
-              "Content-Type": "application/json",
-              ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-            },
-          }
-        );
+      if (!rateLimitRes.allowed) {
+        res.setHeader("Retry-After", String(rateLimitRes.resetSeconds ?? BURST_WINDOW));
+        res.status(429).json({ error: "rate_limit_exceeded", scope: mode });
+        return;
       }
     }
   } catch (e) {
@@ -308,7 +289,8 @@ async function webHandler(req: Request) {
     const aiUrl = normalizedUrl;
     if (!year) {
       logError(requestId, "Missing year for AI cache mode", { year });
-      return errorResponseWithCors("Missing year parameter");
+      errorResponseWithCors("Missing year parameter");
+      return;
     }
 
     // Validate year format
@@ -319,7 +301,8 @@ async function webHandler(req: Request) {
 
     if (!isValidYear) {
       logError(requestId, "Invalid year format for AI cache mode", { year });
-      return errorResponseWithCors("Invalid year format");
+      errorResponseWithCors("Invalid year format");
+      return;
     }
 
     // Normalize the URL for the cache key
@@ -332,7 +315,8 @@ async function webHandler(req: Request) {
     if (!normalizedUrlForKey) {
       // Handle case where normalization failed
       logError(requestId, "URL normalization failed for AI cache key", null);
-      return errorResponseWithCors("URL normalization failed", 500);
+      errorResponseWithCors("URL normalization failed", 500);
+      return;
     }
 
     try {
@@ -344,28 +328,20 @@ async function webHandler(req: Request) {
       const html = (await redis.lindex(key, 0)) as string | null;
       if (html) {
         logInfo(requestId, `AI Cache HIT for key: ${key}`);
-        return new Response(html, {
-          headers: {
-            "Content-Type": "text/html; charset=utf-8",
-            "Access-Control-Allow-Origin": "*",
-            "X-AI-Cache": "HIT",
-          },
-        });
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("X-AI-Cache", "HIT");
+        res.status(200).send(html);
+        return;
       }
       logInfo(requestId, `AI Cache MISS for key: ${key}`);
-      return new Response(JSON.stringify({ aiCache: false }), {
-        status: 404,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      });
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.status(404).json({ aiCache: false });
+      return;
     } catch (e) {
       logError(requestId, "Error checking AI cache", e);
-      return new Response(JSON.stringify({ error: (e as Error).message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      res.status(500).json({ error: (e as Error).message });
+      return;
     }
   }
 
@@ -381,7 +357,8 @@ async function webHandler(req: Request) {
     );
     if (!normalizedUrlForKey) {
       logError(requestId, "URL normalization failed for list-cache key", null);
-      return errorResponseWithCors("URL normalization failed", 500);
+      errorResponseWithCors("URL normalization failed", 500);
+      return;
     }
 
     try {
@@ -443,8 +420,8 @@ async function webHandler(req: Request) {
           const yearMonthPart = key.substring(waybackKeyPrefixLength);
           // Validate Wayback year-month (YYYYMM) and extract year
           if (yearMonthPart && /^\d{6}$/.test(yearMonthPart)) {
-            const year = yearMonthPart.substring(0, 4);
-            uniqueYears.add(year);
+            const yearOnly = yearMonthPart.substring(0, 4);
+            uniqueYears.add(yearOnly);
           } else {
             logInfo(
               requestId,
@@ -479,18 +456,13 @@ async function webHandler(req: Request) {
         `Found ${sortedYears.length} unique cached years for URL: ${listUrl}`
       );
 
-      return new Response(JSON.stringify({ years: sortedYears }), {
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      });
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.status(200).json({ years: sortedYears });
+      return;
     } catch (e) {
       logError(requestId, "Error listing combined cache keys", e);
-      return new Response(JSON.stringify({ error: (e as Error).message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      res.status(500).json({ error: (e as Error).message });
+      return;
     }
   }
 
@@ -511,19 +483,15 @@ async function webHandler(req: Request) {
       requestId,
       "Auto-proxy domain in 'check' mode, returning allowed: false"
     );
-    return new Response(
-      JSON.stringify({
-        allowed: false,
-        reason: "Auto-proxied domain",
-      }),
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    res.status(200).json({
+      allowed: false,
+      reason: "Auto-proxied domain",
+    });
+    return;
   }
 
   // Read theme to drive conditional font override injection
-  const theme = (searchParams.get("theme") || "").toLowerCase();
+  const theme = ((req.query.theme as string) || "").toLowerCase();
   const shouldInjectFontOverrides = theme !== "macosx";
 
   // Determine target URL (Wayback or original)
@@ -548,7 +516,8 @@ async function webHandler(req: Request) {
         month,
       });
       // Potentially return an error or fall back to non-Wayback? Let's return error.
-      return errorResponseWithCors("Invalid year/month format for Wayback proxy");
+      errorResponseWithCors("Invalid year/month format for Wayback proxy");
+      return;
     }
   }
 
@@ -572,11 +541,11 @@ async function webHandler(req: Request) {
             requestId,
             `Wayback Cache HIT for ${cacheKey} (content length: ${cachedContent.length})`
           );
-          const headers = new Headers();
-          headers.set("Content-Type", "text/html; charset=utf-8");
-          headers.set("Access-Control-Allow-Origin", "*");
-          headers.set("X-Wayback-Cache", "HIT");
-          return new Response(cachedContent, { headers });
+          res.setHeader("Content-Type", "text/html; charset=utf-8");
+          res.setHeader("Access-Control-Allow-Origin", "*");
+          res.setHeader("X-Wayback-Cache", "HIT");
+          res.status(200).send(cachedContent);
+          return;
         }
         logInfo(
           requestId,
@@ -610,26 +579,26 @@ async function webHandler(req: Request) {
   const checkSiteEmbeddingAllowed = async () => {
     try {
       logInfo(requestId, `Performing header check for: ${targetUrl}`);
-      const res = await fetch(targetUrl, {
+      const fetchRes = await fetch(targetUrl, {
         method: "GET",
         redirect: "follow",
         headers: BROWSER_HEADERS, // Add browser headers
       });
 
-      if (!res.ok) {
-        throw new Error(`Upstream fetch failed with status ${res.status}`);
+      if (!fetchRes.ok) {
+        throw new Error(`Upstream fetch failed with status ${fetchRes.status}`);
       }
 
-      const xFrameOptions = res.headers.get("x-frame-options") || "";
-      const headerCsp = res.headers.get("content-security-policy") || "";
-      const contentType = res.headers.get("content-type") || "";
+      const xFrameOptions = fetchRes.headers.get("x-frame-options") || "";
+      const headerCsp = fetchRes.headers.get("content-security-policy") || "";
+      const contentType = fetchRes.headers.get("content-type") || "";
 
       // Check meta tags and extract title only for HTML content
       let metaCsp = "";
       let pageTitle: string | undefined = undefined; // Initialize title
 
       if (contentType.includes("text/html")) {
-        const html = await res.text();
+        const html = await fetchRes.text();
         // Extract meta CSP
         const metaTagMatch = html.match(
           /<meta\s+http-equiv=["']Content-Security-Policy["']\s+content=["']([^"']*)["'][^>]*>/i
@@ -722,9 +691,8 @@ async function webHandler(req: Request) {
     if (mode === "check") {
       logInfo(requestId, "Executing in 'check' mode");
       const result = await checkSiteEmbeddingAllowed();
-      return new Response(JSON.stringify(result), {
-        headers: { "Content-Type": "application/json" },
-      });
+      res.status(200).json(result);
+      return;
     }
 
     // 2. Proxy mode – stream the upstream resource, removing blocking headers
@@ -750,39 +718,32 @@ async function webHandler(req: Request) {
           `Upstream fetch failed with status ${upstreamRes.status}`,
           { url: targetUrl }
         );
-        return new Response(
-          JSON.stringify({
-            error: true,
-            status: upstreamRes.status,
-            statusText: upstreamRes.statusText || "File not found",
-            type: "http_error",
-            message: `The page cannot be found. HTTP ${upstreamRes.status} - ${
-              upstreamRes.statusText || "File not found"
-            }`,
-          }),
-          {
-            status: upstreamRes.status,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
-            },
-          }
-        );
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.status(upstreamRes.status).json({
+          error: true,
+          status: upstreamRes.status,
+          statusText: upstreamRes.statusText || "File not found",
+          type: "http_error",
+          message: `The page cannot be found. HTTP ${upstreamRes.status} - ${
+            upstreamRes.statusText || "File not found"
+          }`,
+        });
+        return;
       }
 
-      // Clone headers so we can edit them
-      const headers = new Headers(upstreamRes.headers);
-      const contentType = headers.get("content-type") || "";
+      // Get headers from upstream response
+      const contentType = upstreamRes.headers.get("content-type") || "";
       logInfo(requestId, `Proxying content type: ${contentType}`);
       let pageTitle: string | undefined = undefined; // Initialize title for proxy mode
 
-      headers.delete("x-frame-options");
-      headers.delete("content-security-policy");
-      headers.set(
-        "content-security-policy",
+      // Set response headers
+      res.setHeader("Content-Type", contentType);
+      res.removeHeader("x-frame-options");
+      res.setHeader(
+        "Content-Security-Policy",
         "frame-ancestors *; sandbox allow-scripts allow-forms allow-same-origin allow-popups allow-pointer-lock"
       );
-      headers.set("access-control-allow-origin", "*");
+      res.setHeader("Access-Control-Allow-Origin", "*");
 
       // If it's HTML, inject the <base> tag and click interceptor script
       if (contentType.includes("text/html")) {
@@ -1062,7 +1023,7 @@ async function webHandler(req: Request) {
 
         // Add the extracted title to a custom header (URL-encoded)
         if (pageTitle) {
-          headers.set("X-Proxied-Page-Title", encodeURIComponent(pageTitle));
+          res.setHeader("X-Proxied-Page-Title", encodeURIComponent(pageTitle));
         }
 
         // Cache Wayback content *after* successful fetch and modification
@@ -1111,18 +1072,14 @@ async function webHandler(req: Request) {
           }
         }
 
-        return new Response(html, {
-          status: upstreamRes.status,
-          headers,
-        });
+        res.status(upstreamRes.status).send(html);
+        return;
       } else {
         logInfo(requestId, "Proxying non-HTML content directly");
-        // For non‑HTML content, stream the body directly
-        // No title extraction or header needed for non-HTML
-        return new Response(upstreamRes.body, {
-          status: upstreamRes.status,
-          headers,
-        });
+        // For non‑HTML content, get the body as buffer and send it
+        const buffer = await upstreamRes.arrayBuffer();
+        res.status(upstreamRes.status).send(Buffer.from(buffer));
+        return;
       }
     } catch (fetchError) {
       clearTimeout(timeout);
@@ -1131,33 +1088,23 @@ async function webHandler(req: Request) {
       logError(requestId, `Proxy fetch error for ${targetUrl}`, fetchError);
 
       // Return JSON with error information instead of HTML
-      return new Response(
-        JSON.stringify({
-          error: true,
-          type: "connection_error",
-          status: 503,
-          message:
-            "The page cannot be displayed. Internet Explorer cannot access this website.",
-          // Include the target URL in the details for better debugging
-          details: `Failed to fetch the requested URL. Reason: ${
-            fetchError instanceof Error
-              ? fetchError.message
-              : "Connection failed or timed out"
-          }`,
-        }),
-        {
-          status: 503,
-          headers: {
-            "Content-Type": "application/json",
-            ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-          },
-        }
-      );
+      res.status(503).json({
+        error: true,
+        type: "connection_error",
+        status: 503,
+        message:
+          "The page cannot be displayed. Internet Explorer cannot access this website.",
+        // Include the target URL in the details for better debugging
+        details: `Failed to fetch the requested URL. Reason: ${
+          fetchError instanceof Error
+            ? fetchError.message
+            : "Connection failed or timed out"
+        }`,
+      });
+      return;
     }
   } catch (error) {
     logError(requestId, "General handler error", error);
-    return errorResponseWithCors((error as Error).message, 500);
+    errorResponseWithCors((error as Error).message, 500);
   }
 }
-
-export default wrapHandler(webHandler);

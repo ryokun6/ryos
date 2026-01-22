@@ -13,6 +13,9 @@ import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./_cors.
 import * as RateLimit from "./_rate-limit.js";
 import { createRedis } from "./redis.js";
 
+// Re-export VercelRequest and VercelResponse types for convenience
+export type { VercelRequest, VercelResponse } from "@vercel/node";
+
 // ============================================================================
 // Node.js Runtime Adapter
 // ============================================================================
@@ -139,6 +142,87 @@ export function wrapHandler(handler: WebApiHandler): NodeHandler {
       res.status(500).json({ error: "Internal Server Error" });
     }
   };
+}
+
+// ============================================================================
+// Node.js Runtime Helpers
+// ============================================================================
+
+/**
+ * Set CORS headers on a VercelResponse
+ */
+export function setCorsHeaders(
+  res: VercelResponse,
+  origin: string | undefined,
+  methods: string[] = ["GET", "POST", "DELETE", "OPTIONS"]
+): void {
+  res.setHeader("Content-Type", "application/json");
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", methods.join(", "));
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+}
+
+/**
+ * Get the effective origin from a VercelRequest
+ */
+export function getOriginFromVercel(req: VercelRequest): string | undefined {
+  return req.headers.origin as string | undefined;
+}
+
+/**
+ * Get client IP from VercelRequest
+ */
+export function getClientIpFromRequest(req: VercelRequest): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
+  }
+  if (Array.isArray(forwarded)) {
+    return forwarded[0];
+  }
+  return (req.headers["x-real-ip"] as string) || "unknown";
+}
+
+/**
+ * Check if origin is allowed for VercelRequest
+ */
+export function isOriginAllowed(origin: string | undefined): boolean {
+  if (!origin) return false;
+  
+  const ALLOWED_ORIGINS = [
+    "https://os.ryo.lu",
+    "https://ryos.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+  ];
+  
+  // Allow Vercel preview deployments
+  if (origin.endsWith(".vercel.app")) return true;
+  
+  return ALLOWED_ORIGINS.includes(origin);
+}
+
+/**
+ * Handle CORS preflight for VercelRequest/VercelResponse
+ * Returns true if it was a preflight request and was handled
+ */
+export function handlePreflight(
+  req: VercelRequest,
+  res: VercelResponse,
+  methods: string[] = ["GET", "POST", "DELETE", "OPTIONS"]
+): boolean {
+  if (req.method === "OPTIONS") {
+    const origin = req.headers.origin as string | undefined;
+    setCorsHeaders(res, origin, methods);
+    res.status(204).end();
+    return true;
+  }
+  return false;
 }
 
 // Re-export commonly used utilities for convenience
