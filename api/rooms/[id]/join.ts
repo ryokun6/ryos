@@ -4,6 +4,7 @@
  * Join a room
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   createRedis,
   getEffectiveOrigin,
@@ -19,64 +20,62 @@ export const config = {
   runtime: "nodejs",
 };
 
-function getRoomId(req: Request): string | null {
-  const url = new URL(req.url);
-  const pathParts = url.pathname.split("/");
-  const roomsIndex = pathParts.indexOf("rooms");
-  if (roomsIndex !== -1 && pathParts[roomsIndex + 1]) {
-    return pathParts[roomsIndex + 1];
-  }
-  return null;
-}
-
-export default async function handler(req: Request) {
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const origin = getEffectiveOrigin(req);
   
   if (req.method === "OPTIONS") {
     const preflight = preflightIfNeeded(req, ["POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+    if (preflight) {
+      res.status(204).end();
+      return;
+    }
+    res.status(204).end();
+    return;
   }
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403, headers: { "Content-Type": "application/json" },
-    });
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
 
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
-  const roomId = getRoomId(req);
+  const roomId = req.query.id as string;
   if (!roomId) {
-    return new Response(JSON.stringify({ error: "Room ID is required" }), { status: 400, headers });
+    res.status(400).json({ error: "Room ID is required" });
+    return;
   }
 
-  let body;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers });
+  const body = req.body;
+  if (!body) {
+    res.status(400).json({ error: "Invalid JSON body" });
+    return;
   }
 
   const username = body?.username?.toLowerCase();
   if (!username) {
-    return new Response(JSON.stringify({ error: "Username is required" }), { status: 400, headers });
+    res.status(400).json({ error: "Username is required" });
+    return;
   }
 
   try {
     assertValidUsername(username, "join-room");
     assertValidRoomId(roomId, "join-room");
   } catch (e) {
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Validation error" }), { status: 400, headers });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Validation error" });
+    return;
   }
 
   if (isProfaneUsername(username)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers });
+    res.status(401).json({ error: "Unauthorized" });
+    return;
   }
 
   try {
@@ -86,11 +85,13 @@ export default async function handler(req: Request) {
     ]);
 
     if (!roomData) {
-      return new Response(JSON.stringify({ error: "Room not found" }), { status: 404, headers });
+      res.status(404).json({ error: "Room not found" });
+      return;
     }
 
     if (!userData) {
-      return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers });
+      res.status(404).json({ error: "User not found" });
+      return;
     }
 
     await setRoomPresence(roomId, username);
@@ -98,9 +99,11 @@ export default async function handler(req: Request) {
     const updatedRoom: Room = { ...roomData, userCount };
     await setRoom(roomId, updatedRoom);
 
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+    res.status(200).json({ success: true });
+    return;
   } catch (error) {
     console.error(`Error joining room ${roomId}:`, error);
-    return new Response(JSON.stringify({ error: "Failed to join room" }), { status: 500, headers });
+    res.status(500).json({ error: "Failed to join room" });
+    return;
   }
 }

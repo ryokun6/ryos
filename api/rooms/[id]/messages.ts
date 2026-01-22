@@ -5,6 +5,7 @@
  * POST - Send a message to a room
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   createRedis,
   getEffectiveOrigin,
@@ -114,43 +115,39 @@ async function refreshRoomPresence(roomId: string, username: string): Promise<vo
 // Route Handler
 // ============================================================================
 
-function getRoomId(req: Request): string | null {
-  const url = new URL(req.url);
-  const pathParts = url.pathname.split("/");
-  const roomsIndex = pathParts.indexOf("rooms");
-  if (roomsIndex !== -1 && pathParts[roomsIndex + 1]) {
-    return pathParts[roomsIndex + 1];
-  }
-  return null;
-}
-
-export default async function handler(req: Request) {
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const origin = getEffectiveOrigin(req);
   
   if (req.method === "OPTIONS") {
     const preflight = preflightIfNeeded(req, ["GET", "POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+    if (preflight) {
+      res.status(204).end();
+      return;
+    }
+    res.status(204).end();
+    return;
   }
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403, headers: { "Content-Type": "application/json" },
-    });
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
 
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
 
-  const roomId = getRoomId(req);
+  const roomId = req.query.id as string;
   if (!roomId) {
-    return new Response(JSON.stringify({ error: "Room ID is required" }), { status: 400, headers });
+    res.status(400).json({ error: "Room ID is required" });
+    return;
   }
 
   try {
     assertValidRoomId(roomId, "messages-operation");
   } catch (e) {
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Invalid room ID" }), { status: 400, headers });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Invalid room ID" });
+    return;
   }
 
   // GET - Get messages
@@ -158,59 +155,65 @@ export default async function handler(req: Request) {
     try {
       const exists = await roomExists(roomId);
       if (!exists) {
-        return new Response(JSON.stringify({ error: "Room not found" }), { status: 404, headers });
+        res.status(404).json({ error: "Room not found" });
+        return;
       }
 
-      const url = new URL(req.url);
-      const limitParam = url.searchParams.get("limit");
+      const limitParam = req.query.limit as string;
       const limit = limitParam ? Math.min(parseInt(limitParam, 10) || 20, 500) : 20;
 
       const messages = await getMessages(roomId, limit);
-      return new Response(JSON.stringify({ messages }), { status: 200, headers });
+      res.status(200).json({ messages });
+      return;
     } catch (error) {
       console.error(`Error fetching messages for room ${roomId}:`, error);
-      return new Response(JSON.stringify({ error: "Failed to fetch messages" }), { status: 500, headers });
+      res.status(500).json({ error: "Failed to fetch messages" });
+      return;
     }
   }
 
   // POST - Send message
   if (req.method === "POST") {
-    const authHeader = req.headers.get("authorization");
-    const usernameHeader = req.headers.get("x-username");
+    const authHeader = req.headers["authorization"] as string;
+    const usernameHeader = req.headers["x-username"] as string;
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
     if (!token || !usernameHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
+      res.status(401).json({ error: "Unauthorized - missing credentials" });
+      return;
     }
 
     const authResult = await validateAuth(createRedis(), usernameHeader, token, {});
     if (!authResult.valid) {
-      return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
+      res.status(401).json({ error: "Unauthorized - invalid token" });
+      return;
     }
 
     const username = usernameHeader.toLowerCase();
 
     if (isProfaneUsername(username)) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers });
+      res.status(401).json({ error: "Unauthorized" });
+      return;
     }
 
-    let body;
-    try {
-      body = await req.json();
-    } catch {
-      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers });
+    const body = req.body;
+    if (!body) {
+      res.status(400).json({ error: "Invalid JSON body" });
+      return;
     }
 
     const originalContent = body?.content;
     if (!originalContent || typeof originalContent !== "string") {
-      return new Response(JSON.stringify({ error: "Content is required" }), { status: 400, headers });
+      res.status(400).json({ error: "Content is required" });
+      return;
     }
 
     const content = escapeHTML(filterProfanityPreservingUrls(originalContent));
 
     const roomData = await getRoom(roomId);
     if (!roomData) {
-      return new Response(JSON.stringify({ error: "Room not found" }), { status: 404, headers });
+      res.status(404).json({ error: "Room not found" });
+      return;
     }
 
     const isPublicRoom = !roomData.type || roomData.type === "public";
@@ -226,13 +229,15 @@ export default async function handler(req: Request) {
         const shortCount = await redis.incr(shortKey);
         if (shortCount === 1) await redis.expire(shortKey, CHAT_BURST_SHORT_WINDOW_SECONDS);
         if (shortCount > CHAT_BURST_SHORT_LIMIT) {
-          return new Response(JSON.stringify({ error: "You're sending messages too quickly." }), { status: 429, headers });
+          res.status(429).json({ error: "You're sending messages too quickly." });
+          return;
         }
 
         const longCount = await redis.incr(longKey);
         if (longCount === 1) await redis.expire(longKey, CHAT_BURST_LONG_WINDOW_SECONDS);
         if (longCount > CHAT_BURST_LONG_LIMIT) {
-          return new Response(JSON.stringify({ error: "Too many messages. Please wait." }), { status: 429, headers });
+          res.status(429).json({ error: "Too many messages. Please wait." });
+          return;
         }
 
         const nowSeconds = Math.floor(Date.now() / 1000);
@@ -240,7 +245,8 @@ export default async function handler(req: Request) {
         if (lastSent) {
           const delta = nowSeconds - parseInt(lastSent);
           if (delta < CHAT_MIN_INTERVAL_SECONDS) {
-            return new Response(JSON.stringify({ error: "Please wait before sending another message." }), { status: 429, headers });
+            res.status(429).json({ error: "Please wait before sending another message." });
+            return;
           }
         }
         await redis.set(lastKey, nowSeconds, { ex: CHAT_BURST_LONG_WINDOW_SECONDS });
@@ -254,22 +260,27 @@ export default async function handler(req: Request) {
       try {
         userData = await ensureUserExists(username, "send-message");
         if (!userData) {
-          return new Response(JSON.stringify({ error: "Failed to verify user" }), { status: 500, headers });
+          res.status(500).json({ error: "Failed to verify user" });
+          return;
         }
       } catch (error) {
         if (error instanceof Error && error.message === "Username contains inappropriate language") {
-          return new Response(JSON.stringify({ error: "Username contains inappropriate language" }), { status: 400, headers });
+          res.status(400).json({ error: "Username contains inappropriate language" });
+          return;
         }
-        return new Response(JSON.stringify({ error: "Failed to verify user" }), { status: 500, headers });
+        res.status(500).json({ error: "Failed to verify user" });
+        return;
       }
 
       if (content.length > MAX_MESSAGE_LENGTH) {
-        return new Response(JSON.stringify({ error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH}` }), { status: 400, headers });
+        res.status(400).json({ error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH}` });
+        return;
       }
 
       const lastMsg = await getLastMessage(roomId);
       if (lastMsg && lastMsg.username === username && lastMsg.content === content) {
-        return new Response(JSON.stringify({ error: "Duplicate message detected" }), { status: 400, headers });
+        res.status(400).json({ error: "Duplicate message detected" });
+        return;
       }
 
       const message: Message = {
@@ -287,12 +298,14 @@ export default async function handler(req: Request) {
       await createRedis().expire(`chat:users:${username}`, USER_EXPIRATION_TIME);
       await refreshRoomPresence(roomId, username);
 
-      return new Response(JSON.stringify({ message }), { status: 201, headers });
+      res.status(201).json({ message });
+      return;
     } catch (error) {
       console.error(`Error sending message in room ${roomId}:`, error);
-      return new Response(JSON.stringify({ error: "Failed to send message" }), { status: 500, headers });
+      res.status(500).json({ error: "Failed to send message" });
+      return;
     }
   }
 
-  return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+  res.status(405).json({ error: "Method not allowed" });
 }
