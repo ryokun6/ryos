@@ -2,6 +2,7 @@ import { openai } from "@ai-sdk/openai";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import {
+  wrapHandler,
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
@@ -28,7 +29,7 @@ const ParsedTitleSchema = z.object({
   album: z.string().nullable(),
 });
 
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   if (req.method === "OPTIONS") {
     const effectiveOrigin = getEffectiveOrigin(req);
     const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
@@ -195,3 +196,5 @@ export default async function handler(req: Request) {
     );
   }
 }
+
+export default wrapHandler(webHandler);

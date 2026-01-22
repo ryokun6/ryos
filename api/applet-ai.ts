@@ -8,6 +8,7 @@ import {
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import {
+  wrapHandler,
   createRedis,
   getEffectiveOrigin,
   isAllowedOrigin,
@@ -342,7 +343,7 @@ const buildModelMessages = (
   return messages;
 };
 
-export default async function handler(req: Request): Promise<Response> {
+async function webHandler(req: Request): Promise<Response> {
   const effectiveOrigin = getEffectiveOrigin(req);
   if (req.method === "OPTIONS") {
     const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
@@ -719,3 +720,5 @@ export default async function handler(req: Request): Promise<Response> {
     );
   }
 }
+
+export default wrapHandler(webHandler);

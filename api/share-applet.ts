@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  wrapHandler,
   isAdmin,
   createRedis,
   getEffectiveOrigin,
@@ -44,7 +45,7 @@ const SaveAppletRequestSchema = z.object({
 /**
  * Main handler
  */
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     const effectiveOrigin = getEffectiveOrigin(req);
@@ -697,3 +698,5 @@ export default async function handler(req: Request) {
     );
   }
 }
+
+export default wrapHandler(webHandler);

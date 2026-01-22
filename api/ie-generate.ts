@@ -6,6 +6,7 @@ import {
   type UIMessage,
 } from "ai";
 import {
+  wrapHandler,
   createRedis,
   getEffectiveOrigin,
   isAllowedOrigin,
@@ -180,7 +181,7 @@ ${RYO_PERSONA_INSTRUCTIONS}`;
   return finalPrompt;
 };
 
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   // CORS / Origin validation
   const effectiveOrigin = getEffectiveOrigin(req);
   if (req.method === "OPTIONS") {
@@ -433,3 +434,5 @@ export default async function handler(req: Request) {
     return new Response("Internal Server Error", { status: 500 });
   }
 }
+
+export default wrapHandler(webHandler);

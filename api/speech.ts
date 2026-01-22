@@ -1,6 +1,7 @@
 import { experimental_generateSpeech as generateSpeech } from "ai";
 import { openai } from "@ai-sdk/openai";
 import {
+  wrapHandler,
   createRedis,
   getEffectiveOrigin,
   isAllowedOrigin,
@@ -130,7 +131,7 @@ const generateElevenLabsSpeech = async (
   return await response.arrayBuffer();
 };
 
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   // Generate a request ID and log the incoming request
   const requestId = generateRequestId();
   const startTime =
@@ -361,3 +362,5 @@ export default async function handler(req: Request) {
     return new Response(message, { status: 500 });
   }
 }
+
+export default wrapHandler(webHandler);

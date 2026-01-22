@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  wrapHandler,
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
@@ -90,7 +91,7 @@ const generateRequestId = (): string =>
 /**
  * Main handler
  */
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   const requestId = generateRequestId();
   logRequest(req.method, req.url, requestId);
 
@@ -368,3 +369,5 @@ export default async function handler(req: Request) {
     }
   );
 }
+
+export default wrapHandler(webHandler);

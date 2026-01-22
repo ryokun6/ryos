@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import {
+  wrapHandler,
   getEffectiveOrigin,
   isAllowedOrigin,
   preflightIfNeeded,
@@ -27,7 +28,7 @@ export const config = {
 
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB limit imposed by OpenAI
 
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   const effectiveOrigin = getEffectiveOrigin(req);
 
   if (req.method === "OPTIONS") {
@@ -170,3 +171,5 @@ export default async function handler(req: Request) {
     );
   }
 }
+
+export default wrapHandler(webHandler);

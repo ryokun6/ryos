@@ -1,6 +1,7 @@
 // No Next.js types needed – omit unused import to keep file framework‑agnostic.
 
 import {
+  wrapHandler,
   createRedis,
   getEffectiveOrigin,
   isAllowedOrigin,
@@ -161,7 +162,7 @@ const WAYBACK_CACHE_PREFIX = "wayback:cache:";
  * blocked accidentally (the front‑end still has its own error handling for actual iframe errors).
  */
 
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   const { searchParams } = new URL(req.url);
   const urlParam = searchParams.get("url");
   let mode = searchParams.get("mode") || "proxy"; // "check" | "proxy" | "ai" | "list-cache"
@@ -1158,3 +1159,5 @@ export default async function handler(req: Request) {
     return errorResponseWithCors((error as Error).message, 500);
   }
 }
+
+export default wrapHandler(webHandler);
