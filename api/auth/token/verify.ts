@@ -12,6 +12,7 @@ import {
   extractAuth,
   jsonResponse,
   errorResponse,
+  wrapHandler,
 } from "../../_utils/middleware.js";
 import { validateAuth } from "../../_utils/auth/index.js";
 import { isProfaneUsername } from "../../_utils/_validation.js";
@@ -20,7 +21,7 @@ export const config = {
   runtime: "nodejs",
 };
 
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   const origin = getEffectiveOrigin(req);
   
   if (req.method === "OPTIONS") {
@@ -86,3 +87,5 @@ export default async function handler(req: Request) {
     message: "Token is valid",
   }), { status: 200, headers });
 }
+
+export default wrapHandler(webHandler);

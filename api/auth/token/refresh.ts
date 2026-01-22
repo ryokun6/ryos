@@ -12,6 +12,7 @@ import {
   getClientIp,
   errorResponse,
   jsonResponse,
+  wrapHandler,
 } from "../../_utils/middleware.js";
 import {
   generateAuthToken,
@@ -33,7 +34,7 @@ interface RefreshRequest {
   oldToken: string;
 }
 
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   const origin = getEffectiveOrigin(req);
   
   if (req.method === "OPTIONS") {
@@ -121,3 +122,5 @@ export default async function handler(req: Request) {
 
   return new Response(JSON.stringify({ token: newToken }), { status: 201, headers });
 }
+
+export default wrapHandler(webHandler);

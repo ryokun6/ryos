@@ -12,6 +12,7 @@ import {
   extractAuth,
   errorResponse,
   jsonResponse,
+  wrapHandler,
 } from "../_utils/middleware.js";
 import { getUserTokens, validateAuth } from "../_utils/auth/index.js";
 
@@ -20,7 +21,7 @@ export const config = {
   runtime: "nodejs",
 };
 
-export default async function handler(req: Request) {
+async function webHandler(req: Request) {
   const origin = getEffectiveOrigin(req);
   
   if (req.method === "OPTIONS") {
@@ -74,3 +75,5 @@ export default async function handler(req: Request) {
     count: tokenList.length,
   }), { status: 200, headers });
 }
+
+export default wrapHandler(webHandler);
