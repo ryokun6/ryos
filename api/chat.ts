@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   streamText,
   smoothStream,
@@ -23,12 +24,9 @@ import { z } from "zod";
 import { SUPPORTED_AI_MODELS } from "../src/types/aiModels.js";
 import { appIds } from "../src/config/appIds.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
-import {
-  createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-} from "./_utils/middleware.js";
 import { validateAuth } from "./_utils/auth/index.js";
+import { Redis } from "@upstash/redis";
+import { initLogger } from "./_utils/_logging.js";
 
 // Central list of supported theme IDs for tool validation
 const themeIds = ["system7", "macosx", "xp", "win98"] as const;
@@ -260,11 +258,34 @@ interface SystemState {
 }
 
 
-// Edge runtime configuration
-export const config = {
-  runtime: "edge",
-};
+// Node.js runtime configuration
+export const runtime = "nodejs";
 export const maxDuration = 80;
+
+// Helper functions for Node.js runtime
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL!,
+    token: process.env.REDIS_KV_REST_API_TOKEN!,
+  });
+}
+
+function getEffectiveOrigin(req: Request): string | null {
+  return req.headers.get("origin") || null;
+}
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true;
+  const allowedOrigins = [
+    "https://os.ryo.lu",
+    "https://ryos.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+  ];
+  return allowedOrigins.some((allowed) => origin.startsWith(allowed)) || origin.includes("vercel.app");
+}
 
 // Unified static prompt with all instructions
 const STATIC_SYSTEM_PROMPT = [
@@ -514,13 +535,19 @@ const buildContextAwarePrompts = () => {
   return { prompts, loadedSections };
 };
 
-// Add Redis client for auth validation
-const redis = createRedis();
 
 export default async function handler(req: Request) {
+  const { requestId, logger } = initLogger();
+  const startTime = Date.now();
+  
   // Check origin before processing request
   const effectiveOrigin = getEffectiveOrigin(req);
+  
+  logger.request(req.method, req.url, "chat");
+  
   if (!isAllowedOrigin(effectiveOrigin)) {
+    logger.warn("Unauthorized origin", { origin: effectiveOrigin });
+    logger.response(403, Date.now() - startTime);
     return new Response("Unauthorized", { status: 403 });
   }
 
@@ -528,6 +555,7 @@ export default async function handler(req: Request) {
   const validOrigin = effectiveOrigin as string;
 
   if (req.method === "OPTIONS") {
+    logger.response(204, Date.now() - startTime);
     return new Response(null, {
       headers: {
         "Access-Control-Allow-Origin": validOrigin,
@@ -538,8 +566,12 @@ export default async function handler(req: Request) {
   }
 
   if (req.method !== "POST") {
+    logger.response(405, Date.now() - startTime);
     return new Response("Method not allowed", { status: 405 });
   }
+
+  // Create Redis client for auth validation
+  const redis = createRedis();
 
   try {
     // Parse query string to get model parameter
@@ -569,9 +601,9 @@ export default async function handler(req: Request) {
     // Helper: prefix log lines with username (for easier tracing)
     const usernameForLogs = headerUsernameInitial ?? "unknown";
     const log = (...args: unknown[]) =>
-      console.log(`[User: ${usernameForLogs}]`, ...args);
+      logger.info(`[User: ${usernameForLogs}]`, args);
     const logError = (...args: unknown[]) =>
-      console.error(`[User: ${usernameForLogs}]`, ...args);
+      logger.error(`[User: ${usernameForLogs}]`, args);
 
     // Get IP address for rate limiting anonymous users
     // For Vercel deployments, use x-vercel-forwarded-for (won't be overwritten by proxies)
@@ -1220,7 +1252,7 @@ export default async function handler(req: Request) {
       headers,
     });
   } catch (error) {
-    console.error("Chat API error:", error);
+    logger.error("Chat API error", error);
 
     // Ensure CORS headers are included on error responses so clients can read them
     const corsHeaders: Record<string, string> = {
@@ -1232,13 +1264,15 @@ export default async function handler(req: Request) {
 
     // Check if error is a SyntaxError (likely from parsing JSON)
     if (error instanceof SyntaxError) {
-      console.error(`400 Error: Invalid JSON - ${error.message}`);
+      logger.error(`Invalid JSON`, error.message);
+      logger.response(400, Date.now() - startTime);
       return new Response(
         JSON.stringify({ error: "Bad Request", message: `Invalid JSON - ${error.message}` }),
         { status: 400, headers: corsHeaders }
       );
     }
 
+    logger.response(500, Date.now() - startTime);
     return new Response(
       JSON.stringify({ error: "Internal Server Error" }),
       { status: 500, headers: corsHeaders }

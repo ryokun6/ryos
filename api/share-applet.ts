@@ -1,19 +1,65 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import {
-  isAdmin,
-  createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
-} from "./_utils/middleware.js";
 import { validateAuth, generateAuthToken } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
+import { Redis } from "@upstash/redis";
+import { initLogger } from "./_utils/_logging.js";
 
-// Vercel Edge Function configuration
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
+export const maxDuration = 30;
+
+// Helper functions for Node.js runtime
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL!,
+    token: process.env.REDIS_KV_REST_API_TOKEN!,
+  });
+}
+
+function getClientIp(req: VercelRequest): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
+  }
+  if (Array.isArray(forwarded)) {
+    return forwarded[0];
+  }
+  return (req.headers["x-real-ip"] as string) || "unknown";
+}
+
+function getEffectiveOrigin(req: VercelRequest): string | null {
+  return (req.headers.origin as string) || null;
+}
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true;
+  const allowedOrigins = [
+    "https://os.ryo.lu",
+    "https://ryos.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+  ];
+  return allowedOrigins.some((allowed) => origin.startsWith(allowed)) || origin.includes("vercel.app");
+}
+
+function setCorsHeaders(res: VercelResponse, origin: string | null): void {
+  res.setHeader("Content-Type", "application/json");
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, PATCH, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+}
+
+async function isAdmin(redis: Redis, username: string | null, token: string | null): Promise<boolean> {
+  if (!username || !token) return false;
+  if (username.toLowerCase() !== "ryo") return false;
+  const authResult = await validateAuth(redis, username, token, { allowExpired: false });
+  return authResult.valid;
+}
 
 // Rate limiting configuration
 const RATE_LIMITS = {
@@ -44,37 +90,46 @@ const SaveAppletRequestSchema = z.object({
 /**
  * Main handler
  */
-export default async function handler(req: Request) {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const { requestId, logger } = initLogger();
+  const startTime = Date.now();
+  const effectiveOrigin = getEffectiveOrigin(req);
+
+  logger.request(req.method || "GET", req.url || "/api/share-applet", "share-applet");
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    const effectiveOrigin = getEffectiveOrigin(req);
-    const resp = preflightIfNeeded(req, ["GET", "POST", "DELETE", "PATCH", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    setCorsHeaders(res, effectiveOrigin);
+    logger.response(204, Date.now() - startTime);
+    res.status(204).end();
+    return;
   }
 
-  if (req.method !== "GET" && req.method !== "POST" && req.method !== "DELETE" && req.method !== "PATCH" && req.method !== "OPTIONS") {
-    return new Response("Method not allowed", { status: 405 });
+  if (!["GET", "POST", "DELETE", "PATCH"].includes(req.method || "")) {
+    logger.response(405, Date.now() - startTime);
+    res.status(405).send("Method not allowed");
+    return;
+  }
+
+  setCorsHeaders(res, effectiveOrigin);
+
+  if (!isAllowedOrigin(effectiveOrigin)) {
+    logger.warn("Unauthorized origin", { origin: effectiveOrigin });
+    logger.response(403, Date.now() - startTime);
+    res.status(403).send("Unauthorized");
+    return;
   }
 
   // Create Redis client
   const redis = createRedis();
 
-  // Parse and validate request
-  let effectiveOrigin: string | null;
-  try {
-    effectiveOrigin = getEffectiveOrigin(req);
-    if (!isAllowedOrigin(effectiveOrigin)) {
-      return new Response("Unauthorized", { status: 403 });
-    }
-  } catch {
-    return new Response("Unauthorized", { status: 403 });
-  }
-
   try {
     // GET: Retrieve applet by ID or list featured applets
     if (req.method === "GET") {
-      const url = new URL(req.url);
-      const listParam = url.searchParams.get("list");
+      const listParam = req.query.list as string | undefined;
       
       // Rate limiting for GET requests
       const ip = getClientIp(req);
@@ -87,21 +142,15 @@ export default async function handler(req: Request) {
       });
       
       if (!rlResult.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            limit: rlResult.limit,
-            retryAfter: rlResult.resetSeconds,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-              "Retry-After": String(rlResult.resetSeconds),
-            },
-          }
-        );
+        logger.warn("Rate limit exceeded", { ip });
+        logger.response(429, Date.now() - startTime);
+        res.setHeader("Retry-After", String(rlResult.resetSeconds));
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          limit: rlResult.limit,
+          retryAfter: rlResult.resetSeconds,
+        });
+        return;
       }
       
       // If list=true, return all applets
