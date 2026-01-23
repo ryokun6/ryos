@@ -3,103 +3,129 @@
  * 
  * GET    - Get a single room
  * DELETE - Delete a room
+ * 
+ * Node.js runtime with terminal logging
  */
 
-import {
-  createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-} from "../_utils/middleware.js";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { Redis } from "@upstash/redis";
 import { validateAuth } from "../_utils/auth/index.js";
 import { assertValidRoomId } from "../_utils/_validation.js";
-
-// Import from existing chat-rooms modules
-import {
-  getRoom,
-  setRoom,
-} from "./_helpers/_redis.js";
-import {
-  CHAT_ROOM_PREFIX,
-  CHAT_ROOM_USERS_PREFIX,
-  CHAT_ROOMS_SET,
-} from "./_helpers/_constants.js";
-import {
-  refreshRoomUserCount,
-  deleteRoomPresence,
-} from "./_helpers/_presence.js";
+import { initLogger } from "../_utils/_logging.js";
+import { getRoom, setRoom } from "./_helpers/_redis.js";
+import { CHAT_ROOM_PREFIX, CHAT_ROOM_USERS_PREFIX, CHAT_ROOMS_SET } from "./_helpers/_constants.js";
+import { refreshRoomUserCount, deleteRoomPresence } from "./_helpers/_presence.js";
 import type { Room } from "./_helpers/_types.js";
 
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
+export const maxDuration = 30;
 
-function getRoomId(req: Request): string | null {
-  const url = new URL(req.url);
-  const pathParts = url.pathname.split("/");
-  return pathParts[pathParts.length - 1] || null;
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL!,
+    token: process.env.REDIS_KV_REST_API_TOKEN!,
+  });
 }
 
-export default async function handler(req: Request) {
-  const origin = getEffectiveOrigin(req);
-  
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["GET", "DELETE", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+function getEffectiveOrigin(req: VercelRequest): string | null {
+  return (req.headers.origin as string) || null;
+}
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true;
+  const allowedOrigins = [
+    "https://os.ryo.lu", "https://ryos.vercel.app",
+    "http://localhost:5173", "http://localhost:3000",
+    "http://127.0.0.1:5173", "http://127.0.0.1:3000",
+  ];
+  return allowedOrigins.some((a) => origin.startsWith(a)) || origin.includes("vercel.app");
+}
+
+function setCorsHeaders(res: VercelResponse, origin: string | null): void {
+  res.setHeader("Content-Type", "application/json");
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
   }
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const { requestId, logger } = initLogger();
+  const startTime = Date.now();
+  const origin = getEffectiveOrigin(req);
+  const roomId = req.query.id as string | undefined;
+
+  logger.request(req.method || "GET", req.url || "/api/rooms/[id]", `room:${roomId}`);
+
+  if (req.method === "OPTIONS") {
+    setCorsHeaders(res, origin);
+    logger.response(204, Date.now() - startTime);
+    res.status(204).end();
+    return;
+  }
+
+  setCorsHeaders(res, origin);
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403, headers: { "Content-Type": "application/json" },
-    });
+    logger.response(403, Date.now() - startTime);
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
 
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
-
-  const roomId = getRoomId(req);
   if (!roomId) {
-    return new Response(JSON.stringify({ error: "Room ID is required" }), { status: 400, headers });
+    logger.response(400, Date.now() - startTime);
+    res.status(400).json({ error: "Room ID is required" });
+    return;
   }
 
   try {
     assertValidRoomId(roomId, "room-operation");
   } catch (e) {
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Invalid room ID" }), { status: 400, headers });
+    logger.response(400, Date.now() - startTime);
+    res.status(400).json({ error: e instanceof Error ? e.message : "Invalid room ID" });
+    return;
   }
 
-  // GET - Get single room
   if (req.method === "GET") {
     try {
       const roomObj = await getRoom(roomId);
       if (!roomObj) {
-        return new Response(JSON.stringify({ error: "Room not found" }), { status: 404, headers });
+        logger.response(404, Date.now() - startTime);
+        res.status(404).json({ error: "Room not found" });
+        return;
       }
-
       const userCount = await refreshRoomUserCount(roomId);
       const room: Room = { ...roomObj, userCount };
-
-      return new Response(JSON.stringify({ room }), { status: 200, headers });
+      logger.info("Room fetched", { roomId, userCount });
+      logger.response(200, Date.now() - startTime);
+      res.status(200).json({ room });
+      return;
     } catch (error) {
-      console.error(`Error fetching room ${roomId}:`, error);
-      return new Response(JSON.stringify({ error: "Failed to fetch room" }), { status: 500, headers });
+      logger.error(`Error fetching room ${roomId}`, error);
+      logger.response(500, Date.now() - startTime);
+      res.status(500).json({ error: "Failed to fetch room" });
+      return;
     }
   }
 
-  // DELETE - Delete room
   if (req.method === "DELETE") {
-    const authHeader = req.headers.get("authorization");
-    const usernameHeader = req.headers.get("x-username");
+    const authHeader = req.headers.authorization;
+    const usernameHeader = req.headers["x-username"] as string | undefined;
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
     if (!token || !usernameHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
+      logger.response(401, Date.now() - startTime);
+      res.status(401).json({ error: "Unauthorized - missing credentials" });
+      return;
     }
 
     const authResult = await validateAuth(createRedis(), usernameHeader, token, {});
     if (!authResult.valid) {
-      return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
+      logger.response(401, Date.now() - startTime);
+      res.status(401).json({ error: "Unauthorized - invalid token" });
+      return;
     }
 
     const username = usernameHeader.toLowerCase();
@@ -107,23 +133,27 @@ export default async function handler(req: Request) {
     try {
       const roomData = await getRoom(roomId);
       if (!roomData) {
-        return new Response(JSON.stringify({ error: "Room not found" }), { status: 404, headers });
+        logger.response(404, Date.now() - startTime);
+        res.status(404).json({ error: "Room not found" });
+        return;
       }
 
-      // Permission check
       if (roomData.type === "private") {
         if (!roomData.members || !roomData.members.includes(username)) {
-          return new Response(JSON.stringify({ error: "Unauthorized - not a member" }), { status: 403, headers });
+          logger.response(403, Date.now() - startTime);
+          res.status(403).json({ error: "Unauthorized - not a member" });
+          return;
         }
       } else {
         if (username !== "ryo") {
-          return new Response(JSON.stringify({ error: "Unauthorized - admin required" }), { status: 403, headers });
+          logger.response(403, Date.now() - startTime);
+          res.status(403).json({ error: "Unauthorized - admin required" });
+          return;
         }
       }
 
       if (roomData.type === "private") {
-        const updatedMembers = roomData.members!.filter((member) => member !== username);
-
+        const updatedMembers = roomData.members!.filter((m) => m !== username);
         if (updatedMembers.length <= 1) {
           const pipeline = createRedis().pipeline();
           pipeline.del(`${CHAT_ROOM_PREFIX}${roomId}`);
@@ -146,12 +176,18 @@ export default async function handler(req: Request) {
         await deleteRoomPresence(roomId);
       }
 
-      return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+      logger.info("Room deleted", { roomId, username });
+      logger.response(200, Date.now() - startTime);
+      res.status(200).json({ success: true });
+      return;
     } catch (error) {
-      console.error(`Error deleting room ${roomId}:`, error);
-      return new Response(JSON.stringify({ error: "Failed to delete room" }), { status: 500, headers });
+      logger.error(`Error deleting room ${roomId}`, error);
+      logger.response(500, Date.now() - startTime);
+      res.status(500).json({ error: "Failed to delete room" });
+      return;
     }
   }
 
-  return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+  logger.response(405, Date.now() - startTime);
+  res.status(405).json({ error: "Method not allowed" });
 }

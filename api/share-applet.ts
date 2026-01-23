@@ -63,17 +63,17 @@ async function isAdmin(redis: Redis, username: string | null, token: string | nu
 
 // Rate limiting configuration
 const RATE_LIMITS = {
-  list: { windowSeconds: 60, limit: 60 },      // 60/min for listing
-  get: { windowSeconds: 60, limit: 120 },      // 120/min for getting
-  save: { windowSeconds: 60, limit: 20 },      // 20/min for saving
-  delete: { windowSeconds: 60, limit: 10 },    // 10/min for delete (admin)
-  patch: { windowSeconds: 60, limit: 10 },     // 10/min for patch (admin)
+  list: { windowSeconds: 60, limit: 60 },
+  get: { windowSeconds: 60, limit: 120 },
+  save: { windowSeconds: 60, limit: 20 },
+  delete: { windowSeconds: 60, limit: 10 },
+  patch: { windowSeconds: 60, limit: 10 },
 };
 
 // Applet sharing key prefix
 const APPLET_SHARE_PREFIX = "applet:share:";
 
-// Generate unique ID for applets (uses shared token generator)
+// Generate unique ID for applets
 const generateId = (): string => generateAuthToken().substring(0, 32);
 
 // Request schemas
@@ -84,12 +84,9 @@ const SaveAppletRequestSchema = z.object({
   name: z.string().optional(),
   windowWidth: z.number().optional(),
   windowHeight: z.number().optional(),
-  shareId: z.string().optional(), // Optional: if provided, update existing applet
+  shareId: z.string().optional(),
 });
 
-/**
- * Main handler
- */
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
@@ -100,7 +97,6 @@ export default async function handler(
 
   logger.request(req.method || "GET", req.url || "/api/share-applet", "share-applet");
 
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     setCorsHeaders(res, effectiveOrigin);
     logger.response(204, Date.now() - startTime);
@@ -123,15 +119,12 @@ export default async function handler(
     return;
   }
 
-  // Create Redis client
   const redis = createRedis();
 
   try {
     // GET: Retrieve applet by ID or list featured applets
     if (req.method === "GET") {
       const listParam = req.query.list as string | undefined;
-      
-      // Rate limiting for GET requests
       const ip = getClientIp(req);
       const rlConfig = listParam === "true" ? RATE_LIMITS.list : RATE_LIMITS.get;
       const rlKey = RateLimit.makeKey(["rl", "applet", listParam === "true" ? "list" : "get", "ip", ip]);
@@ -145,46 +138,24 @@ export default async function handler(
         logger.warn("Rate limit exceeded", { ip });
         logger.response(429, Date.now() - startTime);
         res.setHeader("Retry-After", String(rlResult.resetSeconds));
-        res.status(429).json({
-          error: "rate_limit_exceeded",
-          limit: rlResult.limit,
-          retryAfter: rlResult.resetSeconds,
-        });
+        res.status(429).json({ error: "rate_limit_exceeded", limit: rlResult.limit, retryAfter: rlResult.resetSeconds });
         return;
       }
       
-      // If list=true, return all applets
       if (listParam === "true") {
-        // Scan Redis for all applet keys
         const appletIds: string[] = [];
         let cursor = 0;
         
         do {
-          const [newCursor, keys] = await redis.scan(cursor, {
-            match: `${APPLET_SHARE_PREFIX}*`,
-            count: 100,
-          });
+          const [newCursor, keys] = await redis.scan(cursor, { match: `${APPLET_SHARE_PREFIX}*`, count: 100 });
           cursor = parseInt(newCursor as unknown as string, 10);
-          
-          // Extract IDs from keys (remove prefix)
           for (const key of keys) {
             const id = key.substring(APPLET_SHARE_PREFIX.length);
-            if (id) {
-              appletIds.push(id);
-            }
+            if (id) appletIds.push(id);
           }
         } while (cursor !== 0);
         
-        // Fetch applet metadata for all IDs
-        const applets: {
-          id: string;
-          title?: string;
-          name?: string;
-          icon?: string;
-          createdAt: number;
-          featured: boolean;
-          createdBy?: string;
-        }[] = [];
+        const applets: { id: string; title?: string; name?: string; icon?: string; createdAt: number; featured: boolean; createdBy?: string }[] = [];
         
         if (appletIds.length > 0) {
           const appletKeys = appletIds.map((id) => `${APPLET_SHARE_PREFIX}${id}`);
@@ -193,12 +164,8 @@ export default async function handler(
           for (let i = 0; i < appletsData.length; i++) {
             const appletData = appletsData[i];
             if (!appletData) continue;
-            
             try {
-              const parsed = typeof appletData === "string" 
-                ? JSON.parse(appletData) 
-                : appletData;
-              
+              const parsed = typeof appletData === "string" ? JSON.parse(appletData) : appletData;
               applets.push({
                 id: appletIds[i],
                 title: parsed.title,
@@ -209,12 +176,10 @@ export default async function handler(
                 createdBy: parsed.createdBy || undefined,
               });
             } catch {
-              // Skip invalid applet data
               continue;
             }
           }
           
-          // Sort: featured first, then by createdAt (newest first)
           applets.sort((a, b) => {
             if (a.featured && !b.featured) return -1;
             if (!a.featured && b.featured) return 1;
@@ -222,100 +187,58 @@ export default async function handler(
           });
         }
         
-        return new Response(JSON.stringify({ applets }), {
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
-        });
+        logger.info("Listed applets", { count: applets.length });
+        logger.response(200, Date.now() - startTime);
+        res.status(200).json({ applets });
+        return;
       }
       
-      // Otherwise, retrieve by ID
-      const id = url.searchParams.get("id");
-
+      const id = req.query.id as string | undefined;
       if (!id) {
-        return new Response(
-          JSON.stringify({ error: "Missing id parameter" }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "Missing id parameter" });
+        return;
       }
 
       const key = `${APPLET_SHARE_PREFIX}${id}`;
       const appletData = await redis.get(key);
 
       if (!appletData) {
-        return new Response(
-          JSON.stringify({ error: "Applet not found" }),
-          {
-            status: 404,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        logger.response(404, Date.now() - startTime);
+        res.status(404).json({ error: "Applet not found" });
+        return;
       }
 
-      // Parse stored data (could be string or object)
       let parsed;
       try {
-        parsed =
-          typeof appletData === "string"
-            ? JSON.parse(appletData)
-            : appletData;
+        parsed = typeof appletData === "string" ? JSON.parse(appletData) : appletData;
       } catch (e) {
-        console.error("Error parsing applet data:", e);
-        return new Response(
-          JSON.stringify({ error: "Invalid applet data" }),
-          {
-            status: 500,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        logger.error("Error parsing applet data", e);
+        logger.response(500, Date.now() - startTime);
+        res.status(500).json({ error: "Invalid applet data" });
+        return;
       }
 
-      return new Response(JSON.stringify(parsed), {
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin!,
-        },
-      });
+      logger.info("Retrieved applet", { id });
+      logger.response(200, Date.now() - startTime);
+      res.status(200).json(parsed);
+      return;
     }
 
     // POST: Save applet
     if (req.method === "POST") {
-      // Extract authentication from headers
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
-
+      const authHeader = req.headers.authorization;
+      const usernameHeader = req.headers["x-username"] as string | undefined;
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
-      // Validate authentication
       const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
-        return new Response(
-          JSON.stringify({ error: "Unauthorized" }),
-          {
-            status: 401,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        logger.response(401, Date.now() - startTime);
+        res.status(401).json({ error: "Unauthorized" });
+        return;
       }
 
-      // Rate limiting for POST (save) - by user
       const rlKey = RateLimit.makeKey(["rl", "applet", "save", "user", username || "unknown"]);
       const rlResult = await RateLimit.checkCounterLimit({
         key: rlKey,
@@ -324,201 +247,86 @@ export default async function handler(
       });
       
       if (!rlResult.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            limit: rlResult.limit,
-            retryAfter: rlResult.resetSeconds,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-              "Retry-After": String(rlResult.resetSeconds),
-            },
-          }
-        );
+        logger.warn("Rate limit exceeded", { username });
+        logger.response(429, Date.now() - startTime);
+        res.setHeader("Retry-After", String(rlResult.resetSeconds));
+        res.status(429).json({ error: "rate_limit_exceeded", limit: rlResult.limit, retryAfter: rlResult.resetSeconds });
+        return;
       }
 
-      // Parse and validate request body
-      let body;
-      try {
-        body = await req.json();
-      } catch {
-        return new Response(
-          JSON.stringify({ error: "Invalid JSON in request body" }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
-      }
-
-      const validation = SaveAppletRequestSchema.safeParse(body);
-
+      const validation = SaveAppletRequestSchema.safeParse(req.body);
       if (!validation.success) {
-        return new Response(
-          JSON.stringify({
-            error: "Invalid request body",
-            details: validation.error.format(),
-          }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "Invalid request body", details: validation.error.format() });
+        return;
       }
+
       const { content, title, icon, name, windowWidth, windowHeight, shareId } = validation.data;
 
       let id: string;
       let isUpdate = false;
-      let existingAppletData: {
-        createdAt?: number;
-        createdBy?: string;
-        featured?: boolean;
-      } | null = null;
+      let existingAppletData: { createdAt?: number; createdBy?: string; featured?: boolean } | null = null;
 
-      // If shareId is provided, check if we can update existing applet
       if (shareId) {
         const existingKey = `${APPLET_SHARE_PREFIX}${shareId}`;
         const existingData = await redis.get(existingKey);
 
         if (existingData) {
-          // Parse existing applet data
-          let parsed;
           try {
-            parsed =
-              typeof existingData === "string"
-                ? JSON.parse(existingData)
-                : existingData;
-
-            // Check if author matches
+            const parsed = typeof existingData === "string" ? JSON.parse(existingData) : existingData;
             if (parsed && parsed.createdBy && parsed.createdBy.toLowerCase() === username?.toLowerCase()) {
-              // Author matches, update existing applet
               id = shareId;
               isUpdate = true;
-              existingAppletData = {
-                createdAt: parsed.createdAt,
-                createdBy: parsed.createdBy,
-                featured: parsed.featured,
-              };
+              existingAppletData = { createdAt: parsed.createdAt, createdBy: parsed.createdBy, featured: parsed.featured };
             } else {
-              // Author doesn't match or no author, create new share
               id = generateId();
             }
           } catch {
-            // If we can't parse, we can't verify author - generate new ID for security
             id = generateId();
           }
         } else {
-          // Applet doesn't exist on server, but client has shareId - reuse it to recreate
-          // This handles cases where the applet was deleted from server but local file still has the ID
           id = shareId;
         }
       } else {
-        // No shareId provided, generate new ID
         id = generateId();
       }
 
       const key = `${APPLET_SHARE_PREFIX}${id}`;
-
-      // Prepare applet data
-      const appletData: {
-        content: string;
-        title?: string;
-        icon?: string;
-        name?: string;
-        windowWidth?: number;
-        windowHeight?: number;
-        createdAt: number;
-        createdBy?: string;
-        featured?: boolean;
-      } = {
+      const appletData = {
         content,
         title: title || undefined,
         icon: icon || undefined,
         name: name || undefined,
         windowWidth: windowWidth || undefined,
         windowHeight: windowHeight || undefined,
-        // Always update createdAt to current time for simpler update detection
-        // This makes it easier to detect updates by comparing createdAt
         createdAt: Date.now(),
-        createdBy: isUpdate && existingAppletData?.createdBy
-          ? existingAppletData.createdBy
-          : (username || undefined),
-        featured:
-          isUpdate && existingAppletData?.featured !== undefined
-            ? existingAppletData.featured
-            : undefined,
+        createdBy: isUpdate && existingAppletData?.createdBy ? existingAppletData.createdBy : (username || undefined),
+        featured: isUpdate && existingAppletData?.featured !== undefined ? existingAppletData.featured : undefined,
       };
 
-      try {
-        await redis.set(key, JSON.stringify(appletData));
-      } catch (redisError) {
-        console.error("Redis write error:", redisError);
-        return new Response(
-          JSON.stringify({ error: "Failed to save applet" }),
-          {
-            status: 500,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
-      }
-
-      // Generate share URL
+      await redis.set(key, JSON.stringify(appletData));
       const shareUrl = `${effectiveOrigin}/applet-viewer/${id}`;
 
-      return new Response(
-        JSON.stringify({
-          id,
-          shareUrl,
-          updated: isUpdate,
-          createdAt: appletData.createdAt, // Return createdAt so client can update local metadata
-        }),
-        {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin || "*",
-          },
-        }
-      );
+      logger.info("Saved applet", { id, isUpdate });
+      logger.response(200, Date.now() - startTime);
+      res.status(200).json({ id, shareUrl, updated: isUpdate, createdAt: appletData.createdAt });
+      return;
     }
 
-    // DELETE: Delete applet (admin only - ryo)
+    // DELETE: Delete applet (admin only)
     if (req.method === "DELETE") {
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
-
+      const authHeader = req.headers.authorization;
+      const usernameHeader = req.headers["x-username"] as string | undefined;
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
-      // Check if user is admin (ryo) with valid token
       const adminAccess = await isAdmin(redis, username, authToken);
       if (!adminAccess) {
-        return new Response(
-          JSON.stringify({ error: "Forbidden" }),
-          {
-            status: 403,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        logger.response(403, Date.now() - startTime);
+        res.status(403).json({ error: "Forbidden" });
+        return;
       }
 
-      // Rate limiting for DELETE - by admin user
       const rlKey = RateLimit.makeKey(["rl", "applet", "delete", "user", username || "unknown"]);
       const rlResult = await RateLimit.checkCounterLimit({
         key: rlKey,
@@ -527,91 +335,48 @@ export default async function handler(
       });
       
       if (!rlResult.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            limit: rlResult.limit,
-            retryAfter: rlResult.resetSeconds,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-              "Retry-After": String(rlResult.resetSeconds),
-            },
-          }
-        );
+        logger.response(429, Date.now() - startTime);
+        res.setHeader("Retry-After", String(rlResult.resetSeconds));
+        res.status(429).json({ error: "rate_limit_exceeded", limit: rlResult.limit, retryAfter: rlResult.resetSeconds });
+        return;
       }
 
-      const url = new URL(req.url);
-      const id = url.searchParams.get("id");
-
+      const id = req.query.id as string | undefined;
       if (!id) {
-        return new Response(
-          JSON.stringify({ error: "Missing id parameter" }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "Missing id parameter" });
+        return;
       }
 
       const key = `${APPLET_SHARE_PREFIX}${id}`;
       const deleted = await redis.del(key);
 
       if (deleted === 0) {
-        return new Response(
-          JSON.stringify({ error: "Applet not found" }),
-          {
-            status: 404,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        logger.response(404, Date.now() - startTime);
+        res.status(404).json({ error: "Applet not found" });
+        return;
       }
 
-      return new Response(
-        JSON.stringify({ success: true }),
-        {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
-        }
-      );
+      logger.info("Deleted applet", { id });
+      logger.response(200, Date.now() - startTime);
+      res.status(200).json({ success: true });
+      return;
     }
 
-    // PATCH: Update applet (admin only - ryo) - for setting featured status
+    // PATCH: Update applet (admin only)
     if (req.method === "PATCH") {
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
-
+      const authHeader = req.headers.authorization;
+      const usernameHeader = req.headers["x-username"] as string | undefined;
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
-      // Check if user is admin (ryo) with valid token
       const adminAccess = await isAdmin(redis, username, authToken);
       if (!adminAccess) {
-        return new Response(
-          JSON.stringify({ error: "Forbidden" }),
-          {
-            status: 403,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        logger.response(403, Date.now() - startTime);
+        res.status(403).json({ error: "Forbidden" });
+        return;
       }
 
-      // Rate limiting for PATCH - by admin user
       const rlKey = RateLimit.makeKey(["rl", "applet", "patch", "user", username || "unknown"]);
       const rlResult = await RateLimit.checkCounterLimit({
         key: rlKey,
@@ -620,129 +385,52 @@ export default async function handler(
       });
       
       if (!rlResult.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            limit: rlResult.limit,
-            retryAfter: rlResult.resetSeconds,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-              "Retry-After": String(rlResult.resetSeconds),
-            },
-          }
-        );
+        logger.response(429, Date.now() - startTime);
+        res.setHeader("Retry-After", String(rlResult.resetSeconds));
+        res.status(429).json({ error: "rate_limit_exceeded", limit: rlResult.limit, retryAfter: rlResult.resetSeconds });
+        return;
       }
 
-      const url = new URL(req.url);
-      const id = url.searchParams.get("id");
-
+      const id = req.query.id as string | undefined;
       if (!id) {
-        return new Response(
-          JSON.stringify({ error: "Missing id parameter" }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "Missing id parameter" });
+        return;
       }
 
-      // Parse request body
-      let body;
-      try {
-        body = await req.json();
-      } catch {
-        return new Response(
-          JSON.stringify({ error: "Invalid JSON in request body" }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
-      }
-
-      const { featured } = body;
+      const { featured } = req.body || {};
       if (typeof featured !== "boolean") {
-        return new Response(
-          JSON.stringify({ error: "Invalid request body: featured must be boolean" }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "Invalid request body: featured must be boolean" });
+        return;
       }
 
       const key = `${APPLET_SHARE_PREFIX}${id}`;
       const appletData = await redis.get(key);
 
       if (!appletData) {
-        return new Response(
-          JSON.stringify({ error: "Applet not found" }),
-          {
-            status: 404,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        logger.response(404, Date.now() - startTime);
+        res.status(404).json({ error: "Applet not found" });
+        return;
       }
 
-      // Parse and update
-      const parsed = typeof appletData === "string" 
-        ? JSON.parse(appletData) 
-        : appletData;
-      
+      const parsed = typeof appletData === "string" ? JSON.parse(appletData) : appletData;
       parsed.featured = featured;
-
       await redis.set(key, JSON.stringify(parsed));
 
-      return new Response(
-        JSON.stringify({ success: true, featured }),
-        {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
-        }
-      );
+      logger.info("Updated applet", { id, featured });
+      logger.response(200, Date.now() - startTime);
+      res.status(200).json({ success: true, featured });
+      return;
     }
 
-    // Method not allowed (shouldn't reach here due to early return)
-    return new Response("Method not allowed", {
-      status: 405,
-      headers: {
-        "Access-Control-Allow-Origin": effectiveOrigin!,
-        "Allow": "GET, POST, DELETE, PATCH, OPTIONS",
-      },
-    });
-  } catch (error: unknown) {
-    console.error("Error in share-applet API:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Internal server error";
+    logger.response(405, Date.now() - startTime);
+    res.status(405).json({ error: "Method not allowed" });
 
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin!,
-        },
-      }
-    );
+  } catch (error: unknown) {
+    logger.error("Error in share-applet API", error);
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
+    logger.response(500, Date.now() - startTime);
+    res.status(500).json({ error: errorMessage });
   }
 }
