@@ -15,7 +15,16 @@ import { createRedis } from "./redis.js";
 // Re-export commonly used utilities for convenience
 export { createRedis } from "./redis.js";
 export { getClientIp, getClientIpFromVercel } from "./_rate-limit.js";
-export { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./_cors.js";
+export { 
+  getEffectiveOrigin, 
+  isAllowedOrigin, 
+  preflightIfNeeded,
+  // Node.js runtime helpers
+  getEffectiveOriginNode,
+  setCorsHeadersNode,
+  handlePreflightNode,
+  getClientIpNode,
+} from "./_cors.js";
 export { extractAuth, extractAuthNormalized } from "./auth/index.js";
 export type { AuthenticatedUser } from "./auth/index.js";
 

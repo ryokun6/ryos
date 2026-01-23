@@ -1,12 +1,31 @@
+/**
+ * POST /api/audio-transcribe
+ * 
+ * Transcribe audio using OpenAI Whisper
+ */
+
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import OpenAI from "openai";
+import { IncomingForm, File as FormidableFile } from "formidable";
+import fs from "fs";
 import {
-  getEffectiveOrigin,
+  getEffectiveOriginNode,
   isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
-  errorResponse,
+  setCorsHeadersNode,
+  handlePreflightNode,
+  getClientIpNode,
 } from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+// Disable body parsing to handle multipart/form-data
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 interface OpenAIError {
   status: number;
@@ -20,33 +39,51 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-
-export const config = {
-  runtime: "edge",
-};
-
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB limit imposed by OpenAI
 
-export default async function handler(req: Request) {
-  const effectiveOrigin = getEffectiveOrigin(req);
+// Parse form data using formidable
+async function parseForm(req: VercelRequest): Promise<{ fields: Record<string, unknown>; files: Record<string, FormidableFile | FormidableFile[]> }> {
+  return new Promise((resolve, reject) => {
+    const form = new IncomingForm({
+      maxFileSize: MAX_FILE_SIZE_BYTES,
+    });
+    form.parse(req, (err, fields, files) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve({ fields, files: files as Record<string, FormidableFile | FormidableFile[]> });
+      }
+    });
+  });
+}
 
-  if (req.method === "OPTIONS") {
-    const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const effectiveOrigin = getEffectiveOriginNode(req);
+
+  // Handle CORS preflight
+  if (handlePreflightNode(req, res, ["POST", "OPTIONS"])) {
+    return;
   }
 
+  setCorsHeadersNode(res, effectiveOrigin, ["POST", "OPTIONS"]);
+
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
   if (!isAllowedOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
 
   try {
     // Rate limiting (burst + daily) before reading form data
     try {
-      const ip = getClientIp(req);
+      const ip = getClientIpNode(req);
       const BURST_WINDOW = 60; // 1 minute
       const BURST_LIMIT = 10;
       const DAILY_WINDOW = 60 * 60 * 24; // 1 day
@@ -61,24 +98,16 @@ export default async function handler(req: Request) {
         limit: BURST_LIMIT,
       });
       if (!burst.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            scope: "burst",
-            limit: burst.limit,
-            windowSeconds: burst.windowSeconds,
-            resetSeconds: burst.resetSeconds,
-            identifier: `ip:${ip}`,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Retry-After": String(burst.resetSeconds ?? BURST_WINDOW),
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Retry-After", String(burst.resetSeconds ?? BURST_WINDOW));
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          scope: "burst",
+          limit: burst.limit,
+          windowSeconds: burst.windowSeconds,
+          resetSeconds: burst.resetSeconds,
+          identifier: `ip:${ip}`,
+        });
+        return;
       }
 
       const daily = await RateLimit.checkCounterLimit({
@@ -87,86 +116,68 @@ export default async function handler(req: Request) {
         limit: DAILY_LIMIT,
       });
       if (!daily.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            scope: "daily",
-            limit: daily.limit,
-            windowSeconds: daily.windowSeconds,
-            resetSeconds: daily.resetSeconds,
-            identifier: `ip:${ip}`,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Retry-After": String(daily.resetSeconds ?? DAILY_WINDOW),
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin!,
-            },
-          }
-        );
+        res.setHeader("Retry-After", String(daily.resetSeconds ?? DAILY_WINDOW));
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          scope: "daily",
+          limit: daily.limit,
+          windowSeconds: daily.windowSeconds,
+          resetSeconds: daily.resetSeconds,
+          identifier: `ip:${ip}`,
+        });
+        return;
       }
     } catch (rlErr) {
       console.error("Rate limit check failed (transcribe)", rlErr);
       // Fail open: let it continue
     }
 
-    const formData = await req.formData();
-    const audioFile = formData.get("audio") as File;
-
-    if (!audioFile) {
-      return new Response(JSON.stringify({ error: "No audio file provided" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+    const { files } = await parseForm(req);
+    const audioFileData = files.audio;
+    
+    if (!audioFileData) {
+      res.status(400).json({ error: "No audio file provided" });
+      return;
     }
 
+    // Handle both single file and array
+    const audioFile = Array.isArray(audioFileData) ? audioFileData[0] : audioFileData;
+
     // Verify file type
-    if (!audioFile.type.startsWith("audio/")) {
-      return new Response(
-        JSON.stringify({ error: "Invalid file type. Must be an audio file." }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+    if (!audioFile.mimetype?.startsWith("audio/")) {
+      res.status(400).json({ error: "Invalid file type. Must be an audio file." });
+      return;
     }
 
     // Verify file size
     if (audioFile.size > MAX_FILE_SIZE_BYTES) {
-      return new Response(
-        JSON.stringify({
-          error: `File exceeds maximum size of ${
-            MAX_FILE_SIZE_BYTES / (1024 * 1024)
-          }MB`,
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      res.status(400).json({
+        error: `File exceeds maximum size of ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB`,
+      });
+      return;
     }
 
+    // Read the file and create a File object for OpenAI
+    const fileBuffer = fs.readFileSync(audioFile.filepath);
+    const file = new File([fileBuffer], audioFile.originalFilename || "audio.webm", {
+      type: audioFile.mimetype || "audio/webm",
+    });
+
     const transcription = await openai.audio.transcriptions.create({
-      file: audioFile,
+      file: file,
       model: "whisper-1",
     });
 
-    return new Response(JSON.stringify({ text: transcription.text }), {
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": effectiveOrigin! },
-    });
+    // Clean up temp file
+    fs.unlinkSync(audioFile.filepath);
+
+    res.status(200).json({ text: transcription.text });
   } catch (error: unknown) {
     console.error("Error processing audio:", error);
     const openAIError = error as OpenAIError;
-    return new Response(
-      JSON.stringify({
-        error: openAIError.message || "Error processing audio",
-        details: openAIError.error?.message,
-      }),
-      {
-        status: openAIError.status || 500,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": effectiveOrigin! },
-      }
-    );
+    res.status(openAIError.status || 500).json({
+      error: openAIError.message || "Error processing audio",
+      details: openAIError.error?.message,
+    });
   }
 }

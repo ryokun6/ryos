@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   streamText,
   smoothStream,
@@ -7,10 +8,10 @@ import {
 } from "ai";
 import {
   createRedis,
-  getEffectiveOrigin,
+  getEffectiveOriginNode,
   isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
+  handlePreflightNode,
+  getClientIpNode,
 } from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import {
@@ -26,13 +27,9 @@ import {
   } from "./_utils/_aiPrompts.js";
 import { SUPPORTED_AI_MODELS } from "../src/types/aiModels.js";
 
-// CORS handled via shared utils
-
-// After ALLOWED_ORIGINS const block, add Redis setup and cache prefix
-
 const redis = createRedis();
 
-const IE_CACHE_PREFIX = "ie:cache:"; // Key prefix for stored generated pages
+const IE_CACHE_PREFIX = "ie:cache:";
 
 // --- Logging Utilities ---------------------------------------------------
 
@@ -73,9 +70,6 @@ interface IEGenerateRequestBody {
 
 // --- Utility Functions ----------------------------------------------------
 
-const isValidOrigin = (origin: string | null): boolean =>
-  isAllowedOrigin(origin);
-
 const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
   return messages.map((msg, index) => {
     const id = msg.id || `ie-msg-${index}`;
@@ -94,31 +88,20 @@ const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
   });
 };
 
-// --- Edge Runtime Config --------------------------------------------------
+// --- Node.js Runtime Config --------------------------------------------------
 
+export const runtime = "nodejs";
 export const maxDuration = 80;
-export const runtime = "edge";
-
-export const stream = true;
-export const config = { runtime: "edge" };
 
 // --- Handler --------------------------------------------------------------
 
-// Static portion of the system prompt shared across requests. This string is
-// passed via the `system` option to enable prompt caching by the model
-// provider.
 const STATIC_SYSTEM_PROMPT = `${CORE_PRIORITY_INSTRUCTIONS}\n\nThe user is in ryOS Internet Explorer asking to time travel with website context and a specific year. You are Ryo, a visionary designer specialized in turning present websites into past and futuristic coherent versions in story and design.\n\nGenerate content for the URL path and year provided, original site content, and use provided HTML as template if available.\n\n${IE_HTML_GENERATION_INSTRUCTIONS}`;
 
-// Function to generate the dynamic portion of the system prompt. This portion
-// depends on the requested year and URL and will be sent as a regular system
-// message so it is not cached by the model provider.
 const getDynamicSystemPrompt = (
   year: number | null,
-  rawUrl: string | null // Add rawUrl parameter
+  rawUrl: string | null
 ): string => {
   const currentYear = new Date().getFullYear();
-
-  // --- Prompt Sections ---
 
   const INTRO_LINE = `Generate content for the URL path, the year provided (${
     year ?? "current"
@@ -148,8 +131,6 @@ const getDynamicSystemPrompt = (
   const PERSONA_INSTRUCTIONS_BLOCK = `ABOUT THE DESIGNER (RYO LU):
 ${RYO_PERSONA_INSTRUCTIONS}`;
 
-  // --- Determine Year Specific Instructions ---
-
   let yearSpecificInstructions = "";
   if (year === null) {
     yearSpecificInstructions = YEAR_NOT_SPECIFIED_INSTRUCTIONS;
@@ -158,15 +139,11 @@ ${RYO_PERSONA_INSTRUCTIONS}`;
   } else if (year < currentYear) {
     yearSpecificInstructions = PAST_YEAR_INSTRUCTIONS;
   } else {
-    // year === currentYear
     yearSpecificInstructions = CURRENT_YEAR_INSTRUCTIONS;
   }
 
-  // --- Assemble the Final Prompt ---
-
   let finalPrompt = `${INTRO_LINE}\n\n${yearSpecificInstructions}`;
 
-  // Conditionally add Ryo's persona instructions
   if (
     rawUrl &&
     (rawUrl.includes("ryo.lu") ||
@@ -180,19 +157,24 @@ ${RYO_PERSONA_INSTRUCTIONS}`;
   return finalPrompt;
 };
 
-export default async function handler(req: Request) {
-  // CORS / Origin validation
-  const effectiveOrigin = getEffectiveOrigin(req);
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+) {
+  const effectiveOrigin = getEffectiveOriginNode(req);
+
   if (req.method === "OPTIONS") {
-    const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    if (handlePreflightNode(req, res, ["POST", "OPTIONS"], effectiveOrigin)) {
+      return;
+    }
   }
-  if (!isValidOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+
+  if (!isAllowedOrigin(effectiveOrigin)) {
+    return res.status(403).send("Unauthorized");
   }
 
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    return res.status(405).send("Method not allowed");
   }
 
   try {
@@ -200,10 +182,10 @@ export default async function handler(req: Request) {
     // Rate limiting (burst + budget per IP)
     // ---------------------------
     try {
-      const ip = getClientIp(req);
-      const BURST_WINDOW = 60; // 1 minute
+      const ip = getClientIpNode(req);
+      const BURST_WINDOW = 60;
       const BURST_LIMIT = 3;
-      const BUDGET_WINDOW = 5 * 60 * 60; // 5 hours
+      const BUDGET_WINDOW = 5 * 60 * 60;
       const BUDGET_LIMIT = 10;
 
       const burstKey = RateLimit.makeKey(["rl", "ie", "burst", "ip", ip]);
@@ -215,22 +197,19 @@ export default async function handler(req: Request) {
         limit: BURST_LIMIT,
       });
       if (!burst.allowed) {
-        const headers = new Headers({
-          "Retry-After": String(burst.resetSeconds ?? BURST_WINDOW),
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin,
+        res.setHeader("Retry-After", String(burst.resetSeconds ?? BURST_WINDOW));
+        res.setHeader("Content-Type", "application/json");
+        if (effectiveOrigin) {
+          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
+        }
+        return res.status(429).json({
+          error: "rate_limit_exceeded",
+          scope: "burst",
+          limit: burst.limit,
+          windowSeconds: burst.windowSeconds,
+          resetSeconds: burst.resetSeconds,
+          identifier: `ip:${ip}`,
         });
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            scope: "burst",
-            limit: burst.limit,
-            windowSeconds: burst.windowSeconds,
-            resetSeconds: burst.resetSeconds,
-            identifier: `ip:${ip}`,
-          }),
-          { status: 429, headers }
-        );
       }
 
       const budget = await RateLimit.checkCounterLimit({
@@ -239,71 +218,57 @@ export default async function handler(req: Request) {
         limit: BUDGET_LIMIT,
       });
       if (!budget.allowed) {
-        const headers = new Headers({
-          "Retry-After": String(budget.resetSeconds ?? BUDGET_WINDOW),
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin,
+        res.setHeader("Retry-After", String(budget.resetSeconds ?? BUDGET_WINDOW));
+        res.setHeader("Content-Type", "application/json");
+        if (effectiveOrigin) {
+          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
+        }
+        return res.status(429).json({
+          error: "rate_limit_exceeded",
+          scope: "budget",
+          limit: budget.limit,
+          windowSeconds: budget.windowSeconds,
+          resetSeconds: budget.resetSeconds,
+          identifier: `ip:${ip}`,
         });
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            scope: "budget",
-            limit: budget.limit,
-            windowSeconds: budget.windowSeconds,
-            resetSeconds: budget.resetSeconds,
-            identifier: `ip:${ip}`,
-          }),
-          { status: 429, headers }
-        );
       }
     } catch (e) {
-      // Fail open on limiter error to avoid blocking
       console.error("IE generate rate-limit error", e);
     }
 
     const requestId = generateRequestId();
     const startTime =
       typeof performance !== "undefined" ? performance.now() : Date.now();
-    const urlObj = new URL(req.url);
 
-    const queryModel = urlObj.searchParams.get(
-      "model"
-    ) as SupportedModel | null;
-    // Extract caching parameters from query string
-    const targetUrl = urlObj.searchParams.get("url");
-    const targetYear = urlObj.searchParams.get("year");
+    const queryModel = req.query.model as SupportedModel | null;
+    const targetUrl = req.query.url as string | undefined;
+    const targetYear = req.query.year as string | undefined;
 
-    // Parse JSON body once
-    const bodyData = (await req
-      .json()
-      .catch(() => ({}))) as IEGenerateRequestBody;
+    const bodyData = (req.body || {}) as IEGenerateRequestBody;
 
     const bodyUrl = bodyData.url;
     const bodyYear = bodyData.year;
 
-    // Build a safe cache key using url/year present in query string or body
-    const rawUrl = targetUrl || bodyUrl; // Get the url before normalization
+    const rawUrl = targetUrl || bodyUrl;
     const effectiveYearStr = targetYear || bodyYear;
     const effectiveYear = effectiveYearStr
       ? parseInt(effectiveYearStr, 10)
-      : null; // Parse year to number
+      : null;
 
-    // Normalize the URL for the cache key
     const normalizedUrlForKey = normalizeUrlForCacheKey(rawUrl);
 
     logRequest(
-      req.method,
-      req.url,
+      req.method || "POST",
+      req.url || "",
       `${rawUrl} (${effectiveYearStr || "N/A"})`,
       requestId
-    ); // Log original requested URL
+    );
 
     const {
       messages: incomingMessages = [],
       model: bodyModel = DEFAULT_MODEL,
     } = bodyData;
 
-    // Use normalized URL for the cache key
     const cacheKey =
       normalizedUrlForKey && effectiveYearStr
         ? `${IE_CACHE_PREFIX}${encodeURIComponent(
@@ -311,25 +276,20 @@ export default async function handler(req: Request) {
           )}:${effectiveYearStr}`
         : null;
 
-    // Removed cache read to avoid duplicate generation; cache handled through iframe-check AI mode
-
-    // Use query parameter if available, otherwise use body parameter, otherwise use default
     const model = queryModel || bodyModel || DEFAULT_MODEL;
 
     if (!Array.isArray(incomingMessages)) {
-      return new Response("Invalid messages format", { status: 400 });
+      return res.status(400).send("Invalid messages format");
     }
 
     if (model !== null && !SUPPORTED_AI_MODELS.includes(model)) {
-      return new Response(`Unsupported model: ${model}`, { status: 400 });
+      return res.status(400).send(`Unsupported model: ${model}`);
     }
 
     const selectedModel = getModelInstance(model as SupportedModel);
 
-    // Generate dynamic portion of the system prompt, passing the rawUrl
     const systemPrompt = getDynamicSystemPrompt(effectiveYear, rawUrl ?? null);
 
-    // Build system messages similar to chat.ts approach
     const staticSystemMessage = {
       role: "system" as const,
       content: STATIC_SYSTEM_PROMPT,
@@ -340,7 +300,6 @@ export default async function handler(req: Request) {
       content: systemPrompt,
     };
 
-    // Convert UIMessages to ModelMessages for the AI model (AI SDK v6)
     const uiMessages = ensureUIMessageFormat(incomingMessages);
     const modelMessages = await convertToModelMessages(uiMessages);
 
@@ -353,13 +312,12 @@ export default async function handler(req: Request) {
     const result = streamText({
       model: selectedModel,
       messages: enrichedMessages,
-      // We assume prompt/messages already include necessary system/user details
       temperature: 0.7,
       maxOutputTokens: 4000,
       experimental_transform: smoothStream(),
       providerOptions: {
         openai: {
-          reasoningEffort: "none", // Turn off reasoning for GPT-5 and other reasoning models
+          reasoningEffort: "none",
         },
       },
       onFinish: async ({ text }) => {
@@ -368,23 +326,19 @@ export default async function handler(req: Request) {
           return;
         }
         try {
-          // Attempt to extract HTML inside fenced block
           let cleaned = text.trim();
           const blockMatch = cleaned.match(/```(?:html)?\s*([\s\S]*?)```/);
           if (blockMatch) {
             cleaned = blockMatch[1].trim();
           } else {
-            // Remove any stray fences if present
             cleaned = cleaned
               .replace(/```(?:html)?\s*/g, "")
               .replace(/```/g, "")
               .trim();
           }
-          // Remove duplicate TITLE comments beyond first
           const titleCommentMatch = cleaned.match(/<!--\s*TITLE:[\s\S]*?-->/);
           if (titleCommentMatch) {
             const titleComment = titleCommentMatch[0];
-            // Remove any additional copies of title comment
             cleaned =
               titleComment + cleaned.replace(new RegExp(titleComment, "g"), "");
           }
@@ -409,27 +363,24 @@ export default async function handler(req: Request) {
       },
     });
 
-    const response = result.toUIMessageStreamResponse();
+    // For streaming response, return Web Response object (supported in Node.js runtime)
+    const streamResponse = result.toUIMessageStreamResponse();
 
-    const headers = new Headers(response.headers);
+    const headers = new Headers(streamResponse.headers);
     headers.set("Access-Control-Allow-Origin", effectiveOrigin!);
 
-    const resp = new Response(response.body, {
-      status: response.status,
+    return new Response(streamResponse.body, {
+      status: streamResponse.status,
       headers,
     });
-
-    return resp;
   } catch (error) {
-    const requestId = generateRequestId(); // fallback id
+    const requestId = generateRequestId();
     logError(requestId, "IE Generate API error", error);
 
     if (error instanceof SyntaxError) {
-      return new Response(`Bad Request: Invalid JSON - ${error.message}`, {
-        status: 400,
-      });
+      return res.status(400).send(`Bad Request: Invalid JSON - ${error.message}`);
     }
 
-    return new Response("Internal Server Error", { status: 500 });
+    return res.status(500).send("Internal Server Error");
   }
 }

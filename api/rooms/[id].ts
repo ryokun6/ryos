@@ -5,11 +5,13 @@
  * DELETE - Delete a room
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   createRedis,
-  getEffectiveOrigin,
+  getEffectiveOriginNode,
   isAllowedOrigin,
-  preflightIfNeeded,
+  setCorsHeadersNode,
+  handlePreflightNode,
 } from "../_utils/middleware.js";
 import { validateAuth } from "../_utils/auth/index.js";
 import { assertValidRoomId } from "../_utils/_validation.js";
@@ -30,43 +32,44 @@ import {
 } from "./_helpers/_presence.js";
 import type { Room } from "./_helpers/_types.js";
 
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
+export const maxDuration = 30;
 
-function getRoomId(req: Request): string | null {
-  const url = new URL(req.url);
-  const pathParts = url.pathname.split("/");
-  return pathParts[pathParts.length - 1] || null;
+function getHeader(req: VercelRequest, name: string): string | null {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) return value[0] || null;
+  return value || null;
 }
 
-export default async function handler(req: Request) {
-  const origin = getEffectiveOrigin(req);
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const origin = getEffectiveOriginNode(req);
   
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["GET", "DELETE", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+  // Handle CORS preflight
+  if (handlePreflightNode(req, res, ["GET", "DELETE", "OPTIONS"])) {
+    return;
   }
+
+  setCorsHeadersNode(res, origin, ["GET", "DELETE", "OPTIONS"]);
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403, headers: { "Content-Type": "application/json" },
-    });
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
 
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
-
-  const roomId = getRoomId(req);
+  const roomId = req.query.id as string;
   if (!roomId) {
-    return new Response(JSON.stringify({ error: "Room ID is required" }), { status: 400, headers });
+    res.status(400).json({ error: "Room ID is required" });
+    return;
   }
 
   try {
     assertValidRoomId(roomId, "room-operation");
   } catch (e) {
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Invalid room ID" }), { status: 400, headers });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Invalid room ID" });
+    return;
   }
 
   // GET - Get single room
@@ -74,32 +77,37 @@ export default async function handler(req: Request) {
     try {
       const roomObj = await getRoom(roomId);
       if (!roomObj) {
-        return new Response(JSON.stringify({ error: "Room not found" }), { status: 404, headers });
+        res.status(404).json({ error: "Room not found" });
+        return;
       }
 
       const userCount = await refreshRoomUserCount(roomId);
       const room: Room = { ...roomObj, userCount };
 
-      return new Response(JSON.stringify({ room }), { status: 200, headers });
+      res.status(200).json({ room });
+      return;
     } catch (error) {
       console.error(`Error fetching room ${roomId}:`, error);
-      return new Response(JSON.stringify({ error: "Failed to fetch room" }), { status: 500, headers });
+      res.status(500).json({ error: "Failed to fetch room" });
+      return;
     }
   }
 
   // DELETE - Delete room
   if (req.method === "DELETE") {
-    const authHeader = req.headers.get("authorization");
-    const usernameHeader = req.headers.get("x-username");
+    const authHeader = getHeader(req, "authorization");
+    const usernameHeader = getHeader(req, "x-username");
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
     if (!token || !usernameHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
+      res.status(401).json({ error: "Unauthorized - missing credentials" });
+      return;
     }
 
     const authResult = await validateAuth(createRedis(), usernameHeader, token, {});
     if (!authResult.valid) {
-      return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
+      res.status(401).json({ error: "Unauthorized - invalid token" });
+      return;
     }
 
     const username = usernameHeader.toLowerCase();
@@ -107,17 +115,20 @@ export default async function handler(req: Request) {
     try {
       const roomData = await getRoom(roomId);
       if (!roomData) {
-        return new Response(JSON.stringify({ error: "Room not found" }), { status: 404, headers });
+        res.status(404).json({ error: "Room not found" });
+        return;
       }
 
       // Permission check
       if (roomData.type === "private") {
         if (!roomData.members || !roomData.members.includes(username)) {
-          return new Response(JSON.stringify({ error: "Unauthorized - not a member" }), { status: 403, headers });
+          res.status(403).json({ error: "Unauthorized - not a member" });
+          return;
         }
       } else {
         if (username !== "ryo") {
-          return new Response(JSON.stringify({ error: "Unauthorized - admin required" }), { status: 403, headers });
+          res.status(403).json({ error: "Unauthorized - admin required" });
+          return;
         }
       }
 
@@ -146,12 +157,14 @@ export default async function handler(req: Request) {
         await deleteRoomPresence(roomId);
       }
 
-      return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+      res.status(200).json({ success: true });
+      return;
     } catch (error) {
       console.error(`Error deleting room ${roomId}:`, error);
-      return new Response(JSON.stringify({ error: "Failed to delete room" }), { status: 500, headers });
+      res.status(500).json({ error: "Failed to delete room" });
+      return;
     }
   }
 
-  return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+  res.status(405).json({ error: "Method not allowed" });
 }

@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   streamText,
   smoothStream,
@@ -25,7 +26,7 @@ import { appIds } from "../src/config/appIds.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import {
   createRedis,
-  getEffectiveOrigin,
+  getEffectiveOriginNode,
   isAllowedOrigin,
 } from "./_utils/middleware.js";
 import { validateAuth } from "./_utils/auth/index.js";
@@ -34,11 +35,9 @@ import { validateAuth } from "./_utils/auth/index.js";
 const themeIds = ["system7", "macosx", "xp", "win98"] as const;
 
 // Helper to ensure messages are in UIMessage format for AI SDK v6
-// Handles both simple { role, content } format and UIMessage format with parts
 type SimpleMessage = { id?: string; role: string; content?: string; parts?: Array<{ type: string; text?: string }> };
 const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
   return messages.map((msg, index) => {
-    // If message already has parts, it's in UIMessage format
     if (msg.parts && Array.isArray(msg.parts)) {
       return {
         id: msg.id || `msg-${index}`,
@@ -46,7 +45,6 @@ const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
         parts: msg.parts,
       } as UIMessage;
     }
-    // Convert simple { role, content } format to UIMessage format
     return {
       id: msg.id || `msg-${index}`,
       role: msg.role as UIMessage['role'],
@@ -169,18 +167,15 @@ const createMediaControlSchema = (options: { hasEnableVideo?: boolean } = {}) =>
   return baseSchema.superRefine(mediaControlRefinement);
 };
 
-// Update SystemState type to match new store structure (optimized for token efficiency)
+// Update SystemState type to match new store structure
 interface SystemState {
   username?: string | null;
-  /** User's operating system (e.g., "iOS", "Android", "macOS", "Windows", "Linux") */
   userOS?: string;
-  /** User's system locale (e.g., "en", "zh-TW", "ja", "ko", "fr", "de", "es", "pt", "it", "ru") */
   locale?: string;
   internetExplorer?: {
     url: string;
     year: string;
     currentPageTitle: string | null;
-    /** Markdown form of the AI generated HTML (more token-efficient than raw HTML) */
     aiGeneratedMarkdown?: string | null;
   };
   video?: {
@@ -222,13 +217,11 @@ interface SystemState {
       hasUnsavedChanges: boolean;
     }>;
   };
-  /** Local time information reported by the user's browser */
   userLocalTime?: {
     timeString: string;
     dateString: string;
     timeZone: string;
   };
-  /** Geolocation info inferred from the incoming request (provided by Vercel). */
   requestGeo?: {
     city?: string;
     region?: string;
@@ -259,11 +252,8 @@ interface SystemState {
   };
 }
 
-
-// Edge runtime configuration
-export const config = {
-  runtime: "edge",
-};
+// Node.js runtime configuration
+export const runtime = "nodejs";
 export const maxDuration = 80;
 
 // Unified static prompt with all instructions
@@ -335,14 +325,11 @@ User Locale: ${systemState.locale}`;
 User Location: ${location} (inferred from IP, may be inaccurate)`;
   }
 
-  // Applications Section
   prompt += `\n\n## RUNNING APPLICATIONS`;
 
-  // Helper to format app instance info
   const formatAppInstance = (inst: { appId: string; title?: string; appletPath?: string; appletId?: string }) => {
     let info = inst.appId;
     if (inst.title) info += ` (${inst.title})`;
-    // For applet-viewer, include applet path and/or ID
     if (inst.appId === "applet-viewer") {
       if (inst.appletPath) info += ` [path: ${inst.appletPath}]`;
       if (inst.appletId) info += ` [appletId: ${inst.appletId}]`;
@@ -372,7 +359,6 @@ Background: ${backgroundApps}`;
 Background: None`;
   }
 
-  // Media Section
   let hasMedia = false;
 
   if (systemState.video?.currentVideo && systemState.video.isPlaying) {
@@ -387,7 +373,6 @@ Background: None`;
 Video: ${systemState.video.currentVideo.title}${videoArtist} (Playing)`;
   }
 
-  // Check if iPod app is open
   const hasOpenIpod =
     systemState.runningApps?.foreground?.appId === "ipod" ||
     systemState.runningApps?.background?.some((app) => app.appId === "ipod");
@@ -405,7 +390,6 @@ Video: ${systemState.video.currentVideo.title}${videoArtist} (Playing)`;
 iPod: ${systemState.ipod.currentTrack.title}${trackArtist} (${playingStatus})`;
 
     if (systemState.ipod.currentLyrics?.lines) {
-      // Truncate lyrics to ~10 lines to save tokens (full lyrics can be 100+ lines)
       const allLines = systemState.ipod.currentLyrics.lines;
       const maxLines = 10;
       const truncatedLines = allLines.length > maxLines 
@@ -419,7 +403,6 @@ ${lyricsText}${truncationNote}`;
     }
   }
 
-  // Check if Karaoke app is open
   const hasOpenKaraoke =
     systemState.runningApps?.foreground?.appId === "karaoke" ||
     systemState.runningApps?.background?.some((app) => app.appId === "karaoke");
@@ -437,7 +420,6 @@ ${lyricsText}${truncationNote}`;
 Karaoke: ${systemState.karaoke.currentTrack.title}${karaokeTrackArtist} (${karaokePlayingStatus})`;
   }
 
-  // Browser Section
   const hasOpenInternetExplorer =
     systemState.runningApps?.foreground?.appId === "internet-explorer" ||
     systemState.runningApps?.background?.some(
@@ -462,7 +444,6 @@ ${htmlMd}`;
     }
   }
 
-  // TextEdit Section
   if (
     systemState.textEdit?.instances &&
     systemState.textEdit.instances.length > 0
@@ -476,7 +457,6 @@ ${htmlMd}`;
 ${index + 1}. ${instance.title}${unsavedMark}${pathInfo} (instanceId: ${instance.instanceId})`;
 
       if (instance.contentMarkdown) {
-        // Limit content preview to avoid overly long prompts
         const preview =
           instance.contentMarkdown.length > 500
             ? instance.contentMarkdown.substring(0, 500) + "..."
@@ -507,66 +487,70 @@ Mentioned Message: "${systemState.chatRoomContext.mentionedMessage}"
   return prompt;
 };
 
-// Simplified prompt builder that always includes every instruction
 const buildContextAwarePrompts = () => {
   const prompts = [STATIC_SYSTEM_PROMPT];
   const loadedSections = ["STATIC_SYSTEM_PROMPT"];
   return { prompts, loadedSections };
 };
 
+// Helper to get header from VercelRequest
+function getHeader(req: VercelRequest, name: string): string | null {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) return value[0] || null;
+  return value || null;
+}
+
 // Add Redis client for auth validation
 const redis = createRedis();
 
-export default async function handler(req: Request) {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+) {
   // Check origin before processing request
-  const effectiveOrigin = getEffectiveOrigin(req);
+  const effectiveOrigin = getEffectiveOriginNode(req);
   if (!isAllowedOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+    return res.status(403).send("Unauthorized");
   }
 
-  // At this point origin is guaranteed to be a valid string
   const validOrigin = effectiveOrigin as string;
 
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: {
-        "Access-Control-Allow-Origin": validOrigin,
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    });
+    res.setHeader("Access-Control-Allow-Origin", validOrigin);
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    return res.status(200).end();
   }
 
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    return res.status(405).send("Method not allowed");
   }
 
   try {
     // Parse query string to get model parameter
-    const url = new URL(req.url);
-    const queryModel = url.searchParams.get("model") as SupportedModel | null;
+    const queryModel = req.query.model as SupportedModel | null;
+
+    const body = req.body;
+    if (!body || typeof body !== "object") {
+      console.error("400 Error: Invalid body");
+      return res.status(400).json({ error: "Invalid request body" });
+    }
 
     const {
       messages,
-      systemState: incomingSystemState, // still passed for dynamic prompt generation but NOT for auth
+      systemState: incomingSystemState,
       model: bodyModel = DEFAULT_MODEL,
-    } = await req.json();
+    } = body;
 
-    // Use query parameter if available, otherwise use body parameter, otherwise use default
     const model = queryModel || bodyModel || DEFAULT_MODEL;
 
-    // ---------------------------
-    // Extract auth headers FIRST so we can use username for logging
-    // ---------------------------
-
-    const authHeaderInitial = req.headers.get("authorization");
+    const authHeaderInitial = getHeader(req, "authorization");
     const headerAuthTokenInitial =
       authHeaderInitial && authHeaderInitial.startsWith("Bearer ")
         ? authHeaderInitial.substring(7)
         : null;
-    const headerUsernameInitial = req.headers.get("x-username");
+    const headerUsernameInitial = getHeader(req, "x-username");
 
-    // Helper: prefix log lines with username (for easier tracing)
     const usernameForLogs = headerUsernameInitial ?? "unknown";
     const log = (...args: unknown[]) =>
       console.log(`[User: ${usernameForLogs}]`, ...args);
@@ -574,30 +558,20 @@ export default async function handler(req: Request) {
       console.error(`[User: ${usernameForLogs}]`, ...args);
 
     // Get IP address for rate limiting anonymous users
-    // For Vercel deployments, use x-vercel-forwarded-for (won't be overwritten by proxies)
-    // For localhost/local dev, use a fixed identifier
     const isLocalDev = validOrigin?.startsWith("http://localhost") || validOrigin?.startsWith("http://127.0.0.1") || validOrigin?.includes("100.110.251.60");
     let ip: string;
 
     if (isLocalDev) {
-      // For local development, use a fixed identifier
       ip = "localhost-dev";
     } else {
-      // For Vercel deployments, prefer x-vercel-forwarded-for which is more reliable
       ip =
-        req.headers.get("x-vercel-forwarded-for") ||
-        req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-        req.headers.get("x-real-ip") ||
+        getHeader(req, "x-vercel-forwarded-for") ||
+        getHeader(req, "x-forwarded-for")?.split(",")[0].trim() ||
+        getHeader(req, "x-real-ip") ||
         "unknown-ip";
     }
 
     log(`Request origin: ${validOrigin}, IP: ${ip}`);
-
-    // ---------------------------
-    // Authentication extraction
-    // ---------------------------
-    // Prefer credentials in the incoming system state (back-compat),
-    // but fall back to HTTP headers for multi-token support (Authorization & X-Username)
 
     const headerAuthToken = headerAuthTokenInitial ?? undefined;
     const headerUsername = headerUsernameInitial;
@@ -605,42 +579,27 @@ export default async function handler(req: Request) {
     const username = headerUsername || null;
     const authToken: string | undefined = headerAuthToken;
 
-    // ---------------------------
-    // Rate-limit & auth checks
-    // ---------------------------
-    // Validate authentication (all users, including "ryo", must present a valid token)
-    // Enable grace period for expired tokens (client is responsible for token refresh)
+    // Validate authentication
     const validationResult = await validateAuth(redis, username, authToken, {
       allowExpired: true,
       refreshOnGrace: false,
     });
 
-    // If a username was provided but the token is missing/invalid, reject the request early
     if (username && !validationResult.valid) {
       console.log(
         `[User: ${username}] Authentication failed – invalid or missing token`
       );
-      return new Response(
-        JSON.stringify({
-          error: "authentication_failed",
-          message: "Invalid or missing authentication token",
-        }),
-        {
-          status: 401,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": validOrigin,
-          },
-        }
-      );
+      return res.status(401).json({
+        error: "authentication_failed",
+        message: "Invalid or missing authentication token",
+      });
     }
 
-    // Use validated auth status for rate limiting
     const isAuthenticated = validationResult.valid;
     const identifier =
       isAuthenticated && username ? username.toLowerCase() : `anon:${ip}`;
 
-    // Only check rate limits for user messages (not system messages)
+    // Only check rate limits for user messages
     const userMessages = messages.filter(
       (m: { role: string }) => m.role === "user"
     );
@@ -656,20 +615,12 @@ export default async function handler(req: Request) {
           `Rate limit exceeded: ${identifier} (${rateLimitResult.count}/${rateLimitResult.limit})`
         );
 
-        const errorResponse = {
+        return res.status(429).json({
           error: "rate_limit_exceeded",
           isAuthenticated,
           count: rateLimitResult.count,
           limit: rateLimitResult.limit,
           message: `You've hit your limit of ${rateLimitResult.limit} messages in this 5-hour window. Please wait a few hours and try again.`,
-        };
-
-        return new Response(JSON.stringify(errorResponse), {
-          status: 429,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": validOrigin,
-          },
         });
       }
 
@@ -688,71 +639,56 @@ export default async function handler(req: Request) {
       logError(
         `400 Error: Invalid messages format - ${JSON.stringify({ messages })}`
       );
-      return new Response("Invalid messages format", { status: 400 });
+      return res.status(400).send("Invalid messages format");
     }
 
-    // Additional validation for model
     if (model !== null && !SUPPORTED_AI_MODELS.includes(model)) {
       logError(`400 Error: Unsupported model - ${model}`);
-      return new Response(`Unsupported model: ${model}`, { status: 400 });
+      return res.status(400).send(`Unsupported model: ${model}`);
     }
 
-    // --- Geolocation (available only on deployed environment) ---
-    const geo = geolocation(req);
+    // Get geolocation from Vercel
+    // Note: geolocation() requires the original Request object, but we can build one
+    const geo = geolocation(req as unknown as Request);
 
-    // Attach geolocation info to system state that will be sent to the prompt
     const systemState: SystemState | undefined = incomingSystemState
       ? { ...incomingSystemState, requestGeo: geo }
       : ({ requestGeo: geo } as SystemState);
 
     const selectedModel = getModelInstance(model as SupportedModel);
 
-    // Build unified static prompts
     const { prompts: staticPrompts, loadedSections } =
       buildContextAwarePrompts();
     const staticSystemPrompt = staticPrompts.join("\n");
 
-    // Log prompt optimization metrics with loaded sections
     log(
       `Context-aware prompts (${
         loadedSections.length
       } sections): ${loadedSections.join(", ")}`
     );
-    const approxTokens = staticSystemPrompt.length / 4; // rough estimate
+    const approxTokens = staticSystemPrompt.length / 4;
     log(`Approximate prompt tokens: ${Math.round(approxTokens)}`);
 
-    // -------------------------------------------------------------
-    // System messages – first the LARGE static prompt (cached),
-    // then the smaller dynamic prompt (not cached)
-    // -------------------------------------------------------------
-
-    // 1) Static system instructions – mark as cacheable so Anthropic
-    // can reuse this costly prefix across calls (min-1024-token rule)
     const staticSystemMessage = {
       role: "system" as const,
       content: staticSystemPrompt,
-      ...CACHE_CONTROL_OPTIONS, // { providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } } }
+      ...CACHE_CONTROL_OPTIONS,
     };
 
-    // 2) Dynamic, user-specific system state (don't cache)
     const dynamicSystemMessage = {
       role: "system" as const,
       content: generateDynamicSystemPrompt(systemState),
     };
 
-    // Convert UIMessages to ModelMessages for the AI model
-    // Ensure messages are in UIMessage format (handles both simple and parts-based formats)
     const uiMessages = ensureUIMessageFormat(messages);
     const modelMessages = await convertToModelMessages(uiMessages);
 
-    // Merge all messages: static sys → dynamic sys → user/assistant turns
     const enrichedMessages = [
       staticSystemMessage,
       dynamicSystemMessage,
       ...modelMessages,
     ];
 
-    // Log all messages right before model call (as per user preference)
     enrichedMessages.forEach((msg, index) => {
       const contentStr =
         typeof msg.content === "string"
@@ -783,16 +719,12 @@ export default async function handler(req: Request) {
                 )
                 .refine(
                   (year) => {
-                    if (year === undefined) return true; // Optional field is valid if not provided
-                    // Check if it's 'current' or matches the specific allowed year formats
+                    if (year === undefined) return true;
                     const allowedYearsRegex =
                       /^(current|1000 BC|1 CE|500|800|1000|1200|1400|1600|1700|1800|19[0-8][0-9]|199[0-5]|199[1-9]|20[0-2][0-9]|2030|2040|2050|2060|2070|2080|2090|2100|2150|2200|2250|2300|2400|2500|2750|3000)$/;
-                    // Adjust the regex dynamically based on current year if needed, but for simplicity, using fixed ranges that cover the logic.
-                    // The regex covers: 'current', specific BC/CE/early years, 1900-1989, 1990-1995, 1991-currentYear-1 (approximated by 1991-2029), future decades, and specific future years.
                     const currentYearNum = new Date().getFullYear();
                     if (/^\d{4}$/.test(year)) {
                       const numericYear = parseInt(year, 10);
-                      // Allow years from 1991 up to currentYear - 1
                       if (numericYear >= 1991 && numericYear < currentYearNum) {
                         return true;
                       }
@@ -808,7 +740,6 @@ export default async function handler(req: Request) {
             })
             .refine(
               (data) => {
-                // If id is 'internet-explorer', either both url and year must be provided, or neither should be.
                 if (data.id === "internet-explorer") {
                   const urlProvided =
                     data.url !== undefined &&
@@ -818,17 +749,15 @@ export default async function handler(req: Request) {
                     data.year !== undefined &&
                     data.year !== null &&
                     data.year !== "";
-                  // Return true if (both provided) or (neither provided). Return false otherwise.
                   return (
                     (urlProvided && yearProvided) ||
                     (!urlProvided && !yearProvided)
                   );
                 }
-                // If id is not 'internet-explorer', url/year should not be provided.
                 if (data.url !== undefined || data.year !== undefined) {
                   return false;
                 }
-                return true; // Valid otherwise
+                return true;
               },
               {
                 message:
@@ -843,19 +772,16 @@ export default async function handler(req: Request) {
             id: z.enum(appIds).describe("The app id to close"),
           }),
         },
-        // iPod control tools (uses shared media control schema with video support)
         ipodControl: {
           description:
             "Control playback in the iPod app. Launches the iPod automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable video or fullscreen mode with enableVideo or enableFullscreen. LYRICS TRANSLATION: By default, keep lyrics in the ORIGINAL language - only use enableTranslation when the user EXPLICITLY asks for translated lyrics. IMPORTANT: If the user's OS is iOS, do NOT automatically start playback – instead, inform the user that due to iOS browser restrictions they need to press the center button or play button on the iPod themselves to start playing.",
           inputSchema: createMediaControlSchema({ hasEnableVideo: true }),
         },
-        // Karaoke control tools (uses shared media control schema without video)
         karaokeControl: {
           description:
             "Control playback in the Karaoke app. Launches the Karaoke app automatically if needed. Use action 'toggle' (default), 'play', or 'pause' for playback state; 'playKnown' to play an existing library track by id/title/artist; 'addAndPlay' to add a track from a YouTube ID or URL and start playback; 'next' or 'previous' to navigate the playlist. Optionally enable fullscreen mode with enableFullscreen. LYRICS TRANSLATION: By default, keep lyrics in the ORIGINAL language - only use enableTranslation when the user EXPLICITLY asks for translated lyrics. IMPORTANT: If the user's OS is iOS, do NOT automatically start playback – instead, inform the user that due to iOS browser restrictions they need to tap the play button themselves to start playing. NOTE: Karaoke shares the same music library as iPod but has independent playback state.",
           inputSchema: createMediaControlSchema(),
         },
-        // --- HTML generation & preview ---
         generateHtml: {
           description:
             "Generate an HTML snippet for an ryOS Applet: a small windowed app (default ~320px wide) that runs inside ryOS, not the full page. Design mobile-first for ~320px width but keep layouts responsive to expand gracefully. Provide markup in 'html', a short 'title', and an 'icon' (emoji). DO NOT wrap it in markdown fences; the client will handle scaffolding.",
@@ -879,7 +805,6 @@ export default async function handler(req: Request) {
               ),
           }),
           execute: async ({ html, title, icon }) => {
-            // Server-side execution: validate and return the HTML, title, and icon
             log(
               `[generateHtml] Received HTML (${html.length} chars), title: ${
                 title || "none"
@@ -890,17 +815,14 @@ export default async function handler(req: Request) {
               throw new Error("HTML content cannot be empty");
             }
 
-            // Return object with html, title, and icon
             return { html, title: title || "Applet", icon: icon || "📦" };
           },
         },
-        // --- Emoji Aquarium ---
         aquarium: {
           description:
             "Render a playful emoji aquarium inside the chat bubble. Use when the user asks for an aquarium / fish tank / fishes / sam's aquarium.",
           inputSchema: z.object({}),
         },
-        // --- Unified Virtual File System Tools ---
         list: {
           description:
             "List items from the ryOS virtual file system. Returns a JSON array with metadata for each item. CRITICAL: You MUST ONLY reference items that are explicitly returned in the tool result. DO NOT suggest, mention, or hallucinate items that are not in the returned list.",
@@ -1022,7 +944,6 @@ export default async function handler(req: Request) {
               ),
           }),
         },
-        // --- YouTube/Song Search Tool ---
         searchSongs: {
           description:
             "Search for songs/videos on YouTube. Returns a list of results with video IDs, titles, and channel names. Use this to help users find music to add to their iPod. PREFER official music videos from verified artist channels (look for 'VEVO' or the artist's official channel). AVOID karaoke versions, instrumental versions, playlists, compilations, 'best of' collections, lyric videos, and covers unless specifically requested. After getting results, you can use ipodControl with action 'addAndPlay' to add a song using its videoId.",
@@ -1048,7 +969,6 @@ export default async function handler(req: Request) {
           execute: async ({ query, maxResults = 5 }) => {
             log(`[searchSongs] Searching for: "${query}" (max ${maxResults} results)`);
             
-            // Collect all available API keys for rotation
             const apiKeys = [
               process.env.YOUTUBE_API_KEY,
               process.env.YOUTUBE_API_KEY_2,
@@ -1060,7 +980,6 @@ export default async function handler(req: Request) {
 
             log(`[searchSongs] Available API keys: ${apiKeys.length}`);
 
-            // Helper to check if error is a quota exceeded error
             const isQuotaError = (status: number, errorText: string): boolean => {
               if (status === 403) {
                 const lowerText = errorText.toLowerCase();
@@ -1071,7 +990,6 @@ export default async function handler(req: Request) {
 
             let lastError: string | null = null;
 
-            // Try each API key until one works
             for (let keyIndex = 0; keyIndex < apiKeys.length; keyIndex++) {
               const apiKey = apiKeys[keyIndex];
               const keyLabel = keyIndex === 0 ? "primary" : `backup-${keyIndex}`;
@@ -1082,7 +1000,7 @@ export default async function handler(req: Request) {
                 const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
                 searchUrl.searchParams.set("part", "snippet");
                 searchUrl.searchParams.set("type", "video");
-                searchUrl.searchParams.set("videoCategoryId", "10"); // Music category
+                searchUrl.searchParams.set("videoCategoryId", "10");
                 searchUrl.searchParams.set("q", query);
                 searchUrl.searchParams.set("maxResults", String(maxResults));
                 searchUrl.searchParams.set("key", apiKey);
@@ -1093,11 +1011,10 @@ export default async function handler(req: Request) {
                   const errorText = await response.text();
                   log(`[searchSongs] YouTube API error with ${keyLabel} key: ${response.status} - ${errorText}`);
                   
-                  // Check if quota exceeded and we have more keys to try
                   if (isQuotaError(response.status, errorText) && keyIndex < apiKeys.length - 1) {
                     log(`[searchSongs] Quota exceeded for ${keyLabel} key, rotating to next key`);
                     lastError = errorText;
-                    continue; // Try next key
+                    continue;
                   }
                   
                   throw new Error(`YouTube search failed: ${response.status}`);
@@ -1112,7 +1029,6 @@ export default async function handler(req: Request) {
                   };
                 }
 
-                // Transform results to a simpler format
                 const results = data.items.map((item: {
                   id: { videoId: string };
                   snippet: {
@@ -1137,7 +1053,6 @@ export default async function handler(req: Request) {
                 };
               } catch (error) {
                 logError(`[searchSongs] Error with ${keyLabel} key:`, error);
-                // If we have more keys, try the next one
                 if (keyIndex < apiKeys.length - 1) {
                   log(`[searchSongs] Retrying with next API key`);
                   continue;
@@ -1146,11 +1061,9 @@ export default async function handler(req: Request) {
               }
             }
 
-            // All keys exhausted
             throw new Error(`All YouTube API keys exhausted. Last error: ${lastError || 'Unknown'}`);
           },
         },
-        // --- System Settings Tool ---
         settings: {
           description:
             "Change system settings in ryOS. Use this tool when the user asks to change language, theme, volume, enable/disable speech, or check for updates. Multiple settings can be changed in a single call.",
@@ -1191,38 +1104,36 @@ export default async function handler(req: Request) {
         },
       },
       temperature: 0.7,
-      maxOutputTokens: 48000, // Increased from 6000 to prevent code generation cutoff
-      stopWhen: stepCountIs(10), // Allow up to 10 steps for multi-tool workflows
+      maxOutputTokens: 48000,
+      stopWhen: stepCountIs(10),
       experimental_transform: smoothStream({
         chunking: /[\u4E00-\u9FFF]|\S+\s+/,
       }),
       headers: {
-        // Enable fine-grained tool streaming for Anthropic models
         ...(model.startsWith("claude")
           ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
           : {}),
       },
       providerOptions: {
         openai: {
-          reasoningEffort: "none", // Turn off reasoning for GPT-5 and other reasoning models
+          reasoningEffort: "none",
         },
       },
     });
 
-    const response = result.toUIMessageStreamResponse();
+    // For streaming response, return Web Response object (supported in Node.js runtime)
+    const streamResponse = result.toUIMessageStreamResponse();
 
-    // Add CORS headers to the response
-    const headers = new Headers(response.headers);
+    const headers = new Headers(streamResponse.headers);
     headers.set("Access-Control-Allow-Origin", validOrigin);
 
-    return new Response(response.body, {
-      status: response.status,
+    return new Response(streamResponse.body, {
+      status: streamResponse.status,
       headers,
     });
   } catch (error) {
     console.error("Chat API error:", error);
 
-    // Ensure CORS headers are included on error responses so clients can read them
     const corsHeaders: Record<string, string> = {
       "Content-Type": "application/json",
     };
@@ -1230,7 +1141,6 @@ export default async function handler(req: Request) {
       corsHeaders["Access-Control-Allow-Origin"] = validOrigin;
     }
 
-    // Check if error is a SyntaxError (likely from parsing JSON)
     if (error instanceof SyntaxError) {
       console.error(`400 Error: Invalid JSON - ${error.message}`);
       return new Response(

@@ -3,22 +3,23 @@
  * Only accessible by the admin user (ryo)
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import { CHAT_USERS_PREFIX } from "./rooms/_helpers/_constants.js";
 import { deleteAllUserTokens, PASSWORD_HASH_PREFIX } from "./_utils/auth/index.js";
 import {
   isAdmin,
   createRedis,
-  getEffectiveOrigin,
+  getEffectiveOriginNode,
   isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
+  handlePreflightNode,
+  setCorsHeadersNode,
+  getClientIpNode,
 } from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const ADMIN_RATE_LIMIT_WINDOW = 60;
 const ADMIN_RATE_LIMIT_MAX = 30;
@@ -37,6 +38,12 @@ interface UserProfile {
   bannedAt?: number;
   messageCount?: number;
   rooms?: { id: string; name: string }[];
+}
+
+function getHeader(req: VercelRequest, name: string): string | null {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) return value[0] || null;
+  return value || null;
 }
 
 async function deleteUser(redis: Redis, targetUsername: string): Promise<{ success: boolean; error?: string }> {
@@ -258,108 +265,140 @@ async function getStats(redis: Redis): Promise<{ totalUsers: number; totalRooms:
   }
 }
 
-export default async function handler(req: Request) {
-  const origin = getEffectiveOrigin(req);
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const origin = getEffectiveOriginNode(req);
   
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["GET", "POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+  // Handle CORS preflight
+  if (handlePreflightNode(req, res, ["GET", "POST", "OPTIONS"])) {
+    return;
   }
+
+  setCorsHeadersNode(res, origin, ["GET", "POST", "OPTIONS"]);
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: { "Content-Type": "application/json" } });
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
-
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
   const redis = createRedis();
 
-  const authHeader = req.headers.get("authorization");
-  const usernameHeader = req.headers.get("x-username");
+  const authHeader = getHeader(req, "authorization");
+  const usernameHeader = getHeader(req, "x-username");
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
   const username = usernameHeader || null;
 
   const adminAccess = await isAdmin(redis, username, token);
   if (!adminAccess) {
-    return new Response(JSON.stringify({ error: "Forbidden - Admin access required" }), { status: 403, headers });
+    res.status(403).json({ error: "Forbidden - Admin access required" });
+    return;
   }
 
-  const ip = getClientIp(req);
+  const ip = getClientIpNode(req);
   const rateLimitKey = RateLimit.makeKey(["rl", "admin", "user", username || ip]);
   const rateLimitResult = await RateLimit.checkCounterLimit({ key: rateLimitKey, windowSeconds: ADMIN_RATE_LIMIT_WINDOW, limit: ADMIN_RATE_LIMIT_MAX });
 
   if (!rateLimitResult.allowed) {
-    return new Response(JSON.stringify({ error: "rate_limit_exceeded", limit: rateLimitResult.limit, retryAfter: rateLimitResult.resetSeconds }), { status: 429, headers });
+    res.status(429).json({ error: "rate_limit_exceeded", limit: rateLimitResult.limit, retryAfter: rateLimitResult.resetSeconds });
+    return;
   }
 
-  const url = new URL(req.url);
-
   if (req.method === "GET") {
-    const action = url.searchParams.get("action");
+    const action = req.query.action as string | undefined;
 
     switch (action) {
       case "getStats": {
         const stats = await getStats(redis);
-        return new Response(JSON.stringify(stats), { status: 200, headers });
+        res.status(200).json(stats);
+        return;
       }
       case "getAllUsers": {
         const users = await getAllUsers(redis);
-        return new Response(JSON.stringify({ users }), { status: 200, headers });
+        res.status(200).json({ users });
+        return;
       }
       case "getUserProfile": {
-        const targetUsername = url.searchParams.get("username");
-        if (!targetUsername) return new Response(JSON.stringify({ error: "Username is required" }), { status: 400, headers });
+        const targetUsername = req.query.username as string | undefined;
+        if (!targetUsername) {
+          res.status(400).json({ error: "Username is required" });
+          return;
+        }
         const profile = await getUserProfile(redis, targetUsername);
-        if (!profile) return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers });
-        return new Response(JSON.stringify(profile), { status: 200, headers });
+        if (!profile) {
+          res.status(404).json({ error: "User not found" });
+          return;
+        }
+        res.status(200).json(profile);
+        return;
       }
       case "getUserMessages": {
-        const targetUsername = url.searchParams.get("username");
-        const limit = parseInt(url.searchParams.get("limit") || "50");
-        if (!targetUsername) return new Response(JSON.stringify({ error: "Username is required" }), { status: 400, headers });
+        const targetUsername = req.query.username as string | undefined;
+        const limit = parseInt((req.query.limit as string) || "50");
+        if (!targetUsername) {
+          res.status(400).json({ error: "Username is required" });
+          return;
+        }
         const messages = await getUserMessages(redis, targetUsername, limit);
-        return new Response(JSON.stringify({ messages }), { status: 200, headers });
+        res.status(200).json({ messages });
+        return;
       }
       default:
-        return new Response(JSON.stringify({ error: "Invalid action" }), { status: 400, headers });
+        res.status(400).json({ error: "Invalid action" });
+        return;
     }
   }
 
   if (req.method === "POST") {
-    let body: AdminRequest;
-    try {
-      body = await req.json();
-    } catch {
-      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers });
-    }
-
+    const body = req.body as AdminRequest;
     const { action, targetUsername, reason } = body;
 
     switch (action) {
       case "deleteUser": {
-        if (!targetUsername) return new Response(JSON.stringify({ error: "Target username is required" }), { status: 400, headers });
+        if (!targetUsername) {
+          res.status(400).json({ error: "Target username is required" });
+          return;
+        }
         const result = await deleteUser(redis, targetUsername);
-        if (result.success) return new Response(JSON.stringify({ success: true }), { status: 200, headers });
-        return new Response(JSON.stringify({ error: result.error }), { status: 400, headers });
+        if (result.success) {
+          res.status(200).json({ success: true });
+          return;
+        }
+        res.status(400).json({ error: result.error });
+        return;
       }
       case "banUser": {
-        if (!targetUsername) return new Response(JSON.stringify({ error: "Target username is required" }), { status: 400, headers });
+        if (!targetUsername) {
+          res.status(400).json({ error: "Target username is required" });
+          return;
+        }
         const result = await banUser(redis, targetUsername, reason);
-        if (result.success) return new Response(JSON.stringify({ success: true }), { status: 200, headers });
-        return new Response(JSON.stringify({ error: result.error }), { status: 400, headers });
+        if (result.success) {
+          res.status(200).json({ success: true });
+          return;
+        }
+        res.status(400).json({ error: result.error });
+        return;
       }
       case "unbanUser": {
-        if (!targetUsername) return new Response(JSON.stringify({ error: "Target username is required" }), { status: 400, headers });
+        if (!targetUsername) {
+          res.status(400).json({ error: "Target username is required" });
+          return;
+        }
         const result = await unbanUser(redis, targetUsername);
-        if (result.success) return new Response(JSON.stringify({ success: true }), { status: 200, headers });
-        return new Response(JSON.stringify({ error: result.error }), { status: 400, headers });
+        if (result.success) {
+          res.status(200).json({ success: true });
+          return;
+        }
+        res.status(400).json({ error: result.error });
+        return;
       }
       default:
-        return new Response(JSON.stringify({ error: "Invalid action" }), { status: 400, headers });
+        res.status(400).json({ error: "Invalid action" });
+        return;
     }
   }
 
-  return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+  res.status(405).json({ error: "Method not allowed" });
 }

@@ -17,14 +17,16 @@
  * { action: "import", songs: [...] }
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import pako from "pako";
 import {
   createRedis,
-  getEffectiveOrigin,
+  getEffectiveOriginNode,
   isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
+  setCorsHeadersNode,
+  handlePreflightNode,
+  getClientIpNode,
 } from "../_utils/middleware.js";
 import { validateAuth } from "../_utils/auth/index.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
@@ -44,17 +46,16 @@ import {
 } from "../_utils/_song-service.js";
 import { fetchCoverUrl } from "./_kugou.js";
 
-// Vercel Edge Function configuration
-export const config = {
-  runtime: "edge",
-};
+// Vercel Node.js Function configuration
+export const runtime = "nodejs";
+export const maxDuration = 120;
 
 // Rate limiting configuration
 const RATE_LIMITS = {
-  list: { windowSeconds: 60, limit: 120 },     // 120/min for listing
-  create: { windowSeconds: 60, limit: 30 },    // 30/min for creating songs
-  import: { windowSeconds: 60, limit: 5 },     // 5/min for bulk import (admin)
-  delete: { windowSeconds: 60, limit: 5 },     // 5/min for delete all (admin)
+  list: { windowSeconds: 60, limit: 120 },
+  create: { windowSeconds: 60, limit: 30 },
+  import: { windowSeconds: 60, limit: 5 },
+  delete: { windowSeconds: 60, limit: 5 },
 };
 
 // =============================================================================
@@ -78,20 +79,17 @@ const CreateSongSchema = z.object({
   lyricsSource: LyricsSourceSchema.optional(),
 });
 
-// Furigana/Soramimi segment schema
 const FuriganaSegmentSchema = z.object({
   text: z.string(),
   reading: z.string().optional(),
 });
 
-// Lyrics content schema (cover is now in metadata, but accept it here for backwards compatibility during import)
 const LyricsContentSchema = z.object({
   lrc: z.string().optional(),
   krc: z.string().optional(),
-  cover: z.string().optional(), // Accepted during import but stored in metadata
+  cover: z.string().optional(),
 });
 
-// Helper to create a schema that accepts either compressed string or raw data
 const compressedOrRaw = <T extends z.ZodTypeAny>(schema: T) => 
   z.union([z.string().startsWith("gzip:"), schema]);
 
@@ -106,20 +104,17 @@ const BulkImportSchema = z.object({
       album: z.string().optional(),
       lyricOffset: z.number().optional(),
       lyricsSource: LyricsSourceSchema.optional(),
-      // Legacy format support
       lyricsSearch: z
         .object({
           query: z.string().optional(),
           selection: LyricsSourceSchema.optional(),
         })
         .optional(),
-      // Content fields (v2/v3 export format) - can be compressed or raw
       lyrics: compressedOrRaw(LyricsContentSchema).optional(),
       translations: compressedOrRaw(z.record(z.string(), z.string())).optional(),
       furigana: compressedOrRaw(z.array(z.array(FuriganaSegmentSchema))).optional(),
       soramimi: compressedOrRaw(z.array(z.array(FuriganaSegmentSchema))).optional(),
       soramimiByLang: compressedOrRaw(z.record(z.string(), z.array(z.array(FuriganaSegmentSchema)))).optional(),
-      // Timestamps for preserving original dates
       createdBy: z.string().optional(),
       createdAt: z.number().optional(),
       updatedAt: z.number().optional(),
@@ -144,24 +139,18 @@ function logError(id: string, message: string, error: unknown) {
   console.error(`[${id}] ERROR: ${message}`, error);
 }
 
-/**
- * Decompress a gzip:base64 encoded string back to the original data
- * Returns the parsed JSON if the string starts with "gzip:", otherwise returns null
- */
 function decompressFromBase64<T>(value: unknown): T | null {
   if (typeof value !== "string" || !value.startsWith("gzip:")) {
-    return null; // Not compressed, return null to indicate raw data should be used
+    return null;
   }
 
   try {
-    const base64Data = value.slice(5); // Remove "gzip:" prefix
+    const base64Data = value.slice(5);
     const binaryString = atob(base64Data);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
-
-    // Use ungzip since the data is gzip compressed (not raw deflate)
     const decompressed = pako.ungzip(bytes);
     const text = new TextDecoder("utf-8").decode(decompressed);
     return JSON.parse(text) as T;
@@ -171,61 +160,60 @@ function decompressFromBase64<T>(value: unknown): T | null {
   }
 }
 
-/**
- * Get a field value, decompressing if needed
- * Works with both compressed (gzip:base64) and raw JSON data
- */
 function getFieldValue<T>(value: unknown): T | undefined {
   if (value === undefined || value === null) {
     return undefined;
   }
-
-  // Check if it's a compressed string
   const decompressed = decompressFromBase64<T>(value);
   if (decompressed !== null) {
     return decompressed;
   }
-
-  // Return raw value (already parsed JSON)
   return value as T;
+}
+
+// Helper to get header value from VercelRequest
+function getHeader(req: VercelRequest, name: string): string | null {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) return value[0] || null;
+  return value || null;
 }
 
 // =============================================================================
 // Main Handler
 // =============================================================================
 
-export default async function handler(req: Request) {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+) {
   const requestId = generateRequestId();
   const startTime = Date.now();
 
   console.log(`[${requestId}] ${req.method} /api/songs`);
 
+  const effectiveOrigin = getEffectiveOriginNode(req);
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    const effectiveOrigin = getEffectiveOrigin(req);
-    const resp = preflightIfNeeded(req, ["GET", "POST", "DELETE", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    if (handlePreflightNode(req, res, ["GET", "POST", "DELETE", "OPTIONS"], effectiveOrigin)) {
+      return;
+    }
   }
 
   // Validate origin
-  const effectiveOrigin = getEffectiveOrigin(req);
   if (!isAllowedOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+    return res.status(403).send("Unauthorized");
   }
 
   // Create Redis client
   const redis = createRedis();
 
   // Helper for JSON responses
-  const jsonResponse = (data: unknown, status = 200, headers: Record<string, string> = {}) =>
-    new Response(JSON.stringify(data), {
-      status,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": effectiveOrigin!,
-        ...headers,
-      },
-    });
+  const jsonResponse = (data: unknown, status = 200, headers: Record<string, string> = {}) => {
+    setCorsHeadersNode(res, effectiveOrigin);
+    Object.entries(headers).forEach(([key, value]) => res.setHeader(key, value));
+    return res.status(status).json(data);
+  };
 
   const errorResponse = (message: string, status = 400) => {
     logInfo(requestId, `Response: ${status} - ${message}`);
@@ -237,8 +225,7 @@ export default async function handler(req: Request) {
     // GET: List songs
     // =========================================================================
     if (req.method === "GET") {
-      // Rate limiting for GET
-      const ip = getClientIp(req);
+      const ip = getClientIpNode(req);
       const rlKey = RateLimit.makeKey(["rl", "song", "list", "ip", ip]);
       const rlResult = await RateLimit.checkCounterLimit({
         key: rlKey,
@@ -254,11 +241,10 @@ export default async function handler(req: Request) {
         }, 429, { "Retry-After": String(rlResult.resetSeconds) });
       }
       
-      const url = new URL(req.url);
-      const createdBy = url.searchParams.get("createdBy") || undefined;
-      const idsParam = url.searchParams.get("ids");
+      const createdBy = (req.query.createdBy as string) || undefined;
+      const idsParam = req.query.ids as string | undefined;
       const ids = idsParam ? idsParam.split(",").map((s) => s.trim()).filter(Boolean) : undefined;
-      const includeParam = url.searchParams.get("include") || "metadata";
+      const includeParam = (req.query.include as string) || "metadata";
       const includes = includeParam.split(",").map((s) => s.trim());
 
       logInfo(requestId, "Listing songs", { createdBy, idsCount: ids?.length, includes });
@@ -289,25 +275,22 @@ export default async function handler(req: Request) {
     // POST: Create song or bulk import
     // =========================================================================
     if (req.method === "POST") {
-      // Extract auth credentials
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
+      const authHeader = getHeader(req, "Authorization");
+      const usernameHeader = getHeader(req, "X-Username");
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
-      // Validate authentication
       const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
         return errorResponse("Unauthorized - authentication required", 401);
       }
 
-      let body: Record<string, unknown>;
-      try {
-        body = await req.json();
-      } catch (parseError) {
-        logError(requestId, "Failed to parse request body", parseError);
+      const body = req.body as Record<string, unknown>;
+      if (!body || typeof body !== "object") {
+        logError(requestId, "Failed to parse request body", "Invalid body");
         return errorResponse("Invalid JSON body", 400);
       }
+
       logInfo(requestId, `POST action=${body.action || "create"}`, { 
         hasId: !!body.id,
         songsCount: Array.isArray(body.songs) ? body.songs.length : undefined 
@@ -315,12 +298,10 @@ export default async function handler(req: Request) {
 
       // Handle bulk import (admin only)
       if (body.action === "import") {
-        // Only admin can bulk import
         if (username?.toLowerCase() !== "ryo") {
           return errorResponse("Forbidden - admin access required for bulk import", 403);
         }
 
-        // Rate limiting for bulk import - by admin user
         const rlKey = RateLimit.makeKey(["rl", "song", "import", "user", username || "unknown"]);
         const rlResult = await RateLimit.checkCounterLimit({
           key: rlKey,
@@ -349,7 +330,6 @@ export default async function handler(req: Request) {
 
         logInfo(requestId, "Starting bulk import", { songCount: songs.length });
 
-        // Batch fetch all existing songs (1 Redis call instead of N)
         const songIds = songs.map((s) => s.id);
         const existingSongs = await listSongs(redis, {
           ids: songIds,
@@ -357,47 +337,33 @@ export default async function handler(req: Request) {
         });
         const existingMap = new Map(existingSongs.map((s) => [s.id, s]));
 
-        // Build all song metadata and content documents
-        // Use Promise.all to handle async decompression of content fields
         const songDocs = await Promise.all(songs.map(async (songData, i) => {
           const existing = existingMap.get(songData.id);
 
-          // Convert legacy lyricsSearch to lyricsSource
-          // Use type assertion since Zod's inferred type may differ slightly from LyricsSource
           let lyricsSource: LyricsSource | undefined = songData.lyricsSource as LyricsSource | undefined;
           if (!lyricsSource && songData.lyricsSearch?.selection) {
             lyricsSource = songData.lyricsSearch.selection as LyricsSource;
           }
 
-          // Handle lyrics - may be compressed string or raw object
-          // Extract cover from lyrics (old format) to put in metadata (new format)
           const lyricsValue = getFieldValue<{ lrc?: string; krc?: string; cover?: string }>(songData.lyrics);
-          
-          // Cover: prefer from lyrics data (backwards compat), otherwise from existing, otherwise fetch later
           const cover = lyricsValue?.cover || existing?.cover;
 
-          // Build metadata (cover is now in metadata, not lyrics)
-          // For imports, respect the original createdBy from the export file
-          // Only fall back to existing song's creator, NOT to the importing user
           const meta: SongMetadata = {
             id: songData.id,
             title: songData.title,
             artist: songData.artist,
             album: songData.album,
-            cover, // Will be updated later if we need to fetch it
+            cover,
             lyricOffset: songData.lyricOffset,
             lyricsSource,
             createdBy: songData.createdBy || existing?.createdBy,
-            createdAt: songData.createdAt || existing?.createdAt || now - i, // Maintain order
+            createdAt: songData.createdAt || existing?.createdAt || now - i,
             updatedAt: songData.updatedAt || now,
             importOrder: songData.importOrder ?? existing?.importOrder ?? i,
           };
 
-          // Build content (if any content fields are present)
-          // Content may be compressed (gzip:base64) or raw JSON - handle both
           const content: SongContent = {};
           
-          // Handle lyrics - cover is extracted above and stored in metadata
           if (lyricsValue?.lrc) {
             content.lyrics = {
               lrc: lyricsValue.lrc,
@@ -405,25 +371,21 @@ export default async function handler(req: Request) {
             };
           }
           
-          // Handle translations - may be compressed string or raw object
           const translationsValue = getFieldValue<Record<string, string>>(songData.translations);
           if (translationsValue && Object.keys(translationsValue).length > 0) {
             content.translations = translationsValue;
           }
           
-          // Handle furigana - may be compressed string or raw array
           const furiganaValue = getFieldValue<Array<Array<{ text: string; reading?: string }>>>(songData.furigana);
           if (furiganaValue && furiganaValue.length > 0) {
             content.furigana = furiganaValue;
           }
           
-          // Handle soramimi - may be compressed string or raw array
           const soramimiValue = getFieldValue<Array<Array<{ text: string; reading?: string }>>>(songData.soramimi);
           if (soramimiValue && soramimiValue.length > 0) {
             content.soramimi = soramimiValue;
           }
           
-          // Handle soramimiByLang - may be compressed string or raw object
           const soramimiByLangValue = getFieldValue<Record<string, Array<Array<{ text: string; reading?: string }>>>>(songData.soramimiByLang);
           if (soramimiByLangValue && Object.keys(soramimiByLangValue).length > 0) {
             content.soramimiByLang = soramimiByLangValue;
@@ -439,12 +401,10 @@ export default async function handler(req: Request) {
           };
         }));
 
-        // Fetch missing covers for songs that have lyricsSource but no cover
         const songsNeedingCovers = songDocs.filter(d => d.needsCover && d.meta.lyricsSource);
         if (songsNeedingCovers.length > 0) {
           logInfo(requestId, `Fetching ${songsNeedingCovers.length} missing covers from Kugou`);
           
-          // Fetch covers in parallel (but limit concurrency to avoid rate limiting)
           const COVER_FETCH_BATCH_SIZE = 10;
           let fetchedCount = 0;
           
@@ -453,13 +413,12 @@ export default async function handler(req: Request) {
             const coverPromises = batch.map(async (doc) => {
               const source = doc.meta.lyricsSource!;
               try {
-                const cover = await fetchCoverUrl(source.hash, source.albumId);
-                if (cover) {
-                  doc.meta.cover = cover;
+                const coverUrl = await fetchCoverUrl(source.hash, source.albumId);
+                if (coverUrl) {
+                  doc.meta.cover = coverUrl;
                   fetchedCount++;
                 }
               } catch (err) {
-                // Log but don't fail the import if cover fetch fails
                 console.warn(`[${requestId}] Failed to fetch cover for ${doc.meta.id}:`, err);
               }
             });
@@ -469,12 +428,10 @@ export default async function handler(req: Request) {
           logInfo(requestId, `Fetched ${fetchedCount}/${songsNeedingCovers.length} covers`);
         }
 
-        // Use pipeline for all writes (1 batched Redis call)
         const pipeline = redis.pipeline();
         for (const { meta, content } of songDocs) {
           pipeline.set(getSongMetaKey(meta.id), JSON.stringify(meta));
           pipeline.sadd(SONG_SET_KEY, meta.id);
-          // Save content if present
           if (content) {
             pipeline.set(getSongContentKey(meta.id), JSON.stringify(content));
           }
@@ -482,7 +439,6 @@ export default async function handler(req: Request) {
         await pipeline.exec();
 
         const contentCount = songDocs.filter((d) => d.content !== null).length;
-
         const imported = songDocs.filter((d) => !d.isUpdate).length;
         const updated = songDocs.filter((d) => d.isUpdate).length;
 
@@ -503,7 +459,7 @@ export default async function handler(req: Request) {
         });
       }
 
-      // Rate limiting for single song creation - by user
+      // Rate limiting for single song creation
       const createRlKey = RateLimit.makeKey(["rl", "song", "create", "user", username || "unknown"]);
       const createRlResult = await RateLimit.checkCounterLimit({
         key: createRlKey,
@@ -529,12 +485,9 @@ export default async function handler(req: Request) {
       }
 
       const songData = parsed.data;
-
-      // Check permission
       const existing = await getSong(redis, songData.id, { includeMetadata: true });
       const permission = canModifySong(existing, username);
       if (!permission.canModify) {
-        // For create, return success but indicate it was skipped
         if (existing) {
           return jsonResponse({
             success: true,
@@ -579,24 +532,20 @@ export default async function handler(req: Request) {
     // DELETE: Delete all songs (admin only)
     // =========================================================================
     if (req.method === "DELETE") {
-      // Extract auth credentials
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
+      const authHeader = getHeader(req, "Authorization");
+      const usernameHeader = getHeader(req, "X-Username");
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
-      // Validate authentication
       const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
         return errorResponse("Unauthorized - authentication required", 401);
       }
 
-      // Only admin can delete all songs
       if (username?.toLowerCase() !== "ryo") {
         return errorResponse("Forbidden - admin access required", 403);
       }
 
-      // Rate limiting for delete all - by admin user
       const rlKey = RateLimit.makeKey(["rl", "song", "delete", "user", username || "unknown"]);
       const rlResult = await RateLimit.checkCounterLimit({
         key: rlKey,

@@ -4,52 +4,50 @@
  * Search for users
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
-  getEffectiveOrigin,
+  getEffectiveOriginNode,
   isAllowedOrigin,
-  preflightIfNeeded,
-  errorResponse,
-  jsonResponse,
+  setCorsHeadersNode,
+  handlePreflightNode,
 } from "../_utils/middleware.js";
 import { handleGetUsers } from "../rooms/_helpers/_users.js";
 
+export const runtime = "nodejs";
+export const maxDuration = 15;
 
-export const config = {
-  runtime: "edge",
-};
-
-export default async function handler(req: Request) {
-  const origin = getEffectiveOrigin(req);
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const origin = getEffectiveOriginNode(req);
   
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["GET", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+  // Handle CORS preflight
+  if (handlePreflightNode(req, res, ["GET", "OPTIONS"])) {
+    return;
   }
+
+  setCorsHeadersNode(res, origin, ["GET", "OPTIONS"]);
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403, headers: { "Content-Type": "application/json" },
-    });
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
-
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
   if (req.method !== "GET") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
-  const url = new URL(req.url);
-  const searchQuery = url.searchParams.get("search") || "";
+  const searchQuery = (req.query.search as string) || "";
 
   try {
     const response = await handleGetUsers("users-search", searchQuery);
     const data = await response.json();
     
-    return new Response(JSON.stringify(data), { status: response.status, headers });
+    res.status(response.status).json(data);
   } catch (error) {
     console.error("Error searching users:", error);
-    return new Response(JSON.stringify({ error: "Failed to search users" }), { status: 500, headers });
+    res.status(500).json({ error: "Failed to search users" });
   }
 }
