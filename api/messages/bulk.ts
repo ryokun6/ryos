@@ -1,70 +1,92 @@
 /**
  * GET /api/messages/bulk
- * 
  * Get messages for multiple rooms at once
+ * Node.js runtime with terminal logging
  */
 
-import {
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  errorResponse,
-  jsonResponse,
-} from "../_utils/middleware.js";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { ROOM_ID_REGEX } from "../_utils/_validation.js";
+import { initLogger } from "../_utils/_logging.js";
 import { roomExists, getMessages } from "../rooms/_helpers/_redis.js";
 import type { Message } from "../rooms/_helpers/_types.js";
 
+export const runtime = "nodejs";
+export const maxDuration = 15;
 
-export const config = {
-  runtime: "edge",
-};
+function getEffectiveOrigin(req: VercelRequest): string | null {
+  return (req.headers.origin as string) || null;
+}
 
-export default async function handler(req: Request) {
-  const origin = getEffectiveOrigin(req);
-  
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["GET", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true;
+  const allowedOrigins = ["https://os.ryo.lu", "https://ryos.vercel.app", "http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"];
+  return allowedOrigins.some((a) => origin.startsWith(a)) || origin.includes("vercel.app");
+}
+
+function setCorsHeaders(res: VercelResponse, origin: string | null): void {
+  res.setHeader("Content-Type", "application/json");
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
   }
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const { logger } = initLogger();
+  const startTime = Date.now();
+  const origin = getEffectiveOrigin(req);
+
+  logger.request(req.method || "GET", req.url || "/api/messages/bulk", "bulk-messages");
+
+  if (req.method === "OPTIONS") {
+    setCorsHeaders(res, origin);
+    logger.response(204, Date.now() - startTime);
+    res.status(204).end();
+    return;
+  }
+
+  setCorsHeaders(res, origin);
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403, headers: { "Content-Type": "application/json" },
-    });
+    logger.response(403, Date.now() - startTime);
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
-
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
   if (req.method !== "GET") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+    logger.response(405, Date.now() - startTime);
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
-  const url = new URL(req.url);
-  const roomIdsParam = url.searchParams.get("roomIds");
+  const roomIdsParam = req.query.roomIds as string | undefined;
   
   if (!roomIdsParam) {
-    return new Response(JSON.stringify({ error: "roomIds query parameter is required" }), { status: 400, headers });
+    logger.response(400, Date.now() - startTime);
+    res.status(400).json({ error: "roomIds query parameter is required" });
+    return;
   }
 
   const roomIds = roomIdsParam.split(",").map((id) => id.trim()).filter((id) => id.length > 0);
 
   if (roomIds.length === 0) {
-    return new Response(JSON.stringify({ error: "At least one room ID is required" }), { status: 400, headers });
+    logger.response(400, Date.now() - startTime);
+    res.status(400).json({ error: "At least one room ID is required" });
+    return;
   }
 
-  // Validate all room IDs
   for (const id of roomIds) {
     if (!ROOM_ID_REGEX.test(id)) {
-      return new Response(JSON.stringify({ error: "Invalid room ID format" }), { status: 400, headers });
+      logger.response(400, Date.now() - startTime);
+      res.status(400).json({ error: "Invalid room ID format" });
+      return;
     }
   }
 
   try {
     const roomExistenceChecks = await Promise.all(roomIds.map((roomId) => roomExists(roomId)));
-
     const validRoomIds = roomIds.filter((_, index) => roomExistenceChecks[index]);
     const invalidRoomIds = roomIds.filter((_, index) => !roomExistenceChecks[index]);
 
@@ -74,15 +96,17 @@ export default async function handler(req: Request) {
     });
 
     const results = await Promise.all(messagePromises);
-
     const messagesMap: Record<string, Message[]> = {};
     results.forEach(({ roomId, messages }) => {
       messagesMap[roomId] = messages;
     });
 
-    return new Response(JSON.stringify({ messagesMap, validRoomIds, invalidRoomIds }), { status: 200, headers });
+    logger.info("Bulk messages fetched", { validRooms: validRoomIds.length, invalidRooms: invalidRoomIds.length });
+    logger.response(200, Date.now() - startTime);
+    res.status(200).json({ messagesMap, validRoomIds, invalidRoomIds });
   } catch (error) {
-    console.error("Error fetching bulk messages:", error);
-    return new Response(JSON.stringify({ error: "Failed to fetch bulk messages" }), { status: 500, headers });
+    logger.error("Error fetching bulk messages", error);
+    logger.response(500, Date.now() - startTime);
+    res.status(500).json({ error: "Failed to fetch bulk messages" });
   }
 }

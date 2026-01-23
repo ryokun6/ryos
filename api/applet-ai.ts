@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   generateText,
   type ImagePart,
@@ -7,20 +8,79 @@ import {
 } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
-import {
-  createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
-} from "./_utils/middleware.js";
+import { Redis } from "@upstash/redis";
 import { validateAuth } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
+import { initLogger } from "./_utils/_logging.js";
 
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
 export const maxDuration = 60;
+
+// ============================================================================
+// Local Helper Functions
+// ============================================================================
+
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL as string,
+    token: process.env.REDIS_KV_REST_API_TOKEN as string,
+  });
+}
+
+function getEffectiveOrigin(req: VercelRequest): string | null {
+  const origin = req.headers.origin as string | undefined;
+  const referer = req.headers.referer as string | undefined;
+  if (origin) return origin;
+  if (referer) {
+    try {
+      return new URL(referer).origin;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true;
+  const ALLOWED_ORIGINS = [
+    "https://os.ryo.lu",
+    "https://ryo.lu",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+  ];
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) return true;
+  return false;
+}
+
+function setCorsHeaders(res: VercelResponse, origin: string | null): void {
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
+  res.setHeader("Access-Control-Max-Age", "86400");
+  res.setHeader("Vary", "Origin");
+}
+
+function getClientIp(req: VercelRequest): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
+  }
+  const realIp = req.headers["x-real-ip"];
+  if (typeof realIp === "string") {
+    return realIp;
+  }
+  return "unknown";
+}
+
+// ============================================================================
+// Constants and Schemas
+// ============================================================================
 
 const APPLET_SYSTEM_PROMPT = `
 <applet_ai>
@@ -143,57 +203,9 @@ const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
 
 type ParsedMessage = z.infer<typeof MessageSchema>;
 
-const jsonResponse = (
-  data: unknown,
-  status: number,
-  origin: string | null
-): Response => {
-  const headers = new Headers({
-    "Content-Type": "application/json",
-    "Vary": "Origin",
-  });
-  if (origin) {
-    headers.set("Access-Control-Allow-Origin", origin);
-  }
-  return new Response(JSON.stringify(data), { status, headers });
-};
-
-const rateLimitExceededResponse = (
-  scope: RateLimitScope,
-  effectiveOrigin: string | null,
-  identifier: string,
-  result: Awaited<ReturnType<typeof RateLimit.checkCounterLimit>>
-): Response => {
-  const resetSeconds =
-    typeof result.resetSeconds === "number" && result.resetSeconds > 0
-      ? result.resetSeconds
-      : result.windowSeconds;
-
-  const headers = new Headers({
-    "Content-Type": "application/json",
-    "Retry-After": String(resetSeconds),
-    "X-RateLimit-Limit": String(result.limit),
-    "X-RateLimit-Remaining": String(Math.max(0, result.limit - result.count)),
-    "X-RateLimit-Reset": String(resetSeconds),
-    Vary: "Origin",
-  });
-
-  if (effectiveOrigin) {
-    headers.set("Access-Control-Allow-Origin", effectiveOrigin);
-  }
-
-  return new Response(
-    JSON.stringify({
-      error: "rate_limit_exceeded",
-      scope,
-      limit: result.limit,
-      windowSeconds: result.windowSeconds,
-      resetSeconds,
-      identifier,
-    }),
-    { status: 429, headers }
-  );
-};
+// ============================================================================
+// Utility Functions
+// ============================================================================
 
 const decodeBase64ToBinaryString = (value: string): string => {
   const atobFn = (globalThis as typeof globalThis & {
@@ -342,36 +354,53 @@ const buildModelMessages = (
   return messages;
 };
 
-export default async function handler(req: Request): Promise<Response> {
+// ============================================================================
+// Route Handler
+// ============================================================================
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { requestId, logger } = initLogger();
+  const startTime = Date.now();
+  
   const effectiveOrigin = getEffectiveOrigin(req);
+  setCorsHeaders(res, effectiveOrigin);
+  
+  logger.request(req.method || "POST", req.url || "/api/applet-ai");
+  
   if (req.method === "OPTIONS") {
-    const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    logger.response(204, Date.now() - startTime);
+    return res.status(204).end();
   }
 
   if (!isAllowedOrigin(effectiveOrigin)) {
-    return jsonResponse({ error: "Unauthorized" }, 403, effectiveOrigin);
+    logger.warn("Unauthorized origin", { effectiveOrigin });
+    logger.response(403, Date.now() - startTime);
+    return res.status(403).json({ error: "Unauthorized" });
   }
 
-  const host = req.headers.get("host");
-  if (!isRyOSHost(host)) {
-    return jsonResponse({ error: "Unauthorized host" }, 403, effectiveOrigin);
+  const host = req.headers.host as string | undefined;
+  if (!isRyOSHost(host || null)) {
+    logger.warn("Unauthorized host", { host });
+    logger.response(403, Date.now() - startTime);
+    return res.status(403).json({ error: "Unauthorized host" });
   }
 
   if (req.method !== "POST") {
-    return jsonResponse({ error: "Method not allowed" }, 405, effectiveOrigin);
+    logger.warn("Method not allowed", { method: req.method });
+    logger.response(405, Date.now() - startTime);
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   // Initialize Redis for auth token validation
   const redis = createRedis();
 
   // Extract auth headers
-  const authHeader = req.headers.get("authorization");
+  const authHeader = req.headers.authorization as string | undefined;
   const authToken =
     authHeader && authHeader.startsWith("Bearer ")
       ? authHeader.substring(7)
       : null;
-  const usernameHeaderRaw = req.headers.get("x-username");
+  const usernameHeaderRaw = req.headers["x-username"] as string | undefined;
   const usernameHeader =
     usernameHeaderRaw && usernameHeaderRaw.trim().length > 0
       ? usernameHeaderRaw.trim().toLowerCase()
@@ -381,54 +410,42 @@ export default async function handler(req: Request): Promise<Response> {
       ? usernameHeaderRaw.trim()
       : "anonymous";
 
-  const logPrefix = `[applet-ai][User: ${usernameLogLabel}]`;
-  const log = (...args: unknown[]) => console.log(logPrefix, ...args);
-  const logError = (...args: unknown[]) => console.error(logPrefix, ...args);
-
   // Validate authentication (all users, including "ryo", must present a valid token)
   if (usernameHeader) {
     const validationResult = await validateAuth(redis, usernameHeader, authToken);
     if (!validationResult.valid) {
-      logError("Authentication failed – invalid or missing token");
-      return jsonResponse(
-        {
-          error: "authentication_failed",
-          message: "Invalid or missing authentication token",
-        },
-        401,
-        effectiveOrigin
-      );
+      logger.error("Authentication failed – invalid or missing token", { username: usernameLogLabel });
+      logger.response(401, Date.now() - startTime);
+      return res.status(401).json({
+        error: "authentication_failed",
+        message: "Invalid or missing authentication token",
+      });
     }
   }
 
   const ip = getClientIp(req);
-  log("Request received", {
+  logger.info("Request received", {
     origin: effectiveOrigin ?? "unknown",
     host,
     ip,
     method: req.method,
+    user: usernameLogLabel,
   });
 
   let parsedBody: z.infer<typeof RequestSchema>;
   try {
-    const body = await req.json();
+    const body = req.body;
     const result = RequestSchema.safeParse(body);
     if (!result.success) {
-      logError("Invalid request body", result.error.format());
-      return jsonResponse(
-        { error: "Invalid request body", details: result.error.format() },
-        400,
-        effectiveOrigin
-      );
+      logger.error("Invalid request body", result.error.format());
+      logger.response(400, Date.now() - startTime);
+      return res.status(400).json({ error: "Invalid request body", details: result.error.format() });
     }
     parsedBody = result.data;
   } catch (error) {
-    logError("Failed to parse JSON body", error);
-    return jsonResponse(
-      { error: "Invalid JSON in request body" },
-      400,
-      effectiveOrigin
-    );
+    logger.error("Failed to parse JSON body", error);
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: "Invalid JSON in request body" });
   }
 
   const { prompt, messages, context, temperature, mode: requestedMode } =
@@ -455,7 +472,7 @@ export default async function handler(req: Request): Promise<Response> {
     ) ?? 0;
   const requestImagesCount = parsedBody.images?.length ?? 0;
 
-  log("Request payload summary", {
+  logger.info("Request payload summary", {
     mode,
     isAuthenticatedUser,
     rateLimitBypass,
@@ -474,7 +491,7 @@ export default async function handler(req: Request): Promise<Response> {
       scope === "image-hour"
         ? AUTH_IMAGE_LIMIT_PER_HOUR
         : AUTH_TEXT_LIMIT_PER_HOUR;
-    log("[rate-limit] Bypass enabled for trusted user", {
+    logger.info("[rate-limit] Bypass enabled for trusted user", {
       scope,
       identifier,
       wouldHaveLimit: limit,
@@ -514,7 +531,7 @@ export default async function handler(req: Request): Promise<Response> {
           : result.windowSeconds;
 
       // Log rate limit information for all requests
-      log("[rate-limit] Check", {
+      logger.info("[rate-limit] Check", {
         scope,
         identifier,
         isAuthenticatedUser,
@@ -526,17 +543,31 @@ export default async function handler(req: Request): Promise<Response> {
       });
 
       if (!result.allowed) {
-        log("[rate-limit] Limit exceeded", {
+        logger.info("[rate-limit] Limit exceeded", {
           scope,
           identifier,
           count: result.count,
           limit: result.limit,
           resetSeconds,
         });
-        return rateLimitExceededResponse(scope, effectiveOrigin, identifier, result);
+        
+        res.setHeader("Retry-After", String(resetSeconds));
+        res.setHeader("X-RateLimit-Limit", String(result.limit));
+        res.setHeader("X-RateLimit-Remaining", String(Math.max(0, result.limit - result.count)));
+        res.setHeader("X-RateLimit-Reset", String(resetSeconds));
+        
+        logger.response(429, Date.now() - startTime);
+        return res.status(429).json({
+          error: "rate_limit_exceeded",
+          scope,
+          limit: result.limit,
+          windowSeconds: result.windowSeconds,
+          resetSeconds,
+          identifier,
+        });
       }
     } catch (error) {
-      logError("Rate limit check failed:", error);
+      logger.error("Rate limit check failed:", error);
     }
   }
 
@@ -574,26 +605,22 @@ export default async function handler(req: Request): Promise<Response> {
         });
       }
     } catch (error) {
-      logError("Image attachment parsing failed:", error);
-      return jsonResponse(
-        {
-          error: "Invalid image attachments in request body",
-          ...(error instanceof Error ? { details: error.message } : {}),
-        },
-        400,
-        effectiveOrigin
-      );
+      logger.error("Image attachment parsing failed:", error);
+      logger.response(400, Date.now() - startTime);
+      return res.status(400).json({
+        error: "Invalid image attachments in request body",
+        ...(error instanceof Error ? { details: error.message } : {}),
+      });
     }
 
     if (promptParts.length === 0) {
-      return jsonResponse(
-        { error: "Image generation requires instructions or image attachments." },
-        400,
-        effectiveOrigin
-      );
+      logger.warn("Image generation requires instructions or image attachments");
+      logger.response(400, Date.now() - startTime);
+      return res.status(400).json({ error: "Image generation requires instructions or image attachments." });
     }
 
     try {
+      logger.info("Starting image generation", { promptPartsCount: promptParts.length });
       const imageResult = await generateText({
         model: google("gemini-2.5-flash-image-preview"),
         messages: [
@@ -615,62 +642,39 @@ export default async function handler(req: Request): Promise<Response> {
       );
 
       if (!imageFile) {
-        logError("Image generation returned no image files.", imageResult);
-        return jsonResponse(
-          { error: "The model did not return an image." },
-          502,
-          effectiveOrigin
-        );
+        logger.error("Image generation returned no image files.");
+        logger.response(502, Date.now() - startTime);
+        return res.status(502).json({ error: "The model did not return an image." });
       }
 
-      log("Image generation succeeded", {
+      logger.info("Image generation succeeded", {
         mediaType: imageFile.mediaType,
         descriptionReturned: Boolean(imageResult.text?.trim()),
         promptParts: promptParts.length,
       });
 
-      const imageStream = new ReadableStream<Uint8Array>({
-        start(controller) {
-          controller.enqueue(imageFile.uint8Array);
-          controller.close();
-        },
-      });
-
-      const headers = new Headers({
-        "Content-Type": imageFile.mediaType,
-        "Cache-Control": "no-store",
-        Vary: "Origin",
-      });
-
-      headers.set("Access-Control-Expose-Headers", "X-Image-Description");
-
-      if (effectiveOrigin) {
-        headers.set("Access-Control-Allow-Origin", effectiveOrigin);
-      }
+      res.setHeader("Content-Type", imageFile.mediaType);
+      res.setHeader("Cache-Control", "no-store");
+      res.setHeader("Access-Control-Expose-Headers", "X-Image-Description");
 
       if (imageResult.text?.trim()) {
-        headers.set("X-Image-Description", imageResult.text.trim());
+        res.setHeader("X-Image-Description", imageResult.text.trim());
       }
 
-      return new Response(imageStream, {
-        status: 200,
-        headers,
-      });
+      logger.response(200, Date.now() - startTime);
+      return res.status(200).send(Buffer.from(imageFile.uint8Array));
     } catch (error) {
-      logError("Image generation failed:", error);
+      logger.error("Image generation failed:", error);
       // Log more details if available
       if (error instanceof Error) {
-        logError("Error details:", {
+        logger.error("Error details:", {
           name: error.name,
           message: error.message,
           cause: error.cause,
         });
       }
-      return jsonResponse(
-        { error: "Failed to generate image" },
-        500,
-        effectiveOrigin
-      );
+      logger.response(500, Date.now() - startTime);
+      return res.status(500).json({ error: "Failed to generate image" });
     }
   }
 
@@ -683,18 +687,16 @@ export default async function handler(req: Request): Promise<Response> {
   try {
     finalMessages = buildModelMessages(conversation, context);
   } catch (error) {
-    logError("Message preparation failed:", error);
-    return jsonResponse(
-      {
-        error: "Invalid attachments in request body",
-        ...(error instanceof Error ? { details: error.message } : {}),
-      },
-      400,
-      effectiveOrigin
-    );
+    logger.error("Message preparation failed:", error);
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({
+      error: "Invalid attachments in request body",
+      ...(error instanceof Error ? { details: error.message } : {}),
+    });
   }
 
   try {
+    logger.info("Starting text generation", { messageCount: finalMessages.length });
     const { text } = await generateText({
       model: google("gemini-2.5-flash"),
       messages: finalMessages,
@@ -703,19 +705,17 @@ export default async function handler(req: Request): Promise<Response> {
     });
 
     const trimmedReply = text.trim();
-    log("Text generation succeeded", {
+    logger.info("Text generation succeeded", {
       replyLength: trimmedReply.length,
       messageCount: finalMessages.length,
       temperature: temperature ?? 0.6,
     });
 
-    return jsonResponse({ reply: trimmedReply }, 200, effectiveOrigin);
+    logger.response(200, Date.now() - startTime);
+    return res.status(200).json({ reply: trimmedReply });
   } catch (error) {
-    logError("Generation failed:", error);
-    return jsonResponse(
-      { error: "Failed to generate response" },
-      500,
-      effectiveOrigin
-    );
+    logger.error("Generation failed:", error);
+    logger.response(500, Date.now() - startTime);
+    return res.status(500).json({ error: "Failed to generate response" });
   }
 }

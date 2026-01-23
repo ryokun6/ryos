@@ -1,26 +1,38 @@
 /**
  * POST /api/presence/switch
- * 
  * Switch between rooms (leave previous, join next)
+ * Node.js runtime with terminal logging
  */
 
-import {
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  errorResponse,
-  jsonResponse,
-} from "../_utils/middleware.js";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { isProfaneUsername, assertValidRoomId } from "../_utils/_validation.js";
-
+import { initLogger } from "../_utils/_logging.js";
 import { getRoom, setRoom } from "../rooms/_helpers/_redis.js";
 import { setRoomPresence, removeRoomPresence, refreshRoomUserCount } from "../rooms/_helpers/_presence.js";
 import { ensureUserExists } from "../rooms/_helpers/_users.js";
 
+export const runtime = "nodejs";
+export const maxDuration = 15;
 
-export const config = {
-  runtime: "edge",
-};
+function getEffectiveOrigin(req: VercelRequest): string | null {
+  return (req.headers.origin as string) || null;
+}
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true;
+  const allowedOrigins = ["https://os.ryo.lu", "https://ryos.vercel.app", "http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"];
+  return allowedOrigins.some((a) => origin.startsWith(a)) || origin.includes("vercel.app");
+}
+
+function setCorsHeaders(res: VercelResponse, origin: string | null): void {
+  res.setHeader("Content-Type", "application/json");
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+}
 
 interface SwitchRequest {
   previousRoomId?: string;
@@ -28,62 +40,68 @@ interface SwitchRequest {
   username: string;
 }
 
-export default async function handler(req: Request) {
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const { logger } = initLogger();
+  const startTime = Date.now();
   const origin = getEffectiveOrigin(req);
-  
+
+  logger.request(req.method || "POST", req.url || "/api/presence/switch", "switch");
+
   if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+    setCorsHeaders(res, origin);
+    logger.response(204, Date.now() - startTime);
+    res.status(204).end();
+    return;
   }
+
+  setCorsHeaders(res, origin);
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403, headers: { "Content-Type": "application/json" },
-    });
+    logger.response(403, Date.now() - startTime);
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
-
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+    logger.response(405, Date.now() - startTime);
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
-  let body: SwitchRequest;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers });
-  }
-
+  const body = req.body as SwitchRequest;
   const { previousRoomId, nextRoomId } = body;
   const username = body.username?.toLowerCase();
 
   if (!username) {
-    return new Response(JSON.stringify({ error: "Username is required" }), { status: 400, headers });
+    logger.response(400, Date.now() - startTime);
+    res.status(400).json({ error: "Username is required" });
+    return;
   }
 
   try {
     if (previousRoomId) assertValidRoomId(previousRoomId, "switch-room");
     if (nextRoomId) assertValidRoomId(nextRoomId, "switch-room");
   } catch (e) {
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Validation error" }), { status: 400, headers });
+    logger.response(400, Date.now() - startTime);
+    res.status(400).json({ error: e instanceof Error ? e.message : "Validation error" });
+    return;
   }
 
   if (isProfaneUsername(username)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers });
+    logger.response(401, Date.now() - startTime);
+    res.status(401).json({ error: "Unauthorized" });
+    return;
   }
 
-  // No-op if same room
   if (previousRoomId === nextRoomId) {
-    return new Response(JSON.stringify({ success: true, noop: true }), { status: 200, headers });
+    logger.response(200, Date.now() - startTime);
+    res.status(200).json({ success: true, noop: true });
+    return;
   }
 
   try {
     await ensureUserExists(username, "switch-room");
 
-    // Leave previous room
     if (previousRoomId) {
       const roomData = await getRoom(previousRoomId);
       if (roomData && roomData.type !== "private") {
@@ -92,11 +110,12 @@ export default async function handler(req: Request) {
       }
     }
 
-    // Join next room
     if (nextRoomId) {
       const roomData = await getRoom(nextRoomId);
       if (!roomData) {
-        return new Response(JSON.stringify({ error: "Next room not found" }), { status: 404, headers });
+        logger.response(404, Date.now() - startTime);
+        res.status(404).json({ error: "Next room not found" });
+        return;
       }
 
       await setRoomPresence(nextRoomId, username);
@@ -104,9 +123,12 @@ export default async function handler(req: Request) {
       await setRoom(nextRoomId, { ...roomData, userCount });
     }
 
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+    logger.info("Room switched", { username, previousRoomId, nextRoomId });
+    logger.response(200, Date.now() - startTime);
+    res.status(200).json({ success: true });
   } catch (error) {
-    console.error("Error during switchRoom:", error);
-    return new Response(JSON.stringify({ error: "Failed to switch room" }), { status: 500, headers });
+    logger.error("Error during switchRoom", error);
+    logger.response(500, Date.now() - startTime);
+    res.status(500).json({ error: "Failed to switch room" });
   }
 }

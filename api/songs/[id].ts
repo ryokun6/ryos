@@ -18,13 +18,8 @@
  * - POST with action=search-lyrics: Search for lyrics matches
  */
 
-import {
-  createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
-} from "../_utils/middleware.js";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { Redis } from "@upstash/redis";
 import { validateAuth } from "../_utils/auth/index.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import {
@@ -100,12 +95,71 @@ import {
   streamText,
 } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { initLogger } from "../_utils/_logging.js";
 
-// Vercel Edge Function configuration
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
 export const maxDuration = 120;
+
+// ============================================================================
+// Local Helper Functions
+// ============================================================================
+
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL as string,
+    token: process.env.REDIS_KV_REST_API_TOKEN as string,
+  });
+}
+
+function getEffectiveOrigin(req: VercelRequest): string | null {
+  const origin = req.headers.origin as string | undefined;
+  const referer = req.headers.referer as string | undefined;
+  if (origin) return origin;
+  if (referer) {
+    try {
+      return new URL(referer).origin;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true;
+  const ALLOWED_ORIGINS = [
+    "https://os.ryo.lu",
+    "https://ryo.lu",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+  ];
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) return true;
+  return false;
+}
+
+function setCorsHeaders(res: VercelResponse, origin: string | null): void {
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
+  res.setHeader("Access-Control-Max-Age", "86400");
+}
+
+function getClientIp(req: VercelRequest): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
+  }
+  const realIp = req.headers["x-real-ip"];
+  if (typeof realIp === "string") {
+    return realIp;
+  }
+  return "unknown";
+}
 
 // Rate limiting configuration
 const RATE_LIMITS = {
@@ -121,44 +175,40 @@ const RATE_LIMITS = {
 // Main Handler
 // =============================================================================
 
-export default async function handler(req: Request) {
-  const requestId = generateRequestId();
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { requestId, logger } = initLogger();
   const startTime = Date.now();
 
-  // Extract song ID from URL
-  const url = new URL(req.url);
-  const pathParts = url.pathname.split("/");
-  const songId = pathParts[pathParts.length - 1];
+  // Extract song ID from query params
+  const songId = req.query.id as string | undefined;
 
-  console.log(`[${requestId}] ${req.method} /api/songs/${songId}`);
+  const effectiveOrigin = getEffectiveOrigin(req);
+  setCorsHeaders(res, effectiveOrigin);
+
+  logger.request(req.method || "GET", `/api/songs/${songId || "[id]"}`);
 
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    const effectiveOrigin = getEffectiveOrigin(req);
-    const resp = preflightIfNeeded(req, ["GET", "POST", "DELETE", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    logger.response(204, Date.now() - startTime);
+    return res.status(204).end();
   }
 
-  // Validate origin
-  const effectiveOrigin = getEffectiveOrigin(req);
-
-  // Helper for JSON responses (defined early for use in origin validation)
-  const jsonResponse = (data: unknown, status = 200, headers: Record<string, string> = {}) =>
-    new Response(JSON.stringify(data), {
-      status,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": effectiveOrigin!,
-        ...headers,
-      },
+  // Helper for JSON responses
+  const jsonResponse = (data: unknown, status = 200, headers: Record<string, string> = {}) => {
+    Object.entries(headers).forEach(([key, value]) => {
+      res.setHeader(key, value);
     });
+    logger.response(status, Date.now() - startTime);
+    return res.status(status).json(data);
+  };
 
   const errorResponse = (message: string, status = 400) => {
-    logInfo(requestId, `Response: ${status} - ${message}`);
+    logger.info(`Response: ${status} - ${message}`);
     return jsonResponse({ error: message }, status);
   };
 
   if (!isAllowedOrigin(effectiveOrigin)) {
+    logger.warn("Unauthorized origin", { effectiveOrigin });
     return errorResponse("Unauthorized", 403);
   }
 
@@ -166,6 +216,7 @@ export default async function handler(req: Request) {
   const redis = createRedis();
 
   if (!songId || songId === "[id]") {
+    logger.warn("Song ID is required");
     return errorResponse("Song ID is required", 400);
   }
 
@@ -191,6 +242,7 @@ export default async function handler(req: Request) {
       });
 
       if (!rlResult.allowed) {
+        logger.warn("Rate limit exceeded (get)", { ip });
         return jsonResponse(
           {
             error: "rate_limit_exceeded",
@@ -202,10 +254,10 @@ export default async function handler(req: Request) {
         );
       }
 
-      const includeParam = url.searchParams.get("include") || "metadata";
+      const includeParam = (req.query.include as string) || "metadata";
       const includes = includeParam.split(",").map((s) => s.trim());
 
-      logInfo(requestId, "GET song", { songId, includes });
+      logger.info("GET song", { songId, includes });
 
       // Fetch song with requested includes
       const song = await getSong(redis, songId, {
@@ -217,6 +269,7 @@ export default async function handler(req: Request) {
       });
 
       if (!song) {
+        logger.warn("Song not found", { songId });
         return errorResponse("Song not found", 404);
       }
 
@@ -230,7 +283,7 @@ export default async function handler(req: Request) {
         );
       }
 
-      logInfo(requestId, `Response: 200 OK`, { 
+      logger.info(`Response: 200 OK`, { 
         hasLyrics: !!song.lyrics,
         hasTranslations: !!song.translations,
         hasFurigana: !!song.furigana,
@@ -244,24 +297,19 @@ export default async function handler(req: Request) {
     // POST: Update song or perform action
     // =========================================================================
     if (req.method === "POST") {
-      let body: Record<string, unknown>;
-      try {
-        body = await req.json();
-      } catch (parseError) {
-        logError(requestId, "Failed to parse request body", parseError);
-        return errorResponse("Invalid JSON body", 400);
-      }
-      const action = body.action;
-      logInfo(requestId, `POST action=${action || "update-metadata"}`, {
-        hasLyricsSource: !!body.lyricsSource,
-        language: body.language,
-        force: body.force,
-        query: body.query,
+      const body = req.body as Record<string, unknown>;
+      const action = body?.action;
+      
+      logger.info(`POST action=${action || "update-metadata"}`, {
+        hasLyricsSource: !!body?.lyricsSource,
+        language: body?.language,
+        force: body?.force,
+        query: body?.query,
       });
 
       // Extract auth credentials
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
+      const authHeader = req.headers.authorization as string | undefined;
+      const usernameHeader = req.headers["x-username"] as string | undefined;
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
       const requestIp = getClientIp(req);
@@ -277,6 +325,7 @@ export default async function handler(req: Request) {
         });
 
         if (!rlResult.allowed) {
+          logger.warn("Rate limit exceeded (search-lyrics)", { ip: requestIp });
           return jsonResponse(
             {
               error: "rate_limit_exceeded",
@@ -310,7 +359,7 @@ export default async function handler(req: Request) {
             const aiParsed = await parseYouTubeTitleWithAI(rawTitle, rawArtist, requestId);
             searchTitle = aiParsed.title || rawTitle;
             searchArtist = aiParsed.artist || rawArtist;
-            logInfo(requestId, "AI-parsed search query (no artist)", { original: rawTitle, parsed: { title: searchTitle, artist: searchArtist } });
+            logger.info("AI-parsed search query (no artist)", { original: rawTitle, parsed: { title: searchTitle, artist: searchArtist } });
           }
           query = `${stripParentheses(searchTitle)} ${stripParentheses(searchArtist)}`.trim();
         } else if (!query) {
@@ -321,9 +370,9 @@ export default async function handler(req: Request) {
           return errorResponse("Search query is required");
         }
 
-        logInfo(requestId, "Searching lyrics", { query });
+        logger.info("Searching lyrics", { query });
         const results = await searchKugou(query, searchTitle, searchArtist);
-        logInfo(requestId, `Response: 200 OK - Found ${results.length} results`);
+        logger.info(`Response: 200 OK - Found ${results.length} results`);
         return jsonResponse({ results });
       }
 
@@ -339,6 +388,7 @@ export default async function handler(req: Request) {
         });
 
         if (!rlResult.allowed) {
+          logger.warn("Rate limit exceeded (fetch-lyrics)", { user: rateLimitUser });
           return jsonResponse(
             {
               error: "rate_limit_exceeded",
@@ -411,7 +461,7 @@ export default async function handler(req: Request) {
         }
 
         if (lyricsSourceChanged) {
-          logInfo(requestId, "Lyrics source changed, will re-fetch and clear cached annotations", {
+          logger.info("Lyrics source changed, will re-fetch and clear cached annotations", {
             oldHash: song?.lyricsSource?.hash,
             newHash: lyricsSource?.hash,
           });
@@ -433,15 +483,15 @@ export default async function handler(req: Request) {
               .then(async (cover) => {
                 if (cover) {
                   await saveLyrics(redis, songId, song.lyrics!, song.lyricsSource, cover);
-                  logInfo(requestId, "Fetched missing cover in background");
+                  logger.info("Fetched missing cover in background");
                 }
               })
               .catch((err) => {
-                logInfo(requestId, "Failed to fetch missing cover", err);
+                logger.info("Failed to fetch missing cover", err);
               });
           }
           
-          logInfo(requestId, `Response: 200 OK - Returning cached lyrics`, {
+          logger.info(`Response: 200 OK - Returning cached lyrics`, {
             parsedLinesCount: parsedLines.length,
           });
           
@@ -471,7 +521,7 @@ export default async function handler(req: Request) {
               if (krcDerivedLrc) {
                 hasTranslation = true;
                 translationLrc = krcDerivedLrc;
-                logInfo(requestId, "Using KRC-derived Traditional Chinese translation (skipping AI)");
+                logger.info("Using KRC-derived Traditional Chinese translation (skipping AI)");
                 // Save this translation for future requests
                 await saveTranslation(redis, songId, translateTo, krcDerivedLrc);
               }
@@ -557,12 +607,12 @@ export default async function handler(req: Request) {
             const aiParsed = await parseYouTubeTitleWithAI(rawTitle, rawArtist, requestId);
             searchTitle = aiParsed.title || rawTitle;
             searchArtist = aiParsed.artist || rawArtist;
-            logInfo(requestId, "Auto-searching lyrics with AI-parsed title (no artist)", { 
+            logger.info("Auto-searching lyrics with AI-parsed title (no artist)", { 
               original: { title: rawTitle, artist: rawArtist },
               parsed: { title: searchTitle, artist: searchArtist }
             });
           } else {
-            logInfo(requestId, "Auto-searching lyrics with existing metadata", { 
+            logger.info("Auto-searching lyrics with existing metadata", { 
               title: searchTitle, artist: searchArtist
             });
           }
@@ -584,7 +634,7 @@ export default async function handler(req: Request) {
           return errorResponse("No lyrics source available");
         }
 
-        logInfo(requestId, "Fetching lyrics from Kugou", { source: lyricsSource });
+        logger.info("Fetching lyrics from Kugou", { source: lyricsSource });
         const kugouResult = await fetchLyricsFromKugou(lyricsSource, requestId);
 
         if (!kugouResult) {
@@ -606,13 +656,13 @@ export default async function handler(req: Request) {
         // Clear annotations (translations, furigana, soramimi) when source changed or force refresh
         const shouldClearAnnotations = force || lyricsSourceChanged;
         const savedSong = await saveLyrics(redis, songId, lyrics, lyricsSource, kugouResult.cover, shouldClearAnnotations);
-        logInfo(requestId, `Lyrics saved to song document`, { 
+        logger.info(`Lyrics saved to song document`, { 
           songId,
           hasLyricsStored: !!savedSong.lyrics,
           parsedLinesCount: parsedLines.length,
         });
 
-        logInfo(requestId, `Response: 200 OK - Lyrics fetched`, { parsedLinesCount: parsedLines.length });
+        logger.info(`Response: 200 OK - Lyrics fetched`, { parsedLinesCount: parsedLines.length });
         
         // Build response with optional translation/furigana info
         const response: Record<string, unknown> = {
@@ -640,7 +690,7 @@ export default async function handler(req: Request) {
             if (krcDerivedLrc) {
               hasTranslation = true;
               translationLrc = krcDerivedLrc;
-              logInfo(requestId, "Using KRC-derived Traditional Chinese translation for fresh lyrics (skipping AI)");
+              logger.info("Using KRC-derived Traditional Chinese translation for fresh lyrics (skipping AI)");
               // Save this translation for future requests
               await saveTranslation(redis, songId, translateTo, krcDerivedLrc);
             }
@@ -695,8 +745,8 @@ export default async function handler(req: Request) {
       // =======================================================================
       if (action === "translate") {
         const language =
-          typeof body.language === "string" ? body.language.trim() : "";
-        const force = body.force === true;
+          typeof body?.language === "string" ? (body.language as string).trim() : "";
+        const force = body?.force === true;
 
         if (!language) {
           return errorResponse("Invalid request body", 400);
@@ -759,7 +809,7 @@ export default async function handler(req: Request) {
           );
           if (krcDerivedLrc) {
             await saveTranslation(redis, songId, language, krcDerivedLrc);
-            logInfo(requestId, "Using KRC-derived Traditional Chinese translation (non-stream)");
+            logger.info("Using KRC-derived Traditional Chinese translation (non-stream)");
             return jsonResponse({
               translation: krcDerivedLrc,
               cached: false,
@@ -808,6 +858,7 @@ export default async function handler(req: Request) {
         });
 
         if (!rlResult.allowed) {
+          logger.warn("Rate limit exceeded (translate-stream)", { user: rateLimitUser });
           return jsonResponse(
             {
               error: "rate_limit_exceeded",
@@ -862,7 +913,7 @@ export default async function handler(req: Request) {
 
         // Check if already cached in main document (and not forcing regeneration)
         if (!force && song.translations?.[language]) {
-          logInfo(requestId, "Returning cached translation via SSE");
+          logger.info("Returning cached translation via SSE");
           const encoder = new TextEncoder();
           const stream = new ReadableStream({
             start(controller) {
@@ -873,6 +924,7 @@ export default async function handler(req: Request) {
               controller.close();
             },
           });
+          // Return Web API Response for streaming
           return new Response(stream, {
             headers: {
               "Content-Type": "text/event-stream",
@@ -893,7 +945,7 @@ export default async function handler(req: Request) {
           );
           if (krcDerivedLrc) {
             await saveTranslation(redis, songId, language, krcDerivedLrc);
-            logInfo(requestId, "Using KRC-derived Traditional Chinese translation (skipping AI)");
+            logger.info("Using KRC-derived Traditional Chinese translation (skipping AI)");
             const encoder = new TextEncoder();
             const stream = new ReadableStream({
               start(controller) {
@@ -918,7 +970,7 @@ export default async function handler(req: Request) {
 
         const totalLines = parsedLines.length;
 
-        logInfo(requestId, `Starting translate SSE stream`, { totalLines, language });
+        logger.info(`Starting translate SSE stream`, { totalLines, language });
 
         // Prepare lines for translation
         const lines: LyricLine[] = parsedLines.map(line => ({
@@ -1006,9 +1058,9 @@ export default async function handler(req: Request) {
                 .map((line, index) => `${msToLrcTime(line.startTimeMs)}${allTranslations[index] || line.words}`)
                 .join("\n");
               await saveTranslation(redis, songId, language, translatedLrc);
-              logInfo(requestId, `Translation saved to Redis`);
+              logger.info(`Translation saved to Redis`);
             } catch (err) {
-              logError(requestId, "Failed to save translation", err);
+              logger.error("Failed to save translation", err);
             }
 
             // Send complete event
@@ -1034,9 +1086,6 @@ export default async function handler(req: Request) {
 
       // =======================================================================
       // Handle furigana-stream action - SSE streaming with line-by-line updates
-      // Uses streamText for real-time line emission as AI generates each line
-      // - First time furigana: anyone can do it
-      // - Force refresh: requires auth + canModifySong
       // =======================================================================
       if (action === "furigana-stream") {
         const rlKey = RateLimit.makeKey(["rl", "song", "furigana-stream", "user", rateLimitUser]);
@@ -1047,6 +1096,7 @@ export default async function handler(req: Request) {
         });
 
         if (!rlResult.allowed) {
+          logger.warn("Rate limit exceeded (furigana-stream)", { user: rateLimitUser });
           return jsonResponse(
             {
               error: "rate_limit_exceeded",
@@ -1092,7 +1142,6 @@ export default async function handler(req: Request) {
         }
 
         // Generate parsedLines on-demand (not stored in Redis)
-        // Use lyricsSource title/artist for filtering (consistent with cached lyrics)
         const parsedLinesFurigana = parseLyricsContent(
           { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
           song.lyricsSource?.title || song.title,
@@ -1101,7 +1150,7 @@ export default async function handler(req: Request) {
 
         // Check if already cached in main document
         if (!force && song.furigana && song.furigana.length > 0) {
-          logInfo(requestId, "Returning cached furigana via SSE");
+          logger.info("Returning cached furigana via SSE");
           const encoder = new TextEncoder();
           const stream = new ReadableStream({
             start(controller) {
@@ -1125,9 +1174,7 @@ export default async function handler(req: Request) {
 
         const totalLines = parsedLinesFurigana.length;
 
-        logInfo(requestId, `Starting furigana SSE stream using createUIMessageStream`, { 
-          totalLines,
-        });
+        logger.info(`Starting furigana SSE stream`, { totalLines });
 
         // Prepare lines for furigana
         const lines: LyricLine[] = parsedLinesFurigana.map(line => ({
@@ -1173,7 +1220,7 @@ export default async function handler(req: Request) {
 
             // If no kanji lines, we're done
             if (linesNeedingFurigana.length === 0) {
-              logInfo(requestId, `No kanji lines, skipping furigana AI generation`);
+              logger.info(`No kanji lines, skipping furigana AI generation`);
               writer.write({
                 type: "data-complete" as const,
                 data: { totalLines, successCount: completedLines, furigana: allFurigana, success: true },
@@ -1254,9 +1301,9 @@ Output:
             // Save to Redis
             try {
               await saveFurigana(redis, songId, allFurigana);
-              logInfo(requestId, `Furigana saved to Redis`);
+              logger.info(`Furigana saved to Redis`);
             } catch (err) {
-              logError(requestId, "Failed to save furigana", err);
+              logger.error("Failed to save furigana", err);
             }
 
             // Send complete event
@@ -1282,9 +1329,6 @@ Output:
 
       // =======================================================================
       // Handle soramimi-stream action - SSE streaming with line-by-line updates
-      // Uses streamText for real-time line emission as AI generates each line
-      // - First time soramimi: anyone can do it
-      // - Force refresh: requires auth + canModifySong
       // =======================================================================
       if (action === "soramimi-stream") {
         const rlKey = RateLimit.makeKey(["rl", "song", "soramimi-stream", "user", rateLimitUser]);
@@ -1295,6 +1339,7 @@ Output:
         });
 
         if (!rlResult.allowed) {
+          logger.warn("Rate limit exceeded (soramimi-stream)", { user: rateLimitUser });
           return jsonResponse(
             {
               error: "rate_limit_exceeded",
@@ -1342,17 +1387,15 @@ Output:
         }
 
         // Generate parsedLines on-demand (not stored in Redis)
-        // Use lyricsSource title/artist for filtering (consistent with cached lyrics)
         const parsedLinesSoramimi = parseLyricsContent(
           { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
           song.lyricsSource?.title || song.title,
           song.lyricsSource?.artist || song.artist
         );
 
-        // Skip Chinese soramimi for Chinese lyrics (no point making Chinese sound like Chinese)
-        // But English soramimi should still work for Chinese lyrics
+        // Skip Chinese soramimi for Chinese lyrics
         if (targetLanguage === "zh-TW" && lyricsAreMostlyChinese(parsedLinesSoramimi)) {
-          logInfo(requestId, "Skipping Chinese soramimi stream - lyrics are already Chinese");
+          logger.info("Skipping Chinese soramimi stream - lyrics are already Chinese");
           return jsonResponse({
             skipped: true,
             skipReason: "chinese_lyrics",
@@ -1360,32 +1403,28 @@ Output:
         }
 
         // Check if already cached in main document (and not forcing regeneration)
-        // First check new soramimiByLang field, then fall back to legacy soramimi field
         const cachedSoramimi = song.soramimiByLang?.[targetLanguage] 
           ?? (targetLanguage === "zh-TW" ? song.soramimi : undefined);
         
         if (!force && cachedSoramimi && cachedSoramimi.length > 0) {
-          logInfo(requestId, `Returning cached ${targetLanguage} soramimi via SSE`);
+          logger.info(`Returning cached ${targetLanguage} soramimi via SSE`);
           
           // Helper to check if text contains Korean or Japanese (for cleaning old cached data)
           const containsKoreanOrJapanese = (text: string): boolean => {
             return /[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F\u3040-\u309F\u30A0-\u30FF]/.test(text);
           };
           
-          // Clean cached data - remove segments with Korean/Japanese text but no reading
-          // Also clean readings that may contain Korean/Japanese (for Chinese soramimi)
+          // Clean cached data
           const cleanedSoramimi = cachedSoramimi.map(lineSegments => 
             lineSegments
               .map(seg => {
                 if (seg.reading && targetLanguage === "zh-TW") {
-                  // Clean the reading using shared helper from _soramimi.ts (Chinese only)
                   const cleanedReading = cleanSoramimiReading(seg.reading);
                   return cleanedReading ? { ...seg, reading: cleanedReading } : { text: seg.text };
                 }
                 return seg;
               })
               .filter(seg => {
-                // Keep segments that have a reading, OR are plain text without Korean/Japanese
                 if (seg.reading) return true;
                 return !containsKoreanOrJapanese(seg.text);
               })
@@ -1415,24 +1454,19 @@ Output:
         const totalLines = parsedLinesSoramimi.length;
 
         // Check if furigana was provided by client (for Japanese songs)
-        // This helps the AI know the correct pronunciation of kanji
         const hasFuriganaData = clientFurigana && clientFurigana.length > 0 && 
           clientFurigana.some(line => line.some(seg => seg.reading));
 
-        logInfo(requestId, `Starting soramimi SSE stream using createUIMessageStream`, { 
-          totalLines,
-          hasFurigana: hasFuriganaData,
-        });
+        logger.info(`Starting soramimi SSE stream`, { totalLines, hasFurigana: hasFuriganaData, targetLanguage });
 
-        // Prepare lines for soramimi - identify non-English lines
-        // Include wordTimings for segment alignment
+        // Prepare lines for soramimi
         const lines: LyricLine[] = parsedLinesSoramimi.map(line => ({
           words: line.words,
           startTimeMs: line.startTimeMs,
           wordTimings: line.wordTimings,
         }));
 
-        // Build the text prompt for soramimi (same as in _soramimi.ts)
+        // Build the text prompt for soramimi
         const nonEnglishLines: { line: LyricLine; originalIndex: number }[] = [];
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i];
@@ -1445,7 +1479,6 @@ Output:
         }
         
         // Build prompt text - if furigana is available, use annotated text format
-        // This includes hiragana readings after kanji so AI knows exact pronunciation
         let textsToProcess: string;
         let systemPrompt: string;
         
@@ -1453,7 +1486,6 @@ Output:
         const isEnglishOutput = targetLanguage === "en";
         
         if (hasFuriganaData) {
-          // Convert furigana to annotated text: 私(わたし)は走(はし)る
           const annotatedLines = convertLinesToAnnotatedText(lines, clientFurigana);
           textsToProcess = nonEnglishLines.map((info, idx) => {
             return `${idx + 1}: ${annotatedLines[info.originalIndex]}`;
@@ -1461,13 +1493,11 @@ Output:
           systemPrompt = isEnglishOutput 
             ? SORAMIMI_ENGLISH_WITH_FURIGANA_PROMPT 
             : SORAMIMI_JAPANESE_WITH_FURIGANA_PROMPT;
-          logInfo(requestId, `Using ${isEnglishOutput ? 'English' : 'Chinese'} prompt with furigana annotations`);
+          logger.info(`Using ${isEnglishOutput ? 'English' : 'Chinese'} prompt with furigana annotations`);
         } else {
-          // No furigana - use standard prompt with word boundaries if available
           textsToProcess = nonEnglishLines.map((info, idx) => {
             const wordTimings = info.line.wordTimings;
             if (wordTimings && wordTimings.length > 0) {
-              // Mark word boundaries with | so AI knows exact segments
               const wordsMarked = wordTimings.map(w => w.text).join('|');
               return `${idx + 1}: ${wordsMarked}`;
             }
@@ -1477,8 +1507,6 @@ Output:
             ? SORAMIMI_ENGLISH_SYSTEM_PROMPT 
             : SORAMIMI_SYSTEM_PROMPT;
         }
-        
-        logInfo(requestId, `Target soramimi language: ${targetLanguage}`);
 
         // Use AI SDK's createUIMessageStream for proper streaming
         const allSoramimi: Array<Array<{ text: string; reading?: string }>> =
@@ -1513,7 +1541,6 @@ Output:
             }
 
             // Helper to process a complete line from AI output
-            // Uses shared parseRubyMarkup from _soramimi.ts
             const processLine = (line: string) => {
               const trimmedLine = line.trim();
               if (!trimmedLine) return;
@@ -1527,12 +1554,8 @@ Output:
                   const info = nonEnglishLines[nonEnglishLineIndex];
                   const originalIndex = info.originalIndex;
                   
-                  // Use shared parsing from _soramimi.ts
-                  // parseSoramimiRubyMarkup handles: extracting {text|reading} patterns,
-                  // stripping furigana annotations from output, cleaning readings
                   const rawSegments = parseSoramimiRubyMarkup(content);
                   const segments = fillMissingReadings(rawSegments);
-                  
                   
                   if (segments.length > 0) {
                     allSoramimi[originalIndex] = segments;
@@ -1547,7 +1570,7 @@ Output:
               }
             };
 
-            // Use streamText and manually iterate (don't use merge - it bypasses onChunk)
+            // Use streamText
             const result = streamText({
               model: openai("gpt-5.2"),
               messages: [
@@ -1578,9 +1601,9 @@ Output:
             // Save to Redis with language
             try {
               await saveSoramimi(redis, songId, allSoramimi, targetLanguage);
-              logInfo(requestId, `${targetLanguage} soramimi saved to Redis`);
+              logger.info(`${targetLanguage} soramimi saved to Redis`);
             } catch (err) {
-              logError(requestId, "Failed to save soramimi", err);
+              logger.error("Failed to save soramimi", err);
             }
 
             // Send complete event
@@ -1656,7 +1679,7 @@ Output:
           cleared.push("soramimi");
         }
 
-        logInfo(requestId, `Cleared cached data: ${cleared.length > 0 ? cleared.join(", ") : "nothing to clear"}`);
+        logger.info(`Cleared cached data: ${cleared.length > 0 ? cleared.join(", ") : "nothing to clear"}`);
         return jsonResponse({ success: true, cleared });
       }
 
@@ -1697,7 +1720,7 @@ Output:
           existingSong
         );
 
-        logInfo(requestId, "Song unshared (createdBy cleared)", { duration: `${Date.now() - startTime}ms` });
+        logger.info("Song unshared (createdBy cleared)", { duration: `${Date.now() - startTime}ms` });
         return jsonResponse({
           success: true,
           id: updatedSong.id,
@@ -1769,7 +1792,7 @@ Output:
 
       const updatedSong = await saveSong(redis, updateData, preserveOptions);
 
-      logInfo(requestId, isUpdate ? "Song updated" : "Song created", { duration: `${Date.now() - startTime}ms` });
+      logger.info(isUpdate ? "Song updated" : "Song created", { duration: `${Date.now() - startTime}ms` });
       return jsonResponse({
         success: true,
         id: updatedSong.id,
@@ -1782,8 +1805,8 @@ Output:
     // DELETE: Delete song (admin only)
     // =========================================================================
     if (req.method === "DELETE") {
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
+      const authHeader = req.headers.authorization as string | undefined;
+      const usernameHeader = req.headers["x-username"] as string | undefined;
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
@@ -1802,14 +1825,15 @@ Output:
         return errorResponse("Song not found", 404);
       }
 
-      logInfo(requestId, "Song deleted", { duration: `${Date.now() - startTime}ms` });
+      logger.info("Song deleted", { duration: `${Date.now() - startTime}ms` });
       return jsonResponse({ success: true, deleted: true });
     }
 
+    logger.warn("Method not allowed", { method: req.method });
     return errorResponse("Method not allowed", 405);
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    logError(requestId, "Song API error", error);
+    logger.error("Song API error", error);
     return errorResponse(errorMessage, 500);
   }
 }

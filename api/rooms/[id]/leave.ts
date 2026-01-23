@@ -1,89 +1,113 @@
 /**
  * POST /api/rooms/[id]/leave
- * 
  * Leave a room
+ * Node.js runtime with terminal logging
  */
 
-import {
-  createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-} from "../../_utils/middleware.js";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { Redis } from "@upstash/redis";
 import { isProfaneUsername, assertValidRoomId, assertValidUsername } from "../../_utils/_validation.js";
+import { initLogger } from "../../_utils/_logging.js";
 import { getRoom, setRoom } from "../_helpers/_redis.js";
 import { CHAT_ROOM_PREFIX, CHAT_ROOM_USERS_PREFIX } from "../_helpers/_constants.js";
 import { removeRoomPresence, refreshRoomUserCount } from "../_helpers/_presence.js";
 import type { Room } from "../_helpers/_types.js";
 
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
+export const maxDuration = 15;
 
-function getRoomId(req: Request): string | null {
-  const url = new URL(req.url);
-  const pathParts = url.pathname.split("/");
-  const roomsIndex = pathParts.indexOf("rooms");
-  if (roomsIndex !== -1 && pathParts[roomsIndex + 1]) {
-    return pathParts[roomsIndex + 1];
-  }
-  return null;
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL!,
+    token: process.env.REDIS_KV_REST_API_TOKEN!,
+  });
 }
 
-export default async function handler(req: Request) {
-  const origin = getEffectiveOrigin(req);
-  
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+function getEffectiveOrigin(req: VercelRequest): string | null {
+  return (req.headers.origin as string) || null;
+}
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true;
+  const allowedOrigins = ["https://os.ryo.lu", "https://ryos.vercel.app", "http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"];
+  return allowedOrigins.some((a) => origin.startsWith(a)) || origin.includes("vercel.app");
+}
+
+function setCorsHeaders(res: VercelResponse, origin: string | null): void {
+  res.setHeader("Content-Type", "application/json");
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
   }
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  const { logger } = initLogger();
+  const startTime = Date.now();
+  const origin = getEffectiveOrigin(req);
+  const roomId = req.query.id as string | undefined;
+
+  logger.request(req.method || "POST", req.url || "/api/rooms/[id]/leave", `leave:${roomId}`);
+
+  if (req.method === "OPTIONS") {
+    setCorsHeaders(res, origin);
+    logger.response(204, Date.now() - startTime);
+    res.status(204).end();
+    return;
+  }
+
+  setCorsHeaders(res, origin);
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403, headers: { "Content-Type": "application/json" },
-    });
+    logger.response(403, Date.now() - startTime);
+    res.status(403).json({ error: "Unauthorized" });
+    return;
   }
-
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+    logger.response(405, Date.now() - startTime);
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
-  const roomId = getRoomId(req);
   if (!roomId) {
-    return new Response(JSON.stringify({ error: "Room ID is required" }), { status: 400, headers });
+    logger.response(400, Date.now() - startTime);
+    res.status(400).json({ error: "Room ID is required" });
+    return;
   }
 
-  let body;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers });
-  }
-
+  const body = req.body || {};
   const username = body?.username?.toLowerCase();
+
   if (!username) {
-    return new Response(JSON.stringify({ error: "Username is required" }), { status: 400, headers });
+    logger.response(400, Date.now() - startTime);
+    res.status(400).json({ error: "Username is required" });
+    return;
   }
 
   try {
     assertValidUsername(username, "leave-room");
     assertValidRoomId(roomId, "leave-room");
   } catch (e) {
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Validation error" }), { status: 400, headers });
+    logger.response(400, Date.now() - startTime);
+    res.status(400).json({ error: e instanceof Error ? e.message : "Validation error" });
+    return;
   }
 
   if (isProfaneUsername(username)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers });
+    logger.response(401, Date.now() - startTime);
+    res.status(401).json({ error: "Unauthorized" });
+    return;
   }
 
   try {
     const roomData = await getRoom(roomId);
     if (!roomData) {
-      return new Response(JSON.stringify({ error: "Room not found" }), { status: 404, headers });
+      logger.response(404, Date.now() - startTime);
+      res.status(404).json({ error: "Room not found" });
+      return;
     }
 
     const removed = await removeRoomPresence(roomId, username);
@@ -107,9 +131,12 @@ export default async function handler(req: Request) {
       }
     }
 
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers });
+    logger.info("User left room", { roomId, username });
+    logger.response(200, Date.now() - startTime);
+    res.status(200).json({ success: true });
   } catch (error) {
-    console.error(`Error leaving room ${roomId}:`, error);
-    return new Response(JSON.stringify({ error: "Failed to leave room" }), { status: 500, headers });
+    logger.error(`Error leaving room ${roomId}`, error);
+    logger.response(500, Date.now() - startTime);
+    res.status(500).json({ error: "Failed to leave room" });
   }
 }
