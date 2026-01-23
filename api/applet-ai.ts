@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   generateText,
   type ImagePart,
@@ -9,10 +10,11 @@ import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import {
   createRedis,
-  getEffectiveOrigin,
+  getEffectiveOriginNode,
   isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
+  handlePreflightNode,
+  setCorsHeadersNode,
+  getClientIpNode,
 } from "./_utils/middleware.js";
 import { validateAuth } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
@@ -124,7 +126,6 @@ const isRyOSHost = (hostHeader: string | null): boolean => {
   if (!hostHeader) return false;
   const normalized = hostHeader.toLowerCase();
   if (ALLOWED_HOSTS.has(normalized)) return true;
-  // Allow localhost with any port number
   if (normalized === "localhost" || normalized === "127.0.0.1") return true;
   if (/^localhost:\d+$/.test(normalized)) return true;
   if (/^127\.0\.0\.1:\d+$/.test(normalized)) return true;
@@ -141,56 +142,57 @@ const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
 
 type ParsedMessage = z.infer<typeof MessageSchema>;
 
+// Helper to get header from VercelRequest
+function getHeader(req: VercelRequest, name: string): string | null {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) return value[0] || null;
+  return value || null;
+}
+
 const jsonResponse = (
+  res: VercelResponse,
   data: unknown,
   status: number,
   origin: string | null
-): Response => {
-  const headers = new Headers({
-    "Content-Type": "application/json",
-    "Vary": "Origin",
-  });
+) => {
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Vary", "Origin");
   if (origin) {
-    headers.set("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Origin", origin);
   }
-  return new Response(JSON.stringify(data), { status, headers });
+  return res.status(status).json(data);
 };
 
 const rateLimitExceededResponse = (
+  res: VercelResponse,
   scope: RateLimitScope,
   effectiveOrigin: string | null,
   identifier: string,
   result: Awaited<ReturnType<typeof RateLimit.checkCounterLimit>>
-): Response => {
+) => {
   const resetSeconds =
     typeof result.resetSeconds === "number" && result.resetSeconds > 0
       ? result.resetSeconds
       : result.windowSeconds;
 
-  const headers = new Headers({
-    "Content-Type": "application/json",
-    "Retry-After": String(resetSeconds),
-    "X-RateLimit-Limit": String(result.limit),
-    "X-RateLimit-Remaining": String(Math.max(0, result.limit - result.count)),
-    "X-RateLimit-Reset": String(resetSeconds),
-    Vary: "Origin",
-  });
-
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Retry-After", String(resetSeconds));
+  res.setHeader("X-RateLimit-Limit", String(result.limit));
+  res.setHeader("X-RateLimit-Remaining", String(Math.max(0, result.limit - result.count)));
+  res.setHeader("X-RateLimit-Reset", String(resetSeconds));
+  res.setHeader("Vary", "Origin");
   if (effectiveOrigin) {
-    headers.set("Access-Control-Allow-Origin", effectiveOrigin);
+    res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
   }
 
-  return new Response(
-    JSON.stringify({
-      error: "rate_limit_exceeded",
-      scope,
-      limit: result.limit,
-      windowSeconds: result.windowSeconds,
-      resetSeconds,
-      identifier,
-    }),
-    { status: 429, headers }
-  );
+  return res.status(429).json({
+    error: "rate_limit_exceeded",
+    scope,
+    limit: result.limit,
+    windowSeconds: result.windowSeconds,
+    resetSeconds,
+    identifier,
+  });
 };
 
 const decodeBase64ToBinaryString = (value: string): string => {
@@ -340,36 +342,39 @@ const buildModelMessages = (
   return messages;
 };
 
-export default async function handler(req: Request): Promise<Response> {
-  const effectiveOrigin = getEffectiveOrigin(req);
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+) {
+  const effectiveOrigin = getEffectiveOriginNode(req);
+
   if (req.method === "OPTIONS") {
-    const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    if (handlePreflightNode(req, res, ["POST", "OPTIONS"], effectiveOrigin)) {
+      return;
+    }
   }
 
   if (!isAllowedOrigin(effectiveOrigin)) {
-    return jsonResponse({ error: "Unauthorized" }, 403, effectiveOrigin);
+    return jsonResponse(res, { error: "Unauthorized" }, 403, effectiveOrigin);
   }
 
-  const host = req.headers.get("host");
+  const host = getHeader(req, "host");
   if (!isRyOSHost(host)) {
-    return jsonResponse({ error: "Unauthorized host" }, 403, effectiveOrigin);
+    return jsonResponse(res, { error: "Unauthorized host" }, 403, effectiveOrigin);
   }
 
   if (req.method !== "POST") {
-    return jsonResponse({ error: "Method not allowed" }, 405, effectiveOrigin);
+    return jsonResponse(res, { error: "Method not allowed" }, 405, effectiveOrigin);
   }
 
-  // Initialize Redis for auth token validation
   const redis = createRedis();
 
-  // Extract auth headers
-  const authHeader = req.headers.get("authorization");
+  const authHeader = getHeader(req, "authorization");
   const authToken =
     authHeader && authHeader.startsWith("Bearer ")
       ? authHeader.substring(7)
       : null;
-  const usernameHeaderRaw = req.headers.get("x-username");
+  const usernameHeaderRaw = getHeader(req, "x-username");
   const usernameHeader =
     usernameHeaderRaw && usernameHeaderRaw.trim().length > 0
       ? usernameHeaderRaw.trim().toLowerCase()
@@ -383,12 +388,12 @@ export default async function handler(req: Request): Promise<Response> {
   const log = (...args: unknown[]) => console.log(logPrefix, ...args);
   const logError = (...args: unknown[]) => console.error(logPrefix, ...args);
 
-  // Validate authentication (all users, including "ryo", must present a valid token)
   if (usernameHeader) {
     const validationResult = await validateAuth(redis, usernameHeader, authToken);
     if (!validationResult.valid) {
       logError("Authentication failed – invalid or missing token");
       return jsonResponse(
+        res,
         {
           error: "authentication_failed",
           message: "Invalid or missing authentication token",
@@ -399,7 +404,7 @@ export default async function handler(req: Request): Promise<Response> {
     }
   }
 
-  const ip = getClientIp(req);
+  const ip = getClientIpNode(req);
   log("Request received", {
     origin: effectiveOrigin ?? "unknown",
     host,
@@ -407,35 +412,34 @@ export default async function handler(req: Request): Promise<Response> {
     method: req.method,
   });
 
-  let parsedBody: z.infer<typeof RequestSchema>;
-  try {
-    const body = await req.json();
-    const result = RequestSchema.safeParse(body);
-    if (!result.success) {
-      logError("Invalid request body", result.error.format());
-      return jsonResponse(
-        { error: "Invalid request body", details: result.error.format() },
-        400,
-        effectiveOrigin
-      );
-    }
-    parsedBody = result.data;
-  } catch (error) {
-    logError("Failed to parse JSON body", error);
+  const body = req.body;
+  if (!body || typeof body !== "object") {
+    logError("Failed to parse JSON body");
     return jsonResponse(
+      res,
       { error: "Invalid JSON in request body" },
       400,
       effectiveOrigin
     );
   }
 
+  const result = RequestSchema.safeParse(body);
+  if (!result.success) {
+    logError("Invalid request body", result.error.format());
+    return jsonResponse(
+      res,
+      { error: "Invalid request body", details: result.error.format() },
+      400,
+      effectiveOrigin
+    );
+  }
+  const parsedBody = result.data;
+
   const { prompt, messages, context, temperature, mode: requestedMode } =
     parsedBody;
   const mode = requestedMode ?? "text";
 
-  // Allow trusted user "ryo" to bypass rate limits (but still requires valid auth token)
   const rateLimitBypass = usernameHeader === "ryo";
-  // If usernameHeader is not null, we've already validated the token, so user is authenticated
   const isAuthenticatedUser = usernameHeader !== null;
   const identifier = isAuthenticatedUser
     ? `user:${usernameHeader}`
@@ -499,39 +503,38 @@ export default async function handler(req: Request): Promise<Response> {
         isAuthenticatedUser ? usernameHeader! : ip,
       ]);
 
-      const result = await RateLimit.checkCounterLimit({
+      const rlResult = await RateLimit.checkCounterLimit({
         key,
         windowSeconds: RATE_LIMIT_WINDOW_SECONDS,
         limit,
       });
 
-      const remaining = Math.max(0, result.limit - result.count);
+      const remaining = Math.max(0, rlResult.limit - rlResult.count);
       const resetSeconds =
-        typeof result.resetSeconds === "number" && result.resetSeconds > 0
-          ? result.resetSeconds
-          : result.windowSeconds;
+        typeof rlResult.resetSeconds === "number" && rlResult.resetSeconds > 0
+          ? rlResult.resetSeconds
+          : rlResult.windowSeconds;
 
-      // Log rate limit information for all requests
       log("[rate-limit] Check", {
         scope,
         identifier,
         isAuthenticatedUser,
-        count: result.count,
-        limit: result.limit,
+        count: rlResult.count,
+        limit: rlResult.limit,
         remaining,
         resetSeconds,
-        allowed: result.allowed,
+        allowed: rlResult.allowed,
       });
 
-      if (!result.allowed) {
+      if (!rlResult.allowed) {
         log("[rate-limit] Limit exceeded", {
           scope,
           identifier,
-          count: result.count,
-          limit: result.limit,
+          count: rlResult.count,
+          limit: rlResult.limit,
           resetSeconds,
         });
-        return rateLimitExceededResponse(scope, effectiveOrigin, identifier, result);
+        return rateLimitExceededResponse(res, scope, effectiveOrigin, identifier, rlResult);
       }
     } catch (error) {
       logError("Rate limit check failed:", error);
@@ -574,6 +577,7 @@ export default async function handler(req: Request): Promise<Response> {
     } catch (error) {
       logError("Image attachment parsing failed:", error);
       return jsonResponse(
+        res,
         {
           error: "Invalid image attachments in request body",
           ...(error instanceof Error ? { details: error.message } : {}),
@@ -585,6 +589,7 @@ export default async function handler(req: Request): Promise<Response> {
 
     if (promptParts.length === 0) {
       return jsonResponse(
+        res,
         { error: "Image generation requires instructions or image attachments." },
         400,
         effectiveOrigin
@@ -615,6 +620,7 @@ export default async function handler(req: Request): Promise<Response> {
       if (!imageFile) {
         logError("Image generation returned no image files.", imageResult);
         return jsonResponse(
+          res,
           { error: "The model did not return an image." },
           502,
           effectiveOrigin
@@ -627,36 +633,21 @@ export default async function handler(req: Request): Promise<Response> {
         promptParts: promptParts.length,
       });
 
-      const imageStream = new ReadableStream<Uint8Array>({
-        start(controller) {
-          controller.enqueue(imageFile.uint8Array);
-          controller.close();
-        },
-      });
-
-      const headers = new Headers({
-        "Content-Type": imageFile.mediaType,
-        "Cache-Control": "no-store",
-        Vary: "Origin",
-      });
-
-      headers.set("Access-Control-Expose-Headers", "X-Image-Description");
-
+      // Return binary image response
+      res.setHeader("Content-Type", imageFile.mediaType);
+      res.setHeader("Cache-Control", "no-store");
+      res.setHeader("Vary", "Origin");
+      res.setHeader("Access-Control-Expose-Headers", "X-Image-Description");
       if (effectiveOrigin) {
-        headers.set("Access-Control-Allow-Origin", effectiveOrigin);
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
       }
-
       if (imageResult.text?.trim()) {
-        headers.set("X-Image-Description", imageResult.text.trim());
+        res.setHeader("X-Image-Description", imageResult.text.trim());
       }
 
-      return new Response(imageStream, {
-        status: 200,
-        headers,
-      });
+      return res.status(200).send(Buffer.from(imageFile.uint8Array));
     } catch (error) {
       logError("Image generation failed:", error);
-      // Log more details if available
       if (error instanceof Error) {
         logError("Error details:", {
           name: error.name,
@@ -665,6 +656,7 @@ export default async function handler(req: Request): Promise<Response> {
         });
       }
       return jsonResponse(
+        res,
         { error: "Failed to generate image" },
         500,
         effectiveOrigin
@@ -683,6 +675,7 @@ export default async function handler(req: Request): Promise<Response> {
   } catch (error) {
     logError("Message preparation failed:", error);
     return jsonResponse(
+      res,
       {
         error: "Invalid attachments in request body",
         ...(error instanceof Error ? { details: error.message } : {}),
@@ -707,10 +700,11 @@ export default async function handler(req: Request): Promise<Response> {
       temperature: temperature ?? 0.6,
     });
 
-    return jsonResponse({ reply: trimmedReply }, 200, effectiveOrigin);
+    return jsonResponse(res, { reply: trimmedReply }, 200, effectiveOrigin);
   } catch (error) {
     logError("Generation failed:", error);
     return jsonResponse(
+      res,
       { error: "Failed to generate response" },
       500,
       effectiveOrigin
