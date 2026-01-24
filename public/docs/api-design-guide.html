@@ -299,7 +299,7 @@
         <h1>ryOS API Design Guide</h1>
 <p>This document outlines the patterns and conventions used in the ryOS API.</p>
 <h2>Architecture Overview</h2>
-<p>The API uses Vercel serverless functions with two runtimes: <ul><li><strong>Edge Runtime</strong>: Most endpoints (default, faster cold starts)</li><li><strong>Node.js Runtime</strong>: Endpoints requiring <code>bcrypt</code> (auth/login, auth/register, auth/password/set)</li></ul></p>
+<p>The API uses Vercel serverless functions with Node.js runtime for all endpoints. This provides full Node.js API access including native modules like <code>bcrypt</code> for password hashing.</p>
 <h2>File Structure</h2>
 <pre><code>api/
 ├── _utils/                    # Shared utilities (global)
@@ -318,7 +318,7 @@
 │       └── _types.ts          # TypeScript types
 ├── auth/                      # Authentication endpoints
 ├── rooms/                     # Chat room endpoints
-│   ├── _helpers/              # Room-specific helpers (moved from chat-rooms/)
+│   ├── _helpers/              # Room-specific helpers
 │   │   ├── _constants.ts
 │   │   ├── _presence.ts
 │   │   ├── _redis.ts
@@ -326,7 +326,7 @@
 │   │   └── ...
 │   ├── [id]/                  # Dynamic room routes
 │   └── index.ts               # Room list endpoint
-├── song/                      # Music library endpoints
+├── songs/                     # Music library endpoints
 │   ├── _*.ts                  # Song-specific helpers
 │   ├── [id].ts                # Single song endpoint
 │   └── index.ts               # Song list endpoint
@@ -335,15 +335,9 @@
 <ul><li><code>_helpers/</code> - Domain-specific helper modules (internal to a feature)</li></ul><ul><li><code>_utils/</code> - Global shared utilities</li><li><code>_*.ts</code> - Internal/private helper files (prefixed with underscore)</li><li><code>index.ts</code> - Main entry point for a feature</li><li><code>[param].ts</code> - Dynamic route handlers</li></ul>
 <h2>Common Patterns</h2>
 <h3>1. Runtime Declaration</h3>
-<pre><code>// Edge runtime (default)
-export const config = {
-  runtime: "edge",
-};
-export const maxDuration = 60; // optional
-
-// Node.js runtime (when bcrypt needed)
+<pre><code>// Node.js runtime (standard for all endpoints)
 export const runtime = "nodejs";
-export const maxDuration = 15;</code></pre>
+export const maxDuration = 30; // optional timeout in seconds (default 10, max 60)</code></pre>
 <h3>2. Imports from Middleware</h3>
 <pre><code>import {
   // Redis
@@ -507,20 +501,48 @@ const adminAccess = await isAdmin(redis, username, token);
 if (!adminAccess) {
   return errorResponse("Forbidden - admin access required", 403, origin);
 }</code></pre>
+<h3>9. Logging</h3>
+<p>Use the logging utility for consistent, color-coded terminal output:</p>
+<pre><code>import { initLogger } from "./_utils/_logging.js";
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { requestId, logger } = initLogger();
+  const startTime = Date.now();
+  
+  logger.request(req.method || "POST", req.url || "/api/endpoint", "endpoint-name");
+  
+  try {
+    // Handler logic
+    logger.info("Processing request", { userId: "123" });
+    
+    logger.response(200, Date.now() - startTime);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    logger.error("Handler failed", error);
+    logger.response(500, Date.now() - startTime);
+    res.status(500).json({ error: "Internal error" });
+  }
+}</code></pre>
+<strong>Logger Methods:</strong>
+<table><thead><tr><th>Method</th><th>Usage</th></tr></thead><tbody><tr><td><code>logger.request(method, url, action?)</code></td><td>Log incoming request with color-coded method</td></tr><tr><td><code>logger.response(status, duration?)</code></td><td>Log response with status color and timing</td></tr><tr><td><code>logger.info(message, data?)</code></td><td>General information logging</td></tr><tr><td><code>logger.warn(message, data?)</code></td><td>Warning messages (yellow)</td></tr><tr><td><code>logger.error(message, error?)</code></td><td>Error logging (red)</td></tr><tr><td><code>logger.debug(message, data?)</code></td><td>Debug output (dev only)</td></tr></tbody></table>
 <h2>Constants</h2>
 <p>Use centralized constants from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/constants.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/constants.ts</a></code>:</p>
-<pre><code>import { REDIS_PREFIXES, TTL, RATE_LIMIT_TIERS } from "./_utils/constants.js";
+<pre><code>import { REDIS_PREFIXES, TTL, RATE_LIMIT_TIERS, PASSWORD, VALIDATION } from "./_utils/constants.js";
 
 // Redis keys
 const userKey = `${REDIS_PREFIXES.users}${username}`;
+const tokenKey = `${REDIS_PREFIXES.authToken}user:${username}:${token}`;
 
-// TTLs
-await redis.set(key, value, { ex: TTL.user });
+// TTLs (in seconds)
+await redis.set(key, value, { ex: TTL.user }); // 90 days
 
-// Rate limit tiers
-const limit = RATE_LIMIT_TIERS.burst.authenticated.limit;</code></pre>
+// Rate limits
+const limit = RATE_LIMIT_TIERS.ai.authenticated.limit;  // 15
+const window = RATE_LIMIT_TIERS.ai.authenticated.window; // 5 hours</code></pre>
+<strong>Available Constants:</strong>
+<table><thead><tr><th>Module</th><th>Contents</th></tr></thead><tbody><tr><td><code>REDIS_PREFIXES</code></td><td>Key prefixes: <code>authToken</code>, <code>passwordHash</code>, <code>users</code>, <code>room</code>, <code>messages</code>, <code>songMeta</code>, <code>songContent</code>, etc.</td></tr><tr><td><code>TTL</code></td><td>Expiration times: <code>user</code> (90 days), <code>tokenGrace</code> (30 days), <code>presence</code> (1 day), etc.</td></tr><tr><td><code>RATE_LIMIT_TIERS</code></td><td>Burst, hourly, daily, AI rate limit configs for public/authenticated/admin</td></tr><tr><td><code>PASSWORD</code></td><td><code>minLength</code> (8), <code>maxLength</code> (128), <code>bcryptRounds</code> (10)</td></tr><tr><td><code>VALIDATION</code></td><td>Username/message/roomId regex and length constraints</td></tr><tr><td><code>TOKEN</code></td><td>Token byte length (32)</td></tr></tbody></table>
 <h2>Best Practices</h2>
-<ol><li><strong>Always validate origin</strong> before processing requests</li></ol><ol><li><strong>Use response helpers</strong> for consistent error formats</li><li><strong>Implement rate limiting</strong> on all public endpoints</li><li><strong>Log with request IDs</strong> for easier debugging</li><li><strong>Use createRedis()</strong> instead of instantiating Redis directly</li><li><strong>Keep runtime declarations simple</strong> - just <code>config.runtime</code> and <code>maxDuration</code></li><li><strong>Validate all user input</strong> using the validation utilities</li><li><strong>Handle errors gracefully</strong> with try/catch blocks</li></ol>
+<ol><li><strong>Always validate origin</strong> before processing requests</li></ol><ol><li><strong>Use response helpers</strong> for consistent error formats</li><li><strong>Implement rate limiting</strong> on all public endpoints</li><li><strong>Use initLogger()</strong> for consistent request tracing and timing</li><li><strong>Use createRedis()</strong> instead of instantiating Redis directly</li><li><strong>Set appropriate maxDuration</strong> for long-running operations (AI: 80s, standard: 30s)</li><li><strong>Validate all user input</strong> using the validation utilities</li><li><strong>Handle errors gracefully</strong> with try/catch blocks</li></ol>
 <h2>Error Response Format</h2>
 <p>All error responses follow this format:</p>
 <pre><code>{

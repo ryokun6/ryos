@@ -322,7 +322,7 @@
         IndexedDB[(IndexedDB)]
     end
     
-    subgraph API["API Layer (Vercel Edge)"]
+    subgraph API["API Layer (Vercel Node.js)"]
         Chat[Chat API]
         Media[Media APIs]
         Rooms[Chat Rooms API]
@@ -344,7 +344,7 @@
     API --> External
     State --> API</pre>
 <h2>Deployment Targets</h2>
-<table><thead><tr><th>Target</th><th>Technology</th><th>Description</th></tr></thead><tbody><tr><td><strong>Web (PWA)</strong></td><td>Vercel</td><td>Primary deployment with CDN, edge functions</td></tr><tr><td><strong>Desktop</strong></td><td>Tauri</td><td>Native app for macOS, Windows, Linux</td></tr><tr><td><strong>Development</strong></td><td>Vite</td><td>Local server with HMR</td></tr></tbody></table>
+<table><thead><tr><th>Target</th><th>Technology</th><th>Description</th></tr></thead><tbody><tr><td><strong>Web (PWA)</strong></td><td>Vercel</td><td>Primary deployment with CDN, serverless functions</td></tr><tr><td><strong>Desktop</strong></td><td>Tauri</td><td>Native app for macOS, Windows, Linux</td></tr><tr><td><strong>Development</strong></td><td>Vite</td><td>Local server with HMR</td></tr></tbody></table>
 <pre class="mermaid">graph LR
     subgraph Source
         A[Source Code]

@@ -297,18 +297,18 @@
     <main class="content">
       <article>
         <h1>API Reference</h1>
-<p>ryOS uses Vercel Serverless Functions with Edge runtime for all backend APIs.</p>
+<p>ryOS uses Vercel Serverless Functions with Node.js runtime for all backend APIs.</p>
 <h2>API Request Flow</h2>
 <pre class="mermaid">graph LR
     Client[Client App] --> Auth{Auth Check}
     Auth -->|Valid| Router[API Router]
     Auth -->|Invalid| Error[401 Error]
-    Router --> Edge[Edge Runtime]
-    Edge --> Services[External Services]
+    Router --> API[Node.js Runtime]
+    API --> Services[External Services]
     Services --> AI[AI Providers]
     Services --> DB[(Redis/KV)]
     Services --> Media[Media APIs]
-    Edge --> Response[JSON Response]
+    API --> Response[JSON Response]
     Response --> Client</pre>
 <h2>Endpoint Documentation</h2>
 <table><thead><tr><th>Endpoint Group</th><th>Description</th></tr></thead><tbody><tr><td><a href="/docs/chat-api">Chat API</a></td><td>Main AI chat with streaming and tool calling</td></tr><tr><td><a href="/docs/song-api">Song API</a></td><td>Music library CRUD, lyrics, furigana, translations</td></tr><tr><td><a href="/docs/media-api">Media API</a></td><td>Text-to-speech, transcription, YouTube search</td></tr><tr><td><a href="/docs/auth-api">Auth API</a></td><td>User registration, login, token management</td></tr><tr><td><a href="/docs/rooms-api">Rooms API</a></td><td>Chat room creation and management</td></tr><tr><td><a href="/docs/messages-api">Messages API</a></td><td>Send and retrieve chat messages</td></tr><tr><td><a href="/docs/presence-api">Presence API</a></td><td>Presence tracking, user search, AI replies</td></tr><tr><td><a href="/docs/ai-generation-apis">AI Generation APIs</a></td><td>Applet generation, IE time-travel, parse-title</td></tr><tr><td><a href="/docs/utility-apis">Utility APIs</a></td><td>Link preview, iframe check, share applet, admin</td></tr><tr><td><a href="/docs/api-design-guide">API Design Guide</a></td><td>Patterns and conventions for API development</td></tr></tbody></table>
