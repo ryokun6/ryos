@@ -18,23 +18,40 @@ export type LogFn = (
 export type LogLevel = "info" | "warn" | "error" | "debug";
 
 // ============================================================================
+// ANSI Color Codes
+// ============================================================================
+
+const C = {
+  reset: "\x1b[0m",
+  dim: "\x1b[2m",
+  bold: "\x1b[1m",
+  // Colors
+  cyan: "\x1b[36m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  red: "\x1b[31m",
+  magenta: "\x1b[35m",
+  blue: "\x1b[34m",
+  white: "\x1b[37m",
+  gray: "\x1b[90m",
+};
+
+// ============================================================================
 // Configuration
 // ============================================================================
 
-const LOG_PREFIX = "[API]";
-const TIMESTAMP_ENABLED = true;
+const COMPACT_JSON = true;
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
 /**
- * Get formatted timestamp for logs
+ * Get formatted timestamp for logs (HH:MM:SS)
  */
 function getTimestamp(): string {
-  if (!TIMESTAMP_ENABLED) return "";
   const now = new Date();
-  return `[${now.toISOString()}]`;
+  return `${C.dim}${now.toTimeString().slice(0, 8)}${C.reset}`;
 }
 
 /**
@@ -43,16 +60,46 @@ function getTimestamp(): string {
 function formatData(data: unknown): string {
   if (data === undefined || data === null) return "";
   if (data instanceof Error) {
-    return `${data.message}${data.stack ? `\n${data.stack}` : ""}`;
+    return `${data.message}${data.stack ? `\n${C.dim}${data.stack}${C.reset}` : ""}`;
   }
   if (typeof data === "object") {
     try {
-      return JSON.stringify(data, null, 2);
+      const json = COMPACT_JSON ? JSON.stringify(data) : JSON.stringify(data, null, 2);
+      if (json.length > 150) {
+        return `${C.dim}${json.substring(0, 150)}…${C.reset}`;
+      }
+      return `${C.dim}${json}${C.reset}`;
     } catch {
       return String(data);
     }
   }
   return String(data);
+}
+
+/**
+ * Get color for HTTP status code
+ */
+function getStatusColor(status: number): string {
+  if (status >= 500) return C.red;
+  if (status >= 400) return C.yellow;
+  if (status >= 300) return C.cyan;
+  if (status >= 200) return C.green;
+  return C.white;
+}
+
+/**
+ * Get color for HTTP method
+ */
+function getMethodColor(method: string): string {
+  switch (method.toUpperCase()) {
+    case "GET": return C.cyan;
+    case "POST": return C.green;
+    case "PUT": return C.yellow;
+    case "PATCH": return C.yellow;
+    case "DELETE": return C.red;
+    case "OPTIONS": return C.gray;
+    default: return C.white;
+  }
 }
 
 // ============================================================================
@@ -68,9 +115,10 @@ export function logRequest(
   action: string | null,
   requestId: string
 ): void {
-  const timestamp = getTimestamp();
-  const actionStr = action ? ` - Action: ${action}` : "";
-  console.log(`${timestamp} ${LOG_PREFIX} [${requestId}] --> ${method} ${url}${actionStr}`);
+  const ts = getTimestamp();
+  const id = `${C.dim}${requestId}${C.reset}`;
+  const m = getMethodColor(method);
+  console.log(`${ts} ${id} ${C.green}→${C.reset} ${m}${method.padEnd(6)}${C.reset} ${url}`);
 }
 
 /**
@@ -81,9 +129,11 @@ export function logResponse(
   statusCode: number,
   duration?: number
 ): void {
-  const timestamp = getTimestamp();
-  const durationStr = duration !== undefined ? ` (${duration.toFixed(2)}ms)` : "";
-  console.log(`${timestamp} ${LOG_PREFIX} [${requestId}] <-- ${statusCode}${durationStr}`);
+  const ts = getTimestamp();
+  const id = `${C.dim}${requestId}${C.reset}`;
+  const sc = getStatusColor(statusCode);
+  const dur = duration !== undefined ? ` ${C.dim}${Math.round(duration)}ms${C.reset}` : "";
+  console.log(`${ts} ${id} ${C.blue}←${C.reset} ${sc}${statusCode}${C.reset}${dur}`);
 }
 
 /**
@@ -94,9 +144,10 @@ export function logInfo(
   message: string,
   data?: unknown
 ): void {
-  const timestamp = getTimestamp();
-  const dataStr = data !== undefined ? ` ${formatData(data)}` : "";
-  console.log(`${timestamp} ${LOG_PREFIX} [${requestId}] INFO: ${message}${dataStr}`);
+  const ts = getTimestamp();
+  const id = `${C.dim}${requestId}${C.reset}`;
+  const d = data !== undefined ? ` ${formatData(data)}` : "";
+  console.log(`${ts} ${id}    ${message}${d}`);
 }
 
 /**
@@ -107,9 +158,10 @@ export function logWarn(
   message: string,
   data?: unknown
 ): void {
-  const timestamp = getTimestamp();
-  const dataStr = data !== undefined ? ` ${formatData(data)}` : "";
-  console.warn(`${timestamp} ${LOG_PREFIX} [${requestId}] WARN: ${message}${dataStr}`);
+  const ts = getTimestamp();
+  const id = `${C.dim}${requestId}${C.reset}`;
+  const d = data !== undefined ? ` ${formatData(data)}` : "";
+  console.warn(`${ts} ${id} ${C.yellow}⚠${C.reset}  ${C.yellow}${message}${C.reset}${d}`);
 }
 
 /**
@@ -120,9 +172,10 @@ export function logError(
   message: string,
   error?: unknown
 ): void {
-  const timestamp = getTimestamp();
-  const errorStr = error !== undefined ? ` ${formatData(error)}` : "";
-  console.error(`${timestamp} ${LOG_PREFIX} [${requestId}] ERROR: ${message}${errorStr}`);
+  const ts = getTimestamp();
+  const id = `${C.dim}${requestId}${C.reset}`;
+  const e = error !== undefined ? ` ${formatData(error)}` : "";
+  console.error(`${ts} ${id} ${C.red}✖${C.reset}  ${C.red}${message}${C.reset}${e}`);
 }
 
 /**
@@ -134,9 +187,10 @@ export function logDebug(
   data?: unknown
 ): void {
   if (process.env.NODE_ENV === "production") return;
-  const timestamp = getTimestamp();
-  const dataStr = data !== undefined ? ` ${formatData(data)}` : "";
-  console.log(`${timestamp} ${LOG_PREFIX} [${requestId}] DEBUG: ${message}${dataStr}`);
+  const ts = getTimestamp();
+  const id = `${C.dim}${requestId}${C.reset}`;
+  const d = data !== undefined ? ` ${formatData(data)}` : "";
+  console.log(`${ts} ${id} ${C.dim}●  ${message}${d}${C.reset}`);
 }
 
 // ============================================================================

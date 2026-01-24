@@ -22,6 +22,11 @@ import {
 
 let testToken: string | null = null;
 let testUsername: string | null = null;
+let isAdminUser = false;
+
+// Admin test credentials
+const ADMIN_USERNAME = "ryo";
+const ADMIN_PASSWORD = "testtest";
 
 const makeRateLimitBypassHeaders = (): Record<string, string> => ({
   "Content-Type": "application/json",
@@ -29,10 +34,26 @@ const makeRateLimitBypassHeaders = (): Record<string, string> => ({
 });
 
 // ============================================================================
-// Setup - Create a test user for auth tests
+// Setup - Use admin user or create a test user for auth tests
 // ============================================================================
 
 async function setupTestUser(): Promise<void> {
+  // First, try to login with admin user (more reliable)
+  const adminLoginRes = await fetchWithOrigin(`${BASE_URL}/api/auth/login`, {
+    method: "POST",
+    headers: makeRateLimitBypassHeaders(),
+    body: JSON.stringify({ username: ADMIN_USERNAME, password: ADMIN_PASSWORD }),
+  });
+  
+  if (adminLoginRes.status === 200) {
+    const data = await adminLoginRes.json();
+    testToken = data.token;
+    testUsername = ADMIN_USERNAME;
+    isAdminUser = true;
+    return;
+  }
+  
+  // Fallback: create a new test user
   testUsername = `authextra${Date.now()}`;
   const res = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
     method: "POST",
@@ -43,19 +64,7 @@ async function setupTestUser(): Promise<void> {
   if (res.status === 201) {
     const data = await res.json();
     testToken = data.token;
-  } else if (res.status === 429) {
-    console.log("  ⚠️  Rate limited - attempting login with existing user");
-    // Try to login instead
-    testUsername = "ryo";
-    const loginRes = await fetchWithOrigin(`${BASE_URL}/api/auth/login`, {
-      method: "POST",
-      headers: makeRateLimitBypassHeaders(),
-      body: JSON.stringify({ username: testUsername, password: "testtest" }),
-    });
-    if (loginRes.status === 200) {
-      const data = await loginRes.json();
-      testToken = data.token;
-    }
+    isAdminUser = false;
   }
 }
 
@@ -157,11 +166,14 @@ async function testPasswordSetSuccess(): Promise<void> {
     return;
   }
   
-  // Set password to same value (safe for testing)
+  // For admin user, set password to same value (safe)
+  // For test user, use test password
+  const password = isAdminUser ? ADMIN_PASSWORD : "testpassword123";
+  
   const res = await fetchWithAuth(`${BASE_URL}/api/auth/password/set`, testUsername, testToken, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password: "testpassword123" }),
+    body: JSON.stringify({ password }),
   });
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
   const data = await res.json();
@@ -226,6 +238,12 @@ async function testLogoutAllInvalidToken(): Promise<void> {
 async function testLogoutAllSuccess(): Promise<void> {
   if (!testToken || !testUsername) {
     console.log("  ⚠️  Skipped (no auth available)");
+    return;
+  }
+  
+  if (isAdminUser) {
+    // Skip for admin user to avoid logging out admin sessions
+    console.log("  ⚠️  Skipped (using admin user - avoiding session invalidation)");
     return;
   }
   
