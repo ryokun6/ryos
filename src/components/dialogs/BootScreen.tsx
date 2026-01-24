@@ -195,12 +195,12 @@ export function BootScreen({
               <img
                 src="/icons/macosx/apple.png"
                 alt="Apple"
-                className="w-[154px] h-[154px] object-contain"
-                style={{ marginBottom: "-40px" }}
+                className="w-[120px] h-[120px] object-contain"
+                style={{ marginBottom: "-30px", filter: "grayscale(50%) brightness(1.25)" }}
               />
               {/* ryOS X text */}
               <h1 
-                className="text-[52px] mb-8"
+                className="text-[52px] mb-6"
                 style={{ 
                   color: "#333333",
                   fontFamily: "AppleGaramond, 'Apple Garamond', 'Times New Roman', serif",
