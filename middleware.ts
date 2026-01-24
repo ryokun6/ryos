@@ -339,11 +339,11 @@ export default async function middleware(request: Request) {
     matched = true;
   }
 
-  // Listen session URLs: /listen/{sessionId}
+  // Live session URLs: /listen/{sessionId}
   const listenMatch = pathname.match(/^\/listen\/([a-zA-Z0-9_-]+)$/);
   if (listenMatch) {
     imageUrl = `${baseUrl}/icons/macosx/karaoke.png`;
-    title = "Join Listen Session on ryOS";
+    title = "Join Live Session on ryOS";
     description = "Listen together in real-time on ryOS Karaoke";
     matched = true;
   }

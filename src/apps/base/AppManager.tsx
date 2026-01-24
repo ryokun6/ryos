@@ -209,7 +209,7 @@ export function AppManager({ apps }: AppManagerProps) {
         
         if (sessionId) {
           console.log("[AppManager] Detected listen session:", sessionId, "app: karaoke");
-          toast.info("Opening listen session...");
+          toast.info("Opening live session...");
           // Use 100ms delay to ensure event listener is ready after store hydration
           setTimeout(() => {
             const event = new CustomEvent("launchApp", {
