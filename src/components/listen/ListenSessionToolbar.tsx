@@ -6,23 +6,32 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   Headphones,
-  ShareNetwork,
+  Export,
   SignOut,
-  Smiley,
-  Users,
   Crown,
-  User,
+  Smiley,
   Fire,
   HandsClapping,
   Heart,
   MusicNote,
 } from "@phosphor-icons/react";
 import type { Icon } from "@phosphor-icons/react";
+
+// Reaction definitions with icons (! so color wins over parent font/foreground overrides)
+const REACTIONS: { id: string; icon: Icon; color: string }[] = [
+  { id: "smile", icon: Smiley, color: "!text-yellow-400" },
+  { id: "fire", icon: Fire, color: "!text-orange-500" },
+  { id: "clap", icon: HandsClapping, color: "!text-amber-400" },
+  { id: "heart", icon: Heart, color: "!text-red-500" },
+  { id: "music", icon: MusicNote, color: "!text-purple-400" },
+];
 
 // Aqua-style shine overlays for macOS X theme (dark glass style)
 function AquaShineOverlays() {
@@ -43,15 +52,6 @@ function AquaShineOverlays() {
   );
 }
 
-// Reaction definitions with icons
-const REACTIONS: { id: string; icon: Icon; color: string }[] = [
-  { id: "smile", icon: Smiley, color: "text-yellow-400" },
-  { id: "fire", icon: Fire, color: "text-orange-500" },
-  { id: "clap", icon: HandsClapping, color: "text-amber-400" },
-  { id: "heart", icon: Heart, color: "text-red-500" },
-  { id: "music", icon: MusicNote, color: "text-purple-400" },
-];
-
 interface ListenSessionToolbarProps {
   session: ListenSession;
   isDj: boolean;
@@ -59,7 +59,6 @@ interface ListenSessionToolbarProps {
   listenerCount: number;
   onShare: () => void;
   onLeave: () => void;
-  onOpenPanel: () => void;
   onPassDj: (username: string) => void;
   onSendReaction: (emoji: string) => void;
   onInteraction?: () => void;
@@ -74,7 +73,6 @@ export function ListenSessionToolbar({
   listenerCount,
   onShare,
   onLeave,
-  onOpenPanel,
   onPassDj,
   onSendReaction,
   onInteraction,
@@ -113,99 +111,103 @@ export function ListenSessionToolbar({
     ? "w-8 h-8 flex items-center justify-center rounded-full transition-colors focus:outline-none relative z-10"
     : "w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors focus:outline-none";
 
-  // Icon classes
+  // Icon classes – ensure visible on both Mac (dark segment) and non‑Mac (dark glass)
   const iconClasses = isMacTheme
     ? "text-white/70 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]"
-    : "";
+    : "text-white/90";
 
   const svgSize = 14;
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {/* Listen Session Status Island */}
+      {/* Listen Session Status Island – count opens session menu (listeners, Pass DJ, Leave) */}
       <div className={segmentClasses} style={aquaSegmentStyle}>
         {isMacTheme && <AquaShineOverlays />}
 
-        {/* Listener count - opens panel */}
-        <button
-          type="button"
-          onClick={handleClick(onOpenPanel)}
-          className={cn(buttonClasses, "gap-1 px-2 w-auto")}
-          title={`${listenerCount} listening`}
-        >
-          <Headphones weight="fill" size={svgSize} className={iconClasses} />
-          <span className={cn("text-sm tabular-nums", iconClasses)}>
-            {listenerCount}
-          </span>
-          {isDj && (
-            <Crown weight="fill" size={12} className={cn("ml-0.5", iconClasses)} />
-          )}
-        </button>
-
-        {/* Users dropdown for DJ pass */}
-        {isDj && session.users.length > 1 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onInteraction?.();
-                }}
-                className={buttonClasses}
-                title="Pass DJ"
-              >
-                <Users weight="fill" size={svgSize} className={iconClasses} />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              container={portalContainer}
-              side="top"
-              align="center"
-              sideOffset={8}
-              className="px-0 min-w-[140px]"
-              onClick={(e) => e.stopPropagation()}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onInteraction?.();
+              }}
+              className={cn(buttonClasses, "gap-1 px-2 w-auto")}
+              title={`${listenerCount} listening`}
             >
-              <div className="px-2 py-1 text-xs text-muted-foreground">
-                Pass DJ to...
-              </div>
-              <DropdownMenuSeparator />
-              {session.users
-                .filter((u) => u.username !== session.djUsername)
-                .map((user) => (
-                  <DropdownMenuItem
+              <Headphones weight="fill" size={svgSize} className={iconClasses} />
+              <span className={cn("text-sm tabular-nums", iconClasses)}>
+                {listenerCount}
+              </span>
+              {isDj && (
+                <Crown weight="fill" size={12} className={cn("ml-0.5", iconClasses)} />
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            container={portalContainer}
+            side="top"
+            align="center"
+            sideOffset={8}
+            className="px-0 w-40"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-2 py-1 text-xs text-muted-foreground">
+              {listenerCount} listening
+              {listenerCount - session.users.length > 0 &&
+                ` (${listenerCount - session.users.length} anonymous)`}
+            </div>
+            {session.users.length > 1 && (
+              <DropdownMenuRadioGroup
+                value={session.djUsername}
+                onValueChange={(username) => {
+                  onInteraction?.();
+                  if (username !== session.djUsername) {
+                    playClick();
+                    onPassDj(username);
+                  }
+                }}
+              >
+                {session.users.map((user) => (
+                  <DropdownMenuRadioItem
                     key={user.username}
-                    onClick={() => {
-                      onInteraction?.();
-                      playClick();
-                      onPassDj(user.username);
-                    }}
-                    className="text-sm flex items-center gap-1.5"
+                    value={user.username}
+                    className="text-md h-6 pr-3"
                   >
-                    <User weight="fill" size={14} className="text-muted-foreground" />
                     {user.username}
-                  </DropdownMenuItem>
+                  </DropdownMenuRadioItem>
                 ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+              </DropdownMenuRadioGroup>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => {
+                onInteraction?.();
+                playClick();
+                onLeave();
+              }}
+              className="text-md h-6"
+            >
+              {session.hostUsername === session.djUsername ? "End Session" : "Leave Session"}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-        {/* Share/Invite */}
+        {/* Share/Invite – iOS-style (box with arrow) */}
         <button
           type="button"
           onClick={handleClick(onShare)}
           className={buttonClasses}
           title="Invite"
         >
-          <ShareNetwork weight="fill" size={svgSize} className={iconClasses} />
+          <Export weight="regular" size={svgSize} className={iconClasses} />
         </button>
       </div>
 
-      {/* Reactions Island - only for logged-in users */}
+      {/* Reactions – separate button, only for logged-in users */}
       {!isAnonymous && (
         <div className={segmentClasses} style={aquaSegmentStyle}>
           {isMacTheme && <AquaShineOverlays />}
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -225,7 +227,7 @@ export function ListenSessionToolbar({
               side="top"
               align="center"
               sideOffset={8}
-              className="px-1 py-1 flex gap-1 min-w-0"
+              className="px-1 py-1 flex gap-1 min-w-0 w-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {REACTIONS.map((reaction) => (
@@ -237,9 +239,16 @@ export function ListenSessionToolbar({
                     onSendReaction(reaction.id);
                     onInteraction?.();
                   }}
-                  className="w-8 h-8 flex items-center justify-center rounded hover:bg-accent transition-colors"
+                  className={cn(
+                    "w-8 h-8 flex items-center justify-center rounded hover:bg-accent transition-colors",
+                    reaction.color
+                  )}
                 >
-                  <reaction.icon weight="fill" size={18} className={reaction.color} />
+                  <reaction.icon
+                    weight="fill"
+                    size={18}
+                    className={cn("shrink-0", reaction.color)}
+                  />
                 </button>
               ))}
             </DropdownMenuContent>

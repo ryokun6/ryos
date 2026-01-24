@@ -33,7 +33,6 @@ interface KaraokeMenuBarProps {
   onShareSong: () => void;
   onStartListenSession: () => void;
   onJoinListenSession: () => void;
-  onOpenListenSession: () => void;
   onShareListenSession: () => void;
   onLeaveListenSession: () => void;
   isInListenSession: boolean;
@@ -74,7 +73,6 @@ export function KaraokeMenuBar({
   onShareSong,
   onStartListenSession,
   onJoinListenSession,
-  onOpenListenSession,
   onShareListenSession,
   onLeaveListenSession,
   isInListenSession,
@@ -250,9 +248,6 @@ export function KaraokeMenuBar({
             </>
           ) : (
             <>
-              <MenubarItem onClick={onOpenListenSession} className="text-md h-6 px-3">
-                Open Listen Session
-              </MenubarItem>
               <MenubarItem onClick={onShareListenSession} className="text-md h-6 px-3">
                 Invite to Session
               </MenubarItem>

@@ -17,7 +17,9 @@ interface ListenSyncOptions {
   addTrackFromId?: (trackId: string) => Promise<unknown> | void;
 }
 
-const HEARTBEAT_INTERVAL_MS = 3000;
+const HEARTBEAT_INTERVAL_MS = 3000;   // when playing
+const HEARTBEAT_PAUSED_MS = 12000;   // when paused – less frequent to avoid spam
+const MIN_STATE_SYNC_INTERVAL_MS = 2500; // Min interval for "state changed" sync to avoid loop
 const SOFT_SYNC_THRESHOLD_MS = 500;  // Below this, no correction needed
 const HARD_SEEK_THRESHOLD_MS = 3000; // Above this, hard seek
 const DJ_DISCONNECT_WARNING_MS = 15000; // Show warning after 15s
@@ -57,6 +59,9 @@ export function useListenSync({
   );
 
   const lastSentRef = useRef<number>(0);
+  const prevTrackIdRef = useRef<typeof currentTrackId>(undefined);
+  const prevPlayingRef = useRef<boolean | undefined>(undefined);
+  const broadcastStateRef = useRef<() => Promise<void>>(async () => {});
   const currentPlaybackRateRef = useRef<number>(1.0);
   const djDisconnectWarningShownRef = useRef<boolean>(false);
 
@@ -87,21 +92,31 @@ export function useListenSync({
     syncSession,
   ]);
 
+  broadcastStateRef.current = broadcastState;
+
+  // Sync only when track or play state actually change (not on every render), and throttle to avoid loop
   useEffect(() => {
     if (!canBroadcast) return;
+    const trackChanged = currentTrackId !== prevTrackIdRef.current;
+    const playingChanged = isPlaying !== prevPlayingRef.current;
+    if (!trackChanged && !playingChanged) return;
     const now = Date.now();
-    if (now - lastSentRef.current < 500) return;
+    if (now - lastSentRef.current < MIN_STATE_SYNC_INTERVAL_MS) return;
+    prevTrackIdRef.current = currentTrackId;
+    prevPlayingRef.current = isPlaying;
     lastSentRef.current = now;
     broadcastState();
   }, [broadcastState, canBroadcast, currentTrackId, isPlaying]);
 
+  // Heartbeat: use ref so interval is not cleared on every re-render; slower when paused
   useEffect(() => {
     if (!canBroadcast) return;
-    const interval = setInterval(() => {
-      broadcastState();
-    }, HEARTBEAT_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [broadcastState, canBroadcast]);
+    const intervalMs = isPlaying ? HEARTBEAT_INTERVAL_MS : HEARTBEAT_PAUSED_MS;
+    const id = setInterval(() => {
+      broadcastStateRef.current();
+    }, intervalMs);
+    return () => clearInterval(id);
+  }, [canBroadcast, isPlaying]);
 
   // Helper to set playback rate on the internal player
   const setPlaybackRate = useCallback((player: ReactPlayer, rate: number) => {

@@ -16,7 +16,6 @@ import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
 import { CoverFlow } from "@/apps/ipod/components/CoverFlow";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { ListenSessionInvite } from "@/components/listen/ListenSessionInvite";
-import { ListenSessionPanel } from "@/components/listen/ListenSessionPanel";
 import { JoinSessionDialog } from "@/components/listen/JoinSessionDialog";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
 import { ListenSessionToolbar } from "@/components/listen/ListenSessionToolbar";
@@ -83,8 +82,6 @@ export function KaraokeAppComponent({
     setIsLyricsSearchDialogOpen,
     isSongSearchDialogOpen,
     setIsSongSearchDialogOpen,
-    isListenPanelOpen,
-    setIsListenPanelOpen,
     isListenInviteOpen,
     setIsListenInviteOpen,
     isJoinListenDialogOpen,
@@ -194,7 +191,6 @@ export function KaraokeAppComponent({
       onToggleCoverFlow={handleToggleCoverFlow}
       onStartListenSession={handleStartListenSession}
       onJoinListenSession={() => setIsJoinListenDialogOpen(true)}
-      onOpenListenSession={() => setIsListenPanelOpen(true)}
       onShareListenSession={() => setIsListenInviteOpen(true)}
       onLeaveListenSession={handleLeaveListenSession}
       isInListenSession={!!listenSession}
@@ -506,6 +502,29 @@ export function KaraokeAppComponent({
             )}
           </AnimatePresence>
 
+          {/* Listen Together toolbar - top right when in a session, not tied to bottom controls */}
+          {listenSession && !isCoverFlowOpen && (
+            <div
+              className="absolute top-6 right-6 z-[60] flex justify-end pointer-events-auto"
+              onClick={(e) => {
+                e.stopPropagation();
+                restartAutoHideTimer();
+              }}
+            >
+              <ListenSessionToolbar
+                session={listenSession}
+                isDj={isListenSessionDj}
+                isAnonymous={isListenSessionAnonymous}
+                listenerCount={listenListenerCount}
+                onShare={() => setIsListenInviteOpen(true)}
+                onLeave={handleLeaveListenSession}
+                onPassDj={handlePassDj}
+                onSendReaction={handleSendReaction}
+                onInteraction={restartAutoHideTimer}
+              />
+            </div>
+          )}
+
           {/* Control toolbar - hidden when CoverFlow is open */}
           <div
             data-toolbar
@@ -523,21 +542,6 @@ export function KaraokeAppComponent({
               restartAutoHideTimer();
             }}
           >
-            {/* Listen Together toolbar - shown when in a session */}
-            {listenSession && (
-              <ListenSessionToolbar
-                session={listenSession}
-                isDj={isListenSessionDj}
-                isAnonymous={isListenSessionAnonymous}
-                listenerCount={listenListenerCount}
-                onShare={() => setIsListenInviteOpen(true)}
-                onLeave={handleLeaveListenSession}
-                onOpenPanel={() => setIsListenPanelOpen(true)}
-                onPassDj={handlePassDj}
-                onSendReaction={handleSendReaction}
-                onInteraction={restartAutoHideTimer}
-              />
-            )}
             {/* Main playback controls */}
             <FullscreenPlayerControls
               isPlaying={isPlaying}
@@ -619,19 +623,6 @@ export function KaraokeAppComponent({
           onSelect={handleSongSearchSelect}
           onAddUrl={handleAddUrl}
         />
-        {listenSession && (
-          <ListenSessionPanel
-            isOpen={isListenPanelOpen}
-            onOpenChange={setIsListenPanelOpen}
-            session={listenSession}
-            isDj={isListenSessionDj}
-            isAnonymous={isListenSessionAnonymous}
-            listenerCount={listenListenerCount}
-            onPassDj={handlePassDj}
-            onLeave={handleLeaveListenSession}
-            onSendReaction={handleSendReaction}
-          />
-        )}
         {listenSession && (
           <ListenSessionInvite
             isOpen={isListenInviteOpen}

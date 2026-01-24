@@ -210,7 +210,6 @@ export function useKaraokeLogic({
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
   const [isAddingSong, setIsAddingSong] = useState(false);
-  const [isListenPanelOpen, setIsListenPanelOpen] = useState(false);
   const [isListenInviteOpen, setIsListenInviteOpen] = useState(false);
   const [isJoinListenDialogOpen, setIsJoinListenDialogOpen] = useState(false);
   
@@ -866,7 +865,6 @@ export function useKaraokeLogic({
       return;
     }
     setIsListenInviteOpen(true);
-    setIsListenPanelOpen(true);
   }, [createListenSession, username]);
 
   const handleJoinListenSession = useCallback(
@@ -878,10 +876,6 @@ export function useKaraokeLogic({
           description: result.error || "Please try again.",
         });
         return;
-      }
-      // Only show panel for logged-in users (anonymous users can't interact much)
-      if (username) {
-        setIsListenPanelOpen(true);
       }
     },
     [joinListenSession, username]
@@ -895,7 +889,6 @@ export function useKaraokeLogic({
       });
       return;
     }
-    setIsListenPanelOpen(false);
     setIsListenInviteOpen(false);
   }, [leaveListenSession]);
 
@@ -1113,20 +1106,12 @@ export function useKaraokeLogic({
 
       const sessionIdToProcess = initialData.listenSessionId;
       setTimeout(() => {
-        if (!username) {
-          toast.error("Login required", {
-            description: "Set a username in Chats to join a session.",
-          });
-          return;
-        }
-        joinListenSession(sessionIdToProcess, username)
+        joinListenSession(sessionIdToProcess, username || undefined)
           .then((result) => {
             if (!result.ok) {
               toast.error("Failed to join session", {
                 description: result.error || "Please try again.",
               });
-            } else {
-              setIsListenPanelOpen(true);
             }
             if (instanceId) clearInstanceInitialData(instanceId);
           })
@@ -1162,20 +1147,12 @@ export function useKaraokeLogic({
         const sessionId = event.detail.initialData.listenSessionId;
         if (lastProcessedListenSessionRef.current === sessionId) return;
         bringToForeground("karaoke");
-        if (!username) {
-          toast.error("Login required", {
-            description: "Set a username in Chats to join a session.",
-          });
-          return;
-        }
-        joinListenSession(sessionId, username)
+        joinListenSession(sessionId, username || undefined)
           .then((result) => {
             if (!result.ok) {
               toast.error("Failed to join session", {
                 description: result.error || "Please try again.",
               });
-            } else {
-              setIsListenPanelOpen(true);
             }
           })
           .catch((error) => {
@@ -1250,8 +1227,6 @@ export function useKaraokeLogic({
     setIsSongSearchDialogOpen,
     isSyncModeOpen,
     setIsSyncModeOpen,
-    isListenPanelOpen,
-    setIsListenPanelOpen,
     isListenInviteOpen,
     setIsListenInviteOpen,
     isJoinListenDialogOpen,
