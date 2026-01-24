@@ -12,6 +12,10 @@ import { runParseTitleTests } from "./test-parse-title";
 import { runSpeechTests } from "./test-speech";
 import { runShareAppletTests } from "./test-share-applet";
 import { runSongTests } from "./test-song";
+import { runAiTests } from "./test-ai";
+import { runMediaTests } from "./test-media";
+import { runAuthExtraTests } from "./test-auth-extra";
+import { runRoomsExtraTests } from "./test-rooms-extra";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -82,6 +86,10 @@ async function runAllTests(): Promise<void> {
     { name: "song", run: runSongTests },
     { name: "speech", run: runSpeechTests },
     { name: "share-applet", run: runShareAppletTests },
+    { name: "ai", run: runAiTests },
+    { name: "media", run: runMediaTests },
+    { name: "auth-extra", run: runAuthExtraTests },
+    { name: "rooms-extra", run: runRoomsExtraTests },
   ];
 
   // Check for specific test to run
