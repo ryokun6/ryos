@@ -13,6 +13,7 @@ import { assertValidRoomId, escapeHTML, filterProfanityPreservingUrls } from "..
 import * as RateLimit from "../_utils/_rate-limit.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
 import { roomExists, addMessage, generateId, getCurrentTimestamp } from "../rooms/_helpers/_redis.js";
+import { broadcastNewMessage } from "../rooms/_helpers/_pusher.js";
 import type { Message } from "../rooms/_helpers/_types.js";
 import { initLogger } from "../_utils/_logging.js";
 
@@ -197,6 +198,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   await addMessage(roomId, message);
+
+  // Broadcast the message to all clients in the room via Pusher
+  try {
+    await broadcastNewMessage(roomId, message);
+    logger.info("Ryo reply broadcasted via Pusher", { roomId, messageId: message.id });
+  } catch (pusherError) {
+    logger.error("Error broadcasting Ryo reply via Pusher", pusherError);
+  }
 
   logger.info("Ryo reply posted", { roomId, messageId: message.id });
   logger.response(201, Date.now() - startTime);
