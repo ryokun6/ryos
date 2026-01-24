@@ -204,6 +204,25 @@ export function AppManager({ apps }: AppManagerProps) {
           }, 0);
           window.history.replaceState({}, "", "/"); // Clean URL
         }
+      } else if (path.startsWith("/listen/")) {
+        const sessionId = path.substring("/listen/".length);
+        if (sessionId) {
+          console.log("[AppManager] Detected listen session:", sessionId);
+          toast.info("Opening listen session...");
+          setTimeout(() => {
+            const event = new CustomEvent("launchApp", {
+              detail: {
+                appId: "ipod",
+                initialData: { listenSessionId: sessionId },
+              },
+            });
+            window.dispatchEvent(event);
+            console.log(
+              "[AppManager] Dispatched launchApp event for listen session.",
+            );
+          }, 0);
+          window.history.replaceState({}, "", "/"); // Clean URL
+        }
       } else if (path.startsWith("/karaoke/")) {
         const videoId = path.substring("/karaoke/".length);
         if (videoId) {
