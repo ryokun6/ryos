@@ -1559,6 +1559,10 @@ export function useIpodLogic({
         toast.error("Failed to pass DJ", {
           description: result.error || "Please try again.",
         });
+      } else {
+        toast.success("DJ passed", {
+          description: `@${nextDj} is now the DJ.`,
+        });
       }
     },
     [currentTrack, currentTrackMeta, getActivePlayer, isPlaying, syncListenSession]
