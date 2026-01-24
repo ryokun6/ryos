@@ -117,6 +117,7 @@ export const config = {
     "/ipod/:path*",
     "/karaoke",
     "/karaoke/:path*",
+    "/listen/:path*",
     "/synth",
     "/pc",
     "/terminal",
@@ -335,6 +336,15 @@ export default async function middleware(request: Request) {
         description = "Sing along on ryOS Karaoke";
       }
     }
+    matched = true;
+  }
+
+  // Listen session URLs: /listen/{sessionId}
+  const listenMatch = pathname.match(/^\/listen\/([a-zA-Z0-9_-]+)$/);
+  if (listenMatch) {
+    imageUrl = `${baseUrl}/icons/macosx/karaoke.png`;
+    title = "Join Listen Session on ryOS";
+    description = "Listen together in real-time on ryOS Karaoke";
     matched = true;
   }
 

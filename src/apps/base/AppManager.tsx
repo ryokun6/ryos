@@ -210,6 +210,7 @@ export function AppManager({ apps }: AppManagerProps) {
         if (sessionId) {
           console.log("[AppManager] Detected listen session:", sessionId, "app: karaoke");
           toast.info("Opening listen session...");
+          // Use 100ms delay to ensure event listener is ready after store hydration
           setTimeout(() => {
             const event = new CustomEvent("launchApp", {
               detail: {
@@ -221,7 +222,7 @@ export function AppManager({ apps }: AppManagerProps) {
             console.log(
               `[AppManager] Dispatched launchApp event for listen session in karaoke.`,
             );
-          }, 0);
+          }, 100);
           window.history.replaceState({}, "", "/"); // Clean URL
         }
       } else if (path.startsWith("/karaoke/")) {
