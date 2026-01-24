@@ -118,7 +118,6 @@ function unsubscribeFromSession(): void {
     pusherClient.unsubscribe(channelRef.name);
   }
   channelRef = null;
-  activeSessionId = null;
 }
 
 export const useListenSessionStore = create<ListenSessionState>((set, get) => {
