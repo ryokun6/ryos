@@ -31,12 +31,14 @@ export function useListenSync({
   const {
     currentSession,
     isDj,
+    username,
     lastSyncPayload,
     syncSession,
   } = useListenSessionStore(
     useShallow((state) => ({
       currentSession: state.currentSession,
       isDj: state.isDj,
+      username: state.username,
       lastSyncPayload: state.lastSyncPayload,
       syncSession: state.syncSession,
     }))
@@ -87,8 +89,15 @@ export function useListenSync({
     return () => clearInterval(interval);
   }, [broadcastState, canBroadcast]);
 
+  // Listener effect: apply sync from DJ to local playback
+  // Skip if: no session, user is the DJ, no sync payload, or sync was sent by self
   useEffect(() => {
-    if (!currentSession || isDj || !lastSyncPayload) return;
+    if (!currentSession || !lastSyncPayload) return;
+    
+    // Ignore sync events sent by ourselves (DJ shouldn't apply their own syncs)
+    // This prevents race conditions where the DJ receives their own broadcast
+    const isSelfSync = lastSyncPayload.djUsername === username;
+    if (isDj || isSelfSync) return;
 
     if (
       lastSyncPayload.currentTrackId &&
@@ -132,5 +141,6 @@ export function useListenSync({
     lastSyncPayload,
     setCurrentTrackId,
     setIsPlaying,
+    username,
   ]);
 }

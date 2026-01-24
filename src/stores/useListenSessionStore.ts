@@ -35,6 +35,7 @@ export interface ListenSyncPayload {
   isPlaying: boolean;
   positionMs: number;
   timestamp: number;
+  djUsername: string; // Sender identification to ignore own syncs
 }
 
 export interface ListenReactionPayload {

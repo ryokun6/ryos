@@ -156,6 +156,7 @@ export default async function handler(
       isPlaying: session.isPlaying,
       positionMs: session.positionMs,
       timestamp: now,
+      djUsername: session.djUsername,
     });
 
     logger.info("Listen session synced", {
