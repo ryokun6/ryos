@@ -388,6 +388,8 @@ Content-Type: application/json
 <pre><code>{
   "success": true
 }</code></pre>
+<strong>Notes:</strong>
+<ul><li>Returns <code>404</code> if the room does not exist.</li><li>Returns <code>404</code> if the user does not exist (users are created via auth or first chat message).</li></ul>
 <h3>Leave Room</h3>
 <p>Leave a room (presence tracking).</p>
 <pre><code>POST /api/rooms/{id}/leave
@@ -400,6 +402,8 @@ Content-Type: application/json
 <pre><code>{
   "success": true
 }</code></pre>
+<strong>Notes:</strong>
+<ul><li>Returns <code>404</code> if the room does not exist.</li><li>Returns <code>404</code> if the user does not exist.</li></ul>
 <h3>List Active Users</h3>
 <p>Get list of users currently active in a room.</p>
 <pre><code>GET /api/rooms/{id}/users</code></pre>
@@ -413,7 +417,7 @@ Content-Type: application/json
 <h3>Private Rooms</h3>
 <ul><li>Only visible to members (when <code>username</code> query param is provided)</li></ul><ul><li>Created with a specific member list</li><li>Ideal for direct messages or group chats</li></ul>
 <h2>Error Responses</h2>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>Authentication required</code></td><td>Token missing or invalid</td></tr><tr><td>403</td><td><code>Forbidden</code></td><td>Not authorized to perform action</td></tr><tr><td>404</td><td><code>Room not found</code></td><td>Room ID doesn't exist</td></tr><tr><td>429</td><td><code>Rate limit exceeded</code></td><td>Too many requests</td></tr></tbody></table>
+<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>Authentication required</code></td><td>Token missing or invalid</td></tr><tr><td>403</td><td><code>Forbidden</code></td><td>Not authorized to perform action</td></tr><tr><td>404</td><td><code>Room not found</code></td><td>Room ID doesn't exist</td></tr><tr><td>404</td><td><code>User not found</code></td><td>Username doesn't exist</td></tr><tr><td>429</td><td><code>Rate limit exceeded</code></td><td>Too many requests</td></tr></tbody></table>
 <h2>Related</h2>
 <ul><li><a href="/docs/auth-api">Auth API</a> - Authentication endpoints</li></ul><ul><li><a href="/docs/messages-api">Messages API</a> - Message endpoints</li><li><a href="/docs/presence-api">Presence API</a> - Presence tracking</li></ul>
       </article>

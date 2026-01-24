@@ -447,6 +447,8 @@ const waybackSrc = `/api/iframe-check?url=https://example.com&amp;mode=proxy&amp
     }
   ]
 }</code></pre>
+<strong>Notes:</strong>
+<ul><li>List results are sorted with featured applets first, then newest first.</li></ul>
 <h3>POST - Save Applet</h3>
 <p>Requires authentication.</p>
 <strong>Request Body:</strong>
@@ -481,6 +483,8 @@ const waybackSrc = `/api/iframe-check?url=https://example.com&amp;mode=proxy&amp
   "success": true,
   "featured": true
 }</code></pre>
+<h3>Rate Limits</h3>
+<table><thead><tr><th>Action</th><th>Limit</th><th>Window</th><th>Scope</th></tr></thead><tbody><tr><td>List applets (<code>list=true</code>)</td><td>60</td><td>1 minute</td><td>per IP</td></tr><tr><td>Get applet by ID</td><td>120</td><td>1 minute</td><td>per IP</td></tr><tr><td>Save/update applet</td><td>20</td><td>1 minute</td><td>per user</td></tr><tr><td>Delete applet</td><td>10</td><td>1 minute</td><td>per admin user</td></tr><tr><td>Patch applet</td><td>10</td><td>1 minute</td><td>per admin user</td></tr></tbody></table>
 <h3>Example</h3>
 <pre><code>// Save a new applet
 const response = await fetch('/api/share-applet', {
@@ -518,7 +522,7 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
 <p>Unauthorized requests return <code>403 Forbidden</code>.</p>
 <h3>GET Operations</h3>
 <strong>Query Parameters:</strong>
-<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>action</code></td><td>string</td><td>Yes</td><td>Operation to perform</td></tr><tr><td><code>username</code></td><td>string</td><td>For some actions</td><td>Target username</td></tr><tr><td><code>limit</code></td><td>number</td><td>No</td><td>Result limit (default: 50)</td></tr></tbody></table>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>action</code></td><td>string</td><td>Yes</td><td>Operation to perform</td></tr><tr><td><code>username</code></td><td>string</td><td>For some actions</td><td>Target username</td></tr></tbody></table>
 <h4><code>getStats</code> Action</h4>
 <p>Get system-wide statistics.</p>
 <strong>Response:</strong>
@@ -577,6 +581,8 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
     }
   ]
 }</code></pre>
+<h3>Rate Limits</h3>
+<p>Admin requests are limited to <strong>30 requests per minute</strong> per admin user.</p>
 <h3>POST Operations</h3>
 <strong>Request Body:</strong>
 <table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>action</code></td><td>string</td><td>Yes</td><td>Operation to perform</td></tr><tr><td><code>targetUsername</code></td><td>string</td><td>Yes</td><td>User to act on</td></tr><tr><td><code>reason</code></td><td>string</td><td>No</td><td>Reason for action (for bans)</td></tr></tbody></table>
