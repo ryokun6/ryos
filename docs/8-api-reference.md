@@ -12,7 +12,7 @@ graph LR
     Router --> API[Node.js Runtime]
     API --> Services[External Services]
     Services --> AI[AI Providers]
-    Services --> DB[(Redis/KV)]
+    Services --> DB[(Upstash Redis)]
     Services --> Media[Media APIs]
     API --> Response[JSON Response]
     Response --> Client
