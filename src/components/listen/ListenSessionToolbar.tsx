@@ -15,7 +15,6 @@ import {
   Headphones,
   Export,
   SignOut,
-  Crown,
   Smiley,
   Fire,
   HandsClapping,
@@ -135,13 +134,15 @@ export function ListenSessionToolbar({
               className={cn(buttonClasses, "gap-1 px-2 w-auto")}
               title={`${listenerCount} listening`}
             >
+              {isDj && (
+                <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-white/20", iconClasses)}>
+                  DJ
+                </span>
+              )}
               <Headphones weight="fill" size={svgSize} className={iconClasses} />
               <span className={cn("text-sm tabular-nums", iconClasses)}>
                 {listenerCount}
               </span>
-              {isDj && (
-                <Crown weight="fill" size={12} className={cn("ml-0.5", iconClasses)} />
-              )}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -224,7 +225,7 @@ export function ListenSessionToolbar({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               container={portalContainer}
-              side="top"
+              side="bottom"
               align="center"
               sideOffset={8}
               className="px-1 py-1 flex gap-1 min-w-0 w-auto"
@@ -265,7 +266,7 @@ export function ListenSessionToolbar({
           className={buttonClasses}
           title={session.hostUsername === session.djUsername ? "End Session" : "Leave Session"}
         >
-          <SignOut weight="fill" size={svgSize} className={cn(iconClasses, "text-red-400")} />
+          <SignOut weight="fill" size={svgSize} className={iconClasses} />
         </button>
       </div>
     </div>
