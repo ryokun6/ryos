@@ -11,7 +11,6 @@ export function StickiesAppComponent({
   isWindowOpen,
   onClose,
   isForeground,
-  instanceId,
 }: AppProps) {
   const {
     translatedHelpItems,
@@ -29,11 +28,7 @@ export function StickiesAppComponent({
     updateNote,
     clearAllNotes,
     bringToFront,
-  } = useStickiesLogic({
-    isWindowOpen,
-    isForeground,
-    instanceId,
-  });
+  } = useStickiesLogic();
 
   // Create a new note when app is opened and no notes exist
   useEffect(() => {
@@ -85,7 +80,6 @@ export function StickiesAppComponent({
         <StickyNote
           key={note.id}
           note={note}
-          isSelected={selectedNoteId === note.id}
           onSelect={() => {
             handleNoteClick(note.id);
             bringToFront(note.id);

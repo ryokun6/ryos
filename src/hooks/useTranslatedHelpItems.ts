@@ -30,6 +30,7 @@ export function useTranslatedHelpItems(
     "applet-viewer": ["appletStore", "createWithRyosChat", "viewApplets", "shareApplets", "openFromFinder", "keepUpdated"],
     "control-panels": ["appearance", "sounds", "aiModel", "shaderEffects", "backupRestore", "system"],
     admin: ["adminAccess", "userManagement", "roomManagement", "statistics"],
+    stickies: ["createNote", "colors", "deleteNote", "autoSave"],
   };
 
   return useMemo(() => {

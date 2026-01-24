@@ -6,7 +6,6 @@ import { useTranslation } from "react-i18next";
 
 interface StickyNoteProps {
   note: StickyNoteType;
-  isSelected: boolean;
   onSelect: () => void;
   onUpdate: (updates: Partial<Omit<StickyNoteType, "id" | "createdAt">>) => void;
   onDelete: () => void;
@@ -48,7 +47,6 @@ const COLOR_STYLES: Record<StickyColor, { bg: string; border: string; text: stri
 
 export function StickyNote({
   note,
-  isSelected,
   onSelect,
   onUpdate,
   onDelete,

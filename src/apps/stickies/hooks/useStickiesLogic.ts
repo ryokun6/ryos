@@ -5,17 +5,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useStickiesStore, StickyColor } from "@/stores/useStickiesStore";
 import { helpItems } from "..";
 
-interface UseStickiesLogicProps {
-  isWindowOpen: boolean;
-  isForeground?: boolean;
-  instanceId: string;
-}
-
-export function useStickiesLogic({
-  isWindowOpen,
-  isForeground,
-  instanceId,
-}: UseStickiesLogicProps) {
+export function useStickiesLogic() {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("stickies", helpItems);
 
