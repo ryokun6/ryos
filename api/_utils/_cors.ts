@@ -1,6 +1,23 @@
 // Shared CORS utilities for API routes
+import type { VercelRequest } from "@vercel/node";
 
 type VercelEnv = "production" | "preview" | "development";
+
+// Helper to get header value from both Web Request and Node.js IncomingMessage
+// Handles vercel dev (Node.js headers object) and production (Web Headers)
+function getHeader(req: Request | VercelRequest, name: string): string | null {
+  // Web standard Headers (has .get method)
+  if (req.headers && typeof (req.headers as Headers).get === 'function') {
+    return (req.headers as Headers).get(name);
+  }
+  // Node.js style headers (plain object)
+  const headers = req.headers as Record<string, string | string[] | undefined>;
+  const value = headers[name.toLowerCase()];
+  if (Array.isArray(value)) {
+    return value[0] || null;
+  }
+  return typeof value === 'string' ? value : null;
+}
 
 const PROD_ALLOWED_ORIGIN = "https://os.ryo.lu";
 const TAILSCALE_ALLOWED_SUFFIX = ".tailb4fa61.ts.net";
@@ -64,11 +81,11 @@ function isTailscaleOrigin(origin: string): boolean {
   return parsed.hostname.endsWith(TAILSCALE_ALLOWED_SUFFIX);
 }
 
-export function getEffectiveOrigin(req: Request): string | null {
+export function getEffectiveOrigin(req: Request | VercelRequest): string | null {
   try {
-    const origin = req.headers.get("origin");
+    const origin = getHeader(req, "origin");
     if (origin) return origin;
-    const referer = req.headers.get("referer");
+    const referer = getHeader(req, "referer");
     if (!referer) return null;
     return new URL(referer).origin;
   } catch {
@@ -95,7 +112,7 @@ export function isAllowedOrigin(origin: string | null): boolean {
 }
 
 export function preflightIfNeeded(
-  req: Request,
+  req: Request | VercelRequest,
   allowedMethods: string[],
   effectiveOrigin: string | null
 ): Response | null {
@@ -105,7 +122,7 @@ export function preflightIfNeeded(
   }
 
   // Echo back requested headers when provided to avoid missing-case issues
-  const requestedHeaders = req.headers.get("Access-Control-Request-Headers");
+  const requestedHeaders = getHeader(req, "Access-Control-Request-Headers");
   const allowHeaders =
     requestedHeaders && requestedHeaders.trim().length > 0
       ? requestedHeaders

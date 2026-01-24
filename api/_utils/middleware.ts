@@ -6,11 +6,28 @@
  */
 
 import type { Redis } from "@upstash/redis";
+import type { VercelRequest } from "@vercel/node";
 import { extractAuth, validateAuth, validateAdminAuth } from "./auth/index.js";
 import type { AuthenticatedUser } from "./auth/index.js";
 import { getEffectiveOrigin, isAllowedOrigin, preflightIfNeeded } from "./_cors.js";
 import * as RateLimit from "./_rate-limit.js";
 import { createRedis } from "./redis.js";
+
+// Helper to get header value from both Web Request and Node.js IncomingMessage
+// Handles vercel dev (Node.js headers object) and production (Web Headers)
+function getHeader(req: Request | VercelRequest, name: string): string | null {
+  // Web standard Headers (has .get method)
+  if (req.headers && typeof (req.headers as Headers).get === 'function') {
+    return (req.headers as Headers).get(name);
+  }
+  // Node.js style headers (plain object)
+  const headers = req.headers as Record<string, string | string[] | undefined>;
+  const value = headers[name.toLowerCase()];
+  if (Array.isArray(value)) {
+    return value[0] || null;
+  }
+  return typeof value === 'string' ? value : null;
+}
 
 // Re-export commonly used utilities for convenience
 export { createRedis } from "./redis.js";
@@ -114,7 +131,7 @@ export interface CorsResult {
  * Handle CORS for a request
  */
 export function handleCors(
-  req: Request,
+  req: Request | VercelRequest,
   allowedMethods: string[] = ["GET", "POST", "DELETE", "OPTIONS"]
 ): CorsResult {
   const origin = getEffectiveOrigin(req);
@@ -390,14 +407,14 @@ export const RATE_LIMITS = {
  * Parse JSON body safely
  */
 export async function parseJsonBody<T = Record<string, unknown>>(
-  req: Request
+  req: Request | VercelRequest
 ): Promise<{ data: T | null; error: string | null }> {
   try {
-    const contentType = req.headers.get("content-type") || "";
+    const contentType = getHeader(req, "content-type") || "";
     if (!contentType.includes("application/json")) {
       return { data: null, error: "Content-Type must be application/json" };
     }
-    const data = await req.json();
+    const data = await (req as Request).json();
     return { data: data as T, error: null };
   } catch {
     return { data: null, error: "Invalid JSON body" };
@@ -407,16 +424,18 @@ export async function parseJsonBody<T = Record<string, unknown>>(
 /**
  * Get query parameters as object
  */
-export function getQueryParams(req: Request): URLSearchParams {
-  const url = new URL(req.url);
+export function getQueryParams(req: Request | VercelRequest): URLSearchParams {
+  // Handle both full URLs and relative paths (vercel dev uses relative paths)
+  const url = new URL(req.url || '/', "http://localhost");
   return url.searchParams;
 }
 
 /**
  * Get a single query parameter
  */
-export function getQueryParam(req: Request, name: string): string | null {
-  const url = new URL(req.url);
+export function getQueryParam(req: Request | VercelRequest, name: string): string | null {
+  // Handle both full URLs and relative paths (vercel dev uses relative paths)
+  const url = new URL(req.url || '/', "http://localhost");
   return url.searchParams.get(name);
 }
 
@@ -472,7 +491,7 @@ export function generateRequestId(): string {
  * ```
  */
 export async function createRequestContext(
-  req: Request,
+  req: Request | VercelRequest,
   options: {
     /** Whether to validate auth (default: false) */
     requireAuth?: boolean;
@@ -485,7 +504,7 @@ export async function createRequestContext(
   const requestId = generateRequestId();
   const origin = getEffectiveOrigin(req);
   const originAllowed = isAllowedOrigin(origin);
-  const ip = RateLimit.getClientIp(req);
+  const ip = RateLimit.getClientIp(req as Request);
   const redis = createRedis();
   
   // Create logging helpers
@@ -498,8 +517,8 @@ export async function createRequestContext(
   
   // Extract and validate auth if needed
   let user: AuthenticatedUser | null = null;
-  if (requireAuth || req.headers.get("authorization")) {
-    const { username, token } = extractAuth(req);
+  if (requireAuth || getHeader(req, "authorization")) {
+    const { username, token } = extractAuth(req as Request);
     if (username && token) {
       const result = await validateAuth(redis, username, token, { allowExpired });
       if (result.valid) {

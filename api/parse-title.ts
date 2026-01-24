@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { openai } from "@ai-sdk/openai";
-import { generateText, Output } from "ai";
+import { generateText, Output, NoObjectGeneratedError } from "ai";
 import { z } from "zod";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { initLogger } from "./_utils/_logging.js";
@@ -163,6 +163,14 @@ export default async function handler(
       temperature: 0.2,
     });
 
+    // Handle case where output is undefined (model didn't return structured data)
+    if (!parsedData) {
+      logger.warn("AI returned undefined output, falling back to raw title");
+      logger.response(200, Date.now() - startTime);
+      res.status(200).json({ title: rawTitle, artist: undefined, album: undefined });
+      return;
+    }
+
     const result = {
       title: parsedData.title ?? rawTitle,
       artist: parsedData.artist ?? undefined,
@@ -174,6 +182,22 @@ export default async function handler(
     res.status(200).json(result);
 
   } catch (error: unknown) {
+    // Handle NoObjectGeneratedError - fall back to raw title
+    if (NoObjectGeneratedError.isInstance(error)) {
+      logger.warn("AI failed to generate structured output, falling back to raw title", {
+        text: error.text,
+        cause: error.cause,
+      });
+      const body = req.body as ParseTitleRequest;
+      logger.response(200, Date.now() - startTime);
+      res.status(200).json({ 
+        title: body.title, 
+        artist: undefined, 
+        album: undefined 
+      });
+      return;
+    }
+
     logger.error("Error parsing title", error);
 
     let status = 500;
