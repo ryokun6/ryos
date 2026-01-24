@@ -205,20 +205,24 @@ export function AppManager({ apps }: AppManagerProps) {
           window.history.replaceState({}, "", "/"); // Clean URL
         }
       } else if (path.startsWith("/listen/")) {
-        const sessionId = path.substring("/listen/".length);
+        const sessionId = path.substring("/listen/".length).split("?")[0]; // Remove query params from sessionId
+        const searchParams = new URLSearchParams(window.location.search);
+        const appType = searchParams.get("app") as "ipod" | "karaoke" | null;
+        const targetApp = appType === "karaoke" ? "karaoke" : "ipod"; // Default to ipod
+        
         if (sessionId) {
-          console.log("[AppManager] Detected listen session:", sessionId);
+          console.log("[AppManager] Detected listen session:", sessionId, "app:", targetApp);
           toast.info("Opening listen session...");
           setTimeout(() => {
             const event = new CustomEvent("launchApp", {
               detail: {
-                appId: "ipod",
+                appId: targetApp,
                 initialData: { listenSessionId: sessionId },
               },
             });
             window.dispatchEvent(event);
             console.log(
-              "[AppManager] Dispatched launchApp event for listen session.",
+              `[AppManager] Dispatched launchApp event for listen session in ${targetApp}.`,
             );
           }, 0);
           window.history.replaceState({}, "", "/"); // Clean URL

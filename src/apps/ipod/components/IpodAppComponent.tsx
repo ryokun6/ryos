@@ -707,6 +707,7 @@ export function IpodAppComponent({
           isOpen={isListenInviteOpen}
           onClose={() => setIsListenInviteOpen(false)}
           sessionId={listenSession.id}
+          appType="ipod"
         />
       )}
       <JoinSessionDialog

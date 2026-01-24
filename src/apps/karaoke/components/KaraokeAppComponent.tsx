@@ -630,6 +630,7 @@ export function KaraokeAppComponent({
             isOpen={isListenInviteOpen}
             onClose={() => setIsListenInviteOpen(false)}
             sessionId={listenSession.id}
+            appType="karaoke"
           />
         )}
         <JoinSessionDialog

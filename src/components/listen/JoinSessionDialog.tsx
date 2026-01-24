@@ -4,9 +4,13 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useThemeStore } from "@/stores/useThemeStore";
+import { cn } from "@/lib/utils";
 
 interface JoinSessionDialogProps {
   isOpen: boolean;
@@ -23,7 +27,8 @@ function extractSessionId(value: string): string {
     const segments = url.pathname.split("/").filter(Boolean);
     const listenIndex = segments.indexOf("listen");
     if (listenIndex >= 0 && segments[listenIndex + 1]) {
-      return segments[listenIndex + 1];
+      // Remove any query params that might be attached
+      return segments[listenIndex + 1].split("?")[0];
     }
   } catch {
     // Not a URL, fall through
@@ -31,10 +36,13 @@ function extractSessionId(value: string): string {
 
   if (trimmed.includes("/listen/")) {
     const parts = trimmed.split("/listen/");
-    return parts[1]?.split("/")[0] || trimmed;
+    // Remove any query params and path segments after the session ID
+    const sessionPart = parts[1]?.split("/")[0] || "";
+    return sessionPart.split("?")[0] || trimmed;
   }
 
-  return trimmed;
+  // If it's just a plain ID, strip any query params
+  return trimmed.split("?")[0];
 }
 
 export function JoinSessionDialog({
@@ -43,6 +51,9 @@ export function JoinSessionDialog({
   onJoin,
 }: JoinSessionDialogProps) {
   const [value, setValue] = useState("");
+  const currentTheme = useThemeStore((state) => state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacOsxTheme = currentTheme === "macosx";
 
   const handleJoin = () => {
     const sessionId = extractSessionId(value);
@@ -52,31 +63,136 @@ export function JoinSessionDialog({
     onClose();
   };
 
+  const dialogContent = (
+    <div className={isXpTheme ? "p-2 px-4" : "p-3"}>
+      <p
+        className={cn(
+          "text-gray-500 mb-2",
+          isXpTheme
+            ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+            : "font-geneva-12 text-[12px]"
+        )}
+        style={{
+          fontFamily: isXpTheme
+            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+            : undefined,
+          fontSize: isXpTheme ? "11px" : undefined,
+        }}
+      >
+        Paste a session link or ID to join.
+      </p>
+      <Input
+        autoFocus
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === "Enter") {
+            handleJoin();
+          }
+        }}
+        placeholder="Session link or ID"
+        className={cn(
+          "shadow-none h-8",
+          isXpTheme
+            ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+            : "font-geneva-12 text-[12px]"
+        )}
+        style={{
+          fontFamily: isXpTheme
+            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+            : undefined,
+          fontSize: isXpTheme ? "11px" : undefined,
+        }}
+      />
+      <DialogFooter className="mt-3 gap-1.5">
+        <Button
+          variant="retro"
+          onClick={onClose}
+          className={cn(
+            "h-7",
+            isXpTheme
+              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+              : "font-geneva-12 text-[12px]"
+          )}
+          style={{
+            fontFamily: isXpTheme
+              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+              : undefined,
+            fontSize: isXpTheme ? "11px" : undefined,
+          }}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant={isMacOsxTheme ? "default" : "retro"}
+          onClick={handleJoin}
+          className={cn(
+            !isMacOsxTheme && "h-7",
+            isXpTheme
+              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+              : "font-geneva-12 text-[12px]"
+          )}
+          style={{
+            fontFamily: isXpTheme
+              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+              : undefined,
+            fontSize: isXpTheme ? "11px" : undefined,
+          }}
+        >
+          Join
+        </Button>
+      </DialogFooter>
+    </div>
+  );
+
+  if (isXpTheme) {
+    return (
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent
+          className="p-0 overflow-hidden max-w-xs border-0"
+          style={{ fontSize: "11px" }}
+          onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
+        >
+          <div
+            className="title-bar"
+            style={currentTheme === "xp" ? { minHeight: "30px" } : undefined}
+          >
+            <div className="title-bar-text">Join Session</div>
+            <div className="title-bar-controls">
+              <button aria-label="Close" data-action="close" onClick={onClose} />
+            </div>
+          </div>
+          <div className="window-body">{dialogContent}</div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-os-window-bg border-[length:var(--os-metrics-border-width)] border-os-window rounded-os shadow-os-window max-w-xs">
-        <DialogHeader>
-          <DialogTitle className="font-normal text-[16px]">
-            Join Listen Session
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-3">
-          <Input
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-            placeholder="Paste a session link or ID"
-            className="h-8"
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button variant="retro" onClick={handleJoin}>
-              Join
-            </Button>
-          </div>
-        </div>
+      <DialogContent
+        className="bg-os-window-bg border-[length:var(--os-metrics-border-width)] border-os-window rounded-os shadow-os-window max-w-xs"
+        onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
+      >
+        {isMacOsxTheme ? (
+          <>
+            <DialogHeader>Join Session</DialogHeader>
+            <DialogDescription className="sr-only">
+              Paste a session link or ID to join.
+            </DialogDescription>
+          </>
+        ) : (
+          <DialogHeader>
+            <DialogTitle className="font-normal text-[13px]">
+              Join Session
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Paste a session link or ID to join.
+            </DialogDescription>
+          </DialogHeader>
+        )}
+        {dialogContent}
       </DialogContent>
     </Dialog>
   );

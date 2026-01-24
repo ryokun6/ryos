@@ -134,7 +134,7 @@ const RATE_LIMITS = {
 // =============================================================================
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { requestId: _requestId, logger } = initLogger();
+  const { requestId, logger } = initLogger();
   const startTime = Date.now();
 
   // Extract song ID from query params
