@@ -930,9 +930,10 @@ export function useKaraokeLogic({
   );
 
   // Generate share URL for song
-  const karaokeGenerateShareUrl = (videoId: string): string => {
-    return `${window.location.origin}/karaoke/${videoId}`;
-  };
+  const karaokeGenerateShareUrl = useCallback(
+    (videoId: string): string => `${window.location.origin}/karaoke/${videoId}`,
+    []
+  );
 
   // Lyrics search handlers
   const handleRefreshLyrics = useCallback(() => {
