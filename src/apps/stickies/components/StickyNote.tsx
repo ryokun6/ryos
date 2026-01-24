@@ -257,12 +257,15 @@ export function StickyNote({
         }}
       />
 
-      {/* Invisible resize handle */}
+      {/* Resize handle with subtle triangle */}
       <div
         onMouseDown={handleResizeStart}
         onTouchStart={handleTouchResizeStart}
-        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize"
-        style={{ touchAction: "none" }}
+        className="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize opacity-70"
+        style={{
+          background: `linear-gradient(135deg, transparent 50%, ${colors.border} 50%)`,
+          touchAction: "none",
+        }}
       />
     </div>
   );
