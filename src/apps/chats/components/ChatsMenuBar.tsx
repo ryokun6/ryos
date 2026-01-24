@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
@@ -51,6 +51,13 @@ interface ChatsMenuBarProps {
     isPassword: boolean
   ) => Promise<void>;
   onLogout?: () => Promise<void>;
+  // IRC props
+  ircServers?: Array<{ id: string; host: string; port: number; nickname: string; connected: boolean; channels: string[] }>;
+  currentIrcChannel?: { serverId: string; channel: string } | null;
+  onConnectIrc?: () => void;
+  onDisconnectIrc?: (serverId: string) => void;
+  onJoinIrcChannel?: (serverId: string, channel: string) => void;
+  onIrcChannelSelect?: (serverId: string, channel: string) => void;
 }
 
 export function ChatsMenuBar({
@@ -82,6 +89,12 @@ export function ChatsMenuBar({
   verifyError,
   handleVerifyTokenSubmit,
   onLogout,
+  ircServers = [],
+  currentIrcChannel,
+  onConnectIrc,
+  onDisconnectIrc,
+  onJoinIrcChannel,
+  onIrcChannelSelect,
 }: ChatsMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -191,15 +204,18 @@ export function ChatsMenuBar({
             </MenubarItem>
 
             {/* Show separator between menu actions and chat list */}
-            {rooms.length > 0 && (
+            {(rooms.length > 0 || ircServers.length > 0) && (
               <MenubarSeparator className="h-[2px] bg-black my-1" />
             )}
 
             {/* Ryo Chat Option */}
             <MenubarCheckboxItem
-              checked={currentRoom === null}
+              checked={currentRoom === null && currentIrcChannel === null}
               onCheckedChange={(checked) => {
-                if (checked) onRoomSelect(null);
+                if (checked) {
+                  onRoomSelect(null);
+                  onIrcChannelSelect?.(null as any, null as any);
+                }
               }}
               className="text-md h-6 px-3"
             >
@@ -223,7 +239,10 @@ export function ChatsMenuBar({
                     key={room.id}
                     checked={currentRoom?.id === room.id}
                     onCheckedChange={(checked) => {
-                      if (checked) onRoomSelect(room);
+                      if (checked) {
+                        onRoomSelect(room);
+                        onIrcChannelSelect?.(null as any, null as any);
+                      }
                     }}
                     className="text-md h-6 px-3"
                   >
@@ -233,6 +252,91 @@ export function ChatsMenuBar({
                   </MenubarCheckboxItem>
                 ));
               })()}
+
+            {/* IRC Servers Section */}
+            {ircServers.length > 0 && (
+              <>
+                <MenubarSeparator className="h-[2px] bg-black my-1" />
+                {ircServers.map((server) => (
+                  <React.Fragment key={server.id}>
+                    <MenubarCheckboxItem
+                      checked={
+                        currentIrcChannel?.serverId === server.id &&
+                        !currentIrcChannel?.channel
+                      }
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          onIrcChannelSelect?.(server.id, null as any);
+                          onRoomSelect(null);
+                        }
+                      }}
+                      className="text-md h-6 px-3 font-semibold"
+                    >
+                      {server.host}
+                      {server.connected ? (
+                        <span className="ml-2 text-green-600">●</span>
+                      ) : (
+                        <span className="ml-2 text-gray-400">○</span>
+                      )}
+                    </MenubarCheckboxItem>
+                    {server.channels.map((channel) => (
+                      <MenubarCheckboxItem
+                        key={`${server.id}:${channel}`}
+                        checked={
+                          currentIrcChannel?.serverId === server.id &&
+                          currentIrcChannel?.channel === channel
+                        }
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            onIrcChannelSelect?.(server.id, channel);
+                            onRoomSelect(null);
+                          }
+                        }}
+                        className="text-md h-6 px-3 pl-6"
+                      >
+                        {channel}
+                      </MenubarCheckboxItem>
+                    ))}
+                    {onJoinIrcChannel && (
+                      <MenubarItem
+                        onClick={() => {
+                          const channel = prompt("Enter channel name (e.g., #general):");
+                          if (channel) {
+                            onJoinIrcChannel(server.id, channel);
+                          }
+                        }}
+                        className="text-md h-6 px-3 pl-6 text-gray-600"
+                      >
+                        Join channel...
+                      </MenubarItem>
+                    )}
+                    {onDisconnectIrc && (
+                      <MenubarItem
+                        onClick={() => onDisconnectIrc(server.id)}
+                        className="text-md h-6 px-3 pl-6 text-red-600"
+                      >
+                        Disconnect
+                      </MenubarItem>
+                    )}
+                  </React.Fragment>
+                ))}
+              </>
+            )}
+
+            {/* Connect to IRC Server */}
+            {onConnectIrc && (
+              <>
+                {(rooms.length > 0 || ircServers.length > 0) && (
+                  <MenubarSeparator className="h-[2px] bg-black my-1" />
+                )}
+                <MenubarItem
+                  onClick={onConnectIrc}
+                  className="text-md h-6 px-3"
+                >
+                  Connect to IRC Server...
+                </MenubarItem>
+              </>
+            )}
           </MenubarContent>
         </MenubarMenu>
 

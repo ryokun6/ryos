@@ -8,10 +8,12 @@ import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { CreateRoomDialog } from "./CreateRoomDialog";
+import { ConnectIrcDialog } from "./ConnectIrcDialog";
 import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useChatRoom } from "../hooks/useChatRoom";
 import { useAiChat } from "../hooks/useAiChat";
+import { useIrcChat } from "../hooks/useIrcChat";
 import { useAuth } from "@/hooks/useAuth";
 import React from "react";
 import { ChatMessages } from "./ChatMessages";
@@ -61,6 +63,9 @@ export function ChatsAppComponent({
 
   // Get room functionality from useChatRoom
   const chatRoomResult = useChatRoom(isWindowOpen ?? false, promptSetUsername);
+  
+  // Get IRC functionality from useIrcChat
+  const ircChatResult = useIrcChat(isWindowOpen ?? false);
 
   const {
     messages,
@@ -143,6 +148,19 @@ export function ChatsAppComponent({
     confirmDeleteRoom,
   } = chatRoomResult;
 
+  // Destructure IRC properties from ircChatResult
+  const {
+    ircServers,
+    currentIrcChannel,
+    currentChannelMessages,
+    handleConnect,
+    handleDisconnect,
+    handleJoinChannel,
+    handlePartChannel,
+    handleSendMessage,
+    setCurrentIrcChannel,
+  } = ircChatResult;
+
   // Get font size state from store - select separately for optimization
   const fontSize = useChatsStore((state) => state.fontSize);
   const setFontSize = useChatsStore((state) => state.setFontSize);
@@ -150,6 +168,7 @@ export function ChatsAppComponent({
   const [isShaking, setIsShaking] = useState(false);
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const [isConnectIrcDialogOpen, setIsConnectIrcDialogOpen] = useState(false);
   // Add state to trigger scroll in ChatMessages
   const [scrollToBottomTrigger, setScrollToBottomTrigger] = useState(0);
 
@@ -231,6 +250,23 @@ export function ChatsAppComponent({
         return;
       }
 
+      // Handle IRC channel message
+      if (currentIrcChannel && username) {
+        const trimmedInput = input.trim();
+        if (trimmedInput) {
+          await handleSendMessage(
+            currentIrcChannel.serverId,
+            currentIrcChannel.channel,
+            trimmedInput
+          );
+          handleInputChange({
+            target: { value: "" },
+          } as React.ChangeEvent<HTMLInputElement>);
+          setScrollToBottomTrigger((prev) => prev + 1);
+        }
+        return;
+      }
+
       if (currentRoomId && username) {
         const trimmedInput = input.trim();
 
@@ -270,6 +306,7 @@ export function ChatsAppComponent({
     },
     [
       currentRoomId,
+      currentIrcChannel,
       username,
       sendRoomMessage,
       handleAiSubmit,
@@ -277,6 +314,7 @@ export function ChatsAppComponent({
       handleInputChange,
       handleRyoMention,
       detectAndProcessMention,
+      handleSendMessage,
     ]
   );
 
@@ -451,8 +489,8 @@ export function ChatsAppComponent({
     setIsPasswordDialogOpen(true);
   }, []);
 
-  // Function to handle send message button click
-  const handleSendMessage = useCallback((username: string) => {
+  // Function to handle send message button click (opens new room dialog with prefilled user)
+  const handleSendMessageClick = useCallback((username: string) => {
     setPrefilledUser(username);
     setIsNewRoomDialogOpen(true);
   }, []);
@@ -493,13 +531,32 @@ export function ChatsAppComponent({
       verifyError={verifyError}
       handleVerifyTokenSubmit={handleVerifyTokenSubmit}
       onLogout={logout}
+      ircServers={ircServers}
+      currentIrcChannel={currentIrcChannel}
+      onConnectIrc={() => setIsConnectIrcDialogOpen(true)}
+      onDisconnectIrc={handleDisconnect}
+      onJoinIrcChannel={handleJoinChannel}
+      onIrcChannelSelect={(serverId, channel) => {
+        setCurrentIrcChannel(serverId, channel);
+        handleRoomSelectWithScroll(null);
+      }}
     />
   );
 
   if (!isWindowOpen) return null;
 
   // Explicitly type the array using the local DisplayMessage interface
-  const currentMessagesToDisplay: DisplayMessage[] = currentRoomId
+  const currentMessagesToDisplay: DisplayMessage[] = currentIrcChannel
+    ? (currentChannelMessages || []).map((msg) => ({
+        id: msg.id,
+        role: msg.nickname === ircServers.find(s => s.id === msg.serverId)?.nickname ? "user" : "human",
+        parts: [{ type: "text" as const, text: msg.content }],
+        metadata: {
+          createdAt: new Date(msg.timestamp),
+        },
+        username: msg.nickname,
+      }))
+    : currentRoomId
     ? currentRoomMessagesLimited.map((msg: AppChatMessage) => ({
         // For room messages, use clientId (if present) for stable rendering key
         id: msg.clientId || msg.id,
@@ -522,7 +579,9 @@ export function ChatsAppComponent({
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
         title={
-          currentRoom
+          currentIrcChannel
+            ? currentIrcChannel.channel
+            : currentRoom
             ? currentRoom.type === "private"
               ? getPrivateRoomDisplayName(currentRoom, username)
               : `#${currentRoom.name}`
@@ -611,6 +670,16 @@ export function ChatsAppComponent({
                     isAdmin={isAdmin}
                     username={username}
                     isOverlay={true}
+                    ircServers={ircServers}
+                    currentIrcChannel={currentIrcChannel}
+                    onIrcChannelSelect={(serverId, channel) => {
+                      setCurrentIrcChannel(serverId, channel);
+                      handleRoomSelectWithScroll(null);
+                    }}
+                    onIrcServerSelect={(serverId) => {
+                      setCurrentIrcChannel(serverId, null);
+                      handleRoomSelectWithScroll(null);
+                    }}
                   />
                 </motion.div>
               </motion.div>
@@ -625,11 +694,22 @@ export function ChatsAppComponent({
               <ChatRoomSidebar
                 rooms={rooms}
                 currentRoom={currentRoom ?? null}
-                onRoomSelect={(room) =>
-                  handleRoomSelectWithScroll(room ? room.id : null)
-                }
+                onRoomSelect={(room) => {
+                  handleRoomSelectWithScroll(room ? room.id : null);
+                  setCurrentIrcChannel(null, null); // Clear IRC selection
+                }}
                 onAddRoom={promptAddRoom}
                 onDeleteRoom={(room) => promptDeleteRoom(room)}
+                ircServers={ircServers}
+                currentIrcChannel={currentIrcChannel}
+                onIrcChannelSelect={(serverId, channel) => {
+                  setCurrentIrcChannel(serverId, channel);
+                  handleRoomSelectWithScroll(null); // Clear room selection
+                }}
+                onIrcServerSelect={(serverId) => {
+                  setCurrentIrcChannel(serverId, null);
+                  handleRoomSelectWithScroll(null); // Clear room selection
+                }}
                 isVisible={sidebarVisibleBool}
                 isAdmin={isAdmin}
                 username={username}
@@ -671,7 +751,9 @@ export function ChatsAppComponent({
                     className="flex items-center gap-0.5 px-2 py-1 h-7"
                   >
                     <h2 className="font-geneva-12 text-[12px] font-medium truncate">
-                      {currentRoom
+                      {currentIrcChannel
+                        ? currentIrcChannel.channel
+                        : currentRoom
                         ? currentRoom.type === "private"
                           ? getPrivateRoomDisplayName(currentRoom, username)
                           : `#${currentRoom.name}`
@@ -690,7 +772,7 @@ export function ChatsAppComponent({
                 </div>
                 <div className="flex items-center gap-2">
                   {/* Create Account button shown only in @ryo view when no username is set */}
-                  {!currentRoom && !username && (
+                  {!currentRoom && !currentIrcChannel && !username && (
                     <Button
                       variant="ghost"
                       onClick={promptSetUsername}
@@ -702,8 +784,8 @@ export function ChatsAppComponent({
                     </Button>
                   )}
 
-                  {/* Clear chat button shown only in @ryo (no current room) */}
-                  {!currentRoom && (
+                  {/* Clear chat button shown only in @ryo (no current room or IRC channel) */}
+                  {!currentRoom && !currentIrcChannel && (
                     <Button
                       variant="ghost"
                       onClick={() => setIsClearDialogOpen(true)}
@@ -738,16 +820,16 @@ export function ChatsAppComponent({
                   ref={messagesContainerRef}
                 >
                   <ChatMessages
-                    key={currentRoomId || "ryo"}
+                    key={currentIrcChannel ? `irc-${currentIrcChannel.serverId}-${currentIrcChannel.channel}` : currentRoomId || "ryo"}
                     messages={currentMessagesToDisplay}
                     isLoading={
-                      (isLoading && !currentRoomId) ||
+                      (isLoading && !currentRoomId && !currentIrcChannel) ||
                       (!!currentRoomId && isRyoLoading)
                     }
-                    error={!currentRoomId ? error : undefined}
+                    error={!currentRoomId && !currentIrcChannel ? error : undefined}
                     onRetry={reload}
                     onClear={() => setIsClearDialogOpen(true)}
-                    isRoomView={!!currentRoomId}
+                    isRoomView={!!currentRoomId || !!currentIrcChannel}
                     roomId={currentRoomId ?? undefined}
                     isAdmin={isAdmin}
                     username={username || undefined}
@@ -758,12 +840,16 @@ export function ChatsAppComponent({
                           .getState()
                           .removeMessageFromRoom(currentRoomId, deletedId);
                       }
+                      // IRC messages are handled via Pusher events
                     }}
                     fontSize={fontSize}
                     scrollToBottomTrigger={scrollToBottomTrigger}
                     highlightSegment={highlightSegment}
                     isSpeaking={isSpeaking}
-                    onSendMessage={handleSendMessage}
+                    onSendMessage={currentIrcChannel ? (async (message: string) => {
+                      await handleSendMessage(currentIrcChannel.serverId, currentIrcChannel.channel, message);
+                      setScrollToBottomTrigger((prev) => prev + 1);
+                    }) : undefined}
                   />
                 </div>
                 {/* Input Area or Create Account Prompt */}
@@ -774,8 +860,8 @@ export function ChatsAppComponent({
                   {/* Show "Create Account" button in two cases:
                       1. In a chat room without username
                       2. In @ryo chat when rate limit is hit for anonymous users */}
-                  {(currentRoomId && !username) ||
-                  (!currentRoomId && needsUsername && !username) ? (
+                  {((currentRoomId || currentIrcChannel) && !username) ||
+                  (!currentRoomId && !currentIrcChannel && needsUsername && !username) ? (
                     isMacTheme ? (
                       <Button
                         variant="secondary"
@@ -833,8 +919,8 @@ export function ChatsAppComponent({
                           onDirectMessageSubmit={handleDirectSubmit}
                           onNudge={handleNudgeClick}
                           previousMessages={prevMessagesContent}
-                          showNudgeButton={!currentRoomId}
-                          isInChatRoom={!!currentRoomId}
+                          showNudgeButton={!currentRoomId && !currentIrcChannel}
+                          isInChatRoom={!!currentRoomId || !!currentIrcChannel}
                           rateLimitError={rateLimitError}
                           isOffline={isOffline}
                           needsUsername={needsUsername && !username}
@@ -917,6 +1003,12 @@ export function ChatsAppComponent({
           isAdmin={isAdmin}
           currentUsername={username}
           initialUsers={prefilledUser ? [prefilledUser] : []}
+        />
+        <ConnectIrcDialog
+          isOpen={isConnectIrcDialogOpen}
+          onOpenChange={setIsConnectIrcDialogOpen}
+          onConnect={handleConnect}
+          defaultNickname={username}
         />
         <ConfirmDialog
           isOpen={isDeleteRoomDialogOpen}

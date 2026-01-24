@@ -27,6 +27,12 @@ interface ChatRoomSidebarProps {
   /** When rendered inside mobile/overlay mode, occupies full width and hides right border */
   isOverlay?: boolean;
   username?: string | null;
+  // IRC props
+  ircServers?: Array<{ id: string; host: string; port: number; nickname: string; connected: boolean; channels: string[] }>;
+  currentIrcChannel?: { serverId: string; channel: string } | null;
+  onIrcChannelSelect?: (serverId: string, channel: string) => void;
+  onIrcServerSelect?: (serverId: string) => void;
+  onIrcChannelJoin?: (serverId: string, channel: string) => void;
 }
 
 export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
@@ -39,6 +45,11 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
   isAdmin,
   isOverlay = false,
   username,
+  ircServers = [],
+  currentIrcChannel = null,
+  onIrcChannelSelect,
+  onIrcServerSelect,
+  onIrcChannelJoin,
 }) => {
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
@@ -54,8 +65,10 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
   // Read collapse state from store BEFORE any early returns to preserve hook order
   const isChannelsOpen = useChatsStore((s) => s.isChannelsOpen);
   const isPrivateOpen = useChatsStore((s) => s.isPrivateOpen);
+  const isIrcOpen = useChatsStore((s) => s.isIrcOpen);
   const toggleChannelsOpen = useChatsStore((s) => s.toggleChannelsOpen);
   const togglePrivateOpen = useChatsStore((s) => s.togglePrivateOpen);
+  const toggleIrcOpen = useChatsStore((s) => s.toggleIrcOpen);
 
   if (!isVisible) {
     return null;
@@ -306,6 +319,104 @@ export const ChatRoomSidebar: React.FC<ChatRoomSidebarProps> = ({
                   </>
                 );
               })()}
+            </>
+          )}
+          {/* IRC Servers Section */}
+          {ircServers.length > 0 && (
+            <>
+              <div
+                className={cn(
+                  "mt-2 px-4 pt-2 pb-1 w-full flex items-center group",
+                  "!text-[11px] uppercase tracking-wide text-black/50"
+                )}
+                onClick={() => {
+                  playButtonClick();
+                  toggleIrcOpen();
+                }}
+                role="button"
+                aria-expanded={isIrcOpen}
+              >
+                <span>IRC</span>
+                <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <CaretRight
+                    className={cn(
+                      "w-2.5 h-2.5 text-black/50 transition-transform",
+                      isIrcOpen ? "rotate-90" : "rotate-0"
+                    )}
+                  />
+                </span>
+              </div>
+              {isIrcOpen && ircServers.map((server) => {
+                const isServerSelected = currentIrcChannel?.serverId === server.id;
+                return (
+                  <div key={server.id}>
+                    <div
+                      className={cn(
+                        "py-1 px-5 pl-8",
+                        isServerSelected && !currentIrcChannel?.channel ? "" : "hover:bg-black/5"
+                      )}
+                      style={
+                        isServerSelected && !currentIrcChannel?.channel
+                          ? {
+                              background: "var(--os-color-selection-bg)",
+                              color: "var(--os-color-selection-text)",
+                            }
+                          : undefined
+                      }
+                      onClick={() => {
+                        playButtonClick();
+                        if (onIrcServerSelect) {
+                          onIrcServerSelect(server.id);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "w-2 h-2 rounded-full",
+                            server.connected ? "bg-green-500" : "bg-gray-400"
+                          )}
+                        />
+                        <span>{server.host}</span>
+                      </div>
+                    </div>
+                    {server.channels.length > 0 && (
+                      <>
+                        {server.channels.map((channel) => {
+                          const isChannelSelected =
+                            currentIrcChannel?.serverId === server.id &&
+                            currentIrcChannel?.channel === channel;
+                          return (
+                            <div
+                              key={`${server.id}:${channel}`}
+                              className={cn(
+                                "py-1 px-5 pl-12",
+                                isChannelSelected ? "" : "hover:bg-black/5"
+                              )}
+                              style={
+                                isChannelSelected
+                                  ? {
+                                      background: "var(--os-color-selection-bg)",
+                                      color: "var(--os-color-selection-text)",
+                                    }
+                                  : undefined
+                              }
+                              onClick={() => {
+                                playButtonClick();
+                                if (onIrcChannelSelect) {
+                                  onIrcChannelSelect(server.id, channel);
+                                }
+                              }}
+                            >
+                              {channel}
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </>
           )}
         </div>

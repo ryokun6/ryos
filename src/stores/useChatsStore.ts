@@ -5,6 +5,11 @@ import {
   type ChatMessage,
   type AIChatMessage,
 } from "@/types/chat";
+import {
+  type IrcServer,
+  type IrcChannel,
+  type IrcMessage,
+} from "@/types/irc";
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
@@ -182,6 +187,12 @@ export interface ChatsStoreState {
   fontSize: number; // Add font size state
   // Rendering limits
   messageRenderLimit: number; // Max messages to render per room initially
+  // IRC State
+  ircServers: IrcServer[]; // Connected IRC servers
+  ircChannels: Record<string, IrcChannel>; // Channel info by "serverId:channel"
+  ircMessages: Record<string, IrcMessage[]>; // Messages by "serverId:channel"
+  currentIrcChannel: { serverId: string; channel: string } | null; // Currently selected IRC channel
+  isIrcOpen: boolean; // Persisted collapse state for IRC section
 
   // Actions
   setAiMessages: (messages: AIChatMessage[]) => void;
@@ -241,6 +252,19 @@ export interface ChatsStoreState {
   clearUnread: (roomId: string) => void;
   setHasEverUsedChats: (value: boolean) => void;
 
+  // IRC Actions
+  connectIrcServer: (host: string, port: number, nickname: string) => Promise<{ ok: boolean; error?: string; serverId?: string }>;
+  disconnectIrcServer: (serverId: string) => Promise<{ ok: boolean; error?: string }>;
+  joinIrcChannel: (serverId: string, channel: string) => Promise<{ ok: boolean; error?: string }>;
+  partIrcChannel: (serverId: string, channel: string) => Promise<{ ok: boolean; error?: string }>;
+  sendIrcMessage: (serverId: string, channel: string, content: string) => Promise<{ ok: boolean; error?: string }>;
+  addIrcMessage: (serverId: string, channel: string, message: IrcMessage) => void;
+  setCurrentIrcChannel: (serverId: string | null, channel: string | null) => void;
+  toggleIrcOpen: () => void;
+  setIrcServerConnected: (serverId: string, connected: boolean) => void;
+  setIrcServerChannels: (serverId: string, channels: string[]) => void;
+  setIrcChannelInfo: (serverId: string, channel: string, info: Partial<IrcChannel>) => void;
+
   reset: () => void; // Reset store to initial state
   logout: () => Promise<void>; // Logout and clear all user data
 }
@@ -290,6 +314,17 @@ const getInitialState = (): Omit<
   | "incrementUnread"
   | "clearUnread"
   | "setHasEverUsedChats"
+  | "connectIrcServer"
+  | "disconnectIrcServer"
+  | "joinIrcChannel"
+  | "partIrcChannel"
+  | "sendIrcMessage"
+  | "addIrcMessage"
+  | "setCurrentIrcChannel"
+  | "toggleIrcOpen"
+  | "setIrcServerConnected"
+  | "setIrcServerChannels"
+  | "setIrcChannelInfo"
 > => {
   // Try to recover username and auth token if available
   const recoveredUsername = getUsernameFromRecovery();
@@ -310,6 +345,12 @@ const getInitialState = (): Omit<
     isPrivateOpen: true,
     fontSize: 13, // Default font size
     messageRenderLimit: 50,
+    // IRC State
+    ircServers: [],
+    ircChannels: {},
+    ircMessages: {},
+    currentIrcChannel: null,
+    isIrcOpen: true,
   };
 };
 
@@ -1454,6 +1495,284 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { ok: false, error: "Network error. Please try again." };
           }
         },
+        // IRC Actions
+        connectIrcServer: async (host: string, port: number, nickname: string) => {
+          try {
+            const serverId = `${host}:${port}`;
+            const existingServer = get().ircServers.find(s => s.id === serverId);
+            
+            if (existingServer && existingServer.connected) {
+              return { ok: false, error: "Already connected to this server" };
+            }
+
+            const response = await fetch(getApiUrl("/api/irc/connect"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ host, port, nickname }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({
+                error: `HTTP error! status: ${response.status}`,
+              }));
+              return { ok: false, error: errorData.error || "Failed to connect to IRC server" };
+            }
+
+            const data = await response.json();
+            const server: IrcServer = {
+              id: serverId,
+              host,
+              port,
+              nickname,
+              connected: true,
+              channels: [],
+            };
+
+            set((state) => ({
+              ircServers: existingServer
+                ? state.ircServers.map(s => s.id === serverId ? server : s)
+                : [...state.ircServers, server],
+            }));
+
+            return { ok: true, serverId };
+          } catch (error) {
+            console.error("[ChatsStore] Error connecting to IRC server:", error);
+            return { ok: false, error: "Network error. Please try again." };
+          }
+        },
+        disconnectIrcServer: async (serverId: string) => {
+          try {
+            const response = await fetch(getApiUrl(`/api/irc/disconnect`), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ serverId }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({
+                error: `HTTP error! status: ${response.status}`,
+              }));
+              return { ok: false, error: errorData.error || "Failed to disconnect from IRC server" };
+            }
+
+            // Clear current IRC channel if it's from this server
+            const currentIrcChannel = get().currentIrcChannel;
+            if (currentIrcChannel?.serverId === serverId) {
+              set({ currentIrcChannel: null });
+            }
+
+            // Remove server and all its channels/messages
+            set((state) => {
+              const newChannels: Record<string, IrcChannel> = {};
+              const newMessages: Record<string, IrcMessage[]> = {};
+              
+              Object.entries(state.ircChannels).forEach(([key, channel]) => {
+                if (channel.serverId !== serverId) {
+                  newChannels[key] = channel;
+                }
+              });
+              
+              Object.entries(state.ircMessages).forEach(([key, messages]) => {
+                if (!key.startsWith(`${serverId}:`)) {
+                  newMessages[key] = messages;
+                }
+              });
+
+              return {
+                ircServers: state.ircServers.filter(s => s.id !== serverId),
+                ircChannels: newChannels,
+                ircMessages: newMessages,
+              };
+            });
+
+            return { ok: true };
+          } catch (error) {
+            console.error("[ChatsStore] Error disconnecting from IRC server:", error);
+            return { ok: false, error: "Network error. Please try again." };
+          }
+        },
+        joinIrcChannel: async (serverId: string, channel: string) => {
+          try {
+            const normalizedChannel = channel.startsWith("#") ? channel : `#${channel}`;
+            const response = await fetch(getApiUrl("/api/irc/join"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ serverId, channel: normalizedChannel }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({
+                error: `HTTP error! status: ${response.status}`,
+              }));
+              return { ok: false, error: errorData.error || "Failed to join IRC channel" };
+            }
+
+            const channelKey = `${serverId}:${normalizedChannel}`;
+            const server = get().ircServers.find(s => s.id === serverId);
+            
+            if (server && !server.channels.includes(normalizedChannel)) {
+              set((state) => ({
+                ircServers: state.ircServers.map(s =>
+                  s.id === serverId
+                    ? { ...s, channels: [...s.channels, normalizedChannel] }
+                    : s
+                ),
+                ircChannels: {
+                  ...state.ircChannels,
+                  [channelKey]: {
+                    name: normalizedChannel,
+                    serverId,
+                    users: [],
+                  },
+                },
+                ircMessages: {
+                  ...state.ircMessages,
+                  [channelKey]: state.ircMessages[channelKey] || [],
+                },
+              }));
+            }
+
+            return { ok: true };
+          } catch (error) {
+            console.error("[ChatsStore] Error joining IRC channel:", error);
+            return { ok: false, error: "Network error. Please try again." };
+          }
+        },
+        partIrcChannel: async (serverId: string, channel: string) => {
+          try {
+            const normalizedChannel = channel.startsWith("#") ? channel : `#${channel}`;
+            const response = await fetch(getApiUrl("/api/irc/part"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ serverId, channel: normalizedChannel }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({
+                error: `HTTP error! status: ${response.status}`,
+              }));
+              return { ok: false, error: errorData.error || "Failed to leave IRC channel" };
+            }
+
+            const channelKey = `${serverId}:${normalizedChannel}`;
+            
+            // Clear current IRC channel if it's this one
+            const currentIrcChannel = get().currentIrcChannel;
+            if (currentIrcChannel?.serverId === serverId && currentIrcChannel?.channel === normalizedChannel) {
+              set({ currentIrcChannel: null });
+            }
+
+            set((state) => {
+              const newChannels = { ...state.ircChannels };
+              const newMessages = { ...state.ircMessages };
+              delete newChannels[channelKey];
+              delete newMessages[channelKey];
+
+              return {
+                ircServers: state.ircServers.map(s =>
+                  s.id === serverId
+                    ? { ...s, channels: s.channels.filter(c => c !== normalizedChannel) }
+                    : s
+                ),
+                ircChannels: newChannels,
+                ircMessages: newMessages,
+              };
+            });
+
+            return { ok: true };
+          } catch (error) {
+            console.error("[ChatsStore] Error leaving IRC channel:", error);
+            return { ok: false, error: "Network error. Please try again." };
+          }
+        },
+        sendIrcMessage: async (serverId: string, channel: string, content: string) => {
+          try {
+            const normalizedChannel = channel.startsWith("#") ? channel : `#${channel}`;
+            const response = await fetch(getApiUrl("/api/irc/message"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ serverId, channel: normalizedChannel, content }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({
+                error: `HTTP error! status: ${response.status}`,
+              }));
+              return { ok: false, error: errorData.error || "Failed to send IRC message" };
+            }
+
+            return { ok: true };
+          } catch (error) {
+            console.error("[ChatsStore] Error sending IRC message:", error);
+            return { ok: false, error: "Network error. Please try again." };
+          }
+        },
+        addIrcMessage: (serverId: string, channel: string, message: IrcMessage) => {
+          const channelKey = `${serverId}:${channel}`;
+          set((state) => {
+            const existingMessages = state.ircMessages[channelKey] || [];
+            // Avoid duplicates
+            if (existingMessages.some(m => m.id === message.id)) {
+              return state;
+            }
+            return {
+              ircMessages: {
+                ...state.ircMessages,
+                [channelKey]: [...existingMessages, message],
+              },
+            };
+          });
+        },
+        setCurrentIrcChannel: (serverId: string | null, channel: string | null) => {
+          if (serverId && channel) {
+            set({ currentIrcChannel: { serverId, channel } });
+            // Also clear current room when switching to IRC
+            set({ currentRoomId: null });
+          } else {
+            set({ currentIrcChannel: null });
+          }
+        },
+        toggleIrcOpen: () => {
+          set((state) => ({ isIrcOpen: !state.isIrcOpen }));
+        },
+        setIrcServerConnected: (serverId: string, connected: boolean) => {
+          set((state) => ({
+            ircServers: state.ircServers.map(s =>
+              s.id === serverId ? { ...s, connected } : s
+            ),
+          }));
+        },
+        setIrcServerChannels: (serverId: string, channels: string[]) => {
+          set((state) => ({
+            ircServers: state.ircServers.map(s =>
+              s.id === serverId ? { ...s, channels } : s
+            ),
+          }));
+        },
+        setIrcChannelInfo: (serverId: string, channel: string, info: Partial<IrcChannel>) => {
+          const channelKey = `${serverId}:${channel}`;
+          set((state) => ({
+            ircChannels: {
+              ...state.ircChannels,
+              [channelKey]: {
+                ...state.ircChannels[channelKey],
+                name: channel,
+                serverId,
+                ...info,
+              },
+            },
+          }));
+        },
         createUser: async (username: string, password: string) => {
           const trimmedUsername = username.trim();
           if (!trimmedUsername) {
@@ -1554,22 +1873,36 @@ export const useChatsStore = create<ChatsStoreState>()(
       name: STORE_NAME,
       version: STORE_VERSION,
       storage: createJSONStorage(() => localStorage), // Use localStorage
-      partialize: (state) => ({
-        // Select properties to persist
-        aiMessages: state.aiMessages,
-        username: state.username,
-        authToken: state.authToken, // Persist auth token
-        hasPassword: state.hasPassword, // Persist password status
-        currentRoomId: state.currentRoomId,
-        isSidebarVisible: state.isSidebarVisible,
-        isChannelsOpen: state.isChannelsOpen,
-        isPrivateOpen: state.isPrivateOpen,
-        rooms: state.rooms, // Persist rooms list
-        roomMessages: state.roomMessages, // Persist room messages cache
-        fontSize: state.fontSize, // Persist font size
-        unreadCounts: state.unreadCounts,
-        hasEverUsedChats: state.hasEverUsedChats,
-      }),
+      partialize: (state) => {
+        // Persist IRC servers (host/port/nickname only, not connection state)
+        const persistedIrcServers = state.ircServers.map(s => ({
+          id: s.id,
+          host: s.host,
+          port: s.port,
+          nickname: s.nickname,
+          connected: false, // Don't persist connection state
+          channels: [], // Don't persist channels (will be re-fetched)
+        }));
+        
+        return {
+          // Select properties to persist
+          aiMessages: state.aiMessages,
+          username: state.username,
+          authToken: state.authToken, // Persist auth token
+          hasPassword: state.hasPassword, // Persist password status
+          currentRoomId: state.currentRoomId,
+          isSidebarVisible: state.isSidebarVisible,
+          isChannelsOpen: state.isChannelsOpen,
+          isPrivateOpen: state.isPrivateOpen,
+          rooms: state.rooms, // Persist rooms list
+          roomMessages: state.roomMessages, // Persist room messages cache
+          fontSize: state.fontSize, // Persist font size
+          unreadCounts: state.unreadCounts,
+          hasEverUsedChats: state.hasEverUsedChats,
+          ircServers: persistedIrcServers, // Persist IRC server configs for auto-reconnect
+          isIrcOpen: state.isIrcOpen, // Persist IRC section collapse state
+        };
+      },
       // --- Migration from old localStorage keys ---
       migrate: (persistedState, version) => {
         console.log(
