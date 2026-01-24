@@ -12,7 +12,6 @@ import { CHAT_USERS_PREFIX } from "./_constants.js";
 import { logInfo, logError } from "../../_utils/_logging.js";
 import {
   isProfaneUsername,
-  assertValidUsername,
   MAX_USERNAME_LENGTH,
   MIN_USERNAME_LENGTH,
   USERNAME_REGEX,

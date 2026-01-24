@@ -161,7 +161,7 @@ ${RYO_PERSONA_INSTRUCTIONS}`;
 // ============================================================================
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { requestId, logger } = initLogger();
+  const { requestId: _requestId, logger } = initLogger();
   const startTime = Date.now();
   
   const effectiveOrigin = getEffectiveOrigin(req);

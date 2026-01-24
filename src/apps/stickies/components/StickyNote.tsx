@@ -62,7 +62,7 @@ export function StickyNote({
 
   const colors = COLOR_STYLES[note.color];
 
-  // Handle drag start
+  // Handle drag start (mouse)
   const handleDragStart = useCallback(
     (e: React.MouseEvent) => {
       if ((e.target as HTMLElement).tagName === "TEXTAREA") return;
@@ -78,7 +78,25 @@ export function StickyNote({
     [note.position, onSelect]
   );
 
-  // Handle resize start
+  // Handle drag start (touch)
+  const handleTouchDragStart = useCallback(
+    (e: React.TouchEvent) => {
+      if ((e.target as HTMLElement).tagName === "TEXTAREA") return;
+      if ((e.target as HTMLElement).closest("button")) return;
+      if (e.touches.length !== 1) return;
+      e.preventDefault();
+      onSelect();
+      const touch = e.touches[0];
+      setIsDragging(true);
+      setDragOffset({
+        x: touch.clientX - note.position.x,
+        y: touch.clientY - note.position.y,
+      });
+    },
+    [note.position, onSelect]
+  );
+
+  // Handle resize start (mouse)
   const handleResizeStart = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -89,14 +107,26 @@ export function StickyNote({
     [onSelect]
   );
 
-  // Handle mouse move for drag and resize
+  // Handle resize start (touch)
+  const handleTouchResizeStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      e.preventDefault();
+      e.stopPropagation();
+      onSelect();
+      setIsResizing(true);
+    },
+    [onSelect]
+  );
+
+  // Handle mouse/touch move for drag and resize
   useEffect(() => {
     if (!isDragging && !isResizing) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMove = (clientX: number, clientY: number) => {
       if (isDragging) {
-        let newX = e.clientX - dragOffset.x;
-        let newY = e.clientY - dragOffset.y;
+        let newX = clientX - dragOffset.x;
+        let newY = clientY - dragOffset.y;
 
         // Constrain to viewport bounds
         const maxX = window.innerWidth - note.size.width;
@@ -112,24 +142,41 @@ export function StickyNote({
         if (!noteEl) return;
 
         const rect = noteEl.getBoundingClientRect();
-        const newWidth = Math.max(180, e.clientX - rect.left);
-        const newHeight = Math.max(120, e.clientY - rect.top);
+        const newWidth = Math.max(180, clientX - rect.left);
+        const newHeight = Math.max(120, clientY - rect.top);
 
         onUpdate({ size: { width: newWidth, height: newHeight } });
       }
     };
 
-    const handleMouseUp = () => {
+    const handleMouseMove = (e: MouseEvent) => {
+      handleMove(e.clientX, e.clientY);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      handleMove(touch.clientX, touch.clientY);
+    };
+
+    const handleEnd = () => {
       setIsDragging(false);
       setIsResizing(false);
     };
 
     document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("mouseup", handleEnd);
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
+    document.addEventListener("touchend", handleEnd);
+    document.addEventListener("touchcancel", handleEnd);
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mouseup", handleEnd);
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("touchend", handleEnd);
+      document.removeEventListener("touchcancel", handleEnd);
     };
   }, [isDragging, isResizing, dragOffset, note.size, onUpdate]);
 
@@ -164,6 +211,7 @@ export function StickyNote({
       {/* Compact title bar */}
       <div
         onMouseDown={handleDragStart}
+        onTouchStart={handleTouchDragStart}
         className={cn(
           "flex items-center h-[14px] px-[3px] cursor-grab select-none",
           isDragging && "cursor-grabbing"
@@ -171,6 +219,7 @@ export function StickyNote({
         style={{
           backgroundColor: colors.bg,
           borderBottom: `1px solid ${colors.border}`,
+          touchAction: "none",
         }}
       >
         {/* Close button */}
@@ -207,9 +256,11 @@ export function StickyNote({
       {/* Resize handle */}
       <div
         onMouseDown={handleResizeStart}
-        className="absolute bottom-0 right-0 w-2.5 h-2.5 cursor-se-resize"
+        onTouchStart={handleTouchResizeStart}
+        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize"
         style={{
           background: `linear-gradient(135deg, transparent 50%, ${colors.border} 50%)`,
+          touchAction: "none",
         }}
       />
     </div>

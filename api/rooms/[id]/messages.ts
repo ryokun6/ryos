@@ -118,7 +118,7 @@ async function refreshRoomPresence(roomId: string, username: string): Promise<vo
 // ============================================================================
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { requestId, logger } = initLogger();
+  const { requestId: _requestId, logger } = initLogger();
   const startTime = Date.now();
   
   const origin = getEffectiveOrigin(req);
