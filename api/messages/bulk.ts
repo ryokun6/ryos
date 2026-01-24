@@ -6,32 +6,13 @@
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { ROOM_ID_REGEX } from "../_utils/_validation.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
 import { roomExists, getMessages } from "../rooms/_helpers/_redis.js";
 import type { Message } from "../rooms/_helpers/_types.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
-
-function getEffectiveOrigin(req: VercelRequest): string | null {
-  return (req.headers.origin as string) || null;
-}
-
-function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return true;
-  const allowedOrigins = ["https://os.ryo.lu", "https://ryos.vercel.app", "http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"];
-  return allowedOrigins.some((a) => origin.startsWith(a)) || origin.includes("vercel.app");
-}
-
-function setCorsHeaders(res: VercelResponse, origin: string | null): void {
-  res.setHeader("Content-Type", "application/json");
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-  }
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const { logger } = initLogger();
@@ -41,13 +22,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   logger.request(req.method || "GET", req.url || "/api/messages/bulk", "bulk-messages");
 
   if (req.method === "OPTIONS") {
-    setCorsHeaders(res, origin);
+    res.setHeader("Content-Type", "application/json");
+    setCorsHeaders(res, origin, { methods: ["GET", "OPTIONS"], headers: ["Content-Type"] });
     logger.response(204, Date.now() - startTime);
     res.status(204).end();
     return;
   }
 
-  setCorsHeaders(res, origin);
+  res.setHeader("Content-Type", "application/json");
+  setCorsHeaders(res, origin, { methods: ["GET", "OPTIONS"], headers: ["Content-Type"] });
 
   if (!isAllowedOrigin(origin)) {
     logger.response(403, Date.now() - startTime);

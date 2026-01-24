@@ -1,27 +1,20 @@
 /**
- * Common helper functions for chat-rooms API
+ * Common helper functions for chat-rooms API (Node.js runtime)
  */
 
 import type { VercelRequest } from "@vercel/node";
 
-// Helper to get header value from both Web Request and Node.js IncomingMessage
-// Handles vercel dev (Node.js headers object) and production (Web Headers)
-function getHeader(req: Request | VercelRequest, name: string): string | null {
-  // Web standard Headers (has .get method)
-  if (req.headers && typeof (req.headers as Headers).get === 'function') {
-    return (req.headers as Headers).get(name);
-  }
-  // Node.js style headers (plain object)
-  const headers = req.headers as Record<string, string | string[] | undefined>;
-  const value = headers[name.toLowerCase()];
+// Helper to get header value from Node.js IncomingMessage headers
+function getHeader(req: VercelRequest, name: string): string | null {
+  const value = req.headers[name.toLowerCase()];
   if (Array.isArray(value)) {
     return value[0] || null;
   }
-  return typeof value === 'string' ? value : null;
+  return typeof value === "string" ? value : null;
 }
 
 // ============================================================================
-// Response Helpers
+// Response Helpers (used by internal helper modules)
 // ============================================================================
 
 /**
@@ -71,7 +64,7 @@ export function addCorsHeaders(
 /**
  * Extract client IP from request headers
  */
-export function getClientIp(request: Request | VercelRequest): string {
+export function getClientIp(request: VercelRequest): string {
   const xVercel = getHeader(request, "x-vercel-forwarded-for");
   const xForwarded = getHeader(request, "x-forwarded-for");
   const xRealIp = getHeader(request, "x-real-ip");
@@ -79,4 +72,3 @@ export function getClientIp(request: Request | VercelRequest): string {
   const ip = raw.split(",")[0].trim();
   return ip || "unknown-ip";
 }
-

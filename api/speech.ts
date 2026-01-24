@@ -3,6 +3,8 @@ import { experimental_generateSpeech as generateSpeech } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { validateAuth } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
+import { getClientIp } from "./_utils/_rate-limit.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
 import { Redis } from "@upstash/redis";
 import { initLogger } from "./_utils/_logging.js";
 
@@ -35,43 +37,6 @@ function createRedis(): Redis {
     url: process.env.REDIS_KV_REST_API_URL!,
     token: process.env.REDIS_KV_REST_API_TOKEN!,
   });
-}
-
-function getClientIp(req: VercelRequest): string {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string") {
-    return forwarded.split(",")[0].trim();
-  }
-  if (Array.isArray(forwarded)) {
-    return forwarded[0];
-  }
-  return (req.headers["x-real-ip"] as string) || "unknown";
-}
-
-function getEffectiveOrigin(req: VercelRequest): string | null {
-  return (req.headers.origin as string) || null;
-}
-
-function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return true;
-  const allowedOrigins = [
-    "https://os.ryo.lu",
-    "https://ryos.vercel.app",
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-  ];
-  return allowedOrigins.some((allowed) => origin.startsWith(allowed)) || origin.includes("vercel.app");
-}
-
-function setCorsHeaders(res: VercelResponse, origin: string | null): void {
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-  }
 }
 
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
@@ -157,7 +122,7 @@ export default async function handler(
 
   // Handle CORS pre-flight request
   if (req.method === "OPTIONS") {
-    setCorsHeaders(res, effectiveOrigin);
+    setCorsHeaders(res, effectiveOrigin, { methods: ["POST", "OPTIONS"] });
     logger.response(204, Date.now() - startTime);
     res.status(204).end();
     return;
@@ -176,7 +141,7 @@ export default async function handler(
     return;
   }
 
-  setCorsHeaders(res, effectiveOrigin);
+  setCorsHeaders(res, effectiveOrigin, { methods: ["POST", "OPTIONS"] });
 
   // Create Redis client
   const redis = createRedis();

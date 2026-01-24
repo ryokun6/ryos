@@ -11,6 +11,7 @@ import { Redis } from "@upstash/redis";
 import { validateAuth } from "../_utils/auth/index.js";
 import { assertValidRoomId, escapeHTML, filterProfanityPreservingUrls } from "../_utils/_validation.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
 import { roomExists, addMessage, generateId, getCurrentTimestamp } from "../rooms/_helpers/_redis.js";
 import type { Message } from "../rooms/_helpers/_types.js";
 import { initLogger } from "../_utils/_logging.js";
@@ -63,44 +64,6 @@ function createRedis(): Redis {
   });
 }
 
-function getEffectiveOrigin(req: VercelRequest): string | null {
-  const origin = req.headers.origin as string | undefined;
-  const referer = req.headers.referer as string | undefined;
-  if (origin) return origin;
-  if (referer) {
-    try {
-      return new URL(referer).origin;
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return true;
-  const ALLOWED_ORIGINS = [
-    "https://os.ryo.lu",
-    "https://ryo.lu",
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
-  ];
-  if (ALLOWED_ORIGINS.includes(origin)) return true;
-  if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) return true;
-  return false;
-}
-
-function setCorsHeaders(res: VercelResponse, origin: string | null): void {
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
-  res.setHeader("Access-Control-Max-Age", "86400");
-}
-
 // ============================================================================
 // Route Handler
 // ============================================================================
@@ -110,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const startTime = Date.now();
   
   const origin = getEffectiveOrigin(req);
-  setCorsHeaders(res, origin);
+  setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
   
   logger.request(req.method || "POST", req.url || "/api/ai/ryo-reply");
   

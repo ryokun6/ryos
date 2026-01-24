@@ -27,6 +27,7 @@ import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { validateAuth } from "./_utils/auth/index.js";
 import { Redis } from "@upstash/redis";
 import { initLogger } from "./_utils/_logging.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
 
 // Central list of supported theme IDs for tool validation
 const themeIds = ["system7", "macosx", "xp", "win98"] as const;
@@ -270,48 +271,13 @@ function createRedis(): Redis {
   });
 }
 
-// Helper to get header value from both Web Request and Node.js IncomingMessage
-// Handles vercel dev (Node.js headers object) and production (Web Headers)
-function getHeader(req: Request | VercelRequest, name: string): string | null {
-  // Web standard Headers (has .get method)
-  if (req.headers && typeof (req.headers as Headers).get === 'function') {
-    return (req.headers as Headers).get(name);
-  }
-  // Node.js style headers (plain object)
-  const headers = req.headers as Record<string, string | string[] | undefined>;
-  const value = headers[name.toLowerCase()];
+// Helper to get header value from Node.js IncomingMessage headers
+function getHeader(req: VercelRequest, name: string): string | null {
+  const value = req.headers[name.toLowerCase()];
   if (Array.isArray(value)) {
     return value[0] || null;
   }
-  return typeof value === 'string' ? value : null;
-}
-
-function getEffectiveOrigin(req: Request | VercelRequest): string | null {
-  return getHeader(req, "origin");
-}
-
-// Helper to get JSON body from both Web Request and VercelRequest
-// Web Request uses .json(), VercelRequest has pre-parsed .body
-async function getJsonBody<T = unknown>(req: Request | VercelRequest): Promise<T> {
-  // Check if it's a VercelRequest (has body property that's already parsed)
-  if ('body' in req && req.body !== undefined && typeof req.body === 'object') {
-    return req.body as T;
-  }
-  // Web Request - use .json()
-  return (req as Request).json();
-}
-
-function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return true;
-  const allowedOrigins = [
-    "https://os.ryo.lu",
-    "https://ryos.vercel.app",
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-  ];
-  return allowedOrigins.some((allowed) => origin.startsWith(allowed)) || origin.includes("vercel.app");
+  return typeof value === "string" ? value : null;
 }
 
 // Unified static prompt with all instructions
@@ -570,7 +536,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Check origin before processing request
   const effectiveOrigin = getEffectiveOrigin(req);
   
-  logger.request(req.method, req.url, "chat");
+  logger.request(req.method || "POST", req.url || "/api/chat", "chat");
   
   if (!isAllowedOrigin(effectiveOrigin)) {
     logger.warn("Unauthorized origin", { origin: effectiveOrigin });
@@ -584,9 +550,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === "OPTIONS") {
     logger.response(204, Date.now() - startTime);
-    res.setHeader("Access-Control-Allow-Origin", validOrigin);
-    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
+    setCorsHeaders(res, validOrigin, { methods: ["POST", "OPTIONS"] });
     res.status(204).end();
     return;
   }
@@ -603,18 +567,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // Parse query string to get model parameter
     // Handle both full URLs and relative paths (vercel dev uses relative paths)
-    const url = new URL(req.url, "http://localhost");
+    const url = new URL(req.url || "/", "http://localhost");
     const queryModel = url.searchParams.get("model") as SupportedModel | null;
 
     const {
       messages,
       systemState: incomingSystemState, // still passed for dynamic prompt generation but NOT for auth
       model: bodyModel = DEFAULT_MODEL,
-    } = await getJsonBody<{
+    } = req.body as {
       messages: unknown[];
       systemState?: SystemState;
       model?: string;
-    }>(req);
+    };
 
     // Use query parameter if available, otherwise use body parameter, otherwise use default
     const model = queryModel || bodyModel || DEFAULT_MODEL;
@@ -698,8 +662,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       isAuthenticated && username ? username.toLowerCase() : `anon:${ip}`;
 
     // Only check rate limits for user messages (not system messages)
-    const userMessages = messages.filter(
-      (m: { role: string }) => m.role === "user"
+    const userMessages = (messages as Array<{ role: string }>).filter(
+      (m) => m.role === "user"
     );
     if (userMessages.length > 0) {
       const rateLimitResult = await checkAndIncrementAIMessageCount(

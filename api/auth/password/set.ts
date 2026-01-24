@@ -12,6 +12,7 @@ import {
   PASSWORD_MAX_LENGTH,
 } from "../../_utils/auth/index.js";
 import { hashPassword, setUserPasswordHash } from "../../_utils/auth/_password.js";
+import { setCorsHeaders } from "../../_utils/_cors.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -34,16 +35,6 @@ function extractAuth(req: VercelRequest): { username: string | null; token: stri
   return { username, token };
 }
 
-function setCorsHeaders(res: VercelResponse, origin: string | undefined): void {
-  res.setHeader("Content-Type", "application/json");
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-  }
-}
-
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
@@ -52,12 +43,12 @@ export default async function handler(
   
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    setCorsHeaders(res, origin);
+    setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
     res.status(204).end();
     return;
   }
 
-  setCorsHeaders(res, origin);
+  setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
 
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });

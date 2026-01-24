@@ -11,6 +11,8 @@ import { CHAT_USERS_PREFIX } from "./rooms/_helpers/_constants.js";
 import { deleteAllUserTokens, PASSWORD_HASH_PREFIX } from "./_utils/auth/index.js";
 import { validateAuth } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
+import { getClientIp } from "./_utils/_rate-limit.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
 import { initLogger } from "./_utils/_logging.js";
 
 export const runtime = "nodejs";
@@ -22,44 +24,6 @@ function createRedis(): Redis {
     url: process.env.REDIS_KV_REST_API_URL!,
     token: process.env.REDIS_KV_REST_API_TOKEN!,
   });
-}
-
-function getClientIp(req: VercelRequest): string {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string") {
-    return forwarded.split(",")[0].trim();
-  }
-  if (Array.isArray(forwarded)) {
-    return forwarded[0];
-  }
-  return (req.headers["x-real-ip"] as string) || "unknown";
-}
-
-function getEffectiveOrigin(req: VercelRequest): string | null {
-  return (req.headers.origin as string) || null;
-}
-
-function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return true; // Allow requests without origin (e.g., server-to-server)
-  const allowedOrigins = [
-    "https://os.ryo.lu",
-    "https://ryos.vercel.app",
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-  ];
-  return allowedOrigins.some((allowed) => origin.startsWith(allowed)) || origin.includes("vercel.app");
-}
-
-function setCorsHeaders(res: VercelResponse, origin: string | null): void {
-  res.setHeader("Content-Type", "application/json");
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-  }
 }
 
 async function isAdmin(redis: Redis, username: string | null, token: string | null): Promise<boolean> {
@@ -326,6 +290,7 @@ export default async function handler(
   }
 
   setCorsHeaders(res, origin);
+  res.setHeader("Content-Type", "application/json");
 
   if (!isAllowedOrigin(origin)) {
     logger.warn("Unauthorized origin", { origin });

@@ -18,8 +18,7 @@ import {
   USERNAME_REGEX,
 } from "../../_utils/_validation.js";
 // NOTE: Auth imports removed to keep this module Edge-compatible.
-// handleCreateUser is DEPRECATED - use POST /api/auth/register instead.
-import type { User, CreateUserData } from "./_types.js";
+import type { User } from "./_types.js";
 import { createErrorResponse } from "./_helpers.js";
 
 // Create Redis client
@@ -123,21 +122,6 @@ export async function ensureUserExists(
 // ============================================================================
 // Handler Functions
 // ============================================================================
-
-/**
- * Handle create user request
- * @deprecated Use POST /api/auth/register instead. This function is kept for type compatibility only.
- */
-export async function handleCreateUser(
-  _data: CreateUserData,
-  requestId: string
-): Promise<Response> {
-  logError(requestId, "handleCreateUser is deprecated - use POST /api/auth/register");
-  return createErrorResponse(
-    "This endpoint is deprecated. Use POST /api/auth/register instead.",
-    410 // Gone
-  );
-}
 
 /**
  * Handle get users request (search)

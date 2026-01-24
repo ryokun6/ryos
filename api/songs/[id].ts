@@ -22,7 +22,8 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import { validateAuth } from "../_utils/auth/index.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
-import { isAllowedOrigin, getEffectiveOrigin } from "../_utils/_cors.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
+import { getClientIp } from "../_utils/_rate-limit.js";
 import {
   getSong,
   saveSong,
@@ -108,15 +109,6 @@ function createRedis(): Redis {
   });
 }
 
-function setCorsHeaders(res: VercelResponse, origin: string | null): void {
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Username");
-  res.setHeader("Access-Control-Max-Age", "86400");
-}
-
 // Helper for SSE responses with Node.js VercelResponse
 function sendSSEResponse(res: VercelResponse, origin: string | null, data: unknown): void {
   res.setHeader("Content-Type", "text/event-stream");
@@ -128,18 +120,6 @@ function sendSSEResponse(res: VercelResponse, origin: string | null, data: unkno
   }
   res.write(`data: ${JSON.stringify(data)}\n\n`);
   res.end();
-}
-
-function getClientIp(req: VercelRequest): string {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string") {
-    return forwarded.split(",")[0].trim();
-  }
-  const realIp = req.headers["x-real-ip"];
-  if (typeof realIp === "string") {
-    return realIp;
-  }
-  return "unknown";
 }
 
 // Rate limiting configuration
@@ -164,7 +144,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const songId = req.query.id as string | undefined;
 
   const effectiveOrigin = getEffectiveOrigin(req);
-  setCorsHeaders(res, effectiveOrigin);
+  setCorsHeaders(res, effectiveOrigin, { methods: ["GET", "POST", "DELETE", "OPTIONS"] });
 
   logger.request(req.method || "GET", `/api/songs/${songId || "[id]"}`);
 

@@ -1,49 +1,12 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import * as RateLimit from "./_utils/_rate-limit.js";
+import { getClientIp } from "./_utils/_rate-limit.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
 import { initLogger } from "./_utils/_logging.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
-
-// Helper functions for Node.js runtime
-function getClientIp(req: VercelRequest): string {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string") {
-    return forwarded.split(",")[0].trim();
-  }
-  if (Array.isArray(forwarded)) {
-    return forwarded[0];
-  }
-  return (req.headers["x-real-ip"] as string) || "unknown";
-}
-
-function getEffectiveOrigin(req: VercelRequest): string | null {
-  return (req.headers.origin as string) || null;
-}
-
-function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return true;
-  const allowedOrigins = [
-    "https://os.ryo.lu",
-    "https://ryos.vercel.app",
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-  ];
-  return allowedOrigins.some((allowed) => origin.startsWith(allowed)) || origin.includes("vercel.app");
-}
-
-function setCorsHeaders(res: VercelResponse, origin: string | null): void {
-  res.setHeader("Content-Type", "application/json");
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-  }
-}
 
 /**
  * Expected request body
@@ -119,7 +82,8 @@ export default async function handler(
   });
 
   if (req.method === "OPTIONS") {
-    setCorsHeaders(res, effectiveOrigin);
+    res.setHeader("Content-Type", "application/json");
+    setCorsHeaders(res, effectiveOrigin, { methods: ["POST", "OPTIONS"], headers: ["Content-Type"] });
     logger.response(204, Date.now() - startTime);
     res.status(204).end();
     return;
@@ -132,7 +96,8 @@ export default async function handler(
     return;
   }
 
-  setCorsHeaders(res, effectiveOrigin);
+  res.setHeader("Content-Type", "application/json");
+  setCorsHeaders(res, effectiveOrigin, { methods: ["POST", "OPTIONS"], headers: ["Content-Type"] });
 
   // Check origin - be more permissive in development
   const vercelEnv = process.env.VERCEL_ENV;

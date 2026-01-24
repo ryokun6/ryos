@@ -3,6 +3,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import * as RateLimit from "./_utils/_rate-limit.js";
+import { getClientIp } from "./_utils/_rate-limit.js";
+import { isAllowedOrigin, getEffectiveOrigin } from "./_utils/_cors.js";
 import { normalizeUrlForCacheKey } from "./_utils/_url.js";
 import { initLogger } from "./_utils/_logging.js";
 
@@ -17,47 +19,6 @@ function createRedis(): Redis {
     url: process.env.REDIS_KV_REST_API_URL as string,
     token: process.env.REDIS_KV_REST_API_TOKEN as string,
   });
-}
-
-function getEffectiveOrigin(req: VercelRequest): string | null {
-  const origin = req.headers.origin as string | undefined;
-  const referer = req.headers.referer as string | undefined;
-  if (origin) return origin;
-  if (referer) {
-    try {
-      return new URL(referer).origin;
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return true;
-  const ALLOWED_ORIGINS = [
-    "https://os.ryo.lu",
-    "https://ryo.lu",
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
-  ];
-  if (ALLOWED_ORIGINS.includes(origin)) return true;
-  if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) return true;
-  return false;
-}
-
-function getClientIp(req: VercelRequest): string {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string") {
-    return forwarded.split(",")[0].trim();
-  }
-  const realIp = req.headers["x-real-ip"];
-  if (typeof realIp === "string") {
-    return realIp;
-  }
-  return "unknown";
 }
 
 // --- Utility Functions ----------------------------------------------------

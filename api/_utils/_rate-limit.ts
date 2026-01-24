@@ -162,17 +162,29 @@ export async function checkCounterLimit({
   };
 }
 
+// Helper to get header value from Node.js IncomingMessage headers
+function getHeaderValue(
+  headers: Record<string, string | string[] | undefined>,
+  name: string
+): string {
+  const value = headers[name.toLowerCase()];
+  if (Array.isArray(value)) return value[0] || "";
+  return value || "";
+}
+
 /**
- * Extract a best-effort client IP from common proxy headers (Web Request API).
+ * Extract a best-effort client IP from common proxy headers (Node.js runtime).
  */
-export function getClientIp(req: Request): string {
+export function getClientIp(
+  req: { headers: Record<string, string | string[] | undefined> }
+): string {
   try {
     const h = req.headers;
-    const origin = h.get("origin") || "";
-    const xVercel = h.get("x-vercel-forwarded-for");
-    const xForwarded = h.get("x-forwarded-for");
-    const xRealIp = h.get("x-real-ip");
-    const cfIp = h.get("cf-connecting-ip");
+    const origin = getHeaderValue(h, "origin");
+    const xVercel = getHeaderValue(h, "x-vercel-forwarded-for");
+    const xForwarded = getHeaderValue(h, "x-forwarded-for");
+    const xRealIp = getHeaderValue(h, "x-real-ip");
+    const cfIp = getHeaderValue(h, "cf-connecting-ip");
     const raw = xVercel || xForwarded || xRealIp || cfIp || "";
     let ip = raw.split(",")[0].trim();
 
@@ -197,45 +209,8 @@ export function getClientIp(req: Request): string {
   }
 }
 
-/**
- * Extract client IP from Vercel request (IncomingMessage-style headers).
- */
-export function getClientIpFromVercel(req: { headers: Record<string, string | string[] | undefined> }): string {
-  try {
-    const h = req.headers;
-    const getHeader = (name: string): string => {
-      const val = h[name];
-      return Array.isArray(val) ? val[0] : val || "";
-    };
-    
-    const origin = getHeader("origin");
-    const xVercel = getHeader("x-vercel-forwarded-for");
-    const xForwarded = getHeader("x-forwarded-for");
-    const xRealIp = getHeader("x-real-ip");
-    const cfIp = getHeader("cf-connecting-ip");
-    const raw = xVercel || xForwarded || xRealIp || cfIp || "";
-    let ip = raw.split(",")[0].trim();
-
-    if (!ip) ip = "unknown-ip";
-
-    // Normalize IPv6-mapped IPv4 and loopback variants
-    ip = ip.replace(/^::ffff:/i, "");
-    const lower = ip.toLowerCase();
-    const isLocalOrigin = /^http:\/\/localhost(?::\d+)?$/.test(origin);
-    if (
-      isLocalOrigin ||
-      lower === "::1" ||
-      lower === "0:0:0:0:0:0:0:1" ||
-      lower === "127.0.0.1"
-    ) {
-      return "localhost-dev";
-    }
-
-    return ip;
-  } catch {
-    return "unknown-ip";
-  }
-}
+/** @deprecated Use getClientIp instead */
+export const getClientIpFromVercel = getClientIp;
 
 /**
  * Build a stable key string from key parts.
