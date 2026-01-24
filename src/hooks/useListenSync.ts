@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useShallow } from "zustand/react/shallow";
 import type ReactPlayer from "react-player";
 import {
   useListenSessionStore,
@@ -32,12 +33,14 @@ export function useListenSync({
     isDj,
     lastSyncPayload,
     syncSession,
-  } = useListenSessionStore((state) => ({
-    currentSession: state.currentSession,
-    isDj: state.isDj,
-    lastSyncPayload: state.lastSyncPayload,
-    syncSession: state.syncSession,
-  }));
+  } = useListenSessionStore(
+    useShallow((state) => ({
+      currentSession: state.currentSession,
+      isDj: state.isDj,
+      lastSyncPayload: state.lastSyncPayload,
+      syncSession: state.syncSession,
+    }))
+  );
 
   const lastSentRef = useRef<number>(0);
 
