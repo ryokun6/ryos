@@ -15,6 +15,11 @@ import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
 import { CoverFlow } from "@/apps/ipod/components/CoverFlow";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
+import { ListenSessionBadge } from "@/components/listen/ListenSessionBadge";
+import { ListenSessionInvite } from "@/components/listen/ListenSessionInvite";
+import { ListenSessionPanel } from "@/components/listen/ListenSessionPanel";
+import { JoinSessionDialog } from "@/components/listen/JoinSessionDialog";
+import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
@@ -78,6 +83,12 @@ export function KaraokeAppComponent({
     setIsLyricsSearchDialogOpen,
     isSongSearchDialogOpen,
     setIsSongSearchDialogOpen,
+    isListenPanelOpen,
+    setIsListenPanelOpen,
+    isListenInviteOpen,
+    setIsListenInviteOpen,
+    isJoinListenDialogOpen,
+    setIsJoinListenDialogOpen,
     isSyncModeOpen,
     setIsSyncModeOpen,
     isCoverFlowOpen,
@@ -105,6 +116,10 @@ export function KaraokeAppComponent({
     activityState,
     hasActiveActivity,
     translationLanguages,
+    listenSession,
+    listenUserCount,
+    isListenSessionHost,
+    isListenSessionDj,
     showStatus,
     showOfflineStatus,
     restartAutoHideTimer,
@@ -131,6 +146,11 @@ export function KaraokeAppComponent({
     handleAddSong,
     handleSongSearchSelect,
     handleAddUrl,
+    handleStartListenSession,
+    handleJoinListenSession,
+    handleLeaveListenSession,
+    handlePassDj,
+    handleSendReaction,
     handlePlayTrack,
     handleToggleCoverFlow,
     handleCoverFlowSelectTrack,
@@ -171,6 +191,13 @@ export function KaraokeAppComponent({
       tracks={tracks}
       currentIndex={currentIndex}
       onToggleCoverFlow={handleToggleCoverFlow}
+      onStartListenSession={handleStartListenSession}
+      onJoinListenSession={() => setIsJoinListenDialogOpen(true)}
+      onOpenListenSession={() => setIsListenPanelOpen(true)}
+      onShareListenSession={() => setIsListenInviteOpen(true)}
+      onLeaveListenSession={handleLeaveListenSession}
+      isInListenSession={!!listenSession}
+      isListenSessionHost={isListenSessionHost}
     />
   );
 
@@ -279,6 +306,20 @@ export function KaraokeAppComponent({
             restartAutoHideTimer();
           }}
         >
+          {listenSession && (
+            <>
+              <ListenSessionBadge
+                className="absolute top-3 right-3 z-50"
+                userCount={listenUserCount}
+                isHost={isListenSessionHost}
+                isDj={isListenSessionDj}
+                onOpenPanel={() => setIsListenPanelOpen(true)}
+                onShare={() => setIsListenInviteOpen(true)}
+                onLeave={handleLeaveListenSession}
+              />
+              <ReactionOverlay className="z-40" />
+            </>
+          )}
           {/* Video Player - container clips YouTube UI by extending height and using negative margin */}
           {currentTrack ? (
             <div className="absolute inset-0 overflow-hidden">
@@ -572,6 +613,29 @@ export function KaraokeAppComponent({
           onOpenChange={setIsSongSearchDialogOpen}
           onSelect={handleSongSearchSelect}
           onAddUrl={handleAddUrl}
+        />
+        {listenSession && (
+          <ListenSessionPanel
+            isOpen={isListenPanelOpen}
+            onOpenChange={setIsListenPanelOpen}
+            session={listenSession}
+            isDj={isListenSessionDj}
+            onPassDj={handlePassDj}
+            onLeave={handleLeaveListenSession}
+            onSendReaction={handleSendReaction}
+          />
+        )}
+        {listenSession && (
+          <ListenSessionInvite
+            isOpen={isListenInviteOpen}
+            onClose={() => setIsListenInviteOpen(false)}
+            sessionId={listenSession.id}
+          />
+        )}
+        <JoinSessionDialog
+          isOpen={isJoinListenDialogOpen}
+          onClose={() => setIsJoinListenDialogOpen(false)}
+          onJoin={handleJoinListenSession}
         />
 
         {/* Lyrics Sync Mode (non-fullscreen only - fullscreen renders in portal) */}
