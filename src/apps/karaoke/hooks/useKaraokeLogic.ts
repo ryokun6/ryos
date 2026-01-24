@@ -21,10 +21,12 @@ import { useFurigana } from "@/hooks/useFurigana";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { LyricsAlignment, LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
 import { useOffline } from "@/hooks/useOffline";
+import { useListenSync } from "@/hooks/useListenSync";
 import { TRANSLATION_LANGUAGES, getYouTubeVideoId, formatKugouImageUrl } from "@/apps/ipod/constants";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import { useActivityState, isAnyActivityActive } from "@/hooks/useActivityState";
 import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
 import type { IpodInitialData } from "../../base/types";
@@ -83,6 +85,7 @@ export function useKaraokeLogic({
     setTrackLyricsSource,
     clearTrackLyricsSource,
     setLyricOffset,
+    addTrackFromVideoId,
   } = useIpodStoreShallow((s) => ({
     setLyricsAlignment: s.setLyricsAlignment,
     setLyricsFont: s.setLyricsFont,
@@ -94,6 +97,7 @@ export function useKaraokeLogic({
     setTrackLyricsSource: s.setTrackLyricsSource,
     clearTrackLyricsSource: s.clearTrackLyricsSource,
     setLyricOffset: s.setLyricOffset,
+    addTrackFromVideoId: s.addTrackFromVideoId,
   }));
 
   // Library update checker
@@ -109,6 +113,7 @@ export function useKaraokeLogic({
 
   // Ref to track processed initial data
   const lastProcessedInitialDataRef = useRef<typeof initialData | null>(null);
+  const lastProcessedListenSessionRef = useRef<string | null>(null);
 
   // Independent playback state from Karaoke store (not shared with iPod)
   const {
@@ -158,6 +163,28 @@ export function useKaraokeLogic({
     [username, authToken]
   );
 
+  const {
+    currentSession: listenSession,
+    isHost: isListenSessionHost,
+    isDj: isListenSessionDj,
+    createSession: createListenSession,
+    joinSession: joinListenSession,
+    leaveSession: leaveListenSession,
+    syncSession: syncListenSession,
+    sendReaction: sendListenReaction,
+  } = useListenSessionStore(
+    useShallow((state) => ({
+      currentSession: state.currentSession,
+      isHost: state.isHost,
+      isDj: state.isDj,
+      createSession: state.createSession,
+      joinSession: state.joinSession,
+      leaveSession: state.leaveSession,
+      syncSession: state.syncSession,
+      sendReaction: state.sendReaction,
+    }))
+  );
+
   // Compute currentIndex from currentSongId
   const currentIndex = useMemo(() => {
     if (!currentSongId) return tracks.length > 0 ? 0 : -1;
@@ -179,6 +206,9 @@ export function useKaraokeLogic({
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
   const [isAddingSong, setIsAddingSong] = useState(false);
+  const [isListenPanelOpen, setIsListenPanelOpen] = useState(false);
+  const [isListenInviteOpen, setIsListenInviteOpen] = useState(false);
+  const [isJoinListenDialogOpen, setIsJoinListenDialogOpen] = useState(false);
   
   // CoverFlow state
   const [isCoverFlowOpen, setIsCoverFlowOpen] = useState(false);
@@ -220,6 +250,32 @@ export function useKaraokeLogic({
 
   // Current track
   const currentTrack: Track | null = tracks[currentIndex] || null;
+  const currentTrackMeta = useMemo(
+    () =>
+      currentTrack
+        ? {
+            title: currentTrack.title,
+            artist: currentTrack.artist,
+            cover: currentTrack.cover,
+          }
+        : null,
+    [currentTrack]
+  );
+
+  const getActivePlayer = useCallback(
+    () => (isFullScreen ? fullScreenPlayerRef.current : playerRef.current),
+    [isFullScreen]
+  );
+
+  useListenSync({
+    currentTrackId: currentTrack?.id ?? null,
+    currentTrackMeta,
+    isPlaying,
+    setIsPlaying,
+    setCurrentTrackId: setCurrentSongId,
+    getActivePlayer,
+    addTrackFromId: addTrackFromVideoId,
+  });
   const lyricsSourceOverride = currentTrack?.lyricsSource;
 
   // Cover URL for paused state overlay
@@ -791,6 +847,88 @@ export function useKaraokeLogic({
     }
   }, [tracks, currentIndex]);
 
+  const handleStartListenSession = useCallback(async () => {
+    if (!username) {
+      toast.error("Login required", {
+        description: "Set a username in Chats to start a session.",
+      });
+      return;
+    }
+    const result = await createListenSession(username);
+    if (!result.ok) {
+      toast.error("Failed to start session", {
+        description: result.error || "Please try again.",
+      });
+      return;
+    }
+    setIsListenInviteOpen(true);
+    setIsListenPanelOpen(true);
+  }, [createListenSession, username]);
+
+  const handleJoinListenSession = useCallback(
+    async (sessionId: string) => {
+      if (!username) {
+        toast.error("Login required", {
+          description: "Set a username in Chats to join a session.",
+        });
+        return;
+      }
+      const result = await joinListenSession(sessionId, username);
+      if (!result.ok) {
+        toast.error("Failed to join session", {
+          description: result.error || "Please try again.",
+        });
+        return;
+      }
+      setIsListenPanelOpen(true);
+    },
+    [joinListenSession, username]
+  );
+
+  const handleLeaveListenSession = useCallback(async () => {
+    const result = await leaveListenSession();
+    if (!result.ok) {
+      toast.error("Failed to leave session", {
+        description: result.error || "Please try again.",
+      });
+      return;
+    }
+    setIsListenPanelOpen(false);
+    setIsListenInviteOpen(false);
+  }, [leaveListenSession]);
+
+  const handlePassDj = useCallback(
+    async (nextDj: string) => {
+      const activePlayer = getActivePlayer();
+      const positionMs = Math.max(0, (activePlayer?.getCurrentTime() ?? 0) * 1000);
+      const result = await syncListenSession({
+        currentTrackId: currentTrack?.id ?? null,
+        currentTrackMeta,
+        isPlaying,
+        positionMs,
+        djUsername: nextDj,
+      });
+      if (!result.ok) {
+        toast.error("Failed to pass DJ", {
+          description: result.error || "Please try again.",
+        });
+      }
+    },
+    [currentTrack, currentTrackMeta, getActivePlayer, isPlaying, syncListenSession]
+  );
+
+  const handleSendReaction = useCallback(
+    async (emoji: string) => {
+      const result = await sendListenReaction(emoji);
+      if (!result.ok) {
+        toast.error("Failed to send reaction", {
+          description: result.error || "Please try again.",
+        });
+      }
+    },
+    [sendListenReaction]
+  );
+
   // Generate share URL for song
   const karaokeGenerateShareUrl = (videoId: string): string => {
     return `${window.location.origin}/karaoke/${videoId}`;
@@ -958,10 +1096,48 @@ export function useKaraokeLogic({
     }
   }, [isWindowOpen, initialData, processVideoId, clearInstanceInitialData, instanceId, tracks, currentSongId, setCurrentSongId]);
 
+  useEffect(() => {
+    if (
+      isWindowOpen &&
+      initialData?.listenSessionId &&
+      typeof initialData.listenSessionId === "string"
+    ) {
+      if (lastProcessedListenSessionRef.current === initialData.listenSessionId) return;
+
+      const sessionIdToProcess = initialData.listenSessionId;
+      setTimeout(() => {
+        if (!username) {
+          toast.error("Login required", {
+            description: "Set a username in Chats to join a session.",
+          });
+          return;
+        }
+        joinListenSession(sessionIdToProcess, username)
+          .then((result) => {
+            if (!result.ok) {
+              toast.error("Failed to join session", {
+                description: result.error || "Please try again.",
+              });
+            } else {
+              setIsListenPanelOpen(true);
+            }
+            if (instanceId) clearInstanceInitialData(instanceId);
+          })
+          .catch((error) => {
+            console.error(`[Karaoke] Error joining listen session ${sessionIdToProcess}:`, error);
+          });
+      }, 100);
+      lastProcessedListenSessionRef.current = initialData.listenSessionId;
+    }
+  }, [isWindowOpen, initialData, joinListenSession, username, clearInstanceInitialData, instanceId]);
+
   // Handle updateApp event for when app is already open and receives new video
   useEffect(() => {
     const handleUpdateApp = (
-      event: CustomEvent<{ appId: string; initialData?: { videoId?: string } }>
+      event: CustomEvent<{
+        appId: string;
+        initialData?: { videoId?: string; listenSessionId?: string };
+      }>
     ) => {
       if (event.detail.appId === "karaoke" && event.detail.initialData?.videoId) {
         if (lastProcessedInitialDataRef.current === event.detail.initialData) return;
@@ -974,11 +1150,37 @@ export function useKaraokeLogic({
         });
         lastProcessedInitialDataRef.current = event.detail.initialData;
       }
+
+      if (event.detail.appId === "karaoke" && event.detail.initialData?.listenSessionId) {
+        const sessionId = event.detail.initialData.listenSessionId;
+        if (lastProcessedListenSessionRef.current === sessionId) return;
+        bringToForeground("karaoke");
+        if (!username) {
+          toast.error("Login required", {
+            description: "Set a username in Chats to join a session.",
+          });
+          return;
+        }
+        joinListenSession(sessionId, username)
+          .then((result) => {
+            if (!result.ok) {
+              toast.error("Failed to join session", {
+                description: result.error || "Please try again.",
+              });
+            } else {
+              setIsListenPanelOpen(true);
+            }
+          })
+          .catch((error) => {
+            console.error(`[Karaoke] Error joining listen session ${sessionId}:`, error);
+          });
+        lastProcessedListenSessionRef.current = sessionId;
+      }
     };
 
     window.addEventListener("updateApp", handleUpdateApp as EventListener);
     return () => window.removeEventListener("updateApp", handleUpdateApp as EventListener);
-  }, [processVideoId, bringToForeground]);
+  }, [processVideoId, bringToForeground, joinListenSession, username]);
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -1041,6 +1243,12 @@ export function useKaraokeLogic({
     setIsSongSearchDialogOpen,
     isSyncModeOpen,
     setIsSyncModeOpen,
+    isListenPanelOpen,
+    setIsListenPanelOpen,
+    isListenInviteOpen,
+    setIsListenInviteOpen,
+    isJoinListenDialogOpen,
+    setIsJoinListenDialogOpen,
     isAddingSong,
     isCoverFlowOpen,
     setIsCoverFlowOpen,
@@ -1088,6 +1296,15 @@ export function useKaraokeLogic({
     cycleLyricsFont,
     handleAddTrack,
     processVideoId,
+    listenSession,
+    listenUserCount: listenSession?.users.length ?? 0,
+    isListenSessionHost,
+    isListenSessionDj,
+    handleStartListenSession,
+    handleJoinListenSession,
+    handleLeaveListenSession,
+    handlePassDj,
+    handleSendReaction,
     handleShareSong,
     karaokeGenerateShareUrl,
     handleRefreshLyrics,
