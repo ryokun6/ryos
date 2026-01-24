@@ -248,7 +248,7 @@ export function StickyNote({
         onChange={handleContentChange}
         placeholder={t("apps.stickies.placeholder")}
         className={cn(
-          "flex-1 p-2 resize-none outline-none bg-transparent font-geneva-12",
+          "flex-1 px-2 pt-1 pb-2 resize-none outline-none bg-transparent font-geneva-12",
           "placeholder:text-black/30 text-[13px]"
         )}
         style={{ 
