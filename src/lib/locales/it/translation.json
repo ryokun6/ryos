@@ -356,6 +356,8 @@
     },
     "chats": {
       "ariaLabels": {
+        "attachImage": "Allega immagine",
+        "clearImage": "Cancella immagine",
         "copyMessage": "Copia messaggio",
         "deleteMessage": "Elimina messaggio",
         "deleteRoom": "Elimina stanza",
@@ -364,6 +366,7 @@
         "messageUser": "Messaggio {{username}}",
         "newChat": "Nuova Chat",
         "pushToTalk": "Premi per parlare",
+        "selectedImage": "Immagine selezionata",
         "sendNudge": "Invia un sollecito",
         "speakMessage": "Leggi messaggio",
         "stopGeneration": "Interrompi generazione",
@@ -1716,6 +1719,44 @@
       "newSoundboardDefault": "Nuovo Pannello Suoni",
       "soundboards": "Pannelli Suoni"
     },
+    "stickies": {
+      "description": "Note adesive per promemoria rapidi",
+      "empty": {
+        "createNote": "Nuova nota",
+        "description": "Crea una nota per iniziare",
+        "title": "Ancora nessuna nota adesiva"
+      },
+      "help": {
+        "autoSave": {
+          "description": "Le note vengono salvate automaticamente e persistono tra le sessioni",
+          "title": "Salvataggio automatico"
+        },
+        "colors": {
+          "description": "Cambia i colori delle note dal menu Nota per organizzare i tuoi pensieri",
+          "title": "Colori"
+        },
+        "createNote": {
+          "description": "Fai clic su File > Nuova nota o usa il pulsante per creare una nuova nota adesiva",
+          "title": "Crea nota"
+        },
+        "deleteNote": {
+          "description": "Fai clic sul pulsante X su una nota o usa il menu per eliminarla",
+          "title": "Elimina nota"
+        }
+      },
+      "menu": {
+        "about": "Informazioni su Stickies",
+        "clearAll": "Cancella tutte le note",
+        "color": "Colore",
+        "deleteNote": "Elimina nota",
+        "help": "Guida di Stickies",
+        "newNote": "Nuova nota",
+        "note": "Nota"
+      },
+      "name": "Stickies",
+      "placeholder": "Scrivi una nota...",
+      "title": "Stickies"
+    },
     "synth": {
       "addPreset": "AGGIUNGI PRESET",
       "controls": "CONTROLLI",
@@ -1810,6 +1851,7 @@
         "date": "Visualizza data/ora attuale",
         "echo": "Visualizza testo",
         "edit": "Apri nell'editor di testo",
+        "grep": "Cerca pattern nel file",
         "help": "Mostra comandi disponibili",
         "history": "Mostra cronologia comandi",
         "logout": "Disconnetti utente corrente",
@@ -1821,6 +1863,7 @@
         "ryo": "Chatta con ryo",
         "su": "Cambia o crea utente",
         "touch": "Crea file vuoto",
+        "uptime": "Mostra uptime del sistema",
         "vim": "Apri file nell'editor vim",
         "whoami": "Visualizza utente corrente"
       },

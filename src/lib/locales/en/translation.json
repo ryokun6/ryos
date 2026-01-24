@@ -2147,6 +2147,44 @@
         }
       }
     },
+    "stickies": {
+      "name": "Stickies",
+      "title": "Stickies",
+      "description": "Sticky notes for quick reminders",
+      "placeholder": "Write a note...",
+      "menu": {
+        "newNote": "New Note",
+        "note": "Note",
+        "color": "Color",
+        "deleteNote": "Delete Note",
+        "clearAll": "Clear All Notes",
+        "help": "Stickies Help",
+        "about": "About Stickies"
+      },
+      "empty": {
+        "title": "No sticky notes yet",
+        "description": "Create a note to get started",
+        "createNote": "New Note"
+      },
+      "help": {
+        "createNote": {
+          "title": "Create Note",
+          "description": "Click File > New Note or use the button to create a new sticky"
+        },
+        "colors": {
+          "title": "Colors",
+          "description": "Change note colors from the Note menu to organize your thoughts"
+        },
+        "deleteNote": {
+          "title": "Delete Note",
+          "description": "Click the X button on a note or use the menu to delete it"
+        },
+        "autoSave": {
+          "title": "Auto-Save",
+          "description": "Notes are automatically saved and persist between sessions"
+        }
+      }
+    },
     "admin": {
       "name": "Admin",
       "description": "System administration panel",

@@ -18,7 +18,8 @@ export type AppId =
   | "terminal"
   | "applet-viewer"
   | "control-panels"
-  | "admin";
+  | "admin"
+  | "stickies";
 
 /**
  * Get translated app name with theme-awareness
@@ -140,6 +141,7 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
     "applet-viewer": ["appletStore", "createWithRyosChat", "viewApplets", "shareApplets", "openFromFinder", "keepUpdated"],
     "control-panels": ["appearance", "sounds", "aiModel", "shaderEffects", "backupRestore", "system"],
     admin: ["adminAccess", "userManagement", "roomManagement", "statistics"],
+    stickies: ["createNote", "colors", "deleteNote", "autoSave"],
   };
 
   const keys = helpKeys[appId] || [];

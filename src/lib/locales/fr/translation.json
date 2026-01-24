@@ -356,6 +356,8 @@
     },
     "chats": {
       "ariaLabels": {
+        "attachImage": "Joindre une image",
+        "clearImage": "Effacer l'image",
         "copyMessage": "Copier le message",
         "deleteMessage": "Supprimer le message",
         "deleteRoom": "Supprimer le salon",
@@ -364,6 +366,7 @@
         "messageUser": "Message à {{username}}",
         "newChat": "Nouveau chat",
         "pushToTalk": "Appuyer pour parler",
+        "selectedImage": "Image sélectionnée",
         "sendNudge": "Envoyer un Nudge",
         "speakMessage": "Lire le message",
         "stopGeneration": "Arrêter la génération",
@@ -1716,6 +1719,44 @@
       "newSoundboardDefault": "Nouvelle table de sons",
       "soundboards": "Tableaux sonores"
     },
+    "stickies": {
+      "description": "Pense-bêtes pour des rappels rapides",
+      "empty": {
+        "createNote": "Nouveau pense-bête",
+        "description": "Créez un pense-bête pour commencer",
+        "title": "Aucun pense-bête pour l'instant"
+      },
+      "help": {
+        "autoSave": {
+          "description": "Les pense-bêtes sont automatiquement enregistrés et persistent entre les sessions",
+          "title": "Enregistrement automatique"
+        },
+        "colors": {
+          "description": "Changez les couleurs des pense-bêtes depuis le menu Note pour organiser vos pensées",
+          "title": "Couleurs"
+        },
+        "createNote": {
+          "description": "Cliquez sur Fichier > Nouvelle note ou utilisez le bouton pour créer un nouveau pense-bête",
+          "title": "Créer un pense-bête"
+        },
+        "deleteNote": {
+          "description": "Cliquez sur le bouton X d'un pense-bête ou utilisez le menu pour le supprimer",
+          "title": "Supprimer le pense-bête"
+        }
+      },
+      "menu": {
+        "about": "À propos de Stickies",
+        "clearAll": "Effacer tous les pense-bêtes",
+        "color": "Couleur",
+        "deleteNote": "Supprimer le pense-bête",
+        "help": "Aide de Stickies",
+        "newNote": "Nouvelle note",
+        "note": "Note"
+      },
+      "name": "Stickies",
+      "placeholder": "Écrire une note...",
+      "title": "Stickies"
+    },
     "synth": {
       "addPreset": "AJOUTER PRÉRÉGLAGE",
       "controls": "COMMANDES",
@@ -1810,6 +1851,7 @@
         "date": "Afficher la date/heure actuelle",
         "echo": "Afficher du texte",
         "edit": "Ouvrir dans l'éditeur de texte",
+        "grep": "Rechercher un motif dans le fichier",
         "help": "Afficher les commandes disponibles",
         "history": "Afficher l'historique des commandes",
         "logout": "Déconnecter l'utilisateur actuel",
@@ -1821,6 +1863,7 @@
         "ryo": "Discuter avec ryo",
         "su": "Changer ou créer un utilisateur",
         "touch": "Créer un fichier vide",
+        "uptime": "Afficher le temps de disponibilité du système",
         "vim": "Ouvrir le fichier dans l'éditeur vim",
         "whoami": "Afficher l'utilisateur actuel"
       },

@@ -37,7 +37,8 @@ export interface BaseApp<TInitialData = unknown> {
     | "karaoke"
     | "terminal"
     | "applet-viewer"
-    | "admin";
+    | "admin"
+    | "stickies";
   name: string;
   icon: string | { type: "image"; src: string };
   description: string;

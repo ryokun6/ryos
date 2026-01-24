@@ -185,6 +185,11 @@ const LazyAdminApp = createLazyComponent<unknown>(
   "admin"
 );
 
+const LazyStickiesApp = createLazyComponent<unknown>(
+  () => import("@/apps/stickies/components/StickiesAppComponent").then(m => ({ default: m.StickiesAppComponent })),
+  "stickies"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small)
 // ============================================================================
@@ -206,6 +211,7 @@ import { appMetadata as terminalMetadata, helpItems as terminalHelpItems } from 
 import { appMetadata as appletViewerMetadata, helpItems as appletViewerHelpItems } from "@/apps/applet-viewer";
 import { appMetadata as controlPanelsMetadata, helpItems as controlPanelsHelpItems } from "@/apps/control-panels";
 import { appMetadata as adminMetadata, helpItems as adminHelpItems } from "@/apps/admin";
+import { appMetadata as stickiesMetadata, helpItems as stickiesHelpItems } from "@/apps/stickies";
 
 // ============================================================================
 // APP REGISTRY
@@ -439,6 +445,19 @@ export const appRegistry = {
     windowConfig: {
       defaultSize: { width: 800, height: 500 },
       minSize: { width: 600, height: 400 },
+    } as WindowConstraints,
+  },
+  ["stickies"]: {
+    id: "stickies",
+    name: "Stickies",
+    icon: { type: "image", src: stickiesMetadata.icon },
+    description: "Sticky notes for quick reminders",
+    component: LazyStickiesApp,
+    helpItems: stickiesHelpItems,
+    metadata: stickiesMetadata,
+    windowConfig: {
+      defaultSize: { width: 500, height: 400 },
+      minSize: { width: 300, height: 250 },
     } as WindowConstraints,
   },
 } as const;

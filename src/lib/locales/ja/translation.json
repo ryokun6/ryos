@@ -356,6 +356,8 @@
     },
     "chats": {
       "ariaLabels": {
+        "attachImage": "画像を添付",
+        "clearImage": "画像をクリア",
         "copyMessage": "メッセージをコピー",
         "deleteMessage": "メッセージを削除",
         "deleteRoom": "ルームを削除",
@@ -364,6 +366,7 @@
         "messageUser": "{{username}}にメッセージを送信",
         "newChat": "新しいチャット",
         "pushToTalk": "プッシュトゥトーク",
+        "selectedImage": "選択中の画像",
         "sendNudge": "ナッジを送信",
         "speakMessage": "メッセージを読み上げる",
         "stopGeneration": "生成を停止",
@@ -1716,6 +1719,44 @@
       "newSoundboardDefault": "新規サウンドボード",
       "soundboards": "サウンドボード"
     },
+    "stickies": {
+      "description": "ちょっとしたメモに付箋",
+      "empty": {
+        "createNote": "新規メモ",
+        "description": "メモを作成して始めましょう",
+        "title": "まだ付箋がありません"
+      },
+      "help": {
+        "autoSave": {
+          "description": "メモは自動的に保存され、セッション間で保持されます",
+          "title": "自動保存"
+        },
+        "colors": {
+          "description": "メモメニューからメモの色を変更して、思考を整理しましょう",
+          "title": "色"
+        },
+        "createNote": {
+          "description": "ファイル > 新規メモをクリックするか、ボタンを使用して新しい付箋を作成します",
+          "title": "メモを作成"
+        },
+        "deleteNote": {
+          "description": "メモのXボタンをクリックするか、メニューを使用して削除します",
+          "title": "メモを削除"
+        }
+      },
+      "menu": {
+        "about": "Stickies について",
+        "clearAll": "全てのメモをクリア",
+        "color": "色",
+        "deleteNote": "メモを削除",
+        "help": "Stickies ヘルプ",
+        "newNote": "新規ノート",
+        "note": "ノート"
+      },
+      "name": "スティッキーズ",
+      "placeholder": "ノートを書く...",
+      "title": "スティッキーズ"
+    },
     "synth": {
       "addPreset": "プリセットを追加",
       "controls": "コントロール",
@@ -1810,6 +1851,7 @@
         "date": "現在の日時を表示",
         "echo": "テキストを表示",
         "edit": "テキストエディタで開く",
+        "grep": "ファイル内のパターンを検索",
         "help": "利用可能なコマンドを表示",
         "history": "コマンド履歴を表示",
         "logout": "現在のユーザーをログアウト",
@@ -1821,6 +1863,7 @@
         "ryo": "ryoとチャット",
         "su": "ユーザーを切り替えるか作成",
         "touch": "空のファイルを作成",
+        "uptime": "システム稼働時間を表示",
         "vim": "vimエディタでファイルを開く",
         "whoami": "現在のユーザーを表示"
       },

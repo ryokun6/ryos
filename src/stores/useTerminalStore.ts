@@ -58,7 +58,7 @@ const STORE_NAME = "ryos:terminal";
 
 export const useTerminalStore = create<TerminalStoreState>()(
   persist(
-    (set) => ({
+    (set): TerminalStoreState => ({
       commandHistory: [],
       currentPath: "/", // default root
       setCommandHistory: (historyOrFn) =>
@@ -107,13 +107,13 @@ export const useTerminalStore = create<TerminalStoreState>()(
         set((state) => ({
           vimCursorColumn: typeof column === 'function' ? column(state.vimCursorColumn) : column
         })),
-      vimMode: "normal",
+      vimMode: "normal" as const,
       setVimMode: (mode) => set({ vimMode: mode }),
       vimClipboard: "",
       setVimClipboard: (content) => set({ vimClipboard: content }),
       vimUndoStack: [],
       vimRedoStack: [],
-      pushVimUndo: (snapshot) =>
+      pushVimUndo: (snapshot: { content: string; cursorLine: number; cursorColumn: number }) =>
         set((state) => ({
           vimUndoStack: [...state.vimUndoStack, snapshot].slice(-100),
           vimRedoStack: [],
@@ -127,7 +127,7 @@ export const useTerminalStore = create<TerminalStoreState>()(
         });
         return snapshot;
       },
-      pushVimRedo: (snapshot) =>
+      pushVimRedo: (snapshot: { content: string; cursorLine: number; cursorColumn: number }) =>
         set((state) => ({
           vimRedoStack: [...state.vimRedoStack, snapshot].slice(-100),
         })),
@@ -142,11 +142,11 @@ export const useTerminalStore = create<TerminalStoreState>()(
       },
       clearVimRedo: () => set({ vimRedoStack: [] }),
       vimSearchPattern: "",
-      setVimSearchPattern: (pattern) => set({ vimSearchPattern: pattern }),
+      setVimSearchPattern: (pattern: string) => set({ vimSearchPattern: pattern }),
       vimSearchForward: true,
-      setVimSearchForward: (forward) => set({ vimSearchForward: forward }),
+      setVimSearchForward: (forward: boolean) => set({ vimSearchForward: forward }),
       vimVisualStartLine: null,
-      setVimVisualStartLine: (line) => set({ vimVisualStartLine: line }),
+      setVimVisualStartLine: (line: number | null) => set({ vimVisualStartLine: line }),
     }),
     {
       name: STORE_NAME,

@@ -50,7 +50,6 @@ export const useVimLogic = ({
     popVimUndo,
     pushVimRedo,
     popVimRedo,
-    clearVimRedo,
     vimSearchPattern,
     setVimSearchPattern,
     vimSearchForward,
@@ -111,8 +110,8 @@ export const useVimLogic = ({
 
   const jumpToMatch = (
     match: { line: number; col: number },
-    lines: string[],
-    maxVisibleLines: number,
+    _lines: string[],
+    _maxVisibleLines: number,
     maxPosition: number,
     upperThreshold: number,
     lowerThreshold: number

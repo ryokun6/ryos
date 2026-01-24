@@ -356,6 +356,8 @@
     },
     "chats": {
       "ariaLabels": {
+        "attachImage": "Adjuntar imagen",
+        "clearImage": "Borrar imagen",
         "copyMessage": "Copiar mensaje",
         "deleteMessage": "Eliminar mensaje",
         "deleteRoom": "Eliminar sala",
@@ -364,6 +366,7 @@
         "messageUser": "Mensaje a {{username}}",
         "newChat": "Nuevo chat",
         "pushToTalk": "Pulsar para hablar",
+        "selectedImage": "Imagen seleccionada",
         "sendNudge": "Enviar un toque",
         "speakMessage": "Reproducir mensaje",
         "stopGeneration": "Detener generación",
@@ -1716,6 +1719,44 @@
       "newSoundboardDefault": "Nueva mesa de sonido",
       "soundboards": "Mesas de sonido"
     },
+    "stickies": {
+      "description": "Notas adhesivas para recordatorios rápidos",
+      "empty": {
+        "createNote": "Nueva nota",
+        "description": "Crea una nota para empezar",
+        "title": "Aún no hay notas adhesivas"
+      },
+      "help": {
+        "autoSave": {
+          "description": "Las notas se guardan automáticamente y persisten entre sesiones",
+          "title": "Guardado automático"
+        },
+        "colors": {
+          "description": "Cambia los colores de las notas desde el menú Nota para organizar tus ideas",
+          "title": "Colores"
+        },
+        "createNote": {
+          "description": "Haz clic en Archivo > Nueva nota o usa el botón para crear una nueva nota adhesiva",
+          "title": "Crear nota"
+        },
+        "deleteNote": {
+          "description": "Haz clic en el botón X de una nota o usa el menú para eliminarla",
+          "title": "Eliminar nota"
+        }
+      },
+      "menu": {
+        "about": "Acerca de Notas Adhesivas",
+        "clearAll": "Borrar todas las notas",
+        "color": "Color",
+        "deleteNote": "Eliminar nota",
+        "help": "Ayuda de Notas Adhesivas",
+        "newNote": "Nueva nota",
+        "note": "Nota"
+      },
+      "name": "Notas rápidas",
+      "placeholder": "Escribir una nota...",
+      "title": "Notas rápidas"
+    },
     "synth": {
       "addPreset": "AÑADIR PREAJUSTE",
       "controls": "CONTROLES",
@@ -1810,6 +1851,7 @@
         "date": "Mostrar fecha/hora actual",
         "echo": "Mostrar texto",
         "edit": "Abrir en editor de texto",
+        "grep": "Buscar patrón en archivo",
         "help": "Mostrar comandos disponibles",
         "history": "Mostrar historial de comandos",
         "logout": "Cerrar sesión del usuario actual",
@@ -1821,6 +1863,7 @@
         "ryo": "Chatear con ryo",
         "su": "Cambiar o crear usuario",
         "touch": "Crear archivo vacío",
+        "uptime": "Mostrar tiempo de actividad del sistema",
         "vim": "Abrir archivo en editor vim",
         "whoami": "Mostrar usuario actual"
       },

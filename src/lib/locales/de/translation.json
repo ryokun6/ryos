@@ -356,6 +356,8 @@
     },
     "chats": {
       "ariaLabels": {
+        "attachImage": "Bild anhängen",
+        "clearImage": "Bild entfernen",
         "copyMessage": "Nachricht kopieren",
         "deleteMessage": "Nachricht löschen",
         "deleteRoom": "Raum löschen",
@@ -364,6 +366,7 @@
         "messageUser": "{{username}} eine Nachricht senden",
         "newChat": "Neuer Chat",
         "pushToTalk": "Push-to-Talk",
+        "selectedImage": "Ausgewähltes Bild",
         "sendNudge": "Stupser senden",
         "speakMessage": "Nachricht sprechen",
         "stopGeneration": "Generierung stoppen",
@@ -1716,6 +1719,44 @@
       "newSoundboardDefault": "Neues Soundboard",
       "soundboards": "Soundboards"
     },
+    "stickies": {
+      "description": "Haftnotizen für schnelle Erinnerungen",
+      "empty": {
+        "createNote": "Neue Notiz",
+        "description": "Erstellen Sie eine Notiz, um zu beginnen",
+        "title": "Noch keine Haftnotizen"
+      },
+      "help": {
+        "autoSave": {
+          "description": "Notizen werden automatisch gespeichert und bleiben zwischen den Sitzungen erhalten",
+          "title": "Automatisches Speichern"
+        },
+        "colors": {
+          "description": "Ändern Sie die Notizfarben über das Notizmenü, um Ihre Gedanken zu ordnen",
+          "title": "Farben"
+        },
+        "createNote": {
+          "description": "Klicken Sie auf Datei > Neue Notiz oder verwenden Sie die Schaltfläche, um eine neue Haftnotiz zu erstellen",
+          "title": "Notiz erstellen"
+        },
+        "deleteNote": {
+          "description": "Klicken Sie auf die Schaltfläche X einer Notiz oder verwenden Sie das Menü, um sie zu löschen",
+          "title": "Notiz löschen"
+        }
+      },
+      "menu": {
+        "about": "Über Stickies",
+        "clearAll": "Alle Notizen löschen",
+        "color": "Farbe",
+        "deleteNote": "Notiz löschen",
+        "help": "Stickies-Hilfe",
+        "newNote": "Neue Notiz",
+        "note": "Notiz"
+      },
+      "name": "Stickies",
+      "placeholder": "Notiz schreiben...",
+      "title": "Stickies"
+    },
     "synth": {
       "addPreset": "VOREINSTELLUNG HINZUFÜGEN",
       "controls": "STEUERUNG",
@@ -1810,6 +1851,7 @@
         "date": "Aktuelles Datum/Uhrzeit anzeigen",
         "echo": "Text anzeigen",
         "edit": "Im Texteditor öffnen",
+        "grep": "Muster in Datei suchen",
         "help": "Verfügbare Befehle anzeigen",
         "history": "Befehlsverlauf anzeigen",
         "logout": "Aktuellen Benutzer abmelden",
@@ -1821,6 +1863,7 @@
         "ryo": "Mit ryo chatten",
         "su": "Benutzer wechseln oder erstellen",
         "touch": "Leere Datei erstellen",
+        "uptime": "System-Betriebszeit anzeigen",
         "vim": "Datei im vim-Editor öffnen",
         "whoami": "Aktuellen Benutzer anzeigen"
       },

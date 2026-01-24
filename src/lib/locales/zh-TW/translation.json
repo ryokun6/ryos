@@ -356,6 +356,8 @@
     },
     "chats": {
       "ariaLabels": {
+        "attachImage": "附加圖片",
+        "clearImage": "清除圖片",
         "copyMessage": "複製訊息",
         "deleteMessage": "刪除訊息",
         "deleteRoom": "刪除聊天室",
@@ -364,6 +366,7 @@
         "messageUser": "傳訊息給 {{username}}",
         "newChat": "新增聊天",
         "pushToTalk": "即按即說",
+        "selectedImage": "已選圖片",
         "sendNudge": "傳送抖動",
         "speakMessage": "朗讀訊息",
         "stopGeneration": "停止生成",
@@ -1716,6 +1719,44 @@
       "newSoundboardDefault": "新增音效板",
       "soundboards": "音效板"
     },
+    "stickies": {
+      "description": "用於快速提醒的便利貼",
+      "empty": {
+        "createNote": "新增便利貼",
+        "description": "建立便利貼以開始使用",
+        "title": "尚未有便利貼"
+      },
+      "help": {
+        "autoSave": {
+          "description": "便利貼會自動儲存，並在不同工作階段之間保留。",
+          "title": "自動儲存"
+        },
+        "colors": {
+          "description": "從「便利貼」選單變更便利貼顏色，以整理您的想法。",
+          "title": "顏色"
+        },
+        "createNote": {
+          "description": "按一下「檔案」>「新增便利貼」，或使用按鈕來建立新的便利貼。",
+          "title": "建立便利貼"
+        },
+        "deleteNote": {
+          "description": "按一下便利貼上的「X」按鈕，或使用選單來刪除便利貼。",
+          "title": "刪除便利貼"
+        }
+      },
+      "menu": {
+        "about": "關於便利貼",
+        "clearAll": "清除所有便利貼",
+        "color": "顏色",
+        "deleteNote": "刪除便利貼",
+        "help": "便利貼輔助說明",
+        "newNote": "新增備忘錄",
+        "note": "備忘錄"
+      },
+      "name": "便條紙",
+      "placeholder": "撰寫備忘錄...",
+      "title": "便條紙"
+    },
     "synth": {
       "addPreset": "新增預設",
       "controls": "控制",
@@ -1810,6 +1851,7 @@
         "date": "顯示目前日期/時間",
         "echo": "顯示文字",
         "edit": "以文字編輯器開啟",
+        "grep": "於檔案中搜尋樣式",
         "help": "顯示可用指令",
         "history": "顯示指令歷史記錄",
         "logout": "登出目前使用者",
@@ -1821,6 +1863,7 @@
         "ryo": "與 ryo 聊天",
         "su": "切換或建立使用者",
         "touch": "建立空白檔案",
+        "uptime": "顯示系統開機時間",
         "vim": "在 vim 編輯器中開啟檔案",
         "whoami": "顯示目前使用者"
       },

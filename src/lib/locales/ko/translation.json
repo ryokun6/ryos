@@ -356,6 +356,8 @@
     },
     "chats": {
       "ariaLabels": {
+        "attachImage": "이미지 첨부",
+        "clearImage": "이미지 지우기",
         "copyMessage": "메시지 복사",
         "deleteMessage": "메시지 삭제",
         "deleteRoom": "방 삭제",
@@ -364,6 +366,7 @@
         "messageUser": "{{username}}에게 메시지",
         "newChat": "새 채팅",
         "pushToTalk": "눌러서 말하기",
+        "selectedImage": "선택된 이미지",
         "sendNudge": "넛지 보내기",
         "speakMessage": "메시지 말하기",
         "stopGeneration": "생성 중지",
@@ -1716,6 +1719,44 @@
       "newSoundboardDefault": "새로운 사운드보드",
       "soundboards": "사운드보드"
     },
+    "stickies": {
+      "description": "빠른 알림을 위한 스티커 메모",
+      "empty": {
+        "createNote": "새 메모",
+        "description": "시작하려면 메모를 만드세요.",
+        "title": "아직 스티커 메모가 없습니다."
+      },
+      "help": {
+        "autoSave": {
+          "description": "메모는 자동으로 저장되며 세션 간에 유지됩니다.",
+          "title": "자동 저장"
+        },
+        "colors": {
+          "description": "생각을 정리하려면 메모 메뉴에서 메모 색상을 변경하세요.",
+          "title": "색상"
+        },
+        "createNote": {
+          "description": "파일 > 새 메모를 클릭하거나 버튼을 사용하여 새 스티커 메모를 만드세요.",
+          "title": "메모 만들기"
+        },
+        "deleteNote": {
+          "description": "메모의 X 버튼을 클릭하거나 메뉴를 사용하여 삭제하세요.",
+          "title": "메모 삭제"
+        }
+      },
+      "menu": {
+        "about": "Stickies 정보",
+        "clearAll": "모든 메모 지우기",
+        "color": "색상",
+        "deleteNote": "메모 삭제",
+        "help": "Stickies 도움말",
+        "newNote": "새 메모",
+        "note": "메모"
+      },
+      "name": "스티커 메모",
+      "placeholder": "메모 작성...",
+      "title": "스티커 메모"
+    },
     "synth": {
       "addPreset": "프리셋 추가",
       "controls": "컨트롤",
@@ -1810,6 +1851,7 @@
         "date": "현재 날짜/시간 표시",
         "echo": "텍스트 표시",
         "edit": "텍스트 편집기로 열기",
+        "grep": "파일에서 패턴 검색",
         "help": "사용 가능한 명령어 표시",
         "history": "명령어 기록 표시",
         "logout": "현재 사용자 로그아웃",
@@ -1821,6 +1863,7 @@
         "ryo": "ryo와 채팅",
         "su": "사용자 전환 또는 생성",
         "touch": "빈 파일 생성",
+        "uptime": "시스템 가동 시간 표시",
         "vim": "vim 편집기에서 파일 열기",
         "whoami": "현재 사용자 표시"
       },

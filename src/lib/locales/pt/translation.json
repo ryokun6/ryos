@@ -356,6 +356,8 @@
     },
     "chats": {
       "ariaLabels": {
+        "attachImage": "Anexar imagem",
+        "clearImage": "Limpar imagem",
         "copyMessage": "Copiar mensagem",
         "deleteMessage": "Excluir mensagem",
         "deleteRoom": "Excluir sala",
@@ -364,6 +366,7 @@
         "messageUser": "Mensagem {{username}}",
         "newChat": "Novo Chat",
         "pushToTalk": "Pressionar para Falar",
+        "selectedImage": "Imagem selecionada",
         "sendNudge": "Enviar uma Cutucada",
         "speakMessage": "Falar mensagem",
         "stopGeneration": "Parar geração",
@@ -1716,6 +1719,44 @@
       "newSoundboardDefault": "Nova Mesa de Som",
       "soundboards": "Mesas de Som"
     },
+    "stickies": {
+      "description": "Notas autoadesivas para lembretes rápidos",
+      "empty": {
+        "createNote": "Nova Nota",
+        "description": "Crie uma nota para começar",
+        "title": "Nenhuma nota autoadesiva ainda"
+      },
+      "help": {
+        "autoSave": {
+          "description": "As notas são salvas automaticamente e persistem entre as sessões",
+          "title": "Salvamento Automático"
+        },
+        "colors": {
+          "description": "Altere as cores das notas no menu Nota para organizar suas ideias",
+          "title": "Cores"
+        },
+        "createNote": {
+          "description": "Clique em Arquivo > Nova Nota ou use o botão para criar uma nova nota autoadesiva",
+          "title": "Criar Nota"
+        },
+        "deleteNote": {
+          "description": "Clique no botão X em uma nota ou use o menu para excluí-la",
+          "title": "Excluir Nota"
+        }
+      },
+      "menu": {
+        "about": "Sobre as Notas Autoadesivas",
+        "clearAll": "Limpar Todas as Notas",
+        "color": "Cor",
+        "deleteNote": "Excluir Nota",
+        "help": "Ajuda das Notas Autoadesivas",
+        "newNote": "Nova Nota",
+        "note": "Nota"
+      },
+      "name": "Stickies",
+      "placeholder": "Escreva uma nota...",
+      "title": "Stickies"
+    },
     "synth": {
       "addPreset": "ADICIONAR PREDEFINIÇÃO",
       "controls": "CONTROLES",
@@ -1810,6 +1851,7 @@
         "date": "Exibir data/hora atual",
         "echo": "Exibir texto",
         "edit": "Abrir no editor de texto",
+        "grep": "Pesquisar padrão no arquivo",
         "help": "Mostrar comandos disponíveis",
         "history": "Mostrar histórico de comandos",
         "logout": "Sair do usuário atual",
@@ -1821,6 +1863,7 @@
         "ryo": "Conversar com ryo",
         "su": "Trocar ou criar usuário",
         "touch": "Criar arquivo vazio",
+        "uptime": "Mostrar tempo de atividade do sistema",
         "vim": "Abrir arquivo no editor vim",
         "whoami": "Exibir usuário atual"
       },
