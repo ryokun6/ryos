@@ -78,7 +78,7 @@ graph TB
 ## Project Structure
 
 ```
-├── api/              # Vercel API endpoints (Edge runtime)
+├── api/              # Vercel API endpoints (Node.js runtime)
 ├── public/           # Static assets
 ├── src/
 │   ├── apps/         # 17 app modules

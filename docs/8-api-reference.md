@@ -1,6 +1,6 @@
 # API Reference
 
-ryOS uses Vercel Serverless Functions with Edge runtime for all backend APIs.
+ryOS uses Vercel Serverless Functions with Node.js runtime for all backend APIs.
 
 ## API Request Flow
 
@@ -9,12 +9,12 @@ graph LR
     Client[Client App] --> Auth{Auth Check}
     Auth -->|Valid| Router[API Router]
     Auth -->|Invalid| Error[401 Error]
-    Router --> Edge[Edge Runtime]
-    Edge --> Services[External Services]
+    Router --> API[Node.js Runtime]
+    API --> Services[External Services]
     Services --> AI[AI Providers]
     Services --> DB[(Redis/KV)]
     Services --> Media[Media APIs]
-    Edge --> Response[JSON Response]
+    API --> Response[JSON Response]
     Response --> Client
 ```
 

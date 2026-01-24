@@ -629,9 +629,8 @@ function ChatComponent() {
 // 3. Call ipodControl({ action: "addAndPlay", id: "dQw4w9WgXcQ" })</code></pre>
 <h2>Configuration</h2>
 <h3>Runtime Settings</h3>
-<pre><code>export const maxDuration = 80;  // Max streaming duration (seconds)
-export const runtime = "edge";  // Edge runtime
-export const stream = true;     // Enable streaming</code></pre>
+<pre><code>export const runtime = "nodejs";   // Node.js runtime
+export const maxDuration = 80;     // Max duration (seconds)</code></pre>
 <h3>Model Configuration</h3>
 <pre><code>const result = streamText({
   model: selectedModel,
