@@ -432,20 +432,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     });
 
-    // Convert to UI message stream response (Web API Response)
-    const response = result.toUIMessageStreamResponse();
-
-    // Stream the response body to the client
-    // Node.js runtime supports returning Web API Response objects
-    const headers = new Headers(response.headers);
-    headers.set("Access-Control-Allow-Origin", effectiveOrigin!);
+    // Set CORS headers
+    res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
 
     logger.info("Streaming response started");
     
-    // Return Web API Response (Vercel Node.js runtime supports this)
-    return new Response(response.body, {
-      status: response.status,
-      headers,
+    // Use pipeUIMessageStreamToResponse for Node.js streaming
+    result.pipeUIMessageStreamToResponse(res, {
+      status: 200,
     });
   } catch (error) {
     logger.error("IE Generate API error", error);
