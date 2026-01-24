@@ -29,7 +29,7 @@ function createRedis(): Redis {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
-  const { requestId, logger } = initLogger();
+  const { requestId: _requestId, logger } = initLogger();
   const startTime = Date.now();
   const origin = getEffectiveOrigin(req);
   const roomId = req.query.id as string | undefined;

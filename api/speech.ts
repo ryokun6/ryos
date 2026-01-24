@@ -113,7 +113,7 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
-  const { requestId, logger } = initLogger();
+  const { requestId: _requestId, logger } = initLogger();
   const startTime = Date.now();
 
   logger.request(req.method || "POST", req.url || "/api/speech", "speech");
