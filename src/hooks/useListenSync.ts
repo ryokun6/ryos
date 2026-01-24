@@ -92,9 +92,11 @@ export function useListenSync({
       lastSyncPayload.currentTrackId !== currentTrackId
     ) {
       if (addTrackFromId) {
-        Promise.resolve(addTrackFromId(lastSyncPayload.currentTrackId)).catch(
-          () => setCurrentTrackId(lastSyncPayload.currentTrackId)
-        );
+        Promise.resolve(addTrackFromId(lastSyncPayload.currentTrackId))
+          .catch(() => null)
+          .finally(() => {
+            setCurrentTrackId(lastSyncPayload.currentTrackId);
+          });
       } else {
         setCurrentTrackId(lastSyncPayload.currentTrackId);
       }
