@@ -75,11 +75,6 @@ export interface SendMessageData {
   content: string;
 }
 
-export interface CreateUserData {
-  username: string;
-  password?: string;
-}
-
 export interface GenerateTokenData {
   username: string;
   force?: boolean;

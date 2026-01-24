@@ -1,41 +1,25 @@
 // No Next.js types needed – omit unused import to keep file framework‑agnostic.
 
-import {
-  createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  getClientIp,
-} from "./_utils/middleware.js";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { Redis } from "@upstash/redis";
 import * as RateLimit from "./_utils/_rate-limit.js";
+import { getClientIp } from "./_utils/_rate-limit.js";
+import { isAllowedOrigin, getEffectiveOrigin } from "./_utils/_cors.js";
+import { normalizeUrlForCacheKey } from "./_utils/_url.js";
+import { initLogger } from "./_utils/_logging.js";
 
+export const runtime = "nodejs";
 
-export const config = {
-  runtime: "edge",
-};
+// ============================================================================
+// Local Helper Functions
+// ============================================================================
 
-import { normalizeUrlForCacheKey } from "./_utils/_url.js"; // Import the function
-
-// --- Logging Utilities ---------------------------------------------------
-
-const logRequest = (
-  method: string,
-  url: string,
-  action: string | null,
-  id: string
-) => {
-  console.log(`[${id}] ${method} ${url} - Action: ${action || "none"}`);
-};
-
-const logInfo = (id: string, message: string, data?: unknown) => {
-  console.log(`[${id}] INFO: ${message}`, data ?? "");
-};
-
-const logError = (id: string, message: string, error: unknown) => {
-  console.error(`[${id}] ERROR: ${message}`, error);
-};
-
-const generateRequestId = (): string =>
-  Math.random().toString(36).substring(2, 10);
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL as string,
+    token: process.env.REDIS_KV_REST_API_TOKEN as string,
+  });
+}
 
 // --- Utility Functions ----------------------------------------------------
 
@@ -161,36 +145,39 @@ const WAYBACK_CACHE_PREFIX = "wayback:cache:";
  * blocked accidentally (the front‑end still has its own error handling for actual iframe errors).
  */
 
-export default async function handler(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const urlParam = searchParams.get("url");
-  let mode = searchParams.get("mode") || "proxy"; // "check" | "proxy" | "ai" | "list-cache"
-  const year = searchParams.get("year");
-  const month = searchParams.get("month");
-  const requestId = generateRequestId(); // Generate request ID
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { requestId, logger } = initLogger();
+  const startTime = Date.now();
+  
+  const urlParam = req.query.url as string | undefined;
+  let mode = (req.query.mode as string | undefined) || "proxy"; // "check" | "proxy" | "ai" | "list-cache"
+  const year = req.query.year as string | undefined;
+  const month = req.query.month as string | undefined;
   const effectiveOrigin = getEffectiveOrigin(req);
+  
+  logger.request(req.method || "GET", req.url || "/api/iframe-check", mode);
+  
   if (!isAllowedOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+    logger.warn("Unauthorized origin", { effectiveOrigin });
+    logger.response(403, Date.now() - startTime);
+    return res.status(403).send("Unauthorized");
   }
 
   // Generate a fresh, randomized browser header set for this request
   const BROWSER_HEADERS = generateRandomBrowserHeaders();
 
-  // Log incoming request
-  logRequest(req.method, req.url, mode, requestId);
-
   // Helper for consistent error responses with CORS
-  const errorResponseWithCors = (message: string, status: number = 400) =>
-    new Response(JSON.stringify({ error: message }), {
-      status,
-      headers: {
-        "Content-Type": "application/json",
-        ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-      },
-    });
+  const errorResponseWithCors = (message: string, status: number = 400) => {
+    if (effectiveOrigin) {
+      res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
+    }
+    res.setHeader("Content-Type", "application/json");
+    logger.response(status, Date.now() - startTime);
+    return res.status(status).json({ error: message });
+  };
 
   if (!urlParam) {
-    logError(requestId, "Missing 'url' query parameter", null);
+    logger.error("Missing 'url' query parameter");
     return errorResponseWithCors("Missing 'url' query parameter");
   }
 
@@ -200,7 +187,7 @@ export default async function handler(req: Request) {
     : `https://${urlParam}`;
 
   // Log normalized URL
-  logInfo(requestId, `Normalized URL: ${normalizedUrl}`);
+  logger.info(`Normalized URL: ${normalizedUrl}`);
 
   // ---------------------------
   // Rate limiting (mode-specific)
@@ -219,21 +206,18 @@ export default async function handler(req: Request) {
         limit: 300, // Relaxed global limit for proxy/check
       });
       if (!global.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            scope: "global",
-            mode,
-          }),
-          {
-            status: 429,
-            headers: {
-              "Retry-After": String(global.resetSeconds ?? BURST_WINDOW),
-              "Content-Type": "application/json",
-              ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-            },
-          }
-        );
+        logger.warn("Rate limit exceeded (global)", { ip, mode });
+        res.setHeader("Retry-After", String(global.resetSeconds ?? BURST_WINDOW));
+        res.setHeader("Content-Type", "application/json");
+        if (effectiveOrigin) {
+          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
+        }
+        logger.response(429, Date.now() - startTime);
+        return res.status(429).json({
+          error: "rate_limit_exceeded",
+          scope: "global",
+          mode,
+        });
       }
 
       // Per-host anti-scrape if URL present
@@ -256,22 +240,19 @@ export default async function handler(req: Request) {
           limit: 100, // Relaxed per-host limit for proxy/check
         });
         if (!host.allowed) {
-          return new Response(
-            JSON.stringify({
-              error: "rate_limit_exceeded",
-              scope: "host",
-              host: hostname,
-              mode,
-            }),
-            {
-              status: 429,
-              headers: {
-                "Retry-After": String(host.resetSeconds ?? BURST_WINDOW),
-                "Content-Type": "application/json",
-                ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-              },
-            }
-          );
+          logger.warn("Rate limit exceeded (host)", { ip, hostname, mode });
+          res.setHeader("Retry-After", String(host.resetSeconds ?? BURST_WINDOW));
+          res.setHeader("Content-Type", "application/json");
+          if (effectiveOrigin) {
+            res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
+          }
+          logger.response(429, Date.now() - startTime);
+          return res.status(429).json({
+            error: "rate_limit_exceeded",
+            scope: "host",
+            host: hostname,
+            mode,
+          });
         }
       } catch (e) {
         // Ignore invalid URL parse or missing hostname
@@ -279,34 +260,31 @@ export default async function handler(req: Request) {
       }
     } else if (mode === "ai" || mode === "list-cache") {
       const key = RateLimit.makeKey(burstKeyBase);
-      const res = await RateLimit.checkCounterLimit({
+      const rateRes = await RateLimit.checkCounterLimit({
         key,
         windowSeconds: BURST_WINDOW,
         limit: 120, // Relaxed limits for cached lookups/listing
       });
-      if (!res.allowed) {
-        return new Response(
-          JSON.stringify({ error: "rate_limit_exceeded", scope: mode }),
-          {
-            status: 429,
-            headers: {
-              "Retry-After": String(res.resetSeconds ?? BURST_WINDOW),
-              "Content-Type": "application/json",
-              ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-            },
-          }
-        );
+      if (!rateRes.allowed) {
+        logger.warn("Rate limit exceeded", { ip, mode });
+        res.setHeader("Retry-After", String(rateRes.resetSeconds ?? BURST_WINDOW));
+        res.setHeader("Content-Type", "application/json");
+        if (effectiveOrigin) {
+          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
+        }
+        logger.response(429, Date.now() - startTime);
+        return res.status(429).json({ error: "rate_limit_exceeded", scope: mode });
       }
     }
   } catch (e) {
-    logError(requestId, "Rate limit check failed (iframe-check)", e);
+    logger.error("Rate limit check failed (iframe-check)", e);
   }
 
   // --- AI cache retrieval mode (PRIORITIZE THIS) ---
   if (mode === "ai") {
     const aiUrl = normalizedUrl;
     if (!year) {
-      logError(requestId, "Missing year for AI cache mode", { year });
+      logger.error("Missing year for AI cache mode", { year });
       return errorResponseWithCors("Missing year parameter");
     }
 
@@ -317,20 +295,17 @@ export default async function handler(req: Request) {
       year === "current"; // Special case
 
     if (!isValidYear) {
-      logError(requestId, "Invalid year format for AI cache mode", { year });
+      logger.error("Invalid year format for AI cache mode", { year });
       return errorResponseWithCors("Invalid year format");
     }
 
     // Normalize the URL for the cache key
     const normalizedUrlForKey = normalizeUrlForCacheKey(aiUrl);
-    logInfo(
-      requestId,
-      `Normalized URL for AI cache key: ${normalizedUrlForKey}`
-    );
+    logger.info(`Normalized URL for AI cache key: ${normalizedUrlForKey}`);
 
     if (!normalizedUrlForKey) {
       // Handle case where normalization failed
-      logError(requestId, "URL normalization failed for AI cache key", null);
+      logger.error("URL normalization failed for AI cache key");
       return errorResponseWithCors("URL normalization failed", 500);
     }
 
@@ -339,47 +314,38 @@ export default async function handler(req: Request) {
       const key = `${IE_CACHE_PREFIX}${encodeURIComponent(
         normalizedUrlForKey
       )}:${year}`;
-      logInfo(requestId, `Checking AI cache with key: ${key}`);
+      logger.info(`Checking AI cache with key: ${key}`);
       const html = (await redis.lindex(key, 0)) as string | null;
       if (html) {
-        logInfo(requestId, `AI Cache HIT for key: ${key}`);
-        return new Response(html, {
-          headers: {
-            "Content-Type": "text/html; charset=utf-8",
-            "Access-Control-Allow-Origin": "*",
-            "X-AI-Cache": "HIT",
-          },
-        });
+        logger.info(`AI Cache HIT for key: ${key}`);
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("X-AI-Cache", "HIT");
+        logger.response(200, Date.now() - startTime);
+        return res.status(200).send(html);
       }
-      logInfo(requestId, `AI Cache MISS for key: ${key}`);
-      return new Response(JSON.stringify({ aiCache: false }), {
-        status: 404,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      });
+      logger.info(`AI Cache MISS for key: ${key}`);
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      logger.response(404, Date.now() - startTime);
+      return res.status(404).json({ aiCache: false });
     } catch (e) {
-      logError(requestId, "Error checking AI cache", e);
-      return new Response(JSON.stringify({ error: (e as Error).message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      logger.error("Error checking AI cache", e);
+      res.setHeader("Content-Type", "application/json");
+      logger.response(500, Date.now() - startTime);
+      return res.status(500).json({ error: (e as Error).message });
     }
   }
 
   // --- List Cache mode (Combined AI and Wayback) ---
   if (mode === "list-cache") {
     const listUrl = normalizedUrl;
-    logInfo(requestId, `Executing in 'list-cache' mode for: ${listUrl}`);
+    logger.info(`Executing in 'list-cache' mode for: ${listUrl}`);
 
     const normalizedUrlForKey = normalizeUrlForCacheKey(listUrl);
-    logInfo(
-      requestId,
-      `Normalized URL for list-cache key: ${normalizedUrlForKey}`
-    );
+    logger.info(`Normalized URL for list-cache key: ${normalizedUrlForKey}`);
     if (!normalizedUrlForKey) {
-      logError(requestId, "URL normalization failed for list-cache key", null);
+      logger.error("URL normalization failed for list-cache key");
       return errorResponseWithCors("URL normalization failed", 500);
     }
 
@@ -395,10 +361,7 @@ export default async function handler(req: Request) {
       const aiKeyPrefixLength = `${IE_CACHE_PREFIX}${encodeURIComponent(
         normalizedUrlForKey
       )}:`.length;
-      logInfo(
-        requestId,
-        `Scanning Redis for AI cache with pattern: ${aiPattern}`
-      );
+      logger.info(`Scanning Redis for AI cache with pattern: ${aiPattern}`);
       let aiCursor = 0;
       do {
         const [nextCursor, keys] = await redis.scan(aiCursor, {
@@ -412,10 +375,7 @@ export default async function handler(req: Request) {
           if (yearPart && /^(\d{1,4}( BC)?|\d+ CE)$/.test(yearPart)) {
             uniqueYears.add(yearPart);
           } else {
-            logInfo(
-              requestId,
-              `Skipping invalid AI year format in key: ${key}`
-            );
+            logger.info(`Skipping invalid AI year format in key: ${key}`);
           }
         }
       } while (aiCursor !== 0);
@@ -427,10 +387,7 @@ export default async function handler(req: Request) {
       const waybackKeyPrefixLength =
         `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(normalizedUrlForKey)}:`
           .length;
-      logInfo(
-        requestId,
-        `Scanning Redis for Wayback cache with pattern: ${waybackPattern}`
-      );
+      logger.info(`Scanning Redis for Wayback cache with pattern: ${waybackPattern}`);
       let waybackCursor = 0;
       do {
         const [nextCursor, keys] = await redis.scan(waybackCursor, {
@@ -442,13 +399,10 @@ export default async function handler(req: Request) {
           const yearMonthPart = key.substring(waybackKeyPrefixLength);
           // Validate Wayback year-month (YYYYMM) and extract year
           if (yearMonthPart && /^\d{6}$/.test(yearMonthPart)) {
-            const year = yearMonthPart.substring(0, 4);
-            uniqueYears.add(year);
+            const yearExtracted = yearMonthPart.substring(0, 4);
+            uniqueYears.add(yearExtracted);
           } else {
-            logInfo(
-              requestId,
-              `Skipping invalid Wayback year-month format in key: ${key}`
-            );
+            logger.info(`Skipping invalid Wayback year-month format in key: ${key}`);
           }
         }
       } while (waybackCursor !== 0);
@@ -473,23 +427,17 @@ export default async function handler(req: Request) {
         return valB - valA; // Sort AD descending (newer first)
       });
 
-      logInfo(
-        requestId,
-        `Found ${sortedYears.length} unique cached years for URL: ${listUrl}`
-      );
+      logger.info(`Found ${sortedYears.length} unique cached years for URL: ${listUrl}`);
 
-      return new Response(JSON.stringify({ years: sortedYears }), {
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      });
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      logger.response(200, Date.now() - startTime);
+      return res.status(200).json({ years: sortedYears });
     } catch (e) {
-      logError(requestId, "Error listing combined cache keys", e);
-      return new Response(JSON.stringify({ error: (e as Error).message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      logger.error("Error listing combined cache keys", e);
+      res.setHeader("Content-Type", "application/json");
+      logger.response(500, Date.now() - startTime);
+      return res.status(500).json({ error: (e as Error).message });
     }
   }
 
@@ -498,31 +446,22 @@ export default async function handler(req: Request) {
   // Check if this is an auto-proxy domain
   const isAutoProxyDomain = shouldAutoProxy(normalizedUrl);
   if (isAutoProxyDomain) {
-    logInfo(
-      requestId,
-      `Domain ${new URL(normalizedUrl).hostname} is auto-proxied`
-    );
+    logger.info(`Domain ${new URL(normalizedUrl).hostname} is auto-proxied`);
   }
 
   // For auto-proxy domains in check mode (and NOT an AI cache request), return JSON indicating embedding is not allowed
   if (isAutoProxyDomain && mode === "check") {
-    logInfo(
-      requestId,
-      "Auto-proxy domain in 'check' mode, returning allowed: false"
-    );
-    return new Response(
-      JSON.stringify({
-        allowed: false,
-        reason: "Auto-proxied domain",
-      }),
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    logger.info("Auto-proxy domain in 'check' mode, returning allowed: false");
+    res.setHeader("Content-Type", "application/json");
+    logger.response(200, Date.now() - startTime);
+    return res.status(200).json({
+      allowed: false,
+      reason: "Auto-proxied domain",
+    });
   }
 
   // Read theme to drive conditional font override injection
-  const theme = (searchParams.get("theme") || "").toLowerCase();
+  const theme = ((req.query.theme as string) || "").toLowerCase();
   const shouldInjectFontOverrides = theme !== "macosx";
 
   // Determine target URL (Wayback or original)
@@ -536,16 +475,13 @@ export default async function handler(req: Request) {
     // Only construct Wayback URL if proxying with year/month
     if (/^\d{4}$/.test(year) && /^\d{2}$/.test(month)) {
       targetUrl = `https://web.archive.org/web/${year}${month}01/${normalizedUrl}`;
-      logInfo(requestId, `Using Wayback Machine URL: ${targetUrl}`);
+      logger.info(`Using Wayback Machine URL: ${targetUrl}`);
       isWaybackRequest = true;
       waybackYear = year;
       waybackMonth = month;
       // No need to force proxy mode here, it's already required
     } else {
-      logError(requestId, "Invalid year/month format for Wayback request", {
-        year,
-        month,
-      });
+      logger.error("Invalid year/month format for Wayback request", { year, month });
       // Potentially return an error or fall back to non-Wayback? Let's return error.
       return errorResponseWithCors("Invalid year/month format for Wayback proxy");
     }
@@ -554,52 +490,36 @@ export default async function handler(req: Request) {
   // Check Wayback cache *only* if this is a Wayback request being proxied
   if (isWaybackRequest && waybackYear && waybackMonth) {
     try {
-      logInfo(
-        requestId,
-        `Initializing Wayback cache check for ${normalizedUrl} (${waybackYear}/${waybackMonth})`
-      );
+      logger.info(`Initializing Wayback cache check for ${normalizedUrl} (${waybackYear}/${waybackMonth})`);
       const redis = createRedis();
       const normalizedUrlForKey = normalizeUrlForCacheKey(normalizedUrl);
       if (normalizedUrlForKey) {
         const cacheKey = `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(
           normalizedUrlForKey
         )}:${waybackYear}${waybackMonth}`;
-        logInfo(requestId, `Generated Wayback cache key: ${cacheKey}`);
+        logger.info(`Generated Wayback cache key: ${cacheKey}`);
         const cachedContent = (await redis.get(cacheKey)) as string | null;
         if (cachedContent) {
-          logInfo(
-            requestId,
-            `Wayback Cache HIT for ${cacheKey} (content length: ${cachedContent.length})`
-          );
-          const headers = new Headers();
-          headers.set("Content-Type", "text/html; charset=utf-8");
-          headers.set("Access-Control-Allow-Origin", "*");
-          headers.set("X-Wayback-Cache", "HIT");
-          return new Response(cachedContent, { headers });
+          logger.info(`Wayback Cache HIT for ${cacheKey} (content length: ${cachedContent.length})`);
+          res.setHeader("Content-Type", "text/html; charset=utf-8");
+          res.setHeader("Access-Control-Allow-Origin", "*");
+          res.setHeader("X-Wayback-Cache", "HIT");
+          logger.response(200, Date.now() - startTime);
+          return res.status(200).send(cachedContent);
         }
-        logInfo(
-          requestId,
-          `Wayback Cache MISS for ${cacheKey}, proceeding with Wayback Machine request`
-        );
+        logger.info(`Wayback Cache MISS for ${cacheKey}, proceeding with Wayback Machine request`);
       } else {
-        logInfo(
-          requestId,
-          `URL normalization failed for Wayback cache: ${normalizedUrl}`
-        );
+        logger.info(`URL normalization failed for Wayback cache: ${normalizedUrl}`);
       }
     } catch (e) {
-      logError(
-        requestId,
-        `Wayback cache check failed for ${normalizedUrl} (${waybackYear}/${waybackMonth})`,
-        e
-      );
+      logger.error(`Wayback cache check failed for ${normalizedUrl} (${waybackYear}/${waybackMonth})`, e);
       // Continue with normal flow if cache check fails
     }
   }
 
   // Force proxy mode for auto-proxy domains only if NOT a Wayback request already
   if (isAutoProxyDomain && !isWaybackRequest && mode !== "proxy") {
-    logInfo(requestId, "Forcing proxy mode for auto-proxied domain");
+    logger.info("Forcing proxy mode for auto-proxied domain");
     mode = "proxy";
   }
 
@@ -608,27 +528,27 @@ export default async function handler(req: Request) {
   // -------------------------------
   const checkSiteEmbeddingAllowed = async () => {
     try {
-      logInfo(requestId, `Performing header check for: ${targetUrl}`);
-      const res = await fetch(targetUrl, {
+      logger.info(`Performing header check for: ${targetUrl}`);
+      const fetchRes = await fetch(targetUrl, {
         method: "GET",
         redirect: "follow",
         headers: BROWSER_HEADERS, // Add browser headers
       });
 
-      if (!res.ok) {
-        throw new Error(`Upstream fetch failed with status ${res.status}`);
+      if (!fetchRes.ok) {
+        throw new Error(`Upstream fetch failed with status ${fetchRes.status}`);
       }
 
-      const xFrameOptions = res.headers.get("x-frame-options") || "";
-      const headerCsp = res.headers.get("content-security-policy") || "";
-      const contentType = res.headers.get("content-type") || "";
+      const xFrameOptions = fetchRes.headers.get("x-frame-options") || "";
+      const headerCsp = fetchRes.headers.get("content-security-policy") || "";
+      const contentType = fetchRes.headers.get("content-type") || "";
 
       // Check meta tags and extract title only for HTML content
       let metaCsp = "";
       let pageTitle: string | undefined = undefined; // Initialize title
 
       if (contentType.includes("text/html")) {
-        const html = await res.text();
+        const html = await fetchRes.text();
         // Extract meta CSP
         const metaTagMatch = html.match(
           /<meta\s+http-equiv=["']Content-Security-Policy["']\s+content=["']([^"']*)["'][^>]*>/i
@@ -697,17 +617,12 @@ export default async function handler(req: Request) {
           : `Content-Security-Policy (header): ${headerCsp}`
         : undefined;
 
-      logInfo(
-        requestId,
-        `Header check result: Allowed=${allowed}, Reason=${
-          finalReason || "N/A"
-        }, Title=${pageTitle || "N/A"}`
-      );
+      logger.info(`Header check result: Allowed=${allowed}, Reason=${finalReason || "N/A"}, Title=${pageTitle || "N/A"}`);
 
       return { allowed, reason: finalReason, title: pageTitle };
     } catch (error) {
       // If fetching upstream headers failed, assume embedding is blocked
-      logError(requestId, `Header check failed for ${targetUrl}`, error);
+      logger.error(`Header check failed for ${targetUrl}`, error);
       // No title available on error
       return {
         allowed: false,
@@ -719,15 +634,15 @@ export default async function handler(req: Request) {
   try {
     // 1. Pure header‑check mode
     if (mode === "check") {
-      logInfo(requestId, "Executing in 'check' mode");
+      logger.info("Executing in 'check' mode");
       const result = await checkSiteEmbeddingAllowed();
-      return new Response(JSON.stringify(result), {
-        headers: { "Content-Type": "application/json" },
-      });
+      res.setHeader("Content-Type", "application/json");
+      logger.response(200, Date.now() - startTime);
+      return res.status(200).json(result);
     }
 
     // 2. Proxy mode – stream the upstream resource, removing blocking headers
-    logInfo(requestId, `Executing in 'proxy' mode for: ${targetUrl}`);
+    logger.info(`Executing in 'proxy' mode for: ${targetUrl}`);
     // Create an AbortController with timeout for the upstream fetch
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000); // 15-second timeout
@@ -744,44 +659,28 @@ export default async function handler(req: Request) {
 
       // If the upstream fetch failed (e.g., 403 Forbidden, 404 Not Found), return an error response
       if (!upstreamRes.ok) {
-        logError(
-          requestId,
-          `Upstream fetch failed with status ${upstreamRes.status}`,
-          { url: targetUrl }
-        );
-        return new Response(
-          JSON.stringify({
-            error: true,
-            status: upstreamRes.status,
-            statusText: upstreamRes.statusText || "File not found",
-            type: "http_error",
-            message: `The page cannot be found. HTTP ${upstreamRes.status} - ${
-              upstreamRes.statusText || "File not found"
-            }`,
-          }),
-          {
-            status: upstreamRes.status,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
-            },
-          }
-        );
+        logger.error(`Upstream fetch failed with status ${upstreamRes.status}`, { url: targetUrl });
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        logger.response(upstreamRes.status, Date.now() - startTime);
+        return res.status(upstreamRes.status).json({
+          error: true,
+          status: upstreamRes.status,
+          statusText: upstreamRes.statusText || "File not found",
+          type: "http_error",
+          message: `The page cannot be found. HTTP ${upstreamRes.status} - ${
+            upstreamRes.statusText || "File not found"
+          }`,
+        });
       }
 
-      // Clone headers so we can edit them
-      const headers = new Headers(upstreamRes.headers);
-      const contentType = headers.get("content-type") || "";
-      logInfo(requestId, `Proxying content type: ${contentType}`);
+      const contentType = upstreamRes.headers.get("content-type") || "";
+      logger.info(`Proxying content type: ${contentType}`);
       let pageTitle: string | undefined = undefined; // Initialize title for proxy mode
 
-      headers.delete("x-frame-options");
-      headers.delete("content-security-policy");
-      headers.set(
-        "content-security-policy",
-        "frame-ancestors *; sandbox allow-scripts allow-forms allow-same-origin allow-popups allow-pointer-lock"
-      );
-      headers.set("access-control-allow-origin", "*");
+      // Set response headers
+      res.setHeader("content-security-policy", "frame-ancestors *; sandbox allow-scripts allow-forms allow-same-origin allow-popups allow-pointer-lock");
+      res.setHeader("access-control-allow-origin", "*");
 
       // If it's HTML, inject the <base> tag and click interceptor script
       if (contentType.includes("text/html")) {
@@ -1061,7 +960,7 @@ export default async function handler(req: Request) {
 
         // Add the extracted title to a custom header (URL-encoded)
         if (pageTitle) {
-          headers.set("X-Proxied-Page-Title", encodeURIComponent(pageTitle));
+          res.setHeader("X-Proxied-Page-Title", encodeURIComponent(pageTitle));
         }
 
         // Cache Wayback content *after* successful fetch and modification
@@ -1072,10 +971,7 @@ export default async function handler(req: Request) {
           contentType.includes("text/html")
         ) {
           try {
-            logInfo(
-              requestId,
-              `Attempting to cache Wayback content for ${normalizedUrl} (${waybackYear}/${waybackMonth})`
-            );
+            logger.info(`Attempting to cache Wayback content for ${normalizedUrl} (${waybackYear}/${waybackMonth})`);
             const redis = new Redis({
               url: process.env.REDIS_KV_REST_API_URL as string,
               token: process.env.REDIS_KV_REST_API_TOKEN as string,
@@ -1085,76 +981,57 @@ export default async function handler(req: Request) {
               const cacheKey = `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(
                 normalizedUrlForKey
               )}:${waybackYear}${waybackMonth}`;
-              logInfo(
-                requestId,
-                `Writing to Wayback cache key: ${cacheKey} (content length: ${html.length})`
-              );
+              logger.info(`Writing to Wayback cache key: ${cacheKey} (content length: ${html.length})`);
               // Use SET with expiration for Wayback cache (e.g., 30 days)
               await redis.set(cacheKey, html, { ex: 60 * 60 * 24 * 30 });
-              logInfo(
-                requestId,
-                `Successfully cached Wayback content for ${cacheKey}`
-              );
+              logger.info(`Successfully cached Wayback content for ${cacheKey}`);
             } else {
-              logInfo(
-                requestId,
-                `Skipped Wayback caching - URL normalization failed: ${normalizedUrl}`
-              );
+              logger.info(`Skipped Wayback caching - URL normalization failed: ${normalizedUrl}`);
             }
           } catch (cacheErr) {
-            logError(
-              requestId,
-              `Failed to cache Wayback content for ${normalizedUrl} (${waybackYear}/${waybackMonth})`,
-              cacheErr
-            );
+            logger.error(`Failed to cache Wayback content for ${normalizedUrl} (${waybackYear}/${waybackMonth})`, cacheErr);
           }
         }
 
-        return new Response(html, {
-          status: upstreamRes.status,
-          headers,
-        });
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        logger.response(upstreamRes.status, Date.now() - startTime);
+        return res.status(upstreamRes.status).send(html);
       } else {
-        logInfo(requestId, "Proxying non-HTML content directly");
+        logger.info("Proxying non-HTML content directly");
         // For non‑HTML content, stream the body directly
-        // No title extraction or header needed for non-HTML
-        return new Response(upstreamRes.body, {
-          status: upstreamRes.status,
-          headers,
-        });
+        const arrayBuffer = await upstreamRes.arrayBuffer();
+        res.setHeader("Content-Type", contentType);
+        logger.response(upstreamRes.status, Date.now() - startTime);
+        return res.status(upstreamRes.status).send(Buffer.from(arrayBuffer));
       }
     } catch (fetchError) {
       clearTimeout(timeout);
 
       // Special handling for timeout or network errors
-      logError(requestId, `Proxy fetch error for ${targetUrl}`, fetchError);
+      logger.error(`Proxy fetch error for ${targetUrl}`, fetchError);
 
       // Return JSON with error information instead of HTML
-      return new Response(
-        JSON.stringify({
-          error: true,
-          type: "connection_error",
-          status: 503,
-          message:
-            "The page cannot be displayed. Internet Explorer cannot access this website.",
-          // Include the target URL in the details for better debugging
-          details: `Failed to fetch the requested URL. Reason: ${
-            fetchError instanceof Error
-              ? fetchError.message
-              : "Connection failed or timed out"
-          }`,
-        }),
-        {
-          status: 503,
-          headers: {
-            "Content-Type": "application/json",
-            ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-          },
-        }
-      );
+      res.setHeader("Content-Type", "application/json");
+      if (effectiveOrigin) {
+        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
+      }
+      logger.response(503, Date.now() - startTime);
+      return res.status(503).json({
+        error: true,
+        type: "connection_error",
+        status: 503,
+        message:
+          "The page cannot be displayed. Internet Explorer cannot access this website.",
+        // Include the target URL in the details for better debugging
+        details: `Failed to fetch the requested URL. Reason: ${
+          fetchError instanceof Error
+            ? fetchError.message
+            : "Connection failed or timed out"
+        }`,
+      });
     }
   } catch (error) {
-    logError(requestId, "General handler error", error);
+    logger.error("General handler error", error);
     return errorResponseWithCors((error as Error).message, 500);
   }
 }

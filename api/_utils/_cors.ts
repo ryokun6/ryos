@@ -1,6 +1,16 @@
-// Shared CORS utilities for API routes
+// Shared CORS utilities for API routes (Node.js runtime only)
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 type VercelEnv = "production" | "preview" | "development";
+
+// Helper to get header value from Node.js IncomingMessage headers
+function getHeader(req: VercelRequest, name: string): string | null {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) {
+    return value[0] || null;
+  }
+  return typeof value === "string" ? value : null;
+}
 
 const PROD_ALLOWED_ORIGIN = "https://os.ryo.lu";
 const TAILSCALE_ALLOWED_SUFFIX = ".tailb4fa61.ts.net";
@@ -64,11 +74,11 @@ function isTailscaleOrigin(origin: string): boolean {
   return parsed.hostname.endsWith(TAILSCALE_ALLOWED_SUFFIX);
 }
 
-export function getEffectiveOrigin(req: Request): string | null {
+export function getEffectiveOrigin(req: VercelRequest): string | null {
   try {
-    const origin = req.headers.get("origin");
+    const origin = getHeader(req, "origin");
     if (origin) return origin;
-    const referer = req.headers.get("referer");
+    const referer = getHeader(req, "referer");
     if (!referer) return null;
     return new URL(referer).origin;
   } catch {
@@ -94,28 +104,71 @@ export function isAllowedOrigin(origin: string | null): boolean {
   return isLocalhostOrigin(origin);
 }
 
-export function preflightIfNeeded(
-  req: Request,
-  allowedMethods: string[],
-  effectiveOrigin: string | null
-): Response | null {
-  if (req.method !== "OPTIONS") return null;
-  if (!effectiveOrigin || !isAllowedOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+/**
+ * Handle OPTIONS preflight request for Node.js runtime.
+ * Returns true if preflight was handled (response sent), false otherwise.
+ */
+export function handlePreflight(
+  req: VercelRequest,
+  res: VercelResponse,
+  options: SetCorsHeadersOptions = {}
+): boolean {
+  if (req.method !== "OPTIONS") return false;
+  
+  const origin = getEffectiveOrigin(req);
+  if (!origin || !isAllowedOrigin(origin)) {
+    res.status(403).send("Unauthorized");
+    return true;
   }
 
-  // Echo back requested headers when provided to avoid missing-case issues
-  const requestedHeaders = req.headers.get("Access-Control-Request-Headers");
+  // Echo back requested headers when provided
+  const requestedHeaders = getHeader(req, "access-control-request-headers");
   const allowHeaders =
     requestedHeaders && requestedHeaders.trim().length > 0
       ? requestedHeaders
-      : "Content-Type, Authorization, X-Username, User-Agent";
+      : (options.headers || DEFAULT_CORS_HEADERS).join(", ");
 
-  const headers: Record<string, string> = {
-    "Access-Control-Allow-Origin": effectiveOrigin,
-    "Access-Control-Allow-Methods": allowedMethods.join(", "),
-    "Access-Control-Allow-Headers": allowHeaders,
-    "Access-Control-Allow-Credentials": "true",
-  };
-  return new Response(null, { headers });
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Access-Control-Allow-Methods", (options.methods || DEFAULT_CORS_METHODS).join(", "));
+  res.setHeader("Access-Control-Allow-Headers", allowHeaders);
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Max-Age", String(options.maxAge || 86400));
+  res.status(204).end();
+  return true;
+}
+
+/**
+ * Set CORS headers on a VercelResponse for Node.js runtime handlers.
+ */
+export interface SetCorsHeadersOptions {
+  methods?: string[];
+  headers?: string[];
+  credentials?: boolean;
+  maxAge?: number;
+}
+
+const DEFAULT_CORS_METHODS = ["GET", "POST", "OPTIONS"];
+const DEFAULT_CORS_HEADERS = ["Content-Type", "Authorization", "X-Username"];
+
+export function setCorsHeaders(
+  res: VercelResponse,
+  origin: string | null | undefined,
+  options: SetCorsHeadersOptions = {}
+): void {
+  const {
+    methods = DEFAULT_CORS_METHODS,
+    headers = DEFAULT_CORS_HEADERS,
+    credentials = true,
+    maxAge = 86400,
+  } = options;
+
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", methods.join(", "));
+  res.setHeader("Access-Control-Allow-Headers", headers.join(", "));
+  if (credentials) {
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+  res.setHeader("Access-Control-Max-Age", String(maxAge));
 }

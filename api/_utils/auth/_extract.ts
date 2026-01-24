@@ -1,8 +1,18 @@
 /**
- * Auth extraction utilities - Extract auth credentials from requests
+ * Auth extraction utilities - Extract auth credentials from requests (Node.js runtime)
  */
 
+import type { VercelRequest } from "@vercel/node";
 import type { ExtractedAuth } from "./_types.js";
+
+// Helper to get header value from Node.js IncomingMessage headers
+function getHeader(req: VercelRequest, name: string): string | null {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) {
+    return value[0] || null;
+  }
+  return typeof value === "string" ? value : null;
+}
 
 /**
  * Extract authentication credentials from request headers
@@ -11,15 +21,15 @@ import type { ExtractedAuth } from "./_types.js";
  * - Authorization: Bearer <token>
  * - X-Username: <username>
  */
-export function extractAuth(request: Request): ExtractedAuth {
-  const authHeader = request.headers.get("authorization");
+export function extractAuth(request: VercelRequest): ExtractedAuth {
+  const authHeader = getHeader(request, "authorization");
   
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return { username: null, token: null };
   }
 
   const token = authHeader.substring(7); // Remove "Bearer " prefix
-  const username = request.headers.get("x-username");
+  const username = getHeader(request, "x-username");
 
   return { username, token };
 }
@@ -27,7 +37,7 @@ export function extractAuth(request: Request): ExtractedAuth {
 /**
  * Extract auth with normalized username (lowercase)
  */
-export function extractAuthNormalized(request: Request): ExtractedAuth {
+export function extractAuthNormalized(request: VercelRequest): ExtractedAuth {
   const { username, token } = extractAuth(request);
   return {
     username: username?.toLowerCase() ?? null,

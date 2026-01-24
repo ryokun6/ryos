@@ -4,15 +4,8 @@
  * Refresh an existing token
  */
 
-import {
-  createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
-  errorResponse,
-  jsonResponse,
-} from "../../_utils/middleware.js";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { Redis } from "@upstash/redis";
 import {
   generateAuthToken,
   storeToken,
@@ -23,41 +16,68 @@ import {
   TOKEN_GRACE_PERIOD,
 } from "../../_utils/auth/index.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
+import { initLogger } from "../../_utils/_logging.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../../_utils/_cors.js";
 
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
 
 interface RefreshRequest {
   username: string;
   oldToken: string;
 }
 
-export default async function handler(req: Request) {
+// ============================================================================
+// Local Helper Functions
+// ============================================================================
+
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL as string,
+    token: process.env.REDIS_KV_REST_API_TOKEN as string,
+  });
+}
+
+function getClientIp(req: VercelRequest): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
+  }
+  const realIp = req.headers["x-real-ip"];
+  if (typeof realIp === "string") {
+    return realIp;
+  }
+  return "unknown";
+}
+
+// ============================================================================
+// Route Handler
+// ============================================================================
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { requestId, logger } = initLogger();
+  const startTime = Date.now();
+  
   const origin = getEffectiveOrigin(req);
+  setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
+  
+  logger.request(req.method || "POST", req.url || "/api/auth/token/refresh");
   
   if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+    logger.response(204, Date.now() - startTime);
+    return res.status(204).end();
   }
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { 
-      status: 405, 
-      headers: { "Content-Type": "application/json" },
-    });
+    logger.warn("Method not allowed", { method: req.method });
+    logger.response(405, Date.now() - startTime);
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
+    logger.warn("Unauthorized origin", { origin });
+    logger.response(403, Date.now() - startTime);
+    return res.status(403).json({ error: "Unauthorized" });
   }
-
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
   const redis = createRedis();
 
@@ -71,27 +91,29 @@ export default async function handler(req: Request) {
   });
 
   if (!rlResult.allowed) {
-    return new Response(JSON.stringify({ 
+    logger.warn("Rate limit exceeded", { ip });
+    logger.response(429, Date.now() - startTime);
+    return res.status(429).json({ 
       error: "Too many refresh attempts. Please try again later." 
-    }), { status: 429, headers });
+    });
   }
 
   // Parse body
-  let body: RefreshRequest;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers });
-  }
+  const body = req.body as RefreshRequest | undefined;
 
-  const { username: rawUsername, oldToken } = body;
+  const rawUsername = body?.username;
+  const oldToken = body?.oldToken;
 
   if (!rawUsername || typeof rawUsername !== "string") {
-    return new Response(JSON.stringify({ error: "Username is required" }), { status: 400, headers });
+    logger.warn("Missing username");
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: "Username is required" });
   }
 
   if (!oldToken || typeof oldToken !== "string") {
-    return new Response(JSON.stringify({ error: "Old token is required" }), { status: 400, headers });
+    logger.warn("Missing old token");
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: "Old token is required" });
   }
 
   const username = rawUsername.toLowerCase();
@@ -100,13 +122,17 @@ export default async function handler(req: Request) {
   const userKey = `${CHAT_USERS_PREFIX}${username}`;
   const userData = await redis.get(userKey);
   if (!userData) {
-    return new Response(JSON.stringify({ error: "User not found" }), { status: 404, headers });
+    logger.warn("User not found", { username });
+    logger.response(404, Date.now() - startTime);
+    return res.status(404).json({ error: "User not found" });
   }
 
   // Validate old token (allow expired for grace period refresh)
   const validationResult = await validateAuth(redis, username, oldToken, { allowExpired: true });
   if (!validationResult.valid) {
-    return new Response(JSON.stringify({ error: "Invalid authentication token" }), { status: 401, headers });
+    logger.warn("Invalid authentication token", { username });
+    logger.response(401, Date.now() - startTime);
+    return res.status(401).json({ error: "Invalid authentication token" });
   }
 
   // Store old token for grace period
@@ -119,5 +145,8 @@ export default async function handler(req: Request) {
   const newToken = generateAuthToken();
   await storeToken(redis, username, newToken);
 
-  return new Response(JSON.stringify({ token: newToken }), { status: 201, headers });
+  logger.info("Token refreshed successfully", { username });
+  logger.response(201, Date.now() - startTime);
+  
+  return res.status(201).json({ token: newToken });
 }

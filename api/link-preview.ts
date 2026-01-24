@@ -1,17 +1,12 @@
-export const config = {
-  runtime: "edge",
-};
-
-import {
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
-  jsonResponse,
-  errorResponse,
-  rateLimitResponse,
-} from "./_utils/middleware.js";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import * as RateLimit from "./_utils/_rate-limit.js";
+import { getClientIp } from "./_utils/_rate-limit.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
+import { initLogger } from "./_utils/_logging.js";
+
+export const runtime = "nodejs";
+export const maxDuration = 30;
+
 interface LinkMetadata {
   title?: string;
   description?: string;
@@ -60,20 +55,39 @@ async function getYouTubeMetadata(url: string): Promise<LinkMetadata> {
   };
 }
 
-export default async function handler(req: Request) {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const { requestId, logger } = initLogger();
+  const startTime = Date.now();
   const effectiveOrigin = getEffectiveOrigin(req);
+  
+  logger.request(req.method || "GET", req.url || "/api/link-preview", "link-preview");
+
   if (!isAllowedOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+    logger.warn("Unauthorized origin", { origin: effectiveOrigin });
+    logger.response(403, Date.now() - startTime);
+    res.status(403).send("Unauthorized");
+    return;
   }
 
   if (req.method === "OPTIONS") {
-    const resp = preflightIfNeeded(req, ["GET", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    res.setHeader("Content-Type", "application/json");
+    setCorsHeaders(res, effectiveOrigin, { methods: ["GET", "OPTIONS"], headers: ["Content-Type"] });
+    logger.response(204, Date.now() - startTime);
+    res.status(204).end();
+    return;
   }
 
   if (req.method !== "GET") {
-    return new Response("Method not allowed", { status: 405 });
+    logger.response(405, Date.now() - startTime);
+    res.status(405).send("Method not allowed");
+    return;
   }
+
+  res.setHeader("Content-Type", "application/json");
+  setCorsHeaders(res, effectiveOrigin, { methods: ["GET", "OPTIONS"], headers: ["Content-Type"] });
 
   try {
     // Burst limiter: 10/min per IP; optional per-host 5/min per IP
@@ -82,8 +96,7 @@ export default async function handler(req: Request) {
       const BURST_WINDOW = 60;
       const GLOBAL_LIMIT = 10;
 
-      const { searchParams } = new URL(req.url);
-      const url = searchParams.get("url");
+      const url = req.query.url as string | undefined;
 
       const globalKey = RateLimit.makeKey(["rl", "preview", "ip", ip]);
       const global = await RateLimit.checkCounterLimit({
@@ -92,7 +105,15 @@ export default async function handler(req: Request) {
         limit: GLOBAL_LIMIT,
       });
       if (!global.allowed) {
-        return rateLimitResponse(effectiveOrigin, GLOBAL_LIMIT, global.resetSeconds ?? BURST_WINDOW, "global");
+        logger.warn("Rate limit exceeded (global)", { ip });
+        logger.response(429, Date.now() - startTime);
+        res.status(429).json({
+          error: "rate_limit_exceeded",
+          scope: "global",
+          limit: GLOBAL_LIMIT,
+          retryAfter: global.resetSeconds ?? BURST_WINDOW,
+        });
+        return;
       }
 
       if (url) {
@@ -105,7 +126,15 @@ export default async function handler(req: Request) {
             limit: 5,
           });
           if (!host.allowed) {
-            return rateLimitResponse(effectiveOrigin, 5, host.resetSeconds ?? BURST_WINDOW, "host");
+            logger.warn("Rate limit exceeded (host)", { ip, hostname });
+            logger.response(429, Date.now() - startTime);
+            res.status(429).json({
+              error: "rate_limit_exceeded",
+              scope: "host",
+              limit: 5,
+              retryAfter: host.resetSeconds ?? BURST_WINDOW,
+            });
+            return;
           }
         } catch (e) {
           // Ignore invalid URL parse or missing hostname
@@ -113,41 +142,47 @@ export default async function handler(req: Request) {
         }
       }
     } catch (e) {
-      console.error("Rate limit check failed (link-preview)", e);
+      logger.error("Rate limit check failed", e);
     }
 
-    const { searchParams } = new URL(req.url);
-    const url = searchParams.get("url");
+    const url = req.query.url as string | undefined;
 
     if (!url || typeof url !== "string") {
-      return errorResponse("No URL provided", 400, effectiveOrigin);
+      logger.response(400, Date.now() - startTime);
+      res.status(400).json({ error: "No URL provided" });
+      return;
     }
+
+    logger.info("Fetching preview for URL", { url });
 
     // Validate URL format
     let parsedUrl: URL;
     try {
       parsedUrl = new URL(url);
     } catch {
-      return errorResponse("Invalid URL format", 400, effectiveOrigin);
+      logger.response(400, Date.now() - startTime);
+      res.status(400).json({ error: "Invalid URL format" });
+      return;
     }
 
     // Only allow HTTP and HTTPS URLs
     if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      return errorResponse("Only HTTP and HTTPS URLs are allowed", 400, effectiveOrigin);
+      logger.response(400, Date.now() - startTime);
+      res.status(400).json({ error: "Only HTTP and HTTPS URLs are allowed" });
+      return;
     }
 
     // Handle YouTube URLs using oEmbed API
     if (isYouTubeUrl(url)) {
       try {
         const metadata = await getYouTubeMetadata(url);
-        return new Response(JSON.stringify(metadata), {
-          headers: { 
-            "Content-Type": "application/json",
-            "Cache-Control": "public, max-age=3600" // Cache for 1 hour
-          },
-        });
+        logger.info("YouTube metadata fetched", { title: metadata.title });
+        logger.response(200, Date.now() - startTime);
+        res.setHeader("Cache-Control", "public, max-age=3600");
+        res.status(200).json(metadata);
+        return;
       } catch (error) {
-        console.error("Error fetching YouTube metadata:", error);
+        logger.error("Error fetching YouTube metadata", error);
         // Fall back to general scraping if YouTube API fails
       }
     }
@@ -162,12 +197,14 @@ export default async function handler(req: Request) {
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
       },
-      // Add timeout to prevent hanging
-      signal: AbortSignal.timeout(10000), // 10 second timeout
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
-      return errorResponse(`HTTP error! status: ${response.status}`, response.status, effectiveOrigin);
+      logger.warn("HTTP error from upstream", { status: response.status });
+      logger.response(response.status, Date.now() - startTime);
+      res.status(response.status).json({ error: `HTTP error! status: ${response.status}` });
+      return;
     }
 
     const html = await response.text();
@@ -197,7 +234,6 @@ export default async function handler(req: Request) {
     const ogImageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i);
     if (ogImageMatch) {
       const imageUrl = ogImageMatch[1].trim();
-      // Make relative URLs absolute
       try {
         metadata.image = new URL(imageUrl, url).href;
       } catch {
@@ -259,8 +295,8 @@ export default async function handler(req: Request) {
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'")
         .replace(/&apos;/g, "'")
-        .replace(/&#x([0-9a-fA-F]+);/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)))
-        .replace(/&#(\d+);/g, (match, dec) => String.fromCharCode(parseInt(dec, 10)));
+        .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)));
     };
 
     // Clean up extracted text
@@ -274,16 +310,13 @@ export default async function handler(req: Request) {
       metadata.siteName = decodeHtml(metadata.siteName);
     }
 
-    return new Response(JSON.stringify(metadata), {
-      headers: { 
-        "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=3600", // Cache for 1 hour
-        ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-      },
-    });
+    logger.info("Metadata extracted", { title: metadata.title, siteName: metadata.siteName });
+    logger.response(200, Date.now() - startTime);
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.status(200).json(metadata);
 
   } catch (error: unknown) {
-    console.error("Error fetching link preview:", error);
+    logger.error("Error fetching link preview", error);
 
     let status = 500;
     let errorMessage = "Error fetching link preview";
@@ -291,7 +324,6 @@ export default async function handler(req: Request) {
     if (error instanceof Error) {
       errorMessage = error.message;
       
-      // Handle specific error types
       if (error.name === 'AbortError') {
         errorMessage = "Request timeout";
         status = 408;
@@ -301,6 +333,7 @@ export default async function handler(req: Request) {
       }
     }
 
-    return errorResponse(errorMessage, status, effectiveOrigin);
+    logger.response(status, Date.now() - startTime);
+    res.status(status).json({ error: errorMessage });
   }
 }

@@ -4,24 +4,19 @@
  * Generate an AI reply as Ryo in chat rooms
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
-import {
-  createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
-} from "../_utils/middleware.js";
+import { Redis } from "@upstash/redis";
 import { validateAuth } from "../_utils/auth/index.js";
 import { assertValidRoomId, escapeHTML, filterProfanityPreservingUrls } from "../_utils/_validation.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
 import { roomExists, addMessage, generateId, getCurrentTimestamp } from "../rooms/_helpers/_redis.js";
 import type { Message } from "../rooms/_helpers/_types.js";
+import { initLogger } from "../_utils/_logging.js";
 
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
 
 interface RyoReplyRequest {
   roomId: string;
@@ -58,40 +53,63 @@ respond in the user's language. comment on the recent conversation and mentioned
 when user asks for an aquarium, fish tank, fishes, or sam's aquarium, include the special token [[AQUARIUM]] in your response.
 </chat_instructions>`;
 
-export default async function handler(req: Request) {
+// ============================================================================
+// Local Helper Functions
+// ============================================================================
+
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL as string,
+    token: process.env.REDIS_KV_REST_API_TOKEN as string,
+  });
+}
+
+// ============================================================================
+// Route Handler
+// ============================================================================
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { requestId, logger } = initLogger();
+  const startTime = Date.now();
+  
   const origin = getEffectiveOrigin(req);
+  setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
+  
+  logger.request(req.method || "POST", req.url || "/api/ai/ryo-reply");
   
   if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+    logger.response(204, Date.now() - startTime);
+    return res.status(204).end();
   }
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403, headers: { "Content-Type": "application/json" },
-    });
+    logger.warn("Unauthorized origin", { origin });
+    logger.response(403, Date.now() - startTime);
+    return res.status(403).json({ error: "Unauthorized" });
   }
 
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
-
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+    logger.warn("Method not allowed", { method: req.method });
+    logger.response(405, Date.now() - startTime);
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   // Require auth
-  const authHeader = req.headers.get("authorization");
-  const usernameHeader = req.headers.get("x-username");
+  const authHeader = req.headers.authorization as string | undefined;
+  const usernameHeader = req.headers["x-username"] as string | undefined;
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
   if (!token || !usernameHeader) {
-    return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
+    logger.warn("Missing credentials");
+    logger.response(401, Date.now() - startTime);
+    return res.status(401).json({ error: "Unauthorized - missing credentials" });
   }
 
   const authResult = await validateAuth(createRedis(), usernameHeader, token, {});
   if (!authResult.valid) {
-    return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
+    logger.warn("Invalid token", { username: usernameHeader });
+    logger.response(401, Date.now() - startTime);
+    return res.status(401).json({ error: "Unauthorized - invalid token" });
   }
 
   // Rate limiting: 5/min per user
@@ -103,14 +121,17 @@ export default async function handler(req: Request) {
   });
 
   if (!rlResult.allowed) {
-    return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers });
+    logger.warn("Rate limit exceeded", { username: usernameHeader });
+    logger.response(429, Date.now() - startTime);
+    return res.status(429).json({ error: "Rate limit exceeded" });
   }
 
-  let body: RyoReplyRequest;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers });
+  const body = req.body as RyoReplyRequest | undefined;
+
+  if (!body) {
+    logger.warn("Invalid JSON body");
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: "Invalid JSON body" });
   }
 
   const { roomId, prompt, systemState } = body;
@@ -118,16 +139,22 @@ export default async function handler(req: Request) {
   try {
     assertValidRoomId(roomId, "ryo-reply");
   } catch (e) {
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Invalid room ID" }), { status: 400, headers });
+    logger.warn("Invalid room ID", { roomId, error: e instanceof Error ? e.message : "Invalid" });
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: e instanceof Error ? e.message : "Invalid room ID" });
   }
 
   if (!prompt || typeof prompt !== "string") {
-    return new Response(JSON.stringify({ error: "Prompt is required" }), { status: 400, headers });
+    logger.warn("Missing prompt");
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: "Prompt is required" });
   }
 
   const exists = await roomExists(roomId);
   if (!exists) {
-    return new Response(JSON.stringify({ error: "Room not found" }), { status: 404, headers });
+    logger.warn("Room not found", { roomId });
+    logger.response(404, Date.now() - startTime);
+    return res.status(404).json({ error: "Room not found" });
   }
 
   const messages = [
@@ -147,15 +174,18 @@ export default async function handler(req: Request) {
 
   let replyText = "";
   try {
+    logger.info("Generating AI reply", { roomId, promptLength: prompt.length });
     const { text } = await generateText({
       model: google("gemini-2.5-flash"),
       messages,
       temperature: 0.6,
     });
     replyText = text;
+    logger.info("AI reply generated", { replyLength: replyText.length });
   } catch (e) {
-    console.error("AI generation failed for Ryo reply", e);
-    return new Response(JSON.stringify({ error: "Failed to generate reply" }), { status: 500, headers });
+    logger.error("AI generation failed for Ryo reply", e);
+    logger.response(500, Date.now() - startTime);
+    return res.status(500).json({ error: "Failed to generate reply" });
   }
 
   const message: Message = {
@@ -168,5 +198,8 @@ export default async function handler(req: Request) {
 
   await addMessage(roomId, message);
 
-  return new Response(JSON.stringify({ message }), { status: 201, headers });
+  logger.info("Ryo reply posted", { roomId, messageId: message.id });
+  logger.response(201, Date.now() - startTime);
+  
+  return res.status(201).json({ message });
 }

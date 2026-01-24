@@ -5,12 +5,8 @@
  * POST - Send a message to a room
  */
 
-import {
-  createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-} from "../../_utils/middleware.js";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { Redis } from "@upstash/redis";
 import { validateAuth } from "../../_utils/auth/index.js";
 import {
   isProfaneUsername,
@@ -34,14 +30,21 @@ import {
 } from "../_helpers/_constants.js";
 import { ensureUserExists } from "../_helpers/_users.js";
 import type { Message, Room, User } from "../_helpers/_types.js";
+import { initLogger } from "../../_utils/_logging.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../../_utils/_cors.js";
 
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
 
 // ============================================================================
 // Local Redis helpers (avoid importing from _redis.ts to prevent bundler issues)
 // ============================================================================
+
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL as string,
+    token: process.env.REDIS_KV_REST_API_TOKEN as string,
+  });
+}
 
 function generateId(): string {
   const bytes = new Uint8Array(16);
@@ -114,43 +117,40 @@ async function refreshRoomPresence(roomId: string, username: string): Promise<vo
 // Route Handler
 // ============================================================================
 
-function getRoomId(req: Request): string | null {
-  const url = new URL(req.url);
-  const pathParts = url.pathname.split("/");
-  const roomsIndex = pathParts.indexOf("rooms");
-  if (roomsIndex !== -1 && pathParts[roomsIndex + 1]) {
-    return pathParts[roomsIndex + 1];
-  }
-  return null;
-}
-
-export default async function handler(req: Request) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { requestId, logger } = initLogger();
+  const startTime = Date.now();
+  
   const origin = getEffectiveOrigin(req);
+  setCorsHeaders(res, origin);
+  
+  logger.request(req.method || "GET", req.url || "/api/rooms/[id]/messages");
   
   if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["GET", "POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+    logger.response(204, Date.now() - startTime);
+    return res.status(204).end();
   }
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403, headers: { "Content-Type": "application/json" },
-    });
+    logger.warn("Unauthorized origin", { origin });
+    logger.response(403, Date.now() - startTime);
+    return res.status(403).json({ error: "Unauthorized" });
   }
 
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
-
-  const roomId = getRoomId(req);
+  // Extract room ID from query params
+  const roomId = req.query.id as string | undefined;
   if (!roomId) {
-    return new Response(JSON.stringify({ error: "Room ID is required" }), { status: 400, headers });
+    logger.warn("Missing room ID");
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: "Room ID is required" });
   }
 
   try {
     assertValidRoomId(roomId, "messages-operation");
   } catch (e) {
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Invalid room ID" }), { status: 400, headers });
+    logger.warn("Invalid room ID", { roomId, error: e instanceof Error ? e.message : "Invalid" });
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: e instanceof Error ? e.message : "Invalid room ID" });
   }
 
   // GET - Get messages
@@ -158,59 +158,69 @@ export default async function handler(req: Request) {
     try {
       const exists = await roomExists(roomId);
       if (!exists) {
-        return new Response(JSON.stringify({ error: "Room not found" }), { status: 404, headers });
+        logger.warn("Room not found", { roomId });
+        logger.response(404, Date.now() - startTime);
+        return res.status(404).json({ error: "Room not found" });
       }
 
-      const url = new URL(req.url);
-      const limitParam = url.searchParams.get("limit");
+      const limitParam = req.query.limit as string | undefined;
       const limit = limitParam ? Math.min(parseInt(limitParam, 10) || 20, 500) : 20;
 
       const messages = await getMessages(roomId, limit);
-      return new Response(JSON.stringify({ messages }), { status: 200, headers });
+      
+      logger.info("Messages retrieved", { roomId, count: messages.length });
+      logger.response(200, Date.now() - startTime);
+      return res.status(200).json({ messages });
     } catch (error) {
-      console.error(`Error fetching messages for room ${roomId}:`, error);
-      return new Response(JSON.stringify({ error: "Failed to fetch messages" }), { status: 500, headers });
+      logger.error(`Error fetching messages for room ${roomId}`, error);
+      logger.response(500, Date.now() - startTime);
+      return res.status(500).json({ error: "Failed to fetch messages" });
     }
   }
 
   // POST - Send message
   if (req.method === "POST") {
-    const authHeader = req.headers.get("authorization");
-    const usernameHeader = req.headers.get("x-username");
+    const authHeader = req.headers.authorization as string | undefined;
+    const usernameHeader = req.headers["x-username"] as string | undefined;
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
     if (!token || !usernameHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized - missing credentials" }), { status: 401, headers });
+      logger.warn("Missing credentials");
+      logger.response(401, Date.now() - startTime);
+      return res.status(401).json({ error: "Unauthorized - missing credentials" });
     }
 
     const authResult = await validateAuth(createRedis(), usernameHeader, token, {});
     if (!authResult.valid) {
-      return new Response(JSON.stringify({ error: "Unauthorized - invalid token" }), { status: 401, headers });
+      logger.warn("Invalid token", { username: usernameHeader });
+      logger.response(401, Date.now() - startTime);
+      return res.status(401).json({ error: "Unauthorized - invalid token" });
     }
 
     const username = usernameHeader.toLowerCase();
 
     if (isProfaneUsername(username)) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers });
+      logger.warn("Profane username", { username });
+      logger.response(401, Date.now() - startTime);
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
-    let body;
-    try {
-      body = await req.json();
-    } catch {
-      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers });
-    }
+    const body = req.body;
 
     const originalContent = body?.content;
     if (!originalContent || typeof originalContent !== "string") {
-      return new Response(JSON.stringify({ error: "Content is required" }), { status: 400, headers });
+      logger.warn("Missing content");
+      logger.response(400, Date.now() - startTime);
+      return res.status(400).json({ error: "Content is required" });
     }
 
     const content = escapeHTML(filterProfanityPreservingUrls(originalContent));
 
     const roomData = await getRoom(roomId);
     if (!roomData) {
-      return new Response(JSON.stringify({ error: "Room not found" }), { status: 404, headers });
+      logger.warn("Room not found", { roomId });
+      logger.response(404, Date.now() - startTime);
+      return res.status(404).json({ error: "Room not found" });
     }
 
     const isPublicRoom = !roomData.type || roomData.type === "public";
@@ -226,13 +236,17 @@ export default async function handler(req: Request) {
         const shortCount = await redis.incr(shortKey);
         if (shortCount === 1) await redis.expire(shortKey, CHAT_BURST_SHORT_WINDOW_SECONDS);
         if (shortCount > CHAT_BURST_SHORT_LIMIT) {
-          return new Response(JSON.stringify({ error: "You're sending messages too quickly." }), { status: 429, headers });
+          logger.warn("Short burst rate limit exceeded", { username, roomId });
+          logger.response(429, Date.now() - startTime);
+          return res.status(429).json({ error: "You're sending messages too quickly." });
         }
 
         const longCount = await redis.incr(longKey);
         if (longCount === 1) await redis.expire(longKey, CHAT_BURST_LONG_WINDOW_SECONDS);
         if (longCount > CHAT_BURST_LONG_LIMIT) {
-          return new Response(JSON.stringify({ error: "Too many messages. Please wait." }), { status: 429, headers });
+          logger.warn("Long burst rate limit exceeded", { username, roomId });
+          logger.response(429, Date.now() - startTime);
+          return res.status(429).json({ error: "Too many messages. Please wait." });
         }
 
         const nowSeconds = Math.floor(Date.now() / 1000);
@@ -240,12 +254,14 @@ export default async function handler(req: Request) {
         if (lastSent) {
           const delta = nowSeconds - parseInt(lastSent);
           if (delta < CHAT_MIN_INTERVAL_SECONDS) {
-            return new Response(JSON.stringify({ error: "Please wait before sending another message." }), { status: 429, headers });
+            logger.warn("Min interval not met", { username, roomId });
+            logger.response(429, Date.now() - startTime);
+            return res.status(429).json({ error: "Please wait before sending another message." });
           }
         }
         await redis.set(lastKey, nowSeconds, { ex: CHAT_BURST_LONG_WINDOW_SECONDS });
       } catch (rlError) {
-        console.error("Chat burst rate-limit check failed", rlError);
+        logger.error("Chat burst rate-limit check failed", rlError);
       }
     }
 
@@ -254,22 +270,32 @@ export default async function handler(req: Request) {
       try {
         userData = await ensureUserExists(username, "send-message");
         if (!userData) {
-          return new Response(JSON.stringify({ error: "Failed to verify user" }), { status: 500, headers });
+          logger.error("Failed to verify user", { username });
+          logger.response(500, Date.now() - startTime);
+          return res.status(500).json({ error: "Failed to verify user" });
         }
       } catch (error) {
         if (error instanceof Error && error.message === "Username contains inappropriate language") {
-          return new Response(JSON.stringify({ error: "Username contains inappropriate language" }), { status: 400, headers });
+          logger.warn("Inappropriate username", { username });
+          logger.response(400, Date.now() - startTime);
+          return res.status(400).json({ error: "Username contains inappropriate language" });
         }
-        return new Response(JSON.stringify({ error: "Failed to verify user" }), { status: 500, headers });
+        logger.error("Failed to verify user", error);
+        logger.response(500, Date.now() - startTime);
+        return res.status(500).json({ error: "Failed to verify user" });
       }
 
       if (content.length > MAX_MESSAGE_LENGTH) {
-        return new Response(JSON.stringify({ error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH}` }), { status: 400, headers });
+        logger.warn("Message too long", { length: content.length, max: MAX_MESSAGE_LENGTH });
+        logger.response(400, Date.now() - startTime);
+        return res.status(400).json({ error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH}` });
       }
 
       const lastMsg = await getLastMessage(roomId);
       if (lastMsg && lastMsg.username === username && lastMsg.content === content) {
-        return new Response(JSON.stringify({ error: "Duplicate message detected" }), { status: 400, headers });
+        logger.warn("Duplicate message detected", { username, roomId });
+        logger.response(400, Date.now() - startTime);
+        return res.status(400).json({ error: "Duplicate message detected" });
       }
 
       const message: Message = {
@@ -287,12 +313,17 @@ export default async function handler(req: Request) {
       await createRedis().expire(`chat:users:${username}`, USER_EXPIRATION_TIME);
       await refreshRoomPresence(roomId, username);
 
-      return new Response(JSON.stringify({ message }), { status: 201, headers });
+      logger.info("Message sent", { username, roomId, messageId: message.id });
+      logger.response(201, Date.now() - startTime);
+      return res.status(201).json({ message });
     } catch (error) {
-      console.error(`Error sending message in room ${roomId}:`, error);
-      return new Response(JSON.stringify({ error: "Failed to send message" }), { status: 500, headers });
+      logger.error(`Error sending message in room ${roomId}`, error);
+      logger.response(500, Date.now() - startTime);
+      return res.status(500).json({ error: "Failed to send message" });
     }
   }
 
-  return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+  logger.warn("Method not allowed", { method: req.method });
+  logger.response(405, Date.now() - startTime);
+  return res.status(405).json({ error: "Method not allowed" });
 }

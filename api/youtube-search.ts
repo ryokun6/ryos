@@ -1,19 +1,12 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import {
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
-  errorResponse,
-  jsonResponse,
-} from "./_utils/middleware.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
+import { getClientIp } from "./_utils/_rate-limit.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
+import { initLogger } from "./_utils/_logging.js";
 
-// Vercel Edge Function configuration
-
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
+export const maxDuration = 30;
 
 /**
  * Expected request body
@@ -69,33 +62,19 @@ interface SearchResultItem {
   publishedAt: string;
 }
 
-// ------------------------------------------------------------------
-// Basic logging helpers
-// ------------------------------------------------------------------
-const logRequest = (method: string, url: string, id: string) => {
-  console.log(`[${id}] ${method} ${url}`);
-};
-
-const logInfo = (id: string, message: string, data?: unknown) => {
-  console.log(`[${id}] INFO: ${message}`, data ?? "");
-};
-
-const logError = (id: string, message: string, error: unknown) => {
-  console.error(`[${id}] ERROR: ${message}`, error);
-};
-
-const generateRequestId = (): string =>
-  Math.random().toString(36).substring(2, 10);
-
 /**
  * Main handler
  */
-export default async function handler(req: Request) {
-  const requestId = generateRequestId();
-  logRequest(req.method, req.url, requestId);
-
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+): Promise<void> {
+  const { requestId, logger } = initLogger();
+  const startTime = Date.now();
   const effectiveOrigin = getEffectiveOrigin(req);
-  logInfo(requestId, "Request details", { 
+
+  logger.request(req.method || "POST", req.url || "/api/youtube-search", "youtube-search");
+  logger.info("Request details", { 
     method: req.method, 
     effectiveOrigin,
     youtubeKeyCount: [process.env.YOUTUBE_API_KEY, process.env.YOUTUBE_API_KEY_2].filter(Boolean).length,
@@ -103,32 +82,32 @@ export default async function handler(req: Request) {
   });
 
   if (req.method === "OPTIONS") {
-    const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    res.setHeader("Content-Type", "application/json");
+    setCorsHeaders(res, effectiveOrigin, { methods: ["POST", "OPTIONS"], headers: ["Content-Type"] });
+    logger.response(204, Date.now() - startTime);
+    res.status(204).end();
+    return;
   }
 
   if (req.method !== "POST") {
-    logError(requestId, "Method not allowed", null);
-    return new Response("Method not allowed", { status: 405 });
+    logger.error("Method not allowed");
+    logger.response(405, Date.now() - startTime);
+    res.status(405).send("Method not allowed");
+    return;
   }
+
+  res.setHeader("Content-Type", "application/json");
+  setCorsHeaders(res, effectiveOrigin, { methods: ["POST", "OPTIONS"], headers: ["Content-Type"] });
 
   // Check origin - be more permissive in development
   const vercelEnv = process.env.VERCEL_ENV;
   const isDev = !vercelEnv || vercelEnv === "development";
   
   if (!isDev && !isAllowedOrigin(effectiveOrigin)) {
-    logError(requestId, "Origin not allowed", { effectiveOrigin, vercelEnv });
-    return new Response(
-      JSON.stringify({ error: "Origin not allowed" }),
-      {
-        status: 403,
-        headers: {
-          "Content-Type": "application/json",
-          // Still include CORS header so client can read the error
-          ...(effectiveOrigin && { "Access-Control-Allow-Origin": effectiveOrigin }),
-        },
-      }
-    );
+    logger.error("Origin not allowed", { effectiveOrigin, vercelEnv });
+    logger.response(403, Date.now() - startTime);
+    res.status(403).json({ error: "Origin not allowed" });
+    return;
   }
 
   // Rate limiting: 20 searches/min/IP, 200/day/IP
@@ -148,18 +127,11 @@ export default async function handler(req: Request) {
       limit: BURST_LIMIT,
     });
     if (!burst.allowed) {
-      logInfo(requestId, "Rate limit exceeded (burst)", { ip });
-      return new Response(
-        JSON.stringify({ error: "rate_limit_exceeded", scope: "burst" }),
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(burst.resetSeconds ?? BURST_WINDOW),
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin || "*",
-          },
-        }
-      );
+      logger.info("Rate limit exceeded (burst)", { ip });
+      logger.response(429, Date.now() - startTime);
+      res.setHeader("Retry-After", String(burst.resetSeconds ?? BURST_WINDOW));
+      res.status(429).json({ error: "rate_limit_exceeded", scope: "burst" });
+      return;
     }
 
     const daily = await RateLimit.checkCounterLimit({
@@ -168,22 +140,14 @@ export default async function handler(req: Request) {
       limit: DAILY_LIMIT,
     });
     if (!daily.allowed) {
-      logInfo(requestId, "Rate limit exceeded (daily)", { ip });
-      return new Response(
-        JSON.stringify({ error: "rate_limit_exceeded", scope: "daily" }),
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(daily.resetSeconds ?? DAILY_WINDOW),
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin || "*",
-          },
-        }
-      );
+      logger.info("Rate limit exceeded (daily)", { ip });
+      logger.response(429, Date.now() - startTime);
+      res.setHeader("Retry-After", String(daily.resetSeconds ?? DAILY_WINDOW));
+      res.status(429).json({ error: "rate_limit_exceeded", scope: "daily" });
+      return;
     }
   } catch (err) {
-    // Log but don't block if rate limit check fails
-    logError(requestId, "Rate limit check failed", err);
+    logger.error("Rate limit check failed", err);
   }
 
   // Collect all available API keys for rotation
@@ -193,46 +157,32 @@ export default async function handler(req: Request) {
   ].filter((key): key is string => !!key);
 
   if (apiKeys.length === 0) {
-    logError(requestId, "No YOUTUBE_API_KEY configured", { 
+    logger.error("No YOUTUBE_API_KEY configured", { 
       envKeys: Object.keys(process.env).filter(k => k.includes("YOUTUBE") || k.includes("API")).join(", ") || "none found"
     });
-    return new Response(
-      JSON.stringify({ 
-        error: "YouTube API is not configured",
-        hint: "Add YOUTUBE_API_KEY to your .env.local file and restart vercel dev"
-      }),
-      {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin || "*",
-        },
-      }
-    );
+    logger.response(500, Date.now() - startTime);
+    res.status(500).json({ 
+      error: "YouTube API is not configured",
+      hint: "Add YOUTUBE_API_KEY to your .env.local file and restart vercel dev"
+    });
+    return;
   }
 
-  logInfo(requestId, "Available API keys", { count: apiKeys.length });
+  logger.info("Available API keys", { count: apiKeys.length });
 
   // Parse and validate request body
   let body: YouTubeSearchRequest;
   try {
-    body = YouTubeSearchRequestSchema.parse(await req.json());
+    body = YouTubeSearchRequestSchema.parse(req.body);
   } catch (err) {
-    logError(requestId, "Invalid request body", err);
-    return new Response(
-      JSON.stringify({ error: "Invalid request body" }),
-      {
-        status: 400,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin!,
-        },
-      }
-    );
+    logger.error("Invalid request body", err);
+    logger.response(400, Date.now() - startTime);
+    res.status(400).json({ error: "Invalid request body" });
+    return;
   }
 
   const { query, maxResults } = body;
-  logInfo(requestId, "Searching YouTube", { query, maxResults });
+  logger.info("Searching YouTube", { query, maxResults });
 
   // Helper to check if error is a quota exceeded error
   const isQuotaError = (status: number, data: YouTubeSearchResponse): boolean => {
@@ -251,13 +201,12 @@ export default async function handler(req: Request) {
     const keyLabel = keyIndex === 0 ? "primary" : `backup-${keyIndex}`;
 
     try {
-      logInfo(requestId, `Trying API key`, { keyLabel, keyIndex: keyIndex + 1, totalKeys: apiKeys.length });
+      logger.info(`Trying API key`, { keyLabel, keyIndex: keyIndex + 1, totalKeys: apiKeys.length });
 
-      // Build YouTube Data API v3 search URL
       const searchUrl = new URL("https://www.googleapis.com/youtube/v3/search");
       searchUrl.searchParams.set("part", "snippet");
       searchUrl.searchParams.set("type", "video");
-      searchUrl.searchParams.set("videoCategoryId", "10"); // Music category
+      searchUrl.searchParams.set("videoCategoryId", "10");
       searchUrl.searchParams.set("q", query);
       searchUrl.searchParams.set("maxResults", String(maxResults));
       searchUrl.searchParams.set("key", apiKey);
@@ -269,17 +218,16 @@ export default async function handler(req: Request) {
         const errorCode = data.error?.code || response.status;
         const errorMessage = data.error?.message || `YouTube API error (${response.status})`;
         
-        // Check if this is a quota error and we have more keys to try
         if (isQuotaError(response.status, data) && keyIndex < apiKeys.length - 1) {
-          logInfo(requestId, `Quota exceeded for ${keyLabel} key, rotating to next key`, { 
+          logger.info(`Quota exceeded for ${keyLabel} key, rotating to next key`, { 
             errorMessage,
             nextKeyIndex: keyIndex + 2 
           });
           lastError = { status: response.status, message: errorMessage, code: errorCode };
-          continue; // Try next key
+          continue;
         }
 
-        logError(requestId, "YouTube API error", { 
+        logger.error("YouTube API error", { 
           status: response.status, 
           error: data.error,
           keyLabel,
@@ -287,27 +235,19 @@ export default async function handler(req: Request) {
             ? "Check if YouTube Data API v3 is enabled in Google Cloud Console and API key has no restrictive referrer settings" 
             : undefined
         });
-        return new Response(
-          JSON.stringify({ 
-            error: errorMessage,
-            code: errorCode,
-            hint: errorCode === 403 
-              ? "YouTube API access denied. Ensure the API key is valid and YouTube Data API v3 is enabled in Google Cloud Console."
-              : undefined
-          }),
-          {
-            status: response.status,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": effectiveOrigin || "*",
-            },
-          }
-        );
+        logger.response(response.status, Date.now() - startTime);
+        res.status(response.status).json({ 
+          error: errorMessage,
+          code: errorCode,
+          hint: errorCode === 403 
+            ? "YouTube API access denied. Ensure the API key is valid and YouTube Data API v3 is enabled in Google Cloud Console."
+            : undefined
+        });
+        return;
       }
 
-      // Transform results
       const results: SearchResultItem[] = (data.items || [])
-        .filter((item) => item.id.videoId) // Only include items with videoId
+        .filter((item) => item.id.videoId)
         .map((item) => ({
           videoId: item.id.videoId,
           title: item.snippet.title,
@@ -319,52 +259,29 @@ export default async function handler(req: Request) {
           publishedAt: item.snippet.publishedAt,
         }));
 
-      logInfo(requestId, "Search completed", { resultsCount: results.length, keyLabel });
+      logger.info("Search completed", { resultsCount: results.length, keyLabel });
+      logger.response(200, Date.now() - startTime);
+      res.status(200).json({ results });
+      return;
 
-      return new Response(
-        JSON.stringify({ results }),
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
-        }
-      );
     } catch (error) {
-      logError(requestId, `Error with ${keyLabel} key`, error);
-      // If we have more keys, try the next one
+      logger.error(`Error with ${keyLabel} key`, error);
       if (keyIndex < apiKeys.length - 1) {
-        logInfo(requestId, `Retrying with next API key`);
+        logger.info(`Retrying with next API key`);
         continue;
       }
-      // No more keys to try
-      return new Response(
-        JSON.stringify({ error: "Failed to search YouTube" }),
-        {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": effectiveOrigin!,
-          },
-        }
-      );
+      logger.response(500, Date.now() - startTime);
+      res.status(500).json({ error: "Failed to search YouTube" });
+      return;
     }
   }
 
   // All keys exhausted (quota exceeded on all)
-  logError(requestId, "All API keys exhausted", { lastError });
-  return new Response(
-    JSON.stringify({ 
-      error: lastError?.message || "All YouTube API keys have exceeded their quota",
-      code: lastError?.code || 403,
-      hint: "All configured API keys have exceeded their quota. Please try again later."
-    }),
-    {
-      status: lastError?.status || 403,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": effectiveOrigin || "*",
-      },
-    }
-  );
+  logger.error("All API keys exhausted", { lastError });
+  logger.response(lastError?.status || 403, Date.now() - startTime);
+  res.status(lastError?.status || 403).json({ 
+    error: lastError?.message || "All YouTube API keys have exceeded their quota",
+    code: lastError?.code || 403,
+    hint: "All configured API keys have exceeded their quota. Please try again later."
+  });
 }

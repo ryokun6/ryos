@@ -78,7 +78,8 @@ export async function handleGetRooms(
 ): Promise<Response> {
   logInfo(requestId, "Fetching all rooms");
   try {
-    const url = new URL(request.url);
+    // Handle both full URLs and relative paths (vercel dev uses relative paths)
+    const url = new URL(request.url, "http://localhost");
     const username = url.searchParams.get("username")?.toLowerCase() || null;
 
     const allRooms = await getRoomsWithCountsFast();

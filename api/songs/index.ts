@@ -17,17 +17,14 @@
  * { action: "import", songs: [...] }
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import pako from "pako";
-import {
-  createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
-} from "../_utils/middleware.js";
+import { Redis } from "@upstash/redis";
 import { validateAuth } from "../_utils/auth/index.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
+import { getClientIp } from "../_utils/_rate-limit.js";
 import {
   listSongs,
   saveSong,
@@ -43,13 +40,26 @@ import {
   type LyricsSource,
 } from "../_utils/_song-service.js";
 import { fetchCoverUrl } from "./_kugou.js";
+import { initLogger } from "../_utils/_logging.js";
 
-// Vercel Edge Function configuration
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
 
+// ============================================================================
+// Local Helper Functions
+// ============================================================================
+
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL as string,
+    token: process.env.REDIS_KV_REST_API_TOKEN as string,
+  });
+}
+
+
+// ============================================================================
 // Rate limiting configuration
+// ============================================================================
+
 const RATE_LIMITS = {
   list: { windowSeconds: 60, limit: 120 },     // 120/min for listing
   create: { windowSeconds: 60, limit: 30 },    // 30/min for creating songs
@@ -132,18 +142,6 @@ const BulkImportSchema = z.object({
 // Utility Functions
 // =============================================================================
 
-function generateRequestId(): string {
-  return Math.random().toString(36).substring(2, 10);
-}
-
-function logInfo(id: string, message: string, data?: unknown) {
-  console.log(`[${id}] INFO: ${message}`, data ?? "");
-}
-
-function logError(id: string, message: string, error: unknown) {
-  console.error(`[${id}] ERROR: ${message}`, error);
-}
-
 /**
  * Decompress a gzip:base64 encoded string back to the original data
  * Returns the parsed JSON if the string starts with "gzip:", otherwise returns null
@@ -194,41 +192,42 @@ function getFieldValue<T>(value: unknown): T | undefined {
 // Main Handler
 // =============================================================================
 
-export default async function handler(req: Request) {
-  const requestId = generateRequestId();
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { requestId, logger } = initLogger();
   const startTime = Date.now();
 
-  console.log(`[${requestId}] ${req.method} /api/songs`);
+  const effectiveOrigin = getEffectiveOrigin(req);
+  setCorsHeaders(res, effectiveOrigin, { methods: ["GET", "POST", "DELETE", "OPTIONS"] });
+
+  logger.request(req.method || "GET", req.url || "/api/songs");
 
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    const effectiveOrigin = getEffectiveOrigin(req);
-    const resp = preflightIfNeeded(req, ["GET", "POST", "DELETE", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    logger.response(204, Date.now() - startTime);
+    return res.status(204).end();
   }
 
   // Validate origin
-  const effectiveOrigin = getEffectiveOrigin(req);
   if (!isAllowedOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+    logger.warn("Unauthorized origin", { effectiveOrigin });
+    logger.response(403, Date.now() - startTime);
+    return res.status(403).send("Unauthorized");
   }
 
   // Create Redis client
   const redis = createRedis();
 
   // Helper for JSON responses
-  const jsonResponse = (data: unknown, status = 200, headers: Record<string, string> = {}) =>
-    new Response(JSON.stringify(data), {
-      status,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": effectiveOrigin!,
-        ...headers,
-      },
+  const jsonResponse = (data: unknown, status = 200, headers: Record<string, string> = {}) => {
+    Object.entries(headers).forEach(([key, value]) => {
+      res.setHeader(key, value);
     });
+    logger.response(status, Date.now() - startTime);
+    return res.status(status).json(data);
+  };
 
   const errorResponse = (message: string, status = 400) => {
-    logInfo(requestId, `Response: ${status} - ${message}`);
+    logger.info(`Response: ${status} - ${message}`);
     return jsonResponse({ error: message }, status);
   };
 
@@ -247,6 +246,7 @@ export default async function handler(req: Request) {
       });
       
       if (!rlResult.allowed) {
+        logger.warn("Rate limit exceeded", { ip });
         return jsonResponse({
           error: "rate_limit_exceeded",
           limit: rlResult.limit,
@@ -254,14 +254,13 @@ export default async function handler(req: Request) {
         }, 429, { "Retry-After": String(rlResult.resetSeconds) });
       }
       
-      const url = new URL(req.url);
-      const createdBy = url.searchParams.get("createdBy") || undefined;
-      const idsParam = url.searchParams.get("ids");
+      const createdBy = req.query.createdBy as string | undefined;
+      const idsParam = req.query.ids as string | undefined;
       const ids = idsParam ? idsParam.split(",").map((s) => s.trim()).filter(Boolean) : undefined;
-      const includeParam = url.searchParams.get("include") || "metadata";
+      const includeParam = (req.query.include as string) || "metadata";
       const includes = includeParam.split(",").map((s) => s.trim());
 
-      logInfo(requestId, "Listing songs", { createdBy, idsCount: ids?.length, includes });
+      logger.info("Listing songs", { createdBy, idsCount: ids?.length, includes });
 
       const getOptions: GetSongOptions = {
         includeMetadata: includes.includes("metadata"),
@@ -277,7 +276,7 @@ export default async function handler(req: Request) {
         getOptions,
       });
 
-      logInfo(requestId, "Returning songs", {
+      logger.info("Returning songs", {
         count: songs.length,
         duration: `${Date.now() - startTime}ms`,
       });
@@ -290,33 +289,30 @@ export default async function handler(req: Request) {
     // =========================================================================
     if (req.method === "POST") {
       // Extract auth credentials
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
+      const authHeader = req.headers.authorization as string | undefined;
+      const usernameHeader = req.headers["x-username"] as string | undefined;
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
       // Validate authentication
       const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
+        logger.warn("Unauthorized - authentication required");
         return errorResponse("Unauthorized - authentication required", 401);
       }
 
-      let body: Record<string, unknown>;
-      try {
-        body = await req.json();
-      } catch (parseError) {
-        logError(requestId, "Failed to parse request body", parseError);
-        return errorResponse("Invalid JSON body", 400);
-      }
-      logInfo(requestId, `POST action=${body.action || "create"}`, { 
-        hasId: !!body.id,
-        songsCount: Array.isArray(body.songs) ? body.songs.length : undefined 
+      const body = req.body as Record<string, unknown>;
+      
+      logger.info(`POST action=${body?.action || "create"}`, { 
+        hasId: !!body?.id,
+        songsCount: Array.isArray(body?.songs) ? body.songs.length : undefined 
       });
 
       // Handle bulk import (admin only)
-      if (body.action === "import") {
+      if (body?.action === "import") {
         // Only admin can bulk import
         if (username?.toLowerCase() !== "ryo") {
+          logger.warn("Forbidden - admin access required for bulk import");
           return errorResponse("Forbidden - admin access required for bulk import", 403);
         }
 
@@ -329,6 +325,7 @@ export default async function handler(req: Request) {
         });
         
         if (!rlResult.allowed) {
+          logger.warn("Rate limit exceeded (import)", { username });
           return jsonResponse({
             error: "rate_limit_exceeded",
             limit: rlResult.limit,
@@ -338,6 +335,7 @@ export default async function handler(req: Request) {
 
         const parsed = BulkImportSchema.safeParse(body);
         if (!parsed.success) {
+          logger.warn("Invalid request body", parsed.error.format());
           return jsonResponse(
             { error: "Invalid request body", details: parsed.error.format() },
             400
@@ -347,7 +345,7 @@ export default async function handler(req: Request) {
         const { songs } = parsed.data;
         const now = Date.now();
 
-        logInfo(requestId, "Starting bulk import", { songCount: songs.length });
+        logger.info("Starting bulk import", { songCount: songs.length });
 
         // Batch fetch all existing songs (1 Redis call instead of N)
         const songIds = songs.map((s) => s.id);
@@ -442,7 +440,7 @@ export default async function handler(req: Request) {
         // Fetch missing covers for songs that have lyricsSource but no cover
         const songsNeedingCovers = songDocs.filter(d => d.needsCover && d.meta.lyricsSource);
         if (songsNeedingCovers.length > 0) {
-          logInfo(requestId, `Fetching ${songsNeedingCovers.length} missing covers from Kugou`);
+          logger.info(`Fetching ${songsNeedingCovers.length} missing covers from Kugou`);
           
           // Fetch covers in parallel (but limit concurrency to avoid rate limiting)
           const COVER_FETCH_BATCH_SIZE = 10;
@@ -453,20 +451,20 @@ export default async function handler(req: Request) {
             const coverPromises = batch.map(async (doc) => {
               const source = doc.meta.lyricsSource!;
               try {
-                const cover = await fetchCoverUrl(source.hash, source.albumId);
-                if (cover) {
-                  doc.meta.cover = cover;
+                const coverResult = await fetchCoverUrl(source.hash, source.albumId);
+                if (coverResult) {
+                  doc.meta.cover = coverResult;
                   fetchedCount++;
                 }
               } catch (err) {
                 // Log but don't fail the import if cover fetch fails
-                console.warn(`[${requestId}] Failed to fetch cover for ${doc.meta.id}:`, err);
+                logger.warn(`Failed to fetch cover for ${doc.meta.id}`, err);
               }
             });
             await Promise.all(coverPromises);
           }
           
-          logInfo(requestId, `Fetched ${fetchedCount}/${songsNeedingCovers.length} covers`);
+          logger.info(`Fetched ${fetchedCount}/${songsNeedingCovers.length} covers`);
         }
 
         // Use pipeline for all writes (1 batched Redis call)
@@ -486,7 +484,7 @@ export default async function handler(req: Request) {
         const imported = songDocs.filter((d) => !d.isUpdate).length;
         const updated = songDocs.filter((d) => d.isUpdate).length;
 
-        logInfo(requestId, "Bulk import complete", {
+        logger.info("Bulk import complete", {
           imported,
           updated,
           withContent: contentCount,
@@ -512,6 +510,7 @@ export default async function handler(req: Request) {
       });
       
       if (!createRlResult.allowed) {
+        logger.warn("Rate limit exceeded (create)", { username });
         return jsonResponse({
           error: "rate_limit_exceeded",
           limit: createRlResult.limit,
@@ -522,6 +521,7 @@ export default async function handler(req: Request) {
       // Single song creation
       const parsed = CreateSongSchema.safeParse(body);
       if (!parsed.success) {
+        logger.warn("Invalid request body", parsed.error.format());
         return jsonResponse(
           { error: "Invalid request body", details: parsed.error.format() },
           400
@@ -562,7 +562,7 @@ export default async function handler(req: Request) {
         { preserveLyrics: true, preserveTranslations: true, preserveFurigana: true }
       );
 
-      logInfo(requestId, existing ? "Song updated" : "Song created", {
+      logger.info(existing ? "Song updated" : "Song created", {
         id: song.id,
         duration: `${Date.now() - startTime}ms`,
       });
@@ -580,19 +580,21 @@ export default async function handler(req: Request) {
     // =========================================================================
     if (req.method === "DELETE") {
       // Extract auth credentials
-      const authHeader = req.headers.get("Authorization");
-      const usernameHeader = req.headers.get("X-Username");
+      const authHeader = req.headers.authorization as string | undefined;
+      const usernameHeader = req.headers["x-username"] as string | undefined;
       const authToken = authHeader?.replace("Bearer ", "") || null;
       const username = usernameHeader || null;
 
       // Validate authentication
       const authResult = await validateAuth(redis, username, authToken);
       if (!authResult.valid) {
+        logger.warn("Unauthorized - authentication required");
         return errorResponse("Unauthorized - authentication required", 401);
       }
 
       // Only admin can delete all songs
       if (username?.toLowerCase() !== "ryo") {
+        logger.warn("Forbidden - admin access required");
         return errorResponse("Forbidden - admin access required", 403);
       }
 
@@ -605,6 +607,7 @@ export default async function handler(req: Request) {
       });
       
       if (!rlResult.allowed) {
+        logger.warn("Rate limit exceeded (delete)", { username });
         return jsonResponse({
           error: "rate_limit_exceeded",
           limit: rlResult.limit,
@@ -612,11 +615,11 @@ export default async function handler(req: Request) {
         }, 429, { "Retry-After": String(rlResult.resetSeconds) });
       }
 
-      logInfo(requestId, "Deleting all songs");
+      logger.info("Deleting all songs");
 
       const deletedCount = await deleteAllSongs(redis);
 
-      logInfo(requestId, "Delete all complete", {
+      logger.info("Delete all complete", {
         deleted: deletedCount,
         duration: `${Date.now() - startTime}ms`,
       });
@@ -627,10 +630,11 @@ export default async function handler(req: Request) {
       });
     }
 
+    logger.warn("Method not allowed", { method: req.method });
     return errorResponse("Method not allowed", 405);
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    logError(requestId, "Song list API error", error);
+    logger.error("Song list API error", error);
     return errorResponse(errorMessage, 500);
   }
 }

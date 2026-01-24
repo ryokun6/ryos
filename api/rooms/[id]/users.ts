@@ -4,66 +4,65 @@
  * Get active users in a room
  */
 
-import {
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-} from "../../_utils/middleware.js";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { assertValidRoomId } from "../../_utils/_validation.js";
 import { getActiveUsersAndPrune } from "../_helpers/_presence.js";
+import { initLogger } from "../../_utils/_logging.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../../_utils/_cors.js";
 
-export const config = {
-  runtime: "edge",
-};
+export const runtime = "nodejs";
 
-function getRoomId(req: Request): string | null {
-  const url = new URL(req.url);
-  const pathParts = url.pathname.split("/");
-  const roomsIndex = pathParts.indexOf("rooms");
-  if (roomsIndex !== -1 && pathParts[roomsIndex + 1]) {
-    return pathParts[roomsIndex + 1];
-  }
-  return null;
-}
-
-export default async function handler(req: Request) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { requestId, logger } = initLogger();
+  const startTime = Date.now();
+  
   const origin = getEffectiveOrigin(req);
+  setCorsHeaders(res, origin, { methods: ["GET", "OPTIONS"] });
+  
+  logger.request(req.method || "GET", req.url || "/api/rooms/[id]/users");
   
   if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["GET", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+    logger.response(204, Date.now() - startTime);
+    return res.status(204).end();
   }
 
   if (!isAllowedOrigin(origin)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-      status: 403, headers: { "Content-Type": "application/json" },
-    });
+    logger.warn("Unauthorized origin", { origin });
+    logger.response(403, Date.now() - startTime);
+    return res.status(403).json({ error: "Unauthorized" });
   }
-
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (origin) headers["Access-Control-Allow-Origin"] = origin;
 
   if (req.method !== "GET") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers });
+    logger.warn("Method not allowed", { method: req.method });
+    logger.response(405, Date.now() - startTime);
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const roomId = getRoomId(req);
+  // Extract room ID from query params
+  const roomId = req.query.id as string | undefined;
   if (!roomId) {
-    return new Response(JSON.stringify({ error: "Room ID is required" }), { status: 400, headers });
+    logger.warn("Missing room ID");
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: "Room ID is required" });
   }
 
   try {
     assertValidRoomId(roomId, "get-room-users");
   } catch (e) {
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Invalid room ID" }), { status: 400, headers });
+    logger.warn("Invalid room ID", { roomId, error: e instanceof Error ? e.message : "Invalid" });
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: e instanceof Error ? e.message : "Invalid room ID" });
   }
 
   try {
     const users = await getActiveUsersAndPrune(roomId);
-    return new Response(JSON.stringify({ users }), { status: 200, headers });
+    
+    logger.info("Users retrieved", { roomId, count: users.length });
+    logger.response(200, Date.now() - startTime);
+    return res.status(200).json({ users });
   } catch (error) {
-    console.error(`Error getting users for room ${roomId}:`, error);
-    return new Response(JSON.stringify({ error: "Failed to get room users" }), { status: 500, headers });
+    logger.error(`Error getting users for room ${roomId}`, error);
+    logger.response(500, Date.now() - startTime);
+    return res.status(500).json({ error: "Failed to get room users" });
   }
 }

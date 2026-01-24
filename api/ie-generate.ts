@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   streamText,
   smoothStream,
@@ -5,14 +6,10 @@ import {
   type ModelMessage,
   type UIMessage,
 } from "ai";
-import {
-  createRedis,
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  getClientIp,
-} from "./_utils/middleware.js";
+import { Redis } from "@upstash/redis";
 import * as RateLimit from "./_utils/_rate-limit.js";
+import { getClientIp } from "./_utils/_rate-limit.js";
+import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
 import {
   SupportedModel,
   DEFAULT_MODEL,
@@ -25,36 +22,27 @@ import {
   IE_HTML_GENERATION_INSTRUCTIONS,
   } from "./_utils/_aiPrompts.js";
 import { SUPPORTED_AI_MODELS } from "../src/types/aiModels.js";
+import { initLogger } from "./_utils/_logging.js";
 
-// CORS handled via shared utils
+export const runtime = "nodejs";
+export const maxDuration = 80;
 
-// After ALLOWED_ORIGINS const block, add Redis setup and cache prefix
+// ============================================================================
+// Local Helper Functions
+// ============================================================================
 
-const redis = createRedis();
+function createRedis(): Redis {
+  return new Redis({
+    url: process.env.REDIS_KV_REST_API_URL as string,
+    token: process.env.REDIS_KV_REST_API_TOKEN as string,
+  });
+}
+
+// ============================================================================
+// Constants and Types
+// ============================================================================
 
 const IE_CACHE_PREFIX = "ie:cache:"; // Key prefix for stored generated pages
-
-// --- Logging Utilities ---------------------------------------------------
-
-const logRequest = (
-  method: string,
-  url: string,
-  action: string | null,
-  id: string
-) => {
-  console.log(`[${id}] ${method} ${url} - Action: ${action || "none"}`);
-};
-
-const logInfo = (id: string, message: string, data?: unknown) => {
-  console.log(`[${id}] INFO: ${message}`, data ?? "");
-};
-
-const logError = (id: string, message: string, error: unknown) => {
-  console.error(`[${id}] ERROR: ${message}`, error);
-};
-
-const generateRequestId = (): string =>
-  Math.random().toString(36).substring(2, 10);
 
 type IncomingUIMessage = Omit<UIMessage, "id">;
 type SimpleMessage = {
@@ -72,9 +60,6 @@ interface IEGenerateRequestBody {
 }
 
 // --- Utility Functions ----------------------------------------------------
-
-const isValidOrigin = (origin: string | null): boolean =>
-  isAllowedOrigin(origin);
 
 const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
   return messages.map((msg, index) => {
@@ -94,16 +79,7 @@ const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
   });
 };
 
-// --- Edge Runtime Config --------------------------------------------------
-
-export const maxDuration = 80;
-export const runtime = "edge";
-
-export const stream = true;
-export const config = { runtime: "edge" };
-
-// --- Handler --------------------------------------------------------------
-
+// --- Static System Prompt ---
 // Static portion of the system prompt shared across requests. This string is
 // passed via the `system` option to enable prompt caching by the model
 // provider.
@@ -180,20 +156,37 @@ ${RYO_PERSONA_INSTRUCTIONS}`;
   return finalPrompt;
 };
 
-export default async function handler(req: Request) {
-  // CORS / Origin validation
+// ============================================================================
+// Route Handler
+// ============================================================================
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { requestId, logger } = initLogger();
+  const startTime = Date.now();
+  
   const effectiveOrigin = getEffectiveOrigin(req);
+  setCorsHeaders(res, effectiveOrigin, { methods: ["POST", "OPTIONS"] });
+  
+  logger.request(req.method || "POST", req.url || "/api/ie-generate");
+  
   if (req.method === "OPTIONS") {
-    const resp = preflightIfNeeded(req, ["POST", "OPTIONS"], effectiveOrigin);
-    if (resp) return resp;
+    logger.response(204, Date.now() - startTime);
+    return res.status(204).end();
   }
-  if (!isValidOrigin(effectiveOrigin)) {
-    return new Response("Unauthorized", { status: 403 });
+  
+  if (!isAllowedOrigin(effectiveOrigin)) {
+    logger.warn("Unauthorized origin", { effectiveOrigin });
+    logger.response(403, Date.now() - startTime);
+    return res.status(403).send("Unauthorized");
   }
 
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    logger.warn("Method not allowed", { method: req.method });
+    logger.response(405, Date.now() - startTime);
+    return res.status(405).send("Method not allowed");
   }
+
+  const redis = createRedis();
 
   try {
     // ---------------------------
@@ -215,22 +208,18 @@ export default async function handler(req: Request) {
         limit: BURST_LIMIT,
       });
       if (!burst.allowed) {
-        const headers = new Headers({
-          "Retry-After": String(burst.resetSeconds ?? BURST_WINDOW),
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin,
+        logger.warn("Rate limit exceeded (burst)", { ip });
+        res.setHeader("Retry-After", String(burst.resetSeconds ?? BURST_WINDOW));
+        res.setHeader("Content-Type", "application/json");
+        logger.response(429, Date.now() - startTime);
+        return res.status(429).json({
+          error: "rate_limit_exceeded",
+          scope: "burst",
+          limit: burst.limit,
+          windowSeconds: burst.windowSeconds,
+          resetSeconds: burst.resetSeconds,
+          identifier: `ip:${ip}`,
         });
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            scope: "burst",
-            limit: burst.limit,
-            windowSeconds: burst.windowSeconds,
-            resetSeconds: burst.resetSeconds,
-            identifier: `ip:${ip}`,
-          }),
-          { status: 429, headers }
-        );
       }
 
       const budget = await RateLimit.checkCounterLimit({
@@ -239,44 +228,31 @@ export default async function handler(req: Request) {
         limit: BUDGET_LIMIT,
       });
       if (!budget.allowed) {
-        const headers = new Headers({
-          "Retry-After": String(budget.resetSeconds ?? BUDGET_WINDOW),
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": effectiveOrigin,
+        logger.warn("Rate limit exceeded (budget)", { ip });
+        res.setHeader("Retry-After", String(budget.resetSeconds ?? BUDGET_WINDOW));
+        res.setHeader("Content-Type", "application/json");
+        logger.response(429, Date.now() - startTime);
+        return res.status(429).json({
+          error: "rate_limit_exceeded",
+          scope: "budget",
+          limit: budget.limit,
+          windowSeconds: budget.windowSeconds,
+          resetSeconds: budget.resetSeconds,
+          identifier: `ip:${ip}`,
         });
-        return new Response(
-          JSON.stringify({
-            error: "rate_limit_exceeded",
-            scope: "budget",
-            limit: budget.limit,
-            windowSeconds: budget.windowSeconds,
-            resetSeconds: budget.resetSeconds,
-            identifier: `ip:${ip}`,
-          }),
-          { status: 429, headers }
-        );
       }
     } catch (e) {
       // Fail open on limiter error to avoid blocking
-      console.error("IE generate rate-limit error", e);
+      logger.error("IE generate rate-limit error", e);
     }
 
-    const requestId = generateRequestId();
-    const startTime =
-      typeof performance !== "undefined" ? performance.now() : Date.now();
-    const urlObj = new URL(req.url);
+    // Extract query parameters
+    const queryModel = req.query.model as SupportedModel | undefined;
+    const targetUrl = req.query.url as string | undefined;
+    const targetYear = req.query.year as string | undefined;
 
-    const queryModel = urlObj.searchParams.get(
-      "model"
-    ) as SupportedModel | null;
-    // Extract caching parameters from query string
-    const targetUrl = urlObj.searchParams.get("url");
-    const targetYear = urlObj.searchParams.get("year");
-
-    // Parse JSON body once
-    const bodyData = (await req
-      .json()
-      .catch(() => ({}))) as IEGenerateRequestBody;
+    // Parse JSON body
+    const bodyData = (req.body || {}) as IEGenerateRequestBody;
 
     const bodyUrl = bodyData.url;
     const bodyYear = bodyData.year;
@@ -291,12 +267,11 @@ export default async function handler(req: Request) {
     // Normalize the URL for the cache key
     const normalizedUrlForKey = normalizeUrlForCacheKey(rawUrl);
 
-    logRequest(
-      req.method,
-      req.url,
-      `${rawUrl} (${effectiveYearStr || "N/A"})`,
-      requestId
-    ); // Log original requested URL
+    logger.info("Request details", {
+      rawUrl,
+      effectiveYear: effectiveYearStr || "N/A",
+      normalizedUrlForKey,
+    });
 
     const {
       messages: incomingMessages = [],
@@ -317,11 +292,15 @@ export default async function handler(req: Request) {
     const model = queryModel || bodyModel || DEFAULT_MODEL;
 
     if (!Array.isArray(incomingMessages)) {
-      return new Response("Invalid messages format", { status: 400 });
+      logger.warn("Invalid messages format");
+      logger.response(400, Date.now() - startTime);
+      return res.status(400).send("Invalid messages format");
     }
 
     if (model !== null && !SUPPORTED_AI_MODELS.includes(model)) {
-      return new Response(`Unsupported model: ${model}`, { status: 400 });
+      logger.warn("Unsupported model", { model });
+      logger.response(400, Date.now() - startTime);
+      return res.status(400).send(`Unsupported model: ${model}`);
     }
 
     const selectedModel = getModelInstance(model as SupportedModel);
@@ -350,6 +329,12 @@ export default async function handler(req: Request) {
       ...modelMessages,
     ];
 
+    logger.info("Starting generation", {
+      model,
+      messageCount: enrichedMessages.length,
+      cacheKey,
+    });
+
     const result = streamText({
       model: selectedModel,
       messages: enrichedMessages,
@@ -364,7 +349,7 @@ export default async function handler(req: Request) {
       },
       onFinish: async ({ text }) => {
         if (!cacheKey) {
-          logInfo(requestId, "No cacheKey available, skipping cache save");
+          logger.info("No cacheKey available, skipping cache save");
           return;
         }
         try {
@@ -390,46 +375,33 @@ export default async function handler(req: Request) {
           }
           await redis.lpush(cacheKey, cleaned);
           await redis.ltrim(cacheKey, 0, 4);
-          logInfo(
-            requestId,
-            `Cached result for ${cacheKey} (length=${cleaned.length})`
-          );
-          const duration =
-            (typeof performance !== "undefined"
-              ? performance.now()
-              : Date.now()) - startTime;
-          logInfo(
-            requestId,
-            `Request completed in ${duration.toFixed(2)}ms (generated)`
-          );
+          const duration = Date.now() - startTime;
+          logger.info(`Cached result for ${cacheKey} (length=${cleaned.length}, duration=${duration.toFixed(2)}ms)`);
         } catch (cacheErr) {
-          logError(requestId, "Cache write error", cacheErr);
-          logInfo(requestId, "Failed to cache HTML, length", text?.length);
+          logger.error("Cache write error", cacheErr);
+          logger.info("Failed to cache HTML", { length: text?.length });
         }
       },
     });
 
-    const response = result.toUIMessageStreamResponse();
+    // Set CORS headers
+    res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
 
-    const headers = new Headers(response.headers);
-    headers.set("Access-Control-Allow-Origin", effectiveOrigin!);
-
-    const resp = new Response(response.body, {
-      status: response.status,
-      headers,
+    logger.info("Streaming response started");
+    
+    // Use pipeUIMessageStreamToResponse for Node.js streaming
+    result.pipeUIMessageStreamToResponse(res, {
+      status: 200,
     });
-
-    return resp;
   } catch (error) {
-    const requestId = generateRequestId(); // fallback id
-    logError(requestId, "IE Generate API error", error);
+    logger.error("IE Generate API error", error);
 
     if (error instanceof SyntaxError) {
-      return new Response(`Bad Request: Invalid JSON - ${error.message}`, {
-        status: 400,
-      });
+      logger.response(400, Date.now() - startTime);
+      return res.status(400).send(`Bad Request: Invalid JSON - ${error.message}`);
     }
 
-    return new Response("Internal Server Error", { status: 500 });
+    logger.response(500, Date.now() - startTime);
+    return res.status(500).send("Internal Server Error");
   }
 }
