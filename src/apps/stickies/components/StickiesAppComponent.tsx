@@ -87,7 +87,7 @@ export function StickiesAppComponent({
           onUpdate={(updates) => updateNote(note.id, updates)}
           onDelete={() => handleDeleteNote(note.id)}
           zIndex={getZIndexForNote(note.id)}
-          isForeground={isForeground && note.id === selectedNoteId}
+          isForeground={!!isForeground && note.id === selectedNoteId}
         />
       ))}
 
