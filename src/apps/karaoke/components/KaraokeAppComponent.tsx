@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
-import { AppProps, IpodInitialData } from "../../base/types";
+import { AppProps, KaraokeInitialData } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { KaraokeMenuBar } from "./KaraokeMenuBar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -15,11 +15,11 @@ import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
 import { CoverFlow } from "@/apps/ipod/components/CoverFlow";
 import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
-import { ListenSessionBadge } from "@/components/listen/ListenSessionBadge";
 import { ListenSessionInvite } from "@/components/listen/ListenSessionInvite";
 import { ListenSessionPanel } from "@/components/listen/ListenSessionPanel";
 import { JoinSessionDialog } from "@/components/listen/JoinSessionDialog";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
+import { ListenSessionToolbar } from "@/components/listen/ListenSessionToolbar";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-with-label";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
@@ -35,7 +35,7 @@ export function KaraokeAppComponent({
   instanceId,
   onNavigateNext,
   onNavigatePrevious,
-}: AppProps<IpodInitialData>) {
+}: AppProps<KaraokeInitialData>) {
   const {
     t,
     translatedHelpItems,
@@ -307,20 +307,8 @@ export function KaraokeAppComponent({
             restartAutoHideTimer();
           }}
         >
-          {listenSession && (
-            <>
-              <ListenSessionBadge
-                className="absolute top-3 right-3 z-50"
-                listenerCount={listenListenerCount}
-                isHost={isListenSessionHost}
-                isDj={isListenSessionDj}
-                onOpenPanel={() => setIsListenPanelOpen(true)}
-                onShare={() => setIsListenInviteOpen(true)}
-                onLeave={handleLeaveListenSession}
-              />
-              <ReactionOverlay className="z-40" />
-            </>
-          )}
+          {/* Reaction overlay for listen sessions */}
+          {listenSession && <ReactionOverlay className="z-40" />}
           {/* Video Player - container clips YouTube UI by extending height and using negative margin */}
           {currentTrack ? (
             <div className="absolute inset-0 overflow-hidden">
@@ -522,7 +510,7 @@ export function KaraokeAppComponent({
           <div
             data-toolbar
             className={cn(
-              "absolute bottom-0 left-0 right-0 flex justify-center z-[60] transition-opacity duration-200",
+              "absolute bottom-0 left-0 right-0 flex flex-col items-center gap-3 z-[60] transition-opacity duration-200",
               (showControls || anyMenuOpen || !isPlaying) && !isCoverFlowOpen
                 ? "opacity-100 pointer-events-auto"
                 : "opacity-0 pointer-events-none"
@@ -535,6 +523,22 @@ export function KaraokeAppComponent({
               restartAutoHideTimer();
             }}
           >
+            {/* Listen Together toolbar - shown when in a session */}
+            {listenSession && (
+              <ListenSessionToolbar
+                session={listenSession}
+                isDj={isListenSessionDj}
+                isAnonymous={isListenSessionAnonymous}
+                listenerCount={listenListenerCount}
+                onShare={() => setIsListenInviteOpen(true)}
+                onLeave={handleLeaveListenSession}
+                onOpenPanel={() => setIsListenPanelOpen(true)}
+                onPassDj={handlePassDj}
+                onSendReaction={handleSendReaction}
+                onInteraction={restartAutoHideTimer}
+              />
+            )}
+            {/* Main playback controls */}
             <FullscreenPlayerControls
               isPlaying={isPlaying}
               onPrevious={handlePrevious}

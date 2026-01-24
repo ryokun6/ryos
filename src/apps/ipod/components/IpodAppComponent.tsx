@@ -18,11 +18,6 @@ import { LyricsSyncMode } from "@/components/shared/LyricsSyncMode";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
 import { SongSearchDialog } from "@/components/dialogs/SongSearchDialog";
-import { ListenSessionBadge } from "@/components/listen/ListenSessionBadge";
-import { ListenSessionInvite } from "@/components/listen/ListenSessionInvite";
-import { ListenSessionPanel } from "@/components/listen/ListenSessionPanel";
-import { JoinSessionDialog } from "@/components/listen/JoinSessionDialog";
-import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodLogic } from "../hooks/useIpodLogic";
@@ -90,22 +85,11 @@ export function IpodAppComponent({
     setIsLyricsSearchDialogOpen,
     isSongSearchDialogOpen,
     setIsSongSearchDialogOpen,
-    isListenPanelOpen,
-    setIsListenPanelOpen,
-    isListenInviteOpen,
-    setIsListenInviteOpen,
-    isJoinListenDialogOpen,
-    setIsJoinListenDialogOpen,
     isSyncModeOpen,
     setIsSyncModeOpen,
     currentTrack,
     lyricsSourceOverride,
     fullscreenCoverUrl,
-    listenSession,
-    listenListenerCount,
-    isListenSessionHost,
-    isListenSessionDj,
-    isListenSessionAnonymous,
     fullScreenLyricsControls,
     furiganaMap,
     soramimiMap,
@@ -134,11 +118,6 @@ export function IpodAppComponent({
     handleSelectTranslation,
     cycleAlignment,
     cycleLyricsFont,
-    handleStartListenSession,
-    handleJoinListenSession,
-    handleLeaveListenSession,
-    handlePassDj,
-    handleSendReaction,
     seekTime,
     seekToTime,
     closeSyncMode,
@@ -178,13 +157,6 @@ export function IpodAppComponent({
       onRefreshLyrics={handleRefreshLyrics}
       onAdjustTiming={() => setIsSyncModeOpen(true)}
       onToggleCoverFlow={() => setIsCoverFlowOpen(!isCoverFlowOpen)}
-      onStartListenSession={handleStartListenSession}
-      onJoinListenSession={() => setIsJoinListenDialogOpen(true)}
-      onOpenListenSession={() => setIsListenPanelOpen(true)}
-      onShareListenSession={() => setIsListenInviteOpen(true)}
-      onLeaveListenSession={handleLeaveListenSession}
-      isInListenSession={!!listenSession}
-      isListenSessionHost={isListenSessionHost}
     />
   );
 
@@ -212,20 +184,6 @@ export function IpodAppComponent({
           className="ipod-force-font flex flex-col items-center justify-center w-full h-full bg-gradient-to-b from-gray-100/20 to-gray-300/20 backdrop-blur-lg p-4 select-none"
           style={{ position: "relative", overflow: "hidden", contain: "layout style paint" }}
         >
-          {listenSession && (
-            <>
-              <ListenSessionBadge
-                className="absolute top-3 right-3 z-40"
-                listenerCount={listenListenerCount}
-                isHost={isListenSessionHost}
-                isDj={isListenSessionDj}
-                onOpenPanel={() => setIsListenPanelOpen(true)}
-                onShare={() => setIsListenInviteOpen(true)}
-                onLeave={handleLeaveListenSession}
-              />
-              <ReactionOverlay className="z-30" />
-            </>
-          )}
           <div
             className={cn(
               "ipod-force-font w-[250px] h-[400px] rounded-2xl shadow-xl border border-black/40 flex flex-col items-center p-4 pb-8",
@@ -692,32 +650,6 @@ export function IpodAppComponent({
           onSelect={handleSongSearchSelect}
           onAddUrl={handleAddUrl}
         />
-      {listenSession && (
-        <ListenSessionPanel
-          isOpen={isListenPanelOpen}
-          onOpenChange={setIsListenPanelOpen}
-          session={listenSession}
-          isDj={isListenSessionDj}
-          isAnonymous={isListenSessionAnonymous}
-          listenerCount={listenListenerCount}
-          onPassDj={handlePassDj}
-          onLeave={handleLeaveListenSession}
-          onSendReaction={handleSendReaction}
-        />
-      )}
-      {listenSession && (
-        <ListenSessionInvite
-          isOpen={isListenInviteOpen}
-          onClose={() => setIsListenInviteOpen(false)}
-          sessionId={listenSession.id}
-          appType="ipod"
-        />
-      )}
-      <JoinSessionDialog
-        isOpen={isJoinListenDialogOpen}
-        onClose={() => setIsJoinListenDialogOpen(false)}
-        onJoin={handleJoinListenSession}
-      />
 
         {/* Lyrics Sync Mode (non-fullscreen only - fullscreen renders in portal) */}
         {!isFullScreen && isSyncModeOpen && fullScreenLyricsControls.originalLines.length > 0 && (

@@ -94,6 +94,10 @@ export interface InternetExplorerInitialData {
 
 export interface IpodInitialData {
   videoId?: string;
+}
+
+export interface KaraokeInitialData {
+  videoId?: string;
   listenSessionId?: string;
 }
 
@@ -115,6 +119,7 @@ export type AnyApp =
   | BaseApp<ControlPanelsInitialData>
   | BaseApp<InternetExplorerInitialData>
   | BaseApp<IpodInitialData>
+  | BaseApp<KaraokeInitialData>
   | BaseApp<PaintInitialData>
   | BaseApp<VideosInitialData>
   | BaseApp<AppletViewerInitialData>
@@ -125,6 +130,7 @@ export type AnyInitialData =
   | ControlPanelsInitialData
   | InternetExplorerInitialData
   | IpodInitialData
+  | KaraokeInitialData
   | PaintInitialData
   | VideosInitialData
   | FinderInitialData

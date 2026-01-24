@@ -12,7 +12,6 @@ import { useFurigana } from "@/hooks/useFurigana";
 import { useActivityState } from "@/hooks/useActivityState";
 import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
 import { useCustomEventListener, useEventListener } from "@/hooks/useEventListener";
-import { useListenSync } from "@/hooks/useListenSync";
 import { useLibraryUpdateChecker } from "./useLibraryUpdateChecker";
 import {
   useIpodStore,
@@ -20,7 +19,6 @@ import {
   getEffectiveTranslationLanguage,
   flushPendingLyricOffsetSave,
 } from "@/stores/useIpodStore";
-import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import { useShallow } from "zustand/react/shallow";
 import {
   useIpodStoreShallow,
@@ -117,7 +115,7 @@ export function useIpodLogic({
     toggleBacklight,
     setTheme,
     clearLibrary,
-    addTrackFromVideoId,
+    // addTrackFromVideoId - accessed via store.getState() directly
     nextTrack,
     previousTrack,
     refreshLyrics,
@@ -148,7 +146,6 @@ export function useIpodLogic({
     toggleBacklight: s.toggleBacklight,
     setTheme: s.setTheme,
     clearLibrary: s.clearLibrary,
-    addTrackFromVideoId: s.addTrackFromVideoId,
     nextTrack: s.nextTrack,
     previousTrack: s.previousTrack,
     refreshLyrics: s.refreshLyrics,
@@ -167,31 +164,6 @@ export function useIpodLogic({
     [username, authToken]
   );
 
-  const {
-    currentSession: listenSession,
-    isHost: isListenSessionHost,
-    isDj: isListenSessionDj,
-    isAnonymous: isListenSessionAnonymous,
-    listenerCount: listenListenerCount,
-    createSession: createListenSession,
-    joinSession: joinListenSession,
-    leaveSession: leaveListenSession,
-    syncSession: syncListenSession,
-    sendReaction: sendListenReaction,
-  } = useListenSessionStore(
-    useShallow((state) => ({
-      currentSession: state.currentSession,
-      isHost: state.isHost,
-      isDj: state.isDj,
-      isAnonymous: state.isAnonymous,
-      listenerCount: state.listenerCount,
-      createSession: state.createSession,
-      joinSession: state.joinSession,
-      leaveSession: state.leaveSession,
-      syncSession: state.syncSession,
-      sendReaction: state.sendReaction,
-    }))
-  );
 
   const lyricOffset = useIpodStore(
     (s) => {
@@ -215,7 +187,6 @@ export function useIpodLogic({
     ? instances[instanceId]?.isMinimized ?? false
     : false;
   const lastProcessedInitialDataRef = useRef<unknown>(null);
-  const lastProcessedListenSessionRef = useRef<string | null>(null);
 
   // Status management
   const [lastActivityTime, setLastActivityTime] = useState(Date.now());
@@ -233,9 +204,6 @@ export function useIpodLogic({
   const [isSongSearchDialogOpen, setIsSongSearchDialogOpen] = useState(false);
   const [isSyncModeOpen, setIsSyncModeOpen] = useState(false);
   const [isAddingSong, setIsAddingSong] = useState(false);
-  const [isListenPanelOpen, setIsListenPanelOpen] = useState(false);
-  const [isListenInviteOpen, setIsListenInviteOpen] = useState(false);
-  const [isJoinListenDialogOpen, setIsJoinListenDialogOpen] = useState(false);
   
   // Cover Flow state
   const [isCoverFlowOpen, setIsCoverFlowOpen] = useState(false);
@@ -930,52 +898,11 @@ export function useIpodLogic({
     }
   }, [isWindowOpen, initialData, processVideoId, clearIpodInitialData, instanceId]);
 
-  useEffect(() => {
-    if (
-      isWindowOpen &&
-      initialData?.listenSessionId &&
-      typeof initialData.listenSessionId === "string"
-    ) {
-      if (lastProcessedListenSessionRef.current === initialData.listenSessionId) return;
-
-      const sessionIdToProcess = initialData.listenSessionId;
-      setTimeout(() => {
-        if (!username) {
-          toast.error("Login required", {
-            description: "Set a username in Chats to join a session.",
-          });
-          return;
-        }
-        joinListenSession(sessionIdToProcess, username)
-          .then((result) => {
-            if (!result.ok) {
-              toast.error("Failed to join session", {
-                description: result.error || "Please try again.",
-              });
-            } else {
-              setIsListenPanelOpen(true);
-            }
-            if (instanceId) clearIpodInitialData(instanceId);
-          })
-          .catch((error) => {
-            console.error(`Error joining listen session ${sessionIdToProcess}:`, error);
-          });
-      }, 100);
-      lastProcessedListenSessionRef.current = initialData.listenSessionId;
-    }
-  }, [
-    isWindowOpen,
-    initialData,
-    joinListenSession,
-    username,
-    clearIpodInitialData,
-    instanceId,
-  ]);
 
   // Update app event handling
   useCustomEventListener<{
     appId: string;
-    initialData?: { videoId?: string; listenSessionId?: string };
+    initialData?: { videoId?: string };
   }>(
     "updateApp",
     (event) => {
@@ -991,31 +918,6 @@ export function useIpodLogic({
           });
         });
         lastProcessedInitialDataRef.current = event.detail.initialData;
-      }
-      if (event.detail.appId === "ipod" && event.detail.initialData?.listenSessionId) {
-        const sessionId = event.detail.initialData.listenSessionId;
-        if (lastProcessedListenSessionRef.current === sessionId) return;
-        bringToForeground("ipod");
-        if (!username) {
-          toast.error("Login required", {
-            description: "Set a username in Chats to join a session.",
-          });
-          return;
-        }
-        joinListenSession(sessionId, username)
-          .then((result) => {
-            if (!result.ok) {
-              toast.error("Failed to join session", {
-                description: result.error || "Please try again.",
-              });
-            } else {
-              setIsListenPanelOpen(true);
-            }
-          })
-          .catch((error) => {
-            console.error(`Error joining listen session ${sessionId}:`, error);
-          });
-        lastProcessedListenSessionRef.current = sessionId;
       }
     }
   );
@@ -1469,116 +1371,6 @@ export function useIpodLogic({
 
   const currentTrack = tracks[currentIndex];
   const lyricsSourceOverride = currentTrack?.lyricsSource;
-  const currentTrackMeta = useMemo(
-    () =>
-      currentTrack
-        ? {
-            title: currentTrack.title,
-            artist: currentTrack.artist,
-            cover: currentTrack.cover,
-          }
-        : null,
-    [currentTrack]
-  );
-
-  const getActivePlayer = useCallback(
-    () => (isFullScreen ? fullScreenPlayerRef.current : playerRef.current),
-    [isFullScreen]
-  );
-
-  useListenSync({
-    currentTrackId: currentTrack?.id ?? null,
-    currentTrackMeta,
-    isPlaying,
-    setIsPlaying,
-    setCurrentTrackId: setCurrentSongId,
-    getActivePlayer,
-    addTrackFromId: addTrackFromVideoId,
-  });
-
-  const handleStartListenSession = useCallback(async () => {
-    if (!username) {
-      toast.error("Login required", {
-        description: "Set a username in Chats to start a session.",
-      });
-      return;
-    }
-    const result = await createListenSession(username);
-    if (!result.ok) {
-      toast.error("Failed to start session", {
-        description: result.error || "Please try again.",
-      });
-      return;
-    }
-    setIsListenInviteOpen(true);
-    setIsListenPanelOpen(true);
-  }, [createListenSession, username]);
-
-  const handleJoinListenSession = useCallback(
-    async (sessionId: string) => {
-      // Allow anonymous users to join (username will be undefined)
-      const result = await joinListenSession(sessionId, username || undefined);
-      if (!result.ok) {
-        toast.error("Failed to join session", {
-          description: result.error || "Please try again.",
-        });
-        return;
-      }
-      // Only show panel for logged-in users (anonymous users can't interact much)
-      if (username) {
-        setIsListenPanelOpen(true);
-      }
-    },
-    [joinListenSession, username]
-  );
-
-  const handleLeaveListenSession = useCallback(async () => {
-    const result = await leaveListenSession();
-    if (!result.ok) {
-      toast.error("Failed to leave session", {
-        description: result.error || "Please try again.",
-      });
-      return;
-    }
-    setIsListenPanelOpen(false);
-    setIsListenInviteOpen(false);
-  }, [leaveListenSession]);
-
-  const handlePassDj = useCallback(
-    async (nextDj: string) => {
-      const activePlayer = getActivePlayer();
-      const positionMs = Math.max(0, (activePlayer?.getCurrentTime() ?? 0) * 1000);
-      const result = await syncListenSession({
-        currentTrackId: currentTrack?.id ?? null,
-        currentTrackMeta,
-        isPlaying,
-        positionMs,
-        djUsername: nextDj,
-      });
-      if (!result.ok) {
-        toast.error("Failed to pass DJ", {
-          description: result.error || "Please try again.",
-        });
-      } else {
-        toast.success("DJ passed", {
-          description: `@${nextDj} is now the DJ.`,
-        });
-      }
-    },
-    [currentTrack, currentTrackMeta, getActivePlayer, isPlaying, syncListenSession]
-  );
-
-  const handleSendReaction = useCallback(
-    async (emoji: string) => {
-      const result = await sendListenReaction(emoji);
-      if (!result.ok) {
-        toast.error("Failed to send reaction", {
-          description: result.error || "Please try again.",
-        });
-      }
-    },
-    [sendListenReaction]
-  );
 
   // Cover URL for paused state overlay in fullscreen
   const fullscreenCoverUrl = useMemo(() => {
@@ -1972,29 +1764,11 @@ export function useIpodLogic({
     setIsSongSearchDialogOpen,
     isSyncModeOpen,
     setIsSyncModeOpen,
-    isListenPanelOpen,
-    setIsListenPanelOpen,
-    isListenInviteOpen,
-    setIsListenInviteOpen,
-    isJoinListenDialogOpen,
-    setIsJoinListenDialogOpen,
 
     // Current track
     currentTrack,
     lyricsSourceOverride,
     fullscreenCoverUrl,
-
-    // Listen together
-    listenSession,
-    listenListenerCount,
-    isListenSessionHost,
-    isListenSessionDj,
-    isListenSessionAnonymous,
-    handleStartListenSession,
-    handleJoinListenSession,
-    handleLeaveListenSession,
-    handlePassDj,
-    handleSendReaction,
 
     // Lyrics
     fullScreenLyricsControls,

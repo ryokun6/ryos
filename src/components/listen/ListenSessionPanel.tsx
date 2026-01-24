@@ -10,6 +10,16 @@ import { Button } from "@/components/ui/button";
 import type { ListenSession } from "@/stores/useListenSessionStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
+import {
+  Crown,
+  User,
+  Smiley,
+  Fire,
+  HandsClapping,
+  Heart,
+  MusicNote,
+} from "@phosphor-icons/react";
+import type { Icon } from "@phosphor-icons/react";
 
 interface ListenSessionPanelProps {
   isOpen: boolean;
@@ -20,10 +30,17 @@ interface ListenSessionPanelProps {
   listenerCount: number;
   onPassDj: (username: string) => void;
   onLeave: () => void;
-  onSendReaction: (emoji: string) => void;
+  onSendReaction: (reactionId: string) => void;
 }
 
-const REACTIONS = ["😄", "🔥", "👏", "❤️", "🎵"];
+// Reaction definitions with icons
+const REACTIONS: { id: string; icon: Icon; color: string }[] = [
+  { id: "smile", icon: Smiley, color: "text-yellow-500" },
+  { id: "fire", icon: Fire, color: "text-orange-500" },
+  { id: "clap", icon: HandsClapping, color: "text-amber-500" },
+  { id: "heart", icon: Heart, color: "text-red-500" },
+  { id: "music", icon: MusicNote, color: "text-purple-500" },
+];
 
 export function ListenSessionPanel({
   isOpen,
@@ -73,6 +90,7 @@ export function ListenSessionPanel({
             >
               <span
                 className={cn(
+                  "flex items-center gap-1.5",
                   isXpTheme
                     ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
                     : "font-geneva-12 text-xs"
@@ -84,7 +102,11 @@ export function ListenSessionPanel({
                   fontSize: isXpTheme ? "11px" : undefined,
                 }}
               >
-                {session.djUsername === user.username ? "👑 " : "👤 "}
+                {session.djUsername === user.username ? (
+                  <Crown weight="fill" size={12} className="text-yellow-500" />
+                ) : (
+                  <User weight="fill" size={12} className="text-muted-foreground" />
+                )}
                 {user.username}
               </span>
               {isDj && user.username !== session.djUsername && (
@@ -128,14 +150,14 @@ export function ListenSessionPanel({
               Reactions
             </p>
             <div className="flex flex-wrap gap-1">
-              {REACTIONS.map((emoji) => (
+              {REACTIONS.map((reaction) => (
                 <Button
-                  key={emoji}
+                  key={reaction.id}
                   variant="retro"
-                  onClick={() => onSendReaction(emoji)}
-                  className="h-7 w-7 p-0 text-base"
+                  onClick={() => onSendReaction(reaction.id)}
+                  className="h-7 w-7 p-0"
                 >
-                  {emoji}
+                  <reaction.icon weight="fill" size={16} className={reaction.color} />
                 </Button>
               ))}
             </div>

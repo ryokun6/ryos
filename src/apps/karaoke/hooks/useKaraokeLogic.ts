@@ -29,7 +29,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import { useActivityState, isAnyActivityActive } from "@/hooks/useActivityState";
 import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
-import type { IpodInitialData } from "../../base/types";
+import type { KaraokeInitialData } from "../../base/types";
 import type { CoverFlowRef } from "@/apps/ipod/components/CoverFlow";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
@@ -37,7 +37,7 @@ import { helpItems } from "..";
 export interface UseKaraokeLogicOptions {
   isWindowOpen: boolean;
   isForeground: boolean | undefined;
-  initialData: IpodInitialData | undefined;
+  initialData: KaraokeInitialData | undefined;
   instanceId: string | undefined;
 }
 
