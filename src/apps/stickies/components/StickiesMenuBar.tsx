@@ -24,13 +24,13 @@ interface StickiesMenuBarProps {
   onDeleteNote: (id: string) => void;
 }
 
-const COLORS: { value: StickyColor; label: string; emoji: string }[] = [
-  { value: "yellow", label: "Yellow", emoji: "🟡" },
-  { value: "blue", label: "Blue", emoji: "🔵" },
-  { value: "green", label: "Green", emoji: "🟢" },
-  { value: "pink", label: "Pink", emoji: "🩷" },
-  { value: "purple", label: "Purple", emoji: "🟣" },
-  { value: "orange", label: "Orange", emoji: "🟠" },
+const COLORS: { value: StickyColor; label: string; hex: string }[] = [
+  { value: "yellow", label: "Yellow", hex: "#FFFFA5" },
+  { value: "blue", label: "Blue", hex: "#D4EDFC" },
+  { value: "green", label: "Green", hex: "#D4F5D4" },
+  { value: "pink", label: "Pink", hex: "#FFD4E5" },
+  { value: "purple", label: "Purple", hex: "#E8D4F5" },
+  { value: "orange", label: "Orange", hex: "#FFE4C4" },
 ];
 
 export function StickiesMenuBar({
@@ -87,9 +87,13 @@ export function StickiesMenuBar({
                   onClick={() =>
                     selectedNoteId && onChangeColor(selectedNoteId, color.value)
                   }
-                  className="text-md h-6 px-3"
+                  className="text-md h-6 px-3 flex items-center gap-2"
                 >
-                  {color.emoji} {color.label}
+                  <span 
+                    className="w-4 h-3 border border-black/30 inline-block"
+                    style={{ backgroundColor: color.hex }}
+                  />
+                  {color.label}
                 </MenubarItem>
               ))}
             </MenubarSubContent>

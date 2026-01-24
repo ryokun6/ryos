@@ -55,6 +55,7 @@ export function StickyNote({
   zIndex,
 }: StickyNoteProps) {
   const { t } = useTranslation();
+  
   const noteRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -196,21 +197,19 @@ export function StickyNote({
         onChange={handleContentChange}
         placeholder={t("apps.stickies.placeholder")}
         className={cn(
-          "flex-1 p-2 resize-none outline-none bg-transparent",
-          "placeholder:text-black/30"
+          "flex-1 p-2 resize-none outline-none bg-transparent font-geneva-12",
+          "placeholder:text-black/30 text-[13px]"
         )}
         style={{ 
-          fontSize: "13px", 
           lineHeight: "1.5",
           color: colors.text,
-          fontFamily: "Geneva, Helvetica, sans-serif",
         }}
       />
 
       {/* Resize handle */}
       <div
         onMouseDown={handleResizeStart}
-        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize"
+        className="absolute bottom-0 right-0 w-2.5 h-2.5 cursor-se-resize"
         style={{
           background: `linear-gradient(135deg, transparent 50%, ${colors.border} 50%)`,
         }}
