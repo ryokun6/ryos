@@ -12,7 +12,7 @@ alwaysApply: true
 - Development Server: Run with `vercel dev` (or `bun run dev:vercel`)
 
 ## General folder structure
-- `api/`: API endpoints (Vercel Edge functions)
+- `_api/`: API endpoints (Vercel Edge functions, uses `_api` prefix to avoid vite-plugin-vercel conflicts)
 - `public/`: Static assets
   - `assets/`: Videos, sounds, and other media
   - `fonts/`: Font files
