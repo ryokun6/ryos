@@ -32,6 +32,13 @@ interface IpodMenuBarProps {
   onSyncLibrary: () => void;
   onAddSong: () => void;
   onShareSong: () => void;
+  onStartListenSession: () => void;
+  onJoinListenSession: () => void;
+  onOpenListenSession: () => void;
+  onShareListenSession: () => void;
+  onLeaveListenSession: () => void;
+  isInListenSession: boolean;
+  isListenSessionHost: boolean;
   onRefreshLyrics?: () => void;
   onAdjustTiming?: () => void;
   onToggleCoverFlow?: () => void;
@@ -45,6 +52,13 @@ export function IpodMenuBar({
   onSyncLibrary,
   onAddSong,
   onShareSong,
+  onStartListenSession,
+  onJoinListenSession,
+  onOpenListenSession,
+  onShareListenSession,
+  onLeaveListenSession,
+  isInListenSession,
+  isListenSessionHost,
   onRefreshLyrics,
   onAdjustTiming,
   onToggleCoverFlow,
@@ -249,6 +263,28 @@ export function IpodMenuBar({
           >
             {t("apps.ipod.menu.shareSong")}
           </MenubarItem>
+          {!isInListenSession ? (
+            <>
+              <MenubarItem onClick={onStartListenSession} className="text-md h-6 px-3">
+                Start Listen Session
+              </MenubarItem>
+              <MenubarItem onClick={onJoinListenSession} className="text-md h-6 px-3">
+                Join Listen Session...
+              </MenubarItem>
+            </>
+          ) : (
+            <>
+              <MenubarItem onClick={onOpenListenSession} className="text-md h-6 px-3">
+                Open Listen Session
+              </MenubarItem>
+              <MenubarItem onClick={onShareListenSession} className="text-md h-6 px-3">
+                Invite to Session
+              </MenubarItem>
+              <MenubarItem onClick={onLeaveListenSession} className="text-md h-6 px-3">
+                {isListenSessionHost ? "End Listen Session" : "Leave Listen Session"}
+              </MenubarItem>
+            </>
+          )}
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             onClick={handleExportLibrary}
