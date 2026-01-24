@@ -12,7 +12,7 @@ interface ListenSyncOptions {
   setIsPlaying: (playing: boolean) => void;
   setCurrentTrackId: (trackId: string | null) => void;
   getActivePlayer: () => ReactPlayer | null;
-  addTrackFromId?: (trackId: string) => Promise<void> | void;
+  addTrackFromId?: (trackId: string) => Promise<unknown> | void;
 }
 
 const HEARTBEAT_INTERVAL_MS = 3000;
