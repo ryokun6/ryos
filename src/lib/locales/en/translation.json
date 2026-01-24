@@ -1797,7 +1797,9 @@
         "su": "Switch or create user",
         "touch": "Create empty file",
         "vim": "Open file in vim editor",
-        "whoami": "Display current user"
+        "whoami": "Display current user",
+        "grep": "Search pattern in file",
+        "uptime": "Show system uptime"
       },
       "output": {
         "noItemsFound": "No items found",

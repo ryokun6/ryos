@@ -29,6 +29,9 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { TERMINAL_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import { CommandHistory, CommandContext, ToolInvocationData } from "../types";
+
+// Maximum number of rendered command entries to keep in memory
+const MAX_RENDERED_HISTORY = 200;
 import { parseCommand } from "../utils/commandParser";
 import { commands, AVAILABLE_COMMANDS } from "../commands";
 import { helpItems } from "../index";
@@ -483,9 +486,9 @@ export const useTerminalLogic = ({
       // Reset animated lines to ensure only new content gets animated
       setAnimatedLines(new Set());
 
-      // Add to command history
-      setCommandHistory([
-        ...commandHistory,
+      // Add to command history (keep bounded)
+      setCommandHistory((prev) => [
+        ...prev.slice(-MAX_RENDERED_HISTORY + 1),
         {
           command: currentCommand,
           output: result.output,
@@ -565,6 +568,37 @@ export const useTerminalLogic = ({
       e.preventDefault();
       const completedCommand = autoComplete(currentCommand);
       setCurrentCommand(completedCommand);
+    } else if (e.key === "c" && e.ctrlKey) {
+      e.preventDefault();
+      // Cancel current AI response if loading
+      if (isAiLoading) {
+        stopAiResponse();
+      }
+      // Exit AI mode if active
+      if (isInAiMode) {
+        setIsInAiMode(false);
+        setCommandHistory((prev) => [
+          ...prev,
+          {
+            command: "",
+            output: "^C - exited ai mode",
+            path: currentPath,
+            isSystemMessage: true,
+          },
+        ]);
+      } else if (currentCommand) {
+        // Clear current input with ^C indicator
+        setCommandHistory((prev) => [
+          ...prev,
+          {
+            command: currentCommand + "^C",
+            output: "",
+            path: currentPath,
+          },
+        ]);
+        setCurrentCommand("");
+      }
+      setHistoryIndex(-1);
     }
   };
 
@@ -598,7 +632,7 @@ export const useTerminalLogic = ({
       }
     }
     // File/directory autocompletion (for commands that take file arguments)
-    else if (["cd", "cat", "rm", "edit", "vim"].includes(cmd)) {
+    else if (["cd", "cat", "rm", "edit", "vim", "grep"].includes(cmd)) {
       const lastArg = args.length > 0 ? args[args.length - 1] : "";
 
       const matches = files

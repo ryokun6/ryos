@@ -17,6 +17,8 @@ import { aboutCommand } from "./about";
 import { aiCommand, chatCommand, ryoCommand } from "./ai";
 import { vimCommand } from "./vim";
 import { openCommand } from "./open";
+import { grepCommand } from "./grep";
+import { uptimeCommand } from "./uptime";
 
 // Create command registry
 export const commands: Record<string, Command> = {
@@ -38,6 +40,8 @@ export const commands: Record<string, Command> = {
   ryo: ryoCommand,
   vim: vimCommand,
   open: openCommand,
+  grep: grepCommand,
+  uptime: uptimeCommand,
 };
 
 // Export list of available command names for autocompletion

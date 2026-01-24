@@ -20,6 +20,7 @@ navigation & files
   open <target>    ${t("apps.terminal.commands.open")}
   edit <file>      ${t("apps.terminal.commands.edit")}
   vim <file>       ${t("apps.terminal.commands.vim")}
+  grep <pat> <f>   ${t("apps.terminal.commands.grep")}
 
 terminal
   clear            ${t("apps.terminal.commands.clear")}
@@ -32,6 +33,7 @@ terminal
   logout           ${t("apps.terminal.commands.logout")}
   date             ${t("apps.terminal.commands.date")}
   cowsay <text>    ${t("apps.terminal.commands.cowsay")}
+  uptime           ${t("apps.terminal.commands.uptime")}
 
 assistant
   ryo <prompt>     ${t("apps.terminal.commands.ryo")}
