@@ -351,18 +351,27 @@ Content-Type: application/json
 {
   "roomId": "general",
   "prompt": "what's up?",
-  "recentContext": "alice: hey everyone\nbob: hi alice\nalice: @ryo what's up?"
+  "systemState": {
+    "chatRoomContext": {
+      "recentMessages": "alice: hey everyone\nbob: hi alice\nalice: @ryo what's up?",
+      "mentionedMessage": "alice: @ryo what's up?"
+    }
+  }
 }</code></pre>
 <strong>Request Body:</strong>
-<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>roomId</code></td><td>string</td><td>Yes</td><td>Room where the mention occurred</td></tr><tr><td><code>prompt</code></td><td>string</td><td>Yes</td><td>The user's message/question</td></tr><tr><td><code>recentContext</code></td><td>string</td><td>No</td><td>Recent chat history for context</td></tr></tbody></table>
-<strong>Response (200):</strong>
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>roomId</code></td><td>string</td><td>Yes</td><td>Room where the mention occurred</td></tr><tr><td><code>prompt</code></td><td>string</td><td>Yes</td><td>The user's message/question</td></tr><tr><td><code>systemState</code></td><td>object</td><td>No</td><td>Optional system state for context</td></tr><tr><td><code>systemState.chatRoomContext.recentMessages</code></td><td>string</td><td>No</td><td>Recent chat history for context</td></tr><tr><td><code>systemState.chatRoomContext.mentionedMessage</code></td><td>string</td><td>No</td><td>The message that mentioned @ryo</td></tr></tbody></table>
+<strong>Response (201):</strong>
 <pre><code>{
-  "reply": "Hey! Just hanging out in the chat. How can I help you today?",
-  "roomId": "general",
-  "timestamp": 1704067320000
+  "message": {
+    "id": "msg123",
+    "roomId": "general",
+    "username": "ryo",
+    "content": "Hey! Just hanging out in the chat. How can I help you today?",
+    "timestamp": 1704067320000
+  }
 }</code></pre>
 <h3>Rate Limits</h3>
-<table><thead><tr><th>User Type</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Authenticated</td><td>5 requests</td><td>1 minute</td></tr></tbody></table>
+<table><thead><tr><th>User Type</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Authenticated</td><td>5 requests</td><td>1 minute (per user)</td></tr></tbody></table>
 <h3>AI Behavior</h3>
 <p>When mentioned in chat rooms, Ryo: <ul><li>Considers recent chat context</li></ul><ul><li>Responds in a casual, friendly tone</li><li>Can answer questions, provide information, or just chat</li><li>Respects the room's conversation flow</li></ul></p>
 <h2>Real-time Updates</h2>
