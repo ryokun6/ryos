@@ -88,7 +88,6 @@ const initialState = {
 
 let pusherClient: ReturnType<typeof getPusherClient> | null = null;
 let channelRef: PusherChannel | null = null;
-let activeSessionId: string | null = null;
 
 function ensurePusherClient(): ReturnType<typeof getPusherClient> {
   if (!pusherClient) {
@@ -134,8 +133,6 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     if (!channelRef) {
       channelRef = client.subscribe(getChannelName(sessionId));
     }
-
-    activeSessionId = sessionId;
 
     channelRef.unbind("sync");
     channelRef.unbind("user-joined");
