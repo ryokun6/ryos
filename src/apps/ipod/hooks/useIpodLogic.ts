@@ -1607,9 +1607,10 @@ export function useIpodLogic({
     }
   }, [tracks, currentIndex, clearTrackLyricsSource, refreshLyrics]);
 
-  const ipodGenerateShareUrl = (videoId: string): string => {
-    return `${window.location.origin}/ipod/${videoId}`;
-  };
+  const ipodGenerateShareUrl = useCallback(
+    (videoId: string): string => `${window.location.origin}/ipod/${videoId}`,
+    []
+  );
 
   const getCurrentStoreTrack = useCallback(() => {
     return useIpodStore.getState().getCurrentTrack();
