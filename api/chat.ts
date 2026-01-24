@@ -747,7 +747,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Additional validation for model
-    if (model !== null && !SUPPORTED_AI_MODELS.includes(model)) {
+    if (model !== null && !SUPPORTED_AI_MODELS.includes(model as SupportedModel)) {
       logError(`400 Error: Unsupported model - ${model}`);
       res.setHeader("Access-Control-Allow-Origin", validOrigin);
       res.status(400).send(`Unsupported model: ${model}`);
@@ -759,7 +759,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let geo: ReturnType<typeof geolocation> = {};
     try {
       // Only works with Web Request in production, fails in vercel dev with VercelRequest
-      geo = geolocation(req as Request);
+      geo = geolocation(req as unknown as Request);
     } catch {
       // In local dev, geolocation isn't available - use empty object
       geo = {};
@@ -807,7 +807,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Convert UIMessages to ModelMessages for the AI model
     // Ensure messages are in UIMessage format (handles both simple and parts-based formats)
-    const uiMessages = ensureUIMessageFormat(messages);
+    const uiMessages = ensureUIMessageFormat(messages as SimpleMessage[]);
     const modelMessages = await convertToModelMessages(uiMessages);
 
     // Merge all messages: static sys → dynamic sys → user/assistant turns

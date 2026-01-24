@@ -670,7 +670,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         logger.error("Error details:", {
           name: error.name,
           message: error.message,
-          cause: error.cause,
+          cause: (error as Error & { cause?: unknown }).cause,
         });
       }
       logger.response(500, Date.now() - startTime);

@@ -22,6 +22,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import { validateAuth } from "../_utils/auth/index.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
+import { isAllowedOrigin, getEffectiveOrigin } from "../_utils/_cors.js";
 import {
   getSong,
   saveSong,
@@ -105,35 +106,6 @@ function createRedis(): Redis {
     url: process.env.REDIS_KV_REST_API_URL as string,
     token: process.env.REDIS_KV_REST_API_TOKEN as string,
   });
-}
-
-function getEffectiveOrigin(req: VercelRequest): string | null {
-  const origin = req.headers.origin as string | undefined;
-  const referer = req.headers.referer as string | undefined;
-  if (origin) return origin;
-  if (referer) {
-    try {
-      return new URL(referer).origin;
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return true;
-  const ALLOWED_ORIGINS = [
-    "https://os.ryo.lu",
-    "https://ryo.lu",
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173",
-  ];
-  if (ALLOWED_ORIGINS.includes(origin)) return true;
-  if (origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:")) return true;
-  return false;
 }
 
 function setCorsHeaders(res: VercelResponse, origin: string | null): void {
