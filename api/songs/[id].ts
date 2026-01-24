@@ -984,9 +984,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let completedLines = 0;
         let currentLineBuffer = "";
 
-        // Helper to send SSE event
-        const sendEvent = (eventType: string, data: unknown) => {
-          res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+        // Helper to send SSE event (type must be in JSON payload for client compatibility)
+        const sendEvent = (eventType: string, data: Record<string, unknown>) => {
+          res.write(`data: ${JSON.stringify({ type: eventType, ...data })}\n\n`);
         };
 
         try {
@@ -1188,9 +1188,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let completedLines = 0;
         let currentLineBuffer = "";
 
-        // Helper to send SSE event
-        const sendEvent = (eventType: string, data: unknown) => {
-          res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+        // Helper to send SSE event (type must be in JSON payload for client compatibility)
+        const sendEvent = (eventType: string, data: Record<string, unknown>) => {
+          res.write(`data: ${JSON.stringify({ type: eventType, ...data })}\n\n`);
         };
 
         try {
@@ -1498,9 +1498,9 @@ Output:
         let completedLines = 0;
         let currentLineBuffer = "";
 
-        // Helper to send SSE event
-        const sendEvent = (eventType: string, data: unknown) => {
-          res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+        // Helper to send SSE event (type must be in JSON payload for client compatibility)
+        const sendEvent = (eventType: string, data: Record<string, unknown>) => {
+          res.write(`data: ${JSON.stringify({ type: eventType, ...data })}\n\n`);
         };
 
         try {
