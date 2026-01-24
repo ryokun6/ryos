@@ -116,6 +116,8 @@ export function TerminalAppComponent({
     vimCursorLine,
     vimCursorColumn,
     vimMode,
+    vimSearchPattern,
+    vimVisualStartLine,
     handleVimTextInput,
     playElevatorMusic,
     stopElevatorMusic,
@@ -163,6 +165,8 @@ export function TerminalAppComponent({
             vimCursorLine={vimCursorLine}
             vimCursorColumn={vimCursorColumn}
             vimMode={vimMode}
+            searchPattern={vimSearchPattern}
+            visualStartLine={vimVisualStartLine}
           />
           <div className="flex items-center mt-1">
             <span
@@ -174,7 +178,13 @@ export function TerminalAppComponent({
                 fontFamily: "inherit",
               }}
             >
-              {vimMode === "normal" ? "" : vimMode === "insert" ? "" : ":"}
+              {vimMode === "normal" || vimMode === "insert" || vimMode === "visual"
+                ? ""
+                : vimMode === "command"
+                  ? ":"
+                  : vimMode === "search"
+                    ? "/"
+                    : ""}
             </span>
             <input
               ref={inputRef}

@@ -79,8 +79,15 @@ export interface VimState {
   position: number;
   cursorLine: number;
   cursorColumn: number;
-  mode: "normal" | "command" | "insert";
+  mode: "normal" | "command" | "insert" | "visual" | "search";
   clipboard: string;
+}
+
+/** Snapshot for undo/redo */
+export interface VimUndoSnapshot {
+  content: string;
+  cursorLine: number;
+  cursorColumn: number;
 }
 
 export type CommandHandler = (

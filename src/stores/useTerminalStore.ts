@@ -31,10 +31,26 @@ interface TerminalStoreState {
   setVimCursorLine: (line: number | ((prev: number) => number)) => void;
   vimCursorColumn: number;
   setVimCursorColumn: (column: number | ((prev: number) => number)) => void;
-  vimMode: "normal" | "command" | "insert";
-  setVimMode: (mode: "normal" | "command" | "insert") => void;
+  vimMode: "normal" | "command" | "insert" | "visual" | "search";
+  setVimMode: (mode: "normal" | "command" | "insert" | "visual" | "search") => void;
   vimClipboard: string;
   setVimClipboard: (content: string) => void;
+  // Undo/redo
+  vimUndoStack: { content: string; cursorLine: number; cursorColumn: number }[];
+  vimRedoStack: { content: string; cursorLine: number; cursorColumn: number }[];
+  pushVimUndo: (snapshot: { content: string; cursorLine: number; cursorColumn: number }) => void;
+  popVimUndo: () => { content: string; cursorLine: number; cursorColumn: number } | undefined;
+  pushVimRedo: (snapshot: { content: string; cursorLine: number; cursorColumn: number }) => void;
+  popVimRedo: () => { content: string; cursorLine: number; cursorColumn: number } | undefined;
+  clearVimRedo: () => void;
+  // Search
+  vimSearchPattern: string;
+  setVimSearchPattern: (pattern: string) => void;
+  vimSearchForward: boolean;
+  setVimSearchForward: (forward: boolean) => void;
+  // Visual line mode
+  vimVisualStartLine: number | null;
+  setVimVisualStartLine: (line: number | null) => void;
 }
 
 const STORE_VERSION = 1;
@@ -95,6 +111,42 @@ export const useTerminalStore = create<TerminalStoreState>()(
       setVimMode: (mode) => set({ vimMode: mode }),
       vimClipboard: "",
       setVimClipboard: (content) => set({ vimClipboard: content }),
+      vimUndoStack: [],
+      vimRedoStack: [],
+      pushVimUndo: (snapshot) =>
+        set((state) => ({
+          vimUndoStack: [...state.vimUndoStack, snapshot].slice(-100),
+          vimRedoStack: [],
+        })),
+      popVimUndo: () => {
+        const state = useTerminalStore.getState();
+        if (state.vimUndoStack.length === 0) return undefined;
+        const snapshot = state.vimUndoStack[state.vimUndoStack.length - 1];
+        useTerminalStore.setState({
+          vimUndoStack: state.vimUndoStack.slice(0, -1),
+        });
+        return snapshot;
+      },
+      pushVimRedo: (snapshot) =>
+        set((state) => ({
+          vimRedoStack: [...state.vimRedoStack, snapshot].slice(-100),
+        })),
+      popVimRedo: () => {
+        const state = useTerminalStore.getState();
+        if (state.vimRedoStack.length === 0) return undefined;
+        const snapshot = state.vimRedoStack[state.vimRedoStack.length - 1];
+        useTerminalStore.setState({
+          vimRedoStack: state.vimRedoStack.slice(0, -1),
+        });
+        return snapshot;
+      },
+      clearVimRedo: () => set({ vimRedoStack: [] }),
+      vimSearchPattern: "",
+      setVimSearchPattern: (pattern) => set({ vimSearchPattern: pattern }),
+      vimSearchForward: true,
+      setVimSearchForward: (forward) => set({ vimSearchForward: forward }),
+      vimVisualStartLine: null,
+      setVimVisualStartLine: (line) => set({ vimVisualStartLine: line }),
     }),
     {
       name: STORE_NAME,

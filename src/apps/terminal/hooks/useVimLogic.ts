@@ -46,6 +46,17 @@ export const useVimLogic = ({
     setVimMode,
     vimClipboard,
     setVimClipboard,
+    pushVimUndo,
+    popVimUndo,
+    pushVimRedo,
+    popVimRedo,
+    clearVimRedo,
+    vimSearchPattern,
+    setVimSearchPattern,
+    vimSearchForward,
+    setVimSearchForward,
+    vimVisualStartLine,
+    setVimVisualStartLine,
   } = useTerminalStore();
 
   const lastGPressTimeRef = useRef<number>(0);
@@ -53,6 +64,67 @@ export const useVimLogic = ({
     key: "",
     time: 0,
   });
+
+  const pushUndoBeforeMutation = () => {
+    if (vimFile)
+      pushVimUndo({
+        content: vimFile.content,
+        cursorLine: vimCursorLine,
+        cursorColumn: vimCursorColumn,
+      });
+  };
+
+  const findNextMatch = (
+    content: string,
+    pattern: string,
+    startLine: number,
+    startCol: number
+  ): { line: number; col: number } | null => {
+    if (!pattern) return null;
+    const lines = content.split("\n");
+    for (let l = startLine; l < lines.length; l++) {
+      const line = lines[l];
+      const from = l === startLine ? startCol + 1 : 0;
+      const idx = line.indexOf(pattern, from);
+      if (idx !== -1) return { line: l, col: idx };
+    }
+    return null;
+  };
+
+  const findPrevMatch = (
+    content: string,
+    pattern: string,
+    startLine: number,
+    startCol: number
+  ): { line: number; col: number } | null => {
+    if (!pattern) return null;
+    const lines = content.split("\n");
+    for (let l = startLine; l >= 0; l--) {
+      const line = lines[l];
+      const searchEnd = l === startLine ? startCol : line.length;
+      const slice = line.slice(0, searchEnd);
+      const idx = slice.lastIndexOf(pattern);
+      if (idx !== -1) return { line: l, col: idx };
+    }
+    return null;
+  };
+
+  const jumpToMatch = (
+    match: { line: number; col: number },
+    lines: string[],
+    maxVisibleLines: number,
+    maxPosition: number,
+    upperThreshold: number,
+    lowerThreshold: number
+  ) => {
+    setVimCursorLine(match.line);
+    setVimCursorColumn(match.col);
+    if (match.line - vimPosition > upperThreshold && vimPosition < maxPosition) {
+      setVimPosition((prev) => Math.min(prev + (match.line - vimPosition - upperThreshold), maxPosition));
+    } else if (match.line - vimPosition < lowerThreshold && vimPosition > 0) {
+      setVimPosition((prev) => Math.max(prev - (lowerThreshold - (match.line - vimPosition)), 0));
+    }
+  };
 
   // Helper function to save vim file content
   const saveVimFile = async (vimFileToSave: { name: string; content: string }) => {
@@ -93,9 +165,13 @@ export const useVimLogic = ({
   const handleVimInput = (input: string) => {
     // Handle commands that start with ":"
     if (input.startsWith(":")) {
-      if (input === ":q" || input === ":q!" || input === ":wq") {
-        // Exit vim mode
-        const output = input === ":wq" ? `"${vimFile?.name}" written` : "";
+      if (input === ":w" || input === ":wq" || input === ":q" || input === ":q!") {
+        const written = input === ":w" || input === ":wq";
+        const output = written && vimFile ? `"${vimFile.name}" written` : "";
+
+        if (written && vimFile) {
+          saveVimFile(vimFile);
+        }
 
         setCommandHistory([
           ...commandHistory,
@@ -106,16 +182,62 @@ export const useVimLogic = ({
           },
         ]);
 
-        // Save file if using :wq
-        if (input === ":wq" && vimFile) {
-          saveVimFile(vimFile);
+        if (input === ":wq" || input === ":q" || input === ":q!") {
+          setIsInVimMode(false);
+          setVimFile(null);
+          setVimPosition(0);
+          setVimMode("normal");
         }
-
-        // Clear vim state
-        setIsInVimMode(false);
-        setVimFile(null);
-        setVimPosition(0);
-        setVimMode("normal");
+      } else if (input.startsWith(":%s/")) {
+        // :%s/pattern/replacement/g or :%s/pattern/replacement/
+        const rest = input.slice(4); // after ":%s/"
+        const slashIdx = rest.indexOf("/");
+        if (slashIdx === -1) {
+          setCommandHistory([
+            ...commandHistory,
+            {
+              command: input,
+              output: `invalid substitute: ${input}`,
+              path: currentPath,
+            },
+          ]);
+        } else {
+          const pattern = rest.slice(0, slashIdx);
+          const after = rest.slice(slashIdx + 1);
+          const gIdx = after.indexOf("/");
+          const replacement = gIdx === -1 ? after : after.slice(0, gIdx);
+          const global = gIdx !== -1 && after.slice(gIdx + 1) === "g";
+          if (!vimFile || !pattern) {
+            setCommandHistory([
+              ...commandHistory,
+              {
+                command: input,
+                output: `invalid substitute: ${input}`,
+                path: currentPath,
+              },
+            ]);
+          } else {
+            pushUndoBeforeMutation();
+            const lines = vimFile.content.split("\n");
+            const newLines = lines.map((line) =>
+              global
+                ? line.split(pattern).join(replacement)
+                : line.replace(pattern, replacement)
+            );
+            setVimFile({
+              ...vimFile,
+              content: newLines.join("\n"),
+            });
+            setCommandHistory([
+              ...commandHistory,
+              {
+                command: input,
+                output: "substituted",
+                path: currentPath,
+              },
+            ]);
+          }
+        }
       } else {
         // Unsupported vim command
         setCommandHistory([
@@ -149,6 +271,7 @@ export const useVimLogic = ({
   const handleVimTextInput = (e: ChangeEvent<HTMLInputElement>) => {
     if (!isInVimMode || !vimFile || vimMode !== "insert") return;
 
+    pushUndoBeforeMutation();
     const inputText = e.target.value;
     const lastChar = inputText.slice(-1);
 
@@ -193,6 +316,7 @@ export const useVimLogic = ({
         e.preventDefault();
 
         if (!vimFile) return;
+        pushUndoBeforeMutation();
 
         const lines = vimFile.content.split("\n");
 
@@ -261,6 +385,7 @@ export const useVimLogic = ({
         e.preventDefault();
 
         if (!vimFile) return;
+        pushUndoBeforeMutation();
 
         const lines = vimFile.content.split("\n");
         const currentLine = lines[vimCursorLine] || "";
@@ -303,6 +428,7 @@ export const useVimLogic = ({
         e.preventDefault();
 
         if (!vimFile) return;
+        pushUndoBeforeMutation();
 
         const lines = vimFile.content.split("\n");
         const currentLine = lines[vimCursorLine] || "";
@@ -331,6 +457,7 @@ export const useVimLogic = ({
         e.preventDefault();
 
         if (!vimFile) return;
+        pushUndoBeforeMutation();
 
         const lines = vimFile.content.split("\n");
         const currentLine = lines[vimCursorLine] || "";
@@ -467,6 +594,77 @@ export const useVimLogic = ({
       return;
     }
 
+    // Visual line mode handling
+    if (vimMode === "visual") {
+      e.preventDefault();
+      if (!vimFile) return;
+      const lines = vimFile.content.split("\n");
+      const maxVisibleLines = 20;
+      const maxPosition = Math.max(0, lines.length - maxVisibleLines);
+      const lowerThreshold = Math.floor(maxVisibleLines * 0.4);
+      const upperThreshold = Math.floor(maxVisibleLines * 0.6);
+
+      if (e.key === "Escape") {
+        setVimMode("normal");
+        setVimVisualStartLine(null);
+        return;
+      }
+      if (e.key === "j" || e.key === "ArrowDown") {
+        if (vimCursorLine < lines.length - 1) {
+          const newLine = vimCursorLine + 1;
+          setVimCursorLine(newLine);
+          if (
+            newLine - vimPosition > upperThreshold &&
+            vimPosition < maxPosition
+          ) {
+            setVimPosition((prev) => Math.min(prev + 1, maxPosition));
+          }
+        }
+        return;
+      }
+      if (e.key === "k" || e.key === "ArrowUp") {
+        if (vimCursorLine > 0) {
+          const newLine = vimCursorLine - 1;
+          setVimCursorLine(newLine);
+          if (
+            newLine - vimPosition < lowerThreshold &&
+            vimPosition > 0
+          ) {
+            setVimPosition((prev) => Math.max(prev - 1, 0));
+          }
+        }
+        return;
+      }
+      if (e.key === "d") {
+        if (vimVisualStartLine === null) return;
+        pushUndoBeforeMutation();
+        const start = Math.min(vimVisualStartLine, vimCursorLine);
+        const end = Math.max(vimVisualStartLine, vimCursorLine);
+        const selected = lines.slice(start, end + 1);
+        setVimClipboard(selected.join("\n"));
+        const newLines = [...lines];
+        newLines.splice(start, end - start + 1);
+        if (newLines.length === 0) newLines.push("");
+        setVimFile({ ...vimFile, content: newLines.join("\n") });
+        setVimCursorLine(Math.min(start, newLines.length - 1));
+        setVimCursorColumn(0);
+        setVimMode("normal");
+        setVimVisualStartLine(null);
+        return;
+      }
+      if (e.key === "y") {
+        if (vimVisualStartLine === null) return;
+        const start = Math.min(vimVisualStartLine, vimCursorLine);
+        const end = Math.max(vimVisualStartLine, vimCursorLine);
+        const selected = lines.slice(start, end + 1);
+        setVimClipboard(selected.join("\n"));
+        setVimMode("normal");
+        setVimVisualStartLine(null);
+        return;
+      }
+      return;
+    }
+
     // Normal mode handling
     if (
       e.key === "j" ||
@@ -489,10 +687,84 @@ export const useVimLogic = ({
       e.key === "d" ||
       e.key === "y" ||
       e.key === "p" ||
+      e.key === "u" ||
+      e.key === "n" ||
+      e.key === "N" ||
+      e.key === "x" ||
+      e.key === "A" ||
+      e.key === "I" ||
+      e.key === "^" ||
+      e.key === "e" ||
+      e.key === "D" ||
+      e.key === "C" ||
+      e.key === "J" ||
       (e.key === "d" && e.ctrlKey) ||
-      (e.key === "u" && e.ctrlKey)
+      (e.key === "u" && e.ctrlKey) ||
+      (e.key === "r" && e.ctrlKey)
     ) {
       e.preventDefault();
+
+      // Next search match (n)
+      if (e.key === "n" && vimSearchPattern && vimFile) {
+        const lines = vimFile.content.split("\n");
+        const match = vimSearchForward
+          ? findNextMatch(vimFile.content, vimSearchPattern, vimCursorLine, vimCursorColumn)
+          : findPrevMatch(vimFile.content, vimSearchPattern, vimCursorLine, vimCursorColumn);
+        if (match) {
+          const maxVisibleLines = 20;
+          const maxPosition = Math.max(0, lines.length - maxVisibleLines);
+          const upperThreshold = Math.floor(maxVisibleLines * 0.6);
+          const lowerThreshold = Math.floor(maxVisibleLines * 0.4);
+          jumpToMatch(match, lines, maxVisibleLines, maxPosition, upperThreshold, lowerThreshold);
+        }
+        return;
+      }
+      // Previous search match (N)
+      if (e.key === "N" && vimSearchPattern && vimFile) {
+        const lines = vimFile.content.split("\n");
+        const match = vimSearchForward
+          ? findPrevMatch(vimFile.content, vimSearchPattern, vimCursorLine, vimCursorColumn)
+          : findNextMatch(vimFile.content, vimSearchPattern, vimCursorLine, vimCursorColumn);
+        if (match) {
+          const maxVisibleLines = 20;
+          const maxPosition = Math.max(0, lines.length - maxVisibleLines);
+          const upperThreshold = Math.floor(maxVisibleLines * 0.6);
+          const lowerThreshold = Math.floor(maxVisibleLines * 0.4);
+          jumpToMatch(match, lines, maxVisibleLines, maxPosition, upperThreshold, lowerThreshold);
+        }
+        return;
+      }
+
+      // Undo (u)
+      if (e.key === "u" && !e.ctrlKey && vimFile) {
+        const snapshot = popVimUndo();
+        if (snapshot) {
+          pushVimRedo({
+            content: vimFile.content,
+            cursorLine: vimCursorLine,
+            cursorColumn: vimCursorColumn,
+          });
+          setVimFile({ ...vimFile, content: snapshot.content });
+          setVimCursorLine(snapshot.cursorLine);
+          setVimCursorColumn(snapshot.cursorColumn);
+        }
+        return;
+      }
+      // Redo (Ctrl+r)
+      if (e.key === "r" && e.ctrlKey && vimFile) {
+        const snapshot = popVimRedo();
+        if (snapshot) {
+          pushVimUndo({
+            content: vimFile.content,
+            cursorLine: vimCursorLine,
+            cursorColumn: vimCursorColumn,
+          });
+          setVimFile({ ...vimFile, content: snapshot.content });
+          setVimCursorLine(snapshot.cursorLine);
+          setVimCursorColumn(snapshot.cursorColumn);
+        }
+        return;
+      }
 
       // Directly handle navigation keys
       if (!vimFile) return;
@@ -554,9 +826,10 @@ export const useVimLogic = ({
         // Move cursor left
         setVimCursorColumn((prev) => prev - 1);
       } else if (e.key === "ArrowRight" || e.key === "l") {
-        // Move cursor right, but don't go beyond the end of the line
+        // Move cursor right; in normal mode cursor stays on last char (column <= length - 1)
         const currentLineLength = lines[vimCursorLine]?.length || 0;
-        if (vimCursorColumn < currentLineLength) {
+        const maxCol = currentLineLength > 0 ? currentLineLength - 1 : 0;
+        if (vimCursorColumn < maxCol) {
           setVimCursorColumn((prev) => prev + 1);
         }
       }
@@ -564,28 +837,27 @@ export const useVimLogic = ({
       else if (e.key === "0") {
         setVimCursorColumn(0);
       }
-      // Go to end of line ($)
+      // Go to end of line ($) — cursor sits on last character in normal mode
       else if (e.key === "$") {
         const currentLineLength = lines[vimCursorLine]?.length || 0;
-        setVimCursorColumn(Math.max(0, currentLineLength));
+        setVimCursorColumn(Math.max(0, currentLineLength > 0 ? currentLineLength - 1 : 0));
       }
-      // Move to next word (w)
+      // Move to next word (w) — start of next word (skip non-word, then land on word start)
       else if (e.key === "w") {
         const currentLine = lines[vimCursorLine] || "";
-        // Find next word boundary
-        const wordRegex = /\b\w/g;
-        wordRegex.lastIndex = vimCursorColumn + 1; // Start from next character
-
-        const match = wordRegex.exec(currentLine);
-        if (match) {
-          // Found a word boundary in current line
-          setVimCursorColumn(match.index);
-        } else if (vimCursorLine < lines.length - 1) {
-          // Move to beginning of next line
+        let i = vimCursorColumn + 1;
+        while (i < currentLine.length) {
+          const isWordChar = /\w/.test(currentLine[i]);
+          const atWordStart = isWordChar && (i === 0 || !/\w/.test(currentLine[i - 1]));
+          if (atWordStart) {
+            setVimCursorColumn(i);
+            break;
+          }
+          i++;
+        }
+        if (i >= currentLine.length && vimCursorLine < lines.length - 1) {
           setVimCursorLine((prev) => prev + 1);
           setVimCursorColumn(0);
-
-          // Auto-scroll if needed
           if (
             vimCursorLine + 1 - vimPosition > upperThreshold &&
             vimPosition < maxPosition
@@ -691,17 +963,18 @@ export const useVimLogic = ({
           setVimCursorColumn(Math.max(0, newLineLength));
         }
       }
-      // Insert after cursor (a)
+      // Insert after cursor (a) — at EOL we stay; else move right once into insert
       else if (e.key === "a") {
         setVimMode("insert");
-        // Move cursor one position right if not at end of line
         const currentLineLength = lines[vimCursorLine]?.length || 0;
-        if (vimCursorColumn < currentLineLength) {
+        const maxCol = currentLineLength > 0 ? currentLineLength - 1 : 0;
+        if (vimCursorColumn < maxCol) {
           setVimCursorColumn((prev) => prev + 1);
         }
       }
       // Open new line below cursor (o)
       else if (e.key === "o") {
+        pushUndoBeforeMutation();
         // Insert a new line below current line
         const newLines = [...lines];
         newLines.splice(vimCursorLine + 1, 0, "");
@@ -729,6 +1002,7 @@ export const useVimLogic = ({
       }
       // Open new line above cursor (O)
       else if (e.key === "O") {
+        pushUndoBeforeMutation();
         // Insert a new line above current line
         const newLines = [...lines];
         newLines.splice(vimCursorLine, 0, "");
@@ -757,6 +1031,7 @@ export const useVimLogic = ({
 
         // If pressed 'd' twice quickly
         if (lastKey.key === "d" && now - lastKey.time < 500) {
+          pushUndoBeforeMutation();
           // Can't delete the last line - vim always keeps at least one line
           if (lines.length > 1) {
             // Copy the line to clipboard before deleting
@@ -821,6 +1096,7 @@ export const useVimLogic = ({
       else if (e.key === "p") {
         // Only paste if there's content in the clipboard
         if (vimClipboard) {
+          pushUndoBeforeMutation();
           const newLines = [...lines];
 
           // Paste after current line
@@ -845,6 +1121,112 @@ export const useVimLogic = ({
           }
         }
       }
+      // Delete character under cursor (x)
+      else if (e.key === "x") {
+        const currentLine = lines[vimCursorLine] || "";
+        if (currentLine.length > 0) {
+          pushUndoBeforeMutation();
+          const newLine =
+            currentLine.substring(0, vimCursorColumn) +
+            currentLine.substring(vimCursorColumn + 1);
+          const newLines = [...lines];
+          newLines[vimCursorLine] = newLine;
+          setVimFile({ ...vimFile, content: newLines.join("\n") });
+          if (vimCursorColumn >= newLine.length && newLine.length > 0) {
+            setVimCursorColumn(Math.max(0, newLine.length - 1));
+          }
+        }
+      }
+      // Append at end of line (A) — cursor after last char, then insert
+      else if (e.key === "A") {
+        const currentLineLength = lines[vimCursorLine]?.length || 0;
+        setVimCursorColumn(currentLineLength);
+        setVimMode("insert");
+      }
+      // Insert at beginning of line (I)
+      else if (e.key === "I") {
+        setVimCursorColumn(0);
+        setVimMode("insert");
+      }
+      // First non-whitespace on line (^)
+      else if (e.key === "^") {
+        const currentLine = lines[vimCursorLine] || "";
+        const match = currentLine.match(/\S/);
+        const col = match ? currentLine.indexOf(match[0]) : 0;
+        setVimCursorColumn(col);
+      }
+      // End of current word (e)
+      else if (e.key === "e") {
+        const currentLine = lines[vimCursorLine] || "";
+        let i = vimCursorColumn + 1;
+        while (i < currentLine.length) {
+          const isWordChar = /\w/.test(currentLine[i]);
+          const atWordEnd =
+            isWordChar &&
+            (i === currentLine.length - 1 || !/\w/.test(currentLine[i + 1]));
+          if (atWordEnd) {
+            setVimCursorColumn(i);
+            break;
+          }
+          i++;
+        }
+        if (i >= currentLine.length && vimCursorLine < lines.length - 1) {
+          const nextLine = lines[vimCursorLine + 1];
+          const match = nextLine.match(/\S/);
+          const col = match ? nextLine.indexOf(match[0]) : 0;
+          setVimCursorLine((prev) => prev + 1);
+          setVimCursorColumn(col);
+          if (
+            vimCursorLine + 1 - vimPosition > upperThreshold &&
+            vimPosition < maxPosition
+          ) {
+            setVimPosition((prev) => Math.min(prev + 1, maxPosition));
+          }
+        }
+      }
+      // Delete to end of line (D)
+      else if (e.key === "D") {
+        const currentLine = lines[vimCursorLine] || "";
+        if (vimCursorColumn < currentLine.length) {
+          pushUndoBeforeMutation();
+          const newLine = currentLine.substring(0, vimCursorColumn);
+          const newLines = [...lines];
+          newLines[vimCursorLine] = newLine;
+          setVimFile({ ...vimFile, content: newLines.join("\n") });
+          const maxCol = newLine.length > 0 ? newLine.length - 1 : 0;
+          setVimCursorColumn(maxCol);
+        }
+      }
+      // Change to end of line (C) — delete to EOL, enter insert
+      else if (e.key === "C") {
+        const currentLine = lines[vimCursorLine] || "";
+        if (vimCursorColumn < currentLine.length) {
+          pushUndoBeforeMutation();
+          const newLine = currentLine.substring(0, vimCursorColumn);
+          const newLines = [...lines];
+          newLines[vimCursorLine] = newLine;
+          setVimFile({ ...vimFile, content: newLines.join("\n") });
+        }
+        setVimMode("insert");
+      }
+      // Join with next line (J)
+      else if (e.key === "J") {
+        if (vimCursorLine < lines.length - 1) {
+          pushUndoBeforeMutation();
+          const currentLine = lines[vimCursorLine] || "";
+          const nextLine = lines[vimCursorLine + 1] || "";
+          const joined =
+            currentLine.trimEnd().length > 0
+              ? currentLine.trimEnd() + " " + nextLine.trimStart()
+              : currentLine + nextLine;
+          const newLines = [...lines];
+          newLines[vimCursorLine] = joined;
+          newLines.splice(vimCursorLine + 1, 1);
+          setVimFile({ ...vimFile, content: newLines.join("\n") });
+          const maxCol = joined.length > 0 ? joined.length - 1 : 0;
+          setVimCursorColumn(maxCol);
+        }
+      }
 
       return;
     } else if (e.key === "i") {
@@ -852,13 +1234,26 @@ export const useVimLogic = ({
       e.preventDefault();
       setVimMode("insert");
       return;
+    } else if (e.key === "V") {
+      // Enter visual line mode
+      e.preventDefault();
+      setVimMode("visual");
+      setVimVisualStartLine(vimCursorLine);
+      return;
     } else if (e.key === ":") {
       // Switch to command mode without adding colon to the input
       e.preventDefault();
       setVimMode("command");
       setCurrentCommand("");
       return;
-    } else if (e.key === "Escape" && vimMode === "command") {
+    } else if (e.key === "/") {
+      // Enter search mode (forward)
+      e.preventDefault();
+      setVimMode("search");
+      setVimSearchForward(true);
+      setCurrentCommand("");
+      return;
+    } else if (e.key === "Escape" && (vimMode === "command" || vimMode === "search")) {
       // Return to normal mode
       setVimMode("normal");
       setCurrentCommand("");
@@ -871,6 +1266,31 @@ export const useVimLogic = ({
       const command = ":" + currentCommand;
       handleVimInput(command);
       return;
+    } else if (e.key === "Enter" && vimMode === "search") {
+      // Execute search: set pattern and jump to next match
+      e.preventDefault();
+      const pattern = currentCommand.trim();
+      setVimMode("normal");
+      setCurrentCommand("");
+      if (pattern && vimFile) {
+        setVimSearchPattern(pattern);
+        setVimSearchForward(true);
+        const match = findNextMatch(vimFile.content, pattern, vimCursorLine, vimCursorColumn);
+        if (match) {
+          const lines = vimFile.content.split("\n");
+          const maxVisibleLines = 20;
+          const maxPosition = Math.max(0, lines.length - maxVisibleLines);
+          jumpToMatch(
+            match,
+            lines,
+            maxVisibleLines,
+            maxPosition,
+            Math.floor(maxVisibleLines * 0.6),
+            Math.floor(maxVisibleLines * 0.4)
+          );
+        }
+      }
+      return;
     }
   };
 
@@ -881,6 +1301,8 @@ export const useVimLogic = ({
     vimCursorLine,
     vimCursorColumn,
     vimMode,
+    vimSearchPattern,
+    vimVisualStartLine,
     handleVimInput,
     handleVimTextInput,
     handleVimKeyDown,
