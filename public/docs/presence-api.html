@@ -326,7 +326,7 @@ Content-Type: application/json
 <p>Search for users by username prefix.</p>
 <pre><code>GET /api/users?search=ali</code></pre>
 <strong>Query Parameters:</strong>
-<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>search</code></td><td>string</td><td>Yes</td><td>Username prefix to search (min 1 char)</td></tr><tr><td><code>limit</code></td><td>number</td><td>No</td><td>Max results (default: 10)</td></tr></tbody></table>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>search</code></td><td>string</td><td>Yes</td><td>Username query (min 2 characters)</td></tr></tbody></table>
 <strong>Response (200):</strong>
 <pre><code>{
   "users": [
@@ -340,6 +340,8 @@ Content-Type: application/json
     }
   ]
 }</code></pre>
+<strong>Notes:</strong>
+<ul><li>Searches are substring matches against usernames.</li><li>Results are capped at 20 users.</li><li>Queries shorter than 2 characters return an empty list.</li></ul>
 <h2>AI Integration</h2>
 <h3>Ryo Reply</h3>
 <p>Generate an AI response from Ryo within a chat room. This is triggered when users mention <code>@ryo</code> in their messages.</p>

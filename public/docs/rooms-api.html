@@ -299,7 +299,7 @@
         <h1>Rooms API</h1>
 <p>Endpoints for creating, listing, and managing chat rooms.</p>
 <h2>Overview</h2>
-<p>Chat rooms are either <strong>public</strong> (visible to all users) or <strong>private</strong> (visible only to members). Users can create, join, leave, and delete rooms.</p>
+<p>Chat rooms are either <strong>public</strong> (visible to all users) or <strong>private</strong> (visible only to members). Authenticated users can create private rooms; public rooms are created by the admin user (<code>ryo</code>).</p>
 <h2>Endpoint Summary</h2>
 <table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/rooms</code></td><td>List rooms (public + private membership)</td><td>No</td></tr><tr><td>POST</td><td><code>/api/rooms</code></td><td>Create room</td><td>Yes</td></tr><tr><td>GET</td><td><code>/api/rooms/{id}</code></td><td>Get room by ID</td><td>No</td></tr><tr><td>DELETE</td><td><code>/api/rooms/{id}</code></td><td>Delete room</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/join</code></td><td>Join room</td><td>No</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/leave</code></td><td>Leave room</td><td>No</td></tr><tr><td>GET</td><td><code>/api/rooms/{id}/users</code></td><td>List active users</td><td>No</td></tr></tbody></table>
 <h2>Endpoints</h2>
@@ -316,8 +316,7 @@
       "name": "General Chat",
       "type": "public",
       "createdAt": 1704067200000,
-      "createdBy": "ryo",
-      "memberCount": 15
+      "userCount": 15
     },
     {
       "id": "abc123",
@@ -325,7 +324,7 @@
       "type": "private",
       "members": ["alice", "bob"],
       "createdAt": 1704153600000,
-      "createdBy": "alice"
+      "userCount": 2
     }
   ]
 }</code></pre>
@@ -338,20 +337,21 @@ Content-Type: application/json
 
 {
   "type": "private",
-  "members": ["alice", "bob"],
-  "name": "Project Discussion"  // optional
+  "members": ["alice", "bob"]
 }</code></pre>
 <strong>Request Body:</strong>
-<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>type</code></td><td>string</td><td>Yes</td><td><code>"public"</code> or <code>"private"</code></td></tr><tr><td><code>members</code></td><td>string[]</td><td>For private</td><td>List of usernames</td></tr><tr><td><code>name</code></td><td>string</td><td>No</td><td>Room display name</td></tr></tbody></table>
-<strong>Response (200):</strong>
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>type</code></td><td>string</td><td>No</td><td><code>"public"</code> or <code>"private"</code> (default: <code>"public"</code>)</td></tr><tr><td><code>members</code></td><td>string[]</td><td>For private</td><td>List of usernames (required for private rooms)</td></tr><tr><td><code>name</code></td><td>string</td><td>For public</td><td>Room display name (required for public rooms)</td></tr></tbody></table>
+<strong>Notes:</strong>
+<ul><li>Public rooms can only be created by the admin user (<code>ryo</code>).</li><li>Private rooms automatically include the creator in the member list.</li><li>Public room names are normalized to lowercase hyphenated slugs (e.g., <code>"General Chat"</code> → <code>"general-chat"</code>).</li><li>Private room names are generated from sorted members (e.g., <code>"@alice, @bob"</code>).</li></ul>
+<strong>Response (201):</strong>
 <pre><code>{
   "room": {
     "id": "abc123def456",
-    "name": "Project Discussion",
+    "name": "@alice, @bob",
     "type": "private",
     "members": ["alice", "bob"],
     "createdAt": 1704067200000,
-    "createdBy": "alice"
+    "userCount": 2
   }
 }</code></pre>
 <h3>Get Room</h3>
@@ -364,12 +364,11 @@ Content-Type: application/json
     "name": "General Chat",
     "type": "public",
     "createdAt": 1704067200000,
-    "createdBy": "ryo",
-    "memberCount": 15
+      "userCount": 15
   }
 }</code></pre>
 <h3>Delete Room</h3>
-<p>Delete a room. Only the room creator or admin can delete.</p>
+<p>Delete a room. Public rooms require admin access. Private rooms can be deleted by any member; if the remaining member count drops to 1 or fewer, the room is deleted.</p>
 <pre><code>DELETE /api/rooms/{id}
 Authorization: Bearer {token}
 X-Username: alice</code></pre>
@@ -378,7 +377,7 @@ X-Username: alice</code></pre>
   "success": true
 }</code></pre>
 <h3>Join Room</h3>
-<p>Join a room to participate in chat.</p>
+<p>Join a room to participate in chat (presence tracking). The user must already exist in the chat system.</p>
 <pre><code>POST /api/rooms/{id}/join
 Content-Type: application/json
 
@@ -390,7 +389,7 @@ Content-Type: application/json
   "success": true
 }</code></pre>
 <h3>Leave Room</h3>
-<p>Leave a room.</p>
+<p>Leave a room (presence tracking).</p>
 <pre><code>POST /api/rooms/{id}/leave
 Content-Type: application/json
 
@@ -406,22 +405,13 @@ Content-Type: application/json
 <pre><code>GET /api/rooms/{id}/users</code></pre>
 <strong>Response (200):</strong>
 <pre><code>{
-  "users": [
-    {
-      "username": "alice",
-      "joinedAt": 1704067200000
-    },
-    {
-      "username": "bob",
-      "joinedAt": 1704153600000
-    }
-  ]
+  "users": ["alice", "bob"]
 }</code></pre>
 <h2>Room Types</h2>
 <h3>Public Rooms</h3>
-<ul><li>Visible to all users in room listings</li></ul><ul><li>Anyone can join without invitation</li><li>Default room type for general discussions</li></ul>
+<ul><li>Visible to all users in room listings</li></ul><ul><li>Anyone can join without invitation</li><li>Created by admin (<code>ryo</code>) only</li></ul>
 <h3>Private Rooms</h3>
-<ul><li>Only visible to members</li></ul><ul><li>Created with a specific member list</li><li>Ideal for direct messages or group chats</li></ul>
+<ul><li>Only visible to members (when <code>username</code> query param is provided)</li></ul><ul><li>Created with a specific member list</li><li>Ideal for direct messages or group chats</li></ul>
 <h2>Error Responses</h2>
 <table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>Authentication required</code></td><td>Token missing or invalid</td></tr><tr><td>403</td><td><code>Forbidden</code></td><td>Not authorized to perform action</td></tr><tr><td>404</td><td><code>Room not found</code></td><td>Room ID doesn't exist</td></tr><tr><td>429</td><td><code>Rate limit exceeded</code></td><td>Too many requests</td></tr></tbody></table>
 <h2>Related</h2>
