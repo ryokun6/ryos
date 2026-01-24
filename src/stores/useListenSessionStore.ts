@@ -16,6 +16,11 @@ export interface ListenSessionUser {
   isOnline: boolean;
 }
 
+export interface ListenAnonymousListener {
+  anonymousId: string;
+  joinedAt: number;
+}
+
 export interface ListenSession {
   id: string;
   hostUsername: string;
@@ -27,6 +32,7 @@ export interface ListenSession {
   positionMs: number;
   lastSyncAt: number;
   users: ListenSessionUser[];
+  anonymousListeners?: ListenAnonymousListener[];
 }
 
 export interface ListenSyncPayload {
@@ -36,6 +42,7 @@ export interface ListenSyncPayload {
   positionMs: number;
   timestamp: number;
   djUsername: string; // Sender identification to ignore own syncs
+  listenerCount: number; // Total listeners (users + anonymous)
 }
 
 export interface ListenReactionPayload {
@@ -48,9 +55,12 @@ export interface ListenReactionPayload {
 export interface ListenSessionState {
   currentSession: ListenSession | null;
   username: string | null;
+  anonymousId: string | null; // For anonymous listeners
+  isAnonymous: boolean;
   isHost: boolean;
   isDj: boolean;
   isConnected: boolean;
+  listenerCount: number; // Total listeners from sync payload
   lastSyncPayload: ListenSyncPayload | null;
   lastSyncAt: number | null;
   reactions: ListenReactionPayload[];
@@ -62,7 +72,7 @@ export interface ListenSessionState {
   }>;
   joinSession: (
     sessionId: string,
-    username: string
+    username?: string // Optional - if not provided, joins as anonymous
   ) => Promise<{ ok: boolean; session?: ListenSession; error?: string }>;
   leaveSession: () => Promise<{ ok: boolean; error?: string }>;
   syncSession: (payload: {
@@ -79,13 +89,21 @@ export interface ListenSessionState {
 const initialState = {
   currentSession: null,
   username: null,
+  anonymousId: null,
+  isAnonymous: false,
   isHost: false,
   isDj: false,
   isConnected: false,
+  listenerCount: 0,
   lastSyncPayload: null,
   lastSyncAt: null,
   reactions: [],
 };
+
+// Generate a random anonymous ID
+function generateAnonymousId(): string {
+  return `anon-${Math.random().toString(36).substring(2, 10)}`;
+}
 
 let pusherClient: ReturnType<typeof getPusherClient> | null = null;
 let channelRef: PusherChannel | null = null;
@@ -156,6 +174,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           currentSession: nextSession,
           lastSyncPayload: payload,
           lastSyncAt: payload.timestamp,
+          listenerCount: payload.listenerCount ?? state.listenerCount,
           ...updateIdentityFlags(nextSession, state.username),
         };
       });
@@ -282,14 +301,20 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       }
     },
 
-    joinSession: async (sessionId: string, username: string) => {
+    joinSession: async (sessionId: string, username?: string) => {
       try {
+        // If no username, join as anonymous
+        const isAnonymous = !username;
+        const anonymousId = isAnonymous ? generateAnonymousId() : null;
+
         const response = await fetch(
           getApiUrl(`/api/listen/sessions/${encodeURIComponent(sessionId)}/join`),
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username }),
+            body: JSON.stringify(
+              isAnonymous ? { anonymousId } : { username }
+            ),
           }
         );
 
@@ -302,13 +327,22 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
 
         const data = await response.json();
         const session = data.session as ListenSession;
-        const identity = updateIdentityFlags(session, username);
+        const identity = isAnonymous
+          ? { isHost: false, isDj: false }
+          : updateIdentityFlags(session, username!);
+
+        // Calculate initial listener count
+        const listenerCount =
+          session.users.length + (session.anonymousListeners?.length ?? 0);
 
         bindChannelEvents(session.id);
         set({
           currentSession: session,
-          username,
+          username: username ?? null,
+          anonymousId,
+          isAnonymous,
           isConnected: true,
+          listenerCount,
           lastSyncAt: session.lastSyncAt,
           lastSyncPayload: null,
           reactions: [],
@@ -323,8 +357,15 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     },
 
     leaveSession: async () => {
-      const { currentSession, username } = get();
-      if (!currentSession || !username) {
+      const { currentSession, username, anonymousId, isAnonymous } = get();
+      if (!currentSession) {
+        return { ok: true };
+      }
+
+      // Must have either username or anonymousId
+      if (!username && !anonymousId) {
+        unsubscribeFromSession();
+        set({ ...initialState });
         return { ok: true };
       }
 
@@ -334,7 +375,9 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username }),
+            body: JSON.stringify(
+              isAnonymous ? { anonymousId } : { username }
+            ),
           }
         );
 
@@ -388,9 +431,14 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     },
 
     sendReaction: async (emoji: string) => {
-      const { currentSession, username } = get();
+      const { currentSession, username, isAnonymous } = get();
       if (!currentSession || !username) {
         return { ok: false, error: "No active session" };
+      }
+
+      // Anonymous users cannot send reactions
+      if (isAnonymous) {
+        return { ok: false, error: "Sign in to send reactions" };
       }
 
       try {

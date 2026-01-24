@@ -167,6 +167,8 @@ export function useKaraokeLogic({
     currentSession: listenSession,
     isHost: isListenSessionHost,
     isDj: isListenSessionDj,
+    isAnonymous: isListenSessionAnonymous,
+    listenerCount: listenListenerCount,
     createSession: createListenSession,
     joinSession: joinListenSession,
     leaveSession: leaveListenSession,
@@ -177,6 +179,8 @@ export function useKaraokeLogic({
       currentSession: state.currentSession,
       isHost: state.isHost,
       isDj: state.isDj,
+      isAnonymous: state.isAnonymous,
+      listenerCount: state.listenerCount,
       createSession: state.createSession,
       joinSession: state.joinSession,
       leaveSession: state.leaveSession,
@@ -867,20 +871,18 @@ export function useKaraokeLogic({
 
   const handleJoinListenSession = useCallback(
     async (sessionId: string) => {
-      if (!username) {
-        toast.error("Login required", {
-          description: "Set a username in Chats to join a session.",
-        });
-        return;
-      }
-      const result = await joinListenSession(sessionId, username);
+      // Allow anonymous users to join (username will be undefined)
+      const result = await joinListenSession(sessionId, username || undefined);
       if (!result.ok) {
         toast.error("Failed to join session", {
           description: result.error || "Please try again.",
         });
         return;
       }
-      setIsListenPanelOpen(true);
+      // Only show panel for logged-in users (anonymous users can't interact much)
+      if (username) {
+        setIsListenPanelOpen(true);
+      }
     },
     [joinListenSession, username]
   );
@@ -1298,9 +1300,10 @@ export function useKaraokeLogic({
     handleAddTrack,
     processVideoId,
     listenSession,
-    listenUserCount: listenSession?.users.length ?? 0,
+    listenListenerCount,
     isListenSessionHost,
     isListenSessionDj,
+    isListenSessionAnonymous,
     handleStartListenSession,
     handleJoinListenSession,
     handleLeaveListenSession,

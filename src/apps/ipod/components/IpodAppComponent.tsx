@@ -102,9 +102,10 @@ export function IpodAppComponent({
     lyricsSourceOverride,
     fullscreenCoverUrl,
     listenSession,
-    listenUserCount,
+    listenListenerCount,
     isListenSessionHost,
     isListenSessionDj,
+    isListenSessionAnonymous,
     fullScreenLyricsControls,
     furiganaMap,
     soramimiMap,
@@ -215,7 +216,7 @@ export function IpodAppComponent({
             <>
               <ListenSessionBadge
                 className="absolute top-3 right-3 z-40"
-                userCount={listenUserCount}
+                listenerCount={listenListenerCount}
                 isHost={isListenSessionHost}
                 isDj={isListenSessionDj}
                 onOpenPanel={() => setIsListenPanelOpen(true)}
@@ -697,6 +698,8 @@ export function IpodAppComponent({
           onOpenChange={setIsListenPanelOpen}
           session={listenSession}
           isDj={isListenSessionDj}
+          isAnonymous={isListenSessionAnonymous}
+          listenerCount={listenListenerCount}
           onPassDj={handlePassDj}
           onLeave={handleLeaveListenSession}
           onSendReaction={handleSendReaction}

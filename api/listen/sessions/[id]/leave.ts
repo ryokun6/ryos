@@ -1,6 +1,9 @@
 /**
  * POST /api/listen/sessions/[id]/leave
  * Leave a listen-together session
+ * 
+ * Supports both logged-in users (username) and anonymous listeners (anonymousId).
+ * Anonymous listeners don't trigger user-left broadcasts to save Pusher events.
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
@@ -73,23 +76,27 @@ export default async function handler(
 
   const body = req.body as LeaveSessionRequest;
   const username = body?.username?.toLowerCase();
+  const anonymousId = body?.anonymousId;
 
-  if (!username) {
+  // Must provide either username or anonymousId
+  if (!username && !anonymousId) {
     logger.response(400, Date.now() - startTime);
-    res.status(400).json({ error: "Username is required" });
+    res.status(400).json({ error: "Username or anonymousId is required" });
     return;
   }
 
   try {
-    assertValidUsername(username, "listen-leave");
     assertValidRoomId(sessionId, "listen-leave");
+    if (username) {
+      assertValidUsername(username, "listen-leave");
+    }
   } catch (error) {
     logger.response(400, Date.now() - startTime);
     res.status(400).json({ error: error instanceof Error ? error.message : "Validation error" });
     return;
   }
 
-  if (isProfaneUsername(username)) {
+  if (username && isProfaneUsername(username)) {
     logger.response(401, Date.now() - startTime);
     res.status(401).json({ error: "Unauthorized" });
     return;
@@ -104,45 +111,71 @@ export default async function handler(
       return;
     }
 
-    if (session.hostUsername === username) {
-      await deleteSession(sessionId);
-      await broadcastSessionEnded(sessionId);
+    // Handle logged-in user leaving
+    if (username) {
+      if (session.hostUsername === username) {
+        await deleteSession(sessionId);
+        await broadcastSessionEnded(sessionId);
 
-      logger.info("Listen session ended by host", { sessionId, username });
+        logger.info("Listen session ended by host", { sessionId, username });
+        logger.response(200, Date.now() - startTime);
+        res.status(200).json({ success: true });
+        return;
+      }
+
+      const userIndex = session.users.findIndex((user) => user.username === username);
+      const wasDj = session.djUsername === username;
+      const userExisted = userIndex !== -1;
+
+      if (userIndex !== -1) {
+        session.users.splice(userIndex, 1);
+      }
+
+      if (wasDj) {
+        const nextDj = session.users.sort((a, b) => a.joinedAt - b.joinedAt)[0]?.username;
+        if (nextDj) {
+          const previousDj = session.djUsername;
+          session.djUsername = nextDj;
+          await broadcastDjChanged(sessionId, { previousDj, newDj: nextDj });
+        }
+      }
+
+      session.lastSyncAt = getCurrentTimestamp();
+      session.users.sort((a, b) => a.joinedAt - b.joinedAt);
+
+      await setSession(sessionId, session);
+
+      // Broadcast for logged-in users
+      if (userExisted) {
+        await broadcastUserLeft(sessionId, { username });
+      }
+
+      logger.info("User left listen session", { sessionId, username });
+      logger.response(200, Date.now() - startTime);
+      res.status(200).json({ success: true, session });
+    } else {
+      // Handle anonymous listener leaving - NO broadcast
+      // Initialize anonymousListeners if not present (for backwards compatibility)
+      if (!session.anonymousListeners) {
+        session.anonymousListeners = [];
+      }
+
+      const listenerIndex = session.anonymousListeners.findIndex(
+        (listener) => listener.anonymousId === anonymousId
+      );
+
+      if (listenerIndex !== -1) {
+        session.anonymousListeners.splice(listenerIndex, 1);
+      }
+
+      session.lastSyncAt = getCurrentTimestamp();
+      await setSession(sessionId, session);
+
+      // NO broadcast for anonymous listeners - saves Pusher events
+      logger.info("Anonymous listener left", { sessionId, anonymousId });
       logger.response(200, Date.now() - startTime);
       res.status(200).json({ success: true });
-      return;
     }
-
-    const userIndex = session.users.findIndex((user) => user.username === username);
-    const wasDj = session.djUsername === username;
-    const userExisted = userIndex !== -1;
-
-    if (userIndex !== -1) {
-      session.users.splice(userIndex, 1);
-    }
-
-    if (wasDj) {
-      const nextDj = session.users.sort((a, b) => a.joinedAt - b.joinedAt)[0]?.username;
-      if (nextDj) {
-        const previousDj = session.djUsername;
-        session.djUsername = nextDj;
-        await broadcastDjChanged(sessionId, { previousDj, newDj: nextDj });
-      }
-    }
-
-    session.lastSyncAt = getCurrentTimestamp();
-    session.users.sort((a, b) => a.joinedAt - b.joinedAt);
-
-    await setSession(sessionId, session);
-
-    if (userExisted) {
-      await broadcastUserLeft(sessionId, { username });
-    }
-
-    logger.info("User left listen session", { sessionId, username });
-    logger.response(200, Date.now() - startTime);
-    res.status(200).json({ success: true, session });
   } catch (error) {
     logger.error("Failed to leave listen session", error);
     logger.response(500, Date.now() - startTime);

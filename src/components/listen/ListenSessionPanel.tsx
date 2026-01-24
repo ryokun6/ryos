@@ -16,6 +16,8 @@ interface ListenSessionPanelProps {
   onOpenChange: (open: boolean) => void;
   session: ListenSession;
   isDj: boolean;
+  isAnonymous: boolean;
+  listenerCount: number;
   onPassDj: (username: string) => void;
   onLeave: () => void;
   onSendReaction: (emoji: string) => void;
@@ -28,6 +30,8 @@ export function ListenSessionPanel({
   onOpenChange,
   session,
   isDj,
+  isAnonymous,
+  listenerCount,
   onPassDj,
   onLeave,
   onSendReaction,
@@ -36,10 +40,13 @@ export function ListenSessionPanel({
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacOsxTheme = currentTheme === "macosx";
 
+  // Count anonymous listeners
+  const anonymousCount = listenerCount - session.users.length;
+
   const dialogContent = (
     <div className={isXpTheme ? "p-2 px-4" : "p-3"}>
       <div className="space-y-3">
-        {/* Session ID */}
+        {/* Listener count */}
         <p
           className={cn(
             "text-muted-foreground",
@@ -54,7 +61,7 @@ export function ListenSessionPanel({
             fontSize: isXpTheme ? "10px" : undefined,
           }}
         >
-          Session: {session.id}
+          {listenerCount} listening{anonymousCount > 0 ? ` (${anonymousCount} anonymous)` : ""}
         </p>
 
         {/* Users list */}
@@ -101,37 +108,39 @@ export function ListenSessionPanel({
           ))}
         </div>
 
-        {/* Reactions */}
-        <div className="space-y-1">
-          <p
-            className={cn(
-              "text-muted-foreground",
-              isXpTheme
-                ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
-                : "font-geneva-12 text-[10px]"
-            )}
-            style={{
-              fontFamily: isXpTheme
-                ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                : undefined,
-              fontSize: isXpTheme ? "10px" : undefined,
-            }}
-          >
-            Reactions
-          </p>
-          <div className="flex flex-wrap gap-1">
-            {REACTIONS.map((emoji) => (
-              <Button
-                key={emoji}
-                variant="retro"
-                onClick={() => onSendReaction(emoji)}
-                className="h-7 w-7 p-0 text-base"
-              >
-                {emoji}
-              </Button>
-            ))}
+        {/* Reactions - hidden for anonymous users */}
+        {!isAnonymous && (
+          <div className="space-y-1">
+            <p
+              className={cn(
+                "text-muted-foreground",
+                isXpTheme
+                  ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
+                  : "font-geneva-12 text-[10px]"
+              )}
+              style={{
+                fontFamily: isXpTheme
+                  ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+                  : undefined,
+                fontSize: isXpTheme ? "10px" : undefined,
+              }}
+            >
+              Reactions
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {REACTIONS.map((emoji) => (
+                <Button
+                  key={emoji}
+                  variant="retro"
+                  onClick={() => onSendReaction(emoji)}
+                  className="h-7 w-7 p-0 text-base"
+                >
+                  {emoji}
+                </Button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <DialogFooter className="mt-3 flex justify-end">

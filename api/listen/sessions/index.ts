@@ -120,6 +120,7 @@ export default async function handler(
         isOnline: true,
       },
     ],
+    anonymousListeners: [],
   };
 
   try {

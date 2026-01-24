@@ -18,6 +18,11 @@ export interface ListenSessionUser {
   isOnline: boolean;
 }
 
+export interface ListenAnonymousListener {
+  anonymousId: string;
+  joinedAt: number;
+}
+
 export interface ListenSession {
   id: string;
   hostUsername: string;
@@ -29,6 +34,7 @@ export interface ListenSession {
   positionMs: number;
   lastSyncAt: number;
   users: ListenSessionUser[];
+  anonymousListeners: ListenAnonymousListener[];
 }
 
 // ============================================================================
@@ -40,11 +46,13 @@ export interface CreateSessionRequest {
 }
 
 export interface JoinSessionRequest {
-  username: string;
+  username?: string;      // For logged-in users
+  anonymousId?: string;   // For anonymous listeners
 }
 
 export interface LeaveSessionRequest {
-  username: string;
+  username?: string;      // For logged-in users
+  anonymousId?: string;   // For anonymous listeners
 }
 
 export interface SyncSessionRequest {
@@ -82,6 +90,7 @@ export interface ListenSyncPayload {
   positionMs: number;
   timestamp: number;
   djUsername: string; // Sender identification to ignore own syncs
+  listenerCount: number; // Total listeners (users + anonymous) for UI display
 }
 
 export interface ListenReactionPayload {

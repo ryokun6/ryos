@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/useThemeStore";
 
 interface ListenSessionBadgeProps {
-  userCount: number;
+  listenerCount: number;
   isHost: boolean;
   isDj: boolean;
   onOpenPanel: () => void;
@@ -13,7 +13,7 @@ interface ListenSessionBadgeProps {
 }
 
 export function ListenSessionBadge({
-  userCount,
+  listenerCount,
   isHost,
   isDj,
   onOpenPanel,
@@ -48,7 +48,7 @@ export function ListenSessionBadge({
         className={buttonClassName}
         style={buttonStyle}
       >
-        🎧 {userCount} {isDj && "• DJ"}
+        🎧 {listenerCount} {isDj && "• DJ"}
       </Button>
       <Button
         variant="retro"

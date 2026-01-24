@@ -150,6 +150,9 @@ export default async function handler(
 
     await setSession(sessionId, session);
 
+    // Calculate total listener count (users + anonymous)
+    const listenerCount = session.users.length + (session.anonymousListeners?.length ?? 0);
+
     await broadcastSync(sessionId, {
       currentTrackId: session.currentTrackId,
       currentTrackMeta: session.currentTrackMeta,
@@ -157,6 +160,7 @@ export default async function handler(
       positionMs: session.positionMs,
       timestamp: now,
       djUsername: session.djUsername,
+      listenerCount,
     });
 
     logger.info("Listen session synced", {

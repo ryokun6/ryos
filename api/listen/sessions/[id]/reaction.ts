@@ -1,6 +1,8 @@
 /**
  * POST /api/listen/sessions/[id]/reaction
  * Send an emoji reaction in a session
+ * 
+ * Requires logged-in user (username). Anonymous listeners cannot send reactions.
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";

@@ -117,9 +117,10 @@ export function KaraokeAppComponent({
     hasActiveActivity,
     translationLanguages,
     listenSession,
-    listenUserCount,
+    listenListenerCount,
     isListenSessionHost,
     isListenSessionDj,
+    isListenSessionAnonymous,
     showStatus,
     showOfflineStatus,
     restartAutoHideTimer,
@@ -310,7 +311,7 @@ export function KaraokeAppComponent({
             <>
               <ListenSessionBadge
                 className="absolute top-3 right-3 z-50"
-                userCount={listenUserCount}
+                listenerCount={listenListenerCount}
                 isHost={isListenSessionHost}
                 isDj={isListenSessionDj}
                 onOpenPanel={() => setIsListenPanelOpen(true)}
@@ -620,6 +621,8 @@ export function KaraokeAppComponent({
             onOpenChange={setIsListenPanelOpen}
             session={listenSession}
             isDj={isListenSessionDj}
+            isAnonymous={isListenSessionAnonymous}
+            listenerCount={listenListenerCount}
             onPassDj={handlePassDj}
             onLeave={handleLeaveListenSession}
             onSendReaction={handleSendReaction}
