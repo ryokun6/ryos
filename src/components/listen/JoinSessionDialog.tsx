@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +51,7 @@ export function JoinSessionDialog({
   onClose,
   onJoin,
 }: JoinSessionDialogProps) {
+  const { t } = useTranslation();
   const [value, setValue] = useState("");
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -79,7 +81,7 @@ export function JoinSessionDialog({
           fontSize: isXpTheme ? "11px" : undefined,
         }}
       >
-        Paste a session link or ID to join.
+        {t("apps.karaoke.liveListen.pasteLinkOrId")}
       </p>
       <Input
         autoFocus
@@ -91,7 +93,7 @@ export function JoinSessionDialog({
             handleJoin();
           }
         }}
-        placeholder="Session link or ID"
+        placeholder={t("apps.karaoke.liveListen.sessionLinkPlaceholder")}
         className={cn(
           "shadow-none h-8",
           isXpTheme
@@ -122,7 +124,7 @@ export function JoinSessionDialog({
             fontSize: isXpTheme ? "11px" : undefined,
           }}
         >
-          Cancel
+          {t("apps.karaoke.liveListen.cancel")}
         </Button>
         <Button
           variant={isMacOsxTheme ? "default" : "retro"}
@@ -140,7 +142,7 @@ export function JoinSessionDialog({
             fontSize: isXpTheme ? "11px" : undefined,
           }}
         >
-          Join
+          {t("apps.karaoke.liveListen.joinButton")}
         </Button>
       </DialogFooter>
     </div>
@@ -158,7 +160,7 @@ export function JoinSessionDialog({
             className="title-bar"
             style={currentTheme === "xp" ? { minHeight: "30px" } : undefined}
           >
-            <div className="title-bar-text">Join Session</div>
+            <div className="title-bar-text">{t("apps.karaoke.liveListen.joinSession")}</div>
             <div className="title-bar-controls">
               <button aria-label="Close" data-action="close" onClick={onClose} />
             </div>
@@ -177,18 +179,18 @@ export function JoinSessionDialog({
       >
         {isMacOsxTheme ? (
           <>
-            <DialogHeader>Join Session</DialogHeader>
+            <DialogHeader>{t("apps.karaoke.liveListen.joinSession")}</DialogHeader>
             <DialogDescription className="sr-only">
-              Paste a session link or ID to join.
+              {t("apps.karaoke.liveListen.pasteLinkOrId")}
             </DialogDescription>
           </>
         ) : (
           <DialogHeader>
             <DialogTitle className="font-normal text-[13px]">
-              Join Session
+              {t("apps.karaoke.liveListen.joinSession")}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              Paste a session link or ID to join.
+              {t("apps.karaoke.liveListen.pasteLinkOrId")}
             </DialogDescription>
           </DialogHeader>
         )}

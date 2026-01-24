@@ -50,7 +50,8 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 ## Project Structure
 
 ```
-├── api/              # Vercel API endpoints (AI, chat, lyrics, etc.)
+├── _api/             # Vercel API endpoints (AI, chat, lyrics, etc.)
+├── api/              # Local dev only: symlink to _api (created by dev:vercel; gitignored)
 ├── public/           # Static assets (icons, wallpapers, sounds, fonts)
 ├── src/
 │   ├── apps/         # Individual app modules
@@ -84,8 +85,10 @@ bun dev              # Start development server
 bun run build        # Build for production
 bun run lint         # Run ESLint
 bun run preview      # Preview production build
-vercel dev           # Run with Vercel dev server (recommended)
+bun run dev:vercel   # Run with Vercel dev server (recommended); ensures api -> _api for local dev only
 ```
+
+For local development only: `bun run dev:vercel` creates an `api` → `_api` symlink so Vercel dev serves your API routes (Vercel looks for `api/`). The symlink is gitignored and not used in production.
 
 ## License
 

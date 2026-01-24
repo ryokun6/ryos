@@ -1400,6 +1400,27 @@
           "title": "Funciona con Chats"
         }
       },
+      "liveListen": {
+        "anonymous": "{{count}} anónimos",
+        "cancel": "Cancelar",
+        "copyLink": "Copiar enlace",
+        "end": "Finalizar Escucha en Vivo",
+        "endSession": "Finalizar sesión",
+        "invite": "Invitar a Escucha en Vivo",
+        "inviteTitle": "Invitar",
+        "inviteToListen": "Invitar a Escucha en Vivo",
+        "join": "Unirse a Escucha en Vivo...",
+        "joinButton": "Unirse",
+        "joinSession": "Unirse a Escucha en Vivo",
+        "leave": "Salir de Escucha en Vivo",
+        "leaveSession": "Salir de la sesión",
+        "listening": "{{count}} escuchando",
+        "pasteLinkOrId": "Pega un enlace o ID de sesión para unirte.",
+        "sendReaction": "Enviar reacción",
+        "sessionLinkPlaceholder": "Enlace o ID de sesión",
+        "shareLinkInvite": "Comparte este enlace para invitar a amigos a escuchar juntos.",
+        "start": "Iniciar Escucha en Vivo"
+      },
       "lyrics": {
         "noLyricsFound": "No se encontraron letras",
         "search": "Buscar",

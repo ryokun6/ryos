@@ -1400,6 +1400,27 @@
           "title": "與聊天整合"
         }
       },
+      "liveListen": {
+        "anonymous": "{{count}} 位匿名使用者",
+        "cancel": "取消",
+        "copyLink": "複製連結",
+        "end": "結束實時聆聽",
+        "endSession": "結束會話",
+        "invite": "邀請加入實時聆聽",
+        "inviteTitle": "邀請",
+        "inviteToListen": "邀請加入實時聆聽",
+        "join": "加入實時聆聽...",
+        "joinButton": "加入",
+        "joinSession": "加入實時聆聽",
+        "leave": "離開實時聆聽",
+        "leaveSession": "離開會話",
+        "listening": "{{count}} 位正在聆聽",
+        "pasteLinkOrId": "貼上會話連結或 ID 即可加入。",
+        "sendReaction": "傳送回應",
+        "sessionLinkPlaceholder": "會話連結或 ID",
+        "shareLinkInvite": "分享此連結以邀請朋友一起聆聽。",
+        "start": "開始實時聆聽"
+      },
       "lyrics": {
         "noLyricsFound": "找不到歌詞",
         "search": "搜尋",
@@ -1750,12 +1771,12 @@
         "color": "顏色",
         "deleteNote": "刪除便利貼",
         "help": "便利貼輔助說明",
-        "newNote": "新增備忘錄",
-        "note": "備忘錄"
+        "newNote": "新增便利貼",
+        "note": "便利貼"
       },
-      "name": "便條紙",
-      "placeholder": "撰寫備忘錄...",
-      "title": "便條紙"
+      "name": "便利貼",
+      "placeholder": "撰寫便利貼...",
+      "title": "便利貼"
     },
     "synth": {
       "addPreset": "新增預設",

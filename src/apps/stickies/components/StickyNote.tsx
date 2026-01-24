@@ -10,6 +10,7 @@ interface StickyNoteProps {
   onUpdate: (updates: Partial<Omit<StickyNoteType, "id" | "createdAt">>) => void;
   onDelete: () => void;
   zIndex: number;
+  isForeground: boolean;
 }
 
 const COLOR_STYLES: Record<StickyColor, { bg: string; border: string; text: string }> = {
@@ -51,6 +52,7 @@ export function StickyNote({
   onUpdate,
   onDelete,
   zIndex,
+  isForeground,
 }: StickyNoteProps) {
   const { t } = useTranslation();
   
@@ -195,7 +197,7 @@ export function StickyNote({
       className={cn(
         "fixed flex flex-col overflow-hidden",
         "shadow-[0_4px_12px_rgba(0,0,0,0.15)]",
-        isDragging && "cursor-grabbing opacity-95"
+        isDragging && "opacity-95"
       )}
       style={{
         left: note.position.x,
@@ -208,33 +210,35 @@ export function StickyNote({
         borderRadius: "1px",
       }}
     >
-      {/* Compact title bar */}
+      {/* Compact title bar - always rendered to prevent layout shift, but contents hidden when not foreground */}
       <div
-        onMouseDown={handleDragStart}
-        onTouchStart={handleTouchDragStart}
+        onMouseDown={isForeground ? handleDragStart : undefined}
+        onTouchStart={isForeground ? handleTouchDragStart : undefined}
         className={cn(
-          "flex items-center h-[14px] px-[3px] cursor-grab select-none",
-          isDragging && "cursor-grabbing"
+          "flex items-center h-[14px] px-[3px] select-none",
+          isForeground ? "cursor-move" : "cursor-default"
         )}
         style={{
           backgroundColor: colors.bg,
-          borderBottom: `1px solid ${colors.border}`,
+          borderBottom: isForeground ? `1px solid ${colors.border}` : "none",
           touchAction: "none",
         }}
       >
-        {/* Close button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="w-[9px] h-[9px] flex items-center justify-center"
-          style={{ 
-            border: `1px solid ${colors.border}`,
-            backgroundColor: colors.bg,
-          }}
-          title="Close"
-        />
+        {/* Close button - only visible when foreground */}
+        {isForeground && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="w-[9px] h-[9px] flex items-center justify-center"
+            style={{ 
+              border: `1px solid ${colors.border}`,
+              backgroundColor: colors.bg,
+            }}
+            title="Close"
+          />
+        )}
       </div>
 
       {/* Content */}
@@ -253,15 +257,12 @@ export function StickyNote({
         }}
       />
 
-      {/* Resize handle */}
+      {/* Invisible resize handle */}
       <div
         onMouseDown={handleResizeStart}
         onTouchStart={handleTouchResizeStart}
         className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize"
-        style={{
-          background: `linear-gradient(135deg, transparent 50%, ${colors.border} 50%)`,
-          touchAction: "none",
-        }}
+        style={{ touchAction: "none" }}
       />
     </div>
   );

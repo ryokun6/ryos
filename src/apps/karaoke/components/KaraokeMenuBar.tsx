@@ -237,22 +237,23 @@ export function KaraokeMenuBar({
           >
             {t("apps.ipod.menu.shareSong")}
           </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
           {!isInListenSession ? (
             <>
               <MenubarItem onClick={onStartListenSession} className="text-md h-6 px-3">
-                Start Listen Session
+                {t("apps.karaoke.liveListen.start")}
               </MenubarItem>
               <MenubarItem onClick={onJoinListenSession} className="text-md h-6 px-3">
-                Join Listen Session...
+                {t("apps.karaoke.liveListen.join")}
               </MenubarItem>
             </>
           ) : (
             <>
               <MenubarItem onClick={onShareListenSession} className="text-md h-6 px-3">
-                Invite to Session
+                {t("apps.karaoke.liveListen.invite")}
               </MenubarItem>
               <MenubarItem onClick={onLeaveListenSession} className="text-md h-6 px-3">
-                {isListenSessionHost ? "End Listen Session" : "Leave Listen Session"}
+                {isListenSessionHost ? t("apps.karaoke.liveListen.end") : t("apps.karaoke.liveListen.leave")}
               </MenubarItem>
             </>
           )}

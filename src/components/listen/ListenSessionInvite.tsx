@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ export function ListenSessionInvite({
   sessionId,
   appType,
 }: ListenSessionInviteProps) {
+  const { t } = useTranslation();
   const [shareUrl, setShareUrl] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const currentTheme = useThemeStore((state) => state.current);
@@ -98,7 +100,7 @@ export function ListenSessionInvite({
             fontSize: isXpTheme ? "10px" : undefined,
           }}
         >
-          Share this link to invite friends to listen together.
+          {t("apps.karaoke.liveListen.shareLinkInvite")}
         </p>
 
         <Input
@@ -137,7 +139,7 @@ export function ListenSessionInvite({
             fontSize: isXpTheme ? "11px" : undefined,
           }}
         >
-          Copy Link
+          {t("apps.karaoke.liveListen.copyLink")}
         </Button>
       </DialogFooter>
     </div>
@@ -155,7 +157,7 @@ export function ListenSessionInvite({
             className="title-bar"
             style={currentTheme === "xp" ? { minHeight: "30px" } : undefined}
           >
-            <div className="title-bar-text">Invite to Listen</div>
+            <div className="title-bar-text">{t("apps.karaoke.liveListen.inviteToListen")}</div>
             <div className="title-bar-controls">
               <button aria-label="Close" data-action="close" onClick={onClose} />
             </div>
@@ -174,18 +176,18 @@ export function ListenSessionInvite({
       >
         {isMacOsxTheme ? (
           <>
-            <DialogHeader>Invite to Listen</DialogHeader>
+            <DialogHeader>{t("apps.karaoke.liveListen.inviteToListen")}</DialogHeader>
             <DialogDescription className="sr-only">
-              Share this link to invite friends to listen together.
+              {t("apps.karaoke.liveListen.shareLinkInvite")}
             </DialogDescription>
           </>
         ) : (
           <DialogHeader>
             <DialogTitle className="font-normal text-[13px]">
-              Invite to Listen
+              {t("apps.karaoke.liveListen.inviteToListen")}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              Share this link to invite friends to listen together.
+              {t("apps.karaoke.liveListen.shareLinkInvite")}
             </DialogDescription>
           </DialogHeader>
         )}

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -78,6 +79,7 @@ export function ListenSessionToolbar({
   portalContainer,
   className,
 }: ListenSessionToolbarProps) {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((s) => s.current);
   const isMacTheme = currentTheme === "macosx";
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
@@ -132,7 +134,7 @@ export function ListenSessionToolbar({
                 onInteraction?.();
               }}
               className={cn(buttonClasses, "gap-1 px-2 w-auto")}
-              title={`${listenerCount} listening`}
+              title={t("apps.karaoke.liveListen.listening", { count: listenerCount })}
             >
               {isDj && (
                 <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide bg-white/20", iconClasses)}>
@@ -147,16 +149,16 @@ export function ListenSessionToolbar({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             container={portalContainer}
-            side="top"
+            side="bottom"
             align="center"
             sideOffset={8}
             className="px-0 w-40"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-2 py-1 text-xs text-muted-foreground">
-              {listenerCount} listening
+              {t("apps.karaoke.liveListen.listening", { count: listenerCount })}
               {listenerCount - session.users.length > 0 &&
-                ` (${listenerCount - session.users.length} anonymous)`}
+                ` (${t("apps.karaoke.liveListen.anonymous", { count: listenerCount - session.users.length })})`}
             </div>
             {session.users.length > 1 && (
               <DropdownMenuRadioGroup
@@ -189,7 +191,7 @@ export function ListenSessionToolbar({
               }}
               className="text-md h-6"
             >
-              {session.hostUsername === session.djUsername ? "End Session" : "Leave Session"}
+              {session.hostUsername === session.djUsername ? t("apps.karaoke.liveListen.endSession") : t("apps.karaoke.liveListen.leaveSession")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -199,7 +201,7 @@ export function ListenSessionToolbar({
           type="button"
           onClick={handleClick(onShare)}
           className={buttonClasses}
-          title="Invite"
+          title={t("apps.karaoke.liveListen.inviteTitle")}
         >
           <Export weight="regular" size={svgSize} className={iconClasses} />
         </button>
@@ -218,7 +220,7 @@ export function ListenSessionToolbar({
                   onInteraction?.();
                 }}
                 className={buttonClasses}
-                title="Send Reaction"
+                title={t("apps.karaoke.liveListen.sendReaction")}
               >
                 <Smiley weight="fill" size={svgSize} className={iconClasses} />
               </button>
@@ -264,7 +266,7 @@ export function ListenSessionToolbar({
           type="button"
           onClick={handleClick(onLeave)}
           className={buttonClasses}
-          title={session.hostUsername === session.djUsername ? "End Session" : "Leave Session"}
+          title={session.hostUsername === session.djUsername ? t("apps.karaoke.liveListen.endSession") : t("apps.karaoke.liveListen.leaveSession")}
         >
           <SignOut weight="fill" size={svgSize} className={iconClasses} />
         </button>

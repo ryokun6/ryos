@@ -1400,6 +1400,27 @@
           "title": "Funktioniert mit Chats"
         }
       },
+      "liveListen": {
+        "anonymous": "{{count}} anonym",
+        "cancel": "Abbrechen",
+        "copyLink": "Link kopieren",
+        "end": "Live Listen beenden",
+        "endSession": "Sitzung beenden",
+        "invite": "Zu Live Listen einladen",
+        "inviteTitle": "Einladen",
+        "inviteToListen": "Zu Live Listen einladen",
+        "join": "Live Listen beitreten...",
+        "joinButton": "Beitreten",
+        "joinSession": "Live Listen beitreten",
+        "leave": "Live Listen verlassen",
+        "leaveSession": "Sitzung verlassen",
+        "listening": "{{count}} Hörer",
+        "pasteLinkOrId": "Sitzungslink oder ID zum Beitreten einfügen.",
+        "sendReaction": "Reaktion senden",
+        "sessionLinkPlaceholder": "Sitzungslink oder ID",
+        "shareLinkInvite": "Diesen Link teilen, um Freunde zum gemeinsamen Zuhören einzuladen.",
+        "start": "Live Listen starten"
+      },
       "lyrics": {
         "noLyricsFound": "Keine Liedtexte gefunden",
         "search": "Suchen",

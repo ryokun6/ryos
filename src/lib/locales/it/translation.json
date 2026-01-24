@@ -1400,6 +1400,27 @@
           "title": "Funziona con Chat"
         }
       },
+      "liveListen": {
+        "anonymous": "{{count}} anonimi",
+        "cancel": "Annulla",
+        "copyLink": "Copia link",
+        "end": "Termina l'ascolto in diretta",
+        "endSession": "Termina sessione",
+        "invite": "Invita all'ascolto in diretta",
+        "inviteTitle": "Invita",
+        "inviteToListen": "Invita all'ascolto in diretta",
+        "join": "Partecipa all'ascolto in diretta...",
+        "joinButton": "Partecipa",
+        "joinSession": "Partecipa all'ascolto in diretta",
+        "leave": "Abbandona l'ascolto in diretta",
+        "leaveSession": "Abbandona sessione",
+        "listening": "{{count}} in ascolto",
+        "pasteLinkOrId": "Incolla un link o ID sessione per partecipare.",
+        "sendReaction": "Invia reazione",
+        "sessionLinkPlaceholder": "Link o ID sessione",
+        "shareLinkInvite": "Condividi questo link per invitare amici ad ascoltare insieme.",
+        "start": "Avvia l'ascolto in diretta"
+      },
       "lyrics": {
         "noLyricsFound": "Testi non trovati",
         "search": "Cerca",

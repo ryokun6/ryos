@@ -1400,6 +1400,27 @@
           "title": "チャットと連携"
         }
       },
+      "liveListen": {
+        "anonymous": "{{count}} 匿名",
+        "cancel": "キャンセル",
+        "copyLink": "リンクをコピー",
+        "end": "ライブリスニングを終了",
+        "endSession": "セッションを終了",
+        "invite": "ライブリスニングに招待",
+        "inviteTitle": "招待",
+        "inviteToListen": "ライブリスニングに招待",
+        "join": "ライブリスニングに参加...",
+        "joinButton": "参加",
+        "joinSession": "ライブリスニングに参加",
+        "leave": "ライブリスニングを退出",
+        "leaveSession": "セッションを退出",
+        "listening": "{{count}} 聴取中",
+        "pasteLinkOrId": "セッションリンクまたはIDを貼り付けて参加します。",
+        "sendReaction": "リアクションを送信",
+        "sessionLinkPlaceholder": "セッションリンクまたはID",
+        "shareLinkInvite": "友達を招待して一緒に聴くには、このリンクを共有してください。",
+        "start": "ライブリスニングを開始"
+      },
       "lyrics": {
         "noLyricsFound": "歌詞が見つかりません",
         "search": "検索",
@@ -1720,41 +1741,41 @@
       "soundboards": "サウンドボード"
     },
     "stickies": {
-      "description": "ちょっとしたメモに付箋",
+      "description": "ちょっとした付箋",
       "empty": {
-        "createNote": "新規メモ",
-        "description": "メモを作成して始めましょう",
+        "createNote": "新規付箋",
+        "description": "付箋を作成して始めましょう",
         "title": "まだ付箋がありません"
       },
       "help": {
         "autoSave": {
-          "description": "メモは自動的に保存され、セッション間で保持されます",
+          "description": "付箋は自動的に保存され、セッション間で保持されます",
           "title": "自動保存"
         },
         "colors": {
-          "description": "メモメニューからメモの色を変更して、思考を整理しましょう",
+          "description": "付箋メニューから付箋の色を変更して、思考を整理しましょう",
           "title": "色"
         },
         "createNote": {
-          "description": "ファイル > 新規メモをクリックするか、ボタンを使用して新しい付箋を作成します",
-          "title": "メモを作成"
+          "description": "ファイル > 新規付箋をクリックするか、ボタンを使用して新しい付箋を作成します",
+          "title": "付箋を作成"
         },
         "deleteNote": {
-          "description": "メモのXボタンをクリックするか、メニューを使用して削除します",
-          "title": "メモを削除"
+          "description": "付箋のXボタンをクリックするか、メニューを使用して削除します",
+          "title": "付箋を削除"
         }
       },
       "menu": {
         "about": "Stickies について",
-        "clearAll": "全てのメモをクリア",
+        "clearAll": "全ての付箋をクリア",
         "color": "色",
-        "deleteNote": "メモを削除",
+        "deleteNote": "付箋を削除",
         "help": "Stickies ヘルプ",
-        "newNote": "新規ノート",
-        "note": "ノート"
+        "newNote": "新規付箋",
+        "note": "付箋"
       },
       "name": "スティッキーズ",
-      "placeholder": "ノートを書く...",
+      "placeholder": "付箋を書く...",
       "title": "スティッキーズ"
     },
     "synth": {
