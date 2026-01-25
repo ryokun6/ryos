@@ -14,6 +14,7 @@
     "preview": "vite preview",
     "generate:icons": "bun run scripts/generate-icon-manifest.ts",
     "generate:infinite-mac-thumbnails": "bun run scripts/generate-infinite-mac-thumbnails.ts",
+    "generate:average-colors": "bun run scripts/compute-average-colors.ts",
     "generate:wallpapers": "bun run scripts/generate-wallpaper-manifest.ts",
     "generate:app-docs": "bun run scripts/generate-app-docs.ts",
     "generate:changelog": "bun run scripts/generate-changelog.ts",
