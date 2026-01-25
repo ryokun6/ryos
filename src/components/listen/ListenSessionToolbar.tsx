@@ -15,7 +15,6 @@ import {
 import {
   Headphones,
   Export,
-  SignOut,
   Smiley,
   Fire,
   HandsClapping,
@@ -195,16 +194,6 @@ export function ListenSessionToolbar({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {/* Share/Invite – iOS-style (box with arrow) */}
-        <button
-          type="button"
-          onClick={handleClick(onShare)}
-          className={buttonClasses}
-          title={t("apps.karaoke.liveListen.inviteTitle")}
-        >
-          <Export weight="regular" size={svgSize} className={iconClasses} />
-        </button>
       </div>
 
       {/* Reactions – separate button, only for logged-in users */}
@@ -259,18 +248,19 @@ export function ListenSessionToolbar({
         </div>
       )}
 
-      {/* Leave Session Island */}
+      {/* Share/Invite Island */}
       <div className={segmentClasses} style={aquaSegmentStyle}>
         {isMacTheme && <AquaShineOverlays />}
         <button
           type="button"
-          onClick={handleClick(onLeave)}
+          onClick={handleClick(onShare)}
           className={buttonClasses}
-          title={session.hostUsername === session.djUsername ? t("apps.karaoke.liveListen.endSession") : t("apps.karaoke.liveListen.leaveSession")}
+          title={t("apps.karaoke.liveListen.inviteTitle")}
         >
-          <SignOut weight="fill" size={svgSize} className={iconClasses} />
+          <Export weight="regular" size={svgSize} className={iconClasses} />
         </button>
       </div>
+
     </div>
   );
 }
