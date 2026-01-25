@@ -50,7 +50,7 @@ function PresetGridCard({
           <img
             src={preset.image}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover object-top origin-top-left transition-transform duration-[800ms] ease-out group-hover:scale-105"
+            className="absolute inset-0 w-full h-full object-cover object-top origin-top-left opacity-80 transition-[transform_800ms_ease-out,opacity_200ms_ease-out] group-hover:scale-115 group-hover:opacity-100"
             onError={() => setThumbError(true)}
           />
         ) : null}

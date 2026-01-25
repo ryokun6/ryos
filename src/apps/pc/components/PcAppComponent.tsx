@@ -52,7 +52,7 @@ function GameGridCard({
           <img
             src={game.image}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover object-top origin-top-left transition-transform duration-[800ms] ease-out group-hover:scale-105"
+            className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-[800ms] ease-out group-hover:scale-105"
             onError={() => setThumbError(true)}
           />
         ) : null}
