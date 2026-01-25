@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
+import { AnimatePresence } from "framer-motion";
 import { StickyNote } from "./StickyNote";
 import { StickiesMenuBar } from "./StickiesMenuBar";
 import { AppProps } from "@/apps/base/types";
@@ -75,21 +77,26 @@ export function StickiesAppComponent({
       {/* Menu bar for macOS/System7 themes */}
       {!isXpTheme && isForeground && menuBar}
 
-      {/* Render all sticky notes as floating elements */}
-      {notes.map((note) => (
-        <StickyNote
-          key={note.id}
-          note={note}
-          onSelect={() => {
-            handleNoteClick(note.id);
-            bringToFront(note.id);
-          }}
-          onUpdate={(updates) => updateNote(note.id, updates)}
-          onDelete={() => handleDeleteNote(note.id)}
-          zIndex={getZIndexForNote(note.id)}
-          isForeground={!!isForeground && note.id === selectedNoteId}
-        />
-      ))}
+      {/* Render sticky notes in a portal with AnimatePresence for in/out animations (like window frames) */}
+      {createPortal(
+        <AnimatePresence>
+          {notes.map((note) => (
+            <StickyNote
+              key={note.id}
+              note={note}
+              onSelect={() => {
+                handleNoteClick(note.id);
+                bringToFront(note.id);
+              }}
+              onUpdate={(updates) => updateNote(note.id, updates)}
+              onDelete={() => handleDeleteNote(note.id)}
+              zIndex={getZIndexForNote(note.id)}
+              isForeground={!!isForeground && note.id === selectedNoteId}
+            />
+          ))}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Dialogs */}
       <HelpDialog

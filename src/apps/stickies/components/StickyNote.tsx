@@ -1,8 +1,23 @@
 import { useRef, useState, useCallback, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { motion } from "framer-motion";
 import { StickyNote as StickyNoteType, StickyColor } from "@/stores/useStickiesStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+
+// Match WindowFrame open/close animation (scale 0.95 ↔ 1, opacity 0 ↔ 1)
+const STICKY_ANIMATION = {
+  initial: { scale: 0.95, opacity: 0 },
+  animate: {
+    scale: 1,
+    opacity: 1,
+    transition: { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const },
+  },
+  exit: {
+    scale: 0.95,
+    opacity: 0,
+    transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] as const },
+  },
+};
 
 interface StickyNoteProps {
   note: StickyNoteType;
@@ -190,20 +205,45 @@ export function StickyNote({
     [onUpdate]
   );
 
+  // When agent (or anything) updates position/size, animate there. During user drag/resize keep instant.
+  const layoutTransition = {
+    left: { duration: isDragging ? 0 : 0.2, ease: [0.33, 1, 0.68, 1] as const },
+    top: { duration: isDragging ? 0 : 0.2, ease: [0.33, 1, 0.68, 1] as const },
+    width: { duration: isResizing ? 0 : 0.2, ease: [0.33, 1, 0.68, 1] as const },
+    height: { duration: isResizing ? 0 : 0.2, ease: [0.33, 1, 0.68, 1] as const },
+  };
+
   const noteElement = (
-    <div
+    <motion.div
       ref={noteRef}
       onMouseDown={onSelect}
-      className={cn(
-        "fixed flex flex-col overflow-hidden",
-        "shadow-[0_4px_12px_rgba(0,0,0,0.15)]",
-        isDragging && "opacity-95"
-      )}
-      style={{
+      initial={{
+        ...STICKY_ANIMATION.initial,
         left: note.position.x,
         top: note.position.y,
         width: note.size.width,
         height: note.size.height,
+      }}
+      animate={{
+        scale: 1,
+        opacity: 1,
+        left: note.position.x,
+        top: note.position.y,
+        width: note.size.width,
+        height: note.size.height,
+      }}
+      transition={{
+        scale: { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const },
+        opacity: { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const },
+        ...layoutTransition,
+      }}
+      exit={STICKY_ANIMATION.exit}
+      className={cn(
+        "fixed flex flex-col overflow-hidden origin-top-left",
+        "shadow-[0_4px_12px_rgba(0,0,0,0.15)]",
+        isDragging && "opacity-95"
+      )}
+      style={{
         zIndex: zIndex,
         backgroundColor: colors.bg,
         border: `1px solid ${colors.border}`,
@@ -267,9 +307,8 @@ export function StickyNote({
           touchAction: "none",
         }}
       />
-    </div>
+    </motion.div>
   );
 
-  // Render via portal to ensure notes float above everything
-  return createPortal(noteElement, document.body);
+  return noteElement;
 }
