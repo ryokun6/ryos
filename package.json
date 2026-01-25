@@ -43,10 +43,10 @@
     "test:share-applet": "bun run tests/test-share-applet.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.13",
-    "@ai-sdk/google": "^3.0.8",
-    "@ai-sdk/openai": "^3.0.10",
-    "@ai-sdk/react": "^3.0.37",
+    "@ai-sdk/anthropic": "^3.0.23",
+    "@ai-sdk/google": "^3.0.13",
+    "@ai-sdk/openai": "^3.0.18",
+    "@ai-sdk/react": "^3.0.51",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-checkbox": "^1.3.3",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -80,7 +80,7 @@
     "@vercel/functions": "^2.2",
     "@vercel/node": "^5.5.16",
     "@vercel/og": "^0.8.6",
-    "ai": "^6.0.35",
+    "ai": "^6.0.49",
     "audio-buffer-utils": "^5.1.2",
     "baseline-browser-mapping": "^2.9.11",
     "bcryptjs": "^3.0.3",

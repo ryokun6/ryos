@@ -652,7 +652,21 @@
         "toolExecutionFailed": "工具執行失敗",
         "unknownError": "未知錯誤",
         "updatedDocument": "文件已更新：{{path}}",
-        "writingContent": "寫入內容…"
+        "writingContent": "寫入內容…",
+        "stickies": {
+          "managing": "管理便利貼…",
+          "noStickies": "沒有便利貼",
+          "foundStickies": "找到 {{count}} 張便利貼",
+          "createdWithColor": "已建立{{color}}便利貼",
+          "updated": "已更新便利貼",
+          "deleted": "已刪除便利貼",
+          "cleared": "已清除 {{count}} 張便利貼",
+          "nothingToClear": "沒有便利貼可清除",
+          "missingId": "缺少便利貼 ID",
+          "notFound": "找不到便利貼：{{id}}",
+          "noUpdates": "沒有提供更新內容",
+          "invalidAction": "無效的動作：{{action}}"
+        }
       }
     },
     "control-panels": {

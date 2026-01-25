@@ -652,7 +652,21 @@
         "toolExecutionFailed": "Échec de l'exécution de l'outil",
         "unknownError": "Erreur inconnue",
         "updatedDocument": "Document mis à jour : {{path}}",
-        "writingContent": "Écriture du contenu…"
+        "writingContent": "Écriture du contenu…",
+        "stickies": {
+          "managing": "Gestion des pense-bêtes…",
+          "noStickies": "Aucun pense-bête",
+          "foundStickies": "{{count}} pense-bêtes trouvés",
+          "createdWithColor": "Pense-bête {{color}} créé",
+          "updated": "Pense-bête mis à jour",
+          "deleted": "Pense-bête supprimé",
+          "cleared": "{{count}} pense-bêtes effacés",
+          "nothingToClear": "Aucun pense-bête à effacer",
+          "missingId": "ID du pense-bête manquant",
+          "notFound": "Pense-bête introuvable : {{id}}",
+          "noUpdates": "Aucune mise à jour fournie",
+          "invalidAction": "Action invalide : {{action}}"
+        }
       }
     },
     "control-panels": {

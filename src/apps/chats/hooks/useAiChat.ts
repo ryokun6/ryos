@@ -44,12 +44,14 @@ import {
   handleSettings,
   handleIpodControl,
   handleKaraokeControl,
+  handleStickiesControl,
   type ToolContext,
   type LaunchAppInput,
   type CloseAppInput,
   type SettingsInput,
   type IpodControlInput,
   type KaraokeControlInput,
+  type StickiesControlInput,
 } from "../tools";
 
 /**
@@ -1619,6 +1621,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             result = ""; // Handler manages its own result
             break;
           }
+          case "stickiesControl": {
+            handleStickiesControl(
+              toolCall.input as StickiesControlInput,
+              toolCall.toolCallId,
+              toolContext
+            );
+            result = ""; // Handler manages its own result
+            break;
+          }
           default:
             console.warn("Unhandled tool call:", toolCall.toolName);
             result = "Tool executed";
@@ -1721,6 +1732,18 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     },
 
     onError: (err) => {
+      // Workaround for AI SDK v6 bug with stopWhen and tool calls (GitHub issue #10291)
+      // The finish event emits {"type":"finish","finishReason":"tool-calls"} which fails validation
+      // This is a known issue and the error can be safely ignored as the chat still works
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (
+        errorMessage.includes("AI_TypeValidationError") ||
+        errorMessage.includes("Type validation failed")
+      ) {
+        console.warn("[AI SDK v6 Bug] Type validation error (ignored):", errorMessage.substring(0, 100) + "...");
+        return; // Ignore this error - it's a known SDK issue
+      }
+
       console.error("AI Chat Error:", err);
 
       // Helper function to handle authentication errors consistently

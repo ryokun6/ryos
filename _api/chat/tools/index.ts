@@ -112,6 +112,9 @@ export const TOOL_DESCRIPTIONS = {
   
   settings:
     "Change system settings in ryOS. Use this tool when the user asks to change language, theme, volume, enable/disable speech, or check for updates. Multiple settings can be changed in a single call.",
+  
+  stickiesControl:
+    "Manage sticky notes in ryOS. Actions: 'list' returns all stickies with their IDs, content, and colors; 'create' makes a new sticky note with optional content/text, color (yellow/blue/green/pink/purple/orange), position, size; 'update' modifies an existing sticky by ID - use this to set/replace text content, change color, or move it; 'delete' removes a sticky by ID; 'clear' removes all stickies. The Stickies app opens automatically when creating notes.",
 } as const;
 
 /**
@@ -220,6 +223,15 @@ export function createChatTools(context: ServerToolContext) {
     settings: {
       description: TOOL_DESCRIPTIONS.settings,
       inputSchema: schemas.settingsSchema,
+      // No execute - handled client-side (requires Zustand store access)
+    },
+
+    // ============================================================================
+    // Stickies Control Tools (Client-side execution)
+    // ============================================================================
+    stickiesControl: {
+      description: TOOL_DESCRIPTIONS.stickiesControl,
+      inputSchema: schemas.stickiesControlSchema,
       // No execute - handled client-side (requires Zustand store access)
     },
   };

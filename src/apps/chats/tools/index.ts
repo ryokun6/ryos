@@ -121,6 +121,9 @@ export type { IpodControlInput } from "./ipodHandler";
 export { handleKaraokeControl } from "./karaokeHandler";
 export type { KaraokeControlInput } from "./karaokeHandler";
 
+export { handleStickiesControl } from "./stickiesHandler";
+export type { StickiesControlInput } from "./stickiesHandler";
+
 // ============================================================================
 // Register tool handlers for automatic dispatch (optional)
 // ============================================================================
@@ -128,10 +131,12 @@ export type { KaraokeControlInput } from "./karaokeHandler";
 import { handleSettings } from "./settingsHandler";
 import { handleIpodControl } from "./ipodHandler";
 import { handleKaraokeControl } from "./karaokeHandler";
+import { handleStickiesControl } from "./stickiesHandler";
 
 registerToolHandler("settings", handleSettings);
 registerToolHandler("ipodControl", handleIpodControl);
 registerToolHandler("karaokeControl", handleKaraokeControl);
+registerToolHandler("stickiesControl", handleStickiesControl);
 
 // Note: launchApp and closeApp handlers require additional context (closeAppLegacy)
 // so they are called directly from useAiChat rather than through the registry

@@ -913,7 +913,21 @@
         "missingEditParameters": "Missing required parameters: path, old_string, and new_string",
         "oldStringNotFound": "old_string not found in file. Use read tool to verify current content.",
         "oldStringMultipleMatches": "old_string matches {{count}} locations. Include more context to make it unique.",
-        "unknownError": "Unknown error"
+        "unknownError": "Unknown error",
+        "stickies": {
+          "managing": "Managing stickies…",
+          "noStickies": "No stickies",
+          "foundStickies": "Found {{count}} stickies",
+          "createdWithColor": "Created {{color}} sticky",
+          "updated": "Sticky updated",
+          "deleted": "Sticky deleted",
+          "cleared": "Cleared {{count}} stickies",
+          "nothingToClear": "No stickies to clear",
+          "missingId": "Missing sticky ID",
+          "notFound": "Sticky not found: {{id}}",
+          "noUpdates": "No updates provided",
+          "invalidAction": "Invalid action: {{action}}"
+        }
       },
       "tokenStatus": {
         "clickToRefresh": "Click to manually refresh token",

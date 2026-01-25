@@ -137,6 +137,10 @@ export function ToolInvocationMessage({
         displayCallMessage = t("apps.chats.toolCalls.searchingSongs", { query });
         break;
       }
+      case "stickiesControl": {
+        displayCallMessage = t("apps.chats.toolCalls.stickies.managing");
+        break;
+      }
       default:
         displayCallMessage = t("apps.chats.toolCalls.running", { toolName: formatToolName(toolName) });
     }
@@ -355,6 +359,14 @@ export function ToolInvocationMessage({
         }
       }
       displayResultMessage = t("apps.chats.toolCalls.foundVideos", { count });
+    } else if (toolName === "stickiesControl") {
+      if (typeof output === "string") {
+        // Extract just the first line (the summary) for display
+        const firstLine = output.split("\n")[0];
+        displayResultMessage = firstLine;
+      } else {
+        displayResultMessage = t("apps.chats.toolCalls.stickies.updated");
+      }
     }
   }
 

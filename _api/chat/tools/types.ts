@@ -162,3 +162,41 @@ export interface SettingsInput {
   speechEnabled?: boolean;
   checkForUpdates?: boolean;
 }
+
+// Sticky colors
+export const STICKY_COLORS = ["yellow", "blue", "green", "pink", "purple", "orange"] as const;
+export type StickyColor = typeof STICKY_COLORS[number];
+
+// Stickies control actions
+export const STICKIES_ACTIONS = ["list", "create", "update", "delete", "clear"] as const;
+export type StickiesAction = typeof STICKIES_ACTIONS[number];
+
+// Stickies control input
+export interface StickiesControlInput {
+  action: StickiesAction;
+  id?: string;
+  content?: string;
+  color?: StickyColor;
+  position?: { x: number; y: number };
+  size?: { width: number; height: number };
+}
+
+// Stickies control output
+export interface StickiesControlOutput {
+  success: boolean;
+  message: string;
+  notes?: Array<{
+    id: string;
+    content: string;
+    color: StickyColor;
+    position: { x: number; y: number };
+    size: { width: number; height: number };
+  }>;
+  note?: {
+    id: string;
+    content: string;
+    color: StickyColor;
+    position: { x: number; y: number };
+    size: { width: number; height: number };
+  };
+}

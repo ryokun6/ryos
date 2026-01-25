@@ -652,7 +652,21 @@
         "toolExecutionFailed": "Ошибка выполнения инструмента",
         "unknownError": "Неизвестная ошибка",
         "updatedDocument": "Документ обновлен: {{path}}",
-        "writingContent": "Запись содержимого…"
+        "writingContent": "Запись содержимого…",
+        "stickies": {
+          "managing": "Управление стикерами…",
+          "noStickies": "Нет стикеров",
+          "foundStickies": "Найдено {{count}} стикеров",
+          "createdWithColor": "Создан {{color}} стикер",
+          "updated": "Стикер обновлён",
+          "deleted": "Стикер удалён",
+          "cleared": "Очищено {{count}} стикеров",
+          "nothingToClear": "Нет стикеров для очистки",
+          "missingId": "Отсутствует ID стикера",
+          "notFound": "Стикер не найден: {{id}}",
+          "noUpdates": "Нет обновлений",
+          "invalidAction": "Недопустимое действие: {{action}}"
+        }
       }
     },
     "control-panels": {

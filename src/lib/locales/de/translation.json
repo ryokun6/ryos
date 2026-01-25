@@ -652,7 +652,21 @@
         "toolExecutionFailed": "Tool-Ausführung fehlgeschlagen",
         "unknownError": "Unbekannter Fehler",
         "updatedDocument": "Dokument aktualisiert: {{path}}",
-        "writingContent": "Inhalt wird geschrieben…"
+        "writingContent": "Inhalt wird geschrieben…",
+        "stickies": {
+          "managing": "Notizzettel verwalten…",
+          "noStickies": "Keine Notizzettel",
+          "foundStickies": "{{count}} Notizzettel gefunden",
+          "createdWithColor": "{{color}} Notizzettel erstellt",
+          "updated": "Notizzettel aktualisiert",
+          "deleted": "Notizzettel gelöscht",
+          "cleared": "{{count}} Notizzettel gelöscht",
+          "nothingToClear": "Keine Notizzettel zum Löschen",
+          "missingId": "Notizzettel-ID fehlt",
+          "notFound": "Notizzettel nicht gefunden: {{id}}",
+          "noUpdates": "Keine Aktualisierungen angegeben",
+          "invalidAction": "Ungültige Aktion: {{action}}"
+        }
       }
     },
     "control-panels": {

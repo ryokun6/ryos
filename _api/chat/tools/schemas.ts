@@ -382,3 +382,59 @@ export const settingsSchema = z.object({
       "When true, triggers a check for ryOS updates. Will notify the user if an update is available."
     ),
 });
+
+/**
+ * Stickies control schema
+ */
+export const stickiesControlSchema = z.object({
+  action: z
+    .enum(["list", "create", "update", "delete", "clear"])
+    .describe(
+      "Action to perform: 'list' returns all stickies, 'create' creates a new sticky, 'update' modifies an existing sticky, 'delete' removes a sticky by ID, 'clear' removes all stickies."
+    ),
+  id: z
+    .string()
+    .optional()
+    .describe(
+      "For 'update' and 'delete' actions: the ID of the sticky to modify or remove."
+    ),
+  content: z
+    .string()
+    .optional()
+    .describe(
+      "For 'create' and 'update' actions: the text content to set or replace on the sticky note. Use this to write messages, notes, or any text."
+    ),
+  color: z
+    .enum(["yellow", "blue", "green", "pink", "purple", "orange"])
+    .optional()
+    .describe(
+      "For 'create' and 'update' actions: the color of the sticky note. Defaults to 'yellow' for new stickies."
+    ),
+  position: z
+    .object({
+      x: z.number().describe("X coordinate (pixels from left)"),
+      y: z.number().describe("Y coordinate (pixels from top)"),
+    })
+    .optional()
+    .describe(
+      "For 'create' and 'update' actions: the position of the sticky note on screen."
+    ),
+  size: z
+    .object({
+      width: z.number().min(100).max(800).describe("Width in pixels (100-800)"),
+      height: z.number().min(100).max(800).describe("Height in pixels (100-800)"),
+    })
+    .optional()
+    .describe(
+      "For 'create' and 'update' actions: the size of the sticky note."
+    ),
+}).superRefine((data, ctx) => {
+  // Validate that 'update' and 'delete' actions have an ID
+  if ((data.action === "update" || data.action === "delete") && !data.id) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `The '${data.action}' action requires the 'id' parameter.`,
+      path: ["id"],
+    });
+  }
+});

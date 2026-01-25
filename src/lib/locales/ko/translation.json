@@ -652,7 +652,21 @@
         "toolExecutionFailed": "도구 실행 실패",
         "unknownError": "알 수 없는 오류",
         "updatedDocument": "문서 업데이트됨: {{path}}",
-        "writingContent": "내용 쓰는 중…"
+        "writingContent": "내용 쓰는 중…",
+        "stickies": {
+          "managing": "스티커 메모 관리 중…",
+          "noStickies": "스티커 메모 없음",
+          "foundStickies": "{{count}}개 스티커 메모",
+          "createdWithColor": "{{color}} 스티커 메모 생성",
+          "updated": "스티커 메모 업데이트됨",
+          "deleted": "스티커 메모 삭제됨",
+          "cleared": "{{count}}개 스티커 메모 지움",
+          "nothingToClear": "지울 스티커 메모 없음",
+          "missingId": "스티커 메모 ID 없음",
+          "notFound": "스티커 메모를 찾을 수 없음: {{id}}",
+          "noUpdates": "업데이트 내용 없음",
+          "invalidAction": "잘못된 동작: {{action}}"
+        }
       }
     },
     "control-panels": {

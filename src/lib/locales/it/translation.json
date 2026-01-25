@@ -652,7 +652,21 @@
         "toolExecutionFailed": "Esecuzione strumento fallita",
         "unknownError": "Errore sconosciuto",
         "updatedDocument": "Documento aggiornato: {{path}}",
-        "writingContent": "Scrittura contenuto…"
+        "writingContent": "Scrittura contenuto…",
+        "stickies": {
+          "managing": "Gestione note…",
+          "noStickies": "Nessuna nota",
+          "foundStickies": "{{count}} note trovate",
+          "createdWithColor": "Nota {{color}} creata",
+          "updated": "Nota aggiornata",
+          "deleted": "Nota eliminata",
+          "cleared": "{{count}} note eliminate",
+          "nothingToClear": "Nessuna nota da eliminare",
+          "missingId": "ID nota mancante",
+          "notFound": "Nota non trovata: {{id}}",
+          "noUpdates": "Nessun aggiornamento",
+          "invalidAction": "Azione non valida: {{action}}"
+        }
       }
     },
     "control-panels": {

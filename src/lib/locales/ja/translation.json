@@ -652,7 +652,21 @@
         "toolExecutionFailed": "ツールの実行に失敗しました",
         "unknownError": "不明なエラー",
         "updatedDocument": "ドキュメントを更新しました: {{path}}",
-        "writingContent": "コンテンツを書き込み中…"
+        "writingContent": "コンテンツを書き込み中…",
+        "stickies": {
+          "managing": "付箋を管理中…",
+          "noStickies": "付箋がありません",
+          "foundStickies": "{{count}}件の付箋",
+          "createdWithColor": "{{color}}の付箋を作成",
+          "updated": "付箋を更新",
+          "deleted": "付箋を削除",
+          "cleared": "{{count}}件の付箋を消去",
+          "nothingToClear": "消去する付箋がありません",
+          "missingId": "付箋IDがありません",
+          "notFound": "付箋が見つかりません: {{id}}",
+          "noUpdates": "更新内容がありません",
+          "invalidAction": "無効なアクション: {{action}}"
+        }
       }
     },
     "control-panels": {
