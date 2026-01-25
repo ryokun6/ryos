@@ -2256,6 +2256,14 @@
       "signupDescription": "チャットルームにアクセスし、設定を保存するためにアカウントを作成してください",
       "username": "ユーザー名"
     },
+    "colors": {
+      "yellow": "黄色",
+      "blue": "青",
+      "green": "緑",
+      "pink": "ピンク",
+      "purple": "紫",
+      "orange": "オレンジ"
+    },
     "desktop": {
       "myComputer": "マイコンピュータ",
       "setWallpaper": "壁紙を設定…"

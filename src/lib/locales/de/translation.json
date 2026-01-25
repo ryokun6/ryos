@@ -2256,6 +2256,14 @@
       "signupDescription": "Erstellen Sie ein Konto, um auf Chaträume zuzugreifen und Ihre Einstellungen zu speichern",
       "username": "Benutzername"
     },
+    "colors": {
+      "yellow": "gelb",
+      "blue": "blau",
+      "green": "grün",
+      "pink": "rosa",
+      "purple": "lila",
+      "orange": "orange"
+    },
     "desktop": {
       "myComputer": "Arbeitsplatz",
       "setWallpaper": "Hintergrundbild festlegen…"

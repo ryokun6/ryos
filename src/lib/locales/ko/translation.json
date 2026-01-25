@@ -2256,6 +2256,14 @@
       "signupDescription": "채팅방에 접속하고 설정을 저장하려면 계정을 만드세요.",
       "username": "사용자 이름"
     },
+    "colors": {
+      "yellow": "노란색",
+      "blue": "파란색",
+      "green": "초록색",
+      "pink": "분홍색",
+      "purple": "보라색",
+      "orange": "주황색"
+    },
     "desktop": {
       "myComputer": "내 컴퓨터",
       "setWallpaper": "배경화면 설정…"

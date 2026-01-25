@@ -12,6 +12,14 @@
       "minimizeDisabled": "Minimize (disabled)",
       "maximizeDisabled": "Maximize (disabled)"
     },
+    "colors": {
+      "yellow": "yellow",
+      "blue": "blue",
+      "green": "green",
+      "pink": "pink",
+      "purple": "purple",
+      "orange": "orange"
+    },
     "menu": {
       "file": "File",
       "edit": "Edit",

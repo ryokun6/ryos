@@ -2256,6 +2256,14 @@
       "signupDescription": "Crie uma conta para aceder às salas de chat e guardar as suas definições",
       "username": "Nome de usuário"
     },
+    "colors": {
+      "yellow": "amarelo",
+      "blue": "azul",
+      "green": "verde",
+      "pink": "rosa",
+      "purple": "roxo",
+      "orange": "laranja"
+    },
     "desktop": {
       "myComputer": "Meu Computador",
       "setWallpaper": "Definir Papel de Parede…"

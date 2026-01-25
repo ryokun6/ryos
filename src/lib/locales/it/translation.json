@@ -2256,6 +2256,14 @@
       "signupDescription": "Crea un account per accedere alle chat room e salvare le tue impostazioni",
       "username": "Nome utente"
     },
+    "colors": {
+      "yellow": "giallo",
+      "blue": "blu",
+      "green": "verde",
+      "pink": "rosa",
+      "purple": "viola",
+      "orange": "arancione"
+    },
     "desktop": {
       "myComputer": "Computer",
       "setWallpaper": "Imposta sfondo…"

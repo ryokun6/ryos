@@ -72,10 +72,12 @@ export const handleStickiesControl = (
             ...(size !== undefined && { size }),
           });
         }
+        const colorKey = color || "yellow";
+        const translatedColor = i18n.t(`common.colors.${colorKey}`);
         context.addToolResult({ 
           tool: "stickiesControl", 
           toolCallId, 
-          output: i18n.t("apps.chats.toolCalls.stickies.createdWithColor", { color: color || "yellow" }) 
+          output: i18n.t("apps.chats.toolCalls.stickies.createdWithColor", { color: translatedColor }) 
         });
         break;
       }

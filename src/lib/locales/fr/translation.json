@@ -2256,6 +2256,14 @@
       "signupDescription": "Créez un compte pour accéder aux salons de discussion et enregistrer vos paramètres",
       "username": "Nom d'utilisateur"
     },
+    "colors": {
+      "yellow": "jaune",
+      "blue": "bleu",
+      "green": "vert",
+      "pink": "rose",
+      "purple": "violet",
+      "orange": "orange"
+    },
     "desktop": {
       "myComputer": "Mon ordinateur",
       "setWallpaper": "Définir le fond d'écran…"

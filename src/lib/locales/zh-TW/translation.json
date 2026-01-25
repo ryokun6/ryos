@@ -2256,6 +2256,14 @@
       "signupDescription": "建立帳戶以存取聊天室並儲存您的設定",
       "username": "使用者名稱"
     },
+    "colors": {
+      "yellow": "黃色",
+      "blue": "藍色",
+      "green": "綠色",
+      "pink": "粉紅色",
+      "purple": "紫色",
+      "orange": "橘色"
+    },
     "desktop": {
       "myComputer": "我的電腦",
       "setWallpaper": "設定背景圖片…"
