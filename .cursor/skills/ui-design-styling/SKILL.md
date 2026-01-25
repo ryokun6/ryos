@@ -5,27 +5,24 @@ description: Design and style UI components for ryOS following the 4 OS themes (
 
 # ryOS UI Design & Styling
 
-## Quick Reference
+## The 4 Themes
 
-### The 4 Themes
+| Theme | ID | Key Traits |
+|-------|-----|------------|
+| System 7 | `system7` | Black/white, square corners, Chicago font, dotted patterns |
+| macOS Aqua | `macosx` | Pinstripes, traffic lights, glossy buttons, Lucida Grande |
+| Windows XP | `xp` | Blue gradients, Luna style, soft shadows, Tahoma |
+| Windows 98 | `win98` | Gray 3D bevels, classic blue title bars, MS Sans Serif |
 
-| Theme | ID | Era | Key Traits |
-|-------|-----|-----|------------|
-| System 7 | `system7` | 1990s Mac | Black/white, dotted patterns, square corners, Chicago font |
-| macOS Aqua | `macosx` | 2000s Mac | Pinstripes, traffic lights, glossy buttons, Lucida Grande font |
-| Windows XP | `xp` | 2000s PC | Blue gradients, beveled edges, Luna style, Tahoma font |
-| Windows 98 | `win98` | 1990s PC | Gray 3D bevels, classic blue title bars, MS Sans Serif |
-
-### Essential Utilities
+## Essential Utilities
 
 ```tsx
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 
-// Get current theme
 const { osTheme } = useTheme();
 
-// Conditional theme classes
+// Theme-conditional classes
 className={cn(
   "base-classes",
   osTheme === "macosx" && "aqua-specific",
@@ -33,10 +30,9 @@ className={cn(
 )}
 ```
 
-### OS-Aware Tailwind Classes
+## OS-Aware Tailwind Classes
 
 ```tsx
-// Use these for automatic theme adaptation
 className="bg-os-window-bg"        // Window background
 className="border-os-window"       // Window border
 className="rounded-os"             // Theme-appropriate radius
@@ -44,175 +40,192 @@ className="font-os-ui"             // UI font stack
 className="font-os-mono"           // Monospace font
 className="shadow-os-window"       // Window shadow
 className="h-os-titlebar"          // Title bar height
-className="h-os-menubar"           // Menu bar height
 ```
 
 ## CSS Variables
 
-All themes expose these variables (access via `var(--name)`):
+Access via `var(--name)`:
 
 ```css
-/* Fonts */
---os-font-ui              /* UI font family */
---os-font-mono            /* Monospace font */
-
-/* Colors */
---os-color-window-bg
---os-color-window-border
---os-color-titlebar-active-bg
---os-color-titlebar-inactive-bg
---os-color-titlebar-text
---os-color-button-face
---os-color-button-highlight
---os-color-button-shadow
---os-color-selection-bg
---os-color-selection-text
---os-color-text-primary
---os-color-text-secondary
-
-/* Metrics */
---os-metrics-border-width
---os-metrics-radius
---os-metrics-titlebar-height
---os-metrics-menubar-height
---os-window-shadow
+--os-font-ui, --os-font-mono
+--os-color-window-bg, --os-color-window-border
+--os-color-titlebar-active-bg, --os-color-titlebar-inactive-bg
+--os-color-button-face, --os-color-button-highlight, --os-color-button-shadow
+--os-color-selection-bg, --os-color-selection-text
+--os-metrics-border-width, --os-metrics-radius
+--os-metrics-titlebar-height, --os-metrics-menubar-height
 ```
+
+---
 
 ## Theme-Specific Styling
 
 ### System 7
-
 ```tsx
-// High contrast, square corners, pixel-perfect
 <div className={cn(
-  "border-2 border-black bg-white",
+  "border-2 border-black bg-white rounded-none",
   "font-chicago text-black",
-  "rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]"
+  "shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]"
 )}>
-  {/* Content */}
-</div>
 ```
 
 ### macOS Aqua
-
 ```tsx
-// Glossy, pinstripes, traffic lights
 <div className={cn(
   "bg-[#E8E8E8] border border-black/30",
   "rounded-lg font-lucida-grande",
   "shadow-[0_3px_10px_rgba(0,0,0,0.3)]"
 )}>
-  {/* Use .aqua-button for buttons */}
   <button className="aqua-button primary">OK</button>
 </div>
 ```
 
 ### Windows XP
-
 ```tsx
-// Luna blue, subtle rounding
 <div className={cn(
   "bg-[#ECE9D8] border-[3px] border-[#0054E3]",
   "rounded-[0.5rem] font-tahoma",
   "shadow-[0_4px_8px_rgba(0,0,0,0.25)]"
 )}>
-  {/* Content */}
-</div>
 ```
 
 ### Windows 98
-
 ```tsx
-// 3D bevels, gray, square
 <div className={cn(
-  "bg-[#C0C0C0] border-2",
+  "bg-[#C0C0C0] border-2 rounded-none font-ms-sans-serif",
   "border-t-white border-l-white",
-  "border-b-[#808080] border-r-[#808080]",
-  "font-ms-sans-serif rounded-none"
+  "border-b-[#808080] border-r-[#808080]"
 )}>
-  {/* Content */}
-</div>
 ```
+
+---
+
+## Theme Specifications
+
+### System 7 (`system7`)
+| Property | Value |
+|----------|-------|
+| Fonts | Chicago, Monaco (mono) |
+| Window BG | `#FFFFFF` |
+| Border | `2px solid #000000` |
+| Radius | `0px` |
+| Selection | Black bg, white text |
+| Shadow | `2px 2px 0px 0px rgba(0,0,0,0.5)` |
+
+### macOS Aqua (`macosx`)
+| Property | Value |
+|----------|-------|
+| Fonts | Lucida Grande, Monaco (mono) |
+| Window BG | `#E8E8E8` |
+| Border | `0.5px solid rgba(0,0,0,0.3)` |
+| Radius | `0.45rem` (8px) |
+| Selection | `#3875D7` bg, white text |
+| Shadow | `0 3px 10px rgba(0,0,0,0.3)` |
+| Traffic Lights | Red `#FF5F57`, Yellow `#FEBC2E`, Green `#28C840` |
+
+### Windows XP (`xp`)
+| Property | Value |
+|----------|-------|
+| Fonts | Tahoma, Consolas (mono) |
+| Window BG | `#ECE9D8` |
+| Border | `3px solid #0054E3` |
+| Radius | `0.5rem` (8px) |
+| Selection | `#316AC5` bg, white text |
+| Shadow | `0 4px 8px rgba(0,0,0,0.25)` |
+| Title Bar | Blue gradient `#0A246A` → `#0054E3` |
+
+### Windows 98 (`win98`)
+| Property | Value |
+|----------|-------|
+| Fonts | MS Sans Serif, Fixedsys (mono) |
+| Window BG | `#C0C0C0` |
+| Raised Bevel | `border: 2px solid; border-color: #FFF #808080 #808080 #FFF` |
+| Sunken Bevel | `border: 2px solid; border-color: #808080 #FFF #FFF #808080` |
+| Radius | `0px` |
+| Selection | `#000080` bg, white text |
+| Title Bar | Gradient `#000080` → `#1084D0` |
+
+---
 
 ## Component Patterns
 
-### Using shadcn Components
-
+### Theme-Adaptive Button
 ```tsx
 import { Button } from "@/components/ui/button";
 
-// Button variants adapt to theme
 <Button variant="default">Standard</Button>
 <Button variant="retro">Retro Style</Button>
 <Button variant="aqua">Aqua (macOS)</Button>
 ```
 
-### Aqua Button Classes
-
+### Aqua Buttons (CSS classes)
 ```tsx
-// For macOS Aqua theme - use these CSS classes
 <button className="aqua-button">Default</button>
 <button className="aqua-button primary">Primary (pulsing)</button>
 <button className="aqua-button secondary">Secondary</button>
 ```
 
-### Glassmorphism
-
+### Win98 3D Button
 ```tsx
-// Common pattern for overlays and modern effects
-<div className="bg-white/80 backdrop-blur-lg rounded-lg">
-  {/* Semi-transparent with blur */}
-</div>
-
-// Darker variant
-<div className="bg-black/40 backdrop-blur-xl text-white">
-  {/* Dark glass effect */}
-</div>
+<button className={cn(
+  "px-4 py-1 bg-[#C0C0C0]",
+  "border-2 border-t-white border-l-white",
+  "border-b-[#808080] border-r-[#808080]",
+  "active:border-t-[#808080] active:border-l-[#808080]",
+  "active:border-b-white active:border-r-white"
+)}>
 ```
 
-## Window Materials
+### Glassmorphism
+```tsx
+<div className="bg-white/80 backdrop-blur-lg rounded-lg">
+<div className="bg-black/40 backdrop-blur-xl text-white">
+```
 
-The `WindowFrame` component supports different material modes:
+### Theme-Aware Panel
+```tsx
+<div className={cn(
+  "p-4 bg-os-window-bg border-os-window rounded-os",
+  osTheme === "system7" && "border-2 border-black",
+  osTheme === "macosx" && "shadow-md",
+  osTheme === "win98" && "border-2 border-t-white border-l-white border-b-[#808080] border-r-[#808080]"
+)}>
+```
+
+---
+
+## Custom Components
+
+| Component | Usage |
+|-----------|-------|
+| `AudioBars` | Frequency visualization |
+| `PlaybackBars` | Equalizer animation |
+| `VolumeBar` | Horizontal volume indicator |
+| `Dial` | Circular dial control (sm/md/lg) |
+| `RightClickMenu` | Context menu wrapper |
+
+### Dial Example
+```tsx
+import { Dial } from "@/components/ui/dial";
+<Dial value={50} onChange={setValue} size="md" label="Volume" />
+```
+
+---
+
+## Window Materials
 
 | Mode | Use Case |
 |------|----------|
 | `default` | Standard opaque windows |
 | `transparent` | Semi-transparent (iPod, Photo Booth) |
-| `notitlebar` | Immersive with floating controls (Videos, games) |
+| `notitlebar` | Immersive with floating controls (Videos) |
 
-## Custom Components
-
-### Available Custom Components
-
-- `AudioBars` - Animated frequency visualization
-- `PlaybackBars` - Equalizer animation
-- `VolumeBar` - Horizontal volume indicator
-- `Dial` - Circular dial control (sm/md/lg)
-- `RightClickMenu` - Context menu wrapper
-- `SwipeInstructions` - Mobile gesture hints
-
-### Using the Dial Component
-
-```tsx
-import { Dial } from "@/components/ui/dial";
-
-<Dial
-  value={50}
-  onChange={setValue}
-  size="md"        // sm | md | lg
-  label="Volume"
-/>
-```
+---
 
 ## Best Practices
 
-1. **Always use `cn()` for conditional classes** - merges classes safely
-2. **Use OS-aware Tailwind classes** when available (`bg-os-*`, `border-os-*`)
+1. **Always use `cn()`** for conditional class merging
+2. **Use OS-aware classes** (`bg-os-*`, `border-os-*`) when available
 3. **Check theme with `useTheme()`** for complex conditional rendering
-4. **Prefer CSS variables** over hardcoded colors for theme compatibility
-5. **Test all 4 themes** when adding new styled components
-
-## Additional Resources
-
-- For detailed theme specifications, see [THEMES.md](THEMES.md)
-- For component examples, see [EXAMPLES.md](EXAMPLES.md)
+4. **Prefer CSS variables** over hardcoded colors
+5. **Test all 4 themes** when adding styled components
