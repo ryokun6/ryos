@@ -52,6 +52,20 @@ export interface ListenReactionPayload {
   timestamp: number;
 }
 
+export interface ListenSessionSummary {
+  id: string;
+  hostUsername: string;
+  djUsername: string;
+  createdAt: number;
+  currentTrackMeta: {
+    title: string;
+    artist?: string;
+    cover?: string;
+  } | null;
+  isPlaying: boolean;
+  listenerCount: number;
+}
+
 export interface ListenSessionState {
   currentSession: ListenSession | null;
   username: string | null;
@@ -65,6 +79,11 @@ export interface ListenSessionState {
   lastSyncAt: number | null;
   reactions: ListenReactionPayload[];
 
+  fetchSessions: () => Promise<{
+    ok: boolean;
+    sessions?: ListenSessionSummary[];
+    error?: string;
+  }>;
   createSession: (username: string) => Promise<{
     ok: boolean;
     session?: ListenSession;
@@ -263,6 +282,28 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
 
   return {
     ...initialState,
+
+    fetchSessions: async () => {
+      try {
+        const response = await fetch(getApiUrl("/api/listen/sessions"), {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({
+            error: `HTTP error! status: ${response.status}`,
+          }));
+          return { ok: false, error: errorData.error || "Failed to fetch sessions" };
+        }
+
+        const data = await response.json();
+        return { ok: true, sessions: data.sessions as ListenSessionSummary[] };
+      } catch (error) {
+        console.error("[ListenSession] fetchSessions failed", error);
+        return { ok: false, error: "Network error. Please try again." };
+      }
+    },
 
     createSession: async (username: string) => {
       try {
