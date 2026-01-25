@@ -301,17 +301,10 @@ Video: ${systemState.video.currentVideo.title}${videoArtist} (Playing)`;
 iPod: ${systemState.ipod.currentTrack.title}${trackArtist} (${playingStatus})`;
 
     if (systemState.ipod.currentLyrics?.lines) {
-      // Truncate lyrics to ~10 lines to save tokens (full lyrics can be 100+ lines)
-      const allLines = systemState.ipod.currentLyrics.lines;
-      const maxLines = 10;
-      const truncatedLines = allLines.length > maxLines 
-        ? allLines.slice(0, maxLines)
-        : allLines;
-      const lyricsText = truncatedLines.map((line) => line.words).join("\n");
-      const truncationNote = allLines.length > maxLines ? `\n(${allLines.length - maxLines} more lines...)` : "";
+      const lyricsText = systemState.ipod.currentLyrics.lines.map((line) => line.words).join("\n");
       prompt += `
-Lyrics Preview:
-${lyricsText}${truncationNote}`;
+Lyrics:
+${lyricsText}`;
     }
   }
 
@@ -331,6 +324,14 @@ ${lyricsText}${truncationNote}`;
       : "";
     prompt += `
 Karaoke: ${systemState.karaoke.currentTrack.title}${karaokeTrackArtist} (${karaokePlayingStatus})`;
+
+    // Karaoke shares lyrics storage with iPod - include lyrics if available and iPod section didn't already show them
+    if (!hasOpenIpod && systemState.ipod?.currentLyrics?.lines) {
+      const lyricsText = systemState.ipod.currentLyrics.lines.map((line) => line.words).join("\n");
+      prompt += `
+Lyrics:
+${lyricsText}`;
+    }
   }
 
   // Browser Section
