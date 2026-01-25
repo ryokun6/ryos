@@ -645,6 +645,20 @@
         "skippedToPreviousTrack": "Saltato al brano precedente",
         "skippingToNext": "Passaggio al successivo…",
         "skippingToPrevious": "Passaggio al precedente…",
+        "stickies": {
+          "cleared": "{{count}} note eliminate",
+          "createdWithColor": "Nota {{color}} creata",
+          "deleted": "Nota eliminata",
+          "foundStickies": "{{count}} note trovate",
+          "invalidAction": "Azione non valida: {{action}}",
+          "managing": "Gestione note…",
+          "missingId": "ID nota mancante",
+          "noStickies": "Nessuna nota",
+          "noUpdates": "Nessun aggiornamento",
+          "notFound": "Nota non trovata: {{id}}",
+          "nothingToClear": "Nessuna nota da eliminare",
+          "updated": "Nota aggiornata"
+        },
         "switchedTo": "Passato a {{theme}}",
         "switchingTheme": "Cambio tema…",
         "textNotFound": "Testo non trovato",
@@ -652,21 +666,7 @@
         "toolExecutionFailed": "Esecuzione strumento fallita",
         "unknownError": "Errore sconosciuto",
         "updatedDocument": "Documento aggiornato: {{path}}",
-        "writingContent": "Scrittura contenuto…",
-        "stickies": {
-          "managing": "Gestione note…",
-          "noStickies": "Nessuna nota",
-          "foundStickies": "{{count}} note trovate",
-          "createdWithColor": "Nota {{color}} creata",
-          "updated": "Nota aggiornata",
-          "deleted": "Nota eliminata",
-          "cleared": "{{count}} note eliminate",
-          "nothingToClear": "Nessuna nota da eliminare",
-          "missingId": "ID nota mancante",
-          "notFound": "Nota non trovata: {{id}}",
-          "noUpdates": "Nessun aggiornamento",
-          "invalidAction": "Azione non valida: {{action}}"
-        }
+        "writingContent": "Scrittura contenuto…"
       }
     },
     "control-panels": {
@@ -949,6 +949,39 @@
         "finder": "Finder",
         "macintoshHd": "Macintosh HD"
       }
+    },
+    "infinite-mac": {
+      "description": "Emulatori Mac OS Classico",
+      "help": {
+        "backToSystems": {
+          "description": "Usa File ▸ Torna ai sistemi per tornare alla griglia preimpostata",
+          "title": "Torna ai sistemi"
+        },
+        "classicMacEmulator": {
+          "description": "Esegui sistemi Mac OS Classico nel tuo browser tramite Infinite Mac",
+          "title": "Emulatore Mac Classico"
+        },
+        "pauseResume": {
+          "description": "Usa Vista ▸ Pausa o Riprendi per risparmiare risorse quando non interagisci",
+          "title": "Pausa / Riprendi"
+        },
+        "selectSystem": {
+          "description": "Scegli una versione di Mac OS dalla griglia per caricare l'emulatore",
+          "title": "Seleziona un sistema"
+        }
+      },
+      "loadingEmulator": "Caricamento emulatore...",
+      "menu": {
+        "aboutInfiniteMac": "Informazioni su Infinite Mac",
+        "backToPresets": "Torna ai sistemi",
+        "infiniteMacHelp": "Aiuto Infinite Mac",
+        "pause": "Pausa",
+        "resume": "Riprendi"
+      },
+      "name": "Infinite Mac",
+      "selectSystem": "Seleziona un sistema Mac Classico",
+      "systemsAvailable": "{{count}} SISTEMI DISPONIBILI",
+      "title": "Infinite Mac"
     },
     "internet-explorer": {
       "addFavorite": "Aggiungi preferito",
@@ -2257,12 +2290,12 @@
       "username": "Nome utente"
     },
     "colors": {
-      "yellow": "giallo",
       "blue": "blu",
       "green": "verde",
+      "orange": "arancione",
       "pink": "rosa",
       "purple": "viola",
-      "orange": "arancione"
+      "yellow": "giallo"
     },
     "desktop": {
       "myComputer": "Computer",

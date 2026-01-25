@@ -645,6 +645,20 @@
         "skippedToPreviousTrack": "Переключено на предыдущий трек",
         "skippingToNext": "Переключение на следующий…",
         "skippingToPrevious": "Переключение на предыдущий…",
+        "stickies": {
+          "cleared": "Очищено {{count}} стикеров",
+          "createdWithColor": "Создан {{color}} стикер",
+          "deleted": "Стикер удалён",
+          "foundStickies": "Найдено {{count}} стикеров",
+          "invalidAction": "Недопустимое действие: {{action}}",
+          "managing": "Управление стикерами…",
+          "missingId": "Отсутствует ID стикера",
+          "noStickies": "Нет стикеров",
+          "noUpdates": "Нет обновлений",
+          "notFound": "Стикер не найден: {{id}}",
+          "nothingToClear": "Нет стикеров для очистки",
+          "updated": "Стикер обновлён"
+        },
         "switchedTo": "Переключено на {{theme}}",
         "switchingTheme": "Переключение темы…",
         "textNotFound": "Текст не найден",
@@ -652,21 +666,7 @@
         "toolExecutionFailed": "Ошибка выполнения инструмента",
         "unknownError": "Неизвестная ошибка",
         "updatedDocument": "Документ обновлен: {{path}}",
-        "writingContent": "Запись содержимого…",
-        "stickies": {
-          "managing": "Управление стикерами…",
-          "noStickies": "Нет стикеров",
-          "foundStickies": "Найдено {{count}} стикеров",
-          "createdWithColor": "Создан {{color}} стикер",
-          "updated": "Стикер обновлён",
-          "deleted": "Стикер удалён",
-          "cleared": "Очищено {{count}} стикеров",
-          "nothingToClear": "Нет стикеров для очистки",
-          "missingId": "Отсутствует ID стикера",
-          "notFound": "Стикер не найден: {{id}}",
-          "noUpdates": "Нет обновлений",
-          "invalidAction": "Недопустимое действие: {{action}}"
-        }
+        "writingContent": "Запись содержимого…"
       }
     },
     "control-panels": {
@@ -949,6 +949,39 @@
         "finder": "Finder",
         "macintoshHd": "Macintosh HD"
       }
+    },
+    "infinite-mac": {
+      "description": "Эмуляторы классической Mac OS",
+      "help": {
+        "backToSystems": {
+          "description": "Используйте Файл ▸ Назад к системам, чтобы вернуться к сетке предустановок",
+          "title": "Назад к системам"
+        },
+        "classicMacEmulator": {
+          "description": "Запускайте классические системы Mac OS в браузере через Infinite Mac",
+          "title": "Эмулятор классического Mac"
+        },
+        "pauseResume": {
+          "description": "Используйте Вид ▸ Пауза или Возобновить для экономии ресурсов, когда не взаимодействуете",
+          "title": "Пауза / Возобновить"
+        },
+        "selectSystem": {
+          "description": "Выберите версию Mac OS из сетки, чтобы загрузить эмулятор",
+          "title": "Выбрать систему"
+        }
+      },
+      "loadingEmulator": "Загрузка эмулятора...",
+      "menu": {
+        "aboutInfiniteMac": "О Infinite Mac",
+        "backToPresets": "Назад к системам",
+        "infiniteMacHelp": "Справка Infinite Mac",
+        "pause": "Пауза",
+        "resume": "Возобновить"
+      },
+      "name": "Infinite Mac",
+      "selectSystem": "Выберите классическую систему Mac",
+      "systemsAvailable": "{{count}} СИСТЕМ ДОСТУПНО",
+      "title": "Infinite Mac"
     },
     "internet-explorer": {
       "addFavorite": "Добавить в избранное",
@@ -2257,12 +2290,12 @@
       "username": "Имя пользователя"
     },
     "colors": {
-      "yellow": "жёлтый",
       "blue": "синий",
       "green": "зелёный",
+      "orange": "оранжевый",
       "pink": "розовый",
       "purple": "фиолетовый",
-      "orange": "оранжевый"
+      "yellow": "жёлтый"
     },
     "desktop": {
       "myComputer": "Мой компьютер",

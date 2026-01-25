@@ -645,6 +645,20 @@
         "skippedToPreviousTrack": "Zum vorherigen Titel gesprungen",
         "skippingToNext": "Zum nächsten springen…",
         "skippingToPrevious": "Zum vorherigen springen…",
+        "stickies": {
+          "cleared": "{{count}} Notizzettel gelöscht",
+          "createdWithColor": "{{color}} Notizzettel erstellt",
+          "deleted": "Notizzettel gelöscht",
+          "foundStickies": "{{count}} Notizzettel gefunden",
+          "invalidAction": "Ungültige Aktion: {{action}}",
+          "managing": "Notizzettel verwalten…",
+          "missingId": "Notizzettel-ID fehlt",
+          "noStickies": "Keine Notizzettel",
+          "noUpdates": "Keine Aktualisierungen angegeben",
+          "notFound": "Notizzettel nicht gefunden: {{id}}",
+          "nothingToClear": "Keine Notizzettel zum Löschen",
+          "updated": "Notizzettel aktualisiert"
+        },
         "switchedTo": "Zu {{theme}} gewechselt",
         "switchingTheme": "Thema wird gewechselt…",
         "textNotFound": "Text nicht gefunden",
@@ -652,21 +666,7 @@
         "toolExecutionFailed": "Tool-Ausführung fehlgeschlagen",
         "unknownError": "Unbekannter Fehler",
         "updatedDocument": "Dokument aktualisiert: {{path}}",
-        "writingContent": "Inhalt wird geschrieben…",
-        "stickies": {
-          "managing": "Notizzettel verwalten…",
-          "noStickies": "Keine Notizzettel",
-          "foundStickies": "{{count}} Notizzettel gefunden",
-          "createdWithColor": "{{color}} Notizzettel erstellt",
-          "updated": "Notizzettel aktualisiert",
-          "deleted": "Notizzettel gelöscht",
-          "cleared": "{{count}} Notizzettel gelöscht",
-          "nothingToClear": "Keine Notizzettel zum Löschen",
-          "missingId": "Notizzettel-ID fehlt",
-          "notFound": "Notizzettel nicht gefunden: {{id}}",
-          "noUpdates": "Keine Aktualisierungen angegeben",
-          "invalidAction": "Ungültige Aktion: {{action}}"
-        }
+        "writingContent": "Inhalt wird geschrieben…"
       }
     },
     "control-panels": {
@@ -949,6 +949,39 @@
         "finder": "Finder",
         "macintoshHd": "Macintosh HD"
       }
+    },
+    "infinite-mac": {
+      "description": "Klassische Mac OS Emulatoren",
+      "help": {
+        "backToSystems": {
+          "description": "Verwenden Sie Ablage ▸ Zurück zu den Systemen, um zum voreingestellten Raster zurückzukehren",
+          "title": "Zurück zu den Systemen"
+        },
+        "classicMacEmulator": {
+          "description": "Führen Sie klassische Mac OS Systeme in Ihrem Browser über Infinite Mac aus",
+          "title": "Klassischer Mac Emulator"
+        },
+        "pauseResume": {
+          "description": "Verwenden Sie Darstellung ▸ Anhalten oder Fortsetzen, um Ressourcen zu sparen, wenn Sie nicht interagieren",
+          "title": "Anhalten / Fortsetzen"
+        },
+        "selectSystem": {
+          "description": "Wählen Sie eine Mac OS Version aus dem Raster, um den Emulator zu laden",
+          "title": "System auswählen"
+        }
+      },
+      "loadingEmulator": "Emulator wird geladen...",
+      "menu": {
+        "aboutInfiniteMac": "Über Infinite Mac",
+        "backToPresets": "Zurück zu den Systemen",
+        "infiniteMacHelp": "Infinite Mac Hilfe",
+        "pause": "Anhalten",
+        "resume": "Fortsetzen"
+      },
+      "name": "Infinite Mac",
+      "selectSystem": "Klassisches Mac System auswählen",
+      "systemsAvailable": "{{count}} SYSTEME VERFÜGBAR",
+      "title": "Infinite Mac"
     },
     "internet-explorer": {
       "addFavorite": "Favorit hinzufügen",
@@ -2257,12 +2290,12 @@
       "username": "Benutzername"
     },
     "colors": {
-      "yellow": "gelb",
       "blue": "blau",
       "green": "grün",
+      "orange": "orange",
       "pink": "rosa",
       "purple": "lila",
-      "orange": "orange"
+      "yellow": "gelb"
     },
     "desktop": {
       "myComputer": "Arbeitsplatz",

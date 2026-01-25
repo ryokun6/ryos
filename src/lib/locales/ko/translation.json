@@ -645,6 +645,20 @@
         "skippedToPreviousTrack": "이전 트랙으로 건너뜀",
         "skippingToNext": "다음으로 건너뛰는 중…",
         "skippingToPrevious": "이전으로 건너뛰는 중…",
+        "stickies": {
+          "cleared": "{{count}}개 스티커 메모 지움",
+          "createdWithColor": "{{color}} 스티커 메모 생성",
+          "deleted": "스티커 메모 삭제됨",
+          "foundStickies": "{{count}}개 스티커 메모",
+          "invalidAction": "잘못된 동작: {{action}}",
+          "managing": "스티커 메모 관리 중…",
+          "missingId": "스티커 메모 ID 없음",
+          "noStickies": "스티커 메모 없음",
+          "noUpdates": "업데이트 내용 없음",
+          "notFound": "스티커 메모를 찾을 수 없음: {{id}}",
+          "nothingToClear": "지울 스티커 메모 없음",
+          "updated": "스티커 메모 업데이트됨"
+        },
         "switchedTo": "{{theme}}로 전환됨",
         "switchingTheme": "테마 전환 중…",
         "textNotFound": "텍스트를 찾을 수 없음",
@@ -652,21 +666,7 @@
         "toolExecutionFailed": "도구 실행 실패",
         "unknownError": "알 수 없는 오류",
         "updatedDocument": "문서 업데이트됨: {{path}}",
-        "writingContent": "내용 쓰는 중…",
-        "stickies": {
-          "managing": "스티커 메모 관리 중…",
-          "noStickies": "스티커 메모 없음",
-          "foundStickies": "{{count}}개 스티커 메모",
-          "createdWithColor": "{{color}} 스티커 메모 생성",
-          "updated": "스티커 메모 업데이트됨",
-          "deleted": "스티커 메모 삭제됨",
-          "cleared": "{{count}}개 스티커 메모 지움",
-          "nothingToClear": "지울 스티커 메모 없음",
-          "missingId": "스티커 메모 ID 없음",
-          "notFound": "스티커 메모를 찾을 수 없음: {{id}}",
-          "noUpdates": "업데이트 내용 없음",
-          "invalidAction": "잘못된 동작: {{action}}"
-        }
+        "writingContent": "내용 쓰는 중…"
       }
     },
     "control-panels": {
@@ -949,6 +949,39 @@
         "finder": "Finder",
         "macintoshHd": "Macintosh HD"
       }
+    },
+    "infinite-mac": {
+      "description": "클래식 Mac OS 에뮬레이터",
+      "help": {
+        "backToSystems": {
+          "description": "파일 ▸ 시스템으로 돌아가기를 이용해 사전 설정된 그리드로 돌아가세요.",
+          "title": "시스템으로 돌아가기"
+        },
+        "classicMacEmulator": {
+          "description": "Infinite Mac을 통해 브라우저에서 클래식 Mac OS 시스템을 실행하세요.",
+          "title": "클래식 Mac 에뮬레이터"
+        },
+        "pauseResume": {
+          "description": "상호 작용하지 않을 때 보기 ▸ 일시 정지 또는 재개를 이용해 리소스를 절약하세요.",
+          "title": "일시 정지 / 재개"
+        },
+        "selectSystem": {
+          "description": "에뮬레이터를 로드하려면 그리드에서 Mac OS 버전을 선택하세요.",
+          "title": "시스템 선택"
+        }
+      },
+      "loadingEmulator": "에뮬레이터 로드 중...",
+      "menu": {
+        "aboutInfiniteMac": "Infinite Mac 정보",
+        "backToPresets": "시스템으로 돌아가기",
+        "infiniteMacHelp": "Infinite Mac 도움말",
+        "pause": "일시 정지",
+        "resume": "재개"
+      },
+      "name": "Infinite Mac",
+      "selectSystem": "클래식 Mac 시스템 선택",
+      "systemsAvailable": "{{count}}개의 시스템 사용 가능",
+      "title": "Infinite Mac"
     },
     "internet-explorer": {
       "addFavorite": "즐겨찾기 추가",
@@ -2257,12 +2290,12 @@
       "username": "사용자 이름"
     },
     "colors": {
-      "yellow": "노란색",
       "blue": "파란색",
       "green": "초록색",
+      "orange": "주황색",
       "pink": "분홍색",
       "purple": "보라색",
-      "orange": "주황색"
+      "yellow": "노란색"
     },
     "desktop": {
       "myComputer": "내 컴퓨터",

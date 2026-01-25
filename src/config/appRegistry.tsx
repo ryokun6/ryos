@@ -477,7 +477,7 @@ export const appRegistry = {
     windowConfig: {
       defaultSize: { width: 640, height: 480 },
       minSize: { width: 512, height: 342 },
-      maxSize: { width: 800, height: 624 }, // 600 + 24 for macOS X titlebar spacer
+      maxSize: { width: 1024, height: 792 }, // 768 + 24 for macOS X titlebar spacer
     } as WindowConstraints,
   },
 } as const;

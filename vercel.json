@@ -6,6 +6,19 @@
   "trailingSlash": false,
   "headers": [
     {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cross-Origin-Embedder-Policy",
+          "value": "credentialless"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        }
+      ]
+    },
+    {
       "source": "/api/(.*)",
       "headers": [
         {
@@ -192,7 +205,8 @@
     { "source": "/synth", "destination": "/" },
     { "source": "/pc", "destination": "/" },
     { "source": "/terminal", "destination": "/" },
-    { "source": "/control-panels", "destination": "/" }
+    { "source": "/control-panels", "destination": "/" },
+    { "source": "/infinite-mac", "destination": "/" }
   ],
   "redirects": [
     { "source": "/docs", "destination": "/docs/overview", "permanent": false },

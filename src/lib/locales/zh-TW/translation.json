@@ -645,6 +645,20 @@
         "skippedToPreviousTrack": "跳到上一首",
         "skippingToNext": "跳到下一首…",
         "skippingToPrevious": "跳到上一首…",
+        "stickies": {
+          "cleared": "已清除 {{count}} 張便利貼",
+          "createdWithColor": "已建立{{color}}便利貼",
+          "deleted": "已刪除便利貼",
+          "foundStickies": "找到 {{count}} 張便利貼",
+          "invalidAction": "無效的動作：{{action}}",
+          "managing": "管理便利貼…",
+          "missingId": "缺少便利貼 ID",
+          "noStickies": "沒有便利貼",
+          "noUpdates": "沒有提供更新內容",
+          "notFound": "找不到便利貼：{{id}}",
+          "nothingToClear": "沒有便利貼可清除",
+          "updated": "已更新便利貼"
+        },
         "switchedTo": "已切換至 {{theme}}",
         "switchingTheme": "切換主題…",
         "textNotFound": "找不到文字",
@@ -652,21 +666,7 @@
         "toolExecutionFailed": "工具執行失敗",
         "unknownError": "未知錯誤",
         "updatedDocument": "文件已更新：{{path}}",
-        "writingContent": "寫入內容…",
-        "stickies": {
-          "managing": "管理便利貼…",
-          "noStickies": "沒有便利貼",
-          "foundStickies": "找到 {{count}} 張便利貼",
-          "createdWithColor": "已建立{{color}}便利貼",
-          "updated": "已更新便利貼",
-          "deleted": "已刪除便利貼",
-          "cleared": "已清除 {{count}} 張便利貼",
-          "nothingToClear": "沒有便利貼可清除",
-          "missingId": "缺少便利貼 ID",
-          "notFound": "找不到便利貼：{{id}}",
-          "noUpdates": "沒有提供更新內容",
-          "invalidAction": "無效的動作：{{action}}"
-        }
+        "writingContent": "寫入內容…"
       }
     },
     "control-panels": {
@@ -949,6 +949,39 @@
         "finder": "Finder",
         "macintoshHd": "Macintosh HD"
       }
+    },
+    "infinite-mac": {
+      "description": "經典 Mac OS 模擬器",
+      "help": {
+        "backToSystems": {
+          "description": "使用「檔案 ▸ 返回系統」返回預設網格",
+          "title": "返回系統"
+        },
+        "classicMacEmulator": {
+          "description": "透過 Infinite Mac 在您的瀏覽器中執行經典 Mac OS 系統",
+          "title": "經典 Mac 模擬器"
+        },
+        "pauseResume": {
+          "description": "在不互動時，使用「檢視 ▸ 暫停或繼續」以節省資源",
+          "title": "暫停 / 繼續"
+        },
+        "selectSystem": {
+          "description": "從網格中選擇一個 Mac OS 版本以載入模擬器",
+          "title": "選擇系統"
+        }
+      },
+      "loadingEmulator": "正在載入模擬器...",
+      "menu": {
+        "aboutInfiniteMac": "關於 Infinite Mac",
+        "backToPresets": "返回系統",
+        "infiniteMacHelp": "Infinite Mac 說明",
+        "pause": "暫停",
+        "resume": "繼續"
+      },
+      "name": "Infinite Mac",
+      "selectSystem": "選擇經典 Mac 系統",
+      "systemsAvailable": "{{count}} 個系統可用",
+      "title": "Infinite Mac"
     },
     "internet-explorer": {
       "addFavorite": "加入我的最愛",
@@ -2257,12 +2290,12 @@
       "username": "使用者名稱"
     },
     "colors": {
-      "yellow": "黃色",
       "blue": "藍色",
       "green": "綠色",
+      "orange": "橘色",
       "pink": "粉紅色",
       "purple": "紫色",
-      "orange": "橘色"
+      "yellow": "黃色"
     },
     "desktop": {
       "myComputer": "我的電腦",

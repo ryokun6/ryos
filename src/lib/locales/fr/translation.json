@@ -645,6 +645,20 @@
         "skippedToPreviousTrack": "Passage à la piste précédente",
         "skippingToNext": "Passage au suivant…",
         "skippingToPrevious": "Passage au précédent…",
+        "stickies": {
+          "cleared": "{{count}} pense-bêtes effacés",
+          "createdWithColor": "Pense-bête {{color}} créé",
+          "deleted": "Pense-bête supprimé",
+          "foundStickies": "{{count}} pense-bêtes trouvés",
+          "invalidAction": "Action invalide : {{action}}",
+          "managing": "Gestion des pense-bêtes…",
+          "missingId": "ID du pense-bête manquant",
+          "noStickies": "Aucun pense-bête",
+          "noUpdates": "Aucune mise à jour fournie",
+          "notFound": "Pense-bête introuvable : {{id}}",
+          "nothingToClear": "Aucun pense-bête à effacer",
+          "updated": "Pense-bête mis à jour"
+        },
         "switchedTo": "Basculé vers {{theme}}",
         "switchingTheme": "Changement de thème…",
         "textNotFound": "Texte introuvable",
@@ -652,21 +666,7 @@
         "toolExecutionFailed": "Échec de l'exécution de l'outil",
         "unknownError": "Erreur inconnue",
         "updatedDocument": "Document mis à jour : {{path}}",
-        "writingContent": "Écriture du contenu…",
-        "stickies": {
-          "managing": "Gestion des pense-bêtes…",
-          "noStickies": "Aucun pense-bête",
-          "foundStickies": "{{count}} pense-bêtes trouvés",
-          "createdWithColor": "Pense-bête {{color}} créé",
-          "updated": "Pense-bête mis à jour",
-          "deleted": "Pense-bête supprimé",
-          "cleared": "{{count}} pense-bêtes effacés",
-          "nothingToClear": "Aucun pense-bête à effacer",
-          "missingId": "ID du pense-bête manquant",
-          "notFound": "Pense-bête introuvable : {{id}}",
-          "noUpdates": "Aucune mise à jour fournie",
-          "invalidAction": "Action invalide : {{action}}"
-        }
+        "writingContent": "Écriture du contenu…"
       }
     },
     "control-panels": {
@@ -949,6 +949,39 @@
         "finder": "Finder",
         "macintoshHd": "Macintosh HD"
       }
+    },
+    "infinite-mac": {
+      "description": "Émulateurs Classic Mac OS",
+      "help": {
+        "backToSystems": {
+          "description": "Utilisez Fichier ▸ Retour aux systèmes pour revenir à la grille de préréglages",
+          "title": "Retour aux systèmes"
+        },
+        "classicMacEmulator": {
+          "description": "Exécutez des systèmes Classic Mac OS dans votre navigateur via Infinite Mac",
+          "title": "Émulateur Classic Mac"
+        },
+        "pauseResume": {
+          "description": "Utilisez Vue ▸ Pause ou Reprendre pour économiser des ressources lorsque vous n'interagissez pas",
+          "title": "Pause / Reprendre"
+        },
+        "selectSystem": {
+          "description": "Choisissez une version de Mac OS dans la grille pour charger l'émulateur",
+          "title": "Sélectionner un système"
+        }
+      },
+      "loadingEmulator": "Chargement de l'émulateur...",
+      "menu": {
+        "aboutInfiniteMac": "À propos d'Infinite Mac",
+        "backToPresets": "Retour aux systèmes",
+        "infiniteMacHelp": "Aide Infinite Mac",
+        "pause": "Pause",
+        "resume": "Reprendre"
+      },
+      "name": "Infinite Mac",
+      "selectSystem": "Sélectionner un système Classic Mac",
+      "systemsAvailable": "{{count}} SYSTÈMES DISPONIBLES",
+      "title": "Infinite Mac"
     },
     "internet-explorer": {
       "addFavorite": "Ajouter aux favoris",
@@ -2257,12 +2290,12 @@
       "username": "Nom d'utilisateur"
     },
     "colors": {
-      "yellow": "jaune",
       "blue": "bleu",
       "green": "vert",
+      "orange": "orange",
       "pink": "rose",
       "purple": "violet",
-      "orange": "orange"
+      "yellow": "jaune"
     },
     "desktop": {
       "myComputer": "Mon ordinateur",

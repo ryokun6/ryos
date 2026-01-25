@@ -645,6 +645,20 @@
         "skippedToPreviousTrack": "前のトラックにスキップしました",
         "skippingToNext": "次へスキップ中…",
         "skippingToPrevious": "前へスキップ中…",
+        "stickies": {
+          "cleared": "{{count}}件の付箋を消去",
+          "createdWithColor": "{{color}}の付箋を作成",
+          "deleted": "付箋を削除",
+          "foundStickies": "{{count}}件の付箋",
+          "invalidAction": "無効なアクション: {{action}}",
+          "managing": "付箋を管理中…",
+          "missingId": "付箋IDがありません",
+          "noStickies": "付箋がありません",
+          "noUpdates": "更新内容がありません",
+          "notFound": "付箋が見つかりません: {{id}}",
+          "nothingToClear": "消去する付箋がありません",
+          "updated": "付箋を更新"
+        },
         "switchedTo": "{{theme}} に切り替えました",
         "switchingTheme": "テーマを切り替え中…",
         "textNotFound": "テキストが見つかりませんでした",
@@ -652,21 +666,7 @@
         "toolExecutionFailed": "ツールの実行に失敗しました",
         "unknownError": "不明なエラー",
         "updatedDocument": "ドキュメントを更新しました: {{path}}",
-        "writingContent": "コンテンツを書き込み中…",
-        "stickies": {
-          "managing": "付箋を管理中…",
-          "noStickies": "付箋がありません",
-          "foundStickies": "{{count}}件の付箋",
-          "createdWithColor": "{{color}}の付箋を作成",
-          "updated": "付箋を更新",
-          "deleted": "付箋を削除",
-          "cleared": "{{count}}件の付箋を消去",
-          "nothingToClear": "消去する付箋がありません",
-          "missingId": "付箋IDがありません",
-          "notFound": "付箋が見つかりません: {{id}}",
-          "noUpdates": "更新内容がありません",
-          "invalidAction": "無効なアクション: {{action}}"
-        }
+        "writingContent": "コンテンツを書き込み中…"
       }
     },
     "control-panels": {
@@ -949,6 +949,39 @@
         "finder": "Finder",
         "macintoshHd": "Macintosh HD"
       }
+    },
+    "infinite-mac": {
+      "description": "クラシックMac OSエミュレータ",
+      "help": {
+        "backToSystems": {
+          "description": "ファイル ▸ システムに戻る を使用してプリセットグリッドに戻ります。",
+          "title": "システムに戻る"
+        },
+        "classicMacEmulator": {
+          "description": "Infinite Mac経由で、ブラウザでクラシックMac OSシステムを実行します。",
+          "title": "クラシックMacエミュレータ"
+        },
+        "pauseResume": {
+          "description": "操作していないときは、表示 ▸ 一時停止または再開 を使用してリソースを節約します。",
+          "title": "一時停止 / 再開"
+        },
+        "selectSystem": {
+          "description": "グリッドからMac OSバージョンを選択して、エミュレータを読み込みます。",
+          "title": "システムを選択"
+        }
+      },
+      "loadingEmulator": "エミュレータを読み込み中...",
+      "menu": {
+        "aboutInfiniteMac": "Infinite Macについて",
+        "backToPresets": "システムに戻る",
+        "infiniteMacHelp": "Infinite Macヘルプ",
+        "pause": "一時停止",
+        "resume": "再開"
+      },
+      "name": "Infinite Mac",
+      "selectSystem": "クラシックMacシステムを選択",
+      "systemsAvailable": "{{count}} システム利用可能",
+      "title": "Infinite Mac"
     },
     "internet-explorer": {
       "addFavorite": "お気に入りに追加",
@@ -2257,12 +2290,12 @@
       "username": "ユーザー名"
     },
     "colors": {
-      "yellow": "黄色",
       "blue": "青",
       "green": "緑",
+      "orange": "オレンジ",
       "pink": "ピンク",
       "purple": "紫",
-      "orange": "オレンジ"
+      "yellow": "黄色"
     },
     "desktop": {
       "myComputer": "マイコンピュータ",

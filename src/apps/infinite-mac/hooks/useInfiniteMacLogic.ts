@@ -122,7 +122,7 @@ export const MAC_PRESETS: MacPreset[] = [
     machine: "Power Macintosh G4 (PCI Graphics)",
     description: "Panther - Exposé, fast user switching",
     image: "/icons/default/infinite-mac.png",
-    screenSize: { width: 800, height: 600 },
+    screenSize: { width: 1024, height: 768 },
   },
   {
     id: "macosx-10-4",
@@ -145,6 +145,7 @@ function buildEmbedUrl(preset: MacPreset): string {
   url.searchParams.set("infinite_hd", "true");
   url.searchParams.set("saved_hd", "true");
   url.searchParams.set("screen_scale", "1");
+  url.searchParams.set("auto_pause", "true"); // Auto-pause when out of view
   return url.toString();
 }
 
