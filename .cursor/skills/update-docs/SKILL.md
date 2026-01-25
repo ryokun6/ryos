@@ -31,7 +31,31 @@ For each section, launch a Task with:
 4. Preserve existing structure
 5. Report changes
 
-### 2. Sub-Agent Prompts
+### 2. Generate Changelog
+
+For incremental updates (recommended):
+```bash
+bun run scripts/generate-changelog.ts --months=1
+```
+
+For full regeneration (12 months):
+```bash
+bun run scripts/generate-changelog.ts
+```
+
+### 3. Generate HTML
+
+```bash
+bun run scripts/generate-docs.ts
+```
+
+### 4. Review Changes
+
+```bash
+git diff docs/
+```
+
+## Sub-Agent Prompts
 
 **Overview**: Review `package.json`, `src/` structure → update tech stack, features
 
@@ -49,18 +73,6 @@ For each section, launch a Task with:
 
 **API Reference**: Review `api/*.ts` → update endpoints, request/response formats
 
-### 3. Generate HTML
-
-```bash
-bun run scripts/generate-docs.ts
-```
-
-### 4. Review Changes
-
-```bash
-git diff docs/
-```
-
 ## Section Shortcuts
 
 | Arg | Sections |
@@ -76,7 +88,8 @@ git diff docs/
 
 ## Notes
 
-- **Don't update generated docs**: App docs (2.1-2.17) and changelog are auto-generated
+- **Changelog**: Use `--months=1` for recent updates, full regen only when needed
+- **App docs**: Individual app pages (2.1-2.18) are auto-generated via `generate-app-docs.ts`
 - **Preserve structure**: Keep headings, mermaid diagrams, formatting
 - **Be conservative**: Only update clearly outdated info
 - **Run HTML generation**: Always run `generate-docs.ts` after updates
