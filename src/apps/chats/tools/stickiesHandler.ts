@@ -6,6 +6,7 @@ import type { ToolContext } from "./types";
 import { useStickiesStore, type StickyColor } from "@/stores/useStickiesStore";
 import { useAppStore } from "@/stores/useAppStore";
 import i18n from "@/lib/i18n";
+import { createShortIdMap, resolveId, type ShortIdMap } from "./helpers";
 
 export interface StickiesControlInput {
   action: "list" | "create" | "update" | "delete" | "clear";
@@ -15,6 +16,12 @@ export interface StickiesControlInput {
   position?: { x: number; y: number };
   size?: { width: number; height: number };
 }
+
+/**
+ * Module-level storage for short ID mapping.
+ * Created during 'list' action, used by 'update'/'delete' actions.
+ */
+let stickyIdMap: ShortIdMap | undefined;
 
 /**
  * Ensure the Stickies app is open
@@ -43,12 +50,15 @@ export const handleStickiesControl = (
       case "list": {
         const notes = store.notes;
         if (notes.length === 0) {
+          stickyIdMap = undefined;
           context.addToolResult({ tool: "stickiesControl", toolCallId, output: i18n.t("apps.chats.toolCalls.stickies.noStickies") });
           return;
         }
-        // Return full data for model, UI will show simplified message
+        // Create short ID mapping for efficient AI communication
+        stickyIdMap = createShortIdMap(notes.map((n) => n.id), "s");
+        // Return data with short IDs to reduce token usage
         const notesData = notes.map((n) => ({
-          id: n.id,
+          id: stickyIdMap!.fullToShort.get(n.id),
           color: n.color,
           content: n.content,
           position: n.position,
@@ -87,7 +97,9 @@ export const handleStickiesControl = (
           context.addToolResult({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.missingId") });
           return;
         }
-        if (!store.notes.find((n) => n.id === id)) {
+        // Resolve short ID to full UUID if mapping exists
+        const resolvedId = resolveId(id, stickyIdMap);
+        if (!store.notes.find((n) => n.id === resolvedId)) {
           context.addToolResult({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.notFound", { id }) });
           return;
         }
@@ -100,7 +112,7 @@ export const handleStickiesControl = (
           context.addToolResult({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.noUpdates") });
           return;
         }
-        store.updateNote(id, updates);
+        store.updateNote(resolvedId, updates);
         context.addToolResult({ tool: "stickiesControl", toolCallId, output: i18n.t("apps.chats.toolCalls.stickies.updated") });
         break;
       }
@@ -110,11 +122,13 @@ export const handleStickiesControl = (
           context.addToolResult({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.missingId") });
           return;
         }
-        if (!store.notes.find((n) => n.id === id)) {
+        // Resolve short ID to full UUID if mapping exists
+        const resolvedId = resolveId(id, stickyIdMap);
+        if (!store.notes.find((n) => n.id === resolvedId)) {
           context.addToolResult({ tool: "stickiesControl", toolCallId, state: "output-error", errorText: i18n.t("apps.chats.toolCalls.stickies.notFound", { id }) });
           return;
         }
-        store.deleteNote(id);
+        store.deleteNote(resolvedId);
         context.addToolResult({ tool: "stickiesControl", toolCallId, output: i18n.t("apps.chats.toolCalls.stickies.deleted") });
         break;
       }
@@ -126,6 +140,8 @@ export const handleStickiesControl = (
           return;
         }
         store.clearAllNotes();
+        // Clear the ID mapping since all notes are removed
+        stickyIdMap = undefined;
         context.addToolResult({ tool: "stickiesControl", toolCallId, output: i18n.t("apps.chats.toolCalls.stickies.cleared", { count }) });
         break;
       }
