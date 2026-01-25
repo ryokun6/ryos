@@ -122,6 +122,19 @@
       ]
     },
     {
+      "source": "/assets/games/jsdos/:path*",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/zip"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
       "source": "/patterns/:path*",
       "headers": [
         {

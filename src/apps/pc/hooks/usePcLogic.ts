@@ -38,6 +38,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
       const targetGame = game;
       setSelectedGame(targetGame);
       setIsGameRunning(true);
+
       if (!containerRef.current) {
         console.error("Container ref is null");
         return;
@@ -244,6 +245,17 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
     setIsResetDialogOpen(false);
   }, []);
 
+  const handleBackToGames = useCallback(async () => {
+    if (containerRef.current) {
+      if (dosPropsRef.current) {
+        await dosPropsRef.current.stop();
+        dosPropsRef.current = null;
+      }
+      containerRef.current.innerHTML = "";
+      setIsGameRunning(false);
+    }
+  }, []);
+
   return {
     t,
     translatedHelpItems,
@@ -273,5 +285,6 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
     handleSetFullScreen,
     handleSetRenderAspect,
     handleSetMouseSensitivity,
+    handleBackToGames,
   };
 }

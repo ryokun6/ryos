@@ -8,6 +8,7 @@ import { appMetadata } from "..";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { motion } from "framer-motion";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
+import { SquaresFour } from "@phosphor-icons/react";
 import { usePcLogic } from "../hooks/usePcLogic";
 
 export function PcAppComponent({
@@ -48,6 +49,7 @@ export function PcAppComponent({
     handleSetFullScreen,
     handleSetRenderAspect,
     handleSetMouseSensitivity,
+    handleBackToGames,
   } = usePcLogic({ isWindowOpen, instanceId });
 
   const menuBar = (
@@ -73,11 +75,40 @@ export function PcAppComponent({
 
   if (!isWindowOpen) return null;
 
+  const windowTitle = isGameRunning && selectedGame
+    ? selectedGame.name
+    : getTranslatedAppName("pc");
+
+  // Grid button for titlebar (back to games) - same pattern as Infinite Mac
+  const backButton = (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        if (isGameRunning) handleBackToGames();
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      className={`w-5 h-5 flex items-center justify-center transition-colors ${
+        isGameRunning
+          ? "text-white/80 hover:text-white cursor-pointer"
+          : "text-transparent cursor-default"
+      }`}
+      style={{
+        filter: isGameRunning
+          ? "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))"
+          : "none",
+      }}
+      disabled={!isGameRunning}
+    >
+      <SquaresFour size={14} weight="bold" />
+    </button>
+  );
+
   return (
     <>
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
-        title={getTranslatedAppName("pc")}
+        title={windowTitle}
         onClose={onClose}
         isForeground={isForeground}
         appId="pc"
@@ -88,6 +119,7 @@ export function PcAppComponent({
         onNavigateNext={onNavigateNext}
         onNavigatePrevious={onNavigatePrevious}
         menuBar={isXpTheme ? menuBar : undefined}
+        titleBarRightContent={backButton}
       >
         <div className="flex flex-col h-full w-full bg-black">
           {currentTheme === "macosx" && <div className="h-6 shrink-0 bg-black" />}

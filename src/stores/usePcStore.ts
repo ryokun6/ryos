@@ -28,18 +28,6 @@ const DEFAULT_GAMES: Game[] = [
     image: "/assets/games/images/mario.webp",
   },
   {
-    id: "ageofempires",
-    name: "Age of Empires",
-    path: "/assets/games/jsdos/aoe.jsdos",
-    image: "/assets/games/images/aoe.webp",
-  },
-  {
-    id: "ageofempires2",
-    name: "Age of Empires II",
-    path: "/assets/games/jsdos/aoe2.jsdos",
-    image: "/assets/games/images/aoe2.webp",
-  },
-  {
     id: "princeofpersia",
     name: "Prince of Persia",
     path: "/assets/games/jsdos/prince.jsdos",
@@ -63,6 +51,18 @@ const DEFAULT_GAMES: Game[] = [
     path: "/assets/games/jsdos/command-conquer.jsdos",
     image: "/assets/games/images/command-conquer.webp",
   },
+  {
+    id: "atrain",
+    name: "A-Train",
+    path: "/assets/games/jsdos/a-train.jsdos",
+    image: "/assets/games/images/a-train.webp",
+  },
+  {
+    id: "simrefinery",
+    name: "SimRefinery",
+    path: "/assets/games/jsdos/simrefinery.jsdos",
+    image: "/assets/games/images/simrefinery.webp",
+  },
 ];
 
 interface PcStoreState {
@@ -78,7 +78,12 @@ export const usePcStore = create<PcStoreState>()(
     }),
     {
       name: "ryos:pc",
+      version: 5,
       partialize: (state) => ({ games: state.games }),
+      migrate: () => {
+        // Reset to default games on version change
+        return { games: DEFAULT_GAMES };
+      },
     }
   )
 );
@@ -90,4 +95,4 @@ export const loadGames = (): Game[] => {
 
 export const saveGames = (games: Game[]): void => {
   usePcStore.getState().setGames(games);
-}; 
+};
