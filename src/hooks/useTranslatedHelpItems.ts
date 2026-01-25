@@ -31,6 +31,7 @@ export function useTranslatedHelpItems(
     "control-panels": ["appearance", "sounds", "aiModel", "shaderEffects", "backupRestore", "system"],
     admin: ["adminAccess", "userManagement", "roomManagement", "statistics"],
     stickies: ["createNote", "colors", "deleteNote", "autoSave"],
+    "infinite-mac": ["classicMacEmulator", "selectSystem", "pauseResume", "backToSystems"],
   };
 
   return useMemo(() => {

@@ -2243,6 +2243,39 @@
         }
       }
     },
+    "infinite-mac": {
+      "name": "Infinite Mac",
+      "title": "Infinite Mac",
+      "description": "Classic Mac OS emulators",
+      "selectSystem": "Select a Classic Mac System",
+      "systemsAvailable": "{{count}} SYSTEMS AVAILABLE",
+      "loadingEmulator": "Loading Emulator...",
+      "menu": {
+        "backToPresets": "Back to Systems",
+        "pause": "Pause",
+        "resume": "Resume",
+        "infiniteMacHelp": "Infinite Mac Help",
+        "aboutInfiniteMac": "About Infinite Mac"
+      },
+      "help": {
+        "classicMacEmulator": {
+          "title": "Classic Mac Emulator",
+          "description": "Run classic Mac OS systems in your browser via Infinite Mac"
+        },
+        "selectSystem": {
+          "title": "Select a System",
+          "description": "Pick a Mac OS version from the grid to load the emulator"
+        },
+        "pauseResume": {
+          "title": "Pause / Resume",
+          "description": "Use View ▸ Pause or Resume to save resources when not interacting"
+        },
+        "backToSystems": {
+          "title": "Back to Systems",
+          "description": "Use File ▸ Back to Systems to return to the preset grid"
+        }
+      }
+    },
     "admin": {
       "name": "Admin",
       "description": "System administration panel",

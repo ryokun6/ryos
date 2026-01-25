@@ -19,7 +19,8 @@ export type AppId =
   | "applet-viewer"
   | "control-panels"
   | "admin"
-  | "stickies";
+  | "stickies"
+  | "infinite-mac";
 
 /**
  * Get translated app name with theme-awareness
@@ -142,6 +143,7 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
     "control-panels": ["appearance", "sounds", "aiModel", "shaderEffects", "backupRestore", "system"],
     admin: ["adminAccess", "userManagement", "roomManagement", "statistics"],
     stickies: ["createNote", "colors", "deleteNote", "autoSave"],
+    "infinite-mac": ["classicMacEmulator", "selectSystem", "pauseResume", "backToSystems"],
   };
 
   const keys = helpKeys[appId] || [];

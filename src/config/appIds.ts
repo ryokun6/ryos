@@ -17,6 +17,7 @@ export const appIds = [
   "control-panels",
   "admin",
   "stickies",
+  "infinite-mac",
 ] as const;
 
 export type AppId = (typeof appIds)[number];

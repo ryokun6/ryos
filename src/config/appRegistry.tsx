@@ -190,6 +190,11 @@ const LazyStickiesApp = createLazyComponent<unknown>(
   "stickies"
 );
 
+const LazyInfiniteMacApp = createLazyComponent<unknown>(
+  () => import("@/apps/infinite-mac/components/InfiniteMacAppComponent").then(m => ({ default: m.InfiniteMacAppComponent })),
+  "infinite-mac"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small)
 // ============================================================================
@@ -212,6 +217,7 @@ import { appMetadata as appletViewerMetadata, helpItems as appletViewerHelpItems
 import { appMetadata as controlPanelsMetadata, helpItems as controlPanelsHelpItems } from "@/apps/control-panels";
 import { appMetadata as adminMetadata, helpItems as adminHelpItems } from "@/apps/admin";
 import { appMetadata as stickiesMetadata, helpItems as stickiesHelpItems } from "@/apps/stickies";
+import { appMetadata as infiniteMacMetadata, helpItems as infiniteMacHelpItems } from "@/apps/infinite-mac";
 
 // ============================================================================
 // APP REGISTRY
@@ -458,6 +464,20 @@ export const appRegistry = {
     windowConfig: {
       defaultSize: { width: 500, height: 400 },
       minSize: { width: 300, height: 250 },
+    } as WindowConstraints,
+  },
+  ["infinite-mac"]: {
+    id: "infinite-mac",
+    name: "Infinite Mac",
+    icon: { type: "image", src: infiniteMacMetadata.icon },
+    description: "Classic Mac OS emulators",
+    component: LazyInfiniteMacApp,
+    helpItems: infiniteMacHelpItems,
+    metadata: infiniteMacMetadata,
+    windowConfig: {
+      defaultSize: { width: 800, height: 600 },
+      minSize: { width: 800, height: 600 },
+      maxSize: { width: 800, height: 600 },
     } as WindowConstraints,
   },
 } as const;

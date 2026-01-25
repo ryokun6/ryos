@@ -38,7 +38,8 @@ export interface BaseApp<TInitialData = unknown> {
     | "terminal"
     | "applet-viewer"
     | "admin"
-    | "stickies";
+    | "stickies"
+    | "infinite-mac";
   name: string;
   icon: string | { type: "image"; src: string };
   description: string;
