@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { AppProps } from "@/apps/base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { PcMenuBar } from "./PcMenuBar";
@@ -10,6 +11,59 @@ import { motion } from "framer-motion";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { SquaresFour } from "@phosphor-icons/react";
 import { usePcLogic } from "../hooks/usePcLogic";
+import type { Game } from "@/stores/usePcStore";
+
+function GameGridCard({
+  game,
+  onSelect,
+}: {
+  game: Game;
+  onSelect: () => void;
+}) {
+  const [thumbError, setThumbError] = useState(false);
+  const showThumb = !thumbError;
+  const textShadow = "0 1px 2px rgba(0,0,0,1)";
+
+  return (
+    <motion.button
+      type="button"
+      onClick={onSelect}
+      title={game.name}
+      className="group relative rounded overflow-hidden bg-neutral-800 hover:bg-neutral-700 transition-all duration-200 w-full flex flex-col min-h-[100px] @md:min-h-0 [box-shadow:0_4px_12px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.05)] hover:[box-shadow:0_8px_24px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.12)]"
+      whileTap={{
+        scale: 0.97,
+        y: 0,
+        transition: { type: "spring", duration: 0.15 },
+      }}
+    >
+      <div
+        className="w-full flex-1 min-h-0 bg-neutral-900 relative shrink-0"
+        style={{ aspectRatio: "16/9" }}
+      >
+        {showThumb ? (
+          <img
+            src={game.image}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-top"
+            onError={() => setThumbError(true)}
+          />
+        ) : null}
+        <div
+          className="absolute inset-0 bg-black/50 pointer-events-none transition-opacity duration-200 group-hover:opacity-20"
+          aria-hidden
+        />
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 pt-2 pl-3 pb-2 pr-3 flex flex-col items-start gap-0.5 @md:flex-row @md:justify-between @md:items-baseline z-10 pointer-events-none">
+        <span
+          className="text-white font-apple-garamond !text-[18px] leading-tight truncate max-w-full"
+          style={{ textShadow }}
+        >
+          {game.name}
+        </span>
+      </div>
+    </motion.button>
+  );
+}
 
 export function PcAppComponent({
   isWindowOpen,
@@ -163,45 +217,20 @@ export function PcAppComponent({
                   </div>
                 </div>
 
-                <div className="flex-1 p-4 overflow-y-auto flex justify-start md:justify-center w-full">
+                <div className="flex-1 min-h-0 overflow-y-auto flex justify-start @md:justify-center w-full p-4 @container">
                   <div
-                    className={`games-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 transition-opacity duration-300 w-full ${
+                    className={`games-grid grid grid-cols-1 @md:grid-cols-3 gap-2 w-full max-w-4xl pb-[calc(1rem+env(safe-area-inset-bottom,0px))] @md:pb-0 transition-opacity duration-300 ${
                       !isScriptLoaded
                         ? "opacity-50 pointer-events-none"
                         : "opacity-100"
                     }`}
                   >
                     {games.map((game) => (
-                      <motion.button
+                      <GameGridCard
                         key={game.id}
-                        onClick={() => handleLoadGame(game)}
-                        className="group relative aspect-video rounded overflow-hidden bg-[#2a2a2a] hover:bg-[#3a3a3a] transition-all duration-200 shadow-[0_4px_12px_rgba(0,0,0,0.5)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.7)] border border-[#3a3a3a] hover:border-[#4a4a4a] w-full h-full"
-                        style={{ aspectRatio: "16/9" }}
-                        whileTap={{
-                          scale: 0.95,
-                          y: 0,
-                          transition: {
-                            type: "spring",
-                            duration: 0.15,
-                          },
-                        }}
-                      >
-                        <div className="relative w-full h-full">
-                          <img
-                            src={game.image}
-                            alt={game.name}
-                            className="w-full h-full object-cover"
-                            width={320}
-                            height={180}
-                            loading="lazy"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                            <span className="text-white font-geneva-12 text-[12px]">
-                              {game.name}
-                            </span>
-                          </div>
-                        </div>
-                      </motion.button>
+                        game={game}
+                        onSelect={() => handleLoadGame(game)}
+                      />
                     ))}
                   </div>
                 </div>

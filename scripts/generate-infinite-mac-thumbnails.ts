@@ -8,7 +8,8 @@
 
 const EMBED_BASE = "https://infinitemac.org/embed";
 const BOOT_WAIT_MS = 10_000;
-const BOOT_WAIT_SLOW_MS = 120_000; // 2 min for Mac OS 9 and Mac OS X
+const BOOT_WAIT_SLOW_MS = 120_000; // 2 min for Mac OS 8.5, 9, 10.1
+const BOOT_WAIT_SLOWER_MS = 300_000; // 5 min for Mac OS X 10.2, 10.3, 10.4
 const OUT_DIR = "public/assets/infinite-mac-thumbnails";
 
 const PRESETS: {
@@ -28,9 +29,9 @@ const PRESETS: {
   { id: "macos-9", disk: "Mac OS 9.0", width: 640, height: 480, bootWaitMs: BOOT_WAIT_SLOW_MS },
   { id: "macos-9-2", disk: "Mac OS 9.2.2", width: 640, height: 480, bootWaitMs: BOOT_WAIT_SLOW_MS },
   { id: "macosx-10-1", disk: "Mac OS X 10.1", machine: "Power Macintosh G3 (Beige)", width: 640, height: 480, bootWaitMs: BOOT_WAIT_SLOW_MS },
-  { id: "macosx-10-2", disk: "Mac OS X 10.2", machine: "Power Macintosh G4 (PCI Graphics)", width: 640, height: 480, bootWaitMs: BOOT_WAIT_SLOW_MS },
-  { id: "macosx-10-3", disk: "Mac OS X 10.3", machine: "Power Macintosh G4 (PCI Graphics)", width: 640, height: 480, bootWaitMs: BOOT_WAIT_SLOW_MS },
-  { id: "macosx-10-4", disk: "Mac OS X 10.4", machine: "Power Macintosh G4 (PCI Graphics)", width: 640, height: 480, bootWaitMs: BOOT_WAIT_SLOW_MS },
+  { id: "macosx-10-2", disk: "Mac OS X 10.2", machine: "Power Macintosh G4 (PCI Graphics)", width: 640, height: 480, bootWaitMs: BOOT_WAIT_SLOWER_MS },
+  { id: "macosx-10-3", disk: "Mac OS X 10.3", machine: "Power Macintosh G4 (PCI Graphics)", width: 640, height: 480, bootWaitMs: BOOT_WAIT_SLOWER_MS },
+  { id: "macosx-10-4", disk: "Mac OS X 10.4", machine: "Power Macintosh G4 (PCI Graphics)", width: 640, height: 480, bootWaitMs: BOOT_WAIT_SLOWER_MS },
 ];
 
 function buildEmbedUrl(p: (typeof PRESETS)[number]): string {
@@ -52,9 +53,18 @@ async function main() {
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
+  const onlyIds = process.argv.slice(2).filter((a) => !a.startsWith("-"));
+  const presets = onlyIds.length
+    ? PRESETS.filter((p) => onlyIds.includes(p.id))
+    : PRESETS;
+  if (onlyIds.length && presets.length === 0) {
+    console.error("No matching presets. Valid ids:", PRESETS.map((p) => p.id).join(", "));
+    process.exit(1);
+  }
+
   const browser = await chromium.launch({ headless: true });
 
-  for (const preset of PRESETS) {
+  for (const preset of presets) {
     const context = await browser.newContext({ javaScriptEnabled: true });
     const page = await context.newPage();
     try {
