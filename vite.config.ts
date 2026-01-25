@@ -183,6 +183,7 @@ export default defineConfig({
         // By denying these routes, the request goes directly to the server/middleware.
         navigateFallbackDenylist: [
           /^\/api\//,  // API routes
+          /^\/embed\//,  // embed wrapper pages (e.g. infinite-mac with COEP)
           /^\/iframe-check/,  // iframe proxy endpoint
           /^\/404/,  // Don't intercept 404 redirects
           /^\/docs(\/|$)/,  // Documentation pages - serve static HTML files directly (including /docs root redirect)

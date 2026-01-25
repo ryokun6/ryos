@@ -5,7 +5,18 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { helpItems } from "..";
 
-const INFINITEMAC_EMBED_BASE = "https://infinitemac.org/embed";
+/** Same-origin wrapper URL with COEP/COOP for SharedArrayBuffer; params are forwarded to infinitemac.org */
+function buildWrapperUrl(preset: MacPreset): string {
+  const params = new URLSearchParams();
+  params.set("disk", preset.disk);
+  if (preset.machine) params.set("machine", preset.machine);
+  params.set("infinite_hd", "true");
+  params.set("saved_hd", "true");
+  params.set("screen_scale", "1");
+  params.set("auto_pause", "true");
+  params.set("screen_update_messages", "true");
+  return `/embed/infinite-mac?${params.toString()}`;
+}
 
 export interface MacPreset {
   id: string;
@@ -145,19 +156,6 @@ export const MAC_PRESETS: MacPreset[] = [
   },
 ];
 
-function buildEmbedUrl(preset: MacPreset): string {
-  const url = new URL(INFINITEMAC_EMBED_BASE);
-  url.searchParams.set("disk", preset.disk);
-  if (preset.machine) {
-    url.searchParams.set("machine", preset.machine);
-  }
-  url.searchParams.set("infinite_hd", "true");
-  url.searchParams.set("saved_hd", "true");
-  url.searchParams.set("screen_scale", "1");
-  url.searchParams.set("auto_pause", "true"); // Auto-pause when out of view
-  url.searchParams.set("screen_update_messages", "true"); // Receive emulator_screen (width/height) to resize window
-  return url.toString();
-}
 
 interface UseInfiniteMacLogicProps {
   isWindowOpen: boolean;
@@ -179,7 +177,7 @@ export function useInfiniteMacLogic({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const translatedHelpItems = useTranslatedHelpItems("infinite-mac", helpItems);
-  const embedUrl = selectedPreset ? buildEmbedUrl(selectedPreset) : null;
+  const embedUrl = selectedPreset ? buildWrapperUrl(selectedPreset) : null;
 
   // Titlebar height per theme so auto-resize fits content + titlebar (matches WindowFrame / themes.css)
   const TITLEBAR_HEIGHT_BY_THEME: Record<string, number> = {
@@ -252,14 +250,22 @@ export function useInfiniteMacLogic({
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      if (e.origin !== "https://infinitemac.org") return;
-      switch (e.data?.type) {
+      // Bridge wrapper forwards as { type: '_infinite_mac_bridge', payload }; payload is
+      // the raw iframe message (emulator_loaded, emulator_screen, etc. per Infinite Mac embed API).
+      const data =
+        e.origin === window.location.origin && e.data?.type === "_infinite_mac_bridge"
+          ? e.data.payload
+          : e.origin === "https://infinitemac.org"
+            ? e.data
+            : undefined;
+      if (!data || typeof data !== "object") return;
+      switch (data.type) {
         case "emulator_loaded":
           setIsEmulatorLoaded(true);
           break;
         case "emulator_screen": {
-          const w = e.data?.width;
-          const h = e.data?.height;
+          const w = data.width;
+          const h = data.height;
           if (typeof w === "number" && typeof h === "number") {
             resizeWindow({ width: w, height: h });
           }

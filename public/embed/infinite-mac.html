@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Infinite Mac</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+    #emu { display: block; width: 100%; height: 100%; border: 0; }
+  </style>
+</head>
+<body>
+  <iframe id="emu" allow="cross-origin-isolated" sandbox="allow-scripts allow-same-origin allow-pointer-lock"></iframe>
+  <script>
+(function () {
+  var INFINITEMAC_ORIGIN = "https://infinitemac.org";
+  var INFINITEMAC_EMBED = INFINITEMAC_ORIGIN + "/embed";
+
+  var iframe = document.getElementById("emu");
+  var params = new URLSearchParams(location.search);
+
+  // Build Infinite Mac embed URL from our query params; fallbacks match ryOS preset defaults
+  var disk = params.get("disk");
+  if (!disk) {
+    iframe.remove();
+    document.body.textContent = "Missing disk parameter";
+    return;
+  }
+  var url = new URL(INFINITEMAC_EMBED);
+  url.searchParams.set("disk", disk);
+  var machine = params.get("machine");
+  if (machine) url.searchParams.set("machine", machine);
+  url.searchParams.set("infinite_hd", params.get("infinite_hd") || "true");
+  url.searchParams.set("saved_hd", params.get("saved_hd") || "true");
+  url.searchParams.set("screen_scale", params.get("screen_scale") || "1");
+  url.searchParams.set("auto_pause", params.get("auto_pause") || "true");
+  url.searchParams.set("screen_update_messages", params.get("screen_update_messages") || "true");
+
+  iframe.src = url.toString();
+
+  // Bridge: parent <-> this page <-> Infinite Mac iframe
+  // Forwards full e.data from iframe so parent receives same payloads as documented:
+  // - {"type": "emulator_loaded"}
+  // - {"type": "emulator_screen", "width": N, "height": M, ...} (data Uint8Array if present)
+  function forwardToParent(data) {
+    try {
+      window.parent.postMessage({ type: "_infinite_mac_bridge", payload: data }, "*");
+    } catch (_) {}
+  }
+
+  function forwardToIframe(data) {
+    try {
+      if (iframe.contentWindow) {
+        iframe.contentWindow.postMessage(data, INFINITEMAC_ORIGIN);
+      }
+    } catch (_) {}
+  }
+
+  window.addEventListener("message", function (e) {
+    if (e.source === iframe.contentWindow && e.origin === INFINITEMAC_ORIGIN) {
+      forwardToParent(e.data);
+      return;
+    }
+    if (e.source === window.parent) {
+      var d = e.data;
+      if (d && typeof d === "object" && (d.type === "emulator_pause" || d.type === "emulator_unpause" || (d.type && String(d.type).indexOf("emulator_") === 0))) {
+        forwardToIframe(d);
+      }
+    }
+  });
+})();
+  </script>
+</body>
+</html>
