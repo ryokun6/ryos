@@ -171,6 +171,7 @@ const handlePlaybackState = (
 
 /**
  * Handle playKnown action - play existing track by id/title/artist
+ * If no identifiers are provided, falls back to toggle/play current track
  */
 const handlePlayKnown = (
   input: IpodControlInput,
@@ -181,6 +182,12 @@ const handlePlayKnown = (
   const { id, title, artist, enableVideo, enableTranslation, enableFullscreen } = input;
   const ipodState = useIpodStore.getState();
   const { tracks } = ipodState;
+
+  // If no identifiers provided, fall back to toggle/play behavior
+  if (!id && !title && !artist) {
+    handlePlaybackState("toggle", input, toolCallId, context, isIOS);
+    return;
+  }
 
   let finalCandidateIndices: number[] = [];
   const allTracksWithIndices = tracks.map((t, idx) => ({

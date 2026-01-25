@@ -280,6 +280,7 @@ const handlePlaybackState = (
 
 /**
  * Handle playKnown action
+ * If no identifiers are provided, falls back to toggle/play current track
  */
 const handlePlayKnown = (
   input: KaraokeControlInput,
@@ -290,6 +291,12 @@ const handlePlayKnown = (
   const { id, title, artist, enableTranslation, enableFullscreen } = input;
   const ipodState = useIpodStore.getState();
   const { tracks } = ipodState;
+
+  // If no identifiers provided, fall back to toggle/play behavior
+  if (!id && !title && !artist) {
+    handlePlaybackState("toggle", input, toolCallId, context, isIOS);
+    return;
+  }
 
   // Find matching tracks
   let candidateIndices: number[] = [];
