@@ -125,129 +125,63 @@ export function JoinSessionDialog({
 
   const dialogContent = (
     <div className={isXpTheme ? "p-2 px-4" : "p-4 px-6"}>
-      <p
-        className={cn(
-          "text-gray-500 mb-3",
-          isXpTheme
-            ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-            : "font-geneva-12 text-[12px]"
-        )}
-        style={{
-          fontFamily: isXpTheme
-            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-            : undefined,
-          fontSize: isXpTheme ? "11px" : undefined,
-        }}
-      >
-        {t("apps.karaoke.liveListen.pasteLinkOrId")}
-      </p>
-
-      <div className="flex gap-2 mb-3">
-        <Input
-          autoFocus
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => {
-            e.stopPropagation();
-            if (e.key === "Enter" && value.trim()) {
-              handleJoin();
-            }
-          }}
-          placeholder={t("apps.karaoke.liveListen.sessionLinkPlaceholder")}
-          className={cn(
-            "shadow-none flex-1",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
-        />
-        <Button
-          variant={isMacTheme ? "secondary" : "retro"}
-          onClick={() => handleJoin()}
-          disabled={!value.trim()}
-          className={cn(
-            "flex-shrink-0",
-            !isMacTheme && "h-7",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
-        >
-          {t("apps.karaoke.liveListen.joinButton")}
-        </Button>
-      </div>
-
-      {error && (
-        <p
-          className={cn(
-            "text-red-600 mb-2",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
-        >
-          {error}
-        </p>
-      )}
-
-      {isLoading && (
-        <p
-          className={cn(
-            "text-gray-500 mb-2",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
-        >
-          {t("apps.karaoke.liveListen.loadingSessions")}
-        </p>
-      )}
-
-      {!isLoading && !error && sessions.length > 0 && (
-        <div className="mb-3">
-          <p
-            className={cn(
-              "text-gray-500 mb-2",
-              isXpTheme
-                ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                : "font-geneva-12 text-[12px]"
-            )}
-            style={{
-              fontFamily: isXpTheme
-                ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                : undefined,
-              fontSize: isXpTheme ? "11px" : undefined,
-            }}
-          >
-            {t("apps.karaoke.liveListen.activeSessions")}
-          </p>
-          <ScrollArea className="h-[160px] border border-gray-300 rounded-md overflow-hidden bg-white">
-            <div>
-              {sessions.map((session, index) => (
+      {/* Session List - Primary view */}
+      <div className="mb-3">
+        <ScrollArea className="h-[160px] border border-gray-300 rounded-md overflow-hidden bg-white">
+          <div>
+            {isLoading ? (
+              <div
+                className={cn(
+                  "flex items-center justify-center h-[140px] text-gray-500",
+                  isXpTheme
+                    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+                    : "font-geneva-12 text-[12px]"
+                )}
+                style={{
+                  fontFamily: isXpTheme
+                    ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+                    : undefined,
+                  fontSize: isXpTheme ? "11px" : undefined,
+                }}
+              >
+                {t("apps.karaoke.liveListen.loadingSessions")}
+              </div>
+            ) : error ? (
+              <div
+                className={cn(
+                  "flex items-center justify-center h-[140px] text-red-600",
+                  isXpTheme
+                    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+                    : "font-geneva-12 text-[12px]"
+                )}
+                style={{
+                  fontFamily: isXpTheme
+                    ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+                    : undefined,
+                  fontSize: isXpTheme ? "11px" : undefined,
+                }}
+              >
+                {error}
+              </div>
+            ) : sessions.length === 0 ? (
+              <div
+                className={cn(
+                  "flex items-center justify-center h-[140px] text-gray-500",
+                  isXpTheme
+                    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+                    : "font-geneva-12 text-[12px]"
+                )}
+                style={{
+                  fontFamily: isXpTheme
+                    ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+                    : undefined,
+                  fontSize: isXpTheme ? "11px" : undefined,
+                }}
+              >
+                {t("apps.karaoke.liveListen.noActiveSessions")}
+              </div>
+            ) : (
+              sessions.map((session, index) => (
                 <div
                   key={session.id}
                   onClick={() => setSelectedIndex(index)}
@@ -314,12 +248,76 @@ export function JoinSessionDialog({
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
-      )}
+              ))
+            )}
+          </div>
+        </ScrollArea>
+      </div>
 
+      {/* Manual Entry - Secondary option */}
+      <p
+        className={cn(
+          "text-gray-500 mb-2",
+          isXpTheme
+            ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+            : "font-geneva-12 text-[12px]"
+        )}
+        style={{
+          fontFamily: isXpTheme
+            ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+            : undefined,
+          fontSize: isXpTheme ? "11px" : undefined,
+        }}
+      >
+        {t("apps.karaoke.liveListen.orEnterSessionId")}
+      </p>
+      <div className="flex gap-2">
+        <Input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            if (e.key === "Enter" && value.trim()) {
+              handleJoin();
+            }
+          }}
+          placeholder={t("apps.karaoke.liveListen.sessionLinkPlaceholder")}
+          className={cn(
+            "shadow-none flex-1",
+            isXpTheme
+              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+              : "font-geneva-12 text-[12px]"
+          )}
+          style={{
+            fontFamily: isXpTheme
+              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+              : undefined,
+            fontSize: isXpTheme ? "11px" : undefined,
+          }}
+        />
+        <Button
+          variant={isMacTheme ? "secondary" : "retro"}
+          onClick={() => handleJoin()}
+          disabled={!value.trim()}
+          className={cn(
+            "flex-shrink-0",
+            !isMacTheme && "h-7",
+            isXpTheme
+              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+              : "font-geneva-12 text-[12px]"
+          )}
+          style={{
+            fontFamily: isXpTheme
+              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
+              : undefined,
+            fontSize: isXpTheme ? "11px" : undefined,
+          }}
+        >
+          {t("apps.karaoke.liveListen.joinButton")}
+        </Button>
+      </div>
+
+      {/* Footer with Cancel/Join when sessions available */}
       {sessions.length > 0 && (
         <DialogFooter className="mt-4 gap-1 sm:justify-end">
           <div className="flex flex-col-reverse gap-2 w-full sm:w-auto sm:flex-row">
