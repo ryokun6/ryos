@@ -82,21 +82,18 @@ export default async function handler(
       const sessionIds = await getActiveSessionIds();
       const sessions: ListenSessionSummary[] = [];
       const now = Date.now();
-      // Consider sessions stale if no sync in the last 5 minutes
-      const STALE_THRESHOLD_MS = 5 * 60 * 1000;
+      // Consider sessions stale if no activity in the last 30 minutes
+      const STALE_THRESHOLD_MS = 30 * 60 * 1000;
 
       // Fetch all sessions in parallel
       const sessionPromises = sessionIds.map(async (id) => {
         const session = await getSession(id);
         if (session) {
-          // Filter out stale/inactive sessions:
-          // - Must be currently playing
-          // - Must have a track loaded
-          // - Must have synced recently (within last 5 minutes)
+          // Only filter out truly stale sessions (no sync in 30+ minutes)
+          // Allow paused sessions and sessions without a track loaded
           const isStale = (now - session.lastSyncAt) > STALE_THRESHOLD_MS;
-          const isActive = session.isPlaying && session.currentTrackMeta && !isStale;
           
-          if (!isActive) {
+          if (isStale) {
             return null;
           }
 
