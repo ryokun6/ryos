@@ -219,6 +219,7 @@
     <a href="/docs/virtual-pc" class="nav-child ">2.15 Virtual PC</a>
     <a href="/docs/admin" class="nav-child ">2.16 Admin</a>
     <a href="/docs/applet-store" class="nav-child ">2.17 Applet Store</a>
+    <a href="/docs/stickies" class="nav-child ">2.18 Stickies</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -318,7 +319,7 @@
 <h3>Media Endpoints</h3>
 <table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/songs/</code></td><td>Song library CRUD</td></tr><tr><td><code>/api/songs/[id]</code></td><td>Individual song operations</td></tr><tr><td><code>/api/speech</code></td><td>Text-to-speech</td></tr><tr><td><code>/api/audio-transcribe</code></td><td>Speech-to-text</td></tr><tr><td><code>/api/youtube-search</code></td><td>YouTube music search</td></tr></tbody></table>
 <h3>Communication Endpoints</h3>
-<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/rooms</code></td><td>Room list + create</td></tr><tr><td><code>/api/rooms/[id]</code></td><td>Room detail + delete</td></tr><tr><td><code>/api/rooms/[id]/messages</code></td><td>List/send messages</td></tr><tr><td><code>/api/rooms/[id]/messages/[msgId]</code></td><td>Delete message (admin)</td></tr><tr><td><code>/api/messages/bulk</code></td><td>Bulk message fetch</td></tr><tr><td><code>/api/presence/switch</code></td><td>Presence switching</td></tr><tr><td><code>/api/users</code></td><td>User search</td></tr><tr><td><code>/api/ai/ryo-reply</code></td><td>AI reply in rooms</td></tr></tbody></table>
+<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/rooms</code></td><td>Room list + create</td></tr><tr><td><code>/api/rooms/[id]</code></td><td>Room detail + delete</td></tr><tr><td><code>/api/rooms/[id]/join</code></td><td>Join a room</td></tr><tr><td><code>/api/rooms/[id]/leave</code></td><td>Leave a room</td></tr><tr><td><code>/api/rooms/[id]/users</code></td><td>Get active users in room</td></tr><tr><td><code>/api/rooms/[id]/messages</code></td><td>List/send messages</td></tr><tr><td><code>/api/rooms/[id]/messages/[msgId]</code></td><td>Delete message (admin)</td></tr><tr><td><code>/api/messages/bulk</code></td><td>Bulk message fetch</td></tr><tr><td><code>/api/presence/switch</code></td><td>Presence switching</td></tr><tr><td><code>/api/users</code></td><td>User search</td></tr><tr><td><code>/api/ai/ryo-reply</code></td><td>AI reply in rooms</td></tr><tr><td><code>/api/listen/sessions</code></td><td>List/create listen-together sessions</td></tr><tr><td><code>/api/listen/sessions/[id]</code></td><td>Get session state</td></tr><tr><td><code>/api/listen/sessions/[id]/join</code></td><td>Join listen session</td></tr><tr><td><code>/api/listen/sessions/[id]/leave</code></td><td>Leave listen session</td></tr><tr><td><code>/api/listen/sessions/[id]/sync</code></td><td>Sync playback state (DJ only)</td></tr><tr><td><code>/api/listen/sessions/[id]/reaction</code></td><td>Send emoji reaction</td></tr></tbody></table>
 <h3>Utility Endpoints</h3>
 <table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/link-preview</code></td><td>URL metadata extraction</td></tr><tr><td><code>/api/iframe-check</code></td><td>Embeddability checking</td></tr><tr><td><code>/api/share-applet</code></td><td>Applet sharing</td></tr><tr><td><code>/api/admin</code></td><td>Admin operations</td></tr></tbody></table>
 <h3>Endpoint Categories Overview</h3>
@@ -344,6 +345,7 @@
     Comm --> presence["/presence/switch"]
     Comm --> users["/users"]
     Comm --> ryo["/ai/ryo-reply"]
+    Comm --> listen["/listen/sessions"]
     
     Util --> preview["/link-preview"]
     Util --> iframe["/iframe-check"]

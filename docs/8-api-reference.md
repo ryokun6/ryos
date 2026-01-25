@@ -60,12 +60,21 @@ graph LR
 |----------|---------|
 | `/api/rooms` | Room list + create |
 | `/api/rooms/[id]` | Room detail + delete |
+| `/api/rooms/[id]/join` | Join a room |
+| `/api/rooms/[id]/leave` | Leave a room |
+| `/api/rooms/[id]/users` | Get active users in room |
 | `/api/rooms/[id]/messages` | List/send messages |
 | `/api/rooms/[id]/messages/[msgId]` | Delete message (admin) |
 | `/api/messages/bulk` | Bulk message fetch |
 | `/api/presence/switch` | Presence switching |
 | `/api/users` | User search |
 | `/api/ai/ryo-reply` | AI reply in rooms |
+| `/api/listen/sessions` | List/create listen-together sessions |
+| `/api/listen/sessions/[id]` | Get session state |
+| `/api/listen/sessions/[id]/join` | Join listen session |
+| `/api/listen/sessions/[id]/leave` | Leave listen session |
+| `/api/listen/sessions/[id]/sync` | Sync playback state (DJ only) |
+| `/api/listen/sessions/[id]/reaction` | Send emoji reaction |
 
 ### Utility Endpoints
 
@@ -101,6 +110,7 @@ graph TD
     Comm --> presence["/presence/switch"]
     Comm --> users["/users"]
     Comm --> ryo["/ai/ryo-reply"]
+    Comm --> listen["/listen/sessions"]
     
     Util --> preview["/link-preview"]
     Util --> iframe["/iframe-check"]

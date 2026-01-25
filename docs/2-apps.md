@@ -1,6 +1,6 @@
 # Apps
 
-ryOS includes 17 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
+ryOS includes 18 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
 
 ## App Overview
 
@@ -22,6 +22,7 @@ ryOS includes 17 built-in applications, each designed to replicate classic deskt
 | [Control Panels](/docs/control-panels) | System settings for themes, wallpapers, and audio | System |
 | [Minesweeper](/docs/minesweeper) | Classic puzzle game | Games |
 | [Virtual PC](/docs/virtual-pc) | 3D PC simulation experience | Entertainment |
+| [Stickies](/docs/stickies) | Sticky notes for quick reminders | Productivity |
 | [Admin](/docs/admin) | System administration panel (admin only) | System |
 
 ## App Architecture

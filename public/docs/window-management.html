@@ -219,6 +219,7 @@
     <a href="/docs/virtual-pc" class="nav-child ">2.15 Virtual PC</a>
     <a href="/docs/admin" class="nav-child ">2.16 Admin</a>
     <a href="/docs/applet-store" class="nav-child ">2.17 Applet Store</a>
+    <a href="/docs/stickies" class="nav-child ">2.18 Stickies</a>
   </div>
 </div>
 <div class="nav-group expanded">
@@ -573,16 +574,41 @@ transition={{ duration: 0.4 }}</code></pre>
   appId === "applet-viewer";</code></pre>
 <p>When launching a multi-instance app: <ul><li>If no instance exists: Create new instance</li><li>If instance exists but minimized: Restore existing</li><li>If instance exists and visible: Create new instance (if supported)</li></ul></p>
 <h2>Expose Mode (Mission Control)</h2>
-<p>Windows can enter Expose mode for an overview:</p>
+<p>Windows can enter Expose mode for an overview of all open windows. This is managed via <code>useAppStore</code>:</p>
+<pre><code>// In useAppStore
+exposeMode: boolean;
+setExposeMode: (v: boolean) =&gt; void;</code></pre>
+<p>When expose mode is active, windows are arranged in a grid layout:</p>
 <pre><code>const exposeTransform = useMemo(() =&gt; {
-  if (!exposeMode) return null;
+  if (!exposeMode || !instanceId) return null;
   
   const openInstances = Object.values(instances)
     .filter(inst =&gt; inst.isOpen &amp;&amp; !inst.isMinimized);
+  const myIndex = openInstances.findIndex(inst =&gt; inst.instanceId === instanceId);
   
-  const grid = calculateExposeGrid(openInstances.length);
-  return getExposeTransform(grid, myIndex, windowPosition, windowSize);
-}, [exposeMode, instances, windowPosition, windowSize]);</code></pre>
+  if (myIndex === -1 || openInstances.length === 0) return null;
+  
+  const grid = calculateExposeGrid(
+    openInstances.length,
+    window.innerWidth,
+    window.innerHeight,
+    60, // padding
+    24, // gap
+    isMobile
+  );
+  
+  return getExposeTransform(
+    windowPosition.x,
+    windowPosition.y,
+    windowSize.width,
+    windowSize.height,
+    myIndex,
+    grid,
+    window.innerWidth,
+    window.innerHeight
+  );
+}, [exposeMode, instanceId, instances, windowPosition, windowSize, isMobile]);</code></pre>
+<p>Windows can be selected in expose mode by clicking on them, which brings them to foreground and exits expose mode.</p>
 <h2>Close Interception</h2>
 <p>Apps can intercept close to show confirmation dialogs:</p>
 <pre><code>// In app component

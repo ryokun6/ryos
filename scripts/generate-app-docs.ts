@@ -39,6 +39,7 @@ const APP_CONFIGS: Record<string, { sectionNum: string; docName: string }> = {
   "pc": { sectionNum: "2.15", docName: "virtual-pc" },
   "admin": { sectionNum: "2.16", docName: "admin" },
   "applet-viewer": { sectionNum: "2.17", docName: "applet-store" },
+  "stickies": { sectionNum: "2.18", docName: "stickies" },
 };
 
 const APP_IDS = Object.keys(APP_CONFIGS) as (keyof typeof APP_CONFIGS)[];
@@ -257,6 +258,10 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
     admin: {
       defaultSize: { width: 800, height: 500 },
       minSize: { width: 600, height: 400 },
+    },
+    stickies: {
+      defaultSize: { width: 500, height: 400 },
+      minSize: { width: 300, height: 250 },
     },
   };
 
@@ -519,6 +524,7 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false, 
     "applet-viewer": "Browse and run user-created HTML applets from the Applet Store",
     "control-panels": "System settings for themes, wallpapers, screen savers, and audio volume mixing",
     admin: "System administration panel for managing users, songs, and system configuration (admin only)",
+    stickies: "Create and manage colorful sticky notes for quick reminders and note-taking",
   };
 
   appInfo.description = descriptions[appId] || `A ${metadata.name} application for ryOS`;

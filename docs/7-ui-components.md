@@ -46,9 +46,9 @@ graph LR
 The UI system follows a layered approach:
 
 1. **Base Layer**: shadcn/ui components (19 components: button, dialog, input, select, etc.) provide accessible, themeable primitives
-2. **Custom Layer**: Specialized components (10 components: activity-indicator, audio-bars, dial, playback-bars, etc.) extend functionality for app-specific needs
+2. **Custom Layer**: Specialized components (9 components: activity-indicator, audio-bars, dial, playback-bars, etc.) extend functionality for app-specific needs
 3. **Layout Layer**: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure
-4. **Application Layer**: Dialog and shared components (10 components) provide common patterns used across multiple apps
+4. **Application Layer**: Dialog and shared components (11 components) provide common patterns used across multiple apps
 
 ```mermaid
 graph TD
@@ -87,5 +87,5 @@ All components are theme-aware, automatically adapting to the active system them
 
 ## Subsections
 
-- [Component Library](/docs/component-library) - Core UI component library including 19 shadcn components, 10 custom primitives, and 10 shared components
+- [Component Library](/docs/component-library) - Core UI component library including 19 shadcn components, 9 custom primitives, and 11 shared components
 - [Internationalization](/docs/i18n) - i18n hooks and translation system supporting 10 languages

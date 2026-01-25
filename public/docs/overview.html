@@ -219,6 +219,7 @@
     <a href="/docs/virtual-pc" class="nav-child ">2.15 Virtual PC</a>
     <a href="/docs/admin" class="nav-child ">2.16 Admin</a>
     <a href="/docs/applet-store" class="nav-child ">2.17 Applet Store</a>
+    <a href="/docs/stickies" class="nav-child ">2.18 Stickies</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -297,11 +298,11 @@
     <main class="content">
       <article>
         <h1>Overview</h1>
-<p>ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 17 fully-functional apps, an AI assistant, and a complete virtual file system.</p>
+<p>ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 18 fully-functional apps, an AI assistant, and a complete virtual file system.</p>
 <p>Whether you're exploring the retro aesthetics, building HTML applets, or chatting with Ryo (the AI assistant), ryOS offers a unique blend of nostalgia and modern web technology.</p>
 <pre class="mermaid">graph TB
     subgraph Presentation["Presentation Layer"]
-        Apps[17 App Modules]
+        Apps[18 App Modules]
         UI[UI Components]
         Themes[4 Themes]
     end
@@ -333,19 +334,19 @@
 <h2>Quick Start</h2>
 <table><thead><tr><th>I want to...</th><th>Go to</th></tr></thead><tbody><tr><td>Learn about the apps</td><td><a href="/docs/apps">Apps Overview</a></td></tr><tr><td>Understand the architecture</td><td><a href="/docs/architecture">Architecture</a></td></tr><tr><td>Understand the API layer</td><td><a href="/docs/api-architecture">API Architecture</a></td></tr><tr><td>Build with the framework</td><td><a href="/docs/application-framework">Application Framework</a></td></tr><tr><td>Work with AI features</td><td><a href="/docs/ai-system">AI System</a></td></tr><tr><td>Use the APIs</td><td><a href="/docs/api-reference">API Reference</a></td></tr></tbody></table>
 <h2>Key Features</h2>
-<ul><li><strong><a href="/docs/theme-system">Multi-Theme Support</a>:</strong> System 7, Mac OS X (Aqua), Windows XP, Windows 98</li></ul><ul><li><strong><a href="/docs/apps">17 Built-in Apps</a>:</strong> Finder, TextEdit, Paint, iPod, Terminal, Chats, and more</li><li><strong><a href="/docs/ai-system">AI Assistant (Ryo)</a>:</strong> Chat, tool calling, app control, code generation</li><li><strong><a href="/docs/file-system">Virtual File System</a>:</strong> IndexedDB-backed with lazy loading</li><li><strong><a href="/docs/rooms-api">Real-time Chat</a>:</strong> RESTful rooms with AI integration</li><li><strong><a href="/docs/audio-system">Audio System</a>:</strong> Synthesizer, soundboard, TTS, and UI sounds</li><li><strong><a href="/docs/component-library">Component Library</a>:</strong> shadcn/ui + custom components with i18n</li></ul>
+<ul><li><strong><a href="/docs/theme-system">Multi-Theme Support</a>:</strong> System 7, Mac OS X (Aqua), Windows XP, Windows 98</li></ul><ul><li><strong><a href="/docs/apps">18 Built-in Apps</a>:</strong> Finder, TextEdit, Paint, iPod, Terminal, Chats, and more</li><li><strong><a href="/docs/ai-system">AI Assistant (Ryo)</a>:</strong> Chat, tool calling, app control, code generation</li><li><strong><a href="/docs/file-system">Virtual File System</a>:</strong> IndexedDB-backed with lazy loading</li><li><strong><a href="/docs/rooms-api">Real-time Chat</a>:</strong> RESTful rooms with AI integration</li><li><strong><a href="/docs/audio-system">Audio System</a>:</strong> Synthesizer, soundboard, TTS, and UI sounds</li><li><strong><a href="/docs/component-library">Component Library</a>:</strong> shadcn/ui + custom components with i18n</li></ul>
 <h2>Tech Stack</h2>
 <table><thead><tr><th>Category</th><th>Technologies</th></tr></thead><tbody><tr><td>Frontend</td><td>React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Framer Motion</td></tr><tr><td>State</td><td>Zustand with localStorage/IndexedDB persistence</td></tr><tr><td>Audio</td><td>Tone.js, WaveSurfer.js, Web Audio API</td></tr><tr><td>3D</td><td>Three.js (shaders)</td></tr><tr><td>Text Editor</td><td>TipTap</td></tr><tr><td>Storage</td><td>IndexedDB, LocalStorage, Redis (Upstash)</td></tr><tr><td>AI</td><td>OpenAI, Anthropic, Google via Vercel AI SDK</td></tr><tr><td>Real-time</td><td>Pusher</td></tr><tr><td>Build</td><td>Vite, Bun</td></tr><tr><td>Desktop</td><td>Tauri (macOS, Windows, Linux)</td></tr><tr><td>Deployment</td><td>Vercel</td></tr></tbody></table>
 <h2>Project Structure</h2>
 <pre><code>├── api/              # Vercel API endpoints (Node.js runtime)
 ├── public/           # Static assets
 ├── src/
-│   ├── apps/         # 17 app modules
+│   ├── apps/         # 18 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
-│   ├── hooks/        # 34 custom hooks
+│   ├── hooks/        # 35 custom hooks
 │   ├── lib/          # Libraries
-│   ├── stores/       # 21 Zustand stores
+│   ├── stores/       # 24 Zustand stores
 │   ├── styles/       # CSS
 │   ├── themes/       # 4 theme definitions
 │   ├── types/        # TypeScript types
