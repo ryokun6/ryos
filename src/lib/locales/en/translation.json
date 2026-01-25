@@ -1597,7 +1597,18 @@
         "pasteLinkOrId": "Paste a session link or ID to join.",
         "sessionLinkPlaceholder": "Session link or ID",
         "joinButton": "Join",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "activeSessions": "Active Sessions",
+        "noActiveSessions": "No active sessions",
+        "djLabel": "DJ",
+        "hostLabel": "Host",
+        "listener": "listener",
+        "listenerPlural": "listeners",
+        "nowPlaying": "Now playing",
+        "idle": "Idle",
+        "loadingSessions": "Loading sessions...",
+        "refreshSessions": "Refresh",
+        "orEnterSessionId": "Or enter session ID"
       },
       "menu": {
         "file": "File",
