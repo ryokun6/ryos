@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { useInfiniteMacLogic } from "../hooks/useInfiniteMacLogic";
 import { InfiniteMacMenuBar } from "./InfiniteMacMenuBar";
 import { MAC_PRESETS } from "../hooks/useInfiniteMacLogic";
+import { SquaresFour } from "@phosphor-icons/react";
 
 export function InfiniteMacAppComponent({
   isWindowOpen,
@@ -51,11 +52,39 @@ export function InfiniteMacAppComponent({
 
   if (!isWindowOpen) return null;
 
+  // Dynamic title based on selected preset
+  const windowTitle = selectedPreset
+    ? selectedPreset.name
+    : t("apps.infinite-mac.title");
+
+  // Grid button for titlebar (back to systems) - always rendered to prevent relayout
+  const backButton = (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        if (selectedPreset) handleBackToPresets();
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      className={`w-5 h-5 flex items-center justify-center transition-colors ${
+        selectedPreset
+          ? "text-white/80 hover:text-white cursor-pointer"
+          : "text-transparent cursor-default"
+      }`}
+      style={{
+        filter: selectedPreset ? "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))" : "none",
+      }}
+      disabled={!selectedPreset}
+    >
+      <SquaresFour size={14} weight="bold" />
+    </button>
+  );
+
   return (
     <>
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
-        title={t("apps.infinite-mac.title")}
+        title={windowTitle}
         onClose={onClose}
         isForeground={isForeground}
         appId="infinite-mac"
@@ -64,9 +93,10 @@ export function InfiniteMacAppComponent({
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         menuBar={isXpTheme ? menuBar : undefined}
+        titleBarRightContent={backButton}
       >
         <div className="flex flex-col h-full w-full bg-black">
-          {currentTheme === "macosx" && <div className="h-7 shrink-0 bg-black" />}
+          {currentTheme === "macosx" && <div className="h-6 shrink-0 bg-black" />}
           <div className="flex-1 relative h-full bg-[#1a1a1a]">
             {selectedPreset && embedUrl ? (
               <>
@@ -116,14 +146,6 @@ export function InfiniteMacAppComponent({
                         key={preset.id}
                         onClick={() => handleSelectPreset(preset)}
                         className="group relative rounded overflow-hidden bg-neutral-800 hover:bg-neutral-700 transition-all duration-200 shadow-[0_4px_12px_rgba(0,0,0,0.5)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.7)] border border-neutral-700 hover:border-neutral-600 w-full p-3"
-                        whileHover={{
-                          scale: 1.03,
-                          y: -2,
-                          transition: {
-                            duration: 0.08,
-                            ease: "linear",
-                          },
-                        }}
                         whileTap={{
                           scale: 0.97,
                           y: 0,

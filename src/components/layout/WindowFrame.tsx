@@ -50,6 +50,8 @@ interface WindowFrameProps {
   onFullscreenToggle?: () => void;
   // Disable auto-hide for notitlebar material (keeps titlebar always visible)
   disableTitlebarAutoHide?: boolean;
+  // Custom content for the right side of the titlebar (replaces fullscreen button if provided)
+  titleBarRightContent?: React.ReactNode;
 }
 
 export function WindowFrame({
@@ -70,6 +72,7 @@ export function WindowFrame({
   keepMountedWhenMinimized = false,
   onFullscreenToggle,
   disableTitlebarAutoHide = false,
+  titleBarRightContent,
 }: WindowFrameProps) {
   const { t } = useTranslation();
   const config = getWindowConfig(appId);
@@ -1442,9 +1445,11 @@ export function WindowFrame({
                 <span className="truncate">{title}</span>
               </span>
 
-{/* Fullscreen button (or spacer to balance the traffic lights) */}
-                              <div className="flex items-center justify-end mr-1" style={{ width: 52 }}>
-                                {onFullscreenToggle && (
+{/* Titlebar right content, fullscreen button, or spacer to balance the traffic lights */}
+                              <div className="flex items-center justify-end mr-1" data-titlebar-controls>
+                                {titleBarRightContent ? (
+                                  titleBarRightContent
+                                ) : onFullscreenToggle ? (
                                   <button
                                     aria-label={t("common.window.fullscreen")}
                                     onClick={(e) => {
@@ -1472,6 +1477,8 @@ export function WindowFrame({
                                   >
                                     <ArrowsOutSimple size={14} weight="bold" />
                                   </button>
+                                ) : (
+                                  <div style={{ width: 52 }} />
                                 )}
                               </div>
             </div>

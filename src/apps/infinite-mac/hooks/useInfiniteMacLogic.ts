@@ -74,7 +74,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "Mac OS 8.5",
     description: "Sherlock, 32-bit icons, font smoothing",
     image: "/icons/default/infinite-mac.png",
-    screenSize: { width: 710, height: 526 },
+    screenSize: { width: 674, height: 504 },
   },
   {
     id: "macos-9",
@@ -83,7 +83,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "Mac OS 9.0",
     description: "Keychain, multiple users, Sherlock channels",
     image: "/icons/default/infinite-mac.png",
-    screenSize: { width: 729, height: 546 },
+    screenSize: { width: 668, height: 500 },
   },
   {
     id: "macos-9-2",
@@ -170,8 +170,8 @@ export function useInfiniteMacLogic({
   const translatedHelpItems = useTranslatedHelpItems("infinite-mac", helpItems);
   const embedUrl = selectedPreset ? buildEmbedUrl(selectedPreset) : null;
 
-  // Extra height for macOS X theme's titlebar spacer (h-7 = 28px)
-  const MACOSX_TITLEBAR_HEIGHT = 28;
+  // Extra height for macOS X theme's titlebar spacer (h-6 = 24px)
+  const MACOSX_TITLEBAR_HEIGHT = 24;
 
   const resizeWindow = useCallback(
     (size: { width: number; height: number }) => {

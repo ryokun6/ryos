@@ -142,14 +142,6 @@ export function PcAppComponent({
                         onClick={() => handleLoadGame(game)}
                         className="group relative aspect-video rounded overflow-hidden bg-[#2a2a2a] hover:bg-[#3a3a3a] transition-all duration-200 shadow-[0_4px_12px_rgba(0,0,0,0.5)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.7)] border border-[#3a3a3a] hover:border-[#4a4a4a] w-full h-full"
                         style={{ aspectRatio: "16/9" }}
-                        whileHover={{
-                          scale: 1.05,
-                          y: -2,
-                          transition: {
-                            duration: 0.08,
-                            ease: "linear",
-                          },
-                        }}
                         whileTap={{
                           scale: 0.95,
                           y: 0,
