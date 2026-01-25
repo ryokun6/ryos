@@ -132,6 +132,28 @@ button:focus {
   outline-offset: -4px;
 }
 
+/* Preset/games grid cards: keep dark card styling, do not apply XP button skin */
+.preset-grid button {
+  background: #262626;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  border: 1px solid #404040;
+}
+.preset-grid button:hover {
+  background: #404040;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+  border-color: #525252;
+}
+.games-grid button {
+  background: #2a2a2a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  border: 1px solid #3a3a3a;
+}
+.games-grid button:hover {
+  background: #3a3a3a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+  border-color: #4a4a4a;
+}
+
 /* Switch toggle - XP themed */
 button.os-switch {
   height: 16px !important;
@@ -1494,4 +1516,20 @@ progress:not([value])::-moz-progress-bar:not([value]) {
 .ipod-force-font .font-geneva-12 {
   font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
     -apple-system, sans-serif !important;
+}
+
+/* Title bar: center content and control button icons */
+.title-bar {
+  display: flex;
+  align-items: center;
+}
+.title-bar-controls {
+  display: flex;
+  align-items: center;
+}
+.title-bar-controls button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-position: center;
 }

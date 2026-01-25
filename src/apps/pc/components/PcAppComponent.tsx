@@ -165,7 +165,7 @@ export function PcAppComponent({
 
                 <div className="flex-1 p-4 overflow-y-auto flex justify-start md:justify-center w-full">
                   <div
-                    className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 transition-opacity duration-300 w-full ${
+                    className={`games-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 transition-opacity duration-300 w-full ${
                       !isScriptLoaded
                         ? "opacity-50 pointer-events-none"
                         : "opacity-100"

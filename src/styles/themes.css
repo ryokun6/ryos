@@ -65,6 +65,11 @@
   --os-color-selection-text: #000000;
 }
 
+/* System 7 title bar: grid/back button icon black */
+:root[data-os-theme="system7"] .h-os-titlebar > span.mr-2 > button {
+  color: #000;
+}
+
 /* Mac OS X Theme */
 :root[data-os-theme="macosx"] {
   --os-font-ui: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",

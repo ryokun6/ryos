@@ -145,7 +145,7 @@ export function InfiniteMacAppComponent({
                 </div>
 
                 <div className="flex-1 p-4 overflow-y-auto flex justify-start md:justify-center w-full">
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full max-w-4xl">
+                  <div className="preset-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full max-w-4xl">
                     {MAC_PRESETS.map((preset) => (
                       <motion.button
                         key={preset.id}
@@ -161,7 +161,7 @@ export function InfiniteMacAppComponent({
                         }}
                       >
                         <div className="flex flex-col items-start text-left">
-                          <span className="text-white font-apple-garamond text-base">
+                          <span className="text-white font-apple-garamond !text-[18px] leading-tight">
                             {preset.name}
                           </span>
                           <span className="text-neutral-500 text-[10px]">

@@ -716,3 +716,72 @@ ul.tree-view {
   font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui,
     -apple-system, sans-serif !important;
 }
+
+/* Fix 98 title-bar height and align icon/text with control buttons */
+.title-bar {
+  height: 20px;
+  min-height: 20px;
+  box-sizing: border-box;
+  padding: 3px 2px 3px 3px;
+  align-items: center;
+}
+.title-bar .title-bar-text {
+  height: 14px;
+  min-height: 14px;
+  line-height: 14px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+.title-bar .title-bar-text > *:first-child {
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  min-height: 14px;
+  max-width: 14px;
+  max-height: 14px;
+  flex-shrink: 0;
+}
+.title-bar-controls {
+  align-items: center;
+}
+/* Standard control buttons: centered bg; minimize uses bottom alignment for the underscore */
+.title-bar-controls button[data-action] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.title-bar-controls button[data-action="minimize"] {
+  background-position: bottom 3px center;
+}
+/* Grid/back button: same 98 styled look as other title-bar controls, icon black */
+.title-bar-controls > button:not([data-action]) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 14px;
+  min-width: 16px;
+  min-height: 14px;
+  max-width: 16px;
+  max-height: 14px;
+  padding: 0;
+  background: silver;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey,
+    inset 2px 2px #dfdfdf;
+  border: none;
+  border-radius: 0;
+  color: #000;
+}
+.title-bar-controls > button:not([data-action]):not(:disabled).active,
+.title-bar-controls > button:not([data-action]):not(:disabled):active {
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a,
+    inset -2px -2px #dfdfdf, inset 2px 2px grey;
+}
+.title-bar-controls > button:not([data-action]) svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
