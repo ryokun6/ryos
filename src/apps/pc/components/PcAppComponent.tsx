@@ -79,7 +79,8 @@ export function PcAppComponent({
     ? selectedGame.name
     : getTranslatedAppName("pc");
 
-  // Grid button for titlebar (back to games) - same pattern as Infinite Mac
+  // Grid button for titlebar (back to games). macOS X notitlebar: light icon + shadow. System 7/XP/98: dark icon, no shadow, fixed height.
+  const isDarkTitlebar = currentTheme === "macosx";
   const backButton = (
     <button
       onClick={(e) => {
@@ -88,15 +89,17 @@ export function PcAppComponent({
       }}
       onMouseDown={(e) => e.stopPropagation()}
       onTouchStart={(e) => e.stopPropagation()}
-      className={`w-5 h-5 flex items-center justify-center transition-colors ${
-        isGameRunning
-          ? "text-white/80 hover:text-white cursor-pointer"
-          : "text-transparent cursor-default"
+      className={`shrink-0 w-5 h-5 min-h-5 max-h-5 flex items-center justify-center transition-colors ${
+        !isGameRunning
+          ? "text-transparent cursor-default"
+          : isDarkTitlebar
+            ? "text-white/80 hover:text-white cursor-pointer"
+            : "text-gray-600 hover:text-gray-800 cursor-pointer"
       }`}
       style={{
-        filter: isGameRunning
+        filter: isGameRunning && isDarkTitlebar
           ? "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))"
-          : "none",
+          : undefined,
       }}
       disabled={!isGameRunning}
     >

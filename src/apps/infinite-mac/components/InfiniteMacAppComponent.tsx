@@ -57,7 +57,8 @@ export function InfiniteMacAppComponent({
     ? selectedPreset.name
     : t("apps.infinite-mac.title");
 
-  // Grid button for titlebar (back to systems) - always rendered to prevent relayout
+  // Grid button for titlebar (back to systems). macOS X notitlebar: light icon + shadow. System 7/XP/98: dark icon, no shadow, fixed height.
+  const isDarkTitlebar = currentTheme === "macosx";
   const backButton = (
     <button
       onClick={(e) => {
@@ -66,13 +67,17 @@ export function InfiniteMacAppComponent({
       }}
       onMouseDown={(e) => e.stopPropagation()}
       onTouchStart={(e) => e.stopPropagation()}
-      className={`w-5 h-5 flex items-center justify-center transition-colors ${
-        selectedPreset
-          ? "text-white/80 hover:text-white cursor-pointer"
-          : "text-transparent cursor-default"
+      className={`shrink-0 w-5 h-5 min-h-5 max-h-5 flex items-center justify-center transition-colors ${
+        !selectedPreset
+          ? "text-transparent cursor-default"
+          : isDarkTitlebar
+            ? "text-white/80 hover:text-white cursor-pointer"
+            : "text-gray-600 hover:text-gray-800 cursor-pointer"
       }`}
       style={{
-        filter: selectedPreset ? "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))" : "none",
+        filter: selectedPreset && isDarkTitlebar
+          ? "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))"
+          : undefined,
       }}
       disabled={!selectedPreset}
     >

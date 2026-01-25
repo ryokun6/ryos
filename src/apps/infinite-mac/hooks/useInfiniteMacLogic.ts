@@ -41,20 +41,20 @@ export const MAC_PRESETS: MacPreset[] = [
     screenSize: { width: 512, height: 342 },
   },
   {
-    id: "system-7",
-    name: "System 7.0",
-    year: "1991",
-    disk: "System 7.0",
-    description: "Fully 32-bit clean, MultiFinder",
-    image: "/icons/default/infinite-mac.png",
-    screenSize: { width: 640, height: 480 },
-  },
-  {
     id: "system-7-5",
     name: "System 7.5.3",
     year: "1996",
     disk: "System 7.5.3",
     description: "Open Transport and broader Mac support",
+    image: "/icons/default/infinite-mac.png",
+    screenSize: { width: 640, height: 480 },
+  },
+  {
+    id: "kanjitalk-7-5",
+    name: "KanjiTalk 7.5.3",
+    year: "1996",
+    disk: "KanjiTalk 7.5.3",
+    description: "Japanese edition of System 7.5.3",
     image: "/icons/default/infinite-mac.png",
     screenSize: { width: 640, height: 480 },
   },
@@ -171,23 +171,26 @@ export function useInfiniteMacLogic({
   const translatedHelpItems = useTranslatedHelpItems("infinite-mac", helpItems);
   const embedUrl = selectedPreset ? buildEmbedUrl(selectedPreset) : null;
 
-  // Extra height for macOS X theme's titlebar spacer (h-6 = 24px)
-  const MACOSX_TITLEBAR_HEIGHT = 24;
+  // Titlebar height per theme so auto-resize fits content + titlebar (matches WindowFrame / themes.css)
+  const TITLEBAR_HEIGHT_BY_THEME: Record<string, number> = {
+    macosx: 24, // notitlebar h-6 spacer
+    system7: 24, // 1.5rem
+    xp: 30, // 1.875rem, WindowFrame minHeight 30px
+    win98: 22, // 1.375rem
+  };
 
   const resizeWindow = useCallback(
     (size: { width: number; height: number }) => {
       if (!instanceId) return;
-      // Get fresh state directly from store to avoid stale closures
       const { instances, updateInstanceWindowState } = useAppStore.getState();
       const theme = useThemeStore.getState().current;
       const instance = instances[instanceId];
       if (instance) {
-        // Add extra height for macOS X theme's titlebar spacer
-        const extraHeight = theme === "macosx" ? MACOSX_TITLEBAR_HEIGHT : 0;
+        const titlebarHeight = TITLEBAR_HEIGHT_BY_THEME[theme] ?? 24;
         updateInstanceWindowState(
           instanceId,
           instance.position ?? { x: 100, y: 100 },
-          { width: size.width, height: size.height + extraHeight }
+          { width: size.width, height: size.height + titlebarHeight }
         );
       }
     },

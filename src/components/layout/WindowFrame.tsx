@@ -1276,18 +1276,19 @@ export function WindowFrame({
                 {title}
               </div>
               <div className="title-bar-controls" data-titlebar-controls>
-                {onFullscreenToggle && (
-                  <button
-                    aria-label={t("common.window.fullscreen")}
-                    data-action="fullscreen"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onFullscreenToggle();
-                    }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => e.stopPropagation()}
-                  />
-                )}
+                {(titleBarRightContent || onFullscreenToggle) &&
+                  (titleBarRightContent ?? (
+                    <button
+                      aria-label={t("common.window.fullscreen")}
+                      data-action="fullscreen"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onFullscreenToggle!();
+                      }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onTouchStart={(e) => e.stopPropagation()}
+                    />
+                  ))}
                 <button
                   aria-label={t("common.window.minimize")}
                   data-action="minimize"
@@ -1553,7 +1554,9 @@ export function WindowFrame({
               >
 <span className="truncate">{title}</span>
                               </span>
-                              {onFullscreenToggle ? (
+                              {titleBarRightContent ? (
+                                <span className="mr-2 flex items-center shrink-0">{titleBarRightContent}</span>
+                              ) : onFullscreenToggle ? (
                                 <button
                                   aria-label={t("common.window.fullscreen")}
                                   onClick={(e) => {
