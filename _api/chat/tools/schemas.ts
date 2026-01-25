@@ -11,12 +11,16 @@ import { THEME_IDS, LANGUAGE_CODES, VFS_PATHS } from "./types.js";
 
 /**
  * Helper to normalize optional string values
- * Converts empty/whitespace strings to undefined
+ * Converts empty/whitespace strings and placeholder values to undefined
  */
 export const normalizeOptionalString = (value: unknown) => {
   if (typeof value === "string") {
-    const trimmed = value.trim();
-    return trimmed.length === 0 ? undefined : trimmed;
+    const trimmed = value.trim().toLowerCase();
+    // Treat empty strings and common AI placeholder values as undefined
+    if (trimmed.length === 0 || trimmed === "-" || trimmed === "ignored" || trimmed === "none" || trimmed === "null" || trimmed === "undefined") {
+      return undefined;
+    }
+    return value.toString().trim();
   }
   return value;
 };
@@ -56,14 +60,8 @@ export const mediaControlRefinement = (
     return;
   }
 
+  // playKnown with no identifiers is allowed - handler will treat it as toggle/play current
   if (action === "playKnown") {
-    if (!id && !title && !artist) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "The 'playKnown' action requires at least one of 'id', 'title', or 'artist'.",
-        path: ["id"],
-      });
-    }
     return;
   }
 
@@ -100,20 +98,16 @@ export const createMediaControlSchema = (options: { hasEnableVideo?: boolean } =
       .default("toggle")
       .describe("Playback operation to perform. Defaults to 'toggle' when omitted."),
     id: z
-      .string()
-      .optional()
+      .preprocess(normalizeOptionalString, z.string().optional())
       .describe("For 'playKnown' (optional) or 'addAndPlay' (required): YouTube video ID or supported URL."),
     title: z
-      .string()
-      .optional()
+      .preprocess(normalizeOptionalString, z.string().optional())
       .describe("For 'playKnown': The title (or part of it) of the song to play."),
     artist: z
-      .string()
-      .optional()
+      .preprocess(normalizeOptionalString, z.string().optional())
       .describe("For 'playKnown': The artist name (or part of it) of the song to play."),
     enableTranslation: z
-      .string()
-      .optional()
+      .preprocess(normalizeOptionalString, z.string().optional())
       .describe(
         "ONLY use when user explicitly requests translated lyrics. Set to language code (e.g., 'en', 'zh-TW', 'ja', 'ko', 'es', 'fr', 'de', 'pt', 'it', 'ru') to translate, or 'off'/'original' to show original lyrics. By default, do NOT set this - lyrics should remain in original language."
       ),
