@@ -379,6 +379,11 @@ export default async function middleware(request: Request) {
         try {
           const urlObj = new URL(sharedUrl.startsWith("http") ? sharedUrl : `https://${sharedUrl}`);
           hostname = urlObj.hostname.replace(/^www\./, "");
+          
+          // Use infinite-mac.png icon for Infinite Mac URLs
+          if (hostname.includes("infinitemac")) {
+            imageUrl = `${baseUrl}/icons/macosx/infinite-mac.png`;
+          }
         } catch {
           // Use the raw URL if parsing fails
         }
