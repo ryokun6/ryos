@@ -5,8 +5,6 @@
  * supporting both server-side and client-side tool execution.
  */
 
-import type { Logger } from "../../_utils/_logging.js";
-
 // Central list of supported theme IDs for tool validation
 export const THEME_IDS = ["system7", "macosx", "xp", "win98"] as const;
 export type ThemeId = typeof THEME_IDS[number];
