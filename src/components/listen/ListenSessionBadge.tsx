@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -21,6 +22,7 @@ export function ListenSessionBadge({
   onLeave,
   className,
 }: ListenSessionBadgeProps) {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
@@ -48,7 +50,7 @@ export function ListenSessionBadge({
         className={buttonClassName}
         style={buttonStyle}
       >
-        🎧 {listenerCount} {isDj && "• DJ"}
+        🎧 {listenerCount} {isDj && `• ${t("apps.karaoke.liveListen.djLabel")}`}
       </Button>
       <Button
         variant="retro"
@@ -56,7 +58,7 @@ export function ListenSessionBadge({
         className={buttonClassName}
         style={buttonStyle}
       >
-        Invite
+        {t("apps.karaoke.liveListen.inviteTitle")}
       </Button>
       <Button
         variant="retro"
@@ -64,7 +66,7 @@ export function ListenSessionBadge({
         className={buttonClassName}
         style={buttonStyle}
       >
-        {isHost ? "End" : "Leave"}
+        {isHost ? t("apps.karaoke.liveListen.endSession") : t("apps.karaoke.liveListen.leaveSession")}
       </Button>
     </div>
   );

@@ -61,13 +61,13 @@ export function ListenSessionInvite({
     if (!shareUrl) return;
     try {
       await navigator.clipboard.writeText(shareUrl);
-      toast.success("Link copied", {
-        description: "Share the link to invite friends.",
+      toast.success(t("apps.karaoke.liveListen.linkCopied"), {
+        description: t("apps.karaoke.liveListen.linkCopiedDescription"),
       });
       onClose();
     } catch {
-      toast.error("Copy failed", {
-        description: "Select the link and copy manually.",
+      toast.error(t("apps.karaoke.liveListen.copyFailed"), {
+        description: t("apps.karaoke.liveListen.copyFailedDescription"),
       });
       inputRef.current?.focus();
       inputRef.current?.select();

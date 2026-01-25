@@ -1608,7 +1608,11 @@
         "idle": "Idle",
         "loadingSessions": "Loading sessions...",
         "refreshSessions": "Refresh",
-        "orEnterSessionId": "Or enter session ID"
+        "orEnterSessionId": "Or enter session ID",
+        "linkCopied": "Link copied",
+        "linkCopiedDescription": "Share the link to invite friends.",
+        "copyFailed": "Copy failed",
+        "copyFailedDescription": "Select the link and copy manually."
       },
       "menu": {
         "file": "File",
