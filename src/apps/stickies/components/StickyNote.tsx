@@ -251,13 +251,11 @@ export function StickyNote({
       }}
     >
       {/* Compact title bar - always rendered to prevent layout shift, but contents hidden when not foreground */}
+      {/* Drag is always enabled so stickies can be moved even when title bar appears hidden */}
       <div
-        onMouseDown={isForeground ? handleDragStart : undefined}
-        onTouchStart={isForeground ? handleTouchDragStart : undefined}
-        className={cn(
-          "flex items-center h-[14px] px-[3px] select-none",
-          isForeground ? "cursor-move" : "cursor-default"
-        )}
+        onMouseDown={handleDragStart}
+        onTouchStart={handleTouchDragStart}
+        className="flex items-center h-[14px] px-[3px] select-none cursor-move"
         style={{
           backgroundColor: colors.bg,
           borderBottom: isForeground ? `1px solid ${colors.border}` : "none",
