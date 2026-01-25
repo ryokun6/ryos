@@ -18,6 +18,8 @@ const APP_NAMES: Record<string, string> = {
   terminal: "Terminal",
   "applet-viewer": "Applet Store",
   "control-panels": "Control Panels",
+  stickies: "Stickies",
+  "infinite-mac": "Infinite Mac",
 };
 
 // App descriptions
@@ -38,6 +40,8 @@ const APP_DESCRIPTIONS: Record<string, string> = {
   terminal: "Command line interface with Ryo AI",
   "applet-viewer": "Explore and install community applets",
   "control-panels": "Set themes, sounds, and system preferences",
+  stickies: "Colorful sticky notes for reminders and quick notes",
+  "infinite-mac": "Run classic Mac OS and NeXT in your browser",
 };
 
 // App ID to macOS icon mapping
@@ -58,6 +62,8 @@ const APP_ICONS: Record<string, string> = {
   terminal: "terminal.png",
   "applet-viewer": "app.png",
   "control-panels": "control-panels/appearance-manager/app.png",
+  stickies: "stickies.png",
+  "infinite-mac": "infinite-mac.png",
 };
 
 function generateOgHtml(options: {
@@ -103,6 +109,8 @@ function escapeHtml(str: string): string {
 export const config = {
   matcher: [
     "/finder",
+    "/stickies",
+    "/infinite-mac",
     "/soundboard",
     "/internet-explorer",
     "/internet-explorer/:path*",

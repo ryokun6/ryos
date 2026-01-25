@@ -55,14 +55,14 @@ export function StickiesAppComponent({
   // Calculate z-indices for notes based on foreground state
   // Windows use z-index starting at 2 (BASE_Z_INDEX + index + 1)
   // When NOT foreground: z-index 1 (above desktop at 0, below windows at 2+)
-  // When foreground: high z-index (above everything)
+  // When foreground: z-index below dialogs (z-50) so Help/About appear on top
   const getZIndexForNote = (noteId: string) => {
     if (!isForeground) {
       // All stickies at z-index 1 when not foreground (below all windows)
       return 1;
     }
-    // When foreground, stack notes with selected on top
-    const baseZ = 1000;
+    // When foreground, stack notes with selected on top; stay below dialogs (z-50)
+    const baseZ = 40;
     const index = notes.findIndex(n => n.id === noteId);
     if (noteId === selectedNoteId) {
       return baseZ + notes.length + 1;
