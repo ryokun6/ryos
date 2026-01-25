@@ -971,6 +971,7 @@
         }
       },
       "loadingEmulator": "Загрузка эмулятора...",
+      "loadingSystem": "Загрузка {{name}}...",
       "menu": {
         "aboutInfiniteMac": "О Infinite Mac",
         "backToPresets": "Назад к системам",

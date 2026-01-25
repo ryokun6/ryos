@@ -2250,6 +2250,7 @@
       "selectSystem": "Select a Classic Mac System",
       "systemsAvailable": "{{count}} SYSTEMS AVAILABLE",
       "loadingEmulator": "Loading Emulator...",
+      "loadingSystem": "Loading {{name}}...",
       "menu": {
         "backToPresets": "Back to Systems",
         "pause": "Pause",

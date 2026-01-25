@@ -244,9 +244,8 @@ export function useInfiniteMacLogic({
     setIsPaused(false);
   }, [sendEmulatorCommand]);
 
-  const handleIframeLoad = useCallback(() => {
-    setIsEmulatorLoaded(true);
-  }, []);
+  // Only show emulator after iframe sends {"type": "emulator_loaded"} via postMessage
+  const handleIframeLoad = useCallback(() => {}, []);
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {

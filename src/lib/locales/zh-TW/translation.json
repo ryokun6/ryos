@@ -971,6 +971,7 @@
         }
       },
       "loadingEmulator": "正在載入模擬器...",
+      "loadingSystem": "正在載入 {{name}}...",
       "menu": {
         "aboutInfiniteMac": "關於 Infinite Mac",
         "backToPresets": "返回系統",

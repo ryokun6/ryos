@@ -195,11 +195,14 @@ export function InfiniteMacAppComponent({
                   }}
                   onLoad={handleIframeLoad}
                 />
-                {!isEmulatorLoaded && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                {!isEmulatorLoaded && selectedPreset && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
                     <div className="px-4 py-2 rounded bg-black/50 backdrop-blur-sm">
-                      <div className="font-geneva-12 text-sm text-white">
-                        {t("apps.infinite-mac.loadingEmulator")}
+                      <div className="font-geneva-12 text-sm shimmer">
+                        {t("apps.infinite-mac.loadingSystem", {
+                          name: selectedPreset.name,
+                          defaultValue: `Loading ${selectedPreset.name}...`,
+                        })}
                       </div>
                     </div>
                   </div>

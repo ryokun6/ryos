@@ -971,6 +971,7 @@
         }
       },
       "loadingEmulator": "エミュレータを読み込み中...",
+      "loadingSystem": "{{name}}を読み込み中...",
       "menu": {
         "aboutInfiniteMac": "Infinite Macについて",
         "backToPresets": "システムに戻る",

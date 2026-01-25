@@ -971,6 +971,7 @@
         }
       },
       "loadingEmulator": "Cargando emulador...",
+      "loadingSystem": "Cargando {{name}}...",
       "menu": {
         "aboutInfiniteMac": "Acerca de Infinite Mac",
         "backToPresets": "Volver a Sistemas",

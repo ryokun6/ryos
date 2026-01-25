@@ -971,6 +971,7 @@
         }
       },
       "loadingEmulator": "에뮬레이터 로드 중...",
+      "loadingSystem": "{{name}} 로드 중...",
       "menu": {
         "aboutInfiniteMac": "Infinite Mac 정보",
         "backToPresets": "시스템으로 돌아가기",
