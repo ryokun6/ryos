@@ -28,6 +28,8 @@ export const DEFAULT_WINDOW_SIZE_WITH_TITLEBAR = {
   height: DEFAULT_WINDOW_SIZE.height + DEFAULT_TITLEBAR_HEIGHT,
 };
 
+const THUMBNAIL_BASE = "/assets/infinite-mac-thumbnails";
+
 export const MAC_PRESETS: MacPreset[] = [
   {
     id: "system-1",
@@ -35,7 +37,7 @@ export const MAC_PRESETS: MacPreset[] = [
     year: "1984",
     disk: "System 1.0",
     description: "Initial Mac system software",
-    image: "/icons/default/infinite-mac.png",
+    image: `${THUMBNAIL_BASE}/system-1.png`,
     screenSize: { width: 512, height: 342 },
   },
   {
@@ -44,7 +46,7 @@ export const MAC_PRESETS: MacPreset[] = [
     year: "1991",
     disk: "System 6.0.8",
     description: "Final System 6 release",
-    image: "/icons/default/infinite-mac.png",
+    image: `${THUMBNAIL_BASE}/system-6.png`,
     screenSize: { width: 512, height: 342 },
   },
   {
@@ -53,7 +55,7 @@ export const MAC_PRESETS: MacPreset[] = [
     year: "1996",
     disk: "System 7.5.3",
     description: "Open Transport and broader Mac support",
-    image: "/icons/default/infinite-mac.png",
+    image: `${THUMBNAIL_BASE}/system-7-5.png`,
     screenSize: { width: 640, height: 480 },
   },
   {
@@ -62,7 +64,7 @@ export const MAC_PRESETS: MacPreset[] = [
     year: "1996",
     disk: "KanjiTalk 7.5.3",
     description: "Japanese edition of System 7.5.3",
-    image: "/icons/default/infinite-mac.png",
+    image: `${THUMBNAIL_BASE}/kanjitalk-7-5.png`,
     screenSize: { width: 640, height: 480 },
   },
   {
@@ -71,7 +73,7 @@ export const MAC_PRESETS: MacPreset[] = [
     year: "1997",
     disk: "Mac OS 8.0",
     description: "Platinum appearance, multi-threaded Finder",
-    image: "/icons/default/infinite-mac.png",
+    image: `${THUMBNAIL_BASE}/macos-8.png`,
     screenSize: { width: 640, height: 480 },
   },
   {
@@ -80,7 +82,7 @@ export const MAC_PRESETS: MacPreset[] = [
     year: "1998",
     disk: "Mac OS 8.5",
     description: "Sherlock, 32-bit icons, font smoothing",
-    image: "/icons/default/infinite-mac.png",
+    image: `${THUMBNAIL_BASE}/macos-8-5.png`,
     screenSize: { width: 640, height: 480 },
   },
   {
@@ -89,7 +91,7 @@ export const MAC_PRESETS: MacPreset[] = [
     year: "1999",
     disk: "Mac OS 9.0",
     description: "Keychain, multiple users, Sherlock channels",
-    image: "/icons/default/infinite-mac.png",
+    image: `${THUMBNAIL_BASE}/macos-9.png`,
     screenSize: { width: 640, height: 480 },
   },
   {
@@ -98,7 +100,7 @@ export const MAC_PRESETS: MacPreset[] = [
     year: "2001",
     disk: "Mac OS 9.2.2",
     description: "Final classic Mac OS release",
-    image: "/icons/default/infinite-mac.png",
+    image: `${THUMBNAIL_BASE}/macos-9-2.png`,
     screenSize: { width: 640, height: 480 },
   },
   {
@@ -108,7 +110,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "Mac OS X 10.1",
     machine: "Power Macintosh G3 (Beige)",
     description: "Puma - improved performance, DVD playback",
-    image: "/icons/default/infinite-mac.png",
+    image: `${THUMBNAIL_BASE}/macosx-10-1.png`,
     screenSize: { width: 640, height: 480 },
   },
   {
@@ -118,7 +120,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "Mac OS X 10.2",
     machine: "Power Macintosh G4 (PCI Graphics)",
     description: "Jaguar - Quartz Extreme, Address Book, iChat",
-    image: "/icons/default/infinite-mac.png",
+    image: `${THUMBNAIL_BASE}/macosx-10-2.png`,
     screenSize: { width: 640, height: 480 },
   },
   {
@@ -128,7 +130,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "Mac OS X 10.3",
     machine: "Power Macintosh G4 (PCI Graphics)",
     description: "Panther - Exposé, fast user switching",
-    image: "/icons/default/infinite-mac.png",
+    image: `${THUMBNAIL_BASE}/macosx-10-3.png`,
     screenSize: { width: 640, height: 480 },
   },
   {
@@ -138,7 +140,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "Mac OS X 10.4",
     machine: "Power Macintosh G4 (PCI Graphics)",
     description: "Tiger - Spotlight, Dashboard, Safari RSS",
-    image: "/icons/default/infinite-mac.png",
+    image: `${THUMBNAIL_BASE}/macosx-10-4.png`,
     screenSize: { width: 640, height: 480 },
   },
 ];

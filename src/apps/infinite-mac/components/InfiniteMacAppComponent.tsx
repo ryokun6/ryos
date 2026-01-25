@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { AppProps } from "@/apps/base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -5,9 +6,67 @@ import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { appMetadata } from "..";
 import { motion } from "framer-motion";
 import { useInfiniteMacLogic } from "../hooks/useInfiniteMacLogic";
+import type { MacPreset } from "../hooks/useInfiniteMacLogic";
 import { InfiniteMacMenuBar } from "./InfiniteMacMenuBar";
 import { MAC_PRESETS } from "../hooks/useInfiniteMacLogic";
 import { SquaresFour } from "@phosphor-icons/react";
+
+function PresetGridCard({
+  preset,
+  onSelect,
+}: {
+  preset: MacPreset;
+  onSelect: () => void;
+}) {
+  const [thumbError, setThumbError] = useState(false);
+  const showThumb = !thumbError;
+
+  return (
+    <motion.button
+      type="button"
+      onClick={onSelect}
+      title={preset.name}
+      className="group relative rounded overflow-hidden bg-neutral-800 hover:bg-neutral-700 transition-all duration-200 shadow-[0_4px_12px_rgba(0,0,0,0.5)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.7)] border border-neutral-700 hover:border-neutral-600 w-full flex flex-col min-h-0"
+      whileTap={{
+        scale: 0.97,
+        y: 0,
+        transition: { type: "spring", duration: 0.15 },
+      }}
+    >
+      <div
+        className="w-full flex-1 min-h-0 bg-neutral-900 relative shrink-0"
+        style={{
+          aspectRatio: `${preset.screenSize.width} / ${preset.screenSize.height}`,
+        }}
+      >
+        {showThumb ? (
+          <img
+            src={preset.image}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover object-top"
+            onError={() => setThumbError(true)}
+          />
+        ) : null}
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent pointer-events-none transition-opacity duration-200 group-hover:opacity-0"
+          aria-hidden
+        />
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent pointer-events-none opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          aria-hidden
+        />
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 pt-2 pl-3 pb-2 pr-3 flex flex-row justify-between items-baseline gap-2 z-10 pointer-events-none">
+        <span className="text-white font-apple-garamond !text-[18px] leading-tight truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+          {preset.name}
+        </span>
+        <span className="text-neutral-300 text-[10px] shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          {preset.year}
+        </span>
+      </div>
+    </motion.button>
+  );
+}
 
 export function InfiniteMacAppComponent({
   isWindowOpen,
@@ -147,28 +206,11 @@ export function InfiniteMacAppComponent({
                 <div className="flex-1 min-h-0 overflow-y-auto flex justify-start md:justify-center w-full p-4">
                   <div className="preset-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full max-w-4xl pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pb-0">
                     {MAC_PRESETS.map((preset) => (
-                      <motion.button
+                      <PresetGridCard
                         key={preset.id}
-                        onClick={() => handleSelectPreset(preset)}
-                        className="group relative rounded overflow-hidden bg-neutral-800 hover:bg-neutral-700 transition-all duration-200 shadow-[0_4px_12px_rgba(0,0,0,0.5)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.7)] border border-neutral-700 hover:border-neutral-600 w-full min-h-16 p-3"
-                        whileTap={{
-                          scale: 0.97,
-                          y: 0,
-                          transition: {
-                            type: "spring",
-                            duration: 0.15,
-                          },
-                        }}
-                      >
-                        <div className="flex flex-col items-start text-left">
-                          <span className="text-white font-apple-garamond !text-[18px] leading-tight">
-                            {preset.name}
-                          </span>
-                          <span className="text-neutral-500 text-[10px]">
-                            {preset.year}
-                          </span>
-                        </div>
-                      </motion.button>
+                        preset={preset}
+                        onSelect={() => handleSelectPreset(preset)}
+                      />
                     ))}
                   </div>
                 </div>
