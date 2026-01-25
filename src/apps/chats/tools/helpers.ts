@@ -7,6 +7,87 @@
 
 import i18n from "@/lib/i18n";
 
+// ============================================================================
+// Short ID Mapping for AI Communication
+// ============================================================================
+
+/**
+ * Bidirectional mapping between short IDs and full UUIDs.
+ * Used to reduce token usage when communicating with AI.
+ */
+export interface ShortIdMap {
+  /** Map from short ID (e.g., "s1") to full UUID */
+  shortToFull: Map<string, string>;
+  /** Map from full UUID to short ID */
+  fullToShort: Map<string, string>;
+}
+
+/**
+ * Creates a short ID mapping from an array of full UUIDs.
+ * Short IDs are formatted as "{prefix}{number}" (e.g., "s1", "s2").
+ * 
+ * @param fullIds Array of full UUIDs to map
+ * @param prefix Single character prefix for short IDs (default: "s")
+ * @returns Bidirectional mapping object
+ */
+export const createShortIdMap = (
+  fullIds: string[],
+  prefix: string = "s"
+): ShortIdMap => {
+  const shortToFull = new Map<string, string>();
+  const fullToShort = new Map<string, string>();
+  
+  fullIds.forEach((fullId, index) => {
+    const shortId = `${prefix}${index + 1}`;
+    shortToFull.set(shortId, fullId);
+    fullToShort.set(fullId, shortId);
+  });
+  
+  return { shortToFull, fullToShort };
+};
+
+/**
+ * Converts a short ID to its full UUID using the provided mapping.
+ * Returns undefined if the short ID is not found in the mapping.
+ */
+export const shortToFullId = (
+  shortId: string,
+  map: ShortIdMap
+): string | undefined => {
+  return map.shortToFull.get(shortId);
+};
+
+/**
+ * Converts a full UUID to its short ID using the provided mapping.
+ * Returns undefined if the full ID is not found in the mapping.
+ */
+export const fullToShortId = (
+  fullId: string,
+  map: ShortIdMap
+): string | undefined => {
+  return map.fullToShort.get(fullId);
+};
+
+/**
+ * Resolves an ID that could be either a short ID or a full UUID.
+ * First checks if it's a valid short ID in the map, then returns it as-is (full UUID).
+ * 
+ * @param id The ID to resolve (could be short or full)
+ * @param map The short ID mapping (can be undefined if no mapping exists)
+ * @returns The full UUID
+ */
+export const resolveId = (
+  id: string,
+  map: ShortIdMap | undefined
+): string => {
+  if (map) {
+    const fullId = map.shortToFull.get(id);
+    if (fullId) return fullId;
+  }
+  // If no mapping exists or ID not found in map, assume it's already a full UUID
+  return id;
+};
+
 /**
  * Case-insensitive string inclusion check
  * Used by iPod and Karaoke handlers for track matching
