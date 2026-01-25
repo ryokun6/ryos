@@ -224,8 +224,10 @@ import { Dial } from "@/components/ui/dial";
 
 ## Best Practices
 
-1. **Always use `cn()`** for conditional class merging
-2. **Use OS-aware classes** (`bg-os-*`, `border-os-*`) when available
-3. **Check theme with `useTheme()`** for complex conditional rendering
-4. **Prefer CSS variables** over hardcoded colors
-5. **Test all 4 themes** when adding styled components
+1. **Always search for existing patterns** before creating new styles or components
+2. **Always use `cn()`** for conditional class merging
+3. **Use OS-aware classes** (`bg-os-*`, `border-os-*`) when available
+4. **Check theme with `useTheme()`** for complex conditional rendering
+5. **Prefer CSS variables** over hardcoded colors
+6. **Test all 4 themes** when adding styled components
+x

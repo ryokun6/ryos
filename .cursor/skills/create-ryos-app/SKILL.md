@@ -12,10 +12,11 @@ description: Create new applications for ryOS following established patterns and
 - [ ] 2. Create main component: components/[AppName]AppComponent.tsx
 - [ ] 3. Create menu bar: components/[AppName]MenuBar.tsx
 - [ ] 4. Create logic hook: hooks/use[AppName]Logic.ts
-- [ ] 5. Create app definition: index.tsx
+- [ ] 5. Create app definition: index.tsx (include 6 help items)
 - [ ] 6. Add icon: public/icons/default/[app-name].png
 - [ ] 7. Register in src/config/appRegistry.tsx
-- [ ] 8. Add translations to src/locales/en/translation.json
+- [ ] 8. Add translation keys to src/lib/locales/en/translation.json
+- [ ] 9. Localize (last): add en strings, sync locales; use the localize skill to finish
 ```
 
 ## Directory Structure
@@ -41,8 +42,14 @@ export const appMetadata = {
   icon: "/icons/default/[app-name].png",
 };
 
+// Always include exactly 6 help items (icon, title, description each).
 export const helpItems = [
   { icon: "🚀", title: "Getting Started", description: "How to use this app" },
+  { icon: "📂", title: "Open & Save", description: "Open and save files from the File menu" },
+  { icon: "✏️", title: "Editing", description: "Use the Edit menu for cut, copy, paste" },
+  { icon: "👁️", title: "View Options", description: "Adjust view and layout from the View menu" },
+  { icon: "⌨️", title: "Shortcuts", description: "Use keyboard shortcuts for faster workflows" },
+  { icon: "❓", title: "Help & About", description: "Open Help from the Help menu for more info" },
 ];
 ```
 
@@ -149,6 +156,14 @@ export function use[AppName]Logic({ instanceId }: { instanceId: string }) {
 
 ## 4. Menu Bar (`[AppName]MenuBar.tsx`)
 
+Match existing app menubars: structure, classes, and spacing.
+
+- **Wrapper**: `<MenuBar inWindowFrame={isXpTheme}>` — no extra gap between menus (layout uses `space-x-0`).
+- **Trigger**: `MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0"`.
+- **Content**: `MenubarContent align="start" sideOffset={1} className="px-0"`.
+- **Items**: `MenubarItem className="text-md h-6 px-3"`.
+- **Separators**: `MenubarSeparator className="h-[2px] bg-black my-1"`.
+
 ```tsx
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
@@ -176,20 +191,30 @@ export function [AppName]MenuBar({ onClose, onShowHelp, onShowAbout }: [AppName]
   return (
     <MenuBar inWindowFrame={isXpTheme}>
       <MenubarMenu>
-        <MenubarTrigger>{t("common.menu.file")}</MenubarTrigger>
-        <MenubarContent>
-          <MenubarSeparator />
-          <MenubarItem onClick={onClose}>{t("common.menu.close")}</MenubarItem>
+        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.file")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarItem onClick={onClose} className="text-md h-6 px-3">
+            {t("common.menu.close")}
+          </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
       <MenubarMenu>
-        <MenubarTrigger>{t("common.menu.help")}</MenubarTrigger>
-        <MenubarContent>
-          <MenubarItem onClick={onShowHelp}>{t("apps.[app-name].menu.help")}</MenubarItem>
+        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("common.menu.help")}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem onClick={onShowHelp} className="text-md h-6 px-3">
+            {t("apps.[app-name].menu.help")}
+          </MenubarItem>
           {!isMacOsxTheme && (
             <>
-              <MenubarSeparator />
-              <MenubarItem onClick={onShowAbout}>{t("apps.[app-name].menu.about")}</MenubarItem>
+              <MenubarSeparator className="h-[2px] bg-black my-1" />
+              <MenubarItem onClick={onShowAbout} className="text-md h-6 px-3">
+                {t("apps.[app-name].menu.about")}
+              </MenubarItem>
             </>
           )}
         </MenubarContent>
@@ -287,3 +312,13 @@ export const use[AppName]Store = create<State>()(
   persist((set) => ({ /* state and actions */ }), { name: "[app-name]-storage" })
 );
 ```
+
+## 9. Localize (Do Last)
+
+After the app is built and wired up, finish by localizing:
+
+1. **Add translation keys** for all user-facing strings (menu labels, dialogs, status, help).
+2. **Add English entries** under `apps.[app-name].*` in `src/lib/locales/en/translation.json`.
+3. **Sync other locales** (e.g. `bun run scripts/sync-translations.ts --mark-untranslated`).
+
+Use the **localize** skill for the full workflow: extract strings → `t()` calls → en keys → sync. Do this step last so all UI copy is stable before extracting and syncing.
