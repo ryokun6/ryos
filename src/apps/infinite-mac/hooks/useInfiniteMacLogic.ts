@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useAppStore } from "@/stores/useAppStore";
 import { helpItems } from "..";
 
 const INFINITEMAC_EMBED_BASE = "https://infinitemac.org/embed";
@@ -14,7 +15,11 @@ export interface MacPreset {
   machine?: string;
   description: string;
   image: string;
+  screenSize: { width: number; height: number };
 }
+
+// Default window size for the preset grid
+export const DEFAULT_WINDOW_SIZE = { width: 640, height: 480 };
 
 export const MAC_PRESETS: MacPreset[] = [
   {
@@ -24,6 +29,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "System 1.0",
     description: "Initial Mac system software",
     image: "/icons/default/infinite-mac.png",
+    screenSize: { width: 512, height: 342 },
   },
   {
     id: "system-6",
@@ -32,6 +38,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "System 6.0.8",
     description: "Final System 6 release",
     image: "/icons/default/infinite-mac.png",
+    screenSize: { width: 512, height: 342 },
   },
   {
     id: "system-7",
@@ -40,6 +47,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "System 7.0",
     description: "Fully 32-bit clean, MultiFinder",
     image: "/icons/default/infinite-mac.png",
+    screenSize: { width: 640, height: 480 },
   },
   {
     id: "system-7-5",
@@ -48,6 +56,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "System 7.5.3",
     description: "Open Transport and broader Mac support",
     image: "/icons/default/infinite-mac.png",
+    screenSize: { width: 640, height: 480 },
   },
   {
     id: "macos-8",
@@ -56,6 +65,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "Mac OS 8.0",
     description: "Platinum appearance, multi-threaded Finder",
     image: "/icons/default/infinite-mac.png",
+    screenSize: { width: 640, height: 480 },
   },
   {
     id: "macos-8-5",
@@ -64,6 +74,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "Mac OS 8.5",
     description: "Sherlock, 32-bit icons, font smoothing",
     image: "/icons/default/infinite-mac.png",
+    screenSize: { width: 710, height: 526 },
   },
   {
     id: "macos-9",
@@ -72,6 +83,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "Mac OS 9.0",
     description: "Keychain, multiple users, Sherlock channels",
     image: "/icons/default/infinite-mac.png",
+    screenSize: { width: 729, height: 546 },
   },
   {
     id: "macos-9-2",
@@ -80,15 +92,17 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "Mac OS 9.2.2",
     description: "Final classic Mac OS release",
     image: "/icons/default/infinite-mac.png",
+    screenSize: { width: 640, height: 480 },
   },
   {
-    id: "macosx-10-0",
-    name: "Mac OS X 10.0",
+    id: "macosx-10-1",
+    name: "Mac OS X 10.1",
     year: "2001",
-    disk: "Mac OS X 10.0",
-    machine: "Power Macintosh G3 (Blue & White)",
-    description: "Aqua interface, Quartz graphics, the Dock",
+    disk: "Mac OS X 10.1",
+    machine: "Power Macintosh G3 (Beige)",
+    description: "Puma - improved performance, DVD playback",
     image: "/icons/default/infinite-mac.png",
+    screenSize: { width: 640, height: 480 },
   },
   {
     id: "macosx-10-2",
@@ -98,6 +112,7 @@ export const MAC_PRESETS: MacPreset[] = [
     machine: "Power Macintosh G4 (PCI Graphics)",
     description: "Jaguar - Quartz Extreme, Address Book, iChat",
     image: "/icons/default/infinite-mac.png",
+    screenSize: { width: 800, height: 600 },
   },
   {
     id: "macosx-10-3",
@@ -107,6 +122,7 @@ export const MAC_PRESETS: MacPreset[] = [
     machine: "Power Macintosh G4 (PCI Graphics)",
     description: "Panther - Exposé, fast user switching",
     image: "/icons/default/infinite-mac.png",
+    screenSize: { width: 800, height: 600 },
   },
   {
     id: "macosx-10-4",
@@ -116,6 +132,7 @@ export const MAC_PRESETS: MacPreset[] = [
     machine: "Power Macintosh G4 (PCI Graphics)",
     description: "Tiger - Spotlight, Dashboard, Safari RSS",
     image: "/icons/default/infinite-mac.png",
+    screenSize: { width: 800, height: 600 },
   },
 ];
 
@@ -138,6 +155,7 @@ interface UseInfiniteMacLogicProps {
 
 export function useInfiniteMacLogic({
   isWindowOpen: _isWindowOpen,
+  instanceId,
 }: UseInfiniteMacLogicProps) {
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
@@ -150,20 +168,49 @@ export function useInfiniteMacLogic({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const translatedHelpItems = useTranslatedHelpItems("infinite-mac", helpItems);
-
   const embedUrl = selectedPreset ? buildEmbedUrl(selectedPreset) : null;
 
-  const handleSelectPreset = useCallback((preset: MacPreset) => {
-    setSelectedPreset(preset);
-    setIsEmulatorLoaded(false);
-    setIsPaused(false);
-  }, []);
+  // Extra height for macOS X theme's titlebar spacer (h-7 = 28px)
+  const MACOSX_TITLEBAR_HEIGHT = 28;
+
+  const resizeWindow = useCallback(
+    (size: { width: number; height: number }) => {
+      if (!instanceId) return;
+      // Get fresh state directly from store to avoid stale closures
+      const { instances, updateInstanceWindowState } = useAppStore.getState();
+      const theme = useThemeStore.getState().current;
+      const instance = instances[instanceId];
+      if (instance) {
+        // Add extra height for macOS X theme's titlebar spacer
+        const extraHeight = theme === "macosx" ? MACOSX_TITLEBAR_HEIGHT : 0;
+        updateInstanceWindowState(
+          instanceId,
+          instance.position ?? { x: 100, y: 100 },
+          { width: size.width, height: size.height + extraHeight }
+        );
+      }
+    },
+    [instanceId]
+  );
+
+  const handleSelectPreset = useCallback(
+    (preset: MacPreset) => {
+      setSelectedPreset(preset);
+      setIsEmulatorLoaded(false);
+      setIsPaused(false);
+      // Resize window to match emulator screen size
+      resizeWindow(preset.screenSize);
+    },
+    [resizeWindow]
+  );
 
   const handleBackToPresets = useCallback(() => {
     setSelectedPreset(null);
     setIsEmulatorLoaded(false);
     setIsPaused(false);
-  }, []);
+    // Resize window back to default for preset grid
+    resizeWindow(DEFAULT_WINDOW_SIZE);
+  }, [resizeWindow]);
 
   const sendEmulatorCommand = useCallback(
     (type: string, payload?: Record<string, unknown>) => {

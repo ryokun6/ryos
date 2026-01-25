@@ -475,9 +475,9 @@ export const appRegistry = {
     helpItems: infiniteMacHelpItems,
     metadata: infiniteMacMetadata,
     windowConfig: {
-      defaultSize: { width: 800, height: 600 },
-      minSize: { width: 800, height: 600 },
-      maxSize: { width: 800, height: 600 },
+      defaultSize: { width: 640, height: 480 },
+      minSize: { width: 512, height: 342 },
+      maxSize: { width: 800, height: 628 }, // 800x600 + 28 for macOS X titlebar spacer
     } as WindowConstraints,
   },
 } as const;

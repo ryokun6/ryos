@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   WindowPosition,
   WindowSize,
@@ -92,6 +92,14 @@ export const useWindowManager = ({
   const preSnapStateRef = useRef<{ position: WindowPosition; size: WindowSize } | null>(null);
 
   const isMobile = window.innerWidth < 768;
+
+  // Sync local state with store when store changes (for programmatic resizes)
+  useEffect(() => {
+    const storeSize = instanceStateFromStore?.size || appStateFromStore?.size;
+    if (storeSize && (storeSize.width !== windowSize.width || storeSize.height !== windowSize.height)) {
+      setWindowSize(storeSize);
+    }
+  }, [instanceStateFromStore?.size, appStateFromStore?.size]);
 
   const { play: playMoveSound, stop: stopMoveMoving } = useSound(Sounds.WINDOW_MOVE_MOVING);
   const { play: playMoveStop } = useSound(Sounds.WINDOW_MOVE_STOP);
