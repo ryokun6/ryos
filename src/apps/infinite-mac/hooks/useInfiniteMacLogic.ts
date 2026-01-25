@@ -18,8 +18,15 @@ export interface MacPreset {
   screenSize: { width: number; height: number };
 }
 
-// Default window size for the preset grid
+// Default window size for the preset grid (content only)
 export const DEFAULT_WINDOW_SIZE = { width: 640, height: 480 };
+
+// Default window size including titlebar (for app registry initial size)
+const DEFAULT_TITLEBAR_HEIGHT = 24; // matches TITLEBAR_HEIGHT_BY_THEME fallback
+export const DEFAULT_WINDOW_SIZE_WITH_TITLEBAR = {
+  width: DEFAULT_WINDOW_SIZE.width,
+  height: DEFAULT_WINDOW_SIZE.height + DEFAULT_TITLEBAR_HEIGHT,
+};
 
 export const MAC_PRESETS: MacPreset[] = [
   {
@@ -74,7 +81,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "Mac OS 8.5",
     description: "Sherlock, 32-bit icons, font smoothing",
     image: "/icons/default/infinite-mac.png",
-    screenSize: { width: 674, height: 504 },
+    screenSize: { width: 640, height: 480 },
   },
   {
     id: "macos-9",
@@ -83,7 +90,7 @@ export const MAC_PRESETS: MacPreset[] = [
     disk: "Mac OS 9.0",
     description: "Keychain, multiple users, Sherlock channels",
     image: "/icons/default/infinite-mac.png",
-    screenSize: { width: 668, height: 500 },
+    screenSize: { width: 640, height: 480 },
   },
   {
     id: "macos-9-2",
@@ -112,7 +119,7 @@ export const MAC_PRESETS: MacPreset[] = [
     machine: "Power Macintosh G4 (PCI Graphics)",
     description: "Jaguar - Quartz Extreme, Address Book, iChat",
     image: "/icons/default/infinite-mac.png",
-    screenSize: { width: 800, height: 600 },
+    screenSize: { width: 640, height: 480 },
   },
   {
     id: "macosx-10-3",
@@ -122,7 +129,7 @@ export const MAC_PRESETS: MacPreset[] = [
     machine: "Power Macintosh G4 (PCI Graphics)",
     description: "Panther - Exposé, fast user switching",
     image: "/icons/default/infinite-mac.png",
-    screenSize: { width: 1024, height: 768 },
+    screenSize: { width: 640, height: 480 },
   },
   {
     id: "macosx-10-4",
@@ -132,7 +139,7 @@ export const MAC_PRESETS: MacPreset[] = [
     machine: "Power Macintosh G4 (PCI Graphics)",
     description: "Tiger - Spotlight, Dashboard, Safari RSS",
     image: "/icons/default/infinite-mac.png",
-    screenSize: { width: 800, height: 600 },
+    screenSize: { width: 640, height: 480 },
   },
 ];
 
@@ -146,6 +153,7 @@ function buildEmbedUrl(preset: MacPreset): string {
   url.searchParams.set("saved_hd", "true");
   url.searchParams.set("screen_scale", "1");
   url.searchParams.set("auto_pause", "true"); // Auto-pause when out of view
+  url.searchParams.set("screen_update_messages", "true"); // Receive emulator_screen (width/height) to resize window
   return url.toString();
 }
 
@@ -242,13 +250,24 @@ export function useInfiniteMacLogic({
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      if (e.data?.type === "emulator_loaded") {
-        setIsEmulatorLoaded(true);
+      if (e.origin !== "https://infinitemac.org") return;
+      switch (e.data?.type) {
+        case "emulator_loaded":
+          setIsEmulatorLoaded(true);
+          break;
+        case "emulator_screen": {
+          const w = e.data?.width;
+          const h = e.data?.height;
+          if (typeof w === "number" && typeof h === "number") {
+            resizeWindow({ width: w, height: h });
+          }
+          break;
+        }
       }
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, []);
+  }, [resizeWindow]);
 
   return {
     t,

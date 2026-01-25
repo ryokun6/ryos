@@ -100,9 +100,9 @@ export function InfiniteMacAppComponent({
         menuBar={isXpTheme ? menuBar : undefined}
         titleBarRightContent={backButton}
       >
-        <div className="flex flex-col h-full w-full bg-black">
+        <div className="flex flex-col flex-1 min-h-0 w-full bg-black">
           {currentTheme === "macosx" && <div className="h-6 shrink-0 bg-black" />}
-          <div className="flex-1 relative h-full bg-[#1a1a1a]">
+          <div className="flex flex-col flex-1 min-h-0 relative bg-[#1a1a1a]">
             {selectedPreset && embedUrl ? (
               <>
                 <iframe
@@ -130,7 +130,7 @@ export function InfiniteMacAppComponent({
                 )}
               </>
             ) : (
-              <div className="flex flex-col h-full">
+              <div className="flex flex-col flex-1 min-h-0">
                 <div className="bg-black px-4 py-2 border-b border-[#3a3a3a] shrink-0">
                   <div className="flex items-center justify-between">
                     <div className="font-apple-garamond text-white text-lg">
@@ -144,13 +144,13 @@ export function InfiniteMacAppComponent({
                   </div>
                 </div>
 
-                <div className="flex-1 p-4 overflow-y-auto flex justify-start md:justify-center w-full">
-                  <div className="preset-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full max-w-4xl">
+                <div className="flex-1 min-h-0 overflow-y-auto flex justify-start md:justify-center w-full p-4">
+                  <div className="preset-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full max-w-4xl pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pb-0">
                     {MAC_PRESETS.map((preset) => (
                       <motion.button
                         key={preset.id}
                         onClick={() => handleSelectPreset(preset)}
-                        className="group relative rounded overflow-hidden bg-neutral-800 hover:bg-neutral-700 transition-all duration-200 shadow-[0_4px_12px_rgba(0,0,0,0.5)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.7)] border border-neutral-700 hover:border-neutral-600 w-full p-3"
+                        className="group relative rounded overflow-hidden bg-neutral-800 hover:bg-neutral-700 transition-all duration-200 shadow-[0_4px_12px_rgba(0,0,0,0.5)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.7)] border border-neutral-700 hover:border-neutral-600 w-full min-h-16 p-3"
                         whileTap={{
                           scale: 0.97,
                           y: 0,

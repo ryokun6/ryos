@@ -217,7 +217,11 @@ import { appMetadata as appletViewerMetadata, helpItems as appletViewerHelpItems
 import { appMetadata as controlPanelsMetadata, helpItems as controlPanelsHelpItems } from "@/apps/control-panels";
 import { appMetadata as adminMetadata, helpItems as adminHelpItems } from "@/apps/admin";
 import { appMetadata as stickiesMetadata, helpItems as stickiesHelpItems } from "@/apps/stickies";
-import { appMetadata as infiniteMacMetadata, helpItems as infiniteMacHelpItems } from "@/apps/infinite-mac";
+import {
+  appMetadata as infiniteMacMetadata,
+  helpItems as infiniteMacHelpItems,
+  DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize,
+} from "@/apps/infinite-mac";
 
 // ============================================================================
 // APP REGISTRY
@@ -475,7 +479,7 @@ export const appRegistry = {
     helpItems: infiniteMacHelpItems,
     metadata: infiniteMacMetadata,
     windowConfig: {
-      defaultSize: { width: 640, height: 480 },
+      defaultSize: infiniteMacDefaultSize,
       minSize: { width: 512, height: 342 },
       maxSize: { width: 1024, height: 792 }, // 768 + 24 for macOS X titlebar spacer
     } as WindowConstraints,

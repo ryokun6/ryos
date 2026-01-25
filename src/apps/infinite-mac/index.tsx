@@ -1,3 +1,5 @@
+export { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR } from "./hooks/useInfiniteMacLogic";
+
 export const appMetadata = {
   name: "Infinite Mac",
   version: "1.0.0",
