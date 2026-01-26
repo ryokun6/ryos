@@ -1447,7 +1447,7 @@
           "title": "スタイル・発音"
         },
         "syncLyricsTiming": {
-          "description": "[ ]キー、マウスホイール、または上下ドラッグで歌詞オフセットを調整。",
+          "description": "[ ]キー、マウスホイール、または左右ドラッグで歌詞オフセットを調整。",
           "title": "歌詞タイミング同期"
         },
         "syncedWithIpod": {
@@ -1573,10 +1573,6 @@
         "openFiltersMenu": "フィルターメニューを開く"
       },
       "help": {
-        "colors": {
-          "description": "ツールの下のパレットから色を選択して描画色を変更。",
-          "title": "色"
-        },
         "drawingTools": {
           "description": "左側のツールバーを使用して、鉛筆、ブラシ、図形などのさまざまな描画ツールを選択。",
           "title": "描画ツール"
@@ -1665,7 +1661,7 @@
           "title": "アスペクト比"
         },
         "fullscreenMode": {
-          "description": "表示 ▸ フルスクリーンを切り替えて没入感のある表示",
+          "description": "コントロール ▸ フルスクリーンを切り替えて没入感のある表示",
           "title": "フルスクリーンモード"
         },
         "keyboardControls": {
@@ -1683,10 +1679,6 @@
         "resetLoad": {
           "description": "ファイル ▸ リセットで再開、またはゲームをロードでゲームを切り替えます。",
           "title": "リセットとロード"
-        },
-        "saveStates": {
-          "description": "ファイルメニューからいつでもゲームの進行状況を保存または読み込み",
-          "title": "セーブステート"
         }
       },
       "loadingEmulator": "エミュレーターを読み込み中",
@@ -1758,7 +1750,7 @@
           "title": "クイックスナップ"
         },
         "switchingCameras": {
-          "description": "複数のカメラが接続されている場合、メニューバーの「表示」メニューを使用して利用可能なカメラを切り替え。",
+          "description": "複数のカメラが接続されている場合、メニューバーの「カメラ」メニューを使用して利用可能なカメラを切り替え。",
           "title": "カメラの切り替え"
         },
         "takingPhoto": {
@@ -1907,10 +1899,6 @@
         "effects": {
           "description": "リバーブ、ディレイ、ディストーション、コーラス、フェイザー、ビットクラッシャー",
           "title": "エフェクト"
-        },
-        "midiInput": {
-          "description": "MIDIキーボードを接続して即座に演奏",
-          "title": "MIDI入力"
         },
         "octaveShift": {
           "description": "-/+ キーまたはボタンでオクターブを上下にシフトします。",
@@ -2104,7 +2092,7 @@
           "title": "リッチ編集"
         },
         "slashCommands": {
-          "description": "/を入力してクイックアクション、またはRyo AIにリモートで行を編集させる",
+          "description": "/を入力してクイック書式設定（見出し、リスト、テキストスタイル）",
           "title": "スラッシュコマンド"
         },
         "voiceDictation": {

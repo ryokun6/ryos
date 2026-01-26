@@ -1447,7 +1447,7 @@
           "title": "樣式與發音"
         },
         "syncLyricsTiming": {
-          "description": "使用 [ ] 鍵、滑鼠滾輪或上下拖曳來調整歌詞偏移。",
+          "description": "使用 [ ] 鍵、滑鼠滾輪或左右拖曳來調整歌詞偏移。",
           "title": "同步歌詞時間"
         },
         "syncedWithIpod": {
@@ -1573,10 +1573,6 @@
         "openFiltersMenu": "開啟濾鏡選單"
       },
       "help": {
-        "colors": {
-          "description": "從工具下方的調色盤選擇顏色以變更繪圖顏色。",
-          "title": "顏色"
-        },
         "drawingTools": {
           "description": "使用左側工具列選擇不同的繪圖工具，如鉛筆、畫筆、形狀等。",
           "title": "繪圖工具"
@@ -1665,7 +1661,7 @@
           "title": "長寬比"
         },
         "fullscreenMode": {
-          "description": "切換「檢視」▸「全螢幕」以獲得沉浸式顯示",
+          "description": "切換「控制」▸「全螢幕」以獲得沉浸式顯示",
           "title": "全螢幕模式"
         },
         "keyboardControls": {
@@ -1683,10 +1679,6 @@
         "resetLoad": {
           "description": "使用「檔案 ▸ 重設」重新開始，或「載入遊戲」切換遊戲。",
           "title": "重設與載入"
-        },
-        "saveStates": {
-          "description": "隨時從「檔案」選單儲存或載入遊戲進度",
-          "title": "儲存狀態"
         }
       },
       "loadingEmulator": "載入模擬器",
@@ -1758,7 +1750,7 @@
           "title": "快速連拍"
         },
         "switchingCameras": {
-          "description": "如果您連接了多個相機，請使用選單列中的「檢視」選單在可用相機之間切換。",
+          "description": "如果您連接了多個相機，請使用選單列中的「相機」選單在可用相機之間切換。",
           "title": "切換相機"
         },
         "takingPhoto": {
@@ -1907,10 +1899,6 @@
         "effects": {
           "description": "殘響、延遲、失真、和聲、相位器和位元壓縮器",
           "title": "效果"
-        },
-        "midiInput": {
-          "description": "插入 MIDI 鍵盤並立即演奏",
-          "title": "MIDI 輸入"
         },
         "octaveShift": {
           "description": "使用 -/+ 鍵或按鈕向上或向下移動八度音。",
@@ -2104,7 +2092,7 @@
           "title": "富文字編輯"
         },
         "slashCommands": {
-          "description": "輸入 / 以快速操作，或讓 Ryo AI 遠端編輯行",
+          "description": "輸入 / 以快速格式化（標題、列表、文字樣式）",
           "title": "斜線指令"
         },
         "voiceDictation": {

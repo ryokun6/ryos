@@ -1447,7 +1447,7 @@
           "title": "Stile e pronuncia"
         },
         "syncLyricsTiming": {
-          "description": "Usa i tasti [ ], la rotellina del mouse o trascina su/giù per regolare l'offset dei testi.",
+          "description": "Usa i tasti [ ], la rotellina del mouse o trascina sinistra/destra per regolare l'offset dei testi.",
           "title": "Sincronizza timing testi"
         },
         "syncedWithIpod": {
@@ -1573,10 +1573,6 @@
         "openFiltersMenu": "Apri menu filtri"
       },
       "help": {
-        "colors": {
-          "description": "Seleziona i colori dalla tavolozza sotto gli strumenti per cambiare il colore del tuo disegno.",
-          "title": "Colori"
-        },
         "drawingTools": {
           "description": "Usa la barra degli strumenti a sinistra per selezionare diversi strumenti di disegno come matita, pennello, forme e altro.",
           "title": "Strumenti di disegno"
@@ -1665,7 +1661,7 @@
           "title": "Proporzioni"
         },
         "fullscreenMode": {
-          "description": "Attiva/Disattiva Visualizza ▸ Schermo Intero per una visualizzazione immersiva",
+          "description": "Attiva/Disattiva Controlli ▸ Schermo Intero per una visualizzazione immersiva",
           "title": "Modalità Schermo Intero"
         },
         "keyboardControls": {
@@ -1683,10 +1679,6 @@
         "resetLoad": {
           "description": "Usa File ▸ Reimposta per riavviare, o Carica Partita per cambiare partita.",
           "title": "Reimposta & Carica"
-        },
-        "saveStates": {
-          "description": "Salva o carica i progressi di gioco in qualsiasi momento dal menu File",
-          "title": "Salva Stati"
         }
       },
       "loadingEmulator": "CARICAMENTO EMULATORE",
@@ -1758,7 +1750,7 @@
           "title": "Scatti rapidi"
         },
         "switchingCameras": {
-          "description": "Usa il menu 'Visualizza' nella barra dei menu per passare da una fotocamera all'altra se ne hai più di una collegata.",
+          "description": "Usa il menu 'Fotocamera' nella barra dei menu per passare da una fotocamera all'altra se ne hai più di una collegata.",
           "title": "Cambio fotocamere"
         },
         "takingPhoto": {
@@ -1907,10 +1899,6 @@
         "effects": {
           "description": "Riverbero, delay, distorsione, chorus, phaser e bit-crusher",
           "title": "Effetti"
-        },
-        "midiInput": {
-          "description": "Collega una tastiera MIDI e suona all'istante",
-          "title": "Ingresso MIDI"
         },
         "octaveShift": {
           "description": "Usa i tasti o i pulsanti -/+ per spostare le ottave su o giù.",
@@ -2104,7 +2092,7 @@
           "title": "Modifica avanzata"
         },
         "slashCommands": {
-          "description": "Digita / per azioni rapide o lascia che Ryo AI modifichi le righe in remoto",
+          "description": "Digita / per formattazione rapida (titoli, elenchi, stili di testo)",
           "title": "Comandi slash"
         },
         "voiceDictation": {

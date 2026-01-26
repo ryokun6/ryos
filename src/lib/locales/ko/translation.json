@@ -1447,7 +1447,7 @@
           "title": "스타일 및 발음"
         },
         "syncLyricsTiming": {
-          "description": "[ ] 키, 마우스 휠 또는 위/아래 드래그로 가사 오프셋을 조정하세요.",
+          "description": "[ ] 키, 마우스 휠 또는 좌/우 드래그로 가사 오프셋을 조정하세요.",
           "title": "가사 타이밍 동기화"
         },
         "syncedWithIpod": {
@@ -1573,10 +1573,6 @@
         "openFiltersMenu": "필터 메뉴 열기"
       },
       "help": {
-        "colors": {
-          "description": "도구 아래의 팔레트에서 색상을 선택하여 그리기 색상 변경.",
-          "title": "색상"
-        },
         "drawingTools": {
           "description": "왼쪽 도구 모음을 사용하여 연필, 브러시, 도형 등의 다양한 그리기 도구 선택.",
           "title": "그리기 도구"
@@ -1665,7 +1661,7 @@
           "title": "종횡비"
         },
         "fullscreenMode": {
-          "description": "보기 ▸ 전체 화면을 전환하여 몰입형 표시",
+          "description": "제어 ▸ 전체 화면을 전환하여 몰입형 표시",
           "title": "전체 화면 모드"
         },
         "keyboardControls": {
@@ -1683,10 +1679,6 @@
         "resetLoad": {
           "description": "파일 ▸ 재시작으로 다시 시작하거나, 게임 불러오기로 게임을 전환하세요.",
           "title": "재시작 및 불러오기"
-        },
-        "saveStates": {
-          "description": "파일 메뉴에서 언제든지 게임 진행 상황 저장 또는 로드",
-          "title": "저장 상태"
         }
       },
       "loadingEmulator": "에뮬레이터 로드 중",
@@ -1758,7 +1750,7 @@
           "title": "빠른 스냅"
         },
         "switchingCameras": {
-          "description": "여러 카메라가 연결된 경우 메뉴 모음의 보기 메뉴를 사용하여 사용 가능한 카메라 간 전환.",
+          "description": "여러 카메라가 연결된 경우 메뉴 모음의 카메라 메뉴를 사용하여 사용 가능한 카메라 간 전환.",
           "title": "카메라 전환"
         },
         "takingPhoto": {
@@ -1907,10 +1899,6 @@
         "effects": {
           "description": "리버브, 딜레이, 디스토션, 코러스, 페이저 및 비트 크러셔",
           "title": "효과"
-        },
-        "midiInput": {
-          "description": "MIDI 키보드를 연결하고 즉시 연주",
-          "title": "MIDI 입력"
         },
         "octaveShift": {
           "description": "-/+ 키 또는 버튼으로 옥타브를 위아래로 이동하세요.",
@@ -2104,7 +2092,7 @@
           "title": "리치 편집"
         },
         "slashCommands": {
-          "description": "/를 입력하여 빠른 작업 수행 또는 Ryo AI가 원격으로 줄 편집",
+          "description": "/를 입력하여 빠른 서식 지정 (제목, 목록, 텍스트 스타일)",
           "title": "슬래시 명령"
         },
         "voiceDictation": {

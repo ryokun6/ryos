@@ -1447,7 +1447,7 @@
           "title": "Stil & Aussprache"
         },
         "syncLyricsTiming": {
-          "description": "Verwenden Sie [ ]-Tasten, Mausrad oder ziehen Sie nach oben/unten, um den Liedtext-Offset anzupassen.",
+          "description": "Verwenden Sie [ ]-Tasten, Mausrad oder ziehen Sie nach links/rechts, um den Liedtext-Offset anzupassen.",
           "title": "Liedtext-Timing synchronisieren"
         },
         "syncedWithIpod": {
@@ -1573,10 +1573,6 @@
         "openFiltersMenu": "Filtermenü öffnen"
       },
       "help": {
-        "colors": {
-          "description": "Wählen Sie Farben aus der Palette unter den Werkzeugen aus, um Ihre Zeichenfarbe zu ändern.",
-          "title": "Farben"
-        },
         "drawingTools": {
           "description": "Verwenden Sie die Symbolleiste links, um verschiedene Zeichenwerkzeuge wie Bleistift, Pinsel, Formen und mehr auszuwählen.",
           "title": "Zeichenwerkzeuge"
@@ -1665,7 +1661,7 @@
           "title": "Seitenverhältnis"
         },
         "fullscreenMode": {
-          "description": "Darstellung ▸ Vollbild umschalten für eine immersive Anzeige",
+          "description": "Steuerung ▸ Vollbild umschalten für eine immersive Anzeige",
           "title": "Vollbildmodus"
         },
         "keyboardControls": {
@@ -1683,10 +1679,6 @@
         "resetLoad": {
           "description": "Verwenden Sie Datei ▸ Zurücksetzen, um neu zu starten, oder Spiel laden, um das Spiel zu wechseln.",
           "title": "Zurücksetzen & Laden"
-        },
-        "saveStates": {
-          "description": "Spielstand jederzeit aus dem Ablage-Menü speichern oder laden",
-          "title": "Speicherstände"
         }
       },
       "loadingEmulator": "EMULATOR WIRD GELADEN",
@@ -1758,7 +1750,7 @@
           "title": "Schnappschüsse"
         },
         "switchingCameras": {
-          "description": "Verwenden Sie das Menü 'Darstellung' in der Menüleiste, um zwischen verfügbaren Kameras zu wechseln, wenn Sie mehr als eine angeschlossen haben.",
+          "description": "Verwenden Sie das Menü 'Kamera' in der Menüleiste, um zwischen verfügbaren Kameras zu wechseln, wenn Sie mehr als eine angeschlossen haben.",
           "title": "Kameras wechseln"
         },
         "takingPhoto": {
@@ -1907,10 +1899,6 @@
         "effects": {
           "description": "Hall, Verzögerung, Verzerrung, Chorus, Phaser und Bit-Crusher",
           "title": "Effekte"
-        },
-        "midiInput": {
-          "description": "MIDI-Tastatur anschließen und sofort spielen",
-          "title": "MIDI-Eingabe"
         },
         "octaveShift": {
           "description": "Nutzen Sie die Tasten oder Schaltflächen -/+, um Oktaven nach oben oder unten zu verschieben.",
@@ -2104,7 +2092,7 @@
           "title": "Rich-Bearbeitung"
         },
         "slashCommands": {
-          "description": "Geben Sie / für schnelle Aktionen ein oder lassen Sie Ryo KI Zeilen remote bearbeiten",
+          "description": "Geben Sie / für schnelle Formatierung (Überschriften, Listen, Textstile) ein",
           "title": "Schrägstrich-Befehle"
         },
         "voiceDictation": {

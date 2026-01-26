@@ -1447,7 +1447,7 @@
           "title": "Estilo y Pronunciación"
         },
         "syncLyricsTiming": {
-          "description": "Usa las teclas [ ], la rueda del ratón o arrastra arriba/abajo para ajustar el desfase de la letra.",
+          "description": "Usa las teclas [ ], la rueda del ratón o arrastra izquierda/derecha para ajustar el desfase de la letra.",
           "title": "Sincronizar tiempo de letras"
         },
         "syncedWithIpod": {
@@ -1573,10 +1573,6 @@
         "openFiltersMenu": "Abrir menú de filtros"
       },
       "help": {
-        "colors": {
-          "description": "Selecciona colores de la paleta debajo de las herramientas para cambiar el color de tu dibujo.",
-          "title": "Colores"
-        },
         "drawingTools": {
           "description": "Usa la barra de herramientas de la izquierda para seleccionar diferentes herramientas de dibujo como lápiz, pincel, formas y más.",
           "title": "Herramientas de dibujo"
@@ -1665,7 +1661,7 @@
           "title": "Relación de aspecto"
         },
         "fullscreenMode": {
-          "description": "Alterna Ver ▸ Pantalla completa para una visualización inmersiva",
+          "description": "Alterna Controles ▸ Pantalla completa para una visualización inmersiva",
           "title": "Modo de pantalla completa"
         },
         "keyboardControls": {
@@ -1683,10 +1679,6 @@
         "resetLoad": {
           "description": "Usa Archivo ▸ Reiniciar para reiniciar, o Cargar partida para cambiar de partida.",
           "title": "Reiniciar y Cargar"
-        },
-        "saveStates": {
-          "description": "Guarda o carga el progreso del juego en cualquier momento desde el menú Archivo",
-          "title": "Guardar estados"
         }
       },
       "loadingEmulator": "CARGANDO EMULADOR",
@@ -1758,7 +1750,7 @@
           "title": "Instantáneas rápidas"
         },
         "switchingCameras": {
-          "description": "Usa el menú 'Ver' en la barra de menú para cambiar entre las cámaras disponibles si tienes más de una conectada.",
+          "description": "Usa el menú 'Cámara' en la barra de menú para cambiar entre las cámaras disponibles si tienes más de una conectada.",
           "title": "Cambiando de cámara"
         },
         "takingPhoto": {
@@ -1907,10 +1899,6 @@
         "effects": {
           "description": "Reverb, delay, distorsión, chorus, phaser y bit-crusher",
           "title": "Efectos"
-        },
-        "midiInput": {
-          "description": "Conecta un teclado MIDI y toca al instante",
-          "title": "Entrada MIDI"
         },
         "octaveShift": {
           "description": "Usa las teclas o botones -/+ para desplazar las octavas hacia arriba o hacia abajo.",
@@ -2104,7 +2092,7 @@
           "title": "Edición enriquecida"
         },
         "slashCommands": {
-          "description": "Escribe / para acciones rápidas o deja que Ryo AI edite líneas de forma remota",
+          "description": "Escribe / para formato rápido (encabezados, listas, estilos de texto)",
           "title": "Comandos de barra"
         },
         "voiceDictation": {
