@@ -253,6 +253,36 @@ export function createChatTools(context: ServerToolContext) {
       description: TOOL_DESCRIPTIONS.infiniteMacControl,
       inputSchema: schemas.infiniteMacControlSchema,
       // No execute - handled client-side (requires iframe postMessage access)
+      // toModelOutput converts the tool result to multimodal content for the AI model
+      toModelOutput: ({ output }: { output: unknown }) => {
+        // Check if this is a readScreen result with image data
+        const result = output as { screenImageDataUrl?: string; message?: string; screenSize?: { width: number; height: number } } | undefined;
+        if (result?.screenImageDataUrl) {
+          // Extract base64 data from data URL (remove "data:image/png;base64," prefix)
+          const base64Match = result.screenImageDataUrl.match(/^data:([^;]+);base64,(.+)$/);
+          if (base64Match) {
+            const mediaType = base64Match[1];
+            const base64Data = base64Match[2];
+            // Return multimodal content with image for the AI to "see"
+            return {
+              type: "content" as const,
+              value: [
+                {
+                  type: "text" as const,
+                  text: result.message || "Screen captured from emulator.",
+                },
+                {
+                  type: "image-data" as const,
+                  data: base64Data,
+                  mediaType,
+                },
+              ],
+            };
+          }
+        }
+        // For other outputs, return as JSON
+        return { type: "json" as const, value: output };
+      },
     },
   };
 }
