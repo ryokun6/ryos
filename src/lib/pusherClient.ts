@@ -1,6 +1,7 @@
 import Pusher, { Channel } from "pusher-js";
 
 // App-wide singleton so we don't open/close the WebSocket on every React Strict-Mode remount.
+// Also survives HMR to prevent connection churn during development.
 
 const globalWithPusher = globalThis as typeof globalThis & {
   __pusherClient?: Pusher;
@@ -26,3 +27,12 @@ export function getPusherClient(): Pusher {
 }
 
 export type PusherChannel = Channel;
+
+// HMR cleanup - don't disconnect during HMR, the singleton survives via globalThis
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    // Intentionally keep the connection alive during HMR
+    // The globalThis singleton will be reused by the new module
+    console.debug("[pusherClient] HMR: keeping connection alive");
+  });
+}

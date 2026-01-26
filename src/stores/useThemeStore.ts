@@ -51,7 +51,7 @@ async function ensureLegacyCss(theme: OsThemeId) {
 const THEME_KEY = "ryos:theme";
 const LEGACY_THEME_KEY = "os_theme";
 
-export const useThemeStore = create<ThemeState>((set) => ({
+const createThemeStore = () => create<ThemeState>((set) => ({
   current: "macosx",
   setTheme: (theme) => {
     set({ current: theme });
@@ -81,3 +81,15 @@ export const useThemeStore = create<ThemeState>((set) => ({
     ensureLegacyCss(theme);
   },
 }));
+
+// Preserve store across Vite HMR to prevent theme flashing during development
+let useThemeStore = createThemeStore();
+if (import.meta.hot) {
+  const data = import.meta.hot.data as { useThemeStore?: typeof useThemeStore };
+  if (data.useThemeStore) {
+    useThemeStore = data.useThemeStore;
+  } else {
+    data.useThemeStore = useThemeStore;
+  }
+}
+export { useThemeStore };

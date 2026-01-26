@@ -68,11 +68,15 @@ export default defineConfig({
       // Increase timeout to allow for slower transforms
       timeout: 5000,
     },
-    // Disable warmup in dev to reduce memory - files are transformed on-demand
-    warmup: isDev ? undefined : {
+    // Enable warmup for critical files to speed up first page load
+    // These files are always needed and pre-transforming them improves perceived startup
+    warmup: {
       clientFiles: [
         "./src/main.tsx",
         "./src/App.tsx",
+        "./src/config/appRegistry.tsx",
+        "./src/stores/useAppStore.ts",
+        "./src/components/layout/WindowFrame.tsx",
       ],
     },
   },
@@ -110,6 +114,16 @@ export default defineConfig({
       "@tiptap/react",
       "@tiptap/starter-kit",
       "@tiptap/pm",
+      // Video player - only needed when Videos app opens
+      "react-player",
+      // Realtime chat - only needed when Chats opens
+      "pusher-js",
+      // Chinese/Japanese text processing - only needed for lyrics features
+      "pinyin-pro",
+      "wanakana",
+      "hangul-romanization",
+      // QR codes - only needed for specific features
+      "qrcode.react",
     ] : [],
   },
   plugins: [
