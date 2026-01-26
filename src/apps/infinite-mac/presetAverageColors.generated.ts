@@ -12,5 +12,5 @@ export const PRESET_AVERAGE_COLORS: Record<string, string> = {
   "macosx-10-4": "39,74,117",
   "system-1": "94,94,94",
   "system-6": "95,95,95",
-  "system-7-5": "171,148,148",
+  "system-7-5": "148,148,169",
 };

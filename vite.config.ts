@@ -56,6 +56,17 @@ export default defineConfig({
       ],
       // Use polling only when necessary (e.g., Docker/VM)
       usePolling: false,
+      // Debounce rapid file changes to prevent duplicate HMR updates
+      // This helps when editors save multiple times or trigger multiple events
+      awaitWriteFinish: {
+        stabilityThreshold: 100,
+        pollInterval: 50,
+      },
+    },
+    // Reduce HMR full reload frequency
+    hmr: {
+      // Increase timeout to allow for slower transforms
+      timeout: 5000,
     },
     // Disable warmup in dev to reduce memory - files are transformed on-demand
     warmup: isDev ? undefined : {

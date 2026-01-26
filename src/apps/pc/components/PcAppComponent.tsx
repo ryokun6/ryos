@@ -76,6 +76,12 @@ function GameGridCard({
         >
           {game.name}
         </span>
+        <span
+          className="text-neutral-300 text-[10px] shrink-0 opacity-100 @md:opacity-0 transition-opacity duration-200 @md:group-hover:opacity-100"
+          style={{ textShadow }}
+        >
+          {game.year}
+        </span>
       </div>
     </motion.button>
   );

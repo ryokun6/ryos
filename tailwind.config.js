@@ -1,11 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
+  // Only scan src/ - other paths don't exist in this project
+  // Exclude generated files and test files to reduce scanning scope
   content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
+    "!./src/**/*.generated.{ts,tsx}",
+    "!./src/**/*.test.{ts,tsx}",
+    "./index.html",
   ],
   theme: {
     container: {

@@ -75,7 +75,7 @@ function PresetGridCard({
           {preset.name}
         </span>
         <span
-          className="text-neutral-300 text-[10px] shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          className="text-neutral-300 text-[10px] shrink-0 opacity-100 @md:opacity-0 transition-opacity duration-200 @md:group-hover:opacity-100"
           style={{ textShadow }}
         >
           {preset.year}
@@ -224,7 +224,7 @@ export function InfiniteMacAppComponent({
                 </div>
 
                 <div className="flex-1 min-h-0 overflow-y-auto flex justify-start @md:justify-center w-full p-4 @container">
-                  <div className="preset-grid grid grid-cols-1 @md:grid-cols-3 gap-2 w-full max-w-4xl pb-[calc(1rem+env(safe-area-inset-bottom,0px))] @md:pb-0">
+                  <div className="preset-grid grid grid-cols-1 @md:grid-cols-3 gap-2 w-full max-w-md @md:max-w-none pb-[calc(1rem+env(safe-area-inset-bottom,0px))] @md:pb-0">
                     {MAC_PRESETS.map((preset) => (
                       <PresetGridCard
                         key={preset.id}
