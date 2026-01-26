@@ -45,6 +45,7 @@ import {
   handleIpodControl,
   handleKaraokeControl,
   handleStickiesControl,
+  handleInfiniteMacControl,
   type ToolContext,
   type LaunchAppInput,
   type CloseAppInput,
@@ -52,6 +53,7 @@ import {
   type IpodControlInput,
   type KaraokeControlInput,
   type StickiesControlInput,
+  type InfiniteMacControlInput,
 } from "../tools";
 
 /**
@@ -1624,6 +1626,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           case "stickiesControl": {
             handleStickiesControl(
               toolCall.input as StickiesControlInput,
+              toolCall.toolCallId,
+              toolContext
+            );
+            result = ""; // Handler manages its own result
+            break;
+          }
+          case "infiniteMacControl": {
+            await handleInfiniteMacControl(
+              toolCall.input as InfiniteMacControlInput,
               toolCall.toolCallId,
               toolContext
             );

@@ -115,6 +115,19 @@ export const TOOL_DESCRIPTIONS = {
   
   stickiesControl:
     "Manage sticky notes in ryOS. Actions: 'list' returns all stickies with their IDs, content, and colors; 'create' makes a new sticky note with optional content/text, color (yellow/blue/green/pink/purple/orange), position, size; 'update' modifies an existing sticky by ID - use this to set/replace text content, change color, or move it; 'delete' removes a sticky by ID; 'clear' removes all stickies. The Stickies app opens automatically when creating notes.",
+
+  infiniteMacControl:
+    "Control the Infinite Mac emulator to run classic Mac OS systems. Actions: " +
+    "'launchSystem' launches a Mac OS (requires 'system' param - options include system-1, system-6, system-7-5, macos-8, macos-9, macosx-10-1 through 10-4); " +
+    "'getStatus' returns the current emulator state (loaded, paused, current system, screen size); " +
+    "'readScreen' captures the current screen as a PNG image that you can analyze visually; " +
+    "'mouseMove' moves the cursor to (x, y) pixel coordinates matching the screenshot; " +
+    "'mouseClick' single-clicks at (x, y) with optional 'button' (left/right); " +
+    "'doubleClick' double-clicks at (x, y) to open files/folders; " +
+    "'keyPress' sends a key press (use JS key codes like 'KeyA', 'Enter', 'Space', 'ArrowUp'); " +
+    "'pause'/'unpause' controls emulation. " +
+    "IMPORTANT: Mouse coordinates are 1:1 with the screenshot pixels - use exact pixel positions from the image. " +
+    "Mouse control works best on classic Mac OS (System 1-9). Mac OS X systems have limited mouse support due to emulator constraints.",
 } as const;
 
 /**
@@ -233,6 +246,45 @@ export function createChatTools(context: ServerToolContext) {
       description: TOOL_DESCRIPTIONS.stickiesControl,
       inputSchema: schemas.stickiesControlSchema,
       // No execute - handled client-side (requires Zustand store access)
+    },
+
+    // ============================================================================
+    // Infinite Mac Emulator Control Tools (Client-side execution)
+    // ============================================================================
+    infiniteMacControl: {
+      description: TOOL_DESCRIPTIONS.infiniteMacControl,
+      inputSchema: schemas.infiniteMacControlSchema,
+      // No execute - handled client-side (requires iframe postMessage access)
+      // toModelOutput converts the tool result to multimodal content for the AI model
+      toModelOutput: ({ output }: { output: unknown }) => {
+        // Check if this is a readScreen result with image data
+        const result = output as { screenImageDataUrl?: string; message?: string; screenSize?: { width: number; height: number } } | undefined;
+        if (result?.screenImageDataUrl) {
+          // Extract base64 data from data URL (remove "data:image/png;base64," prefix)
+          const base64Match = result.screenImageDataUrl.match(/^data:([^;]+);base64,(.+)$/);
+          if (base64Match) {
+            const mediaType = base64Match[1];
+            const base64Data = base64Match[2];
+            // Return multimodal content with image for the AI to "see"
+            return {
+              type: "content" as const,
+              value: [
+                {
+                  type: "text" as const,
+                  text: result.message || "Screen captured from emulator.",
+                },
+                {
+                  type: "image-data" as const,
+                  data: base64Data,
+                  mediaType,
+                },
+              ],
+            };
+          }
+        }
+        // For other outputs, return as JSON
+        return { type: "json" as const, value: output };
+      },
     },
   };
 }

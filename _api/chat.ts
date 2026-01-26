@@ -652,10 +652,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       content: generateDynamicSystemPrompt(systemState),
     };
 
+    // Create tools with server-side context for logging and API access
+    // This follows the Vercel AI SDK's tool loop agent pattern:
+    // - Server-side tools have `execute` functions
+    // - Client-side tools are handled via `onToolCall` on the frontend
+    // - Tools with `toModelOutput` can convert results to multimodal content
+    const tools = createChatTools({
+      log: (...args: unknown[]) => log(...args),
+      logError: (...args: unknown[]) => logError(...args),
+      env: {
+        YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
+        YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
+      },
+    });
+
     // Convert UIMessages to ModelMessages for the AI model
     // Ensure messages are in UIMessage format (handles both simple and parts-based formats)
+    // Pass tools so toModelOutput can convert tool results to multimodal content
     const uiMessages = ensureUIMessageFormat(messages as SimpleMessage[]);
-    const modelMessages = await convertToModelMessages(uiMessages);
+    const modelMessages = await convertToModelMessages(uiMessages, { tools });
 
     // Merge all messages: static sys → dynamic sys → user/assistant turns
     const enrichedMessages = [
@@ -671,19 +686,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ? msg.content
           : JSON.stringify(msg.content);
       log(`Message ${index} [${msg.role}]: ${contentStr.substring(0, 100)}...`);
-    });
-
-    // Create tools with server-side context for logging and API access
-    // This follows the Vercel AI SDK's tool loop agent pattern:
-    // - Server-side tools have `execute` functions
-    // - Client-side tools are handled via `onToolCall` on the frontend
-    const tools = createChatTools({
-      log: (...args: unknown[]) => log(...args),
-      logError: (...args: unknown[]) => logError(...args),
-      env: {
-        YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
-        YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
-      },
     });
 
     const result = streamText({

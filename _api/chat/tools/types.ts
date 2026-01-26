@@ -200,3 +200,72 @@ export interface StickiesControlOutput {
     size: { width: number; height: number };
   };
 }
+
+// Infinite Mac control actions
+export const INFINITE_MAC_ACTIONS = [
+  "launchSystem",
+  "getStatus",
+  "readScreen",
+  "mouseMove",
+  "mouseClick",
+  "doubleClick",
+  "keyPress",
+  "pause",
+  "unpause",
+] as const;
+export type InfiniteMacAction = typeof INFINITE_MAC_ACTIONS[number];
+
+// Infinite Mac system presets
+export const INFINITE_MAC_SYSTEMS = [
+  "system-1",
+  "system-6",
+  "system-7-5",
+  "kanjitalk-7-5",
+  "macos-8",
+  "macos-8-5",
+  "macos-9",
+  "macos-9-2",
+  "macosx-10-1",
+  "macosx-10-2",
+  "macosx-10-3",
+  "macosx-10-4",
+] as const;
+export type InfiniteMacSystem = typeof INFINITE_MAC_SYSTEMS[number];
+
+// Infinite Mac control input
+export interface InfiniteMacControlInput {
+  action: InfiniteMacAction;
+  // For launchSystem
+  system?: InfiniteMacSystem;
+  // For mouseMove and mouseClick
+  x?: number;
+  y?: number;
+  // For mouseClick
+  button?: "left" | "right";
+  // For keyPress
+  key?: string;
+}
+
+// Infinite Mac control output
+export interface InfiniteMacControlOutput {
+  success: boolean;
+  message: string;
+  // For getStatus
+  status?: {
+    isEmulatorLoaded: boolean;
+    isPaused: boolean;
+    currentSystem: string | null;
+    screenSize: { width: number; height: number } | null;
+  };
+  // For readScreen - returns screen metadata and base64 image data URL
+  screenSize?: { width: number; height: number };
+  currentSystem?: string;
+  screenImageDataUrl?: string; // Base64 PNG data URL for display
+  // Available systems list (for launchSystem help)
+  availableSystems?: Array<{
+    id: string;
+    name: string;
+    year: string;
+    description: string;
+  }>;
+}
