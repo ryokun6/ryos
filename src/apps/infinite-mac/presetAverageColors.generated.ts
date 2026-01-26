@@ -6,7 +6,7 @@ export const PRESET_AVERAGE_COLORS: Record<string, string> = {
   "macos-8-5": "70,70,109",
   "macos-9": "107,107,143",
   "macos-9-2": "69,69,109",
-  "macosx-10-1": "34,64,116",
+  "macosx-10-1": "35,64,116",
   "macosx-10-2": "21,47,94",
   "macosx-10-3": "17,37,78",
   "macosx-10-4": "20,43,92",
