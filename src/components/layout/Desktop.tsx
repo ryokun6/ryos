@@ -11,6 +11,7 @@ import { useLongPress } from "@/hooks/useLongPress";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
+import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
@@ -29,7 +30,7 @@ interface DesktopStyles {
 interface DesktopProps {
   apps: AnyApp[];
   appStates: AppManagerState;
-  toggleApp: (appId: AppId, initialData?: unknown) => void;
+  toggleApp: (appId: AppId, initialData?: unknown, launchOrigin?: LaunchOriginRect) => void;
   onClick?: () => void;
   desktopStyles?: DesktopStyles;
 }
@@ -133,13 +134,13 @@ export function Desktop({
   };
 
   // Resolve and open alias target
-  const handleAliasOpen = async (shortcut: FileSystemItem) => {
+  const handleAliasOpen = async (shortcut: FileSystemItem, launchOrigin?: LaunchOriginRect) => {
     if (!shortcut.aliasTarget || !shortcut.aliasType) return;
 
     if (shortcut.aliasType === "app") {
       // Launch app directly
       const appId = shortcut.aliasTarget as AppId;
-      toggleApp(appId);
+      toggleApp(appId, undefined, launchOrigin);
     } else {
       // Open file/applet - need to resolve the original file
       const targetPath = shortcut.aliasTarget;
@@ -188,14 +189,16 @@ export function Desktop({
 
         // Launch appropriate app based on file type
         if (targetFile.path.startsWith("/Applications/") && targetFile.appId) {
-          launchApp(targetFile.appId as AppId);
+          launchApp(targetFile.appId as AppId, { launchOrigin });
         } else if (targetFile.path.startsWith("/Documents/")) {
           launchApp("textedit", {
             initialData: { path: targetFile.path, content: contentAsString ?? "" },
+            launchOrigin,
           });
         } else if (targetFile.path.startsWith("/Images/")) {
           launchApp("paint", {
             initialData: { path: targetFile.path, content: contentToUse },
+            launchOrigin,
           });
         } else if (
           targetFile.path.startsWith("/Applets/") &&
@@ -206,6 +209,7 @@ export function Desktop({
               path: targetFile.path,
               content: contentAsString ?? "",
             },
+            launchOrigin,
           });
         }
       } catch (err) {
@@ -409,7 +413,14 @@ export function Desktop({
     localStorage.setItem("ryos:app:finder:initial-path", "/");
     const finderApp = apps.find((app) => app.id === "finder");
     if (finderApp) {
-      toggleApp(finderApp.id);
+      const rect = e.currentTarget.getBoundingClientRect();
+      const launchOrigin: LaunchOriginRect = {
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height,
+      };
+      toggleApp(finderApp.id, undefined, launchOrigin);
     }
     setSelectedAppId(null);
   };
@@ -770,7 +781,14 @@ export function Desktop({
                 }}
                 onDoubleClick={(e) => {
                   e.stopPropagation();
-                  handleAliasOpen(shortcut);
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const launchOrigin: LaunchOriginRect = {
+                    x: rect.left,
+                    y: rect.top,
+                    width: rect.width,
+                    height: rect.height,
+                  };
+                  handleAliasOpen(shortcut, launchOrigin);
                   setSelectedShortcutPath(null);
                 }}
                 onContextMenu={(e: React.MouseEvent<HTMLDivElement>) =>
@@ -796,7 +814,14 @@ export function Desktop({
               onClick={(e) => handleIconClick(app.id, e)}
               onDoubleClick={(e) => {
                 e.stopPropagation();
-                toggleApp(app.id);
+                const rect = e.currentTarget.getBoundingClientRect();
+                const launchOrigin: LaunchOriginRect = {
+                  x: rect.left,
+                  y: rect.top,
+                  width: rect.width,
+                  height: rect.height,
+                };
+                toggleApp(app.id, undefined, launchOrigin);
                 setSelectedAppId(null);
               }}
               onContextMenu={(e: React.MouseEvent<HTMLDivElement>) =>
@@ -822,7 +847,14 @@ export function Desktop({
                 localStorage.setItem("ryos:app:finder:initial-path", "/Trash");
                 const finderApp = apps.find((app) => app.id === "finder");
                 if (finderApp) {
-                  toggleApp(finderApp.id);
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const launchOrigin: LaunchOriginRect = {
+                    x: rect.left,
+                    y: rect.top,
+                    width: rect.width,
+                    height: rect.height,
+                  };
+                  toggleApp(finderApp.id, undefined, launchOrigin);
                 }
                 setSelectedAppId(null);
               }}

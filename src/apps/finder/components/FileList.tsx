@@ -14,6 +14,7 @@ import { useState, useRef, useEffect } from "react";
 import { useLongPress } from "@/hooks/useLongPress";
 import { isTouchDevice } from "@/utils/device";
 import { useThemeStore } from "@/stores/useThemeStore";
+import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
 import { getTranslatedFolderNameFromName, getTranslatedAppName, AppId } from "@/utils/i18n";
 
@@ -34,7 +35,7 @@ export interface FileItem {
 
 interface FileListProps {
   files: FileItem[];
-  onFileOpen: (file: FileItem) => void;
+  onFileOpen: (file: FileItem, launchOrigin?: LaunchOriginRect) => void;
   onFileSelect: (file: FileItem) => void;
   selectedFile?: FileItem;
   viewType?: ViewType;
@@ -82,7 +83,7 @@ export function FileList({
     };
   }, []);
 
-  const handleFileOpen = (file: FileItem) => {
+  const handleFileOpen = (file: FileItem, launchOrigin?: LaunchOriginRect) => {
     // Clear any pending rename timeout when opening a file
     if (clickTimeoutRef.current) {
       clearTimeout(clickTimeoutRef.current);
@@ -90,7 +91,7 @@ export function FileList({
     }
 
     playClick();
-    onFileOpen(file);
+    onFileOpen(file, launchOrigin);
     onFileSelect(null as unknown as FileItem); // Clear selection with proper typing
   };
 
@@ -455,20 +456,34 @@ export function FileList({
       }
     });
 
-    const handleClick = () => {
+    const handleClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
       // On touch devices, single tap should open the file (execute handleFileOpen)
       if (isTouchDevice()) {
-        handleFileOpen(file);
+        const rect = e.currentTarget.getBoundingClientRect();
+        const launchOrigin: LaunchOriginRect = {
+          x: rect.left,
+          y: rect.top,
+          width: rect.width,
+          height: rect.height,
+        };
+        handleFileOpen(file, launchOrigin);
       } else {
         // On desktop, execute the regular click handler (selection)
         handleFileSelect(file);
       }
     };
 
-    const handleDoubleClick = () => {
+    const handleDoubleClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
       // Only handle double-click on desktop (touch uses single tap)
       if (!isTouchDevice()) {
-        handleFileOpen(file);
+        const rect = e.currentTarget.getBoundingClientRect();
+        const launchOrigin: LaunchOriginRect = {
+          x: rect.left,
+          y: rect.top,
+          width: rect.width,
+          height: rect.height,
+        };
+        handleFileOpen(file, launchOrigin);
       }
     };
 
@@ -608,7 +623,16 @@ export function FileList({
           icon={file.icon}
           content={isImageFile(file) ? file.content : undefined}
           contentUrl={shouldShowThumbnail(file) ? file.contentUrl : undefined}
-          onDoubleClick={() => handleFileOpen(file)}
+          onDoubleClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const launchOrigin: LaunchOriginRect = {
+              x: rect.left,
+              y: rect.top,
+              width: rect.width,
+              height: rect.height,
+            };
+            handleFileOpen(file, launchOrigin);
+          }}
           onClick={() => handleFileSelect(file)}
           isSelected={selectedFile?.path === file.path}
           isDropTarget={dropTargetPath === file.path}

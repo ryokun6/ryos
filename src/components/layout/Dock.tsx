@@ -20,7 +20,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useSound, Sounds } from "@/hooks/useSound";
-import type { AppInstance } from "@/stores/useAppStore";
+import type { AppInstance, LaunchOriginRect } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { RightClickMenu, MenuItem } from "@/components/ui/right-click-menu";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
@@ -42,7 +42,7 @@ const BASE_BUTTON_SIZE = 48; // px (w-12)
 
 interface IconButtonProps {
   label: string;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
   icon: string;
   idKey: string;
   showIndicator?: boolean;
@@ -1335,7 +1335,7 @@ function MacDock() {
   };
 
   const focusOrLaunchApp = useCallback(
-    (appId: AppId, initialData?: unknown) => {
+    (appId: AppId, initialData?: unknown, launchOrigin?: LaunchOriginRect) => {
       // First, restore all minimized instances of this app
       let hasMinimized = false;
       let lastRestoredId: string | null = null;
@@ -1362,15 +1362,15 @@ function MacDock() {
           return;
         }
       }
-      // Launch new
-      launchApp(appId, initialData !== undefined ? { initialData } : undefined);
+      // Launch new with launch origin for animation
+      launchApp(appId, initialData !== undefined ? { initialData, launchOrigin } : { launchOrigin });
     },
     [instanceOrder, instances, bringInstanceToForeground, restoreInstance, launchApp]
   );
 
   // Finder-specific: bring existing to foreground, otherwise launch one
   const focusOrLaunchFinder = useCallback(
-    (initialPath?: string) => {
+    (initialPath?: string, launchOrigin?: LaunchOriginRect) => {
       // First, restore all minimized Finder instances
       let hasMinimized = false;
       let lastRestoredId: string | null = null;
@@ -1398,15 +1398,15 @@ function MacDock() {
         }
       }
       // None open; launch new Finder instance (multi-window supported by hook)
-      if (initialPath) launchApp("finder", { initialPath });
-      else launchApp("finder", { initialPath: "/" });
+      if (initialPath) launchApp("finder", { initialPath, launchOrigin });
+      else launchApp("finder", { initialPath: "/", launchOrigin });
     },
     [instances, instanceOrder, bringInstanceToForeground, restoreInstance, launchApp]
   );
 
   // Focus a Finder window already at targetPath (or its subpath); otherwise launch new Finder at targetPath
   const focusFinderAtPathOrLaunch = useCallback(
-    (targetPath: string, initialData?: unknown) => {
+    (targetPath: string, initialData?: unknown, launchOrigin?: LaunchOriginRect) => {
       for (let i = instanceOrder.length - 1; i >= 0; i--) {
         const id = instanceOrder[i];
         const inst = instances[id];
@@ -1430,6 +1430,7 @@ function MacDock() {
       launchApp("finder", {
         initialPath: targetPath,
         initialData: initialData,
+        launchOrigin,
       });
     },
     [
@@ -2108,11 +2109,18 @@ function MacDock() {
                         label={label}
                         icon={icon}
                         idKey={appId}
-                        onClick={() => {
+                        onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const launchOrigin: LaunchOriginRect = {
+                            x: rect.left,
+                            y: rect.top,
+                            width: rect.width,
+                            height: rect.height,
+                          };
                           if (appId === "finder") {
-                            focusOrLaunchFinder("/");
+                            focusOrLaunchFinder("/", launchOrigin);
                           } else {
-                            focusOrLaunchApp(appId);
+                            focusOrLaunchApp(appId, undefined, launchOrigin);
                           }
                         }}
                         onContextMenu={(e) => handleAppContextMenu(e, appId)}
@@ -2152,10 +2160,18 @@ function MacDock() {
                         icon={icon}
                         idKey={item.id}
                         isEmoji={isEmojiIcon || (!item.icon?.startsWith("/") && !item.icon?.startsWith("http"))}
-                        onClick={() => {
+                        onClick={(e) => {
                           if (item.path) {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const launchOrigin: LaunchOriginRect = {
+                              x: rect.left,
+                              y: rect.top,
+                              width: rect.width,
+                              height: rect.height,
+                            };
                             launchApp("applet-viewer", {
                               initialData: { path: item.path },
+                              launchOrigin,
                             });
                           }
                         }}
@@ -2215,7 +2231,7 @@ function MacDock() {
                       label={label}
                       icon={icon}
                       idKey={item.instanceId}
-                      onClick={() => {
+                      onClick={(_e) => {
                         // If minimized, restore it; otherwise just bring to foreground
                         if (instance.isMinimized) {
                           restoreInstance(item.instanceId!);
@@ -2250,7 +2266,7 @@ function MacDock() {
                       label={label}
                       icon={icon}
                       idKey={item.appId}
-                      onClick={() => focusMostRecentInstanceOfApp(item.appId)}
+                      onClick={(_e) => focusMostRecentInstanceOfApp(item.appId)}
                       onContextMenu={(e) => handleAppContextMenu(e, item.appId)}
                       showIndicator
                       isLoading={isLoading}
@@ -2307,12 +2323,19 @@ function MacDock() {
                     label={t("common.dock.applications")}
                     icon="/icons/default/applications.png"
                     idKey="__applications__"
-                    onClick={() =>
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const launchOrigin: LaunchOriginRect = {
+                        x: rect.left,
+                        y: rect.top,
+                        width: rect.width,
+                        height: rect.height,
+                      };
                       focusFinderAtPathOrLaunch("/Applications", {
                         path: "/Applications",
                         viewType: "large",
-                      })
-                    }
+                      }, launchOrigin);
+                    }}
                     onContextMenu={handleApplicationsContextMenu}
                     mouseX={mouseX}
                     magnifyEnabled={effectiveMagnifyEnabled}
@@ -2398,8 +2421,15 @@ function MacDock() {
                       label={t("common.dock.trash")}
                       icon={trashIcon}
                       idKey="__trash__"
-                      onClick={() => {
-                        focusFinderAtPathOrLaunch("/Trash");
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const launchOrigin: LaunchOriginRect = {
+                          x: rect.left,
+                          y: rect.top,
+                          width: rect.width,
+                          height: rect.height,
+                        };
+                        focusFinderAtPathOrLaunch("/Trash", undefined, launchOrigin);
                       }}
                       onDragOver={handleTrashDragOver}
                       onDrop={handleTrashDrop}

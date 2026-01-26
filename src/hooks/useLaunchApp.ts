@@ -1,4 +1,4 @@
-import { useAppStore } from "@/stores/useAppStore";
+import { useAppStore, LaunchOriginRect } from "@/stores/useAppStore";
 import { AppId } from "@/config/appRegistry";
 
 // Export the interface
@@ -6,6 +6,7 @@ export interface LaunchAppOptions {
   initialPath?: string;
   initialData?: unknown; // Add initialData field
   multiWindow?: boolean; // Add multiWindow flag
+  launchOrigin?: LaunchOriginRect; // Position of icon that launched the app
 }
 
 export const useLaunchApp = () => {
@@ -159,7 +160,8 @@ export const useLaunchApp = () => {
       appId,
       initialData,
       undefined,
-      multiWindow
+      multiWindow,
+      options?.launchOrigin
     );
     console.log(
       `[useLaunchApp] Created instance ${instanceId} for app ${appId} with multiWindow: ${multiWindow}`

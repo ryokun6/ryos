@@ -405,6 +405,25 @@ export function WindowFrame({
     return { x: 0, y: window.innerHeight - windowPosition.y }; // Fallback to bottom of screen
   }, [appId, instanceId, windowPosition, windowSize, currentTheme]);
 
+  // Get launch origin from instance (position of icon that launched this window)
+  const launchOrigin = instanceId ? instances[instanceId]?.launchOrigin : undefined;
+
+  // Calculate launch origin offset relative to window center (used for initial open animation)
+  const launchOriginOffset = useMemo(() => {
+    if (!launchOrigin) return null;
+    
+    // Calculate offset from window center to launch icon center
+    const windowCenterX = windowPosition.x + windowSize.width / 2;
+    const windowCenterY = windowPosition.y + windowSize.height / 2;
+    const iconCenterX = launchOrigin.x + launchOrigin.width / 2;
+    const iconCenterY = launchOrigin.y + launchOrigin.height / 2;
+    
+    return {
+      x: iconCenterX - windowCenterX,
+      y: iconCenterY - windowCenterY,
+    };
+  }, [launchOrigin, windowPosition, windowSize]);
+
   // Calculate expose transform for Mission Control view
   const exposeTransform = useMemo(() => {
     if (!exposeMode || !instanceId) return null;
@@ -749,7 +768,16 @@ export function WindowFrame({
       };
     }
     if (isInitialMount) {
-      // Initial window open
+      // Initial window open - animate from launch origin if available
+      if (launchOriginOffset) {
+        return { 
+          scale: 0.1, 
+          opacity: 0,
+          x: launchOriginOffset.x,
+          y: launchOriginOffset.y,
+        };
+      }
+      // Fallback to simple scale/opacity animation
       return { scale: 0.95, opacity: 0 };
     }
     return false;
@@ -818,12 +846,14 @@ export function WindowFrame({
     }
     
     // Normal visible state
+    // Use longer transition for restore or launch from icon animation
+    const shouldUseLongerTransition = shouldAnimateRestore || (isInitialMount && launchOriginOffset);
     return { 
       scale: 1, 
       opacity: 1,
       x: 0,
       y: 0,
-      transition: shouldAnimateRestore 
+      transition: shouldUseLongerTransition 
         ? { duration: 0.25, ease: [0.33, 1, 0.68, 1] as const }
         : { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const }
     };
