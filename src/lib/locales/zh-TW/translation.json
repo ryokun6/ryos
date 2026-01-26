@@ -975,11 +975,14 @@
       "menu": {
         "aboutInfiniteMac": "關於 Infinite Mac",
         "backToPresets": "返回系統",
+        "captureScreenshot": "擷取截圖",
         "infiniteMacHelp": "Infinite Mac 說明",
         "pause": "暫停",
-        "resume": "繼續"
+        "resume": "繼續",
+        "scaling": "縮放"
       },
       "name": "Infinite Mac",
+      "screenshotUnavailable": "無法擷取螢幕截圖。請使用瀏覽器的截圖工具 (Mac 上為 Cmd+Shift+4，Windows 上為 Win+Shift+S)。",
       "selectSystem": "選擇經典 Mac 系統",
       "systemsAvailable": "{{count}} 個系統可用",
       "title": "Infinite Mac"

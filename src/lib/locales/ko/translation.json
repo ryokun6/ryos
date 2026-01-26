@@ -975,11 +975,14 @@
       "menu": {
         "aboutInfiniteMac": "Infinite Mac 정보",
         "backToPresets": "시스템으로 돌아가기",
+        "captureScreenshot": "화면 캡처",
         "infiniteMacHelp": "Infinite Mac 도움말",
         "pause": "일시 정지",
-        "resume": "재개"
+        "resume": "재개",
+        "scaling": "배율"
       },
       "name": "Infinite Mac",
+      "screenshotUnavailable": "스크린샷을 찍을 수 없습니다. 브라우저의 스크린샷 도구를 사용하세요 (Mac: Cmd+Shift+4, Windows: Win+Shift+S).",
       "selectSystem": "클래식 Mac 시스템 선택",
       "systemsAvailable": "{{count}}개의 시스템 사용 가능",
       "title": "Infinite Mac"

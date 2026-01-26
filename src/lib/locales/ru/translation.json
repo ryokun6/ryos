@@ -975,11 +975,14 @@
       "menu": {
         "aboutInfiniteMac": "О Infinite Mac",
         "backToPresets": "Назад к системам",
+        "captureScreenshot": "Сделать скриншот",
         "infiniteMacHelp": "Справка Infinite Mac",
         "pause": "Пауза",
-        "resume": "Возобновить"
+        "resume": "Возобновить",
+        "scaling": "Масштабирование"
       },
       "name": "Infinite Mac",
+      "screenshotUnavailable": "Скриншот недоступен. Используйте инструмент для скриншотов вашего браузера (Cmd+Shift+4 на Mac, Win+Shift+S на Windows).",
       "selectSystem": "Выберите классическую систему Mac",
       "systemsAvailable": "{{count}} СИСТЕМ ДОСТУПНО",
       "title": "Infinite Mac"

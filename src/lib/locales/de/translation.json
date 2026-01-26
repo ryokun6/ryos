@@ -975,11 +975,14 @@
       "menu": {
         "aboutInfiniteMac": "Über Infinite Mac",
         "backToPresets": "Zurück zu den Systemen",
+        "captureScreenshot": "Screenshot aufnehmen",
         "infiniteMacHelp": "Infinite Mac Hilfe",
         "pause": "Anhalten",
-        "resume": "Fortsetzen"
+        "resume": "Fortsetzen",
+        "scaling": "Skalierung"
       },
       "name": "Infinite Mac",
+      "screenshotUnavailable": "Screenshot nicht verfügbar. Verwenden Sie das Screenshot-Tool Ihres Browsers (Cmd+Shift+4 auf Mac, Win+Shift+S unter Windows).",
       "selectSystem": "Klassisches Mac System auswählen",
       "systemsAvailable": "{{count}} SYSTEME VERFÜGBAR",
       "title": "Infinite Mac"
