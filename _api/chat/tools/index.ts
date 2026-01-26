@@ -122,7 +122,8 @@ export const TOOL_DESCRIPTIONS = {
     "'getStatus' returns the current emulator state (loaded, paused, current system, screen size); " +
     "'readScreen' captures the current screen as a PNG image that you can analyze visually; " +
     "'mouseMove' moves the cursor to (x, y) pixel coordinates matching the screenshot; " +
-    "'mouseClick' clicks at (x, y) with optional 'button' (left/right); " +
+    "'mouseClick' single-clicks at (x, y) with optional 'button' (left/right); " +
+    "'doubleClick' double-clicks at (x, y) to open files/folders; " +
     "'keyPress' sends a key press (use JS key codes like 'KeyA', 'Enter', 'Space', 'ArrowUp'); " +
     "'pause'/'unpause' controls emulation. " +
     "IMPORTANT: Mouse coordinates are 1:1 with the screenshot pixels - use exact pixel positions from the image. " +

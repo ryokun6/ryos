@@ -451,6 +451,7 @@ export const infiniteMacControlSchema = z.object({
       "readScreen",
       "mouseMove",
       "mouseClick",
+      "doubleClick",
       "keyPress",
       "pause",
       "unpause",
@@ -458,7 +459,8 @@ export const infiniteMacControlSchema = z.object({
     .describe(
       "Action to perform: 'launchSystem' launches a Mac OS system, 'getStatus' returns emulator state, " +
       "'readScreen' captures the current screen as an image, 'mouseMove' moves the mouse cursor, " +
-      "'mouseClick' clicks at a position, 'keyPress' sends a key press, 'pause'/'unpause' controls emulation."
+      "'mouseClick' single-clicks at a position, 'doubleClick' double-clicks at a position (for opening files/folders), " +
+      "'keyPress' sends a key press, 'pause'/'unpause' controls emulation."
     ),
   system: z
     .enum([

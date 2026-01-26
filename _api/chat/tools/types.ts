@@ -208,6 +208,7 @@ export const INFINITE_MAC_ACTIONS = [
   "readScreen",
   "mouseMove",
   "mouseClick",
+  "doubleClick",
   "keyPress",
   "pause",
   "unpause",

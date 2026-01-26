@@ -55,6 +55,7 @@ export interface InfiniteMacControlInput {
     | "readScreen"
     | "mouseMove"
     | "mouseClick"
+    | "doubleClick"
     | "keyPress"
     | "pause"
     | "unpause";
@@ -413,6 +414,92 @@ export const handleInfiniteMacControl = async (
             toolCallId,
             state: "output-error",
             errorText: "Failed to send mouse click command.",
+          });
+        }
+        break;
+      }
+
+      case "doubleClick": {
+        if (x === undefined || y === undefined) {
+          context.addToolResult({
+            tool: "infiniteMacControl",
+            toolCallId,
+            state: "output-error",
+            errorText: "The 'doubleClick' action requires 'x' and 'y' coordinates.",
+          });
+          return;
+        }
+
+        if (!store.isEmulatorLoaded || !store.selectedPreset) {
+          context.addToolResult({
+            tool: "infiniteMacControl",
+            toolCallId,
+            state: "output-error",
+            errorText: "The emulator is not loaded. Use 'launchSystem' first.",
+          });
+          return;
+        }
+
+        // Check if this system supports absolute coordinates
+        if (!supportsAbsoluteCoordinates(store.selectedPreset.id)) {
+          context.addToolResult({
+            tool: "infiniteMacControl",
+            toolCallId,
+            state: "output-error",
+            errorText: `Double-clicking is limited on ${store.selectedPreset.name} (Mac OS X uses relative coordinates only). Consider using an older Mac OS system for precise mouse control.`,
+          });
+          return;
+        }
+
+        const dblButtonNum = button === "right" ? 2 : 0;
+
+        // Move mouse to position first
+        store.sendEmulatorCommand({
+          type: "emulator_mouse_move",
+          x,
+          y,
+        });
+
+        // Small delay after move
+        await new Promise((resolve) => setTimeout(resolve, 30));
+
+        // First click - fast down/up
+        store.sendEmulatorCommand({
+          type: "emulator_mouse_down",
+          button: dblButtonNum,
+        });
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        store.sendEmulatorCommand({
+          type: "emulator_mouse_up",
+          button: dblButtonNum,
+        });
+
+        // Very short delay between clicks (must be fast for double-click detection)
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
+        // Second click - fast down/up
+        store.sendEmulatorCommand({
+          type: "emulator_mouse_down",
+          button: dblButtonNum,
+        });
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        const dblUpSent = store.sendEmulatorCommand({
+          type: "emulator_mouse_up",
+          button: dblButtonNum,
+        });
+
+        if (dblUpSent) {
+          context.addToolResult({
+            tool: "infiniteMacControl",
+            toolCallId,
+            output: `Double-clicked at (${x}, ${y})`,
+          });
+        } else {
+          context.addToolResult({
+            tool: "infiniteMacControl",
+            toolCallId,
+            state: "output-error",
+            errorText: "Failed to send double-click command.",
           });
         }
         break;
