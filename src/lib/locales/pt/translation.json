@@ -54,6 +54,14 @@
           "description": "Visualize e gerencie salas de bate-papo, exclua conteúdo inadequado.",
           "title": "Gerenciamento de Salas"
         },
+        "searchFilter": {
+          "description": "Pesquise usuários ou músicas pelo nome para encontrar entradas rapidamente.",
+          "title": "Pesquisar e Filtrar"
+        },
+        "songLibrary": {
+          "description": "Importar, exportar e gerenciar a biblioteca de músicas em cache.",
+          "title": "Biblioteca de Músicas"
+        },
         "statistics": {
           "description": "Visualize estatísticas do sistema e métricas de uso.",
           "title": "Estatísticas"
@@ -957,9 +965,17 @@
           "description": "Use Arquivo ▸ Voltar aos Sistemas para retornar à grade predefinida",
           "title": "Voltar aos Sistemas"
         },
+        "captureScreenshot": {
+          "description": "Use Visualizar ▸ Capturar Tela para salvar a exibição atual",
+          "title": "Capturar Tela"
+        },
         "classicMacEmulator": {
           "description": "Execute sistemas clássicos de Mac OS no seu navegador via Infinite Mac",
           "title": "Emulador de Mac Clássico"
+        },
+        "displayScaling": {
+          "description": "Use Visualizar ▸ Escala para ajustar o tamanho da exibição (1x, 1.5x ou 2x)",
+          "title": "Escala da Exibição"
         },
         "pauseResume": {
           "description": "Use Visualizar ▸ Pausar ou Retomar para economizar recursos quando não estiver interagindo",
@@ -975,11 +991,14 @@
       "menu": {
         "aboutInfiniteMac": "Sobre o Infinite Mac",
         "backToPresets": "Voltar aos Sistemas",
+        "captureScreenshot": "Capturar Tela",
         "infiniteMacHelp": "Ajuda do Infinite Mac",
         "pause": "Pausar",
-        "resume": "Retomar"
+        "resume": "Retomar",
+        "scaling": "Dimensionamento"
       },
       "name": "Infinite Mac",
+      "screenshotUnavailable": "Captura de tela não disponível. Use a ferramenta de captura de tela do seu navegador (Cmd+Shift+4 no Mac, Win+Shift+S no Windows).",
       "selectSystem": "Selecionar um Sistema Mac Clássico",
       "systemsAvailable": "{{count}} SISTEMAS DISPONÍVEIS",
       "title": "Infinite Mac"
@@ -1423,10 +1442,6 @@
           "description": "Busque músicas no YouTube ou cole uma URL para adicionar à sua biblioteca.",
           "title": "Adicionar e Buscar Músicas"
         },
-        "instantTranslations": {
-          "description": "Traduzir letras para vários idiomas em tempo real.",
-          "title": "Traduções Instantâneas"
-        },
         "keyboardShortcuts": {
           "description": "Espaço para reproduzir/pausar, teclas de seta para buscar e mudar de faixa.",
           "title": "Atalhos de Teclado"
@@ -1436,7 +1451,7 @@
           "title": "Estilo e Pronúncia"
         },
         "syncLyricsTiming": {
-          "description": "Use as teclas [ ], a roda do mouse ou arraste para cima/baixo para ajustar o deslocamento da letra.",
+          "description": "Use as teclas [ ], a roda do mouse ou arraste para esquerda/direita para ajustar o deslocamento da letra.",
           "title": "Sincronizar Tempo das Letras"
         },
         "syncedWithIpod": {
@@ -1518,6 +1533,14 @@
           "description": "Números mostram minas adjacentes. Sinalize todas as minas e revele todas as células seguras para vencer.",
           "title": "Regras do Jogo"
         },
+        "gameStatus": {
+          "description": "O rosto sorridente mostra o estado do jogo: 🙂 jogando, 💀 fim de jogo, 😎 você venceu!",
+          "title": "Status do Jogo"
+        },
+        "mineCounter": {
+          "description": "A barra superior mostra as minas não sinalizadas restantes e o total de minas.",
+          "title": "Contador de Minas"
+        },
         "mobileControls": {
           "description": "Toque para revelar, pressione e segure para sinalizar uma mina.",
           "title": "Controles Móveis"
@@ -1525,10 +1548,6 @@
         "restart": {
           "description": "Pressione o rosto sorridente ou escolha Jogo ▸ Novo para iniciar um novo tabuleiro.",
           "title": "Reiniciar"
-        },
-        "timerCounter": {
-          "description": "A barra superior mostra o tempo decorrido e as minas restantes não sinalizadas.",
-          "title": "Cronômetro e Contador"
         }
       },
       "lcd": {
@@ -1558,10 +1577,6 @@
         "openFiltersMenu": "Abrir menu de filtros"
       },
       "help": {
-        "colors": {
-          "description": "Selecione cores da paleta abaixo das ferramentas para mudar a cor do seu desenho.",
-          "title": "Cores"
-        },
         "drawingTools": {
           "description": "Use a barra de ferramentas à esquerda para selecionar diferentes ferramentas de desenho como lápis, pincel, formas e muito mais.",
           "title": "Ferramentas de Desenho"
@@ -1577,6 +1592,10 @@
         "saving": {
           "description": "Use Arquivo > Salvar para salvar sua arte, ou Arquivo > Salvar Como para salvá-lo com um novo nome.",
           "title": "Salvando"
+        },
+        "strokeWidth": {
+          "description": "Ajuste a espessura do traço do pincel e do lápis usando os controles da barra de ferramentas.",
+          "title": "Espessura do Traço"
         },
         "undo": {
           "description": "Pressione ⌘Z ou use Editar > Desfazer para desfazer sua última ação.",
@@ -1646,7 +1665,7 @@
           "title": "Proporção da Tela"
         },
         "fullscreenMode": {
-          "description": "Alternar Visualizar ▸ Tela Cheia para uma exibição imersiva",
+          "description": "Alternar Controles ▸ Tela Cheia para uma exibição imersiva",
           "title": "Modo Tela Cheia"
         },
         "keyboardControls": {
@@ -1661,9 +1680,9 @@
           "description": "Executa jogos e aplicativos clássicos do DOS diretamente no seu navegador",
           "title": "Emulador de PC"
         },
-        "saveStates": {
-          "description": "Salvar ou carregar o progresso do jogo a qualquer momento no menu Arquivo",
-          "title": "Salvar Estados"
+        "resetLoad": {
+          "description": "Use Arquivo ▸ Redefinir para reiniciar, ou Carregar Jogo para mudar de jogo",
+          "title": "Redefinir e Carregar"
         }
       },
       "loadingEmulator": "CARREGANDO EMULADOR",
@@ -1735,7 +1754,7 @@
           "title": "Fotos Rápidas"
         },
         "switchingCameras": {
-          "description": "Use o menu 'Visualizar' na barra de menus para alternar entre as câmeras disponíveis se você tiver mais de uma conectada.",
+          "description": "Use o menu 'Câmera' na barra de menus para alternar entre as câmeras disponíveis se você tiver mais de uma conectada.",
           "title": "Alternando Câmeras"
         },
         "takingPhoto": {
@@ -1815,6 +1834,10 @@
           "description": "As notas são salvas automaticamente e persistem entre as sessões",
           "title": "Salvamento Automático"
         },
+        "clearAll": {
+          "description": "Use Arquivo > Limpar Todas as Notas para remover todas as notas adesivas de uma vez",
+          "title": "Limpar Tudo"
+        },
         "colors": {
           "description": "Altere as cores das notas no menu Nota para organizar suas ideias",
           "title": "Cores"
@@ -1826,6 +1849,10 @@
         "deleteNote": {
           "description": "Clique no botão X em uma nota ou use o menu para excluí-la",
           "title": "Excluir Nota"
+        },
+        "moveResize": {
+          "description": "Arraste a barra de título para mover, arraste o canto para redimensionar notas",
+          "title": "Mover e Redimensionar"
         }
       },
       "menu": {
@@ -1877,9 +1904,9 @@
           "description": "Reverb, delay, distorção, chorus, phaser e bit-crusher",
           "title": "Efeitos"
         },
-        "midiInput": {
-          "description": "Conecte um teclado MIDI e toque instantaneamente",
-          "title": "Entrada MIDI"
+        "octaveShift": {
+          "description": "Use as teclas ou botões -/+ para deslocar as oitavas para cima ou para baixo",
+          "title": "Deslocamento de Oitava"
         },
         "presets": {
           "description": "Salve, carregue e gerencie predefinições de som personalizadas",
@@ -2069,7 +2096,7 @@
           "title": "Edição Avançada"
         },
         "slashCommands": {
-          "description": "Digite / para ações rápidas ou deixe a IA Ryo editar linhas remotamente",
+          "description": "Digite / para formatação rápida (títulos, listas, estilos de texto)",
           "title": "Comandos de Barra"
         },
         "voiceDictation": {

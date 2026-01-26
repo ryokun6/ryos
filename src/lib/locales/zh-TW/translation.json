@@ -54,6 +54,14 @@
           "description": "檢視及管理聊天室，刪除不當內容。",
           "title": "聊天室管理"
         },
+        "searchFilter": {
+          "description": "依名稱搜尋使用者或歌曲，快速找到項目。",
+          "title": "搜尋與篩選"
+        },
+        "songLibrary": {
+          "description": "匯入、匯出與管理快取歌曲庫。",
+          "title": "歌曲庫"
+        },
         "statistics": {
           "description": "檢視系統統計資料和使用指標。",
           "title": "統計資料"
@@ -957,9 +965,17 @@
           "description": "使用「檔案 ▸ 返回系統」返回預設網格",
           "title": "返回系統"
         },
+        "captureScreenshot": {
+          "description": "使用「檢視 ▸ 擷取螢幕截圖」來儲存目前的顯示畫面",
+          "title": "擷取螢幕截圖"
+        },
         "classicMacEmulator": {
           "description": "透過 Infinite Mac 在您的瀏覽器中執行經典 Mac OS 系統",
           "title": "經典 Mac 模擬器"
+        },
+        "displayScaling": {
+          "description": "使用「檢視 ▸ 縮放」來調整顯示大小 (1 倍、1.5 倍或 2 倍)",
+          "title": "顯示縮放"
         },
         "pauseResume": {
           "description": "在不互動時，使用「檢視 ▸ 暫停或繼續」以節省資源",
@@ -975,11 +991,14 @@
       "menu": {
         "aboutInfiniteMac": "關於 Infinite Mac",
         "backToPresets": "返回系統",
+        "captureScreenshot": "擷取截圖",
         "infiniteMacHelp": "Infinite Mac 說明",
         "pause": "暫停",
-        "resume": "繼續"
+        "resume": "繼續",
+        "scaling": "縮放"
       },
       "name": "Infinite Mac",
+      "screenshotUnavailable": "無法擷取螢幕截圖。請使用瀏覽器的截圖工具 (Mac 上為 Cmd+Shift+4，Windows 上為 Win+Shift+S)。",
       "selectSystem": "選擇經典 Mac 系統",
       "systemsAvailable": "{{count}} 個系統可用",
       "title": "Infinite Mac"
@@ -1423,10 +1442,6 @@
           "description": "在 YouTube 搜尋歌曲，或貼上網址加入資料庫。",
           "title": "新增與搜尋歌曲"
         },
-        "instantTranslations": {
-          "description": "即時將歌詞翻譯成多種語言。",
-          "title": "即時翻譯"
-        },
         "keyboardShortcuts": {
           "description": "空白鍵播放/暫停，方向鍵跳轉及切換曲目。",
           "title": "鍵盤快捷鍵"
@@ -1436,7 +1451,7 @@
           "title": "樣式與發音"
         },
         "syncLyricsTiming": {
-          "description": "使用 [ ] 鍵、滑鼠滾輪或上下拖曳來調整歌詞偏移。",
+          "description": "使用 [ ] 鍵、滑鼠滾輪或左右拖曳來調整歌詞偏移。",
           "title": "同步歌詞時間"
         },
         "syncedWithIpod": {
@@ -1518,6 +1533,14 @@
           "description": "數字顯示相鄰地雷數量。標記所有地雷並顯示所有安全格子以獲勝。",
           "title": "遊戲規則"
         },
+        "gameStatus": {
+          "description": "笑臉顯示遊戲狀態：🙂 遊戲中，💀 遊戲結束，😎 你贏了！",
+          "title": "遊戲狀態"
+        },
+        "mineCounter": {
+          "description": "頂端列顯示剩餘未標記的地雷數和地雷總數。",
+          "title": "地雷計數"
+        },
         "mobileControls": {
           "description": "點擊以顯示，長按以標記地雷。",
           "title": "行動裝置控制"
@@ -1525,10 +1548,6 @@
         "restart": {
           "description": "按笑臉或選擇「遊戲」▸「新增」以開始新的遊戲。",
           "title": "重新開始"
-        },
-        "timerCounter": {
-          "description": "頂部列顯示經過時間和剩餘未標記的地雷。",
-          "title": "計時器與計數器"
         }
       },
       "lcd": {
@@ -1558,10 +1577,6 @@
         "openFiltersMenu": "開啟濾鏡選單"
       },
       "help": {
-        "colors": {
-          "description": "從工具下方的調色盤選擇顏色以變更繪圖顏色。",
-          "title": "顏色"
-        },
         "drawingTools": {
           "description": "使用左側工具列選擇不同的繪圖工具，如鉛筆、畫筆、形狀等。",
           "title": "繪圖工具"
@@ -1577,6 +1592,10 @@
         "saving": {
           "description": "使用「檔案」>「儲存」以儲存您的作品，或「檔案」>「另存新檔」以使用新名稱儲存。",
           "title": "儲存"
+        },
+        "strokeWidth": {
+          "description": "使用工具列控制項調整筆刷和鉛筆的筆觸寬度。",
+          "title": "筆觸寬度"
         },
         "undo": {
           "description": "按 ⌘Z 或使用「編輯」>「還原」以還原上一個動作。",
@@ -1646,7 +1665,7 @@
           "title": "長寬比"
         },
         "fullscreenMode": {
-          "description": "切換「檢視」▸「全螢幕」以獲得沉浸式顯示",
+          "description": "切換「控制」▸「全螢幕」以獲得沉浸式顯示",
           "title": "全螢幕模式"
         },
         "keyboardControls": {
@@ -1661,9 +1680,9 @@
           "description": "在瀏覽器中直接執行經典 DOS 遊戲和應用程式",
           "title": "PC 模擬器"
         },
-        "saveStates": {
-          "description": "隨時從「檔案」選單儲存或載入遊戲進度",
-          "title": "儲存狀態"
+        "resetLoad": {
+          "description": "使用「檔案 ▸ 重設」重新開始，或「載入遊戲」切換遊戲。",
+          "title": "重設與載入"
         }
       },
       "loadingEmulator": "載入模擬器",
@@ -1735,7 +1754,7 @@
           "title": "快速連拍"
         },
         "switchingCameras": {
-          "description": "如果您連接了多個相機，請使用選單列中的「檢視」選單在可用相機之間切換。",
+          "description": "如果您連接了多個相機，請使用選單列中的「相機」選單在可用相機之間切換。",
           "title": "切換相機"
         },
         "takingPhoto": {
@@ -1815,6 +1834,10 @@
           "description": "便利貼會自動儲存，並在不同工作階段之間保留。",
           "title": "自動儲存"
         },
+        "clearAll": {
+          "description": "使用「檔案 > 清除所有備註」一次移除所有便利貼。",
+          "title": "清除所有"
+        },
         "colors": {
           "description": "從「便利貼」選單變更便利貼顏色，以整理您的想法。",
           "title": "顏色"
@@ -1826,6 +1849,10 @@
         "deleteNote": {
           "description": "按一下便利貼上的「X」按鈕，或使用選單來刪除便利貼。",
           "title": "刪除便利貼"
+        },
+        "moveResize": {
+          "description": "拖曳標題列以移動，拖曳角落以調整備註大小。",
+          "title": "移動與調整大小"
         }
       },
       "menu": {
@@ -1877,9 +1904,9 @@
           "description": "殘響、延遲、失真、和聲、相位器和位元壓縮器",
           "title": "效果"
         },
-        "midiInput": {
-          "description": "插入 MIDI 鍵盤並立即演奏",
-          "title": "MIDI 輸入"
+        "octaveShift": {
+          "description": "使用 -/+ 鍵或按鈕向上或向下移動八度音。",
+          "title": "八度音移位"
         },
         "presets": {
           "description": "儲存、載入和管理自訂音效預設",
@@ -2069,7 +2096,7 @@
           "title": "富文字編輯"
         },
         "slashCommands": {
-          "description": "輸入 / 以快速操作，或讓 Ryo AI 遠端編輯行",
+          "description": "輸入 / 以快速格式化（標題、列表、文字樣式）",
           "title": "斜線指令"
         },
         "voiceDictation": {

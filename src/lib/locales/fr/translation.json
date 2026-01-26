@@ -54,6 +54,14 @@
           "description": "Afficher et gérer les salons de discussion, supprimer le contenu inapproprié.",
           "title": "Gestion des salons"
         },
+        "searchFilter": {
+          "description": "Rechercher des utilisateurs ou des chansons par nom pour trouver rapidement des entrées.",
+          "title": "Rechercher & Filtrer"
+        },
+        "songLibrary": {
+          "description": "Importer, exporter et gérer la bibliothèque de chansons mise en cache.",
+          "title": "Bibliothèque de chansons"
+        },
         "statistics": {
           "description": "Afficher les statistiques système et les métriques d'utilisation.",
           "title": "Statistiques"
@@ -957,9 +965,17 @@
           "description": "Utilisez Fichier ▸ Retour aux systèmes pour revenir à la grille de préréglages",
           "title": "Retour aux systèmes"
         },
+        "captureScreenshot": {
+          "description": "Utilisez Affichage ▸ Capture d'écran pour enregistrer l'affichage actuel",
+          "title": "Capture d'écran"
+        },
         "classicMacEmulator": {
           "description": "Exécutez des systèmes Classic Mac OS dans votre navigateur via Infinite Mac",
           "title": "Émulateur Classic Mac"
+        },
+        "displayScaling": {
+          "description": "Utilisez Affichage ▸ Mise à l'échelle pour ajuster la taille de l'affichage (1x, 1,5x ou 2x)",
+          "title": "Mise à l'échelle de l'affichage"
         },
         "pauseResume": {
           "description": "Utilisez Vue ▸ Pause ou Reprendre pour économiser des ressources lorsque vous n'interagissez pas",
@@ -975,11 +991,14 @@
       "menu": {
         "aboutInfiniteMac": "À propos d'Infinite Mac",
         "backToPresets": "Retour aux systèmes",
+        "captureScreenshot": "Capturer l'écran",
         "infiniteMacHelp": "Aide Infinite Mac",
         "pause": "Pause",
-        "resume": "Reprendre"
+        "resume": "Reprendre",
+        "scaling": "Mise à l'échelle"
       },
       "name": "Infinite Mac",
+      "screenshotUnavailable": "Capture d'écran non disponible. Utilisez l'outil de capture d'écran de votre navigateur (Cmd+Maj+4 sur Mac, Win+Maj+S sur Windows).",
       "selectSystem": "Sélectionner un système Classic Mac",
       "systemsAvailable": "{{count}} SYSTÈMES DISPONIBLES",
       "title": "Infinite Mac"
@@ -1423,10 +1442,6 @@
           "description": "Recherchez des chansons sur YouTube ou collez une URL pour ajouter à votre bibliothèque.",
           "title": "Ajouter et rechercher des chansons"
         },
-        "instantTranslations": {
-          "description": "Traduire les paroles en plusieurs langues à la volée.",
-          "title": "Traductions instantanées"
-        },
         "keyboardShortcuts": {
           "description": "Espace pour lecture/pause, touches fléchées pour naviguer et changer de piste.",
           "title": "Raccourcis clavier"
@@ -1436,7 +1451,7 @@
           "title": "Style et prononciation"
         },
         "syncLyricsTiming": {
-          "description": "Utilisez les touches [ ], la molette ou glissez vers le haut/bas pour ajuster le décalage des paroles.",
+          "description": "Utilisez les touches [ ], la molette ou glissez vers la gauche/droite pour ajuster le décalage des paroles.",
           "title": "Synchroniser le timing des paroles"
         },
         "syncedWithIpod": {
@@ -1518,6 +1533,14 @@
           "description": "Les nombres indiquent les mines adjacentes. Marquez toutes les mines et révélez toutes les cellules sûres pour gagner.",
           "title": "Règles du jeu"
         },
+        "gameStatus": {
+          "description": "Le smiley indique l'état du jeu : 🙂 en jeu, 💀 partie terminée, 😎 vous avez gagné !",
+          "title": "État du jeu"
+        },
+        "mineCounter": {
+          "description": "La barre supérieure affiche les mines non signalées restantes et le nombre total de mines.",
+          "title": "Compteur de mines"
+        },
         "mobileControls": {
           "description": "Appuyez pour révéler, appuyez longuement pour marquer une mine",
           "title": "Contrôles mobiles"
@@ -1525,10 +1548,6 @@
         "restart": {
           "description": "Appuyez sur le visage souriant ou choisissez Jeu ▸ Nouveau pour commencer un nouveau plateau",
           "title": "Redémarrer"
-        },
-        "timerCounter": {
-          "description": "La barre supérieure affiche le temps écoulé et les mines non marquées restantes",
-          "title": "Minuteur et compteur"
         }
       },
       "lcd": {
@@ -1558,10 +1577,6 @@
         "openFiltersMenu": "Ouvrir le menu des filtres"
       },
       "help": {
-        "colors": {
-          "description": "Sélectionnez des couleurs dans la palette sous les outils pour changer votre couleur de dessin.",
-          "title": "Couleurs"
-        },
         "drawingTools": {
           "description": "Utilisez la barre d'outils à gauche pour sélectionner différents outils de dessin comme le crayon, le pinceau, les formes, etc.",
           "title": "Outils de dessin"
@@ -1577,6 +1592,10 @@
         "saving": {
           "description": "Utilisez Fichier > Enregistrer pour enregistrer votre œuvre, ou Fichier > Enregistrer sous pour l'enregistrer sous un nouveau nom.",
           "title": "Enregistrement"
+        },
+        "strokeWidth": {
+          "description": "Réglez l'épaisseur du trait du pinceau et du crayon à l'aide des commandes de la barre d'outils.",
+          "title": "Épaisseur du trait"
         },
         "undo": {
           "description": "Appuyez sur ⌘Z ou utilisez Édition > Annuler pour annuler votre dernière action.",
@@ -1646,7 +1665,7 @@
           "title": "Ratio d'aspect"
         },
         "fullscreenMode": {
-          "description": "Basculer Affichage ▸ Plein écran pour un affichage immersif",
+          "description": "Basculer Contrôles ▸ Plein écran pour un affichage immersif",
           "title": "Mode plein écran"
         },
         "keyboardControls": {
@@ -1661,9 +1680,9 @@
           "description": "Exécute des jeux et applications DOS classiques directement dans votre navigateur",
           "title": "Émulateur PC"
         },
-        "saveStates": {
-          "description": "Enregistrer ou charger la progression du jeu à tout moment depuis le menu Fichier",
-          "title": "États de sauvegarde"
+        "resetLoad": {
+          "description": "Utilisez Fichier ▸ Réinitialiser pour redémarrer, ou Charger partie pour changer de partie",
+          "title": "Réinitialiser et charger"
         }
       },
       "loadingEmulator": "CHARGEMENT ÉMULATEUR",
@@ -1735,7 +1754,7 @@
           "title": "Photos rapides"
         },
         "switchingCameras": {
-          "description": "Utilisez le menu 'Affichage' dans la barre de menu pour changer entre les caméras disponibles si vous en avez plus d'une connectée.",
+          "description": "Utilisez le menu 'Caméra' dans la barre de menu pour changer entre les caméras disponibles si vous en avez plus d'une connectée.",
           "title": "Changer de caméra"
         },
         "takingPhoto": {
@@ -1815,6 +1834,10 @@
           "description": "Les pense-bêtes sont automatiquement enregistrés et persistent entre les sessions",
           "title": "Enregistrement automatique"
         },
+        "clearAll": {
+          "description": "Utilisez Fichier > Effacer toutes les notes pour supprimer toutes les notes adhésives en une seule fois",
+          "title": "Tout effacer"
+        },
         "colors": {
           "description": "Changez les couleurs des pense-bêtes depuis le menu Note pour organiser vos pensées",
           "title": "Couleurs"
@@ -1826,6 +1849,10 @@
         "deleteNote": {
           "description": "Cliquez sur le bouton X d'un pense-bête ou utilisez le menu pour le supprimer",
           "title": "Supprimer le pense-bête"
+        },
+        "moveResize": {
+          "description": "Faites glisser la barre de titre pour déplacer, faites glisser le coin pour redimensionner les notes",
+          "title": "Déplacer et redimensionner"
         }
       },
       "menu": {
@@ -1877,9 +1904,9 @@
           "description": "Réverbération, délai, distorsion, chœur, phaser et réducteur de bits",
           "title": "Effets"
         },
-        "midiInput": {
-          "description": "Branchez un clavier MIDI et jouez instantanément",
-          "title": "Entrée MIDI"
+        "octaveShift": {
+          "description": "Utilisez les touches ou boutons -/+ pour décaler les octaves vers le haut ou le bas",
+          "title": "Décalage d'octave"
         },
         "presets": {
           "description": "Enregistrer, charger et gérer des préréglages sonores personnalisés",
@@ -2069,7 +2096,7 @@
           "title": "Édition enrichie"
         },
         "slashCommands": {
-          "description": "Tapez / pour des actions rapides ou laissez Ryo IA modifier les lignes à distance",
+          "description": "Tapez / pour une mise en forme rapide (titres, listes, styles de texte)",
           "title": "Commandes slash"
         },
         "voiceDictation": {

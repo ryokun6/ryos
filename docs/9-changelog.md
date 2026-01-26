@@ -6,6 +6,7 @@ A summary of changes and updates to ryOS, organized by month.
 
 ## January 2026
 
+- Add Infinite Mac app with 12 classic Mac OS emulators (System 1.0 to Mac OS X 10.4), display scaling, pause/resume, and screenshot capture.
 - Add Listen Together feature with session management, invite dialogs, reaction support, and Pusher integration for Karaoke and iPod apps.
 - Implement modular REST API structure with unified authentication and migrate API endpoints to Edge runtime for improved performance.
 - Introduce image upload support in chat input with aqua styling and thumbnail display.

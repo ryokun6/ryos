@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>i18n & Hooks - ryOS Docs</title>
+  <title>Infinite Mac - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -194,14 +194,14 @@
     <a href="/docs/api-architecture" class="nav-child ">1.2 API Architecture</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/apps" class="">2. Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chats" class="nav-child ">2.1 Chats</a>
     <a href="/docs/internet-explorer" class="nav-child ">2.2 Internet Explorer</a>
     <a href="/docs/ipod" class="nav-child ">2.3 iPod</a>
@@ -220,7 +220,7 @@
     <a href="/docs/admin" class="nav-child ">2.16 Admin</a>
     <a href="/docs/applet-store" class="nav-child ">2.17 Applet Store</a>
     <a href="/docs/stickies" class="nav-child ">2.18 Stickies</a>
-    <a href="/docs/infinite-mac" class="nav-child ">2.19 Infinite Mac</a>
+    <a href="/docs/infinite-mac" class="nav-child active">2.19 Infinite Mac</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -256,16 +256,16 @@
     <a href="/docs/audio-system" class="">6. Audio System</a>
   </div>
 </div>
-<div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/ui-components" class="">7. UI Components and Shared Systems</a>
   </button>
-  <div class="nav-children" style="display: block;">
+  <div class="nav-children" style="display: none;">
     <a href="/docs/component-library" class="nav-child ">7.1 Components</a>
-    <a href="/docs/i18n" class="nav-child active">7.2 i18n & Hooks</a>
+    <a href="/docs/i18n" class="nav-child ">7.2 i18n & Hooks</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -298,57 +298,46 @@
     
     <main class="content">
       <article>
-        <h1>i18n & Hooks</h1>
-<p>Internationalization and 29+ custom hooks.</p>
-<h2>Supported Languages</h2>
-<table><thead><tr><th>Code</th><th>Language</th><th>Native Name</th></tr></thead><tbody><tr><td><code>en</code></td><td>English (default)</td><td>English</td></tr><tr><td><code>zh-TW</code></td><td>Chinese Traditional</td><td>中文</td></tr><tr><td><code>ja</code></td><td>Japanese</td><td>日本語</td></tr><tr><td><code>ko</code></td><td>Korean</td><td>한국어</td></tr><tr><td><code>fr</code></td><td>French</td><td>Français</td></tr><tr><td><code>de</code></td><td>German</td><td>Deutsch</td></tr><tr><td><code>es</code></td><td>Spanish</td><td>Español</td></tr><tr><td><code>pt</code></td><td>Portuguese</td><td>Português</td></tr><tr><td><code>it</code></td><td>Italian</td><td>Italiano</td></tr><tr><td><code>ru</code></td><td>Russian</td><td>Русский</td></tr></tbody></table>
-<h2>i18n Configuration</h2>
-<p>The i18n system is configured in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/i18n.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/i18n.ts</a></code>: <ul><li><strong>Library</strong>: i18next with react-i18next bindings</li></ul><ul><li><strong>Detection</strong>: Browser language auto-detection via <code>i18next-browser-languagedetector</code></li><li><strong>Storage</strong>: Language preference saved to localStorage (<code>ryos_language</code>)</li><li><strong>Fallback</strong>: English (<code>en</code>) as default fallback language</li></ul></p>
-<h3>Translation File Structure</h3>
-<p>Translations are stored in <code>src/lib/locales/{lang}/translation.json</code>:</p>
-<pre><code>src/lib/locales/
-├── en/translation.json
-├── zh-TW/translation.json
-├── ja/translation.json
-├── ko/translation.json
-├── fr/translation.json
-├── de/translation.json
-├── es/translation.json
-├── pt/translation.json
-├── it/translation.json
-└── ru/translation.json</code></pre>
-<h3>Translation Key Patterns</h3>
-<table><thead><tr><th>Pattern</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>common.<em></code></td><td>Shared UI elements (menus, dialogs, buttons)</td><td><code>common.menu.file</code></td></tr><tr><td><code>apps.{appId}.</em></code></td><td>App-specific translations</td><td><code>apps.finder.name</code></td></tr><tr><td><code>apps.{appId}.menu.<em></code></td><td>App menu items</td><td><code>apps.ipod.menu.addSong</code></td></tr><tr><td><code>apps.{appId}.help.</em></code></td><td>App help content</td><td><code>apps.chats.help.chatWithRyo</code></td></tr><tr><td><code>apps.{appId}.dialogs.<em></code></td><td>App dialog text</td><td><code>apps.videos.dialogs.clearPlaylistTitle</code></td></tr><tr><td><code>settings.</em></code></td><td>Settings panel translations</td><td><code>settings.language.title</code></td></tr><tr><td><code>components.*</code></td><td>Shared component translations</td><td><code>components.linkPreview.openIpod</code></td></tr></tbody></table>
-<h2>Key Hooks</h2>
-<strong>Window & App Management:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useLaunchApp</code></td><td>Launch apps with multi-window support</td></tr><tr><td><code>useWindowManager</code></td><td>Drag, resize, snap-to-edge</td></tr><tr><td><code>useWindowInsets</code></td><td>Theme-dependent constraints</td></tr></tbody></table>
-<strong>Audio System:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useSound</code></td><td>Web Audio API playback</td></tr><tr><td><code>useChatSynth</code></td><td>Chat typing sounds</td></tr><tr><td><code>useTerminalSounds</code></td><td>Terminal feedback</td></tr><tr><td><code>useTtsQueue</code></td><td>Text-to-speech queue</td></tr><tr><td><code>useAudioRecorder</code></td><td>Audio recording</td></tr></tbody></table>
-<strong>Device Detection:</strong>
-<table><thead><tr><th>Hook</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useIsMobile</code></td><td>Mobile detection (<768px)</td></tr><tr><td><code>useIsPhone</code></td><td>Phone detection (<640px)</td></tr><tr><td><code>useMediaQuery</code></td><td>CSS media query hook</td></tr></tbody></table>
-<h2>Using i18n</h2>
-<pre><code>import { useTranslation } from "react-i18next";
-
-const { t } = useTranslation();
-
-// Simple key lookup
-t("common.menu.file")              // "File"
-t("apps.finder.name")              // "Finder"
-
-// With interpolation
-t("common.dialog.aboutApp", { appName: "Finder" })  // "About Finder"
-t("apps.ipod.dialogs.addedSongsToTop", { count: 5, plural: "s" })
-
-// Pluralization
-t("apps.admin.statusBar.usersCount", { count: 1 })  // "1 user"
-t("apps.admin.statusBar.usersCount_plural", { count: 5 })  // "5 users"</code></pre>
-<h2>Helper Functions (src/utils/i18n.ts)</h2>
-<table><thead><tr><th>Function</th><th>Purpose</th></tr></thead><tbody><tr><td><code>getTranslatedAppName(appId)</code></td><td>Get localized app name (theme-aware)</td></tr><tr><td><code>getTranslatedAppDescription(appId)</code></td><td>Get localized app description</td></tr><tr><td><code>getTranslatedFolderName(path)</code></td><td>Get localized folder name from path</td></tr><tr><td><code>getTranslatedHelpItems(appId)</code></td><td>Get localized help items for an app</td></tr></tbody></table>
+        <h1>Infinite Mac</h1>
+<p>Infinite Mac is a ryOS application that brings classic Macintosh computing to your browser. It provides access to a curated selection of historic Mac OS versions, from the original System 1.0 (1984) to Mac OS X 10.4 Tiger (2005), all running through the Infinite Mac emulator project.</p>
+<h2>Overview</h2>
+<p>The Infinite Mac app transforms your ryOS desktop into a time machine for classic Macintosh systems. Powered by browser-based emulation technology, it allows users to experience the evolution of Mac OS through 12 different system versions spanning over two decades of computing history. Each system runs in an authentic emulated environment, complete with the original user interface, applications, and capabilities of that era.</p>
+<p>Whether you're a longtime Mac enthusiast wanting to revisit the Platinum appearance of Mac OS 8, explore the Japanese KanjiTalk 7.5.3, or experience the original Macintosh System 1.0, Infinite Mac provides an accessible window into Apple's operating system history—all without leaving your browser.</p>
+<h2>Features</h2>
+<ul><li><strong>Classic Mac Emulator</strong>: Run authentic classic Mac OS systems in your browser via the Infinite Mac project, from System 1.0 (1984) to Mac OS X 10.4 (2005).</li></ul><ul><li><strong>Select a System</strong>: Choose from 12 historic Mac OS versions including System 1.0, System 6.0.8, System 7.5.3, KanjiTalk 7.5.3, Mac OS 8.0, Mac OS 8.5, Mac OS 9.0, Mac OS 9.2.2, and Mac OS X 10.1-10.4.</li><li><strong>Display Scaling</strong>: Adjust the emulator display with 1x, 1.5x, or 2x scaling options via View ▸ Scaling.</li><li><strong>Pause / Resume</strong>: Use View ▸ Pause or Resume to save system resources when not actively interacting.</li><li><strong>Capture Screenshot</strong>: Use View ▸ Capture Screenshot to save the current emulator display as a PNG image.</li><li><strong>Back to Systems</strong>: Use File ▸ Back to Systems or the grid icon in the title bar to return to the system selection.</li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+Launch Infinite Mac from the ryOS application launcher. You'll be presented with a grid of available Mac OS systems, each showing a preview thumbnail, the system name, and its release year. Simply click on any system to load it.
+<h3>Key Actions</h3>
+<ul><li><strong>Selecting a System</strong>: Click on any system card in the grid to load that Mac OS version. The emulator will initialize and display a loading indicator while the system boots.</li></ul><ul><li><strong>Navigating Back</strong>: To return to the system selection grid, use <code>File &gt; Back to Systems</code> in the menu bar, or click the grid icon in the window title bar.</li><li><strong>Adjusting Display Scale</strong>: Access <code>View &gt; Scaling</code> to choose between 1x, 1.5x, or 2x display scaling. The window will resize to accommodate the new scale.</li><li><strong>Pausing the Emulator</strong>: When you're not actively using the emulated system, select <code>View &gt; Pause</code> to freeze emulation and conserve CPU resources. Select <code>View &gt; Resume</code> to continue.</li><li><strong>Capturing Screenshots</strong>: With an emulator running, select <code>View &gt; Capture Screenshot</code> to download a PNG image of the current emulator display.</li></ul>
+<h3>Available Systems</h3>
+<table><thead><tr><th>System</th><th>Year</th><th>Description</th></tr></thead><tbody><tr><td>System 1.0</td><td>1984</td><td>Initial Mac system software</td></tr><tr><td>System 6.0.8</td><td>1991</td><td>Final System 6 release</td></tr><tr><td>System 7.5.3</td><td>1996</td><td>Open Transport and broader Mac support</td></tr><tr><td>KanjiTalk 7.5.3</td><td>1996</td><td>Japanese edition of System 7.5.3</td></tr><tr><td>Mac OS 8.0</td><td>1997</td><td>Platinum appearance, multi-threaded Finder</td></tr><tr><td>Mac OS 8.5</td><td>1998</td><td>Sherlock, 32-bit icons, font smoothing</td></tr><tr><td>Mac OS 9.0</td><td>1999</td><td>Keychain, multiple users, Sherlock channels</td></tr><tr><td>Mac OS 9.2.2</td><td>2001</td><td>Final classic Mac OS release</td></tr><tr><td>Mac OS X 10.1</td><td>2001</td><td>Puma - improved performance, DVD playback</td></tr><tr><td>Mac OS X 10.2</td><td>2002</td><td>Jaguar - Quartz Extreme, Address Book, iChat</td></tr><tr><td>Mac OS X 10.3</td><td>2003</td><td>Panther - Exposé, fast user switching</td></tr><tr><td>Mac OS X 10.4</td><td>2005</td><td>Tiger - Spotlight, Dashboard, Safari RSS</td></tr></tbody></table>
+<h3>Tips & Shortcuts</h3>
+<ul><li><strong>Resource Management</strong>: Pause emulation when switching to other ryOS apps to free up CPU resources.</li></ul><ul><li><strong>Screen Resolution</strong>: Different systems have different native resolutions. System 1.0 and 6.0.8 use 512×342, while later systems use 640×480.</li><li><strong>Persistence</strong>: The emulated systems support saving data to a virtual hard disk that persists between sessions.</li><li><strong>Keyboard Input</strong>: Your physical keyboard inputs are forwarded to the emulated Mac when the emulator window is focused.</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+<ul><li>Default size: 640×504px (content area 640×480 + titlebar)</li><li>Minimum size: 512×342px</li><li>Maximum size: 1024×792px</li></ul>
+<h3>Component Architecture</h3>
+The app consists of 2 component file(s):
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/infinite-mac/components/InfiniteMacMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/infinite-mac/components/InfiniteMacMenuBar.tsx</a></code>: Manages the application's menu bar, handling File menu actions (back to presets, close), View menu actions (scaling, pause/resume, screenshot), and Help menu items.</li></ul><ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/infinite-mac/components/InfiniteMacAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/infinite-mac/components/InfiniteMacAppComponent.tsx</a></code>: The main application component, responsible for rendering both the system selection grid and the embedded emulator iframe, managing emulator lifecycle and communication.</li></ul>
+<h3>Hooks & Utilities</h3>
+<strong>Custom Hooks:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/infinite-mac/hooks/useInfiniteMacLogic.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/infinite-mac/hooks/useInfiniteMacLogic.ts</a></code>: A comprehensive hook that manages emulator state, preset selection, window resizing, iframe communication via postMessage, and screenshot capture functionality.</li></ul>
+<strong>Generated Files:</strong>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/infinite-mac/presetAverageColors.generated.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/infinite-mac/presetAverageColors.generated.ts</a></code>: Pre-computed average colors for each system's thumbnail, used for smooth loading transitions.</li></ul>
+<h3>State Management</h3>
+Infinite Mac uses a combination of local React state and a dedicated Zustand store:
+<ul><li><strong>Local State</strong>: Manages UI concerns like dialog visibility (<code>isHelpDialogOpen</code>, <code>isAboutDialogOpen</code>), currently selected preset (<code>selectedPreset</code>), emulator loading state (<code>isEmulatorLoaded</code>), and pause state (<code>isPaused</code>).</li></ul><ul><li><strong>useInfiniteMacStore</strong>: A Zustand store that persists the user's preferred display scale setting (<code>scale</code>) across sessions.</li></ul>
+<h3>Emulator Integration</h3>
+The app integrates with Infinite Mac via a same-origin wrapper that enables cross-origin isolation (COEP/COOP headers required for SharedArrayBuffer). Communication with the emulator happens through postMessage:
+<ul><li><strong>emulator_loaded</strong>: Received when the emulator has fully initialized</li></ul><ul><li><strong>emulator_screen</strong>: Received with screen dimensions and pixel data for dynamic window sizing and screenshots</li><li><strong>emulator_pause / emulator_unpause</strong>: Sent to control emulator execution</li></ul>
+<h2>Related Apps</h2>
+<ul><li><strong><a href="/docs/virtual-pc">Virtual PC</a></strong>: Another emulation app in ryOS that runs classic DOS games and applications, offering a complementary retro computing experience.</li></ul><ul><li><strong><a href="/docs/control-panels">Control Panels</a></strong>: System-wide preferences that may affect display settings and audio output for the emulated systems.</li></ul>
       </article>
       
       <nav class="nav">
-        <a href="/docs/component-library">← Components</a>
-        <a href="/docs/api-reference">API Reference →</a>
+        <a href="/docs/stickies">← Stickies</a>
+        <a href="/docs/application-framework">Application Framework →</a>
       </nav>
       
     </main>

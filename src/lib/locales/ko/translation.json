@@ -54,6 +54,14 @@
           "description": "채팅방을 보고 관리하며, 부적절한 콘텐츠를 삭제합니다.",
           "title": "채팅방 관리"
         },
+        "searchFilter": {
+          "description": "사용자나 노래를 이름으로 검색하여 항목을 빠르게 찾으세요.",
+          "title": "검색 및 필터"
+        },
+        "songLibrary": {
+          "description": "캐시된 노래 라이브러리 가져오기, 내보내기 및 관리.",
+          "title": "노래 라이브러리"
+        },
         "statistics": {
           "description": "시스템 통계 및 사용량 지표를 확인합니다.",
           "title": "통계"
@@ -957,9 +965,17 @@
           "description": "파일 ▸ 시스템으로 돌아가기를 이용해 사전 설정된 그리드로 돌아가세요.",
           "title": "시스템으로 돌아가기"
         },
+        "captureScreenshot": {
+          "description": "보기 ▸ 스크린샷 캡처를 사용하여 현재 디스플레이를 저장합니다",
+          "title": "스크린샷 캡처"
+        },
         "classicMacEmulator": {
           "description": "Infinite Mac을 통해 브라우저에서 클래식 Mac OS 시스템을 실행하세요.",
           "title": "클래식 Mac 에뮬레이터"
+        },
+        "displayScaling": {
+          "description": "보기 ▸ 크기 조절을 사용하여 디스플레이 크기(1배, 1.5배 또는 2배)를 조절합니다",
+          "title": "디스플레이 크기 조절"
         },
         "pauseResume": {
           "description": "상호 작용하지 않을 때 보기 ▸ 일시 정지 또는 재개를 이용해 리소스를 절약하세요.",
@@ -975,11 +991,14 @@
       "menu": {
         "aboutInfiniteMac": "Infinite Mac 정보",
         "backToPresets": "시스템으로 돌아가기",
+        "captureScreenshot": "화면 캡처",
         "infiniteMacHelp": "Infinite Mac 도움말",
         "pause": "일시 정지",
-        "resume": "재개"
+        "resume": "재개",
+        "scaling": "배율"
       },
       "name": "Infinite Mac",
+      "screenshotUnavailable": "스크린샷을 찍을 수 없습니다. 브라우저의 스크린샷 도구를 사용하세요 (Mac: Cmd+Shift+4, Windows: Win+Shift+S).",
       "selectSystem": "클래식 Mac 시스템 선택",
       "systemsAvailable": "{{count}}개의 시스템 사용 가능",
       "title": "Infinite Mac"
@@ -1423,10 +1442,6 @@
           "description": "YouTube에서 노래를 검색하거나 URL을 붙여넣어 라이브러리에 추가하세요.",
           "title": "노래 추가 및 검색"
         },
-        "instantTranslations": {
-          "description": "가사를 여러 언어로 실시간 번역.",
-          "title": "즉시 번역"
-        },
         "keyboardShortcuts": {
           "description": "스페이스바로 재생/일시 정지, 화살표 키로 탐색 및 트랙 변경.",
           "title": "키보드 단축키"
@@ -1436,7 +1451,7 @@
           "title": "스타일 및 발음"
         },
         "syncLyricsTiming": {
-          "description": "[ ] 키, 마우스 휠 또는 위/아래 드래그로 가사 오프셋을 조정하세요.",
+          "description": "[ ] 키, 마우스 휠 또는 좌/우 드래그로 가사 오프셋을 조정하세요.",
           "title": "가사 타이밍 동기화"
         },
         "syncedWithIpod": {
@@ -1518,6 +1533,14 @@
           "description": "숫자는 인접한 지뢰 수를 보여줍니다. 모든 지뢰에 깃발을 달고 모든 안전한 셀을 표시하여 승리.",
           "title": "게임 규칙"
         },
+        "gameStatus": {
+          "description": "이모티콘은 게임 상태를 보여줍니다: 🙂 플레이 중, 💀 게임 오버, 😎 승리!",
+          "title": "게임 상태"
+        },
+        "mineCounter": {
+          "description": "상단 바에 깃발 없는 지뢰 수와 총 지뢰 수가 표시됩니다.",
+          "title": "지뢰 수"
+        },
         "mobileControls": {
           "description": "탭하여 표시, 길게 눌러 지뢰에 깃발",
           "title": "모바일 컨트롤"
@@ -1525,10 +1548,6 @@
         "restart": {
           "description": "웃는 얼굴을 누르거나 게임 ▸ 새로 만들기를 선택하여 새 보드 시작",
           "title": "다시 시작"
-        },
-        "timerCounter": {
-          "description": "상단 막대에 경과 시간 및 남은 깃발 없는 지뢰 표시",
-          "title": "타이머 및 카운터"
         }
       },
       "lcd": {
@@ -1558,10 +1577,6 @@
         "openFiltersMenu": "필터 메뉴 열기"
       },
       "help": {
-        "colors": {
-          "description": "도구 아래의 팔레트에서 색상을 선택하여 그리기 색상 변경.",
-          "title": "색상"
-        },
         "drawingTools": {
           "description": "왼쪽 도구 모음을 사용하여 연필, 브러시, 도형 등의 다양한 그리기 도구 선택.",
           "title": "그리기 도구"
@@ -1577,6 +1592,10 @@
         "saving": {
           "description": "파일 > 저장을 사용하여 작품 저장 또는 파일 > 다른 이름으로 저장을 사용하여 새 이름으로 저장.",
           "title": "저장"
+        },
+        "strokeWidth": {
+          "description": "도구 모음 컨트롤로 브러시 및 연필 획 너비를 조절합니다.",
+          "title": "획 너비"
         },
         "undo": {
           "description": "⌘Z를 누르거나 편집 > 실행 취소를 사용하여 마지막 작업 취소.",
@@ -1646,7 +1665,7 @@
           "title": "종횡비"
         },
         "fullscreenMode": {
-          "description": "보기 ▸ 전체 화면을 전환하여 몰입형 표시",
+          "description": "제어 ▸ 전체 화면을 전환하여 몰입형 표시",
           "title": "전체 화면 모드"
         },
         "keyboardControls": {
@@ -1661,9 +1680,9 @@
           "description": "브라우저에서 클래식 DOS 게임 및 앱 직접 실행",
           "title": "PC 에뮬레이터"
         },
-        "saveStates": {
-          "description": "파일 메뉴에서 언제든지 게임 진행 상황 저장 또는 로드",
-          "title": "저장 상태"
+        "resetLoad": {
+          "description": "파일 ▸ 재시작으로 다시 시작하거나, 게임 불러오기로 게임을 전환하세요.",
+          "title": "재시작 및 불러오기"
         }
       },
       "loadingEmulator": "에뮬레이터 로드 중",
@@ -1735,7 +1754,7 @@
           "title": "빠른 스냅"
         },
         "switchingCameras": {
-          "description": "여러 카메라가 연결된 경우 메뉴 모음의 보기 메뉴를 사용하여 사용 가능한 카메라 간 전환.",
+          "description": "여러 카메라가 연결된 경우 메뉴 모음의 카메라 메뉴를 사용하여 사용 가능한 카메라 간 전환.",
           "title": "카메라 전환"
         },
         "takingPhoto": {
@@ -1815,6 +1834,10 @@
           "description": "메모는 자동으로 저장되며 세션 간에 유지됩니다.",
           "title": "자동 저장"
         },
+        "clearAll": {
+          "description": "파일 > 모든 메모 지우기를 사용하여 모든 스티커 메모를 한 번에 제거합니다.",
+          "title": "모두 지우기"
+        },
         "colors": {
           "description": "생각을 정리하려면 메모 메뉴에서 메모 색상을 변경하세요.",
           "title": "색상"
@@ -1826,6 +1849,10 @@
         "deleteNote": {
           "description": "메모의 X 버튼을 클릭하거나 메뉴를 사용하여 삭제하세요.",
           "title": "메모 삭제"
+        },
+        "moveResize": {
+          "description": "제목 표시줄을 드래그하여 이동하고, 모서리를 드래그하여 메모 크기를 조절하세요.",
+          "title": "이동 및 크기 조절"
         }
       },
       "menu": {
@@ -1877,9 +1904,9 @@
           "description": "리버브, 딜레이, 디스토션, 코러스, 페이저 및 비트 크러셔",
           "title": "효과"
         },
-        "midiInput": {
-          "description": "MIDI 키보드를 연결하고 즉시 연주",
-          "title": "MIDI 입력"
+        "octaveShift": {
+          "description": "-/+ 키 또는 버튼으로 옥타브를 위아래로 이동하세요.",
+          "title": "옥타브 이동"
         },
         "presets": {
           "description": "사용자 지정 사운드 사전 설정 저장, 로드 및 관리",
@@ -2069,7 +2096,7 @@
           "title": "리치 편집"
         },
         "slashCommands": {
-          "description": "/를 입력하여 빠른 작업 수행 또는 Ryo AI가 원격으로 줄 편집",
+          "description": "/를 입력하여 빠른 서식 지정 (제목, 목록, 텍스트 스타일)",
           "title": "슬래시 명령"
         },
         "voiceDictation": {

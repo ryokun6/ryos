@@ -35,9 +35,11 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 - **Control Panels** — System preferences: appearance, sounds, backup/restore, and file system management
 - **Minesweeper** — Classic puzzle game
 - **Virtual PC** — DOS emulator for classic games (Doom, SimCity, etc.)
+- **Infinite Mac** — Classic Mac OS emulators (System 1.0 to Mac OS X 10.4) via Infinite Mac
 - **Terminal** — Unix-like CLI with AI integration (`ryo <prompt>`)
 - **iPod** — 1st-gen iPod music player with YouTube import, lyrics, and translation
 - **Applet Store** — Browse, install, and share community-created HTML applets
+- **Stickies** — Sticky notes for quick reminders
 
 ## Quick Start
 

@@ -13,7 +13,7 @@ export const helpItems = [
   {
     icon: "📝",
     title: "Create Note",
-    description: "Click File > New Note or use ⌘N to create a new sticky note",
+    description: "Click File > New Note to create a new sticky note",
   },
   {
     icon: "🎨",
@@ -21,9 +21,19 @@ export const helpItems = [
     description: "Change note colors from the Note menu to organize your thoughts",
   },
   {
+    icon: "↔️",
+    title: "Move & Resize",
+    description: "Drag the title bar to move, drag the corner to resize notes",
+  },
+  {
     icon: "🗑️",
     title: "Delete Note",
-    description: "Click the close button on a note or use ⌘W to delete it",
+    description: "Click the X button on a note to delete it",
+  },
+  {
+    icon: "🧹",
+    title: "Clear All",
+    description: "Use File > Clear All Notes to remove all stickies at once",
   },
   {
     icon: "💾",

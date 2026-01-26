@@ -54,6 +54,14 @@
           "description": "チャットルームの表示と管理、不適切なコンテンツの削除を行います。",
           "title": "ルーム管理"
         },
+        "searchFilter": {
+          "description": "ユーザーまたは曲を名前で検索して、すばやく見つけます。",
+          "title": "検索とフィルタ"
+        },
+        "songLibrary": {
+          "description": "キャッシュされた曲ライブラリをインポート、エクスポート、管理します。",
+          "title": "曲ライブラリ"
+        },
         "statistics": {
           "description": "システムの統計情報と利用状況の指標を表示します。",
           "title": "統計情報"
@@ -957,9 +965,17 @@
           "description": "ファイル ▸ システムに戻る を使用してプリセットグリッドに戻ります。",
           "title": "システムに戻る"
         },
+        "captureScreenshot": {
+          "description": "「表示 ▸ スクリーンショットをキャプチャ」を使って現在の画面を保存します",
+          "title": "スクリーンショットをキャプチャ"
+        },
         "classicMacEmulator": {
           "description": "Infinite Mac経由で、ブラウザでクラシックMac OSシステムを実行します。",
           "title": "クラシックMacエミュレータ"
+        },
+        "displayScaling": {
+          "description": "「表示 ▸ スケーリング」を使って表示サイズ（1倍、1.5倍、2倍）を調整します",
+          "title": "表示スケーリング"
         },
         "pauseResume": {
           "description": "操作していないときは、表示 ▸ 一時停止または再開 を使用してリソースを節約します。",
@@ -981,8 +997,8 @@
         "resume": "再開",
         "scaling": "拡大縮小"
       },
-      "screenshotUnavailable": "スクリーンショットを利用できません。ブラウザのスクリーンショットツール（MacはCmd+Shift+4、WindowsはWin+Shift+S）をご利用ください。",
       "name": "Infinite Mac",
+      "screenshotUnavailable": "スクリーンショットを利用できません。ブラウザのスクリーンショットツール（MacはCmd+Shift+4、WindowsはWin+Shift+S）をご利用ください。",
       "selectSystem": "クラシックMacシステムを選択",
       "systemsAvailable": "{{count}} システム利用可能",
       "title": "Infinite Mac"
@@ -1426,10 +1442,6 @@
           "description": "YouTubeで曲を検索するか、URLを貼り付けてライブラリに追加。",
           "title": "曲を追加・検索"
         },
-        "instantTranslations": {
-          "description": "歌詞を多言語に即時翻訳。",
-          "title": "即時翻訳"
-        },
         "keyboardShortcuts": {
           "description": "スペースで再生/一時停止、矢印キーでシーク・トラック変更。",
           "title": "キーボードショートカット"
@@ -1439,7 +1451,7 @@
           "title": "スタイル・発音"
         },
         "syncLyricsTiming": {
-          "description": "[ ]キー、マウスホイール、または上下ドラッグで歌詞オフセットを調整。",
+          "description": "[ ]キー、マウスホイール、または左右ドラッグで歌詞オフセットを調整。",
           "title": "歌詞タイミング同期"
         },
         "syncedWithIpod": {
@@ -1521,6 +1533,14 @@
           "description": "数字は隣接する地雷の数を示します。すべての地雷にフラグを立て、すべての安全なセルを表示して勝利。",
           "title": "ゲームルール"
         },
+        "gameStatus": {
+          "description": "絵文字はゲームの状態を表します: 🙂 プレイ中、💀 ゲームオーバー、😎 勝利！",
+          "title": "ゲームステータス"
+        },
+        "mineCounter": {
+          "description": "トップバーには、残りの未フラグ地雷数と総地雷数が表示されます。",
+          "title": "地雷数"
+        },
         "mobileControls": {
           "description": "タップで表示、長押しで地雷にフラグ",
           "title": "モバイルコントロール"
@@ -1528,10 +1548,6 @@
         "restart": {
           "description": "笑顔アイコンを押すか、ゲーム ▸ 新規を選択して新しいボードを開始",
           "title": "再開"
-        },
-        "timerCounter": {
-          "description": "上部バーに経過時間と残りの未フラグ地雷を表示",
-          "title": "タイマーとカウンター"
         }
       },
       "lcd": {
@@ -1561,10 +1577,6 @@
         "openFiltersMenu": "フィルターメニューを開く"
       },
       "help": {
-        "colors": {
-          "description": "ツールの下のパレットから色を選択して描画色を変更。",
-          "title": "色"
-        },
         "drawingTools": {
           "description": "左側のツールバーを使用して、鉛筆、ブラシ、図形などのさまざまな描画ツールを選択。",
           "title": "描画ツール"
@@ -1580,6 +1592,10 @@
         "saving": {
           "description": "ファイル > 保存を使用して作品を保存、またはファイル > 別名で保存を使用して新しい名前で保存。",
           "title": "保存"
+        },
+        "strokeWidth": {
+          "description": "ツールバーのコントロールを使って、ブラシと鉛筆の線の太さを調整します。",
+          "title": "線の太さ"
         },
         "undo": {
           "description": "⌘Zを押すか、編集 > 取り消すを使用して最後の操作を取り消し。",
@@ -1649,7 +1665,7 @@
           "title": "アスペクト比"
         },
         "fullscreenMode": {
-          "description": "表示 ▸ フルスクリーンを切り替えて没入感のある表示",
+          "description": "コントロール ▸ フルスクリーンを切り替えて没入感のある表示",
           "title": "フルスクリーンモード"
         },
         "keyboardControls": {
@@ -1664,9 +1680,9 @@
           "description": "ブラウザでクラシックなDOSゲームとアプリを直接実行",
           "title": "PCエミュレーター"
         },
-        "saveStates": {
-          "description": "ファイルメニューからいつでもゲームの進行状況を保存または読み込み",
-          "title": "セーブステート"
+        "resetLoad": {
+          "description": "ファイル ▸ リセットで再開、またはゲームをロードでゲームを切り替えます。",
+          "title": "リセットとロード"
         }
       },
       "loadingEmulator": "エミュレーターを読み込み中",
@@ -1738,7 +1754,7 @@
           "title": "クイックスナップ"
         },
         "switchingCameras": {
-          "description": "複数のカメラが接続されている場合、メニューバーの「表示」メニューを使用して利用可能なカメラを切り替え。",
+          "description": "複数のカメラが接続されている場合、メニューバーの「カメラ」メニューを使用して利用可能なカメラを切り替え。",
           "title": "カメラの切り替え"
         },
         "takingPhoto": {
@@ -1818,6 +1834,10 @@
           "description": "付箋は自動的に保存され、セッション間で保持されます",
           "title": "自動保存"
         },
+        "clearAll": {
+          "description": "ファイル > 全てのメモを消去で、全ての付箋を一度に削除します。",
+          "title": "全て消去"
+        },
         "colors": {
           "description": "付箋メニューから付箋の色を変更して、思考を整理しましょう",
           "title": "色"
@@ -1829,6 +1849,10 @@
         "deleteNote": {
           "description": "付箋のXボタンをクリックするか、メニューを使用して削除します",
           "title": "付箋を削除"
+        },
+        "moveResize": {
+          "description": "タイトルバーをドラッグして移動、角をドラッグしてメモのサイズを変更します。",
+          "title": "移動とサイズ変更"
         }
       },
       "menu": {
@@ -1880,9 +1904,9 @@
           "description": "リバーブ、ディレイ、ディストーション、コーラス、フェイザー、ビットクラッシャー",
           "title": "エフェクト"
         },
-        "midiInput": {
-          "description": "MIDIキーボードを接続して即座に演奏",
-          "title": "MIDI入力"
+        "octaveShift": {
+          "description": "-/+ キーまたはボタンでオクターブを上下にシフトします。",
+          "title": "オクターブシフト"
         },
         "presets": {
           "description": "カスタムサウンドプリセットを保存、読み込み、管理",
@@ -2072,7 +2096,7 @@
           "title": "リッチ編集"
         },
         "slashCommands": {
-          "description": "/を入力してクイックアクション、またはRyo AIにリモートで行を編集させる",
+          "description": "/を入力してクイック書式設定（見出し、リスト、テキストスタイル）",
           "title": "スラッシュコマンド"
         },
         "voiceDictation": {
