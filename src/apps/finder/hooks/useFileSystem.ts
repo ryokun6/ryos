@@ -14,7 +14,7 @@ import {
 } from "@/stores/useInternetExplorerStore";
 import { useFilesStore, FileSystemItem, ensureFileContentLoaded } from "@/stores/useFilesStore";
 import { useTextEditStore } from "@/stores/useTextEditStore";
-import { useAppStore } from "@/stores/useAppStore";
+import { useAppStore, type LaunchOriginRect } from "@/stores/useAppStore";
 import { migrateIndexedDBToUUIDs } from "@/utils/indexedDBMigration";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { formatKugouImageUrl } from "@/apps/ipod/constants";
@@ -864,7 +864,7 @@ export function useFileSystem(
 
   // Define handleFileOpen
   const handleFileOpen = useCallback(
-    async (file: ExtendedDisplayFileItem) => {
+    async (file: ExtendedDisplayFileItem, launchOrigin?: LaunchOriginRect) => {
       // 0. Handle Aliases/Shortcuts first - resolve to target before processing
       // Handle nested aliases by resolving until we get to the actual target
       let currentFile = file;
@@ -887,7 +887,7 @@ export function useFileSystem(
           if (fileMetadata.aliasType === "app") {
             // Launch app directly
             const appId = fileMetadata.aliasTarget as AppId;
-            launchApp(appId);
+            launchApp(appId, { launchOrigin });
             return;
           } else {
             // Open file/applet - need to resolve the original file
@@ -1032,7 +1032,7 @@ export function useFileSystem(
           contentUrlToUse,
         });
         if (file.path.startsWith("/Applications/") && file.appId) {
-          launchApp(file.appId as AppId);
+          launchApp(file.appId as AppId, { launchOrigin });
         } else if (file.path.startsWith("/Documents/")) {
           // Check if this file is already open in a TextEdit instance
           const textEditStore = useTextEditStore.getState();
@@ -1059,18 +1059,21 @@ export function useFileSystem(
               textEditStore.removeInstance(existingInstanceId);
               launchApp("textedit", {
                 initialData: { path: file.path, content: contentAsString ?? "" },
+                launchOrigin,
               });
             }
           } else {
             // File not open - launch new TextEdit instance
             launchApp("textedit", {
               initialData: { path: file.path, content: contentAsString ?? "" },
+              launchOrigin,
             });
           }
         } else if (file.path.startsWith("/Images/")) {
           // Pass the Blob object itself to Paint via initialData
           launchApp("paint", {
             initialData: { path: file.path, content: contentToUse },
+            launchOrigin,
           }); // Pass contentToUse (Blob)
         } else if (
           file.path.startsWith("/Applets/") &&
@@ -1090,6 +1093,7 @@ export function useFileSystem(
                 path: file.path,
                 content: contentAsString ?? "",
               },
+              launchOrigin,
             });
           } catch (e) {
             console.warn(
@@ -1101,12 +1105,12 @@ export function useFileSystem(
           // iPod uses song ID directly
           setIpodSongId(file.data.songId);
           setIpodPlaying(true);
-          launchApp("ipod");
+          launchApp("ipod", { launchOrigin });
         } else if (file.appId === "videos" && file.data?.videoId) {
           // Videos uses video ID directly
           setVideoIndex(file.data.videoId);
           setVideoPlaying(true);
-          launchApp("videos");
+          launchApp("videos", { launchOrigin });
         } else if (file.type === "site-link" && file.data?.url) {
           // Pass url and year via initialData instead of using IE store directly
           launchApp("internet-explorer", {
@@ -1114,6 +1118,7 @@ export function useFileSystem(
               url: file.data.url,
               year: file.data.year || "current",
             },
+            launchOrigin,
           });
           // internetExplorerStore.setPendingNavigation(file.data.url, file.data.year || "current");
         } else {

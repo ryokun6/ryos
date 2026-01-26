@@ -13,7 +13,7 @@ import { calculateStorageSpace } from "@/stores/useFinderStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { FileItem } from "../components/FileList";
 import { useFinderStore } from "@/stores/useFinderStore";
-import { useAppStore } from "@/stores/useAppStore";
+import { useAppStore, type LaunchOriginRect } from "@/stores/useAppStore";
 import { MenuItem } from "@/components/ui/right-click-menu";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -279,9 +279,9 @@ export function useFinderLogic({
   );
 
   // Wrap the original handleFileOpen - now only calls the original without TextEditStore updates
-  const handleFileOpen = async (file: FileItem) => {
+  const handleFileOpen = async (file: FileItem, launchOrigin?: LaunchOriginRect) => {
     // Call original file open handler from useFileSystem
-    originalHandleFileOpen(file);
+    originalHandleFileOpen(file, launchOrigin);
     // TextEditStore updates removed - TextEdit instances now manage their own state
   };
 
