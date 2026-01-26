@@ -246,6 +246,8 @@ export interface InfiniteMacControlInput {
 }
 
 // Infinite Mac control output
+// Note: readScreen returns multimodal content using AI SDK's content format
+// with image-data parts so the model can "see" the screen
 export interface InfiniteMacControlOutput {
   success: boolean;
   message: string;
@@ -256,8 +258,8 @@ export interface InfiniteMacControlOutput {
     currentSystem: string | null;
     screenSize: { width: number; height: number } | null;
   };
-  // For readScreen - base64 encoded PNG image
-  screenImage?: string;
+  // For readScreen - returns AI SDK multimodal content format:
+  // { type: 'content', value: [{ type: 'text', text: '...' }, { type: 'image-data', data: '...', mediaType: 'image/png' }] }
   // Available systems list (for launchSystem help)
   availableSystems?: Array<{
     id: string;

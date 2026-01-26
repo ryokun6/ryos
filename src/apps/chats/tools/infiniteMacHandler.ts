@@ -217,15 +217,29 @@ export const handleInfiniteMacControl = async (
           return;
         }
 
+        // Extract base64 data from data URL (remove "data:image/png;base64," prefix)
+        const base64Data = screenBase64.replace(/^data:image\/\w+;base64,/, "");
+        const screenSize = store.lastScreenData
+          ? { width: store.lastScreenData.width, height: store.lastScreenData.height }
+          : selectedPreset.screenSize;
+
+        // Return as multimodal content so the AI model can "see" the image
         context.addToolResult({
           tool: "infiniteMacControl",
           toolCallId,
           output: {
-            message: `Screen captured from ${selectedPreset.name}`,
-            screenImage: screenBase64,
-            screenSize: store.lastScreenData
-              ? { width: store.lastScreenData.width, height: store.lastScreenData.height }
-              : selectedPreset.screenSize,
+            type: "content",
+            value: [
+              {
+                type: "text",
+                text: `Screen captured from ${selectedPreset.name} (${screenSize.width}x${screenSize.height}). Analyze the screen to understand the current state of the emulator.`,
+              },
+              {
+                type: "image-data",
+                data: base64Data,
+                mediaType: "image/png",
+              },
+            ],
           },
         });
         break;
