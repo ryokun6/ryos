@@ -115,6 +115,18 @@ export const TOOL_DESCRIPTIONS = {
   
   stickiesControl:
     "Manage sticky notes in ryOS. Actions: 'list' returns all stickies with their IDs, content, and colors; 'create' makes a new sticky note with optional content/text, color (yellow/blue/green/pink/purple/orange), position, size; 'update' modifies an existing sticky by ID - use this to set/replace text content, change color, or move it; 'delete' removes a sticky by ID; 'clear' removes all stickies. The Stickies app opens automatically when creating notes.",
+
+  infiniteMacControl:
+    "Control the Infinite Mac emulator to run classic Mac OS systems. Actions: " +
+    "'launchSystem' launches a Mac OS (requires 'system' param - options include system-1, system-6, system-7-5, macos-8, macos-9, macosx-10-1 through 10-4); " +
+    "'getStatus' returns the current emulator state (loaded, paused, current system, screen size); " +
+    "'readScreen' captures the current screen as a base64 PNG image for visual analysis; " +
+    "'mouseMove' moves the cursor to (x, y) coordinates; " +
+    "'mouseClick' clicks at (x, y) with optional 'button' (left/right); " +
+    "'keyPress' sends a key press (use JS key codes like 'KeyA', 'Enter', 'Space', 'ArrowUp'); " +
+    "'pause'/'unpause' controls emulation. " +
+    "The emulator window opens automatically when launching a system. " +
+    "Use readScreen to see what's on screen before performing mouse/keyboard actions.",
 } as const;
 
 /**
@@ -233,6 +245,15 @@ export function createChatTools(context: ServerToolContext) {
       description: TOOL_DESCRIPTIONS.stickiesControl,
       inputSchema: schemas.stickiesControlSchema,
       // No execute - handled client-side (requires Zustand store access)
+    },
+
+    // ============================================================================
+    // Infinite Mac Emulator Control Tools (Client-side execution)
+    // ============================================================================
+    infiniteMacControl: {
+      description: TOOL_DESCRIPTIONS.infiniteMacControl,
+      inputSchema: schemas.infiniteMacControlSchema,
+      // No execute - handled client-side (requires iframe postMessage access)
     },
   };
 }

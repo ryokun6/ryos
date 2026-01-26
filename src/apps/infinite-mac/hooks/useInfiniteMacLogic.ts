@@ -3,11 +3,17 @@ import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAppStore } from "@/stores/useAppStore";
-import { useInfiniteMacStore, type ScaleOption } from "@/stores/useInfiniteMacStore";
+import { 
+  useInfiniteMacStore, 
+  type ScaleOption, 
+  type ScreenData,
+  type MacPreset,
+} from "@/stores/useInfiniteMacStore";
 import { helpItems } from "..";
 
-// Re-export ScaleOption for consumers
-export type { ScaleOption } from "@/stores/useInfiniteMacStore";
+// Re-export types and presets for consumers
+export type { ScaleOption, MacPreset, ScreenData } from "@/stores/useInfiniteMacStore";
+export { MAC_PRESETS } from "@/stores/useInfiniteMacStore";
 
 /** Same-origin wrapper URL with COEP/COOP for SharedArrayBuffer; params are forwarded to infinitemac.org */
 function buildWrapperUrl(preset: MacPreset, scale: number = 1): string {
@@ -22,17 +28,6 @@ function buildWrapperUrl(preset: MacPreset, scale: number = 1): string {
   return `/embed/infinite-mac?${params.toString()}`;
 }
 
-export interface MacPreset {
-  id: string;
-  name: string;
-  year: string;
-  disk: string;
-  machine?: string;
-  description: string;
-  image: string;
-  screenSize: { width: number; height: number };
-}
-
 // Default window size for the preset grid (content only)
 export const DEFAULT_WINDOW_SIZE = { width: 640, height: 480 };
 
@@ -43,122 +38,7 @@ export const DEFAULT_WINDOW_SIZE_WITH_TITLEBAR = {
   height: DEFAULT_WINDOW_SIZE.height + DEFAULT_TITLEBAR_HEIGHT,
 };
 
-const THUMBNAIL_BASE = "/assets/infinite-mac-thumbnails";
-
-export const MAC_PRESETS: MacPreset[] = [
-  {
-    id: "system-1",
-    name: "System 1.0",
-    year: "1984",
-    disk: "System 1.0",
-    description: "Initial Mac system software",
-    image: `${THUMBNAIL_BASE}/system-1.png`,
-    screenSize: { width: 512, height: 342 },
-  },
-  {
-    id: "system-6",
-    name: "System 6.0.8",
-    year: "1991",
-    disk: "System 6.0.8",
-    description: "Final System 6 release",
-    image: `${THUMBNAIL_BASE}/system-6.png`,
-    screenSize: { width: 512, height: 342 },
-  },
-  {
-    id: "system-7-5",
-    name: "System 7.5.3",
-    year: "1996",
-    disk: "System 7.5.3",
-    description: "Open Transport and broader Mac support",
-    image: `${THUMBNAIL_BASE}/system-7-5.png`,
-    screenSize: { width: 640, height: 480 },
-  },
-  {
-    id: "kanjitalk-7-5",
-    name: "KanjiTalk 7.5.3",
-    year: "1996",
-    disk: "KanjiTalk 7.5.3",
-    description: "Japanese edition of System 7.5.3",
-    image: `${THUMBNAIL_BASE}/kanjitalk-7-5.png`,
-    screenSize: { width: 640, height: 480 },
-  },
-  {
-    id: "macos-8",
-    name: "Mac OS 8.0",
-    year: "1997",
-    disk: "Mac OS 8.0",
-    description: "Platinum appearance, multi-threaded Finder",
-    image: `${THUMBNAIL_BASE}/macos-8.png`,
-    screenSize: { width: 640, height: 480 },
-  },
-  {
-    id: "macos-8-5",
-    name: "Mac OS 8.5",
-    year: "1998",
-    disk: "Mac OS 8.5",
-    description: "Sherlock, 32-bit icons, font smoothing",
-    image: `${THUMBNAIL_BASE}/macos-8-5.png`,
-    screenSize: { width: 640, height: 480 },
-  },
-  {
-    id: "macos-9",
-    name: "Mac OS 9.0",
-    year: "1999",
-    disk: "Mac OS 9.0",
-    description: "Keychain, multiple users, Sherlock channels",
-    image: `${THUMBNAIL_BASE}/macos-9.png`,
-    screenSize: { width: 640, height: 480 },
-  },
-  {
-    id: "macos-9-2",
-    name: "Mac OS 9.2.2",
-    year: "2001",
-    disk: "Mac OS 9.2.2",
-    description: "Final classic Mac OS release",
-    image: `${THUMBNAIL_BASE}/macos-9-2.png`,
-    screenSize: { width: 640, height: 480 },
-  },
-  {
-    id: "macosx-10-1",
-    name: "Mac OS X 10.1",
-    year: "2001",
-    disk: "Mac OS X 10.1",
-    machine: "Power Macintosh G3 (Beige)",
-    description: "Puma - improved performance, DVD playback",
-    image: `${THUMBNAIL_BASE}/macosx-10-1.png`,
-    screenSize: { width: 640, height: 480 },
-  },
-  {
-    id: "macosx-10-2",
-    name: "Mac OS X 10.2",
-    year: "2002",
-    disk: "Mac OS X 10.2",
-    machine: "Power Macintosh G4 (PCI Graphics)",
-    description: "Jaguar - Quartz Extreme, Address Book, iChat",
-    image: `${THUMBNAIL_BASE}/macosx-10-2.png`,
-    screenSize: { width: 640, height: 480 },
-  },
-  {
-    id: "macosx-10-3",
-    name: "Mac OS X 10.3",
-    year: "2003",
-    disk: "Mac OS X 10.3",
-    machine: "Power Macintosh G4 (PCI Graphics)",
-    description: "Panther - Exposé, fast user switching",
-    image: `${THUMBNAIL_BASE}/macosx-10-3.png`,
-    screenSize: { width: 640, height: 480 },
-  },
-  {
-    id: "macosx-10-4",
-    name: "Mac OS X 10.4",
-    year: "2005",
-    disk: "Mac OS X 10.4",
-    machine: "Power Macintosh G4 (PCI Graphics)",
-    description: "Tiger - Spotlight, Dashboard, Safari RSS",
-    image: `${THUMBNAIL_BASE}/macosx-10-4.png`,
-    screenSize: { width: 640, height: 480 },
-  },
-];
+// MAC_PRESETS is now imported from the store
 
 
 interface UseInfiniteMacLogicProps {
@@ -172,13 +52,37 @@ export function useInfiniteMacLogic({
 }: UseInfiniteMacLogicProps) {
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState<MacPreset | null>(null);
-  const [isEmulatorLoaded, setIsEmulatorLoaded] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const { scale: currentScale, setScale: setCurrentScale } = useInfiniteMacStore();
+  const [selectedPreset, setSelectedPresetLocal] = useState<MacPreset | null>(null);
+  const [isEmulatorLoaded, setIsEmulatorLoadedLocal] = useState(false);
+  const [isPaused, setIsPausedLocal] = useState(false);
+  const { 
+    scale: currentScale, 
+    setScale: setCurrentScale,
+    setActiveIframe,
+    setSelectedPreset: setSelectedPresetStore,
+    setIsEmulatorLoaded: setIsEmulatorLoadedStore,
+    setIsPaused: setIsPausedStore,
+    setLastScreenData,
+  } = useInfiniteMacStore();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   // Store latest screen data for screenshots (from emulator_screen messages)
-  const lastScreenDataRef = useRef<{ width: number; height: number; data: Uint8Array } | null>(null);
+  const lastScreenDataRef = useRef<ScreenData | null>(null);
+
+  // Sync local state with store for AI tool access
+  const setSelectedPreset = useCallback((preset: MacPreset | null) => {
+    setSelectedPresetLocal(preset);
+    setSelectedPresetStore(preset);
+  }, [setSelectedPresetStore]);
+
+  const setIsEmulatorLoaded = useCallback((loaded: boolean) => {
+    setIsEmulatorLoadedLocal(loaded);
+    setIsEmulatorLoadedStore(loaded);
+  }, [setIsEmulatorLoadedStore]);
+
+  const setIsPaused = useCallback((paused: boolean) => {
+    setIsPausedLocal(paused);
+    setIsPausedStore(paused);
+  }, [setIsPausedStore]);
 
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
@@ -348,7 +252,24 @@ export function useInfiniteMacLogic({
   }, [selectedPreset, t]);
 
   // Only show emulator after iframe sends {"type": "emulator_loaded"} via postMessage
-  const handleIframeLoad = useCallback(() => {}, []);
+  // Also sync the iframe window to the store for AI tool access
+  const handleIframeLoad = useCallback(() => {
+    const win = iframeRef.current?.contentWindow;
+    if (win) {
+      setActiveIframe(win);
+    }
+  }, [setActiveIframe]);
+
+  // Clear active iframe from store when component unmounts
+  useEffect(() => {
+    return () => {
+      setActiveIframe(null);
+      setSelectedPresetStore(null);
+      setIsEmulatorLoadedStore(false);
+      setIsPausedStore(false);
+      setLastScreenData(null);
+    };
+  }, [setActiveIframe, setSelectedPresetStore, setIsEmulatorLoadedStore, setIsPausedStore, setLastScreenData]);
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
@@ -387,11 +308,14 @@ export function useInfiniteMacLogic({
                   uint8Data = new Uint8Array(pixelData);
                 }
                 if (uint8Data.length > 0) {
-                  lastScreenDataRef.current = {
+                  const screenData = {
                     width: w,
                     height: h,
                     data: uint8Data,
                   };
+                  lastScreenDataRef.current = screenData;
+                  // Sync to store for AI tool access
+                  setLastScreenData(screenData);
                 }
               } catch (e) {
                 // Conversion failed, log for debugging
@@ -405,7 +329,22 @@ export function useInfiniteMacLogic({
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [resizeWindow]);
+  }, [resizeWindow, setLastScreenData]);
+
+  // Listen for AI tool preset selection events
+  useEffect(() => {
+    const handleSelectPresetEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<{ preset: MacPreset }>;
+      if (customEvent.detail?.preset) {
+        handleSelectPreset(customEvent.detail.preset);
+      }
+    };
+
+    window.addEventListener("infiniteMac:selectPreset", handleSelectPresetEvent);
+    return () => {
+      window.removeEventListener("infiniteMac:selectPreset", handleSelectPresetEvent);
+    };
+  }, [handleSelectPreset]);
 
   return {
     t,

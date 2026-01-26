@@ -438,3 +438,98 @@ export const stickiesControlSchema = z.object({
     });
   }
 });
+
+/**
+ * Infinite Mac control schema
+ * Controls the Infinite Mac emulator via postMessage API
+ */
+export const infiniteMacControlSchema = z.object({
+  action: z
+    .enum([
+      "launchSystem",
+      "getStatus",
+      "readScreen",
+      "mouseMove",
+      "mouseClick",
+      "keyPress",
+      "pause",
+      "unpause",
+    ])
+    .describe(
+      "Action to perform: 'launchSystem' launches a Mac OS system, 'getStatus' returns emulator state, " +
+      "'readScreen' captures the current screen as an image, 'mouseMove' moves the mouse cursor, " +
+      "'mouseClick' clicks at a position, 'keyPress' sends a key press, 'pause'/'unpause' controls emulation."
+    ),
+  system: z
+    .enum([
+      "system-1",
+      "system-6",
+      "system-7-5",
+      "kanjitalk-7-5",
+      "macos-8",
+      "macos-8-5",
+      "macos-9",
+      "macos-9-2",
+      "macosx-10-1",
+      "macosx-10-2",
+      "macosx-10-3",
+      "macosx-10-4",
+    ])
+    .optional()
+    .describe(
+      "For 'launchSystem': The Mac OS system to launch. Options: " +
+      "'system-1' (System 1.0, 1984), 'system-6' (System 6.0.8, 1991), " +
+      "'system-7-5' (System 7.5.3, 1996), 'kanjitalk-7-5' (Japanese System 7.5.3), " +
+      "'macos-8' (Mac OS 8.0, 1997), 'macos-8-5' (Mac OS 8.5, 1998), " +
+      "'macos-9' (Mac OS 9.0, 1999), 'macos-9-2' (Mac OS 9.2.2, 2001), " +
+      "'macosx-10-1' (Mac OS X 10.1, 2001), 'macosx-10-2' (Mac OS X 10.2, 2002), " +
+      "'macosx-10-3' (Mac OS X 10.3, 2003), 'macosx-10-4' (Mac OS X 10.4, 2005)."
+    ),
+  x: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe("For 'mouseMove' and 'mouseClick': X coordinate in screen pixels."),
+  y: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe("For 'mouseMove' and 'mouseClick': Y coordinate in screen pixels."),
+  button: z
+    .enum(["left", "right"])
+    .optional()
+    .default("left")
+    .describe("For 'mouseClick': Which mouse button to click. Defaults to 'left'."),
+  key: z
+    .string()
+    .optional()
+    .describe(
+      "For 'keyPress': The key to press. Use JavaScript key codes like 'KeyA', 'KeyB', 'Enter', 'Space', " +
+      "'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Backspace', 'Tab', 'Escape', etc."
+    ),
+}).superRefine((data, ctx) => {
+  // Validate action-specific required parameters
+  if (data.action === "launchSystem" && !data.system) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "The 'launchSystem' action requires the 'system' parameter.",
+      path: ["system"],
+    });
+  }
+  if ((data.action === "mouseMove" || data.action === "mouseClick") && (data.x === undefined || data.y === undefined)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `The '${data.action}' action requires both 'x' and 'y' parameters.`,
+      path: ["x"],
+    });
+  }
+  if (data.action === "keyPress" && !data.key) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "The 'keyPress' action requires the 'key' parameter.",
+      path: ["key"],
+    });
+  }
+});
