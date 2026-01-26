@@ -154,6 +154,25 @@ export function WindowFrame({
     currentTheme,
   } = useWindowInsets();
   const theme = getTheme(currentTheme);
+
+  // Respect reduced-motion preference (keep simple minimize/restore animation)
+  const prefersReducedMotion = useMemo(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function")
+      return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }, []);
+
+  // "Genie" minimize effect is macOS-dock specific
+  const useGenieMinimize = currentTheme === "macosx" && !prefersReducedMotion;
+
+  // Clip-path shapes for the genie effect (relative to the window content box)
+  const GENIE_FULL_CLIP = "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)";
+  const GENIE_FUNNEL_CLIP =
+    // Wide top, progressively pinched bottom like macOS "genie"
+    "polygon(0% 0%, 100% 0%, 100% 62%, 92% 72%, 75% 82%, 60% 90%, 40% 90%, 25% 82%, 8% 72%, 0% 62%)";
+  const GENIE_END_CLIP =
+    // Thin vertical ribbon toward the bottom center
+    "polygon(46% 0%, 54% 0%, 62% 100%, 38% 100%)";
   
   // Derive material booleans for internal use
   const isTransparent = material === "transparent" || material === "notitlebar";
@@ -741,12 +760,23 @@ export function WindowFrame({
   const getInitialAnimation = () => {
     if (shouldAnimateRestore) {
       // Restoring from minimized - animate from dock icon position
-      return { 
-        scale: 0.1, 
-        opacity: 0, 
-        x: dockIconOffset.x,
-        y: dockIconOffset.y 
-      };
+      return useGenieMinimize
+        ? {
+            opacity: 0,
+            x: dockIconOffset.x,
+            y: dockIconOffset.y,
+            scaleX: 0.15,
+            scaleY: 0.15,
+            skewX: -10,
+            clipPath: GENIE_END_CLIP,
+            filter: "blur(2px)",
+          }
+        : {
+            scale: 0.1,
+            opacity: 0,
+            x: dockIconOffset.x,
+            y: dockIconOffset.y,
+          };
     }
     if (isInitialMount) {
       // Initial window open
@@ -769,12 +799,29 @@ export function WindowFrame({
       };
     }
     // Default behavior: minimize animation - shrink to dock icon position
-    return { 
-      scale: 0.1, 
+    if (useGenieMinimize) {
+      return {
+        opacity: [1, 1, 0],
+        x: [0, dockIconOffset.x * 0.6, dockIconOffset.x],
+        y: [0, dockIconOffset.y * 0.85, dockIconOffset.y],
+        scaleX: [1, 0.9, 0.08],
+        scaleY: [1, 0.75, 0.08],
+        skewX: [0, -12, -18],
+        clipPath: [GENIE_FULL_CLIP, GENIE_FUNNEL_CLIP, GENIE_END_CLIP],
+        filter: ["blur(0px)", "blur(0.5px)", "blur(2px)"],
+        transition: {
+          duration: 0.42,
+          times: [0, 0.55, 1],
+          ease: [0.22, 0.61, 0.36, 1] as const,
+        },
+      };
+    }
+    return {
+      scale: 0.1,
       opacity: 0,
       x: dockIconOffset.x,
       y: dockIconOffset.y,
-      transition: { duration: 0.25, ease: [0.32, 0, 0.67, 0] as const }
+      transition: { duration: 0.25, ease: [0.32, 0, 0.67, 0] as const },
     };
   };
 
@@ -793,12 +840,29 @@ export function WindowFrame({
     // Otherwise, the exit animation handles minimize
     if (keepMountedWhenMinimized && isMinimized) {
       // Minimize animation - shrink to dock icon position
-      return { 
-        scale: 0.1, 
+      if (useGenieMinimize) {
+        return {
+          opacity: [1, 1, 0],
+          x: [0, dockIconOffset.x * 0.6, dockIconOffset.x],
+          y: [0, dockIconOffset.y * 0.85, dockIconOffset.y],
+          scaleX: [1, 0.9, 0.08],
+          scaleY: [1, 0.75, 0.08],
+          skewX: [0, -12, -18],
+          clipPath: [GENIE_FULL_CLIP, GENIE_FUNNEL_CLIP, GENIE_END_CLIP],
+          filter: ["blur(0px)", "blur(0.5px)", "blur(2px)"],
+          transition: {
+            duration: 0.42,
+            times: [0, 0.55, 1],
+            ease: [0.22, 0.61, 0.36, 1] as const,
+          },
+        };
+      }
+      return {
+        scale: 0.1,
         opacity: 0,
         x: dockIconOffset.x,
         y: dockIconOffset.y,
-        transition: { duration: 0.25, ease: [0.32, 0, 0.67, 0] as const }
+        transition: { duration: 0.25, ease: [0.32, 0, 0.67, 0] as const },
       };
     }
     
@@ -818,14 +882,30 @@ export function WindowFrame({
     }
     
     // Normal visible state
-    return { 
-      scale: 1, 
+    if (useGenieMinimize && shouldAnimateRestore) {
+      // Restore with reverse-genie: unclip + unskew quickly, then settle.
+      return {
+        opacity: 1,
+        x: 0,
+        y: 0,
+        scaleX: 1,
+        scaleY: 1,
+        skewX: 0,
+        clipPath: GENIE_FULL_CLIP,
+        filter: "blur(0px)",
+        transition: { duration: 0.42, ease: [0.22, 0.61, 0.36, 1] as const },
+      };
+    }
+    return {
+      scale: 1,
       opacity: 1,
       x: 0,
       y: 0,
-      transition: shouldAnimateRestore 
+      // If a previous genie animation left clipPath/filter set, clear them.
+      ...(useGenieMinimize ? { clipPath: GENIE_FULL_CLIP, filter: "blur(0px)", skewX: 0 } : {}),
+      transition: shouldAnimateRestore
         ? { duration: 0.25, ease: [0.33, 1, 0.68, 1] as const }
-        : { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const }
+        : { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const },
     };
   };
 
@@ -960,7 +1040,7 @@ export function WindowFrame({
             }
           }}
           style={{
-            transformOrigin: "center",
+            transformOrigin: useGenieMinimize ? "50% 100%" : "center",
           }}
         >
       <div className="relative w-full h-full">
