@@ -23,9 +23,19 @@ export const helpItems = [
     description: "Pick a Mac OS version from the grid to load the emulator",
   },
   {
+    icon: "🔍",
+    title: "Display Scaling",
+    description: "Use View ▸ Scaling to adjust display size (1x, 1.5x, or 2x)",
+  },
+  {
     icon: "⏸️",
     title: "Pause / Resume",
     description: "Use View ▸ Pause or Resume to save resources when not interacting",
+  },
+  {
+    icon: "📸",
+    title: "Capture Screenshot",
+    description: "Use View ▸ Capture Screenshot to save the current display",
   },
   {
     icon: "🔙",

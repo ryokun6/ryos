@@ -957,9 +957,17 @@
           "description": "Utilisez Fichier ▸ Retour aux systèmes pour revenir à la grille de préréglages",
           "title": "Retour aux systèmes"
         },
+        "captureScreenshot": {
+          "description": "Utilisez Affichage ▸ Capture d'écran pour enregistrer l'affichage actuel",
+          "title": "Capture d'écran"
+        },
         "classicMacEmulator": {
           "description": "Exécutez des systèmes Classic Mac OS dans votre navigateur via Infinite Mac",
           "title": "Émulateur Classic Mac"
+        },
+        "displayScaling": {
+          "description": "Utilisez Affichage ▸ Mise à l'échelle pour ajuster la taille de l'affichage (1x, 1,5x ou 2x)",
+          "title": "Mise à l'échelle de l'affichage"
         },
         "pauseResume": {
           "description": "Utilisez Vue ▸ Pause ou Reprendre pour économiser des ressources lorsque vous n'interagissez pas",

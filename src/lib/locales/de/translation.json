@@ -957,9 +957,17 @@
           "description": "Verwenden Sie Ablage ▸ Zurück zu den Systemen, um zum voreingestellten Raster zurückzukehren",
           "title": "Zurück zu den Systemen"
         },
+        "captureScreenshot": {
+          "description": "Verwenden Sie Ansicht ▸ Bildschirmfoto aufnehmen, um die aktuelle Anzeige zu speichern",
+          "title": "Bildschirmfoto aufnehmen"
+        },
         "classicMacEmulator": {
           "description": "Führen Sie klassische Mac OS Systeme in Ihrem Browser über Infinite Mac aus",
           "title": "Klassischer Mac Emulator"
+        },
+        "displayScaling": {
+          "description": "Verwenden Sie Ansicht ▸ Skalierung, um die Anzeigegröße anzupassen (1x, 1,5x oder 2x)",
+          "title": "Anzeige-Skalierung"
         },
         "pauseResume": {
           "description": "Verwenden Sie Darstellung ▸ Anhalten oder Fortsetzen, um Ressourcen zu sparen, wenn Sie nicht interagieren",

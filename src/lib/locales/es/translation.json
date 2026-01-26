@@ -957,9 +957,17 @@
           "description": "Usa Archivo ▸ Volver a Sistemas para volver a la cuadrícula preestablecida",
           "title": "Volver a Sistemas"
         },
+        "captureScreenshot": {
+          "description": "Usa Ver ▸ Capturar Captura de Pantalla para guardar la pantalla actual",
+          "title": "Capturar Captura de Pantalla"
+        },
         "classicMacEmulator": {
           "description": "Ejecuta sistemas Mac OS clásicos en tu navegador a través de Infinite Mac",
           "title": "Emulador de Mac clásico"
+        },
+        "displayScaling": {
+          "description": "Usa Ver ▸ Escalado para ajustar el tamaño de la pantalla (1x, 1.5x o 2x)",
+          "title": "Escalado de Pantalla"
         },
         "pauseResume": {
           "description": "Usa Ver ▸ Pausar o Reanudar para ahorrar recursos cuando no estés interactuando",

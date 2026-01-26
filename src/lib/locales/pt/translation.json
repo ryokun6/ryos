@@ -957,9 +957,17 @@
           "description": "Use Arquivo ▸ Voltar aos Sistemas para retornar à grade predefinida",
           "title": "Voltar aos Sistemas"
         },
+        "captureScreenshot": {
+          "description": "Use Visualizar ▸ Capturar Tela para salvar a exibição atual",
+          "title": "Capturar Tela"
+        },
         "classicMacEmulator": {
           "description": "Execute sistemas clássicos de Mac OS no seu navegador via Infinite Mac",
           "title": "Emulador de Mac Clássico"
+        },
+        "displayScaling": {
+          "description": "Use Visualizar ▸ Escala para ajustar o tamanho da exibição (1x, 1.5x ou 2x)",
+          "title": "Escala da Exibição"
         },
         "pauseResume": {
           "description": "Use Visualizar ▸ Pausar ou Retomar para economizar recursos quando não estiver interagindo",

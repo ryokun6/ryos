@@ -2270,9 +2270,17 @@
           "title": "Select a System",
           "description": "Pick a Mac OS version from the grid to load the emulator"
         },
+        "displayScaling": {
+          "title": "Display Scaling",
+          "description": "Use View ▸ Scaling to adjust display size (1x, 1.5x, or 2x)"
+        },
         "pauseResume": {
           "title": "Pause / Resume",
           "description": "Use View ▸ Pause or Resume to save resources when not interacting"
+        },
+        "captureScreenshot": {
+          "title": "Capture Screenshot",
+          "description": "Use View ▸ Capture Screenshot to save the current display"
         },
         "backToSystems": {
           "title": "Back to Systems",

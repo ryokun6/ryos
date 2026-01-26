@@ -957,9 +957,17 @@
           "description": "Usa File ▸ Torna ai sistemi per tornare alla griglia preimpostata",
           "title": "Torna ai sistemi"
         },
+        "captureScreenshot": {
+          "description": "Usa Visualizza ▸ Acquisisci screenshot per salvare la schermata attuale",
+          "title": "Acquisisci screenshot"
+        },
         "classicMacEmulator": {
           "description": "Esegui sistemi Mac OS Classico nel tuo browser tramite Infinite Mac",
           "title": "Emulatore Mac Classico"
+        },
+        "displayScaling": {
+          "description": "Usa Visualizza ▸ Scala per regolare le dimensioni del display (1x, 1,5x o 2x)",
+          "title": "Scala del display"
         },
         "pauseResume": {
           "description": "Usa Vista ▸ Pausa o Riprendi per risparmiare risorse quando non interagisci",

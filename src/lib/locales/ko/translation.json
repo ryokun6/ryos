@@ -957,9 +957,17 @@
           "description": "파일 ▸ 시스템으로 돌아가기를 이용해 사전 설정된 그리드로 돌아가세요.",
           "title": "시스템으로 돌아가기"
         },
+        "captureScreenshot": {
+          "description": "보기 ▸ 스크린샷 캡처를 사용하여 현재 디스플레이를 저장합니다",
+          "title": "스크린샷 캡처"
+        },
         "classicMacEmulator": {
           "description": "Infinite Mac을 통해 브라우저에서 클래식 Mac OS 시스템을 실행하세요.",
           "title": "클래식 Mac 에뮬레이터"
+        },
+        "displayScaling": {
+          "description": "보기 ▸ 크기 조절을 사용하여 디스플레이 크기(1배, 1.5배 또는 2배)를 조절합니다",
+          "title": "디스플레이 크기 조절"
         },
         "pauseResume": {
           "description": "상호 작용하지 않을 때 보기 ▸ 일시 정지 또는 재개를 이용해 리소스를 절약하세요.",

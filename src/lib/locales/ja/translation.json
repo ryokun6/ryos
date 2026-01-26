@@ -957,9 +957,17 @@
           "description": "ファイル ▸ システムに戻る を使用してプリセットグリッドに戻ります。",
           "title": "システムに戻る"
         },
+        "captureScreenshot": {
+          "description": "「表示 ▸ スクリーンショットをキャプチャ」を使って現在の画面を保存します",
+          "title": "スクリーンショットをキャプチャ"
+        },
         "classicMacEmulator": {
           "description": "Infinite Mac経由で、ブラウザでクラシックMac OSシステムを実行します。",
           "title": "クラシックMacエミュレータ"
+        },
+        "displayScaling": {
+          "description": "「表示 ▸ スケーリング」を使って表示サイズ（1倍、1.5倍、2倍）を調整します",
+          "title": "表示スケーリング"
         },
         "pauseResume": {
           "description": "操作していないときは、表示 ▸ 一時停止または再開 を使用してリソースを節約します。",
@@ -981,8 +989,8 @@
         "resume": "再開",
         "scaling": "拡大縮小"
       },
-      "screenshotUnavailable": "スクリーンショットを利用できません。ブラウザのスクリーンショットツール（MacはCmd+Shift+4、WindowsはWin+Shift+S）をご利用ください。",
       "name": "Infinite Mac",
+      "screenshotUnavailable": "スクリーンショットを利用できません。ブラウザのスクリーンショットツール（MacはCmd+Shift+4、WindowsはWin+Shift+S）をご利用ください。",
       "selectSystem": "クラシックMacシステムを選択",
       "systemsAvailable": "{{count}} システム利用可能",
       "title": "Infinite Mac"

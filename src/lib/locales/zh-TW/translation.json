@@ -957,9 +957,17 @@
           "description": "使用「檔案 ▸ 返回系統」返回預設網格",
           "title": "返回系統"
         },
+        "captureScreenshot": {
+          "description": "使用「檢視 ▸ 擷取螢幕截圖」來儲存目前的顯示畫面",
+          "title": "擷取螢幕截圖"
+        },
         "classicMacEmulator": {
           "description": "透過 Infinite Mac 在您的瀏覽器中執行經典 Mac OS 系統",
           "title": "經典 Mac 模擬器"
+        },
+        "displayScaling": {
+          "description": "使用「檢視 ▸ 縮放」來調整顯示大小 (1 倍、1.5 倍或 2 倍)",
+          "title": "顯示縮放"
         },
         "pauseResume": {
           "description": "在不互動時，使用「檢視 ▸ 暫停或繼續」以節省資源",
