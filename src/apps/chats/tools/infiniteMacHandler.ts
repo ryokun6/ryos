@@ -3,6 +3,15 @@
  *
  * Controls the Infinite Mac emulator via postMessage API.
  * Supports launching systems, reading screen, mouse/keyboard control.
+ * 
+ * Coordinate Systems:
+ * - Mini vMac (System 1, 6): Absolute coordinates supported
+ * - Basilisk II (System 7.x): Absolute coordinates supported
+ * - SheepShaver (Mac OS 8.x, 9.x): Absolute coordinates supported
+ * - DingusPPC/PearPC (Mac OS X): Relative coordinates only (deltaX, deltaY)
+ * 
+ * When using screen_scale > 1, the screenshot dimensions are scaled but
+ * coordinates should be in the native (unscaled) resolution space.
  */
 
 import type { ToolContext } from "./types";
@@ -13,6 +22,31 @@ import {
 } from "@/stores/useInfiniteMacStore";
 import { useAppStore } from "@/stores/useAppStore";
 import i18n from "@/lib/i18n";
+
+/**
+ * Systems that support absolute mouse coordinates
+ * (Mini vMac, Basilisk II, SheepShaver emulators)
+ */
+const ABSOLUTE_COORDINATE_SYSTEMS = [
+  "system-1",
+  "system-6", 
+  "system-7-5",
+  "kanjitalk-7-5",
+  "macos-8",
+  "macos-8-5",
+  "macos-9",
+  "macos-9-2",
+];
+
+// Note: Mac OS X systems (macosx-10-1 through 10-4) use DingusPPC/PearPC emulators
+// which only support relative mouse coordinates (deltaX, deltaY), not absolute positioning.
+
+/**
+ * Check if a system supports absolute coordinates
+ */
+const supportsAbsoluteCoordinates = (systemId: string): boolean => {
+  return ABSOLUTE_COORDINATE_SYSTEMS.includes(systemId);
+};
 
 export interface InfiniteMacControlInput {
   action: 
@@ -217,22 +251,33 @@ export const handleInfiniteMacControl = async (
           return;
         }
 
-        const screenSize = store.lastScreenData
+        // Get the current scale and calculate dimensions
+        const scale = store.scale;
+        const nativeScreenSize = selectedPreset.screenSize;
+        const scaledScreenSize = store.lastScreenData
           ? { width: store.lastScreenData.width, height: store.lastScreenData.height }
-          : selectedPreset.screenSize;
+          : { 
+              width: Math.round(nativeScreenSize.width * scale), 
+              height: Math.round(nativeScreenSize.height * scale) 
+            };
 
-        // Return screen capture info with base64 data
-        // Note: Due to AI SDK limitations with client-side tools, the image is returned as
-        // data that can be displayed to the user but cannot be visually analyzed by the AI.
-        // The AI receives metadata about the screen state instead.
+        // Check if this system supports absolute coordinates
+        const absoluteCoords = supportsAbsoluteCoordinates(selectedPreset.id);
+        const coordInfo = absoluteCoords
+          ? `Coordinates are 1:1 with the screenshot - use pixel positions directly from the image.`
+          : `This Mac OS X system uses relative coordinates only - mouse control may be limited.`;
+
         context.addToolResult({
           tool: "infiniteMacControl",
           toolCallId,
           output: {
             success: true,
-            message: `Screen captured from ${selectedPreset.name} (${screenSize.width}x${screenSize.height} pixels). The screenshot has been taken and is available for display.`,
-            screenSize,
+            message: `Screen captured from ${selectedPreset.name}. Screenshot is ${scaledScreenSize.width}x${scaledScreenSize.height} pixels (scale: ${scale}x, native: ${nativeScreenSize.width}x${nativeScreenSize.height}). ${coordInfo}`,
+            screenSize: scaledScreenSize,
+            nativeScreenSize,
+            scale,
             currentSystem: selectedPreset.name,
+            supportsAbsoluteCoordinates: absoluteCoords,
             // Include the base64 image data so it can be displayed in the UI or used programmatically
             screenImageDataUrl: screenBase64,
           },
@@ -251,7 +296,7 @@ export const handleInfiniteMacControl = async (
           return;
         }
 
-        if (!store.isEmulatorLoaded) {
+        if (!store.isEmulatorLoaded || !store.selectedPreset) {
           context.addToolResult({
             tool: "infiniteMacControl",
             toolCallId,
@@ -261,6 +306,19 @@ export const handleInfiniteMacControl = async (
           return;
         }
 
+        // Check if this system supports absolute coordinates
+        if (!supportsAbsoluteCoordinates(store.selectedPreset.id)) {
+          context.addToolResult({
+            tool: "infiniteMacControl",
+            toolCallId,
+            state: "output-error",
+            errorText: `Mouse movement is limited on ${store.selectedPreset.name} (Mac OS X uses relative coordinates only). Consider using an older Mac OS system for precise mouse control.`,
+          });
+          return;
+        }
+
+        // Coordinates from the AI are based on the screenshot dimensions
+        // which match the emulator's screen output directly
         const moveSent = store.sendEmulatorCommand({
           type: "emulator_mouse_move",
           x,
@@ -295,7 +353,7 @@ export const handleInfiniteMacControl = async (
           return;
         }
 
-        if (!store.isEmulatorLoaded) {
+        if (!store.isEmulatorLoaded || !store.selectedPreset) {
           context.addToolResult({
             tool: "infiniteMacControl",
             toolCallId,
@@ -305,9 +363,20 @@ export const handleInfiniteMacControl = async (
           return;
         }
 
+        // Check if this system supports absolute coordinates
+        if (!supportsAbsoluteCoordinates(store.selectedPreset.id)) {
+          context.addToolResult({
+            tool: "infiniteMacControl",
+            toolCallId,
+            state: "output-error",
+            errorText: `Mouse clicking is limited on ${store.selectedPreset.name} (Mac OS X uses relative coordinates only). Consider using an older Mac OS system for precise mouse control.`,
+          });
+          return;
+        }
+
         const buttonNum = button === "right" ? 2 : 0;
 
-        // Move mouse to position first
+        // Move mouse to position first - coordinates match screenshot dimensions
         store.sendEmulatorCommand({
           type: "emulator_mouse_move",
           x,
