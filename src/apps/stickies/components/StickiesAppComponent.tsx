@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence } from "framer-motion";
 import { StickyNote } from "./StickyNote";
@@ -13,6 +13,7 @@ export function StickiesAppComponent({
   isWindowOpen,
   onClose,
   isForeground,
+  instanceId,
 }: AppProps) {
   const {
     translatedHelpItems,
@@ -31,6 +32,33 @@ export function StickiesAppComponent({
     clearAllNotes,
     bringToFront,
   } = useStickiesLogic();
+
+  // Handle close request from dock or menu bar
+  const handleCloseRequest = useCallback(() => {
+    onClose?.();
+  }, [onClose]);
+
+  // Listen for close requests from external sources (dock, menu bar, etc.)
+  // Stickies doesn't use WindowFrame, so we need to handle this event ourselves
+  useEffect(() => {
+    if (!instanceId) return;
+
+    const handleRequestClose = () => {
+      handleCloseRequest();
+    };
+
+    window.addEventListener(
+      `requestCloseWindow-${instanceId}`,
+      handleRequestClose
+    );
+
+    return () => {
+      window.removeEventListener(
+        `requestCloseWindow-${instanceId}`,
+        handleRequestClose
+      );
+    };
+  }, [instanceId, handleCloseRequest]);
 
   // Create a new note when app is opened and no notes exist
   useEffect(() => {
