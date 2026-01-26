@@ -54,6 +54,14 @@
           "description": "Visualize e gerencie salas de bate-papo, exclua conteúdo inadequado.",
           "title": "Gerenciamento de Salas"
         },
+        "searchFilter": {
+          "description": "Pesquise usuários ou músicas pelo nome para encontrar entradas rapidamente.",
+          "title": "Pesquisar e Filtrar"
+        },
+        "songLibrary": {
+          "description": "Importar, exportar e gerenciar a biblioteca de músicas em cache.",
+          "title": "Biblioteca de Músicas"
+        },
         "statistics": {
           "description": "Visualize estatísticas do sistema e métricas de uso.",
           "title": "Estatísticas"
@@ -1434,10 +1442,6 @@
           "description": "Busque músicas no YouTube ou cole uma URL para adicionar à sua biblioteca.",
           "title": "Adicionar e Buscar Músicas"
         },
-        "instantTranslations": {
-          "description": "Traduzir letras para vários idiomas em tempo real.",
-          "title": "Traduções Instantâneas"
-        },
         "keyboardShortcuts": {
           "description": "Espaço para reproduzir/pausar, teclas de seta para buscar e mudar de faixa.",
           "title": "Atalhos de Teclado"
@@ -1529,6 +1533,10 @@
           "description": "Números mostram minas adjacentes. Sinalize todas as minas e revele todas as células seguras para vencer.",
           "title": "Regras do Jogo"
         },
+        "gameStatus": {
+          "description": "O rosto sorridente mostra o estado do jogo: 🙂 jogando, 💀 fim de jogo, 😎 você venceu!",
+          "title": "Status do Jogo"
+        },
         "mineCounter": {
           "description": "A barra superior mostra as minas não sinalizadas restantes e o total de minas.",
           "title": "Contador de Minas"
@@ -1540,10 +1548,6 @@
         "restart": {
           "description": "Pressione o rosto sorridente ou escolha Jogo ▸ Novo para iniciar um novo tabuleiro.",
           "title": "Reiniciar"
-        },
-        "timerCounter": {
-          "description": "A barra superior mostra o tempo decorrido e as minas restantes não sinalizadas.",
-          "title": "Cronômetro e Contador"
         }
       },
       "lcd": {

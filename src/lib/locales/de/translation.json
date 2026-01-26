@@ -54,6 +54,14 @@
           "description": "Chaträume anzeigen und verwalten, unangemessene Inhalte löschen.",
           "title": "Raumverwaltung"
         },
+        "searchFilter": {
+          "description": "Suche Benutzer oder Lieder nach Namen, um Einträge schnell zu finden.",
+          "title": "Suchen & Filtern"
+        },
+        "songLibrary": {
+          "description": "Importieren, exportieren und verwalten Sie die zwischengespeicherte Songbibliothek.",
+          "title": "Songbibliothek"
+        },
         "statistics": {
           "description": "Systemstatistiken und Nutzungsmetriken anzeigen.",
           "title": "Statistiken"
@@ -1434,10 +1442,6 @@
           "description": "Suchen Sie auf YouTube nach Songs oder fügen Sie eine URL ein, um sie zur Bibliothek hinzuzufügen.",
           "title": "Songs hinzufügen & suchen"
         },
-        "instantTranslations": {
-          "description": "Liedtexte in Echtzeit in mehrere Sprachen übersetzen.",
-          "title": "Sofortübersetzungen"
-        },
         "keyboardShortcuts": {
           "description": "Leertaste für Wiedergabe/Pause, Pfeiltasten zum Spulen und Titelwechsel.",
           "title": "Tastaturkürzel"
@@ -1529,6 +1533,10 @@
           "description": "Zahlen zeigen benachbarte Minen an. Markieren Sie jede Mine und decken Sie alle sicheren Zellen auf, um zu gewinnen.",
           "title": "Spielregeln"
         },
+        "gameStatus": {
+          "description": "Das Smiley zeigt den Spielstatus an: 🙂 spielt, 💀 Spiel vorbei, 😎 du hast gewonnen!",
+          "title": "Spielstatus"
+        },
         "mineCounter": {
           "description": "Die obere Leiste zeigt die verbleibenden unmarkierten Minen und die Gesamtminenzahl an.",
           "title": "Minenzähler"
@@ -1540,10 +1548,6 @@
         "restart": {
           "description": "Drücken Sie das lächelnde Gesicht oder wählen Sie Spiel ▸ Neu, um ein neues Spielfeld zu starten",
           "title": "Neustart"
-        },
-        "timerCounter": {
-          "description": "Die obere Leiste zeigt die verstrichene Zeit und die verbleibenden nicht markierten Minen an",
-          "title": "Timer und Zähler"
         }
       },
       "lcd": {

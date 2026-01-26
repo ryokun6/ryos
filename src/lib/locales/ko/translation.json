@@ -54,6 +54,14 @@
           "description": "채팅방을 보고 관리하며, 부적절한 콘텐츠를 삭제합니다.",
           "title": "채팅방 관리"
         },
+        "searchFilter": {
+          "description": "사용자나 노래를 이름으로 검색하여 항목을 빠르게 찾으세요.",
+          "title": "검색 및 필터"
+        },
+        "songLibrary": {
+          "description": "캐시된 노래 라이브러리 가져오기, 내보내기 및 관리.",
+          "title": "노래 라이브러리"
+        },
         "statistics": {
           "description": "시스템 통계 및 사용량 지표를 확인합니다.",
           "title": "통계"
@@ -1434,10 +1442,6 @@
           "description": "YouTube에서 노래를 검색하거나 URL을 붙여넣어 라이브러리에 추가하세요.",
           "title": "노래 추가 및 검색"
         },
-        "instantTranslations": {
-          "description": "가사를 여러 언어로 실시간 번역.",
-          "title": "즉시 번역"
-        },
         "keyboardShortcuts": {
           "description": "스페이스바로 재생/일시 정지, 화살표 키로 탐색 및 트랙 변경.",
           "title": "키보드 단축키"
@@ -1529,6 +1533,10 @@
           "description": "숫자는 인접한 지뢰 수를 보여줍니다. 모든 지뢰에 깃발을 달고 모든 안전한 셀을 표시하여 승리.",
           "title": "게임 규칙"
         },
+        "gameStatus": {
+          "description": "이모티콘은 게임 상태를 보여줍니다: 🙂 플레이 중, 💀 게임 오버, 😎 승리!",
+          "title": "게임 상태"
+        },
         "mineCounter": {
           "description": "상단 바에 깃발 없는 지뢰 수와 총 지뢰 수가 표시됩니다.",
           "title": "지뢰 수"
@@ -1540,10 +1548,6 @@
         "restart": {
           "description": "웃는 얼굴을 누르거나 게임 ▸ 새로 만들기를 선택하여 새 보드 시작",
           "title": "다시 시작"
-        },
-        "timerCounter": {
-          "description": "상단 막대에 경과 시간 및 남은 깃발 없는 지뢰 표시",
-          "title": "타이머 및 카운터"
         }
       },
       "lcd": {

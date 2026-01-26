@@ -33,9 +33,15 @@ export const helpItems = [
     description: "Top bar shows remaining unflagged mines and total mine count.",
   },
   {
+    icon: "🙂",
+    title: "Game Status",
+    description:
+      "The smiley face shows game state: 🙂 playing, 💀 game over, 😎 you won!",
+  },
+  {
     icon: "🔄",
     title: "Restart",
     description:
-      "Press the smiley face or choose Game ▸ New to start a fresh board.",
+      "Press the smiley face or choose File ▸ New Game to start a fresh board.",
   },
 ];

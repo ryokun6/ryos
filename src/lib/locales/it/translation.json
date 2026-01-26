@@ -54,6 +54,14 @@
           "description": "Visualizza e gestisci le chat room, elimina i contenuti inappropriati.",
           "title": "Gestione Stanze"
         },
+        "searchFilter": {
+          "description": "Cerca utenti o brani per nome per trovare rapidamente le voci.",
+          "title": "Cerca & Filtra"
+        },
+        "songLibrary": {
+          "description": "Importa, esporta e gestisci la libreria di brani in cache.",
+          "title": "Libreria brani"
+        },
         "statistics": {
           "description": "Visualizza le statistiche di sistema e le metriche di utilizzo.",
           "title": "Statistiche"
@@ -1434,10 +1442,6 @@
           "description": "Cerca brani su YouTube o incolla un URL per aggiungerli alla tua libreria.",
           "title": "Aggiungi e cerca brani"
         },
-        "instantTranslations": {
-          "description": "Traduci i testi in più lingue al volo.",
-          "title": "Traduzioni istantanee"
-        },
         "keyboardShortcuts": {
           "description": "Spazio per riprodurre/mettere in pausa, tasti freccia per cercare e cambiare brano.",
           "title": "Scorciatoie da tastiera"
@@ -1529,6 +1533,10 @@
           "description": "I numeri indicano le mine adiacenti. Segnala ogni mina e rivela tutte le celle sicure per vincere.",
           "title": "Regole del gioco"
         },
+        "gameStatus": {
+          "description": "La faccina mostra lo stato del gioco: 🙂 in gioco, 💀 gioco finito, 😎 hai vinto!",
+          "title": "Stato del gioco"
+        },
         "mineCounter": {
           "description": "La barra superiore mostra le mine non contrassegnate rimanenti e il numero totale di mine.",
           "title": "Contatore Mine"
@@ -1540,10 +1548,6 @@
         "restart": {
           "description": "Premi la faccina sorridente o scegli Gioco ▸ Nuovo per iniziare una nuova partita.",
           "title": "Ricomincia"
-        },
-        "timerCounter": {
-          "description": "La barra superiore mostra il tempo trascorso e le mine rimanenti non segnalate.",
-          "title": "Timer e Contatore"
         }
       },
       "lcd": {

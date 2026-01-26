@@ -18,6 +18,16 @@ export const helpItems = [
     description: "View and manage chat rooms, delete inappropriate content.",
   },
   {
+    icon: "🎵",
+    title: "Song Library",
+    description: "Import, export, and manage the cached song library.",
+  },
+  {
+    icon: "🔍",
+    title: "Search & Filter",
+    description: "Search users or songs by name to quickly find entries.",
+  },
+  {
     icon: "📊",
     title: "Statistics",
     description: "View system statistics and usage metrics.",

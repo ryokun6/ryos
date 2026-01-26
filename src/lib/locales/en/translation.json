@@ -1257,9 +1257,13 @@
           "title": "Mine Counter",
           "description": "Top bar shows remaining unflagged mines and total mine count."
         },
+        "gameStatus": {
+          "title": "Game Status",
+          "description": "The smiley face shows game state: 🙂 playing, 💀 game over, 😎 you won!"
+        },
         "restart": {
           "title": "Restart",
-          "description": "Press the smiley face or choose Game ▸ New to start a fresh board."
+          "description": "Press the smiley face or choose File ▸ New Game to start a fresh board."
         }
       }
     },
@@ -1655,10 +1659,6 @@
         "addSearchSongs": {
           "title": "Add & Search Songs",
           "description": "Search YouTube for songs, or paste a URL to add to your library."
-        },
-        "instantTranslations": {
-          "title": "Instant Translations",
-          "description": "Instantly translate lyrics into multiple languages."
         },
         "syncLyricsTiming": {
           "title": "Sync Lyrics Timing",
@@ -2506,6 +2506,14 @@
         "roomManagement": {
           "title": "Room Management",
           "description": "View and manage chat rooms, delete inappropriate content."
+        },
+        "songLibrary": {
+          "title": "Song Library",
+          "description": "Import, export, and manage the cached song library."
+        },
+        "searchFilter": {
+          "title": "Search & Filter",
+          "description": "Search users or songs by name to quickly find entries."
         },
         "statistics": {
           "title": "Statistics",

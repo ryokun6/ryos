@@ -54,6 +54,14 @@
           "description": "Ver y gestionar salas de chat, eliminar contenido inapropiado.",
           "title": "Gestión de salas"
         },
+        "searchFilter": {
+          "description": "Busca usuarios o canciones por nombre para encontrar entradas rápidamente.",
+          "title": "Buscar y filtrar"
+        },
+        "songLibrary": {
+          "description": "Importa, exporta y gestiona la biblioteca de canciones en caché.",
+          "title": "Biblioteca de canciones"
+        },
         "statistics": {
           "description": "Ver estadísticas del sistema y métricas de uso.",
           "title": "Estadísticas"
@@ -1434,10 +1442,6 @@
           "description": "Busca canciones en YouTube o pega una URL para agregar a tu biblioteca.",
           "title": "Agregar y buscar canciones"
         },
-        "instantTranslations": {
-          "description": "Traduce letras a varios idiomas al instante.",
-          "title": "Traducciones instantáneas"
-        },
         "keyboardShortcuts": {
           "description": "Espacio para reproducir/pausar, teclas de flecha para buscar y cambiar pistas.",
           "title": "Atajos de teclado"
@@ -1529,6 +1533,10 @@
           "description": "Los números muestran minas adyacentes. Marca todas las minas y revela todas las celdas seguras para ganar.",
           "title": "Reglas del juego"
         },
+        "gameStatus": {
+          "description": "La cara sonriente muestra el estado del juego: 🙂 jugando, 💀 fin del juego, 😎 ¡ganaste!",
+          "title": "Estado del juego"
+        },
         "mineCounter": {
           "description": "La barra superior muestra las minas restantes sin marcar y el número total de minas.",
           "title": "Contador de minas"
@@ -1540,10 +1548,6 @@
         "restart": {
           "description": "Pulsa la cara sonriente o elige Juego ▸ Nuevo para empezar un tablero nuevo.",
           "title": "Reiniciar"
-        },
-        "timerCounter": {
-          "description": "La barra superior muestra el tiempo transcurrido y las minas restantes sin marcar.",
-          "title": "Temporizador y Contador"
         }
       },
       "lcd": {

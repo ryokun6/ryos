@@ -54,6 +54,14 @@
           "description": "Afficher et gérer les salons de discussion, supprimer le contenu inapproprié.",
           "title": "Gestion des salons"
         },
+        "searchFilter": {
+          "description": "Rechercher des utilisateurs ou des chansons par nom pour trouver rapidement des entrées.",
+          "title": "Rechercher & Filtrer"
+        },
+        "songLibrary": {
+          "description": "Importer, exporter et gérer la bibliothèque de chansons mise en cache.",
+          "title": "Bibliothèque de chansons"
+        },
         "statistics": {
           "description": "Afficher les statistiques système et les métriques d'utilisation.",
           "title": "Statistiques"
@@ -1434,10 +1442,6 @@
           "description": "Recherchez des chansons sur YouTube ou collez une URL pour ajouter à votre bibliothèque.",
           "title": "Ajouter et rechercher des chansons"
         },
-        "instantTranslations": {
-          "description": "Traduire les paroles en plusieurs langues à la volée.",
-          "title": "Traductions instantanées"
-        },
         "keyboardShortcuts": {
           "description": "Espace pour lecture/pause, touches fléchées pour naviguer et changer de piste.",
           "title": "Raccourcis clavier"
@@ -1529,6 +1533,10 @@
           "description": "Les nombres indiquent les mines adjacentes. Marquez toutes les mines et révélez toutes les cellules sûres pour gagner.",
           "title": "Règles du jeu"
         },
+        "gameStatus": {
+          "description": "Le smiley indique l'état du jeu : 🙂 en jeu, 💀 partie terminée, 😎 vous avez gagné !",
+          "title": "État du jeu"
+        },
         "mineCounter": {
           "description": "La barre supérieure affiche les mines non signalées restantes et le nombre total de mines.",
           "title": "Compteur de mines"
@@ -1540,10 +1548,6 @@
         "restart": {
           "description": "Appuyez sur le visage souriant ou choisissez Jeu ▸ Nouveau pour commencer un nouveau plateau",
           "title": "Redémarrer"
-        },
-        "timerCounter": {
-          "description": "La barre supérieure affiche le temps écoulé et les mines non marquées restantes",
-          "title": "Minuteur et compteur"
         }
       },
       "lcd": {

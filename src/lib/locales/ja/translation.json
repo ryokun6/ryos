@@ -54,6 +54,14 @@
           "description": "チャットルームの表示と管理、不適切なコンテンツの削除を行います。",
           "title": "ルーム管理"
         },
+        "searchFilter": {
+          "description": "ユーザーまたは曲を名前で検索して、すばやく見つけます。",
+          "title": "検索とフィルタ"
+        },
+        "songLibrary": {
+          "description": "キャッシュされた曲ライブラリをインポート、エクスポート、管理します。",
+          "title": "曲ライブラリ"
+        },
         "statistics": {
           "description": "システムの統計情報と利用状況の指標を表示します。",
           "title": "統計情報"
@@ -1434,10 +1442,6 @@
           "description": "YouTubeで曲を検索するか、URLを貼り付けてライブラリに追加。",
           "title": "曲を追加・検索"
         },
-        "instantTranslations": {
-          "description": "歌詞を多言語に即時翻訳。",
-          "title": "即時翻訳"
-        },
         "keyboardShortcuts": {
           "description": "スペースで再生/一時停止、矢印キーでシーク・トラック変更。",
           "title": "キーボードショートカット"
@@ -1529,6 +1533,10 @@
           "description": "数字は隣接する地雷の数を示します。すべての地雷にフラグを立て、すべての安全なセルを表示して勝利。",
           "title": "ゲームルール"
         },
+        "gameStatus": {
+          "description": "絵文字はゲームの状態を表します: 🙂 プレイ中、💀 ゲームオーバー、😎 勝利！",
+          "title": "ゲームステータス"
+        },
         "mineCounter": {
           "description": "トップバーには、残りの未フラグ地雷数と総地雷数が表示されます。",
           "title": "地雷数"
@@ -1540,10 +1548,6 @@
         "restart": {
           "description": "笑顔アイコンを押すか、ゲーム ▸ 新規を選択して新しいボードを開始",
           "title": "再開"
-        },
-        "timerCounter": {
-          "description": "上部バーに経過時間と残りの未フラグ地雷を表示",
-          "title": "タイマーとカウンター"
         }
       },
       "lcd": {

@@ -54,6 +54,14 @@
           "description": "檢視及管理聊天室，刪除不當內容。",
           "title": "聊天室管理"
         },
+        "searchFilter": {
+          "description": "依名稱搜尋使用者或歌曲，快速找到項目。",
+          "title": "搜尋與篩選"
+        },
+        "songLibrary": {
+          "description": "匯入、匯出與管理快取歌曲庫。",
+          "title": "歌曲庫"
+        },
         "statistics": {
           "description": "檢視系統統計資料和使用指標。",
           "title": "統計資料"
@@ -1434,10 +1442,6 @@
           "description": "在 YouTube 搜尋歌曲，或貼上網址加入資料庫。",
           "title": "新增與搜尋歌曲"
         },
-        "instantTranslations": {
-          "description": "即時將歌詞翻譯成多種語言。",
-          "title": "即時翻譯"
-        },
         "keyboardShortcuts": {
           "description": "空白鍵播放/暫停，方向鍵跳轉及切換曲目。",
           "title": "鍵盤快捷鍵"
@@ -1529,6 +1533,10 @@
           "description": "數字顯示相鄰地雷數量。標記所有地雷並顯示所有安全格子以獲勝。",
           "title": "遊戲規則"
         },
+        "gameStatus": {
+          "description": "笑臉顯示遊戲狀態：🙂 遊戲中，💀 遊戲結束，😎 你贏了！",
+          "title": "遊戲狀態"
+        },
         "mineCounter": {
           "description": "頂端列顯示剩餘未標記的地雷數和地雷總數。",
           "title": "地雷計數"
@@ -1540,10 +1548,6 @@
         "restart": {
           "description": "按笑臉或選擇「遊戲」▸「新增」以開始新的遊戲。",
           "title": "重新開始"
-        },
-        "timerCounter": {
-          "description": "頂部列顯示經過時間和剩餘未標記的地雷。",
-          "title": "計時器與計數器"
         }
       },
       "lcd": {
