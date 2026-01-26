@@ -1529,6 +1529,10 @@
           "description": "Números mostram minas adjacentes. Sinalize todas as minas e revele todas as células seguras para vencer.",
           "title": "Regras do Jogo"
         },
+        "mineCounter": {
+          "description": "A barra superior mostra as minas não sinalizadas restantes e o total de minas.",
+          "title": "Contador de Minas"
+        },
         "mobileControls": {
           "description": "Toque para revelar, pressione e segure para sinalizar uma mina.",
           "title": "Controles Móveis"
@@ -1588,6 +1592,10 @@
         "saving": {
           "description": "Use Arquivo > Salvar para salvar sua arte, ou Arquivo > Salvar Como para salvá-lo com um novo nome.",
           "title": "Salvando"
+        },
+        "strokeWidth": {
+          "description": "Ajuste a espessura do traço do pincel e do lápis usando os controles da barra de ferramentas.",
+          "title": "Espessura do Traço"
         },
         "undo": {
           "description": "Pressione ⌘Z ou use Editar > Desfazer para desfazer sua última ação.",
@@ -1671,6 +1679,10 @@
         "pcEmulator": {
           "description": "Executa jogos e aplicativos clássicos do DOS diretamente no seu navegador",
           "title": "Emulador de PC"
+        },
+        "resetLoad": {
+          "description": "Use Arquivo ▸ Redefinir para reiniciar, ou Carregar Jogo para mudar de jogo",
+          "title": "Redefinir e Carregar"
         },
         "saveStates": {
           "description": "Salvar ou carregar o progresso do jogo a qualquer momento no menu Arquivo",
@@ -1826,6 +1838,10 @@
           "description": "As notas são salvas automaticamente e persistem entre as sessões",
           "title": "Salvamento Automático"
         },
+        "clearAll": {
+          "description": "Use Arquivo > Limpar Todas as Notas para remover todas as notas adesivas de uma vez",
+          "title": "Limpar Tudo"
+        },
         "colors": {
           "description": "Altere as cores das notas no menu Nota para organizar suas ideias",
           "title": "Cores"
@@ -1837,6 +1853,10 @@
         "deleteNote": {
           "description": "Clique no botão X em uma nota ou use o menu para excluí-la",
           "title": "Excluir Nota"
+        },
+        "moveResize": {
+          "description": "Arraste a barra de título para mover, arraste o canto para redimensionar notas",
+          "title": "Mover e Redimensionar"
         }
       },
       "menu": {
@@ -1891,6 +1911,10 @@
         "midiInput": {
           "description": "Conecte um teclado MIDI e toque instantaneamente",
           "title": "Entrada MIDI"
+        },
+        "octaveShift": {
+          "description": "Use as teclas ou botões -/+ para deslocar as oitavas para cima ou para baixo",
+          "title": "Deslocamento de Oitava"
         },
         "presets": {
           "description": "Salve, carregue e gerencie predefinições de som personalizadas",

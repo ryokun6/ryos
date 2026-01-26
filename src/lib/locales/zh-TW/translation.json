@@ -1529,6 +1529,10 @@
           "description": "數字顯示相鄰地雷數量。標記所有地雷並顯示所有安全格子以獲勝。",
           "title": "遊戲規則"
         },
+        "mineCounter": {
+          "description": "頂端列顯示剩餘未標記的地雷數和地雷總數。",
+          "title": "地雷計數"
+        },
         "mobileControls": {
           "description": "點擊以顯示，長按以標記地雷。",
           "title": "行動裝置控制"
@@ -1588,6 +1592,10 @@
         "saving": {
           "description": "使用「檔案」>「儲存」以儲存您的作品，或「檔案」>「另存新檔」以使用新名稱儲存。",
           "title": "儲存"
+        },
+        "strokeWidth": {
+          "description": "使用工具列控制項調整筆刷和鉛筆的筆觸寬度。",
+          "title": "筆觸寬度"
         },
         "undo": {
           "description": "按 ⌘Z 或使用「編輯」>「還原」以還原上一個動作。",
@@ -1671,6 +1679,10 @@
         "pcEmulator": {
           "description": "在瀏覽器中直接執行經典 DOS 遊戲和應用程式",
           "title": "PC 模擬器"
+        },
+        "resetLoad": {
+          "description": "使用「檔案 ▸ 重設」重新開始，或「載入遊戲」切換遊戲。",
+          "title": "重設與載入"
         },
         "saveStates": {
           "description": "隨時從「檔案」選單儲存或載入遊戲進度",
@@ -1826,6 +1838,10 @@
           "description": "便利貼會自動儲存，並在不同工作階段之間保留。",
           "title": "自動儲存"
         },
+        "clearAll": {
+          "description": "使用「檔案 > 清除所有備註」一次移除所有便利貼。",
+          "title": "清除所有"
+        },
         "colors": {
           "description": "從「便利貼」選單變更便利貼顏色，以整理您的想法。",
           "title": "顏色"
@@ -1837,6 +1853,10 @@
         "deleteNote": {
           "description": "按一下便利貼上的「X」按鈕，或使用選單來刪除便利貼。",
           "title": "刪除便利貼"
+        },
+        "moveResize": {
+          "description": "拖曳標題列以移動，拖曳角落以調整備註大小。",
+          "title": "移動與調整大小"
         }
       },
       "menu": {
@@ -1891,6 +1911,10 @@
         "midiInput": {
           "description": "插入 MIDI 鍵盤並立即演奏",
           "title": "MIDI 輸入"
+        },
+        "octaveShift": {
+          "description": "使用 -/+ 鍵或按鈕向上或向下移動八度音。",
+          "title": "八度音移位"
         },
         "presets": {
           "description": "儲存、載入和管理自訂音效預設",

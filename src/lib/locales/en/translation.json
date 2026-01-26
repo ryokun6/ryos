@@ -1060,7 +1060,7 @@
         },
         "slashCommands": {
           "title": "Slash Commands",
-          "description": "Type / for quick actions or let Ryo AI edit lines remotely"
+          "description": "Type / for quick formatting (headings, lists, text styles)"
         }
       }
     },
@@ -1134,9 +1134,9 @@
           "title": "Drawing Tools",
           "description": "Use the toolbar on the left to select different drawing tools like pencil, brush, shapes, and more."
         },
-        "colors": {
-          "title": "Colors",
-          "description": "Select colors from the palette below the tools to change your drawing color."
+        "strokeWidth": {
+          "title": "Stroke Width",
+          "description": "Adjust brush and pencil stroke width using the toolbar controls."
         },
         "undo": {
           "title": "Undo",
@@ -1224,7 +1224,7 @@
         },
         "switchingCameras": {
           "title": "Switching Cameras",
-          "description": "Use the 'View' menu in the menu bar to switch between available cameras if you have more than one connected."
+          "description": "Use the 'Camera' menu in the menu bar to switch between available cameras if you have more than one connected."
         }
       }
     },
@@ -1253,9 +1253,9 @@
           "title": "Game Rules",
           "description": "Numbers show adjacent mines. Flag every mine and reveal all safe cells to win."
         },
-        "timerCounter": {
-          "title": "Timer & Counter",
-          "description": "Top bar shows elapsed time and remaining unflagged mines."
+        "mineCounter": {
+          "title": "Mine Counter",
+          "description": "Top bar shows remaining unflagged mines and total mine count."
         },
         "restart": {
           "title": "Restart",
@@ -1662,7 +1662,7 @@
         },
         "syncLyricsTiming": {
           "title": "Sync Lyrics Timing",
-          "description": "Use [ ] keys, mouse wheel, or drag up/down to adjust lyrics offset."
+          "description": "Use [ ] keys, mouse wheel, or drag left/right to adjust lyrics offset."
         },
         "stylePronunciation": {
           "title": "Style & Pronunciation",
@@ -1721,9 +1721,9 @@
           "title": "Effects",
           "description": "Reverb, delay, distortion, chorus, phaser & bit-crusher"
         },
-        "midiInput": {
-          "title": "MIDI Input",
-          "description": "Plug in a MIDI keyboard and play instantly"
+        "octaveShift": {
+          "title": "Octave Shift",
+          "description": "Use -/+ keys or buttons to shift octaves up or down"
         }
       },
       "selectPreset": "Select Preset",
@@ -1808,11 +1808,11 @@
         },
         "fullscreenMode": {
           "title": "Full-Screen Mode",
-          "description": "Toggle View ▸ Full Screen for an immersive display"
+          "description": "Toggle Controls ▸ Full Screen for an immersive display"
         },
-        "saveStates": {
-          "title": "Save States",
-          "description": "Save or load game progress any time from File menu"
+        "resetLoad": {
+          "title": "Reset & Load",
+          "description": "Use File ▸ Reset to restart, or Load Game to switch games"
         },
         "aspectRatio": {
           "title": "Aspect Ratio",
@@ -2227,15 +2227,23 @@
       "help": {
         "createNote": {
           "title": "Create Note",
-          "description": "Click File > New Note or use the button to create a new sticky"
+          "description": "Click File > New Note to create a new sticky note"
         },
         "colors": {
           "title": "Colors",
           "description": "Change note colors from the Note menu to organize your thoughts"
         },
+        "moveResize": {
+          "title": "Move & Resize",
+          "description": "Drag the title bar to move, drag the corner to resize notes"
+        },
         "deleteNote": {
           "title": "Delete Note",
-          "description": "Click the X button on a note or use the menu to delete it"
+          "description": "Click the X button on a note to delete it"
+        },
+        "clearAll": {
+          "title": "Clear All",
+          "description": "Use File > Clear All Notes to remove all stickies at once"
         },
         "autoSave": {
           "title": "Auto-Save",

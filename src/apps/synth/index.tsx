@@ -28,9 +28,9 @@ export const helpItems = [
     description: "Reverb, delay, distortion, chorus, phaser & bit-crusher",
   },
   {
-    icon: "�",
-    title: "MIDI Input",
-    description: "Plug in a MIDI keyboard and play instantly",
+    icon: "🎵",
+    title: "Octave Shift",
+    description: "Use -/+ keys or buttons to shift octaves up or down",
   },
 ];
 

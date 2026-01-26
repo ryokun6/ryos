@@ -46,7 +46,7 @@ export const helpItems = [
     icon: "📷",
     title: "Switching Cameras",
     description:
-      "Use the 'View' menu in the menu bar to switch between available cameras if you have more than one connected.",
+      "Use the 'Camera' menu in the menu bar to switch between available cameras if you have more than one connected.",
   },
 ];
 

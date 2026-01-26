@@ -1529,6 +1529,10 @@
           "description": "I numeri indicano le mine adiacenti. Segnala ogni mina e rivela tutte le celle sicure per vincere.",
           "title": "Regole del gioco"
         },
+        "mineCounter": {
+          "description": "La barra superiore mostra le mine non contrassegnate rimanenti e il numero totale di mine.",
+          "title": "Contatore Mine"
+        },
         "mobileControls": {
           "description": "Tocca per rivelare, tieni premuto per contrassegnare una mina.",
           "title": "Controlli mobile"
@@ -1588,6 +1592,10 @@
         "saving": {
           "description": "Usa File > Salva per salvare la tua opera, o File > Salva con nome per salvarla con un nuovo nome.",
           "title": "Salvataggio"
+        },
+        "strokeWidth": {
+          "description": "Regola lo spessore del tratto di pennello e matita tramite i controlli della barra degli strumenti.",
+          "title": "Spessore Tratto"
         },
         "undo": {
           "description": "Premi ⌘Z o usa Modifica > Annulla per annullare l'ultima azione.",
@@ -1671,6 +1679,10 @@
         "pcEmulator": {
           "description": "Esegue giochi e app DOS classici direttamente nel tuo browser",
           "title": "Emulatore PC"
+        },
+        "resetLoad": {
+          "description": "Usa File ▸ Reimposta per riavviare, o Carica Partita per cambiare partita.",
+          "title": "Reimposta & Carica"
         },
         "saveStates": {
           "description": "Salva o carica i progressi di gioco in qualsiasi momento dal menu File",
@@ -1826,6 +1838,10 @@
           "description": "Le note vengono salvate automaticamente e persistono tra le sessioni",
           "title": "Salvataggio automatico"
         },
+        "clearAll": {
+          "description": "Usa File > Cancella Tutte le Note per rimuovere tutti gli adesivi contemporaneamente.",
+          "title": "Cancella Tutto"
+        },
         "colors": {
           "description": "Cambia i colori delle note dal menu Nota per organizzare i tuoi pensieri",
           "title": "Colori"
@@ -1837,6 +1853,10 @@
         "deleteNote": {
           "description": "Fai clic sul pulsante X su una nota o usa il menu per eliminarla",
           "title": "Elimina nota"
+        },
+        "moveResize": {
+          "description": "Trascina la barra del titolo per spostare, trascina l'angolo per ridimensionare le note.",
+          "title": "Sposta & Ridimensiona"
         }
       },
       "menu": {
@@ -1891,6 +1911,10 @@
         "midiInput": {
           "description": "Collega una tastiera MIDI e suona all'istante",
           "title": "Ingresso MIDI"
+        },
+        "octaveShift": {
+          "description": "Usa i tasti o i pulsanti -/+ per spostare le ottave su o giù.",
+          "title": "Spostamento Ottava"
         },
         "presets": {
           "description": "Salva, carica e gestisci i preset audio personalizzati",

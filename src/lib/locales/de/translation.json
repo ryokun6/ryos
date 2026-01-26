@@ -1529,6 +1529,10 @@
           "description": "Zahlen zeigen benachbarte Minen an. Markieren Sie jede Mine und decken Sie alle sicheren Zellen auf, um zu gewinnen.",
           "title": "Spielregeln"
         },
+        "mineCounter": {
+          "description": "Die obere Leiste zeigt die verbleibenden unmarkierten Minen und die Gesamtminenzahl an.",
+          "title": "Minenzähler"
+        },
         "mobileControls": {
           "description": "Tippen zum Aufdecken, lange drücken, um eine Mine zu markieren",
           "title": "Mobile Steuerung"
@@ -1588,6 +1592,10 @@
         "saving": {
           "description": "Verwenden Sie Ablage > Sichern, um Ihr Werk zu sichern, oder Ablage > Sichern unter, um es unter einem neuen Namen zu sichern.",
           "title": "Sichern"
+        },
+        "strokeWidth": {
+          "description": "Passen Sie die Strichstärke von Pinsel und Bleistift über die Steuerelemente der Symbolleiste an.",
+          "title": "Strichstärke"
         },
         "undo": {
           "description": "Drücken Sie ⌘Z oder verwenden Sie Bearbeiten > Rückgängig, um Ihre letzte Aktion rückgängig zu machen.",
@@ -1671,6 +1679,10 @@
         "pcEmulator": {
           "description": "Führt klassische DOS-Spiele und Apps direkt in Ihrem Browser aus",
           "title": "PC-Emulator"
+        },
+        "resetLoad": {
+          "description": "Verwenden Sie Datei ▸ Zurücksetzen, um neu zu starten, oder Spiel laden, um das Spiel zu wechseln.",
+          "title": "Zurücksetzen & Laden"
         },
         "saveStates": {
           "description": "Spielstand jederzeit aus dem Ablage-Menü speichern oder laden",
@@ -1826,6 +1838,10 @@
           "description": "Notizen werden automatisch gespeichert und bleiben zwischen den Sitzungen erhalten",
           "title": "Automatisches Speichern"
         },
+        "clearAll": {
+          "description": "Verwenden Sie Datei > Alle Notizen löschen, um alle Haftnotizen auf einmal zu entfernen.",
+          "title": "Alle löschen"
+        },
         "colors": {
           "description": "Ändern Sie die Notizfarben über das Notizmenü, um Ihre Gedanken zu ordnen",
           "title": "Farben"
@@ -1837,6 +1853,10 @@
         "deleteNote": {
           "description": "Klicken Sie auf die Schaltfläche X einer Notiz oder verwenden Sie das Menü, um sie zu löschen",
           "title": "Notiz löschen"
+        },
+        "moveResize": {
+          "description": "Ziehen Sie die Titelleiste zum Verschieben, ziehen Sie die Ecke zum Ändern der Größe von Notizen.",
+          "title": "Verschieben & Größe ändern"
         }
       },
       "menu": {
@@ -1891,6 +1911,10 @@
         "midiInput": {
           "description": "MIDI-Tastatur anschließen und sofort spielen",
           "title": "MIDI-Eingabe"
+        },
+        "octaveShift": {
+          "description": "Nutzen Sie die Tasten oder Schaltflächen -/+, um Oktaven nach oben oder unten zu verschieben.",
+          "title": "Oktavverschiebung"
         },
         "presets": {
           "description": "Benutzerdefinierte Sound-Voreinstellungen speichern, laden und verwalten",

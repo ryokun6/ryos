@@ -1529,6 +1529,10 @@
           "description": "숫자는 인접한 지뢰 수를 보여줍니다. 모든 지뢰에 깃발을 달고 모든 안전한 셀을 표시하여 승리.",
           "title": "게임 규칙"
         },
+        "mineCounter": {
+          "description": "상단 바에 깃발 없는 지뢰 수와 총 지뢰 수가 표시됩니다.",
+          "title": "지뢰 수"
+        },
         "mobileControls": {
           "description": "탭하여 표시, 길게 눌러 지뢰에 깃발",
           "title": "모바일 컨트롤"
@@ -1588,6 +1592,10 @@
         "saving": {
           "description": "파일 > 저장을 사용하여 작품 저장 또는 파일 > 다른 이름으로 저장을 사용하여 새 이름으로 저장.",
           "title": "저장"
+        },
+        "strokeWidth": {
+          "description": "도구 모음 컨트롤로 브러시 및 연필 획 너비를 조절합니다.",
+          "title": "획 너비"
         },
         "undo": {
           "description": "⌘Z를 누르거나 편집 > 실행 취소를 사용하여 마지막 작업 취소.",
@@ -1671,6 +1679,10 @@
         "pcEmulator": {
           "description": "브라우저에서 클래식 DOS 게임 및 앱 직접 실행",
           "title": "PC 에뮬레이터"
+        },
+        "resetLoad": {
+          "description": "파일 ▸ 재시작으로 다시 시작하거나, 게임 불러오기로 게임을 전환하세요.",
+          "title": "재시작 및 불러오기"
         },
         "saveStates": {
           "description": "파일 메뉴에서 언제든지 게임 진행 상황 저장 또는 로드",
@@ -1826,6 +1838,10 @@
           "description": "메모는 자동으로 저장되며 세션 간에 유지됩니다.",
           "title": "자동 저장"
         },
+        "clearAll": {
+          "description": "파일 > 모든 메모 지우기를 사용하여 모든 스티커 메모를 한 번에 제거합니다.",
+          "title": "모두 지우기"
+        },
         "colors": {
           "description": "생각을 정리하려면 메모 메뉴에서 메모 색상을 변경하세요.",
           "title": "색상"
@@ -1837,6 +1853,10 @@
         "deleteNote": {
           "description": "메모의 X 버튼을 클릭하거나 메뉴를 사용하여 삭제하세요.",
           "title": "메모 삭제"
+        },
+        "moveResize": {
+          "description": "제목 표시줄을 드래그하여 이동하고, 모서리를 드래그하여 메모 크기를 조절하세요.",
+          "title": "이동 및 크기 조절"
         }
       },
       "menu": {
@@ -1891,6 +1911,10 @@
         "midiInput": {
           "description": "MIDI 키보드를 연결하고 즉시 연주",
           "title": "MIDI 입력"
+        },
+        "octaveShift": {
+          "description": "-/+ 키 또는 버튼으로 옥타브를 위아래로 이동하세요.",
+          "title": "옥타브 이동"
         },
         "presets": {
           "description": "사용자 지정 사운드 사전 설정 저장, 로드 및 관리",

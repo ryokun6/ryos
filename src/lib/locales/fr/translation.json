@@ -1529,6 +1529,10 @@
           "description": "Les nombres indiquent les mines adjacentes. Marquez toutes les mines et révélez toutes les cellules sûres pour gagner.",
           "title": "Règles du jeu"
         },
+        "mineCounter": {
+          "description": "La barre supérieure affiche les mines non signalées restantes et le nombre total de mines.",
+          "title": "Compteur de mines"
+        },
         "mobileControls": {
           "description": "Appuyez pour révéler, appuyez longuement pour marquer une mine",
           "title": "Contrôles mobiles"
@@ -1588,6 +1592,10 @@
         "saving": {
           "description": "Utilisez Fichier > Enregistrer pour enregistrer votre œuvre, ou Fichier > Enregistrer sous pour l'enregistrer sous un nouveau nom.",
           "title": "Enregistrement"
+        },
+        "strokeWidth": {
+          "description": "Réglez l'épaisseur du trait du pinceau et du crayon à l'aide des commandes de la barre d'outils.",
+          "title": "Épaisseur du trait"
         },
         "undo": {
           "description": "Appuyez sur ⌘Z ou utilisez Édition > Annuler pour annuler votre dernière action.",
@@ -1671,6 +1679,10 @@
         "pcEmulator": {
           "description": "Exécute des jeux et applications DOS classiques directement dans votre navigateur",
           "title": "Émulateur PC"
+        },
+        "resetLoad": {
+          "description": "Utilisez Fichier ▸ Réinitialiser pour redémarrer, ou Charger partie pour changer de partie",
+          "title": "Réinitialiser et charger"
         },
         "saveStates": {
           "description": "Enregistrer ou charger la progression du jeu à tout moment depuis le menu Fichier",
@@ -1826,6 +1838,10 @@
           "description": "Les pense-bêtes sont automatiquement enregistrés et persistent entre les sessions",
           "title": "Enregistrement automatique"
         },
+        "clearAll": {
+          "description": "Utilisez Fichier > Effacer toutes les notes pour supprimer toutes les notes adhésives en une seule fois",
+          "title": "Tout effacer"
+        },
         "colors": {
           "description": "Changez les couleurs des pense-bêtes depuis le menu Note pour organiser vos pensées",
           "title": "Couleurs"
@@ -1837,6 +1853,10 @@
         "deleteNote": {
           "description": "Cliquez sur le bouton X d'un pense-bête ou utilisez le menu pour le supprimer",
           "title": "Supprimer le pense-bête"
+        },
+        "moveResize": {
+          "description": "Faites glisser la barre de titre pour déplacer, faites glisser le coin pour redimensionner les notes",
+          "title": "Déplacer et redimensionner"
         }
       },
       "menu": {
@@ -1891,6 +1911,10 @@
         "midiInput": {
           "description": "Branchez un clavier MIDI et jouez instantanément",
           "title": "Entrée MIDI"
+        },
+        "octaveShift": {
+          "description": "Utilisez les touches ou boutons -/+ pour décaler les octaves vers le haut ou le bas",
+          "title": "Décalage d'octave"
         },
         "presets": {
           "description": "Enregistrer, charger et gérer des préréglages sonores personnalisés",

@@ -6,10 +6,10 @@ export const helpItems = [
       "Use the toolbar on the left to select different drawing tools like pencil, brush, shapes, and more.",
   },
   {
-    icon: "🎨",
-    title: "Colors",
+    icon: "🖌️",
+    title: "Stroke Width",
     description:
-      "Select colors from the palette below the tools to change your drawing color.",
+      "Adjust brush and pencil stroke width using the toolbar controls.",
   },
   {
     icon: "↩️",

@@ -31,12 +31,12 @@ export const helpItems = [
   {
     icon: "⛶",
     title: "Full-Screen Mode",
-    description: "Toggle View ▸ Full Screen for an immersive display",
+    description: "Toggle Controls ▸ Full Screen for an immersive display",
   },
   {
-    icon: "💾",
-    title: "Save States",
-    description: "Save or load game progress any time from File menu",
+    icon: "🔄",
+    title: "Reset & Load",
+    description: "Use File ▸ Reset to restart, or Load Game to switch games",
   },
   {
     icon: "🔳",

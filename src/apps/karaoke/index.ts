@@ -10,7 +10,7 @@ export const helpItems = [
   {
     icon: "⏱️",
     title: "Sync Lyrics Timing",
-    description: "Use [ ] keys, mouse wheel, or drag up/down to adjust lyrics offset.",
+    description: "Use [ ] keys, mouse wheel, or drag left/right to adjust lyrics offset.",
   },
   {
     icon: "🎨",

@@ -28,9 +28,9 @@ export const helpItems = [
       "Numbers show adjacent mines. Flag every mine and reveal all safe cells to win.",
   },
   {
-    icon: "⏱️",
-    title: "Timer & Counter",
-    description: "Top bar shows elapsed time and remaining unflagged mines.",
+    icon: "💣",
+    title: "Mine Counter",
+    description: "Top bar shows remaining unflagged mines and total mine count.",
   },
   {
     icon: "🔄",
