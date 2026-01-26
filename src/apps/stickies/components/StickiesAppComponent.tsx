@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence } from "framer-motion";
 import { StickyNote } from "./StickyNote";
@@ -8,12 +8,16 @@ import { useStickiesLogic } from "../hooks/useStickiesLogic";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { appMetadata } from "..";
+import { useAppStore } from "@/stores/useAppStore";
 
 export function StickiesAppComponent({
   isWindowOpen,
-  onClose,
+  onClose: _onClose, // Unused - Stickies uses closeAppInstance directly since it doesn't have a WindowFrame
   isForeground,
+  instanceId,
 }: AppProps) {
+  const closeAppInstance = useAppStore((state) => state.closeAppInstance);
+  
   const {
     translatedHelpItems,
     isHelpDialogOpen,
@@ -32,6 +36,36 @@ export function StickiesAppComponent({
     bringToFront,
   } = useStickiesLogic();
 
+  // Handle close - directly close the app instance
+  // Stickies doesn't use WindowFrame, so we call closeAppInstance directly
+  const handleClose = useCallback(() => {
+    if (instanceId) {
+      closeAppInstance(instanceId);
+    }
+  }, [instanceId, closeAppInstance]);
+
+  // Listen for close requests from external sources (dock, menu bar, etc.)
+  // Stickies doesn't use WindowFrame, so we need to handle this event ourselves
+  useEffect(() => {
+    if (!instanceId) return;
+
+    const handleRequestClose = () => {
+      handleClose();
+    };
+
+    window.addEventListener(
+      `requestCloseWindow-${instanceId}`,
+      handleRequestClose
+    );
+
+    return () => {
+      window.removeEventListener(
+        `requestCloseWindow-${instanceId}`,
+        handleRequestClose
+      );
+    };
+  }, [instanceId, handleClose]);
+
   // Create a new note when app is opened and no notes exist
   useEffect(() => {
     if (isWindowOpen && notes.length === 0) {
@@ -41,7 +75,7 @@ export function StickiesAppComponent({
 
   const menuBar = (
     <StickiesMenuBar
-      onClose={onClose}
+      onClose={handleClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onNewNote={handleCreateNote}
