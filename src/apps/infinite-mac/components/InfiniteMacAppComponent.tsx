@@ -50,7 +50,7 @@ function PresetGridCard({
           <img
             src={preset.image}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover object-top origin-top-left opacity-80 transition-[transform_800ms_ease-out,opacity_200ms_ease-out] group-hover:scale-115 group-hover:opacity-100"
+            className="absolute inset-0 w-full h-full object-cover object-top opacity-80 transition-all duration-[800ms] ease-out group-hover:scale-105 group-hover:opacity-100"
             onError={() => setThumbError(true)}
           />
         ) : null}
@@ -104,12 +104,15 @@ export function InfiniteMacAppComponent({
     selectedPreset,
     isEmulatorLoaded,
     isPaused,
+    currentScale,
     embedUrl,
     iframeRef,
     handleSelectPreset,
     handleBackToPresets,
     handlePause,
     handleUnpause,
+    handleSetScale,
+    handleCaptureScreenshot,
     handleIframeLoad,
   } = useInfiniteMacLogic({ isWindowOpen, instanceId });
 
@@ -121,8 +124,11 @@ export function InfiniteMacAppComponent({
       onBackToPresets={handleBackToPresets}
       onPause={handlePause}
       onUnpause={handleUnpause}
+      onSetScale={handleSetScale}
+      onCaptureScreenshot={handleCaptureScreenshot}
       hasEmulator={!!selectedPreset}
       isPaused={isPaused}
+      currentScale={currentScale}
     />
   );
 

@@ -2255,9 +2255,12 @@
         "backToPresets": "Back to Systems",
         "pause": "Pause",
         "resume": "Resume",
+        "scaling": "Scaling",
+        "captureScreenshot": "Capture Screenshot",
         "infiniteMacHelp": "Infinite Mac Help",
         "aboutInfiniteMac": "About Infinite Mac"
       },
+      "screenshotUnavailable": "Screenshot not available. Use your browser's screenshot tool (Cmd+Shift+4 on Mac, Win+Shift+S on Windows).",
       "help": {
         "classicMacEmulator": {
           "title": "Classic Mac Emulator",

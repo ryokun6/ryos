@@ -975,10 +975,13 @@
       "menu": {
         "aboutInfiniteMac": "Infinite Macについて",
         "backToPresets": "システムに戻る",
+        "captureScreenshot": "スクリーンショットを撮る",
         "infiniteMacHelp": "Infinite Macヘルプ",
         "pause": "一時停止",
-        "resume": "再開"
+        "resume": "再開",
+        "scaling": "拡大縮小"
       },
+      "screenshotUnavailable": "スクリーンショットを利用できません。ブラウザのスクリーンショットツール（MacはCmd+Shift+4、WindowsはWin+Shift+S）をご利用ください。",
       "name": "Infinite Mac",
       "selectSystem": "クラシックMacシステムを選択",
       "systemsAvailable": "{{count}} システム利用可能",
