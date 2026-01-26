@@ -1,6 +1,6 @@
 import { useWindowManager } from "@/hooks/useWindowManager";
 import { ResizeType } from "@/types/types";
-import { useSound, Sounds } from "@/hooks/useSound";
+import { useSound, Sounds, hasUserInteractedYet } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
 import { useWindowInsets } from "@/hooks/useWindowInsets";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
@@ -124,6 +124,9 @@ export function WindowFrame({
   
   // Check if this instance is minimized
   const isMinimized = instanceId ? instances[instanceId]?.isMinimized ?? false : false;
+  const isRestoredFromStorage = instanceId
+    ? instances[instanceId]?.restoredFromStorage ?? false
+    : false;
   const { play: playWindowOpen } = useSound(Sounds.WINDOW_OPEN);
   const { play: playWindowClose } = useSound(Sounds.WINDOW_CLOSE);
   // For green button zoom (maximize/restore window size)
@@ -230,13 +233,13 @@ export function WindowFrame({
   });
 
   useEffect(() => {
-    if (!skipInitialSound) {
+    if (!skipInitialSound && !isRestoredFromStorage && hasUserInteractedYet()) {
       playWindowOpen();
     }
     // Remove initial mount state after animation
     const timer = setTimeout(() => setIsInitialMount(false), 200);
     return () => clearTimeout(timer);
-  }, []); // Play sound when component mounts
+  }, [skipInitialSound, isRestoredFromStorage, playWindowOpen]); // Play sound only on user-triggered opens
 
   // Sync window title to the app store for the dock context menu
   useEffect(() => {
