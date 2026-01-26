@@ -20,7 +20,7 @@ import {
   CHAT_INSTRUCTIONS,
   TOOL_USAGE_INSTRUCTIONS,
 } from "./_utils/_aiPrompts.js";
-import { SUPPORTED_AI_MODELS } from "../src/types/aiModels.js";
+import { SUPPORTED_AI_MODELS } from "./_utils/_aiModels.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { validateAuth } from "./_utils/auth/index.js";
 import { Redis } from "@upstash/redis";

@@ -2,11 +2,15 @@
 module.exports = {
   darkMode: ["class"],
   // Only scan src/ - other paths don't exist in this project
-  // Exclude generated files and test files to reduce scanning scope
+  // Exclude generated files, test files, and non-component files to reduce scanning scope
   content: [
     "./src/**/*.{ts,tsx}",
+    // Exclusions for faster scanning
     "!./src/**/*.generated.{ts,tsx}",
     "!./src/**/*.test.{ts,tsx}",
+    "!./src/**/*.d.ts",
+    "!./src/lib/*.json", // JSON data files
+    "!./src/shaders/**", // WebGL shaders don't use Tailwind
     "./index.html",
   ],
   theme: {

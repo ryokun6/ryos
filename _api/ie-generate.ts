@@ -21,7 +21,7 @@ import {
   RYO_PERSONA_INSTRUCTIONS,
   IE_HTML_GENERATION_INSTRUCTIONS,
   } from "./_utils/_aiPrompts.js";
-import { SUPPORTED_AI_MODELS } from "../src/types/aiModels.js";
+import { SUPPORTED_AI_MODELS } from "./_utils/_aiModels.js";
 import { initLogger } from "./_utils/_logging.js";
 
 export const runtime = "nodejs";
