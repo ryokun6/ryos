@@ -432,8 +432,8 @@ export function AppManager({ apps }: AppManagerProps) {
 
       <Desktop
         apps={apps}
-        toggleApp={(appId, initialData) => {
-          launchApp(appId, initialData);
+        toggleApp={(appId, initialData, launchOrigin) => {
+          launchApp(appId, initialData, undefined, false, launchOrigin);
         }}
         appStates={{ windowOrder: instanceOrder, apps: legacyAppStates }}
       />

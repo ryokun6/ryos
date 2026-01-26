@@ -10,6 +10,14 @@ import { APP_ANALYTICS } from "@/utils/analytics";
 export type { AIModel } from "@/types/aiModels";
 
 // ---------------- Types ---------------------------------------------------------
+// Position rect for launch origin animation
+export interface LaunchOriginRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface AppInstance extends AppState {
   instanceId: string;
   appId: AppId;
@@ -18,6 +26,7 @@ export interface AppInstance extends AppState {
   createdAt: number; // stable ordering for taskbar (creation time)
   isLoading?: boolean;
   isMinimized?: boolean;
+  launchOrigin?: LaunchOriginRect; // Position of the icon that launched this instance
 }
 
 export interface RecentApp {
@@ -58,7 +67,8 @@ interface AppStoreState extends AppManagerState {
   createAppInstance: (
     appId: AppId,
     initialData?: unknown,
-    title?: string
+    title?: string,
+    launchOrigin?: LaunchOriginRect
   ) => string;
   markInstanceAsLoaded: (instanceId: string) => void;
   closeAppInstance: (instanceId: string) => void;
@@ -79,7 +89,8 @@ interface AppStoreState extends AppManagerState {
     appId: AppId,
     initialData?: unknown,
     title?: string,
-    multiWindow?: boolean
+    multiWindow?: boolean,
+    launchOrigin?: LaunchOriginRect
   ) => string;
 
   // Legacy app‑level window APIs (kept as wrappers)
@@ -383,7 +394,7 @@ const createUseAppStore = () =>
       foregroundInstanceId: null,
       nextInstanceId: 0,
 
-      createAppInstance: (appId, initialData, title) => {
+      createAppInstance: (appId, initialData, title, launchOrigin) => {
         let createdId = "";
         set((state) => {
           const nextNum = state.nextInstanceId + 1;
@@ -437,6 +448,7 @@ const createUseAppStore = () =>
               position,
               size,
               createdAt: Date.now(),
+              launchOrigin, // Store the position of the icon that launched this instance
             },
           } as typeof state.instances;
 
@@ -734,7 +746,7 @@ const createUseAppStore = () =>
           };
         });
       },
-      launchApp: (appId, initialData, title, multiWindow = false) => {
+      launchApp: (appId, initialData, title, multiWindow = false, launchOrigin) => {
         const state = get();
         
         // Check if all instances of this app are minimized
@@ -802,7 +814,7 @@ const createUseAppStore = () =>
             return existing.instanceId;
           }
         }
-        return state.createAppInstance(appId, initialData, title);
+        return state.createAppInstance(appId, initialData, title, launchOrigin);
       },
 
       _debugCheckInstanceIntegrity: () => {
