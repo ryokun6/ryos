@@ -758,6 +758,11 @@ export function WindowFrame({
 
   // Determine animation variants
   const getInitialAnimation = () => {
+    // Skip animation for windows being restored on page load
+    // (skipInitialSound is true when restoring windows from persistence)
+    if (skipInitialSound) {
+      return false;
+    }
     if (shouldAnimateRestore) {
       // Restoring from minimized - animate from dock icon position
       return { 
