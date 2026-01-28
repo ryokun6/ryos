@@ -935,6 +935,29 @@
           "notFound": "Sticky not found: {{id}}",
           "noUpdates": "No updates provided",
           "invalidAction": "Invalid action: {{action}}"
+        },
+        "infiniteMac": {
+          "startingSystem": "Starting {{system}}…",
+          "gettingStatus": "Getting status…",
+          "capturingScreen": "Capturing screen…",
+          "movingMouse": "Moving mouse…",
+          "clicking": "Clicking…",
+          "doubleClicking": "Double-clicking…",
+          "pressingKey": "Pressing key…",
+          "pausing": "Pausing…",
+          "resuming": "Resuming…",
+          "startedSystem": "Started {{system}}",
+          "systemLoading": "{{system}} loading…",
+          "capturedScreen": "Captured screen",
+          "movedMouse": "Moved to ({{x}}, {{y}})",
+          "clicked": "Clicked at ({{x}}, {{y}})",
+          "rightClicked": "Right-clicked at ({{x}}, {{y}})",
+          "doubleClicked": "Double-clicked at ({{x}}, {{y}})",
+          "pressedKey": "Pressed {{key}}",
+          "paused": "Paused",
+          "resumed": "Resumed",
+          "statusRunning": "Running {{system}}",
+          "statusNotRunning": "No system running"
         }
       },
       "tokenStatus": {
