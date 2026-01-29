@@ -758,11 +758,6 @@ export function WindowFrame({
 
   // Determine animation variants
   const getInitialAnimation = () => {
-    // Skip animation for windows being restored on page load
-    // (skipInitialSound is true when restoring windows from persistence)
-    if (skipInitialSound) {
-      return false;
-    }
     if (shouldAnimateRestore) {
       // Restoring from minimized - animate from dock icon position
       return { 
@@ -773,6 +768,16 @@ export function WindowFrame({
       };
     }
     if (isInitialMount) {
+      // Windows restored on page load should animate from dock icon, not launch origin
+      // (skipInitialSound is true when restoring windows from persistence)
+      if (skipInitialSound) {
+        return { 
+          scale: 0.1, 
+          opacity: 0,
+          x: dockIconOffset.x,
+          y: dockIconOffset.y,
+        };
+      }
       // Initial window open - animate from launch origin if available
       if (launchOriginOffset) {
         return { 
