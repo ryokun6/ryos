@@ -8,6 +8,7 @@
  * do not have executors here - they are handled by the client via onToolCall.
  */
 
+import type { Redis } from "@upstash/redis";
 import type {
   ServerToolContext,
   GenerateHtmlInput,
@@ -15,7 +16,19 @@ import type {
   SearchSongsInput,
   SearchSongsOutput,
   SearchSongsResult,
+  MemoryWriteInput,
+  MemoryWriteOutput,
+  MemoryReadInput,
+  MemoryReadOutput,
+  MemoryDeleteInput,
+  MemoryDeleteOutput,
 } from "./types.js";
+import {
+  getMemoryIndex,
+  getMemoryDetail,
+  upsertMemory,
+  deleteMemory,
+} from "../../_utils/_memory.js";
 
 /**
  * Execute generateHtml tool
@@ -157,4 +170,185 @@ export async function executeSearchSongs(
 
   // All keys exhausted
   throw new Error(`All YouTube API keys exhausted. Last error: ${lastError || 'Unknown'}`);
+}
+
+// ============================================================================
+// Memory Tool Executors
+// ============================================================================
+
+/**
+ * Extended context for memory operations
+ */
+export interface MemoryToolContext extends ServerToolContext {
+  username?: string | null;
+  redis?: Redis;
+}
+
+/**
+ * Execute memoryWrite tool
+ * 
+ * Saves or updates a memory for the authenticated user.
+ * Returns the current memories list so the AI knows what's stored.
+ */
+export async function executeMemoryWrite(
+  input: MemoryWriteInput,
+  context: MemoryToolContext
+): Promise<MemoryWriteOutput> {
+  const { key, summary, content, mode = "add" } = input;
+
+  context.log(`[memoryWrite] Writing memory "${key}" with mode "${mode}"`);
+
+  // Validate authentication
+  if (!context.username) {
+    context.log("[memoryWrite] No username - authentication required");
+    return {
+      success: false,
+      message: "Authentication required to write memories. Please log in.",
+      currentMemories: [],
+    };
+  }
+
+  if (!context.redis) {
+    context.logError("[memoryWrite] Redis not available");
+    return {
+      success: false,
+      message: "Memory storage not available.",
+      currentMemories: [],
+    };
+  }
+
+  // Execute the memory operation
+  const result = await upsertMemory(
+    context.redis,
+    context.username,
+    key,
+    summary,
+    content,
+    mode
+  );
+
+  // Get updated memory list
+  const index = await getMemoryIndex(context.redis, context.username);
+  const currentMemories = index?.memories.map((m) => ({
+    key: m.key,
+    summary: m.summary,
+  })) || [];
+
+  context.log(
+    `[memoryWrite] Result: ${result.success ? "success" : "failed"} - ${result.message}`
+  );
+
+  return {
+    success: result.success,
+    message: result.message,
+    currentMemories,
+  };
+}
+
+/**
+ * Execute memoryRead tool
+ * 
+ * Retrieves the full content of a memory by key.
+ */
+export async function executeMemoryRead(
+  input: MemoryReadInput,
+  context: MemoryToolContext
+): Promise<MemoryReadOutput> {
+  const { key } = input;
+
+  context.log(`[memoryRead] Reading memory "${key}"`);
+
+  // Validate authentication
+  if (!context.username) {
+    context.log("[memoryRead] No username - authentication required");
+    return {
+      success: false,
+      message: "Authentication required to read memories. Please log in.",
+      key,
+      content: null,
+      summary: null,
+    };
+  }
+
+  if (!context.redis) {
+    context.logError("[memoryRead] Redis not available");
+    return {
+      success: false,
+      message: "Memory storage not available.",
+      key,
+      content: null,
+      summary: null,
+    };
+  }
+
+  // Get the memory detail
+  const detail = await getMemoryDetail(context.redis, context.username, key);
+
+  if (!detail) {
+    context.log(`[memoryRead] Memory "${key}" not found`);
+    return {
+      success: false,
+      message: `Memory "${key}" not found.`,
+      key,
+      content: null,
+      summary: null,
+    };
+  }
+
+  // Also get the summary from the index
+  const index = await getMemoryIndex(context.redis, context.username);
+  const entry = index?.memories.find((m) => m.key === key.toLowerCase());
+
+  context.log(`[memoryRead] Found memory "${key}" (${detail.content.length} chars)`);
+
+  return {
+    success: true,
+    message: `Retrieved memory "${key}".`,
+    key,
+    content: detail.content,
+    summary: entry?.summary || null,
+  };
+}
+
+/**
+ * Execute memoryDelete tool
+ * 
+ * Deletes a memory by key.
+ */
+export async function executeMemoryDelete(
+  input: MemoryDeleteInput,
+  context: MemoryToolContext
+): Promise<MemoryDeleteOutput> {
+  const { key } = input;
+
+  context.log(`[memoryDelete] Deleting memory "${key}"`);
+
+  // Validate authentication
+  if (!context.username) {
+    context.log("[memoryDelete] No username - authentication required");
+    return {
+      success: false,
+      message: "Authentication required to delete memories. Please log in.",
+    };
+  }
+
+  if (!context.redis) {
+    context.logError("[memoryDelete] Redis not available");
+    return {
+      success: false,
+      message: "Memory storage not available.",
+    };
+  }
+
+  // Execute the delete operation
+  const result = await deleteMemory(context.redis, context.username, key);
+
+  context.log(
+    `[memoryDelete] Result: ${result.success ? "success" : "failed"} - ${result.message}`
+  );
+
+  return {
+    success: result.success,
+    message: result.message,
+  };
 }

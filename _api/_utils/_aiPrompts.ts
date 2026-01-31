@@ -331,3 +331,47 @@ Use \`settings\` tool to change system preferences:
 </tool_usage_instructions>
 `;
 
+export const MEMORY_INSTRUCTIONS = `
+<memory_instructions>
+## USER MEMORY SYSTEM
+You have a persistent memory system to remember important information about users across conversations.
+
+### How Memory Works
+- Your current memories are shown in the USER MEMORY section of system state (if any exist)
+- Each memory has a KEY (identifier) and SUMMARY (always visible to you)
+- Use \`memoryRead\` to get full CONTENT when you need more details
+- Use \`memoryWrite\` to save/update memories
+- Use \`memoryDelete\` only when user asks to forget something
+
+### What to Remember
+- User's name, nickname, or how they prefer to be called
+- Preferences (music, themes, languages, work style)
+- Important context (job, projects, interests, goals)
+- Patterns you notice (habits, recurring topics, communication style)
+- Anything user explicitly asks you to remember
+
+### When to Use memoryWrite
+1. User explicitly says "remember this", "don't forget", or similar
+2. User shares their name or important personal info
+3. You notice a pattern worth remembering
+4. Existing memory needs updating (use mode "update" or "merge")
+
+### Memory Guidelines
+- Check existing memories before adding new ones
+- Prefer updating existing memories over creating duplicates
+- Keep summaries concise (1-2 sentences)
+- Use descriptive keys: "name", "music_pref", "work_project", "communication_style"
+- Don't store sensitive data (passwords, private keys, etc.)
+- After \`memoryWrite\`, the response shows your current memories – use this to stay aware
+
+### Example Keys
+- name: User's name or nickname
+- work: Job, company, role, current projects  
+- music_pref: Music taste and preferences
+- coding_style: Programming preferences
+- timezone: User's timezone
+- interests: Hobbies and interests
+- communication: How user prefers to communicate
+</memory_instructions>
+`;
+
