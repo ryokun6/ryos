@@ -20,31 +20,47 @@ import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_
 import { initLogger } from "../_utils/_logging.js";
 import {
   getMemoryIndex,
+  getMemoryDetail,
   upsertMemory,
+  deleteMemory,
   MAX_MEMORIES_PER_USER,
 } from "../_utils/_memory.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// Schema for extracted memories
-const extractedMemorySchema = z.object({
+// Phase 1 Schema: Extract new memories and identify related existing keys
+const extractionSchema = z.object({
   memories: z.array(z.object({
     key: z.string()
       .min(1)
       .max(30)
-      .describe("Short key for this memory (lowercase, underscores ok)"),
+      .describe("Canonical key for this memory (use preferred keys when topic matches)"),
     summary: z.string()
       .min(1)
-      .max(150)
-      .describe("Brief 1-2 sentence summary"),
+      .max(180)
+      .describe("Brief summary of the NEW information from this conversation"),
     content: z.string()
       .min(1)
-      .max(500)
-      .describe("Relevant details and context"),
+      .max(2000)
+      .describe("Detailed NEW information extracted from this conversation"),
     confidence: z.enum(["high", "medium", "low"])
       .describe("How confident this is worth remembering"),
+    relatedKeys: z.array(z.string()).optional()
+      .describe("Existing memory keys that cover the same/related topic and should be merged with this"),
   })).describe("List of memories to extract from the conversation"),
+});
+
+// Phase 2 Schema: Consolidate new info with existing memory content
+const consolidationSchema = z.object({
+  summary: z.string()
+    .min(1)
+    .max(180)
+    .describe("Synthesized summary combining all information"),
+  content: z.string()
+    .min(1)
+    .max(2000)
+    .describe("Consolidated content - organized, deduped, newer info takes precedence"),
 });
 
 // Message format from the chat
@@ -73,32 +89,52 @@ function createRedis(): Redis {
   });
 }
 
-// System prompt for memory extraction
-const EXTRACTION_PROMPT = `You are analyzing a conversation to extract important information about the user that should be remembered for future conversations.
+// Phase 1: Extract new information and identify related existing memories
+const EXTRACTION_PROMPT = `You are analyzing a conversation to extract user memories.
 
-Extract memories for information that is:
-- Personal details (name, birthday, location, timezone, family, pets)
-- Preferences and opinions (likes, dislikes, communication style)
-- Work/life context (job, projects, goals, skills, education)
-- Significant events or context shared
-- Patterns or recurring themes
+CANONICAL KEYS (prefer these when the topic matches):
+- name: User's name, nickname, how to address them
+- birthday: Birthday, age
+- location: Where they live, timezone
+- work: Job, company, role, career
+- skills: Skills, expertise
+- education: School, degree
+- projects: Current projects
+- music_pref: Music taste, favorite artists
+- food_pref: Food preferences, diet
+- interests: Hobbies, general interests
+- entertainment: Movies, shows, games, books
+- family: Family members
+- friends: Friends
+- pets: Pets
+- goals: Goals, aspirations
+- current_focus: Current priorities
+- context: Important life context
+- preferences: General preferences
+- instructions: How to respond to them
 
-Guidelines:
-- Only extract information explicitly stated or strongly implied
-- Use confidence "high" for directly stated facts, "medium" for reasonable inferences, "low" for weak signals
-- Prefer specific details over vague observations
-- Don't extract sensitive data (passwords, financial details)
-- Use lowercase keys with underscores (e.g., "work_project", "music_pref")
-- Keep summaries concise but informative
-- If nothing noteworthy, return empty array
+EXTRACTION RULES:
+1. Use canonical keys when the topic matches
+2. Extract only NEW information from the conversation
+3. If an existing memory (shown below) covers the same/related topic:
+   - Use the canonical key as the output key
+   - List the related existing key(s) in relatedKeys - these will be merged
+4. Use confidence "high" for directly stated facts, "medium" for reasonable inferences, "low" for weak signals
+5. Don't store sensitive data (passwords, financial info)
+6. Use lowercase keys with underscores
+7. If nothing noteworthy, return empty array`;
 
-Common keys to use:
-- name, nickname, birthday, age, location, timezone
-- work, job, company, role, projects, skills
-- interests, hobbies, music_pref, food_pref
-- family, pets, relationships
-- goals, aspirations, current_focus
-- communication_style, preferences`;
+// Phase 2: Consolidate new info with existing memory content
+const CONSOLIDATION_PROMPT = `You are consolidating user memory information.
+
+Given:
+- NEW information extracted from a conversation
+- EXISTING memory content that covers the same topic
+
+Create a consolidated memory that:
+1. Synthesizes a combined summary (max 180 chars) capturing all relevant info
+2. Consolidates content - organize logically, remove duplicates, newer info takes precedence if contradicting
+3. Preserves all important details from both sources`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { logger } = initLogger();
@@ -191,49 +227,117 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   });
 
   try {
-    // Get existing memory keys to avoid duplicates
+    // Get existing memory summaries (not full content yet - that's fetched on demand)
     const existingKeys = currentIndex?.memories.map(m => m.key) || [];
-    const existingKeysText = existingKeys.length > 0
-      ? `\n\nExisting memory keys (avoid duplicating these topics unless updating): ${existingKeys.join(", ")}`
-      : "";
+    const existingSummariesText = currentIndex && currentIndex.memories.length > 0
+      ? currentIndex.memories.map(m => `- ${m.key}: ${m.summary}`).join("\n")
+      : "None";
 
-    // Use AI to extract memories
-    const { object: result } = await generateObject({
+    // Phase 1: Extract new memories and identify related existing keys
+    logger.info("Phase 1: Extracting new memories", { username });
+    const { object: extractionResult } = await generateObject({
       model: google("gemini-2.0-flash"),
-      schema: extractedMemorySchema,
-      prompt: `${EXTRACTION_PROMPT}${existingKeysText}\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\nExtract up to ${Math.min(5, remainingSlots)} memories from this conversation. Focus on high and medium confidence items.`,
+      schema: extractionSchema,
+      prompt: `${EXTRACTION_PROMPT}\n\nEXISTING MEMORIES (summaries only):\n${existingSummariesText}\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\nExtract up to ${Math.min(5, remainingSlots)} memories. For each, identify any related existing keys that should be merged.`,
       temperature: 0.3,
     });
 
-    logger.info("Extraction complete", { 
+    logger.info("Phase 1 complete", { 
       username, 
-      memoriesFound: result.memories.length,
+      memoriesFound: extractionResult.memories.length,
     });
 
     // Filter to high/medium confidence and limit count
-    const toStore = result.memories
+    const toProcess = extractionResult.memories
       .filter(m => m.confidence !== "low")
       .slice(0, remainingSlots);
 
-    // Store each memory
+    // Phase 2: For memories with relatedKeys, fetch content and consolidate
     let stored = 0;
-    for (const mem of toStore) {
+    for (const mem of toProcess) {
       // Normalize key
       const key = mem.key.toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 30);
       if (!key || !/^[a-z]/.test(key)) continue;
 
+      let finalSummary = mem.summary;
+      let finalContent = mem.content;
+      const keysToDelete: string[] = [];
+
+      // Check if there are related keys that need consolidation
+      const relatedKeys = (mem.relatedKeys || [])
+        .map(k => k.toLowerCase().replace(/[^a-z0-9_]/g, "_"))
+        .filter(k => k !== key && existingKeys.includes(k));
+
+      // Also check if the target key itself exists (needs merging)
+      const targetKeyExists = existingKeys.includes(key);
+
+      if (relatedKeys.length > 0 || targetKeyExists) {
+        // Fetch content only for keys that need consolidation
+        const keysToFetch = targetKeyExists ? [key, ...relatedKeys] : relatedKeys;
+        const uniqueKeysToFetch = [...new Set(keysToFetch)];
+        
+        logger.info("Phase 2: Fetching content for consolidation", { 
+          username, 
+          targetKey: key, 
+          keysToFetch: uniqueKeysToFetch 
+        });
+
+        const existingContents = await Promise.all(
+          uniqueKeysToFetch.map(async (k) => {
+            const detail = await getMemoryDetail(redis, username, k);
+            const entry = currentIndex?.memories.find(m => m.key === k);
+            return {
+              key: k,
+              summary: entry?.summary || "",
+              content: detail?.content || "",
+            };
+          })
+        );
+
+        const existingContentText = existingContents
+          .map(m => `Key: ${m.key}\nSummary: ${m.summary}\nContent: ${m.content}`)
+          .join("\n\n");
+
+        // Phase 2: Consolidate with AI
+        const { object: consolidated } = await generateObject({
+          model: google("gemini-2.0-flash"),
+          schema: consolidationSchema,
+          prompt: `${CONSOLIDATION_PROMPT}\n\nNEW INFORMATION:\nSummary: ${mem.summary}\nContent: ${mem.content}\n\nEXISTING MEMORY CONTENT:\n${existingContentText}\n\nConsolidate into a single memory.`,
+          temperature: 0.3,
+        });
+
+        finalSummary = consolidated.summary;
+        finalContent = consolidated.content;
+        keysToDelete.push(...relatedKeys);
+
+        logger.info("Phase 2: Consolidation complete", { username, key, mergedFrom: relatedKeys });
+      }
+
+      // Store the memory
+      const mode = existingKeys.includes(key) ? "update" : "add";
+      
       const storeResult = await upsertMemory(
         redis,
         username,
         key,
-        mem.summary,
-        mem.content,
-        existingKeys.includes(key) ? "merge" : "add"
+        finalSummary,
+        finalContent,
+        mode
       );
 
       if (storeResult.success) {
         stored++;
-        logger.info("Stored memory", { username, key, confidence: mem.confidence });
+        logger.info("Stored memory", { username, key, confidence: mem.confidence, mode });
+        
+        // Delete merged keys
+        for (const oldKey of keysToDelete) {
+          const deleteResult = await deleteMemory(redis, username, oldKey);
+          if (deleteResult.success) {
+            logger.info("Deleted merged key", { username, oldKey, mergedInto: key });
+          } else {
+            logger.warn("Failed to delete merged key", { username, oldKey, error: deleteResult.message });
+          }
+        }
       } else {
         logger.warn("Failed to store memory", { username, key, error: storeResult.message });
       }
