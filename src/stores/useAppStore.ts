@@ -861,18 +861,22 @@ const createUseAppStore = () =>
           Object.entries(state.instances)
             .filter(([, inst]) => inst.isOpen)
             .map(([id, inst]) => {
+              // Exclude launchOrigin from persisted state - restored windows should
+              // animate from window center, not from the original icon position
+              const { launchOrigin: _, ...instWithoutLaunchOrigin } = inst;
+              
               // For applet-viewer, exclude content from initialData to prevent localStorage storage
               if (inst.appId === "applet-viewer" && inst.initialData) {
                 const appletData = inst.initialData as { path?: string; content?: string; shareCode?: string; icon?: string; name?: string };
                 return [id, {
-                  ...inst,
+                  ...instWithoutLaunchOrigin,
                   initialData: {
                     ...appletData,
                     content: "", // Exclude content - it should be loaded from IndexedDB
                   },
                 }];
               }
-              return [id, inst];
+              return [id, instWithoutLaunchOrigin];
             })
         ),
         instanceOrder: state.instanceOrder.filter(
