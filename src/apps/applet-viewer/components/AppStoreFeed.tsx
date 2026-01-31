@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { useLatestRef } from "@/hooks/useLatestRef";
 import { useAppletActions, type Applet } from "../utils/appletActions";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChatsStore } from "@/stores/useChatsStore";
@@ -34,8 +35,9 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   const feedRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef<Set<string>>(new Set());
   const loadedRef = useRef<Set<string>>(new Set());
-  const currentIndexRef = useRef(currentIndex);
-  const appletsLengthRef = useRef(applets.length);
+  // Use useLatestRef to keep refs in sync with state without effects
+  const currentIndexRef = useLatestRef(currentIndex);
+  const appletsLengthRef = useLatestRef(applets.length);
   const hasFetchedRef = useRef(false);
   const sessionSeedRef = useRef(Math.floor(Math.random() * 1000000));
   const currentTheme = useThemeStore((state) => state.current);
@@ -341,7 +343,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
     if (index >= 0 && index < appletsLengthRef.current) {
       const prevIndex = currentIndexRef.current;
       setCurrentIndex(index);
-      currentIndexRef.current = index;
+      // Note: currentIndexRef.current is automatically updated by useLatestRef
       
       // Determine navigation direction
       if (index > prevIndex) {
@@ -354,13 +356,8 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
     }
   };
 
-  useEffect(() => {
-    currentIndexRef.current = currentIndex;
-  }, [currentIndex]);
-
-  useEffect(() => {
-    appletsLengthRef.current = applets.length;
-  }, [applets.length]);
+  // Note: Removed useEffect hooks that synced refs with state
+  // useLatestRef handles this automatically during render
 
   useImperativeHandle(ref, () => ({
     goToNext: () => {

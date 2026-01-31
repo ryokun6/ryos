@@ -2,7 +2,7 @@ import { Microphone } from "@phosphor-icons/react";
 import { useAudioTranscription } from "@/hooks/useAudioTranscription";
 import { AudioBars } from "./audio-bars";
 import { ActivityIndicator } from "./activity-indicator";
-import { forwardRef, useEffect } from "react";
+import { forwardRef } from "react";
 
 interface AudioInputButtonProps {
   onTranscriptionComplete: (text: string) => void;
@@ -56,15 +56,11 @@ export const AudioInputButton = forwardRef<
       silenceThreshold,
       minRecordingDuration: 500, // Ensure we get at least 0.5s of audio
       frequencyBands,
+      // Pass callbacks directly to the hook - called inline when state changes
+      // instead of using useEffect to notify parent (React anti-pattern)
+      onRecordingStateChange,
+      onFrequenciesChange,
     });
-
-    useEffect(() => {
-      onRecordingStateChange?.(isRecording);
-    }, [isRecording, onRecordingStateChange]);
-
-    useEffect(() => {
-      onFrequenciesChange?.(frequencies, isSilent);
-    }, [frequencies, isSilent, onFrequenciesChange]);
 
     return (
       <div className="relative">

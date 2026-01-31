@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import * as Tone from "tone";
+import { useLatestRef } from "@/hooks/useLatestRef";
 
 interface Waveform3DProps {
   analyzer: Tone.Analyser | null;
@@ -57,7 +58,8 @@ const fragmentShader = `
 export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const analyzerRef = useRef<Tone.Analyser | null>(null);
+  // Use useLatestRef to keep analyzer ref in sync without useEffect
+  const analyzerRef = useLatestRef(analyzer);
   const [isMobile, setIsMobile] = useState(false);
   const timeRef = useRef(0);
   const amplitudeRef = useRef(0);
@@ -133,9 +135,7 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
     };
   }, []);
 
-  useEffect(() => {
-    analyzerRef.current = analyzer;
-  }, [analyzer]);
+  // Note: analyzerRef is kept in sync via useLatestRef (no effect needed)
 
   useEffect(() => {
     if (!containerRef.current || isMobile || !renderer) return;
