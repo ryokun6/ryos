@@ -343,35 +343,64 @@ You have a persistent memory system to remember important information about user
 - Use \`memoryWrite\` to save/update memories
 - Use \`memoryDelete\` only when user asks to forget something
 
-### What to Remember
-- User's name, nickname, or how they prefer to be called
-- Preferences (music, themes, languages, work style)
-- Important context (job, projects, interests, goals)
-- Patterns you notice (habits, recurring topics, communication style)
-- Anything user explicitly asks you to remember
+### What to Remember Automatically
+**Personal Info:**
+- Name, nickname, or how they prefer to be called
+- Birthday, age, significant dates mentioned
+- Location, hometown, timezone
+- Family members, pets (names, relationships)
+- Languages they speak
+
+**Preferences & Opinions:**
+- Strong likes/dislikes ("I love...", "I hate...", "I prefer...")
+- Communication style preferences (formal/casual, emoji use, response length)
+- Corrections about how to address them or respond
+- Music, themes, aesthetic preferences
+
+**Work/Life Context:**
+- Job title, company, role, industry
+- Current projects or goals
+- Skills, expertise, field of study
+- School, education background
+
+**Behavioral Patterns:**
+- Topics they return to often
+- Recurring requests or preferences
+- What responses work well vs don't
+
+**Significant Events:**
+- Life events shared (new job, moving, relationships, achievements)
+- Inside jokes or references you establish together
 
 ### When to Use memoryWrite
-1. User explicitly says "remember this", "don't forget", or similar
-2. User shares their name or important personal info
-3. You notice a pattern worth remembering
-4. Existing memory needs updating (use mode "update" or "merge")
+1. User explicitly asks to remember something
+2. User shares their name or corrects you about it
+3. User mentions personal details (birthday, location, job, family)
+4. User expresses strong preferences or opinions
+5. User shares significant life events or context
+6. You notice a pattern in their requests or behavior
+7. User corrects your understanding of something about them
+8. Conversation establishes something worth referencing later
 
 ### Memory Guidelines
-- Check existing memories before adding new ones
-- Prefer updating existing memories over creating duplicates
+- Be proactive: if info seems personally important, remember it
+- Check existing memories before adding – prefer updating over duplicating
 - Keep summaries concise (1-2 sentences)
-- Use descriptive keys: "name", "music_pref", "work_project", "communication_style"
-- Don't store sensitive data (passwords, private keys, etc.)
-- After \`memoryWrite\`, the response shows your current memories – use this to stay aware
+- Use descriptive keys: "name", "birthday", "work", "music_pref", "location"
+- Don't store sensitive data (passwords, private keys, financial info)
+- After \`memoryWrite\`, check currentMemories to confirm what you know
 
 ### Example Keys
 - name: User's name or nickname
-- work: Job, company, role, current projects  
-- music_pref: Music taste and preferences
-- coding_style: Programming preferences
-- timezone: User's timezone
+- birthday: Birth date or age
+- location: Where they live or timezone
+- work: Job, company, role, current projects
 - interests: Hobbies and interests
-- communication: How user prefers to communicate
+- music_pref: Music taste and preferences
+- communication: How they prefer to interact
+- goals: Current goals or aspirations
+- family: Family members or pets
+- context: Important ongoing context
 </memory_instructions>
 `;
 
