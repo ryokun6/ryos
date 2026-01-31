@@ -26,7 +26,14 @@ export const MAX_SUMMARY_LENGTH = 180;
 export const MAX_CONTENT_LENGTH = 2000;
 
 /** Current schema version for migrations */
-export const MEMORY_SCHEMA_VERSION = 1;
+export const MEMORY_SCHEMA_VERSION = 2;
+
+/** Default expiration for short-term memories (7 days) */
+export const DEFAULT_SHORTTERM_TTL_DAYS = 7;
+export const DEFAULT_SHORTTERM_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Memory type: longterm (permanent) or shortterm (expires) */
+export type MemoryType = "longterm" | "shortterm";
 
 /**
  * Canonical memory keys that the AI should prefer.
@@ -66,6 +73,51 @@ export const CANONICAL_MEMORY_KEYS = [
   "instructions",   // How to respond, communication style
 ] as const;
 
+/**
+ * Canonical keys that default to longterm (permanent facts).
+ * These represent stable information that rarely changes.
+ */
+export const LONGTERM_CANONICAL_KEYS = [
+  "name",
+  "birthday", 
+  "location",
+  "work",
+  "skills",
+  "education",
+  "music_pref",
+  "food_pref",
+  "interests",
+  "entertainment",
+  "family",
+  "friends",
+  "pets",
+  "goals",
+  "preferences",
+  "instructions",
+] as const;
+
+/**
+ * Canonical keys that default to shortterm (temporary/current info).
+ * These represent current state that may change frequently.
+ */
+export const SHORTTERM_CANONICAL_KEYS = [
+  "current_focus",
+  "context",
+  "projects",
+] as const;
+
+/**
+ * Get the default memory type for a given key.
+ * Returns 'shortterm' for keys in SHORTTERM_CANONICAL_KEYS, 'longterm' otherwise.
+ */
+export function getDefaultMemoryType(key: string): MemoryType {
+  const normalizedKey = key.toLowerCase();
+  if ((SHORTTERM_CANONICAL_KEYS as readonly string[]).includes(normalizedKey)) {
+    return "shortterm";
+  }
+  return "longterm";
+}
+
 // ============================================================================
 // Key Patterns
 // ============================================================================
@@ -96,6 +148,10 @@ export interface MemoryEntry {
   summary: string;
   /** Unix timestamp of last update */
   updatedAt: number;
+  /** Memory type: longterm (permanent) or shortterm (temporary) */
+  type: MemoryType;
+  /** Unix timestamp when this memory expires (shortterm only) */
+  expiresAt?: number;
 }
 
 /**
@@ -120,6 +176,10 @@ export interface MemoryDetail {
   createdAt: number;
   /** Unix timestamp of last update */
   updatedAt: number;
+  /** Memory type: longterm (permanent) or shortterm (temporary) */
+  type: MemoryType;
+  /** Unix timestamp when this memory expires (shortterm only) */
+  expiresAt?: number;
 }
 
 /**
@@ -129,6 +189,51 @@ export interface MemoryOperationResult {
   success: boolean;
   message: string;
   entry?: MemoryEntry;
+}
+
+// ============================================================================
+// Expiration Helpers
+// ============================================================================
+
+/**
+ * Check if a memory entry is expired.
+ * Only shortterm memories can expire.
+ */
+export function isMemoryExpired(entry: MemoryEntry): boolean {
+  return (
+    entry.type === "shortterm" &&
+    entry.expiresAt !== undefined &&
+    entry.expiresAt < Date.now()
+  );
+}
+
+/**
+ * Filter memories into active (non-expired) and expired lists.
+ * Longterm memories are always active. Shortterm memories are active
+ * if they have no expiresAt or expiresAt is in the future.
+ */
+export function filterActiveMemories(
+  memories: MemoryEntry[]
+): { active: MemoryEntry[]; expired: MemoryEntry[] } {
+  const active: MemoryEntry[] = [];
+  const expired: MemoryEntry[] = [];
+
+  for (const entry of memories) {
+    if (isMemoryExpired(entry)) {
+      expired.push(entry);
+    } else {
+      active.push(entry);
+    }
+  }
+
+  return { active, expired };
+}
+
+/**
+ * Calculate expiration timestamp from days.
+ */
+export function calculateExpiresAt(days: number = DEFAULT_SHORTTERM_TTL_DAYS): number {
+  return Date.now() + days * 24 * 60 * 60 * 1000;
 }
 
 // ============================================================================
@@ -196,7 +301,38 @@ export async function saveMemoryIndex(
 }
 
 /**
- * Get or create the user's memory index
+ * Migrate a memory index from v1 to v2 schema.
+ * V1 memories don't have a type field - we add 'longterm' as default.
+ */
+export function migrateMemoryIndex(index: MemoryIndex): MemoryIndex {
+  if (index.version >= MEMORY_SCHEMA_VERSION) {
+    return index;
+  }
+
+  // Migrate v1 -> v2: Add type field to all memories
+  const migratedMemories = index.memories.map((entry) => {
+    // If entry already has a type, keep it (shouldn't happen in v1)
+    if ((entry as MemoryEntry).type) {
+      return entry;
+    }
+    
+    // Add type based on canonical key defaults
+    return {
+      ...entry,
+      type: getDefaultMemoryType(entry.key),
+      // No expiresAt for migrated memories - they become permanent longterm
+    } as MemoryEntry;
+  });
+
+  return {
+    memories: migratedMemories,
+    version: MEMORY_SCHEMA_VERSION,
+  };
+}
+
+/**
+ * Get or create the user's memory index.
+ * Automatically migrates v1 indexes to v2.
  */
 export async function getOrCreateMemoryIndex(
   redis: Redis,
@@ -204,6 +340,13 @@ export async function getOrCreateMemoryIndex(
 ): Promise<MemoryIndex> {
   const existing = await getMemoryIndex(redis, username);
   if (existing) {
+    // Check if migration is needed
+    if (existing.version < MEMORY_SCHEMA_VERSION) {
+      const migrated = migrateMemoryIndex(existing);
+      // Save migrated index
+      await saveMemoryIndex(redis, username, migrated);
+      return migrated;
+    }
     return existing;
   }
   return {
@@ -279,7 +422,9 @@ export async function addMemory(
   username: string,
   memoryKey: string,
   summary: string,
-  content: string
+  content: string,
+  type?: MemoryType,
+  expiresAt?: number
 ): Promise<MemoryOperationResult> {
   const normalizedKey = normalizeMemoryKey(memoryKey);
 
@@ -310,7 +455,7 @@ export async function addMemory(
   // Get current index
   const index = await getOrCreateMemoryIndex(redis, username);
 
-  // Check if key already exists
+  // Check if key already exists (including expired ones)
   const existingIdx = index.memories.findIndex((m) => m.key === normalizedKey);
   if (existingIdx !== -1) {
     return {
@@ -328,12 +473,22 @@ export async function addMemory(
   }
 
   const now = Date.now();
+  
+  // Determine memory type (use provided, or default based on key)
+  const memoryType = type ?? getDefaultMemoryType(normalizedKey);
+  
+  // Calculate expiration for shortterm memories
+  const finalExpiresAt = memoryType === "shortterm" 
+    ? (expiresAt ?? calculateExpiresAt())
+    : undefined;
 
   // Create entry
   const entry: MemoryEntry = {
     key: normalizedKey,
     summary: summary.trim(),
     updatedAt: now,
+    type: memoryType,
+    expiresAt: finalExpiresAt,
   };
 
   // Create detail
@@ -342,6 +497,8 @@ export async function addMemory(
     content: content.trim(),
     createdAt: now,
     updatedAt: now,
+    type: memoryType,
+    expiresAt: finalExpiresAt,
   };
 
   // Save both
@@ -351,7 +508,7 @@ export async function addMemory(
 
   return {
     success: true,
-    message: `Memory "${normalizedKey}" created successfully.`,
+    message: `Memory "${normalizedKey}" created successfully (${memoryType}).`,
     entry,
   };
 }
@@ -364,7 +521,9 @@ export async function updateMemory(
   username: string,
   memoryKey: string,
   summary: string,
-  content: string
+  content: string,
+  type?: MemoryType,
+  expiresAt?: number
 ): Promise<MemoryOperationResult> {
   const normalizedKey = normalizeMemoryKey(memoryKey);
 
@@ -405,12 +564,28 @@ export async function updateMemory(
   }
 
   const now = Date.now();
+  const existingEntry = index.memories[existingIdx];
+  
+  // Use provided type or keep existing type
+  const memoryType = type ?? existingEntry.type;
+  
+  // Calculate expiration
+  let finalExpiresAt: number | undefined;
+  if (memoryType === "shortterm") {
+    // For shortterm: use provided, or keep existing, or calculate new
+    finalExpiresAt = expiresAt ?? existingEntry.expiresAt ?? calculateExpiresAt();
+  } else {
+    // Longterm memories don't expire
+    finalExpiresAt = undefined;
+  }
 
   // Update entry
   const entry: MemoryEntry = {
     key: normalizedKey,
     summary: summary.trim(),
     updatedAt: now,
+    type: memoryType,
+    expiresAt: finalExpiresAt,
   };
 
   // Get existing detail for createdAt
@@ -423,6 +598,8 @@ export async function updateMemory(
     content: content.trim(),
     createdAt,
     updatedAt: now,
+    type: memoryType,
+    expiresAt: finalExpiresAt,
   };
 
   // Save both
@@ -432,7 +609,7 @@ export async function updateMemory(
 
   return {
     success: true,
-    message: `Memory "${normalizedKey}" updated successfully.`,
+    message: `Memory "${normalizedKey}" updated successfully (${memoryType}).`,
     entry,
   };
 }
@@ -445,7 +622,9 @@ export async function mergeMemory(
   username: string,
   memoryKey: string,
   summary: string,
-  content: string
+  content: string,
+  type?: MemoryType,
+  expiresAt?: number
 ): Promise<MemoryOperationResult> {
   const normalizedKey = normalizeMemoryKey(memoryKey);
 
@@ -465,10 +644,11 @@ export async function mergeMemory(
 
   if (existingIdx === -1) {
     // Key doesn't exist - create new
-    return addMemory(redis, username, memoryKey, summary, content);
+    return addMemory(redis, username, memoryKey, summary, content, type, expiresAt);
   }
 
   // Key exists - merge content
+  const existingEntry = index.memories[existingIdx];
   const existingDetail = await getMemoryDetail(redis, username, normalizedKey);
   const existingContent = existingDetail?.content || "";
   const mergedContent = existingContent
@@ -492,12 +672,25 @@ export async function mergeMemory(
   }
 
   const now = Date.now();
+  
+  // Use provided type or keep existing type
+  const memoryType = type ?? existingEntry.type;
+  
+  // Calculate expiration
+  let finalExpiresAt: number | undefined;
+  if (memoryType === "shortterm") {
+    finalExpiresAt = expiresAt ?? existingEntry.expiresAt ?? calculateExpiresAt();
+  } else {
+    finalExpiresAt = undefined;
+  }
 
   // Update entry with new summary
   const entry: MemoryEntry = {
     key: normalizedKey,
     summary: summary.trim(),
     updatedAt: now,
+    type: memoryType,
+    expiresAt: finalExpiresAt,
   };
 
   // Update detail with merged content
@@ -506,6 +699,8 @@ export async function mergeMemory(
     content: mergedContent,
     createdAt: existingDetail?.createdAt || now,
     updatedAt: now,
+    type: memoryType,
+    expiresAt: finalExpiresAt,
   };
 
   // Save both
@@ -515,7 +710,7 @@ export async function mergeMemory(
 
   return {
     success: true,
-    message: `Memory "${normalizedKey}" merged successfully.`,
+    message: `Memory "${normalizedKey}" merged successfully (${memoryType}).`,
     entry,
   };
 }
@@ -564,21 +759,90 @@ export async function upsertMemory(
   memoryKey: string,
   summary: string,
   content: string,
-  mode: "add" | "update" | "merge" = "add"
+  mode: "add" | "update" | "merge" = "add",
+  type?: MemoryType,
+  expiresAt?: number
 ): Promise<MemoryOperationResult> {
   switch (mode) {
     case "add":
-      return addMemory(redis, username, memoryKey, summary, content);
+      return addMemory(redis, username, memoryKey, summary, content, type, expiresAt);
     case "update":
-      return updateMemory(redis, username, memoryKey, summary, content);
+      return updateMemory(redis, username, memoryKey, summary, content, type, expiresAt);
     case "merge":
-      return mergeMemory(redis, username, memoryKey, summary, content);
+      return mergeMemory(redis, username, memoryKey, summary, content, type, expiresAt);
     default:
       return {
         success: false,
         message: `Invalid mode "${mode}". Use "add", "update", or "merge".`,
       };
   }
+}
+
+/**
+ * Promote a shortterm memory to longterm.
+ * Removes expiration and changes type.
+ */
+export async function promoteMemoryToLongterm(
+  redis: Redis,
+  username: string,
+  memoryKey: string
+): Promise<MemoryOperationResult> {
+  const normalizedKey = normalizeMemoryKey(memoryKey);
+  
+  // Get current index
+  const index = await getOrCreateMemoryIndex(redis, username);
+  
+  // Find existing entry
+  const existingIdx = index.memories.findIndex((m) => m.key === normalizedKey);
+  if (existingIdx === -1) {
+    return {
+      success: false,
+      message: `Memory with key "${normalizedKey}" not found.`,
+    };
+  }
+  
+  const existingEntry = index.memories[existingIdx];
+  
+  // Already longterm
+  if (existingEntry.type === "longterm") {
+    return {
+      success: true,
+      message: `Memory "${normalizedKey}" is already longterm.`,
+      entry: existingEntry,
+    };
+  }
+  
+  const now = Date.now();
+  
+  // Update entry to longterm
+  const entry: MemoryEntry = {
+    ...existingEntry,
+    type: "longterm",
+    expiresAt: undefined,
+    updatedAt: now,
+  };
+  
+  // Update detail
+  const existingDetail = await getMemoryDetail(redis, username, normalizedKey);
+  if (existingDetail) {
+    const detail: MemoryDetail = {
+      ...existingDetail,
+      type: "longterm",
+      expiresAt: undefined,
+      updatedAt: now,
+    };
+    await saveMemoryDetail(redis, username, detail);
+  }
+  
+  // Save index
+  index.memories[existingIdx] = entry;
+  await saveMemoryIndex(redis, username, index);
+  
+  return {
+    success: true,
+    message: `Memory "${normalizedKey}" promoted to longterm.`,
+    entry,
+  };
 }
 
 /**
@@ -596,18 +860,44 @@ export async function listMemoryKeys(
 }
 
 /**
+ * Get only active (non-expired) memories for a user.
+ * This is the primary function for AI prompts - excludes expired shortterm memories.
+ */
+export async function getActiveMemoryIndex(
+  redis: Redis,
+  username: string
+): Promise<MemoryIndex | null> {
+  const index = await getMemoryIndex(redis, username);
+  if (!index) {
+    return null;
+  }
+
+  const { active } = filterActiveMemories(index.memories);
+  
+  return {
+    memories: active,
+    version: index.version,
+  };
+}
+
+/**
  * Get memory summaries for system prompt injection
  * Returns a formatted string for inclusion in AI context
+ * Only includes active (non-expired) memories.
  */
 export async function getMemorySummariesForPrompt(
   redis: Redis,
   username: string
 ): Promise<string | null> {
-  const index = await getMemoryIndex(redis, username);
+  const index = await getActiveMemoryIndex(redis, username);
   if (!index || index.memories.length === 0) {
     return null;
   }
 
-  const lines = index.memories.map((m) => `- ${m.key}: ${m.summary}`);
+  const lines = index.memories.map((m) => {
+    // Add [temp] indicator for shortterm memories
+    const typeIndicator = m.type === "shortterm" ? " [temp]" : "";
+    return `- ${m.key}${typeIndicator}: ${m.summary}`;
+  });
   return lines.join("\n");
 }

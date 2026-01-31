@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { appIds } from "../../../src/config/appIds.js";
-import { THEME_IDS, LANGUAGE_CODES, VFS_PATHS, MEMORY_MODES } from "./types.js";
+import { THEME_IDS, LANGUAGE_CODES, VFS_PATHS, MEMORY_MODES, MEMORY_TYPES } from "./types.js";
 import {
   MAX_KEY_LENGTH,
   MAX_SUMMARY_LENGTH,
@@ -579,6 +579,21 @@ export const memoryWriteSchema = z.object({
     .default("add")
     .describe(
       "'add' creates new memory (fails if key exists), 'update' replaces existing (fails if doesn't exist), 'merge' appends to existing or creates new."
+    ),
+  type: z
+    .enum(MEMORY_TYPES)
+    .optional()
+    .describe(
+      "Memory type: 'longterm' for permanent facts (name, preferences, skills), 'shortterm' for current/temporary info (current project, recent events). Defaults based on key."
+    ),
+  expiresInDays: z
+    .number()
+    .int()
+    .min(1)
+    .max(90)
+    .optional()
+    .describe(
+      "For shortterm memories only: days until expiration (1-90). Defaults to 7 days. Ignored for longterm memories."
     ),
 });
 

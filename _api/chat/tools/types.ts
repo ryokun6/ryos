@@ -278,6 +278,10 @@ export interface InfiniteMacControlOutput {
 export const MEMORY_MODES = ["add", "update", "merge"] as const;
 export type MemoryMode = typeof MEMORY_MODES[number];
 
+// Memory types
+export const MEMORY_TYPES = ["longterm", "shortterm"] as const;
+export type MemoryType = typeof MEMORY_TYPES[number];
+
 // Memory write input
 export interface MemoryWriteInput {
   /** Short key for this memory (e.g., "name", "music_pref") */
@@ -288,6 +292,10 @@ export interface MemoryWriteInput {
   content: string;
   /** Write mode: "add" (new), "update" (replace), "merge" (append) */
   mode?: MemoryMode;
+  /** Memory type: "longterm" (permanent) or "shortterm" (temporary) */
+  type?: MemoryType;
+  /** For shortterm memories: days until expiration (1-90, default 7) */
+  expiresInDays?: number;
 }
 
 // Memory write output
@@ -295,7 +303,12 @@ export interface MemoryWriteOutput {
   success: boolean;
   message: string;
   /** Current memories after the operation (for AI awareness) */
-  currentMemories: Array<{ key: string; summary: string }>;
+  currentMemories: Array<{ 
+    key: string; 
+    summary: string;
+    type: MemoryType;
+    expiresAt?: number;
+  }>;
 }
 
 // Memory read input
@@ -313,6 +326,12 @@ export interface MemoryReadOutput {
   content: string | null;
   /** Summary (null if not found) */
   summary: string | null;
+  /** Memory type */
+  type?: MemoryType;
+  /** Expiration timestamp for shortterm memories */
+  expiresAt?: number;
+  /** Whether this memory is expired */
+  isExpired?: boolean;
 }
 
 // Memory delete input
