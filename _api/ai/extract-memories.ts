@@ -23,7 +23,11 @@ import {
   getMemoryDetail,
   upsertMemory,
   deleteMemory,
+  promoteMemoryToLongterm,
+  filterActiveMemories,
+  calculateExpiresAt,
   MAX_MEMORIES_PER_USER,
+  type MemoryType,
 } from "../_utils/_memory.js";
 
 export const runtime = "nodejs";
@@ -48,7 +52,18 @@ const extractionSchema = z.object({
       .describe("How confident this is worth remembering"),
     relatedKeys: z.array(z.string()).optional()
       .describe("Existing memory keys that cover the same/related topic and should be merged with this"),
+    type: z.enum(["longterm", "shortterm"])
+      .describe("'longterm' for permanent facts (name, preferences), 'shortterm' for current/temporary info (current project, recent events)"),
+    expiresInDays: z.number().int().min(1).max(90).optional()
+      .describe("For shortterm only: days until expiration (default 7). Use 14-30 for longer projects, 1-3 for very temporary info."),
   })).describe("List of memories to extract from the conversation"),
+  promotions: z.array(z.object({
+    key: z.string().describe("Existing shortterm memory key to promote to longterm"),
+    reason: z.string().describe("Why this should become permanent"),
+  })).optional()
+    .describe("Shortterm memories that should be promoted to longterm (became permanent facts)"),
+  deleteKeys: z.array(z.string()).optional()
+    .describe("Memory keys that should be permanently deleted (obsolete, incorrect, or user requested removal)"),
 });
 
 // Phase 2 Schema: Consolidate new info with existing memory content
@@ -113,6 +128,24 @@ CANONICAL KEYS (prefer these when the topic matches):
 - preferences: General preferences
 - instructions: How to respond to them
 
+MEMORY TYPES:
+- longterm: Permanent facts that rarely change (name, birthday, preferences, skills, instructions)
+- shortterm: Current/temporary info that will change (current project, recent events, ongoing context)
+
+TYPE CLASSIFICATION:
+- Identity info (name, birthday, location) → longterm
+- Stable preferences (music, food, interests) → longterm
+- Skills, education, work history → longterm
+- Instructions for how to respond → longterm
+- Current work/projects → shortterm (7-14 day expiration)
+- Recent events/context → shortterm (7 day expiration)
+- Temporary states or situations → shortterm (1-7 day expiration)
+
+EXPIRATION (shortterm only):
+- Default: 7 days
+- Longer projects: 14-30 days
+- Very temporary info: 1-3 days
+
 EXTRACTION RULES:
 1. Use canonical keys when the topic matches
 2. Extract only NEW information from the conversation
@@ -122,7 +155,14 @@ EXTRACTION RULES:
 4. Use confidence "high" for directly stated facts, "medium" for reasonable inferences, "low" for weak signals
 5. Don't store sensitive data (passwords, financial info)
 6. Use lowercase keys with underscores
-7. If nothing noteworthy, return empty array`;
+7. If nothing noteworthy, return empty array
+8. Classify each memory as longterm or shortterm based on the rules above
+
+CONSOLIDATION:
+- Review existing shortterm memories (especially expired ones shown below)
+- If a shortterm memory has become a permanent fact, add it to "promotions"
+- If a memory is obsolete, incorrect, or user requested removal, add its key to "deleteKeys"
+- Expired memories are still in storage but hidden from the AI - you can promote them back if still relevant`;
 
 // Phase 2: Consolidate new info with existing memory content
 const CONSOLIDATION_PROMPT = `You are consolidating user memory information.
@@ -227,11 +267,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   });
 
   try {
-    // Get existing memory summaries (not full content yet - that's fetched on demand)
+    // Get existing memory summaries with type info (not full content yet - that's fetched on demand)
     const existingKeys = currentIndex?.memories.map(m => m.key) || [];
-    const existingSummariesText = currentIndex && currentIndex.memories.length > 0
-      ? currentIndex.memories.map(m => `- ${m.key}: ${m.summary}`).join("\n")
+    
+    // Separate active and expired memories for the prompt
+    const { active: activeMemories, expired: expiredMemories } = currentIndex
+      ? filterActiveMemories(currentIndex.memories)
+      : { active: [], expired: [] };
+    
+    const activeSummariesText = activeMemories.length > 0
+      ? activeMemories.map(m => {
+          const typeLabel = m.type === "shortterm" ? " [shortterm]" : " [longterm]";
+          const expiresLabel = m.expiresAt 
+            ? ` (expires: ${new Date(m.expiresAt).toLocaleDateString()})` 
+            : "";
+          return `- ${m.key}${typeLabel}${expiresLabel}: ${m.summary}`;
+        }).join("\n")
       : "None";
+    
+    const expiredSummariesText = expiredMemories.length > 0
+      ? expiredMemories.map(m => {
+          const expiredDate = m.expiresAt ? new Date(m.expiresAt).toLocaleDateString() : "unknown";
+          return `- ${m.key} (expired ${expiredDate}): ${m.summary}`;
+        }).join("\n")
+      : "None";
+    
+    const existingSummariesText = `ACTIVE MEMORIES:\n${activeSummariesText}\n\nEXPIRED MEMORIES (still in storage, can be promoted):\n${expiredSummariesText}`;
 
     // Phase 1: Extract new memories and identify related existing keys
     logger.info("Phase 1: Extracting new memories", { username });
@@ -313,8 +374,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         logger.info("Phase 2: Consolidation complete", { username, key, mergedFrom: relatedKeys });
       }
 
-      // Store the memory
+      // Store the memory with type and expiration
       const mode = existingKeys.includes(key) ? "update" : "add";
+      const memType = mem.type as MemoryType;
+      const expiresAt = memType === "shortterm" 
+        ? calculateExpiresAt(mem.expiresInDays || 7)
+        : undefined;
       
       const storeResult = await upsertMemory(
         redis,
@@ -322,12 +387,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         key,
         finalSummary,
         finalContent,
-        mode
+        mode,
+        memType,
+        expiresAt
       );
 
       if (storeResult.success) {
         stored++;
-        logger.info("Stored memory", { username, key, confidence: mem.confidence, mode });
+        logger.info("Stored memory", { username, key, confidence: mem.confidence, mode, type: memType });
         
         // Delete merged keys
         for (const oldKey of keysToDelete) {
@@ -343,14 +410,60 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    logger.info("Memory extraction complete", { username, extracted: stored });
+    // Process promotions (shortterm → longterm)
+    let promoted = 0;
+    if (extractionResult.promotions && extractionResult.promotions.length > 0) {
+      logger.info("Processing promotions", { username, count: extractionResult.promotions.length });
+      
+      for (const promotion of extractionResult.promotions) {
+        const normalizedKey = promotion.key.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+        if (!existingKeys.includes(normalizedKey)) {
+          logger.warn("Promotion skipped - key not found", { username, key: normalizedKey });
+          continue;
+        }
+        
+        const promoteResult = await promoteMemoryToLongterm(redis, username, normalizedKey);
+        if (promoteResult.success) {
+          promoted++;
+          logger.info("Promoted memory to longterm", { username, key: normalizedKey, reason: promotion.reason });
+        } else {
+          logger.warn("Failed to promote memory", { username, key: normalizedKey, error: promoteResult.message });
+        }
+      }
+    }
+
+    // Process explicit deletions (only when AI specifically recommends)
+    let deleted = 0;
+    if (extractionResult.deleteKeys && extractionResult.deleteKeys.length > 0) {
+      logger.info("Processing deletions", { username, count: extractionResult.deleteKeys.length });
+      
+      for (const keyToDelete of extractionResult.deleteKeys) {
+        const normalizedKey = keyToDelete.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+        if (!existingKeys.includes(normalizedKey)) {
+          logger.warn("Deletion skipped - key not found", { username, key: normalizedKey });
+          continue;
+        }
+        
+        const deleteResult = await deleteMemory(redis, username, normalizedKey);
+        if (deleteResult.success) {
+          deleted++;
+          logger.info("Deleted memory", { username, key: normalizedKey });
+        } else {
+          logger.warn("Failed to delete memory", { username, key: normalizedKey, error: deleteResult.message });
+        }
+      }
+    }
+
+    logger.info("Memory extraction complete", { username, extracted: stored, promoted, deleted });
     logger.response(200, Date.now() - startTime);
 
     return res.status(200).json({
       extracted: stored,
-      analyzed: result.memories.length,
-      message: stored > 0 
-        ? `Extracted ${stored} memories from conversation`
+      promoted,
+      deleted,
+      analyzed: extractionResult.memories.length,
+      message: stored > 0 || promoted > 0 || deleted > 0
+        ? `Processed memories: ${stored} extracted, ${promoted} promoted, ${deleted} deleted`
         : "No noteworthy memories found",
     });
 

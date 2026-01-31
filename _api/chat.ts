@@ -21,7 +21,7 @@ import {
   TOOL_USAGE_INSTRUCTIONS,
   MEMORY_INSTRUCTIONS,
 } from "./_utils/_aiPrompts.js";
-import { getMemoryIndex, type MemoryIndex } from "./_utils/_memory.js";
+import { getActiveMemoryIndex, type MemoryIndex } from "./_utils/_memory.js";
 import { SUPPORTED_AI_MODELS } from "./_utils/_aiModels.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { validateAuth } from "./_utils/auth/index.js";
@@ -650,7 +650,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let userMemories: MemoryIndex | null = null;
     if (username && validationResult.valid) {
       try {
-        userMemories = await getMemoryIndex(redis, username);
+        userMemories = await getActiveMemoryIndex(redis, username);
         if (userMemories) {
           log(`Loaded ${userMemories.memories.length} memories for user ${username}`);
         }

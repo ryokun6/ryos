@@ -28,6 +28,9 @@ import {
   getMemoryDetail,
   upsertMemory,
   deleteMemory,
+  calculateExpiresAt,
+  isMemoryExpired,
+  type MemoryType,
 } from "../../_utils/_memory.js";
 
 /**
@@ -194,9 +197,9 @@ export async function executeMemoryWrite(
   input: MemoryWriteInput,
   context: MemoryToolContext
 ): Promise<MemoryWriteOutput> {
-  const { key, summary, content, mode = "add" } = input;
+  const { key, summary, content, mode = "add", type, expiresInDays } = input;
 
-  context.log(`[memoryWrite] Writing memory "${key}" with mode "${mode}"`);
+  context.log(`[memoryWrite] Writing memory "${key}" with mode "${mode}", type "${type || 'default'}"`);
 
   // Validate authentication
   if (!context.username) {
@@ -217,6 +220,12 @@ export async function executeMemoryWrite(
     };
   }
 
+  // Calculate expiration if this is a shortterm memory with custom days
+  let expiresAt: number | undefined;
+  if (type === "shortterm" && expiresInDays !== undefined) {
+    expiresAt = calculateExpiresAt(expiresInDays);
+  }
+
   // Execute the memory operation
   const result = await upsertMemory(
     context.redis,
@@ -224,14 +233,18 @@ export async function executeMemoryWrite(
     key,
     summary,
     content,
-    mode
+    mode,
+    type as MemoryType | undefined,
+    expiresAt
   );
 
-  // Get updated memory list
+  // Get updated memory list (includes all memories, not just active)
   const index = await getMemoryIndex(context.redis, context.username);
   const currentMemories = index?.memories.map((m) => ({
     key: m.key,
     summary: m.summary,
+    type: m.type,
+    expiresAt: m.expiresAt,
   })) || [];
 
   context.log(
@@ -295,18 +308,26 @@ export async function executeMemoryRead(
     };
   }
 
-  // Also get the summary from the index
+  // Also get the entry from the index for summary and to check expiration
   const index = await getMemoryIndex(context.redis, context.username);
   const entry = index?.memories.find((m) => m.key === key.toLowerCase());
+  
+  // Check if expired
+  const expired = entry ? isMemoryExpired(entry) : false;
 
-  context.log(`[memoryRead] Found memory "${key}" (${detail.content.length} chars)`);
+  context.log(`[memoryRead] Found memory "${key}" (${detail.content.length} chars, type: ${detail.type}, expired: ${expired})`);
 
   return {
     success: true,
-    message: `Retrieved memory "${key}".`,
+    message: expired 
+      ? `Retrieved memory "${key}" (note: this memory has expired and is not shown in your active memories).`
+      : `Retrieved memory "${key}".`,
     key,
     content: detail.content,
     summary: entry?.summary || null,
+    type: detail.type,
+    expiresAt: detail.expiresAt,
+    isExpired: expired,
   };
 }
 
