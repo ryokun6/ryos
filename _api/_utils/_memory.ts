@@ -20,13 +20,51 @@ export const MAX_MEMORIES_PER_USER = 50;
 export const MAX_KEY_LENGTH = 30;
 
 /** Maximum length for memory summary */
-export const MAX_SUMMARY_LENGTH = 150;
+export const MAX_SUMMARY_LENGTH = 180;
 
 /** Maximum length for memory content */
 export const MAX_CONTENT_LENGTH = 2000;
 
 /** Current schema version for migrations */
 export const MEMORY_SCHEMA_VERSION = 1;
+
+/**
+ * Canonical memory keys that the AI should prefer.
+ * These are stable identifiers for common memory categories.
+ * AI handles matching related topics to these keys.
+ */
+export const CANONICAL_MEMORY_KEYS = [
+  // Identity
+  "name",           // User's name, nickname, how to address them
+  "birthday",       // Birthday, age
+  "location",       // Where they live, timezone
+  
+  // Work & Education  
+  "work",           // Job, company, role, career context
+  "skills",         // Skills, expertise, tech stack
+  "education",      // School, degree, field of study
+  "projects",       // Current projects, side projects
+  
+  // Interests & Preferences
+  "music_pref",     // Music taste, favorite artists/bands
+  "food_pref",      // Food preferences, diet, favorite cuisines
+  "interests",      // Hobbies, general interests
+  "entertainment",  // Movies, shows, games, books
+  
+  // Relationships
+  "family",         // Family members
+  "friends",        // Friends, social connections
+  "pets",           // Pets, animals
+  
+  // Goals & Context
+  "goals",          // Goals, aspirations, plans
+  "current_focus",  // What they're working on now
+  "context",        // Important ongoing life context
+  
+  // Meta
+  "preferences",    // General preferences, likes/dislikes
+  "instructions",   // How to respond, communication style
+] as const;
 
 // ============================================================================
 // Key Patterns
