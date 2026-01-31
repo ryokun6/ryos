@@ -7,7 +7,12 @@
 
 import { z } from "zod";
 import { appIds } from "../../../src/config/appIds.js";
-import { THEME_IDS, LANGUAGE_CODES, VFS_PATHS } from "./types.js";
+import { THEME_IDS, LANGUAGE_CODES, VFS_PATHS, MEMORY_MODES } from "./types.js";
+import {
+  MAX_KEY_LENGTH,
+  MAX_SUMMARY_LENGTH,
+  MAX_CONTENT_LENGTH,
+} from "../../_utils/_memory.js";
 
 /**
  * Helper to normalize optional string values
@@ -534,4 +539,69 @@ export const infiniteMacControlSchema = z.object({
       path: ["key"],
     });
   }
+});
+
+// ============================================================================
+// Memory Tool Schemas
+// ============================================================================
+
+/**
+ * Memory write schema
+ * Used to save/update user memories
+ */
+export const memoryWriteSchema = z.object({
+  key: z
+    .string()
+    .min(1)
+    .max(MAX_KEY_LENGTH)
+    .regex(/^[a-z][a-z0-9_]*$/, {
+      message: "Key must start with a letter and contain only lowercase letters, numbers, and underscores",
+    })
+    .describe(
+      "Short key for this memory (e.g., 'name', 'music_pref', 'work_context'). Must start with a letter, contain only lowercase letters, numbers, underscores."
+    ),
+  summary: z
+    .string()
+    .min(1)
+    .max(MAX_SUMMARY_LENGTH)
+    .describe(
+      `Brief 1-2 sentence summary of the memory (max ${MAX_SUMMARY_LENGTH} chars). This is always visible to you.`
+    ),
+  content: z
+    .string()
+    .min(1)
+    .max(MAX_CONTENT_LENGTH)
+    .describe(
+      `Full detailed content of the memory (max ${MAX_CONTENT_LENGTH} chars). Retrieved via memoryRead.`
+    ),
+  mode: z
+    .enum(MEMORY_MODES)
+    .default("add")
+    .describe(
+      "'add' creates new memory (fails if key exists), 'update' replaces existing (fails if doesn't exist), 'merge' appends to existing or creates new."
+    ),
+});
+
+/**
+ * Memory read schema
+ * Used to retrieve full memory details
+ */
+export const memoryReadSchema = z.object({
+  key: z
+    .string()
+    .min(1)
+    .max(MAX_KEY_LENGTH)
+    .describe("The memory key to retrieve full details for."),
+});
+
+/**
+ * Memory delete schema
+ * Used to delete a specific memory
+ */
+export const memoryDeleteSchema = z.object({
+  key: z
+    .string()
+    .min(1)
+    .max(MAX_KEY_LENGTH)
+    .describe("The memory key to delete."),
 });

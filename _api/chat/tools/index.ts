@@ -33,14 +33,28 @@
  * ```
  */
 
-import type { ServerToolContext } from "./types.js";
+import type { ServerToolContext, MemoryWriteInput, MemoryReadInput, MemoryDeleteInput } from "./types.js";
 import * as schemas from "./schemas.js";
-import { executeGenerateHtml, executeSearchSongs } from "./executors.js";
+import {
+  executeGenerateHtml,
+  executeSearchSongs,
+  executeMemoryWrite,
+  executeMemoryRead,
+  executeMemoryDelete,
+  type MemoryToolContext,
+} from "./executors.js";
 
 // Re-export types and schemas for external use
 export * from "./types.js";
 export * from "./schemas.js";
-export { executeGenerateHtml, executeSearchSongs } from "./executors.js";
+export {
+  executeGenerateHtml,
+  executeSearchSongs,
+  executeMemoryWrite,
+  executeMemoryRead,
+  executeMemoryDelete,
+  type MemoryToolContext,
+} from "./executors.js";
 
 /**
  * Tool descriptions - centralized for easy maintenance
@@ -128,6 +142,24 @@ export const TOOL_DESCRIPTIONS = {
     "'pause'/'unpause' controls emulation. " +
     "IMPORTANT: Mouse coordinates are 1:1 with the screenshot pixels - use exact pixel positions from the image. " +
     "Mouse control works best on classic Mac OS (System 1-9). Mac OS X systems have limited mouse support due to emulator constraints.",
+
+  // Memory Tools
+  memoryWrite:
+    "Remember information about the user. Use when: " +
+    "1) User explicitly asks to remember something ('remember my name is...'), " +
+    "2) You notice important info (name, preferences, habits, work context), " +
+    "3) You want to update existing memory with new info. " +
+    "The 'currentMemories' in the response shows what you know after the operation. " +
+    "Modes: 'add' (new key), 'update' (replace existing), 'merge' (append to existing or create new).",
+  
+  memoryRead:
+    "Retrieve full details of a specific memory by key. " +
+    "Use when the summary in your context isn't enough and you need the complete content. " +
+    "Memory summaries are always visible in your system state under USER MEMORY.",
+  
+  memoryDelete:
+    "Delete a specific memory by key. " +
+    "Use only when the user explicitly asks to forget something or when information is no longer relevant.",
 } as const;
 
 /**
@@ -136,10 +168,10 @@ export const TOOL_DESCRIPTIONS = {
  * This function creates a tools configuration object that can be passed
  * directly to the Vercel AI SDK's streamText function.
  * 
- * @param context - Server-side context with logging and environment
+ * @param context - Server-side context with logging, environment, and optional memory support
  * @returns Tools configuration for streamText
  */
-export function createChatTools(context: ServerToolContext) {
+export function createChatTools(context: MemoryToolContext) {
   return {
     // ============================================================================
     // App Control Tools (Client-side execution)
@@ -284,6 +316,31 @@ export function createChatTools(context: ServerToolContext) {
         }
         // For other outputs, return as JSON
         return { type: "json" as const, value: output };
+      },
+    },
+
+    // ============================================================================
+    // Memory Tools (Server-side execution)
+    // ============================================================================
+    memoryWrite: {
+      description: TOOL_DESCRIPTIONS.memoryWrite,
+      inputSchema: schemas.memoryWriteSchema,
+      execute: async (input: MemoryWriteInput) => {
+        return executeMemoryWrite(input, context);
+      },
+    },
+    memoryRead: {
+      description: TOOL_DESCRIPTIONS.memoryRead,
+      inputSchema: schemas.memoryReadSchema,
+      execute: async (input: MemoryReadInput) => {
+        return executeMemoryRead(input, context);
+      },
+    },
+    memoryDelete: {
+      description: TOOL_DESCRIPTIONS.memoryDelete,
+      inputSchema: schemas.memoryDeleteSchema,
+      execute: async (input: MemoryDeleteInput) => {
+        return executeMemoryDelete(input, context);
       },
     },
   };

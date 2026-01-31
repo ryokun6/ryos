@@ -19,7 +19,9 @@ import {
   CODE_GENERATION_INSTRUCTIONS,
   CHAT_INSTRUCTIONS,
   TOOL_USAGE_INSTRUCTIONS,
+  MEMORY_INSTRUCTIONS,
 } from "./_utils/_aiPrompts.js";
+import { getMemoryIndex, type MemoryIndex } from "./_utils/_memory.js";
 import { SUPPORTED_AI_MODELS } from "./_utils/_aiModels.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { validateAuth } from "./_utils/auth/index.js";
@@ -169,6 +171,7 @@ const STATIC_SYSTEM_PROMPT = [
   RYO_PERSONA_INSTRUCTIONS,
   CHAT_INSTRUCTIONS,
   TOOL_USAGE_INSTRUCTIONS,
+  MEMORY_INSTRUCTIONS,
   CODE_GENERATION_INSTRUCTIONS,
 ].join("\n");
 
@@ -178,7 +181,7 @@ const CACHE_CONTROL_OPTIONS = {
   },
 } as const;
 
-const generateDynamicSystemPrompt = (systemState?: SystemState) => {
+const generateDynamicSystemPrompt = (systemState?: SystemState, userMemories?: MemoryIndex | null) => {
   const now = new Date();
   const timeString = now.toLocaleTimeString("en-US", {
     timeZone: "America/Los_Angeles",
@@ -229,6 +232,16 @@ User Locale: ${systemState.locale}`;
       .join(", ");
     prompt += `
 User Location: ${location} (inferred from IP, may be inaccurate)`;
+  }
+
+  // User Memory Section (Layer 1 - summaries always visible)
+  if (userMemories && userMemories.memories.length > 0) {
+    prompt += `\n\n## USER MEMORY`;
+    prompt += `\nYou have ${userMemories.memories.length} memories about this user:`;
+    for (const mem of userMemories.memories) {
+      prompt += `\n- ${mem.key}: ${mem.summary}`;
+    }
+    prompt += `\nUse memoryRead("key") to get full details for any memory.`;
   }
 
   // Applications Section
@@ -633,6 +646,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const approxTokens = staticSystemPrompt.length / 4; // rough estimate
     log(`Approximate prompt tokens: ${Math.round(approxTokens)}`);
 
+    // Fetch user memories for authenticated users
+    let userMemories: MemoryIndex | null = null;
+    if (username && validationResult.valid) {
+      try {
+        userMemories = await getMemoryIndex(redis, username);
+        if (userMemories) {
+          log(`Loaded ${userMemories.memories.length} memories for user ${username}`);
+        }
+      } catch (memErr) {
+        logError("Error fetching user memories:", memErr);
+        // Continue without memories - not a fatal error
+      }
+    }
+
     // -------------------------------------------------------------
     // System messages – first the LARGE static prompt (cached),
     // then the smaller dynamic prompt (not cached)
@@ -649,7 +676,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 2) Dynamic, user-specific system state (don't cache)
     const dynamicSystemMessage = {
       role: "system" as const,
-      content: generateDynamicSystemPrompt(systemState),
+      content: generateDynamicSystemPrompt(systemState, userMemories),
     };
 
     // Create tools with server-side context for logging and API access
@@ -664,6 +691,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
         YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
       },
+      // Memory tool context - only available for authenticated users
+      username: validationResult.valid ? username : null,
+      redis: validationResult.valid ? redis : undefined,
     });
 
     // Convert UIMessages to ModelMessages for the AI model

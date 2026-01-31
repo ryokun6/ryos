@@ -269,3 +269,60 @@ export interface InfiniteMacControlOutput {
     description: string;
   }>;
 }
+
+// ============================================================================
+// Memory Tool Types
+// ============================================================================
+
+// Memory write modes
+export const MEMORY_MODES = ["add", "update", "merge"] as const;
+export type MemoryMode = typeof MEMORY_MODES[number];
+
+// Memory write input
+export interface MemoryWriteInput {
+  /** Short key for this memory (e.g., "name", "music_pref") */
+  key: string;
+  /** Brief 1-2 sentence summary */
+  summary: string;
+  /** Full detailed content */
+  content: string;
+  /** Write mode: "add" (new), "update" (replace), "merge" (append) */
+  mode?: MemoryMode;
+}
+
+// Memory write output
+export interface MemoryWriteOutput {
+  success: boolean;
+  message: string;
+  /** Current memories after the operation (for AI awareness) */
+  currentMemories: Array<{ key: string; summary: string }>;
+}
+
+// Memory read input
+export interface MemoryReadInput {
+  /** The memory key to retrieve full details for */
+  key: string;
+}
+
+// Memory read output
+export interface MemoryReadOutput {
+  success: boolean;
+  message: string;
+  key: string;
+  /** Full content (null if not found) */
+  content: string | null;
+  /** Summary (null if not found) */
+  summary: string | null;
+}
+
+// Memory delete input
+export interface MemoryDeleteInput {
+  /** The memory key to delete */
+  key: string;
+}
+
+// Memory delete output
+export interface MemoryDeleteOutput {
+  success: boolean;
+  message: string;
+}

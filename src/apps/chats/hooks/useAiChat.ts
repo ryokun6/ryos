@@ -2144,6 +2144,44 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const clearChats = useCallback(() => {
     console.log("Clearing AI chats");
 
+    // --- Extract memories before clearing (async, fire and forget) ---
+    // Capture current messages before we clear them
+    const messagesToAnalyze = [...aiMessages];
+    const currentUsername = username;
+    const currentToken = authToken;
+
+    // Only extract if user is logged in and there are messages worth analyzing
+    if (currentUsername && currentToken && messagesToAnalyze.length > 2) {
+      console.log("[clearChats] Triggering async memory extraction...");
+      
+      // Fire and forget - don't await, don't block the UI
+      fetch(getApiUrl("/api/ai/extract-memories"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentToken}`,
+          "X-Username": currentUsername,
+        },
+        body: JSON.stringify({
+          messages: messagesToAnalyze.map(msg => ({
+            role: msg.role,
+            parts: msg.parts,
+          })),
+        }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.extracted > 0) {
+            console.log(`[clearChats] Extracted ${data.extracted} memories from conversation`);
+          } else {
+            console.log("[clearChats] No memories extracted:", data.message);
+          }
+        })
+        .catch(err => {
+          console.warn("[clearChats] Memory extraction failed (non-blocking):", err);
+        });
+    }
+
     // --- Reset speech & highlight state so the next reply starts clean ---
     // Stop any ongoing TTS playback or pending requests
     stopTts();
@@ -2170,7 +2208,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     // Update both the Zustand store and the SDK state directly
     setAiMessages([initialMessage]);
     setSdkMessages([initialMessage]);
-  }, [setAiMessages, setSdkMessages, stopTts]);
+  }, [setAiMessages, setSdkMessages, stopTts, aiMessages, username, authToken]);
 
   // --- Dialog States & Handlers ---
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
