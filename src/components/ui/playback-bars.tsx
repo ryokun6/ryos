@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
 interface PlaybackBarsProps {
   className?: string;
@@ -17,11 +17,10 @@ export function PlaybackBars({
   barCount = 5,
 }: PlaybackBarsProps) {
   const MIN_SCALE = 0.2;
-  const [randomScales, setRandomScales] = useState<number[][]>([]);
-  const [randomDurations, setRandomDurations] = useState<number[]>([]);
 
-  // Generate random animation values on mount
-  useEffect(() => {
+  // Generate random animation values when barCount changes
+  // Using useMemo instead of useState+useEffect to compute derived values
+  const { randomScales, randomDurations } = useMemo(() => {
     // Create random animation targets for each bar
     const scales = Array.from({ length: barCount }).map(() => {
       // Generate 3-5 random points for each bar animation
@@ -36,8 +35,7 @@ export function PlaybackBars({
       () => 0.7 + Math.random() * 0.6
     );
 
-    setRandomScales(scales);
-    setRandomDurations(durations);
+    return { randomScales: scales, randomDurations: durations };
   }, [barCount]);
 
   return (

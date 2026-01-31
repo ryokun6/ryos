@@ -293,10 +293,8 @@ export function LyricsSyncMode({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  // Initialize refs array
-  useEffect(() => {
-    lineRefs.current = lineRefs.current.slice(0, lines.length);
-  }, [lines.length]);
+  // Note: lineRefs array is populated during render via setRef callbacks
+  // No need for an effect to resize it - React handles this naturally
 
   // Pre-compute romanized text for all lines (only when lines/romanization/furiganaMap change)
   const romanizedTexts = useMemo(() => {
