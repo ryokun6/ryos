@@ -2508,7 +2508,8 @@
         "room": "Room",
         "memories": "Memories",
         "noMemories": "No memories stored",
-        "memoryUpdated": "Updated"
+        "memoryKey": "Key",
+        "memorySummary": "Summary"
       },
       "dialogs": {
         "deleteTitle": "Delete {{type}}?",
