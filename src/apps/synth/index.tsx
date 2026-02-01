@@ -1,49 +1,11 @@
 import { BaseApp } from "../base/types";
 import { SynthAppComponent } from "./components/SynthAppComponent";
 
-export const helpItems = [
-  {
-    icon: "🎹",
-    title: "Virtual Keyboard",
-    description: "Play notes with on-screen keys or computer keyboard",
-  },
-  {
-    icon: "🎛️",
-    title: "Controls Panel",
-    description: "Toggle CONTROLS to tweak oscillators, envelope & effects",
-  },
-  {
-    icon: "🔊",
-    title: "Presets",
-    description: "Save, load & manage custom sound presets",
-  },
-  {
-    icon: "🌈",
-    title: "3D Waveform",
-    description: "Live animated waveform when controls panel is open",
-  },
-  {
-    icon: "🎚️",
-    title: "Effects",
-    description: "Reverb, delay, distortion, chorus, phaser & bit-crusher",
-  },
-  {
-    icon: "🎵",
-    title: "Octave Shift",
-    description: "Use -/+ keys or buttons to shift octaves up or down",
-  },
-];
+// Re-export metadata from separate file to avoid eager loading of components
+export { appMetadata, helpItems } from "./metadata";
 
-export const appMetadata = {
-  name: "Synth",
-  version: "0.1",
-  creator: {
-    name: "Ryo Lu",
-    url: "https://ryo.lu",
-  },
-  github: "https://github.com/ryokun6/ryos",
-  icon: "/icons/default/synth.png",
-};
+// Import for local use
+import { appMetadata, helpItems } from "./metadata";
 
 export const SynthApp: BaseApp = {
   id: "synth",

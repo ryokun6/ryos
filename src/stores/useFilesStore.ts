@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import type { OsThemeId } from "@/themes/types";
-import { appRegistry } from "@/config/appRegistry";
+import { getAppBasicInfoList } from "@/config/appRegistryData";
 
 // Define the structure for a file system item (metadata)
 export interface FileSystemItem {
@@ -1092,8 +1092,9 @@ export const useFilesStore = create<FilesStoreState>()(
           );
 
           // Process all apps in registry except Finder and Control Panels
-          const apps = Object.values(appRegistry).filter(
-            (app: { id: string }) => app.id !== "finder" && app.id !== "control-panels"
+          // Use lightweight app data to avoid importing heavy component registry
+          const apps = getAppBasicInfoList().filter(
+            (app) => app.id !== "finder" && app.id !== "control-panels"
           );
 
           // Collect all shortcuts to create in a single batch update

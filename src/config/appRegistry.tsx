@@ -1,5 +1,5 @@
 import { lazy, Suspense, ComponentType, useEffect } from "react";
-import { appIds } from "./appIds";
+import { appIds, type AppId } from "./appRegistryData";
 import type {
   AppProps,
   BaseApp,
@@ -12,7 +12,7 @@ import type {
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { useAppStore } from "@/stores/useAppStore";
 
-export type AppId = (typeof appIds)[number];
+export type { AppId };
 
 export interface WindowSize {
   width: number;
@@ -196,32 +196,33 @@ const LazyInfiniteMacApp = createLazyComponent<unknown>(
 );
 
 // ============================================================================
-// APP METADATA (loaded eagerly - small)
+// APP METADATA (loaded eagerly - small, isolated from components)
+// Import from metadata.ts files to avoid eager loading of components
 // ============================================================================
 
-import { appMetadata as finderMetadata, helpItems as finderHelpItems } from "@/apps/finder";
-import { appMetadata as soundboardMetadata, helpItems as soundboardHelpItems } from "@/apps/soundboard";
-import { appMetadata as internetExplorerMetadata, helpItems as internetExplorerHelpItems } from "@/apps/internet-explorer";
-import { appMetadata as chatsMetadata, helpItems as chatsHelpItems } from "@/apps/chats";
-import { appMetadata as texteditMetadata, helpItems as texteditHelpItems } from "@/apps/textedit";
+import { appMetadata as finderMetadata, helpItems as finderHelpItems } from "@/apps/finder/metadata";
+import { appMetadata as soundboardMetadata, helpItems as soundboardHelpItems } from "@/apps/soundboard/metadata";
+import { appMetadata as internetExplorerMetadata, helpItems as internetExplorerHelpItems } from "@/apps/internet-explorer/metadata";
+import { appMetadata as chatsMetadata, helpItems as chatsHelpItems } from "@/apps/chats/metadata";
+import { appMetadata as texteditMetadata, helpItems as texteditHelpItems } from "@/apps/textedit/metadata";
 import { appMetadata as paintMetadata, helpItems as paintHelpItems } from "@/apps/paint";
-import { appMetadata as photoboothMetadata, helpItems as photoboothHelpItems } from "@/apps/photo-booth";
+import { appMetadata as photoboothMetadata, helpItems as photoboothHelpItems } from "@/apps/photo-booth/metadata";
 import { appMetadata as minesweeperMetadata, helpItems as minesweeperHelpItems } from "@/apps/minesweeper";
-import { appMetadata as videosMetadata, helpItems as videosHelpItems } from "@/apps/videos";
-import { appMetadata as ipodMetadata, helpItems as ipodHelpItems } from "@/apps/ipod";
-import { appMetadata as karaokeMetadata, helpItems as karaokeHelpItems } from "@/apps/karaoke";
-import { appMetadata as synthMetadata, helpItems as synthHelpItems } from "@/apps/synth";
-import { appMetadata as pcMetadata, helpItems as pcHelpItems } from "@/apps/pc";
+import { appMetadata as videosMetadata, helpItems as videosHelpItems } from "@/apps/videos/metadata";
+import { appMetadata as ipodMetadata, helpItems as ipodHelpItems } from "@/apps/ipod/metadata";
+import { appMetadata as karaokeMetadata, helpItems as karaokeHelpItems } from "@/apps/karaoke/metadata";
+import { appMetadata as synthMetadata, helpItems as synthHelpItems } from "@/apps/synth/metadata";
+import { appMetadata as pcMetadata, helpItems as pcHelpItems } from "@/apps/pc/metadata";
 import { appMetadata as terminalMetadata, helpItems as terminalHelpItems } from "@/apps/terminal";
 import { appMetadata as appletViewerMetadata, helpItems as appletViewerHelpItems } from "@/apps/applet-viewer";
 import { appMetadata as controlPanelsMetadata, helpItems as controlPanelsHelpItems } from "@/apps/control-panels";
-import { appMetadata as adminMetadata, helpItems as adminHelpItems } from "@/apps/admin";
+import { appMetadata as adminMetadata, helpItems as adminHelpItems } from "@/apps/admin/metadata";
 import { appMetadata as stickiesMetadata, helpItems as stickiesHelpItems } from "@/apps/stickies";
 import {
   appMetadata as infiniteMacMetadata,
   helpItems as infiniteMacHelpItems,
-  DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize,
 } from "@/apps/infinite-mac";
+import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/hooks/useInfiniteMacLogic";
 
 // ============================================================================
 // APP REGISTRY
