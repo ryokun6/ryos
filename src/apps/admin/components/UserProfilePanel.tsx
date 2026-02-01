@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Prohibit, Check, Trash, ChatCircle, Hash, Warning } from "@phosphor-icons/react";
+import { ArrowLeft, Prohibit, Check, Trash, ChatCircle, Hash, Warning, CaretRight, Brain } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +35,14 @@ interface UserMessage {
   timestamp: number;
 }
 
+interface UserMemory {
+  key: string;
+  summary: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 interface UserProfilePanelProps {
   username: string;
   onBack: () => void;
@@ -50,6 +58,8 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const { username: currentUser, authToken } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [messages, setMessages] = useState<UserMessage[]>([]);
+  const [memories, setMemories] = useState<UserMemory[]>([]);
+  const [expandedMemories, setExpandedMemories] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [banReason, setBanReason] = useState("");
   const [showBanInput, setShowBanInput] = useState(false);
@@ -99,12 +109,45 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     }
   }, [username, authToken, currentUser]);
 
+  const fetchMemories = useCallback(async () => {
+    if (!currentUser || !authToken) return;
+    try {
+      const response = await fetch(
+        `/api/admin?action=getUserMemories&username=${encodeURIComponent(username)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "x-username": currentUser,
+          },
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setMemories(data.memories || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch memories:", error);
+    }
+  }, [username, authToken, currentUser]);
+
+  const toggleMemory = useCallback((key: string) => {
+    setExpandedMemories((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     setIsLoading(true);
-    Promise.all([fetchProfile(), fetchMessages()]).finally(() => {
+    Promise.all([fetchProfile(), fetchMessages(), fetchMemories()]).finally(() => {
       setIsLoading(false);
     });
-  }, [fetchProfile, fetchMessages]);
+  }, [fetchProfile, fetchMessages, fetchMemories]);
 
   const handleBan = async () => {
     if (!currentUser || !authToken) return;
@@ -433,6 +476,81 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Memories */}
+          {isLoading ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 !text-[11px] uppercase tracking-wide text-black/50">
+                <Brain className="h-3 w-3" weight="bold" />
+                {t("apps.admin.profile.memories")}
+              </div>
+              <div className="space-y-1">
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 !text-[11px] uppercase tracking-wide text-black/50">
+                <Brain className="h-3 w-3" weight="bold" />
+                {t("apps.admin.profile.memories")} ({memories.length})
+              </div>
+              {memories.length === 0 ? (
+                <div className="text-[11px] text-neutral-400 text-center py-4">
+                  {t("apps.admin.profile.noMemories")}
+                </div>
+              ) : (
+                <div className="border border-gray-200 rounded overflow-hidden">
+                  {memories.map((memory, index) => {
+                    const isExpanded = expandedMemories.has(memory.key);
+                    return (
+                      <div key={memory.key}>
+                        {/* Memory row - clickable header */}
+                        <div
+                          onClick={() => toggleMemory(memory.key)}
+                          className={cn(
+                            "flex items-start gap-2 px-2 py-1.5 cursor-pointer hover:bg-gray-100/50 transition-colors",
+                            index % 2 === 1 && "bg-gray-50"
+                          )}
+                        >
+                          <CaretRight
+                            className={cn(
+                              "h-3 w-3 mt-0.5 flex-shrink-0 text-neutral-400 transition-transform",
+                              isExpanded && "rotate-90"
+                            )}
+                            weight="bold"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[11px] font-medium text-purple-700">
+                              {memory.key}
+                            </span>
+                            <span className="text-[11px] text-neutral-400 mx-1">·</span>
+                            <span className="text-[11px] text-neutral-600 line-clamp-1">
+                              {memory.summary}
+                            </span>
+                          </div>
+                        </div>
+                        {/* Expanded content */}
+                        {isExpanded && (
+                          <div className={cn(
+                            "px-7 py-2 border-t border-gray-100",
+                            index % 2 === 1 ? "bg-gray-100/50" : "bg-gray-50/50"
+                          )}>
+                            <p className="text-[11px] whitespace-pre-wrap text-neutral-700">
+                              {memory.content}
+                            </p>
+                            <div className="mt-2 text-[10px] text-neutral-400">
+                              {t("apps.admin.profile.memoryUpdated")} {formatRelativeTime(memory.updatedAt)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
