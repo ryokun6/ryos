@@ -274,7 +274,8 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
 
   const isTargetAdmin = username.toLowerCase() === "ryo";
   const sectionHeadingClass = "text-[11px] uppercase tracking-wide text-black/50";
-  const roomsCount = profile?.rooms?.length ?? 0;
+  const rooms = profile?.rooms ?? [];
+  const roomsCount = rooms.length;
   const hasRooms = roomsCount > 0;
 
   // Skeleton placeholder component
@@ -483,7 +484,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
               </button>
               {isRoomsExpanded && (
                 <div className="flex flex-wrap gap-1">
-                  {profile.rooms.map((room) => (
+                  {rooms.map((room) => (
                     <span
                       key={room.id}
                       className="px-2 py-1 text-[10px] bg-gray-100 rounded"
