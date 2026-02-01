@@ -1,5 +1,5 @@
 import { lazy, Suspense, ComponentType, useEffect } from "react";
-import { appIds, type AppId } from "./appRegistryData";
+import { type AppId } from "./appRegistryData";
 import type {
   AppProps,
   BaseApp,
