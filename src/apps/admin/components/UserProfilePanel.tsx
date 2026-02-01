@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Prohibit, Check, Trash, ChatCircle, Hash, Warning } from "@phosphor-icons/react";
+import { ArrowLeft, Prohibit, Check, Trash, ChatCircle, Hash, Warning, CaretRight } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +35,14 @@ interface UserMessage {
   timestamp: number;
 }
 
+interface UserMemory {
+  key: string;
+  summary: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 interface UserProfilePanelProps {
   username: string;
   onBack: () => void;
@@ -50,6 +58,8 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const { username: currentUser, authToken } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [messages, setMessages] = useState<UserMessage[]>([]);
+  const [memories, setMemories] = useState<UserMemory[]>([]);
+  const [expandedMemories, setExpandedMemories] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [banReason, setBanReason] = useState("");
   const [showBanInput, setShowBanInput] = useState(false);
@@ -99,12 +109,45 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     }
   }, [username, authToken, currentUser]);
 
+  const fetchMemories = useCallback(async () => {
+    if (!currentUser || !authToken) return;
+    try {
+      const response = await fetch(
+        `/api/admin?action=getUserMemories&username=${encodeURIComponent(username)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "x-username": currentUser,
+          },
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setMemories(data.memories || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch memories:", error);
+    }
+  }, [username, authToken, currentUser]);
+
+  const toggleMemory = useCallback((key: string) => {
+    setExpandedMemories((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     setIsLoading(true);
-    Promise.all([fetchProfile(), fetchMessages()]).finally(() => {
+    Promise.all([fetchProfile(), fetchMessages(), fetchMemories()]).finally(() => {
       setIsLoading(false);
     });
-  }, [fetchProfile, fetchMessages]);
+  }, [fetchProfile, fetchMessages, fetchMemories]);
 
   const handleBan = async () => {
     if (!currentUser || !authToken) return;
@@ -433,6 +476,93 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Memories */}
+          {isLoading ? (
+            <div className="space-y-2">
+              <div className="!text-[11px] uppercase tracking-wide text-black/50">
+                {t("apps.admin.profile.memories")}
+              </div>
+              <div className="space-y-1">
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="!text-[11px] uppercase tracking-wide text-black/50">
+                {t("apps.admin.profile.memories")} ({memories.length})
+              </div>
+              {memories.length === 0 ? (
+                <div className="text-[11px] text-neutral-400 text-center py-4">
+                  {t("apps.admin.profile.noMemories")}
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="text-[10px] border-none font-normal">
+                      <TableHead className="font-normal bg-gray-100/50 h-[24px]">
+                        {t("apps.admin.profile.memoryKey")}
+                      </TableHead>
+                      <TableHead className="font-normal bg-gray-100/50 h-[24px]">
+                        {t("apps.admin.profile.memorySummary")}
+                      </TableHead>
+                      <TableHead className="font-normal bg-gray-100/50 h-[24px] whitespace-nowrap">
+                        {t("apps.admin.tableHeaders.time")}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="text-[11px]">
+                    {memories.map((memory, index) => {
+                      const isExpanded = expandedMemories.has(memory.key);
+                      return (
+                        <React.Fragment key={memory.key}>
+                          <TableRow
+                            onClick={() => toggleMemory(memory.key)}
+                            className={cn(
+                              "border-none hover:bg-gray-100/50 transition-colors cursor-pointer",
+                              index % 2 === 1 && "bg-gray-200/30"
+                            )}
+                          >
+                            <TableCell className="whitespace-nowrap">
+                              <span className="text-purple-700 font-medium">{memory.key}</span>
+                              <CaretRight
+                                className={cn(
+                                  "h-3 w-3 inline-block ml-1 text-neutral-400 transition-transform",
+                                  isExpanded && "rotate-90"
+                                )}
+                                weight="bold"
+                              />
+                            </TableCell>
+                            <TableCell className="max-w-[200px]">
+                              <span className="truncate block text-neutral-500">{memory.summary}</span>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-neutral-500">
+                              {formatRelativeTime(memory.updatedAt)}
+                            </TableCell>
+                          </TableRow>
+                          {isExpanded && (
+                            <TableRow className={cn(
+                              "border-none",
+                              index % 2 === 1 ? "bg-gray-200/30" : ""
+                            )}>
+                              <TableCell colSpan={3} className="pt-0 pb-3">
+                                <div className="pl-2 border-l-2 border-purple-200">
+                                  <p className="text-[11px] whitespace-pre-wrap text-neutral-700">
+                                    {memory.content}
+                                  </p>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
             </div>
           )}
 

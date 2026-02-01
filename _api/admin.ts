@@ -14,6 +14,7 @@ import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
 import { initLogger } from "./_utils/_logging.js";
+import { getMemoryIndex, getMemoryDetail, type MemoryEntry } from "./_utils/_memory.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -271,6 +272,47 @@ async function getStats(redis: Redis): Promise<{ totalUsers: number; totalRooms:
   }
 }
 
+interface UserMemory {
+  key: string;
+  summary: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+async function getUserMemories(redis: Redis, targetUsername: string): Promise<UserMemory[]> {
+  const normalizedUsername = targetUsername.toLowerCase();
+
+  try {
+    const index = await getMemoryIndex(redis, normalizedUsername);
+    if (!index || index.memories.length === 0) {
+      return [];
+    }
+
+    // Fetch all memory details in parallel
+    const memoriesWithDetails = await Promise.all(
+      index.memories.map(async (entry: MemoryEntry) => {
+        const detail = await getMemoryDetail(redis, normalizedUsername, entry.key);
+        return {
+          key: entry.key,
+          summary: entry.summary,
+          content: detail?.content || "",
+          createdAt: detail?.createdAt || entry.updatedAt,
+          updatedAt: entry.updatedAt,
+        };
+      })
+    );
+
+    // Sort by most recently updated
+    memoriesWithDetails.sort((a, b) => b.updatedAt - a.updatedAt);
+
+    return memoriesWithDetails;
+  } catch (error) {
+    console.error(`Error fetching memories for ${normalizedUsername}:`, error);
+    return [];
+  }
+}
+
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
@@ -377,6 +419,19 @@ export default async function handler(
         logger.info("Messages retrieved", { targetUsername, count: messages.length });
         logger.response(200, Date.now() - startTime);
         res.status(200).json({ messages });
+        return;
+      }
+      case "getUserMemories": {
+        const targetUsername = req.query.username as string | undefined;
+        if (!targetUsername) {
+          logger.response(400, Date.now() - startTime);
+          res.status(400).json({ error: "Username is required" });
+          return;
+        }
+        const memories = await getUserMemories(redis, targetUsername);
+        logger.info("Memories retrieved", { targetUsername, count: memories.length });
+        logger.response(200, Date.now() - startTime);
+        res.status(200).json({ memories });
         return;
       }
       default:

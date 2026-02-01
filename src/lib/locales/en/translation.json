@@ -2505,7 +2505,11 @@
         "activeRooms": "Active in Rooms",
         "recentMessages": "Recent Messages",
         "noMessages": "No messages found",
-        "room": "Room"
+        "room": "Room",
+        "memories": "Memories",
+        "noMemories": "No memories stored",
+        "memoryKey": "Key",
+        "memorySummary": "Summary"
       },
       "dialogs": {
         "deleteTitle": "Delete {{type}}?",
