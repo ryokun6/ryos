@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Prohibit, Check, Trash, ChatCircle, Hash, Warning, CaretRight } from "@phosphor-icons/react";
+import { ArrowLeft, Prohibit, Check, Trash, Warning, CaretRight } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,6 +60,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const [messages, setMessages] = useState<UserMessage[]>([]);
   const [memories, setMemories] = useState<UserMemory[]>([]);
   const [expandedMemories, setExpandedMemories] = useState<Set<string>>(new Set());
+  const [isRoomsExpanded, setIsRoomsExpanded] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [banReason, setBanReason] = useState("");
   const [showBanInput, setShowBanInput] = useState(false);
@@ -272,6 +273,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   }
 
   const isTargetAdmin = username.toLowerCase() === "ryo";
+  const sectionHeadingClass = "text-[11px] uppercase tracking-wide text-black/50";
+  const roomsCount = profile?.rooms?.length ?? 0;
+  const hasRooms = roomsCount > 0;
 
   // Skeleton placeholder component
   const Skeleton = ({ className }: { className?: string }) => (
@@ -333,8 +337,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           {/* Stats */}
           <div className="grid grid-cols-2 gap-2">
             <div className="py-1.5">
-              <div className="flex items-start gap-1.5 text-[10px] text-neutral-500 mb-1">
-                <ChatCircle className="h-3 w-3 mt-px" weight="bold" />
+              <div className={cn(sectionHeadingClass, "mb-1")}>
                 {t("apps.admin.profile.messages")}
               </div>
               {isLoading ? (
@@ -344,8 +347,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
               )}
             </div>
             <div className="py-1.5">
-              <div className="flex items-start gap-1.5 text-[10px] text-neutral-500 mb-1">
-                <Hash className="h-3 w-3 mt-px" weight="bold" />
+              <div className={cn(sectionHeadingClass, "mb-1")}>
                 {t("apps.admin.profile.rooms")}
               </div>
               {isLoading ? (
@@ -359,7 +361,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           {/* Ban Info */}
           {!isLoading && profile?.banned && (
             <div className="p-2 bg-red-50 rounded border border-red-200">
-              <div className="flex items-start gap-1.5 text-[10px] text-red-600 mb-1">
+              <div className={cn(sectionHeadingClass, "flex items-start gap-1.5 text-red-600 mb-1")}>
                 <Prohibit className="h-3 w-3 mt-px" weight="bold" />
                 {t("apps.admin.profile.banDetails")}
               </div>
@@ -381,7 +383,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           {/* Actions */}
           {!isTargetAdmin && (
             <div className="space-y-2">
-              <div className="!text-[11px] uppercase tracking-wide text-black/50">
+              <div className={sectionHeadingClass}>
                 {t("apps.admin.profile.actions")}
               </div>
               {isLoading ? (
@@ -453,7 +455,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           {/* Rooms */}
           {isLoading ? (
             <div className="space-y-2">
-              <div className="!text-[11px] uppercase tracking-wide text-black/50">
+              <div className={sectionHeadingClass}>
                 {t("apps.admin.profile.activeRooms")}
               </div>
               <div className="flex gap-1">
@@ -461,28 +463,43 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                 <Skeleton className="h-6 w-20" />
               </div>
             </div>
-          ) : profile?.rooms && profile.rooms.length > 0 && (
+          ) : hasRooms && (
             <div className="space-y-2">
-              <div className="!text-[11px] uppercase tracking-wide text-black/50">
-                {t("apps.admin.profile.activeRooms")}
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {profile.rooms.map((room) => (
-                  <span
-                    key={room.id}
-                    className="px-2 py-1 text-[10px] bg-gray-100 rounded"
-                  >
-                    #{room.name}
-                  </span>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={() => setIsRoomsExpanded((prev) => !prev)}
+                className="flex items-center gap-1 text-left"
+              >
+                <CaretRight
+                  className={cn(
+                    "h-3 w-3 text-neutral-400 transition-transform",
+                    isRoomsExpanded && "rotate-90"
+                  )}
+                  weight="bold"
+                />
+                <span className={sectionHeadingClass}>
+                  {t("apps.admin.profile.activeRooms")} ({roomsCount})
+                </span>
+              </button>
+              {isRoomsExpanded && (
+                <div className="flex flex-wrap gap-1">
+                  {profile.rooms.map((room) => (
+                    <span
+                      key={room.id}
+                      className="px-2 py-1 text-[10px] bg-gray-100 rounded"
+                    >
+                      #{room.name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* Memories */}
           {isLoading ? (
             <div className="space-y-2">
-              <div className="!text-[11px] uppercase tracking-wide text-black/50">
+              <div className={sectionHeadingClass}>
                 {t("apps.admin.profile.memories")}
               </div>
               <div className="space-y-1">
@@ -492,7 +509,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="!text-[11px] uppercase tracking-wide text-black/50">
+              <div className={sectionHeadingClass}>
                 {t("apps.admin.profile.memories")} ({memories.length})
               </div>
               {memories.length === 0 ? (
@@ -569,7 +586,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           {/* Recent Messages */}
           {!isLoading && (
           <div className="space-y-2">
-            <div className="!text-[11px] uppercase tracking-wide text-black/50">
+            <div className={sectionHeadingClass}>
               {t("apps.admin.profile.recentMessages")} ({messages.length})
             </div>
             {messages.length === 0 ? (
