@@ -348,7 +348,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
       extracted: stored,
-      analyzed: result.memories.length,
+      analyzed: extractionResult.memories.length,
       message: stored > 0 
         ? `Extracted ${stored} memories from conversation`
         : "No noteworthy memories found",
