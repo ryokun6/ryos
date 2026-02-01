@@ -1355,7 +1355,7 @@ export function WindowFrame({
             // Mac OS X theme title bar with traffic light buttons
             <div
               className={cn(
-                "title-bar flex items-center h-6 min-h-[1.25rem] mx-0 mb-0 px-[0.1rem] py-[0.1rem] select-none cursor-move user-select-none z-50 draggable-area",
+                "title-bar relative flex items-center h-6 min-h-[1.25rem] mx-0 mb-0 px-[0.1rem] py-[0.1rem] select-none cursor-move user-select-none z-50 draggable-area",
                 // For notitlebar: absolute positioning, no shrink, transition opacity
                 isNoTitlebar 
                   ? "absolute top-0 left-0 right-0 transition-opacity duration-200" 
@@ -1453,10 +1453,10 @@ export function WindowFrame({
                 />
               </div>
 
-              {/* Title - white for notitlebar, themed otherwise */}
+              {/* Title - absolutely centered so it stays centered regardless of left/right content width */}
               <span
                 className={cn(
-                  "select-none mx-auto px-2 py-0 h-full flex items-center whitespace-nowrap overflow-hidden text-ellipsis max-w-[80%] text-[13px]",
+                  "select-none absolute left-1/2 -translate-x-1/2 px-2 py-0 h-full flex items-center justify-center whitespace-nowrap overflow-hidden text-ellipsis max-w-[80%] text-[13px] pointer-events-none",
                   isNoTitlebar
                     ? "text-white"
                     : isForeground
@@ -1477,7 +1477,7 @@ export function WindowFrame({
               </span>
 
 {/* Titlebar right content, fullscreen button, or spacer to balance the traffic lights */}
-                              <div className="flex items-center justify-end mr-1" data-titlebar-controls>
+                              <div className="flex items-center justify-end ml-auto mr-1" data-titlebar-controls>
                                 {titleBarRightContent ? (
                                   titleBarRightContent
                                 ) : onFullscreenToggle ? (
