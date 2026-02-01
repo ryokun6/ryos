@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import OpenAI from "openai";
+import { toFile } from "openai/uploads";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
@@ -166,16 +167,20 @@ export default async function handler(
       return;
     }
 
-    // Create a file stream for OpenAI
-    const fileStream = fs.createReadStream(audioFile.filepath);
-    
+    // Create a File with correct name/extension so OpenAI can detect format
+    // (temp path from formidable may lack extension, causing 400 "Invalid file format")
+    const buffer = await fs.promises.readFile(audioFile.filepath);
+    fs.unlink(audioFile.filepath, () => {});
+    const file = await toFile(
+      buffer,
+      audioFile.originalFilename || "recording.webm",
+      { type: audioFile.mimetype || "audio/webm" }
+    );
+
     const transcription = await openai.audio.transcriptions.create({
-      file: fileStream,
+      file,
       model: "whisper-1",
     });
-
-    // Clean up temp file
-    fs.unlink(audioFile.filepath, () => {});
 
     logger.info("Transcription completed", { textLength: transcription.text.length });
     logger.response(200, Date.now() - startTime);

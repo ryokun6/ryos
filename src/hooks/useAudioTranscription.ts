@@ -332,8 +332,9 @@ export function useAudioTranscription({
         audio: DEFAULT_AUDIO_CONFIG,
       });
 
-      // Set up audio analysis
-      audioContextRef.current = new AudioContext({ sampleRate: 16000 });
+      // Set up audio analysis - use default sample rate to match getUserMedia stream
+      // (explicit sampleRate: 16000 caused NotSupportedError when connecting stream)
+      audioContextRef.current = new AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
