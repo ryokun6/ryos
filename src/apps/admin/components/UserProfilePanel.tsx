@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Prohibit, Check, Trash, ChatCircle, Hash, Warning, CaretRight } from "@phosphor-icons/react";
+import { ArrowLeft, Prohibit, Check, Trash, Warning, CaretRight } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -287,6 +287,44 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     <div className={cn("bg-neutral-200 animate-pulse rounded", className)} />
   );
   const sectionHeaderClass = "text-[11px] uppercase tracking-wide text-black/50";
+  const SectionHeader = ({
+    children,
+    icon,
+    onClick,
+    isOpen,
+    showCaret,
+    className,
+  }: {
+    children: React.ReactNode;
+    icon?: React.ReactNode;
+    onClick?: () => void;
+    isOpen?: boolean;
+    showCaret?: boolean;
+    className?: string;
+  }) => {
+    const Component = onClick ? "button" : "div";
+    return (
+      <Component
+        type={onClick ? "button" : undefined}
+        onClick={onClick}
+        aria-expanded={onClick ? isOpen : undefined}
+        className={cn(
+          sectionHeaderClass,
+          onClick && "flex items-center gap-1.5 text-left",
+          className
+        )}
+      >
+        {showCaret && (
+          <CaretRight
+            className={cn("h-3 w-3 transition-transform", isOpen && "rotate-90")}
+            weight="bold"
+          />
+        )}
+        {icon}
+        <span>{children}</span>
+      </Component>
+    );
+  };
 
   return (
     <div className="flex flex-col h-full font-geneva-12">
@@ -343,8 +381,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           {/* Stats */}
           <div className="grid grid-cols-2 gap-2">
             <div className="py-1.5">
-              <div className="flex items-start gap-1.5 text-[10px] text-neutral-500 mb-1">
-                <ChatCircle className="h-3 w-3 mt-px" weight="bold" />
+              <div className="text-[10px] text-neutral-500 mb-1">
                 {t("apps.admin.profile.messages")}
               </div>
               {isLoading ? (
@@ -354,8 +391,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
               )}
             </div>
             <div className="py-1.5">
-              <div className="flex items-start gap-1.5 text-[10px] text-neutral-500 mb-1">
-                <Hash className="h-3 w-3 mt-px" weight="bold" />
+              <div className="text-[10px] text-neutral-500 mb-1">
                 {t("apps.admin.profile.rooms")}
               </div>
               {isLoading ? (
@@ -366,100 +402,15 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             </div>
           </div>
 
-          {/* Memories */}
-          {isLoading ? (
-            <div className="space-y-2">
-              <div className={sectionHeaderClass}>
-                {t("apps.admin.profile.memories")}
-              </div>
-              <div className="space-y-1">
-                <Skeleton className="h-6 w-full" />
-                <Skeleton className="h-6 w-full" />
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <div className={sectionHeaderClass}>
-                {t("apps.admin.profile.memories")} ({memories.length})
-              </div>
-              {memories.length === 0 ? (
-                <div className="text-[11px] text-neutral-400 text-center py-4">
-                  {t("apps.admin.profile.noMemories")}
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="text-[10px] border-none font-normal">
-                      <TableHead className="font-normal bg-gray-100/50 h-[24px]">
-                        {t("apps.admin.profile.memoryKey")}
-                      </TableHead>
-                      <TableHead className="font-normal bg-gray-100/50 h-[24px]">
-                        {t("apps.admin.profile.memorySummary")}
-                      </TableHead>
-                      <TableHead className="font-normal bg-gray-100/50 h-[24px] whitespace-nowrap">
-                        {t("apps.admin.tableHeaders.time")}
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody className="text-[11px]">
-                    {memories.map((memory, index) => {
-                      const isExpanded = expandedMemories.has(memory.key);
-                      return (
-                        <React.Fragment key={memory.key}>
-                          <TableRow
-                            onClick={() => toggleMemory(memory.key)}
-                            className={cn(
-                              "border-none hover:bg-gray-100/50 transition-colors cursor-pointer",
-                              index % 2 === 1 && "bg-gray-200/30"
-                            )}
-                          >
-                            <TableCell className="whitespace-nowrap">
-                              <span className="text-purple-700 font-medium">{memory.key}</span>
-                              <CaretRight
-                                className={cn(
-                                  "h-3 w-3 inline-block ml-1 text-neutral-400 transition-transform",
-                                  isExpanded && "rotate-90"
-                                )}
-                                weight="bold"
-                              />
-                            </TableCell>
-                            <TableCell className="max-w-[200px]">
-                              <span className="truncate block text-neutral-500">{memory.summary}</span>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-neutral-500">
-                              {formatRelativeTime(memory.updatedAt)}
-                            </TableCell>
-                          </TableRow>
-                          {isExpanded && (
-                            <TableRow className={cn(
-                              "border-none",
-                              index % 2 === 1 ? "bg-gray-200/30" : ""
-                            )}>
-                              <TableCell colSpan={3} className="pt-0 pb-3">
-                                <div className="pl-2 border-l-2 border-purple-200">
-                                  <p className="text-[11px] whitespace-pre-wrap text-neutral-700">
-                                    {memory.content}
-                                  </p>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-          )}
-
           {/* Ban Info */}
           {!isLoading && profile?.banned && (
             <div className="p-2 bg-red-50 rounded border border-red-200">
-              <div className={cn(sectionHeaderClass, "flex items-start gap-1.5 text-red-600 mb-1")}>
-                <Prohibit className="h-3 w-3 mt-px" weight="bold" />
+              <SectionHeader
+                className="flex items-start gap-1.5 text-red-600 mb-1"
+                icon={<Prohibit className="h-3 w-3 mt-px" weight="bold" />}
+              >
                 {t("apps.admin.profile.banDetails")}
-              </div>
+              </SectionHeader>
               <div className="text-[11px] space-y-1">
                 <div>
                   <span className="text-neutral-500">{t("apps.admin.profile.reason")}:</span>{" "}
@@ -478,9 +429,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           {/* Actions */}
           {!isTargetAdmin && (
             <div className="space-y-2">
-              <div className={sectionHeaderClass}>
-                {t("apps.admin.profile.actions")}
-              </div>
+              <SectionHeader>{t("apps.admin.profile.actions")}</SectionHeader>
               {isLoading ? (
                 <div className="flex gap-2">
                   <Skeleton className="h-7 w-24" />
@@ -547,12 +496,97 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             </div>
           )}
 
+          {/* Memories */}
+          {isLoading ? (
+            <div className="space-y-2">
+              <SectionHeader>{t("apps.admin.profile.memories")}</SectionHeader>
+              <div className="space-y-1">
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <SectionHeader>
+                {t("apps.admin.profile.memories")} ({memories.length})
+              </SectionHeader>
+              {memories.length === 0 ? (
+                <div className="text-[11px] text-neutral-400 text-center py-4">
+                  {t("apps.admin.profile.noMemories")}
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="text-[10px] border-none font-normal">
+                      <TableHead className="font-normal bg-gray-100/50 h-[24px]">
+                        {t("apps.admin.profile.memoryKey")}
+                      </TableHead>
+                      <TableHead className="font-normal bg-gray-100/50 h-[24px]">
+                        {t("apps.admin.profile.memorySummary")}
+                      </TableHead>
+                      <TableHead className="font-normal bg-gray-100/50 h-[24px] whitespace-nowrap">
+                        {t("apps.admin.tableHeaders.time")}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="text-[11px]">
+                    {memories.map((memory, index) => {
+                      const isExpanded = expandedMemories.has(memory.key);
+                      return (
+                        <React.Fragment key={memory.key}>
+                          <TableRow
+                            onClick={() => toggleMemory(memory.key)}
+                            className={cn(
+                              "border-none hover:bg-gray-100/50 transition-colors cursor-pointer",
+                              index % 2 === 1 && "bg-gray-200/30"
+                            )}
+                          >
+                            <TableCell className="whitespace-nowrap">
+                              <span className="text-purple-700 font-medium">{memory.key}</span>
+                              <CaretRight
+                                className={cn(
+                                  "h-3 w-3 inline-block ml-1 text-neutral-400 transition-transform",
+                                  isExpanded && "rotate-90"
+                                )}
+                                weight="bold"
+                              />
+                            </TableCell>
+                            <TableCell className="max-w-[200px]">
+                              <span className="truncate block text-neutral-500">{memory.summary}</span>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-neutral-500">
+                              {formatRelativeTime(memory.updatedAt)}
+                            </TableCell>
+                          </TableRow>
+                          {isExpanded && (
+                            <TableRow
+                              className={cn(
+                                "border-none",
+                                index % 2 === 1 ? "bg-gray-200/30" : ""
+                              )}
+                            >
+                              <TableCell colSpan={3} className="pt-0 pb-3">
+                                <div className="pl-2 border-l-2 border-purple-200">
+                                  <p className="text-[11px] whitespace-pre-wrap text-neutral-700">
+                                    {memory.content}
+                                  </p>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          )}
+
           {/* Rooms */}
           {isLoading ? (
             <div className="space-y-2">
-              <div className={sectionHeaderClass}>
-                {t("apps.admin.profile.activeRooms")}
-              </div>
+              <SectionHeader>{t("apps.admin.profile.activeRooms")}</SectionHeader>
               <div className="flex gap-1">
                 <Skeleton className="h-6 w-16" />
                 <Skeleton className="h-6 w-20" />
@@ -560,20 +594,13 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             </div>
           ) : (
             <div className="space-y-2">
-              <button
-                type="button"
+              <SectionHeader
                 onClick={() => setIsRoomsOpen((prev) => !prev)}
-                aria-expanded={isRoomsOpen}
-                className={cn(sectionHeaderClass, "flex items-center gap-1.5 text-left")}
+                isOpen={isRoomsOpen}
+                showCaret={true}
               >
-                <CaretRight
-                  className={cn("h-3 w-3 transition-transform", isRoomsOpen && "rotate-90")}
-                  weight="bold"
-                />
-                <span>
-                  {t("apps.admin.profile.activeRooms")} ({roomsCount})
-                </span>
-              </button>
+                {t("apps.admin.profile.activeRooms")} ({roomsCount})
+              </SectionHeader>
               {isRoomsOpen && (
                 <>
                   {roomsCount > 0 && (
@@ -596,9 +623,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           {/* Recent Messages */}
           {isLoading ? (
             <div className="space-y-2">
-              <div className={sectionHeaderClass}>
-                {t("apps.admin.profile.recentMessages")}
-              </div>
+              <SectionHeader>{t("apps.admin.profile.recentMessages")}</SectionHeader>
               <div className="space-y-1">
                 <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-6 w-full" />
@@ -606,20 +631,13 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             </div>
           ) : (
             <div className="space-y-2">
-              <button
-                type="button"
+              <SectionHeader
                 onClick={() => setIsMessagesOpen((prev) => !prev)}
-                aria-expanded={isMessagesOpen}
-                className={cn(sectionHeaderClass, "flex items-center gap-1.5 text-left")}
+                isOpen={isMessagesOpen}
+                showCaret={true}
               >
-                <CaretRight
-                  className={cn("h-3 w-3 transition-transform", isMessagesOpen && "rotate-90")}
-                  weight="bold"
-                />
-                <span>
-                  {t("apps.admin.profile.recentMessages")} ({messagesCount})
-                </span>
-              </button>
+                {t("apps.admin.profile.recentMessages")} ({messagesCount})
+              </SectionHeader>
               {isMessagesOpen && (
                 <>
                   {messagesCount === 0 ? (
