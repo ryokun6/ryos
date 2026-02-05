@@ -1655,17 +1655,26 @@ export function useIpodLogic({
     const store = useIpodStore.getState();
     const curr = store.lyricsFont;
     let next: LyricsFont;
-    if (curr === LyricsFont.Rounded) next = LyricsFont.SansSerif;
-    else if (curr === LyricsFont.SansSerif) next = LyricsFont.Serif;
-    else next = LyricsFont.Rounded;
+    // Cycle: Rounded → Serif → SansSerif → SerifRed → GoldGlow → Gradient → Rounded
+    switch (curr) {
+      case LyricsFont.Rounded: next = LyricsFont.Serif; break;
+      case LyricsFont.Serif: next = LyricsFont.SansSerif; break;
+      case LyricsFont.SansSerif: next = LyricsFont.SerifRed; break;
+      case LyricsFont.SerifRed: next = LyricsFont.GoldGlow; break;
+      case LyricsFont.GoldGlow: next = LyricsFont.Gradient; break;
+      default: next = LyricsFont.Rounded;
+    }
     store.setLyricsFont(next);
-    showStatus(
-      next === LyricsFont.Rounded
-        ? t("apps.ipod.status.fontRounded")
-        : next === LyricsFont.SansSerif
-        ? t("apps.ipod.status.fontSansSerif")
-        : t("apps.ipod.status.fontSerif")
-    );
+    
+    const statusMessages: Record<LyricsFont, string> = {
+      [LyricsFont.Rounded]: t("apps.ipod.status.fontRounded"),
+      [LyricsFont.Serif]: t("apps.ipod.status.fontSerif"),
+      [LyricsFont.SansSerif]: t("apps.ipod.status.fontSansSerif"),
+      [LyricsFont.SerifRed]: t("apps.ipod.status.fontSerifRed"),
+      [LyricsFont.GoldGlow]: t("apps.ipod.status.fontGoldGlow"),
+      [LyricsFont.Gradient]: t("apps.ipod.status.fontGradient"),
+    };
+    showStatus(statusMessages[next]);
   }, [showStatus, t]);
 
   // Get CSS class name for current lyrics font

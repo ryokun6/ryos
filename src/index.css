@@ -426,6 +426,48 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
+  /* Serif Red - Japanese classic style (same font as serif but with outline styling) */
+  .font-lyrics-serif-red {
+    font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
+      "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", "Times New Roman", serif;
+    font-weight: 700;
+    line-height: 1.1;
+    -webkit-font-smoothing: antialiased;
+    font-smooth: always;
+  }
+
+  /* Gold Glow - Warm karaoke bar style (uses rounded font) */
+  .font-lyrics-gold-glow {
+    font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
+      "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif;
+    font-weight: normal;
+    line-height: 1.1;
+    font-synthesis: none;
+    -webkit-font-smoothing: antialiased;
+    font-smooth: always;
+  }
+
+  /* Gradient - Modern gradient fill style (uses bold sans-serif) */
+  .font-lyrics-gradient {
+    font-family: "Geneva-12", "ArkPixel", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+      "PingFang SC", "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic",
+      "Nanum Gothic", system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+    line-height: 1.1;
+    -webkit-font-smoothing: antialiased;
+    font-smooth: always;
+  }
+
+  /* Animated rainbow for gradient lyrics - rotates hue of both text and glow together */
+  @keyframes lyrics-hue-rotate {
+    from { filter: drop-shadow(0 0 6px rgba(0,255,255,0.5)) drop-shadow(0 0 12px rgba(0,255,255,0.3)) hue-rotate(0deg); }
+    to { filter: drop-shadow(0 0 6px rgba(0,255,255,0.5)) drop-shadow(0 0 12px rgba(0,255,255,0.3)) hue-rotate(360deg); }
+  }
+
+  .lyrics-rainbow-animate {
+    animation: lyrics-hue-rotate 6s linear infinite;
+  }
+
   /* Karaoke force-font container - enables container queries for responsive sizing */
   .karaoke-force-font {
     container-type: inline-size;

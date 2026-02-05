@@ -1164,11 +1164,52 @@
   font-smooth: auto !important;
 }
 
+/* Preserve serif-red lyrics font on macOS theme (Japanese classic style) */
+:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif-red,
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif-red {
+  font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN", 
+    "Hiragino Mincho Pro", "Yu Mincho", "Songti TC", "Songti SC", "SimSun", 
+    "Nanum Myeongjo", "AppleMyungjo", "Batang", serif !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
+}
+
+/* Preserve gold-glow lyrics font on macOS theme (warm karaoke bar style) */
+:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gold-glow,
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gold-glow {
+  font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
+    "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif !important;
+  font-weight: normal !important;
+  line-height: 1.1 !important;
+  font-synthesis: none !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
+}
+
+/* Preserve gradient lyrics font on macOS theme (modern gradient style) */
+:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gradient,
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gradient {
+  font-family: "LucidaGrande", "Lucida Grande", "Hiragino Sans",
+    "Hiragino Kaku Gothic ProN", "PingFang SC", "Microsoft YaHei",
+    "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic", system-ui,
+    -apple-system, sans-serif !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
+}
+
 /* Bold furigana for serif and sans-serif lyrics fonts on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-sans rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif rt.lyrics-furigana-rt,
-:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-sans rt.lyrics-furigana-rt {
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-sans rt.lyrics-furigana-rt,
+:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif-red rt.lyrics-furigana-rt,
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif-red rt.lyrics-furigana-rt,
+:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gradient rt.lyrics-furigana-rt,
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gradient rt.lyrics-furigana-rt {
   font-weight: 700 !important;
 }
 
