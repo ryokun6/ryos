@@ -102,6 +102,7 @@ export default defineConfig({
     // Exclude heavy deps from initial pre-bundling to reduce memory
     // These will be bundled on-demand when their apps are opened
     // Note: AI SDK removed from exclude to fix ESM/CJS compatibility with @vercel/oidc
+    // Note: pusher-js, hangul-romanization, react-player removed from exclude to fix ESM/CJS compatibility
     exclude: isDev ? [
       // Audio libs - only needed when Soundboard/iPod/Synth/Karaoke opens
       "tone",
@@ -114,14 +115,9 @@ export default defineConfig({
       "@tiptap/react",
       "@tiptap/starter-kit",
       "@tiptap/pm",
-      // Video player - only needed when Videos app opens
-      "react-player",
-      // Realtime chat - only needed when Chats opens
-      "pusher-js",
       // Chinese/Japanese text processing - only needed for lyrics features
       "pinyin-pro",
       "wanakana",
-      "hangul-romanization",
       // QR codes - only needed for specific features
       "qrcode.react",
     ] : [],
