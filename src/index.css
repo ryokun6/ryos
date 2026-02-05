@@ -426,6 +426,38 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
+  /* Serif Red - Japanese classic style (same font as serif but with outline styling) */
+  .font-lyrics-serif-red {
+    font-family: Charter, "Noto Serif JP", "Noto Serif KR", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho",
+      "Songti TC", "Songti SC", "SimSun", "Nanum Myeongjo", "AppleMyungjo", "Batang", "Times New Roman", serif;
+    font-weight: 700;
+    line-height: 1.1;
+    -webkit-font-smoothing: antialiased;
+    font-smooth: always;
+  }
+
+  /* Gold Glow - Warm karaoke bar style (uses rounded font) */
+  .font-lyrics-gold-glow {
+    font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
+      "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif;
+    font-weight: normal;
+    line-height: 1.1;
+    font-synthesis: none;
+    -webkit-font-smoothing: antialiased;
+    font-smooth: always;
+  }
+
+  /* Neon Pink - K-pop modern style (uses bold sans-serif) */
+  .font-lyrics-neon-pink {
+    font-family: "Geneva-12", "ArkPixel", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+      "PingFang SC", "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic",
+      "Nanum Gothic", system-ui, -apple-system, sans-serif;
+    font-weight: 700;
+    line-height: 1.1;
+    -webkit-font-smoothing: antialiased;
+    font-smooth: always;
+  }
+
   /* Karaoke force-font container - enables container queries for responsive sizing */
   .karaoke-force-font {
     container-type: inline-size;

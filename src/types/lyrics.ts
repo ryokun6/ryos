@@ -21,6 +21,9 @@ export enum LyricsFont {
   SansSerif = "sans-serif",
   Serif = "serif",
   Rounded = "rounded",
+  SerifRed = "serif-red",      // Japanese classic: serif + red outline
+  GoldGlow = "gold-glow",      // Warm karaoke bar: rounded + gold glow
+  NeonPink = "neon-pink",      // K-pop modern: sans + pink neon halo
 }
 
 /**
@@ -33,6 +36,12 @@ export function getLyricsFontClassName(font: LyricsFont): string {
       return "font-lyrics-serif";
     case LyricsFont.SansSerif:
       return "font-lyrics-sans";
+    case LyricsFont.SerifRed:
+      return "font-lyrics-serif-red";
+    case LyricsFont.GoldGlow:
+      return "font-lyrics-gold-glow";
+    case LyricsFont.NeonPink:
+      return "font-lyrics-neon-pink";
     case LyricsFont.Rounded:
     default:
       return "font-lyrics-rounded";

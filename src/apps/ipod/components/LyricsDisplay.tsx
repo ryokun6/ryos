@@ -170,6 +170,42 @@ const OLD_SCHOOL_PADDING_TOP = "0.4em";
 // Bottom padding for old-school (less than default since no glow)
 const OLD_SCHOOL_PADDING_BOTTOM = "0.2em";
 
+// === NEW STYLE CONSTANTS ===
+
+// Serif Red (Japanese classic) - same outline style but with red highlight
+const SERIF_RED_HIGHLIGHT_COLOR = "#CC0000";
+
+// Gold Glow (Warm karaoke bar) - soft golden glow effect
+const GOLD_GLOW_COLOR = "#FFD700";
+const GOLD_GLOW_SHADOW = "0 0 8px rgba(255,215,0,0.8), 0 0 16px rgba(255,215,0,0.4), 0 0 6px rgba(0,0,0,0.5)";
+const GOLD_GLOW_FILTER = "drop-shadow(0 0 8px rgba(255,215,0,0.5))";
+const GOLD_BASE_COLOR = "rgba(255, 215, 0, 0.6)"; // Dimmed gold for inactive
+
+// Neon Pink (K-pop modern) - intense pink neon halo
+const NEON_PINK_COLOR = "#FF1493";
+const NEON_PINK_GLOW_SHADOW = "0 0 4px #FF1493, 0 0 8px #FF1493, 0 0 16px #FF1493, 0 0 6px rgba(0,0,0,0.5)";
+const NEON_PINK_GLOW_FILTER = "drop-shadow(0 0 4px #FF1493) drop-shadow(0 0 12px rgba(255,20,147,0.6))";
+const NEON_PINK_BASE_COLOR = "rgba(255, 20, 147, 0.5)"; // Dimmed pink for inactive
+
+// Style category detection
+type StyleCategory = 'outline-blue' | 'outline-red' | 'glow-white' | 'glow-gold' | 'glow-neon-pink';
+
+const getStyleCategory = (className: string): StyleCategory => {
+  if (className.includes("font-lyrics-rounded") && !className.includes("gold-glow")) {
+    return 'outline-blue';
+  }
+  if (className.includes("font-lyrics-serif-red")) {
+    return 'outline-red';
+  }
+  if (className.includes("font-lyrics-gold-glow")) {
+    return 'glow-gold';
+  }
+  if (className.includes("font-lyrics-neon-pink")) {
+    return 'glow-neon-pink';
+  }
+  return 'glow-white'; // Default for serif, sans-serif
+};
+
 /**
  * CSS-based mask using custom property for GPU-accelerated animation.
  * The gradient is computed in CSS using calc(), avoiding string allocation on every frame.
@@ -391,6 +427,7 @@ function StaticWordRendering({
   lineStartTimeMs,
   onSeekToTime,
   isOldSchoolKaraoke = false,
+  baseColor,
 }: {
   wordTimings: LyricWord[];
   processText: (text: string) => string;
@@ -406,6 +443,8 @@ function StaticWordRendering({
   onSeekToTime?: (timeMs: number) => void;
   /** Use old-school karaoke styling (black outline, white text) */
   isOldSchoolKaraoke?: boolean;
+  /** Base color for colored glow styles (gold/pink inactive state) */
+  baseColor?: string;
 }): ReactNode {
   // Pre-compute render items for consistency with animated version
   const renderItems = useMemo(() => {
@@ -553,7 +592,7 @@ function StaticWordRendering({
             } : undefined}
           >
             <span 
-              className={`lyrics-word-layer ${isOldSchoolKaraoke ? "" : "opacity-55"}`} 
+              className={`lyrics-word-layer ${isOldSchoolKaraoke ? "" : baseColor ? "" : "opacity-55"}`} 
               style={{ 
                 textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW, 
                 paddingTop: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_TOP : undefined,
@@ -564,7 +603,7 @@ function StaticWordRendering({
                 paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
                 marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
                 marginRight: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
-                color: isOldSchoolKaraoke ? OLD_SCHOOL_BASE_COLOR : undefined,
+                color: isOldSchoolKaraoke ? OLD_SCHOOL_BASE_COLOR : baseColor,
                 WebkitTextStroke: isOldSchoolKaraoke ? OLD_SCHOOL_BASE_STROKE : undefined,
                 paintOrder: isOldSchoolKaraoke ? "stroke fill" : undefined,
               } as React.CSSProperties}
@@ -608,6 +647,9 @@ function WordTimingHighlight({
   soramimiTargetLanguage,
   onSeekToTime,
   isOldSchoolKaraoke = false,
+  highlightColor,
+  glowFilter,
+  baseColor,
 }: {
   wordTimings: LyricWord[];
   lineStartTimeMs: number;
@@ -624,6 +666,12 @@ function WordTimingHighlight({
   onSeekToTime?: (timeMs: number) => void;
   /** Use old-school karaoke styling (black outline white text -> white outline blue text) */
   isOldSchoolKaraoke?: boolean;
+  /** Highlight color for the active/filled state */
+  highlightColor?: string;
+  /** Glow filter for non-outline styles */
+  glowFilter?: string;
+  /** Base color for colored glow styles (gold/pink inactive state) */
+  baseColor?: string;
 }): ReactNode {
   // Refs for direct DOM manipulation (bypasses React reconciliation)
   const overlayRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -842,7 +890,7 @@ function WordTimingHighlight({
         >
           {/* Base layer: dimmed or old-school white with black outline */}
           <span 
-            className={`lyrics-word-layer ${isOldSchoolKaraoke ? "" : "opacity-55"}`} 
+            className={`lyrics-word-layer ${isOldSchoolKaraoke ? "" : baseColor ? "" : "opacity-55"}`} 
             style={{ 
               textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW, 
               paddingTop: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING_TOP : undefined,
@@ -853,19 +901,19 @@ function WordTimingHighlight({
               paddingRight: isOldSchoolKaraoke ? OLD_SCHOOL_PADDING : undefined,
               marginLeft: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
               marginRight: isOldSchoolKaraoke ? `-${OLD_SCHOOL_PADDING}` : undefined,
-              color: isOldSchoolKaraoke ? OLD_SCHOOL_BASE_COLOR : undefined,
+              color: isOldSchoolKaraoke ? OLD_SCHOOL_BASE_COLOR : baseColor,
               WebkitTextStroke: isOldSchoolKaraoke ? OLD_SCHOOL_BASE_STROKE : undefined,
               paintOrder: isOldSchoolKaraoke ? "stroke fill" : undefined,
             } as React.CSSProperties}
           >
             {item.content}
           </span>
-          {/* Highlight layer: glow or old-school blue with white outline */}
+          {/* Highlight layer: glow or old-school colored outline */}
           <span
             aria-hidden="true"
             className="lyrics-word-layer"
             style={{ 
-              filter: isOldSchoolKaraoke ? "none" : GLOW_FILTER,
+              filter: isOldSchoolKaraoke ? "none" : (glowFilter || GLOW_FILTER),
               // Keep GPU-composited to prevent pixel rounding
               backfaceVisibility: "hidden",
             }}
@@ -875,7 +923,7 @@ function WordTimingHighlight({
               ref={(el) => { overlayRefs.current[idx] = el; }}
               style={{ 
                 display: "block",
-                color: isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_COLOR : "rgba(255, 255, 255, 1)",
+                color: highlightColor || (isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_COLOR : "rgba(255, 255, 255, 1)"),
                 opacity: isOldSchoolKaraoke ? undefined : 1,
                 textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW,
                 WebkitTextStroke: isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_STROKE : undefined,
@@ -1258,8 +1306,52 @@ export function LyricsDisplay({
   // For word-level timing, we still need to track Korean romanization state
   const showKoreanRomanization = romanization.enabled && romanization.korean;
 
-  // Detect if old-school karaoke styling should be used (when font is rounded)
-  const isOldSchoolKaraoke = fontClassName.includes("font-lyrics-rounded");
+  // Detect style category and whether to use outline styling
+  const styleCategory = getStyleCategory(fontClassName);
+  const isOldSchoolKaraoke = styleCategory === 'outline-blue' || styleCategory === 'outline-red';
+  
+  // Get the highlight color based on style category
+  const getHighlightColor = (): string => {
+    switch (styleCategory) {
+      case 'outline-blue': return OLD_SCHOOL_HIGHLIGHT_COLOR;
+      case 'outline-red': return SERIF_RED_HIGHLIGHT_COLOR;
+      case 'glow-gold': return GOLD_GLOW_COLOR;
+      case 'glow-neon-pink': return NEON_PINK_COLOR;
+      default: return "rgba(255, 255, 255, 1)";
+    }
+  };
+  
+  // Get the glow shadow based on style category
+  const getGlowShadow = (isHighlight: boolean): string => {
+    if (isOldSchoolKaraoke) return "none";
+    switch (styleCategory) {
+      case 'glow-gold': return isHighlight ? GOLD_GLOW_SHADOW : BASE_SHADOW;
+      case 'glow-neon-pink': return isHighlight ? NEON_PINK_GLOW_SHADOW : BASE_SHADOW;
+      default: return isHighlight ? GLOW_SHADOW : BASE_SHADOW;
+    }
+  };
+  
+  // Get the glow filter based on style category
+  const getGlowFilter = (): string => {
+    if (isOldSchoolKaraoke) return "none";
+    switch (styleCategory) {
+      case 'glow-gold': return GOLD_GLOW_FILTER;
+      case 'glow-neon-pink': return NEON_PINK_GLOW_FILTER;
+      default: return GLOW_FILTER;
+    }
+  };
+  
+  // Get base color for colored glow styles (inactive state)
+  const getBaseColor = (): string | undefined => {
+    switch (styleCategory) {
+      case 'glow-gold': return GOLD_BASE_COLOR;
+      case 'glow-neon-pink': return NEON_PINK_BASE_COLOR;
+      default: return undefined;
+    }
+  };
+  
+  const highlightColor = getHighlightColor();
+  const isColoredGlow = styleCategory === 'glow-gold' || styleCategory === 'glow-neon-pink';
 
   const getTextAlign = (
     align: LyricsAlignment,
@@ -1650,9 +1742,14 @@ export function LyricsDisplay({
                                 // For old-school karaoke non-word-timed lines, apply stroke and color
                                 isOldSchoolKaraoke && !hasWordTimings
                                   ? { 
-                                      color: isCurrent ? OLD_SCHOOL_HIGHLIGHT_COLOR : OLD_SCHOOL_BASE_COLOR,
+                                      color: isCurrent ? highlightColor : OLD_SCHOOL_BASE_COLOR,
                                       WebkitTextStroke: isCurrent ? OLD_SCHOOL_HIGHLIGHT_STROKE : OLD_SCHOOL_BASE_STROKE,
                                       paintOrder: "stroke fill",
+                                    } as React.CSSProperties
+                                  : isColoredGlow && !hasWordTimings
+                                  ? {
+                                      color: isCurrent ? highlightColor : getBaseColor(),
+                                      textShadow: isCurrent ? getGlowShadow(true) : BASE_SHADOW,
                                     } as React.CSSProperties
                                   : undefined
                               }
@@ -1675,6 +1772,9 @@ export function LyricsDisplay({
                     soramimiTargetLanguage={soramimiSegments ? romanization.soramamiTargetLanguage : undefined}
                     onSeekToTime={onSeekToTime}
                     isOldSchoolKaraoke={isOldSchoolKaraoke}
+                    highlightColor={highlightColor}
+                    glowFilter={getGlowFilter()}
+                    baseColor={getBaseColor()}
                   />
                 ) : hasWordTimings ? (
                   <StaticWordRendering
@@ -1689,6 +1789,7 @@ export function LyricsDisplay({
                     lineStartTimeMs={parseInt(line.startTimeMs, 10)}
                     onSeekToTime={onSeekToTime}
                     isOldSchoolKaraoke={isOldSchoolKaraoke}
+                    baseColor={getBaseColor()}
                   />
                 ) : (
                   // The hook's renderWithFurigana handles furigana + all romanization types including soramimi
