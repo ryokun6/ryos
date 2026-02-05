@@ -437,13 +437,13 @@ export function KaraokeMenuBar({
                 {t("apps.ipod.menu.fontGoldGlow")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={lyricsFont === LyricsFont.NeonPink}
+                checked={lyricsFont === LyricsFont.Gradient}
                 onCheckedChange={(checked) => {
-                  if (checked) setLyricsFont(LyricsFont.NeonPink);
+                  if (checked) setLyricsFont(LyricsFont.Gradient);
                 }}
                 className="text-md h-6 pr-3"
               >
-                {t("apps.ipod.menu.fontNeonPink")}
+                {t("apps.ipod.menu.fontGradient")}
               </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>

@@ -447,8 +447,8 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
-  /* Neon Pink - K-pop modern style (uses bold sans-serif) */
-  .font-lyrics-neon-pink {
+  /* Gradient - Modern gradient fill style (uses bold sans-serif) */
+  .font-lyrics-gradient {
     font-family: "Geneva-12", "ArkPixel", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
       "PingFang SC", "Microsoft YaHei", "Apple SD Gothic Neo", "Malgun Gothic",
       "Nanum Gothic", system-ui, -apple-system, sans-serif;

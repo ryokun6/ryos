@@ -1655,13 +1655,13 @@ export function useIpodLogic({
     const store = useIpodStore.getState();
     const curr = store.lyricsFont;
     let next: LyricsFont;
-    // Cycle: Rounded → Serif → SansSerif → SerifRed → GoldGlow → NeonPink → Rounded
+    // Cycle: Rounded → Serif → SansSerif → SerifRed → GoldGlow → Gradient → Rounded
     switch (curr) {
       case LyricsFont.Rounded: next = LyricsFont.Serif; break;
       case LyricsFont.Serif: next = LyricsFont.SansSerif; break;
       case LyricsFont.SansSerif: next = LyricsFont.SerifRed; break;
       case LyricsFont.SerifRed: next = LyricsFont.GoldGlow; break;
-      case LyricsFont.GoldGlow: next = LyricsFont.NeonPink; break;
+      case LyricsFont.GoldGlow: next = LyricsFont.Gradient; break;
       default: next = LyricsFont.Rounded;
     }
     store.setLyricsFont(next);
@@ -1672,7 +1672,7 @@ export function useIpodLogic({
       [LyricsFont.SansSerif]: t("apps.ipod.status.fontSansSerif"),
       [LyricsFont.SerifRed]: t("apps.ipod.status.fontSerifRed"),
       [LyricsFont.GoldGlow]: t("apps.ipod.status.fontGoldGlow"),
-      [LyricsFont.NeonPink]: t("apps.ipod.status.fontNeonPink"),
+      [LyricsFont.Gradient]: t("apps.ipod.status.fontGradient"),
     };
     showStatus(statusMessages[next]);
   }, [showStatus, t]);

@@ -23,7 +23,7 @@ export enum LyricsFont {
   Rounded = "rounded",
   SerifRed = "serif-red",      // Japanese classic: serif + red outline
   GoldGlow = "gold-glow",      // Warm karaoke bar: rounded + gold glow
-  NeonPink = "neon-pink",      // K-pop modern: sans + pink neon halo
+  Gradient = "gradient",       // Modern: gradient fill (blue → cyan)
 }
 
 /**
@@ -40,8 +40,8 @@ export function getLyricsFontClassName(font: LyricsFont): string {
       return "font-lyrics-serif-red";
     case LyricsFont.GoldGlow:
       return "font-lyrics-gold-glow";
-    case LyricsFont.NeonPink:
-      return "font-lyrics-neon-pink";
+    case LyricsFont.Gradient:
+      return "font-lyrics-gradient";
     case LyricsFont.Rounded:
     default:
       return "font-lyrics-rounded";

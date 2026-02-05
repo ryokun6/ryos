@@ -181,14 +181,14 @@ const GOLD_GLOW_SHADOW = "0 0 8px rgba(255,215,0,0.8), 0 0 16px rgba(255,215,0,0
 const GOLD_GLOW_FILTER = "drop-shadow(0 0 8px rgba(255,215,0,0.5))";
 const GOLD_BASE_COLOR = "rgba(255, 215, 0, 0.6)"; // Dimmed gold for inactive
 
-// Neon Pink (K-pop modern) - intense pink neon halo
-const NEON_PINK_COLOR = "#FF1493";
-const NEON_PINK_GLOW_SHADOW = "0 0 4px #FF1493, 0 0 8px #FF1493, 0 0 16px #FF1493, 0 0 6px rgba(0,0,0,0.5)";
-const NEON_PINK_GLOW_FILTER = "drop-shadow(0 0 4px #FF1493) drop-shadow(0 0 12px rgba(255,20,147,0.6))";
-const NEON_PINK_BASE_COLOR = "rgba(255, 20, 147, 0.5)"; // Dimmed pink for inactive
+// Gradient (Modern) - blue to cyan gradient fill
+const GRADIENT_COLORS = "linear-gradient(90deg, #0066FF 0%, #00BFFF 50%, #00FFFF 100%)";
+const GRADIENT_GLOW_SHADOW = "0 0 8px rgba(0,191,255,0.6), 0 0 16px rgba(0,191,255,0.3), 0 0 6px rgba(0,0,0,0.5)";
+const GRADIENT_GLOW_FILTER = "drop-shadow(0 0 6px rgba(0,191,255,0.5))";
+const GRADIENT_BASE_COLOR = "rgba(0, 191, 255, 0.5)"; // Dimmed cyan for inactive
 
 // Style category detection
-type StyleCategory = 'outline-blue' | 'outline-red' | 'glow-white' | 'glow-gold' | 'glow-neon-pink';
+type StyleCategory = 'outline-blue' | 'outline-red' | 'glow-white' | 'glow-gold' | 'glow-gradient';
 
 const getStyleCategory = (className: string): StyleCategory => {
   if (className.includes("font-lyrics-rounded") && !className.includes("gold-glow")) {
@@ -200,8 +200,8 @@ const getStyleCategory = (className: string): StyleCategory => {
   if (className.includes("font-lyrics-gold-glow")) {
     return 'glow-gold';
   }
-  if (className.includes("font-lyrics-neon-pink")) {
-    return 'glow-neon-pink';
+  if (className.includes("font-lyrics-gradient")) {
+    return 'glow-gradient';
   }
   return 'glow-white'; // Default for serif, sans-serif
 };
@@ -650,6 +650,7 @@ function WordTimingHighlight({
   highlightColor,
   glowFilter,
   baseColor,
+  isGradient = false,
 }: {
   wordTimings: LyricWord[];
   lineStartTimeMs: number;
@@ -666,12 +667,14 @@ function WordTimingHighlight({
   onSeekToTime?: (timeMs: number) => void;
   /** Use old-school karaoke styling (black outline white text -> white outline blue text) */
   isOldSchoolKaraoke?: boolean;
-  /** Highlight color for the active/filled state */
+  /** Highlight color for the active/filled state (or gradient string for gradient style) */
   highlightColor?: string;
   /** Glow filter for non-outline styles */
   glowFilter?: string;
-  /** Base color for colored glow styles (gold/pink inactive state) */
+  /** Base color for colored glow styles (gold/gradient inactive state) */
   baseColor?: string;
+  /** Whether to use gradient text rendering */
+  isGradient?: boolean;
 }): ReactNode {
   // Refs for direct DOM manipulation (bypasses React reconciliation)
   const overlayRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -923,7 +926,15 @@ function WordTimingHighlight({
               ref={(el) => { overlayRefs.current[idx] = el; }}
               style={{ 
                 display: "block",
-                color: highlightColor || (isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_COLOR : "rgba(255, 255, 255, 1)"),
+                // For gradient style, use background-clip: text
+                ...(isGradient ? {
+                  background: highlightColor,
+                  backgroundClip: "text",
+                  WebkitBackgroundClip: "text",
+                  color: "transparent",
+                } : {
+                  color: highlightColor || (isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_COLOR : "rgba(255, 255, 255, 1)"),
+                }),
                 opacity: isOldSchoolKaraoke ? undefined : 1,
                 textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW,
                 WebkitTextStroke: isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_STROKE : undefined,
@@ -1310,13 +1321,13 @@ export function LyricsDisplay({
   const styleCategory = getStyleCategory(fontClassName);
   const isOldSchoolKaraoke = styleCategory === 'outline-blue' || styleCategory === 'outline-red';
   
-  // Get the highlight color based on style category
+  // Get the highlight color based on style category (returns gradient string for gradient style)
   const getHighlightColor = (): string => {
     switch (styleCategory) {
       case 'outline-blue': return OLD_SCHOOL_HIGHLIGHT_COLOR;
       case 'outline-red': return SERIF_RED_HIGHLIGHT_COLOR;
       case 'glow-gold': return GOLD_GLOW_COLOR;
-      case 'glow-neon-pink': return NEON_PINK_COLOR;
+      case 'glow-gradient': return GRADIENT_COLORS; // Returns gradient string
       default: return "rgba(255, 255, 255, 1)";
     }
   };
@@ -1326,7 +1337,7 @@ export function LyricsDisplay({
     if (isOldSchoolKaraoke) return "none";
     switch (styleCategory) {
       case 'glow-gold': return isHighlight ? GOLD_GLOW_SHADOW : BASE_SHADOW;
-      case 'glow-neon-pink': return isHighlight ? NEON_PINK_GLOW_SHADOW : BASE_SHADOW;
+      case 'glow-gradient': return isHighlight ? GRADIENT_GLOW_SHADOW : BASE_SHADOW;
       default: return isHighlight ? GLOW_SHADOW : BASE_SHADOW;
     }
   };
@@ -1336,7 +1347,7 @@ export function LyricsDisplay({
     if (isOldSchoolKaraoke) return "none";
     switch (styleCategory) {
       case 'glow-gold': return GOLD_GLOW_FILTER;
-      case 'glow-neon-pink': return NEON_PINK_GLOW_FILTER;
+      case 'glow-gradient': return GRADIENT_GLOW_FILTER;
       default: return GLOW_FILTER;
     }
   };
@@ -1345,13 +1356,14 @@ export function LyricsDisplay({
   const getBaseColor = (): string | undefined => {
     switch (styleCategory) {
       case 'glow-gold': return GOLD_BASE_COLOR;
-      case 'glow-neon-pink': return NEON_PINK_BASE_COLOR;
+      case 'glow-gradient': return GRADIENT_BASE_COLOR;
       default: return undefined;
     }
   };
   
   const highlightColor = getHighlightColor();
-  const isColoredGlow = styleCategory === 'glow-gold' || styleCategory === 'glow-neon-pink';
+  const isColoredGlow = styleCategory === 'glow-gold' || styleCategory === 'glow-gradient';
+  const isGradientStyle = styleCategory === 'glow-gradient';
 
   const getTextAlign = (
     align: LyricsAlignment,
@@ -1746,6 +1758,14 @@ export function LyricsDisplay({
                                       WebkitTextStroke: isCurrent ? OLD_SCHOOL_HIGHLIGHT_STROKE : OLD_SCHOOL_BASE_STROKE,
                                       paintOrder: "stroke fill",
                                     } as React.CSSProperties
+                                  : isGradientStyle && !hasWordTimings && isCurrent
+                                  ? {
+                                      background: highlightColor,
+                                      backgroundClip: "text",
+                                      WebkitBackgroundClip: "text",
+                                      color: "transparent",
+                                      textShadow: getGlowShadow(true),
+                                    } as React.CSSProperties
                                   : isColoredGlow && !hasWordTimings
                                   ? {
                                       color: isCurrent ? highlightColor : getBaseColor(),
@@ -1775,6 +1795,7 @@ export function LyricsDisplay({
                     highlightColor={highlightColor}
                     glowFilter={getGlowFilter()}
                     baseColor={getBaseColor()}
+                    isGradient={isGradientStyle}
                   />
                 ) : hasWordTimings ? (
                   <StaticWordRendering

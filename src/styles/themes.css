@@ -1188,9 +1188,9 @@
   font-smooth: auto !important;
 }
 
-/* Preserve neon-pink lyrics font on macOS theme (K-pop modern style) */
-:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-neon-pink,
-:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-neon-pink {
+/* Preserve gradient lyrics font on macOS theme (modern gradient style) */
+:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gradient,
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gradient {
   font-family: "LucidaGrande", "Lucida Grande", "Hiragino Sans",
     "Hiragino Kaku Gothic ProN", "PingFang SC", "Microsoft YaHei",
     "Apple SD Gothic Neo", "Malgun Gothic", "Nanum Gothic", system-ui,
@@ -1208,8 +1208,8 @@
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-sans rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif-red rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-serif-red rt.lyrics-furigana-rt,
-:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-neon-pink rt.lyrics-furigana-rt,
-:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-neon-pink rt.lyrics-furigana-rt {
+:root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gradient rt.lyrics-furigana-rt,
+:root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gradient rt.lyrics-furigana-rt {
   font-weight: 700 !important;
 }
 
