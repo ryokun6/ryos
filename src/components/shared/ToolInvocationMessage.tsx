@@ -37,15 +37,18 @@ interface ToolInvocationStatusRowProps {
   icon: ReactNode;
   children: ReactNode;
   className?: string;
+  align?: "center" | "start";
 }
 
 function ToolInvocationStatusRow({
   icon,
   children,
   className,
+  align = "center",
 }: ToolInvocationStatusRowProps) {
+  const alignmentClass = align === "start" ? "items-start" : "items-center";
   return (
-    <div className={`flex items-center gap-1 ${className || ""}`}>
+    <div className={`flex ${alignmentClass} gap-1 ${className || ""}`}>
       <span className="inline-flex h-3 w-3 items-center justify-center shrink-0">
         {icon}
       </span>
@@ -614,6 +617,7 @@ export function ToolInvocationMessage({
         <ToolInvocationStatusRow
           icon={<Check className="h-3 w-3 text-blue-600" weight="bold" />}
           className="text-gray-700"
+          align="start"
         >
           {displayResultMessage ? (
             <span>{displayResultMessage}</span>
