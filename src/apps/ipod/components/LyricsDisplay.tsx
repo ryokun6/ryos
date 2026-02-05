@@ -181,11 +181,11 @@ const GOLD_GLOW_SHADOW = "0 0 8px rgba(255,215,0,0.8), 0 0 16px rgba(255,215,0,0
 const GOLD_GLOW_FILTER = "drop-shadow(0 0 8px rgba(255,215,0,0.5))";
 const GOLD_BASE_COLOR = "rgba(255, 215, 0, 0.6)"; // Dimmed gold for inactive
 
-// Gradient (Rainbow) - colorful rainbow spectrum effect
-const GRADIENT_COLORS = "linear-gradient(90deg, #FF0000 0%, #FF7F00 17%, #FFFF00 33%, #00FF00 50%, #0000FF 67%, #4B0082 83%, #9400D3 100%)";
-const GRADIENT_GLOW_SHADOW = "0 0 6px rgba(255,255,255,0.6), 0 0 6px rgba(0,0,0,0.5)";
-const GRADIENT_GLOW_FILTER = "drop-shadow(0 0 4px rgba(255,255,255,0.5))";
-const GRADIENT_BASE_COLOR = "#888"; // Flat gray for inactive
+// Gradient (Rainbow) - bright pastel rainbow spectrum effect
+const GRADIENT_COLORS = "linear-gradient(90deg, #FF6B9D 0%, #FFAA5C 17%, #FFEE55 33%, #5CFF8A 50%, #5CD9FF 67%, #8B9DFF 83%, #D98CFF 100%)";
+const GRADIENT_GLOW_SHADOW = "0 0 8px rgba(255,107,157,0.7), 0 0 8px rgba(92,255,138,0.5), 0 0 8px rgba(92,217,255,0.5), 0 0 6px rgba(0,0,0,0.4)";
+const GRADIENT_GLOW_FILTER = "drop-shadow(0 0 6px rgba(255,107,157,0.6)) drop-shadow(0 0 6px rgba(92,217,255,0.6))";
+const GRADIENT_BASE_COLOR = "#999"; // Flat gray for inactive
 
 // Style category detection
 type StyleCategory = 'outline-blue' | 'outline-red' | 'glow-white' | 'glow-gold' | 'glow-gradient';
