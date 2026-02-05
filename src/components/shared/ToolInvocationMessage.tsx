@@ -1,4 +1,5 @@
 import { Check } from "@phosphor-icons/react";
+import type { ReactNode } from "react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { useTranslation } from "react-i18next";
@@ -30,6 +31,27 @@ function getToolName(part: ToolInvocationPart): string {
     return part.type.slice(5);
   }
   return part.type;
+}
+
+interface ToolInvocationStatusRowProps {
+  icon: ReactNode;
+  children: ReactNode;
+  className?: string;
+}
+
+function ToolInvocationStatusRow({
+  icon,
+  children,
+  className,
+}: ToolInvocationStatusRowProps) {
+  return (
+    <div className={`flex items-center gap-1 ${className || ""}`}>
+      <span className="inline-flex h-3 w-3 items-center justify-center shrink-0">
+        {icon}
+      </span>
+      {children}
+    </div>
+  );
 }
 
 interface ToolInvocationMessageProps {
@@ -524,12 +546,15 @@ export function ToolInvocationMessage({
       }
       // Show loading state if HTML not yet available
       return (
-        <div
-          key={partKey}
-          className="mb-0 px-1 py-0.5 text-xs italic text-neutral-600 flex items-center gap-1"
-        >
-          <ActivityIndicator size="xs" className="text-gray-500" />
-          <span className="shimmer">{t("apps.chats.toolCalls.generating")}</span>
+        <div key={partKey} className="mb-0 px-1 py-0.5 italic text-[12px]">
+          <ToolInvocationStatusRow
+            icon={<ActivityIndicator size="xs" className="text-gray-500" />}
+            className="text-neutral-600"
+          >
+            <span className="shimmer">
+              {t("apps.chats.toolCalls.generating")}
+            </span>
+          </ToolInvocationStatusRow>
         </div>
       );
     } else if (state === "input-available") {
@@ -550,35 +575,46 @@ export function ToolInvocationMessage({
         );
       }
       return (
-        <div
-          key={partKey}
-          className="mb-0 px-1 py-0.5 text-xs italic text-gray-500"
-        >
-          {t("apps.chats.toolCalls.preparingHtmlPreview")}
+        <div key={partKey} className="mb-0 px-1 py-0.5 italic text-[12px]">
+          <ToolInvocationStatusRow
+            icon={<ActivityIndicator size="xs" className="text-gray-500" />}
+            className="text-gray-500"
+          >
+            <span>{t("apps.chats.toolCalls.preparingHtmlPreview")}</span>
+          </ToolInvocationStatusRow>
         </div>
       );
     }
   }
 
   // Default rendering for other tools
+  const fallbackErrorText =
+    errorText || t("apps.chats.toolCalls.toolExecutionFailed");
+
   return (
     <div key={partKey} className="mb-0 px-1 py-0.5 italic text-[12px]">
       {(state === "input-streaming" || state === "input-available") &&
         !output && (
-          <div className="flex items-center gap-1 text-gray-700">
-            <ActivityIndicator size="xs" className="text-gray-500" />
+          <ToolInvocationStatusRow
+            icon={<ActivityIndicator size="xs" className="text-gray-500" />}
+            className="text-gray-700"
+          >
             {displayCallMessage ? (
               <span className="shimmer">{displayCallMessage}</span>
             ) : (
               <span>
-                {t("apps.chats.toolCalls.calling", { toolName: formatToolName(toolName) })}
+                {t("apps.chats.toolCalls.calling", {
+                  toolName: formatToolName(toolName),
+                })}
               </span>
             )}
-          </div>
+          </ToolInvocationStatusRow>
         )}
       {state === "output-available" && (
-        <div className="flex items-center gap-1 text-gray-700">
-          <Check className="h-3 w-3 text-blue-600" weight="bold" />
+        <ToolInvocationStatusRow
+          icon={<Check className="h-3 w-3 text-blue-600" weight="bold" />}
+          className="text-gray-700"
+        >
           {displayResultMessage ? (
             <span>{displayResultMessage}</span>
           ) : (
@@ -590,14 +626,19 @@ export function ToolInvocationMessage({
               )}
             </div>
           )}
-        </div>
+        </ToolInvocationStatusRow>
       )}
       {state === "output-error" && (
-        <div className="flex items-center gap-1 text-red-600">
-          <span className="text-xs">
-            ⚠️ {errorText || t("apps.chats.toolCalls.toolExecutionFailed")}
-          </span>
-        </div>
+        <ToolInvocationStatusRow
+          icon={
+            <span className="text-[10px] leading-none" aria-hidden="true">
+              ⚠️
+            </span>
+          }
+          className="text-red-600"
+        >
+          <span className="text-xs">{fallbackErrorText}</span>
+        </ToolInvocationStatusRow>
       )}
     </div>
   );
