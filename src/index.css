@@ -460,8 +460,8 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
 
   /* Animated rainbow for gradient lyrics - rotates hue of both text and glow together */
   @keyframes lyrics-hue-rotate {
-    from { filter: drop-shadow(0 0 8px #00FFFF) drop-shadow(0 0 16px #00FFFF) hue-rotate(0deg); }
-    to { filter: drop-shadow(0 0 8px #00FFFF) drop-shadow(0 0 16px #00FFFF) hue-rotate(360deg); }
+    from { filter: drop-shadow(0 0 6px rgba(0,255,255,0.5)) drop-shadow(0 0 12px rgba(0,255,255,0.3)) hue-rotate(0deg); }
+    to { filter: drop-shadow(0 0 6px rgba(0,255,255,0.5)) drop-shadow(0 0 12px rgba(0,255,255,0.3)) hue-rotate(360deg); }
   }
 
   .lyrics-rainbow-animate {

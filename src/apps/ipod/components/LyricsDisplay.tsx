@@ -183,8 +183,8 @@ const GOLD_BASE_COLOR = "rgba(255, 215, 0, 0.6)"; // Dimmed gold for inactive
 
 // Gradient (Rainbow) - cyan starting color, hue-rotate animates both text and glow together
 const GRADIENT_COLORS = "#00FFFF"; // Cyan starting color (hue-rotate will cycle it)
-const GRADIENT_GLOW_SHADOW = "0 0 8px #00FFFF, 0 0 16px #00FFFF, 0 0 6px rgba(0,0,0,0.4)";
-const GRADIENT_GLOW_FILTER = "drop-shadow(0 0 8px #00FFFF) drop-shadow(0 0 16px #00FFFF)";
+const GRADIENT_GLOW_SHADOW = "0 0 6px rgba(0,255,255,0.5), 0 0 12px rgba(0,255,255,0.3), 0 0 4px rgba(0,0,0,0.3)";
+const GRADIENT_GLOW_FILTER = "drop-shadow(0 0 6px rgba(0,255,255,0.5)) drop-shadow(0 0 12px rgba(0,255,255,0.3))";
 const GRADIENT_BASE_COLOR = "#888"; // Flat gray for inactive
 
 // Style category detection
@@ -651,6 +651,7 @@ function WordTimingHighlight({
   glowFilter,
   baseColor,
   isGradient = false,
+  rainbowHue,
 }: {
   wordTimings: LyricWord[];
   lineStartTimeMs: number;
@@ -675,6 +676,8 @@ function WordTimingHighlight({
   baseColor?: string;
   /** Whether to use gradient text rendering */
   isGradient?: boolean;
+  /** Current hue rotation in degrees for rainbow effect (0-360) */
+  rainbowHue?: number;
 }): ReactNode {
   // Refs for direct DOM manipulation (bypasses React reconciliation)
   const overlayRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -914,10 +917,12 @@ function WordTimingHighlight({
           {/* Highlight layer: glow or old-school colored outline */}
           <span
             aria-hidden="true"
-            className={`lyrics-word-layer ${isGradient ? "lyrics-rainbow-animate" : ""}`}
+            className="lyrics-word-layer"
             style={{ 
-              // For gradient style, CSS animation handles the filter
-              filter: isGradient ? undefined : (isOldSchoolKaraoke ? "none" : (glowFilter || GLOW_FILTER)),
+              // For gradient style, combine drop-shadow with hue-rotate based on playback time
+              filter: isGradient && rainbowHue !== undefined
+                ? `${GRADIENT_GLOW_FILTER} hue-rotate(${rainbowHue}deg)`
+                : (isOldSchoolKaraoke ? "none" : (glowFilter || GLOW_FILTER)),
               // Keep GPU-composited to prevent pixel rounding
               backfaceVisibility: "hidden",
             }}
@@ -1742,7 +1747,7 @@ export function LyricsDisplay({
                               );
                               return (
                             <div
-                              className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${onSeekToTime && !hasWordTimings ? "cursor-pointer lyrics-line-clickable" : ""} ${isGradientStyle && !hasWordTimings && isCurrent ? "lyrics-rainbow-animate" : ""}`}
+                              className={`${textSizeClass} ${fontClassName} ${lineHeightClass} ${onSeekToTime && !hasWordTimings ? "cursor-pointer lyrics-line-clickable" : ""}`}
                               style={
                                 // For old-school karaoke non-word-timed lines, apply stroke and color
                                 isOldSchoolKaraoke && !hasWordTimings
@@ -1755,6 +1760,10 @@ export function LyricsDisplay({
                                   ? {
                                       color: isCurrent ? highlightColor : getBaseColor(),
                                       textShadow: isCurrent ? getGlowShadow(true) : BASE_SHADOW,
+                                      // Apply hue-rotate only when current (playing), continues from current playback position
+                                      filter: isCurrent && currentTimeMs !== undefined 
+                                        ? `${GRADIENT_GLOW_FILTER} hue-rotate(${(currentTimeMs / 6000 * 360) % 360}deg)` 
+                                        : undefined,
                                     } as React.CSSProperties
                                   : isColoredGlow && !hasWordTimings
                                   ? {
@@ -1786,6 +1795,7 @@ export function LyricsDisplay({
                     glowFilter={getGlowFilter()}
                     baseColor={getBaseColor()}
                     isGradient={isGradientStyle}
+                    rainbowHue={isGradientStyle && currentTimeMs !== undefined ? (currentTimeMs / 6000 * 360) % 360 : undefined}
                   />
                 ) : hasWordTimings ? (
                   <StaticWordRendering
