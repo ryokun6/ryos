@@ -426,6 +426,37 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
+  /* Monospace lyrics font utility */
+  .font-lyrics-mono {
+    font-family: "Monaco", "PerfectDOS", "ArkPixel", ui-monospace, SFMono-Regular, Menlo,
+      Consolas, "Liberation Mono", "Courier New", monospace;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    font-smooth: always;
+  }
+
+  /* Pixel lyrics font utility */
+  .font-lyrics-pixel {
+    font-family: "NeueBit", "ArkPixel", "PerfectDOS", "Geneva-12", system-ui, sans-serif;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: 0.02em;
+    -webkit-font-smoothing: none;
+    font-smooth: never;
+  }
+
+  /* Display lyrics font utility */
+  .font-lyrics-display {
+    font-family: "Mondwest", "AppleGaramond", "Hiragino Mincho ProN", "Yu Mincho",
+      "Songti TC", "Songti SC", "Noto Serif JP", "Noto Serif KR", serif;
+    font-weight: 600;
+    line-height: 1.1;
+    -webkit-font-smoothing: antialiased;
+    font-smooth: always;
+  }
+
   /* Karaoke force-font container - enables container queries for responsive sizing */
   .karaoke-force-font {
     container-type: inline-size;

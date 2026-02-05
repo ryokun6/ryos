@@ -414,6 +414,33 @@ export function KaraokeMenuBar({
               >
                 {t("apps.ipod.menu.fontSansSerif")}
               </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={lyricsFont === LyricsFont.Mono}
+                onCheckedChange={(checked) => {
+                  if (checked) setLyricsFont(LyricsFont.Mono);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.fontMono")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={lyricsFont === LyricsFont.Pixel}
+                onCheckedChange={(checked) => {
+                  if (checked) setLyricsFont(LyricsFont.Pixel);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.fontPixel")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={lyricsFont === LyricsFont.Display}
+                onCheckedChange={(checked) => {
+                  if (checked) setLyricsFont(LyricsFont.Display);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.fontDisplay")}
+              </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>
 

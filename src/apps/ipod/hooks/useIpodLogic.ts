@@ -1654,17 +1654,29 @@ export function useIpodLogic({
   const cycleLyricsFont = useCallback(() => {
     const store = useIpodStore.getState();
     const curr = store.lyricsFont;
-    let next: LyricsFont;
-    if (curr === LyricsFont.Rounded) next = LyricsFont.SansSerif;
-    else if (curr === LyricsFont.SansSerif) next = LyricsFont.Serif;
-    else next = LyricsFont.Rounded;
+    const cycleOrder: LyricsFont[] = [
+      LyricsFont.Rounded,
+      LyricsFont.SansSerif,
+      LyricsFont.Serif,
+      LyricsFont.Mono,
+      LyricsFont.Pixel,
+      LyricsFont.Display,
+    ];
+    const currentIndex = cycleOrder.indexOf(curr);
+    const next = cycleOrder[(currentIndex + 1) % cycleOrder.length] ?? LyricsFont.Rounded;
     store.setLyricsFont(next);
     showStatus(
       next === LyricsFont.Rounded
         ? t("apps.ipod.status.fontRounded")
         : next === LyricsFont.SansSerif
         ? t("apps.ipod.status.fontSansSerif")
-        : t("apps.ipod.status.fontSerif")
+        : next === LyricsFont.Serif
+        ? t("apps.ipod.status.fontSerif")
+        : next === LyricsFont.Mono
+        ? t("apps.ipod.status.fontMono")
+        : next === LyricsFont.Pixel
+        ? t("apps.ipod.status.fontPixel")
+        : t("apps.ipod.status.fontDisplay")
     );
   }, [showStatus, t]);
 

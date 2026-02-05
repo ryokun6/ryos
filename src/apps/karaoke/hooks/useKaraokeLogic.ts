@@ -773,17 +773,29 @@ export function useKaraokeLogic({
   // Font style cycle
   const cycleLyricsFont = useCallback(() => {
     const curr = lyricsFont;
-    let next: LyricsFont;
-    if (curr === LyricsFont.Rounded) next = LyricsFont.Serif;
-    else if (curr === LyricsFont.Serif) next = LyricsFont.SansSerif;
-    else next = LyricsFont.Rounded;
+    const cycleOrder: LyricsFont[] = [
+      LyricsFont.Rounded,
+      LyricsFont.SansSerif,
+      LyricsFont.Serif,
+      LyricsFont.Mono,
+      LyricsFont.Pixel,
+      LyricsFont.Display,
+    ];
+    const currentIndex = cycleOrder.indexOf(curr);
+    const next = cycleOrder[(currentIndex + 1) % cycleOrder.length] ?? LyricsFont.Rounded;
     setLyricsFont(next);
     showStatus(
       next === LyricsFont.Rounded
         ? t("apps.ipod.status.fontRounded")
+        : next === LyricsFont.SansSerif
+        ? t("apps.ipod.status.fontSansSerif")
         : next === LyricsFont.Serif
         ? t("apps.ipod.status.fontSerif")
-        : t("apps.ipod.status.fontSansSerif")
+        : next === LyricsFont.Mono
+        ? t("apps.ipod.status.fontMono")
+        : next === LyricsFont.Pixel
+        ? t("apps.ipod.status.fontPixel")
+        : t("apps.ipod.status.fontDisplay")
     );
   }, [lyricsFont, setLyricsFont, showStatus, t]);
 

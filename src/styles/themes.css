@@ -1164,6 +1164,68 @@
   font-smooth: auto !important;
 }
 
+/* Preserve mono lyrics font inside iPod fullscreen on macOS theme */
+::root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-mono {
+  font-family: "Monaco", "PerfectDOS", "ArkPixel", ui-monospace, SFMono-Regular, Menlo,
+    Consolas, "Liberation Mono", "Courier New", monospace !important;
+  font-weight: 600 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
+}
+
+/* Preserve mono lyrics font inside Karaoke app on macOS theme */
+::root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-mono {
+  font-family: "Monaco", "PerfectDOS", "ArkPixel", ui-monospace, SFMono-Regular, Menlo,
+    Consolas, "Liberation Mono", "Courier New", monospace !important;
+  font-weight: 600 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
+}
+
+/* Preserve pixel lyrics font inside iPod fullscreen on macOS theme */
+::root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-pixel {
+  font-family: "NeueBit", "ArkPixel", "PerfectDOS", "Geneva-12", system-ui, sans-serif !important;
+  font-weight: 700 !important;
+  line-height: 1.05 !important;
+  letter-spacing: 0.02em;
+  -webkit-font-smoothing: none !important;
+  font-smooth: never !important;
+}
+
+/* Preserve pixel lyrics font inside Karaoke app on macOS theme */
+::root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-pixel {
+  font-family: "NeueBit", "ArkPixel", "PerfectDOS", "Geneva-12", system-ui, sans-serif !important;
+  font-weight: 700 !important;
+  line-height: 1.05 !important;
+  letter-spacing: 0.02em;
+  -webkit-font-smoothing: none !important;
+  font-smooth: never !important;
+}
+
+/* Preserve display lyrics font inside iPod fullscreen on macOS theme */
+::root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-display {
+  font-family: "Mondwest", "AppleGaramond", "Hiragino Mincho ProN", "Yu Mincho",
+    "Songti TC", "Songti SC", "Noto Serif JP", "Noto Serif KR", serif !important;
+  font-weight: 600 !important;
+  line-height: 1.1 !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
+}
+
+/* Preserve display lyrics font inside Karaoke app on macOS theme */
+::root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-display {
+  font-family: "Mondwest", "AppleGaramond", "Hiragino Mincho ProN", "Yu Mincho",
+    "Songti TC", "Songti SC", "Noto Serif JP", "Noto Serif KR", serif !important;
+  font-weight: 600 !important;
+  line-height: 1.1 !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
+}
+
 /* Bold furigana for serif and sans-serif lyrics fonts on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-serif rt.lyrics-furigana-rt,
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-sans rt.lyrics-furigana-rt,

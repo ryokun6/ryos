@@ -21,6 +21,9 @@ export enum LyricsFont {
   SansSerif = "sans-serif",
   Serif = "serif",
   Rounded = "rounded",
+  Mono = "mono",
+  Pixel = "pixel",
+  Display = "display",
 }
 
 /**
@@ -33,6 +36,12 @@ export function getLyricsFontClassName(font: LyricsFont): string {
       return "font-lyrics-serif";
     case LyricsFont.SansSerif:
       return "font-lyrics-sans";
+    case LyricsFont.Mono:
+      return "font-lyrics-mono";
+    case LyricsFont.Pixel:
+      return "font-lyrics-pixel";
+    case LyricsFont.Display:
+      return "font-lyrics-display";
     case LyricsFont.Rounded:
     default:
       return "font-lyrics-rounded";
