@@ -458,6 +458,16 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
+  /* Animated hue rotation for rainbow gradient lyrics */
+  @keyframes lyrics-hue-rotate {
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+  }
+
+  .lyrics-rainbow-animate {
+    animation: lyrics-hue-rotate 8s linear infinite;
+  }
+
   /* Karaoke force-font container - enables container queries for responsive sizing */
   .karaoke-force-font {
     container-type: inline-size;
