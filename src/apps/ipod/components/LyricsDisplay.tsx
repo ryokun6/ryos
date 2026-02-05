@@ -181,11 +181,11 @@ const GOLD_GLOW_SHADOW = "0 0 8px rgba(255,215,0,0.8), 0 0 16px rgba(255,215,0,0
 const GOLD_GLOW_FILTER = "drop-shadow(0 0 8px rgba(255,215,0,0.5))";
 const GOLD_BASE_COLOR = "rgba(255, 215, 0, 0.6)"; // Dimmed gold for inactive
 
-// Gradient (Modern) - blue to cyan gradient fill
-const GRADIENT_COLORS = "linear-gradient(90deg, #0066FF 0%, #00BFFF 50%, #00FFFF 100%)";
-const GRADIENT_GLOW_SHADOW = "0 0 8px rgba(0,191,255,0.6), 0 0 16px rgba(0,191,255,0.3), 0 0 6px rgba(0,0,0,0.5)";
-const GRADIENT_GLOW_FILTER = "drop-shadow(0 0 6px rgba(0,191,255,0.5))";
-const GRADIENT_BASE_COLOR = "rgba(0, 191, 255, 0.5)"; // Dimmed cyan for inactive
+// Gradient (Metallic) - chrome/silver metallic shine effect
+const GRADIENT_COLORS = "linear-gradient(90deg, #666 0%, #ccc 20%, #fff 50%, #ccc 80%, #666 100%)";
+const GRADIENT_GLOW_SHADOW = "0 0 4px rgba(255,255,255,0.8), 0 0 8px rgba(255,255,255,0.4), 0 0 6px rgba(0,0,0,0.5)";
+const GRADIENT_GLOW_FILTER = "drop-shadow(0 0 4px rgba(255,255,255,0.6))";
+const GRADIENT_BASE_COLOR = "#777"; // Flat gray for inactive
 
 // Style category detection
 type StyleCategory = 'outline-blue' | 'outline-red' | 'glow-white' | 'glow-gold' | 'glow-gradient';
