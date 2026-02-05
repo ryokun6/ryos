@@ -181,10 +181,10 @@ const GOLD_GLOW_SHADOW = "0 0 8px rgba(255,215,0,0.8), 0 0 16px rgba(255,215,0,0
 const GOLD_GLOW_FILTER = "drop-shadow(0 0 8px rgba(255,215,0,0.5))";
 const GOLD_BASE_COLOR = "rgba(255, 215, 0, 0.6)"; // Dimmed gold for inactive
 
-// Gradient (Rainbow) - animated hue rotation effect
-const GRADIENT_COLORS = "#00FFFF"; // Cyan base color that will be hue-rotated
-const GRADIENT_GLOW_SHADOW = "0 0 8px currentColor, 0 0 6px rgba(0,0,0,0.4)";
-const GRADIENT_GLOW_FILTER = "drop-shadow(0 0 6px currentColor)";
+// Gradient (Rainbow) - cyan starting color, hue-rotate animates both text and glow together
+const GRADIENT_COLORS = "#00FFFF"; // Cyan starting color (hue-rotate will cycle it)
+const GRADIENT_GLOW_SHADOW = "0 0 8px #00FFFF, 0 0 16px #00FFFF, 0 0 6px rgba(0,0,0,0.4)";
+const GRADIENT_GLOW_FILTER = "drop-shadow(0 0 8px #00FFFF) drop-shadow(0 0 16px #00FFFF)";
 const GRADIENT_BASE_COLOR = "#888"; // Flat gray for inactive
 
 // Style category detection
@@ -914,9 +914,10 @@ function WordTimingHighlight({
           {/* Highlight layer: glow or old-school colored outline */}
           <span
             aria-hidden="true"
-            className="lyrics-word-layer"
+            className={`lyrics-word-layer ${isGradient ? "lyrics-rainbow-animate" : ""}`}
             style={{ 
-              filter: isOldSchoolKaraoke ? "none" : (glowFilter || GLOW_FILTER),
+              // For gradient style, CSS animation handles the filter
+              filter: isGradient ? undefined : (isOldSchoolKaraoke ? "none" : (glowFilter || GLOW_FILTER)),
               // Keep GPU-composited to prevent pixel rounding
               backfaceVisibility: "hidden",
             }}
@@ -924,7 +925,6 @@ function WordTimingHighlight({
             {/* Masked text - uses CSS custom property for GPU-accelerated animation */}
             <span
               ref={(el) => { overlayRefs.current[idx] = el; }}
-              className={isGradient ? "lyrics-rainbow-animate" : undefined}
               style={{ 
                 display: "block",
                 color: highlightColor || (isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_COLOR : "rgba(255, 255, 255, 1)"),

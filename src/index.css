@@ -458,14 +458,14 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
-  /* Animated hue rotation for rainbow gradient lyrics */
+  /* Animated rainbow for gradient lyrics - rotates hue of both text and glow together */
   @keyframes lyrics-hue-rotate {
-    0% { filter: hue-rotate(0deg); }
-    100% { filter: hue-rotate(360deg); }
+    from { filter: drop-shadow(0 0 8px #00FFFF) drop-shadow(0 0 16px #00FFFF) hue-rotate(0deg); }
+    to { filter: drop-shadow(0 0 8px #00FFFF) drop-shadow(0 0 16px #00FFFF) hue-rotate(360deg); }
   }
 
   .lyrics-rainbow-animate {
-    animation: lyrics-hue-rotate 8s linear infinite;
+    animation: lyrics-hue-rotate 6s linear infinite;
   }
 
   /* Karaoke force-font container - enables container queries for responsive sizing */
