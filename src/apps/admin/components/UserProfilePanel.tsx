@@ -65,6 +65,8 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const [showBanInput, setShowBanInput] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isBanDialogOpen, setIsBanDialogOpen] = useState(false);
+  const [isRoomsOpen, setIsRoomsOpen] = useState(false);
+  const [isMessagesOpen, setIsMessagesOpen] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     if (!currentUser || !authToken) return;
@@ -148,6 +150,11 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
       setIsLoading(false);
     });
   }, [fetchProfile, fetchMessages, fetchMemories]);
+
+  useEffect(() => {
+    setIsRoomsOpen(false);
+    setIsMessagesOpen(false);
+  }, [username]);
 
   const handleBan = async () => {
     if (!currentUser || !authToken) return;
@@ -272,11 +279,14 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   }
 
   const isTargetAdmin = username.toLowerCase() === "ryo";
+  const roomsCount = profile?.rooms?.length ?? 0;
+  const messagesCount = messages.length;
 
   // Skeleton placeholder component
   const Skeleton = ({ className }: { className?: string }) => (
     <div className={cn("bg-neutral-200 animate-pulse rounded", className)} />
   );
+  const sectionHeaderClass = "text-[11px] uppercase tracking-wide text-black/50";
 
   return (
     <div className="flex flex-col h-full font-geneva-12">
@@ -356,133 +366,10 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             </div>
           </div>
 
-          {/* Ban Info */}
-          {!isLoading && profile?.banned && (
-            <div className="p-2 bg-red-50 rounded border border-red-200">
-              <div className="flex items-start gap-1.5 text-[10px] text-red-600 mb-1">
-                <Prohibit className="h-3 w-3 mt-px" weight="bold" />
-                {t("apps.admin.profile.banDetails")}
-              </div>
-              <div className="text-[11px] space-y-1">
-                <div>
-                  <span className="text-neutral-500">{t("apps.admin.profile.reason")}:</span>{" "}
-                  {profile.banReason || t("apps.admin.profile.noReason")}
-                </div>
-                {profile.bannedAt && (
-                  <div>
-                    <span className="text-neutral-500">{t("apps.admin.profile.bannedOn")}:</span>{" "}
-                    {formatDate(profile.bannedAt)}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Actions */}
-          {!isTargetAdmin && (
-            <div className="space-y-2">
-              <div className="!text-[11px] uppercase tracking-wide text-black/50">
-                {t("apps.admin.profile.actions")}
-              </div>
-              {isLoading ? (
-                <div className="flex gap-2">
-                  <Skeleton className="h-7 w-24" />
-                  <Skeleton className="h-7 w-24" />
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {profile?.banned ? (
-                    <button
-                      onClick={handleUnban}
-                      className="aqua-button primary h-7 px-3 text-[11px] flex items-center gap-1"
-                    >
-                      <Check className="h-3 w-3" weight="bold" />
-                      <span>{t("apps.admin.profile.unban")}</span>
-                    </button>
-                  ) : (
-                    <>
-                      {showBanInput ? (
-                        <div className="flex items-center gap-2 flex-1">
-                          <Input
-                            placeholder={t("apps.admin.profile.banReasonPlaceholder")}
-                            value={banReason}
-                            onChange={(e) => setBanReason(e.target.value)}
-                            className="h-7 text-[11px] flex-1"
-                          />
-                          <button
-                            onClick={() => setIsBanDialogOpen(true)}
-                            className="aqua-button orange h-7 px-3 text-[11px]"
-                            style={{ color: "#000", textShadow: "none" }}
-                          >
-                            <span style={{ color: "#000" }}>{t("apps.admin.profile.confirmBan")}</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setShowBanInput(false);
-                              setBanReason("");
-                            }}
-                            className="aqua-button secondary h-7 px-3 text-[11px]"
-                          >
-                            <span>{t("common.dialog.cancel")}</span>
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setShowBanInput(true)}
-                          className="aqua-button orange h-7 px-3 text-[11px] flex items-center gap-1"
-                          style={{ color: "#000", textShadow: "none" }}
-                        >
-                          <Prohibit className="h-3 w-3" style={{ color: "#000" }} weight="bold" />
-                          <span style={{ color: "#000" }}>{t("apps.admin.profile.ban")}</span>
-                        </button>
-                      )}
-                    </>
-                  )}
-                  <button
-                    onClick={() => setIsDeleteDialogOpen(true)}
-                    className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
-                  >
-                    <Trash className="h-3 w-3" weight="bold" />
-                    <span>{t("apps.admin.profile.delete")}</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Rooms */}
-          {isLoading ? (
-            <div className="space-y-2">
-              <div className="!text-[11px] uppercase tracking-wide text-black/50">
-                {t("apps.admin.profile.activeRooms")}
-              </div>
-              <div className="flex gap-1">
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-6 w-20" />
-              </div>
-            </div>
-          ) : profile?.rooms && profile.rooms.length > 0 && (
-            <div className="space-y-2">
-              <div className="!text-[11px] uppercase tracking-wide text-black/50">
-                {t("apps.admin.profile.activeRooms")}
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {profile.rooms.map((room) => (
-                  <span
-                    key={room.id}
-                    className="px-2 py-1 text-[10px] bg-gray-100 rounded"
-                  >
-                    #{room.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Memories */}
           {isLoading ? (
             <div className="space-y-2">
-              <div className="!text-[11px] uppercase tracking-wide text-black/50">
+              <div className={sectionHeaderClass}>
                 {t("apps.admin.profile.memories")}
               </div>
               <div className="space-y-1">
@@ -492,7 +379,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             </div>
           ) : (
             <div className="space-y-2">
-              <div className="!text-[11px] uppercase tracking-wide text-black/50">
+              <div className={sectionHeaderClass}>
                 {t("apps.admin.profile.memories")} ({memories.length})
               </div>
               {memories.length === 0 ? (
@@ -566,53 +453,218 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             </div>
           )}
 
-          {/* Recent Messages */}
-          {!isLoading && (
-          <div className="space-y-2">
-            <div className="!text-[11px] uppercase tracking-wide text-black/50">
-              {t("apps.admin.profile.recentMessages")} ({messages.length})
-            </div>
-            {messages.length === 0 ? (
-              <div className="text-[11px] text-neutral-400 text-center py-4">
-                {t("apps.admin.profile.noMessages")}
+          {/* Ban Info */}
+          {!isLoading && profile?.banned && (
+            <div className="p-2 bg-red-50 rounded border border-red-200">
+              <div className={cn(sectionHeaderClass, "flex items-start gap-1.5 text-red-600 mb-1")}>
+                <Prohibit className="h-3 w-3 mt-px" weight="bold" />
+                {t("apps.admin.profile.banDetails")}
               </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="text-[10px] border-none font-normal">
-                    <TableHead className="font-normal bg-gray-100/50 h-[24px]">
-                      {t("apps.admin.profile.room")}
-                    </TableHead>
-                    <TableHead className="font-normal bg-gray-100/50 h-[24px]">
-                      {t("apps.admin.tableHeaders.message")}
-                    </TableHead>
-                    <TableHead className="font-normal bg-gray-100/50 h-[24px] whitespace-nowrap">
-                      {t("apps.admin.tableHeaders.time")}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="text-[11px]">
-                  {messages.map((message) => (
-                    <TableRow
-                      key={message.id}
-                      className="border-none hover:bg-gray-100/50 transition-colors cursor-default odd:bg-gray-200/30"
+              <div className="text-[11px] space-y-1">
+                <div>
+                  <span className="text-neutral-500">{t("apps.admin.profile.reason")}:</span>{" "}
+                  {profile.banReason || t("apps.admin.profile.noReason")}
+                </div>
+                {profile.bannedAt && (
+                  <div>
+                    <span className="text-neutral-500">{t("apps.admin.profile.bannedOn")}:</span>{" "}
+                    {formatDate(profile.bannedAt)}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Actions */}
+          {!isTargetAdmin && (
+            <div className="space-y-2">
+              <div className={sectionHeaderClass}>
+                {t("apps.admin.profile.actions")}
+              </div>
+              {isLoading ? (
+                <div className="flex gap-2">
+                  <Skeleton className="h-7 w-24" />
+                  <Skeleton className="h-7 w-24" />
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {profile?.banned ? (
+                    <button
+                      onClick={handleUnban}
+                      className="aqua-button primary h-7 px-3 text-[11px] flex items-center gap-1"
                     >
-                      <TableCell className="whitespace-nowrap">
-                        <span className="text-neutral-500">#</span>
-                        {message.roomName || message.roomId}
-                      </TableCell>
-                      <TableCell className="max-w-[200px]">
-                        <span className="truncate block">{message.content}</span>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-neutral-500">
-                        {formatRelativeTime(message.timestamp)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
+                      <Check className="h-3 w-3" weight="bold" />
+                      <span>{t("apps.admin.profile.unban")}</span>
+                    </button>
+                  ) : (
+                    <>
+                      {showBanInput ? (
+                        <div className="flex items-center gap-2 flex-1">
+                          <Input
+                            placeholder={t("apps.admin.profile.banReasonPlaceholder")}
+                            value={banReason}
+                            onChange={(e) => setBanReason(e.target.value)}
+                            className="h-7 text-[11px] flex-1"
+                          />
+                          <button
+                            onClick={() => setIsBanDialogOpen(true)}
+                            className="aqua-button orange h-7 px-3 text-[11px]"
+                            style={{ color: "#000", textShadow: "none" }}
+                          >
+                            <span style={{ color: "#000" }}>{t("apps.admin.profile.confirmBan")}</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowBanInput(false);
+                              setBanReason("");
+                            }}
+                            className="aqua-button secondary h-7 px-3 text-[11px]"
+                          >
+                            <span>{t("common.dialog.cancel")}</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowBanInput(true)}
+                          className="aqua-button orange h-7 px-3 text-[11px] flex items-center gap-1"
+                          style={{ color: "#000", textShadow: "none" }}
+                        >
+                          <Prohibit className="h-3 w-3" style={{ color: "#000" }} weight="bold" />
+                          <span style={{ color: "#000" }}>{t("apps.admin.profile.ban")}</span>
+                        </button>
+                      )}
+                    </>
+                  )}
+                  <button
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                    className="aqua-button secondary h-7 px-3 text-[11px] flex items-center gap-1"
+                  >
+                    <Trash className="h-3 w-3" weight="bold" />
+                    <span>{t("apps.admin.profile.delete")}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Rooms */}
+          {isLoading ? (
+            <div className="space-y-2">
+              <div className={sectionHeaderClass}>
+                {t("apps.admin.profile.activeRooms")}
+              </div>
+              <div className="flex gap-1">
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-6 w-20" />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setIsRoomsOpen((prev) => !prev)}
+                aria-expanded={isRoomsOpen}
+                className={cn(sectionHeaderClass, "flex items-center gap-1.5 text-left")}
+              >
+                <CaretRight
+                  className={cn("h-3 w-3 transition-transform", isRoomsOpen && "rotate-90")}
+                  weight="bold"
+                />
+                <span>
+                  {t("apps.admin.profile.activeRooms")} ({roomsCount})
+                </span>
+              </button>
+              {isRoomsOpen && (
+                <>
+                  {roomsCount > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {profile?.rooms?.map((room) => (
+                        <span
+                          key={room.id}
+                          className="px-2 py-1 text-[10px] bg-gray-100 rounded"
+                        >
+                          #{room.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Recent Messages */}
+          {isLoading ? (
+            <div className="space-y-2">
+              <div className={sectionHeaderClass}>
+                {t("apps.admin.profile.recentMessages")}
+              </div>
+              <div className="space-y-1">
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-full" />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setIsMessagesOpen((prev) => !prev)}
+                aria-expanded={isMessagesOpen}
+                className={cn(sectionHeaderClass, "flex items-center gap-1.5 text-left")}
+              >
+                <CaretRight
+                  className={cn("h-3 w-3 transition-transform", isMessagesOpen && "rotate-90")}
+                  weight="bold"
+                />
+                <span>
+                  {t("apps.admin.profile.recentMessages")} ({messagesCount})
+                </span>
+              </button>
+              {isMessagesOpen && (
+                <>
+                  {messagesCount === 0 ? (
+                    <div className="text-[11px] text-neutral-400 text-center py-4">
+                      {t("apps.admin.profile.noMessages")}
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="text-[10px] border-none font-normal">
+                          <TableHead className="font-normal bg-gray-100/50 h-[24px]">
+                            {t("apps.admin.profile.room")}
+                          </TableHead>
+                          <TableHead className="font-normal bg-gray-100/50 h-[24px]">
+                            {t("apps.admin.tableHeaders.message")}
+                          </TableHead>
+                          <TableHead className="font-normal bg-gray-100/50 h-[24px] whitespace-nowrap">
+                            {t("apps.admin.tableHeaders.time")}
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody className="text-[11px]">
+                        {messages.map((message) => (
+                          <TableRow
+                            key={message.id}
+                            className="border-none hover:bg-gray-100/50 transition-colors cursor-default odd:bg-gray-200/30"
+                          >
+                            <TableCell className="whitespace-nowrap">
+                              <span className="text-neutral-500">#</span>
+                              {message.roomName || message.roomId}
+                            </TableCell>
+                            <TableCell className="max-w-[200px]">
+                              <span className="truncate block">{message.content}</span>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-neutral-500">
+                              {formatRelativeTime(message.timestamp)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </>
+              )}
+            </div>
           )}
         </div>
       </ScrollArea>
