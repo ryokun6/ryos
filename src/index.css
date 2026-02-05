@@ -457,6 +457,26 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
+  /* Outline karaoke style variables (used by outline lyric styles) */
+  .lyrics-style-outline {
+    --lyrics-outline-width: 0.12em;
+    --lyrics-outline-base-color: #fff;
+    --lyrics-outline-highlight-color: #0066ff;
+    --lyrics-outline-base-stroke-color: rgba(0, 0, 0, 0.7);
+    --lyrics-outline-highlight-stroke-color: #fff;
+    --lyrics-outline-padding: 0.2em;
+    --lyrics-outline-padding-top: 0.4em;
+    --lyrics-outline-padding-bottom: 0.2em;
+  }
+
+  .lyrics-style-outline-red {
+    --lyrics-outline-highlight-color: #ff3b30;
+  }
+
+  .lyrics-style-outline-gold {
+    --lyrics-outline-highlight-color: #ffcc33;
+  }
+
   /* Karaoke force-font container - enables container queries for responsive sizing */
   .karaoke-force-font {
     container-type: inline-size;
@@ -1065,8 +1085,8 @@ ruby.lyrics-furigana {
   ruby-position: over;
 }
 
-/* Move furigana up in rounded/old-school style */
-.font-lyrics-rounded ruby.lyrics-furigana rt {
+/* Move furigana up in outline karaoke styles */
+.lyrics-style-outline ruby.lyrics-furigana rt {
   margin-bottom: 0.2em;
 }
 
@@ -1095,8 +1115,8 @@ ruby.lyrics-furigana {
   margin-top: -0.35em;
 }
 
-/* Old-school karaoke (rounded font) needs more top padding for stroke + furigana */
-.font-lyrics-rounded .lyrics-word-highlight:has(ruby) {
+/* Outline karaoke needs more top padding for stroke + furigana */
+.lyrics-style-outline .lyrics-word-highlight:has(ruby) {
   padding-top: 0.45em;
   margin-top: -0.45em;
 }

@@ -1656,8 +1656,10 @@ export function useIpodLogic({
     const curr = store.lyricsFont;
     const cycleOrder: LyricsFont[] = [
       LyricsFont.Rounded,
-      LyricsFont.SansSerif,
       LyricsFont.Serif,
+      LyricsFont.SerifOutlineRed,
+      LyricsFont.SansSerif,
+      LyricsFont.SansOutlineGold,
       LyricsFont.Mono,
       LyricsFont.Pixel,
       LyricsFont.Display,
@@ -1668,10 +1670,14 @@ export function useIpodLogic({
     showStatus(
       next === LyricsFont.Rounded
         ? t("apps.ipod.status.fontRounded")
-        : next === LyricsFont.SansSerif
-        ? t("apps.ipod.status.fontSansSerif")
         : next === LyricsFont.Serif
         ? t("apps.ipod.status.fontSerif")
+        : next === LyricsFont.SerifOutlineRed
+        ? t("apps.ipod.status.fontSerifOutlineRed")
+        : next === LyricsFont.SansSerif
+        ? t("apps.ipod.status.fontSansSerif")
+        : next === LyricsFont.SansOutlineGold
+        ? t("apps.ipod.status.fontSansOutlineGold")
         : next === LyricsFont.Mono
         ? t("apps.ipod.status.fontMono")
         : next === LyricsFont.Pixel

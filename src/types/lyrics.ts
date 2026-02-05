@@ -20,6 +20,8 @@ export interface LyricLine {
 export enum LyricsFont {
   SansSerif = "sans-serif",
   Serif = "serif",
+  SerifOutlineRed = "serif-outline-red",
+  SansOutlineGold = "sans-outline-gold",
   Rounded = "rounded",
   Mono = "mono",
   Pixel = "pixel",
@@ -32,6 +34,10 @@ export enum LyricsFont {
  */
 export function getLyricsFontClassName(font: LyricsFont): string {
   switch (font) {
+    case LyricsFont.SerifOutlineRed:
+      return "font-lyrics-serif lyrics-style-outline lyrics-style-outline-red";
+    case LyricsFont.SansOutlineGold:
+      return "font-lyrics-sans lyrics-style-outline lyrics-style-outline-gold";
     case LyricsFont.Serif:
       return "font-lyrics-serif";
     case LyricsFont.SansSerif:
@@ -44,7 +50,7 @@ export function getLyricsFontClassName(font: LyricsFont): string {
       return "font-lyrics-display";
     case LyricsFont.Rounded:
     default:
-      return "font-lyrics-rounded";
+      return "font-lyrics-rounded lyrics-style-outline";
   }
 }
 
