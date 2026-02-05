@@ -381,9 +381,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           {/* Stats */}
           <div className="grid grid-cols-2 gap-2">
             <div className="py-1.5">
-              <div className="text-[10px] text-neutral-500 mb-1">
+              <SectionHeader className="mb-1">
                 {t("apps.admin.profile.messages")}
-              </div>
+              </SectionHeader>
               {isLoading ? (
                 <Skeleton className="h-5 w-8" />
               ) : (
@@ -391,9 +391,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
               )}
             </div>
             <div className="py-1.5">
-              <div className="text-[10px] text-neutral-500 mb-1">
+              <SectionHeader className="mb-1">
                 {t("apps.admin.profile.rooms")}
-              </div>
+              </SectionHeader>
               {isLoading ? (
                 <Skeleton className="h-5 w-8" />
               ) : (
