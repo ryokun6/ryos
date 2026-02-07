@@ -146,6 +146,7 @@ export function ChatsAppComponent({
   // Get font size state from store - select separately for optimization
   const fontSize = useChatsStore((state) => state.fontSize);
   const setFontSize = useChatsStore((state) => state.setFontSize);
+  const messageRenderLimit = useChatsStore((state) => state.messageRenderLimit);
 
   const [isShaking, setIsShaking] = useState(false);
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
@@ -511,7 +512,7 @@ export function ChatsAppComponent({
         },
         username: msg.username,
       }))
-    : messages.map((msg: AIChatMessage) => ({
+    : messages.slice(-messageRenderLimit).map((msg: AIChatMessage) => ({
         ...msg,
         // metadata with createdAt is already present from AIChatMessage
         username: msg.role === "user" ? username || "You" : "Ryo",
