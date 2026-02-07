@@ -6,8 +6,6 @@ export { STORES };
 import { getNonFinderApps, AppId, getAppIconPath } from "@/config/appRegistry";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
-import { useIpodStore } from "@/stores/useIpodStore";
-import { useVideoStore } from "@/stores/useVideoStore";
 import {
   useInternetExplorerStore,
   type Favorite,
@@ -17,7 +15,11 @@ import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useAppStore, type LaunchOriginRect } from "@/stores/useAppStore";
 import { migrateIndexedDBToUUIDs } from "@/utils/indexedDBMigration";
 import { useFinderStore } from "@/stores/useFinderStore";
-import { useFilesStoreShallow } from "@/stores/helpers";
+import {
+  useFilesStoreShallow,
+  useIpodStoreShallow,
+  useVideoStoreShallow,
+} from "@/stores/helpers";
 import { formatKugouImageUrl } from "@/apps/ipod/constants";
 
 // STORES is now imported from @/utils/indexedDB to avoid duplication
@@ -436,13 +438,23 @@ export function useFileSystem(
     tracks: ipodTracks,
     setCurrentSongId: setIpodSongId,
     setIsPlaying: setIpodPlaying,
-  } = useIpodStore();
+  } = useIpodStoreShallow((state) => ({
+    tracks: state.tracks,
+    setCurrentSongId: state.setCurrentSongId,
+    setIsPlaying: state.setIsPlaying,
+  }));
   const {
     videos: videoTracks,
     setCurrentVideoId: setVideoIndex,
     setIsPlaying: setVideoPlaying,
-  } = useVideoStore();
-  const internetExplorerStore = useInternetExplorerStore();
+  } = useVideoStoreShallow((state) => ({
+    videos: state.videos,
+    setCurrentVideoId: state.setCurrentVideoId,
+    setIsPlaying: state.setIsPlaying,
+  }));
+  const internetExplorerFavorites = useInternetExplorerStore(
+    (state) => state.favorites
+  );
 
   useEffect(() => {
     return () => {
@@ -702,7 +714,7 @@ export function useFileSystem(
         ); // Log entry
         const pathParts = currentPath.split("/").filter(Boolean);
         console.log(`[useFileSystem:loadFiles] Path parts:`, pathParts); // Log parts
-        let currentLevelFavorites = internetExplorerStore.favorites;
+        let currentLevelFavorites = internetExplorerFavorites;
         let currentVirtualPath = "/Sites";
 
         // Traverse down the favorites structure based on the path
@@ -870,7 +882,7 @@ export function useFileSystem(
       }
       // c. Favorites (Virtual)
       else if (currentPath === "/Favorites") {
-        displayFiles = internetExplorerStore.favorites.map((favorite) => ({
+        displayFiles = internetExplorerFavorites.map((favorite) => ({
           name: `${favorite.title}.webloc`,
           isDirectory: false,
           path: `/Favorites/${favorite.title}.webloc`,
@@ -902,7 +914,7 @@ export function useFileSystem(
     fileItems,
     ipodTracks,
     videoTracks,
-    internetExplorerStore.favorites,
+    internetExplorerFavorites,
     isAdmin,
   ]);
 
@@ -1182,7 +1194,6 @@ export function useFileSystem(
       setIpodPlaying,
       setVideoIndex,
       setVideoPlaying,
-      internetExplorerStore,
       ensureDefaultContent,
       fetchAppletContentFromShare,
       getFileItem,

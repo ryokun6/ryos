@@ -1,6 +1,7 @@
 import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "./useAppStore";
 import { useIpodStore } from "./useIpodStore";
+import { useVideoStore } from "./useVideoStore";
 import { useAudioSettingsStore } from "./useAudioSettingsStore";
 import { useDisplaySettingsStore } from "./useDisplaySettingsStore";
 import { useChatsStore } from "./useChatsStore";
@@ -19,6 +20,13 @@ export function useIpodStoreShallow<T>(
   selector: (state: ReturnType<typeof useIpodStore.getState>) => T
 ): T {
   return useIpodStore(useShallow(selector));
+}
+
+// Generic helper to wrap a selector with Zustand's shallow comparator for VideoStore
+export function useVideoStoreShallow<T>(
+  selector: (state: ReturnType<typeof useVideoStore.getState>) => T
+): T {
+  return useVideoStore(useShallow(selector));
 }
 
 // Generic helper to wrap a selector with Zustand's shallow comparator for AudioSettingsStore
