@@ -12,26 +12,17 @@ import {
   getMissingApnsEnvVars,
   sendApnsAlert,
 } from "../_utils/_push-apns.js";
+import { normalizePushTestPayload } from "./_payload.js";
 import {
   type PushTokenMetadata,
   extractAuthFromHeaders,
   extractTokenMetadataOwner,
   getTokenMetaKey,
   getUserTokensKey,
-  isValidPushToken,
 } from "./_shared.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 20;
-
-interface PushTestBody {
-  title?: string;
-  body?: string;
-  token?: string;
-  data?: Record<string, unknown>;
-  badge?: number;
-  sound?: string;
-}
 
 function createRedis(): Redis {
   return new Redis({
@@ -96,9 +87,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  const body = (req.body || {}) as PushTestBody;
-  const title = body.title?.trim() || "ryOS test notification";
-  const message = body.body?.trim() || "Push notifications are working 🎉";
+  const normalizedPayload = normalizePushTestPayload(req.body);
+  if (!normalizedPayload.ok) {
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: normalizedPayload.error });
+  }
+  const payload = normalizedPayload.value;
+  const title = payload.title;
+  const message = payload.body;
 
   const userTokens = await redis.smembers<string[]>(getUserTokensKey(username));
   if (userTokens.length === 0) {
@@ -134,11 +130,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await cleanupPipeline.exec();
   }
 
-  const requestedToken = body.token?.trim();
-  if (requestedToken && !isValidPushToken(requestedToken)) {
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Invalid push token format" });
-  }
+  const requestedToken = payload.token;
 
   let targetTokens: string[] = [];
   if (requestedToken) {
@@ -161,9 +153,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sendApnsAlert(apnsConfig, deviceToken, {
         title,
         body: message,
-        data: body.data,
-        badge: body.badge,
-        sound: body.sound,
+        data: payload.data,
+        badge: payload.badge,
+        sound: payload.sound,
       })
     )
   );
