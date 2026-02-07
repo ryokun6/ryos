@@ -12,6 +12,8 @@ import {
   requestPushPermission,
 } from "@/utils/tauriPushNotifications";
 
+const NATIVE_REGISTRATION_ERROR_DEDUPE_MS = 15_000;
+
 export function useTauriPushNotifications() {
   const { username, authToken } = useChatsStore((state) => ({
     username: state.username,
@@ -22,6 +24,10 @@ export function useTauriPushNotifications() {
   const initializedRef = useRef(false);
   const lastRegisteredRef = useRef<string | null>(null);
   const lastRegistrationErrorRef = useRef<string | null>(null);
+  const lastNativeRegistrationErrorRef = useRef<{
+    message: string;
+    at: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!isTauriIOS() || initializedRef.current) return;
@@ -65,6 +71,19 @@ export function useTauriPushNotifications() {
             typeof payload?.message === "string" && payload.message.trim().length > 0
               ? payload.message
               : "Could not register for push notifications on this device.";
+          const now = Date.now();
+          const previousError = lastNativeRegistrationErrorRef.current;
+          if (
+            previousError &&
+            previousError.message === description &&
+            now - previousError.at < NATIVE_REGISTRATION_ERROR_DEDUPE_MS
+          ) {
+            return;
+          }
+          lastNativeRegistrationErrorRef.current = {
+            message: description,
+            at: now,
+          };
           toast("Push registration failed", {
             description,
           });
@@ -132,6 +151,7 @@ export function useTauriPushNotifications() {
         if (!cancelled) {
           lastRegisteredRef.current = registerKey;
           lastRegistrationErrorRef.current = null;
+          lastNativeRegistrationErrorRef.current = null;
         }
       } catch (error) {
         console.error("[push] Failed to register iOS push token", error);
@@ -158,6 +178,7 @@ export function useTauriPushNotifications() {
     if (!username || !authToken) {
       lastRegisteredRef.current = null;
       lastRegistrationErrorRef.current = null;
+      lastNativeRegistrationErrorRef.current = null;
     }
   }, [username, authToken]);
 }
