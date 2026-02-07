@@ -103,6 +103,7 @@ Set these in your deployment environment to enable test sends:
 - `APNS_USE_SANDBOX` (`true`/`1` for sandbox, optional)
 - `APNS_ENDPOINT_OVERRIDE` (optional `https://...` endpoint for local/staging APNs gateway testing; origin used)
 - `APNS_CA_CERT` (optional PEM cert for custom APNs gateway TLS trust)
+- `APNS_SEND_CONCURRENCY` (optional integer `1..20` for test-send fanout concurrency; default `4`)
 
 ## Security
 

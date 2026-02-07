@@ -28,3 +28,20 @@ export async function mapWithConcurrency<T, R>(
 
   return results;
 }
+
+export function resolveBoundedConcurrency(
+  rawValue: string | undefined,
+  fallback: number,
+  min: number = 1,
+  max: number = 20
+): number {
+  if (!Number.isInteger(fallback) || fallback < min || fallback > max) {
+    throw new Error("Fallback concurrency must be within bounds");
+  }
+
+  if (!rawValue) return fallback;
+  const parsed = Number.parseInt(rawValue.trim(), 10);
+  if (!Number.isInteger(parsed)) return fallback;
+  if (parsed < min || parsed > max) return fallback;
+  return parsed;
+}

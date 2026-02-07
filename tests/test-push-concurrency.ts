@@ -3,7 +3,10 @@
  * Tests for bounded concurrency helper used by push test endpoint.
  */
 
-import { mapWithConcurrency } from "../_api/push/_concurrency";
+import {
+  mapWithConcurrency,
+  resolveBoundedConcurrency,
+} from "../_api/push/_concurrency";
 import {
   assertEq,
   clearResults,
@@ -49,6 +52,14 @@ async function testInvalidConcurrencyThrows() {
   assertEq(errorMessage, "Concurrency must be a positive integer");
 }
 
+async function testResolveBoundedConcurrency() {
+  assertEq(resolveBoundedConcurrency(undefined, 4), 4);
+  assertEq(resolveBoundedConcurrency("6", 4), 6);
+  assertEq(resolveBoundedConcurrency("0", 4), 4);
+  assertEq(resolveBoundedConcurrency("999", 4), 4);
+  assertEq(resolveBoundedConcurrency("not-a-number", 4), 4);
+}
+
 export async function runPushConcurrencyTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-concurrency"));
   clearResults();
@@ -56,6 +67,7 @@ export async function runPushConcurrencyTests(): Promise<{ passed: number; faile
   await runTest("Concurrency helper preserves result order", testPreservesResultOrder);
   await runTest("Concurrency helper respects max workers", testRespectsMaxConcurrency);
   await runTest("Concurrency helper rejects invalid limits", testInvalidConcurrencyThrows);
+  await runTest("Concurrency helper resolves bounded env values", testResolveBoundedConcurrency);
 
   return printSummary();
 }
