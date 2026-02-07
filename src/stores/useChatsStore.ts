@@ -116,7 +116,12 @@ const makeAuthenticatedRequest = async (
   options: RequestInit,
   refreshToken: () => Promise<{ ok: boolean; error?: string; token?: string }>
 ): Promise<Response> => {
-  const initialResponse = await fetch(url, options);
+  const initialResponse = await abortableFetch(url, {
+    ...options,
+    timeout: 15000,
+    throwOnHttpError: false,
+    retry: { maxAttempts: 1, initialDelayMs: 250 },
+  });
 
   // If not 401 or no auth header, return as-is
   if (
@@ -146,7 +151,13 @@ const makeAuthenticatedRequest = async (
   };
 
   console.log("[ChatsStore] Retrying request with refreshed token");
-  return fetch(url, { ...options, headers: newHeaders });
+  return abortableFetch(url, {
+    ...options,
+    headers: newHeaders,
+    timeout: 15000,
+    throwOnHttpError: false,
+    retry: { maxAttempts: 1, initialDelayMs: 250 },
+  });
 };
 
 // Ensure recovery keys are set if values exist in store but not in recovery
