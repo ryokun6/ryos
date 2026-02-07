@@ -5,6 +5,7 @@ import { useChatsStore } from "../../../stores/useChatsStore";
 import { toast } from "@/hooks/useToast";
 import { type ChatRoom, type ChatMessage } from "../../../../src/types/chat";
 import { useChatsStoreShallow } from "@/stores/helpers";
+import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
@@ -216,9 +217,7 @@ export function useChatRoom(
             action: {
               label: "Open",
               onClick: () => {
-                // Switch to the room and ensure we are subscribed
-                switchRoom(data.message.roomId);
-                subscribeToRoomChannel(data.message.roomId);
+                openChatRoomFromNotification(data.message.roomId);
               },
             },
           });
@@ -242,7 +241,7 @@ export function useChatRoom(
       roomChannel.bind("room-message", handleRoomMessage);
       roomChannel.bind("message-deleted", handleMessageDeleted);
     },
-    [addMessageToRoom, removeMessageFromRoom, switchRoom, incrementUnread]
+    [addMessageToRoom, removeMessageFromRoom, incrementUnread]
   );
 
   const unsubscribeFromRoomChannel = useCallback((roomId: string) => {

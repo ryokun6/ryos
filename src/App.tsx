@@ -16,6 +16,7 @@ import { isTauri } from "./utils/platform";
 import { checkDesktopUpdate, onDesktopUpdate, DesktopUpdateResult } from "./utils/prefetch";
 import { DownloadSimple } from "@phosphor-icons/react";
 import { ScreenSaverOverlay } from "./components/screensavers/ScreenSaverOverlay";
+import { useBackgroundChatNotifications } from "./hooks/useBackgroundChatNotifications";
 
 // Convert registry to array
 const apps: AnyApp[] = Object.values(appRegistry);
@@ -34,6 +35,7 @@ export function App() {
   const isMobile = useIsMobile();
   // Initialize offline detection
   useOffline();
+  useBackgroundChatNotifications();
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
