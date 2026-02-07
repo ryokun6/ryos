@@ -21,6 +21,7 @@ import {
   useVideoStoreShallow,
 } from "@/stores/helpers";
 import { formatKugouImageUrl } from "@/apps/ipod/constants";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 // STORES is now imported from @/utils/indexedDB to avoid duplication
 
@@ -494,16 +495,13 @@ export function useFileSystem(
       }
 
       try {
-        const response = await fetch(
-          `/api/share-applet?id=${encodeURIComponent(shareId)}`
+        const response = await abortableFetch(
+          `/api/share-applet?id=${encodeURIComponent(shareId)}`,
+          {
+            timeout: 15000,
+            retry: { maxAttempts: 2, initialDelayMs: 500 },
+          }
         );
-
-        if (!response.ok) {
-          console.error(
-            `[useFileSystem] Failed to fetch applet content for shareId ${shareId}: ${response.status}`
-          );
-          return null;
-        }
 
         const data = await response.json();
         const content =
