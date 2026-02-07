@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import { useChatsStoreShallow } from "@/stores/helpers";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 export function useAuth() {
   const {
@@ -141,7 +142,7 @@ export function useAuth() {
           }
 
           // Authenticate with password
-          const response = await fetch(
+          const response = await abortableFetch(
             "/api/auth/login",
             {
               method: "POST",
@@ -154,6 +155,9 @@ export function useAuth() {
                 password: input.trim(),
                 ...(authToken ? { oldToken: authToken } : {}),
               }),
+              timeout: 15000,
+              throwOnHttpError: false,
+              retry: { maxAttempts: 1, initialDelayMs: 250 },
             }
           );
 
@@ -192,7 +196,7 @@ export function useAuth() {
           }
 
           // Test the token using the dedicated verification endpoint
-          const testResponse = await fetch(
+          const testResponse = await abortableFetch(
             "/api/auth/token/verify",
             {
               method: "POST",
@@ -201,6 +205,9 @@ export function useAuth() {
                 Authorization: `Bearer ${input.trim()}`,
                 "X-Username": verifyUsernameInput.trim() || "",
               },
+              timeout: 15000,
+              throwOnHttpError: false,
+              retry: { maxAttempts: 1, initialDelayMs: 250 },
             }
           );
 
