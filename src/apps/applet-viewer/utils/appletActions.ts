@@ -6,7 +6,6 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { track } from "@vercel/analytics";
 import { APPLET_ANALYTICS } from "@/utils/analytics";
 import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 export interface Applet {
   id: string;
@@ -42,15 +41,12 @@ export const extractEmojiIcon = (
 export const useAppletActions = () => {
   const { saveFile, files, handleFileOpen } = useFileSystem("/Applets");
   const launchApp = useLaunchApp();
-  const getFileItem = useFilesStore((state) => state.getItem);
-  const updateFileItemMetadata = useFilesStore(
-    (state) => state.updateItemMetadata
-  );
+  const fileStore = useFilesStore();
 
   // Check if an applet is installed
   const isAppletInstalled = (appletId: string): boolean => {
     return files.some((f) => {
-      const fileItem = getFileItem(f.path);
+      const fileItem = fileStore.getItem(f.path);
       return fileItem?.shareId === appletId;
     });
   };
@@ -58,7 +54,7 @@ export const useAppletActions = () => {
   // Get installed applet file item
   const getInstalledApplet = (appletId: string) => {
     return files.find((f) => {
-      const fileItem = getFileItem(f.path);
+      const fileItem = fileStore.getItem(f.path);
       return fileItem?.shareId === appletId;
     });
   };
@@ -75,9 +71,9 @@ export const useAppletActions = () => {
       // Defer metadata write until after render to avoid React update loops
       setTimeout(() => {
         try {
-          const latestItem = getFileItem(filePath);
+          const latestItem = fileStore.getItem(filePath);
           if (latestItem && !latestItem.storeCreatedAt) {
-            updateFileItemMetadata(filePath, {
+            fileStore.updateItemMetadata(filePath, {
               storeCreatedAt: createdAt,
             });
           }
@@ -86,7 +82,7 @@ export const useAppletActions = () => {
         }
       }, 0);
     },
-    [getFileItem, updateFileItemMetadata]
+    [fileStore]
   );
 
   const needsUpdate = useCallback(
@@ -94,7 +90,7 @@ export const useAppletActions = () => {
       if (!isAppletInstalled(applet.id)) return false;
       const installedFile = getInstalledApplet(applet.id);
       if (!installedFile) return false;
-      const fileItem = getFileItem(installedFile.path);
+      const fileItem = fileStore.getItem(installedFile.path);
       if (!fileItem) return false;
 
       const currentCreatedAt = applet.createdAt || 0;
@@ -115,7 +111,7 @@ export const useAppletActions = () => {
 
       return currentCreatedAt - baselineCreatedAt > 1000;
     },
-    [getFileItem, getInstalledApplet, isAppletInstalled, scheduleStoreCreatedAtUpdate]
+    [fileStore, getInstalledApplet, isAppletInstalled, scheduleStoreCreatedAtUpdate]
   );
 
   // Handle clicking on an applet
@@ -124,7 +120,7 @@ export const useAppletActions = () => {
     
     if (installed) {
       const installedApplet = files.find((f) => {
-        const fileItem = getFileItem(f.path);
+        const fileItem = fileStore.getItem(f.path);
         return fileItem?.shareId === applet.id;
       });
 
@@ -151,13 +147,7 @@ export const useAppletActions = () => {
     try {
       const isUpdate = isAppletInstalled(applet.id);
       
-      const response = await abortableFetch(
-        getApiUrl(`/api/share-applet?id=${encodeURIComponent(applet.id)}`),
-        {
-          timeout: 15000,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
+      const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(applet.id)}`));
       if (!response.ok) {
         throw new Error("Failed to fetch applet");
       }
@@ -173,7 +163,7 @@ export const useAppletActions = () => {
         : `${defaultName}.app`;
       
       const existingApplet = files.find((f) => {
-        const fileItem = getFileItem(f.path);
+        const fileItem = fileStore.getItem(f.path);
         return fileItem?.shareId === applet.id;
       });
       
@@ -191,12 +181,12 @@ export const useAppletActions = () => {
       });
       
       const storeCreatedAtValue = data.createdAt || Date.now();
-      updateFileItemMetadata(finalPath, {
+      fileStore.updateItemMetadata(finalPath, {
         storeCreatedAt: storeCreatedAtValue,
       });
       
       if (data.windowWidth && data.windowHeight) {
-        updateFileItemMetadata(finalPath, {
+        fileStore.updateItemMetadata(finalPath, {
           windowWidth: data.windowWidth,
           windowHeight: data.windowHeight,
         });

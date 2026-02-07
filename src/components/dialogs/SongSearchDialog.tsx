@@ -13,7 +13,6 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 // Decode HTML entities like &#39; &amp; etc.
 function decodeHtmlEntities(text: string): string {
@@ -115,13 +114,10 @@ export function SongSearchDialog({
     setSelectedIndex(-1);
 
     try {
-      const response = await abortableFetch(getApiUrl("/api/youtube-search"), {
+      const response = await fetch(getApiUrl("/api/youtube-search"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: query.trim(), maxResults: 15 }),
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
 
       if (!response.ok) {

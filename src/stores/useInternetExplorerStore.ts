@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 // Define types
 export interface Favorite {
@@ -821,15 +820,16 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
         set({ isFetchingCachedYears: true, cachedYears: [] });
         try {
           const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
-          const response = await abortableFetch(
+          const response = await fetch(
             `/api/iframe-check?mode=list-cache&url=${encodeURIComponent(
               normalizedUrl
-            )}`,
-            {
-              timeout: 15000,
-              retry: { maxAttempts: 2, initialDelayMs: 500 },
-            }
+            )}`
           );
+          if (!response.ok) {
+            throw new Error(
+              `Failed to fetch cached years: ${response.statusText}`
+            );
+          }
           const data = await response.json();
           const fetchedYears: string[] = data.years || [];
           const currentActualYear = new Date().getFullYear();

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FileItem as DisplayFileItem } from "../components/FileList";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 // Re-export STORES for backward compatibility (other modules import from here)
@@ -6,6 +6,8 @@ export { STORES };
 import { getNonFinderApps, AppId, getAppIconPath } from "@/config/appRegistry";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
+import { useIpodStore } from "@/stores/useIpodStore";
+import { useVideoStore } from "@/stores/useVideoStore";
 import {
   useInternetExplorerStore,
   type Favorite,
@@ -15,13 +17,7 @@ import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useAppStore, type LaunchOriginRect } from "@/stores/useAppStore";
 import { migrateIndexedDBToUUIDs } from "@/utils/indexedDBMigration";
 import { useFinderStore } from "@/stores/useFinderStore";
-import {
-  useFilesStoreShallow,
-  useIpodStoreShallow,
-  useVideoStoreShallow,
-} from "@/stores/helpers";
 import { formatKugouImageUrl } from "@/apps/ipod/constants";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 // STORES is now imported from @/utils/indexedDB to avoid duplication
 
@@ -312,17 +308,16 @@ export function useFileSystem(
     loggedInitializationPaths.add(initialPath);
   }
 
-  // Finder store selectors
-  const finderInstances = useFinderStore((state) => state.instances);
-  const updateFinderInstance = useFinderStore((state) => state.updateInstance);
-  const getViewTypeForPath = useFinderStore(
-    (state) => state.getViewTypeForPath
-  );
+  // Get Finder store methods
+  const finderStore = useFinderStore();
+  const updateFinderInstance = finderStore.updateInstance;
   
   // Get current username for admin check
   const username = useChatsStore((state) => state.username);
   const isAdmin = username?.toLowerCase() === "ryo";
-  const finderInstance = instanceId ? finderInstances[instanceId] : null;
+  const finderInstance = instanceId
+    ? finderStore.getInstance(instanceId)
+    : null;
 
   // Use instance-based state if available, otherwise use local state
   // When using instances, initialize local state from instance data if available
@@ -348,7 +343,7 @@ export function useFileSystem(
   const setCurrentPath = useCallback(
     (path: string) => {
       if (instanceId && finderInstance) {
-        const nextViewType = getViewTypeForPath(path);
+        const nextViewType = finderStore.getViewTypeForPath(path);
         updateFinderInstance(instanceId, {
           currentPath: path,
           viewType: nextViewType,
@@ -357,7 +352,7 @@ export function useFileSystem(
         setLocalCurrentPath(path);
       }
     },
-    [instanceId, finderInstance, updateFinderInstance, getViewTypeForPath]
+    [instanceId, finderInstance, updateFinderInstance]
   );
 
   const setHistory = useCallback(
@@ -406,63 +401,21 @@ export function useFileSystem(
   const [selectedFile, setSelectedFile] = useState<ExtendedDisplayFileItem>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>();
-  const objectUrlsRef = useRef<Set<string>>(new Set());
 
-  // Files store selectors (avoid broad store subscriptions)
-  const {
-    items: fileItems,
-    getItem: getFileItem,
-    getItemsInPath,
-    updateItemMetadata,
-    addItem: addFileItem,
-    moveItem: moveFileItem,
-    renameItem: renameFileItem,
-    removeItem: removeFileItem,
-    restoreItem: restoreFileItem,
-    emptyTrash: emptyTrashMetadata,
-    reset: resetFilesStore,
-  } = useFilesStoreShallow((state) => ({
-    items: state.items,
-    getItem: state.getItem,
-    getItemsInPath: state.getItemsInPath,
-    updateItemMetadata: state.updateItemMetadata,
-    addItem: state.addItem,
-    moveItem: state.moveItem,
-    renameItem: state.renameItem,
-    removeItem: state.removeItem,
-    restoreItem: state.restoreItem,
-    emptyTrash: state.emptyTrash,
-    reset: state.reset,
-  }));
+  // Zustand Stores
+  const fileStore = useFilesStore();
   const launchApp = useLaunchApp();
   const {
     tracks: ipodTracks,
     setCurrentSongId: setIpodSongId,
     setIsPlaying: setIpodPlaying,
-  } = useIpodStoreShallow((state) => ({
-    tracks: state.tracks,
-    setCurrentSongId: state.setCurrentSongId,
-    setIsPlaying: state.setIsPlaying,
-  }));
+  } = useIpodStore();
   const {
     videos: videoTracks,
     setCurrentVideoId: setVideoIndex,
     setIsPlaying: setVideoPlaying,
-  } = useVideoStoreShallow((state) => ({
-    videos: state.videos,
-    setCurrentVideoId: state.setCurrentVideoId,
-    setIsPlaying: state.setIsPlaying,
-  }));
-  const internetExplorerFavorites = useInternetExplorerStore(
-    (state) => state.favorites
-  );
-
-  useEffect(() => {
-    return () => {
-      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
-      objectUrlsRef.current.clear();
-    };
-  }, []);
+  } = useVideoStore();
+  const internetExplorerStore = useInternetExplorerStore();
 
   // Define getParentPath inside hook
   const getParentPath = (path: string): string => {
@@ -495,13 +448,16 @@ export function useFileSystem(
       }
 
       try {
-        const response = await abortableFetch(
-          `/api/share-applet?id=${encodeURIComponent(shareId)}`,
-          {
-            timeout: 15000,
-            retry: { maxAttempts: 2, initialDelayMs: 500 },
-          }
+        const response = await fetch(
+          `/api/share-applet?id=${encodeURIComponent(shareId)}`
         );
+
+        if (!response.ok) {
+          console.error(
+            `[useFileSystem] Failed to fetch applet content for shareId ${shareId}: ${response.status}`
+          );
+          return null;
+        }
 
         const data = await response.json();
         const content =
@@ -539,7 +495,7 @@ export function useFileSystem(
         }
 
         if (Object.keys(metadataUpdates).length > 0) {
-          updateItemMetadata(filePath, metadataUpdates);
+          fileStore.updateItemMetadata(filePath, metadataUpdates);
         }
 
         return content;
@@ -551,7 +507,7 @@ export function useFileSystem(
         return null;
       }
     },
-    [updateItemMetadata]
+    [fileStore]
   );
 
   // --- REORDERED useCallback DEFINITIONS --- //
@@ -589,7 +545,6 @@ export function useFileSystem(
 
     try {
       let displayFiles: ExtendedDisplayFileItem[] = [];
-      const nextObjectUrls = new Set<string>();
 
       // 1. Handle Virtual Directories
       if (currentPath === "/Applications") {
@@ -712,7 +667,7 @@ export function useFileSystem(
         ); // Log entry
         const pathParts = currentPath.split("/").filter(Boolean);
         console.log(`[useFileSystem:loadFiles] Path parts:`, pathParts); // Log parts
-        let currentLevelFavorites = internetExplorerFavorites;
+        let currentLevelFavorites = internetExplorerStore.favorites;
         let currentVirtualPath = "/Sites";
 
         // Traverse down the favorites structure based on the path
@@ -770,7 +725,7 @@ export function useFileSystem(
       // 2. Handle Trash Directory (Uses fileStore)
       else if (currentPath === "/Trash") {
         // Get metadata from the store
-        const itemsMetadata = getItemsInPath(currentPath);
+        const itemsMetadata = fileStore.getItemsInPath(currentPath);
         displayFiles = itemsMetadata.map((item) => ({
           ...item,
           icon: getFileIcon(item), // Get icon based on metadata
@@ -779,7 +734,7 @@ export function useFileSystem(
       }
       // 3. Handle Real Directories (Uses useFilesStore)
       else {
-        const itemsMetadata = getItemsInPath(currentPath);
+        const itemsMetadata = fileStore.getItemsInPath(currentPath);
         // Map metadata to display items. Content fetching happens on open.
         displayFiles = itemsMetadata.map((item) => ({
           ...item,
@@ -808,7 +763,6 @@ export function useFileSystem(
                       `[useFileSystem:loadFiles] Found Blob content for ${item.name}, creating URL`
                     );
                     contentUrl = URL.createObjectURL(contentData.content);
-                    nextObjectUrls.add(contentUrl);
                     console.log(
                       `[useFileSystem:loadFiles] Created URL: ${contentUrl}`
                     );
@@ -880,7 +834,7 @@ export function useFileSystem(
       }
       // c. Favorites (Virtual)
       else if (currentPath === "/Favorites") {
-        displayFiles = internetExplorerFavorites.map((favorite) => ({
+        displayFiles = internetExplorerStore.favorites.map((favorite) => ({
           name: `${favorite.title}.webloc`,
           isDirectory: false,
           path: `/Favorites/${favorite.title}.webloc`,
@@ -890,14 +844,6 @@ export function useFileSystem(
           modifiedAt: undefined, // Virtual files don't have timestamps
         }));
       }
-
-      // Revoke stale object URLs from previous runs before replacing file list.
-      objectUrlsRef.current.forEach((previousUrl) => {
-        if (!nextObjectUrls.has(previousUrl)) {
-          URL.revokeObjectURL(previousUrl);
-        }
-      });
-      objectUrlsRef.current = nextObjectUrls;
 
       setFiles(displayFiles);
     } catch (err) {
@@ -909,10 +855,10 @@ export function useFileSystem(
     // Add fileStore dependency to re-run if items change
   }, [
     currentPath,
-    fileItems,
+    fileStore.items,
     ipodTracks,
     videoTracks,
-    internetExplorerFavorites,
+    internetExplorerStore.favorites,
     isAdmin,
   ]);
 
@@ -929,7 +875,7 @@ export function useFileSystem(
       
       while (!resolved && depth < maxDepth) {
         depth++;
-          const fileMetadata = getFileItem(currentFile.path);
+        const fileMetadata = fileStore.getItem(currentFile.path);
         if (fileMetadata?.aliasType && fileMetadata?.aliasTarget) {
           // Check for circular references
           if (visitedPaths.has(currentFile.path)) {
@@ -946,7 +892,7 @@ export function useFileSystem(
           } else {
             // Open file/applet - need to resolve the original file
             const targetPath = fileMetadata.aliasTarget;
-            const targetFile = getFileItem(targetPath);
+            const targetFile = fileStore.getItem(targetPath);
             
             if (!targetFile) {
               console.warn(`[useFileSystem] Target file not found: ${targetPath}`);
@@ -996,7 +942,7 @@ export function useFileSystem(
           file.path.startsWith("/Applets/")
         ) {
           // Get the file metadata to get the UUID
-          const fileMetadata = getFileItem(file.path);
+          const fileMetadata = fileStore.getItem(file.path);
           if (fileMetadata?.uuid) {
             const storeName = file.path.startsWith("/Documents/")
               ? STORES.DOCUMENTS
@@ -1192,9 +1138,10 @@ export function useFileSystem(
       setIpodPlaying,
       setVideoIndex,
       setVideoPlaying,
+      internetExplorerStore,
       ensureDefaultContent,
       fetchAppletContentFromShare,
-      getFileItem,
+      fileStore,
     ]
   );
 
@@ -1256,7 +1203,7 @@ export function useFileSystem(
       const fileType = fileData.type || getFileTypeFromExtension(name);
 
       // Check if file already exists to preserve UUID
-      const existingItem = getFileItem(path);
+      const existingItem = fileStore.getItem(path);
       const uuid = existingItem?.uuid;
 
       // 1. Create the full metadata object first
@@ -1306,10 +1253,10 @@ export function useFileSystem(
           `[useFileSystem:saveFile] Updating metadata store for: ${path}`
         );
         // Pass the complete metadata object to addItem
-        addFileItem(metadata);
+        fileStore.addItem(metadata);
 
         // Get the item again to get the UUID (in case it was newly generated)
-        const savedItem = getFileItem(path);
+        const savedItem = fileStore.getItem(path);
         if (!savedItem?.uuid) {
           throw new Error("Failed to get UUID for saved item");
         }
@@ -1373,7 +1320,7 @@ export function useFileSystem(
         return;
       }
     },
-    [getFileItem, addFileItem]
+    [fileStore]
   );
 
   const moveFile = useCallback(
@@ -1386,7 +1333,7 @@ export function useFileSystem(
         return false;
       }
 
-      const targetFolder = getFileItem(targetFolderPath);
+      const targetFolder = fileStore.getItem(targetFolderPath);
       if (!targetFolder || !targetFolder.isDirectory) {
         console.error(
           `[useFileSystem:moveFile] Target is not a valid directory: ${targetFolderPath}`
@@ -1399,7 +1346,7 @@ export function useFileSystem(
       const newPath = `${targetFolderPath}/${sourceFile.name}`;
 
       // Check if destination already exists
-      if (getFileItem(newPath)) {
+      if (fileStore.getItem(newPath)) {
         console.error(
           `[useFileSystem:moveFile] A file with the same name already exists at destination: ${newPath}`
         );
@@ -1448,7 +1395,7 @@ export function useFileSystem(
         }
 
         // Update metadata in file store
-        moveFileItem(sourcePath, newPath);
+        fileStore.moveItem(sourcePath, newPath);
         console.log(
           `[useFileSystem:moveFile] Successfully moved ${sourcePath} to ${newPath}`
         );
@@ -1459,12 +1406,12 @@ export function useFileSystem(
         return false;
       }
     },
-    [getFileItem, moveFileItem]
+    [fileStore]
   );
 
   const renameFile = useCallback(
     async (oldPath: string, newName: string) => {
-      const itemToRename = getFileItem(oldPath);
+      const itemToRename = fileStore.getItem(oldPath);
       if (!itemToRename) {
         console.error("Error: Item to rename not found in FileStore");
         setError("Failed to rename file");
@@ -1474,14 +1421,14 @@ export function useFileSystem(
       const parentPath = getParentPath(oldPath);
       const newPath = `${parentPath === "/" ? "" : parentPath}/${newName}`;
 
-      if (getFileItem(newPath)) {
+      if (fileStore.getItem(newPath)) {
         console.error("Error: New path already exists in FileStore");
         setError("Failed to rename file");
         return;
       }
 
       // 1. Rename Metadata in FileStore (preserves UUID)
-      renameFileItem(oldPath, newPath, newName);
+      fileStore.renameItem(oldPath, newPath, newName);
 
       // 2. Update content metadata (name field) in IndexedDB if it's a file with content
       if (!itemToRename.isDirectory && itemToRename.uuid) {
@@ -1518,14 +1465,14 @@ export function useFileSystem(
         }
       }
     },
-    [getFileItem, renameFileItem, getParentPath]
+    [fileStore, getParentPath]
   );
 
   // --- Create Folder --- //
   const createFolder = useCallback(
     (folderData: { path: string; name: string }) => {
       const { path, name } = folderData;
-      if (getFileItem(path)) {
+      if (fileStore.getItem(path)) {
         console.error("Folder already exists:", path);
         setError("Folder already exists.");
         return;
@@ -1537,10 +1484,10 @@ export function useFileSystem(
         type: "directory",
         icon: "/icons/directory.png",
       };
-      addFileItem(newFolderItem);
+      fileStore.addItem(newFolderItem);
       setError(undefined); // Clear previous error
     },
-    [getFileItem, addFileItem]
+    [fileStore]
   );
 
   const moveToTrash = useCallback(
@@ -1554,7 +1501,7 @@ export function useFileSystem(
         return;
 
       // 1. Mark item as trashed in FileStore
-      removeFileItem(fileMetadata.path);
+      fileStore.removeItem(fileMetadata.path);
 
       // 2. Move Content to TRASH DB store
       const storeName = fileMetadata.path.startsWith("/Documents/")
@@ -1590,12 +1537,12 @@ export function useFileSystem(
         }
       }
     },
-    [removeFileItem]
+    [fileStore]
   );
 
   const restoreFromTrash = useCallback(
     async (itemToRestore: ExtendedDisplayFileItem) => {
-      const fileMetadata = getFileItem(itemToRestore.path);
+      const fileMetadata = fileStore.getItem(itemToRestore.path);
       if (
         !fileMetadata ||
         fileMetadata.status !== "trashed" ||
@@ -1609,7 +1556,7 @@ export function useFileSystem(
       }
 
       // 1. Restore metadata in FileStore
-      restoreFileItem(fileMetadata.path);
+      fileStore.restoreItem(fileMetadata.path);
 
       // 2. Move Content from TRASH DB store back
       const targetStoreName = fileMetadata.originalPath.startsWith(
@@ -1646,12 +1593,12 @@ export function useFileSystem(
         }
       }
     },
-    [getFileItem, restoreFileItem]
+    [fileStore]
   );
 
   const emptyTrash = useCallback(async () => {
     // 1. Permanently delete metadata from FileStore and get UUIDs of files whose content needs deletion
-    const contentUUIDsToDelete = emptyTrashMetadata();
+    const contentUUIDsToDelete = fileStore.emptyTrash();
 
     // 2. Clear corresponding content from TRASH IndexedDB store
     try {
@@ -1664,7 +1611,7 @@ export function useFileSystem(
       console.error("Error clearing trash content from IndexedDB:", err);
       setError("Failed to empty trash storage.");
     }
-  }, [emptyTrashMetadata]);
+  }, [fileStore]);
 
   // --- Format File System (Refactored) --- //
   const formatFileSystem = useCallback(async () => {
@@ -1682,7 +1629,7 @@ export function useFileSystem(
       localStorage.removeItem("ryos:file-size-timestamp-sync-v1");
 
       // Reset metadata store (this will trigger re-initialization with new UUIDs)
-      resetFilesStore();
+      fileStore.reset();
 
       // Re-initialization will happen automatically via the store's onRehydrateStorage
       // The default files will be loaded with new UUIDs by initializeLibrary
@@ -1696,10 +1643,10 @@ export function useFileSystem(
       console.error("Error formatting file system:", err);
       setError("Failed to format file system");
     }
-  }, [resetFilesStore]);
+  }, [fileStore]);
 
   // Calculate trash count based on store data
-  const trashItemsCount = getItemsInPath("/Trash").length;
+  const trashItemsCount = fileStore.getItemsInPath("/Trash").length;
 
   // --- One-time sync for file sizes and timestamps --- //
   useEffect(() => {
@@ -1873,7 +1820,7 @@ export function useFileSystem(
     navigateUp,
     navigateToPath,
     moveToTrash: (file: ExtendedDisplayFileItem) => {
-      const itemMeta = getFileItem(file.path);
+      const itemMeta = fileStore.getItem(file.path);
       if (itemMeta) {
         moveToTrash(itemMeta);
       } else {

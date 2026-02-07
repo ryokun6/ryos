@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,6 @@ import { type User } from "@/types/chat";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 interface CreateRoomDialogProps {
   isOpen: boolean;
@@ -51,7 +50,6 @@ export function CreateRoomDialog({
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"public" | "private">("private");
   const [isSearching, setIsSearching] = useState(false);
-  const searchRequestIdRef = useRef(0);
 
   // Theme detection
   const currentTheme = useThemeStore((state) => state.current);
@@ -74,9 +72,7 @@ export function CreateRoomDialog({
   // Search for users when search term changes (with debouncing)
   useEffect(() => {
     if (searchTerm.length < 2) {
-      searchRequestIdRef.current += 1;
       setUsers([]);
-      setIsSearching(false);
       return;
     }
 
@@ -88,37 +84,24 @@ export function CreateRoomDialog({
   }, [searchTerm]);
 
   const searchUsers = async (query: string) => {
-    const requestId = ++searchRequestIdRef.current;
     setIsSearching(true);
     try {
-      const response = await abortableFetch(
-        `/api/users?search=${encodeURIComponent(query)}`,
-        {
-          timeout: 10000,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
+      const response = await fetch(
+        `/api/users?search=${encodeURIComponent(query)}`
       );
-      const data = await response.json();
-
-      if (requestId !== searchRequestIdRef.current) {
-        return;
+      if (response.ok) {
+        const data = await response.json();
+        const usersList = data.users || [];
+        // Filter out current user
+        const filteredUsers = usersList.filter(
+          (u: User) => u.username !== currentUsername?.toLowerCase()
+        );
+        setUsers(filteredUsers);
       }
-
-      const usersList = data.users || [];
-      // Filter out current user
-      const filteredUsers = usersList.filter(
-        (u: User) => u.username !== currentUsername?.toLowerCase()
-      );
-      setUsers(filteredUsers);
     } catch (error) {
-      if (requestId !== searchRequestIdRef.current) {
-        return;
-      }
       console.error("Failed to search users:", error);
     } finally {
-      if (requestId === searchRequestIdRef.current) {
-        setIsSearching(false);
-      }
+      setIsSearching(false);
     }
   };
 

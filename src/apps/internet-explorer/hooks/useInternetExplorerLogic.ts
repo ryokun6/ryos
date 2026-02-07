@@ -31,8 +31,6 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { toast } from "sonner";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { useInternetExplorerStoreShallow } from "@/stores/helpers";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 // Helper function to get language display name
 const getLanguageDisplayName = (lang: LanguageOption): string => {
@@ -238,63 +236,7 @@ export function useInternetExplorerLogic({
     setLocation,
     setTimeMachineViewOpen,
     fetchCachedYears,
-  } = useInternetExplorerStoreShallow((state) => ({
-    url: state.url,
-    year: state.year,
-    mode: state.mode,
-    token: state.token,
-    favorites: state.favorites,
-    history: state.history,
-    historyIndex: state.historyIndex,
-    isTitleDialogOpen: state.isTitleDialogOpen,
-    newFavoriteTitle: state.newFavoriteTitle,
-    isHelpDialogOpen: state.isHelpDialogOpen,
-    isAboutDialogOpen: state.isAboutDialogOpen,
-    isNavigatingHistory: state.isNavigatingHistory,
-    isClearFavoritesDialogOpen: state.isClearFavoritesDialogOpen,
-    isClearHistoryDialogOpen: state.isClearHistoryDialogOpen,
-    currentPageTitle: state.currentPageTitle,
-    timelineSettings: state.timelineSettings,
-    status: state.status,
-    finalUrl: state.finalUrl,
-    aiGeneratedHtml: state.aiGeneratedHtml,
-    errorDetails: state.errorDetails,
-    isResetFavoritesDialogOpen: state.isResetFavoritesDialogOpen,
-    isFutureSettingsDialogOpen: state.isFutureSettingsDialogOpen,
-    language: state.language,
-    location: state.location,
-    isTimeMachineViewOpen: state.isTimeMachineViewOpen,
-    cachedYears: state.cachedYears,
-    isFetchingCachedYears: state.isFetchingCachedYears,
-
-    setUrl: state.setUrl,
-    setYear: state.setYear,
-    navigateStart: state.navigateStart,
-    setFinalUrl: state.setFinalUrl,
-    loadSuccess: state.loadSuccess,
-    loadError: state.loadError,
-    cancel: state.cancel,
-    addFavorite: state.addFavorite,
-    clearFavorites: state.clearFavorites,
-    setHistoryIndex: state.setHistoryIndex,
-    clearHistory: state.clearHistory,
-    setTitleDialogOpen: state.setTitleDialogOpen,
-    setNewFavoriteTitle: state.setNewFavoriteTitle,
-    setHelpDialogOpen: state.setHelpDialogOpen,
-    setAboutDialogOpen: state.setAboutDialogOpen,
-    setNavigatingHistory: state.setNavigatingHistory,
-    setClearFavoritesDialogOpen: state.setClearFavoritesDialogOpen,
-    setClearHistoryDialogOpen: state.setClearHistoryDialogOpen,
-    handleNavigationError: state.handleNavigationError,
-    setPrefetchedTitle: state.setPrefetchedTitle,
-    clearErrorDetails: state.clearErrorDetails,
-    setResetFavoritesDialogOpen: state.setResetFavoritesDialogOpen,
-    setFutureSettingsDialogOpen: state.setFutureSettingsDialogOpen,
-    setLanguage: state.setLanguage,
-    setLocation: state.setLocation,
-    setTimeMachineViewOpen: state.setTimeMachineViewOpen,
-    fetchCachedYears: state.fetchCachedYears,
-  }));
+  } = useInternetExplorerStore();
 
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems(
@@ -841,18 +783,11 @@ export function useInternetExplorerLogic({
               console.log(
                 `[IE] Checking REMOTE cache for ${normalizedTargetUrl} in ${targetYearParam}...`
               );
-              const res = await abortableFetch(
+              const res = await fetch(
                 `/api/iframe-check?mode=ai&url=${encodeURIComponent(
                   normalizedTargetUrl
-                )}&year=${targetYearParam}`,
-                {
-                  signal: abortController.signal,
-                  timeout: 15000,
-                  throwOnHttpError: false,
-                  retry: { maxAttempts: 1, initialDelayMs: 250 },
-                }
+                )}&year=${targetYearParam}`
               );
-              if (abortController.signal.aborted) return;
               console.log(
                 `[IE] Remote cache response status: ${res.status}, ok: ${
                   res.ok
@@ -896,7 +831,6 @@ export function useInternetExplorerLogic({
                 console.log(`[IE] REMOTE cache MISS or invalid response.`);
               }
             } catch (e) {
-              if (e instanceof Error && e.name === "AbortError") return;
               console.warn("[IE] AI remote cache fetch failed", e);
             }
           }
@@ -993,21 +927,19 @@ export function useInternetExplorerLogic({
             }
 
             try {
-              const checkRes = await abortableFetch(
+              const checkRes = await fetch(
                 `/api/iframe-check?mode=check&url=${encodeURIComponent(
                   normalizedTargetUrl
                 )}&theme=${encodeURIComponent(currentTheme)}`,
-                {
-                  signal: abortController.signal,
-                  timeout: 15000,
-                  retry: { maxAttempts: 1, initialDelayMs: 250 },
-                }
+                { signal: abortController.signal }
               );
               if (abortController.signal.aborted) return;
 
-              const checkData = await checkRes.json();
-              if (checkData.title) {
-                setPrefetchedTitle(checkData.title);
+              if (checkRes.ok) {
+                const checkData = await checkRes.json();
+                if (checkData.title) {
+                  setPrefetchedTitle(checkData.title);
+                }
               }
             } catch (error) {
               if (error instanceof Error && error.name === "AbortError") return;
@@ -1271,21 +1203,6 @@ export function useInternetExplorerLogic({
     handleNavigate,
     setNavigatingHistory,
   ]);
-  const latestNavigateRef = useRef(handleNavigate);
-  const latestGoBackRef = useRef(handleGoBack);
-  const latestYearRef = useRef(year);
-
-  useEffect(() => {
-    latestNavigateRef.current = handleNavigate;
-  }, [handleNavigate]);
-
-  useEffect(() => {
-    latestGoBackRef.current = handleGoBack;
-  }, [handleGoBack]);
-
-  useEffect(() => {
-    latestYearRef.current = year;
-  }, [year]);
 
   const handleAddFavorite = useCallback(() => {
     const titleSource =
@@ -1710,71 +1627,38 @@ export function useInternetExplorerLogic({
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      const messageData = event.data as
-        | { type?: string; url?: string }
-        | undefined;
-      if (!messageData?.type) {
-        return;
-      }
-
-      // Only accept messages from the current window origin.
-      // This blocks untrusted cross-origin frames from driving navigation.
-      if (event.origin !== window.location.origin) {
-        return;
-      }
-
-      // For iframe-driven controls, ensure the sender is our active iframe.
-      // aiHtmlNavigation is emitted by HtmlPreview's internal iframe(s), so it
-      // is validated by same-origin only.
-      const sourceWindow = event.source as Window | null;
-      const currentIframeWindow = iframeRef.current?.contentWindow ?? null;
-      const isFromActiveIframe =
-        !!sourceWindow &&
-        !!currentIframeWindow &&
-        sourceWindow === currentIframeWindow;
-
       if (
-        messageData.type !== "aiHtmlNavigation" &&
-        !isFromActiveIframe
-      ) {
-        return;
-      }
-
-      if (
-        messageData.type === "iframeNavigation" &&
-        typeof messageData.url === "string"
+        event.data &&
+        event.data.type === "iframeNavigation" &&
+        typeof event.data.url === "string"
       ) {
         console.log(
-          `[IE] Received navigation request from iframe: ${messageData.url}`
+          `[IE] Received navigation request from iframe: ${event.data.url}`
         );
-        latestNavigateRef.current(messageData.url, latestYearRef.current);
-      } else if (messageData.type === "goBack") {
+        handleNavigate(event.data.url, year);
+      } else if (event.data && event.data.type === "goBack") {
         console.log(`[IE] Received back button request from iframe`);
-        latestGoBackRef.current();
+        handleGoBack();
       } else if (
-        messageData.type === "aiHtmlNavigation" &&
-        typeof messageData.url === "string"
+        event.data &&
+        event.data.type === "aiHtmlNavigation" &&
+        typeof event.data.url === "string"
       ) {
         console.log(
-          `[IE] Received navigation request from AI HTML preview: ${messageData.url}`
+          `[IE] Received navigation request from AI HTML preview: ${event.data.url}`
         );
         // Fetch the most up-to-date HTML from the store in case the closure is stale
         const contextHtml =
           useInternetExplorerStore.getState().aiGeneratedHtml;
 
-        latestNavigateRef.current(
-          messageData.url,
-          latestYearRef.current,
-          false,
-          contextHtml
-        );
+        handleNavigate(event.data.url, year, false, contextHtml);
       }
     };
     window.addEventListener("message", handleMessage);
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, []);
+  }, [year, handleNavigate, handleGoBack]);
 
   useEffect(() => {
     if (!isWindowOpen) {

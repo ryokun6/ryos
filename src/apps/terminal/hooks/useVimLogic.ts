@@ -5,7 +5,7 @@ import type {
   KeyboardEvent,
   SetStateAction,
 } from "react";
-import { useTerminalStoreShallow } from "@/stores/helpers";
+import { useTerminalStore } from "@/stores/useTerminalStore";
 import type {
   CommandHistory,
   SaveFileData,
@@ -56,32 +56,7 @@ export const useVimLogic = ({
     setVimSearchForward,
     vimVisualStartLine,
     setVimVisualStartLine,
-  } = useTerminalStoreShallow((state) => ({
-    isInVimMode: state.isInVimMode,
-    setIsInVimMode: state.setIsInVimMode,
-    vimFile: state.vimFile,
-    setVimFile: state.setVimFile,
-    vimPosition: state.vimPosition,
-    setVimPosition: state.setVimPosition,
-    vimCursorLine: state.vimCursorLine,
-    setVimCursorLine: state.setVimCursorLine,
-    vimCursorColumn: state.vimCursorColumn,
-    setVimCursorColumn: state.setVimCursorColumn,
-    vimMode: state.vimMode,
-    setVimMode: state.setVimMode,
-    vimClipboard: state.vimClipboard,
-    setVimClipboard: state.setVimClipboard,
-    pushVimUndo: state.pushVimUndo,
-    popVimUndo: state.popVimUndo,
-    pushVimRedo: state.pushVimRedo,
-    popVimRedo: state.popVimRedo,
-    vimSearchPattern: state.vimSearchPattern,
-    setVimSearchPattern: state.setVimSearchPattern,
-    vimSearchForward: state.vimSearchForward,
-    setVimSearchForward: state.setVimSearchForward,
-    vimVisualStartLine: state.vimVisualStartLine,
-    setVimVisualStartLine: state.setVimVisualStartLine,
-  }));
+  } = useTerminalStore();
 
   const lastGPressTimeRef = useRef<number>(0);
   const lastKeyPressRef = useRef<{ key: string; time: number }>({
