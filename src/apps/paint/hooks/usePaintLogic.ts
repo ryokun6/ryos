@@ -27,9 +27,10 @@ interface PaintCanvasHandle {
 
 export interface UsePaintLogicProps {
   initialData?: PaintInitialData;
+  instanceId?: string;
 }
 
-export function usePaintLogic({ initialData }: UsePaintLogicProps) {
+export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("paint", helpItems);
   const [selectedTool, setSelectedTool] = useState<string>("pencil");
@@ -53,7 +54,9 @@ export function usePaintLogic({ initialData }: UsePaintLogicProps) {
   const { saveFile } = useFileSystem("/Images");
   const launchApp = useLaunchApp();
   const contentChangeTimeoutRef = useRef<number | null>(null);
-  const clearInitialData = useAppStore((state) => state.clearInitialData);
+  const clearInstanceInitialData = useAppStore(
+    (state) => state.clearInstanceInitialData
+  );
   const lastConsumedBlobUrl = useRef<string | null>(null);
   const [initialFileLoaded, setInitialFileLoaded] = useState(false);
 
@@ -138,9 +141,11 @@ export function usePaintLogic({ initialData }: UsePaintLogicProps) {
       } else {
         console.error("[Paint] Received initialData content is not a Blob:", content);
       }
-      clearInitialData("paint");
+      if (instanceId) {
+        clearInstanceInitialData(instanceId);
+      }
     }
-  }, [initialData, handleFileOpen, clearInitialData]);
+  }, [initialData, handleFileOpen, clearInstanceInitialData, instanceId]);
 
   useEffect(() => {
     if (!canvasRef.current) return;

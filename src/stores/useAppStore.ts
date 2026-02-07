@@ -2,8 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { AppId, getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
 import { useAppletStore } from "@/stores/useAppletStore";
-import { appIds } from "@/config/appIds";
-import { AppManagerState, AppState } from "@/apps/base/types";
+import { AppState } from "@/apps/base/types";
 import { AIModel } from "@/types/aiModels";
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
@@ -42,18 +41,7 @@ export interface RecentDocument {
   timestamp: number;
 }
 
-const getInitialState = (): AppManagerState => {
-  const apps: { [appId: string]: AppState } = appIds.reduce(
-    (acc: { [appId: string]: AppState }, id) => {
-      acc[id] = { isOpen: false };
-      return acc;
-    },
-    {} as { [appId: string]: AppState }
-  );
-  return { windowOrder: [], apps };
-};
-
-interface AppStoreState extends AppManagerState {
+interface AppStoreState {
   // Instance (window) management
   instances: Record<string, AppInstance>;
   instanceOrder: string[]; // END = TOP (foreground)
@@ -93,25 +81,11 @@ interface AppStoreState extends AppManagerState {
     launchOrigin?: LaunchOriginRect
   ) => string;
 
-  // Legacy app‑level window APIs (kept as wrappers)
-  bringToForeground: (appId: AppId | "") => void;
-  toggleApp: (appId: AppId, initialData?: unknown) => void;
-  closeApp: (appId: AppId) => void;
-  navigateToNextApp: (currentAppId: AppId) => void;
-  navigateToPreviousApp: (currentAppId: AppId) => void;
-  launchOrFocusApp: (appId: AppId, initialData?: unknown) => void;
-
   // Misc state & helpers
-  clearInitialData: (appId: AppId) => void;
   clearInstanceInitialData: (instanceId: string) => void;
   updateInstanceInitialData: (instanceId: string, initialData: unknown) => void;
   aiModel: AIModel;
   setAiModel: (m: AIModel) => void;
-  updateWindowState: (
-    appId: AppId,
-    position: { x: number; y: number },
-    size: { width: number; height: number }
-  ) => void;
   isFirstBoot: boolean;
   setHasBooted: () => void;
   macAppToastShown: boolean;
@@ -138,14 +112,13 @@ interface AppStoreState extends AppManagerState {
   clearRecentItems: () => void;
 }
 
-const CURRENT_APP_STORE_VERSION = 3; // bump for instanceOrder unification
+const CURRENT_APP_STORE_VERSION = 4; // migrate to instance-only state
 
 // ---------------- Store ---------------------------------------------------------
 const createUseAppStore = () =>
   create<AppStoreState>()(
     persist(
       (set, get) => ({
-      ...getInitialState(),
       version: CURRENT_APP_STORE_VERSION,
 
       // AI model (kept here as it's core app functionality)
@@ -198,168 +171,6 @@ const createUseAppStore = () =>
         }),
       clearRecentItems: () => set({ recentApps: [], recentDocuments: [] }),
 
-      updateWindowState: (appId, position, size) =>
-        set((state) => ({
-          apps: {
-            ...state.apps,
-            [appId]: { ...state.apps[appId], position, size },
-          },
-        })),
-
-      // Legacy app-level wrappers (kept)
-      bringToForeground: (appId) => {
-        set((state) => {
-          const newState: AppManagerState = {
-            windowOrder: [...state.windowOrder],
-            apps: { ...state.apps },
-          };
-          if (!appId) {
-            Object.keys(newState.apps).forEach((id) => {
-              newState.apps[id] = { ...newState.apps[id], isForeground: false };
-            });
-          } else {
-            newState.windowOrder = [
-              ...newState.windowOrder.filter((id) => id !== appId),
-              appId,
-            ];
-            Object.keys(newState.apps).forEach((id) => {
-              newState.apps[id] = {
-                ...newState.apps[id],
-                isForeground: id === appId,
-              };
-            });
-          }
-          window.dispatchEvent(
-            new CustomEvent("appStateChange", {
-              detail: {
-                appId,
-                isOpen: newState.apps[appId]?.isOpen || false,
-                isForeground: true,
-              },
-            })
-          );
-          return newState;
-        });
-      },
-      toggleApp: (appId, initialData) => {
-        set((state) => {
-          const isOpen = state.apps[appId]?.isOpen;
-          let windowOrder = [...state.windowOrder];
-          windowOrder = isOpen
-            ? windowOrder.filter((id) => id !== appId)
-            : [...windowOrder, appId];
-          const apps: Record<string, AppState> = { ...state.apps };
-          const shouldBringPrev = isOpen && windowOrder.length > 0;
-          const prev = shouldBringPrev
-            ? windowOrder[windowOrder.length - 1]
-            : null;
-          Object.keys(apps).forEach((id) => {
-            if (id === appId) {
-              apps[id] = {
-                ...apps[id],
-                isOpen: !isOpen,
-                isForeground: !isOpen,
-                initialData: !isOpen ? initialData : undefined,
-              };
-            } else {
-              apps[id] = {
-                ...apps[id],
-                isForeground: shouldBringPrev && id === prev,
-              };
-            }
-          });
-          window.dispatchEvent(
-            new CustomEvent("appStateChange", {
-              detail: { appId, isOpen: !isOpen, isForeground: !isOpen },
-            })
-          );
-          return { windowOrder, apps };
-        });
-      },
-      closeApp: (appId) => {
-        set((state) => {
-          if (!state.apps[appId]?.isOpen) return state;
-          const windowOrder = state.windowOrder.filter((id) => id !== appId);
-          const nextId = windowOrder.length
-            ? windowOrder[windowOrder.length - 1]
-            : null;
-          const apps = { ...state.apps };
-          Object.keys(apps).forEach((id) => {
-            if (id === appId)
-              apps[id] = {
-                ...apps[id],
-                isOpen: false,
-                isForeground: false,
-                initialData: undefined,
-              };
-            else apps[id] = { ...apps[id], isForeground: id === nextId };
-          });
-          window.dispatchEvent(
-            new CustomEvent("appStateChange", {
-              detail: { appId, isOpen: false, isForeground: false },
-            })
-          );
-          return { windowOrder, apps };
-        });
-      },
-      launchOrFocusApp: (appId, initialData) => {
-        set((state) => {
-          const isOpen = state.apps[appId]?.isOpen;
-          let windowOrder = [...state.windowOrder];
-          if (isOpen)
-            windowOrder = [...windowOrder.filter((id) => id !== appId), appId];
-          else windowOrder.push(appId);
-          const apps = { ...state.apps };
-          Object.keys(apps).forEach((id) => {
-            const target = id === appId;
-            apps[id] = {
-              ...apps[id],
-              isOpen: target ? true : apps[id].isOpen,
-              isForeground: target,
-              initialData: target ? initialData : apps[id].initialData,
-            };
-          });
-          window.dispatchEvent(
-            new CustomEvent("appStateChange", {
-              detail: {
-                appId,
-                isOpen: true,
-                isForeground: true,
-                updatedData: !!initialData,
-              },
-            })
-          );
-          return { windowOrder, apps };
-        });
-      },
-      navigateToNextApp: (current) => {
-        const { windowOrder } = get();
-        if (windowOrder.length <= 1) return;
-        const idx = windowOrder.indexOf(current);
-        if (idx === -1) return;
-        get().bringToForeground(
-          windowOrder[(idx + 1) % windowOrder.length] as AppId
-        );
-      },
-      navigateToPreviousApp: (current) => {
-        const { windowOrder } = get();
-        if (windowOrder.length <= 1) return;
-        const idx = windowOrder.indexOf(current);
-        if (idx === -1) return;
-        const prev = (idx - 1 + windowOrder.length) % windowOrder.length;
-        get().bringToForeground(windowOrder[prev] as AppId);
-      },
-
-      clearInitialData: (appId) =>
-        set((state) => {
-          if (!state.apps[appId]?.initialData) return state;
-          return {
-            apps: {
-              ...state.apps,
-              [appId]: { ...state.apps[appId], initialData: undefined },
-            },
-          };
-        }),
       clearInstanceInitialData: (instanceId: string) =>
         set((state) => {
           if (!state.instances[instanceId]?.initialData) return state;
@@ -836,9 +647,6 @@ const createUseAppStore = () =>
         name: "ryos:app-store",
         version: CURRENT_APP_STORE_VERSION,
         partialize: (state): Partial<AppStoreState> => ({
-        // Core app/window state
-        windowOrder: state.windowOrder,
-        apps: state.apps,
         version: state.version,
         
         // AI model
@@ -890,6 +698,8 @@ const createUseAppStore = () =>
           instanceStackOrder?: string[];
           instanceWindowOrder?: string[];
           instanceOrder?: string[];
+          apps?: Record<string, AppState>;
+          windowOrder?: string[];
         };
         console.log(
           "[AppStore] Migrating from",
@@ -907,6 +717,63 @@ const createUseAppStore = () =>
           delete prev.instanceStackOrder;
           delete prev.instanceWindowOrder;
         }
+
+        // v<4 migrate legacy app-level window state to instances
+        if (version < 4) {
+          const hasLegacyApps =
+            !!prev.apps && !!prev.windowOrder && prev.windowOrder.length > 0;
+          const hasInstances =
+            !!prev.instances && Object.keys(prev.instances).length > 0;
+
+          if (hasLegacyApps && !hasInstances) {
+            let idCounter = prev.nextInstanceId || 0;
+            const instances: Record<string, AppInstance> = {};
+            const order: string[] = [];
+            let foreground: string | null = null;
+
+            prev.windowOrder?.forEach((appId) => {
+              const a = prev.apps?.[appId];
+              if (a?.isOpen) {
+                const instId = (++idCounter).toString();
+                instances[instId] = {
+                  instanceId: instId,
+                  appId: appId as AppId,
+                  isOpen: true,
+                  isForeground: a.isForeground,
+                  position: a.position,
+                  size: a.size,
+                  initialData: a.initialData,
+                  createdAt: Date.now(),
+                };
+                order.push(instId);
+                if (a.isForeground) foreground = instId;
+              }
+            });
+
+            prev.instances = instances;
+            prev.instanceOrder = order;
+            prev.nextInstanceId = idCounter;
+            prev.foregroundInstanceId =
+              foreground || (order.length ? order[order.length - 1] : null);
+          }
+
+          delete prev.apps;
+          delete prev.windowOrder;
+        }
+
+        if (!prev.instances) {
+          prev.instances = {};
+        }
+        if (!prev.instanceOrder) {
+          prev.instanceOrder = [];
+        }
+        if (prev.foregroundInstanceId === undefined) {
+          prev.foregroundInstanceId = null;
+        }
+        if (!prev.nextInstanceId) {
+          prev.nextInstanceId = 0;
+        }
+
         prev.version = CURRENT_APP_STORE_VERSION;
         return prev;
         },
@@ -947,41 +814,6 @@ const createUseAppStore = () =>
                 : cfg.defaultSize;
           }
         });
-        // Migrate old app states (pre-instance system)
-        const hasOldOpen = Object.values(state.apps || {}).some(
-          (a) => a.isOpen
-        );
-        if (hasOldOpen && Object.keys(state.instances || {}).length === 0) {
-          let idCounter = state.nextInstanceId || 0;
-          const instances: Record<string, AppInstance> = {};
-          const order: string[] = [];
-          state.windowOrder.forEach((appId) => {
-            const a = state.apps[appId];
-            if (a?.isOpen) {
-              const instId = (++idCounter).toString();
-              instances[instId] = {
-                instanceId: instId,
-                appId: appId as AppId,
-                isOpen: true,
-                isForeground: a.isForeground,
-                position: a.position,
-                size: a.size,
-                initialData: a.initialData,
-                createdAt: Date.now(),
-              };
-              order.push(instId);
-            }
-          });
-          state.instances = instances;
-          (state as unknown as { instanceOrder?: string[] }).instanceOrder =
-            order;
-          state.nextInstanceId = idCounter;
-          // Reset legacy app flags
-          Object.keys(state.apps).forEach((appId) => {
-            state.apps[appId] = { isOpen: false, isForeground: false };
-          });
-          state.windowOrder = [];
-        }
         },
       }
     )

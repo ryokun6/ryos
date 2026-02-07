@@ -173,8 +173,9 @@ export function useInternetExplorerLogic({
   const terminalSoundsEnabled = useAudioSettingsStore(
     (state) => state.terminalSoundsEnabled
   );
-  const bringToForeground = useAppStore((state) => state.bringToForeground);
-  const clearInitialData = useAppStore((state) => state.clearInitialData);
+  const bringInstanceToForeground = useAppStore(
+    (state) => state.bringInstanceToForeground
+  );
   const clearInstanceInitialData = useAppStore(
     (state) => state.clearInstanceInitialData
   );
@@ -1367,8 +1368,6 @@ export function useInternetExplorerLogic({
             // Clear initialData after navigation is initiated
             if (instanceId) {
               clearInstanceInitialData(instanceId);
-            } else {
-              clearInitialData("internet-explorer");
             }
           }, 0);
           // Mark this initialData as processed
@@ -1414,8 +1413,6 @@ export function useInternetExplorerLogic({
           // Clear initialData after navigation is initiated
           if (instanceId) {
             clearInstanceInitialData(instanceId);
-          } else {
-            clearInitialData("internet-explorer");
           }
           // --- END FIX ---
         }, 0);
@@ -1437,7 +1434,6 @@ export function useInternetExplorerLogic({
     handleNavigate,
     url,
     year,
-    clearInitialData,
     clearInstanceInitialData,
     instanceId,
     setUrl,
@@ -1486,8 +1482,6 @@ export function useInternetExplorerLogic({
             // Clear initialData after navigation
             if (instanceId) {
               clearInstanceInitialData(instanceId);
-            } else {
-              clearInitialData("internet-explorer");
             }
           }, 50);
           // Mark this initialData as processed
@@ -1518,8 +1512,6 @@ export function useInternetExplorerLogic({
           // Clear initialData after navigation
           if (instanceId) {
             clearInstanceInitialData(instanceId);
-          } else {
-            clearInitialData("internet-explorer");
           }
         }, 50);
         // Mark this initialData as processed
@@ -1530,7 +1522,6 @@ export function useInternetExplorerLogic({
     isWindowOpen,
     initialData,
     handleNavigate,
-    clearInitialData,
     clearInstanceInitialData,
     instanceId,
   ]);
@@ -1545,9 +1536,16 @@ export function useInternetExplorerLogic({
     }
 
     const handleUpdateApp = (
-      event: CustomEvent<{ appId: string; initialData?: AppUpdateInitialData }>
+      event: CustomEvent<{
+        appId: string;
+        instanceId?: string;
+        initialData?: AppUpdateInitialData;
+      }>
     ) => {
-      if (event.detail.appId === "internet-explorer") {
+      if (
+        event.detail.appId === "internet-explorer" &&
+        (!event.detail.instanceId || event.detail.instanceId === instanceId)
+      ) {
         const initialData = event.detail.initialData;
 
         // Skip if this initialData has already been processed
@@ -1623,8 +1621,8 @@ export function useInternetExplorerLogic({
     return () => {
       window.removeEventListener("updateApp", handleUpdateApp as EventListener);
     };
-    // Add bringToForeground and isForeground to dependencies
-  }, [handleNavigate, bringToForeground, isForeground]);
+    // Add isForeground to dependencies to refresh navigation when focus changes
+  }, [handleNavigate, isForeground, instanceId]);
   // --- End updateApp listener ---
 
   useEffect(() => {
@@ -1951,8 +1949,7 @@ export function useInternetExplorerLogic({
     ieGenerateShareUrl,
 
     // App store actions
-    bringToForeground,
-    clearInitialData,
+    bringInstanceToForeground,
     clearInstanceInitialData,
 
     // Translation
