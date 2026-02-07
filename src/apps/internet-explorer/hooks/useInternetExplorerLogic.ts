@@ -1271,6 +1271,21 @@ export function useInternetExplorerLogic({
     handleNavigate,
     setNavigatingHistory,
   ]);
+  const latestNavigateRef = useRef(handleNavigate);
+  const latestGoBackRef = useRef(handleGoBack);
+  const latestYearRef = useRef(year);
+
+  useEffect(() => {
+    latestNavigateRef.current = handleNavigate;
+  }, [handleNavigate]);
+
+  useEffect(() => {
+    latestGoBackRef.current = handleGoBack;
+  }, [handleGoBack]);
+
+  useEffect(() => {
+    latestYearRef.current = year;
+  }, [year]);
 
   const handleAddFavorite = useCallback(() => {
     const titleSource =
@@ -1732,10 +1747,10 @@ export function useInternetExplorerLogic({
         console.log(
           `[IE] Received navigation request from iframe: ${messageData.url}`
         );
-        handleNavigate(messageData.url, year);
+        latestNavigateRef.current(messageData.url, latestYearRef.current);
       } else if (messageData.type === "goBack") {
         console.log(`[IE] Received back button request from iframe`);
-        handleGoBack();
+        latestGoBackRef.current();
       } else if (
         messageData.type === "aiHtmlNavigation" &&
         typeof messageData.url === "string"
@@ -1747,14 +1762,19 @@ export function useInternetExplorerLogic({
         const contextHtml =
           useInternetExplorerStore.getState().aiGeneratedHtml;
 
-        handleNavigate(messageData.url, year, false, contextHtml);
+        latestNavigateRef.current(
+          messageData.url,
+          latestYearRef.current,
+          false,
+          contextHtml
+        );
       }
     };
     window.addEventListener("message", handleMessage);
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, [year, handleNavigate, handleGoBack]);
+  }, []);
 
   useEffect(() => {
     if (!isWindowOpen) {
