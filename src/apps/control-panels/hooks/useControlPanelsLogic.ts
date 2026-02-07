@@ -256,10 +256,12 @@ export function useControlPanelsLogic({
   }));
 
   // Theme state
-  const { current: currentTheme, setTheme } = useThemeStore();
+  const currentTheme = useThemeStore((state) => state.current);
+  const setTheme = useThemeStore((state) => state.setTheme);
 
   // Language state
-  const { current: currentLanguage, setLanguage } = useLanguageStore();
+  const currentLanguage = useLanguageStore((state) => state.current);
+  const setLanguage = useLanguageStore((state) => state.setLanguage);
 
   // Use auth hook
   const {
