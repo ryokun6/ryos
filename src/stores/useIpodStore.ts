@@ -7,6 +7,7 @@ import { getApiUrl } from "@/utils/platform";
 import { getCachedSongMetadata, listAllCachedSongMetadata } from "@/utils/songMetadataCache";
 import i18n from "@/lib/i18n";
 import { useChatsStore } from "./useChatsStore";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
@@ -999,7 +1000,11 @@ export const useIpodStore = create<IpodState>()(
           const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(
             youtubeUrl
           )}&format=json`;
-          const oembedResponse = await fetch(oembedUrl);
+          const oembedResponse = await abortableFetch(oembedUrl, {
+            timeout: 15000,
+            throwOnHttpError: false,
+            retry: { maxAttempts: 1, initialDelayMs: 250 },
+          });
 
           if (oembedResponse.ok) {
             const oembedData = await oembedResponse.json();
@@ -1032,15 +1037,21 @@ export const useIpodStore = create<IpodState>()(
         // Single call to fetch-lyrics with returnMetadata: searches Kugou, fetches lyrics+cover, returns metadata
         // This consolidates search + fetch into one call
         try {
-          const fetchResponse = await fetch(getApiUrl(`/api/songs/${videoId}`), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "fetch-lyrics",
-              title: rawTitle,
-              returnMetadata: true,
-            }),
-          });
+          const fetchResponse = await abortableFetch(
+            getApiUrl(`/api/songs/${videoId}`),
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "fetch-lyrics",
+                title: rawTitle,
+                returnMetadata: true,
+              }),
+              timeout: 15000,
+              throwOnHttpError: false,
+              retry: { maxAttempts: 1, initialDelayMs: 250 },
+            }
+          );
 
           if (fetchResponse.ok) {
             const fetchData = await fetchResponse.json();
@@ -1070,14 +1081,20 @@ export const useIpodStore = create<IpodState>()(
           console.log(`[iPod Store] No Kugou match for ${videoId}, falling back to AI parse`);
           try {
             // Call /api/parse-title
-            const parseResponse = await fetch(getApiUrl("/api/parse-title"), {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                title: rawTitle,
-                author_name: authorName,
-              }),
-            });
+            const parseResponse = await abortableFetch(
+              getApiUrl("/api/parse-title"),
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  title: rawTitle,
+                  author_name: authorName,
+                }),
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
+              }
+            );
 
             if (parseResponse.ok) {
               const parsedData = await parseResponse.json();
