@@ -7,6 +7,8 @@ import {
   setCorsHeaders,
 } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
+import { mapWithConcurrency } from "./_concurrency.js";
+import { normalizeUnregisterPushPayload } from "./_request-payloads.js";
 import {
   type PushTokenMetadata,
   extractAuthFromHeaders,
@@ -15,10 +17,10 @@ import {
   getTokenMetaKey,
   getUserTokensKey,
 } from "./_shared.js";
-import { normalizeUnregisterPushPayload } from "./_request-payloads.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
+const TOKEN_METADATA_LOOKUP_CONCURRENCY = 8;
 
 function createRedis(): Redis {
   return new Redis({
@@ -140,8 +142,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   await redis.del(userTokensKey);
 
-  const tokenOwnership = await Promise.all(
-    userTokens.map(async (storedToken) => {
+  const tokenOwnership = await mapWithConcurrency(
+    userTokens,
+    TOKEN_METADATA_LOOKUP_CONCURRENCY,
+    async (storedToken) => {
       const tokenMeta = await redis.get<Partial<PushTokenMetadata> | null>(
         getTokenMetaKey(storedToken)
       );
@@ -149,7 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         storedToken,
         ownedByCurrentUser: extractTokenMetadataOwner(tokenMeta) === username,
       };
-    })
+    }
   );
 
   const ownedTokens = tokenOwnership

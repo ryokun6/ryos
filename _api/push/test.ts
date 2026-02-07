@@ -39,6 +39,7 @@ const APNS_STALE_REASONS = new Set([
   "Unregistered",
   "DeviceTokenNotForTopic",
 ]);
+const TOKEN_METADATA_LOOKUP_CONCURRENCY = 8;
 const APNS_SEND_CONCURRENCY = resolveBoundedConcurrency(
   process.env.APNS_SEND_CONCURRENCY,
   4
@@ -132,8 +133,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "No registered push tokens for this user" });
   }
 
-  const ownershipEntries = await Promise.all(
-    userTokens.map(async (deviceToken) => {
+  const ownershipEntries = await mapWithConcurrency(
+    userTokens,
+    TOKEN_METADATA_LOOKUP_CONCURRENCY,
+    async (deviceToken) => {
       const metadata = await redis.get<Partial<PushTokenMetadata> | null>(
         getTokenMetaKey(deviceToken)
       );
@@ -141,7 +144,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         deviceToken,
         ownedByCurrentUser: extractTokenMetadataOwner(metadata) === username,
       };
-    })
+    }
   );
 
   const ownedTokens = ownershipEntries
