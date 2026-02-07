@@ -1135,8 +1135,14 @@ export const useChatsStore = create<ChatsStoreState>()(
               roomIds: roomIds.join(","),
             });
 
-            const response = await fetch(
-              `/api/messages/bulk?${queryParams.toString()}`
+            const response = await abortableFetch(
+              `/api/messages/bulk?${queryParams.toString()}`,
+              {
+                method: "GET",
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
+              }
             );
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
@@ -1269,7 +1275,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           // If switching to a real room and we have a username, handle the API call
           if (username) {
             try {
-              const response = await fetch(
+              const response = await abortableFetch(
                 "/api/presence/switch",
                 {
                   method: "POST",
@@ -1279,6 +1285,9 @@ export const useChatsStore = create<ChatsStoreState>()(
                     nextRoomId: newRoomId,
                     username,
                   }),
+                  timeout: 15000,
+                  throwOnHttpError: false,
+                  retry: { maxAttempts: 1, initialDelayMs: 250 },
                 }
               );
 
@@ -1476,10 +1485,13 @@ export const useChatsStore = create<ChatsStoreState>()(
                   },
                   get().refreshAuthToken
                 )
-              : await fetch(getApiUrl(messageUrl), {
+              : await abortableFetch(getApiUrl(messageUrl), {
                   method: "POST",
                   headers,
                   body: messageBody,
+                  timeout: 15000,
+                  throwOnHttpError: false,
+                  retry: { maxAttempts: 1, initialDelayMs: 250 },
                 });
 
             if (!response.ok) {
@@ -1534,11 +1546,17 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await fetch(getApiUrl("/api/auth/register"), {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ username: trimmedUsername, password }),
-            });
+            const response = await abortableFetch(
+              getApiUrl("/api/auth/register"),
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: trimmedUsername, password }),
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
+              }
+            );
 
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
