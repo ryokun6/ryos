@@ -355,7 +355,7 @@ export const useTerminalLogic = ({
     playMooSound,
   } = useTerminalSounds();
 
-  const { username } = useChatsStore();
+  const username = useChatsStore((state) => state.username);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
