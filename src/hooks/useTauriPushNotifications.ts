@@ -7,6 +7,7 @@ import {
   getPushToken,
   onPushNotification,
   onPushNotificationTapped,
+  onPushRegistrationError,
   onPushToken,
   requestPushPermission,
 } from "@/utils/tauriPushNotifications";
@@ -29,6 +30,7 @@ export function useTauriPushNotifications() {
     let tokenUnlisten: (() => Promise<void>) | undefined;
     let notificationUnlisten: (() => Promise<void>) | undefined;
     let tapUnlisten: (() => Promise<void>) | undefined;
+    let registrationErrorUnlisten: (() => Promise<void>) | undefined;
 
     const init = async () => {
       try {
@@ -57,6 +59,17 @@ export function useTauriPushNotifications() {
         });
         tapUnlisten = () => tapListener.unregister();
 
+        const registrationErrorListener = await onPushRegistrationError((payload) => {
+          const description =
+            typeof payload?.message === "string" && payload.message.trim().length > 0
+              ? payload.message
+              : "Could not register for push notifications on this device.";
+          toast("Push registration failed", {
+            description,
+          });
+        });
+        registrationErrorUnlisten = () => registrationErrorListener.unregister();
+
         const permission = await requestPushPermission();
         if (!permission.granted) {
           return;
@@ -82,6 +95,7 @@ export function useTauriPushNotifications() {
       void tokenUnlisten?.();
       void notificationUnlisten?.();
       void tapUnlisten?.();
+      void registrationErrorUnlisten?.();
     };
   }, []);
 

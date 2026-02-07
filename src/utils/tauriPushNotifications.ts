@@ -19,6 +19,10 @@ interface PushTokenPayload {
   token: string;
 }
 
+export interface PushRegistrationErrorPayload {
+  message: string;
+}
+
 export async function requestPushPermission(): Promise<PushPermissionResult> {
   return invoke<PushPermissionResult>(`plugin:${IOS_PUSH_PLUGIN}|request_push_permission`);
 }
@@ -53,6 +57,16 @@ export async function onPushNotificationTapped(
   return addPluginListener<IosPushNotificationPayload>(
     IOS_PUSH_PLUGIN,
     "notification-tapped",
+    handler
+  );
+}
+
+export async function onPushRegistrationError(
+  handler: (payload: PushRegistrationErrorPayload) => void
+): Promise<PluginListener> {
+  return addPluginListener<PushRegistrationErrorPayload>(
+    IOS_PUSH_PLUGIN,
+    "registration-error",
     handler
   );
 }

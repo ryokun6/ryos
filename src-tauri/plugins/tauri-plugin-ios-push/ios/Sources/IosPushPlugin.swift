@@ -59,6 +59,16 @@ public class IosPushPlugin: Plugin, UNUserNotificationCenterDelegate {
         }
     }
 
+    public func handleDeviceTokenRegistrationError(_ error: Error) {
+        do {
+            try self.trigger("registration-error", data: [
+                "message": error.localizedDescription
+            ])
+        } catch {
+            // Best-effort event dispatch.
+        }
+    }
+
     public func handleRemoteNotification(_ userInfo: [AnyHashable: Any]) {
         let payload = sanitizeDictionary(userInfo)
         do {

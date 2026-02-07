@@ -24,6 +24,7 @@ class AppDelegate: TauriAppDelegate {
     _ application: UIApplication,
     didFailToRegisterForRemoteNotificationsWithError error: Error
   ) {
+    IosPushPlugin.instance?.handleDeviceTokenRegistrationError(error)
     super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
   }
 
