@@ -53,6 +53,13 @@ function normalizePem(raw: string): string {
   return raw.replace(/\\n/g, "\n").trim();
 }
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && typeof error.message === "string") {
+    return error.message;
+  }
+  return String(error);
+}
+
 export function getApnsConfigFromEnv(): ApnsConfig | null {
   const keyId = process.env.APNS_KEY_ID;
   const teamId = process.env.APNS_TEAM_ID;
@@ -161,7 +168,18 @@ export async function sendApnsAlert(
       ? "https://api.sandbox.push.apple.com"
       : "https://api.push.apple.com");
 
-  const authorization = `bearer ${createApnsJwt(config)}`;
+  let authorization: string;
+  try {
+    authorization = `bearer ${createApnsJwt(config)}`;
+  } catch (error) {
+    return {
+      ok: false,
+      status: 0,
+      token: deviceToken,
+      reason: `JWT_ERROR:${getErrorMessage(error)}`,
+    };
+  }
+
   const apnsPayload: Record<string, unknown> = {
     aps: {
       alert: {
@@ -175,7 +193,17 @@ export async function sendApnsAlert(
   };
 
   const body = JSON.stringify(apnsPayload);
-  const session = connect(authority, config.caCert ? { ca: config.caCert } : undefined);
+  let session: ClientHttp2Session;
+  try {
+    session = connect(authority, config.caCert ? { ca: config.caCert } : undefined);
+  } catch (error) {
+    return {
+      ok: false,
+      status: 0,
+      token: deviceToken,
+      reason: `CONNECT_ERROR:${getErrorMessage(error)}`,
+    };
+  }
 
   return new Promise<ApnsSendResult>((resolve) => {
     let settled = false;

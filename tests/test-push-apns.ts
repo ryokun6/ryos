@@ -193,13 +193,38 @@ async function testMissingCaCertFailsTlsHandshake() {
   }
 }
 
+async function testInvalidPrivateKeyReturnsJwtError() {
+  const result = await sendApnsAlert(
+    {
+      keyId: "ABC123DEFG",
+      teamId: "TEAM123ABC",
+      bundleId: "lu.ryo.os",
+      privateKey: "not-a-valid-private-key",
+      useSandbox: false,
+      endpointOverride: "https://api.push.apple.com",
+    },
+    "valid-token-1234567890",
+    {
+      title: "Hello",
+      body: "World",
+    }
+  );
+
+  assertEq(result.ok, false, "Expected invalid private key to fail");
+  assert(result.reason?.startsWith("JWT_ERROR:"), "Expected JWT_ERROR reason");
+}
+
 export async function runPushApnsTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-apns"));
   clearResults();
 
   await runTest("APNs helper sends valid HTTP/2 request", testSuccessfulSend);
   await runTest("APNs helper preserves stale-token reason", testStaleTokenReasonPropagation);
-  await runTest("APNs helper supports custom CA configuration", testMissingCaCertFailsTlsHandshake);
+  await runTest(
+    "APNs helper fails TLS handshake without custom CA",
+    testMissingCaCertFailsTlsHandshake
+  );
+  await runTest("APNs helper returns JWT error on invalid key", testInvalidPrivateKeyReturnsJwtError);
 
   return printSummary();
 }
