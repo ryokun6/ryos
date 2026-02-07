@@ -843,8 +843,10 @@ export function useInternetExplorerLogic({
               const res = await fetch(
                 `/api/iframe-check?mode=ai&url=${encodeURIComponent(
                   normalizedTargetUrl
-                )}&year=${targetYearParam}`
+                )}&year=${targetYearParam}`,
+                { signal: abortController.signal }
               );
+              if (abortController.signal.aborted) return;
               console.log(
                 `[IE] Remote cache response status: ${res.status}, ok: ${
                   res.ok
@@ -888,6 +890,7 @@ export function useInternetExplorerLogic({
                 console.log(`[IE] REMOTE cache MISS or invalid response.`);
               }
             } catch (e) {
+              if (e instanceof Error && e.name === "AbortError") return;
               console.warn("[IE] AI remote cache fetch failed", e);
             }
           }
