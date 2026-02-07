@@ -142,7 +142,7 @@ export function useInfiniteMacLogic({
     (type: string, payload?: Record<string, unknown>) => {
       const win = iframeRef.current?.contentWindow;
       if (win) {
-        win.postMessage({ type, ...payload }, "*");
+        win.postMessage({ type, ...payload }, window.location.origin);
       }
     },
     []
@@ -273,10 +273,16 @@ export function useInfiniteMacLogic({
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
+      const iframeWindow = iframeRef.current?.contentWindow ?? null;
+      const isBridgeMessage =
+        e.origin === window.location.origin &&
+        e.source === iframeWindow &&
+        e.data?.type === "_infinite_mac_bridge";
+
       // Bridge wrapper forwards as { type: '_infinite_mac_bridge', payload }; payload is
       // the raw iframe message (emulator_loaded, emulator_screen, etc. per Infinite Mac embed API).
       const data =
-        e.origin === window.location.origin && e.data?.type === "_infinite_mac_bridge"
+        isBridgeMessage
           ? e.data.payload
           : e.origin === "https://infinitemac.org"
             ? e.data
