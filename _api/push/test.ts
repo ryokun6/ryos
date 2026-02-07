@@ -11,7 +11,11 @@ import {
   getMissingApnsEnvVars,
   sendApnsAlert,
 } from "../_utils/_push-apns.js";
-import { mapWithConcurrency, resolveBoundedConcurrency } from "./_concurrency.js";
+import { mapWithConcurrency } from "./_concurrency.js";
+import {
+  getApnsSendConcurrency,
+  getPushMetadataLookupConcurrency,
+} from "./_config.js";
 import { normalizePushTestPayload } from "./_payload.js";
 import { createPushRedis } from "./_redis.js";
 import { summarizePushSendResults } from "./_results.js";
@@ -32,14 +36,8 @@ const APNS_STALE_REASONS = new Set([
   "Unregistered",
   "DeviceTokenNotForTopic",
 ]);
-const TOKEN_METADATA_LOOKUP_CONCURRENCY = resolveBoundedConcurrency(
-  process.env.PUSH_METADATA_LOOKUP_CONCURRENCY,
-  8
-);
-const APNS_SEND_CONCURRENCY = resolveBoundedConcurrency(
-  process.env.APNS_SEND_CONCURRENCY,
-  4
-);
+const TOKEN_METADATA_LOOKUP_CONCURRENCY = getPushMetadataLookupConcurrency();
+const APNS_SEND_CONCURRENCY = getApnsSendConcurrency();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { logger } = initLogger();

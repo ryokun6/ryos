@@ -8,6 +8,10 @@ import {
   resolveBoundedConcurrency,
 } from "../_api/push/_concurrency";
 import {
+  getApnsSendConcurrency,
+  getPushMetadataLookupConcurrency,
+} from "../_api/push/_config";
+import {
   assertEq,
   clearResults,
   printSummary,
@@ -104,6 +108,54 @@ async function testInvalidFallbackBoundsThrows() {
   assertEq(errorMessage, "Fallback concurrency must be within bounds");
 }
 
+function withEnv<T>(envPatch: Record<string, string | undefined>, run: () => T): T {
+  const originalValues = new Map<string, string | undefined>();
+  for (const [key, value] of Object.entries(envPatch)) {
+    originalValues.set(key, process.env[key]);
+    if (typeof value === "undefined") {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+
+  try {
+    return run();
+  } finally {
+    for (const [key, value] of originalValues.entries()) {
+      if (typeof value === "undefined") {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  }
+}
+
+async function testConcurrencyConfigAccessors() {
+  withEnv(
+    {
+      APNS_SEND_CONCURRENCY: "7",
+      PUSH_METADATA_LOOKUP_CONCURRENCY: "12",
+    },
+    () => {
+      assertEq(getApnsSendConcurrency(), 7);
+      assertEq(getPushMetadataLookupConcurrency(), 12);
+    }
+  );
+
+  withEnv(
+    {
+      APNS_SEND_CONCURRENCY: "200",
+      PUSH_METADATA_LOOKUP_CONCURRENCY: "0",
+    },
+    () => {
+      assertEq(getApnsSendConcurrency(), 4);
+      assertEq(getPushMetadataLookupConcurrency(), 8);
+    }
+  );
+}
+
 export async function runPushConcurrencyTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-concurrency"));
   clearResults();
@@ -115,6 +167,7 @@ export async function runPushConcurrencyTests(): Promise<{ passed: number; faile
   await runTest("Concurrency helper propagates worker errors", testWorkerErrorPropagation);
   await runTest("Concurrency helper stops scheduling after error", testStopsSchedulingAfterError);
   await runTest("Concurrency helper validates fallback bounds", testInvalidFallbackBoundsThrows);
+  await runTest("Concurrency config accessors apply bounded env values", testConcurrencyConfigAccessors);
 
   return printSummary();
 }

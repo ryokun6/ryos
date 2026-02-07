@@ -6,7 +6,8 @@ import {
   setCorsHeaders,
 } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
-import { mapWithConcurrency, resolveBoundedConcurrency } from "./_concurrency.js";
+import { mapWithConcurrency } from "./_concurrency.js";
+import { getPushMetadataLookupConcurrency } from "./_config.js";
 import { normalizeUnregisterPushPayload } from "./_request-payloads.js";
 import { createPushRedis } from "./_redis.js";
 import {
@@ -20,10 +21,7 @@ import {
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
-const TOKEN_METADATA_LOOKUP_CONCURRENCY = resolveBoundedConcurrency(
-  process.env.PUSH_METADATA_LOOKUP_CONCURRENCY,
-  8
-);
+const TOKEN_METADATA_LOOKUP_CONCURRENCY = getPushMetadataLookupConcurrency();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { logger } = initLogger();
