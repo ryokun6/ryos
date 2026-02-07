@@ -103,6 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: true,
       removed: removedFromUserSet,
       metadataRemoved: removedMetadataCount,
+      invalidStoredTokensRemoved: 0,
     });
   }
 
@@ -135,6 +136,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: true,
       removed: invalidStoredTokens.length,
       metadataRemoved: 0,
+      invalidStoredTokensRemoved: invalidStoredTokens.length,
     });
   }
 
