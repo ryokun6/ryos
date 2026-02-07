@@ -1,4 +1,10 @@
 import { createPrivateKey, createSign } from "node:crypto";
+import {
+  connect,
+  constants,
+  type ClientHttp2Session,
+  type IncomingHttpHeaders,
+} from "node:http2";
 
 export interface ApnsConfig {
   keyId: string;
@@ -101,15 +107,35 @@ function createApnsJwt(config: ApnsConfig): string {
   return jwt;
 }
 
+function getHeaderString(
+  headers: IncomingHttpHeaders,
+  key: string
+): string | null {
+  const value = headers[key];
+  if (!value) return null;
+  if (Array.isArray(value)) {
+    return typeof value[0] === "string" ? value[0] : null;
+  }
+  return typeof value === "string" ? value : null;
+}
+
+function closeSessionQuietly(session: ClientHttp2Session): void {
+  if (session.closed || session.destroyed) return;
+  try {
+    session.close();
+  } catch {
+    // no-op
+  }
+}
+
 export async function sendApnsAlert(
   config: ApnsConfig,
   deviceToken: string,
   payload: ApnsAlertPayload
 ): Promise<ApnsSendResult> {
-  const host = config.useSandbox
+  const authority = config.useSandbox
     ? "https://api.sandbox.push.apple.com"
     : "https://api.push.apple.com";
-  const url = `${host}/3/device/${encodeURIComponent(deviceToken)}`;
 
   const authorization = `bearer ${createApnsJwt(config)}`;
   const apnsPayload: Record<string, unknown> = {
@@ -118,49 +144,114 @@ export async function sendApnsAlert(
         title: payload.title,
         body: payload.body,
       },
-      badge: payload.badge,
+      ...(typeof payload.badge === "number" ? { badge: payload.badge } : {}),
       sound: payload.sound ?? "default",
     },
     ...(payload.data ? { data: payload.data } : {}),
   };
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      authorization,
+  const body = JSON.stringify(apnsPayload);
+  const session = connect(authority);
+
+  return new Promise<ApnsSendResult>((resolve) => {
+    let settled = false;
+    let status = 0;
+    let apnsId: string | null = null;
+    let responseBody = "";
+
+    const finish = (result: ApnsSendResult) => {
+      if (settled) return;
+      settled = true;
+      closeSessionQuietly(session);
+      resolve(result);
+    };
+
+    session.once("error", (error) => {
+      finish({
+        ok: false,
+        status: 0,
+        token: deviceToken,
+        reason: `SESSION_ERROR:${error.message}`,
+      });
+    });
+
+    const request = session.request({
+      [constants.HTTP2_HEADER_SCHEME]: "https",
+      [constants.HTTP2_HEADER_METHOD]: "POST",
+      [constants.HTTP2_HEADER_PATH]: `/3/device/${encodeURIComponent(deviceToken)}`,
+      [constants.HTTP2_HEADER_AUTHORIZATION]: authorization,
+      [constants.HTTP2_HEADER_CONTENT_TYPE]: "application/json",
       "apns-topic": config.bundleId,
       "apns-push-type": "alert",
       "apns-priority": "10",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(apnsPayload),
+    });
+
+    request.setEncoding("utf8");
+    request.setTimeout(15000, () => {
+      request.close();
+      finish({
+        ok: false,
+        status: 0,
+        token: deviceToken,
+        reason: "TIMEOUT",
+      });
+    });
+
+    request.on("response", (headers) => {
+      const statusHeader = headers[constants.HTTP2_HEADER_STATUS];
+      status =
+        typeof statusHeader === "number"
+          ? statusHeader
+          : Number(statusHeader || 0);
+      apnsId = getHeaderString(headers, "apns-id");
+    });
+
+    request.on("data", (chunk: string) => {
+      responseBody += chunk;
+    });
+
+    request.on("error", (error) => {
+      finish({
+        ok: false,
+        status: status || 0,
+        token: deviceToken,
+        apnsId,
+        reason: `REQUEST_ERROR:${error.message}`,
+      });
+    });
+
+    request.on("end", () => {
+      if (status >= 200 && status < 300) {
+        finish({
+          ok: true,
+          status,
+          token: deviceToken,
+          apnsId,
+        });
+        return;
+      }
+
+      let reason = `HTTP_${status || 0}`;
+      if (responseBody) {
+        try {
+          const errorData = JSON.parse(responseBody);
+          if (typeof errorData?.reason === "string") {
+            reason = errorData.reason;
+          }
+        } catch {
+          // Ignore malformed JSON body and keep default reason.
+        }
+      }
+
+      finish({
+        ok: false,
+        status: status || 0,
+        token: deviceToken,
+        apnsId,
+        reason,
+      });
+    });
+
+    request.end(body);
   });
-
-  const apnsId = response.headers.get("apns-id");
-  if (response.ok) {
-    return {
-      ok: true,
-      status: response.status,
-      token: deviceToken,
-      apnsId,
-    };
-  }
-
-  let reason = `HTTP_${response.status}`;
-  try {
-    const errorData = await response.json();
-    if (typeof errorData?.reason === "string") {
-      reason = errorData.reason;
-    }
-  } catch {
-    // ignore JSON parse failures for non-JSON APNs responses
-  }
-
-  return {
-    ok: false,
-    status: response.status,
-    token: deviceToken,
-    apnsId,
-    reason,
-  };
 }
