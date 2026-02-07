@@ -8,7 +8,11 @@ import { generateKeyPairSync } from "node:crypto";
 import { constants, createSecureServer, type IncomingHttpHeaders } from "node:http2";
 import type { AddressInfo } from "node:net";
 import type { ApnsConfig } from "../_api/_utils/_push-apns";
-import { sendApnsAlert } from "../_api/_utils/_push-apns";
+import {
+  getApnsConfigFromEnv,
+  getMissingApnsEnvVars,
+  sendApnsAlert,
+} from "../_api/_utils/_push-apns";
 import {
   assert,
   assertEq,
@@ -214,6 +218,76 @@ async function testInvalidPrivateKeyReturnsJwtError() {
   assert(result.reason?.startsWith("JWT_ERROR:"), "Expected JWT_ERROR reason");
 }
 
+function withEnv<T>(envPatch: Record<string, string | undefined>, run: () => T): T {
+  const originalValues = new Map<string, string | undefined>();
+  for (const [key, value] of Object.entries(envPatch)) {
+    originalValues.set(key, process.env[key]);
+    if (typeof value === "undefined") {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+
+  try {
+    return run();
+  } finally {
+    for (const [key, value] of originalValues.entries()) {
+      if (typeof value === "undefined") {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  }
+}
+
+async function testApnsEnvValidationHelpers() {
+  withEnv(
+    {
+      APNS_KEY_ID: undefined,
+      APNS_TEAM_ID: undefined,
+      APNS_BUNDLE_ID: undefined,
+      APNS_PRIVATE_KEY: undefined,
+    },
+    () => {
+      const missing = getMissingApnsEnvVars();
+      assertEq(missing.includes("APNS_KEY_ID"), true);
+      assertEq(missing.includes("APNS_TEAM_ID"), true);
+      assertEq(missing.includes("APNS_BUNDLE_ID"), true);
+      assertEq(missing.includes("APNS_PRIVATE_KEY"), true);
+      assertEq(getApnsConfigFromEnv(), null);
+    }
+  );
+
+  withEnv(
+    {
+      APNS_KEY_ID: "ABC123DEFG",
+      APNS_TEAM_ID: "TEAM123ABC",
+      APNS_BUNDLE_ID: "lu.ryo.os",
+      APNS_PRIVATE_KEY:
+        "-----BEGIN PRIVATE KEY-----\\nline-1\\nline-2\\n-----END PRIVATE KEY-----",
+      APNS_ENDPOINT_OVERRIDE: "https://example.test",
+      APNS_CA_CERT:
+        "-----BEGIN CERTIFICATE-----\\nline-a\\nline-b\\n-----END CERTIFICATE-----",
+      APNS_USE_SANDBOX: "true",
+    },
+    () => {
+      const missing = getMissingApnsEnvVars();
+      assertEq(missing.length, 0, "Expected all required APNs env vars to be present");
+
+      const config = getApnsConfigFromEnv();
+      assert(config !== null, "Expected APNs config when required env vars are present");
+      if (!config) return;
+
+      assertEq(config.endpointOverride, "https://example.test");
+      assertEq(config.useSandbox, true);
+      assert(config.privateKey.includes("\nline-1\n"), "Expected private key newline normalization");
+      assert(config.caCert?.includes("\nline-a\n"), "Expected CA cert newline normalization");
+    }
+  );
+}
+
 export async function runPushApnsTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-apns"));
   clearResults();
@@ -225,6 +299,7 @@ export async function runPushApnsTests(): Promise<{ passed: number; failed: numb
     testMissingCaCertFailsTlsHandshake
   );
   await runTest("APNs helper returns JWT error on invalid key", testInvalidPrivateKeyReturnsJwtError);
+  await runTest("APNs env helper reports missing/normalized vars", testApnsEnvValidationHelpers);
 
   return printSummary();
 }

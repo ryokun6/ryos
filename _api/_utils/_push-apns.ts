@@ -33,6 +33,12 @@ export interface ApnsSendResult {
 }
 
 const JWT_VALIDITY_MS = 50 * 60 * 1000; // 50 minutes
+const REQUIRED_APNS_ENV_VARS = [
+  "APNS_KEY_ID",
+  "APNS_TEAM_ID",
+  "APNS_BUNDLE_ID",
+  "APNS_PRIVATE_KEY",
+] as const;
 
 let cachedJwt: { token: string; expiresAt: number; cacheKey: string } | null = null;
 
@@ -60,20 +66,29 @@ function getErrorMessage(error: unknown): string {
   return String(error);
 }
 
+export function getMissingApnsEnvVars(
+  env: NodeJS.ProcessEnv = process.env
+): string[] {
+  return REQUIRED_APNS_ENV_VARS.filter((name) => {
+    const value = env[name];
+    return typeof value !== "string" || value.trim().length === 0;
+  });
+}
+
 export function getApnsConfigFromEnv(): ApnsConfig | null {
-  const keyId = process.env.APNS_KEY_ID;
-  const teamId = process.env.APNS_TEAM_ID;
-  const bundleId = process.env.APNS_BUNDLE_ID;
-  const privateKeyRaw = process.env.APNS_PRIVATE_KEY;
+  if (getMissingApnsEnvVars().length > 0) {
+    return null;
+  }
+
+  const keyId = process.env.APNS_KEY_ID as string;
+  const teamId = process.env.APNS_TEAM_ID as string;
+  const bundleId = process.env.APNS_BUNDLE_ID as string;
+  const privateKeyRaw = process.env.APNS_PRIVATE_KEY as string;
   const caCertRaw = process.env.APNS_CA_CERT;
   const endpointOverrideRaw = process.env.APNS_ENDPOINT_OVERRIDE?.trim();
   const useSandbox =
     process.env.APNS_USE_SANDBOX === "1" ||
     process.env.APNS_USE_SANDBOX === "true";
-
-  if (!keyId || !teamId || !bundleId || !privateKeyRaw) {
-    return null;
-  }
 
   return {
     keyId,

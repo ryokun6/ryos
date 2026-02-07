@@ -7,7 +7,11 @@ import {
   setCorsHeaders,
 } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
-import { getApnsConfigFromEnv, sendApnsAlert } from "../_utils/_push-apns.js";
+import {
+  getApnsConfigFromEnv,
+  getMissingApnsEnvVars,
+  sendApnsAlert,
+} from "../_utils/_push-apns.js";
 import {
   type PushTokenMetadata,
   extractAuthFromHeaders,
@@ -84,10 +88,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const apnsConfig = getApnsConfigFromEnv();
   if (!apnsConfig) {
+    const missingEnvVars = getMissingApnsEnvVars();
     logger.response(500, Date.now() - startTime);
     return res.status(500).json({
-      error:
-        "APNs is not configured. Set APNS_KEY_ID, APNS_TEAM_ID, APNS_BUNDLE_ID, and APNS_PRIVATE_KEY.",
+      error: "APNs is not configured.",
+      missingEnvVars,
     });
   }
 
