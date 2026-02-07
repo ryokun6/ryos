@@ -10,6 +10,7 @@ import {
   type MacPreset,
 } from "@/stores/useInfiniteMacStore";
 import { helpItems } from "..";
+import { useShallow } from "zustand/react/shallow";
 
 // Re-export types and presets for consumers
 export type { ScaleOption, MacPreset, ScreenData } from "@/stores/useInfiniteMacStore";
@@ -63,7 +64,17 @@ export function useInfiniteMacLogic({
     setIsEmulatorLoaded: setIsEmulatorLoadedStore,
     setIsPaused: setIsPausedStore,
     setLastScreenData,
-  } = useInfiniteMacStore();
+  } = useInfiniteMacStore(
+    useShallow((state) => ({
+      scale: state.scale,
+      setScale: state.setScale,
+      setActiveIframe: state.setActiveIframe,
+      setSelectedPreset: state.setSelectedPreset,
+      setIsEmulatorLoaded: state.setIsEmulatorLoaded,
+      setIsPaused: state.setIsPaused,
+      setLastScreenData: state.setLastScreenData,
+    }))
+  );
   const iframeRef = useRef<HTMLIFrameElement>(null);
   // Store latest screen data for screenshots (from emulator_screen messages)
   const lastScreenDataRef = useRef<ScreenData | null>(null);
