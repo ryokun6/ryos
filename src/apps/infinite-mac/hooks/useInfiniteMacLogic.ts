@@ -292,12 +292,7 @@ export function useInfiniteMacLogic({
 
       // Bridge wrapper forwards as { type: '_infinite_mac_bridge', payload }; payload is
       // the raw iframe message (emulator_loaded, emulator_screen, etc. per Infinite Mac embed API).
-      const data =
-        isBridgeMessage
-          ? e.data.payload
-          : e.origin === "https://infinitemac.org"
-            ? e.data
-            : undefined;
+      const data = isBridgeMessage ? e.data.payload : undefined;
       if (!data || typeof data !== "object") return;
       switch (data.type) {
         case "emulator_loaded":
