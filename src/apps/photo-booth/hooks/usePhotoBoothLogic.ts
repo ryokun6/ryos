@@ -693,7 +693,6 @@ export function usePhotoBoothLogic({
     }
 
     const blob = new Blob(byteArrays, { type: mimeType });
-    const blobUrl = URL.createObjectURL(blob);
 
     // Generate unique filename with timestamp and correct extension
     const timestamp = Date.now();
@@ -708,7 +707,6 @@ export function usePhotoBoothLogic({
     const fileItem = {
       name: filename,
       content: blob,
-      contentUrl: blobUrl,
       type: mimeType,
       path: `/Images/${filename}`,
       isDirectory: false,
@@ -780,7 +778,6 @@ export function usePhotoBoothLogic({
             }
 
             const blob = new Blob(byteArrays, { type: mimeType });
-            const blobUrl = URL.createObjectURL(blob);
 
             // Generate unique filename with timestamp
             const timestamp = Date.now();
@@ -795,7 +792,6 @@ export function usePhotoBoothLogic({
             const fileItem = {
               name: filename,
               content: blob,
-              contentUrl: blobUrl,
               type: mimeType,
               path: `/Images/${filename}`,
               isDirectory: false,
