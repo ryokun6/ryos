@@ -31,6 +31,7 @@ graph LR
 | [Presence API](/docs/presence-api) | Presence tracking, user search, AI replies |
 | [AI Generation APIs](/docs/ai-generation-apis) | Applet generation, IE time-travel, parse-title |
 | [Utility APIs](/docs/utility-apis) | Link preview, iframe check, share applet, admin |
+| [Push API](/docs/push-api) | Device token registration and APNs test notifications |
 | [API Design Guide](/docs/api-design-guide) | Patterns and conventions for API development |
 
 ## Quick Reference
@@ -84,6 +85,9 @@ graph LR
 | `/api/iframe-check` | Embeddability checking |
 | `/api/share-applet` | Applet sharing |
 | `/api/admin` | Admin operations |
+| `/api/push/register` | Register user push token |
+| `/api/push/unregister` | Unregister one/all user push tokens |
+| `/api/push/test` | Send APNs test push to user tokens |
 
 ### Endpoint Categories Overview
 
