@@ -9,6 +9,7 @@ import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 // Recovery mechanism - uses different prefix to avoid reset
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -385,7 +386,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             currentUsername
           );
           try {
-            const response = await fetch(
+            const response = await abortableFetch(
               "/api/auth/password/check",
               {
                 method: "GET",
@@ -393,6 +394,9 @@ export const useChatsStore = create<ChatsStoreState>()(
                   Authorization: `Bearer ${currentToken}`,
                   "X-Username": currentUsername,
                 },
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
               }
             );
 
@@ -434,15 +438,21 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await fetch(getApiUrl("/api/auth/password/set"), {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${currentToken}`,
-                "X-Username": currentUsername,
-              },
-              body: JSON.stringify({ password }),
-            });
+            const response = await abortableFetch(
+              getApiUrl("/api/auth/password/set"),
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${currentToken}`,
+                  "X-Username": currentUsername,
+                },
+                body: JSON.stringify({ password }),
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
+              }
+            );
 
             if (!response.ok) {
               const data = await response.json();
