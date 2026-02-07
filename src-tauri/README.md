@@ -67,6 +67,40 @@ This generates all platform-specific icon formats from the source `icon.png` fil
 - `src/main.rs` - Rust entry point (minimal, just launches webview)
 - `capabilities/default.json` - Security permissions
 
+## iOS Push Notifications
+
+The wrapper includes a local `ios-push` Tauri plugin that bridges APNs into the webview.
+
+### What the wrapper does
+
+- Requests push permission on iOS
+- Retrieves the APNs device token
+- Emits notification/token events to the frontend
+- Registers/unregisters tokens with backend endpoints:
+  - `POST /api/push/register`
+  - `POST /api/push/unregister`
+  - `POST /api/push/test` (authenticated test send)
+
+### iOS native setup (required on macOS/Xcode)
+
+1. Generate/open the iOS project:
+   - `bunx @tauri-apps/cli ios init` (macOS only)
+   - open `src-tauri/gen/apple/...xcodeproj`
+2. In **Signing & Capabilities** add:
+   - **Push Notifications**
+   - **Background Modes** with **Remote notifications** checked
+3. Ensure `src-tauri/src/ios/app/AppDelegate.swift` is used (already added in repo) so APNs callbacks are forwarded to the plugin.
+
+### APNs backend environment variables
+
+Set these in your deployment environment to enable test sends:
+
+- `APNS_KEY_ID`
+- `APNS_TEAM_ID`
+- `APNS_BUNDLE_ID`
+- `APNS_PRIVATE_KEY` (contents of `.p8`, newline-safe)
+- `APNS_USE_SANDBOX` (`true`/`1` for sandbox, optional)
+
 ## Security
 
 The app uses a Content Security Policy (CSP) configured in `tauri.conf.json` that allows:
