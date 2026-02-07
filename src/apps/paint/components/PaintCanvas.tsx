@@ -629,106 +629,110 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
           for (const type of clipboardItem.types) {
             if (type.startsWith("image/")) {
               const blob = await clipboardItem.getType(type);
+              const blobUrl = URL.createObjectURL(blob);
               const img = new Image();
-              img.src = URL.createObjectURL(blob);
-              await new Promise<void>((resolve, reject) => {
-                img.onload = () => {
-                  if (!contextRef.current || !canvasRef.current) {
-                    reject(new Error("Canvas not available"));
-                    return;
-                  }
+              img.src = blobUrl;
+              try {
+                await new Promise<void>((resolve, reject) => {
+                  img.onload = () => {
+                    if (!contextRef.current || !canvasRef.current) {
+                      reject(new Error("Canvas not available"));
+                      return;
+                    }
 
-                  // Restore the clean canvas state again right before drawing.
-                  // The selection outline animation may have drawn additional
-                  // strokes while we were waiting on the clipboard/image load,
-                  // so re-applying the clean snapshot prevents baking the
-                  // marching-ants box into the canvas when pasting.
-                  if (selection && lastImageRef.current) {
-                    contextRef.current.putImageData(lastImageRef.current, 0, 0);
-                  }
+                    // Restore the clean canvas state again right before drawing.
+                    // The selection outline animation may have drawn additional
+                    // strokes while we were waiting on the clipboard/image load,
+                    // so re-applying the clean snapshot prevents baking the
+                    // marching-ants box into the canvas when pasting.
+                    if (selection && lastImageRef.current) {
+                      contextRef.current.putImageData(lastImageRef.current, 0, 0);
+                    }
 
-                  // If there's a selection, paste into the selection area (scaled to fit)
-                  if (selection) {
-                    // Calculate scaling to fit selection while maintaining aspect ratio
-                    const scaleX = selection.width / img.width;
-                    const scaleY = selection.height / img.height;
-                    const scale = Math.min(scaleX, scaleY);
-                    const scaledWidth = img.width * scale;
-                    const scaledHeight = img.height * scale;
-                    const offsetX = (selection.width - scaledWidth) / 2;
-                    const offsetY = (selection.height - scaledHeight) / 2;
+                    // If there's a selection, paste into the selection area (scaled to fit)
+                    if (selection) {
+                      // Calculate scaling to fit selection while maintaining aspect ratio
+                      const scaleX = selection.width / img.width;
+                      const scaleY = selection.height / img.height;
+                      const scale = Math.min(scaleX, scaleY);
+                      const scaledWidth = img.width * scale;
+                      const scaledHeight = img.height * scale;
+                      const offsetX = (selection.width - scaledWidth) / 2;
+                      const offsetY = (selection.height - scaledHeight) / 2;
 
-                    // For lasso selections, we need to clip to the path
-                    if (selection.type === "lasso" && selection.path) {
-                      // Save current state
-                      contextRef.current.save();
-                      
-                      // Create clipping path
-                      contextRef.current.beginPath();
-                      contextRef.current.moveTo(
-                        selection.path[0].x,
-                        selection.path[0].y
-                      );
-                      for (let i = 1; i < selection.path.length; i++) {
-                        contextRef.current.lineTo(
-                          selection.path[i].x,
-                          selection.path[i].y
+                      // For lasso selections, we need to clip to the path
+                      if (selection.type === "lasso" && selection.path) {
+                        // Save current state
+                        contextRef.current.save();
+                        
+                        // Create clipping path
+                        contextRef.current.beginPath();
+                        contextRef.current.moveTo(
+                          selection.path[0].x,
+                          selection.path[0].y
+                        );
+                        for (let i = 1; i < selection.path.length; i++) {
+                          contextRef.current.lineTo(
+                            selection.path[i].x,
+                            selection.path[i].y
+                          );
+                        }
+                        contextRef.current.closePath();
+                        contextRef.current.clip();
+
+                        // Draw image scaled to fit
+                        contextRef.current.drawImage(
+                          img,
+                          selection.startX + offsetX,
+                          selection.startY + offsetY,
+                          scaledWidth,
+                          scaledHeight
+                        );
+
+                        contextRef.current.restore();
+                      } else {
+                        // Rectangle selection - simple draw
+                        contextRef.current.drawImage(
+                          img,
+                          selection.startX + offsetX,
+                          selection.startY + offsetY,
+                          scaledWidth,
+                          scaledHeight
                         );
                       }
-                      contextRef.current.closePath();
-                      contextRef.current.clip();
-
-                      // Draw image scaled to fit
-                      contextRef.current.drawImage(
-                        img,
-                        selection.startX + offsetX,
-                        selection.startY + offsetY,
-                        scaledWidth,
-                        scaledHeight
-                      );
-
-                      contextRef.current.restore();
                     } else {
-                      // Rectangle selection - simple draw
-                      contextRef.current.drawImage(
-                        img,
-                        selection.startX + offsetX,
-                        selection.startY + offsetY,
-                        scaledWidth,
-                        scaledHeight
+                      // If no selection, paste at center
+                      const x = (canvasRef.current.width - img.width) / 2;
+                      const y = (canvasRef.current.height - img.height) / 2;
+                      contextRef.current.drawImage(img, x, y);
+                    }
+                    
+                    // Clear selection FIRST to stop the animation from drawing the selection box
+                    // This must happen before updating lastImageRef to prevent race conditions
+                    setSelection(null);
+                    
+                    // Update lastImageRef to reflect the pasted state (without selection box)
+                    if (canvasRef.current && contextRef.current) {
+                      lastImageRef.current = contextRef.current.getImageData(
+                        0,
+                        0,
+                        canvasRef.current.width,
+                        canvasRef.current.height
                       );
                     }
-                  } else {
-                    // If no selection, paste at center
-                    const x = (canvasRef.current.width - img.width) / 2;
-                    const y = (canvasRef.current.height - img.height) / 2;
-                    contextRef.current.drawImage(img, x, y);
-                  }
-                  
-                  // Clear selection FIRST to stop the animation from drawing the selection box
-                  // This must happen before updating lastImageRef to prevent race conditions
-                  setSelection(null);
-                  
-                  // Update lastImageRef to reflect the pasted state (without selection box)
-                  if (canvasRef.current && contextRef.current) {
-                    lastImageRef.current = contextRef.current.getImageData(
-                      0,
-                      0,
-                      canvasRef.current.width,
-                      canvasRef.current.height
-                    );
-                  }
-                  
-                  saveToHistory();
-                  if (onContentChange) onContentChange();
-                  
-                  resolve();
-                };
-                img.onerror = () => {
-                  reject(new Error("Failed to load image from clipboard"));
-                };
-              });
-              URL.revokeObjectURL(img.src);
+                    
+                    saveToHistory();
+                    if (onContentChange) onContentChange();
+                    
+                    resolve();
+                  };
+                  img.onerror = () => {
+                    reject(new Error("Failed to load image from clipboard"));
+                  };
+                });
+              } finally {
+                URL.revokeObjectURL(blobUrl);
+              }
               break;
             }
           }
