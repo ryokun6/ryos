@@ -32,6 +32,7 @@ import i18n from "@/lib/i18n";
 import { toast } from "sonner";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useInternetExplorerStoreShallow } from "@/stores/helpers";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 // Helper function to get language display name
 const getLanguageDisplayName = (lang: LanguageOption): string => {
@@ -987,19 +988,21 @@ export function useInternetExplorerLogic({
             }
 
             try {
-              const checkRes = await fetch(
+              const checkRes = await abortableFetch(
                 `/api/iframe-check?mode=check&url=${encodeURIComponent(
                   normalizedTargetUrl
                 )}&theme=${encodeURIComponent(currentTheme)}`,
-                { signal: abortController.signal }
+                {
+                  signal: abortController.signal,
+                  timeout: 15000,
+                  retry: { maxAttempts: 1, initialDelayMs: 250 },
+                }
               );
               if (abortController.signal.aborted) return;
 
-              if (checkRes.ok) {
-                const checkData = await checkRes.json();
-                if (checkData.title) {
-                  setPrefetchedTitle(checkData.title);
-                }
+              const checkData = await checkRes.json();
+              if (checkData.title) {
+                setPrefetchedTitle(checkData.title);
               }
             } catch (error) {
               if (error instanceof Error && error.name === "AbortError") return;
