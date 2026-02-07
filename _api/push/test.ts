@@ -187,6 +187,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     successCount,
     failureCount,
     failureReasons,
+    apnsSendConcurrency: APNS_SEND_CONCURRENCY,
     staleTokensRemoved: staleTokens.length,
     staleOwnershipTokensRemoved: staleOwnershipTokens.length,
   });
@@ -196,6 +197,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     successCount,
     failureCount,
     failureReasons,
+    apnsSendConcurrency: APNS_SEND_CONCURRENCY,
     staleTokensRemoved: staleTokens.length,
     staleOwnershipTokensRemoved: staleOwnershipTokens.length,
     results,
