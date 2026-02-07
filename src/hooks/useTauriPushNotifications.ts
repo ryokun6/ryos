@@ -21,6 +21,7 @@ export function useTauriPushNotifications() {
   const [deviceToken, setDeviceToken] = useState<string | null>(null);
   const initializedRef = useRef(false);
   const lastRegisteredRef = useRef<string | null>(null);
+  const lastRegistrationErrorRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isTauriIOS() || initializedRef.current) return;
@@ -130,9 +131,19 @@ export function useTauriPushNotifications() {
 
         if (!cancelled) {
           lastRegisteredRef.current = registerKey;
+          lastRegistrationErrorRef.current = null;
         }
       } catch (error) {
         console.error("[push] Failed to register iOS push token", error);
+        if (!cancelled && lastRegistrationErrorRef.current !== registerKey) {
+          lastRegistrationErrorRef.current = registerKey;
+          toast("Push registration failed", {
+            description:
+              error instanceof Error
+                ? error.message
+                : "Could not register this device token with the server.",
+          });
+        }
       }
     };
 
@@ -146,6 +157,7 @@ export function useTauriPushNotifications() {
   useEffect(() => {
     if (!username || !authToken) {
       lastRegisteredRef.current = null;
+      lastRegistrationErrorRef.current = null;
     }
   }, [username, authToken]);
 }
