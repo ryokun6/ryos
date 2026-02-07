@@ -28,6 +28,7 @@ import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
+import { useChatsStoreShallow } from "@/stores/helpers";
 import { generateHTML, generateJSON } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -519,7 +520,13 @@ const showBackgroundedMessageNotification = (message: UIMessage) => {
 
 export function useAiChat(onPromptSetUsername?: () => void) {
   const { aiMessages, setAiMessages, username, authToken, ensureAuthToken } =
-    useChatsStore();
+    useChatsStoreShallow((state) => ({
+      aiMessages: state.aiMessages,
+      setAiMessages: state.setAiMessages,
+      username: state.username,
+      authToken: state.authToken,
+      ensureAuthToken: state.ensureAuthToken,
+    }));
   const launchApp = useLaunchApp();
   const aiModel = useAppStore((state) => state.aiModel);
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);

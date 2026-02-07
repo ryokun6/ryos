@@ -53,7 +53,7 @@ export function ChatsAppComponent({
 }: AppProps) {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("chats", helpItems);
-  const { aiMessages } = useChatsStore();
+  const aiMessages = useChatsStore((state) => state.aiMessages);
 
   // Use auth hook for authentication functionality
   const authResult = useAuth();

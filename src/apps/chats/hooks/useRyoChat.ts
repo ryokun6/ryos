@@ -9,6 +9,7 @@ import { useIpodStore } from "@/stores/useIpodStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { getApiUrl } from "@/utils/platform";
+import { useChatsStoreShallow } from "@/stores/helpers";
 
 // Helper function to get system state for AI chat
 const getSystemState = () => {
@@ -109,7 +110,10 @@ export function useRyoChat({
 }: UseRyoChatProps) {
   const { t } = useTranslation();
   // Pull current auth credentials from store (reactive)
-  const { authToken, username } = useChatsStore();
+  const { authToken, username } = useChatsStoreShallow((state) => ({
+    authToken: state.authToken,
+    username: state.username,
+  }));
 
   // Build auth headers once per render (updates when authToken/username change)
   const authHeaders: Record<string, string> = {};

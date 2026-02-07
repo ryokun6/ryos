@@ -1,8 +1,8 @@
 import { useState, useCallback } from "react";
-import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
+import { useChatsStoreShallow } from "@/stores/helpers";
 
 export function useAuth() {
   const {
@@ -15,7 +15,17 @@ export function useAuth() {
     logout,
     checkHasPassword: storeCheckHasPassword,
     setPassword: storeSetPassword,
-  } = useChatsStore();
+  } = useChatsStoreShallow((state) => ({
+    username: state.username,
+    authToken: state.authToken,
+    hasPassword: state.hasPassword,
+    setAuthToken: state.setAuthToken,
+    setUsername: state.setUsername,
+    createUser: state.createUser,
+    logout: state.logout,
+    checkHasPassword: state.checkHasPassword,
+    setPassword: state.setPassword,
+  }));
 
   // Set username dialog states
   const [isUsernameDialogOpen, setIsUsernameDialogOpen] = useState(false);

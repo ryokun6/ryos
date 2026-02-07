@@ -4,13 +4,13 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { useAppletActions, type Applet } from "../utils/appletActions";
 import { motion, AnimatePresence } from "framer-motion";
-import { useChatsStore } from "@/stores/useChatsStore";
 import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
 } from "@/utils/appletAuthBridge";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
+import { useChatsStoreShallow } from "@/stores/helpers";
 
 interface AppStoreFeedProps {
   theme?: string;
@@ -41,7 +41,10 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   const hasFetchedRef = useRef(false);
   const sessionSeedRef = useRef(Math.floor(Math.random() * 1000000));
   const currentTheme = useThemeStore((state) => state.current);
-  const { username, authToken } = useChatsStore();
+  const { username, authToken } = useChatsStoreShallow((state) => ({
+    username: state.username,
+    authToken: state.authToken,
+  }));
 
   // Stacking constants (similar to TimeMachineView)
   const MAX_VISIBLE_PREVIEWS = 4;
