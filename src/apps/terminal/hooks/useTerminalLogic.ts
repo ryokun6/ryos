@@ -6,6 +6,7 @@ import {
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
+import { useTerminalStoreShallow } from "@/stores/helpers";
 import { useTerminalStore } from "@/stores/useTerminalStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAiChat } from "@/apps/chats/hooks/useAiChat";
@@ -278,7 +279,14 @@ export const useTerminalLogic = ({
     setIsInAiMode,
     initialAiPrompt,
     setInitialAiPrompt,
-  } = useTerminalStore();
+    currentPath: storedPath,
+  } = useTerminalStoreShallow((state) => ({
+    isInAiMode: state.isInAiMode,
+    setIsInAiMode: state.setIsInAiMode,
+    initialAiPrompt: state.initialAiPrompt,
+    setInitialAiPrompt: state.setInitialAiPrompt,
+    currentPath: state.currentPath,
+  }));
   const [spinnerIndex, setSpinnerIndex] = useState(0);
   const [isInteractingWithPreview, setIsInteractingWithPreview] =
     useState(false);
@@ -309,9 +317,6 @@ export const useTerminalLogic = ({
 
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
-
-  // Get terminal state from the store
-  const { currentPath: storedPath } = useTerminalStore();
 
   const { currentPath, files, navigateToPath, saveFile, moveToTrash } =
     useFileSystem(storedPath);

@@ -5,6 +5,7 @@ import { useAudioSettingsStore } from "./useAudioSettingsStore";
 import { useDisplaySettingsStore } from "./useDisplaySettingsStore";
 import { useChatsStore } from "./useChatsStore";
 import { useFilesStore } from "./useFilesStore";
+import { useTerminalStore } from "./useTerminalStore";
 
 // Generic helper to wrap a selector with Zustand's shallow comparator for AppStore
 export function useAppStoreShallow<T>(
@@ -46,4 +47,11 @@ export function useFilesStoreShallow<T>(
   selector: (state: ReturnType<typeof useFilesStore.getState>) => T
 ): T {
   return useFilesStore(useShallow(selector));
+}
+
+// Generic helper to wrap a selector with Zustand's shallow comparator for TerminalStore
+export function useTerminalStoreShallow<T>(
+  selector: (state: ReturnType<typeof useTerminalStore.getState>) => T
+): T {
+  return useTerminalStore(useShallow(selector));
 }
