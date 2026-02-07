@@ -12,6 +12,7 @@ export interface ApnsConfig {
   bundleId: string;
   privateKey: string;
   useSandbox: boolean;
+  endpointOverride?: string;
 }
 
 export interface ApnsAlertPayload {
@@ -52,6 +53,7 @@ export function getApnsConfigFromEnv(): ApnsConfig | null {
   const teamId = process.env.APNS_TEAM_ID;
   const bundleId = process.env.APNS_BUNDLE_ID;
   const privateKeyRaw = process.env.APNS_PRIVATE_KEY;
+  const endpointOverrideRaw = process.env.APNS_ENDPOINT_OVERRIDE?.trim();
   const useSandbox =
     process.env.APNS_USE_SANDBOX === "1" ||
     process.env.APNS_USE_SANDBOX === "true";
@@ -66,6 +68,10 @@ export function getApnsConfigFromEnv(): ApnsConfig | null {
     bundleId,
     privateKey: normalizePrivateKey(privateKeyRaw),
     useSandbox,
+    endpointOverride:
+      endpointOverrideRaw && endpointOverrideRaw.startsWith("https://")
+        ? endpointOverrideRaw
+        : undefined,
   };
 }
 
@@ -133,9 +139,11 @@ export async function sendApnsAlert(
   deviceToken: string,
   payload: ApnsAlertPayload
 ): Promise<ApnsSendResult> {
-  const authority = config.useSandbox
-    ? "https://api.sandbox.push.apple.com"
-    : "https://api.push.apple.com";
+  const authority =
+    config.endpointOverride ||
+    (config.useSandbox
+      ? "https://api.sandbox.push.apple.com"
+      : "https://api.push.apple.com");
 
   const authorization = `bearer ${createApnsJwt(config)}`;
   const apnsPayload: Record<string, unknown> = {
