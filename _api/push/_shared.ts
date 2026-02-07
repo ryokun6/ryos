@@ -26,6 +26,46 @@ export function getRequestBodyObject(
   return body;
 }
 
+export interface ParsedStoredPushTokens {
+  validTokens: string[];
+  invalidTokensToRemove: string[];
+  skippedNonStringCount: number;
+}
+
+export function parseStoredPushTokens(rawValue: unknown): ParsedStoredPushTokens {
+  if (!Array.isArray(rawValue)) {
+    return {
+      validTokens: [],
+      invalidTokensToRemove: [],
+      skippedNonStringCount: 0,
+    };
+  }
+
+  const validTokensSet = new Set<string>();
+  const invalidTokensSet = new Set<string>();
+  let skippedNonStringCount = 0;
+
+  for (const entry of rawValue) {
+    if (typeof entry !== "string") {
+      skippedNonStringCount += 1;
+      continue;
+    }
+
+    if (isValidPushToken(entry)) {
+      validTokensSet.add(entry);
+      continue;
+    }
+
+    invalidTokensSet.add(entry);
+  }
+
+  return {
+    validTokens: Array.from(validTokensSet),
+    invalidTokensToRemove: Array.from(invalidTokensSet),
+    skippedNonStringCount,
+  };
+}
+
 export function getUserTokensKey(username: string): string {
   return `push:user:${username}:tokens`;
 }

@@ -33,6 +33,14 @@ async function testRegisterPayloadValidation() {
     assertEq(invalidTokenType.error, "Invalid push token format");
   }
 
+  const blankToken = normalizeRegisterPushPayload({
+    token: "   ",
+  });
+  assertEq(blankToken.ok, false);
+  if (!blankToken.ok) {
+    assertEq(blankToken.error, "Push token is required");
+  }
+
   const invalidPlatform = normalizeRegisterPushPayload({
     token: VALID_TOKEN,
     platform: "web",
@@ -40,6 +48,15 @@ async function testRegisterPayloadValidation() {
   assertEq(invalidPlatform.ok, false);
   if (!invalidPlatform.ok) {
     assertEq(invalidPlatform.error, "Unsupported push platform");
+  }
+
+  const invalidPlatformType = normalizeRegisterPushPayload({
+    token: VALID_TOKEN,
+    platform: 123,
+  });
+  assertEq(invalidPlatformType.ok, false);
+  if (!invalidPlatformType.ok) {
+    assertEq(invalidPlatformType.error, "Unsupported push platform");
   }
 }
 

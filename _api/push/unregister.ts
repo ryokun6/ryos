@@ -11,6 +11,7 @@ import {
   type PushTokenMetadata,
   extractAuthFromHeaders,
   extractTokenMetadataOwner,
+  parseStoredPushTokens,
   getTokenMetaKey,
   getUserTokensKey,
 } from "./_shared.js";
@@ -105,10 +106,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  const userTokens = await redis.smembers<string[]>(userTokensKey);
-  if (!userTokens || userTokens.length === 0) {
+  const rawUserTokens = await redis.smembers<unknown[]>(userTokensKey);
+  const {
+    validTokens: userTokens,
+    invalidTokensToRemove: invalidStoredTokens,
+    skippedNonStringCount: skippedNonStringTokenCount,
+  } = parseStoredPushTokens(rawUserTokens);
+
+  if (invalidStoredTokens.length > 0) {
+    const cleanupPipeline = redis.pipeline();
+    for (const invalidToken of invalidStoredTokens) {
+      cleanupPipeline.srem(userTokensKey, invalidToken);
+    }
+    await cleanupPipeline.exec();
+  }
+
+  if (invalidStoredTokens.length > 0 || skippedNonStringTokenCount > 0) {
+    logger.warn("Cleaned invalid stored push tokens during unregister", {
+      username,
+      invalidStoredTokensRemoved: invalidStoredTokens.length,
+      skippedNonStringTokenCount,
+    });
+  }
+
+  if (userTokens.length === 0) {
     logger.response(200, Date.now() - startTime);
-    return res.status(200).json({ success: true, removed: 0 });
+    return res.status(200).json({
+      success: true,
+      removed: invalidStoredTokens.length,
+      metadataRemoved: 0,
+    });
   }
 
   await redis.del(userTokensKey);
@@ -139,14 +166,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   logger.info("Unregistered all push tokens for user", {
     username,
-    removed: userTokens.length,
+    removed: userTokens.length + invalidStoredTokens.length,
     removedMetadata: ownedTokens.length,
+    invalidStoredTokensRemoved: invalidStoredTokens.length,
+    skippedNonStringTokenCount,
   });
   logger.response(200, Date.now() - startTime);
 
   return res.status(200).json({
     success: true,
-    removed: userTokens.length,
+    removed: userTokens.length + invalidStoredTokens.length,
     metadataRemoved: ownedTokens.length,
+    invalidStoredTokensRemoved: invalidStoredTokens.length,
   });
 }

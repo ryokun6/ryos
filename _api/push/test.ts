@@ -19,6 +19,7 @@ import {
   type PushTokenMetadata,
   extractAuthFromHeaders,
   extractTokenMetadataOwner,
+  parseStoredPushTokens,
   getTokenMetaKey,
   getUserTokensKey,
 } from "./_shared.js";
@@ -102,7 +103,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const title = payload.title;
   const message = payload.body;
 
-  const userTokens = await redis.smembers<string[]>(getUserTokensKey(username));
+  const userTokensKey = getUserTokensKey(username);
+  const rawUserTokens = await redis.smembers<unknown[]>(userTokensKey);
+  const {
+    validTokens: userTokens,
+    invalidTokensToRemove: invalidStoredTokens,
+    skippedNonStringCount: skippedNonStringTokenCount,
+  } = parseStoredPushTokens(rawUserTokens);
+
+  if (invalidStoredTokens.length > 0) {
+    const cleanupPipeline = redis.pipeline();
+    for (const invalidToken of invalidStoredTokens) {
+      cleanupPipeline.srem(userTokensKey, invalidToken);
+    }
+    await cleanupPipeline.exec();
+  }
+
+  if (invalidStoredTokens.length > 0 || skippedNonStringTokenCount > 0) {
+    logger.warn("Cleaned invalid stored push tokens before send", {
+      username,
+      invalidStoredTokensRemoved: invalidStoredTokens.length,
+      skippedNonStringTokenCount,
+    });
+  }
+
   if (userTokens.length === 0) {
     logger.response(400, Date.now() - startTime);
     return res.status(400).json({ error: "No registered push tokens for this user" });
@@ -131,7 +155,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (staleOwnershipTokens.length > 0) {
     const cleanupPipeline = redis.pipeline();
     for (const staleToken of staleOwnershipTokens) {
-      cleanupPipeline.srem(getUserTokensKey(username), staleToken);
+      cleanupPipeline.srem(userTokensKey, staleToken);
     }
     await cleanupPipeline.exec();
   }
@@ -174,7 +198,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (staleTokens.length > 0) {
     const pipeline = redis.pipeline();
     for (const staleToken of staleTokens) {
-      pipeline.srem(getUserTokensKey(username), staleToken);
+      pipeline.srem(userTokensKey, staleToken);
       pipeline.del(getTokenMetaKey(staleToken));
     }
     await pipeline.exec();
@@ -188,6 +212,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     failureCount,
     failureReasons,
     apnsSendConcurrency: APNS_SEND_CONCURRENCY,
+    invalidStoredTokensRemoved: invalidStoredTokens.length,
+    skippedNonStringTokenCount,
     staleTokensRemoved: staleTokens.length,
     staleOwnershipTokensRemoved: staleOwnershipTokens.length,
   });
@@ -198,6 +224,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     failureCount,
     failureReasons,
     apnsSendConcurrency: APNS_SEND_CONCURRENCY,
+    invalidStoredTokensRemoved: invalidStoredTokens.length,
     staleTokensRemoved: staleTokens.length,
     staleOwnershipTokensRemoved: staleOwnershipTokens.length,
     results,

@@ -8,6 +8,7 @@ import {
   extractBearerToken,
   extractTokenMetadataOwner,
   getOptionalTrimmedString,
+  parseStoredPushTokens,
   getRequestBodyObject,
   getTokenMetaKey,
   getUserTokensKey,
@@ -115,6 +116,25 @@ async function testRequestBodyObjectAndTrimHelpers() {
   assertEq(getOptionalTrimmedString(123), undefined);
 }
 
+async function testParseStoredPushTokens() {
+  const parsed = parseStoredPushTokens([
+    "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+    "invalid-token",
+    123,
+    "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+    "   ",
+  ]);
+
+  assertEq(parsed.validTokens.length, 1);
+  assertEq(parsed.invalidTokensToRemove.length, 2);
+  assertEq(parsed.skippedNonStringCount, 1);
+
+  const emptyParsed = parseStoredPushTokens(null);
+  assertEq(emptyParsed.validTokens.length, 0);
+  assertEq(emptyParsed.invalidTokensToRemove.length, 0);
+  assertEq(emptyParsed.skippedNonStringCount, 0);
+}
+
 export async function runPushSharedTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-shared"));
   clearResults();
@@ -127,6 +147,7 @@ export async function runPushSharedTests(): Promise<{ passed: number; failed: nu
   await runTest("Push platform validator", testPlatformValidation);
   await runTest("Token metadata ownership helpers", testTokenMetadataOwnershipHelpers);
   await runTest("Push body/trim helper utilities", testRequestBodyObjectAndTrimHelpers);
+  await runTest("Stored token parsing helper", testParseStoredPushTokens);
 
   return printSummary();
 }
