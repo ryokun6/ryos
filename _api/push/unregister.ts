@@ -6,14 +6,12 @@ import {
   setCorsHeaders,
 } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
-import { mapWithConcurrency } from "./_concurrency.js";
 import { getPushMetadataLookupConcurrency } from "./_config.js";
+import { getTokenOwnershipEntries, splitTokenOwnership } from "./_ownership.js";
 import { normalizeUnregisterPushPayload } from "./_request-payloads.js";
 import { createPushRedis } from "./_redis.js";
 import {
-  type PushTokenMetadata,
   extractAuthFromHeaders,
-  extractTokenMetadataOwner,
   parseStoredPushTokens,
   getTokenMetaKey,
   getUserTokensKey,
@@ -133,23 +131,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   await redis.del(userTokensKey);
 
-  const tokenOwnership = await mapWithConcurrency(
+  const tokenOwnership = await getTokenOwnershipEntries(
+    redis,
+    username,
     userTokens,
-    TOKEN_METADATA_LOOKUP_CONCURRENCY,
-    async (storedToken) => {
-      const tokenMeta = await redis.get<Partial<PushTokenMetadata> | null>(
-        getTokenMetaKey(storedToken)
-      );
-      return {
-        storedToken,
-        ownedByCurrentUser: extractTokenMetadataOwner(tokenMeta) === username,
-      };
-    }
+    TOKEN_METADATA_LOOKUP_CONCURRENCY
   );
-
-  const ownedTokens = tokenOwnership
-    .filter((entry) => entry.ownedByCurrentUser)
-    .map((entry) => entry.storedToken);
+  const { ownedTokens } = splitTokenOwnership(tokenOwnership);
 
   if (ownedTokens.length > 0) {
     const pipeline = redis.pipeline();

@@ -16,13 +16,12 @@ import {
   getApnsSendConcurrency,
   getPushMetadataLookupConcurrency,
 } from "./_config.js";
+import { getTokenOwnershipEntries, splitTokenOwnership } from "./_ownership.js";
 import { normalizePushTestPayload } from "./_payload.js";
 import { createPushRedis } from "./_redis.js";
 import { summarizePushSendResults } from "./_results.js";
 import {
-  type PushTokenMetadata,
   extractAuthFromHeaders,
-  extractTokenMetadataOwner,
   parseStoredPushTokens,
   getTokenMetaKey,
   getUserTokensKey,
@@ -127,27 +126,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "No registered push tokens for this user" });
   }
 
-  const ownershipEntries = await mapWithConcurrency(
+  const ownershipEntries = await getTokenOwnershipEntries(
+    redis,
+    username,
     userTokens,
-    TOKEN_METADATA_LOOKUP_CONCURRENCY,
-    async (deviceToken) => {
-      const metadata = await redis.get<Partial<PushTokenMetadata> | null>(
-        getTokenMetaKey(deviceToken)
-      );
-      return {
-        deviceToken,
-        ownedByCurrentUser: extractTokenMetadataOwner(metadata) === username,
-      };
-    }
+    TOKEN_METADATA_LOOKUP_CONCURRENCY
   );
-
-  const ownedTokens = ownershipEntries
-    .filter((entry) => entry.ownedByCurrentUser)
-    .map((entry) => entry.deviceToken);
-
-  const staleOwnershipTokens = ownershipEntries
-    .filter((entry) => !entry.ownedByCurrentUser)
-    .map((entry) => entry.deviceToken);
+  const {
+    ownedTokens,
+    unownedTokens: staleOwnershipTokens,
+  } = splitTokenOwnership(ownershipEntries);
 
   if (staleOwnershipTokens.length > 0) {
     const cleanupPipeline = redis.pipeline();
