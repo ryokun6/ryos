@@ -1,4 +1,4 @@
-import { createPrivateKey, createSign } from "node:crypto";
+import { createHash, createPrivateKey, createSign } from "node:crypto";
 import {
   connect,
   constants,
@@ -13,6 +13,7 @@ export interface ApnsConfig {
   privateKey: string;
   useSandbox: boolean;
   endpointOverride?: string;
+  caCert?: string;
 }
 
 export interface ApnsAlertPayload {
@@ -33,7 +34,7 @@ export interface ApnsSendResult {
 
 const JWT_VALIDITY_MS = 50 * 60 * 1000; // 50 minutes
 
-let cachedJwt: { token: string; expiresAt: number } | null = null;
+let cachedJwt: { token: string; expiresAt: number; cacheKey: string } | null = null;
 
 function toBase64Url(input: Buffer | string): string {
   const buffer = typeof input === "string" ? Buffer.from(input) : input;
@@ -48,11 +49,16 @@ function normalizePrivateKey(raw: string): string {
   return raw.replace(/\\n/g, "\n").trim();
 }
 
+function normalizePem(raw: string): string {
+  return raw.replace(/\\n/g, "\n").trim();
+}
+
 export function getApnsConfigFromEnv(): ApnsConfig | null {
   const keyId = process.env.APNS_KEY_ID;
   const teamId = process.env.APNS_TEAM_ID;
   const bundleId = process.env.APNS_BUNDLE_ID;
   const privateKeyRaw = process.env.APNS_PRIVATE_KEY;
+  const caCertRaw = process.env.APNS_CA_CERT;
   const endpointOverrideRaw = process.env.APNS_ENDPOINT_OVERRIDE?.trim();
   const useSandbox =
     process.env.APNS_USE_SANDBOX === "1" ||
@@ -72,12 +78,21 @@ export function getApnsConfigFromEnv(): ApnsConfig | null {
       endpointOverrideRaw && endpointOverrideRaw.startsWith("https://")
         ? endpointOverrideRaw
         : undefined,
+    caCert: caCertRaw ? normalizePem(caCertRaw) : undefined,
   };
 }
 
 function createApnsJwt(config: ApnsConfig): string {
   const now = Date.now();
-  if (cachedJwt && cachedJwt.expiresAt > now) {
+  const cacheKey = createHash("sha256")
+    .update(config.keyId)
+    .update(":")
+    .update(config.teamId)
+    .update(":")
+    .update(config.privateKey)
+    .digest("hex");
+
+  if (cachedJwt && cachedJwt.expiresAt > now && cachedJwt.cacheKey === cacheKey) {
     return cachedJwt.token;
   }
 
@@ -109,6 +124,7 @@ function createApnsJwt(config: ApnsConfig): string {
   cachedJwt = {
     token: jwt,
     expiresAt: now + JWT_VALIDITY_MS,
+    cacheKey,
   };
   return jwt;
 }
@@ -159,7 +175,7 @@ export async function sendApnsAlert(
   };
 
   const body = JSON.stringify(apnsPayload);
-  const session = connect(authority);
+  const session = connect(authority, config.caCert ? { ca: config.caCert } : undefined);
 
   return new Promise<ApnsSendResult>((resolve) => {
     let settled = false;

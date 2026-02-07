@@ -29,6 +29,9 @@
     "i18n:translate:dry-run": "bun run scripts/machine-translate.ts --dry-run",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
+    "tauri:ios:init": "tauri ios init",
+    "tauri:ios:dev": "tauri ios dev",
+    "tauri:ios:build": "tauri ios build",
     "tauri:build:mac": "bash -c 'set -a && [ -f .env.local ] && source .env.local; set +a && tauri build --target universal-apple-darwin'",
     "tauri:build:windows": "tauri build --target x86_64-pc-windows-msvc",
     "seed:dev": "bun run scripts/seed-dev-users.ts",
@@ -42,7 +45,8 @@
     "test:lyrics": "bun run tests/test-lyrics.ts",
     "test:speech": "bun run tests/test-speech.ts",
     "test:translate-lyrics": "bun run tests/test-translate-lyrics.ts",
-    "test:share-applet": "bun run tests/test-share-applet.ts"
+    "test:share-applet": "bun run tests/test-share-applet.ts",
+    "test:push-apns": "bun run tests/test-push-apns.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.23",
