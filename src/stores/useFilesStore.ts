@@ -186,6 +186,52 @@ const getParentPath = (path: string): string => {
   return "/" + parts.slice(0, -1).join("/");
 };
 
+type PathQueryCache = {
+  itemsRef: Record<string, FileSystemItem> | null;
+  activeChildrenByParent: Map<string, FileSystemItem[]>;
+  trashedItems: FileSystemItem[];
+};
+
+const pathQueryCache: PathQueryCache = {
+  itemsRef: null,
+  activeChildrenByParent: new Map(),
+  trashedItems: [],
+};
+
+const rebuildPathQueryCache = (items: Record<string, FileSystemItem>) => {
+  const activeChildrenByParent = new Map<string, FileSystemItem[]>();
+  const trashedItems: FileSystemItem[] = [];
+
+  for (const item of Object.values(items)) {
+    if (item.status === "trashed") {
+      trashedItems.push(item);
+      continue;
+    }
+
+    if (item.status !== "active" || item.path === "/") {
+      continue;
+    }
+
+    const parentPath = getParentPath(item.path);
+    const existingBucket = activeChildrenByParent.get(parentPath);
+    if (existingBucket) {
+      existingBucket.push(item);
+    } else {
+      activeChildrenByParent.set(parentPath, [item]);
+    }
+  }
+
+  pathQueryCache.itemsRef = items;
+  pathQueryCache.activeChildrenByParent = activeChildrenByParent;
+  pathQueryCache.trashedItems = trashedItems;
+};
+
+const ensurePathQueryCache = (items: Record<string, FileSystemItem>) => {
+  if (pathQueryCache.itemsRef !== items) {
+    rebuildPathQueryCache(items);
+  }
+};
+
 // Track files pending lazy load (path -> FileSystemItemData)
 const pendingLazyLoadFiles = new Map<string, FileSystemItemData>();
 
@@ -784,31 +830,14 @@ export const useFilesStore = create<FilesStoreState>()(
       },
 
       getItemsInPath: (path) => {
-        const allItems = Object.values(get().items);
-
-        if (path === "/") {
-          // Special case for root: Return top-level active directories/virtual directories
-          return allItems.filter(
-            (item) =>
-              item.status === "active" &&
-              item.path !== "/" && // Exclude the root item itself
-              getParentPath(item.path) === "/" // Ensure it's a direct child of root
-          );
-        }
+        const currentItems = get().items;
+        ensurePathQueryCache(currentItems);
 
         if (path === "/Trash") {
-          // Show only top-level *trashed* items (items originally from root or elsewhere)
-          // Let's refine this: show items whose *originalPath* parent was root, or items directly trashed?
-          // For now, let's show all items *marked* as trashed, regardless of original location depth.
-          // The UI might need adjustment if we only want top-level trash display.
-          return allItems.filter((item) => item.status === "trashed");
+          return pathQueryCache.trashedItems.slice();
         }
 
-        // For regular paths, show only direct children that are active
-        return allItems.filter(
-          (item) =>
-            item.status === "active" && getParentPath(item.path) === path
-        );
+        return (pathQueryCache.activeChildrenByParent.get(path) || []).slice();
       },
 
       getItem: (path) => get().items[path],
@@ -836,9 +865,9 @@ export const useFilesStore = create<FilesStoreState>()(
       },
 
       getTrashItems: () => {
-        return Object.values(get().items).filter(
-          (item) => item.status === "trashed"
-        );
+        const currentItems = get().items;
+        ensurePathQueryCache(currentItems);
+        return pathQueryCache.trashedItems.slice();
       },
 
       createAlias: (targetPath, aliasName, aliasType, targetAppId) => {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { FileItem as DisplayFileItem } from "../components/FileList";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 // Re-export STORES for backward compatibility (other modules import from here)
@@ -401,6 +401,7 @@ export function useFileSystem(
   const [selectedFile, setSelectedFile] = useState<ExtendedDisplayFileItem>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const objectUrlsRef = useRef<Set<string>>(new Set());
 
   // Zustand Stores
   const fileStore = useFilesStore();
@@ -416,6 +417,13 @@ export function useFileSystem(
     setIsPlaying: setVideoPlaying,
   } = useVideoStore();
   const internetExplorerStore = useInternetExplorerStore();
+
+  useEffect(() => {
+    return () => {
+      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      objectUrlsRef.current.clear();
+    };
+  }, []);
 
   // Define getParentPath inside hook
   const getParentPath = (path: string): string => {
@@ -545,6 +553,7 @@ export function useFileSystem(
 
     try {
       let displayFiles: ExtendedDisplayFileItem[] = [];
+      const nextObjectUrls = new Set<string>();
 
       // 1. Handle Virtual Directories
       if (currentPath === "/Applications") {
@@ -763,6 +772,7 @@ export function useFileSystem(
                       `[useFileSystem:loadFiles] Found Blob content for ${item.name}, creating URL`
                     );
                     contentUrl = URL.createObjectURL(contentData.content);
+                    nextObjectUrls.add(contentUrl);
                     console.log(
                       `[useFileSystem:loadFiles] Created URL: ${contentUrl}`
                     );
@@ -844,6 +854,14 @@ export function useFileSystem(
           modifiedAt: undefined, // Virtual files don't have timestamps
         }));
       }
+
+      // Revoke stale object URLs from previous runs before replacing file list.
+      objectUrlsRef.current.forEach((previousUrl) => {
+        if (!nextObjectUrls.has(previousUrl)) {
+          URL.revokeObjectURL(previousUrl);
+        }
+      });
+      objectUrlsRef.current = nextObjectUrls;
 
       setFiles(displayFiles);
     } catch (err) {
