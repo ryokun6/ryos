@@ -14,6 +14,7 @@ import {
   isTokenMetadataOwnedByUser,
   isPushPlatform,
   isValidPushToken,
+  normalizePushPlatform,
   normalizeUsername,
 } from "../_api/push/_shared";
 import {
@@ -72,6 +73,11 @@ async function testPlatformValidation() {
   assertEq(isPushPlatform("ios"), true);
   assertEq(isPushPlatform("android"), true);
   assertEq(isPushPlatform("web"), false);
+
+  assertEq(normalizePushPlatform("IOS"), "ios");
+  assertEq(normalizePushPlatform(" android "), "android");
+  assertEq(normalizePushPlatform("web"), null);
+  assertEq(normalizePushPlatform(123), null);
 }
 
 async function testTokenMetadataOwnershipHelpers() {

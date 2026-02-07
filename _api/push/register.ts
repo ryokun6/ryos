@@ -8,7 +8,6 @@ import {
 } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
 import {
-  type PushPlatform,
   type PushTokenMetadata,
   PUSH_TOKEN_TTL_SECONDS,
   extractAuthFromHeaders,
@@ -17,8 +16,8 @@ import {
   getRequestBodyObject,
   getTokenMetaKey,
   getUserTokensKey,
-  isPushPlatform,
   isValidPushToken,
+  normalizePushPlatform,
 } from "./_shared.js";
 
 export const runtime = "nodejs";
@@ -82,14 +81,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Invalid push token format" });
   }
 
-  if (typeof body.platform !== "undefined" && typeof body.platform !== "string") {
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Unsupported push platform" });
-  }
-
   const hasTokenField = Object.prototype.hasOwnProperty.call(body, "token");
   const pushToken = getOptionalTrimmedString(body.token);
-  const platform = (body.platform as PushPlatform | undefined) ?? "ios";
+  const platform =
+    typeof body.platform === "undefined"
+      ? "ios"
+      : normalizePushPlatform(body.platform);
 
   if (hasTokenField && typeof body.token === "string" && !pushToken) {
     logger.response(400, Date.now() - startTime);
@@ -106,7 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Invalid push token format" });
   }
 
-  if (!isPushPlatform(platform)) {
+  if (!platform) {
     logger.response(400, Date.now() - startTime);
     return res.status(400).json({ error: "Unsupported push platform" });
   }

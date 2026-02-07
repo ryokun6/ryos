@@ -42,6 +42,12 @@ export function isPushPlatform(platform: string): platform is PushPlatform {
   return platform === "ios" || platform === "android";
 }
 
+export function normalizePushPlatform(value: unknown): PushPlatform | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  return isPushPlatform(normalized) ? normalized : null;
+}
+
 export function normalizeUsername(value: string | null | undefined): string | null {
   if (!value) return null;
   const normalized = value.trim().toLowerCase();
