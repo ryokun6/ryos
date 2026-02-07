@@ -12,6 +12,7 @@ import {
   getMissingApnsEnvVars,
   sendApnsAlert,
 } from "../_utils/_push-apns.js";
+import { mapWithConcurrency } from "./_concurrency.js";
 import { normalizePushTestPayload } from "./_payload.js";
 import { summarizePushSendResults } from "./_results.js";
 import {
@@ -37,6 +38,7 @@ const APNS_STALE_REASONS = new Set([
   "Unregistered",
   "DeviceTokenNotForTopic",
 ]);
+const APNS_SEND_CONCURRENCY = 4;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { logger } = initLogger();
@@ -149,8 +151,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "No owned push tokens for this user" });
   }
 
-  const results = await Promise.all(
-    targetTokens.map((deviceToken) =>
+  const results = await mapWithConcurrency(
+    targetTokens,
+    APNS_SEND_CONCURRENCY,
+    (deviceToken) =>
       sendApnsAlert(apnsConfig, deviceToken, {
         title,
         body: message,
@@ -158,7 +162,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         badge: payload.badge,
         sound: payload.sound,
       })
-    )
   );
 
   const staleTokens = results

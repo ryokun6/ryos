@@ -19,6 +19,7 @@ import { runRoomsExtraTests } from "./test-rooms-extra";
 import { runPushApnsTests } from "./test-push-apns";
 import { runPushSharedTests } from "./test-push-shared";
 import { runPushPayloadTests } from "./test-push-payload";
+import { runPushConcurrencyTests } from "./test-push-concurrency";
 import { runPushResultsTests } from "./test-push-results";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
@@ -96,6 +97,7 @@ async function runAllTests(): Promise<void> {
     { name: "rooms-extra", run: runRoomsExtraTests },
     { name: "push-shared", run: runPushSharedTests },
     { name: "push-payload", run: runPushPayloadTests },
+    { name: "push-concurrency", run: runPushConcurrencyTests },
     { name: "push-results", run: runPushResultsTests },
     { name: "push-apns", run: runPushApnsTests },
   ];
