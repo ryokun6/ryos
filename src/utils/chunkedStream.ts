@@ -4,6 +4,7 @@
  */
 
 import { getApiUrl } from "@/utils/platform";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 // =============================================================================
 // Constants
@@ -123,7 +124,7 @@ export async function processTranslationSSE(
         headers["X-Username"] = auth.username;
       }
 
-      const response = await fetch(getApiUrl(`/api/songs/${songId}`), {
+      const response = await abortableFetch(getApiUrl(`/api/songs/${songId}`), {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -132,6 +133,9 @@ export async function processTranslationSSE(
           force,
         }),
         signal: controller.signal,
+        timeout: 300000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
 
       if (!response.ok) {
@@ -358,7 +362,7 @@ export async function processFuriganaSSE(
         furiganaHeaders["X-Username"] = auth.username;
       }
 
-      const response = await fetch(getApiUrl(`/api/songs/${songId}`), {
+      const response = await abortableFetch(getApiUrl(`/api/songs/${songId}`), {
         method: "POST",
         headers: furiganaHeaders,
         body: JSON.stringify({
@@ -366,6 +370,9 @@ export async function processFuriganaSSE(
           force,
         }),
         signal: controller.signal,
+        timeout: 300000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
 
       if (!response.ok) {
@@ -623,11 +630,14 @@ export async function processSoramimiSSE(
         soramimiHeaders["X-Username"] = auth.username;
       }
 
-      const response = await fetch(getApiUrl(`/api/songs/${songId}`), {
+      const response = await abortableFetch(getApiUrl(`/api/songs/${songId}`), {
         method: "POST",
         headers: soramimiHeaders,
         body: JSON.stringify(requestBody),
         signal: controller.signal,
+        timeout: 300000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
 
       if (!response.ok) {
