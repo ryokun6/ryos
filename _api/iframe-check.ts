@@ -7,6 +7,7 @@ import { getClientIp } from "./_utils/_rate-limit.js";
 import { isAllowedOrigin, getEffectiveOrigin } from "./_utils/_cors.js";
 import { normalizeUrlForCacheKey } from "./_utils/_url.js";
 import { initLogger } from "./_utils/_logging.js";
+import { safeFetchWithRedirects, validatePublicUrl, SsrfBlockedError } from "./_utils/_ssrf.js";
 
 export const runtime = "nodejs";
 
@@ -188,6 +189,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Log normalized URL
   logger.info(`Normalized URL: ${normalizedUrl}`);
+
+  try {
+    await validatePublicUrl(normalizedUrl);
+  } catch (error) {
+    const message =
+      error instanceof SsrfBlockedError ? error.message : "Invalid URL format";
+    logger.warn("Blocked URL for iframe check", { normalizedUrl, message, mode });
+    return errorResponseWithCors(message, 400);
+  }
 
   // ---------------------------
   // Rate limiting (mode-specific)
@@ -529,11 +539,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const checkSiteEmbeddingAllowed = async () => {
     try {
       logger.info(`Performing header check for: ${targetUrl}`);
-      const fetchRes = await fetch(targetUrl, {
-        method: "GET",
-        redirect: "follow",
-        headers: BROWSER_HEADERS, // Add browser headers
-      });
+      const { response: fetchRes, finalUrl } = await safeFetchWithRedirects(
+        targetUrl,
+        {
+          method: "GET",
+          headers: BROWSER_HEADERS,
+        },
+        { maxRedirects: 5 }
+      );
 
       if (!fetchRes.ok) {
         throw new Error(`Upstream fetch failed with status ${fetchRes.status}`);
@@ -617,7 +630,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           : `Content-Security-Policy (header): ${headerCsp}`
         : undefined;
 
-      logger.info(`Header check result: Allowed=${allowed}, Reason=${finalReason || "N/A"}, Title=${pageTitle || "N/A"}`);
+      logger.info(
+        `Header check result: Allowed=${allowed}, Reason=${finalReason || "N/A"}, Title=${pageTitle || "N/A"}`,
+        { finalUrl }
+      );
 
       return { allowed, reason: finalReason, title: pageTitle };
     } catch (error) {
@@ -648,12 +664,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const timeout = setTimeout(() => controller.abort(), 15000); // 15-second timeout
 
     try {
-      const upstreamRes = await fetch(targetUrl, {
-        method: "GET",
-        redirect: "follow",
-        signal: controller.signal,
-        headers: BROWSER_HEADERS, // Add browser headers
-      });
+      const { response: upstreamRes, finalUrl } = await safeFetchWithRedirects(
+        targetUrl,
+        {
+          method: "GET",
+          signal: controller.signal,
+          headers: BROWSER_HEADERS,
+        },
+        { maxRedirects: 5 }
+      );
 
       clearTimeout(timeout); // Clear timeout on successful fetch
 
@@ -704,7 +723,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Inject <base> tag right after <head> (case‑insensitive)
-        const baseTag = `<base href="${targetUrl}">`;
+        const baseTag = `<base href="${finalUrl}">`;
         // Inject title meta tag if title was extracted
         const titleMetaTag = pageTitle
           ? `<meta name="page-title" content="${encodeURIComponent(
@@ -1006,6 +1025,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     } catch (fetchError) {
       clearTimeout(timeout);
+
+      if (fetchError instanceof SsrfBlockedError) {
+        logger.warn(`Proxy blocked SSRF target for ${targetUrl}`, fetchError);
+        res.setHeader("Content-Type", "application/json");
+        if (effectiveOrigin) {
+          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
+        }
+        logger.response(400, Date.now() - startTime);
+        return res.status(400).json({
+          error: true,
+          type: "ssrf_blocked",
+          status: 400,
+          message: fetchError.message,
+        });
+      }
 
       // Special handling for timeout or network errors
       logger.error(`Proxy fetch error for ${targetUrl}`, fetchError);

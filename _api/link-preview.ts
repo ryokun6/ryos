@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
+import { safeFetchWithRedirects, validatePublicUrl, SsrfBlockedError } from "./_utils/_ssrf.js";
 import { initLogger } from "./_utils/_logging.js";
 
 export const runtime = "nodejs";
@@ -153,24 +154,20 @@ export default async function handler(
       return;
     }
 
-    logger.info("Fetching preview for URL", { url });
-
-    // Validate URL format
-    let parsedUrl: URL;
     try {
-      parsedUrl = new URL(url);
-    } catch {
+      await validatePublicUrl(url);
+    } catch (error) {
+      const message =
+        error instanceof SsrfBlockedError
+          ? error.message
+          : "Invalid URL format";
+      logger.warn("Blocked URL for link preview", { url, message });
       logger.response(400, Date.now() - startTime);
-      res.status(400).json({ error: "Invalid URL format" });
+      res.status(400).json({ error: message });
       return;
     }
 
-    // Only allow HTTP and HTTPS URLs
-    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      logger.response(400, Date.now() - startTime);
-      res.status(400).json({ error: "Only HTTP and HTTPS URLs are allowed" });
-      return;
-    }
+    logger.info("Fetching preview for URL", { url });
 
     // Handle YouTube URLs using oEmbed API
     if (isYouTubeUrl(url)) {
@@ -188,17 +185,23 @@ export default async function handler(
     }
 
     // Fetch the webpage
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
+    const { response, finalUrl } = await safeFetchWithRedirects(
+      url,
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.5",
+          "Accept-Encoding": "gzip, deflate",
+          Connection: "keep-alive",
+          "Upgrade-Insecure-Requests": "1",
+        },
+        signal: AbortSignal.timeout(10000),
       },
-      signal: AbortSignal.timeout(10000),
-    });
+      { maxRedirects: 5 }
+    );
 
     if (!response.ok) {
       logger.warn("HTTP error from upstream", { status: response.status });
@@ -211,7 +214,7 @@ export default async function handler(
     
     // Extract metadata from HTML
     const metadata: LinkMetadata = {
-      url: url,
+      url: finalUrl,
     };
 
     // Extract title
@@ -231,11 +234,13 @@ export default async function handler(
       metadata.description = ogDescriptionMatch[1].trim();
     }
 
-    const ogImageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+    const ogImageMatch = html.match(
+      /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i
+    );
     if (ogImageMatch) {
       const imageUrl = ogImageMatch[1].trim();
       try {
-        metadata.image = new URL(imageUrl, url).href;
+        metadata.image = new URL(imageUrl, finalUrl).href;
       } catch {
         metadata.image = imageUrl;
       }
@@ -262,11 +267,13 @@ export default async function handler(
     }
 
     if (!metadata.image) {
-      const twitterImageMatch = html.match(/<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["'][^>]*>/i);
+      const twitterImageMatch = html.match(
+        /<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["'][^>]*>/i
+      );
       if (twitterImageMatch) {
         const imageUrl = twitterImageMatch[1].trim();
         try {
-          metadata.image = new URL(imageUrl, url).href;
+          metadata.image = new URL(imageUrl, finalUrl).href;
         } catch {
           metadata.image = imageUrl;
         }
@@ -283,7 +290,7 @@ export default async function handler(
 
     // Use hostname as fallback site name
     if (!metadata.siteName) {
-      metadata.siteName = parsedUrl.hostname;
+      metadata.siteName = new URL(finalUrl).hostname;
     }
 
     // Decode HTML entities
@@ -321,13 +328,16 @@ export default async function handler(
     let status = 500;
     let errorMessage = "Error fetching link preview";
 
-    if (error instanceof Error) {
+    if (error instanceof SsrfBlockedError) {
+      status = 400;
       errorMessage = error.message;
-      
-      if (error.name === 'AbortError') {
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+
+      if (error.name === "AbortError") {
         errorMessage = "Request timeout";
         status = 408;
-      } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      } else if (error.name === "TypeError" && error.message.includes("fetch")) {
         errorMessage = "Network error";
         status = 503;
       }
