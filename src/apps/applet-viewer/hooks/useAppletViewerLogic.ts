@@ -600,7 +600,12 @@ export function useAppletViewerLogic({
     return () => clearTimeout(timeoutId);
   }, [appletPath, loadedContent, checkForAppletUpdate, actions, getFileItem, t]);
 
-  const { getAppletWindowSize, setAppletWindowSize } = useAppletStore();
+  const getAppletWindowSize = useAppletStore(
+    (state) => state.getAppletWindowSize
+  );
+  const setAppletWindowSize = useAppletStore(
+    (state) => state.setAppletWindowSize
+  );
 
   const savedSizeFromMetadata =
     fileItem?.windowWidth && fileItem?.windowHeight
