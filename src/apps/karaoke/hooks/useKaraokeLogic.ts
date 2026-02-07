@@ -106,10 +106,11 @@ export function useKaraokeLogic({
   );
 
   // App store for clearing initial data
-  const { clearInstanceInitialData, bringToForeground } = useAppStoreShallow((state) => ({
-    clearInstanceInitialData: state.clearInstanceInitialData,
-    bringToForeground: state.bringToForeground,
-  }));
+  const { clearInstanceInitialData, bringInstanceToForeground } =
+    useAppStoreShallow((state) => ({
+      clearInstanceInitialData: state.clearInstanceInitialData,
+      bringInstanceToForeground: state.bringInstanceToForeground,
+    }));
 
   // Ref to track processed initial data
   const lastProcessedInitialDataRef = useRef<typeof initialData | null>(null);
@@ -1137,14 +1138,21 @@ export function useKaraokeLogic({
     const handleUpdateApp = (
       event: CustomEvent<{
         appId: string;
+        instanceId?: string;
         initialData?: { videoId?: string; listenSessionId?: string };
       }>
     ) => {
-      if (event.detail.appId === "karaoke" && event.detail.initialData?.videoId) {
+      if (
+        event.detail.appId === "karaoke" &&
+        event.detail.initialData?.videoId &&
+        (!event.detail.instanceId || event.detail.instanceId === instanceId)
+      ) {
         if (lastProcessedInitialDataRef.current === event.detail.initialData) return;
 
         const videoId = event.detail.initialData.videoId;
-        bringToForeground("karaoke");
+        if (instanceId) {
+          bringInstanceToForeground(instanceId);
+        }
         processVideoId(videoId).catch((error) => {
           console.error(`[Karaoke] Error processing videoId ${videoId}:`, error);
           toast.error("Failed to load shared track", { description: `Video ID: ${videoId}` });
@@ -1152,10 +1160,16 @@ export function useKaraokeLogic({
         lastProcessedInitialDataRef.current = event.detail.initialData;
       }
 
-      if (event.detail.appId === "karaoke" && event.detail.initialData?.listenSessionId) {
+      if (
+        event.detail.appId === "karaoke" &&
+        event.detail.initialData?.listenSessionId &&
+        (!event.detail.instanceId || event.detail.instanceId === instanceId)
+      ) {
         const sessionId = event.detail.initialData.listenSessionId;
         if (lastProcessedListenSessionRef.current === sessionId) return;
-        bringToForeground("karaoke");
+        if (instanceId) {
+          bringInstanceToForeground(instanceId);
+        }
         joinListenSession(sessionId, username || undefined)
           .then((result) => {
             if (!result.ok) {
@@ -1173,7 +1187,7 @@ export function useKaraokeLogic({
 
     window.addEventListener("updateApp", handleUpdateApp as EventListener);
     return () => window.removeEventListener("updateApp", handleUpdateApp as EventListener);
-  }, [processVideoId, bringToForeground, joinListenSession, username]);
+  }, [processVideoId, bringInstanceToForeground, joinListenSession, username, instanceId]);
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";

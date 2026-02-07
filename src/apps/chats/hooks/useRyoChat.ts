@@ -45,8 +45,6 @@ const getSystemState = () => {
     .map((inst) => inst.appId);
 
   return {
-    // Keep legacy apps for backward compatibility; include instances
-    apps: appStore.apps,
     instances: appStore.instances,
     username: chatsStore.username,
     locale: languageStore.current,

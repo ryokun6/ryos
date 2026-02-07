@@ -1,5 +1,4 @@
 import { AnyApp } from "@/apps/base/types";
-import { AppManagerState } from "@/apps/base/types";
 import { AppId } from "@/config/appRegistry";
 import { useState, useRef, useCallback } from "react";
 import { FileIcon } from "@/apps/finder/components/FileIcon";
@@ -29,7 +28,6 @@ interface DesktopStyles {
 
 interface DesktopProps {
   apps: AnyApp[];
-  appStates: AppManagerState;
   toggleApp: (appId: AppId, initialData?: unknown, launchOrigin?: LaunchOriginRect) => void;
   onClick?: () => void;
   desktopStyles?: DesktopStyles;

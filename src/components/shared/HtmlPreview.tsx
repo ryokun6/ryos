@@ -22,6 +22,7 @@ import {
 } from "@/utils/appletAuthBridge";
 import { useTranslation } from "react-i18next";
 import { useEventListener } from "@/hooks/useEventListener";
+import DOMPurify from "dompurify";
 
 // Check if a string is a HTML code block
 export const isHtmlCodeBlock = (
@@ -917,8 +918,16 @@ export default function HtmlPreview({
   const sanitizeHtmlForStream = (html: string): string => {
     if (!html) return html;
 
+    const baseSanitized =
+      typeof window !== "undefined"
+        ? DOMPurify.sanitize(html, {
+            USE_PROFILES: { html: true },
+            FORBID_TAGS: ["script", "iframe", "object", "embed", "link", "meta"],
+          })
+        : html;
+
     // Selectively filter style tags content instead of removing them completely
-    let sanitized = html.replace(
+    let sanitized = baseSanitized.replace(
       /<style\b[^>]*>([\s\S]*?)<\/style>/gi,
       (_match, styleContent) => {
         // Filter out global font/color styles but keep other styles

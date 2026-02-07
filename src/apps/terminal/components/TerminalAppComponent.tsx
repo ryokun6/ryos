@@ -122,7 +122,7 @@ export function TerminalAppComponent({
     playElevatorMusic,
     stopElevatorMusic,
     playDingSound,
-    bringToForeground,
+    bringInstanceToForeground,
     handleClearTerminal,
     isXpTheme,
     shouldApplyMarkdown,
@@ -580,7 +580,7 @@ export function TerminalAppComponent({
                 e.stopPropagation();
                 inputRef.current?.focus();
                 if (!isForeground) {
-                  bringToForeground("terminal");
+                  bringInstanceToForeground(instanceId);
                 }
               }
             }}

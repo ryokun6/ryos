@@ -98,9 +98,7 @@ export function WindowFrame({
   // Track if close was triggered via external event (menu bar, dock, etc.)
   const closeViaEventRef = useRef(false);
   const {
-    bringToForeground,
     bringInstanceToForeground,
-    updateWindowState,
     updateInstanceWindowState,
     minimizeInstance,
     instances,
@@ -108,9 +106,7 @@ export function WindowFrame({
     updateInstanceTitle,
     exposeMode,
   } = useAppStoreShallow((state) => ({
-    bringToForeground: state.bringToForeground,
     bringInstanceToForeground: state.bringInstanceToForeground,
-    updateWindowState: state.updateWindowState,
     updateInstanceWindowState: state.updateInstanceWindowState,
     minimizeInstance: state.minimizeInstance,
     instances: state.instances,
@@ -372,38 +368,38 @@ export function WindowFrame({
   // Don't animate during drag or resize operations
   const shouldAnimateWindowTransition = !isDragging && !resizeType;
 
-  // Calculate dock icon or taskbar item position relative to window center (used for both minimize and restore animations)
-  const dockIconOffset = useMemo(() => {
-    // First try to find the dock icon (macOS theme)
+  const dockIconCenter = useMemo(() => {
     const dockIcon = document.querySelector(`[data-dock-icon="${appId}"]`);
     if (dockIcon) {
       const rect = dockIcon.getBoundingClientRect();
-      // Calculate offset from window center to dock icon center
-      const windowCenterX = windowPosition.x + windowSize.width / 2;
-      const windowCenterY = windowPosition.y + windowSize.height / 2;
-      return {
-        x: rect.left + rect.width / 2 - windowCenterX,
-        y: rect.top + rect.height / 2 - windowCenterY,
-      };
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     }
-    
-    // Try to find the taskbar item (Windows XP/98 theme)
-    const taskbarItem = instanceId 
+
+    const taskbarItem = instanceId
       ? document.querySelector(`[data-taskbar-item="${instanceId}"]`)
       : null;
     if (taskbarItem) {
       const rect = taskbarItem.getBoundingClientRect();
-      // Calculate offset from window center to taskbar item center
-      const windowCenterX = windowPosition.x + windowSize.width / 2;
-      const windowCenterY = windowPosition.y + windowSize.height / 2;
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    }
+
+    return null;
+  }, [appId, instanceId, currentTheme, instances]);
+
+  // Calculate dock icon or taskbar item position relative to window center (used for both minimize and restore animations)
+  const dockIconOffset = useMemo(() => {
+    const windowCenterX = windowPosition.x + windowSize.width / 2;
+    const windowCenterY = windowPosition.y + windowSize.height / 2;
+
+    if (dockIconCenter) {
       return {
-        x: rect.left + rect.width / 2 - windowCenterX,
-        y: rect.top + rect.height / 2 - windowCenterY,
+        x: dockIconCenter.x - windowCenterX,
+        y: dockIconCenter.y - windowCenterY,
       };
     }
-    
+
     return { x: 0, y: window.innerHeight - windowPosition.y }; // Fallback to bottom of screen
-  }, [appId, instanceId, windowPosition, windowSize, currentTheme]);
+  }, [dockIconCenter, windowPosition, windowSize]);
 
   // Get launch origin from instance (position of icon that launched this window)
   const launchOrigin = instanceId ? instances[instanceId]?.launchOrigin : undefined;
@@ -473,8 +469,6 @@ export function WindowFrame({
     if (!isForeground) {
       if (instanceId) {
         bringInstanceToForeground(instanceId);
-      } else {
-        bringToForeground(appId);
       }
     }
   };
@@ -487,8 +481,6 @@ export function WindowFrame({
     if (!isForeground) {
       if (instanceId) {
         bringInstanceToForeground(instanceId);
-      } else {
-        bringToForeground(appId);
       }
     }
   };
@@ -526,8 +518,6 @@ export function WindowFrame({
       // Save the window state to global store
       if (instanceId) {
         updateInstanceWindowState(instanceId, windowPosition, newSize);
-      } else {
-        updateWindowState(appId, windowPosition, newSize);
       }
     } else {
       // Play expand sound when maximizing height
@@ -556,8 +546,6 @@ export function WindowFrame({
       // Save the window state to global store
       if (instanceId) {
         updateInstanceWindowState(instanceId, newPosition, newSize);
-      } else {
-        updateWindowState(appId, newPosition, newSize);
       }
     }
   };
@@ -606,12 +594,6 @@ export function WindowFrame({
         if (instanceId) {
           updateInstanceWindowState(
             instanceId,
-            window.innerWidth >= 768 ? newPosition : windowPosition,
-            defaultSize
-          );
-        } else {
-          updateWindowState(
-            appId,
             window.innerWidth >= 768 ? newPosition : windowPosition,
             defaultSize
           );
@@ -666,8 +648,6 @@ export function WindowFrame({
         // Save the new window state to global store
         if (instanceId) {
           updateInstanceWindowState(instanceId, newPosition, newSize);
-        } else {
-          updateWindowState(appId, newPosition, newSize);
         }
       }
     },
@@ -984,8 +964,6 @@ export function WindowFrame({
             if (!isForeground) {
               if (instanceId) {
                 bringInstanceToForeground(instanceId);
-              } else {
-                bringToForeground(appId);
               }
             }
           }}

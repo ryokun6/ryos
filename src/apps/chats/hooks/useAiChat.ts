@@ -521,7 +521,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const { aiMessages, setAiMessages, username, authToken, ensureAuthToken } =
     useChatsStore();
   const launchApp = useLaunchApp();
-  const closeApp = useAppStore((state) => state.closeApp);
   const aiModel = useAppStore((state) => state.aiModel);
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
   const { saveFile } = useFileSystem("/Documents", { skipLoad: true });
@@ -699,8 +698,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             result = handleCloseApp(
               toolCall.input as CloseAppInput,
               toolCall.toolCallId,
-              toolContext,
-              closeApp
+              toolContext
             );
             break;
           }

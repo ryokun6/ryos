@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { AnyApp, AppState } from "./types";
+import type { AnyApp } from "./types";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { Desktop } from "@/components/layout/Desktop";
 import { Dock } from "@/components/layout/Dock";
@@ -55,44 +55,17 @@ export function AppManager({ apps }: AppManagerProps) {
 
   const [isInitialMount, setIsInitialMount] = useState(true);
   const [isExposeViewOpen, setIsExposeViewOpen] = useState(false);
+  const instancesRef = useRef(instances);
+  const launchAppRef = useRef(launchApp);
 
+  useEffect(() => {
+    instancesRef.current = instances;
+  }, [instances]);
 
-  // Create legacy-compatible appStates from instances for Desktop component
-  // NOTE: There can be multiple open instances for the same appId. We need to
-  // aggregate their state so that legacy consumers (e.g. Desktop)
-  // still receive correct information. In particular, `isOpen` should be true
-  // if ANY instance is open, and `isForeground` should reflect the foreground
-  // instance. We also prefer the foreground instance for position/size data.
+  useEffect(() => {
+    launchAppRef.current = launchApp;
+  }, [launchApp]);
 
-  const legacyAppStates = Object.values(instances).reduce(
-    (acc, instance) => {
-      const existing = acc[instance.appId];
-
-      // Determine whether this instance should be the source of foreground /
-      // positional data. We always keep foreground instance data if available.
-      const shouldReplace =
-        !existing || // first encounter
-        (instance.isForeground && !existing.isForeground); // take foreground
-
-      acc[instance.appId] = {
-        // isOpen is true if any instance is open
-        isOpen: (existing?.isOpen ?? false) || instance.isOpen,
-        // isForeground true if this particular instance is foreground, or an
-        // earlier one already marked foreground
-        isForeground:
-          (existing?.isForeground ?? false) || instance.isForeground,
-        // For position / size / initialData, prefer the chosen instance
-        position: shouldReplace ? instance.position : existing?.position,
-        size: shouldReplace ? instance.size : existing?.size,
-        initialData: shouldReplace
-          ? instance.initialData
-          : existing?.initialData,
-      };
-
-      return acc;
-    },
-    {} as { [appId: string]: AppState },
-  );
 
   const getZIndexForInstance = (instanceId: string) => {
     const index = instanceOrder.indexOf(instanceId);
@@ -321,12 +294,12 @@ export function AppManager({ apps }: AppManagerProps) {
       );
 
       // Check if there's an existing instance before launching
-      const existingInstance = Object.values(instances).find(
+      const existingInstance = Object.values(instancesRef.current).find(
         (instance) => instance.appId === appId && instance.isOpen,
       );
 
       // Use instance system
-      const instanceId = launchApp(appId, initialData);
+      const instanceId = launchAppRef.current(appId, initialData);
       console.log(
         `[AppManager] Launched instance ${instanceId} for app ${appId}`,
       );
@@ -337,13 +310,17 @@ export function AppManager({ apps }: AppManagerProps) {
       }
 
       // If there was an existing instance and we have initialData, dispatch updateApp event
-      if (existingInstance && initialData) {
+      if (
+        existingInstance &&
+        initialData &&
+        instanceId === existingInstance.instanceId
+      ) {
         console.log(
           `[AppManager] Dispatching updateApp event for existing ${appId} instance with initialData:`,
           initialData,
         );
         const updateEvent = new CustomEvent("updateApp", {
-          detail: { appId, initialData },
+          detail: { appId, instanceId, initialData },
         });
         window.dispatchEvent(updateEvent);
       }
@@ -353,7 +330,7 @@ export function AppManager({ apps }: AppManagerProps) {
     return () => {
       window.removeEventListener("launchApp", handleAppLaunch as EventListener);
     };
-  }, [instances, launchApp]);
+  }, []);
 
   // Listen for expose view toggle events (e.g., from keyboard shortcut, dock menu)
   useEffect(() => {
@@ -435,7 +412,6 @@ export function AppManager({ apps }: AppManagerProps) {
         toggleApp={(appId, initialData, launchOrigin) => {
           launchApp(appId, initialData, undefined, false, launchOrigin);
         }}
-        appStates={{ windowOrder: instanceOrder, apps: legacyAppStates }}
       />
 
       {/* Expose View (Mission Control) - Backdrop and labels */}

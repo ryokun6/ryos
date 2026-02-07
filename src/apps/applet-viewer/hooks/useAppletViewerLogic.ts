@@ -234,11 +234,6 @@ export function useAppletViewerLogic({
       if (!inst || !inst.isForeground) {
         state.bringInstanceToForeground(instanceId);
       }
-    } else {
-      const appState = state.apps["applet-viewer"];
-      if (!appState || !appState.isForeground) {
-        state.bringToForeground("applet-viewer");
-      }
     }
   }, [instanceId]);
 
@@ -608,7 +603,7 @@ export function useAppletViewerLogic({
   const savedSize = savedSizeFromMetadata || savedSizeFromAppletStore;
 
   const currentWindowState = useAppStore((state) =>
-    instanceId ? state.instances[instanceId] : state.apps["applet-viewer"]
+    instanceId ? state.instances[instanceId] : undefined
   );
 
   const appliedInitialSizeRef = useRef(false);

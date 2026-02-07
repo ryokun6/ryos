@@ -22,7 +22,6 @@ export const useWindowManager = ({
   instanceId,
 }: UseWindowManagerProps) => {
   // Fetch the persisted window state from the global app store
-  const appStateFromStore = useAppStore((state) => state.apps[appId]);
   const instanceStateFromStore = useAppStore((state) =>
     instanceId ? state.instances[instanceId] : null
   );
@@ -54,7 +53,7 @@ export const useWindowManager = ({
   };
 
   // Use instance state if available, otherwise fall back to app state
-  const stateSource = instanceStateFromStore || appStateFromStore;
+  const stateSource = instanceStateFromStore;
 
   const initialState = {
     position: stateSource?.position ?? computeDefaultWindowState().position,
@@ -93,13 +92,32 @@ export const useWindowManager = ({
 
   const isMobile = window.innerWidth < 768;
 
-  // Sync local state with store when store changes (for programmatic resizes)
+  // Sync local state with store when store changes (for programmatic updates)
   useEffect(() => {
-    const storeSize = instanceStateFromStore?.size || appStateFromStore?.size;
-    if (storeSize && (storeSize.width !== windowSize.width || storeSize.height !== windowSize.height)) {
+    const storeSize = instanceStateFromStore?.size;
+    if (
+      storeSize &&
+      !isDragging &&
+      !resizeType &&
+      (storeSize.width !== windowSize.width ||
+        storeSize.height !== windowSize.height)
+    ) {
       setWindowSize(storeSize);
     }
-  }, [instanceStateFromStore?.size, appStateFromStore?.size]);
+  }, [instanceStateFromStore?.size, isDragging, resizeType, windowSize]);
+
+  useEffect(() => {
+    const storePosition = instanceStateFromStore?.position;
+    if (
+      storePosition &&
+      !isDragging &&
+      !resizeType &&
+      (storePosition.x !== windowPosition.x ||
+        storePosition.y !== windowPosition.y)
+    ) {
+      setWindowPosition(storePosition);
+    }
+  }, [instanceStateFromStore?.position, isDragging, resizeType, windowPosition]);
 
   const { play: playMoveSound, stop: stopMoveMoving } = useSound(Sounds.WINDOW_MOVE_MOVING);
   const { play: playMoveStop } = useSound(Sounds.WINDOW_MOVE_STOP);
@@ -110,7 +128,6 @@ export const useWindowManager = ({
   const isMovePlayingRef = useRef(false);
   const isResizePlayingRef = useRef(false);
 
-  const updateWindowState = useAppStore((state) => state.updateWindowState);
   const updateInstanceWindowState = useAppStore(
     (state) => state.updateInstanceWindowState
   );
@@ -139,16 +156,10 @@ export const useWindowManager = ({
           width: windowSize.width,
           height: newHeight,
         });
-      } else {
-        updateWindowState(appId, windowPosition, {
-          width: windowSize.width,
-          height: newHeight,
-        });
       }
     },
     [
       computeInsets,
-      updateWindowState,
       updateInstanceWindowState,
       appId,
       instanceId,
@@ -378,16 +389,12 @@ export const useWindowManager = ({
 
         if (instanceId) {
           updateInstanceWindowState(instanceId, newPosition, newSize);
-        } else {
-          updateWindowState(appId, newPosition, newSize);
         }
 
         setSnapZone(null);
       } else {
         if (instanceId) {
           updateInstanceWindowState(instanceId, windowPosition, windowSize);
-        } else {
-          updateWindowState(appId, windowPosition, windowSize);
         }
       }
 
@@ -402,8 +409,6 @@ export const useWindowManager = ({
       setResizeType("");
       if (instanceId) {
         updateInstanceWindowState(instanceId, windowPosition, windowSize);
-      } else {
-        updateWindowState(appId, windowPosition, windowSize);
       }
       // Stop resize sound and play stop sound
       if (isResizePlayingRef.current) {
@@ -421,7 +426,6 @@ export const useWindowManager = ({
     windowSize,
     instanceId,
     updateInstanceWindowState,
-    updateWindowState,
     appId,
     stopMoveMoving,
     playMoveStop,

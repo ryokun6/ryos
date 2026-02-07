@@ -143,5 +143,5 @@ registerToolHandler("karaokeControl", handleKaraokeControl);
 registerToolHandler("stickiesControl", handleStickiesControl);
 registerToolHandler("infiniteMacControl", handleInfiniteMacControl);
 
-// Note: launchApp and closeApp handlers require additional context (closeAppLegacy)
+// Note: launchApp and closeApp handlers require additional context
 // so they are called directly from useAiChat rather than through the registry

@@ -175,13 +175,17 @@ export function useIpodLogic({
   );
 
   const prevIsForeground = useRef(isForeground);
-  const { bringToForeground, clearIpodInitialData, instances, restoreInstance } =
-    useAppStoreShallow((state) => ({
-      bringToForeground: state.bringToForeground,
-      clearIpodInitialData: state.clearInstanceInitialData,
-      instances: state.instances,
-      restoreInstance: state.restoreInstance,
-    }));
+  const {
+    bringInstanceToForeground,
+    clearIpodInitialData,
+    instances,
+    restoreInstance,
+  } = useAppStoreShallow((state) => ({
+    bringInstanceToForeground: state.bringInstanceToForeground,
+    clearIpodInitialData: state.clearInstanceInitialData,
+    instances: state.instances,
+    restoreInstance: state.restoreInstance,
+  }));
 
   const isMinimized = instanceId
     ? instances[instanceId]?.isMinimized ?? false
@@ -902,15 +906,22 @@ export function useIpodLogic({
   // Update app event handling
   useCustomEventListener<{
     appId: string;
+    instanceId?: string;
     initialData?: { videoId?: string };
   }>(
     "updateApp",
     (event) => {
-      if (event.detail.appId === "ipod" && event.detail.initialData?.videoId) {
+      if (
+        event.detail.appId === "ipod" &&
+        event.detail.initialData?.videoId &&
+        (!event.detail.instanceId || event.detail.instanceId === instanceId)
+      ) {
         if (lastProcessedInitialDataRef.current === event.detail.initialData) return;
 
         const videoId = event.detail.initialData.videoId;
-        bringToForeground("ipod");
+        if (instanceId) {
+          bringInstanceToForeground(instanceId);
+        }
         processVideoId(videoId).catch((error) => {
           console.error(`Error processing videoId ${videoId}:`, error);
           toast.error("Failed to load shared track", {

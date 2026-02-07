@@ -55,7 +55,9 @@ export function useVideosLogic({
   const setIsPlaying = useVideoStore((s) => s.setIsPlaying);
 
   // App store hooks
-  const bringToForeground = useAppStore((state) => state.bringToForeground);
+  const bringInstanceToForeground = useAppStore(
+    (state) => state.bringInstanceToForeground
+  );
   const clearInstanceInitialData = useAppStore(
     (state) => state.clearInstanceInitialData
   );
@@ -776,12 +778,17 @@ export function useVideosLogic({
   ]);
 
   // Effect for updateApp event (when app is already open)
-  useCustomEventListener<{ appId: string; initialData?: { videoId?: string } }>(
+  useCustomEventListener<{
+    appId: string;
+    instanceId?: string;
+    initialData?: { videoId?: string };
+  }>(
     "updateApp",
     (event) => {
       if (
         event.detail.appId === "videos" &&
-        event.detail.initialData?.videoId
+        event.detail.initialData?.videoId &&
+        (!event.detail.instanceId || event.detail.instanceId === instanceId)
       ) {
         // Skip if this videoId has already been processed
         if (
@@ -792,7 +799,9 @@ export function useVideosLogic({
         console.log(
           `[Videos] Received updateApp event with videoId: ${videoId}`
         );
-        bringToForeground("videos");
+        if (instanceId) {
+          bringInstanceToForeground(instanceId);
+        }
         toast.info(sharedVideoToastContent());
         processVideoId(videoId).catch((error) => {
           console.error(

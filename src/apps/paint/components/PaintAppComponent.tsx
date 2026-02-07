@@ -69,7 +69,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
     handleContentChange,
     handleApplyFilter,
     handleCanvasRef,
-  } = usePaintLogic({ initialData });
+  } = usePaintLogic({ initialData, instanceId });
 
   const menuBar = (
     <PaintMenuBar

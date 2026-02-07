@@ -189,8 +189,6 @@ const getSystemState = () => {
   }
 
   return {
-    // Keep legacy apps for backward compatibility, but mark that instances are preferred
-    apps: appStore.apps,
     username,
     userOS,
     userLocalTime: {
@@ -341,7 +339,9 @@ export const useTerminalLogic = ({
   });
 
   const launchApp = useLaunchApp();
-  const bringToForeground = useAppStore((state) => state.bringToForeground);
+  const bringInstanceToForeground = useAppStore(
+    (state) => state.bringInstanceToForeground
+  );
 
   const {
     playCommandSound,
@@ -1620,7 +1620,7 @@ export const useTerminalLogic = ({
     playElevatorMusic,
     stopElevatorMusic,
     playDingSound,
-    bringToForeground,
+    bringInstanceToForeground,
     handleClearTerminal,
     isXpTheme,
     shouldApplyMarkdown,

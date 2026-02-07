@@ -267,7 +267,7 @@ export function InternetExplorerAppComponent({
     setUrl,
     setLanguage,
     setLocation,
-    bringToForeground,
+    bringInstanceToForeground,
     t,
   } = useInternetExplorerLogic({
     isWindowOpen,
@@ -952,12 +952,12 @@ export function InternetExplorerAppComponent({
               {!isForeground && (
                 <div
                   className="absolute inset-0 bg-transparent z-50"
-                  onClick={() => bringToForeground("internet-explorer")}
-                  onMouseDown={() => bringToForeground("internet-explorer")}
-                  onTouchStart={() => bringToForeground("internet-explorer")}
-                  onWheel={() => bringToForeground("internet-explorer")}
-                  onDragStart={() => bringToForeground("internet-explorer")}
-                  onKeyDown={() => bringToForeground("internet-explorer")}
+                  onClick={() => bringInstanceToForeground(instanceId)}
+                  onMouseDown={() => bringInstanceToForeground(instanceId)}
+                  onTouchStart={() => bringInstanceToForeground(instanceId)}
+                  onWheel={() => bringInstanceToForeground(instanceId)}
+                  onDragStart={() => bringInstanceToForeground(instanceId)}
+                  onKeyDown={() => bringInstanceToForeground(instanceId)}
                 />
               )}
 
