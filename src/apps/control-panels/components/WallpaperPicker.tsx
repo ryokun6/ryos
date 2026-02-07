@@ -211,26 +211,45 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
 
   // Load custom wallpapers from IndexedDB (just the references)
   useEffect(() => {
+    let isActive = true;
+
     const fetchCustomWallpapers = async () => {
       try {
         const refs = await loadCustomWallpapers();
+        if (!isActive) return;
+
         setCustomWallpaperRefs(refs);
 
-        // Load preview data for each reference
-        const previews: Record<string, string> = {};
-        for (const ref of refs) {
-          const data = await getWallpaperData(ref);
-          if (data) {
-            previews[ref] = data;
-          }
-        }
+        // Load preview data in parallel
+        const previewEntries = await Promise.all(
+          refs.map(async (ref) => {
+            const data = await getWallpaperData(ref);
+            return data ? ([ref, data] as const) : null;
+          })
+        );
+
+        if (!isActive) return;
+
+        const previews = Object.fromEntries(
+          previewEntries.filter(
+            (
+              entry
+            ): entry is readonly [string, string] => entry !== null
+          )
+        ) as Record<string, string>;
+
         setCustomWallpaperPreviews(previews);
       } catch (error) {
+        if (!isActive) return;
         console.error("Error fetching custom wallpapers:", error);
       }
     };
 
     fetchCustomWallpapers();
+
+    return () => {
+      isActive = false;
+    };
   }, [loadCustomWallpapers, getWallpaperData, INDEXEDDB_PREFIX]);
 
   const handleWallpaperSelect = (path: string) => {
@@ -262,18 +281,20 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
       const refs = await loadCustomWallpapers();
       setCustomWallpaperRefs(refs);
 
-      // Load preview for the new wallpaper
-      for (const ref of refs) {
-        if (!customWallpaperPreviews[ref]) {
+      // Refresh previews in one batch to avoid sequential requests and rerenders
+      const previewEntries = await Promise.all(
+        refs.map(async (ref) => {
           const data = await getWallpaperData(ref);
-          if (data) {
-            setCustomWallpaperPreviews((prev) => ({
-              ...prev,
-              [ref]: data,
-            }));
-          }
-        }
-      }
+          return data ? ([ref, data] as const) : null;
+        })
+      );
+
+      const previews = Object.fromEntries(
+        previewEntries.filter(
+          (entry): entry is readonly [string, string] => entry !== null
+        )
+      ) as Record<string, string>;
+      setCustomWallpaperPreviews(previews);
 
       // Switch to custom category
       setSelectedCategory("custom");
