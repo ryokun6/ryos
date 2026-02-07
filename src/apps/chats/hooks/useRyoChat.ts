@@ -10,6 +10,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { getApiUrl } from "@/utils/platform";
 import { useChatsStoreShallow } from "@/stores/helpers";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 // Helper function to get system state for AI chat
 const getSystemState = () => {
@@ -165,15 +166,22 @@ export function useRyoChat({
         headers["X-Username"] = username;
       }
 
-      await fetch(getApiUrl("/api/ai/ryo-reply"), {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          roomId: currentRoomId,
-          prompt: messageContent,
-          systemState: systemStateWithChat,
-        }),
-      });
+      if (!currentRoomId) return;
+      try {
+        await abortableFetch(getApiUrl("/api/ai/ryo-reply"), {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            roomId: currentRoomId,
+            prompt: messageContent,
+            systemState: systemStateWithChat,
+          }),
+          timeout: 20000,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
+        });
+      } catch (error) {
+        console.error("[RyoChat] Failed to request @ryo reply:", error);
+      }
 
       onScrollToBottom();
     },
