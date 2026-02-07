@@ -46,120 +46,126 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const redis = createPushRedis();
-  const { username, token } = extractAuthFromHeaders(req.headers);
-  if (!username || !token) {
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - missing credentials" });
-  }
-
-  const authResult = await validateAuth(redis, username, token, {
-    allowExpired: false,
-  });
-  if (!authResult.valid || authResult.expired) {
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - invalid token" });
-  }
-
-  const parsedPayload = normalizeUnregisterPushPayload(req.body);
-  if (!parsedPayload.ok) {
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: parsedPayload.error });
-  }
-
-  const { token: pushToken } = parsedPayload.value;
-  const userTokensKey = getUserTokensKey(username);
-
-  if (pushToken) {
-    const tokenMetaKey = getTokenMetaKey(pushToken);
-    const tokenMeta = await redis.get<Partial<PushTokenMetadata> | null>(tokenMetaKey);
-    const metadataBelongsToUser = extractTokenMetadataOwner(tokenMeta) === username;
-
-    const removedFromUserSet = await redis.srem(userTokensKey, pushToken);
-    let removedMetadataCount = 0;
-    if (metadataBelongsToUser) {
-      removedMetadataCount = await redis.del(tokenMetaKey);
+  try {
+    const redis = createPushRedis();
+    const { username, token } = extractAuthFromHeaders(req.headers);
+    if (!username || !token) {
+      logger.response(401, Date.now() - startTime);
+      return res.status(401).json({ error: "Unauthorized - missing credentials" });
     }
 
-    logger.info("Unregistered push token", {
-      username,
-      tokenSuffix: pushToken.slice(-8),
-      removedFromUserSet,
-      removedMetadataCount,
+    const authResult = await validateAuth(redis, username, token, {
+      allowExpired: false,
     });
-    logger.response(200, Date.now() - startTime);
-    return res.status(200).json({
-      success: true,
-      removed: removedFromUserSet,
-      metadataRemoved: removedMetadataCount,
-      invalidStoredTokensRemoved: 0,
-    });
-  }
-
-  const rawUserTokens = await redis.smembers<unknown[]>(userTokensKey);
-  const {
-    validTokens: userTokens,
-    invalidTokensToRemove: invalidStoredTokens,
-    skippedNonStringCount: skippedNonStringTokenCount,
-  } = parseStoredPushTokens(rawUserTokens);
-
-  if (invalidStoredTokens.length > 0) {
-    const cleanupPipeline = redis.pipeline();
-    for (const invalidToken of invalidStoredTokens) {
-      cleanupPipeline.srem(userTokensKey, invalidToken);
+    if (!authResult.valid || authResult.expired) {
+      logger.response(401, Date.now() - startTime);
+      return res.status(401).json({ error: "Unauthorized - invalid token" });
     }
-    await cleanupPipeline.exec();
-  }
 
-  if (invalidStoredTokens.length > 0 || skippedNonStringTokenCount > 0) {
-    logger.warn("Cleaned invalid stored push tokens during unregister", {
+    const parsedPayload = normalizeUnregisterPushPayload(req.body);
+    if (!parsedPayload.ok) {
+      logger.response(400, Date.now() - startTime);
+      return res.status(400).json({ error: parsedPayload.error });
+    }
+
+    const { token: pushToken } = parsedPayload.value;
+    const userTokensKey = getUserTokensKey(username);
+
+    if (pushToken) {
+      const tokenMetaKey = getTokenMetaKey(pushToken);
+      const tokenMeta = await redis.get<Partial<PushTokenMetadata> | null>(tokenMetaKey);
+      const metadataBelongsToUser = extractTokenMetadataOwner(tokenMeta) === username;
+
+      const removedFromUserSet = await redis.srem(userTokensKey, pushToken);
+      let removedMetadataCount = 0;
+      if (metadataBelongsToUser) {
+        removedMetadataCount = await redis.del(tokenMetaKey);
+      }
+
+      logger.info("Unregistered push token", {
+        username,
+        tokenSuffix: pushToken.slice(-8),
+        removedFromUserSet,
+        removedMetadataCount,
+      });
+      logger.response(200, Date.now() - startTime);
+      return res.status(200).json({
+        success: true,
+        removed: removedFromUserSet,
+        metadataRemoved: removedMetadataCount,
+        invalidStoredTokensRemoved: 0,
+      });
+    }
+
+    const rawUserTokens = await redis.smembers<unknown[]>(userTokensKey);
+    const {
+      validTokens: userTokens,
+      invalidTokensToRemove: invalidStoredTokens,
+      skippedNonStringCount: skippedNonStringTokenCount,
+    } = parseStoredPushTokens(rawUserTokens);
+
+    if (invalidStoredTokens.length > 0) {
+      const cleanupPipeline = redis.pipeline();
+      for (const invalidToken of invalidStoredTokens) {
+        cleanupPipeline.srem(userTokensKey, invalidToken);
+      }
+      await cleanupPipeline.exec();
+    }
+
+    if (invalidStoredTokens.length > 0 || skippedNonStringTokenCount > 0) {
+      logger.warn("Cleaned invalid stored push tokens during unregister", {
+        username,
+        invalidStoredTokensRemoved: invalidStoredTokens.length,
+        skippedNonStringTokenCount,
+      });
+    }
+
+    if (userTokens.length === 0) {
+      logger.response(200, Date.now() - startTime);
+      return res.status(200).json({
+        success: true,
+        removed: invalidStoredTokens.length,
+        metadataRemoved: 0,
+        invalidStoredTokensRemoved: invalidStoredTokens.length,
+      });
+    }
+
+    await redis.del(userTokensKey);
+
+    const tokenOwnership = await getTokenOwnershipEntries(
+      redis,
       username,
+      userTokens,
+      TOKEN_METADATA_LOOKUP_CONCURRENCY
+    );
+    const { ownedTokens } = splitTokenOwnership(tokenOwnership);
+
+    if (ownedTokens.length > 0) {
+      const pipeline = redis.pipeline();
+      for (const ownedToken of ownedTokens) {
+        pipeline.del(getTokenMetaKey(ownedToken));
+      }
+      await pipeline.exec();
+    }
+
+    logger.info("Unregistered all push tokens for user", {
+      username,
+      removed: userTokens.length + invalidStoredTokens.length,
+      removedMetadata: ownedTokens.length,
       invalidStoredTokensRemoved: invalidStoredTokens.length,
       skippedNonStringTokenCount,
     });
-  }
-
-  if (userTokens.length === 0) {
     logger.response(200, Date.now() - startTime);
+
     return res.status(200).json({
       success: true,
-      removed: invalidStoredTokens.length,
-      metadataRemoved: 0,
+      removed: userTokens.length + invalidStoredTokens.length,
+      metadataRemoved: ownedTokens.length,
       invalidStoredTokensRemoved: invalidStoredTokens.length,
     });
+  } catch (error) {
+    logger.error("Unexpected error in push unregister handler", error);
+    logger.response(500, Date.now() - startTime);
+    return res.status(500).json({ error: "Internal server error" });
   }
-
-  await redis.del(userTokensKey);
-
-  const tokenOwnership = await getTokenOwnershipEntries(
-    redis,
-    username,
-    userTokens,
-    TOKEN_METADATA_LOOKUP_CONCURRENCY
-  );
-  const { ownedTokens } = splitTokenOwnership(tokenOwnership);
-
-  if (ownedTokens.length > 0) {
-    const pipeline = redis.pipeline();
-    for (const ownedToken of ownedTokens) {
-      pipeline.del(getTokenMetaKey(ownedToken));
-    }
-    await pipeline.exec();
-  }
-
-  logger.info("Unregistered all push tokens for user", {
-    username,
-    removed: userTokens.length + invalidStoredTokens.length,
-    removedMetadata: ownedTokens.length,
-    invalidStoredTokensRemoved: invalidStoredTokens.length,
-    skippedNonStringTokenCount,
-  });
-  logger.response(200, Date.now() - startTime);
-
-  return res.status(200).json({
-    success: true,
-    removed: userTokens.length + invalidStoredTokens.length,
-    metadataRemoved: ownedTokens.length,
-    invalidStoredTokensRemoved: invalidStoredTokens.length,
-  });
 }

@@ -45,57 +45,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const redis = createPushRedis();
-  const { username, token } = extractAuthFromHeaders(req.headers);
-  if (!username || !token) {
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - missing credentials" });
+  try {
+    const redis = createPushRedis();
+    const { username, token } = extractAuthFromHeaders(req.headers);
+    if (!username || !token) {
+      logger.response(401, Date.now() - startTime);
+      return res.status(401).json({ error: "Unauthorized - missing credentials" });
+    }
+
+    const authResult = await validateAuth(redis, username, token, {
+      allowExpired: false,
+    });
+    if (!authResult.valid || authResult.expired) {
+      logger.response(401, Date.now() - startTime);
+      return res.status(401).json({ error: "Unauthorized - invalid token" });
+    }
+
+    const parsedPayload = normalizeRegisterPushPayload(req.body);
+    if (!parsedPayload.ok) {
+      logger.response(400, Date.now() - startTime);
+      return res.status(400).json({ error: parsedPayload.error });
+    }
+    const { token: pushToken, platform } = parsedPayload.value;
+
+    const tokenMetaKey = getTokenMetaKey(pushToken);
+    const existingMeta = await redis.get<Partial<PushTokenMetadata> | null>(tokenMetaKey);
+    const previousUsername = extractTokenMetadataOwner(existingMeta);
+
+    const now = Date.now();
+    const metadata: PushTokenMetadata = {
+      username,
+      platform,
+      updatedAt: now,
+    };
+    const pipeline = redis.pipeline();
+    if (previousUsername && previousUsername !== username) {
+      pipeline.srem(getUserTokensKey(previousUsername), pushToken);
+    }
+    pipeline.sadd(getUserTokensKey(username), pushToken);
+    pipeline.set(tokenMetaKey, metadata, { ex: PUSH_TOKEN_TTL_SECONDS });
+    await pipeline.exec();
+
+    logger.info("Registered push token", {
+      username,
+      platform,
+      tokenSuffix: pushToken.slice(-8),
+      transferredFromUser: previousUsername && previousUsername !== username ? previousUsername : null,
+    });
+    logger.response(200, Date.now() - startTime);
+
+    return res.status(200).json({
+      success: true,
+      token: pushToken,
+      platform,
+    });
+  } catch (error) {
+    logger.error("Unexpected error in push register handler", error);
+    logger.response(500, Date.now() - startTime);
+    return res.status(500).json({ error: "Internal server error" });
   }
-
-  const authResult = await validateAuth(redis, username, token, {
-    allowExpired: false,
-  });
-  if (!authResult.valid || authResult.expired) {
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - invalid token" });
-  }
-
-  const parsedPayload = normalizeRegisterPushPayload(req.body);
-  if (!parsedPayload.ok) {
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: parsedPayload.error });
-  }
-  const { token: pushToken, platform } = parsedPayload.value;
-
-  const tokenMetaKey = getTokenMetaKey(pushToken);
-  const existingMeta = await redis.get<Partial<PushTokenMetadata> | null>(tokenMetaKey);
-  const previousUsername = extractTokenMetadataOwner(existingMeta);
-
-  const now = Date.now();
-  const metadata: PushTokenMetadata = {
-    username,
-    platform,
-    updatedAt: now,
-  };
-  const pipeline = redis.pipeline();
-  if (previousUsername && previousUsername !== username) {
-    pipeline.srem(getUserTokensKey(previousUsername), pushToken);
-  }
-  pipeline.sadd(getUserTokensKey(username), pushToken);
-  pipeline.set(tokenMetaKey, metadata, { ex: PUSH_TOKEN_TTL_SECONDS });
-  await pipeline.exec();
-
-  logger.info("Registered push token", {
-    username,
-    platform,
-    tokenSuffix: pushToken.slice(-8),
-    transferredFromUser: previousUsername && previousUsername !== username ? previousUsername : null,
-  });
-  logger.response(200, Date.now() - startTime);
-
-  return res.status(200).json({
-    success: true,
-    token: pushToken,
-    platform,
-  });
 }
