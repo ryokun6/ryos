@@ -29,6 +29,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import EmojiAquarium from "@/components/shared/EmojiAquarium";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -533,16 +534,13 @@ function ChatMessagesContent({
       headers["X-Username"] = username;
     }
 
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => {
-      controller.abort();
-    }, 10000);
-
     try {
-      const res = await fetch(url, {
+      const res = await abortableFetch(url, {
         method: "DELETE",
         headers,
-        signal: controller.signal,
+        timeout: 10000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
       if (res.ok) {
         // Use the actual server message ID for local removal to match store expectations
@@ -572,8 +570,6 @@ function ChatMessagesContent({
         return;
       }
       console.error("Error deleting message", err);
-    } finally {
-      window.clearTimeout(timeoutId);
     }
   };
 

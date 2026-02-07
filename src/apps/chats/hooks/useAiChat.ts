@@ -2170,7 +2170,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       console.log("[clearChats] Triggering async memory extraction...");
       
       // Fire and forget - don't await, don't block the UI
-      fetch(getApiUrl("/api/ai/extract-memories"), {
+      abortableFetch(getApiUrl("/api/ai/extract-memories"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2183,6 +2183,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             parts: msg.parts,
           })),
         }),
+        timeout: 15000,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
       })
         .then(res => res.json())
         .then(data => {
