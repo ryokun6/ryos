@@ -13,6 +13,7 @@
   "permissions": [
     "core:default",
     "shell:allow-open",
+    "ios-push:default",
     "core:window:allow-start-dragging",
     "core:window:allow-toggle-maximize"
   ]

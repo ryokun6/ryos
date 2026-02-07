@@ -1,0 +1,21 @@
+[package]
+name = "tauri-plugin-ios-push"
+version = "0.1.0"
+authors = ["ryo"]
+description = "iOS remote push notification bridge for ryOS Tauri wrapper"
+license = "MIT"
+edition = "2021"
+rust-version = "1.77.2"
+exclude = ["/examples", "/dist-js", "/guest-js", "/node_modules"]
+links = "tauri-plugin-ios-push"
+
+[dependencies]
+tauri = { version = "2.9.4", default-features = false }
+serde = "1.0"
+thiserror = "2"
+
+[build-dependencies]
+tauri-plugin = { version = "2.2.0", features = ["build"] }
+
+[package.metadata.tauri-plugin]
+ios-src = "ios"

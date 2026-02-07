@@ -16,6 +16,7 @@ tauri-build = { version = "2.0", features = [] }
 tauri = { version = "2.0", features = [] }
 tauri-plugin-shell = "2.0"
 tauri-plugin-localhost = "2.0"
+tauri-plugin-ios-push = { path = "plugins/tauri-plugin-ios-push" }
 
 [features]
 # This feature is used for production builds or when `devPath` points to the filesystem

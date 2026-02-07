@@ -1,0 +1,13 @@
+[default]
+description = "Default permissions for the ios-push plugin"
+permissions = ["allow-request-push-permission", "allow-get-push-token"]
+
+[[permission]]
+identifier = "allow-request-push-permission"
+description = "Allows requesting iOS push notification permission"
+commands.allow = ["request_push_permission"]
+
+[[permission]]
+identifier = "allow-get-push-token"
+description = "Allows retrieving the iOS APNs push token"
+commands.allow = ["get_push_token"]
