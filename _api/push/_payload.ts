@@ -4,6 +4,7 @@ import {
   isPlainObject,
   isValidPushToken,
 } from "./_shared.js";
+import type { ValidationResult } from "./_validation.js";
 
 export const DEFAULT_PUSH_TEST_TITLE = "ryOS test notification";
 export const DEFAULT_PUSH_TEST_BODY = "Push notifications are working 🎉";
@@ -21,18 +22,6 @@ export interface NormalizedPushTestPayload {
   badge?: number;
   sound?: string;
 }
-
-export interface ValidationResultSuccess<T> {
-  ok: true;
-  value: T;
-}
-
-export interface ValidationResultError {
-  ok: false;
-  error: string;
-}
-
-export type ValidationResult<T> = ValidationResultSuccess<T> | ValidationResultError;
 
 export function normalizePushTestPayload(
   rawBody: unknown
