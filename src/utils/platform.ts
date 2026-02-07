@@ -17,6 +17,30 @@ export function isWeb(): boolean {
 }
 
 /**
+ * Check if the current user agent is iOS/iPadOS.
+ */
+export function isIOSPlatform(): boolean {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+
+  const userAgent = navigator.userAgent;
+  const platform = navigator.platform || "";
+
+  return (
+    /iPad|iPhone|iPod/.test(userAgent) ||
+    (platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
+/**
+ * Check if the app is running inside a Tauri iOS wrapper.
+ */
+export function isTauriIOS(): boolean {
+  return isTauri() && isIOSPlatform();
+}
+
+/**
  * Get the API base URL.
  * In Tauri (desktop app), returns the production API URL.
  * In web browser, returns empty string for relative paths.

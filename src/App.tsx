@@ -11,6 +11,7 @@ import { AnyApp } from "./apps/base/types";
 import { useThemeStore } from "./stores/useThemeStore";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useOffline } from "./hooks/useOffline";
+import { useTauriPushNotifications } from "./hooks/useTauriPushNotifications";
 import { useTranslation } from "react-i18next";
 import { isTauri } from "./utils/platform";
 import { checkDesktopUpdate, onDesktopUpdate, DesktopUpdateResult } from "./utils/prefetch";
@@ -34,6 +35,8 @@ export function App() {
   const isMobile = useIsMobile();
   // Initialize offline detection
   useOffline();
+  // Initialize iOS push bridge when running in Tauri iOS
+  useTauriPushNotifications();
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
