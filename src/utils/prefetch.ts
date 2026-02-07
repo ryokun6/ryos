@@ -19,6 +19,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { setNextBootMessage } from "@/utils/bootMessage";
 import i18n from "@/lib/i18n";
 import { getApiUrl, isTauri } from "@/utils/platform";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 // Storage key for manifest timestamp (for cache invalidation)
 const MANIFEST_KEY = 'ryos:manifest-timestamp';
@@ -130,12 +131,15 @@ async function fetchServerVersion(forceRemote: boolean = false): Promise<ServerV
     // Use getApiUrl() which returns the production URL in Tauri.
     const url = forceRemote || isTauri() ? getApiUrl('/version.json') : '/version.json';
     
-    const response = await fetch(url, { 
+    const response = await abortableFetch(url, { 
       cache: 'no-store',
       headers: {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache',
-      }
+      },
+      timeout: 15000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
     });
     
     if (!response.ok) {
@@ -569,12 +573,15 @@ async function prefetchUrlsWithProgress(
   const results = await Promise.allSettled(
     urls.map(async (url) => {
       try {
-        await fetch(url, { 
+        await abortableFetch(url, { 
           method: 'GET',
           // Use 'reload' when skipCache is true (e.g., after cache clear on updates)
           // to bypass browser HTTP cache and fetch fresh from network.
           // Otherwise use 'default' to let browser decide (respects cache headers).
           cache: options?.skipCache ? 'reload' : 'default',
+          timeout: 15000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         });
         completed++;
         onProgress(completed, total);
@@ -601,7 +608,12 @@ interface IconManifest {
  */
 async function fetchIconManifest(): Promise<IconManifest | null> {
   try {
-    const response = await fetch('/icons/manifest.json');
+    const response = await abortableFetch('/icons/manifest.json', {
+      method: 'GET',
+      timeout: 15000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
+    });
     if (!response.ok) return null;
     return await response.json();
   } catch (error) {
@@ -684,7 +696,12 @@ async function clearAllCaches(): Promise<void> {
 async function discoverAllJsChunks(): Promise<string[]> {
   try {
     // First, get the main bundle URL from index.html
-    const indexResponse = await fetch('/index.html');
+    const indexResponse = await abortableFetch('/index.html', {
+      method: 'GET',
+      timeout: 15000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
+    });
     if (!indexResponse.ok) return [];
     
     const html = await indexResponse.text();
@@ -702,7 +719,12 @@ async function discoverAllJsChunks(): Promise<string[]> {
     }
     
     // Fetch the main bundle to find dynamic import URLs
-    const bundleResponse = await fetch(mainBundleMatch[0]);
+    const bundleResponse = await abortableFetch(mainBundleMatch[0], {
+      method: 'GET',
+      timeout: 15000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
+    });
     if (!bundleResponse.ok) return [];
     
     const bundleCode = await bundleResponse.text();
