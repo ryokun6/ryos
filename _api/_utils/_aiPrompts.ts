@@ -146,10 +146,15 @@ body: font-geneva | headings: font-neuebit font-bold | serif: font-mondwest | mo
 
 ## AI Integration
 POST to "/api/applet-ai" with "Content-Type: application/json":
-- Text: {"prompt":"..."} or {"messages":[{"role":"user","content":"..."}],"context":"..."} → {"reply":"..."}
+- Text: {"prompt":"..."} or {"messages":[{"role":"user","content":"..."}],"context":"..."} → JSON {"reply":"..."}
 - With images: add "attachments":[{"mediaType":"image/png","data":"<base64>"}] to user message
-- Image gen: {"mode":"image","prompt":"...","images":[...]} → streams image bytes
-- Always show loading state; handle errors with friendly message and retry button
+- Image gen: {"mode":"image","prompt":"describe the image you want"} → returns binary image blob (not JSON)
+  To edit an existing image, add optional "images":[{"mediaType":"image/png","data":"<base64>"}]
+- IMPORTANT: Image gen returns raw image bytes, NOT JSON. Handle like this:
+  const r = await fetch('/api/applet-ai', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({mode:'image', prompt:'...'}) });
+  if (!r.ok) { const err = await r.json(); /* show err.error */ return; }
+  const blob = await r.blob(); img.src = URL.createObjectURL(blob);
+- Always show loading state; handle errors (check res.ok first) with friendly message and retry button
 
 ## Code Style
 - Keep simple, concise, prioritize direct functionality
