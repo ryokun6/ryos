@@ -868,6 +868,23 @@ export const useChatsStore = create<ChatsStoreState>()(
           // Inform server to invalidate current token if we have auth
           if (currentUsername && currentToken) {
             try {
+              await fetch(getApiUrl("/api/push/unregister"), {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${currentToken}`,
+                  "X-Username": currentUsername,
+                },
+                body: JSON.stringify({}),
+              });
+            } catch (err) {
+              console.warn(
+                "[ChatsStore] Failed to unregister push tokens during logout:",
+                err
+              );
+            }
+
+            try {
               await fetch(getApiUrl("/api/auth/logout"), {
                 method: "POST",
                 headers: {
