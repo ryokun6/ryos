@@ -89,6 +89,14 @@ async function testTrimsOptionalFields() {
 }
 
 async function testRejectsInvalidTokenAndBadge() {
+  const blankToken = normalizePushTestPayload({
+    token: "   ",
+  });
+  assertEq(blankToken.ok, false);
+  if (!blankToken.ok) {
+    assertEq(blankToken.error, "Invalid push token format");
+  }
+
   const invalidToken = normalizePushTestPayload({
     token: "short",
   });

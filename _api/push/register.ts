@@ -87,8 +87,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Unsupported push platform" });
   }
 
+  const hasTokenField = Object.prototype.hasOwnProperty.call(body, "token");
   const pushToken = getOptionalTrimmedString(body.token);
   const platform = (body.platform as PushPlatform | undefined) ?? "ios";
+
+  if (hasTokenField && typeof body.token === "string" && !pushToken) {
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: "Push token is required" });
+  }
 
   if (!pushToken) {
     logger.response(400, Date.now() - startTime);

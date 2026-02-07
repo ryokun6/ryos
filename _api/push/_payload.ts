@@ -75,6 +75,7 @@ export function normalizePushTestPayload(
 
   const title = getOptionalTrimmedString(body.title) ?? DEFAULT_PUSH_TEST_TITLE;
   const message = getOptionalTrimmedString(body.body) ?? DEFAULT_PUSH_TEST_BODY;
+  const hasTokenField = Object.prototype.hasOwnProperty.call(body, "token");
   const token = getOptionalTrimmedString(body.token);
   const sound = getOptionalTrimmedString(body.sound);
 
@@ -89,6 +90,13 @@ export function normalizePushTestPayload(
     return {
       ok: false,
       error: `Notification body is too long (max ${MAX_PUSH_BODY_LENGTH} characters)`,
+    };
+  }
+
+  if (hasTokenField && typeof body.token === "string" && !token) {
+    return {
+      ok: false,
+      error: "Invalid push token format",
     };
   }
 
