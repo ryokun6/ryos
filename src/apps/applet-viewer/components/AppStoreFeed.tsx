@@ -114,7 +114,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
               authToken: authToken ?? null,
             },
           },
-          "*"
+          window.location.origin
         );
       } catch (error) {
         console.warn("[AppStoreFeed] Failed to post auth payload:", error);
@@ -132,6 +132,10 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
         data.type !== APPLET_AUTH_MESSAGE_TYPE ||
         data.action !== "request"
       ) {
+        return;
+      }
+
+      if (event.origin !== window.location.origin) {
         return;
       }
 

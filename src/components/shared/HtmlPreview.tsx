@@ -223,7 +223,7 @@ export default function HtmlPreview({
               authToken: authToken ?? null,
             },
           },
-          "*"
+          window.location.origin
         );
       } catch (error) {
         console.warn("[applet-html-preview] Failed to post auth payload:", error);
@@ -260,6 +260,10 @@ export default function HtmlPreview({
         data.type !== APPLET_AUTH_MESSAGE_TYPE ||
         data.action !== "request"
       ) {
+        return;
+      }
+
+      if (event.origin !== window.location.origin) {
         return;
       }
 
@@ -437,7 +441,7 @@ export default function HtmlPreview({
             // Resolve relative URLs against the document's base URI (if set) or window location
             const absoluteUrl = new URL(targetElement.getAttribute('href'), document.baseURI || window.location.href).href;
             // Use a specific message type for AI HTML navigation
-            window.parent.postMessage({ type: 'aiHtmlNavigation', url: absoluteUrl }, '*');
+            window.parent.postMessage({ type: 'aiHtmlNavigation', url: absoluteUrl }, window.location.origin);
             console.log('Intercepted link click:', absoluteUrl);
           } catch (e) { console.error("Error resolving/posting URL:", e); }
         }
@@ -457,7 +461,7 @@ export default function HtmlPreview({
             // Resolve relative URLs against the document's base URI (if set) or window location
             const absoluteUrl = new URL(targetElement.getAttribute('href'), document.baseURI || window.location.href).href;
             // Use a specific message type for AI HTML navigation
-            window.parent.postMessage({ type: 'aiHtmlNavigation', url: absoluteUrl }, '*');
+            window.parent.postMessage({ type: 'aiHtmlNavigation', url: absoluteUrl }, window.location.origin);
             console.log('Intercepted link click (immediate handler):', absoluteUrl);
           } catch (e) { console.error("Error resolving/posting URL:", e); }
         }

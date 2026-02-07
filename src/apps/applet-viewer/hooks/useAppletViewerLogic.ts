@@ -217,7 +217,7 @@ export function useAppletViewerLogic({
               authToken: authToken ?? null,
             },
           },
-          "*"
+          window.location.origin
         );
       } catch (error) {
         console.warn("[applet-viewer] Failed to post auth payload:", error);
@@ -252,6 +252,10 @@ export function useAppletViewerLogic({
         data.type !== APPLET_AUTH_MESSAGE_TYPE ||
         data.action !== "request"
       ) {
+        return;
+      }
+
+      if (event.origin !== window.location.origin) {
         return;
       }
 

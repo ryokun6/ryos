@@ -1627,31 +1627,59 @@ export function useInternetExplorerLogic({
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      const messageData = event.data as
+        | { type?: string; url?: string }
+        | undefined;
+      if (!messageData?.type) {
+        return;
+      }
+
+      // Only accept messages from the current window origin.
+      // This blocks untrusted cross-origin frames from driving navigation.
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      // For iframe-driven controls, ensure the sender is our active iframe.
+      // aiHtmlNavigation is emitted by HtmlPreview's internal iframe(s), so it
+      // is validated by same-origin only.
+      const sourceWindow = event.source as Window | null;
+      const currentIframeWindow = iframeRef.current?.contentWindow ?? null;
+      const isFromActiveIframe =
+        !!sourceWindow &&
+        !!currentIframeWindow &&
+        sourceWindow === currentIframeWindow;
+
       if (
-        event.data &&
-        event.data.type === "iframeNavigation" &&
-        typeof event.data.url === "string"
+        messageData.type !== "aiHtmlNavigation" &&
+        !isFromActiveIframe
+      ) {
+        return;
+      }
+
+      if (
+        messageData.type === "iframeNavigation" &&
+        typeof messageData.url === "string"
       ) {
         console.log(
-          `[IE] Received navigation request from iframe: ${event.data.url}`
+          `[IE] Received navigation request from iframe: ${messageData.url}`
         );
-        handleNavigate(event.data.url, year);
-      } else if (event.data && event.data.type === "goBack") {
+        handleNavigate(messageData.url, year);
+      } else if (messageData.type === "goBack") {
         console.log(`[IE] Received back button request from iframe`);
         handleGoBack();
       } else if (
-        event.data &&
-        event.data.type === "aiHtmlNavigation" &&
-        typeof event.data.url === "string"
+        messageData.type === "aiHtmlNavigation" &&
+        typeof messageData.url === "string"
       ) {
         console.log(
-          `[IE] Received navigation request from AI HTML preview: ${event.data.url}`
+          `[IE] Received navigation request from AI HTML preview: ${messageData.url}`
         );
         // Fetch the most up-to-date HTML from the store in case the closure is stale
         const contextHtml =
           useInternetExplorerStore.getState().aiGeneratedHtml;
 
-        handleNavigate(event.data.url, year, false, contextHtml);
+        handleNavigate(messageData.url, year, false, contextHtml);
       }
     };
     window.addEventListener("message", handleMessage);
