@@ -31,6 +31,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { toast } from "sonner";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
+import { useInternetExplorerStoreShallow } from "@/stores/helpers";
 
 // Helper function to get language display name
 const getLanguageDisplayName = (lang: LanguageOption): string => {
@@ -236,7 +237,63 @@ export function useInternetExplorerLogic({
     setLocation,
     setTimeMachineViewOpen,
     fetchCachedYears,
-  } = useInternetExplorerStore();
+  } = useInternetExplorerStoreShallow((state) => ({
+    url: state.url,
+    year: state.year,
+    mode: state.mode,
+    token: state.token,
+    favorites: state.favorites,
+    history: state.history,
+    historyIndex: state.historyIndex,
+    isTitleDialogOpen: state.isTitleDialogOpen,
+    newFavoriteTitle: state.newFavoriteTitle,
+    isHelpDialogOpen: state.isHelpDialogOpen,
+    isAboutDialogOpen: state.isAboutDialogOpen,
+    isNavigatingHistory: state.isNavigatingHistory,
+    isClearFavoritesDialogOpen: state.isClearFavoritesDialogOpen,
+    isClearHistoryDialogOpen: state.isClearHistoryDialogOpen,
+    currentPageTitle: state.currentPageTitle,
+    timelineSettings: state.timelineSettings,
+    status: state.status,
+    finalUrl: state.finalUrl,
+    aiGeneratedHtml: state.aiGeneratedHtml,
+    errorDetails: state.errorDetails,
+    isResetFavoritesDialogOpen: state.isResetFavoritesDialogOpen,
+    isFutureSettingsDialogOpen: state.isFutureSettingsDialogOpen,
+    language: state.language,
+    location: state.location,
+    isTimeMachineViewOpen: state.isTimeMachineViewOpen,
+    cachedYears: state.cachedYears,
+    isFetchingCachedYears: state.isFetchingCachedYears,
+
+    setUrl: state.setUrl,
+    setYear: state.setYear,
+    navigateStart: state.navigateStart,
+    setFinalUrl: state.setFinalUrl,
+    loadSuccess: state.loadSuccess,
+    loadError: state.loadError,
+    cancel: state.cancel,
+    addFavorite: state.addFavorite,
+    clearFavorites: state.clearFavorites,
+    setHistoryIndex: state.setHistoryIndex,
+    clearHistory: state.clearHistory,
+    setTitleDialogOpen: state.setTitleDialogOpen,
+    setNewFavoriteTitle: state.setNewFavoriteTitle,
+    setHelpDialogOpen: state.setHelpDialogOpen,
+    setAboutDialogOpen: state.setAboutDialogOpen,
+    setNavigatingHistory: state.setNavigatingHistory,
+    setClearFavoritesDialogOpen: state.setClearFavoritesDialogOpen,
+    setClearHistoryDialogOpen: state.setClearHistoryDialogOpen,
+    handleNavigationError: state.handleNavigationError,
+    setPrefetchedTitle: state.setPrefetchedTitle,
+    clearErrorDetails: state.clearErrorDetails,
+    setResetFavoritesDialogOpen: state.setResetFavoritesDialogOpen,
+    setFutureSettingsDialogOpen: state.setFutureSettingsDialogOpen,
+    setLanguage: state.setLanguage,
+    setLocation: state.setLocation,
+    setTimeMachineViewOpen: state.setTimeMachineViewOpen,
+    fetchCachedYears: state.fetchCachedYears,
+  }));
 
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems(
