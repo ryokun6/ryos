@@ -533,10 +533,16 @@ function ChatMessagesContent({
       headers["X-Username"] = username;
     }
 
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      controller.abort();
+    }, 10000);
+
     try {
       const res = await fetch(url, {
         method: "DELETE",
         headers,
+        signal: controller.signal,
       });
       if (res.ok) {
         // Use the actual server message ID for local removal to match store expectations
@@ -558,7 +564,16 @@ function ChatMessagesContent({
         .catch(() => ({ error: `HTTP error! status: ${res.status}` }));
       console.error("Failed to delete message", errorData);
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        console.error("Delete message request timed out", {
+          roomId,
+          serverMessageId,
+        });
+        return;
+      }
       console.error("Error deleting message", err);
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   };
 
