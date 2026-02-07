@@ -13,6 +13,7 @@ import {
   sendApnsAlert,
 } from "../_utils/_push-apns.js";
 import { normalizePushTestPayload } from "./_payload.js";
+import { summarizePushSendResults } from "./_results.js";
 import {
   type PushTokenMetadata,
   extractAuthFromHeaders,
@@ -173,13 +174,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await pipeline.exec();
   }
 
-  const successCount = results.filter((result) => result.ok).length;
-  const failureCount = results.length - successCount;
+  const { successCount, failureCount, failureReasons } = summarizePushSendResults(results);
 
   logger.info("Push test sent", {
     username,
     successCount,
     failureCount,
+    failureReasons,
     staleTokensRemoved: staleTokens.length,
     staleOwnershipTokensRemoved: staleOwnershipTokens.length,
   });
@@ -188,6 +189,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   return res.status(200).json({
     successCount,
     failureCount,
+    failureReasons,
     staleTokensRemoved: staleTokens.length,
     staleOwnershipTokensRemoved: staleOwnershipTokens.length,
     results,

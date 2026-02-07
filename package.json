@@ -48,6 +48,7 @@
     "test:share-applet": "bun run tests/test-share-applet.ts",
     "test:push-shared": "bun run tests/test-push-shared.ts",
     "test:push-payload": "bun run tests/test-push-payload.ts",
+    "test:push-results": "bun run tests/test-push-results.ts",
     "test:push-apns": "bun run tests/test-push-apns.ts"
   },
   "dependencies": {
