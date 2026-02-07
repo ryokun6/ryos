@@ -7,11 +7,20 @@ import {
   setCorsHeaders,
 } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
+import {
+  type PushPlatform,
+  type PushTokenMetadata,
+  PUSH_TOKEN_TTL_SECONDS,
+  extractAuthFromHeaders,
+  getTokenMetaKey,
+  getUserTokensKey,
+  isPushPlatform,
+  isValidPushToken,
+  normalizeUsername,
+} from "./_shared.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
-
-type PushPlatform = "ios" | "android";
 
 interface RegisterPushTokenBody {
   token?: string;
@@ -23,28 +32,6 @@ function createRedis(): Redis {
     url: process.env.REDIS_KV_REST_API_URL as string,
     token: process.env.REDIS_KV_REST_API_TOKEN as string,
   });
-}
-
-function extractAuth(req: VercelRequest): { username: string | null; token: string | null } {
-  const authHeader = req.headers.authorization as string | undefined;
-  const usernameHeader = req.headers["x-username"] as string | undefined;
-
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  const username = usernameHeader?.trim().toLowerCase() || null;
-
-  return { username, token };
-}
-
-function getUserTokensKey(username: string): string {
-  return `push:user:${username}:tokens`;
-}
-
-function getTokenMetaKey(token: string): string {
-  return `push:token:${token}`;
-}
-
-function isValidPushToken(token: string): boolean {
-  return /^[A-Za-z0-9:_\-.]{20,512}$/.test(token);
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -73,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const redis = createRedis();
-  const { username, token } = extractAuth(req);
+  const { username, token } = extractAuthFromHeaders(req.headers);
   if (!username || !token) {
     logger.response(401, Date.now() - startTime);
     return res.status(401).json({ error: "Unauthorized - missing credentials" });
@@ -101,29 +88,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Invalid push token format" });
   }
 
-  if (platform !== "ios" && platform !== "android") {
+  if (!isPushPlatform(platform)) {
     logger.response(400, Date.now() - startTime);
     return res.status(400).json({ error: "Unsupported push platform" });
   }
 
-  const now = Date.now();
-  const pipeline = redis.pipeline();
-  pipeline.sadd(getUserTokensKey(username), pushToken);
-  pipeline.set(
-    getTokenMetaKey(pushToken),
-    {
-      username,
-      platform,
-      updatedAt: now,
-    },
-    { ex: 60 * 60 * 24 * 365 }
+  const tokenMetaKey = getTokenMetaKey(pushToken);
+  const existingMeta = await redis.get<Partial<PushTokenMetadata> | null>(tokenMetaKey);
+  const previousUsername = normalizeUsername(
+    typeof existingMeta?.username === "string" ? existingMeta.username : null
   );
+
+  const now = Date.now();
+  const metadata: PushTokenMetadata = {
+    username,
+    platform,
+    updatedAt: now,
+  };
+  const pipeline = redis.pipeline();
+  if (previousUsername && previousUsername !== username) {
+    pipeline.srem(getUserTokensKey(previousUsername), pushToken);
+  }
+  pipeline.sadd(getUserTokensKey(username), pushToken);
+  pipeline.set(tokenMetaKey, metadata, { ex: PUSH_TOKEN_TTL_SECONDS });
   await pipeline.exec();
 
   logger.info("Registered push token", {
     username,
     platform,
     tokenSuffix: pushToken.slice(-8),
+    transferredFromUser: previousUsername && previousUsername !== username ? previousUsername : null,
   });
   logger.response(200, Date.now() - startTime);
 

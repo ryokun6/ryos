@@ -8,6 +8,12 @@ import {
 } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
 import { getApnsConfigFromEnv, sendApnsAlert } from "../_utils/_push-apns.js";
+import {
+  extractAuthFromHeaders,
+  getTokenMetaKey,
+  getUserTokensKey,
+  isValidPushToken,
+} from "./_shared.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 20;
@@ -26,24 +32,6 @@ function createRedis(): Redis {
     url: process.env.REDIS_KV_REST_API_URL as string,
     token: process.env.REDIS_KV_REST_API_TOKEN as string,
   });
-}
-
-function extractAuth(req: VercelRequest): { username: string | null; token: string | null } {
-  const authHeader = req.headers.authorization as string | undefined;
-  const usernameHeader = req.headers["x-username"] as string | undefined;
-
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  const username = usernameHeader?.trim().toLowerCase() || null;
-
-  return { username, token };
-}
-
-function getUserTokensKey(username: string): string {
-  return `push:user:${username}:tokens`;
-}
-
-function getTokenMetaKey(token: string): string {
-  return `push:token:${token}`;
 }
 
 const APNS_STALE_REASONS = new Set([
@@ -78,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const redis = createRedis();
-  const { username, token } = extractAuth(req);
+  const { username, token } = extractAuthFromHeaders(req.headers);
   if (!username || !token) {
     logger.response(401, Date.now() - startTime);
     return res.status(401).json({ error: "Unauthorized - missing credentials" });
@@ -107,6 +95,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const userTokens = await redis.smembers<string[]>(getUserTokensKey(username));
   const requestedToken = body.token?.trim();
+  if (requestedToken && !isValidPushToken(requestedToken)) {
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: "Invalid push token format" });
+  }
 
   let targetTokens: string[] = [];
   if (requestedToken) {

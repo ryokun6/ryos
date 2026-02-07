@@ -7,6 +7,14 @@ import {
   setCorsHeaders,
 } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
+import {
+  type PushTokenMetadata,
+  extractAuthFromHeaders,
+  getTokenMetaKey,
+  getUserTokensKey,
+  isValidPushToken,
+  normalizeUsername,
+} from "./_shared.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -20,24 +28,6 @@ function createRedis(): Redis {
     url: process.env.REDIS_KV_REST_API_URL as string,
     token: process.env.REDIS_KV_REST_API_TOKEN as string,
   });
-}
-
-function extractAuth(req: VercelRequest): { username: string | null; token: string | null } {
-  const authHeader = req.headers.authorization as string | undefined;
-  const usernameHeader = req.headers["x-username"] as string | undefined;
-
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  const username = usernameHeader?.trim().toLowerCase() || null;
-
-  return { username, token };
-}
-
-function getUserTokensKey(username: string): string {
-  return `push:user:${username}:tokens`;
-}
-
-function getTokenMetaKey(token: string): string {
-  return `push:token:${token}`;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -66,7 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const redis = createRedis();
-  const { username, token } = extractAuth(req);
+  const { username, token } = extractAuthFromHeaders(req.headers);
   if (!username || !token) {
     logger.response(401, Date.now() - startTime);
     return res.status(401).json({ error: "Unauthorized - missing credentials" });
@@ -85,17 +75,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userTokensKey = getUserTokensKey(username);
 
   if (pushToken) {
-    const pipeline = redis.pipeline();
-    pipeline.srem(userTokensKey, pushToken);
-    pipeline.del(getTokenMetaKey(pushToken));
-    await pipeline.exec();
+    if (!isValidPushToken(pushToken)) {
+      logger.response(400, Date.now() - startTime);
+      return res.status(400).json({ error: "Invalid push token format" });
+    }
+
+    const tokenMetaKey = getTokenMetaKey(pushToken);
+    const tokenMeta = await redis.get<Partial<PushTokenMetadata> | null>(tokenMetaKey);
+    const tokenOwner = normalizeUsername(
+      typeof tokenMeta?.username === "string" ? tokenMeta.username : null
+    );
+    const metadataBelongsToUser = tokenOwner === username;
+
+    const removedFromUserSet = await redis.srem(userTokensKey, pushToken);
+    if (metadataBelongsToUser) {
+      await redis.del(tokenMetaKey);
+    }
 
     logger.info("Unregistered push token", {
       username,
       tokenSuffix: pushToken.slice(-8),
+      removedFromUserSet,
+      removedMetadata: metadataBelongsToUser,
     });
     logger.response(200, Date.now() - startTime);
-    return res.status(200).json({ success: true, removed: 1 });
+    return res.status(200).json({
+      success: true,
+      removed: removedFromUserSet,
+      metadataRemoved: metadataBelongsToUser,
+    });
   }
 
   const userTokens = await redis.smembers<string[]>(userTokensKey);
@@ -104,18 +112,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ success: true, removed: 0 });
   }
 
-  const pipeline = redis.pipeline();
-  pipeline.del(userTokensKey);
-  for (const storedToken of userTokens) {
-    pipeline.del(getTokenMetaKey(storedToken));
+  await redis.del(userTokensKey);
+
+  const tokenOwnership = await Promise.all(
+    userTokens.map(async (storedToken) => {
+      const tokenMeta = await redis.get<Partial<PushTokenMetadata> | null>(
+        getTokenMetaKey(storedToken)
+      );
+      const tokenOwner = normalizeUsername(
+        typeof tokenMeta?.username === "string" ? tokenMeta.username : null
+      );
+      return {
+        storedToken,
+        ownedByCurrentUser: tokenOwner === username,
+      };
+    })
+  );
+
+  const ownedTokens = tokenOwnership
+    .filter((entry) => entry.ownedByCurrentUser)
+    .map((entry) => entry.storedToken);
+
+  if (ownedTokens.length > 0) {
+    const pipeline = redis.pipeline();
+    for (const ownedToken of ownedTokens) {
+      pipeline.del(getTokenMetaKey(ownedToken));
+    }
+    await pipeline.exec();
   }
-  await pipeline.exec();
 
   logger.info("Unregistered all push tokens for user", {
     username,
     removed: userTokens.length,
+    removedMetadata: ownedTokens.length,
   });
   logger.response(200, Date.now() - startTime);
 
-  return res.status(200).json({ success: true, removed: userTokens.length });
+  return res.status(200).json({
+    success: true,
+    removed: userTokens.length,
+    metadataRemoved: ownedTokens.length,
+  });
 }

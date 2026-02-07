@@ -17,6 +17,7 @@ import { runMediaTests } from "./test-media";
 import { runAuthExtraTests } from "./test-auth-extra";
 import { runRoomsExtraTests } from "./test-rooms-extra";
 import { runPushApnsTests } from "./test-push-apns";
+import { runPushSharedTests } from "./test-push-shared";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -91,6 +92,7 @@ async function runAllTests(): Promise<void> {
     { name: "media", run: runMediaTests },
     { name: "auth-extra", run: runAuthExtraTests },
     { name: "rooms-extra", run: runRoomsExtraTests },
+    { name: "push-shared", run: runPushSharedTests },
     { name: "push-apns", run: runPushApnsTests },
   ];
 
