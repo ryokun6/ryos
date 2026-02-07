@@ -35,6 +35,7 @@ import {
   useIsPresent,
   type MotionValue,
 } from "framer-motion";
+import { useShallow } from "zustand/react/shallow";
 
 const MAX_SCALE = 2.3; // peak multiplier at cursor center
 const DISTANCE = 140; // px range where magnification is applied
@@ -585,7 +586,20 @@ function MacDock() {
     setHiding: setDockHiding,
     magnification: dockMagnification,
     setMagnification: setDockMagnification,
-  } = useDockStore();
+  } = useDockStore(
+    useShallow((state) => ({
+      pinnedItems: state.pinnedItems,
+      addItem: state.addItem,
+      removeItem: state.removeItem,
+      reorderItems: state.reorderItems,
+      scale: state.scale,
+      setScale: state.setScale,
+      hiding: state.hiding,
+      setHiding: state.setHiding,
+      magnification: state.magnification,
+      setMagnification: state.setMagnification,
+    }))
+  );
   
   const [isDraggingOverTrash, setIsDraggingOverTrash] = useState(false);
   const [trashContextMenuPos, setTrashContextMenuPos] = useState<{
