@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { Redis } from "@upstash/redis";
 import { validateAuth } from "../_utils/auth/index.js";
 import {
   getEffectiveOrigin,
@@ -14,6 +13,7 @@ import {
 } from "../_utils/_push-apns.js";
 import { mapWithConcurrency, resolveBoundedConcurrency } from "./_concurrency.js";
 import { normalizePushTestPayload } from "./_payload.js";
+import { createPushRedis } from "./_redis.js";
 import { summarizePushSendResults } from "./_results.js";
 import {
   type PushTokenMetadata,
@@ -26,13 +26,6 @@ import {
 
 export const runtime = "nodejs";
 export const maxDuration = 20;
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
-}
 
 const APNS_STALE_REASONS = new Set([
   "BadDeviceToken",
@@ -73,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const redis = createRedis();
+  const redis = createPushRedis();
   const { username, token } = extractAuthFromHeaders(req.headers);
   if (!username || !token) {
     logger.response(401, Date.now() - startTime);

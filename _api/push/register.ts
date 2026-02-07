@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { Redis } from "@upstash/redis";
 import { validateAuth } from "../_utils/auth/index.js";
 import {
   getEffectiveOrigin,
@@ -7,6 +6,7 @@ import {
   setCorsHeaders,
 } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
+import { createPushRedis } from "./_redis.js";
 import {
   PUSH_TOKEN_TTL_SECONDS,
   extractAuthFromHeaders,
@@ -19,13 +19,6 @@ import { normalizeRegisterPushPayload } from "./_request-payloads.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { logger } = initLogger();
@@ -52,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const redis = createRedis();
+  const redis = createPushRedis();
   const { username, token } = extractAuthFromHeaders(req.headers);
   if (!username || !token) {
     logger.response(401, Date.now() - startTime);

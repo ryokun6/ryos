@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { Redis } from "@upstash/redis";
 import { validateAuth } from "../_utils/auth/index.js";
 import {
   getEffectiveOrigin,
@@ -9,6 +8,7 @@ import {
 import { initLogger } from "../_utils/_logging.js";
 import { mapWithConcurrency, resolveBoundedConcurrency } from "./_concurrency.js";
 import { normalizeUnregisterPushPayload } from "./_request-payloads.js";
+import { createPushRedis } from "./_redis.js";
 import {
   type PushTokenMetadata,
   extractAuthFromHeaders,
@@ -24,13 +24,6 @@ const TOKEN_METADATA_LOOKUP_CONCURRENCY = resolveBoundedConcurrency(
   process.env.PUSH_METADATA_LOOKUP_CONCURRENCY,
   8
 );
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { logger } = initLogger();
@@ -57,7 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const redis = createRedis();
+  const redis = createPushRedis();
   const { username, token } = extractAuthFromHeaders(req.headers);
   if (!username || !token) {
     logger.response(401, Date.now() - startTime);
