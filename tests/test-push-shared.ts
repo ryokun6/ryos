@@ -7,6 +7,8 @@ import {
   extractAuthFromHeaders,
   extractBearerToken,
   extractTokenMetadataOwner,
+  getOptionalTrimmedString,
+  getRequestBodyObject,
   getTokenMetaKey,
   getUserTokensKey,
   isTokenMetadataOwnedByUser,
@@ -85,6 +87,28 @@ async function testTokenMetadataOwnershipHelpers() {
   assertEq(extractTokenMetadataOwner(null), null);
 }
 
+async function testRequestBodyObjectAndTrimHelpers() {
+  const emptyFromUndefined = getRequestBodyObject(undefined);
+  assertEq(emptyFromUndefined !== null, true);
+
+  const emptyFromNull = getRequestBodyObject(null);
+  assertEq(emptyFromNull !== null, true);
+
+  const obj = getRequestBodyObject({ token: "abc" });
+  assertEq(obj !== null, true);
+  assertEq(obj?.token, "abc");
+
+  const invalidArray = getRequestBodyObject(["bad"]);
+  assertEq(invalidArray, null);
+
+  const invalidString = getRequestBodyObject("bad");
+  assertEq(invalidString, null);
+
+  assertEq(getOptionalTrimmedString("  value  "), "value");
+  assertEq(getOptionalTrimmedString("    "), undefined);
+  assertEq(getOptionalTrimmedString(123), undefined);
+}
+
 export async function runPushSharedTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-shared"));
   clearResults();
@@ -96,6 +120,7 @@ export async function runPushSharedTests(): Promise<{ passed: number; failed: nu
   await runTest("Auth extraction from request headers", testAuthExtractionFromHeaders);
   await runTest("Push platform validator", testPlatformValidation);
   await runTest("Token metadata ownership helpers", testTokenMetadataOwnershipHelpers);
+  await runTest("Push body/trim helper utilities", testRequestBodyObjectAndTrimHelpers);
 
   return printSummary();
 }

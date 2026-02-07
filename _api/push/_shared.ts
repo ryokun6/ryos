@@ -12,6 +12,20 @@ export const PUSH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 365;
 
 const PUSH_TOKEN_REGEX = /^[A-Za-z0-9:_\-.]{20,512}$/;
 
+export function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function getRequestBodyObject(
+  body: unknown
+): Record<string, unknown> | null {
+  if (typeof body === "undefined" || body === null) {
+    return {};
+  }
+  if (!isPlainObject(body)) return null;
+  return body;
+}
+
 export function getUserTokensKey(username: string): string {
   return `push:user:${username}:tokens`;
 }
@@ -32,6 +46,12 @@ export function normalizeUsername(value: string | null | undefined): string | nu
   if (!value) return null;
   const normalized = value.trim().toLowerCase();
   return normalized.length > 0 ? normalized : null;
+}
+
+export function getOptionalTrimmedString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
 
 export function extractTokenMetadataOwner(

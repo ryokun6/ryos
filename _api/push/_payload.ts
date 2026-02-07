@@ -1,4 +1,9 @@
-import { isValidPushToken } from "./_shared.js";
+import {
+  getOptionalTrimmedString,
+  getRequestBodyObject,
+  isPlainObject,
+  isValidPushToken,
+} from "./_shared.js";
 
 export const DEFAULT_PUSH_TEST_TITLE = "ryOS test notification";
 export const DEFAULT_PUSH_TEST_BODY = "Push notifications are working 🎉";
@@ -29,35 +34,49 @@ export interface ValidationResultError {
 
 export type ValidationResult<T> = ValidationResultSuccess<T> | ValidationResultError;
 
-function getTrimmedString(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 export function normalizePushTestPayload(
   rawBody: unknown
 ): ValidationResult<NormalizedPushTestPayload> {
-  let body: Record<string, unknown> = {};
-  if (typeof rawBody === "undefined" || rawBody === null) {
-    body = {};
-  } else if (isPlainObject(rawBody)) {
-    body = rawBody;
-  } else {
+  const body = getRequestBodyObject(rawBody);
+  if (!body) {
     return {
       ok: false,
       error: "Request body must be a JSON object",
     };
   }
 
-  const title = getTrimmedString(body.title) ?? DEFAULT_PUSH_TEST_TITLE;
-  const message = getTrimmedString(body.body) ?? DEFAULT_PUSH_TEST_BODY;
-  const token = getTrimmedString(body.token);
-  const sound = getTrimmedString(body.sound);
+  if (typeof body.title !== "undefined" && typeof body.title !== "string") {
+    return {
+      ok: false,
+      error: "Title must be a string",
+    };
+  }
+
+  if (typeof body.body !== "undefined" && typeof body.body !== "string") {
+    return {
+      ok: false,
+      error: "Body must be a string",
+    };
+  }
+
+  if (typeof body.token !== "undefined" && typeof body.token !== "string") {
+    return {
+      ok: false,
+      error: "Invalid push token format",
+    };
+  }
+
+  if (typeof body.sound !== "undefined" && typeof body.sound !== "string") {
+    return {
+      ok: false,
+      error: "Sound must be a string",
+    };
+  }
+
+  const title = getOptionalTrimmedString(body.title) ?? DEFAULT_PUSH_TEST_TITLE;
+  const message = getOptionalTrimmedString(body.body) ?? DEFAULT_PUSH_TEST_BODY;
+  const token = getOptionalTrimmedString(body.token);
+  const sound = getOptionalTrimmedString(body.sound);
 
   if (title.length > MAX_PUSH_TITLE_LENGTH) {
     return {

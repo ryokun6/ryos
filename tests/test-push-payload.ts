@@ -43,6 +43,32 @@ async function testRejectsNonObjectBodies() {
   assertEq(fromArray.ok, false);
 }
 
+async function testRejectsInvalidStringFieldTypes() {
+  const invalidTitle = normalizePushTestPayload({
+    title: 123,
+  });
+  assertEq(invalidTitle.ok, false);
+  if (!invalidTitle.ok) {
+    assertEq(invalidTitle.error, "Title must be a string");
+  }
+
+  const invalidBody = normalizePushTestPayload({
+    body: 123,
+  });
+  assertEq(invalidBody.ok, false);
+  if (!invalidBody.ok) {
+    assertEq(invalidBody.error, "Body must be a string");
+  }
+
+  const invalidSound = normalizePushTestPayload({
+    sound: 123,
+  });
+  assertEq(invalidSound.ok, false);
+  if (!invalidSound.ok) {
+    assertEq(invalidSound.error, "Sound must be a string");
+  }
+}
+
 async function testTrimsOptionalFields() {
   const payload = normalizePushTestPayload({
     title: "  Push title  ",
@@ -149,6 +175,7 @@ export async function runPushPayloadTests(): Promise<{ passed: number; failed: n
 
   await runTest("Push payload defaults for missing body", testDefaultsForMissingBody);
   await runTest("Push payload rejects non-object body", testRejectsNonObjectBodies);
+  await runTest("Push payload rejects invalid string field types", testRejectsInvalidStringFieldTypes);
   await runTest("Push payload trims optional fields", testTrimsOptionalFields);
   await runTest("Push payload rejects invalid token and badge", testRejectsInvalidTokenAndBadge);
   await runTest("Push payload rejects overly long text fields", testRejectsLongTextFields);

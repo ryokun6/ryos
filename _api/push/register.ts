@@ -13,6 +13,8 @@ import {
   PUSH_TOKEN_TTL_SECONDS,
   extractAuthFromHeaders,
   extractTokenMetadataOwner,
+  getOptionalTrimmedString,
+  getRequestBodyObject,
   getTokenMetaKey,
   getUserTokensKey,
   isPushPlatform,
@@ -21,11 +23,6 @@ import {
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
-
-interface RegisterPushTokenBody {
-  token?: string;
-  platform?: PushPlatform;
-}
 
 function createRedis(): Redis {
   return new Redis({
@@ -74,9 +71,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: "Unauthorized - invalid token" });
   }
 
-  const body = (req.body || {}) as RegisterPushTokenBody;
-  const pushToken = body.token?.trim();
-  const platform = body.platform ?? "ios";
+  const body = getRequestBodyObject(req.body);
+  if (!body) {
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: "Request body must be a JSON object" });
+  }
+
+  if (typeof body.token !== "undefined" && typeof body.token !== "string") {
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: "Invalid push token format" });
+  }
+
+  if (typeof body.platform !== "undefined" && typeof body.platform !== "string") {
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: "Unsupported push platform" });
+  }
+
+  const pushToken = getOptionalTrimmedString(body.token);
+  const platform = (body.platform as PushPlatform | undefined) ?? "ios";
 
   if (!pushToken) {
     logger.response(400, Date.now() - startTime);
