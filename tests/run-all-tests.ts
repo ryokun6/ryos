@@ -16,6 +16,7 @@ import { runAiTests } from "./test-ai";
 import { runMediaTests } from "./test-media";
 import { runAuthExtraTests } from "./test-auth-extra";
 import { runRoomsExtraTests } from "./test-rooms-extra";
+import { runPushApnsTests } from "./test-push-apns";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -90,6 +91,7 @@ async function runAllTests(): Promise<void> {
     { name: "media", run: runMediaTests },
     { name: "auth-extra", run: runAuthExtraTests },
     { name: "rooms-extra", run: runRoomsExtraTests },
+    { name: "push-apns", run: runPushApnsTests },
   ];
 
   // Check for specific test to run
