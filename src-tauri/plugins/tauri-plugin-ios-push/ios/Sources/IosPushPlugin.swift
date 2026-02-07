@@ -9,11 +9,13 @@ import WebKit
 public class IosPushPlugin: Plugin, UNUserNotificationCenterDelegate {
     public static var instance: IosPushPlugin?
 
+    private let storedTokenKey = "ios_push_cached_apns_token"
     private var pushToken: String?
 
     @objc override public func load(webview: WKWebView) {
         IosPushPlugin.instance = self
         UNUserNotificationCenter.current().delegate = self
+        self.pushToken = UserDefaults.standard.string(forKey: storedTokenKey)
     }
 
     deinit {
@@ -51,6 +53,7 @@ public class IosPushPlugin: Plugin, UNUserNotificationCenterDelegate {
     public func handleDeviceToken(_ deviceToken: Data) {
         let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
         self.pushToken = tokenString
+        UserDefaults.standard.set(tokenString, forKey: storedTokenKey)
 
         do {
             try self.trigger("token", data: ["token": tokenString])
