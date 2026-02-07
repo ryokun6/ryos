@@ -34,10 +34,9 @@ export function normalizeRegisterPushPayload(
     };
   }
 
-  const hasTokenField = Object.prototype.hasOwnProperty.call(body, "token");
   const token = getOptionalTrimmedString(body.token);
 
-  if (!token || (hasTokenField && typeof body.token === "string" && !token)) {
+  if (!token) {
     return {
       ok: false,
       error: "Push token is required",
