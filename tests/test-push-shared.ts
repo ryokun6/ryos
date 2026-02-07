@@ -6,8 +6,10 @@
 import {
   extractAuthFromHeaders,
   extractBearerToken,
+  extractTokenMetadataOwner,
   getTokenMetaKey,
   getUserTokensKey,
+  isTokenMetadataOwnedByUser,
   isPushPlatform,
   isValidPushToken,
   normalizeUsername,
@@ -70,6 +72,19 @@ async function testPlatformValidation() {
   assertEq(isPushPlatform("web"), false);
 }
 
+async function testTokenMetadataOwnershipHelpers() {
+  const metadata = {
+    username: "  Alice  ",
+    platform: "ios" as const,
+    updatedAt: Date.now(),
+  };
+
+  assertEq(extractTokenMetadataOwner(metadata), "alice");
+  assertEq(isTokenMetadataOwnedByUser(metadata, "alice"), true);
+  assertEq(isTokenMetadataOwnedByUser(metadata, "bob"), false);
+  assertEq(extractTokenMetadataOwner(null), null);
+}
+
 export async function runPushSharedTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-shared"));
   clearResults();
@@ -80,6 +95,7 @@ export async function runPushSharedTests(): Promise<{ passed: number; failed: nu
   await runTest("Bearer token extraction helper", testBearerTokenExtraction);
   await runTest("Auth extraction from request headers", testAuthExtractionFromHeaders);
   await runTest("Push platform validator", testPlatformValidation);
+  await runTest("Token metadata ownership helpers", testTokenMetadataOwnershipHelpers);
 
   return printSummary();
 }

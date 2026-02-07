@@ -10,10 +10,10 @@ import { initLogger } from "../_utils/_logging.js";
 import {
   type PushTokenMetadata,
   extractAuthFromHeaders,
+  extractTokenMetadataOwner,
   getTokenMetaKey,
   getUserTokensKey,
   isValidPushToken,
-  normalizeUsername,
 } from "./_shared.js";
 
 export const runtime = "nodejs";
@@ -82,10 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const tokenMetaKey = getTokenMetaKey(pushToken);
     const tokenMeta = await redis.get<Partial<PushTokenMetadata> | null>(tokenMetaKey);
-    const tokenOwner = normalizeUsername(
-      typeof tokenMeta?.username === "string" ? tokenMeta.username : null
-    );
-    const metadataBelongsToUser = tokenOwner === username;
+    const metadataBelongsToUser = extractTokenMetadataOwner(tokenMeta) === username;
 
     const removedFromUserSet = await redis.srem(userTokensKey, pushToken);
     if (metadataBelongsToUser) {
@@ -119,12 +116,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const tokenMeta = await redis.get<Partial<PushTokenMetadata> | null>(
         getTokenMetaKey(storedToken)
       );
-      const tokenOwner = normalizeUsername(
-        typeof tokenMeta?.username === "string" ? tokenMeta.username : null
-      );
       return {
         storedToken,
-        ownedByCurrentUser: tokenOwner === username,
+        ownedByCurrentUser: extractTokenMetadataOwner(tokenMeta) === username,
       };
     })
   );

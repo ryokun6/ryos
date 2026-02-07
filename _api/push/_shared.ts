@@ -34,6 +34,21 @@ export function normalizeUsername(value: string | null | undefined): string | nu
   return normalized.length > 0 ? normalized : null;
 }
 
+export function extractTokenMetadataOwner(
+  metadata: Partial<PushTokenMetadata> | null | undefined
+): string | null {
+  return normalizeUsername(
+    metadata && typeof metadata.username === "string" ? metadata.username : null
+  );
+}
+
+export function isTokenMetadataOwnedByUser(
+  metadata: Partial<PushTokenMetadata> | null | undefined,
+  username: string
+): boolean {
+  return extractTokenMetadataOwner(metadata) === normalizeUsername(username);
+}
+
 export function extractBearerToken(authHeader: string | null | undefined): string | null {
   if (!authHeader) return null;
   if (!authHeader.startsWith("Bearer ")) return null;

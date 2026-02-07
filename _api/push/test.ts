@@ -9,7 +9,9 @@ import {
 import { initLogger } from "../_utils/_logging.js";
 import { getApnsConfigFromEnv, sendApnsAlert } from "../_utils/_push-apns.js";
 import {
+  type PushTokenMetadata,
   extractAuthFromHeaders,
+  extractTokenMetadataOwner,
   getTokenMetaKey,
   getUserTokensKey,
   isValidPushToken,
@@ -94,6 +96,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const message = body.body?.trim() || "Push notifications are working 🎉";
 
   const userTokens = await redis.smembers<string[]>(getUserTokensKey(username));
+  if (userTokens.length === 0) {
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({ error: "No registered push tokens for this user" });
+  }
+
+  const ownershipEntries = await Promise.all(
+    userTokens.map(async (deviceToken) => {
+      const metadata = await redis.get<Partial<PushTokenMetadata> | null>(
+        getTokenMetaKey(deviceToken)
+      );
+      return {
+        deviceToken,
+        ownedByCurrentUser: extractTokenMetadataOwner(metadata) === username,
+      };
+    })
+  );
+
+  const ownedTokens = ownershipEntries
+    .filter((entry) => entry.ownedByCurrentUser)
+    .map((entry) => entry.deviceToken);
+
+  const staleOwnershipTokens = ownershipEntries
+    .filter((entry) => !entry.ownedByCurrentUser)
+    .map((entry) => entry.deviceToken);
+
+  if (staleOwnershipTokens.length > 0) {
+    const cleanupPipeline = redis.pipeline();
+    for (const staleToken of staleOwnershipTokens) {
+      cleanupPipeline.srem(getUserTokensKey(username), staleToken);
+    }
+    await cleanupPipeline.exec();
+  }
+
   const requestedToken = body.token?.trim();
   if (requestedToken && !isValidPushToken(requestedToken)) {
     logger.response(400, Date.now() - startTime);
@@ -102,18 +137,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   let targetTokens: string[] = [];
   if (requestedToken) {
-    if (!userTokens.includes(requestedToken)) {
+    if (!ownedTokens.includes(requestedToken)) {
       logger.response(403, Date.now() - startTime);
       return res.status(403).json({ error: "Token is not registered for this user" });
     }
     targetTokens = [requestedToken];
   } else {
-    targetTokens = userTokens;
+    targetTokens = ownedTokens;
   }
 
   if (targetTokens.length === 0) {
     logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "No registered push tokens for this user" });
+    return res.status(400).json({ error: "No owned push tokens for this user" });
   }
 
   const results = await Promise.all(
@@ -149,6 +184,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     successCount,
     failureCount,
     staleTokensRemoved: staleTokens.length,
+    staleOwnershipTokensRemoved: staleOwnershipTokens.length,
   });
   logger.response(200, Date.now() - startTime);
 
@@ -156,6 +192,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     successCount,
     failureCount,
     staleTokensRemoved: staleTokens.length,
+    staleOwnershipTokensRemoved: staleOwnershipTokens.length,
     results,
   });
 }

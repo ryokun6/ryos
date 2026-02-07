@@ -12,11 +12,11 @@ import {
   type PushTokenMetadata,
   PUSH_TOKEN_TTL_SECONDS,
   extractAuthFromHeaders,
+  extractTokenMetadataOwner,
   getTokenMetaKey,
   getUserTokensKey,
   isPushPlatform,
   isValidPushToken,
-  normalizeUsername,
 } from "./_shared.js";
 
 export const runtime = "nodejs";
@@ -95,9 +95,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const tokenMetaKey = getTokenMetaKey(pushToken);
   const existingMeta = await redis.get<Partial<PushTokenMetadata> | null>(tokenMetaKey);
-  const previousUsername = normalizeUsername(
-    typeof existingMeta?.username === "string" ? existingMeta.username : null
-  );
+  const previousUsername = extractTokenMetadataOwner(existingMeta);
 
   const now = Date.now();
   const metadata: PushTokenMetadata = {
