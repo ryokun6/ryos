@@ -7,6 +7,7 @@ import {
 } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
 import { getPushMetadataLookupConcurrency } from "./_config.js";
+import { respondInternalServerError } from "./_errors.js";
 import { getTokenOwnershipEntries, splitTokenOwnership } from "./_ownership.js";
 import { normalizeUnregisterPushPayload } from "./_request-payloads.js";
 import { createPushRedis } from "./_redis.js";
@@ -164,8 +165,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       invalidStoredTokensRemoved: invalidStoredTokens.length,
     });
   } catch (error) {
-    logger.error("Unexpected error in push unregister handler", error);
-    logger.response(500, Date.now() - startTime);
-    return res.status(500).json({ error: "Internal server error" });
+    return respondInternalServerError(
+      res,
+      logger,
+      startTime,
+      "Unexpected error in push unregister handler",
+      error
+    );
   }
 }

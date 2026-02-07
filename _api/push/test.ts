@@ -16,6 +16,7 @@ import {
   getApnsSendConcurrency,
   getPushMetadataLookupConcurrency,
 } from "./_config.js";
+import { respondInternalServerError } from "./_errors.js";
 import { getTokenOwnershipEntries, splitTokenOwnership } from "./_ownership.js";
 import { normalizePushTestPayload } from "./_payload.js";
 import { createPushRedis } from "./_redis.js";
@@ -216,8 +217,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       results,
     });
   } catch (error) {
-    logger.error("Unexpected error in push test handler", error);
-    logger.response(500, Date.now() - startTime);
-    return res.status(500).json({ error: "Internal server error" });
+    return respondInternalServerError(
+      res,
+      logger,
+      startTime,
+      "Unexpected error in push test handler",
+      error
+    );
   }
 }

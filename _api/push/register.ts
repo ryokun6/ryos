@@ -6,6 +6,7 @@ import {
   setCorsHeaders,
 } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
+import { respondInternalServerError } from "./_errors.js";
 import { createPushRedis } from "./_redis.js";
 import {
   PUSH_TOKEN_TTL_SECONDS,
@@ -100,8 +101,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       platform,
     });
   } catch (error) {
-    logger.error("Unexpected error in push register handler", error);
-    logger.response(500, Date.now() - startTime);
-    return res.status(500).json({ error: "Internal server error" });
+    return respondInternalServerError(
+      res,
+      logger,
+      startTime,
+      "Unexpected error in push register handler",
+      error
+    );
   }
 }
