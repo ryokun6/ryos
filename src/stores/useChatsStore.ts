@@ -17,6 +17,10 @@ const AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
 // Token constants
 const TOKEN_REFRESH_THRESHOLD = 83 * 24 * 60 * 60 * 1000; // 83 days in ms (refresh 7 days before 90-day expiry)
 const TOKEN_LAST_REFRESH_KEY = "_token_refresh_time_";
+const MESSAGE_HISTORY_CAP = 500;
+
+const capRoomMessages = (messages: ChatMessage[]): ChatMessage[] =>
+  messages.slice(-MESSAGE_HISTORY_CAP);
 
 // API Response Types
 interface ApiMessage {
@@ -493,12 +497,13 @@ export const useChatsStore = create<ChatsStoreState>()(
         setRoomMessagesForCurrentRoom: (messages) => {
           const currentRoomId = get().currentRoomId;
           if (currentRoomId) {
+            const sorted = [...messages].sort(
+              (a, b) => a.timestamp - b.timestamp
+            );
             set((state) => ({
               roomMessages: {
                 ...state.roomMessages,
-                [currentRoomId]: messages.sort(
-                  (a, b) => a.timestamp - b.timestamp
-                ),
+                [currentRoomId]: capRoomMessages(sorted),
               },
             }));
           }
@@ -506,6 +511,10 @@ export const useChatsStore = create<ChatsStoreState>()(
         addMessageToRoom: (roomId, message) => {
           set((state) => {
             const existingMessages = state.roomMessages[roomId] || [];
+            const sortAndCap = (messages: ChatMessage[]) =>
+              capRoomMessages(
+                [...messages].sort((a, b) => a.timestamp - b.timestamp)
+              );
 
             // Normalize incoming content to match optimistic content
             const incomingContent = decodeHtmlEntities(
@@ -540,7 +549,7 @@ export const useChatsStore = create<ChatsStoreState>()(
                 return {
                   roomMessages: {
                     ...state.roomMessages,
-                    [roomId]: updated.sort((a, b) => a.timestamp - b.timestamp),
+                    [roomId]: sortAndCap(updated),
                   },
                 };
               }
@@ -565,7 +574,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               return {
                 roomMessages: {
                   ...state.roomMessages,
-                  [roomId]: updated.sort((a, b) => a.timestamp - b.timestamp),
+                  [roomId]: sortAndCap(updated),
                 },
               };
             }
@@ -613,7 +622,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               return {
                 roomMessages: {
                   ...state.roomMessages,
-                  [roomId]: updated.sort((a, b) => a.timestamp - b.timestamp),
+                  [roomId]: sortAndCap(updated),
                 },
               };
             }
@@ -622,9 +631,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             return {
               roomMessages: {
                 ...state.roomMessages,
-                [roomId]: [...existingMessages, incoming].sort(
-                  (a, b) => a.timestamp - b.timestamp
-                ),
+                [roomId]: sortAndCap([...existingMessages, incoming]),
               },
             };
           });
@@ -1052,8 +1059,10 @@ export const useChatsStore = create<ChatsStoreState>()(
                   }
                 }
                 
-                const merged = Array.from(byId.values()).sort(
-                  (a, b) => a.timestamp - b.timestamp
+                const merged = capRoomMessages(
+                  Array.from(byId.values()).sort(
+                    (a, b) => a.timestamp - b.timestamp
+                  )
                 );
                 return {
                   roomMessages: {
@@ -1178,8 +1187,10 @@ export const useChatsStore = create<ChatsStoreState>()(
                       }
                     }
                     
-                    nextRoomMessages[roomId] = Array.from(byId.values()).sort(
-                      (a, b) => a.timestamp - b.timestamp
+                    nextRoomMessages[roomId] = capRoomMessages(
+                      Array.from(byId.values()).sort(
+                        (a, b) => a.timestamp - b.timestamp
+                      )
                     );
                   }
                 );
@@ -1565,7 +1576,12 @@ export const useChatsStore = create<ChatsStoreState>()(
         isChannelsOpen: state.isChannelsOpen,
         isPrivateOpen: state.isPrivateOpen,
         rooms: state.rooms, // Persist rooms list
-        roomMessages: state.roomMessages, // Persist room messages cache
+        roomMessages: Object.fromEntries(
+          Object.entries(state.roomMessages).map(([roomId, messages]) => [
+            roomId,
+            capRoomMessages(messages),
+          ])
+        ), // Persist room messages cache (capped)
         fontSize: state.fontSize, // Persist font size
         unreadCounts: state.unreadCounts,
         hasEverUsedChats: state.hasEverUsedChats,
