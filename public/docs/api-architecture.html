@@ -515,7 +515,7 @@ if (!rlResult.allowed) return rlResult.error;</code></pre>
 <h2>AI Provider Abstraction</h2>
 <h3>Supported Models (AI SDK 6.0)</h3>
 <p>The API uses Vercel AI SDK 6.0 with structured outputs for type-safe responses.</p>
-<table><thead><tr><th>Provider</th><th>Models</th><th>Use Cases</th></tr></thead><tbody><tr><td><strong>OpenAI</strong></td><td>gpt-5, gpt-5.1, gpt-5-mini, gpt-4o, gpt-4.1</td><td>Default chat, code generation</td></tr><tr><td><strong>Anthropic</strong></td><td>claude-4.5, claude-4, claude-3.7, claude-3.5</td><td>Complex reasoning</td></tr><tr><td><strong>Google</strong></td><td>gemini-2.5-pro, gemini-2.5-flash, gemini-3-pro</td><td>Image generation, title parsing</td></tr></tbody></table>
+<table><thead><tr><th>Provider</th><th>Models</th><th>Use Cases</th></tr></thead><tbody><tr><td><strong>OpenAI</strong></td><td>gpt-5, gpt-5.1, gpt-5-mini, gpt-4o, gpt-4.1</td><td>Default chat, code generation</td></tr><tr><td><strong>Anthropic</strong></td><td>claude-4.5, claude-4, claude-3.7, claude-3.5</td><td>Complex reasoning</td></tr><tr><td><strong>Google</strong></td><td>gemini-2.5-pro, gemini-2.5-flash, gemini-2.5-flash-image</td><td>Image generation, title parsing</td></tr></tbody></table>
 <strong>Structured Outputs:</strong> Used for deterministic responses like song title parsing (<code>/api/parse-title</code>).
 <h3>Model Selection</h3>
 <pre><code>// api/_utils/_aiModels.ts
