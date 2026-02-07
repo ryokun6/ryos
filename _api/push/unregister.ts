@@ -85,21 +85,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const metadataBelongsToUser = extractTokenMetadataOwner(tokenMeta) === username;
 
     const removedFromUserSet = await redis.srem(userTokensKey, pushToken);
+    let removedMetadataCount = 0;
     if (metadataBelongsToUser) {
-      await redis.del(tokenMetaKey);
+      removedMetadataCount = await redis.del(tokenMetaKey);
     }
 
     logger.info("Unregistered push token", {
       username,
       tokenSuffix: pushToken.slice(-8),
       removedFromUserSet,
-      removedMetadata: metadataBelongsToUser,
+      removedMetadataCount,
     });
     logger.response(200, Date.now() - startTime);
     return res.status(200).json({
       success: true,
       removed: removedFromUserSet,
-      metadataRemoved: metadataBelongsToUser,
+      metadataRemoved: removedMetadataCount,
     });
   }
 
