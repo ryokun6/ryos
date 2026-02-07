@@ -7,7 +7,7 @@ import {
   setCorsHeaders,
 } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
-import { mapWithConcurrency } from "./_concurrency.js";
+import { mapWithConcurrency, resolveBoundedConcurrency } from "./_concurrency.js";
 import { normalizeUnregisterPushPayload } from "./_request-payloads.js";
 import {
   type PushTokenMetadata,
@@ -20,7 +20,10 @@ import {
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
-const TOKEN_METADATA_LOOKUP_CONCURRENCY = 8;
+const TOKEN_METADATA_LOOKUP_CONCURRENCY = resolveBoundedConcurrency(
+  process.env.PUSH_METADATA_LOOKUP_CONCURRENCY,
+  8
+);
 
 function createRedis(): Redis {
   return new Redis({

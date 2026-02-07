@@ -39,7 +39,10 @@ const APNS_STALE_REASONS = new Set([
   "Unregistered",
   "DeviceTokenNotForTopic",
 ]);
-const TOKEN_METADATA_LOOKUP_CONCURRENCY = 8;
+const TOKEN_METADATA_LOOKUP_CONCURRENCY = resolveBoundedConcurrency(
+  process.env.PUSH_METADATA_LOOKUP_CONCURRENCY,
+  8
+);
 const APNS_SEND_CONCURRENCY = resolveBoundedConcurrency(
   process.env.APNS_SEND_CONCURRENCY,
   4
