@@ -60,6 +60,33 @@ async function testResolveBoundedConcurrency() {
   assertEq(resolveBoundedConcurrency("not-a-number", 4), 4);
 }
 
+async function testWorkerErrorPropagation() {
+  let errorMessage = "";
+  try {
+    await mapWithConcurrency([1, 2, 3], 2, async (value) => {
+      if (value === 2) {
+        throw new Error("boom");
+      }
+      return value;
+    });
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : String(error);
+  }
+
+  assertEq(errorMessage, "boom");
+}
+
+async function testInvalidFallbackBoundsThrows() {
+  let errorMessage = "";
+  try {
+    resolveBoundedConcurrency("2", 0);
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : String(error);
+  }
+
+  assertEq(errorMessage, "Fallback concurrency must be within bounds");
+}
+
 export async function runPushConcurrencyTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-concurrency"));
   clearResults();
@@ -68,6 +95,8 @@ export async function runPushConcurrencyTests(): Promise<{ passed: number; faile
   await runTest("Concurrency helper respects max workers", testRespectsMaxConcurrency);
   await runTest("Concurrency helper rejects invalid limits", testInvalidConcurrencyThrows);
   await runTest("Concurrency helper resolves bounded env values", testResolveBoundedConcurrency);
+  await runTest("Concurrency helper propagates worker errors", testWorkerErrorPropagation);
+  await runTest("Concurrency helper validates fallback bounds", testInvalidFallbackBoundsThrows);
 
   return printSummary();
 }
