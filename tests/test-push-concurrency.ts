@@ -76,6 +76,23 @@ async function testWorkerErrorPropagation() {
   assertEq(errorMessage, "boom");
 }
 
+async function testStopsSchedulingAfterError() {
+  const processed: number[] = [];
+  try {
+    await mapWithConcurrency([1, 2, 3, 4], 1, async (value) => {
+      processed.push(value);
+      if (value === 2) {
+        throw new Error("stop");
+      }
+      return value;
+    });
+  } catch {
+    // expected
+  }
+
+  assertEq(processed.join(","), "1,2");
+}
+
 async function testInvalidFallbackBoundsThrows() {
   let errorMessage = "";
   try {
@@ -96,6 +113,7 @@ export async function runPushConcurrencyTests(): Promise<{ passed: number; faile
   await runTest("Concurrency helper rejects invalid limits", testInvalidConcurrencyThrows);
   await runTest("Concurrency helper resolves bounded env values", testResolveBoundedConcurrency);
   await runTest("Concurrency helper propagates worker errors", testWorkerErrorPropagation);
+  await runTest("Concurrency helper stops scheduling after error", testStopsSchedulingAfterError);
   await runTest("Concurrency helper validates fallback bounds", testInvalidFallbackBoundsThrows);
 
   return printSummary();

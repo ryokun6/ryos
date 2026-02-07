@@ -11,13 +11,21 @@ export async function mapWithConcurrency<T, R>(
 
   const results = new Array<R>(items.length);
   let currentIndex = 0;
+  let fatalError: unknown = null;
 
   async function runWorker(): Promise<void> {
     while (true) {
+      if (fatalError) return;
+
       const index = currentIndex;
       currentIndex += 1;
       if (index >= items.length) return;
-      results[index] = await worker(items[index], index);
+      try {
+        results[index] = await worker(items[index], index);
+      } catch (error) {
+        fatalError = error;
+        return;
+      }
     }
   }
 
@@ -25,6 +33,10 @@ export async function mapWithConcurrency<T, R>(
   await Promise.all(
     Array.from({ length: workerCount }, () => runWorker())
   );
+
+  if (fatalError) {
+    throw fatalError;
+  }
 
   return results;
 }
