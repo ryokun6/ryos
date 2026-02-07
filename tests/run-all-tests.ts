@@ -18,6 +18,7 @@ import { runAuthExtraTests } from "./test-auth-extra";
 import { runRoomsExtraTests } from "./test-rooms-extra";
 import { runPushApnsTests } from "./test-push-apns";
 import { runPushSharedTests } from "./test-push-shared";
+import { runPushRequestPayloadTests } from "./test-push-request-payloads";
 import { runPushPayloadTests } from "./test-push-payload";
 import { runPushConcurrencyTests } from "./test-push-concurrency";
 import { runPushResultsTests } from "./test-push-results";
@@ -96,6 +97,7 @@ async function runAllTests(): Promise<void> {
     { name: "auth-extra", run: runAuthExtraTests },
     { name: "rooms-extra", run: runRoomsExtraTests },
     { name: "push-shared", run: runPushSharedTests },
+    { name: "push-request-payloads", run: runPushRequestPayloadTests },
     { name: "push-payload", run: runPushPayloadTests },
     { name: "push-concurrency", run: runPushConcurrencyTests },
     { name: "push-results", run: runPushResultsTests },

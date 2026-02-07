@@ -47,11 +47,12 @@
     "test:translate-lyrics": "bun run tests/test-translate-lyrics.ts",
     "test:share-applet": "bun run tests/test-share-applet.ts",
     "test:push-shared": "bun run tests/test-push-shared.ts",
+    "test:push-request-payloads": "bun run tests/test-push-request-payloads.ts",
     "test:push-payload": "bun run tests/test-push-payload.ts",
     "test:push-concurrency": "bun run tests/test-push-concurrency.ts",
     "test:push-results": "bun run tests/test-push-results.ts",
     "test:push-apns": "bun run tests/test-push-apns.ts",
-    "test:push": "bun run test:push-shared && bun run test:push-payload && bun run test:push-concurrency && bun run test:push-results && bun run test:push-apns"
+    "test:push": "bun run test:push-shared && bun run test:push-request-payloads && bun run test:push-payload && bun run test:push-concurrency && bun run test:push-results && bun run test:push-apns"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.23",

@@ -11,12 +11,10 @@ import {
   type PushTokenMetadata,
   extractAuthFromHeaders,
   extractTokenMetadataOwner,
-  getOptionalTrimmedString,
-  getRequestBodyObject,
   getTokenMetaKey,
   getUserTokensKey,
-  isValidPushToken,
 } from "./_shared.js";
+import { normalizeUnregisterPushPayload } from "./_request-payloads.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -68,25 +66,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: "Unauthorized - invalid token" });
   }
 
-  const body = getRequestBodyObject(req.body);
-  if (!body) {
+  const parsedPayload = normalizeUnregisterPushPayload(req.body);
+  if (!parsedPayload.ok) {
     logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Request body must be a JSON object" });
+    return res.status(400).json({ error: parsedPayload.error });
   }
 
-  if (typeof body.token !== "undefined" && typeof body.token !== "string") {
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Invalid push token format" });
-  }
-
-  const hasTokenField = Object.prototype.hasOwnProperty.call(body, "token");
-  const pushToken = getOptionalTrimmedString(body.token);
+  const { token: pushToken } = parsedPayload.value;
   const userTokensKey = getUserTokensKey(username);
-
-  if (hasTokenField && typeof body.token === "string" && !pushToken) {
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Invalid push token format" });
-  }
 
   if (pushToken) {
     if (!isValidPushToken(pushToken)) {

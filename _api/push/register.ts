@@ -8,17 +8,14 @@ import {
 } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
 import {
-  type PushTokenMetadata,
   PUSH_TOKEN_TTL_SECONDS,
   extractAuthFromHeaders,
   extractTokenMetadataOwner,
-  getOptionalTrimmedString,
-  getRequestBodyObject,
   getTokenMetaKey,
   getUserTokensKey,
-  isValidPushToken,
-  normalizePushPlatform,
+  type PushTokenMetadata,
 } from "./_shared.js";
+import { normalizeRegisterPushPayload } from "./_request-payloads.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -70,43 +67,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: "Unauthorized - invalid token" });
   }
 
-  const body = getRequestBodyObject(req.body);
-  if (!body) {
+  const parsedPayload = normalizeRegisterPushPayload(req.body);
+  if (!parsedPayload.ok) {
     logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Request body must be a JSON object" });
+    return res.status(400).json({ error: parsedPayload.error });
   }
-
-  if (typeof body.token !== "undefined" && typeof body.token !== "string") {
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Invalid push token format" });
-  }
-
-  const hasTokenField = Object.prototype.hasOwnProperty.call(body, "token");
-  const pushToken = getOptionalTrimmedString(body.token);
-  const platform =
-    typeof body.platform === "undefined"
-      ? "ios"
-      : normalizePushPlatform(body.platform);
-
-  if (hasTokenField && typeof body.token === "string" && !pushToken) {
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Push token is required" });
-  }
-
-  if (!pushToken) {
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Push token is required" });
-  }
-
-  if (!isValidPushToken(pushToken)) {
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Invalid push token format" });
-  }
-
-  if (!platform) {
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Unsupported push platform" });
-  }
+  const { token: pushToken, platform } = parsedPayload.value;
 
   const tokenMetaKey = getTokenMetaKey(pushToken);
   const existingMeta = await redis.get<Partial<PushTokenMetadata> | null>(tokenMetaKey);
