@@ -74,7 +74,7 @@ export function useAiGeneration({
   const generatingYearRef = useRef<string | null>(null); // Ref for current Year
 
   // Get the selected AI model from app store
-  const { aiModel } = useAppStore();
+  const aiModel = useAppStore((state) => state.aiModel);
 
   // Use the Zustand store for caching and updating the store
   const loadSuccess = useInternetExplorerStore((state) => state.loadSuccess);
