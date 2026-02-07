@@ -53,7 +53,7 @@ export function ChatsAppComponent({
 }: AppProps) {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("chats", helpItems);
-  const aiMessages = useChatsStore((state) => state.aiMessages);
+  const { aiMessages } = useChatsStore();
 
   // Use auth hook for authentication functionality
   const authResult = useAuth();
@@ -146,7 +146,6 @@ export function ChatsAppComponent({
   // Get font size state from store - select separately for optimization
   const fontSize = useChatsStore((state) => state.fontSize);
   const setFontSize = useChatsStore((state) => state.setFontSize);
-  const messageRenderLimit = useChatsStore((state) => state.messageRenderLimit);
 
   const [isShaking, setIsShaking] = useState(false);
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
@@ -512,7 +511,7 @@ export function ChatsAppComponent({
         },
         username: msg.username,
       }))
-    : messages.slice(-messageRenderLimit).map((msg: AIChatMessage) => ({
+    : messages.map((msg: AIChatMessage) => ({
         ...msg,
         // metadata with createdAt is already present from AIChatMessage
         username: msg.role === "user" ? username || "You" : "Ryo",

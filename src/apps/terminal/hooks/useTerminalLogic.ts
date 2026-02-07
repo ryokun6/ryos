@@ -6,7 +6,6 @@ import {
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
-import { useTerminalStoreShallow } from "@/stores/helpers";
 import { useTerminalStore } from "@/stores/useTerminalStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAiChat } from "@/apps/chats/hooks/useAiChat";
@@ -30,7 +29,6 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { TERMINAL_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import { CommandHistory, CommandContext, ToolInvocationData } from "../types";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 // Maximum number of rendered command entries to keep in memory
 const MAX_RENDERED_HISTORY = 200;
@@ -280,14 +278,7 @@ export const useTerminalLogic = ({
     setIsInAiMode,
     initialAiPrompt,
     setInitialAiPrompt,
-    currentPath: storedPath,
-  } = useTerminalStoreShallow((state) => ({
-    isInAiMode: state.isInAiMode,
-    setIsInAiMode: state.setIsInAiMode,
-    initialAiPrompt: state.initialAiPrompt,
-    setInitialAiPrompt: state.setInitialAiPrompt,
-    currentPath: state.currentPath,
-  }));
+  } = useTerminalStore();
   const [spinnerIndex, setSpinnerIndex] = useState(0);
   const [isInteractingWithPreview, setIsInteractingWithPreview] =
     useState(false);
@@ -318,6 +309,9 @@ export const useTerminalLogic = ({
 
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
+
+  // Get terminal state from the store
+  const { currentPath: storedPath } = useTerminalStore();
 
   const { currentPath, files, navigateToPath, saveFile, moveToTrash } =
     useFileSystem(storedPath);
@@ -361,7 +355,7 @@ export const useTerminalLogic = ({
     playMooSound,
   } = useTerminalSounds();
 
-  const username = useChatsStore((state) => state.username);
+  const { username } = useChatsStore();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
@@ -1063,16 +1057,13 @@ export const useTerminalLogic = ({
 
               // If password provided, attempt authentication first
               if (passwordArg) {
-                const authResp = await abortableFetch("/api/auth/login", {
+                const authResp = await fetch("/api/auth/login", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
                     username: targetUsername,
                     password: passwordArg,
                   }),
-                  timeout: 15000,
-                  throwOnHttpError: false,
-                  retry: { maxAttempts: 1, initialDelayMs: 250 },
                 });
 
                 if (authResp.ok) {

@@ -12,7 +12,6 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useCustomEventListener } from "@/hooks/useEventListener";
 import { helpItems } from "..";
 import type { VideosInitialData } from "../../base/types";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 interface Video {
   id: string;
@@ -221,13 +220,8 @@ export function useVideosLogic({
         }
 
         // 1. Fetch initial info from oEmbed
-        const oembedResponse = await abortableFetch(
-          `https://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=${videoId}&format=json`,
-          {
-            timeout: 15000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
+        const oembedResponse = await fetch(
+          `https://www.youtube.com/oembed?url=http://www.youtube.com/watch?v=${videoId}&format=json`
         );
         if (!oembedResponse.ok) {
           throw new Error(
@@ -245,22 +239,16 @@ export function useVideosLogic({
 
         try {
           // 2. Call our API to parse the title using AI
-          const parseResponse = await abortableFetch(
-            getApiUrl("/api/parse-title"),
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                title: rawTitle,
-                author_name: authorName,
-              }),
-              timeout: 15000,
-              throwOnHttpError: false,
-              retry: { maxAttempts: 1, initialDelayMs: 250 },
-            }
-          );
+          const parseResponse = await fetch(getApiUrl("/api/parse-title"), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              title: rawTitle,
+              author_name: authorName,
+            }),
+          });
 
           if (parseResponse.ok) {
             const parsedData = await parseResponse.json();

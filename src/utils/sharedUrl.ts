@@ -1,20 +1,11 @@
 import { getApiUrl } from "./platform";
-import { abortableFetch } from "./abortableFetch";
 
 /**
  * Decodes a shared URL code from the /share/{code} path
  */
 export async function decodeSharedUrl(code: string): Promise<{ url: string; year: string } | null> {
   try {
-    const response = await abortableFetch(
-      getApiUrl(`/api/share-link?action=decode&code=${encodeURIComponent(code)}`),
-      {
-        method: "GET",
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      }
-    );
+    const response = await fetch(getApiUrl(`/api/share-link?action=decode&code=${encodeURIComponent(code)}`));
     
     if (!response.ok) {
       console.error('Failed to decode shared URL:', await response.text());

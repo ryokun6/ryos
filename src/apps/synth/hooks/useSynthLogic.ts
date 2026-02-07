@@ -11,7 +11,6 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { helpItems } from "..";
-import { useShallow } from "zustand/react/shallow";
 
 // Define oscillator type
 type OscillatorType = "sine" | "square" | "triangle" | "sawtooth";
@@ -89,20 +88,7 @@ export const useSynthLogic = ({
     setCurrentOctave,
     currentVolume,
     setSustainedNotes,
-  } = useSynthStore(
-    useShallow((state) => ({
-      labelType: state.labelType,
-      setLabelType: state.setLabelType,
-      presets: state.presets,
-      setPresets: state.setPresets,
-      currentPreset: state.currentPreset,
-      setCurrentPreset: state.setCurrentPreset,
-      currentOctave: state.currentOctave,
-      setCurrentOctave: state.setCurrentOctave,
-      currentVolume: state.currentVolume,
-      setSustainedNotes: state.setSustainedNotes,
-    }))
-  );
+  } = useSynthStore();
   const octaveOffset = currentOctave;
   const setOctaveOffset = setCurrentOctave;
   // Always read the latest octave offset inside keyboard handlers

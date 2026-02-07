@@ -2,7 +2,6 @@ import { useState, useRef, useCallback } from "react";
 import { getSupportedMimeType } from "@/utils/audio";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 // Constants
 const DEFAULT_SILENCE_THRESHOLD = 2000; // ms
@@ -182,16 +181,10 @@ export function useAudioTranscription({
         const extension = mimeType.split(";")[0].split("/")[1];
         formData.append("audio", audioBlob, `recording.${extension}`);
 
-        const response = await abortableFetch(
-          getApiUrl("/api/audio-transcribe"),
-          {
-            method: "POST",
-            body: formData,
-            timeout: 30000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
-        );
+        const response = await fetch(getApiUrl("/api/audio-transcribe"), {
+          method: "POST",
+          body: formData,
+        });
 
         if (!response.ok) {
           const errorData = (await response.json()) as { error: string };

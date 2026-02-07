@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 // Mobile detection for performance tuning
 const isMobileDevice =
@@ -49,10 +48,7 @@ const preloadSound = async (soundPath: string): Promise<AudioBuffer> => {
   // Create the load promise and store it
   const loadPromise = (async () => {
     try {
-      const response = await abortableFetch(soundPath, {
-        timeout: 15000,
-        retry: { maxAttempts: 2, initialDelayMs: 500 },
-      });
+      const response = await fetch(soundPath);
       const arrayBuffer = await response.arrayBuffer();
       const audioBuffer = await getAudioContext().decodeAudioData(arrayBuffer);
       // LRU-style eviction: remove oldest entry if cache is full

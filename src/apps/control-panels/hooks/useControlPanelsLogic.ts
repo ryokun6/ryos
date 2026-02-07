@@ -23,7 +23,6 @@ import { getTranslatedAppName } from "@/utils/i18n";
 import { getTabStyles } from "@/utils/tabStyles";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import type { ControlPanelsInitialData } from "@/apps/base/types";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 interface StoreItem {
   name: string;
@@ -257,12 +256,10 @@ export function useControlPanelsLogic({
   }));
 
   // Theme state
-  const currentTheme = useThemeStore((state) => state.current);
-  const setTheme = useThemeStore((state) => state.setTheme);
+  const { current: currentTheme, setTheme } = useThemeStore();
 
   // Language state
-  const currentLanguage = useLanguageStore((state) => state.current);
-  const setLanguage = useLanguageStore((state) => state.setLanguage);
+  const { current: currentLanguage, setLanguage } = useLanguageStore();
 
   // Use auth hook
   const {
@@ -354,16 +351,13 @@ export function useControlPanelsLogic({
         return;
       }
 
-      const response = await abortableFetch(getApiUrl("/api/auth/logout-all"), {
+      const response = await fetch(getApiUrl("/api/auth/logout-all"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
           "X-Username": username,
         },
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
 
       const data = await response.json();

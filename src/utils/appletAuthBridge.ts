@@ -12,7 +12,6 @@ export const APPLET_AUTH_BRIDGE_SCRIPT = `
       return;
     }
 
-    var PARENT_ORIGIN = window.location.origin;
     var currentAuthPayload = null;
     var authResolved = false;
     var resolveAuth = function (payload) {};
@@ -24,6 +23,11 @@ export const APPLET_AUTH_BRIDGE_SCRIPT = `
         }
         authResolved = true;
         currentAuthPayload = payload || null;
+        try {
+          window.__RYOS_APPLET_AUTH = currentAuthPayload || {};
+        } catch (err) {
+          console.warn("[ryOS] Failed to expose applet auth payload:", err);
+        }
         resolve(null);
       };
     });
@@ -32,10 +36,7 @@ export const APPLET_AUTH_BRIDGE_SCRIPT = `
     var requestOnce = function () {
       try {
         if (window.parent) {
-          window.parent.postMessage(
-            { type: CHANNEL, action: "request" },
-            PARENT_ORIGIN
-          );
+          window.parent.postMessage({ type: CHANNEL, action: "request" }, "*");
         }
       } catch (err) {
         console.warn("[ryOS] Applet auth request failed:", err);
@@ -60,12 +61,6 @@ export const APPLET_AUTH_BRIDGE_SCRIPT = `
       }, TIMEOUT_MS);
 
       window.addEventListener("message", function (event) {
-        if (event.source !== window.parent) {
-          return;
-        }
-        if (event.origin !== PARENT_ORIGIN) {
-          return;
-        }
         var data = event && event.data;
         if (!data || data.type !== CHANNEL || data.action !== "response") {
           return;
@@ -73,6 +68,11 @@ export const APPLET_AUTH_BRIDGE_SCRIPT = `
         clearInterval(requestTimer);
         if (authResolved) {
           currentAuthPayload = data.payload || null;
+          try {
+            window.__RYOS_APPLET_AUTH = currentAuthPayload || {};
+          } catch (err) {
+            console.warn("[ryOS] Failed to refresh applet auth payload:", err);
+          }
           return;
         }
         resolveAuth(data.payload || null);
@@ -84,6 +84,7 @@ export const APPLET_AUTH_BRIDGE_SCRIPT = `
 
       var originalFetch = window.fetch.bind(window);
       window.__RYOS_APPLET_FETCH_PATCHED = true;
+      window.__RYOS_ORIGINAL_FETCH = originalFetch;
 
       window.fetch = function (input, init) {
         return authReady.then(function () {

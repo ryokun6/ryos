@@ -4,7 +4,6 @@ import { getPusherClient } from "@/lib/pusherClient";
 import { useChatsStore } from "../../../stores/useChatsStore";
 import { toast } from "@/hooks/useToast";
 import { type ChatRoom, type ChatMessage } from "../../../../src/types/chat";
-import { useChatsStoreShallow } from "@/stores/helpers";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
@@ -52,26 +51,7 @@ export function useChatRoom(
     removeMessageFromRoom,
     incrementUnread,
     messageRenderLimit,
-  } = useChatsStoreShallow((state) => ({
-    username: state.username,
-    authToken: state.authToken,
-    rooms: state.rooms,
-    currentRoomId: state.currentRoomId,
-    roomMessages: state.roomMessages,
-    isSidebarVisible: state.isSidebarVisible,
-    toggleSidebarVisibility: state.toggleSidebarVisibility,
-    fetchRooms: state.fetchRooms,
-    fetchBulkMessages: state.fetchBulkMessages,
-    setRooms: state.setRooms,
-    switchRoom: state.switchRoom,
-    createRoom: state.createRoom,
-    deleteRoom: state.deleteRoom,
-    sendMessage: state.sendMessage,
-    addMessageToRoom: state.addMessageToRoom,
-    removeMessageFromRoom: state.removeMessageFromRoom,
-    incrementUnread: state.incrementUnread,
-    messageRenderLimit: state.messageRenderLimit,
-  }));
+  } = useChatsStore();
 
   // Derive isAdmin directly from the username
   const isAdmin = username === "ryo";

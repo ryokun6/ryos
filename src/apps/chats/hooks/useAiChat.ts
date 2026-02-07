@@ -28,7 +28,6 @@ import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
-import { useChatsStoreShallow } from "@/stores/helpers";
 import { generateHTML, generateJSON } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -39,7 +38,6 @@ import { htmlToMarkdown, markdownToHtml } from "@/utils/markdown";
 import { AnyExtension } from "@tiptap/core";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
-import { abortableFetch } from "@/utils/abortableFetch";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -521,13 +519,7 @@ const showBackgroundedMessageNotification = (message: UIMessage) => {
 
 export function useAiChat(onPromptSetUsername?: () => void) {
   const { aiMessages, setAiMessages, username, authToken, ensureAuthToken } =
-    useChatsStoreShallow((state) => ({
-      aiMessages: state.aiMessages,
-      setAiMessages: state.setAiMessages,
-      username: state.username,
-      authToken: state.authToken,
-      ensureAuthToken: state.ensureAuthToken,
-    }));
+    useChatsStore();
   const launchApp = useLaunchApp();
   const aiModel = useAppStore((state) => state.aiModel);
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
@@ -809,13 +801,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   ? Math.min(Math.max(limit, 1), 100)
                   : 50;
 
-                const response = await abortableFetch(
-                  getApiUrl("/api/share-applet?list=true"),
-                  {
-                    timeout: 15000,
-                    retry: { maxAttempts: 2, initialDelayMs: 500 },
-                  }
-                );
+                const response = await fetch(getApiUrl("/api/share-applet?list=true"));
+                if (!response.ok) {
+                  throw new Error(`Failed to list shared applets (HTTP ${response.status})`);
+                }
 
                 const data = await response.json();
                 const allApplets: Array<{
@@ -1003,15 +992,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 // Fetch applet metadata to get the name
                 let appletName = shareId;
                 try {
-                  const response = await abortableFetch(
-                    getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareId)}`),
-                    {
-                      timeout: 15000,
-                      retry: { maxAttempts: 1, initialDelayMs: 250 },
-                    }
-                  );
-                  const data = await response.json();
-                  appletName = data.title || data.name || shareId;
+                  const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareId)}`));
+                  if (response.ok) {
+                    const data = await response.json();
+                    appletName = data.title || data.name || shareId;
+                  }
                 } catch {
                   // Fall back to shareId if fetch fails
                 }
@@ -1162,13 +1147,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               if (path.startsWith("/Applets Store/")) {
                 // Fetch shared applet content
                 const shareId = path.replace("/Applets Store/", "");
-                const response = await abortableFetch(
-                  getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareId)}`),
-                  {
-                    timeout: 15000,
-                    retry: { maxAttempts: 2, initialDelayMs: 500 },
-                  }
-                );
+                const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareId)}`));
+
+                if (!response.ok) {
+                  throw new Error(`Failed to fetch shared applet (HTTP ${response.status})`);
+                }
 
                 const data = await response.json();
                 const filesStore = useFilesStore.getState();
@@ -2170,7 +2153,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       console.log("[clearChats] Triggering async memory extraction...");
       
       // Fire and forget - don't await, don't block the UI
-      abortableFetch(getApiUrl("/api/ai/extract-memories"), {
+      fetch(getApiUrl("/api/ai/extract-memories"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2183,8 +2166,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             parts: msg.parts,
           })),
         }),
-        timeout: 15000,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
       })
         .then(res => res.json())
         .then(data => {

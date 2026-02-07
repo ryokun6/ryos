@@ -10,7 +10,6 @@ import {
   type MacPreset,
 } from "@/stores/useInfiniteMacStore";
 import { helpItems } from "..";
-import { useShallow } from "zustand/react/shallow";
 
 // Re-export types and presets for consumers
 export type { ScaleOption, MacPreset, ScreenData } from "@/stores/useInfiniteMacStore";
@@ -64,17 +63,7 @@ export function useInfiniteMacLogic({
     setIsEmulatorLoaded: setIsEmulatorLoadedStore,
     setIsPaused: setIsPausedStore,
     setLastScreenData,
-  } = useInfiniteMacStore(
-    useShallow((state) => ({
-      scale: state.scale,
-      setScale: state.setScale,
-      setActiveIframe: state.setActiveIframe,
-      setSelectedPreset: state.setSelectedPreset,
-      setIsEmulatorLoaded: state.setIsEmulatorLoaded,
-      setIsPaused: state.setIsPaused,
-      setLastScreenData: state.setLastScreenData,
-    }))
-  );
+  } = useInfiniteMacStore();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   // Store latest screen data for screenshots (from emulator_screen messages)
   const lastScreenDataRef = useRef<ScreenData | null>(null);
@@ -153,7 +142,7 @@ export function useInfiniteMacLogic({
     (type: string, payload?: Record<string, unknown>) => {
       const win = iframeRef.current?.contentWindow;
       if (win) {
-        win.postMessage({ type, ...payload }, window.location.origin);
+        win.postMessage({ type, ...payload }, "*");
       }
     },
     []
@@ -284,15 +273,14 @@ export function useInfiniteMacLogic({
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      const iframeWindow = iframeRef.current?.contentWindow ?? null;
-      const isBridgeMessage =
-        e.origin === window.location.origin &&
-        e.source === iframeWindow &&
-        e.data?.type === "_infinite_mac_bridge";
-
       // Bridge wrapper forwards as { type: '_infinite_mac_bridge', payload }; payload is
       // the raw iframe message (emulator_loaded, emulator_screen, etc. per Infinite Mac embed API).
-      const data = isBridgeMessage ? e.data.payload : undefined;
+      const data =
+        e.origin === window.location.origin && e.data?.type === "_infinite_mac_bridge"
+          ? e.data.payload
+          : e.origin === "https://infinitemac.org"
+            ? e.data
+            : undefined;
       if (!data || typeof data !== "object") return;
       switch (data.type) {
         case "emulator_loaded":

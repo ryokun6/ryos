@@ -113,7 +113,7 @@ export function AppletViewerAppComponent({
                 srcDoc={injectAppletAuthScript(ensureMacFonts(htmlContent))}
                 title={windowTitle}
                 className="border-0"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
                 style={{
                   display: "block",
                   margin: 0,

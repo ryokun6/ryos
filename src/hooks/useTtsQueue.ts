@@ -5,7 +5,6 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { checkOfflineAndShowError } from "@/utils/offline";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 /**
  * Hook that turns short text chunks into speech and queues them in the same
@@ -154,14 +153,11 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
             headers["X-Username"] = username;
           }
 
-          const res = await abortableFetch(endpoint, {
+          const res = await fetch(endpoint, {
             method: "POST",
             headers,
             body: JSON.stringify(requestBody),
             signal: controller.signal,
-            timeout: 30000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
           });
           controllersRef.current.delete(controller);
           if (!res.ok) {

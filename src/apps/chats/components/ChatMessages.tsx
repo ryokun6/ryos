@@ -29,7 +29,6 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import EmojiAquarium from "@/components/shared/EmojiAquarium";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
-import { abortableFetch } from "@/utils/abortableFetch";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -535,12 +534,9 @@ function ChatMessagesContent({
     }
 
     try {
-      const res = await abortableFetch(url, {
+      const res = await fetch(url, {
         method: "DELETE",
         headers,
-        timeout: 10000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
       if (res.ok) {
         // Use the actual server message ID for local removal to match store expectations
@@ -562,13 +558,6 @@ function ChatMessagesContent({
         .catch(() => ({ error: `HTTP error! status: ${res.status}` }));
       console.error("Failed to delete message", errorData);
     } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") {
-        console.error("Delete message request timed out", {
-          roomId,
-          serverMessageId,
-        });
-        return;
-      }
       console.error("Error deleting message", err);
     }
   };
