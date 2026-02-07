@@ -82,11 +82,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userTokensKey = getUserTokensKey(username);
 
   if (pushToken) {
-    if (!isValidPushToken(pushToken)) {
-      logger.response(400, Date.now() - startTime);
-      return res.status(400).json({ error: "Invalid push token format" });
-    }
-
     const tokenMetaKey = getTokenMetaKey(pushToken);
     const tokenMeta = await redis.get<Partial<PushTokenMetadata> | null>(tokenMetaKey);
     const metadataBelongsToUser = extractTokenMetadataOwner(tokenMeta) === username;
