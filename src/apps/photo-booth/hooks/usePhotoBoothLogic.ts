@@ -176,7 +176,7 @@ export function usePhotoBoothLogic({
   const [isMultiPhotoMode, setIsMultiPhotoMode] = useState(false);
   const [multiPhotoCount, setMultiPhotoCount] = useState(0);
   const multiPhotoTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [currentPhotoBatch, setCurrentPhotoBatch] = useState<string[]>([]);
+  const currentPhotoBatchRef = useRef<string[]>([]);
   const [isFlashing, setIsFlashing] = useState(false);
   const [lastPhoto, setLastPhoto] = useState<string | null>(null);
   const [showThumbnail, setShowThumbnail] = useState(false);
@@ -215,7 +215,7 @@ export function usePhotoBoothLogic({
 
   const handleClearPhotos = useCallback(() => {
     clearPhotos();
-    setCurrentPhotoBatch([]);
+    currentPhotoBatchRef.current = [];
   }, [clearPhotos]);
 
   const handleExportPhotos = useCallback(async () => {
@@ -740,7 +740,7 @@ export function usePhotoBoothLogic({
   const startMultiPhotoSequence = () => {
     setIsMultiPhotoMode(true);
     setMultiPhotoCount(0);
-    setCurrentPhotoBatch([]);
+    currentPhotoBatchRef.current = [];
 
     // Take 4 photos with a 1-second interval
     const timer = setInterval(() => {
@@ -757,10 +757,11 @@ export function usePhotoBoothLogic({
           clearInterval(timer);
           multiPhotoTimerRef.current = null;
           setIsMultiPhotoMode(false);
+          const completedBatch = currentPhotoBatchRef.current;
 
           // After the sequence completes, process batch photos and convert to references
           // This happens after all photos are taken
-          const batchWithReferences = currentPhotoBatch.map((dataUrl) => {
+          const batchWithReferences = completedBatch.map((dataUrl) => {
             // Convert to blob and save file similar to handlePhoto
             const base64Data = dataUrl.split(",")[1];
             const mimeType = dataUrl.split(",")[0].split(":")[1].split(";")[0];
@@ -814,8 +815,8 @@ export function usePhotoBoothLogic({
           addPhotos(batchWithReferences);
 
           // Show thumbnail animation for the last photo in the sequence
-          if (currentPhotoBatch.length > 0) {
-            setLastPhoto(currentPhotoBatch[currentPhotoBatch.length - 1]);
+          if (completedBatch.length > 0) {
+            setLastPhoto(completedBatch[completedBatch.length - 1]);
             setShowThumbnail(true);
             setTimeout(() => setShowThumbnail(false), 3000);
           }
@@ -882,7 +883,10 @@ export function usePhotoBoothLogic({
       }
 
       // Add to batch
-      setCurrentPhotoBatch((prev) => [...prev, photoDataUrl]);
+      currentPhotoBatchRef.current = [
+        ...currentPhotoBatchRef.current,
+        photoDataUrl,
+      ];
     };
 
     // Add event listener
