@@ -11,6 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { useChatsStoreShallow } from "@/stores/helpers";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 interface AppStoreFeedProps {
   theme?: string;
@@ -208,10 +209,15 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       return shuffled;
     };
     try {
-      const response = await fetch(getApiUrl("/api/share-applet?list=true"));
-      if (response.ok) {
-        const data = await response.json();
-        const allApplets = data.applets || [];
+      const response = await abortableFetch(
+        getApiUrl("/api/share-applet?list=true"),
+        {
+          timeout: 15000,
+          retry: { maxAttempts: 2, initialDelayMs: 500 },
+        }
+      );
+      const data = await response.json();
+      const allApplets = data.applets || [];
         
         // Categorize applets by priority
         const featured: Applet[] = [];
@@ -244,8 +250,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
           ...deterministicShuffle(others, 4),
         ];
         
-        setApplets(sortedApplets);
-      }
+      setApplets(sortedApplets);
     } catch (error) {
       console.error("Error fetching applets:", error);
     } finally {
@@ -262,6 +267,9 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
 
   // Fetch applet content only for the current applet
   useEffect(() => {
+    const abortController = new AbortController();
+    let isActive = true;
+
     const fetchAppletContent = async (appletId: string) => {
       if (loadedRef.current.has(appletId) || loadingRef.current.has(appletId)) {
         return;
@@ -271,17 +279,29 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       setLoadingContents((prev) => new Set(prev).add(appletId));
 
       try {
-        const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`));
-        if (response.ok) {
-          const data = await response.json();
-          loadedRef.current.add(appletId);
-          setAppletContents((prev) => {
-            const next = new Map(prev);
-            next.set(appletId, data.content || "");
-            return next;
-          });
-        }
+        const response = await abortableFetch(
+          getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`),
+          {
+            signal: abortController.signal,
+            timeout: 15000,
+            retry: { maxAttempts: 2, initialDelayMs: 500 },
+          }
+        );
+        if (!isActive || abortController.signal.aborted) return;
+
+        const data = await response.json();
+        if (!isActive || abortController.signal.aborted) return;
+
+        loadedRef.current.add(appletId);
+        setAppletContents((prev) => {
+          const next = new Map(prev);
+          next.set(appletId, data.content || "");
+          return next;
+        });
       } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
         console.error(`Error fetching applet content for ${appletId}:`, error);
       } finally {
         loadingRef.current.delete(appletId);
@@ -295,8 +315,12 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
 
     // Only load the current applet
     if (applets.length > 0 && applets[currentIndex]) {
-      fetchAppletContent(applets[currentIndex].id);
+      void fetchAppletContent(applets[currentIndex].id);
     }
+    return () => {
+      isActive = false;
+      abortController.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, applets.length]);
 
