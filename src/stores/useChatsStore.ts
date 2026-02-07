@@ -760,7 +760,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           );
 
           try {
-            const response = await fetch(
+            const response = await abortableFetch(
               "/api/auth/token/refresh",
               {
                 method: "POST",
@@ -771,6 +771,9 @@ export const useChatsStore = create<ChatsStoreState>()(
                   username: currentUsername,
                   oldToken: currentToken,
                 }),
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
               }
             );
 
@@ -889,13 +892,16 @@ export const useChatsStore = create<ChatsStoreState>()(
           // Inform server to invalidate current token if we have auth
           if (currentUsername && currentToken) {
             try {
-              await fetch(getApiUrl("/api/auth/logout"), {
+              await abortableFetch(getApiUrl("/api/auth/logout"), {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${currentToken}`,
                   "X-Username": currentUsername,
                 },
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
               });
             } catch (err) {
               console.warn(
@@ -956,7 +962,12 @@ export const useChatsStore = create<ChatsStoreState>()(
               ? `/api/rooms?${queryParams.toString()}`
               : "/api/rooms";
             
-            const response = await fetch(url);
+            const response = await abortableFetch(url, {
+              method: "GET",
+              timeout: 15000,
+              throwOnHttpError: false,
+              retry: { maxAttempts: 1, initialDelayMs: 250 },
+            });
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
                 error: `HTTP error! status: ${response.status}`,
@@ -986,8 +997,14 @@ export const useChatsStore = create<ChatsStoreState>()(
           console.log(`[ChatsStore] Fetching messages for room ${roomId}...`);
 
           try {
-            const response = await fetch(
-              `/api/rooms/${encodeURIComponent(roomId)}/messages`
+            const response = await abortableFetch(
+              `/api/rooms/${encodeURIComponent(roomId)}/messages`,
+              {
+                method: "GET",
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
+              }
             );
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
