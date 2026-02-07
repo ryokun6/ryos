@@ -3,6 +3,7 @@ import type { PusherChannel } from "@/lib/pusherClient";
 import { getPusherClient } from "@/lib/pusherClient";
 import { getApiUrl } from "@/utils/platform";
 import { toast } from "@/hooks/useToast";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 export interface ListenTrackMeta {
   title: string;
@@ -285,9 +286,12 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
 
     fetchSessions: async () => {
       try {
-        const response = await fetch(getApiUrl("/api/listen/sessions"), {
+        const response = await abortableFetch(getApiUrl("/api/listen/sessions"), {
           method: "GET",
           headers: { "Content-Type": "application/json" },
+          timeout: 15000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         });
 
         if (!response.ok) {
@@ -307,10 +311,13 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
 
     createSession: async (username: string) => {
       try {
-        const response = await fetch(getApiUrl("/api/listen/sessions"), {
+        const response = await abortableFetch(getApiUrl("/api/listen/sessions"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username }),
+          timeout: 15000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         });
 
         if (!response.ok) {
@@ -348,7 +355,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         const isAnonymous = !username;
         const anonymousId = isAnonymous ? generateAnonymousId() : null;
 
-        const response = await fetch(
+        const response = await abortableFetch(
           getApiUrl(`/api/listen/sessions/${encodeURIComponent(sessionId)}/join`),
           {
             method: "POST",
@@ -356,6 +363,9 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
             body: JSON.stringify(
               isAnonymous ? { anonymousId } : { username }
             ),
+            timeout: 15000,
+            throwOnHttpError: false,
+            retry: { maxAttempts: 1, initialDelayMs: 250 },
           }
         );
 
@@ -411,7 +421,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       }
 
       try {
-        const response = await fetch(
+        const response = await abortableFetch(
           getApiUrl(`/api/listen/sessions/${encodeURIComponent(currentSession.id)}/leave`),
           {
             method: "POST",
@@ -419,6 +429,9 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
             body: JSON.stringify(
               isAnonymous ? { anonymousId } : { username }
             ),
+            timeout: 15000,
+            throwOnHttpError: false,
+            retry: { maxAttempts: 1, initialDelayMs: 250 },
           }
         );
 
@@ -445,7 +458,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       }
 
       try {
-        const response = await fetch(
+        const response = await abortableFetch(
           getApiUrl(`/api/listen/sessions/${encodeURIComponent(currentSession.id)}/sync`),
           {
             method: "POST",
@@ -454,6 +467,9 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
               username,
               state: payload,
             }),
+            timeout: 15000,
+            throwOnHttpError: false,
+            retry: { maxAttempts: 1, initialDelayMs: 250 },
           }
         );
 
@@ -483,12 +499,15 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       }
 
       try {
-        const response = await fetch(
+        const response = await abortableFetch(
           getApiUrl(`/api/listen/sessions/${encodeURIComponent(currentSession.id)}/reaction`),
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, emoji }),
+            timeout: 15000,
+            throwOnHttpError: false,
+            retry: { maxAttempts: 1, initialDelayMs: 250 },
           }
         );
 
