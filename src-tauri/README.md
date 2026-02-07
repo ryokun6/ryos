@@ -101,7 +101,7 @@ Set these in your deployment environment to enable test sends:
 - `APNS_BUNDLE_ID`
 - `APNS_PRIVATE_KEY` (contents of `.p8`, newline-safe)
 - `APNS_USE_SANDBOX` (`true`/`1` for sandbox, optional)
-- `APNS_ENDPOINT_OVERRIDE` (optional `https://...` endpoint for local/staging APNs gateway testing)
+- `APNS_ENDPOINT_OVERRIDE` (optional `https://...` endpoint for local/staging APNs gateway testing; origin used)
 - `APNS_CA_CERT` (optional PEM cert for custom APNs gateway TLS trust)
 
 ## Security

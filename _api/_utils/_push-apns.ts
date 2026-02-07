@@ -66,6 +66,19 @@ function getErrorMessage(error: unknown): string {
   return String(error);
 }
 
+function normalizeEndpointOverride(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "https:") return undefined;
+    if (!parsed.hostname) return undefined;
+    return parsed.origin;
+  } catch {
+    return undefined;
+  }
+}
+
 export function getMissingApnsEnvVars(
   env: NodeJS.ProcessEnv = process.env
 ): string[] {
@@ -86,9 +99,8 @@ export function getApnsConfigFromEnv(): ApnsConfig | null {
   const privateKeyRaw = process.env.APNS_PRIVATE_KEY as string;
   const caCertRaw = process.env.APNS_CA_CERT;
   const endpointOverrideRaw = process.env.APNS_ENDPOINT_OVERRIDE?.trim();
-  const useSandbox =
-    process.env.APNS_USE_SANDBOX === "1" ||
-    process.env.APNS_USE_SANDBOX === "true";
+  const useSandboxValue = process.env.APNS_USE_SANDBOX?.trim().toLowerCase();
+  const useSandbox = useSandboxValue === "1" || useSandboxValue === "true";
 
   return {
     keyId,
@@ -96,10 +108,7 @@ export function getApnsConfigFromEnv(): ApnsConfig | null {
     bundleId,
     privateKey: normalizePrivateKey(privateKeyRaw),
     useSandbox,
-    endpointOverride:
-      endpointOverrideRaw && endpointOverrideRaw.startsWith("https://")
-        ? endpointOverrideRaw
-        : undefined,
+    endpointOverride: normalizeEndpointOverride(endpointOverrideRaw),
     caCert: caCertRaw ? normalizePem(caCertRaw) : undefined,
   };
 }

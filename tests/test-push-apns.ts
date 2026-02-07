@@ -267,10 +267,10 @@ async function testApnsEnvValidationHelpers() {
       APNS_BUNDLE_ID: "lu.ryo.os",
       APNS_PRIVATE_KEY:
         "-----BEGIN PRIVATE KEY-----\\nline-1\\nline-2\\n-----END PRIVATE KEY-----",
-      APNS_ENDPOINT_OVERRIDE: "https://example.test",
+      APNS_ENDPOINT_OVERRIDE: "https://example.test/custom/path?x=1",
       APNS_CA_CERT:
         "-----BEGIN CERTIFICATE-----\\nline-a\\nline-b\\n-----END CERTIFICATE-----",
-      APNS_USE_SANDBOX: "true",
+      APNS_USE_SANDBOX: "TRUE",
     },
     () => {
       const missing = getMissingApnsEnvVars();
@@ -284,6 +284,23 @@ async function testApnsEnvValidationHelpers() {
       assertEq(config.useSandbox, true);
       assert(config.privateKey.includes("\nline-1\n"), "Expected private key newline normalization");
       assert(config.caCert?.includes("\nline-a\n"), "Expected CA cert newline normalization");
+    }
+  );
+
+  withEnv(
+    {
+      APNS_KEY_ID: "ABC123DEFG",
+      APNS_TEAM_ID: "TEAM123ABC",
+      APNS_BUNDLE_ID: "lu.ryo.os",
+      APNS_PRIVATE_KEY:
+        "-----BEGIN PRIVATE KEY-----\\nline-1\\nline-2\\n-----END PRIVATE KEY-----",
+      APNS_ENDPOINT_OVERRIDE: "http://insecure.example.test",
+    },
+    () => {
+      const config = getApnsConfigFromEnv();
+      assert(config !== null, "Expected APNs config with required vars present");
+      if (!config) return;
+      assertEq(config.endpointOverride, undefined);
     }
   );
 }
