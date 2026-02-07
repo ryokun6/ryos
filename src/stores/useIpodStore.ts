@@ -368,17 +368,23 @@ async function saveLyricOffsetToServer(
   console.log(`[iPod Store] Saving lyric offset for ${trackId}: ${lyricOffset}ms...`);
   
   try {
-    const response = await fetch(getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${authToken}`,
-        "X-Username": username,
-      },
-      body: JSON.stringify({
-        lyricOffset,
-      }),
-    });
+    const response = await abortableFetch(
+      getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`,
+          "X-Username": username,
+        },
+        body: JSON.stringify({
+          lyricOffset,
+        }),
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      }
+    );
 
     if (response.status === 401) {
       console.warn(`[iPod Store] Unauthorized - user must be logged in to save lyric offset`);
@@ -478,28 +484,34 @@ async function saveLyricsSourceToServer(
   }
 
   try {
-    const response = await fetch(getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${authToken}`,
-        "X-Username": username,
-      },
-      body: JSON.stringify({
-        lyricsSource: lyricsSource || undefined,
-        // Update song metadata from lyricsSource (KuGou has more accurate metadata)
-        ...(lyricsSource && {
-          title: lyricsSource.title,
-          artist: lyricsSource.artist,
-          album: lyricsSource.album,
+    const response = await abortableFetch(
+      getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`,
+          "X-Username": username,
+        },
+        body: JSON.stringify({
+          lyricsSource: lyricsSource || undefined,
+          // Update song metadata from lyricsSource (KuGou has more accurate metadata)
+          ...(lyricsSource && {
+            title: lyricsSource.title,
+            artist: lyricsSource.artist,
+            album: lyricsSource.album,
+          }),
+          // Clear translations, furigana, and soramimi since lyrics changed
+          clearTranslations: true,
+          clearFurigana: true,
+          clearSoramimi: true,
+          clearLyrics: true,
         }),
-        // Clear translations, furigana, and soramimi since lyrics changed
-        clearTranslations: true,
-        clearFurigana: true,
-        clearSoramimi: true,
-        clearLyrics: true,
-      }),
-    });
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      }
+    );
 
     if (response.status === 401) {
       console.warn(`[iPod Store] Unauthorized - user must be logged in to save lyrics source`);
