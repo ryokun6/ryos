@@ -12,6 +12,7 @@ import { useAppletUpdates } from "./useAppletUpdates";
 import { useAppletActions, type Applet } from "../utils/appletActions";
 import { toast } from "sonner";
 import { getApiUrl } from "@/utils/platform";
+import { abortableFetch } from "@/utils/abortableFetch";
 import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
@@ -85,9 +86,13 @@ export function useAppletViewerLogic({
   const checkForAppletUpdate = useCallback(
     async (shareId: string) => {
       try {
-        const response = await fetch(getApiUrl("/api/share-applet?list=true"));
-        if (!response.ok) return null;
-
+        const response = await abortableFetch(
+          getApiUrl("/api/share-applet?list=true"),
+          {
+            timeout: 15000,
+            retry: { maxAttempts: 2, initialDelayMs: 500 },
+          }
+        );
         const data = await response.json();
         const applet = (data.applets || []).find(
           (a: Applet) => a.id === shareId
@@ -311,16 +316,13 @@ export function useAppletViewerLogic({
       }
 
       try {
-        const response = await fetch(
-          `/api/share-applet?id=${encodeURIComponent(shareId)}`
+        const response = await abortableFetch(
+          `/api/share-applet?id=${encodeURIComponent(shareId)}`,
+          {
+            timeout: 15000,
+            retry: { maxAttempts: 2, initialDelayMs: 500 },
+          }
         );
-
-        if (!response.ok) {
-          console.error(
-            `[AppletViewer] Failed to fetch applet content for shareId ${shareId}: ${response.status}`
-          );
-          return null;
-        }
 
         const data = await response.json();
         const content = typeof data.content === "string" ? data.content : "";
@@ -1097,7 +1099,7 @@ export function useAppletViewerLogic({
 
       const windowDimensions = currentWindowState?.size;
 
-      const response = await fetch(getApiUrl("/api/share-applet"), {
+      const response = await abortableFetch(getApiUrl("/api/share-applet"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1113,12 +1115,9 @@ export function useAppletViewerLogic({
           windowHeight: windowDimensions?.height,
           shareId: existingShareId && isAuthor ? existingShareId : undefined,
         }),
+        timeout: 15000,
+        retry: { maxAttempts: 1 },
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to share applet");
-      }
 
       const data = await response.json();
       setShareId(data.id);
@@ -1165,26 +1164,23 @@ export function useAppletViewerLogic({
   useEffect(() => {
     if (shareCode && appletPath) {
       setSharedContent("");
+      const controller = new AbortController();
+      let isActive = true;
 
       const fetchSharedApplet = async () => {
         try {
-          const response = await fetch(
-            getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareCode)}`)
-          );
-
-          if (!response.ok) {
-            if (response.status === 404) {
-              toast.error("Applet not found", {
-                description:
-                  "The shared applet may have been deleted or the link is invalid.",
-              });
-            } else {
-              throw new Error("Failed to fetch shared applet");
+          const response = await abortableFetch(
+            getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareCode)}`),
+            {
+              signal: controller.signal,
+              timeout: 15000,
+              retry: { maxAttempts: 2, initialDelayMs: 500 },
             }
-            return;
-          }
+          );
+          if (!isActive || controller.signal.aborted) return;
 
           const data = await response.json();
+          if (!isActive || controller.signal.aborted) return;
           setSharedContent(data.content);
           setSharedName(data.name);
           setSharedTitle(data.title);
@@ -1290,14 +1286,29 @@ export function useAppletViewerLogic({
             duration: 10000,
           });
         } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") {
+            return;
+          }
+          if (!isActive || controller.signal.aborted) return;
           console.error("Error fetching shared applet:", error);
+          if (error instanceof Error && error.message.includes("404")) {
+            toast.error("Applet not found", {
+              description:
+                "The shared applet may have been deleted or the link is invalid.",
+            });
+            return;
+          }
           toast.error("Failed to load shared applet", {
             description: "Please check your connection and try again.",
           });
         }
       };
 
-      fetchSharedApplet();
+      void fetchSharedApplet();
+      return () => {
+        isActive = false;
+        controller.abort();
+      };
     } else if (!shareCode && sharedContent) {
       setSharedContent("");
       setSharedName(undefined);
