@@ -68,8 +68,7 @@ export const handleLaunchApp = (
 export const handleCloseApp = (
   input: CloseAppInput,
   toolCallId: string,
-  context: ToolContext,
-  closeAppLegacy: (appId: AppId) => void
+  context: ToolContext
 ): string => {
   const { id } = input;
 
@@ -102,9 +101,6 @@ export const handleCloseApp = (
   openInstances.forEach((instance) => {
     requestCloseWindow(instance.instanceId);
   });
-
-  // Also close the legacy app state for backward compatibility
-  closeAppLegacy(id as AppId);
 
   console.log(
     `[ToolCall] Closed ${appName} (${openInstances.length} window${
