@@ -1266,7 +1266,7 @@ export default function HtmlPreview({
             className={`border-0 block ${
               !isInternetExplorer && (appletTitle || appletIcon) ? "flex-1" : ""
             }`}
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
             style={{
               width: isInternetExplorer ? "calc(100% + 1px)" : "100%",
               height: isInternetExplorer
@@ -1415,7 +1415,7 @@ export default function HtmlPreview({
                         // srcDoc={processedHtmlContent()}
                         title={t("common.htmlPreview.codePreviewTitleFullscreen")}
                         className="border-0 bg-white w-full h-full"
-                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
                         onLoad={() =>
