@@ -573,7 +573,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       logger.info("Starting image generation (Gemini)", { promptPartsCount: promptParts.length });
       const imageResult = await generateText({
-        model: google("gemini-2.5-flash-preview-image-generation"),
+        model: google("gemini-2.5-flash-image"),
         messages: [
           {
             role: "user",

@@ -348,7 +348,7 @@
 <p>Note: The main Chat API (<code>/api/chat</code>) has separate rate limits: 15 messages per 5 hours for authenticated users, 3 messages per 24 hours for anonymous users.</p>
 <p>Rate limit headers included in responses: <ul><li><code>X-RateLimit-Limit</code>: Maximum requests allowed</li></ul><ul><li><code>X-RateLimit-Remaining</code>: Requests remaining</li><li><code>X-RateLimit-Reset</code>: Seconds until reset</li><li><code>Retry-After</code>: Seconds to wait (on 429)</li></ul></p>
 <h3>Models</h3>
-<ul><li><strong>Text</strong>: <code>gemini-2.5-flash</code></li></ul><ul><li><strong>Image</strong>: <code>gemini-2.5-flash-image-preview</code></li></ul>
+<ul><li><strong>Text</strong>: <code>gemini-2.5-flash</code></li></ul><ul><li><strong>Image</strong>: <code>gemini-2.5-flash-image</code></li></ul>
 <h3>Example</h3>
 <strong>Text Generation</strong>
 <pre><code>curl -X POST https://os.ryo.lu/api/applet-ai \
