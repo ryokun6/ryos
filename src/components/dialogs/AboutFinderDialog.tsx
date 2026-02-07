@@ -15,6 +15,7 @@ import { useMemo, useState, useEffect } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getTranslatedAppName } from "@/utils/i18n";
 import type { AppId } from "@/config/appRegistry";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 interface AboutFinderDialogProps {
   isOpen: boolean;
@@ -48,7 +49,12 @@ export function AboutFinderDialog({
   // Fetch desktop version for download link
   useEffect(() => {
     if (isMac) {
-      fetch('/version.json', { cache: 'no-store' })
+      abortableFetch('/version.json', {
+        cache: 'no-store',
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      })
         .then(res => res.json())
         .then(data => setDesktopVersion(data.desktopVersion))
         .catch(() => setDesktopVersion('1.0.1')); // fallback

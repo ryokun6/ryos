@@ -8,6 +8,7 @@ import { useSoundboardStore } from "@/stores/useSoundboardStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 import { helpItems as sharedHelpItems } from "..";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 interface ImportedSlot {
   audioData: string | null;
@@ -266,7 +267,10 @@ export function useSoundboardLogic({
 
   const reloadFromJson = async () => {
     try {
-      const res = await fetch("/data/soundboards.json");
+      const res = await abortableFetch("/data/soundboards.json", {
+        timeout: 15000,
+        retry: { maxAttempts: 2, initialDelayMs: 500 },
+      });
       const data = await res.json();
       const importedBoardsRaw = data.boards || [data];
       const newBoards: Soundboard[] = importedBoardsRaw.map(
@@ -296,7 +300,10 @@ export function useSoundboardLogic({
 
   const reloadFromAllSounds = async () => {
     try {
-      const res = await fetch("/data/all-sounds.json");
+      const res = await abortableFetch("/data/all-sounds.json", {
+        timeout: 15000,
+        retry: { maxAttempts: 2, initialDelayMs: 500 },
+      });
       const data = await res.json();
       const importedBoardsRaw = data.boards || [data];
       const newBoards: Soundboard[] = importedBoardsRaw.map(

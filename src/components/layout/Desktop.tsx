@@ -61,12 +61,18 @@ export function Desktop({
   const isTauriApp = typeof window !== "undefined" && "__TAURI__" in window;
 
   // File system and launch app hooks
-  const fileStore = useFilesStore();
   const launchApp = useLaunchApp();
   
-  // Get trash icon (updates automatically when trash state changes)
+  // Files store selectors/actions (avoid broad full-store subscription)
   const allItems = useFilesStore((state) => state.items);
-  const trashIcon = fileStore.getItem("/Trash")?.icon || "/icons/trash-empty.png";
+  const getItem = useFilesStore((state) => state.getItem);
+  const getItemsInPath = useFilesStore((state) => state.getItemsInPath);
+  const updateItemMetadata = useFilesStore((state) => state.updateItemMetadata);
+  const createAlias = useFilesStore((state) => state.createAlias);
+  const removeItem = useFilesStore((state) => state.removeItem);
+  const emptyTrash = useFilesStore((state) => state.emptyTrash);
+  const getTrashItems = useFilesStore((state) => state.getTrashItems);
+  const trashIcon = allItems["/Trash"]?.icon || "/icons/trash-empty.png";
 
   // Define the default order for desktop shortcuts
   const defaultShortcutOrder: AppId[] = [
@@ -142,7 +148,7 @@ export function Desktop({
     } else {
       // Open file/applet - need to resolve the original file
       const targetPath = shortcut.aliasTarget;
-      const targetFile = fileStore.getItem(targetPath);
+      const targetFile = getItem(targetPath);
       
       if (!targetFile) {
         console.warn(`[Desktop] Target file not found: ${targetPath}`);
@@ -248,13 +254,13 @@ export function Desktop({
       }
       
       // Check if an alias already exists for this target
-      const desktopItems = fileStore.getItemsInPath("/Desktop");
+      const desktopItems = getItemsInPath("/Desktop");
       let aliasExists = false;
       
       // Check if this is an app or a file/applet
       if (appId || (path && path.startsWith("/Applications/"))) {
         // It's an application - use appId from drag data or get from file system
-        const finalAppId = appId || fileStore.getItem(path)?.appId;
+        const finalAppId = appId || getItem(path)?.appId;
         if (finalAppId) {
           // Check if alias already exists for this app
           const existingShortcut = desktopItems.find(
@@ -272,17 +278,17 @@ export function Desktop({
               existingShortcut.hiddenOnThemes &&
               existingShortcut.hiddenOnThemes.length > 0
             ) {
-              fileStore.updateItemMetadata(existingShortcut.path, {
+              updateItemMetadata(existingShortcut.path, {
                 hiddenOnThemes: [],
               });
             }
           } else {
-            fileStore.createAlias(path || "", name, "app", finalAppId);
+            createAlias(path || "", name, "app", finalAppId);
           }
         }
       } else if (path) {
         // It's a file or applet
-        const sourceItem = fileStore.getItem(path);
+        const sourceItem = getItem(path);
         if (sourceItem) {
           // Check if alias already exists for this file
           aliasExists = desktopItems.some(
@@ -293,7 +299,7 @@ export function Desktop({
           );
           
           if (!aliasExists) {
-            fileStore.createAlias(path, name, "file");
+            createAlias(path, name, "file");
           }
         }
       }
@@ -443,10 +449,10 @@ export function Desktop({
 
   const handleShortcutDelete = () => {
     if (!contextMenuShortcutPath) return;
-    const shortcut = fileStore.getItem(contextMenuShortcutPath);
+    const shortcut = getItem(contextMenuShortcutPath);
     if (shortcut) {
-      // Use fileStore.removeItem which moves to trash
-      fileStore.removeItem(contextMenuShortcutPath);
+      // Use removeItem which moves to trash
+      removeItem(contextMenuShortcutPath);
     }
     setContextMenuPos(null);
     setContextMenuShortcutPath(null);
@@ -472,11 +478,11 @@ export function Desktop({
 
   const confirmEmptyTrash = async () => {
     // 1. Permanently delete metadata from FileStore and get UUIDs of files whose content needs deletion
-    const contentUUIDsToDelete = fileStore.emptyTrash();
+    const contentUUIDsToDelete = emptyTrash();
 
     // 2. Clear corresponding content from TRASH IndexedDB store
     try {
-      // Delete content based on UUIDs collected from fileStore.emptyTrash()
+      // Delete content based on UUIDs collected from emptyTrash()
       for (const uuid of contentUUIDsToDelete) {
         await dbOperations.delete(STORES.TRASH, uuid);
       }
@@ -528,7 +534,7 @@ export function Desktop({
           type: "item",
           label: t("apps.finder.contextMenu.open"),
           onSelect: () => {
-            const shortcut = fileStore.getItem(contextMenuShortcutPath);
+            const shortcut = getItem(contextMenuShortcutPath);
             if (shortcut) {
               handleAliasOpen(shortcut);
             }
@@ -571,7 +577,7 @@ export function Desktop({
       ];
     } else {
       // Blank desktop context menu
-      const trashItems = fileStore.getTrashItems();
+      const trashItems = getTrashItems();
       const isTrashEmpty = trashItems.length === 0;
       
       return [
@@ -630,7 +636,7 @@ export function Desktop({
     }
     
     if (shortcut.aliasType === "file" && shortcut.aliasTarget) {
-      const targetFile = fileStore.getItem(shortcut.aliasTarget);
+      const targetFile = getItem(shortcut.aliasTarget);
       return targetFile?.icon || "/icons/default/file.png";
     }
     

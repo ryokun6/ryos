@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Soundboard, SoundSlot, PlaybackState } from "@/types/types";
 import i18n from "@/lib/i18n";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 // Helper to create a default soundboard
 const createDefaultBoard = (): Soundboard => ({
@@ -74,11 +75,10 @@ export const useSoundboardStore = create<SoundboardStoreState>()(
         }
 
         try {
-          const response = await fetch("/data/soundboards.json");
-          if (!response.ok)
-            throw new Error(
-              "Failed to fetch soundboards.json status: " + response.status
-            );
+          const response = await abortableFetch("/data/soundboards.json", {
+            timeout: 15000,
+            retry: { maxAttempts: 2, initialDelayMs: 500 },
+          });
           const data = await response.json();
           const importedBoardsRaw =
             data.boards || (Array.isArray(data) ? data : [data]);

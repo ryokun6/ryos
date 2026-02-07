@@ -8,6 +8,7 @@
  */
 
 import { getApiUrl } from "./platform";
+import { abortableFetch } from "./abortableFetch";
 
 /**
  * Lyrics source stored in cache
@@ -112,13 +113,16 @@ export async function getCachedSongMetadata(
   youtubeId: string
 ): Promise<CachedSongMetadata | null> {
   try {
-    const response = await fetch(
+    const response = await abortableFetch(
       getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}?include=metadata`),
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
       }
     );
 
@@ -154,13 +158,16 @@ export async function listAllCachedSongMetadata(createdBy?: string): Promise<Cac
       url += `&createdBy=${encodeURIComponent(createdBy)}`;
     }
     
-    const response = await fetch(
+    const response = await abortableFetch(
       getApiUrl(url),
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
       }
     );
 
@@ -192,7 +199,7 @@ export async function deleteSongMetadata(
   auth: SongMetadataAuthCredentials
 ): Promise<boolean> {
   try {
-    const response = await fetch(
+    const response = await abortableFetch(
       getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
       {
         method: "DELETE",
@@ -201,6 +208,9 @@ export async function deleteSongMetadata(
           "Authorization": `Bearer ${auth.authToken}`,
           "X-Username": auth.username,
         },
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
       }
     );
 
@@ -246,13 +256,16 @@ export async function deleteAllSongMetadata(
   try {
     console.log(`[SongMetadataCache] Deleting all songs...`);
 
-    const response = await fetch(getApiUrl("/api/songs"), {
+    const response = await abortableFetch(getApiUrl("/api/songs"), {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${auth.authToken}`,
         "X-Username": auth.username,
       },
+      timeout: 15000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
     });
 
     if (response.status === 401) {
@@ -302,22 +315,28 @@ export async function saveSongMetadata(
   options?: { isShare?: boolean }
 ): Promise<boolean> {
   try {
-    const response = await fetch(getApiUrl(`/api/songs/${encodeURIComponent(metadata.youtubeId)}`), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${auth.authToken}`,
-        "X-Username": auth.username,
-      },
-      body: JSON.stringify({
-        title: metadata.title,
-        artist: metadata.artist,
-        album: metadata.album,
-        lyricOffset: metadata.lyricOffset,
-        lyricsSource: metadata.lyricsSource,
-        isShare: options?.isShare,
-      }),
-    });
+    const response = await abortableFetch(
+      getApiUrl(`/api/songs/${encodeURIComponent(metadata.youtubeId)}`),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${auth.authToken}`,
+          "X-Username": auth.username,
+        },
+        body: JSON.stringify({
+          title: metadata.title,
+          artist: metadata.artist,
+          album: metadata.album,
+          lyricOffset: metadata.lyricOffset,
+          lyricsSource: metadata.lyricsSource,
+          isShare: options?.isShare,
+        }),
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      }
+    );
 
     if (response.status === 401) {
       console.warn(`[SongMetadataCache] Unauthorized - user must be logged in to save metadata`);
@@ -373,7 +392,7 @@ export async function bulkImportSongMetadata(
   auth: SongMetadataAuthCredentials
 ): Promise<{ success: boolean; imported: number; updated: number; total: number; error?: string }> {
   try {
-    const response = await fetch(getApiUrl("/api/songs"), {
+    const response = await abortableFetch(getApiUrl("/api/songs"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -381,6 +400,9 @@ export async function bulkImportSongMetadata(
         "X-Username": auth.username,
       },
       body: JSON.stringify({ action: "import", songs }),
+      timeout: 30000,
+      throwOnHttpError: false,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
     });
 
     if (response.status === 401) {

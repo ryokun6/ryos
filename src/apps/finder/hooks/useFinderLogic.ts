@@ -10,7 +10,6 @@ import { ViewType, SortType } from "../components/FinderMenuBar";
 import { useFileSystem, dbOperations, DocumentContent } from "./useFileSystem";
 import { STORES } from "@/utils/indexedDB";
 import { calculateStorageSpace } from "@/stores/useFinderStore";
-import { useFilesStore } from "@/stores/useFilesStore";
 import { FileItem } from "../components/FileList";
 import { useFinderStore } from "@/stores/useFinderStore";
 import { useAppStore, type LaunchOriginRect } from "@/stores/useAppStore";
@@ -22,6 +21,7 @@ import { importAppletFile } from "@/utils/appletImportExport";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { getTranslatedFolderNameFromName } from "@/utils/i18n";
 import { helpItems } from "../index";
+import { useFilesStoreShallow } from "@/stores/helpers";
 
 // Type for Finder initial data
 export interface FinderInitialData {
@@ -143,7 +143,17 @@ export function useFinderLogic({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Stores
-  const fileStore = useFilesStore();
+  const {
+    getItem: getFileItem,
+    getItemsInPath,
+    updateItemMetadata,
+    createAlias,
+  } = useFilesStoreShallow((state) => ({
+    getItem: state.getItem,
+    getItemsInPath: state.getItemsInPath,
+    updateItemMetadata: state.updateItemMetadata,
+    createAlias: state.createAlias,
+  }));
   const createFinderInstance = useFinderStore((state) => state.createInstance);
   const removeFinderInstance = useFinderStore((state) => state.removeInstance);
   const updateFinderInstance = useFinderStore((state) => state.updateInstance);
@@ -418,7 +428,7 @@ export function useFinderLogic({
     }
 
     // Get the file from the filesystem using the path
-    const sourceItem = fileStore.getItem(sourceFile.path);
+    const sourceItem = getFileItem(sourceFile.path);
     if (!sourceItem) {
       console.error(`Source file not found at path: ${sourceFile.path}`);
       return;
@@ -441,7 +451,7 @@ export function useFinderLogic({
     }
 
     // Get source file from store
-    const sourceItem = fileStore.getItem(sourceFile.path);
+    const sourceItem = getFileItem(sourceFile.path);
     if (!sourceItem) {
       console.error(`Source file not found at path: ${sourceFile.path}`);
       return;
@@ -477,7 +487,6 @@ export function useFinderLogic({
           const importedData = await importAppletFile(file);
 
           const filePath = `/Applets/${importedData.name}`;
-          const fileStore = useFilesStore.getState();
 
           await saveFile({
             name: importedData.name,
@@ -496,7 +505,7 @@ export function useFinderLogic({
             importedData.createdAt ||
             importedData.modifiedAt
           ) {
-            fileStore.updateItemMetadata(filePath, {
+            updateItemMetadata(filePath, {
               ...(importedData.windowWidth !== undefined && {
                 windowWidth: importedData.windowWidth,
               }),
@@ -574,7 +583,6 @@ export function useFinderLogic({
           const importedData = await importAppletFile(file);
 
           const filePath = `/Applets/${importedData.name}`;
-          const fileStore = useFilesStore.getState();
 
           await saveFile({
             name: importedData.name,
@@ -593,7 +601,7 @@ export function useFinderLogic({
             importedData.createdAt ||
             importedData.modifiedAt
           ) {
-            fileStore.updateItemMetadata(filePath, {
+            updateItemMetadata(filePath, {
               ...(importedData.windowWidth !== undefined && {
                 windowWidth: importedData.windowWidth,
               }),
@@ -712,14 +720,14 @@ export function useFinderLogic({
       let copyPath = `${basePath}/${copyName}`;
 
       // Ensure unique name
-      while (fileStore.getItem(copyPath)) {
+      while (getFileItem(copyPath)) {
         copyIndex++;
         copyName = `${baseName} ${t("apps.finder.defaultNames.copy")} ${copyIndex}${ext}`;
         copyPath = `${basePath}/${copyName}`;
       }
 
       // Get the file metadata to find UUID
-      const fileMetadata = fileStore.getItem(selectedFile.path);
+      const fileMetadata = getFileItem(selectedFile.path);
 
       if (!fileMetadata || !fileMetadata.uuid) {
         console.error(
@@ -779,7 +787,7 @@ export function useFinderLogic({
     let defaultName = t("apps.finder.defaultNames.untitledFolder");
     const basePath = currentPath === "/" ? "" : currentPath;
     let folderPath = `${basePath}/${defaultName}`;
-    while (fileStore.getItem(folderPath)) {
+    while (getFileItem(folderPath)) {
       folderIndex++;
       defaultName = `${t("apps.finder.defaultNames.untitledFolder")} ${folderIndex}`;
       folderPath = `${basePath}/${defaultName}`;
@@ -810,8 +818,7 @@ export function useFinderLogic({
   // Get all root folders for the Go menu using fileStore
   // This will always show root folders regardless of current path
   const rootFolders = useMemo(() => {
-    return fileStore
-      .getItemsInPath("/")
+    return getItemsInPath("/")
       .filter(
         (item) => item.isDirectory && item.path !== "/Trash" // We'll add Trash separately in the menu
       )
@@ -821,7 +828,7 @@ export function useFinderLogic({
         path: item.path,
         icon: item.icon || "/icons/default/directory.png",
       }));
-  }, [fileStore]);
+  }, [getItemsInPath]);
 
   // Add a new handler for rename requests
   const handleRenameRequest = (file: FileItem) => {
@@ -923,7 +930,7 @@ export function useFinderLogic({
     }
 
     // Check if an alias already exists for this target
-    const desktopItems = fileStore.getItemsInPath("/Desktop");
+    const desktopItems = getItemsInPath("/Desktop");
     let aliasExists = false;
 
     // Determine if this is an app or a file/applet
@@ -944,13 +951,13 @@ export function useFinderLogic({
           existingShortcut.hiddenOnThemes &&
           existingShortcut.hiddenOnThemes.length > 0
         ) {
-          fileStore.updateItemMetadata(existingShortcut.path, {
+          updateItemMetadata(existingShortcut.path, {
             hiddenOnThemes: [],
           });
         }
       } else {
         // It's an application - create a new fixed alias
-        fileStore.createAlias(file.path, file.name, "app", file.appId);
+        createAlias(file.path, file.name, "app", file.appId);
       }
     } else if (!file.isDirectory) {
       // Check if alias already exists for this file
@@ -963,7 +970,7 @@ export function useFinderLogic({
 
       if (!aliasExists) {
         // It's a file or applet
-        fileStore.createAlias(file.path, file.name, "file");
+        createAlias(file.path, file.name, "file");
       }
     }
   };
@@ -1075,7 +1082,7 @@ export function useFinderLogic({
       const jsonData = e.dataTransfer.getData("application/json");
       if (jsonData) {
         const { path, name } = JSON.parse(jsonData);
-        const sourceItem = fileStore.getItem(path);
+        const sourceItem = getFileItem(path);
 
         if (sourceItem && currentPath !== "/") {
           // Get parent path

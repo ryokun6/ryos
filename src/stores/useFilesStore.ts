@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
 import type { OsThemeId } from "@/themes/types";
 import { getAppBasicInfoList } from "@/config/appRegistryData";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 // Define the structure for a file system item (metadata)
 export interface FileSystemItem {
@@ -131,7 +132,10 @@ async function loadDefaultFiles(): Promise<FileSystemData> {
   // Start new fetch
   fileSystemDataPromise = (async () => {
     try {
-      const res = await fetch("/data/filesystem.json");
+      const res = await abortableFetch("/data/filesystem.json", {
+        timeout: 15000,
+        retry: { maxAttempts: 2, initialDelayMs: 500 },
+      });
       const data = await res.json();
       cachedFileSystemData = data as FileSystemData;
       return cachedFileSystemData;
@@ -163,7 +167,10 @@ async function loadDefaultApplets(): Promise<{
   // Start new fetch
   appletsDataPromise = (async () => {
     try {
-      const res = await fetch("/data/applets.json");
+      const res = await abortableFetch("/data/applets.json", {
+        timeout: 15000,
+        retry: { maxAttempts: 2, initialDelayMs: 500 },
+      });
       const data = await res.json();
       cachedAppletsData = { applets: data.applets || [] };
       return cachedAppletsData;
@@ -184,6 +191,52 @@ const getParentPath = (path: string): string => {
   const parts = path.split("/").filter(Boolean);
   if (parts.length <= 1) return "/"; // Parent of /Documents is /
   return "/" + parts.slice(0, -1).join("/");
+};
+
+type PathQueryCache = {
+  itemsRef: Record<string, FileSystemItem> | null;
+  activeChildrenByParent: Map<string, FileSystemItem[]>;
+  trashedItems: FileSystemItem[];
+};
+
+const pathQueryCache: PathQueryCache = {
+  itemsRef: null,
+  activeChildrenByParent: new Map(),
+  trashedItems: [],
+};
+
+const rebuildPathQueryCache = (items: Record<string, FileSystemItem>) => {
+  const activeChildrenByParent = new Map<string, FileSystemItem[]>();
+  const trashedItems: FileSystemItem[] = [];
+
+  for (const item of Object.values(items)) {
+    if (item.status === "trashed") {
+      trashedItems.push(item);
+      continue;
+    }
+
+    if (item.status !== "active" || item.path === "/") {
+      continue;
+    }
+
+    const parentPath = getParentPath(item.path);
+    const existingBucket = activeChildrenByParent.get(parentPath);
+    if (existingBucket) {
+      existingBucket.push(item);
+    } else {
+      activeChildrenByParent.set(parentPath, [item]);
+    }
+  }
+
+  pathQueryCache.itemsRef = items;
+  pathQueryCache.activeChildrenByParent = activeChildrenByParent;
+  pathQueryCache.trashedItems = trashedItems;
+};
+
+const ensurePathQueryCache = (items: Record<string, FileSystemItem>) => {
+  if (pathQueryCache.itemsRef !== items) {
+    rebuildPathQueryCache(items);
+  }
 };
 
 // Track files pending lazy load (path -> FileSystemItemData)
@@ -292,11 +345,10 @@ export async function ensureFileContentLoaded(
 
     try {
       // Fetch the asset
-      const resp = await fetch(pendingFile.assetPath);
-      if (!resp.ok) {
-        console.error(`[FilesStore] Failed to fetch asset: ${pendingFile.assetPath}`);
-        return false;
-      }
+      const resp = await abortableFetch(pendingFile.assetPath, {
+        timeout: 20000,
+        retry: { maxAttempts: 2, initialDelayMs: 500 },
+      });
       
       const content = await resp.blob();
       
@@ -784,31 +836,14 @@ export const useFilesStore = create<FilesStoreState>()(
       },
 
       getItemsInPath: (path) => {
-        const allItems = Object.values(get().items);
-
-        if (path === "/") {
-          // Special case for root: Return top-level active directories/virtual directories
-          return allItems.filter(
-            (item) =>
-              item.status === "active" &&
-              item.path !== "/" && // Exclude the root item itself
-              getParentPath(item.path) === "/" // Ensure it's a direct child of root
-          );
-        }
+        const currentItems = get().items;
+        ensurePathQueryCache(currentItems);
 
         if (path === "/Trash") {
-          // Show only top-level *trashed* items (items originally from root or elsewhere)
-          // Let's refine this: show items whose *originalPath* parent was root, or items directly trashed?
-          // For now, let's show all items *marked* as trashed, regardless of original location depth.
-          // The UI might need adjustment if we only want top-level trash display.
-          return allItems.filter((item) => item.status === "trashed");
+          return pathQueryCache.trashedItems.slice();
         }
 
-        // For regular paths, show only direct children that are active
-        return allItems.filter(
-          (item) =>
-            item.status === "active" && getParentPath(item.path) === path
-        );
+        return (pathQueryCache.activeChildrenByParent.get(path) || []).slice();
       },
 
       getItem: (path) => get().items[path],
@@ -836,9 +871,9 @@ export const useFilesStore = create<FilesStoreState>()(
       },
 
       getTrashItems: () => {
-        return Object.values(get().items).filter(
-          (item) => item.status === "trashed"
-        );
+        const currentItems = get().items;
+        ensurePathQueryCache(currentItems);
+        return pathQueryCache.trashedItems.slice();
       },
 
       createAlias: (targetPath, aliasName, aliasType, targetAppId) => {

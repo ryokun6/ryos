@@ -31,6 +31,7 @@ import { useTranslation } from "react-i18next";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { AIModel } from "@/types/aiModels";
 import { useControlPanelsLogic } from "../hooks/useControlPanelsLogic";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 // Version display component that reads from app store
 function VersionDisplay() {
@@ -52,7 +53,12 @@ function VersionDisplay() {
   // Fetch desktop version for download link
   React.useEffect(() => {
     if (isMac) {
-      fetch("/version.json", { cache: "no-store" })
+      abortableFetch("/version.json", {
+        cache: "no-store",
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      })
         .then((res) => res.json())
         .then((data) => setDesktopVersion(data.desktopVersion))
         .catch(() => setDesktopVersion("1.0.1")); // fallback

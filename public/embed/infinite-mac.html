@@ -16,6 +16,7 @@
 (function () {
   var INFINITEMAC_ORIGIN = "https://infinitemac.org";
   var INFINITEMAC_EMBED = INFINITEMAC_ORIGIN + "/embed";
+  var PARENT_ORIGIN = window.location.origin;
 
   var iframe = document.getElementById("emu");
   var params = new URLSearchParams(location.search);
@@ -45,7 +46,10 @@
   // - {"type": "emulator_screen", "width": N, "height": M, ...} (data Uint8Array if present)
   function forwardToParent(data) {
     try {
-      window.parent.postMessage({ type: "_infinite_mac_bridge", payload: data }, "*");
+      window.parent.postMessage(
+        { type: "_infinite_mac_bridge", payload: data },
+        PARENT_ORIGIN
+      );
     } catch (_) {}
   }
 
@@ -62,7 +66,7 @@
       forwardToParent(e.data);
       return;
     }
-    if (e.source === window.parent) {
+    if (e.source === window.parent && e.origin === PARENT_ORIGIN) {
       var d = e.data;
       if (d && typeof d === "object" && (d.type === "emulator_pause" || d.type === "emulator_unpause" || (d.type && String(d.type).indexOf("emulator_") === 0))) {
         forwardToIframe(d);

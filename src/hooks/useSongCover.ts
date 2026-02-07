@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from "react";
 import { getApiUrl } from "@/utils/platform";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 interface SongMetadataResponse {
   id: string;
@@ -67,7 +68,7 @@ export function useSongCover(
     
     (async () => {
       try {
-        const response = await fetch(
+        const response = await abortableFetch(
           getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}?include=metadata`),
           {
             method: "GET",
@@ -75,6 +76,9 @@ export function useSongCover(
               "Content-Type": "application/json",
             },
             signal: controller.signal,
+            timeout: 10000,
+            throwOnHttpError: false,
+            retry: { maxAttempts: 1, initialDelayMs: 250 },
           }
         );
 

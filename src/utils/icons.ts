@@ -1,6 +1,7 @@
 // Utility for resolving themed icon paths using a pre-generated manifest.
 // Generated manifest: public/icons/manifest.json
 // Initial implementation supports only the 'default' theme.
+import { abortableFetch } from "./abortableFetch";
 //
 // Note: Icon cache busting via ?v= query params was removed because:
 // 1. Service worker uses ignoreSearch: true for images (query params are ignored)
@@ -19,7 +20,11 @@ let manifestPromise: Promise<IconManifest> | null = null;
 async function loadManifest(): Promise<IconManifest> {
   if (manifestCache) return manifestCache;
   if (!manifestPromise) {
-    manifestPromise = fetch("/icons/manifest.json", { cache: "no-store" })
+    manifestPromise = abortableFetch("/icons/manifest.json", {
+      cache: "no-store",
+      timeout: 15000,
+      retry: { maxAttempts: 1, initialDelayMs: 250 },
+    })
       .then((r) => {
         if (!r.ok) throw new Error(`Failed to load icon manifest: ${r.status}`);
         return r.json();

@@ -22,6 +22,7 @@ import { useEventListener } from "@/hooks/useEventListener";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import TimeNavigationControls from "./TimeNavigationControls";
 import { useTranslation } from "react-i18next";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 // Define type for preview content source
 type PreviewSource = "html" | "url";
@@ -440,12 +441,15 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
             console.log(
               `[TimeMachine] Source: ${previewYear} < 1996 or BC -> HTML (AI Fetch)`
             );
-            const aiResponse = await fetch(
+            const aiResponse = await abortableFetch(
               `/api/iframe-check?mode=ai&url=${encodeURIComponent(
                 currentUrl
               )}&year=${previewYear}&theme=${encodeURIComponent(document.documentElement.dataset.osTheme || "")}`,
               {
                 signal: abortController.signal,
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
               }
             );
 

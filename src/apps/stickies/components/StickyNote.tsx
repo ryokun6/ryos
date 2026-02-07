@@ -76,8 +76,34 @@ export function StickyNote({
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [draftPosition, setDraftPosition] = useState(note.position);
+  const [draftSize, setDraftSize] = useState(note.size);
+  const draftPositionRef = useRef(note.position);
+  const draftSizeRef = useRef(note.size);
 
   const colors = COLOR_STYLES[note.color];
+
+  useEffect(() => {
+    draftPositionRef.current = draftPosition;
+  }, [draftPosition]);
+
+  useEffect(() => {
+    draftSizeRef.current = draftSize;
+  }, [draftSize]);
+
+  useEffect(() => {
+    if (!isDragging) {
+      setDraftPosition(note.position);
+      draftPositionRef.current = note.position;
+    }
+  }, [note.position.x, note.position.y, isDragging]);
+
+  useEffect(() => {
+    if (!isResizing) {
+      setDraftSize(note.size);
+      draftSizeRef.current = note.size;
+    }
+  }, [note.size.width, note.size.height, isResizing]);
 
   // Handle drag start (mouse)
   const handleDragStart = useCallback(
@@ -88,11 +114,11 @@ export function StickyNote({
       onSelect();
       setIsDragging(true);
       setDragOffset({
-        x: e.clientX - note.position.x,
-        y: e.clientY - note.position.y,
+        x: e.clientX - draftPositionRef.current.x,
+        y: e.clientY - draftPositionRef.current.y,
       });
     },
-    [note.position, onSelect]
+    [onSelect]
   );
 
   // Handle drag start (touch)
@@ -106,11 +132,11 @@ export function StickyNote({
       const touch = e.touches[0];
       setIsDragging(true);
       setDragOffset({
-        x: touch.clientX - note.position.x,
-        y: touch.clientY - note.position.y,
+        x: touch.clientX - draftPositionRef.current.x,
+        y: touch.clientY - draftPositionRef.current.y,
       });
     },
-    [note.position, onSelect]
+    [onSelect]
   );
 
   // Handle resize start (mouse)
@@ -146,12 +172,14 @@ export function StickyNote({
         let newY = clientY - dragOffset.y;
 
         // Constrain to viewport bounds
-        const maxX = window.innerWidth - note.size.width;
-        const maxY = window.innerHeight - note.size.height;
+        const maxX = window.innerWidth - draftSizeRef.current.width;
+        const maxY = window.innerHeight - draftSizeRef.current.height;
         newX = Math.max(0, Math.min(newX, maxX));
         newY = Math.max(24, Math.min(newY, maxY)); // 24px for menu bar
 
-        onUpdate({ position: { x: newX, y: newY } });
+        const nextPosition = { x: newX, y: newY };
+        draftPositionRef.current = nextPosition;
+        setDraftPosition(nextPosition);
       }
 
       if (isResizing) {
@@ -162,7 +190,9 @@ export function StickyNote({
         const newWidth = Math.max(180, clientX - rect.left);
         const newHeight = Math.max(120, clientY - rect.top);
 
-        onUpdate({ size: { width: newWidth, height: newHeight } });
+        const nextSize = { width: newWidth, height: newHeight };
+        draftSizeRef.current = nextSize;
+        setDraftSize(nextSize);
       }
     };
 
@@ -178,8 +208,34 @@ export function StickyNote({
     };
 
     const handleEnd = () => {
+      const updates: Partial<Omit<StickyNoteType, "id" | "createdAt">> = {};
+
+      if (isDragging) {
+        const finalPosition = draftPositionRef.current;
+        if (
+          finalPosition.x !== note.position.x ||
+          finalPosition.y !== note.position.y
+        ) {
+          updates.position = finalPosition;
+        }
+      }
+
+      if (isResizing) {
+        const finalSize = draftSizeRef.current;
+        if (
+          finalSize.width !== note.size.width ||
+          finalSize.height !== note.size.height
+        ) {
+          updates.size = finalSize;
+        }
+      }
+
       setIsDragging(false);
       setIsResizing(false);
+
+      if (Object.keys(updates).length > 0) {
+        onUpdate(updates);
+      }
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -195,7 +251,16 @@ export function StickyNote({
       document.removeEventListener("touchend", handleEnd);
       document.removeEventListener("touchcancel", handleEnd);
     };
-  }, [isDragging, isResizing, dragOffset, note.size, onUpdate]);
+  }, [
+    isDragging,
+    isResizing,
+    dragOffset,
+    note.position.x,
+    note.position.y,
+    note.size.width,
+    note.size.height,
+    onUpdate,
+  ]);
 
   // Handle content change
   const handleContentChange = useCallback(
@@ -219,18 +284,18 @@ export function StickyNote({
       onMouseDown={onSelect}
       initial={{
         ...STICKY_ANIMATION.initial,
-        left: note.position.x,
-        top: note.position.y,
-        width: note.size.width,
-        height: note.size.height,
+        left: draftPosition.x,
+        top: draftPosition.y,
+        width: draftSize.width,
+        height: draftSize.height,
       }}
       animate={{
         scale: 1,
         opacity: 1,
-        left: note.position.x,
-        top: note.position.y,
-        width: note.size.width,
-        height: note.size.height,
+        left: draftPosition.x,
+        top: draftPosition.y,
+        width: draftSize.width,
+        height: draftSize.height,
       }}
       transition={{
         scale: { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const },

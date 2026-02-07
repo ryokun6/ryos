@@ -35,6 +35,7 @@ import {
   useIsPresent,
   type MotionValue,
 } from "framer-motion";
+import { useShallow } from "zustand/react/shallow";
 
 const MAX_SCALE = 2.3; // peak multiplier at cursor center
 const DISTANCE = 140; // px range where magnification is applied
@@ -560,7 +561,10 @@ function MacDock() {
 
   const launchApp = useLaunchApp();
   const files = useFilesStore((s) => s.items);
-  const fileStore = useFilesStore();
+  const getFileItem = useFilesStore((s) => s.getItem);
+  const getFilesInPath = useFilesStore((s) => s.getItemsInPath);
+  const removeFileItem = useFilesStore((s) => s.removeItem);
+  const emptyTrash = useFilesStore((s) => s.emptyTrash);
   const trashIcon = useFilesStore(
     (s) => s.items["/Trash"]?.icon || "/icons/trash-empty.png"
   );
@@ -582,7 +586,20 @@ function MacDock() {
     setHiding: setDockHiding,
     magnification: dockMagnification,
     setMagnification: setDockMagnification,
-  } = useDockStore();
+  } = useDockStore(
+    useShallow((state) => ({
+      pinnedItems: state.pinnedItems,
+      addItem: state.addItem,
+      removeItem: state.removeItem,
+      reorderItems: state.reorderItems,
+      scale: state.scale,
+      setScale: state.setScale,
+      hiding: state.hiding,
+      setHiding: state.setHiding,
+      magnification: state.magnification,
+      setMagnification: state.setMagnification,
+    }))
+  );
   
   const [isDraggingOverTrash, setIsDraggingOverTrash] = useState(false);
   const [trashContextMenuPos, setTrashContextMenuPos] = useState<{
@@ -624,6 +641,7 @@ function MacDock() {
   
   // Resize dragging state
   const [isResizing, setIsResizing] = useState(false);
+  const [liveDockScale, setLiveDockScale] = useState<number | null>(null);
   const resizeStartY = useRef<number>(0);
   const resizeStartScale = useRef<number>(1);
   
@@ -668,10 +686,12 @@ function MacDock() {
     }, 50);
   }, []);
 
+  const effectiveDockScale = liveDockScale ?? dockScale;
+
   // Computed scaled sizes
-  const scaledButtonSize = Math.round(BASE_BUTTON_SIZE * dockScale);
-  const scaledDockHeight = Math.round(56 * dockScale); // Base dock height is 56px
-  const scaledPadding = Math.round(4 * dockScale); // Base padding is 4px (py-1, px-1)
+  const scaledButtonSize = Math.round(BASE_BUTTON_SIZE * effectiveDockScale);
+  const scaledDockHeight = Math.round(56 * effectiveDockScale); // Base dock height is 56px
+  const scaledPadding = Math.round(4 * effectiveDockScale); // Base padding is 4px (py-1, px-1)
 
   // Resize handlers for divider drag (only on desktop)
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
@@ -680,8 +700,9 @@ function MacDock() {
     e.stopPropagation();
     setIsResizing(true);
     resizeStartY.current = e.clientY;
-    resizeStartScale.current = dockScale;
-  }, [isPhone, dockScale]);
+    resizeStartScale.current = effectiveDockScale;
+    setLiveDockScale(effectiveDockScale);
+  }, [isPhone, effectiveDockScale]);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -692,11 +713,16 @@ function MacDock() {
       const deltaY = resizeStartY.current - e.clientY;
       const scaleDelta = deltaY / 100; // 100px drag = 1.0 scale change
       const newScale = resizeStartScale.current + scaleDelta;
-      setDockScale(newScale);
+      // Keep drag updates local and transient; persist only on mouseup.
+      const clampedScale = Math.max(0.5, Math.min(1.5, newScale));
+      setLiveDockScale(clampedScale);
     };
 
     const handleMouseUp = () => {
       setIsResizing(false);
+      const finalScale = liveDockScale ?? resizeStartScale.current;
+      setDockScale(finalScale);
+      setLiveDockScale(null);
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -706,7 +732,13 @@ function MacDock() {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isResizing, setDockScale]);
+  }, [isResizing, setDockScale, liveDockScale]);
+
+  useEffect(() => {
+    if (!isResizing) {
+      setLiveDockScale(null);
+    }
+  }, [isResizing]);
 
   // Sync visibility state when hiding setting changes
   useEffect(() => {
@@ -940,8 +972,8 @@ function MacDock() {
     if (pinnedItems.length === 0) return 0;
     
     // Calculate icon width (including margin) based on dock width
-    // Each icon is about 56px wide (48px + 8px margin), scaled by dockScale
-    const iconWidth = Math.round(56 * dockScale);
+    // Each icon is about 56px wide (48px + 8px margin), scaled by effective dock scale
+    const iconWidth = Math.round(56 * effectiveDockScale);
     
     // Get the starting X position of the first icon
     // Account for padding (scaled)
@@ -955,7 +987,7 @@ function MacDock() {
     
     // Clamp to valid range
     return Math.max(0, Math.min(slotIndex, pinnedItems.length));
-  }, [pinnedItems.length, dockScale, scaledPadding]);
+  }, [pinnedItems.length, effectiveDockScale, scaledPadding]);
   
   // Check if this is an external drag (from desktop/finder, not internal dock reorder)
   const isExternalDrag = useCallback((e: React.DragEvent): boolean => {
@@ -1021,14 +1053,14 @@ function MacDock() {
       }
       // Case 3: Application from /Applications/ path
       else if (path && path.startsWith("/Applications/")) {
-        const appFile = fileStore.getItem(path);
+        const appFile = getFileItem(path);
         if (appFile?.appId) {
           newItem = { type: "app", id: appFile.appId };
         }
       }
       // Case 4: Applet file (.app or .html)
       else if (path && (path.endsWith(".app") || path.endsWith(".html"))) {
-        const file = fileStore.getItem(path);
+        const file = getFileItem(path);
         const fileName = path.split("/").pop()?.replace(/\.(app|html)$/i, "") || name;
         newItem = {
           type: "file",
@@ -1048,7 +1080,7 @@ function MacDock() {
     } catch (err) {
       console.warn("[Dock] Failed to handle drop:", err);
     }
-  }, [externalDragIndex, pinnedItems.length, fileStore, addDockItem, isExternalDrag]);
+  }, [externalDragIndex, pinnedItems.length, getFileItem, addDockItem, isExternalDrag]);
   
   // Handle internal dock item drag start
   const handleItemDragStart = useCallback((e: React.DragEvent, itemId: string, index: number) => {
@@ -1709,7 +1741,7 @@ function MacDock() {
         })).sort((a, b) => a.name.localeCompare(b.name));
       } else {
         // Regular directory - get items from file store
-        const folderItems = fileStore.getItemsInPath(folderPath);
+        const folderItems = getFilesInPath(folderPath);
         sortedItems = folderItems.map((item) => {
           let icon: string | undefined;
           
@@ -1719,7 +1751,7 @@ function MacDock() {
             icon = getAppIconPath(item.aliasTarget as AppId);
           } else if (item.aliasType === "file" && item.aliasTarget) {
             // File alias - get icon from target file
-            const targetFile = fileStore.getItem(item.aliasTarget);
+            const targetFile = getFileItem(item.aliasTarget);
             icon = targetFile?.icon || "/icons/default/file.png";
           } else if (item.isDirectory) {
             // Directory - use folder icon
@@ -1810,7 +1842,7 @@ function MacDock() {
                 }
               } else if (item.aliasType === "file" && item.aliasTarget) {
                 // Open file alias - resolve target and open
-                const targetFile = fileStore.getItem(item.aliasTarget);
+                const targetFile = getFileItem(item.aliasTarget);
                 if (targetFile) {
                   if (targetFile.isDirectory) {
                     focusFinderAtPathOrLaunch(targetFile.path);
@@ -1859,7 +1891,7 @@ function MacDock() {
       
       return items;
     },
-    [fileStore, focusFinderAtPathOrLaunch, focusOrLaunchFinder, focusOrLaunchApp, isTrashEmpty, t, getTranslatedAppName, getTranslatedFolderNameFromName, isAdmin]
+    [getFilesInPath, getFileItem, focusFinderAtPathOrLaunch, focusOrLaunchFinder, focusOrLaunchApp, isTrashEmpty, t, getTranslatedAppName, getTranslatedFolderNameFromName, isAdmin]
   );
 
   // Handle app context menu
@@ -2144,7 +2176,7 @@ function MacDock() {
                     );
                   } else {
                     // File/applet pinned item
-                    const file = item.path ? fileStore.getItem(item.path) : null;
+                    const file = item.path ? getFileItem(item.path) : null;
                     const isEmojiIcon = item.icon && !item.icon.startsWith("/") && !item.icon.startsWith("http") && item.icon.length <= 10;
                     const icon = isEmojiIcon ? item.icon! : (file?.icon || "📦");
                     const label = item.name || item.path?.split("/").pop()?.replace(/\.(app|html)$/i, "") || "Applet";
@@ -2375,7 +2407,7 @@ function MacDock() {
                       // Only handle desktop shortcuts
                       if (parsed.path && parsed.path.startsWith("/Desktop/")) {
                         // Move shortcut to trash
-                        fileStore.removeItem(parsed.path);
+                        removeFileItem(parsed.path);
                       }
                     }
                   } catch (err) {
@@ -2514,7 +2546,7 @@ function MacDock() {
         isOpen={isEmptyTrashDialogOpen}
         onOpenChange={setIsEmptyTrashDialogOpen}
         onConfirm={() => {
-          fileStore.emptyTrash();
+          emptyTrash();
           setIsEmptyTrashDialogOpen(false);
         }}
         title={t("apps.finder.dialogs.emptyTrash.title")}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { useAppletActions, type Applet } from "../utils/appletActions";
 import { AppStoreFeed, type AppStoreFeedRef } from "./AppStoreFeed";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 interface AppStoreProps {
   theme?: string;
@@ -40,23 +41,35 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
   const updateToastIdRef = useRef<string | number | null>(null);
 
 
-  const fetchApplets = async () => {
+  const fetchApplets = useCallback(async (signal?: AbortSignal) => {
     try {
-      const response = await fetch(getApiUrl("/api/share-applet?list=true"));
-      if (response.ok) {
-        const data = await response.json();
-        // Sort by createdAt descending (latest first)
-        const sortedApplets = (data.applets || []).sort((a: Applet, b: Applet) => {
-          return (b.createdAt || 0) - (a.createdAt || 0);
-        });
-        setApplets(sortedApplets);
-      }
+      const response = await abortableFetch(
+        getApiUrl("/api/share-applet?list=true"),
+        {
+          signal,
+          timeout: 15000,
+          retry: { maxAttempts: 2, initialDelayMs: 500 },
+        }
+      );
+      if (signal?.aborted) return;
+
+      const data = await response.json();
+      if (signal?.aborted) return;
+
+      // Sort by createdAt descending (latest first)
+      const sortedApplets = (data.applets || []).sort((a: Applet, b: Applet) => {
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
+      setApplets(sortedApplets);
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
       console.error("Error fetching applets:", error);
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, []);
 
   const handleUpdateAll = async (updates: Applet[]) => {
     if (isBulkUpdating || updates.length === 0) {
@@ -109,8 +122,10 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
   };
 
   useEffect(() => {
-    fetchApplets();
-  }, []);
+    const controller = new AbortController();
+    void fetchApplets(controller.signal);
+    return () => controller.abort();
+  }, [fetchApplets]);
 
   useEffect(() => {
     if (isBulkUpdating) {
@@ -176,41 +191,66 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
   // If sharedAppletId is provided, fetch and show that applet in detail view
   useEffect(() => {
     if (sharedAppletId) {
+      const controller = new AbortController();
+      let isActive = true;
       const fetchSharedApplet = async () => {
         try {
-          const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(sharedAppletId)}`));
-          if (response.ok) {
-            const data = await response.json();
-            const applet: Applet = {
-              id: sharedAppletId,
-              title: data.title,
-              name: data.name,
-              icon: data.icon,
-              createdAt: data.createdAt || Date.now(),
-              createdBy: data.createdBy,
-            };
-            setSelectedApplet(applet);
-            setSelectedAppletContent(data.content || "");
-            setIsSharedApplet(true);
-          } else {
+          const response = await abortableFetch(
+            getApiUrl(`/api/share-applet?id=${encodeURIComponent(sharedAppletId)}`),
+            {
+              signal: controller.signal,
+              timeout: 15000,
+              retry: { maxAttempts: 2, initialDelayMs: 500 },
+            }
+          );
+          if (!isActive || controller.signal.aborted) return;
+
+          const data = await response.json();
+          if (!isActive || controller.signal.aborted) return;
+
+          const applet: Applet = {
+            id: sharedAppletId,
+            title: data.title,
+            name: data.name,
+            icon: data.icon,
+            createdAt: data.createdAt || Date.now(),
+            createdBy: data.createdBy,
+          };
+          setSelectedApplet(applet);
+          setSelectedAppletContent(data.content || "");
+          setIsSharedApplet(true);
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") {
+            return;
+          }
+          if (!isActive || controller.signal.aborted) return;
+          console.error("Error fetching shared applet:", error);
+          if (error instanceof Error && error.message.includes("404")) {
             toast.error(t("apps.applet-viewer.dialogs.appletNotFound"), {
               description: t("apps.applet-viewer.dialogs.appletNotFoundDescription"),
             });
+          } else {
+            toast.error(t("apps.applet-viewer.dialogs.failedToLoadSharedApplet"), {
+              description: t("apps.applet-viewer.dialogs.pleaseCheckConnection"),
+            });
           }
-        } catch (error) {
-          console.error("Error fetching shared applet:", error);
-          toast.error(t("apps.applet-viewer.dialogs.failedToLoadSharedApplet"), {
-            description: t("apps.applet-viewer.dialogs.pleaseCheckConnection"),
-          });
         }
       };
-      fetchSharedApplet();
+      void fetchSharedApplet();
+      return () => {
+        isActive = false;
+        controller.abort();
+      };
     }
-  }, [sharedAppletId]);
+  }, [sharedAppletId, t]);
 
   // Fetch applet content when selectedApplet changes (but skip if content already loaded from sharedAppletId)
   useEffect(() => {
-    if (selectedApplet) {
+    const controller = new AbortController();
+    let isActive = true;
+
+    const fetchSelectedAppletContent = async () => {
+      if (selectedApplet) {
       // If content is already set (from sharedAppletId fetch), don't fetch again
       if (selectedAppletContent && isSharedApplet) {
         return;
@@ -222,24 +262,40 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       }
       // Reset content immediately to show loading
       setSelectedAppletContent("");
-      fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(selectedApplet.id)}`))
-        .then((response) => {
-          if (response.ok) {
-            return response.json();
+      try {
+        const response = await abortableFetch(
+          getApiUrl(`/api/share-applet?id=${encodeURIComponent(selectedApplet.id)}`),
+          {
+            signal: controller.signal,
+            timeout: 15000,
+            retry: { maxAttempts: 2, initialDelayMs: 500 },
           }
-          throw new Error("Failed to fetch applet content");
-        })
-        .then((data) => {
-          setSelectedAppletContent(data.content || "");
-        })
-        .catch((error) => {
-          console.error("Error fetching applet content:", error);
-          // Keep content empty to show loading state indefinitely
-          setSelectedAppletContent("");
-        });
-    } else {
-      setSelectedAppletContent("");
-    }
+        );
+        if (!isActive || controller.signal.aborted) return;
+
+        const data = await response.json();
+        if (!isActive || controller.signal.aborted) return;
+
+        setSelectedAppletContent(data.content || "");
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+        if (!isActive || controller.signal.aborted) return;
+        console.error("Error fetching applet content:", error);
+        // Keep content empty to show loading state indefinitely
+        setSelectedAppletContent("");
+      }
+      } else {
+        setSelectedAppletContent("");
+      }
+    };
+
+    void fetchSelectedAppletContent();
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
   }, [selectedApplet, isSharedApplet]);
 
   // Ensure macOSX theme uses Lucida Grande/system/emoji-safe fonts inside iframe content
@@ -314,20 +370,21 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     }
 
     try {
-      const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`), {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          "X-Username": username!,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete applet");
-      }
+      await abortableFetch(
+        getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`),
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            "X-Username": username!,
+          },
+          timeout: 15000,
+          retry: { maxAttempts: 1 },
+        }
+      );
 
       toast.success(t("apps.applet-viewer.dialogs.appletDeleted"));
-      fetchApplets(); // Refresh list
+      void fetchApplets(); // Refresh list
     } catch (error) {
       console.error("Error deleting applet:", error);
       toast.error(t("apps.applet-viewer.dialogs.failedToDeleteApplet"), {
@@ -340,22 +397,23 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     if (!isAdmin) return;
 
     try {
-      const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`), {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-          "X-Username": username!,
-        },
-        body: JSON.stringify({ featured: !currentFeatured }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update featured status");
-      }
+      await abortableFetch(
+        getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`),
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+            "X-Username": username!,
+          },
+          body: JSON.stringify({ featured: !currentFeatured }),
+          timeout: 15000,
+          retry: { maxAttempts: 1 },
+        }
+      );
 
       toast.success(currentFeatured ? t("apps.applet-viewer.dialogs.removedFromFeatured") : t("apps.applet-viewer.dialogs.addedToFeatured"));
-      fetchApplets(); // Refresh list
+      void fetchApplets(); // Refresh list
     } catch (error) {
       console.error("Error updating featured status:", error);
       toast.error(t("apps.applet-viewer.dialogs.failedToUpdateFeaturedStatus"), {
@@ -659,7 +717,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                 srcDoc={ensureMacFonts(selectedAppletContent)}
                 title={displayName}
                 className="w-full h-full border-0"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
                 style={{
                   display: "block",
                 }}
