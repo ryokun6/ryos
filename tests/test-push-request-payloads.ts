@@ -18,6 +18,20 @@ import {
 const VALID_TOKEN =
   "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
 
+async function testRequestBodyMustBeObject() {
+  const registerFromArray = normalizeRegisterPushPayload([]);
+  assertEq(registerFromArray.ok, false);
+  if (!registerFromArray.ok) {
+    assertEq(registerFromArray.error, "Request body must be a JSON object");
+  }
+
+  const unregisterFromString = normalizeUnregisterPushPayload("bad");
+  assertEq(unregisterFromString.ok, false);
+  if (!unregisterFromString.ok) {
+    assertEq(unregisterFromString.error, "Request body must be a JSON object");
+  }
+}
+
 async function testRegisterPayloadValidation() {
   const missingToken = normalizeRegisterPushPayload({});
   assertEq(missingToken.ok, false);
@@ -115,6 +129,7 @@ export async function runPushRequestPayloadTests(): Promise<{ passed: number; fa
   console.log(section("push-request-payloads"));
   clearResults();
 
+  await runTest("Request payload body must be JSON object", testRequestBodyMustBeObject);
   await runTest("Register payload validation errors", testRegisterPayloadValidation);
   await runTest(
     "Register payload success normalization",
