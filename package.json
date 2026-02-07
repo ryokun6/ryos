@@ -89,6 +89,7 @@
     "caniuse-lite": "^1.0.30001762",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "dompurify": "^3.3.1",
     "formidable": "^3.5.4",
     "framer-motion": "^12.23.26",
     "hangul-romanization": "^1.0.1",
