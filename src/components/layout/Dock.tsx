@@ -560,7 +560,10 @@ function MacDock() {
 
   const launchApp = useLaunchApp();
   const files = useFilesStore((s) => s.items);
-  const fileStore = useFilesStore();
+  const getFileItem = useFilesStore((s) => s.getItem);
+  const getFilesInPath = useFilesStore((s) => s.getItemsInPath);
+  const removeFileItem = useFilesStore((s) => s.removeItem);
+  const emptyTrash = useFilesStore((s) => s.emptyTrash);
   const trashIcon = useFilesStore(
     (s) => s.items["/Trash"]?.icon || "/icons/trash-empty.png"
   );
@@ -1036,14 +1039,14 @@ function MacDock() {
       }
       // Case 3: Application from /Applications/ path
       else if (path && path.startsWith("/Applications/")) {
-        const appFile = fileStore.getItem(path);
+        const appFile = getFileItem(path);
         if (appFile?.appId) {
           newItem = { type: "app", id: appFile.appId };
         }
       }
       // Case 4: Applet file (.app or .html)
       else if (path && (path.endsWith(".app") || path.endsWith(".html"))) {
-        const file = fileStore.getItem(path);
+        const file = getFileItem(path);
         const fileName = path.split("/").pop()?.replace(/\.(app|html)$/i, "") || name;
         newItem = {
           type: "file",
@@ -1063,7 +1066,7 @@ function MacDock() {
     } catch (err) {
       console.warn("[Dock] Failed to handle drop:", err);
     }
-  }, [externalDragIndex, pinnedItems.length, fileStore, addDockItem, isExternalDrag]);
+  }, [externalDragIndex, pinnedItems.length, getFileItem, addDockItem, isExternalDrag]);
   
   // Handle internal dock item drag start
   const handleItemDragStart = useCallback((e: React.DragEvent, itemId: string, index: number) => {
@@ -1724,7 +1727,7 @@ function MacDock() {
         })).sort((a, b) => a.name.localeCompare(b.name));
       } else {
         // Regular directory - get items from file store
-        const folderItems = fileStore.getItemsInPath(folderPath);
+        const folderItems = getFilesInPath(folderPath);
         sortedItems = folderItems.map((item) => {
           let icon: string | undefined;
           
@@ -1734,7 +1737,7 @@ function MacDock() {
             icon = getAppIconPath(item.aliasTarget as AppId);
           } else if (item.aliasType === "file" && item.aliasTarget) {
             // File alias - get icon from target file
-            const targetFile = fileStore.getItem(item.aliasTarget);
+            const targetFile = getFileItem(item.aliasTarget);
             icon = targetFile?.icon || "/icons/default/file.png";
           } else if (item.isDirectory) {
             // Directory - use folder icon
@@ -1825,7 +1828,7 @@ function MacDock() {
                 }
               } else if (item.aliasType === "file" && item.aliasTarget) {
                 // Open file alias - resolve target and open
-                const targetFile = fileStore.getItem(item.aliasTarget);
+                const targetFile = getFileItem(item.aliasTarget);
                 if (targetFile) {
                   if (targetFile.isDirectory) {
                     focusFinderAtPathOrLaunch(targetFile.path);
@@ -1874,7 +1877,7 @@ function MacDock() {
       
       return items;
     },
-    [fileStore, focusFinderAtPathOrLaunch, focusOrLaunchFinder, focusOrLaunchApp, isTrashEmpty, t, getTranslatedAppName, getTranslatedFolderNameFromName, isAdmin]
+    [getFilesInPath, getFileItem, focusFinderAtPathOrLaunch, focusOrLaunchFinder, focusOrLaunchApp, isTrashEmpty, t, getTranslatedAppName, getTranslatedFolderNameFromName, isAdmin]
   );
 
   // Handle app context menu
@@ -2159,7 +2162,7 @@ function MacDock() {
                     );
                   } else {
                     // File/applet pinned item
-                    const file = item.path ? fileStore.getItem(item.path) : null;
+                    const file = item.path ? getFileItem(item.path) : null;
                     const isEmojiIcon = item.icon && !item.icon.startsWith("/") && !item.icon.startsWith("http") && item.icon.length <= 10;
                     const icon = isEmojiIcon ? item.icon! : (file?.icon || "📦");
                     const label = item.name || item.path?.split("/").pop()?.replace(/\.(app|html)$/i, "") || "Applet";
@@ -2390,7 +2393,7 @@ function MacDock() {
                       // Only handle desktop shortcuts
                       if (parsed.path && parsed.path.startsWith("/Desktop/")) {
                         // Move shortcut to trash
-                        fileStore.removeItem(parsed.path);
+                        removeFileItem(parsed.path);
                       }
                     }
                   } catch (err) {
@@ -2529,7 +2532,7 @@ function MacDock() {
         isOpen={isEmptyTrashDialogOpen}
         onOpenChange={setIsEmptyTrashDialogOpen}
         onConfirm={() => {
-          fileStore.emptyTrash();
+          emptyTrash();
           setIsEmptyTrashDialogOpen(false);
         }}
         title={t("apps.finder.dialogs.emptyTrash.title")}
