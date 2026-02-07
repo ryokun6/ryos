@@ -1,12 +1,14 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   generateText,
+  generateImage,
   type ImagePart,
   type ModelMessage,
   type TextPart,
   type UserContent,
 } from "ai";
 import { google } from "@ai-sdk/google";
+import type { GoogleGenerativeAIImageProviderOptions } from "@ai-sdk/google";
 import { z } from "zod";
 import { Redis } from "@upstash/redis";
 import { validateAuth } from "./_utils/auth/index.js";
@@ -524,37 +526,109 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (mode === "image") {
     const promptText = prompt?.trim() ?? "";
-    const promptParts: Array<TextPart | ImagePart> = [];
+    const hasInputImages = parsedBody.images && parsedBody.images.length > 0;
 
+    // Build combined text prompt from context + prompt
+    const textParts: string[] = [];
     if (context && context.trim().length > 0) {
-      promptParts.push({ type: "text", text: context.trim() });
+      textParts.push(context.trim());
+    }
+    if (promptText.length > 0) {
+      textParts.push(promptText);
     }
 
-    if (promptText.length > 0) {
-      promptParts.push({ type: "text", text: promptText });
+    if (textParts.length === 0 && !hasInputImages) {
+      logger.warn("Image generation requires instructions or image attachments");
+      logger.response(400, Date.now() - startTime);
+      return res.status(400).json({ error: "Image generation requires instructions or image attachments." });
+    }
+
+    // -----------------------------------------------------------------------
+    // Path A – Text-to-image via Imagen (generateImage API)
+    // Used when there are NO input images (pure text-to-image generation).
+    // -----------------------------------------------------------------------
+    if (!hasInputImages) {
+      const combinedPrompt = textParts.join("\n\n");
+
+      try {
+        logger.info("Starting image generation (Imagen)", {
+          promptLength: combinedPrompt.length,
+        });
+
+        const imageResult = await generateImage({
+          model: google.image("imagen-4.0-generate-001"),
+          prompt: combinedPrompt,
+          providerOptions: {
+            google: {
+              personGeneration: "allow_adult",
+            } satisfies GoogleGenerativeAIImageProviderOptions,
+          },
+        });
+
+        const generatedImage = imageResult.image;
+
+        if (!generatedImage) {
+          logger.error("Image generation returned no image.");
+          logger.response(502, Date.now() - startTime);
+          return res.status(502).json({ error: "The model did not return an image." });
+        }
+
+        const mediaType = generatedImage.mediaType || "image/png";
+
+        logger.info("Image generation succeeded (Imagen)", {
+          mediaType,
+          promptLength: combinedPrompt.length,
+        });
+
+        res.setHeader("Content-Type", mediaType);
+        res.setHeader("Cache-Control", "no-store");
+        res.setHeader("Access-Control-Expose-Headers", "X-Image-Description");
+
+        logger.response(200, Date.now() - startTime);
+        return res.status(200).send(Buffer.from(generatedImage.uint8Array));
+      } catch (error) {
+        logger.error("Image generation failed (Imagen):", error);
+        if (error instanceof Error) {
+          logger.error("Error details:", {
+            name: error.name,
+            message: error.message,
+            cause: (error as Error & { cause?: unknown }).cause,
+          });
+        }
+        logger.response(500, Date.now() - startTime);
+        return res.status(500).json({ error: "Failed to generate image" });
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // Path B – Image editing via Gemini multimodal (generateText API)
+    // Used when input images are provided (image-to-image / editing).
+    // -----------------------------------------------------------------------
+    const promptParts: Array<TextPart | ImagePart> = [];
+
+    for (const text of textParts) {
+      promptParts.push({ type: "text", text });
     }
 
     try {
-      if (parsedBody.images) {
-        parsedBody.images.forEach((image, index) => {
-          let imageData: Uint8Array;
-          try {
-            imageData = decodeBase64Image(image.data);
-          } catch (error) {
-            const details =
-              error instanceof Error ? error.message : "Invalid base64 payload.";
-            throw new Error(
-              `Invalid image attachment ${index + 1}: ${details}`
-            );
-          }
+      parsedBody.images!.forEach((image, index) => {
+        let imageData: Uint8Array;
+        try {
+          imageData = decodeBase64Image(image.data);
+        } catch (error) {
+          const details =
+            error instanceof Error ? error.message : "Invalid base64 payload.";
+          throw new Error(
+            `Invalid image attachment ${index + 1}: ${details}`
+          );
+        }
 
-          promptParts.push({
-            type: "image",
-            image: imageData,
-            mediaType: image.mediaType,
-          });
+        promptParts.push({
+          type: "image",
+          image: imageData,
+          mediaType: image.mediaType,
         });
-      }
+      });
     } catch (error) {
       logger.error("Image attachment parsing failed:", error);
       logger.response(400, Date.now() - startTime);
@@ -565,13 +639,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (promptParts.length === 0) {
-      logger.warn("Image generation requires instructions or image attachments");
+      logger.warn("Image editing requires instructions or image attachments");
       logger.response(400, Date.now() - startTime);
-      return res.status(400).json({ error: "Image generation requires instructions or image attachments." });
+      return res.status(400).json({ error: "Image editing requires instructions or image attachments." });
     }
 
     try {
-      logger.info("Starting image generation", { promptPartsCount: promptParts.length });
+      logger.info("Starting image editing (Gemini)", { promptPartsCount: promptParts.length });
       const imageResult = await generateText({
         model: google("gemini-2.5-flash-image-preview"),
         messages: [
@@ -593,12 +667,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
 
       if (!imageFile) {
-        logger.error("Image generation returned no image files.");
+        logger.error("Image editing returned no image files.");
         logger.response(502, Date.now() - startTime);
         return res.status(502).json({ error: "The model did not return an image." });
       }
 
-      logger.info("Image generation succeeded", {
+      logger.info("Image editing succeeded (Gemini)", {
         mediaType: imageFile.mediaType,
         descriptionReturned: Boolean(imageResult.text?.trim()),
         promptParts: promptParts.length,
@@ -615,8 +689,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       logger.response(200, Date.now() - startTime);
       return res.status(200).send(Buffer.from(imageFile.uint8Array));
     } catch (error) {
-      logger.error("Image generation failed:", error);
-      // Log more details if available
+      logger.error("Image editing failed (Gemini):", error);
       if (error instanceof Error) {
         logger.error("Error details:", {
           name: error.name,
