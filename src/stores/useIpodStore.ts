@@ -1229,11 +1229,14 @@ export const useIpodStore = create<IpodState>()(
             try {
               // Batch fetch metadata for tracks not in default library
               const idsToFetch = tracksNotInDefaultLibrary.map((t) => t.id).join(",");
-              const response = await fetch(
+              const response = await abortableFetch(
                 getApiUrl(`/api/songs?ids=${encodeURIComponent(idsToFetch)}&include=metadata`),
                 {
                   method: "GET",
                   headers: { "Content-Type": "application/json" },
+                  timeout: 15000,
+                  throwOnHttpError: false,
+                  retry: { maxAttempts: 1, initialDelayMs: 250 },
                 }
               );
 
