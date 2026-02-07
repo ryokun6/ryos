@@ -52,17 +52,41 @@ function VersionDisplay() {
 
   // Fetch desktop version for download link
   React.useEffect(() => {
-    if (isMac) {
-      abortableFetch("/version.json", {
-        cache: "no-store",
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      })
-        .then((res) => res.json())
-        .then((data) => setDesktopVersion(data.desktopVersion))
-        .catch(() => setDesktopVersion("1.0.1")); // fallback
-    }
+    if (!isMac) return;
+
+    const abortController = new AbortController();
+    let isActive = true;
+
+    const loadDesktopVersion = async () => {
+      try {
+        const response = await abortableFetch("/version.json", {
+          cache: "no-store",
+          timeout: 15000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
+          signal: abortController.signal,
+        });
+        const data = await response.json();
+
+        if (!isActive || abortController.signal.aborted) return;
+        setDesktopVersion(
+          typeof data?.desktopVersion === "string" ? data.desktopVersion : "1.0.1"
+        );
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+        if (!isActive || abortController.signal.aborted) return;
+        setDesktopVersion("1.0.1"); // fallback
+      }
+    };
+
+    void loadDesktopVersion();
+
+    return () => {
+      isActive = false;
+      abortController.abort();
+    };
   }, [isMac]);
 
   const displayVersion = ryOSVersion || "...";
