@@ -5,6 +5,8 @@
 export interface AbortableFetchOptions extends RequestInit {
   /** Timeout in milliseconds (default: 30000) */
   timeout?: number;
+  /** Whether non-2xx responses should throw errors (default: true) */
+  throwOnHttpError?: boolean;
   /** Retry configuration */
   retry?: {
     /** Maximum number of retry attempts (default: 3) */
@@ -28,6 +30,7 @@ export async function abortableFetch(
 ): Promise<Response> {
   const {
     timeout = 60000,
+    throwOnHttpError = true,
     retry,
     signal: externalSignal,
     ...fetchOptions
@@ -67,7 +70,7 @@ export async function abortableFetch(
         externalSignal.removeEventListener("abort", abortHandler);
       }
 
-      if (!response.ok) {
+      if (throwOnHttpError && !response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 

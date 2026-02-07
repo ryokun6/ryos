@@ -841,11 +841,16 @@ export function useInternetExplorerLogic({
               console.log(
                 `[IE] Checking REMOTE cache for ${normalizedTargetUrl} in ${targetYearParam}...`
               );
-              const res = await fetch(
+              const res = await abortableFetch(
                 `/api/iframe-check?mode=ai&url=${encodeURIComponent(
                   normalizedTargetUrl
                 )}&year=${targetYearParam}`,
-                { signal: abortController.signal }
+                {
+                  signal: abortController.signal,
+                  timeout: 15000,
+                  throwOnHttpError: false,
+                  retry: { maxAttempts: 1, initialDelayMs: 250 },
+                }
               );
               if (abortController.signal.aborted) return;
               console.log(
