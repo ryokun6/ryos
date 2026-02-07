@@ -9,6 +9,7 @@ import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 // Recovery mechanism - uses different prefix to avoid reset
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -115,7 +116,12 @@ const makeAuthenticatedRequest = async (
   options: RequestInit,
   refreshToken: () => Promise<{ ok: boolean; error?: string; token?: string }>
 ): Promise<Response> => {
-  const initialResponse = await fetch(url, options);
+  const initialResponse = await abortableFetch(url, {
+    ...options,
+    timeout: 15000,
+    throwOnHttpError: false,
+    retry: { maxAttempts: 1, initialDelayMs: 250 },
+  });
 
   // If not 401 or no auth header, return as-is
   if (
@@ -145,7 +151,13 @@ const makeAuthenticatedRequest = async (
   };
 
   console.log("[ChatsStore] Retrying request with refreshed token");
-  return fetch(url, { ...options, headers: newHeaders });
+  return abortableFetch(url, {
+    ...options,
+    headers: newHeaders,
+    timeout: 15000,
+    throwOnHttpError: false,
+    retry: { maxAttempts: 1, initialDelayMs: 250 },
+  });
 };
 
 // Ensure recovery keys are set if values exist in store but not in recovery
@@ -385,7 +397,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             currentUsername
           );
           try {
-            const response = await fetch(
+            const response = await abortableFetch(
               "/api/auth/password/check",
               {
                 method: "GET",
@@ -393,6 +405,9 @@ export const useChatsStore = create<ChatsStoreState>()(
                   Authorization: `Bearer ${currentToken}`,
                   "X-Username": currentUsername,
                 },
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
               }
             );
 
@@ -434,15 +449,21 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await fetch(getApiUrl("/api/auth/password/set"), {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${currentToken}`,
-                "X-Username": currentUsername,
-              },
-              body: JSON.stringify({ password }),
-            });
+            const response = await abortableFetch(
+              getApiUrl("/api/auth/password/set"),
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${currentToken}`,
+                  "X-Username": currentUsername,
+                },
+                body: JSON.stringify({ password }),
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
+              }
+            );
 
             if (!response.ok) {
               const data = await response.json();
@@ -739,7 +760,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           );
 
           try {
-            const response = await fetch(
+            const response = await abortableFetch(
               "/api/auth/token/refresh",
               {
                 method: "POST",
@@ -750,6 +771,9 @@ export const useChatsStore = create<ChatsStoreState>()(
                   username: currentUsername,
                   oldToken: currentToken,
                 }),
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
               }
             );
 
@@ -868,13 +892,16 @@ export const useChatsStore = create<ChatsStoreState>()(
           // Inform server to invalidate current token if we have auth
           if (currentUsername && currentToken) {
             try {
-              await fetch(getApiUrl("/api/auth/logout"), {
+              await abortableFetch(getApiUrl("/api/auth/logout"), {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${currentToken}`,
                   "X-Username": currentUsername,
                 },
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
               });
             } catch (err) {
               console.warn(
@@ -935,7 +962,12 @@ export const useChatsStore = create<ChatsStoreState>()(
               ? `/api/rooms?${queryParams.toString()}`
               : "/api/rooms";
             
-            const response = await fetch(url);
+            const response = await abortableFetch(url, {
+              method: "GET",
+              timeout: 15000,
+              throwOnHttpError: false,
+              retry: { maxAttempts: 1, initialDelayMs: 250 },
+            });
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
                 error: `HTTP error! status: ${response.status}`,
@@ -965,8 +997,14 @@ export const useChatsStore = create<ChatsStoreState>()(
           console.log(`[ChatsStore] Fetching messages for room ${roomId}...`);
 
           try {
-            const response = await fetch(
-              `/api/rooms/${encodeURIComponent(roomId)}/messages`
+            const response = await abortableFetch(
+              `/api/rooms/${encodeURIComponent(roomId)}/messages`,
+              {
+                method: "GET",
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
+              }
             );
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
@@ -1097,8 +1135,14 @@ export const useChatsStore = create<ChatsStoreState>()(
               roomIds: roomIds.join(","),
             });
 
-            const response = await fetch(
-              `/api/messages/bulk?${queryParams.toString()}`
+            const response = await abortableFetch(
+              `/api/messages/bulk?${queryParams.toString()}`,
+              {
+                method: "GET",
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
+              }
             );
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
@@ -1231,7 +1275,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           // If switching to a real room and we have a username, handle the API call
           if (username) {
             try {
-              const response = await fetch(
+              const response = await abortableFetch(
                 "/api/presence/switch",
                 {
                   method: "POST",
@@ -1241,6 +1285,9 @@ export const useChatsStore = create<ChatsStoreState>()(
                     nextRoomId: newRoomId,
                     username,
                   }),
+                  timeout: 15000,
+                  throwOnHttpError: false,
+                  retry: { maxAttempts: 1, initialDelayMs: 250 },
                 }
               );
 
@@ -1438,10 +1485,13 @@ export const useChatsStore = create<ChatsStoreState>()(
                   },
                   get().refreshAuthToken
                 )
-              : await fetch(getApiUrl(messageUrl), {
+              : await abortableFetch(getApiUrl(messageUrl), {
                   method: "POST",
                   headers,
                   body: messageBody,
+                  timeout: 15000,
+                  throwOnHttpError: false,
+                  retry: { maxAttempts: 1, initialDelayMs: 250 },
                 });
 
             if (!response.ok) {
@@ -1496,11 +1546,17 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await fetch(getApiUrl("/api/auth/register"), {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ username: trimmedUsername, password }),
-            });
+            const response = await abortableFetch(
+              getApiUrl("/api/auth/register"),
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: trimmedUsername, password }),
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
+              }
+            );
 
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({

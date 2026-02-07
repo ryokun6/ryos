@@ -7,6 +7,7 @@ import { getApiUrl } from "@/utils/platform";
 import { getCachedSongMetadata, listAllCachedSongMetadata } from "@/utils/songMetadataCache";
 import i18n from "@/lib/i18n";
 import { useChatsStore } from "./useChatsStore";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 /** Special value for lyricsTranslationLanguage that means "use ryOS locale" */
 export const LYRICS_TRANSLATION_AUTO = "auto";
@@ -367,17 +368,23 @@ async function saveLyricOffsetToServer(
   console.log(`[iPod Store] Saving lyric offset for ${trackId}: ${lyricOffset}ms...`);
   
   try {
-    const response = await fetch(getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${authToken}`,
-        "X-Username": username,
-      },
-      body: JSON.stringify({
-        lyricOffset,
-      }),
-    });
+    const response = await abortableFetch(
+      getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`,
+          "X-Username": username,
+        },
+        body: JSON.stringify({
+          lyricOffset,
+        }),
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      }
+    );
 
     if (response.status === 401) {
       console.warn(`[iPod Store] Unauthorized - user must be logged in to save lyric offset`);
@@ -477,28 +484,34 @@ async function saveLyricsSourceToServer(
   }
 
   try {
-    const response = await fetch(getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${authToken}`,
-        "X-Username": username,
-      },
-      body: JSON.stringify({
-        lyricsSource: lyricsSource || undefined,
-        // Update song metadata from lyricsSource (KuGou has more accurate metadata)
-        ...(lyricsSource && {
-          title: lyricsSource.title,
-          artist: lyricsSource.artist,
-          album: lyricsSource.album,
+    const response = await abortableFetch(
+      getApiUrl(`/api/songs/${encodeURIComponent(trackId)}`),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`,
+          "X-Username": username,
+        },
+        body: JSON.stringify({
+          lyricsSource: lyricsSource || undefined,
+          // Update song metadata from lyricsSource (KuGou has more accurate metadata)
+          ...(lyricsSource && {
+            title: lyricsSource.title,
+            artist: lyricsSource.artist,
+            album: lyricsSource.album,
+          }),
+          // Clear translations, furigana, and soramimi since lyrics changed
+          clearTranslations: true,
+          clearFurigana: true,
+          clearSoramimi: true,
+          clearLyrics: true,
         }),
-        // Clear translations, furigana, and soramimi since lyrics changed
-        clearTranslations: true,
-        clearFurigana: true,
-        clearSoramimi: true,
-        clearLyrics: true,
-      }),
-    });
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      }
+    );
 
     if (response.status === 401) {
       console.warn(`[iPod Store] Unauthorized - user must be logged in to save lyrics source`);
@@ -755,7 +768,7 @@ export const useIpodStore = create<IpodState>()(
         
         // Clear server-side cache for translations, furigana, and soramimi
         if (currentTrack?.id) {
-          fetch(getApiUrl(`/api/songs/${currentTrack.id}`), {
+          abortableFetch(getApiUrl(`/api/songs/${currentTrack.id}`), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -764,6 +777,9 @@ export const useIpodStore = create<IpodState>()(
               clearFurigana: true,
               clearSoramimi: true,
             }),
+            timeout: 15000,
+            throwOnHttpError: false,
+            retry: { maxAttempts: 1, initialDelayMs: 250 },
           }).catch((err) => {
             console.error("[iPod Store] Failed to clear server cache:", err);
           });
@@ -999,7 +1015,11 @@ export const useIpodStore = create<IpodState>()(
           const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(
             youtubeUrl
           )}&format=json`;
-          const oembedResponse = await fetch(oembedUrl);
+          const oembedResponse = await abortableFetch(oembedUrl, {
+            timeout: 15000,
+            throwOnHttpError: false,
+            retry: { maxAttempts: 1, initialDelayMs: 250 },
+          });
 
           if (oembedResponse.ok) {
             const oembedData = await oembedResponse.json();
@@ -1032,15 +1052,21 @@ export const useIpodStore = create<IpodState>()(
         // Single call to fetch-lyrics with returnMetadata: searches Kugou, fetches lyrics+cover, returns metadata
         // This consolidates search + fetch into one call
         try {
-          const fetchResponse = await fetch(getApiUrl(`/api/songs/${videoId}`), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: "fetch-lyrics",
-              title: rawTitle,
-              returnMetadata: true,
-            }),
-          });
+          const fetchResponse = await abortableFetch(
+            getApiUrl(`/api/songs/${videoId}`),
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "fetch-lyrics",
+                title: rawTitle,
+                returnMetadata: true,
+              }),
+              timeout: 15000,
+              throwOnHttpError: false,
+              retry: { maxAttempts: 1, initialDelayMs: 250 },
+            }
+          );
 
           if (fetchResponse.ok) {
             const fetchData = await fetchResponse.json();
@@ -1070,14 +1096,20 @@ export const useIpodStore = create<IpodState>()(
           console.log(`[iPod Store] No Kugou match for ${videoId}, falling back to AI parse`);
           try {
             // Call /api/parse-title
-            const parseResponse = await fetch(getApiUrl("/api/parse-title"), {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                title: rawTitle,
-                author_name: authorName,
-              }),
-            });
+            const parseResponse = await abortableFetch(
+              getApiUrl("/api/parse-title"),
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  title: rawTitle,
+                  author_name: authorName,
+                }),
+                timeout: 15000,
+                throwOnHttpError: false,
+                retry: { maxAttempts: 1, initialDelayMs: 250 },
+              }
+            );
 
             if (parseResponse.ok) {
               const parsedData = await parseResponse.json();
@@ -1200,11 +1232,14 @@ export const useIpodStore = create<IpodState>()(
             try {
               // Batch fetch metadata for tracks not in default library
               const idsToFetch = tracksNotInDefaultLibrary.map((t) => t.id).join(",");
-              const response = await fetch(
+              const response = await abortableFetch(
                 getApiUrl(`/api/songs?ids=${encodeURIComponent(idsToFetch)}&include=metadata`),
                 {
                   method: "GET",
                   headers: { "Content-Type": "application/json" },
+                  timeout: 15000,
+                  throwOnHttpError: false,
+                  retry: { maxAttempts: 1, initialDelayMs: 250 },
                 }
               );
 

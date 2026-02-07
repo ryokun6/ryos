@@ -14,6 +14,7 @@ import {
   type CachedSongMetadata,
 } from "@/utils/songMetadataCache";
 import { getApiUrl } from "@/utils/platform";
+import { abortableFetch } from "@/utils/abortableFetch";
 import { helpItems } from "..";
 
 /**
@@ -130,11 +131,14 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     if (isOffline) return; // Skip API calls when offline
 
     try {
-      const response = await fetch(`/api/admin?action=getStats`, {
+      const response = await abortableFetch(`/api/admin?action=getStats`, {
         headers: {
           Authorization: `Bearer ${authToken}`,
           "x-username": username,
         },
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
       if (response.ok) {
         const data = await response.json();
@@ -154,11 +158,14 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/admin?action=getAllUsers`, {
+        const response = await abortableFetch(`/api/admin?action=getAllUsers`, {
           headers: {
             Authorization: `Bearer ${authToken}`,
             "x-username": username,
           },
+          timeout: 15000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         });
         const data = await response.json();
         // Sort users: banned first, then by most recently active
@@ -195,13 +202,16 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
     setIsLoading(true);
     try {
-      const response = await fetch(
+      const response = await abortableFetch(
         `/api/rooms?username=${encodeURIComponent(username)}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
             "x-username": username,
           },
+          timeout: 15000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         }
       );
       const data = await response.json();
@@ -222,13 +232,16 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
       setIsLoading(true);
       try {
-        const response = await fetch(
+        const response = await abortableFetch(
           `/api/rooms/${encodeURIComponent(roomId)}/messages?limit=200`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
               "x-username": username,
             },
+            timeout: 15000,
+            throwOnHttpError: false,
+            retry: { maxAttempts: 1, initialDelayMs: 250 },
           }
         );
         const data = await response.json();
@@ -269,7 +282,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       if (!username || !authToken) return;
 
       try {
-        const response = await fetch(`/api/admin`, {
+        const response = await abortableFetch(`/api/admin`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -280,6 +293,9 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
             action: "deleteUser",
             targetUsername,
           }),
+          timeout: 15000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         });
 
         if (response.ok) {
@@ -306,7 +322,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       if (!username || !authToken) return;
 
       try {
-        const response = await fetch(
+        const response = await abortableFetch(
           `/api/rooms/${encodeURIComponent(roomId)}`,
           {
             method: "DELETE",
@@ -314,6 +330,9 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
               Authorization: `Bearer ${authToken}`,
               "x-username": username,
             },
+            timeout: 15000,
+            throwOnHttpError: false,
+            retry: { maxAttempts: 1, initialDelayMs: 250 },
           }
         );
 
@@ -341,7 +360,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       if (!username || !authToken) return;
 
       try {
-        const response = await fetch(
+        const response = await abortableFetch(
           `/api/rooms/${encodeURIComponent(roomId)}/messages/${encodeURIComponent(
             messageId
           )}`,
@@ -351,6 +370,9 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
               Authorization: `Bearer ${authToken}`,
               "x-username": username,
             },
+            timeout: 15000,
+            throwOnHttpError: false,
+            retry: { maxAttempts: 1, initialDelayMs: 250 },
           }
         );
 
@@ -510,7 +532,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
     try {
       // Fetch full song data including content (lyrics, translations, furigana, soramimi)
-      const response = await fetch(
+      const response = await abortableFetch(
         getApiUrl(
           "/api/songs?include=metadata,lyrics,translations,furigana,soramimi"
         ),
@@ -519,6 +541,9 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
           headers: {
             "Content-Type": "application/json",
           },
+          timeout: 20000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         }
       );
 

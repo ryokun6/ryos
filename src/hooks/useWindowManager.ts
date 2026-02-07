@@ -89,8 +89,65 @@ export const useWindowManager = ({
   const [snapZone, setSnapZone] = useState<"left" | "right" | null>(null);
   // Store pre-snap size/position for potential restore
   const preSnapStateRef = useRef<{ position: WindowPosition; size: WindowSize } | null>(null);
+  const latestWindowPositionRef = useRef(windowPosition);
+  const latestWindowSizeRef = useRef(windowSize);
+  const pendingWindowPositionRef = useRef<WindowPosition | null>(null);
+  const pendingWindowSizeRef = useRef<WindowSize | null>(null);
+  const moveRafRef = useRef<number | null>(null);
 
   const isMobile = window.innerWidth < 768;
+
+  const flushPendingWindowFrame = useCallback(() => {
+    if (moveRafRef.current !== null) {
+      cancelAnimationFrame(moveRafRef.current);
+      moveRafRef.current = null;
+    }
+
+    if (pendingWindowPositionRef.current) {
+      setWindowPosition(pendingWindowPositionRef.current);
+      pendingWindowPositionRef.current = null;
+    }
+
+    if (pendingWindowSizeRef.current) {
+      setWindowSize(pendingWindowSizeRef.current);
+      pendingWindowSizeRef.current = null;
+    }
+  }, []);
+
+  const scheduleWindowFrame = useCallback(() => {
+    if (moveRafRef.current !== null) return;
+    moveRafRef.current = requestAnimationFrame(() => {
+      moveRafRef.current = null;
+
+      if (pendingWindowPositionRef.current) {
+        setWindowPosition(pendingWindowPositionRef.current);
+        pendingWindowPositionRef.current = null;
+      }
+
+      if (pendingWindowSizeRef.current) {
+        setWindowSize(pendingWindowSizeRef.current);
+        pendingWindowSizeRef.current = null;
+      }
+    });
+  }, []);
+
+  const queueWindowPosition = useCallback(
+    (nextPosition: WindowPosition) => {
+      latestWindowPositionRef.current = nextPosition;
+      pendingWindowPositionRef.current = nextPosition;
+      scheduleWindowFrame();
+    },
+    [scheduleWindowFrame]
+  );
+
+  const queueWindowSize = useCallback(
+    (nextSize: WindowSize) => {
+      latestWindowSizeRef.current = nextSize;
+      pendingWindowSizeRef.current = nextSize;
+      scheduleWindowFrame();
+    },
+    [scheduleWindowFrame]
+  );
 
   // Sync local state with store when store changes (for programmatic updates)
   useEffect(() => {
@@ -107,6 +164,10 @@ export const useWindowManager = ({
   }, [instanceStateFromStore?.size, isDragging, resizeType, windowSize]);
 
   useEffect(() => {
+    latestWindowSizeRef.current = windowSize;
+  }, [windowSize]);
+
+  useEffect(() => {
     const storePosition = instanceStateFromStore?.position;
     if (
       storePosition &&
@@ -118,6 +179,18 @@ export const useWindowManager = ({
       setWindowPosition(storePosition);
     }
   }, [instanceStateFromStore?.position, isDragging, resizeType, windowPosition]);
+
+  useEffect(() => {
+    latestWindowPositionRef.current = windowPosition;
+  }, [windowPosition]);
+
+  useEffect(() => {
+    return () => {
+      if (moveRafRef.current !== null) {
+        cancelAnimationFrame(moveRafRef.current);
+      }
+    };
+  }, []);
 
   const { play: playMoveSound, stop: stopMoveMoving } = useSound(Sounds.WINDOW_MOVE_MOVING);
   const { play: playMoveStop } = useSound(Sounds.WINDOW_MOVE_STOP);
@@ -142,26 +215,26 @@ export const useWindowManager = ({
           : maxHeightConstraint
         : maxPossibleHeight;
       const newHeight = Math.min(maxPossibleHeight, maxHeight);
-
-      setWindowSize((prev) => ({
-        ...prev,
+      const nextSize = {
+        width: windowSize.width,
         height: newHeight,
-      }));
-      setWindowPosition((prev) => ({
-        ...prev,
+      };
+      const nextPosition = {
+        x: windowPosition.x,
         y: topInset,
-      }));
+      };
+
+      latestWindowSizeRef.current = nextSize;
+      latestWindowPositionRef.current = nextPosition;
+      setWindowSize(nextSize);
+      setWindowPosition(nextPosition);
       if (instanceId) {
-        updateInstanceWindowState(instanceId, windowPosition, {
-          width: windowSize.width,
-          height: newHeight,
-        });
+        updateInstanceWindowState(instanceId, nextPosition, nextSize);
       }
     },
     [
       computeInsets,
       updateInstanceWindowState,
-      appId,
       instanceId,
       windowPosition,
       windowSize,
@@ -234,7 +307,7 @@ export const useWindowManager = ({
 
         if (isMobile) {
           // On mobile, only allow vertical dragging and keep window full width
-          setWindowPosition({ x: 0, y: Math.max(menuBarHeight, newY) });
+          queueWindowPosition({ x: 0, y: Math.max(menuBarHeight, newY) });
           setSnapZone(null);
         } else {
           // Allow dragging past edges, but keep at least 80px of window visible
@@ -243,7 +316,7 @@ export const useWindowManager = ({
           const maxY = window.innerHeight - 80; // Can drag down, keeping 80px visible at top
           const x = Math.min(Math.max(minX, newX), maxX);
           const y = Math.min(Math.max(menuBarHeight, newY), Math.max(0, maxY));
-          setWindowPosition({ x, y });
+          queueWindowPosition({ x, y });
 
           // Detect snap zones - trigger when cursor is within 20px of screen edge
           const SNAP_THRESHOLD = 20;
@@ -332,8 +405,8 @@ export const useWindowManager = ({
           newLeft = 0;
         }
 
-        setWindowSize({ width: newWidth, height: newHeight });
-        setWindowPosition({ x: newLeft, y: Math.max(menuBarHeight, newTop) });
+        queueWindowSize({ width: newWidth, height: newHeight });
+        queueWindowPosition({ x: newLeft, y: Math.max(menuBarHeight, newTop) });
 
         // Play resize sound once when movement begins
         if (
@@ -356,13 +429,17 @@ export const useWindowManager = ({
       playResizeSound,
       config,
       computeInsets,
+      queueWindowPosition,
+      queueWindowSize,
       setSnapZone,
-      setWindowPosition,
-      setWindowSize,
     ]
   );
 
   const handleEnd = useCallback(() => {
+    flushPendingWindowFrame();
+    const currentPosition = latestWindowPositionRef.current;
+    const currentSize = latestWindowSizeRef.current;
+
     if (isDragging) {
       setIsDragging(false);
 
@@ -374,8 +451,8 @@ export const useWindowManager = ({
 
         // Save current state before snapping (for potential restore later)
         preSnapStateRef.current = {
-          position: { ...windowPosition },
-          size: { ...windowSize },
+          position: { ...currentPosition },
+          size: { ...currentSize },
         };
 
         const newSize = { width: snapWidth, height: snapHeight };
@@ -384,6 +461,8 @@ export const useWindowManager = ({
           y: topInset,
         };
 
+        latestWindowSizeRef.current = newSize;
+        latestWindowPositionRef.current = newPosition;
         setWindowSize(newSize);
         setWindowPosition(newPosition);
 
@@ -394,7 +473,7 @@ export const useWindowManager = ({
         setSnapZone(null);
       } else {
         if (instanceId) {
-          updateInstanceWindowState(instanceId, windowPosition, windowSize);
+          updateInstanceWindowState(instanceId, currentPosition, currentSize);
         }
       }
 
@@ -408,7 +487,7 @@ export const useWindowManager = ({
     if (resizeType) {
       setResizeType("");
       if (instanceId) {
-        updateInstanceWindowState(instanceId, windowPosition, windowSize);
+        updateInstanceWindowState(instanceId, currentPosition, currentSize);
       }
       // Stop resize sound and play stop sound
       if (isResizePlayingRef.current) {
@@ -418,15 +497,13 @@ export const useWindowManager = ({
       }
     }
   }, [
+    flushPendingWindowFrame,
     isDragging,
     snapZone,
     isMobile,
     computeInsets,
-    windowPosition,
-    windowSize,
     instanceId,
     updateInstanceWindowState,
-    appId,
     stopMoveMoving,
     playMoveStop,
     resizeType,

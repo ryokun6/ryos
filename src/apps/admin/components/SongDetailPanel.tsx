@@ -16,6 +16,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 interface FuriganaSegment {
   text: string;
@@ -96,12 +97,15 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     setIsLoading(true);
     try {
       // Include lyrics, translations, furigana, soramimi to get full song data
-      const response = await fetch(
+      const response = await abortableFetch(
         getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}?include=metadata,lyrics,translations,furigana,soramimi`),
         {
           headers: {
             "Content-Type": "application/json",
           },
+          timeout: 20000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         }
       );
 
@@ -128,7 +132,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
     setIsForceRefreshing(true);
     try {
-      const response = await fetch(
+      const response = await abortableFetch(
         getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
         {
           method: "POST",
@@ -142,6 +146,9 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
             force: true,
             lyricsSource: song.lyricsSource,
           }),
+          timeout: 20000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         }
       );
 
@@ -171,7 +178,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     setIsForceRefreshing(true);
     try {
       // First, fetch lyrics with the new source
-      const lyricsResponse = await fetch(
+      const lyricsResponse = await abortableFetch(
         getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
         {
           method: "POST",
@@ -191,6 +198,9 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
               album: result.album,
             },
           }),
+          timeout: 20000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         }
       );
 
@@ -201,7 +211,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
       }
 
       // Then, update song metadata with title/artist/album from the search result
-      const metadataResponse = await fetch(
+      const metadataResponse = await abortableFetch(
         getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
         {
           method: "POST",
@@ -215,6 +225,9 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
             artist: result.artist,
             album: result.album,
           }),
+          timeout: 15000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         }
       );
 
@@ -241,7 +254,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
     if (!username || !authToken) return;
 
     try {
-      const response = await fetch(
+      const response = await abortableFetch(
         getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
         {
           method: "POST",
@@ -253,6 +266,9 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
           body: JSON.stringify({
             clearLyrics: true,
           }),
+          timeout: 15000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         }
       );
 
@@ -337,9 +353,14 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
       setIsYoutubeOembedLoading(true);
       try {
         const url = `https://www.youtube.com/watch?v=${youtubeId}`;
-        const response = await fetch(
+        const response = await abortableFetch(
           getApiUrl(`/api/link-preview?url=${encodeURIComponent(url)}`),
-          { headers: { "Content-Type": "application/json" } }
+          {
+            headers: { "Content-Type": "application/json" },
+            timeout: 15000,
+            throwOnHttpError: false,
+            retry: { maxAttempts: 1, initialDelayMs: 250 },
+          }
         );
         if (!response.ok) return;
         const data = (await response.json()) as { title?: string };
@@ -382,7 +403,7 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
 
     setIsUnsharing(true);
     try {
-      const response = await fetch(
+      const response = await abortableFetch(
         getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
         {
           method: "POST",
@@ -392,6 +413,9 @@ export const SongDetailPanel: React.FC<SongDetailPanelProps> = ({
             "X-Username": username,
           },
           body: JSON.stringify({ action: "unshare" }),
+          timeout: 15000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         }
       );
 

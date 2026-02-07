@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 interface UserProfile {
   username: string;
@@ -71,13 +72,16 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const fetchProfile = useCallback(async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await fetch(
+      const response = await abortableFetch(
         `/api/admin?action=getUserProfile&username=${encodeURIComponent(username)}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
             "x-username": currentUser,
           },
+          timeout: 15000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         }
       );
       if (response.ok) {
@@ -93,13 +97,16 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const fetchMessages = useCallback(async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await fetch(
+      const response = await abortableFetch(
         `/api/admin?action=getUserMessages&username=${encodeURIComponent(username)}&limit=50`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
             "x-username": currentUser,
           },
+          timeout: 15000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         }
       );
       if (response.ok) {
@@ -114,13 +121,16 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const fetchMemories = useCallback(async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await fetch(
+      const response = await abortableFetch(
         `/api/admin?action=getUserMemories&username=${encodeURIComponent(username)}`,
         {
           headers: {
             Authorization: `Bearer ${authToken}`,
             "x-username": currentUser,
           },
+          timeout: 15000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
         }
       );
       if (response.ok) {
@@ -159,7 +169,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const handleBan = async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await fetch(`/api/admin`, {
+      const response = await abortableFetch(`/api/admin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -171,6 +181,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           targetUsername: username,
           reason: banReason || undefined,
         }),
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
 
       if (response.ok) {
@@ -192,7 +205,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const handleUnban = async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await fetch(`/api/admin`, {
+      const response = await abortableFetch(`/api/admin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -203,6 +216,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           action: "unbanUser",
           targetUsername: username,
         }),
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
 
       if (response.ok) {
@@ -221,7 +237,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const handleDelete = async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await fetch(`/api/admin`, {
+      const response = await abortableFetch(`/api/admin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -232,6 +248,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           action: "deleteUser",
           targetUsername: username,
         }),
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
       });
 
       if (response.ok) {

@@ -11,6 +11,7 @@ import { getTranslatedAppName } from "@/utils/i18n";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { useTimeout } from "@/hooks/useTimeout";
 import { helpItems } from "..";
+import { useShallow } from "zustand/react/shallow";
 
 interface Effect {
   name: string;
@@ -164,11 +165,18 @@ export function usePhotoBoothLogic({
   );
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [isBackCamera, setIsBackCamera] = useState(false);
-  const { photos, addPhoto, addPhotos, clearPhotos } = usePhotoBoothStore();
+  const { photos, addPhoto, addPhotos, clearPhotos } = usePhotoBoothStore(
+    useShallow((state) => ({
+      photos: state.photos,
+      addPhoto: state.addPhoto,
+      addPhotos: state.addPhotos,
+      clearPhotos: state.clearPhotos,
+    }))
+  );
   const [isMultiPhotoMode, setIsMultiPhotoMode] = useState(false);
   const [multiPhotoCount, setMultiPhotoCount] = useState(0);
   const multiPhotoTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [currentPhotoBatch, setCurrentPhotoBatch] = useState<string[]>([]);
+  const currentPhotoBatchRef = useRef<string[]>([]);
   const [isFlashing, setIsFlashing] = useState(false);
   const [lastPhoto, setLastPhoto] = useState<string | null>(null);
   const [showThumbnail, setShowThumbnail] = useState(false);
@@ -207,8 +215,41 @@ export function usePhotoBoothLogic({
 
   const handleClearPhotos = useCallback(() => {
     clearPhotos();
-    setCurrentPhotoBatch([]);
+    currentPhotoBatchRef.current = [];
   }, [clearPhotos]);
+
+  const resolvePhotoDownloadUrl = useCallback(
+    (photo: PhotoReference): { url: string; shouldRevoke: boolean } | null => {
+      const matchingFile = files.find(
+        (file) => file.path === photo.path || file.name === photo.filename
+      );
+
+      if (matchingFile?.contentUrl) {
+        return { url: matchingFile.contentUrl, shouldRevoke: false };
+      }
+
+      if (matchingFile?.content instanceof Blob) {
+        return {
+          url: URL.createObjectURL(matchingFile.content),
+          shouldRevoke: true,
+        };
+      }
+
+      if (
+        typeof matchingFile?.content === "string" &&
+        matchingFile.content.length > 0
+      ) {
+        return { url: matchingFile.content, shouldRevoke: false };
+      }
+
+      if (/^(blob:|data:|https?:)/.test(photo.path)) {
+        return { url: photo.path, shouldRevoke: false };
+      }
+
+      return null;
+    },
+    [files]
+  );
 
   const handleExportPhotos = useCallback(async () => {
     if (photos.length === 0) {
@@ -218,28 +259,46 @@ export function usePhotoBoothLogic({
 
     // If there's only one photo, download it directly
     if (photos.length === 1) {
+      const singlePhotoUrl = resolvePhotoDownloadUrl(photos[0]);
+      if (!singlePhotoUrl) {
+        console.warn("Could not resolve photo data for export:", photos[0].path);
+        return;
+      }
+
       const link = document.createElement("a");
-      link.href = photos[0].path;
+      link.href = singlePhotoUrl.url;
       link.download = photos[0].filename || `photo-booth-${Date.now()}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      if (singlePhotoUrl.shouldRevoke) {
+        URL.revokeObjectURL(singlePhotoUrl.url);
+      }
       return;
     }
 
     // For multiple photos, download each one
     for (let i = 0; i < photos.length; i++) {
+      const photoUrl = resolvePhotoDownloadUrl(photos[i]);
+      if (!photoUrl) {
+        console.warn("Could not resolve photo data for export:", photos[i].path);
+        continue;
+      }
+
       const link = document.createElement("a");
-      link.href = photos[i].path;
+      link.href = photoUrl.url;
       link.download =
         photos[i].filename || `photo-booth-${Date.now()}-${i + 1}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      if (photoUrl.shouldRevoke) {
+        URL.revokeObjectURL(photoUrl.url);
+      }
       // Small delay between downloads to prevent browser issues
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-  }, [photos]);
+  }, [photos, resolvePhotoDownloadUrl]);
 
   // Add a small delay before showing photo strip to prevent flickering
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -685,7 +744,6 @@ export function usePhotoBoothLogic({
     }
 
     const blob = new Blob(byteArrays, { type: mimeType });
-    const blobUrl = URL.createObjectURL(blob);
 
     // Generate unique filename with timestamp and correct extension
     const timestamp = Date.now();
@@ -700,7 +758,6 @@ export function usePhotoBoothLogic({
     const fileItem = {
       name: filename,
       content: blob,
-      contentUrl: blobUrl,
       type: mimeType,
       path: `/Images/${filename}`,
       isDirectory: false,
@@ -734,7 +791,7 @@ export function usePhotoBoothLogic({
   const startMultiPhotoSequence = () => {
     setIsMultiPhotoMode(true);
     setMultiPhotoCount(0);
-    setCurrentPhotoBatch([]);
+    currentPhotoBatchRef.current = [];
 
     // Take 4 photos with a 1-second interval
     const timer = setInterval(() => {
@@ -751,10 +808,11 @@ export function usePhotoBoothLogic({
           clearInterval(timer);
           multiPhotoTimerRef.current = null;
           setIsMultiPhotoMode(false);
+          const completedBatch = currentPhotoBatchRef.current;
 
           // After the sequence completes, process batch photos and convert to references
           // This happens after all photos are taken
-          const batchWithReferences = currentPhotoBatch.map((dataUrl) => {
+          const batchWithReferences = completedBatch.map((dataUrl) => {
             // Convert to blob and save file similar to handlePhoto
             const base64Data = dataUrl.split(",")[1];
             const mimeType = dataUrl.split(",")[0].split(":")[1].split(";")[0];
@@ -772,7 +830,6 @@ export function usePhotoBoothLogic({
             }
 
             const blob = new Blob(byteArrays, { type: mimeType });
-            const blobUrl = URL.createObjectURL(blob);
 
             // Generate unique filename with timestamp
             const timestamp = Date.now();
@@ -787,7 +844,6 @@ export function usePhotoBoothLogic({
             const fileItem = {
               name: filename,
               content: blob,
-              contentUrl: blobUrl,
               type: mimeType,
               path: `/Images/${filename}`,
               isDirectory: false,
@@ -810,8 +866,8 @@ export function usePhotoBoothLogic({
           addPhotos(batchWithReferences);
 
           // Show thumbnail animation for the last photo in the sequence
-          if (currentPhotoBatch.length > 0) {
-            setLastPhoto(currentPhotoBatch[currentPhotoBatch.length - 1]);
+          if (completedBatch.length > 0) {
+            setLastPhoto(completedBatch[completedBatch.length - 1]);
             setShowThumbnail(true);
             setTimeout(() => setShowThumbnail(false), 3000);
           }
@@ -878,7 +934,10 @@ export function usePhotoBoothLogic({
       }
 
       // Add to batch
-      setCurrentPhotoBatch((prev) => [...prev, photoDataUrl]);
+      currentPhotoBatchRef.current = [
+        ...currentPhotoBatchRef.current,
+        photoDataUrl,
+      ];
     };
 
     // Add event listener

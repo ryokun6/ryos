@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 interface LinkMetadata {
   title?: string;
@@ -167,8 +168,12 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
   };
 
   useEffect(() => {
+    const abortController = new AbortController();
+    let isActive = true;
+
     const fetchMetadata = async () => {
       try {
+        if (!isActive || abortController.signal.aborted) return;
         setLoading(true);
         setError(null);
 
@@ -178,29 +183,37 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
           if (videoId) {
             // Fetch actual YouTube metadata for the video
             try {
-              const youtubeResponse = await fetch(
+              const youtubeResponse = await abortableFetch(
                 `/api/link-preview?url=${encodeURIComponent(
                   `https://www.youtube.com/watch?v=${videoId}`
-                )}`
+                )}`,
+                {
+                  signal: abortController.signal,
+                  timeout: 15000,
+                  retry: { maxAttempts: 2, initialDelayMs: 500 },
+                }
               );
 
-              if (youtubeResponse.ok) {
-                const youtubeData = await youtubeResponse.json();
-                if (!youtubeData.error) {
-                  setMetadata({
-                    title: youtubeData.title,
-                    description: youtubeData.description,
-                    image:
-                      youtubeData.image ||
-                      `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-                    siteName: "YouTube",
-                    url: url,
-                  });
-                  setLoading(false);
-                  return;
-                }
+              const youtubeData = await youtubeResponse.json();
+              if (!youtubeData.error && isActive && !abortController.signal.aborted) {
+                setMetadata({
+                  title: youtubeData.title,
+                  description: youtubeData.description,
+                  image:
+                    youtubeData.image ||
+                    `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+                  siteName: "YouTube",
+                  url: url,
+                });
+                return;
               }
             } catch (youtubeError) {
+              if (
+                youtubeError instanceof Error &&
+                youtubeError.name === "AbortError"
+              ) {
+                return;
+              }
               console.warn(
                 "Failed to fetch YouTube metadata, using fallback:",
                 youtubeError
@@ -208,6 +221,7 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
             }
 
             // Fallback to basic YouTube-style metadata
+            if (!isActive || abortController.signal.aborted) return;
             setMetadata({
               title: `YouTube Video ${videoId}`,
               description: "Watch on YouTube",
@@ -215,21 +229,22 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
               siteName: "YouTube",
               url: url,
             });
-            setLoading(false);
             return;
           }
         }
 
         // Create a simple metadata extraction API endpoint
-        const response = await fetch(
-          `/api/link-preview?url=${encodeURIComponent(url)}`
+        const response = await abortableFetch(
+          `/api/link-preview?url=${encodeURIComponent(url)}`,
+          {
+            signal: abortController.signal,
+            timeout: 15000,
+            retry: { maxAttempts: 2, initialDelayMs: 500 },
+          }
         );
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const data = await response.json();
+        if (!isActive || abortController.signal.aborted) return;
 
         if (data.error) {
           throw new Error(data.error);
@@ -243,6 +258,10 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
           url: url,
         });
       } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") {
+          return;
+        }
+        if (!isActive || abortController.signal.aborted) return;
         console.error("Error fetching link metadata:", err);
         setError("Failed to load preview");
         // Set basic metadata with just the URL
@@ -251,11 +270,18 @@ export function LinkPreview({ url, className = "" }: LinkPreviewProps) {
           url: url,
         });
       } finally {
-        setLoading(false);
+        if (isActive && !abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchMetadata();
+    void fetchMetadata();
+
+    return () => {
+      isActive = false;
+      abortController.abort();
+    };
   }, [url]);
 
   if (loading) {

@@ -42,7 +42,8 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isConfirmNewDialogOpen, setIsConfirmNewDialogOpen] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const { lastFilePath: currentFilePath, setLastFilePath } = usePaintStore();
+  const currentFilePath = usePaintStore((state) => state.lastFilePath);
+  const setLastFilePath = usePaintStore((state) => state.setLastFilePath);
   const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
   const [saveFileName, setSaveFileName] = useState("");
   const [isLoadingFile, setIsLoadingFile] = useState(false);

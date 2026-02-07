@@ -15,6 +15,7 @@ import { useMemo, useState, useEffect } from "react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getTranslatedAppName } from "@/utils/i18n";
 import type { AppId } from "@/config/appRegistry";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 interface AboutFinderDialogProps {
   isOpen: boolean;
@@ -47,12 +48,41 @@ export function AboutFinderDialog({
 
   // Fetch desktop version for download link
   useEffect(() => {
-    if (isMac) {
-      fetch('/version.json', { cache: 'no-store' })
-        .then(res => res.json())
-        .then(data => setDesktopVersion(data.desktopVersion))
-        .catch(() => setDesktopVersion('1.0.1')); // fallback
-    }
+    if (!isMac) return;
+
+    const abortController = new AbortController();
+    let isActive = true;
+
+    const loadDesktopVersion = async () => {
+      try {
+        const response = await abortableFetch("/version.json", {
+          cache: "no-store",
+          timeout: 15000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
+          signal: abortController.signal,
+        });
+        const data = await response.json();
+
+        if (!isActive || abortController.signal.aborted) return;
+        setDesktopVersion(
+          typeof data?.desktopVersion === "string" ? data.desktopVersion : "1.0.1"
+        );
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+        if (!isActive || abortController.signal.aborted) return;
+        setDesktopVersion("1.0.1"); // fallback
+      }
+    };
+
+    void loadDesktopVersion();
+
+    return () => {
+      isActive = false;
+      abortController.abort();
+    };
   }, [isMac]);
 
   // Get current username for admin check

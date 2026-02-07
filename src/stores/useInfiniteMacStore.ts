@@ -209,7 +209,10 @@ export const useInfiniteMacStore = create<InfiniteMacStoreState>()(
           return false;
         }
         try {
-          activeIframeWindow.postMessage(command, "*");
+          if (typeof window === "undefined") {
+            return false;
+          }
+          activeIframeWindow.postMessage(command, window.location.origin);
           return true;
         } catch (error) {
           console.error("[InfiniteMacStore] Failed to send command:", error);
