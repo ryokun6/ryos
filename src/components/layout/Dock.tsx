@@ -624,6 +624,7 @@ function MacDock() {
   
   // Resize dragging state
   const [isResizing, setIsResizing] = useState(false);
+  const [liveDockScale, setLiveDockScale] = useState<number | null>(null);
   const resizeStartY = useRef<number>(0);
   const resizeStartScale = useRef<number>(1);
   
@@ -668,10 +669,12 @@ function MacDock() {
     }, 50);
   }, []);
 
+  const effectiveDockScale = liveDockScale ?? dockScale;
+
   // Computed scaled sizes
-  const scaledButtonSize = Math.round(BASE_BUTTON_SIZE * dockScale);
-  const scaledDockHeight = Math.round(56 * dockScale); // Base dock height is 56px
-  const scaledPadding = Math.round(4 * dockScale); // Base padding is 4px (py-1, px-1)
+  const scaledButtonSize = Math.round(BASE_BUTTON_SIZE * effectiveDockScale);
+  const scaledDockHeight = Math.round(56 * effectiveDockScale); // Base dock height is 56px
+  const scaledPadding = Math.round(4 * effectiveDockScale); // Base padding is 4px (py-1, px-1)
 
   // Resize handlers for divider drag (only on desktop)
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
@@ -680,8 +683,9 @@ function MacDock() {
     e.stopPropagation();
     setIsResizing(true);
     resizeStartY.current = e.clientY;
-    resizeStartScale.current = dockScale;
-  }, [isPhone, dockScale]);
+    resizeStartScale.current = effectiveDockScale;
+    setLiveDockScale(effectiveDockScale);
+  }, [isPhone, effectiveDockScale]);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -692,11 +696,16 @@ function MacDock() {
       const deltaY = resizeStartY.current - e.clientY;
       const scaleDelta = deltaY / 100; // 100px drag = 1.0 scale change
       const newScale = resizeStartScale.current + scaleDelta;
-      setDockScale(newScale);
+      // Keep drag updates local and transient; persist only on mouseup.
+      const clampedScale = Math.max(0.5, Math.min(1.5, newScale));
+      setLiveDockScale(clampedScale);
     };
 
     const handleMouseUp = () => {
       setIsResizing(false);
+      const finalScale = liveDockScale ?? resizeStartScale.current;
+      setDockScale(finalScale);
+      setLiveDockScale(null);
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -706,7 +715,13 @@ function MacDock() {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isResizing, setDockScale]);
+  }, [isResizing, setDockScale, liveDockScale]);
+
+  useEffect(() => {
+    if (!isResizing) {
+      setLiveDockScale(null);
+    }
+  }, [isResizing]);
 
   // Sync visibility state when hiding setting changes
   useEffect(() => {
@@ -940,8 +955,8 @@ function MacDock() {
     if (pinnedItems.length === 0) return 0;
     
     // Calculate icon width (including margin) based on dock width
-    // Each icon is about 56px wide (48px + 8px margin), scaled by dockScale
-    const iconWidth = Math.round(56 * dockScale);
+    // Each icon is about 56px wide (48px + 8px margin), scaled by effective dock scale
+    const iconWidth = Math.round(56 * effectiveDockScale);
     
     // Get the starting X position of the first icon
     // Account for padding (scaled)
@@ -955,7 +970,7 @@ function MacDock() {
     
     // Clamp to valid range
     return Math.max(0, Math.min(slotIndex, pinnedItems.length));
-  }, [pinnedItems.length, dockScale, scaledPadding]);
+  }, [pinnedItems.length, effectiveDockScale, scaledPadding]);
   
   // Check if this is an external drag (from desktop/finder, not internal dock reorder)
   const isExternalDrag = useCallback((e: React.DragEvent): boolean => {
