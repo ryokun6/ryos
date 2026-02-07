@@ -11,6 +11,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 interface UseAiGenerationProps {
   onLoadingChange?: (isLoading: boolean) => void;
@@ -74,7 +75,7 @@ export function useAiGeneration({
   const generatingYearRef = useRef<string | null>(null); // Ref for current Year
 
   // Get the selected AI model from app store
-  const { aiModel } = useAppStore();
+  const aiModel = useAppStore((state) => state.aiModel);
 
   // Use the Zustand store for caching and updating the store
   const loadSuccess = useInternetExplorerStore((state) => state.loadSuccess);
@@ -238,8 +239,11 @@ export function useAiGeneration({
         ""
       )}`;
 
-      const res = await fetch(jinaEndpoint, { signal });
-      if (!res.ok) return null;
+      const res = await abortableFetch(jinaEndpoint, {
+        signal,
+        timeout: 10000,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      });
       const text = await res.text();
       // Return a trimmed version to avoid blowing up the prompt size (max 4k chars)
       return text.slice(0, 4000);

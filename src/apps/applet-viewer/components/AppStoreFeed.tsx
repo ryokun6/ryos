@@ -4,13 +4,14 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { useAppletActions, type Applet } from "../utils/appletActions";
 import { motion, AnimatePresence } from "framer-motion";
-import { useChatsStore } from "@/stores/useChatsStore";
 import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
 } from "@/utils/appletAuthBridge";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
+import { useChatsStoreShallow } from "@/stores/helpers";
+import { abortableFetch } from "@/utils/abortableFetch";
 
 interface AppStoreFeedProps {
   theme?: string;
@@ -41,7 +42,10 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   const hasFetchedRef = useRef(false);
   const sessionSeedRef = useRef(Math.floor(Math.random() * 1000000));
   const currentTheme = useThemeStore((state) => state.current);
-  const { username, authToken } = useChatsStore();
+  const { username, authToken } = useChatsStoreShallow((state) => ({
+    username: state.username,
+    authToken: state.authToken,
+  }));
 
   // Stacking constants (similar to TimeMachineView)
   const MAX_VISIBLE_PREVIEWS = 4;
@@ -114,7 +118,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
               authToken: authToken ?? null,
             },
           },
-          "*"
+          window.location.origin
         );
       } catch (error) {
         console.warn("[AppStoreFeed] Failed to post auth payload:", error);
@@ -132,6 +136,10 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
         data.type !== APPLET_AUTH_MESSAGE_TYPE ||
         data.action !== "request"
       ) {
+        return;
+      }
+
+      if (event.origin !== window.location.origin) {
         return;
       }
 
@@ -201,10 +209,15 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       return shuffled;
     };
     try {
-      const response = await fetch(getApiUrl("/api/share-applet?list=true"));
-      if (response.ok) {
-        const data = await response.json();
-        const allApplets = data.applets || [];
+      const response = await abortableFetch(
+        getApiUrl("/api/share-applet?list=true"),
+        {
+          timeout: 15000,
+          retry: { maxAttempts: 2, initialDelayMs: 500 },
+        }
+      );
+      const data = await response.json();
+      const allApplets = data.applets || [];
         
         // Categorize applets by priority
         const featured: Applet[] = [];
@@ -237,8 +250,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
           ...deterministicShuffle(others, 4),
         ];
         
-        setApplets(sortedApplets);
-      }
+      setApplets(sortedApplets);
     } catch (error) {
       console.error("Error fetching applets:", error);
     } finally {
@@ -255,6 +267,9 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
 
   // Fetch applet content only for the current applet
   useEffect(() => {
+    const abortController = new AbortController();
+    let isActive = true;
+
     const fetchAppletContent = async (appletId: string) => {
       if (loadedRef.current.has(appletId) || loadingRef.current.has(appletId)) {
         return;
@@ -264,17 +279,29 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       setLoadingContents((prev) => new Set(prev).add(appletId));
 
       try {
-        const response = await fetch(getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`));
-        if (response.ok) {
-          const data = await response.json();
-          loadedRef.current.add(appletId);
-          setAppletContents((prev) => {
-            const next = new Map(prev);
-            next.set(appletId, data.content || "");
-            return next;
-          });
-        }
+        const response = await abortableFetch(
+          getApiUrl(`/api/share-applet?id=${encodeURIComponent(appletId)}`),
+          {
+            signal: abortController.signal,
+            timeout: 15000,
+            retry: { maxAttempts: 2, initialDelayMs: 500 },
+          }
+        );
+        if (!isActive || abortController.signal.aborted) return;
+
+        const data = await response.json();
+        if (!isActive || abortController.signal.aborted) return;
+
+        loadedRef.current.add(appletId);
+        setAppletContents((prev) => {
+          const next = new Map(prev);
+          next.set(appletId, data.content || "");
+          return next;
+        });
       } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
         console.error(`Error fetching applet content for ${appletId}:`, error);
       } finally {
         loadingRef.current.delete(appletId);
@@ -288,8 +315,12 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
 
     // Only load the current applet
     if (applets.length > 0 && applets[currentIndex]) {
-      fetchAppletContent(applets[currentIndex].id);
+      void fetchAppletContent(applets[currentIndex].id);
     }
+    return () => {
+      isActive = false;
+      abortController.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, applets.length]);
 
@@ -499,7 +530,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
               srcDoc={ensureMacFonts(content)}
               title={displayName}
               className="w-full h-full border-0"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-pointer-lock allow-downloads allow-storage-access-by-user-activation"
               style={{
                 display: "block",
               }}

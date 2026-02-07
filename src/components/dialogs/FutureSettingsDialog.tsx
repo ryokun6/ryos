@@ -19,9 +19,9 @@ import { useTranslation } from "react-i18next";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import {
-  useInternetExplorerStore,
   DEFAULT_TIMELINE,
 } from "@/stores/useInternetExplorerStore";
+import { useInternetExplorerStoreShallow } from "@/stores/helpers";
 
 interface FutureSettingsDialogProps {
   isOpen: boolean;
@@ -44,7 +44,11 @@ const FutureSettingsDialog = ({
     timelineSettings,
     setTimelineSettings,
     year: currentYear,
-  } = useInternetExplorerStore();
+  } = useInternetExplorerStoreShallow((state) => ({
+    timelineSettings: state.timelineSettings,
+    setTimelineSettings: state.setTimelineSettings,
+    year: state.year,
+  }));
 
   // Update selectedYear when dialog opens
   useEffect(() => {

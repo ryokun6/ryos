@@ -11,6 +11,7 @@ import { getTranslatedAppName } from "@/utils/i18n";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { useTimeout } from "@/hooks/useTimeout";
 import { helpItems } from "..";
+import { useShallow } from "zustand/react/shallow";
 
 interface Effect {
   name: string;
@@ -164,7 +165,14 @@ export function usePhotoBoothLogic({
   );
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [isBackCamera, setIsBackCamera] = useState(false);
-  const { photos, addPhoto, addPhotos, clearPhotos } = usePhotoBoothStore();
+  const { photos, addPhoto, addPhotos, clearPhotos } = usePhotoBoothStore(
+    useShallow((state) => ({
+      photos: state.photos,
+      addPhoto: state.addPhoto,
+      addPhotos: state.addPhotos,
+      clearPhotos: state.clearPhotos,
+    }))
+  );
   const [isMultiPhotoMode, setIsMultiPhotoMode] = useState(false);
   const [multiPhotoCount, setMultiPhotoCount] = useState(0);
   const multiPhotoTimerRef = useRef<NodeJS.Timeout | null>(null);

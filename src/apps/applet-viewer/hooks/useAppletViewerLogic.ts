@@ -12,6 +12,7 @@ import { useAppletUpdates } from "./useAppletUpdates";
 import { useAppletActions, type Applet } from "../utils/appletActions";
 import { toast } from "sonner";
 import { getApiUrl } from "@/utils/platform";
+import { abortableFetch } from "@/utils/abortableFetch";
 import {
   APPLET_AUTH_BRIDGE_SCRIPT,
   APPLET_AUTH_MESSAGE_TYPE,
@@ -85,9 +86,13 @@ export function useAppletViewerLogic({
   const checkForAppletUpdate = useCallback(
     async (shareId: string) => {
       try {
-        const response = await fetch(getApiUrl("/api/share-applet?list=true"));
-        if (!response.ok) return null;
-
+        const response = await abortableFetch(
+          getApiUrl("/api/share-applet?list=true"),
+          {
+            timeout: 15000,
+            retry: { maxAttempts: 2, initialDelayMs: 500 },
+          }
+        );
         const data = await response.json();
         const applet = (data.applets || []).find(
           (a: Applet) => a.id === shareId
@@ -217,7 +222,7 @@ export function useAppletViewerLogic({
               authToken: authToken ?? null,
             },
           },
-          "*"
+          window.location.origin
         );
       } catch (error) {
         console.warn("[applet-viewer] Failed to post auth payload:", error);
@@ -242,7 +247,10 @@ export function useAppletViewerLogic({
   const shareCode = typedInitialData?.shareCode;
   const [loadedContent, setLoadedContent] = useState<string>("");
 
-  const fileStore = useFilesStore();
+  const getFileItem = useFilesStore((state) => state.getItem);
+  const updateFileItemMetadata = useFilesStore(
+    (state) => state.updateItemMetadata
+  );
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -252,6 +260,10 @@ export function useAppletViewerLogic({
         data.type !== APPLET_AUTH_MESSAGE_TYPE ||
         data.action !== "request"
       ) {
+        return;
+      }
+
+      if (event.origin !== window.location.origin) {
         return;
       }
 
@@ -304,16 +316,13 @@ export function useAppletViewerLogic({
       }
 
       try {
-        const response = await fetch(
-          `/api/share-applet?id=${encodeURIComponent(shareId)}`
+        const response = await abortableFetch(
+          `/api/share-applet?id=${encodeURIComponent(shareId)}`,
+          {
+            timeout: 15000,
+            retry: { maxAttempts: 2, initialDelayMs: 500 },
+          }
         );
-
-        if (!response.ok) {
-          console.error(
-            `[AppletViewer] Failed to fetch applet content for shareId ${shareId}: ${response.status}`
-          );
-          return null;
-        }
 
         const data = await response.json();
         const content = typeof data.content === "string" ? data.content : "";
@@ -350,7 +359,7 @@ export function useAppletViewerLogic({
         }
 
         if (Object.keys(metadataUpdates).length > 0) {
-          fileStore.updateItemMetadata(filePath, metadataUpdates);
+          updateFileItemMetadata(filePath, metadataUpdates);
         }
 
         return {
@@ -372,7 +381,7 @@ export function useAppletViewerLogic({
         return null;
       }
     },
-    [fileStore]
+    [updateFileItemMetadata]
   );
 
   const htmlContent =
@@ -408,7 +417,7 @@ export function useAppletViewerLogic({
       }
 
       try {
-        const fileMetadata = fileStore.getItem(appletPath);
+        const fileMetadata = getFileItem(appletPath);
         if (fileMetadata?.uuid) {
           const contentData = await dbOperations.get<DocumentContent>(
             STORES.APPLETS,
@@ -461,7 +470,7 @@ export function useAppletViewerLogic({
   }, [
     appletPath,
     instanceId,
-    fileStore,
+    getFileItem,
     typedInitialData,
     fetchAndCacheAppletContent,
   ]);
@@ -475,7 +484,7 @@ export function useAppletViewerLogic({
     });
   }, [appletPath, htmlContent, loadedContent]);
 
-  const fileItem = appletPath ? fileStore.getItem(appletPath) : undefined;
+  const fileItem = appletPath ? getFileItem(appletPath) : undefined;
 
   const trackedViewsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
@@ -507,7 +516,7 @@ export function useAppletViewerLogic({
     if (!appletPath) return;
 
     const checkUpdate = async (retryCount: number = 0) => {
-      const currentFileItem = fileStore.getItem(appletPath);
+      const currentFileItem = getFileItem(appletPath);
       const shareId = currentFileItem?.shareId;
       if (!shareId) {
         if (retryCount < 5) {
@@ -545,7 +554,7 @@ export function useAppletViewerLogic({
               try {
                 await actions.handleInstall(updateApplet);
 
-                const updatedFileItem = fileStore.getItem(appletPath);
+                const updatedFileItem = getFileItem(appletPath);
                 if (updatedFileItem?.uuid) {
                   const contentData = await dbOperations.get<DocumentContent>(
                     STORES.APPLETS,
@@ -589,9 +598,14 @@ export function useAppletViewerLogic({
 
     const timeoutId = setTimeout(() => checkUpdate(0), 1000);
     return () => clearTimeout(timeoutId);
-  }, [appletPath, loadedContent, checkForAppletUpdate, actions, fileStore, t]);
+  }, [appletPath, loadedContent, checkForAppletUpdate, actions, getFileItem, t]);
 
-  const { getAppletWindowSize, setAppletWindowSize } = useAppletStore();
+  const getAppletWindowSize = useAppletStore(
+    (state) => state.getAppletWindowSize
+  );
+  const setAppletWindowSize = useAppletStore(
+    (state) => state.setAppletWindowSize
+  );
 
   const savedSizeFromMetadata =
     fileItem?.windowWidth && fileItem?.windowHeight
@@ -635,7 +649,7 @@ export function useAppletViewerLogic({
 
     if (shouldUpdate) {
       if (fileItem) {
-        fileStore.updateItemMetadata(appletPath, {
+        updateFileItemMetadata(appletPath, {
           windowWidth: next.width,
           windowHeight: next.height,
         });
@@ -647,7 +661,7 @@ export function useAppletViewerLogic({
     currentWindowState?.size,
     savedSize,
     fileItem,
-    fileStore,
+    updateFileItemMetadata,
     setAppletWindowSize,
   ]);
 
@@ -897,7 +911,6 @@ export function useAppletViewerLogic({
         }
 
         const filePath = `/Applets/${importFileName}`;
-        const fileStore = useFilesStore.getState();
 
         await saveFile({
           name: importFileName,
@@ -910,7 +923,7 @@ export function useAppletViewerLogic({
         });
 
         if (windowWidth || windowHeight || createdAt || modifiedAt) {
-          fileStore.updateItemMetadata(filePath, {
+          updateFileItemMetadata(filePath, {
             ...(windowWidth && { windowWidth }),
             ...(windowHeight && { windowHeight }),
             ...(createdAt && { createdAt }),
@@ -963,8 +976,7 @@ export function useAppletViewerLogic({
           ?.replace(/\.(html|app)$/i, "") || "Untitled"
       : "Untitled";
 
-    const fileStore = useFilesStore.getState();
-    const currentFile = fileStore.getItem(appletPath);
+    const currentFile = getFileItem(appletPath);
 
     const exportData = {
       name: currentFile?.name || filename,
@@ -1066,7 +1078,7 @@ export function useAppletViewerLogic({
 
     try {
       const currentFile = files.find((f) => f.path === appletPath);
-      const fileItem = appletPath ? fileStore.getItem(appletPath) : null;
+      const fileItem = appletPath ? getFileItem(appletPath) : null;
       const existingShareId = fileItem?.shareId;
       const fileCreatedBy = fileItem?.createdBy;
 
@@ -1092,7 +1104,7 @@ export function useAppletViewerLogic({
 
       const windowDimensions = currentWindowState?.size;
 
-      const response = await fetch(getApiUrl("/api/share-applet"), {
+      const response = await abortableFetch(getApiUrl("/api/share-applet"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1108,19 +1120,16 @@ export function useAppletViewerLogic({
           windowHeight: windowDimensions?.height,
           shareId: existingShareId && isAuthor ? existingShareId : undefined,
         }),
+        timeout: 15000,
+        retry: { maxAttempts: 1 },
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to share applet");
-      }
 
       const data = await response.json();
       setShareId(data.id);
       setIsShareDialogOpen(true);
 
       if (appletPath && data.id) {
-        const currentFileItem = fileStore.getItem(appletPath);
+        const currentFileItem = getFileItem(appletPath);
         if (currentFileItem) {
           const shouldUpdateShareId = data.updated || !existingShareId;
 
@@ -1135,7 +1144,7 @@ export function useAppletViewerLogic({
           });
 
           if (data.createdAt) {
-            fileStore.updateItemMetadata(appletPath, {
+            updateFileItemMetadata(appletPath, {
               storeCreatedAt: data.createdAt,
             });
           }
@@ -1160,26 +1169,23 @@ export function useAppletViewerLogic({
   useEffect(() => {
     if (shareCode && appletPath) {
       setSharedContent("");
+      const controller = new AbortController();
+      let isActive = true;
 
       const fetchSharedApplet = async () => {
         try {
-          const response = await fetch(
-            getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareCode)}`)
-          );
-
-          if (!response.ok) {
-            if (response.status === 404) {
-              toast.error("Applet not found", {
-                description:
-                  "The shared applet may have been deleted or the link is invalid.",
-              });
-            } else {
-              throw new Error("Failed to fetch shared applet");
+          const response = await abortableFetch(
+            getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareCode)}`),
+            {
+              signal: controller.signal,
+              timeout: 15000,
+              retry: { maxAttempts: 2, initialDelayMs: 500 },
             }
-            return;
-          }
+          );
+          if (!isActive || controller.signal.aborted) return;
 
           const data = await response.json();
+          if (!isActive || controller.signal.aborted) return;
           setSharedContent(data.content);
           setSharedName(data.name);
           setSharedTitle(data.title);
@@ -1233,7 +1239,7 @@ export function useAppletViewerLogic({
 
                   const existingApplet = shareCode
                     ? files.find((f) => {
-                        const fileItem = fileStore.getItem(f.path);
+                        const fileItem = getFileItem(f.path);
                         return fileItem?.shareId === shareCode;
                       })
                     : null;
@@ -1252,7 +1258,7 @@ export function useAppletViewerLogic({
                   });
 
                   if (data.windowWidth && data.windowHeight) {
-                    fileStore.updateItemMetadata(finalPath, {
+                    updateFileItemMetadata(finalPath, {
                       windowWidth: data.windowWidth,
                       windowHeight: data.windowHeight,
                     });
@@ -1285,14 +1291,29 @@ export function useAppletViewerLogic({
             duration: 10000,
           });
         } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") {
+            return;
+          }
+          if (!isActive || controller.signal.aborted) return;
           console.error("Error fetching shared applet:", error);
+          if (error instanceof Error && error.message.includes("404")) {
+            toast.error("Applet not found", {
+              description:
+                "The shared applet may have been deleted or the link is invalid.",
+            });
+            return;
+          }
           toast.error("Failed to load shared applet", {
             description: "Please check your connection and try again.",
           });
         }
       };
 
-      fetchSharedApplet();
+      void fetchSharedApplet();
+      return () => {
+        isActive = false;
+        controller.abort();
+      };
     } else if (!shareCode && sharedContent) {
       setSharedContent("");
       setSharedName(undefined);

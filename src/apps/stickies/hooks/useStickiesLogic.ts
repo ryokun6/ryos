@@ -4,6 +4,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useStickiesStore, StickyColor } from "@/stores/useStickiesStore";
 import { helpItems } from "..";
+import { useShallow } from "zustand/react/shallow";
 
 export function useStickiesLogic() {
   const { t } = useTranslation();
@@ -25,7 +26,16 @@ export function useStickiesLogic() {
     deleteNote,
     bringToFront,
     clearAllNotes,
-  } = useStickiesStore();
+  } = useStickiesStore(
+    useShallow((state) => ({
+      notes: state.notes,
+      addNote: state.addNote,
+      updateNote: state.updateNote,
+      deleteNote: state.deleteNote,
+      bringToFront: state.bringToFront,
+      clearAllNotes: state.clearAllNotes,
+    }))
+  );
 
   // Selected note for color changes etc
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
