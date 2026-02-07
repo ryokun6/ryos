@@ -54,6 +54,7 @@
     "test:push-concurrency": "bun run tests/test-push-concurrency.ts",
     "test:push-results": "bun run tests/test-push-results.ts",
     "test:push-apns": "bun run tests/test-push-apns.ts",
+    "test:push:aggregate": "bun run tests/run-all-tests.ts push-",
     "test:push": "bun run test:push-shared && bun run test:push-request-payloads && bun run test:push-ownership && bun run test:push-payload && bun run test:push-concurrency && bun run test:push-results && bun run test:push-apns",
     "check:push": "bun run lint:push && bun run test:push && bun run build"
   },
