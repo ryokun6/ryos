@@ -321,7 +321,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       isActive = false;
       abortController.abort();
     };
-  }, [currentIndex, applets.length]);
+  }, [currentIndex, applets, applets.length]);
 
   const scrollToIndex = useCallback((index: number) => {
     if (index >= 0 && index < appletsLengthRef.current) {
@@ -338,7 +338,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
         setNavigationDirection("none");
       }
     }
-  }, []);
+  }, [appletsLengthRef, currentIndexRef]);
 
   // Handle wheel navigation for edge detection and toolbar
   useEffect(() => {
