@@ -70,6 +70,14 @@ async function testNormalizePushPermissionResult() {
     JSON.stringify({ granted: false })
   );
   assertEq(
+    JSON.stringify(normalizePushPermissionResult({ granted: "true" })),
+    JSON.stringify({ granted: false })
+  );
+  assertEq(
+    JSON.stringify(normalizePushPermissionResult({ granted: 1 })),
+    JSON.stringify({ granted: false })
+  );
+  assertEq(
     JSON.stringify(normalizePushPermissionResult("bad")),
     JSON.stringify({ granted: false })
   );
