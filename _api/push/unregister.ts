@@ -27,7 +27,6 @@ import {
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
-const TOKEN_METADATA_LOOKUP_CONCURRENCY = getPushMetadataLookupConcurrency();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { logger } = initLogger();
@@ -149,13 +148,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    const tokenMetadataLookupConcurrency = getPushMetadataLookupConcurrency();
     await redis.del(userTokensKey);
 
     const tokenOwnership = await getTokenOwnershipEntries(
       redis,
       username,
       userTokens,
-      TOKEN_METADATA_LOOKUP_CONCURRENCY
+      tokenMetadataLookupConcurrency
     );
     const { ownedTokens } = splitTokenOwnership(tokenOwnership);
 

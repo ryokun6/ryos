@@ -43,8 +43,6 @@ const APNS_STALE_REASONS = new Set([
   "Unregistered",
   "DeviceTokenNotForTopic",
 ]);
-const TOKEN_METADATA_LOOKUP_CONCURRENCY = getPushMetadataLookupConcurrency();
-const APNS_SEND_CONCURRENCY = getApnsSendConcurrency();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { logger } = initLogger();
@@ -84,6 +82,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const redis = createPushRedis();
+    const tokenMetadataLookupConcurrency = getPushMetadataLookupConcurrency();
+    const apnsSendConcurrency = getApnsSendConcurrency();
     const { username, token } = extractAuthFromHeaders(req.headers);
     if (!username || !token) {
       logger.response(401, Date.now() - startTime);
@@ -161,7 +161,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       redis,
       username,
       tokensForOwnershipLookup,
-      TOKEN_METADATA_LOOKUP_CONCURRENCY
+      tokenMetadataLookupConcurrency
     );
     const {
       ownedTokens: targetTokens,
@@ -185,7 +185,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const results = await mapWithConcurrency(
       targetTokens,
-      APNS_SEND_CONCURRENCY,
+      apnsSendConcurrency,
       (deviceToken) =>
         sendApnsAlert(apnsConfig, deviceToken, {
           title,
@@ -213,7 +213,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       successCount,
       failureCount,
       failureReasons,
-      apnsSendConcurrency: APNS_SEND_CONCURRENCY,
+      apnsSendConcurrency,
+      pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
       invalidStoredTokensRemoved,
       skippedNonStringTokenCount,
       staleTokensRemoved,
@@ -225,7 +226,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       successCount,
       failureCount,
       failureReasons,
-      apnsSendConcurrency: APNS_SEND_CONCURRENCY,
+      apnsSendConcurrency,
+      pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
       invalidStoredTokensRemoved,
       skippedNonStringTokenCount,
       staleTokensRemoved,
