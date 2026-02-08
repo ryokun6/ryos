@@ -71,6 +71,9 @@ function sumCommandCounts(commandResults: unknown[]): number | null {
     if (parsed === null) {
       return null;
     }
+    if (parsed > 1) {
+      return null;
+    }
     total += parsed;
   }
   return total;

@@ -149,6 +149,14 @@ async function testRemovalFallbackWhenExecResultUnparseable() {
     ["tok1", "tok2"]
   );
   assertEq(removedCountFromShortResult, 2);
+
+  const { redis: redisWithOverlargeCount } = createFakeRedis([[2]]);
+  const removedCountFromOverlarge = await removeTokensFromUserSet(
+    redisWithOverlargeCount,
+    "push:user:alice:tokens",
+    ["tok1"]
+  );
+  assertEq(removedCountFromOverlarge, 1);
 }
 
 async function testMetadataRemovalFallbackWhenExecResultUnparseable() {
