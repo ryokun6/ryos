@@ -209,6 +209,15 @@ async function testSetCorsHeadersFallsBackForInvalidMaxAge() {
   assertEq(nanRes.getHeader("Access-Control-Max-Age"), "86400");
 }
 
+async function testSetCorsHeadersFloorsDecimalMaxAgeValues() {
+  const res = createMockVercelResponseHarness();
+  setCorsHeaders(res.res, "http://localhost:3000", {
+    maxAge: 12.9,
+  });
+
+  assertEq(res.getHeader("Access-Control-Max-Age"), "12");
+}
+
 async function testSetCorsHeadersAppendsOriginToExistingVaryHeader() {
   const res = createMockVercelResponseHarness();
   (res.res as { setHeader: (name: string, value: unknown) => unknown }).setHeader(
@@ -882,6 +891,22 @@ async function testHandlePreflightFallsBackForInvalidMaxAge() {
   });
 }
 
+async function testHandlePreflightFloorsDecimalMaxAgeValues() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:5173",
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res, {
+      maxAge: 12.9,
+    });
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Max-Age"), "12");
+  });
+}
+
 async function testHandlePreflightFiltersNonStringConfiguredMethodsAndHeaders() {
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:5173",
@@ -1051,6 +1076,10 @@ export async function runPushCorsUtilsTests(): Promise<{
     testSetCorsHeadersFallsBackForInvalidMaxAge
   );
   await runTest(
+    "CORS header setter floors decimal max-age values",
+    testSetCorsHeadersFloorsDecimalMaxAgeValues
+  );
+  await runTest(
     "CORS header setter appends Origin to existing Vary values",
     testSetCorsHeadersAppendsOriginToExistingVaryHeader
   );
@@ -1193,6 +1222,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper falls back for invalid max-age values",
     testHandlePreflightFallsBackForInvalidMaxAge
+  );
+  await runTest(
+    "CORS preflight helper floors decimal max-age values",
+    testHandlePreflightFloorsDecimalMaxAgeValues
   );
   await runTest(
     "CORS preflight helper falls back to configured allow headers when requested headers are invalid",
