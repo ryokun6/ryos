@@ -1319,7 +1319,7 @@ export function useAppletViewerLogic({
       setSharedName(undefined);
       setSharedTitle(undefined);
     }
-  }, [shareCode]);
+  }, [shareCode, files, getFileItem, instanceId, saveFile, sharedContent, updateFileItemMetadata]);
 
   useEffect(() => {
     const iframe = iframeRef.current;

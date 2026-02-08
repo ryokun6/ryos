@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useSoundboard } from "@/hooks/useSoundboard";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -65,11 +65,11 @@ export function useSoundboardLogic({
   const storeSetSlotPlaybackState = useSoundboardStore(
     (state) => state.setSlotPlaybackState
   );
-  const storeResetPlaybackStates = () => {
+  const storeResetPlaybackStates = useCallback(() => {
     for (let i = 0; i < 9; i++) {
       storeSetSlotPlaybackState(i, false, false);
     }
-  };
+  }, [storeSetSlotPlaybackState]);
   const storeSetBoards = useSoundboardStore(
     (state) => state._setBoards_internal
   );
