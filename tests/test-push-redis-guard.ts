@@ -121,23 +121,20 @@ async function testRedisGuardWorksWithoutWarnLogger() {
       },
       async () => {
         const mockRes = createMockVercelResponseHarness();
-        let responseCallCount = 0;
+        const mockLogger = createMockPushLoggerHarness({ includeWarn: false });
 
         const redis = createPushRedisOrRespond(
           mockRes.res,
-          {
-            error: () => {
-              // Not expected in this flow.
-            },
-            response: () => {
-              responseCallCount += 1;
-            },
-          },
+          mockLogger.logger,
           Date.now()
         );
 
         assertEq(redis, null);
-        assertEq(responseCallCount, 1);
+        assertEq(typeof mockLogger.logger.warn, "undefined");
+        assertEq(mockLogger.responseCalls.length, 1);
+        assertEq(mockLogger.responseCalls[0].statusCode, 500);
+        assertEq(mockLogger.errorCalls.length, 0);
+        assertEq(mockLogger.warnCalls.length, 0);
         assertEq(mockRes.getStatusCode(), 500);
         assertEq(
           JSON.stringify(mockRes.getJsonPayload()),
