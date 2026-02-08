@@ -55,6 +55,21 @@ async function testGetEffectiveOriginReturnsNullForInvalidReferer() {
   assertEq(getEffectiveOrigin(req), null);
 }
 
+async function testGetEffectiveOriginUsesFirstNonEmptyOriginArrayEntry() {
+  const req = createRequest("POST", {
+    origin: ["not a valid origin", "http://localhost:3000"],
+  });
+  assertEq(getEffectiveOrigin(req), "not a valid origin");
+}
+
+async function testGetEffectiveOriginUsesFirstNonEmptyRefererArrayEntry() {
+  const req = createRequest("POST", {
+    origin: ["   "],
+    referer: ["not a url", "http://localhost:3000/path"],
+  });
+  assertEq(getEffectiveOrigin(req), null);
+}
+
 async function testIsAllowedOriginPoliciesByRuntimeEnv() {
   withPatchedEnv({ VERCEL_ENV: "production" }, () => {
     assertEq(isAllowedOrigin("https://os.ryo.lu"), true);
@@ -305,6 +320,14 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS helper rejects invalid referer fallback values",
     testGetEffectiveOriginReturnsNullForInvalidReferer
+  );
+  await runTest(
+    "CORS helper uses first non-empty origin array entry",
+    testGetEffectiveOriginUsesFirstNonEmptyOriginArrayEntry
+  );
+  await runTest(
+    "CORS helper uses first non-empty referer array entry",
+    testGetEffectiveOriginUsesFirstNonEmptyRefererArrayEntry
   );
   await runTest(
     "CORS origin allow-list respects runtime environment policies",
