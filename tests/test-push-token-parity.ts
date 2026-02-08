@@ -4,7 +4,11 @@
  * and backend push-token validation.
  */
 
-import { isValidPushToken } from "../_api/push/_shared";
+import {
+  isValidPushToken,
+  PUSH_TOKEN_MAX_LENGTH as BACKEND_PUSH_TOKEN_MAX_LENGTH,
+  PUSH_TOKEN_MIN_LENGTH as BACKEND_PUSH_TOKEN_MIN_LENGTH,
+} from "../_api/push/_shared";
 import {
   normalizePushToken,
   PUSH_TOKEN_MAX_LENGTH,
@@ -38,6 +42,11 @@ const SAMPLE_VALUES: unknown[] = [
 
 const ALLOWED_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:_-.";
 const INVALID_CHARS = ["/", " ", "\t", "\n", "@", ",", "π"];
+
+async function testTokenLengthConstantsStayInSync() {
+  assertEq(PUSH_TOKEN_MIN_LENGTH, BACKEND_PUSH_TOKEN_MIN_LENGTH);
+  assertEq(PUSH_TOKEN_MAX_LENGTH, BACKEND_PUSH_TOKEN_MAX_LENGTH);
+}
 
 async function testNormalizedTokensAlwaysPassBackendValidator() {
   for (const value of SAMPLE_VALUES) {
@@ -97,6 +106,10 @@ export async function runPushTokenParityTests(): Promise<{
   await runTest(
     "Normalized frontend tokens always pass backend validation",
     testNormalizedTokensAlwaysPassBackendValidator
+  );
+  await runTest(
+    "Frontend/backend push token length constants stay in sync",
+    testTokenLengthConstantsStayInSync
   );
   await runTest(
     "Canonical token strings match frontend/backend validation parity",
