@@ -126,22 +126,39 @@ export function extractBearerToken(authHeader: string | null | undefined): strin
 }
 
 export function isRedisPositiveCount(value: unknown): boolean {
+  return normalizeRedisNonNegativeCount(value, 0) > 0;
+}
+
+export function normalizeRedisNonNegativeCount(
+  value: unknown,
+  fallback: number = 0
+): number {
   if (typeof value === "bigint") {
-    return value > 0n;
+    if (value < 0n) return fallback;
+    if (value > BigInt(Number.MAX_SAFE_INTEGER)) return fallback;
+    return Number(value);
   }
 
   if (typeof value === "number") {
-    return Number.isFinite(value) && Number.isInteger(value) && value > 0;
+    if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+      return fallback;
+    }
+    return value;
   }
 
   if (typeof value === "string") {
     const trimmed = value.trim();
-    if (trimmed.length === 0) return false;
+    if (trimmed.length === 0) return fallback;
     const parsed = Number(trimmed);
-    return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0;
+    if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0) {
+      return fallback;
+    }
+    return parsed;
   }
 
-  return value === true;
+  if (value === true) return 1;
+  if (value === false) return 0;
+  return fallback;
 }
 
 function readSingleHeader(

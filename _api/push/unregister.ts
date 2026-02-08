@@ -21,6 +21,7 @@ import {
 import {
   extractAuthFromHeaders,
   extractTokenMetadataOwner,
+  normalizeRedisNonNegativeCount,
   parseStoredPushTokens,
   getTokenMetaKey,
   getUserTokensKey,
@@ -96,10 +97,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const tokenMeta = await redis.get<Partial<PushTokenMetadata> | null>(tokenMetaKey);
       const metadataBelongsToUser = extractTokenMetadataOwner(tokenMeta) === username;
 
-      const removedFromUserSet = await redis.srem(userTokensKey, pushToken);
+      const removedFromUserSet = normalizeRedisNonNegativeCount(
+        await redis.srem(userTokensKey, pushToken)
+      );
       let removedMetadataCount = 0;
       if (metadataBelongsToUser) {
-        removedMetadataCount = await redis.del(tokenMetaKey);
+        removedMetadataCount = normalizeRedisNonNegativeCount(
+          await redis.del(tokenMetaKey)
+        );
       }
 
       logger.info("Unregistered push token", {

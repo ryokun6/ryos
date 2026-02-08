@@ -17,6 +17,7 @@ import {
   isPushPlatform,
   isValidPushToken,
   normalizePushPlatform,
+  normalizeRedisNonNegativeCount,
   normalizeUsername,
 } from "../_api/push/_shared";
 import {
@@ -106,6 +107,23 @@ async function testRedisPositiveCountHelper() {
   assertEq(isRedisPositiveCount([]), false);
 }
 
+async function testNormalizeRedisNonNegativeCountHelper() {
+  assertEq(normalizeRedisNonNegativeCount(2), 2);
+  assertEq(normalizeRedisNonNegativeCount("3"), 3);
+  assertEq(normalizeRedisNonNegativeCount(4n), 4);
+  assertEq(normalizeRedisNonNegativeCount(true), 1);
+  assertEq(normalizeRedisNonNegativeCount(false), 0);
+
+  assertEq(normalizeRedisNonNegativeCount(-1), 0);
+  assertEq(normalizeRedisNonNegativeCount("-2"), 0);
+  assertEq(normalizeRedisNonNegativeCount(1.5), 0);
+  assertEq(normalizeRedisNonNegativeCount("1.5"), 0);
+  assertEq(normalizeRedisNonNegativeCount("bad"), 0);
+  assertEq(normalizeRedisNonNegativeCount(BigInt(Number.MAX_SAFE_INTEGER) + 1n), 0);
+
+  assertEq(normalizeRedisNonNegativeCount(-1, 7), 7);
+}
+
 async function testPlatformValidation() {
   assertEq(isPushPlatform("ios"), true);
   assertEq(isPushPlatform("android"), true);
@@ -186,6 +204,10 @@ export async function runPushSharedTests(): Promise<{ passed: number; failed: nu
   await runTest("Bearer token extraction helper", testBearerTokenExtraction);
   await runTest("Auth extraction from request headers", testAuthExtractionFromHeaders);
   await runTest("Redis positive-count helper", testRedisPositiveCountHelper);
+  await runTest(
+    "Redis non-negative count normalization helper",
+    testNormalizeRedisNonNegativeCountHelper
+  );
   await runTest("Push platform validator", testPlatformValidation);
   await runTest("Token metadata ownership helpers", testTokenMetadataOwnershipHelpers);
   await runTest("Push body/trim helper utilities", testRequestBodyObjectAndTrimHelpers);
