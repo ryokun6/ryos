@@ -1581,6 +1581,34 @@ async function testWhitespaceOnlyMethodIsRejected() {
   });
 }
 
+async function testMissingMethodWithDisallowedOriginIsRejectedAsUnauthorized() {
+  await withDevelopmentEnv(async () => {
+    const req = createRawRequest(undefined, "https://evil.example");
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 403);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Unauthorized" })
+    );
+    assertEq(mockRes.getHeader("Allow"), undefined);
+    assertEq(mockLogger.requestCalls.length, 1);
+    assertEq(mockLogger.requestCalls[0].method, "UNKNOWN");
+    assertEq(mockLogger.responseCalls.length, 1);
+    assertEq(mockLogger.responseCalls[0].statusCode, 403);
+  });
+}
+
 async function testLowercaseOptionsMethodHandledAsPreflight() {
   await withDevelopmentEnv(async () => {
     const req = createRawRequest("options");
@@ -2552,6 +2580,10 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard rejects requests with whitespace-only method",
     testWhitespaceOnlyMethodIsRejected
+  );
+  await runTest(
+    "Push request guard prioritizes unauthorized-origin response for missing methods",
+    testMissingMethodWithDisallowedOriginIsRejectedAsUnauthorized
   );
   await runTest(
     "Push request guard normalizes lowercase OPTIONS method",
