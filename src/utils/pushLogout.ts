@@ -98,6 +98,15 @@ export async function unregisterPushTokenForLogout(
     return;
   }
 
+  const normalizedUsername = username.trim();
+  const normalizedAuthToken = authToken.trim();
+  if (!normalizedUsername || !normalizedAuthToken) {
+    deps.warn(
+      "[ChatsStore] Skipping push unregister during logout due to missing auth context"
+    );
+    return;
+  }
+
   try {
     const response = await deps.fetchRuntime(
       deps.getApiUrlRuntime("/api/push/unregister"),
@@ -105,8 +114,8 @@ export async function unregisterPushTokenForLogout(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-          "X-Username": username,
+          Authorization: `Bearer ${normalizedAuthToken}`,
+          "X-Username": normalizedUsername,
         },
         body: JSON.stringify({ token: pushToken }),
       }
