@@ -39,7 +39,8 @@ const defaultUnregisterDeps: UnregisterPushTokenForLogoutDeps = {
 async function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
-  operationLabel: string
+  operationLabel: string,
+  onTimeout?: () => void
 ): Promise<T> {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
     return promise;
@@ -48,6 +49,7 @@ async function withTimeout<T>(
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
   return new Promise<T>((resolve, reject) => {
     timeoutHandle = setTimeout(() => {
+      onTimeout?.();
       reject(new Error(`${operationLabel} timed out after ${timeoutMs}ms`));
     }, timeoutMs);
 
@@ -130,21 +132,31 @@ export async function unregisterPushTokenForLogout(
   }
 
   try {
+    const abortController =
+      typeof AbortController === "function" ? new AbortController() : null;
+    const unregisterRequestInit: RequestInit = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${normalizedAuthToken}`,
+        "X-Username": normalizedUsername,
+      },
+      body: JSON.stringify({ token: normalizedPushToken }),
+    };
+    if (abortController) {
+      unregisterRequestInit.signal = abortController.signal;
+    }
+
     const response = await withTimeout(
       deps.fetchRuntime(
         deps.getApiUrlRuntime("/api/push/unregister"),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${normalizedAuthToken}`,
-            "X-Username": normalizedUsername,
-          },
-          body: JSON.stringify({ token: normalizedPushToken }),
-        }
+        unregisterRequestInit
       ),
       deps.requestTimeoutMs ?? PUSH_UNREGISTER_TIMEOUT_MS,
-      "Push token unregister request"
+      "Push token unregister request",
+      () => {
+        abortController?.abort();
+      }
     );
 
     if (!response.ok) {

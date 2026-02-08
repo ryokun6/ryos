@@ -373,9 +373,19 @@ async function testUnregisterWarnsWhenRequestTimesOut() {
   let warnCalls = 0;
   let warnedMessage = "";
   let warnedError: unknown;
+  let sawAbortSignal = false;
+  let abortTriggered = false;
 
   await unregisterPushTokenForLogout("example-user", "auth-token", "a".repeat(64), {
-    fetchRuntime: () => new Promise<Response>(() => undefined),
+    fetchRuntime: (_url, init) =>
+      new Promise<Response>(() => {
+        if (init?.signal) {
+          sawAbortSignal = true;
+          init.signal.addEventListener("abort", () => {
+            abortTriggered = true;
+          });
+        }
+      }),
     getApiUrlRuntime: (path) => path,
     requestTimeoutMs: 10,
     warn: (message, error) => {
@@ -394,6 +404,8 @@ async function testUnregisterWarnsWhenRequestTimesOut() {
   if (warnedError instanceof Error) {
     assertEq(warnedError.message, "Push token unregister request timed out after 10ms");
   }
+  assertEq(sawAbortSignal, true);
+  assertEq(abortTriggered, true);
 }
 
 async function testUnregisterTimeoutCanBeDisabled() {
