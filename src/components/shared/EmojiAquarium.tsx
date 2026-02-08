@@ -12,7 +12,7 @@ interface EmojiAquariumProps {
   className?: string;
 }
 
-function useSeededRandom(seed?: string) {
+function createSeededRandom(seed?: string) {
   // Mulberry32 PRNG
   let a = 0;
   if (seed && seed.length > 0) {
@@ -30,19 +30,18 @@ function useSeededRandom(seed?: string) {
 }
 
 export function EmojiAquarium({ seed, className }: EmojiAquariumProps) {
-  // Create a stable seed once so re-renders (e.g., hover) don't change layout.
-  const seedRef = useRef<string | undefined>(seed);
-  if (seedRef.current === undefined) {
-    seedRef.current = Math.floor(Math.random() * 2 ** 31).toString();
-  }
+  const [resolvedSeed, setResolvedSeed] = useState<string>(
+    () => seed || Math.floor(Math.random() * 2 ** 31).toString()
+  );
+
   // If a seed prop is provided later, allow switching to it.
   useEffect(() => {
-    if (seed && seed !== seedRef.current) {
-      seedRef.current = seed;
+    if (seed && seed !== resolvedSeed) {
+      setResolvedSeed(seed);
     }
-  }, [seed]);
+  }, [seed, resolvedSeed]);
 
-  const rand = useSeededRandom(seedRef.current);
+  const rand = useMemo(() => createSeededRandom(resolvedSeed), [resolvedSeed]);
 
   // Responsive: fill the container width and compute height via aspect ratio.
   const containerRef = useRef<HTMLDivElement>(null);
@@ -97,7 +96,7 @@ export function EmojiAquarium({ seed, className }: EmojiAquariumProps) {
       xs.push(x);
     }
     return xs;
-  }, [width, floorCount, seedRef.current]);
+  }, [width, floorCount, rand]);
 
   return (
     <MotionConfig reducedMotion="never">
