@@ -401,6 +401,54 @@ async function testHandlePreflightIgnoresRequestedHeaderTokenBeyondTokenScanLimi
   });
 }
 
+async function testHandlePreflightUsesRequestedHeaderTokenAtTokenScanLimitAcrossArrayValues() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": [
+      Array.from(
+        { length: CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS - 1 },
+        () => " "
+      ).join(","),
+      "X-Token-Limit-Across-Values",
+    ],
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(
+      res.getHeader("Access-Control-Allow-Headers"),
+      "X-Token-Limit-Across-Values"
+    );
+  });
+}
+
+async function testHandlePreflightIgnoresRequestedHeaderTokenBeyondTokenScanLimitAcrossArrayValues() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": [
+      Array.from(
+        { length: CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS },
+        () => " "
+      ).join(","),
+      "X-Beyond-Token-Limit-Across-Values",
+    ],
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(
+      res.getHeader("Access-Control-Allow-Headers"),
+      "Content-Type, Authorization, X-Username"
+    );
+  });
+}
+
 async function testHandlePreflightIgnoresRequestedHeaderTokenWhenNameTooLong() {
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:3000",
@@ -775,6 +823,14 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper ignores requested-header token beyond token scan limit",
     testHandlePreflightIgnoresRequestedHeaderTokenBeyondTokenScanLimit
+  );
+  await runTest(
+    "CORS preflight helper uses requested-header token at token scan limit across array values",
+    testHandlePreflightUsesRequestedHeaderTokenAtTokenScanLimitAcrossArrayValues
+  );
+  await runTest(
+    "CORS preflight helper ignores requested-header token beyond token scan limit across array values",
+    testHandlePreflightIgnoresRequestedHeaderTokenBeyondTokenScanLimitAcrossArrayValues
   );
   await runTest(
     "CORS preflight helper ignores requested-header tokens whose names are too long",
