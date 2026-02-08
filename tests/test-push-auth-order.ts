@@ -136,10 +136,11 @@ async function expectMethodNotAllowedResponse(
 
 async function expectOptionsRequestedMethodNotAllowedResponse(
   handler: PushHandler,
-  endpointPath: string
+  endpointPath: string,
+  requestedMethod: string = "DELETE"
 ) {
   const req = createRequest("OPTIONS", endpointPath, "http://localhost:3000", {
-    "access-control-request-method": "DELETE",
+    "access-control-request-method": requestedMethod,
   });
   const mockRes = createMockVercelResponseHarness();
 
@@ -255,6 +256,14 @@ async function testRegisterOptionsRequestedMethodNotAllowedIncludesAllowHeader()
   await expectOptionsRequestedMethodNotAllowedResponse(
     pushRegisterHandler,
     "/api/push/register"
+  );
+}
+
+async function testRegisterOptionsInvalidRequestedMethodTokenRejected() {
+  await expectOptionsRequestedMethodNotAllowedResponse(
+    pushRegisterHandler,
+    "/api/push/register",
+    "PO ST"
   );
 }
 
@@ -440,6 +449,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
   await runTest(
     "Push register preflight rejects unsupported requested method",
     testRegisterOptionsRequestedMethodNotAllowedIncludesAllowHeader
+  );
+  await runTest(
+    "Push register preflight rejects invalid requested-method token",
+    testRegisterOptionsInvalidRequestedMethodTokenRejected
   );
   await runTest(
     "Push register disallowed origin takes precedence over method guard",
