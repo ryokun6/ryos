@@ -6,6 +6,7 @@
 import type { VercelRequest } from "@vercel/node";
 import {
   handlePushPostRequestGuards,
+  PUSH_ALLOW_HEADER_VALUE,
   PUSH_CORS_MAX_REQUESTED_HEADER_COUNT,
   PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH,
   PUSH_OPTIONS_VARY_HEADER,
@@ -103,7 +104,7 @@ async function testAllowedPostContinuesWithoutHandling() {
     assertEq(handled, false);
     assertEq(mockRes.getStatusCode(), 0);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
-    assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), "POST, OPTIONS");
+    assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), PUSH_ALLOW_HEADER_VALUE);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
       "Content-Type, Authorization, X-Username"
@@ -230,7 +231,7 @@ async function testAllowedOptionsPreflightHandled() {
     assertEq(mockRes.getStatusCode(), 204);
     assertEq(mockRes.getEndCallCount(), 1);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
-    assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), "POST, OPTIONS");
+    assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), PUSH_ALLOW_HEADER_VALUE);
     assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
@@ -298,9 +299,9 @@ async function testAllowedOptionsPreflightRejectsUnsupportedRequestedMethod() {
       JSON.stringify(mockRes.getJsonPayload()),
       JSON.stringify({ error: "Method not allowed" })
     );
-    assertEq(mockRes.getHeader("Allow"), "POST, OPTIONS");
+    assertEq(mockRes.getHeader("Allow"), PUSH_ALLOW_HEADER_VALUE);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
-    assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), "POST, OPTIONS");
+    assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), PUSH_ALLOW_HEADER_VALUE);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
       "Content-Type, Authorization, X-Username"
@@ -400,7 +401,7 @@ async function testAllowedOptionsPreflightRejectsWhenFirstNonEmptyRequestedMetho
       JSON.stringify(mockRes.getJsonPayload()),
       JSON.stringify({ error: "Method not allowed" })
     );
-    assertEq(mockRes.getHeader("Allow"), "POST, OPTIONS");
+    assertEq(mockRes.getHeader("Allow"), PUSH_ALLOW_HEADER_VALUE);
     assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
   });
 }
@@ -969,9 +970,9 @@ async function testUnsupportedMethodSetsAllowHeader() {
       JSON.stringify(mockRes.getJsonPayload()),
       JSON.stringify({ error: "Method not allowed" })
     );
-    assertEq(mockRes.getHeader("Allow"), "POST, OPTIONS");
+    assertEq(mockRes.getHeader("Allow"), PUSH_ALLOW_HEADER_VALUE);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
-    assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), "POST, OPTIONS");
+    assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), PUSH_ALLOW_HEADER_VALUE);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
       "Content-Type, Authorization, X-Username"
@@ -1004,7 +1005,7 @@ async function testWhitespacePaddedGetMethodTriggersMethodGuard() {
       JSON.stringify(mockRes.getJsonPayload()),
       JSON.stringify({ error: "Method not allowed" })
     );
-    assertEq(mockRes.getHeader("Allow"), "POST, OPTIONS");
+    assertEq(mockRes.getHeader("Allow"), PUSH_ALLOW_HEADER_VALUE);
     assertEq(mockRes.getHeader("Vary"), "Origin");
     assertEq(mockLogger.requestCalls.length, 1);
     assertEq(mockLogger.requestCalls[0].method, "GET");

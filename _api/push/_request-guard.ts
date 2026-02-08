@@ -15,6 +15,8 @@ export const PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH = 128;
 export const PUSH_CORS_MAX_REQUESTED_HEADER_COUNT = 50;
 export const PUSH_OPTIONS_VARY_HEADER =
   "Origin, Access-Control-Request-Method, Access-Control-Request-Headers";
+export const PUSH_ALLOWED_METHODS = ["POST", "OPTIONS"] as const;
+export const PUSH_ALLOW_HEADER_VALUE = PUSH_ALLOWED_METHODS.join(", ");
 
 function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   const requestedHeaders = req.headers["access-control-request-headers"];
@@ -101,9 +103,9 @@ export function handlePushPostRequestGuards(
     }
 
     const requestedMethod = getRequestedCorsMethod(req);
-    if (requestedMethod && requestedMethod !== "POST") {
-      setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
-      res.setHeader("Allow", "POST, OPTIONS");
+    if (requestedMethod && requestedMethod !== PUSH_ALLOWED_METHODS[0]) {
+      setCorsHeaders(res, origin, { methods: [...PUSH_ALLOWED_METHODS] });
+      res.setHeader("Allow", PUSH_ALLOW_HEADER_VALUE);
       logger.response(405, Date.now() - startTime);
       res.status(405).json({ error: "Method not allowed" });
       return true;
@@ -111,7 +113,7 @@ export function handlePushPostRequestGuards(
 
     const requestedCorsHeaders = getRequestedCorsHeaders(req);
     setCorsHeaders(res, origin, {
-      methods: ["POST", "OPTIONS"],
+      methods: [...PUSH_ALLOWED_METHODS],
       ...(requestedCorsHeaders ? { headers: requestedCorsHeaders } : {}),
     });
     logger.response(204, Date.now() - startTime);
@@ -126,10 +128,10 @@ export function handlePushPostRequestGuards(
     return true;
   }
 
-  setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
+  setCorsHeaders(res, origin, { methods: [...PUSH_ALLOWED_METHODS] });
 
-  if (method !== "POST") {
-    res.setHeader("Allow", "POST, OPTIONS");
+  if (method !== PUSH_ALLOWED_METHODS[0]) {
+    res.setHeader("Allow", PUSH_ALLOW_HEADER_VALUE);
     logger.response(405, Date.now() - startTime);
     res.status(405).json({ error: "Method not allowed" });
     return true;
