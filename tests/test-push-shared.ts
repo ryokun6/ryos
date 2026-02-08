@@ -70,6 +70,13 @@ async function testAuthExtractionFromHeaders() {
   });
   assertEq(authFromArrayHeaders.token, "token-from-array");
   assertEq(authFromArrayHeaders.username, "arrayuser");
+
+  const lowerCaseAuth = extractAuthFromHeaders({
+    authorization: "   bearer token-lower",
+    "x-username": "LowerUser",
+  });
+  assertEq(lowerCaseAuth.token, "token-lower");
+  assertEq(lowerCaseAuth.username, "loweruser");
 }
 
 async function testPlatformValidation() {
