@@ -1,6 +1,8 @@
 import { addPluginListener, invoke, type PluginListener } from "@tauri-apps/api/core";
+import { normalizePushToken } from "@/utils/pushToken";
 
 const IOS_PUSH_PLUGIN = "ios-push";
+export const PUSH_TOKEN_UNAVAILABLE_ERROR = "APNs token is not available yet";
 
 export interface PushPermissionResult {
   granted: boolean;
@@ -23,20 +25,36 @@ export interface PushRegistrationErrorPayload {
   message: string;
 }
 
+export function normalizeInvokedPushToken(token: unknown): string {
+  const normalizedToken = normalizePushToken(token);
+  if (!normalizedToken) {
+    throw new Error(PUSH_TOKEN_UNAVAILABLE_ERROR);
+  }
+  return normalizedToken;
+}
+
+export function extractNormalizedPushToken(
+  payload: Partial<PushTokenPayload> | null | undefined
+): string | null {
+  return normalizePushToken(payload?.token);
+}
+
 export async function requestPushPermission(): Promise<PushPermissionResult> {
   return invoke<PushPermissionResult>(`plugin:${IOS_PUSH_PLUGIN}|request_push_permission`);
 }
 
 export async function getPushToken(): Promise<string> {
-  return invoke<string>(`plugin:${IOS_PUSH_PLUGIN}|get_push_token`);
+  const token = await invoke<string>(`plugin:${IOS_PUSH_PLUGIN}|get_push_token`);
+  return normalizeInvokedPushToken(token);
 }
 
 export async function onPushToken(
   handler: (token: string) => void
 ): Promise<PluginListener> {
   return addPluginListener<PushTokenPayload>(IOS_PUSH_PLUGIN, "token", (payload) => {
-    if (payload?.token) {
-      handler(payload.token);
+    const normalizedToken = extractNormalizedPushToken(payload);
+    if (normalizedToken) {
+      handler(normalizedToken);
     }
   });
 }

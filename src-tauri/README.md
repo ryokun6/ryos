@@ -118,12 +118,14 @@ From repo root:
 - `bun run test:push:helpers` — helper-focused suites only
 - `bun run test:push:token` — token helper suites (normalization + parity)
 - `bun run test:push:token-parity` — frontend/backend token-parity helper suite only
+- `bun run test:push:tauri` — tauri-bridge helper suite only
 - `bun run test:push:logout` — logout-token helper suite only
 - `bun run test:push:config-guards` — Redis/APNs config guard suites only
 - `bun run test:push:guards` — request/auth/config guard-focused suites only
 - `bun run test:push:api` — API-facing suites only
 - `bun run test:push-token` — shared push-token normalization helper tests
 - `bun run test:push-token-parity` — frontend/backend push-token validation parity checks
+- `bun run test:push-tauri-notifications` — tauri push-token and alert helper tests
 - `bun run test:push-logout` — iOS logout token-resolution helper tests
 - `bun run test:push-auth-guard` — shared auth extraction/validation helper tests
 - `bun run test:push-redis-guard` — shared Redis config guard helper tests
@@ -134,6 +136,7 @@ From repo root:
 - `bun run check:push:helpers` — lint + helper suites
 - `bun run check:push:token` — lint + token-normalization helper suite
 - `bun run check:push:token-parity` — lint + token-parity helper suite
+- `bun run check:push:tauri` — lint + tauri helper suite
 - `bun run check:push:logout` — lint + logout helper suite
 - `bun run check:push:config-guards` — lint + Redis/APNs config guard suites
 - `bun run check:push:guards` — lint + guard suites
