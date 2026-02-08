@@ -768,6 +768,25 @@ async function testHandlePreflightFallsBackToDefaultsWhenConfiguredMethodsOrHead
   });
 }
 
+async function testHandlePreflightUsesRequestedHeadersWhenConfiguredHeadersEmpty() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:5173",
+    "access-control-request-headers": "X-Requested",
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res, {
+      methods: [],
+      headers: [],
+    });
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Allow-Methods"), "GET, POST, OPTIONS");
+    assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-Requested");
+  });
+}
+
 async function testHandlePreflightTrimsConfiguredMethodsAndHeaders() {
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:5173",
@@ -1043,6 +1062,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper falls back to defaults when configured methods/headers are empty",
     testHandlePreflightFallsBackToDefaultsWhenConfiguredMethodsOrHeadersEmpty
+  );
+  await runTest(
+    "CORS preflight helper still uses requested headers when configured headers are empty",
+    testHandlePreflightUsesRequestedHeadersWhenConfiguredHeadersEmpty
   );
   await runTest(
     "CORS preflight helper trims configured methods and headers",
