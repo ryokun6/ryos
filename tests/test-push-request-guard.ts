@@ -1006,6 +1006,40 @@ async function testDisallowedOptionsPreflightWithRequestedHeadersRejectedWithout
   });
 }
 
+async function testDisallowedOptionsPreflightWithUnsupportedRequestedMethodRejectedWithoutAllow() {
+  await withDevelopmentEnv(async () => {
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "https://evil.example",
+        "access-control-request-method": "DELETE",
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 403);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Unauthorized" })
+    );
+    assertEq(mockRes.getHeader("Allow"), undefined);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
+    assertEq(mockRes.getEndCallCount(), 0);
+  });
+}
+
 async function testUnsupportedMethodSetsAllowHeader() {
   await withDevelopmentEnv(async () => {
     const req = createRequest("GET");
@@ -1787,6 +1821,10 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard rejects disallowed preflight without echoing requested headers",
     testDisallowedOptionsPreflightWithRequestedHeadersRejectedWithoutEcho
+  );
+  await runTest(
+    "Push request guard rejects disallowed preflight with unsupported requested method without Allow header",
+    testDisallowedOptionsPreflightWithUnsupportedRequestedMethodRejectedWithoutAllow
   );
   await runTest(
     "Push request guard sets Allow header for unsupported methods",
