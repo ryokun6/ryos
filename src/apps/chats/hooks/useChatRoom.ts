@@ -192,12 +192,6 @@ export function useChatRoom(
         setRooms(data.rooms);
       };
 
-      // Unbind any existing handlers first (safety measure)
-      globalChannelRef.current.unbind("room-created");
-      globalChannelRef.current.unbind("room-deleted");
-      globalChannelRef.current.unbind("room-updated");
-      globalChannelRef.current.unbind("rooms-updated");
-
       // Bind the handlers
       globalChannelRef.current.bind("room-created", handleRoomCreated);
       globalChannelRef.current.bind("room-deleted", handleRoomDeleted);
@@ -274,10 +268,6 @@ export function useChatRoom(
         // Remove the message locally so UI reflects deletion
         removeMessageFromRoom(data.roomId, data.messageId);
       };
-
-      // Unbind any existing handlers first (safety measure)
-      roomChannel.unbind("room-message");
-      roomChannel.unbind("message-deleted");
 
       // Bind the handlers
       roomChannel.bind("room-message", handleRoomMessage);
