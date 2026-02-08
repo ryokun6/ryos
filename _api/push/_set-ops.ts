@@ -15,7 +15,7 @@ interface RedisWithDelPipeline {
   pipeline: () => DelPipelineLike;
 }
 
-function parseNumericCount(value: unknown): number | null {
+function parseNumericCount(value: unknown, seen: Set<unknown> = new Set()): number | null {
   if (
     typeof value === "number" &&
     Number.isFinite(value) &&
@@ -36,12 +36,17 @@ function parseNumericCount(value: unknown): number | null {
   }
 
   if (Array.isArray(value)) {
+    if (seen.has(value)) {
+      return null;
+    }
+    seen.add(value);
+
     if (value.length === 2 && value[0] !== null && typeof value[0] !== "undefined") {
       return null;
     }
 
     for (let i = value.length - 1; i >= 0; i -= 1) {
-      const parsed = parseNumericCount(value[i]);
+      const parsed = parseNumericCount(value[i], seen);
       if (parsed !== null) {
         return parsed;
       }
@@ -50,14 +55,19 @@ function parseNumericCount(value: unknown): number | null {
   }
 
   if (typeof value === "object" && value !== null) {
+    if (seen.has(value)) {
+      return null;
+    }
+    seen.add(value);
+
     if ("result" in value) {
-      return parseNumericCount((value as { result: unknown }).result);
+      return parseNumericCount((value as { result: unknown }).result, seen);
     }
     if ("data" in value) {
-      return parseNumericCount((value as { data: unknown }).data);
+      return parseNumericCount((value as { data: unknown }).data, seen);
     }
     if ("value" in value) {
-      return parseNumericCount((value as { value: unknown }).value);
+      return parseNumericCount((value as { value: unknown }).value, seen);
     }
   }
 

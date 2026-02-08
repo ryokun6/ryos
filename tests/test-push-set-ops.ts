@@ -213,6 +213,16 @@ async function testMetadataRemovalFallbackWhenExecResultUnparseable() {
     (token) => `push:token:${token}`
   );
   assertEq(metadataRemovedFromErroredTuple, 2);
+
+  const circular: { result?: unknown } = {};
+  circular.result = circular;
+  const { redis: redisWithCircularResult } = createFakeRedis([[circular, { result: 1 }]]);
+  const metadataRemovedFromCircular = await removeTokenMetadataKeys(
+    redisWithCircularResult,
+    ["tok1", "tok2"],
+    (token) => `push:token:${token}`
+  );
+  assertEq(metadataRemovedFromCircular, 2);
 }
 
 async function testRemoveTokensAndMetadataFallbackWhenExecResultUnparseable() {
