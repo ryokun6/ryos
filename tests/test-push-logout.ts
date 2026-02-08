@@ -4,6 +4,8 @@
  */
 
 import {
+  PUSH_TOKEN_LOOKUP_TIMEOUT_MS,
+  PUSH_UNREGISTER_TIMEOUT_MS,
   resolvePushTokenForLogout,
   unregisterPushTokenForLogout,
 } from "../src/utils/pushLogout";
@@ -33,6 +35,11 @@ async function testSkipsResolutionOutsideTauriIos() {
   assertEq(token, null);
   assertEq(getPushTokenCalls, 0);
   assertEq(warnCalls, 0);
+}
+
+async function testExportedPushLogoutTimeoutConstants() {
+  assertEq(PUSH_TOKEN_LOOKUP_TIMEOUT_MS, 3_000);
+  assertEq(PUSH_UNREGISTER_TIMEOUT_MS, 3_000);
 }
 
 async function testReturnsTrimmedTokenOnIos() {
@@ -531,6 +538,10 @@ export async function runPushLogoutTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Push logout resolver skips token lookup outside Tauri iOS",
     testSkipsResolutionOutsideTauriIos
+  );
+  await runTest(
+    "Push logout helper exported timeout constants remain stable",
+    testExportedPushLogoutTimeoutConstants
   );
   await runTest(
     "Push logout resolver returns trimmed token on iOS",

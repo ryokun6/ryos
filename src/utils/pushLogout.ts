@@ -1,8 +1,8 @@
 import { getApiUrl, isTauriIOS } from "@/utils/platform";
 import { normalizePushToken } from "@/utils/pushToken";
 import { getPushToken } from "@/utils/tauriPushNotifications";
-const PUSH_TOKEN_LOOKUP_TIMEOUT_MS = 3_000;
-const PUSH_UNREGISTER_TIMEOUT_MS = 3_000;
+export const PUSH_TOKEN_LOOKUP_TIMEOUT_MS = 3_000;
+export const PUSH_UNREGISTER_TIMEOUT_MS = 3_000;
 
 interface ResolvePushTokenForLogoutDeps {
   isTauriIOSRuntime: () => boolean;
