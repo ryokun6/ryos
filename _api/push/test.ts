@@ -190,7 +190,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (requestedToken && targetTokens.length === 0) {
       logger.response(403, Date.now() - startTime);
-      return res.status(403).json({ error: "Token is not registered for this user" });
+      return res.status(403).json({
+        error: "Token is not registered for this user",
+        staleOwnershipTokensRemoved,
+        pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
+      });
     }
 
     if (targetTokens.length === 0) {
