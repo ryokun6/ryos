@@ -69,6 +69,7 @@
     "check:push": "bun run lint:push && bun run test:push && bun run build",
     "check:push:aggregate": "bun run lint:push && bun run test:push:aggregate && bun run build",
     "check:push:helpers": "bun run lint:push && bun run test:push:helpers",
+    "check:push:guards": "bun run lint:push && bun run test:push:guards",
     "check:push:api": "bun run lint:push && bun run test:push:api"
   },
   "dependencies": {

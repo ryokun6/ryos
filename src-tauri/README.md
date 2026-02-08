@@ -121,6 +121,7 @@ From repo root:
 - `bun run test:push-auth-order` — auth-first failure-path behavior checks
 - `bun run check:push` — lint + all push suites + build
 - `bun run check:push:helpers` — lint + helper suites
+- `bun run check:push:guards` — lint + guard suites
 - `bun run check:push:api` — lint + API-facing suites
 - `bun run check:push:aggregate` — lint + aggregate summary suite + build
 
