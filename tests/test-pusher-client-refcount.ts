@@ -152,6 +152,26 @@ async function main() {
     assertEq(calls[2].channel, "room-e");
   });
 
+  await runTest("ignores extra releases after zero refs", async () => {
+    const { pusher, calls } = createFakePusher();
+    resetGlobalPusherState(pusher);
+
+    subscribePusherChannel("room-f");
+    unsubscribePusherChannel("room-f");
+    unsubscribePusherChannel("room-f");
+    unsubscribePusherChannel("room-f");
+
+    assertEq(
+      calls.length,
+      2,
+      "Expected one subscribe and one unsubscribe with extra releases ignored"
+    );
+    assertEq(calls[0].type, "subscribe");
+    assertEq(calls[0].channel, "room-f");
+    assertEq(calls[1].type, "unsubscribe");
+    assertEq(calls[1].channel, "room-f");
+  });
+
   const { failed } = printSummary();
   process.exit(failed > 0 ? 1 : 0);
 }

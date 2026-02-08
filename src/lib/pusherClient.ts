@@ -93,6 +93,10 @@ export function unsubscribePusherChannel(channelName: string): void {
   const counts = getChannelRefCounts();
   const currentCount = counts[channelName] || 0;
 
+  if (currentCount <= 0) {
+    return;
+  }
+
   if (currentCount <= 1) {
     delete counts[channelName];
     globalWithPusher.__pusherClient?.unsubscribe(channelName);
