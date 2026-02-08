@@ -54,6 +54,29 @@ function getNonEmptyHeaderValues(
   return trimmed.length > 0 ? [trimmed] : [];
 }
 
+function forEachCommaSeparatedCandidate(
+  value: string,
+  visit: (candidate: string) => boolean
+): boolean {
+  let start = 0;
+
+  for (let index = 0; index <= value.length; index += 1) {
+    const isComma = index < value.length && value.charCodeAt(index) === 44;
+    const isEnd = index === value.length;
+    if (!isComma && !isEnd) {
+      continue;
+    }
+
+    const candidate = value.slice(start, index);
+    start = index + 1;
+    if (!visit(candidate)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function getNormalizedRequestedPreflightHeaders(req: VercelRequest): string | null {
   const requestedHeaderValues = getNonEmptyHeaderValues(
     req,
@@ -72,28 +95,33 @@ function getNormalizedRequestedPreflightHeaders(req: VercelRequest): string | nu
   let processedTokenCount = 0;
 
   for (const headerValue of requestedHeaderValues) {
-    const headerCandidates = headerValue.split(",");
-
-    for (const headerCandidate of headerCandidates) {
+    const shouldContinueScanning = forEachCommaSeparatedCandidate(
+      headerValue,
+      (headerCandidate) => {
       if (processedTokenCount >= CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS) {
-        break;
+          return false;
       }
 
       processedTokenCount += 1;
       const trimmedHeader = headerCandidate.trim();
-      if (trimmedHeader.length === 0) continue;
+        if (trimmedHeader.length === 0) return true;
       if (trimmedHeader.length > CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH) {
-        continue;
+          return true;
       }
-      if (!CORS_HEADER_NAME_REGEX.test(trimmedHeader)) continue;
+        if (!CORS_HEADER_NAME_REGEX.test(trimmedHeader)) return true;
 
       const key = trimmedHeader.toLowerCase();
-      if (seen.has(key)) continue;
+        if (seen.has(key)) return true;
       seen.add(key);
       normalizedHeaders.push(trimmedHeader);
-    }
+        return true;
+      }
+    );
 
-    if (processedTokenCount >= CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS) {
+    if (
+      !shouldContinueScanning ||
+      processedTokenCount >= CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS
+    ) {
       break;
     }
   }
