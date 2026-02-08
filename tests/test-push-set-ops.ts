@@ -102,6 +102,16 @@ async function testRemoveTokensFromUserSetUsesParsedExecCounts() {
   assertEq(removedCount, 2);
 }
 
+async function testRemoveTokensFromUserSetParsesObjectAndStringCounts() {
+  const { redis } = createFakeRedis([[{ result: "1" }, "0"]]);
+  const removedCount = await removeTokensFromUserSet(
+    redis,
+    "push:user:alice:tokens",
+    ["tok1", "tok2"]
+  );
+  assertEq(removedCount, 1);
+}
+
 async function testRemoveTokensAndMetadataUsesParsedExecCounts() {
   const { redis } = createFakeRedis([[[null, 1], [null, 0], [null, 1], [null, 1]]]);
   const removedCount = await removeTokensAndMetadata(
@@ -194,6 +204,10 @@ export async function runPushSetOpsTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Token set helper parses srem results for removal counts",
     testRemoveTokensFromUserSetUsesParsedExecCounts
+  );
+  await runTest(
+    "Token set helper parses object/string count shapes",
+    testRemoveTokensFromUserSetParsesObjectAndStringCounts
   );
   await runTest(
     "Token+metadata helper parses srem results for removal counts",
