@@ -951,7 +951,7 @@ function MacDock() {
 
       return { icon, label, isEmoji };
     },
-    [files]
+    [files, t]
   );
 
   // Pinned apps on the left side (from dock store)
@@ -1708,7 +1708,7 @@ function MacDock() {
       
       return items;
     },
-    [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, closeAppInstance, playZoomMinimize, launchApp, pinnedItems, removeDockItem, addDockItem]
+    [instances, finderInstances, getAppletInfo, restoreInstance, bringInstanceToForeground, minimizeInstance, closeAppInstance, playZoomMinimize, launchApp, pinnedItems, removeDockItem, addDockItem, t]
   );
 
   // Generate context menu items for a folder shortcut
@@ -1891,7 +1891,7 @@ function MacDock() {
       
       return items;
     },
-    [getFilesInPath, getFileItem, focusFinderAtPathOrLaunch, focusOrLaunchFinder, focusOrLaunchApp, isTrashEmpty, t, getTranslatedAppName, getTranslatedFolderNameFromName, isAdmin]
+    [getFilesInPath, getFileItem, focusFinderAtPathOrLaunch, focusOrLaunchFinder, focusOrLaunchApp, isTrashEmpty, t, isAdmin]
   );
 
   // Handle app context menu
