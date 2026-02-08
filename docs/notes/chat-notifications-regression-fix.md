@@ -30,6 +30,8 @@ File: `src/lib/pusherClient.ts`
   - stale refcount + missing channel object is recovered via resubscribe
   - first local holder always performs `subscribe(...)` to guarantee active
     subscription state
+  - channel names are normalized via `trim()` across subscribe/unsubscribe
+  - blank channel subscriptions throw fast with a clear error
 - Added one-time recovery warnings for:
   - missing-channel refcount recovery
   - unsubscribe underflow no-op
@@ -68,6 +70,8 @@ Routes now emit matching realtime events:
   - shared subscribe lifecycle
   - over-release guard
   - stale channel recovery
+  - warning dedupe behavior
+  - channel-name normalization and blank-input guards
 - `tests/test-chat-notification-logic.ts`
   - active vs non-active room notification gating
   - missing/empty/whitespace room-id input guards
