@@ -77,6 +77,7 @@ The wrapper includes a local `ios-push` Tauri plugin that bridges APNs into the 
 - Retrieves the APNs device token (cached across launches once received) and validates token format before forwarding
 - Emits notification/token events to the frontend
 - Emits registration-error events when APNs token registration fails
+  (payloads are normalized to always provide a non-empty message)
 - Registers/unregisters tokens with backend endpoints:
   - `POST /api/push/register`
   - `POST /api/push/unregister`
