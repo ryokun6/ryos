@@ -29,28 +29,30 @@ function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
     return undefined;
   }
 
-  const normalizedHeaders = requestedHeaderValues
-    .join(",")
-    .split(",")
-    .map((header) => header.trim())
-    .filter((header) => header.length > 0)
-    .filter((header) => header.length <= MAX_REQUESTED_CORS_HEADER_NAME_LENGTH)
-    .filter((header) => CORS_HEADER_NAME_REGEX.test(header));
-
-  if (normalizedHeaders.length === 0) {
-    return undefined;
-  }
-
   const seen = new Set<string>();
   const dedupedHeaders: string[] = [];
-  for (const header of normalizedHeaders) {
+
+  for (const requestedHeaderValue of requestedHeaderValues) {
+    const headerCandidates = requestedHeaderValue.split(",");
+    for (const headerCandidate of headerCandidates) {
+      if (dedupedHeaders.length >= MAX_REQUESTED_CORS_HEADER_COUNT) {
+        break;
+      }
+
+      const header = headerCandidate.trim();
+      if (header.length === 0) continue;
+      if (header.length > MAX_REQUESTED_CORS_HEADER_NAME_LENGTH) continue;
+      if (!CORS_HEADER_NAME_REGEX.test(header)) continue;
+
+      const normalizedHeaderKey = header.toLowerCase();
+      if (seen.has(normalizedHeaderKey)) continue;
+      seen.add(normalizedHeaderKey);
+      dedupedHeaders.push(header);
+    }
+
     if (dedupedHeaders.length >= MAX_REQUESTED_CORS_HEADER_COUNT) {
       break;
     }
-    const normalizedHeaderKey = header.toLowerCase();
-    if (seen.has(normalizedHeaderKey)) continue;
-    seen.add(normalizedHeaderKey);
-    dedupedHeaders.push(header);
   }
 
   return dedupedHeaders.length > 0 ? dedupedHeaders : undefined;

@@ -569,6 +569,47 @@ async function testAllowedOptionsPreflightCapsRequestedHeaderCount() {
   });
 }
 
+async function testAllowedOptionsPreflightCapsRequestedHeaderCountAcrossRepeatedValues() {
+  await withDevelopmentEnv(async () => {
+    const firstBatch = Array.from(
+      { length: 30 },
+      (_, index) => `x-first-${index + 1}`
+    );
+    const secondBatch = Array.from(
+      { length: 30 },
+      (_, index) => `x-second-${index + 1}`
+    );
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-headers": [
+          firstBatch.join(", "),
+          secondBatch.join(", "),
+        ],
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Headers"),
+      firstBatch.concat(secondBatch.slice(0, 20)).join(", ")
+    );
+  });
+}
+
 async function testAllowedOptionsPreflightMergesRequestedHeaderArrayValues() {
   await withDevelopmentEnv(async () => {
     const req = createRequestWithHeaders(
@@ -1453,6 +1494,10 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard caps requested preflight header count",
     testAllowedOptionsPreflightCapsRequestedHeaderCount
+  );
+  await runTest(
+    "Push request guard caps requested preflight header count across repeated values",
+    testAllowedOptionsPreflightCapsRequestedHeaderCountAcrossRepeatedValues
   );
   await runTest(
     "Push request guard merges requested-header values from arrays",
