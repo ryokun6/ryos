@@ -1,4 +1,5 @@
 import { abortableFetch } from "@/utils/abortableFetch";
+import { withChatRequestDefaults } from "./requestConfig";
 
 interface SwitchPresenceRoomRequestParams {
   previousRoomId: string | null;
@@ -11,15 +12,15 @@ export const switchPresenceRoomRequest = async ({
   nextRoomId,
   username,
 }: SwitchPresenceRoomRequestParams): Promise<Response> =>
-  abortableFetch("/api/presence/switch", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      previousRoomId,
-      nextRoomId,
-      username,
-    }),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
+  abortableFetch(
+    "/api/presence/switch",
+    withChatRequestDefaults({
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        previousRoomId,
+        nextRoomId,
+        username,
+      }),
+    })
+  );

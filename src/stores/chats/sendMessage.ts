@@ -5,6 +5,7 @@ import {
   type RefreshTokenHandler,
   makeAuthenticatedRequest,
 } from "./authRequests";
+import { withChatRequestDefaults } from "./requestConfig";
 
 export const createOptimisticChatMessage = (
   roomId: string,
@@ -59,12 +60,12 @@ export const sendRoomMessageRequest = async ({
         },
         refreshAuthToken
       )
-    : abortableFetch(getApiUrl(messageUrl), {
-        method: "POST",
-        headers,
-        body: messageBody,
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      });
+    : abortableFetch(
+        getApiUrl(messageUrl),
+        withChatRequestDefaults({
+          method: "POST",
+          headers,
+          body: messageBody,
+        })
+      );
 };

@@ -1,5 +1,6 @@
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
+import { withChatRequestDefaults } from "./requestConfig";
 
 interface RefreshTokenRequestParams {
   username: string;
@@ -10,7 +11,9 @@ export const refreshAuthTokenRequest = async ({
   username,
   oldToken,
 }: RefreshTokenRequestParams): Promise<Response> =>
-  abortableFetch("/api/auth/token/refresh", {
+  abortableFetch(
+    "/api/auth/token/refresh",
+    withChatRequestDefaults({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -19,10 +22,8 @@ export const refreshAuthTokenRequest = async ({
       username,
       oldToken,
     }),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
+    })
+  );
 
 interface RegisterUserRequestParams {
   username: string;
@@ -33,14 +34,14 @@ export const registerUserRequest = async ({
   username,
   password,
 }: RegisterUserRequestParams): Promise<Response> =>
-  abortableFetch(getApiUrl("/api/auth/register"), {
+  abortableFetch(
+    getApiUrl("/api/auth/register"),
+    withChatRequestDefaults({
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
+    })
+  );
 
 interface LogoutRequestParams {
   username: string;
@@ -51,14 +52,14 @@ export const logoutRequest = async ({
   username,
   token,
 }: LogoutRequestParams): Promise<Response> =>
-  abortableFetch(getApiUrl("/api/auth/logout"), {
+  abortableFetch(
+    getApiUrl("/api/auth/logout"),
+    withChatRequestDefaults({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
       "X-Username": username,
     },
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
+    })
+  );

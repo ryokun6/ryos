@@ -1,4 +1,5 @@
 import { abortableFetch } from "@/utils/abortableFetch";
+import { withChatRequestDefaults } from "./requestConfig";
 
 export type RefreshTokenResult = {
   ok: boolean;
@@ -13,12 +14,12 @@ export const makeAuthenticatedRequest = async (
   options: RequestInit,
   refreshToken: RefreshTokenHandler
 ): Promise<Response> => {
-  const initialResponse = await abortableFetch(url, {
+  const initialResponse = await abortableFetch(
+    url,
+    withChatRequestDefaults({
     ...options,
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
+    })
+  );
 
   if (
     initialResponse.status !== 401 ||
@@ -45,11 +46,11 @@ export const makeAuthenticatedRequest = async (
   };
 
   console.log("[ChatsStore] Retrying request with refreshed token");
-  return abortableFetch(url, {
-    ...options,
-    headers: newHeaders,
-    timeout: 15000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 250 },
-  });
+  return abortableFetch(
+    url,
+    withChatRequestDefaults({
+      ...options,
+      headers: newHeaders,
+    })
+  );
 };
