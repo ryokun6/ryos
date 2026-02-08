@@ -78,8 +78,9 @@ Routes now emit matching realtime events:
   - verifies leave-route private-room registry cleanup wiring
 - `tests/test-chat-store-guards-wiring.ts`
   - verifies chat store JSON response guard contexts stay wired
-  - verifies cooldown gates/marking/clear paths remain wired for rooms/message
-    fetchers
+  - verifies per-endpoint warning dedupe keys remain wired
+  - verifies cooldown gates/marking/clear paths and positive cooldown constant
+    remain wired for rooms/message fetchers
 
 ### 4) Chat store response guardrails
 
