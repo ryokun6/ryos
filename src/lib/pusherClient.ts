@@ -8,6 +8,7 @@ import * as PusherNamespace from "pusher-js";
 const globalWithPusher = globalThis as typeof globalThis & {
   __pusherClient?: PusherType;
   __pusherChannelRefCounts?: Record<string, number>;
+  __pusherChannelRecoveryWarnings?: Record<string, true>;
   Pusher?: PusherConstructor;
 };
 
@@ -64,6 +65,17 @@ const getChannelRefCounts = (): Record<string, number> => {
   return globalWithPusher.__pusherChannelRefCounts;
 };
 
+const warnChannelRecoveryOnce = (key: string, message: string): void => {
+  if (!globalWithPusher.__pusherChannelRecoveryWarnings) {
+    globalWithPusher.__pusherChannelRecoveryWarnings = {};
+  }
+  if (globalWithPusher.__pusherChannelRecoveryWarnings[key]) {
+    return;
+  }
+  globalWithPusher.__pusherChannelRecoveryWarnings[key] = true;
+  console.warn(`[pusherClient] ${message}`);
+};
+
 /**
  * Acquire a shared channel subscription.
  * Multiple consumers can subscribe safely without unsubscribing each other.
@@ -87,6 +99,10 @@ export function subscribePusherChannel(channelName: string): PusherChannel {
   if (!existingChannel) {
     const subscribedChannel = pusher.subscribe(channelName);
     // Count became stale while channel was missing; recover to 1 active holder.
+    warnChannelRecoveryOnce(
+      `missing-channel:${channelName}`,
+      `Recovered missing channel "${channelName}" while refcount was ${currentCount}`
+    );
     counts[channelName] = 1;
     return subscribedChannel;
   }
@@ -108,6 +124,10 @@ export function unsubscribePusherChannel(channelName: string): void {
   const currentCount = counts[channelName] || 0;
 
   if (currentCount <= 0) {
+    warnChannelRecoveryOnce(
+      `underflow:${channelName}`,
+      `Ignored unsubscribe underflow for "${channelName}"`
+    );
     return;
   }
 
@@ -127,6 +147,7 @@ if (import.meta.hot) {
     // The globalThis singleton will be reused by the new module
     // Reset channel refcounts to avoid stale holder counts across code reloads.
     globalWithPusher.__pusherChannelRefCounts = {};
+    globalWithPusher.__pusherChannelRecoveryWarnings = {};
     console.debug("[pusherClient] HMR: keeping connection alive");
   });
 }
