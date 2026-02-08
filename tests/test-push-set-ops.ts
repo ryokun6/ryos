@@ -167,6 +167,14 @@ async function testRemovalFallbackWhenExecResultUnparseable() {
     ["tok1"]
   );
   assertEq(removedCountFromOverlarge, 1);
+
+  const { redis: redisWithNegativeCount } = createFakeRedis([[-1]]);
+  const removedCountFromNegative = await removeTokensFromUserSet(
+    redisWithNegativeCount,
+    "push:user:alice:tokens",
+    ["tok1"]
+  );
+  assertEq(removedCountFromNegative, 1);
 }
 
 async function testMetadataRemovalFallbackWhenExecResultUnparseable() {
