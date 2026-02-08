@@ -4,7 +4,11 @@
  */
 
 import type { VercelRequest } from "@vercel/node";
-import { handlePushPostRequestGuards } from "../_api/push/_request-guard";
+import {
+  handlePushPostRequestGuards,
+  PUSH_CORS_MAX_REQUESTED_HEADER_COUNT,
+  PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH,
+} from "../_api/push/_request-guard";
 import {
   assertEq,
   clearResults,
@@ -509,7 +513,7 @@ async function testAllowedOptionsPreflightFallsBackWhenAllRequestedHeadersInvali
 
 async function testAllowedOptionsPreflightFiltersTooLongRequestedHeaders() {
   await withDevelopmentEnv(async () => {
-    const tooLongHeader = `x-${"a".repeat(130)}`;
+    const tooLongHeader = `x-${"a".repeat(PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH + 1)}`;
     const req = createRequestWithHeaders(
       "OPTIONS",
       {
@@ -538,7 +542,7 @@ async function testAllowedOptionsPreflightFiltersTooLongRequestedHeaders() {
 async function testAllowedOptionsPreflightCapsRequestedHeaderCount() {
   await withDevelopmentEnv(async () => {
     const requestedHeaders = Array.from(
-      { length: 60 },
+      { length: PUSH_CORS_MAX_REQUESTED_HEADER_COUNT + 10 },
       (_, index) => `x-header-${index + 1}`
     );
     const req = createRequestWithHeaders(
@@ -564,7 +568,7 @@ async function testAllowedOptionsPreflightCapsRequestedHeaderCount() {
     assertEq(mockRes.getStatusCode(), 204);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
-      requestedHeaders.slice(0, 50).join(", ")
+      requestedHeaders.slice(0, PUSH_CORS_MAX_REQUESTED_HEADER_COUNT).join(", ")
     );
   });
 }
@@ -605,7 +609,9 @@ async function testAllowedOptionsPreflightCapsRequestedHeaderCountAcrossRepeated
     assertEq(mockRes.getStatusCode(), 204);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
-      firstBatch.concat(secondBatch.slice(0, 20)).join(", ")
+      firstBatch
+        .concat(secondBatch.slice(0, PUSH_CORS_MAX_REQUESTED_HEADER_COUNT - firstBatch.length))
+        .join(", ")
     );
   });
 }

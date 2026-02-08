@@ -11,8 +11,8 @@ interface PushRequestLoggerLike {
 }
 
 const CORS_HEADER_NAME_REGEX = /^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/;
-const MAX_REQUESTED_CORS_HEADER_NAME_LENGTH = 128;
-const MAX_REQUESTED_CORS_HEADER_COUNT = 50;
+export const PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH = 128;
+export const PUSH_CORS_MAX_REQUESTED_HEADER_COUNT = 50;
 
 function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   const requestedHeaders = req.headers["access-control-request-headers"];
@@ -35,13 +35,13 @@ function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   for (const requestedHeaderValue of requestedHeaderValues) {
     const headerCandidates = requestedHeaderValue.split(",");
     for (const headerCandidate of headerCandidates) {
-      if (dedupedHeaders.length >= MAX_REQUESTED_CORS_HEADER_COUNT) {
+      if (dedupedHeaders.length >= PUSH_CORS_MAX_REQUESTED_HEADER_COUNT) {
         break;
       }
 
       const header = headerCandidate.trim();
       if (header.length === 0) continue;
-      if (header.length > MAX_REQUESTED_CORS_HEADER_NAME_LENGTH) continue;
+      if (header.length > PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH) continue;
       if (!CORS_HEADER_NAME_REGEX.test(header)) continue;
 
       const normalizedHeaderKey = header.toLowerCase();
@@ -50,7 +50,7 @@ function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
       dedupedHeaders.push(header);
     }
 
-    if (dedupedHeaders.length >= MAX_REQUESTED_CORS_HEADER_COUNT) {
+    if (dedupedHeaders.length >= PUSH_CORS_MAX_REQUESTED_HEADER_COUNT) {
       break;
     }
   }
