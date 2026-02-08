@@ -32,9 +32,14 @@ const decodeHtmlEntities = (str: string): string => {
 };
 
 const toTimestamp = (value: string | number): number =>
-  typeof value === "string" || typeof value === "number"
-    ? new Date(value).getTime()
-    : Date.now();
+  (() => {
+    if (typeof value !== "string" && typeof value !== "number") {
+      return Date.now();
+    }
+
+    const parsed = new Date(value).getTime();
+    return Number.isFinite(parsed) ? parsed : Date.now();
+  })();
 
 const isChatsAppOpen = (): boolean => {
   const { instances } = useAppStore.getState();

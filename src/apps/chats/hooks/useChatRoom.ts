@@ -207,6 +207,10 @@ export function useChatRoom(
 
       // Create event handlers with unique names to prevent duplicate binding
       const handleRoomMessage = (data: { message: ChatMessage }) => {
+        if (!data?.message?.roomId || !data.message.id) {
+          return;
+        }
+
         console.log("[Pusher Hook] Received room-message:", data.message);
 
         // Ignore duplicate realtime deliveries for the same server message.
@@ -216,14 +220,18 @@ export function useChatRoom(
           return;
         }
 
+        const parsedTimestamp =
+          typeof data.message.timestamp === "string" ||
+          typeof data.message.timestamp === "number"
+            ? new Date(data.message.timestamp).getTime()
+            : Date.now();
+
         // Add message with proper timestamp
         const messageWithTimestamp = {
           ...data.message,
-          timestamp:
-            typeof data.message.timestamp === "string" ||
-            typeof data.message.timestamp === "number"
-              ? new Date(data.message.timestamp).getTime()
-              : data.message.timestamp,
+          timestamp: Number.isFinite(parsedTimestamp)
+            ? parsedTimestamp
+            : Date.now(),
         };
 
         addMessageToRoom(data.message.roomId, messageWithTimestamp);
