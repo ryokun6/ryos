@@ -78,6 +78,7 @@ The wrapper includes a local `ios-push` Tauri plugin that bridges APNs into the 
 - Emits notification/token events to the frontend
 - Emits registration-error events when APNs token registration fails
   (payloads are normalized to always provide a non-empty message)
+- Foreground push toasts are shown only when payload alert content is non-empty
 - Registers/unregisters tokens with backend endpoints:
   - `POST /api/push/register`
   - `POST /api/push/unregister`
