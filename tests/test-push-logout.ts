@@ -190,6 +190,26 @@ async function testNegativeLookupTimeoutBehavesAsDisabled() {
   assertEq(warnCalls, 0);
 }
 
+async function testNaNLookupTimeoutBehavesAsDisabled() {
+  let warnCalls = 0;
+  const validToken = "x".repeat(64);
+
+  const token = await resolvePushTokenForLogout({
+    isTauriIOSRuntime: () => true,
+    getPushTokenRuntime: async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return validToken;
+    },
+    tokenLookupTimeoutMs: Number.NaN,
+    warn: () => {
+      warnCalls += 1;
+    },
+  });
+
+  assertEq(token, validToken);
+  assertEq(warnCalls, 0);
+}
+
 async function testUnregisterSkipsWhenTokenMissing() {
   let fetchCalls = 0;
   let warnCalls = 0;
@@ -450,6 +470,27 @@ async function testUnregisterNegativeTimeoutBehavesAsDisabled() {
   assertEq(warnCalls, 0);
 }
 
+async function testUnregisterNaNTimeoutBehavesAsDisabled() {
+  let fetchCalls = 0;
+  let warnCalls = 0;
+
+  await unregisterPushTokenForLogout("example-user", "auth-token", "a".repeat(64), {
+    fetchRuntime: async () => {
+      fetchCalls += 1;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return new Response(null, { status: 200 });
+    },
+    getApiUrlRuntime: (path) => path,
+    requestTimeoutMs: Number.NaN,
+    warn: () => {
+      warnCalls += 1;
+    },
+  });
+
+  assertEq(fetchCalls, 1);
+  assertEq(warnCalls, 0);
+}
+
 export async function runPushLogoutTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-logout"));
   clearResults();
@@ -485,6 +526,10 @@ export async function runPushLogoutTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Push logout resolver treats negative timeout as disabled",
     testNegativeLookupTimeoutBehavesAsDisabled
+  );
+  await runTest(
+    "Push logout resolver treats NaN timeout as disabled",
+    testNaNLookupTimeoutBehavesAsDisabled
   );
   await runTest(
     "Push logout unregister skips network call without token",
@@ -525,6 +570,10 @@ export async function runPushLogoutTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Push logout unregister treats negative request timeout as disabled",
     testUnregisterNegativeTimeoutBehavesAsDisabled
+  );
+  await runTest(
+    "Push logout unregister treats NaN request timeout as disabled",
+    testUnregisterNaNTimeoutBehavesAsDisabled
   );
 
   return printSummary();
