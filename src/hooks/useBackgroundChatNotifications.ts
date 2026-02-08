@@ -13,6 +13,17 @@ const getGlobalChannelName = (username?: string | null): string =>
     ? `chats-${username.toLowerCase().replace(/[^a-zA-Z0-9_\-.]/g, "_")}`
     : "chats-public";
 
+const HTML_ENTITY_MAP: Record<string, string> = {
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&#39;": "'",
+  "&apos;": "'",
+};
+
+const HTML_ENTITY_PATTERN = /&(amp|lt|gt|quot|#39|apos);/g;
+
 const decodeHtmlEntities = (str: string): string => {
   if (!str) return str;
 
@@ -22,13 +33,11 @@ const decodeHtmlEntities = (str: string): string => {
     return textArea.value;
   }
 
-  return str
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'");
+  // Single-pass decode to avoid double-unescaping sequences like "&amp;lt;"
+  return str.replace(
+    HTML_ENTITY_PATTERN,
+    (entity) => HTML_ENTITY_MAP[entity] || entity
+  );
 };
 
 const toTimestamp = (value: string | number): number =>
