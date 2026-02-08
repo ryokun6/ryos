@@ -29,6 +29,7 @@ import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { useChatsStoreShallow } from "@/stores/helpers";
+import { detectUserOS } from "@/utils/userOS";
 import { generateHTML, generateJSON } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -96,42 +97,6 @@ const trackNewTextEditInstance = (instanceId: string) => {
       recentlyCreatedTextEditInstances.delete(id);
     }
   }
-};
-
-// Helper function to detect user's operating system
-const detectUserOS = (): string => {
-  if (typeof navigator === "undefined") return "Unknown";
-  
-  const userAgent = navigator.userAgent;
-  const platform = navigator.platform || "";
-  
-  // Check for iOS (iPhone, iPad, iPod)
-  if (/iPad|iPhone|iPod/.test(userAgent) || 
-      (platform === "MacIntel" && navigator.maxTouchPoints > 1)) {
-    return "iOS";
-  }
-  
-  // Check for Android
-  if (/Android/.test(userAgent)) {
-    return "Android";
-  }
-  
-  // Check for Windows
-  if (/Win/.test(platform)) {
-    return "Windows";
-  }
-  
-  // Check for macOS (not iOS)
-  if (/Mac/.test(platform)) {
-    return "macOS";
-  }
-  
-  // Check for Linux
-  if (/Linux/.test(platform)) {
-    return "Linux";
-  }
-  
-  return "Unknown";
 };
 
 // Replace or update the getSystemState function to use stores

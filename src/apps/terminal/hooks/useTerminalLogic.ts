@@ -28,6 +28,7 @@ import { useVideoStore } from "@/stores/useVideoStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { TERMINAL_ANALYTICS } from "@/utils/analytics";
+import { detectUserOS } from "@/utils/userOS";
 import i18n from "@/lib/i18n";
 import { CommandHistory, CommandContext, ToolInvocationData } from "../types";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -44,44 +45,6 @@ interface UseTerminalLogicOptions {
   isForeground?: boolean;
 }
 
-// Helper function to detect user's operating system
-const detectUserOS = (): string => {
-  if (typeof navigator === "undefined") return i18n.t("apps.terminal.output.unknown");
-
-  const userAgent = navigator.userAgent;
-  const platform = navigator.platform || "";
-
-  // Check for iOS (iPhone, iPad, iPod)
-  if (
-    /iPad|iPhone|iPod/.test(userAgent) ||
-    (platform === "MacIntel" && navigator.maxTouchPoints > 1)
-  ) {
-    return "iOS";
-  }
-
-  // Check for Android
-  if (/Android/.test(userAgent)) {
-    return "Android";
-  }
-
-  // Check for Windows
-  if (/Win/.test(platform)) {
-    return "Windows";
-  }
-
-  // Check for macOS (not iOS)
-  if (/Mac/.test(platform)) {
-    return "macOS";
-  }
-
-  // Check for Linux
-  if (/Linux/.test(platform)) {
-    return "Linux";
-  }
-
-  return "Unknown";
-};
-
 // Minimal system state for AI chat requests
 const getSystemState = () => {
   const appStore = useAppStore.getState();
@@ -97,7 +60,7 @@ const getSystemState = () => {
     : ipodStore.tracks[0] ?? null;
 
   // Detect user's operating system
-  const userOS = detectUserOS();
+  const userOS = detectUserOS(i18n.t("apps.terminal.output.unknown"));
 
   // Use new instance-based model instead of legacy apps
   const runningInstances = Object.entries(appStore.instances)
