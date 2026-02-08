@@ -64,6 +64,15 @@ async function testRegisterPayloadValidation() {
     assertEq(invalidPlatform.error, "Unsupported push platform");
   }
 
+  const blankPlatform = normalizeRegisterPushPayload({
+    token: VALID_TOKEN,
+    platform: "   ",
+  });
+  assertEq(blankPlatform.ok, false);
+  if (!blankPlatform.ok) {
+    assertEq(blankPlatform.error, "Unsupported push platform");
+  }
+
   const invalidPlatformType = normalizeRegisterPushPayload({
     token: VALID_TOKEN,
     platform: 123,
