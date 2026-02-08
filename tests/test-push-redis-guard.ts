@@ -7,46 +7,13 @@ import { createPushRedisOrRespond } from "../_api/push/_redis-guard";
 import {
   assertEq,
   clearResults,
+  createMockPushLoggerHarness,
   createMockVercelResponseHarness,
   printSummary,
   runTest,
   section,
   withPatchedEnv,
 } from "./test-utils";
-
-interface MockLogger {
-  logger: {
-    warn: (message: string, data?: unknown) => void;
-    error: (message: string, error?: unknown) => void;
-    response: (statusCode: number, duration?: number) => void;
-  };
-  warnCalls: Array<{ message: string; data?: unknown }>;
-  errorCalls: Array<{ message: string; error?: unknown }>;
-  responseCalls: Array<{ statusCode: number; duration?: number }>;
-}
-
-function createMockLogger(): MockLogger {
-  const warnCalls: Array<{ message: string; data?: unknown }> = [];
-  const errorCalls: Array<{ message: string; error?: unknown }> = [];
-  const responseCalls: Array<{ statusCode: number; duration?: number }> = [];
-
-  return {
-    logger: {
-      warn: (message: string, data?: unknown) => {
-        warnCalls.push({ message, data });
-      },
-      error: (message: string, error?: unknown) => {
-        errorCalls.push({ message, error });
-      },
-      response: (statusCode: number, duration?: number) => {
-        responseCalls.push({ statusCode, duration });
-      },
-    },
-    warnCalls,
-    errorCalls,
-    responseCalls,
-  };
-}
 
 async function testRedisGuardRespondsWhenEnvMissing() {
   await Promise.resolve(
@@ -57,7 +24,7 @@ async function testRedisGuardRespondsWhenEnvMissing() {
       },
       async () => {
         const mockRes = createMockVercelResponseHarness();
-        const mockLogger = createMockLogger();
+        const mockLogger = createMockPushLoggerHarness();
 
         const redis = createPushRedisOrRespond(
           mockRes.res,
@@ -93,7 +60,7 @@ async function testRedisGuardTreatsWhitespaceEnvAsMissing() {
       },
       async () => {
         const mockRes = createMockVercelResponseHarness();
-        const mockLogger = createMockLogger();
+        const mockLogger = createMockPushLoggerHarness();
 
         const redis = createPushRedisOrRespond(
           mockRes.res,
@@ -127,7 +94,7 @@ async function testRedisGuardReturnsClientWhenEnvConfigured() {
       },
       async () => {
         const mockRes = createMockVercelResponseHarness();
-        const mockLogger = createMockLogger();
+        const mockLogger = createMockPushLoggerHarness();
 
         const redis = createPushRedisOrRespond(
           mockRes.res,

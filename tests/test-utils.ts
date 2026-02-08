@@ -266,6 +266,17 @@ export interface MockVercelResponseHarness {
   getHeader: (name: string) => string | undefined;
 }
 
+export interface MockPushLoggerHarness {
+  logger: {
+    warn?: (message: string, data?: unknown) => void;
+    error: (message: string, error?: unknown) => void;
+    response: (statusCode: number, duration?: number) => void;
+  };
+  warnCalls: Array<{ message: string; data?: unknown }>;
+  errorCalls: Array<{ message: string; error?: unknown }>;
+  responseCalls: Array<{ statusCode: number; duration?: number }>;
+}
+
 export function createMockVercelResponseHarness(): MockVercelResponseHarness {
   let statusCode = 0;
   let jsonPayload: unknown = null;
@@ -297,5 +308,36 @@ export function createMockVercelResponseHarness(): MockVercelResponseHarness {
     getJsonPayload: () => jsonPayload,
     getEndCallCount: () => endCallCount,
     getHeader: (name: string) => headers.get(name.toLowerCase()),
+  };
+}
+
+export function createMockPushLoggerHarness(options?: {
+  includeWarn?: boolean;
+}): MockPushLoggerHarness {
+  const warnCalls: Array<{ message: string; data?: unknown }> = [];
+  const errorCalls: Array<{ message: string; error?: unknown }> = [];
+  const responseCalls: Array<{ statusCode: number; duration?: number }> = [];
+
+  const includeWarn = options?.includeWarn ?? true;
+  const logger: MockPushLoggerHarness["logger"] = {
+    error: (message: string, error?: unknown) => {
+      errorCalls.push({ message, error });
+    },
+    response: (statusCode: number, duration?: number) => {
+      responseCalls.push({ statusCode, duration });
+    },
+  };
+
+  if (includeWarn) {
+    logger.warn = (message: string, data?: unknown) => {
+      warnCalls.push({ message, data });
+    };
+  }
+
+  return {
+    logger,
+    warnCalls,
+    errorCalls,
+    responseCalls,
   };
 }
