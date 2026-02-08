@@ -98,6 +98,10 @@ async function testRedisPositiveCountHelper() {
   assertEq(isRedisPositiveCount(Number.POSITIVE_INFINITY), false);
   assertEq(isRedisPositiveCount(true), true);
   assertEq(isRedisPositiveCount(false), false);
+  assertEq(isRedisPositiveCount(null), false);
+  assertEq(isRedisPositiveCount(undefined), false);
+  assertEq(isRedisPositiveCount({}), false);
+  assertEq(isRedisPositiveCount([]), false);
 }
 
 async function testPlatformValidation() {
