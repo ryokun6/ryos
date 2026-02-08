@@ -215,6 +215,9 @@ async function testHasPushAlertContent() {
     hasPushAlertContent({ aps: { alert: { title: "   ", body: "   " } } }),
     false
   );
+  const nullPrototypeAlert = Object.create(null) as { title: string };
+  nullPrototypeAlert.title = "From null prototype";
+  assertEq(hasPushAlertContent({ aps: { alert: nullPrototypeAlert } }), true);
   assertEq(hasPushAlertContent({ aps: { alert: 123 as unknown as string } }), false);
   assertEq(hasPushAlertContent({}), false);
 }
