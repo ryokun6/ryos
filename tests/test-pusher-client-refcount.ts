@@ -37,6 +37,7 @@ interface FakePusher {
 const globalWithPusherState = globalThis as typeof globalThis & {
   __pusherClient?: FakePusher;
   __pusherChannelRefCounts?: Record<string, number>;
+  __pusherChannelRecoveryWarnings?: Record<string, true>;
 };
 
 const createFakePusher = (): {
@@ -81,6 +82,7 @@ const createFakePusher = (): {
 const resetGlobalPusherState = (pusher: FakePusher) => {
   globalWithPusherState.__pusherClient = pusher;
   globalWithPusherState.__pusherChannelRefCounts = {};
+  globalWithPusherState.__pusherChannelRecoveryWarnings = {};
 };
 
 export async function runPusherClientRefcountTests(): Promise<{
@@ -242,6 +244,71 @@ export async function runPusherClientRefcountTests(): Promise<{
     assertEq(calls[0].channel, "room-h");
     assertEq(calls[1].type, "unsubscribe");
     assertEq(calls[1].channel, "room-h");
+  });
+
+  console.log(section("Recovery warning dedupe"));
+  await runTest("warns once for repeated unsubscribe underflow", async () => {
+    const { pusher, calls } = createFakePusher();
+    resetGlobalPusherState(pusher);
+
+    const originalWarn = console.warn;
+    const warnings: string[] = [];
+    console.warn = (...args: unknown[]) => {
+      warnings.push(args.map(String).join(" "));
+    };
+
+    try {
+      unsubscribePusherChannel("room-i");
+      unsubscribePusherChannel("room-i");
+      unsubscribePusherChannel("room-i");
+    } finally {
+      console.warn = originalWarn;
+    }
+
+    assertEq(calls.length, 0, "Expected no underlying unsubscribe on underflow");
+    assertEq(warnings.length, 1, "Expected one deduplicated underflow warning");
+    const warningContainsUnderflow = warnings[0]?.includes("underflow");
+    assertEq(warningContainsUnderflow, true, "Expected underflow warning message");
+  });
+
+  await runTest("warns once for repeated missing-channel recovery", async () => {
+    const calls: FakeCall[] = [];
+    const fakePusher: FakePusher = {
+      subscribe: (channel) => {
+        calls.push({ type: "subscribe", channel });
+        return { name: channel, bind: () => undefined, unbind: () => undefined };
+      },
+      unsubscribe: (channel) => {
+        calls.push({ type: "unsubscribe", channel });
+      },
+      channel: () => undefined,
+    };
+
+    globalWithPusherState.__pusherClient = fakePusher;
+    globalWithPusherState.__pusherChannelRefCounts = { "room-j": 3 };
+    globalWithPusherState.__pusherChannelRecoveryWarnings = {};
+
+    const originalWarn = console.warn;
+    const warnings: string[] = [];
+    console.warn = (...args: unknown[]) => {
+      warnings.push(args.map(String).join(" "));
+    };
+
+    try {
+      subscribePusherChannel("room-j");
+      subscribePusherChannel("room-j");
+    } finally {
+      console.warn = originalWarn;
+    }
+
+    assertEq(calls.length, 2, "Expected two subscribe recovery attempts");
+    assertEq(warnings.length, 1, "Expected one deduplicated missing-channel warning");
+    const warningContainsRecovery = warnings[0]?.includes("Recovered missing channel");
+    assertEq(
+      warningContainsRecovery,
+      true,
+      "Expected missing-channel recovery warning message"
+    );
   });
 
   return printSummary();
