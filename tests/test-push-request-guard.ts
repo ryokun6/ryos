@@ -474,7 +474,7 @@ async function testAllowedOptionsPreflightFallsBackWhenAllRequestedHeadersInvali
   });
 }
 
-async function testAllowedOptionsPreflightUsesFirstRequestedHeaderValue() {
+async function testAllowedOptionsPreflightMergesRequestedHeaderArrayValues() {
   await withDevelopmentEnv(async () => {
     const req = createRequestWithHeaders(
       "OPTIONS",
@@ -501,7 +501,10 @@ async function testAllowedOptionsPreflightUsesFirstRequestedHeaderValue() {
     assertEq(handled, true);
     assertEq(mockRes.getStatusCode(), 204);
     assertEq(mockRes.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
-    assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), "x-first, authorization");
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Headers"),
+      "x-first, authorization, x-second"
+    );
   });
 }
 
@@ -533,6 +536,37 @@ async function testAllowedOptionsPreflightUsesFirstNonEmptyHeaderArrayValue() {
     assertEq(mockRes.getStatusCode(), 204);
     assertEq(mockRes.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
     assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), "x-second, authorization");
+  });
+}
+
+async function testAllowedOptionsPreflightCombinesArrayValuesAfterFilteringInvalidTokens() {
+  await withDevelopmentEnv(async () => {
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-headers": [
+          "invalid header",
+          "x-valid-header, authorization",
+        ],
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
+    assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), "x-valid-header, authorization");
   });
 }
 
@@ -1314,12 +1348,16 @@ export async function runPushRequestGuardTests(): Promise<{
     testAllowedOptionsPreflightFallsBackWhenAllRequestedHeadersInvalid
   );
   await runTest(
-    "Push request guard uses first requested-header value from arrays",
-    testAllowedOptionsPreflightUsesFirstRequestedHeaderValue
+    "Push request guard merges requested-header values from arrays",
+    testAllowedOptionsPreflightMergesRequestedHeaderArrayValues
   );
   await runTest(
     "Push request guard uses first non-empty requested-header array value",
     testAllowedOptionsPreflightUsesFirstNonEmptyHeaderArrayValue
+  );
+  await runTest(
+    "Push request guard combines array values after filtering invalid tokens",
+    testAllowedOptionsPreflightCombinesArrayValuesAfterFilteringInvalidTokens
   );
   await runTest(
     "Push request guard rejects disallowed preflight",

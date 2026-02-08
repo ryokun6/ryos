@@ -14,18 +14,21 @@ const CORS_HEADER_NAME_REGEX = /^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/;
 
 function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   const requestedHeaders = req.headers["access-control-request-headers"];
-  const requestedHeadersValue = Array.isArray(requestedHeaders)
-    ? requestedHeaders.find(
+  const requestedHeaderValues = Array.isArray(requestedHeaders)
+    ? requestedHeaders.filter(
         (value): value is string =>
           typeof value === "string" && value.trim().length > 0
       )
-    : requestedHeaders;
+    : typeof requestedHeaders === "string" && requestedHeaders.trim().length > 0
+      ? [requestedHeaders]
+      : [];
 
-  if (typeof requestedHeadersValue !== "string") {
+  if (requestedHeaderValues.length === 0) {
     return undefined;
   }
 
-  const normalizedHeaders = requestedHeadersValue
+  const normalizedHeaders = requestedHeaderValues
+    .join(",")
     .split(",")
     .map((header) => header.trim())
     .filter((header) => header.length > 0)
