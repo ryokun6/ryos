@@ -218,6 +218,21 @@ async function testHandlePreflightMergesRepeatedRequestedHeaderValues() {
   });
 }
 
+async function testHandlePreflightHandlesLeadingAndTrailingCommasInRequestedHeaders() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": ", X-Test,",
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-Test");
+  });
+}
+
 async function testHandlePreflightFiltersInvalidRequestedHeaderTokens() {
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:3000",
@@ -823,6 +838,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper merges repeated requested-header values",
     testHandlePreflightMergesRepeatedRequestedHeaderValues
+  );
+  await runTest(
+    "CORS preflight helper handles leading/trailing comma candidates",
+    testHandlePreflightHandlesLeadingAndTrailingCommasInRequestedHeaders
   );
   await runTest(
     "CORS preflight helper filters invalid requested-header tokens",
