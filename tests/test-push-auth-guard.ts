@@ -3,7 +3,6 @@
  * Tests for shared push auth guard helpers.
  */
 
-import type { VercelResponse } from "@vercel/node";
 import {
   extractPushAuthCredentialsOrRespond,
   validatePushAuthOrRespond,
@@ -11,16 +10,11 @@ import {
 import {
   assertEq,
   clearResults,
+  createMockVercelResponseHarness,
   printSummary,
   runTest,
   section,
 } from "./test-utils";
-
-interface MockResponse {
-  res: VercelResponse;
-  getStatusCode: () => number;
-  getJsonPayload: () => unknown;
-}
 
 interface MockLogger {
   logger: { response: (statusCode: number, duration?: number) => void };
@@ -31,28 +25,6 @@ interface FakeAuthRedis {
   exists: (key: string) => Promise<number>;
   expire: (key: string, ttl: number) => Promise<number>;
   get: (key: string) => Promise<unknown>;
-}
-
-function createMockResponse(): MockResponse {
-  let statusCode = 0;
-  let jsonPayload: unknown = null;
-
-  const response = {
-    status(code: number) {
-      statusCode = code;
-      return this;
-    },
-    json(payload: unknown) {
-      jsonPayload = payload;
-      return payload;
-    },
-  };
-
-  return {
-    res: response as unknown as VercelResponse,
-    getStatusCode: () => statusCode,
-    getJsonPayload: () => jsonPayload,
-  };
 }
 
 function createMockLogger(): MockLogger {
@@ -92,7 +64,7 @@ function createFakeAuthRedis(
 }
 
 async function testExtractAuthMissingCredentialsResponse() {
-  const mockRes = createMockResponse();
+  const mockRes = createMockVercelResponseHarness();
   const mockLogger = createMockLogger();
 
   const credentials = extractPushAuthCredentialsOrRespond(
@@ -115,7 +87,7 @@ async function testExtractAuthMissingCredentialsResponse() {
 }
 
 async function testExtractAuthReturnsNormalizedCredentials() {
-  const mockRes = createMockResponse();
+  const mockRes = createMockVercelResponseHarness();
   const mockLogger = createMockLogger();
 
   const credentials = extractPushAuthCredentialsOrRespond(
@@ -135,7 +107,7 @@ async function testExtractAuthReturnsNormalizedCredentials() {
 }
 
 async function testExtractAuthSupportsArrayHeaders() {
-  const mockRes = createMockResponse();
+  const mockRes = createMockVercelResponseHarness();
   const mockLogger = createMockLogger();
 
   const credentials = extractPushAuthCredentialsOrRespond(
@@ -155,7 +127,7 @@ async function testExtractAuthSupportsArrayHeaders() {
 }
 
 async function testExtractAuthRejectsBlankBearerToken() {
-  const mockRes = createMockResponse();
+  const mockRes = createMockVercelResponseHarness();
   const mockLogger = createMockLogger();
 
   const credentials = extractPushAuthCredentialsOrRespond(
@@ -179,7 +151,7 @@ async function testExtractAuthRejectsBlankBearerToken() {
 }
 
 async function testValidateAuthRejectsInvalidToken() {
-  const mockRes = createMockResponse();
+  const mockRes = createMockVercelResponseHarness();
   const mockLogger = createMockLogger();
   const { redis, existsCalls, expireCalls } = createFakeAuthRedis(0);
 
@@ -204,7 +176,7 @@ async function testValidateAuthRejectsInvalidToken() {
 }
 
 async function testValidateAuthAcceptsValidTokenAndRefreshesTtl() {
-  const mockRes = createMockResponse();
+  const mockRes = createMockVercelResponseHarness();
   const mockLogger = createMockLogger();
   const { redis, existsCalls, expireCalls } = createFakeAuthRedis(1);
 
@@ -225,7 +197,7 @@ async function testValidateAuthAcceptsValidTokenAndRefreshesTtl() {
 }
 
 async function testValidateAuthNormalizesUsernameBeforeLookup() {
-  const mockRes = createMockResponse();
+  const mockRes = createMockVercelResponseHarness();
   const mockLogger = createMockLogger();
   const { redis, existsCalls } = createFakeAuthRedis(1);
 

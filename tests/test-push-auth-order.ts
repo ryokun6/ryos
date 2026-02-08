@@ -10,6 +10,7 @@ import pushTestHandler from "../_api/push/test";
 import {
   assertEq,
   clearResults,
+  createMockVercelResponseHarness,
   printSummary,
   runTest,
   section,
@@ -17,48 +18,6 @@ import {
 } from "./test-utils";
 
 type PushHandler = (req: VercelRequest, res: VercelResponse) => Promise<unknown>;
-
-interface MockResponse {
-  res: VercelResponse;
-  getStatusCode: () => number;
-  getJsonPayload: () => unknown;
-  getEndCallCount: () => number;
-  getHeader: (name: string) => string | undefined;
-}
-
-function createMockResponse(): MockResponse {
-  let statusCode = 0;
-  let jsonPayload: unknown = null;
-  let endCallCount = 0;
-  const headers = new Map<string, string>();
-
-  const response = {
-    setHeader: (name: string, value: unknown) => {
-      headers.set(name.toLowerCase(), String(value));
-      return undefined;
-    },
-    status(code: number) {
-      statusCode = code;
-      return this;
-    },
-    json(payload: unknown) {
-      jsonPayload = payload;
-      return payload;
-    },
-    end: () => {
-      endCallCount += 1;
-      return undefined;
-    },
-  };
-
-  return {
-    res: response as unknown as VercelResponse,
-    getStatusCode: () => statusCode,
-    getJsonPayload: () => jsonPayload,
-    getEndCallCount: () => endCallCount,
-    getHeader: (name: string) => headers.get(name.toLowerCase()),
-  };
-}
 
 function createRequest(
   method: "POST" | "OPTIONS" | "GET",
@@ -80,7 +39,7 @@ async function expectMissingCredentialsResponse(
   endpointPath: string
 ) {
   const req = createRequest("POST", endpointPath);
-  const mockRes = createMockResponse();
+  const mockRes = createMockVercelResponseHarness();
 
   await handler(req, mockRes.res);
 
@@ -99,7 +58,7 @@ async function expectUnauthorizedOriginResponse(
   method: "POST" | "OPTIONS" | "GET" = "POST"
 ) {
   const req = createRequest(method, endpointPath, "https://evil.example");
-  const mockRes = createMockResponse();
+  const mockRes = createMockVercelResponseHarness();
 
   await handler(req, mockRes.res);
 
@@ -118,7 +77,7 @@ async function expectMethodNotAllowedResponse(
   endpointPath: string
 ) {
   const req = createRequest("GET", endpointPath);
-  const mockRes = createMockResponse();
+  const mockRes = createMockVercelResponseHarness();
 
   await handler(req, mockRes.res);
 
@@ -172,7 +131,7 @@ async function testRegisterOptionsUnauthorizedOriginRejected() {
 
 async function testRegisterOptionsAllowedOriginReturnsNoContent() {
   const req = createRequest("OPTIONS", "/api/push/register");
-  const mockRes = createMockResponse();
+  const mockRes = createMockVercelResponseHarness();
 
   await pushRegisterHandler(req, mockRes.res);
 
@@ -255,7 +214,7 @@ async function testPushTestOptionsUnauthorizedOriginRejected() {
 
 async function testPushTestOptionsAllowedOriginReturnsNoContent() {
   const req = createRequest("OPTIONS", "/api/push/test");
-  const mockRes = createMockResponse();
+  const mockRes = createMockVercelResponseHarness();
 
   await pushTestHandler(req, mockRes.res);
 
@@ -277,7 +236,7 @@ async function testPushTestDisallowedOriginPrecedesMethodGuard() {
 
 async function testUnregisterOptionsAllowedOriginReturnsNoContent() {
   const req = createRequest("OPTIONS", "/api/push/unregister");
-  const mockRes = createMockResponse();
+  const mockRes = createMockVercelResponseHarness();
 
   await pushUnregisterHandler(req, mockRes.res);
 

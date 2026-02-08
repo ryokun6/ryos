@@ -3,24 +3,17 @@
  * Tests for shared push request guard helper.
  */
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelRequest } from "@vercel/node";
 import { handlePushPostRequestGuards } from "../_api/push/_request-guard";
 import {
   assertEq,
   clearResults,
+  createMockVercelResponseHarness,
   printSummary,
   runTest,
   section,
   withPatchedEnv,
 } from "./test-utils";
-
-interface MockResponse {
-  res: VercelResponse;
-  getStatusCode: () => number;
-  getJsonPayload: () => unknown;
-  getEndCallCount: () => number;
-  getHeader: (name: string) => string | undefined;
-}
 
 interface MockLogger {
   logger: {
@@ -29,40 +22,6 @@ interface MockLogger {
   };
   requestCalls: Array<{ method: string; url: string }>;
   responseCalls: Array<{ statusCode: number; duration?: number }>;
-}
-
-function createMockResponse(): MockResponse {
-  let statusCode = 0;
-  let jsonPayload: unknown = null;
-  let endCallCount = 0;
-  const headers = new Map<string, string>();
-
-  const response = {
-    setHeader: (name: string, value: unknown) => {
-      headers.set(name.toLowerCase(), String(value));
-      return undefined;
-    },
-    status(code: number) {
-      statusCode = code;
-      return this;
-    },
-    json(payload: unknown) {
-      jsonPayload = payload;
-      return payload;
-    },
-    end: () => {
-      endCallCount += 1;
-      return undefined;
-    },
-  };
-
-  return {
-    res: response as unknown as VercelResponse,
-    getStatusCode: () => statusCode,
-    getJsonPayload: () => jsonPayload,
-    getEndCallCount: () => endCallCount,
-    getHeader: (name: string) => headers.get(name.toLowerCase()),
-  };
 }
 
 function createMockLogger(): MockLogger {
@@ -133,7 +92,7 @@ function withDevelopmentEnv<T>(run: () => T | Promise<T>): Promise<T> {
 async function testAllowedPostContinuesWithoutHandling() {
   await withDevelopmentEnv(async () => {
     const req = createRequest("POST");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -157,7 +116,7 @@ async function testAllowedPostContinuesWithoutHandling() {
 async function testDisallowedPostIsRejected() {
   await withDevelopmentEnv(async () => {
     const req = createRequest("POST", "https://evil.example");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -183,7 +142,7 @@ async function testDisallowedPostIsRejected() {
 async function testAllowedOptionsPreflightHandled() {
   await withDevelopmentEnv(async () => {
     const req = createRequest("OPTIONS");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -206,7 +165,7 @@ async function testAllowedOptionsPreflightHandled() {
 async function testDisallowedOptionsPreflightRejected() {
   await withDevelopmentEnv(async () => {
     const req = createRequest("OPTIONS", "https://evil.example");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -233,7 +192,7 @@ async function testDisallowedOptionsPreflightRejected() {
 async function testUnsupportedMethodSetsAllowHeader() {
   await withDevelopmentEnv(async () => {
     const req = createRequest("GET");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -260,7 +219,7 @@ async function testUnsupportedMethodSetsAllowHeader() {
 async function testLowercasePostMethodIsNormalized() {
   await withDevelopmentEnv(async () => {
     const req = createRawRequest("post");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -281,7 +240,7 @@ async function testLowercasePostMethodIsNormalized() {
 async function testMissingMethodDefaultsToPost() {
   await withDevelopmentEnv(async () => {
     const req = createRawRequest(undefined);
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -302,7 +261,7 @@ async function testMissingMethodDefaultsToPost() {
 async function testLowercaseOptionsMethodHandledAsPreflight() {
   await withDevelopmentEnv(async () => {
     const req = createRawRequest("options");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -326,7 +285,7 @@ async function testLowercaseOptionsMethodHandledAsPreflight() {
 async function testMissingUrlFallsBackToEndpointPath() {
   await withDevelopmentEnv(async () => {
     const req = createRawRequest("POST", "http://localhost:3000", undefined);
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -346,7 +305,7 @@ async function testMissingUrlFallsBackToEndpointPath() {
 async function testProductionRejectsLocalhostOrigin() {
   await withRuntimeEnv("production", async () => {
     const req = createRequest("POST", "http://localhost:3000");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -369,7 +328,7 @@ async function testProductionRejectsLocalhostOrigin() {
 async function testProductionAllowsPrimaryOrigin() {
   await withRuntimeEnv("production", async () => {
     const req = createRequest("POST", "https://os.ryo.lu");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -389,7 +348,7 @@ async function testProductionAllowsPrimaryOrigin() {
 async function testProductionAllowsTailscaleOrigin() {
   await withRuntimeEnv("production", async () => {
     const req = createRequest("POST", "https://device.tailb4fa61.ts.net");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -412,7 +371,7 @@ async function testProductionAllowsTailscaleOrigin() {
 async function testPreviewAllowsProjectPreviewOrigin() {
   await withRuntimeEnv("preview", async () => {
     const req = createRequest("POST", "https://ryos-preview-123.vercel.app");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -435,7 +394,7 @@ async function testPreviewAllowsProjectPreviewOrigin() {
 async function testPreviewAllowsRyoLuPrefixOrigin() {
   await withRuntimeEnv("preview", async () => {
     const req = createRequest("POST", "https://ryo-lu-sandbox.vercel.app");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -458,7 +417,7 @@ async function testPreviewAllowsRyoLuPrefixOrigin() {
 async function testPreviewAllowsOsRyoPrefixOrigin() {
   await withRuntimeEnv("preview", async () => {
     const req = createRequest("POST", "https://os-ryo-feature.vercel.app");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -481,7 +440,7 @@ async function testPreviewAllowsOsRyoPrefixOrigin() {
 async function testPreviewRejectsNonProjectPreviewOrigin() {
   await withRuntimeEnv("preview", async () => {
     const req = createRequest("POST", "https://other-project.vercel.app");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -504,7 +463,7 @@ async function testPreviewRejectsNonProjectPreviewOrigin() {
 async function testDevelopmentAllowsConfiguredLocalhostPort() {
   await withRuntimeEnv("development", async () => {
     const req = createRequest("POST", "http://localhost:5173");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -524,7 +483,7 @@ async function testDevelopmentAllowsConfiguredLocalhostPort() {
 async function testDevelopmentRejectsUnknownLocalhostPort() {
   await withRuntimeEnv("development", async () => {
     const req = createRequest("POST", "http://localhost:8080");
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -551,7 +510,7 @@ async function testOriginFallbackToRefererAllowsLocalhost() {
       { referer: "http://localhost:3000/some/path?query=1" },
       "/api/push/register"
     );
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(
@@ -575,7 +534,7 @@ async function testInvalidRefererOriginIsRejected() {
       { referer: "not-a-valid-url" },
       "/api/push/register"
     );
-    const mockRes = createMockResponse();
+    const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
     const handled = handlePushPostRequestGuards(

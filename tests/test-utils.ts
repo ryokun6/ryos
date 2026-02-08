@@ -3,6 +3,8 @@
  * Shared test utilities for API endpoint tests
  */
 
+import type { VercelResponse } from "@vercel/node";
+
 export const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
 export interface TestResult {
@@ -254,4 +256,46 @@ export function withPatchedEnv<T>(
     restore();
     throw error;
   }
+}
+
+export interface MockVercelResponseHarness {
+  res: VercelResponse;
+  getStatusCode: () => number;
+  getJsonPayload: () => unknown;
+  getEndCallCount: () => number;
+  getHeader: (name: string) => string | undefined;
+}
+
+export function createMockVercelResponseHarness(): MockVercelResponseHarness {
+  let statusCode = 0;
+  let jsonPayload: unknown = null;
+  let endCallCount = 0;
+  const headers = new Map<string, string>();
+
+  const response = {
+    setHeader: (name: string, value: unknown) => {
+      headers.set(name.toLowerCase(), String(value));
+      return undefined;
+    },
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      jsonPayload = payload;
+      return payload;
+    },
+    end: () => {
+      endCallCount += 1;
+      return undefined;
+    },
+  };
+
+  return {
+    res: response as unknown as VercelResponse,
+    getStatusCode: () => statusCode,
+    getJsonPayload: () => jsonPayload,
+    getEndCallCount: () => endCallCount,
+    getHeader: (name: string) => headers.get(name.toLowerCase()),
+  };
 }
