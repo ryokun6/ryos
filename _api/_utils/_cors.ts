@@ -332,6 +332,7 @@ export interface SetCorsHeadersOptions {
 
 const DEFAULT_CORS_METHODS = ["GET", "POST", "OPTIONS"];
 const DEFAULT_CORS_HEADERS = ["Content-Type", "Authorization", "X-Username"];
+const DEFAULT_CORS_MAX_AGE = 86400;
 
 function normalizeConfiguredCorsValues(
   values: string[] | undefined,
@@ -362,7 +363,7 @@ function normalizeConfiguredCorsValues(
 
 function normalizeCorsMaxAge(maxAge: number | undefined): number {
   if (typeof maxAge !== "number" || !Number.isFinite(maxAge) || maxAge < 0) {
-    return 86400;
+    return DEFAULT_CORS_MAX_AGE;
   }
 
   return Math.floor(maxAge);
