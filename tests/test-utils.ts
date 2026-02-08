@@ -245,8 +245,8 @@ export function withPatchedEnv<T>(
 
   try {
     const result = run();
-    if (result && typeof (result as Promise<T>).then === "function") {
-      return (result as Promise<T>).finally(restore);
+    if (result && typeof (result as PromiseLike<T>).then === "function") {
+      return Promise.resolve(result).finally(restore);
     }
     restore();
     return result;
