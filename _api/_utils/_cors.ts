@@ -122,7 +122,9 @@ export function handlePreflight(
   res: VercelResponse,
   options: SetCorsHeadersOptions = {}
 ): boolean {
-  if (req.method !== "OPTIONS") return false;
+  const normalizedMethod =
+    typeof req.method === "string" ? req.method.trim().toUpperCase() : "";
+  if (normalizedMethod !== "OPTIONS") return false;
   
   const origin = getEffectiveOrigin(req);
   if (!origin || !isAllowedOrigin(origin)) {

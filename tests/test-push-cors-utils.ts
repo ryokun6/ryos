@@ -138,6 +138,34 @@ async function testHandlePreflightAllowsOriginAndEchoesRequestedHeaders() {
   });
 }
 
+async function testHandlePreflightHandlesLowercaseOptionsMethod() {
+  const req = createRequest("options", {
+    origin: "http://localhost:3000",
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getEndCallCount(), 1);
+  });
+}
+
+async function testHandlePreflightHandlesWhitespacePaddedOptionsMethod() {
+  const req = createRequest("  options  ", {
+    origin: "http://localhost:3000",
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getEndCallCount(), 1);
+  });
+}
+
 async function testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeaderMissing() {
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:5173",
@@ -204,6 +232,14 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper echoes requested headers for allowed origins",
     testHandlePreflightAllowsOriginAndEchoesRequestedHeaders
+  );
+  await runTest(
+    "CORS preflight helper normalizes lowercase OPTIONS requests",
+    testHandlePreflightHandlesLowercaseOptionsMethod
+  );
+  await runTest(
+    "CORS preflight helper normalizes whitespace-padded OPTIONS requests",
+    testHandlePreflightHandlesWhitespacePaddedOptionsMethod
   );
   await runTest(
     "CORS preflight helper falls back to configured allow headers",
