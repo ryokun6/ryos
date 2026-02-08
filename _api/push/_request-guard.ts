@@ -10,6 +10,8 @@ interface PushRequestLoggerLike {
   response: (statusCode: number, duration?: number) => void;
 }
 
+const CORS_HEADER_NAME_REGEX = /^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/;
+
 function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   const requestedHeaders = req.headers["access-control-request-headers"];
   const requestedHeadersValue = Array.isArray(requestedHeaders)
@@ -26,7 +28,8 @@ function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   const normalizedHeaders = requestedHeadersValue
     .split(",")
     .map((header) => header.trim())
-    .filter((header) => header.length > 0);
+    .filter((header) => header.length > 0)
+    .filter((header) => CORS_HEADER_NAME_REGEX.test(header));
 
   if (normalizedHeaders.length === 0) {
     return undefined;
