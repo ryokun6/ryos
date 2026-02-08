@@ -2,6 +2,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 type VercelEnv = "production" | "preview" | "development";
+export const CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES = 50;
 
 // Helper to get header value from Node.js IncomingMessage headers
 function getHeader(req: VercelRequest, name: string): string | null {
@@ -21,13 +22,26 @@ function getHeader(req: VercelRequest, name: string): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function getNonEmptyHeaderValues(req: VercelRequest, name: string): string[] {
+function getNonEmptyHeaderValues(
+  req: VercelRequest,
+  name: string,
+  maxValues = Number.POSITIVE_INFINITY
+): string[] {
   const value = req.headers[name.toLowerCase()];
   if (Array.isArray(value)) {
-    return value
-      .filter((entry): entry is string => typeof entry === "string")
-      .map((entry) => entry.trim())
-      .filter((entry) => entry.length > 0);
+    const nonEmptyValues: string[] = [];
+    for (let index = 0; index < value.length; index += 1) {
+      if (index >= maxValues) {
+        break;
+      }
+
+      const entry = value[index];
+      if (typeof entry !== "string") continue;
+      const trimmed = entry.trim();
+      if (trimmed.length === 0) continue;
+      nonEmptyValues.push(trimmed);
+    }
+    return nonEmptyValues;
   }
 
   if (typeof value !== "string") return [];
@@ -195,7 +209,8 @@ export function handlePreflight(
   // Echo back requested headers when provided
   const requestedHeaderValues = getNonEmptyHeaderValues(
     req,
-    "access-control-request-headers"
+    "access-control-request-headers",
+    CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES
   );
   const allowHeaders =
     requestedHeaderValues.length > 0

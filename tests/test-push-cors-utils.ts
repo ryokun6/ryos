@@ -5,6 +5,7 @@
 
 import type { VercelRequest } from "@vercel/node";
 import {
+  CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES,
   getEffectiveOrigin,
   handlePreflight,
   isAllowedOrigin,
@@ -29,6 +30,10 @@ function createRequest(
     url: "/api/test",
     headers,
   } as unknown as VercelRequest;
+}
+
+async function testExportedCorsContractConstants() {
+  assertEq(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES, 50);
 }
 
 async function testGetEffectiveOriginUsesOriginAndTrimsWhitespace() {
@@ -202,6 +207,51 @@ async function testHandlePreflightMergesRepeatedRequestedHeaderValues() {
   });
 }
 
+async function testHandlePreflightUsesRequestedHeaderValueAtScanLimit() {
+  const requestedHeaderValues = Array.from(
+    { length: CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES },
+    (_, index) =>
+      index === CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES - 1 ? "X-Limit" : "   "
+  );
+
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": requestedHeaderValues,
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-Limit");
+  });
+}
+
+async function testHandlePreflightIgnoresRequestedHeaderValuesBeyondScanLimit() {
+  const requestedHeaderValues = Array.from(
+    { length: CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES + 1 },
+    (_, index) =>
+      index === CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES ? "X-Beyond-Limit" : "   "
+  );
+
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": requestedHeaderValues,
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(
+      res.getHeader("Access-Control-Allow-Headers"),
+      "Content-Type, Authorization, X-Username"
+    );
+  });
+}
+
 async function testHandlePreflightHandlesLowercaseOptionsMethod() {
   const req = createRequest("options", {
     origin: "http://localhost:3000",
@@ -310,6 +360,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   clearResults();
 
   await runTest(
+    "Shared CORS helper exported constants remain stable",
+    testExportedCorsContractConstants
+  );
+  await runTest(
     "CORS helper resolves origin header and trims whitespace",
     testGetEffectiveOriginUsesOriginAndTrimsWhitespace
   );
@@ -356,6 +410,14 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper merges repeated requested-header values",
     testHandlePreflightMergesRepeatedRequestedHeaderValues
+  );
+  await runTest(
+    "CORS preflight helper uses requested-header value at scan limit",
+    testHandlePreflightUsesRequestedHeaderValueAtScanLimit
+  );
+  await runTest(
+    "CORS preflight helper ignores requested-header values beyond scan limit",
+    testHandlePreflightIgnoresRequestedHeaderValuesBeyondScanLimit
   );
   await runTest(
     "CORS preflight helper normalizes lowercase OPTIONS requests",
