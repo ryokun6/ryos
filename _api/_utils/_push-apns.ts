@@ -5,6 +5,7 @@ import {
   type ClientHttp2Session,
   type IncomingHttpHeaders,
 } from "node:http2";
+import { getMissingRequiredEnvVars } from "./_env.js";
 
 export interface ApnsConfig {
   keyId: string;
@@ -82,10 +83,7 @@ function normalizeEndpointOverride(raw: string | undefined): string | undefined 
 export function getMissingApnsEnvVars(
   env: NodeJS.ProcessEnv = process.env
 ): string[] {
-  return REQUIRED_APNS_ENV_VARS.filter((name) => {
-    const value = env[name];
-    return typeof value !== "string" || value.trim().length === 0;
-  });
+  return getMissingRequiredEnvVars(REQUIRED_APNS_ENV_VARS, env);
 }
 
 export function getApnsConfigFromEnv(): ApnsConfig | null {

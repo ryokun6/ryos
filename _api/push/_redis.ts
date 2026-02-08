@@ -1,4 +1,5 @@
 import { Redis } from "@upstash/redis";
+import { getMissingRequiredEnvVars } from "../_utils/_env.js";
 
 const REQUIRED_REDIS_ENV_VARS = [
   "REDIS_KV_REST_API_URL",
@@ -8,10 +9,7 @@ const REQUIRED_REDIS_ENV_VARS = [
 export function getMissingPushRedisEnvVars(
   env: NodeJS.ProcessEnv = process.env
 ): string[] {
-  return REQUIRED_REDIS_ENV_VARS.filter((name) => {
-    const value = env[name];
-    return typeof value !== "string" || value.trim().length === 0;
-  });
+  return getMissingRequiredEnvVars(REQUIRED_REDIS_ENV_VARS, env);
 }
 
 export function createPushRedis(): Redis {

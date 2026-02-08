@@ -17,6 +17,7 @@ import { runMediaTests } from "./test-media";
 import { runAuthExtraTests } from "./test-auth-extra";
 import { runRoomsExtraTests } from "./test-rooms-extra";
 import { runPushApnsTests } from "./test-push-apns";
+import { runPushEnvTests } from "./test-push-env";
 import { runPushSharedTests } from "./test-push-shared";
 import { runPushRedisTests } from "./test-push-redis";
 import { runPushRequestPayloadTests } from "./test-push-request-payloads";
@@ -99,6 +100,7 @@ async function runAllTests(): Promise<void> {
     { name: "media", run: runMediaTests },
     { name: "auth-extra", run: runAuthExtraTests },
     { name: "rooms-extra", run: runRoomsExtraTests },
+    { name: "push-env", run: runPushEnvTests },
     { name: "push-shared", run: runPushSharedTests },
     { name: "push-redis", run: runPushRedisTests },
     { name: "push-request-payloads", run: runPushRequestPayloadTests },
