@@ -1,7 +1,6 @@
 import { getApiUrl, isTauriIOS } from "@/utils/platform";
+import { normalizePushToken } from "@/utils/pushToken";
 import { getPushToken } from "@/utils/tauriPushNotifications";
-
-const PUSH_TOKEN_FORMAT_REGEX = /^[A-Za-z0-9:_\-.]{20,512}$/;
 const PUSH_TOKEN_LOOKUP_TIMEOUT_MS = 3_000;
 
 interface ResolvePushTokenForLogoutDeps {
@@ -65,15 +64,16 @@ export async function resolvePushTokenForLogout(
       deps.getPushTokenRuntime(),
       deps.tokenLookupTimeoutMs ?? PUSH_TOKEN_LOOKUP_TIMEOUT_MS
     );
-    const normalizedToken = typeof token === "string" ? token.trim() : "";
-    if (normalizedToken.length === 0) {
-      return null;
-    }
-
-    if (!PUSH_TOKEN_FORMAT_REGEX.test(normalizedToken)) {
+    const normalizedToken = normalizePushToken(token);
+    if (!normalizedToken) {
+      const normalizedLength =
+        typeof token === "string" ? token.trim().length : 0;
+      if (normalizedLength === 0) {
+        return null;
+      }
       deps.warn(
         "[ChatsStore] Ignoring invalid iOS push token during logout resolution:",
-        { tokenLength: normalizedToken.length }
+        { tokenLength: normalizedLength }
       );
       return null;
     }
@@ -98,15 +98,16 @@ export async function unregisterPushTokenForLogout(
   pushToken: string | null,
   deps: UnregisterPushTokenForLogoutDeps = defaultUnregisterDeps
 ): Promise<void> {
-  const normalizedPushToken = typeof pushToken === "string" ? pushToken.trim() : "";
+  const normalizedPushToken = normalizePushToken(pushToken);
   if (!normalizedPushToken) {
-    return;
-  }
-
-  if (!PUSH_TOKEN_FORMAT_REGEX.test(normalizedPushToken)) {
+    const normalizedLength =
+      typeof pushToken === "string" ? pushToken.trim().length : 0;
+    if (normalizedLength === 0) {
+      return;
+    }
     deps.warn(
       "[ChatsStore] Skipping push unregister during logout due to invalid token format",
-      { tokenLength: normalizedPushToken.length }
+      { tokenLength: normalizedLength }
     );
     return;
   }

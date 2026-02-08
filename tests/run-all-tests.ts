@@ -19,6 +19,7 @@ import { runRoomsExtraTests } from "./test-rooms-extra";
 import { runPushApnsTests } from "./test-push-apns";
 import { runPushEnvTests } from "./test-push-env";
 import { runPushLogoutTests } from "./test-push-logout";
+import { runPushTokenTests } from "./test-push-token";
 import { runPushAuthGuardTests } from "./test-push-auth-guard";
 import { runPushSharedTests } from "./test-push-shared";
 import { runPushRedisTests } from "./test-push-redis";
@@ -108,6 +109,7 @@ async function runAllTests(): Promise<void> {
     { name: "auth-extra", run: runAuthExtraTests },
     { name: "rooms-extra", run: runRoomsExtraTests },
     { name: "push-env", run: runPushEnvTests },
+    { name: "push-token", run: runPushTokenTests },
     { name: "push-logout", run: runPushLogoutTests },
     { name: "push-auth-guard", run: runPushAuthGuardTests },
     { name: "push-shared", run: runPushSharedTests },

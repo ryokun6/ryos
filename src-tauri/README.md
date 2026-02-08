@@ -120,6 +120,7 @@ From repo root:
 - `bun run test:push:config-guards` — Redis/APNs config guard suites only
 - `bun run test:push:guards` — request/auth/config guard-focused suites only
 - `bun run test:push:api` — API-facing suites only
+- `bun run test:push-token` — shared push-token normalization helper tests
 - `bun run test:push-logout` — iOS logout token-resolution helper tests
 - `bun run test:push-auth-guard` — shared auth extraction/validation helper tests
 - `bun run test:push-redis-guard` — shared Redis config guard helper tests

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "@/hooks/useToast";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { getApiUrl, isTauriIOS } from "@/utils/platform";
+import { normalizePushToken } from "@/utils/pushToken";
 import {
   extractPushAlert,
   getPushToken,
@@ -123,7 +124,23 @@ export function useTauriPushNotifications() {
     if (!isTauriIOS()) return;
     if (!deviceToken || !username || !authToken) return;
 
-    const registerKey = `${username}:${deviceToken}`;
+    const normalizedDeviceToken = normalizePushToken(deviceToken);
+    if (!normalizedDeviceToken) {
+      const invalidRegisterKey = `${username}:invalid-token`;
+      if (lastRegistrationErrorRef.current !== invalidRegisterKey) {
+        lastRegistrationErrorRef.current = invalidRegisterKey;
+        console.warn(
+          "[push] Skipping iOS push token registration because token format is invalid",
+          { tokenLength: deviceToken.trim().length }
+        );
+        toast("Push registration failed", {
+          description: "Received an invalid device token format from the iOS bridge.",
+        });
+      }
+      return;
+    }
+
+    const registerKey = `${username}:${normalizedDeviceToken}`;
     if (lastRegisteredRef.current === registerKey) return;
 
     let cancelled = false;
@@ -138,7 +155,7 @@ export function useTauriPushNotifications() {
             "X-Username": username,
           },
           body: JSON.stringify({
-            token: deviceToken,
+            token: normalizedDeviceToken,
             platform: "ios",
           }),
         });
