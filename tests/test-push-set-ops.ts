@@ -128,6 +128,16 @@ async function testRemoveTokensAndMetadataUsesParsedExecCounts() {
   assertEq(removedCount, 2);
 }
 
+async function testTupleWithNumericFirstValueParsesCount() {
+  const { redis } = createFakeRedis([[[0, 1]]]);
+  const removedCount = await removeTokensFromUserSet(
+    redis,
+    "push:user:alice:tokens",
+    ["tok1"]
+  );
+  assertEq(removedCount, 1);
+}
+
 async function testRemoveTokenMetadataKeysUsesParsedExecCounts() {
   const { redis } = createFakeRedis([
     [{ result: 1 }, { result: 0 }, [null, 1]],
@@ -200,6 +210,16 @@ async function testRemovalFallbackWhenExecResultUnparseable() {
     ["tok1"]
   );
   assertEq(removedCountFromErroredTuple, 1);
+
+  const { redis: redisWithStringErroredTuple } = createFakeRedis([
+    [["ERR failure", 1]],
+  ]);
+  const removedCountFromStringErroredTuple = await removeTokensFromUserSet(
+    redisWithStringErroredTuple,
+    "push:user:alice:tokens",
+    ["tok1"]
+  );
+  assertEq(removedCountFromStringErroredTuple, 1);
 }
 
 async function testMetadataRemovalFallbackWhenExecResultUnparseable() {
@@ -304,6 +324,10 @@ export async function runPushSetOpsTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Token+metadata helper parses srem results for removal counts",
     testRemoveTokensAndMetadataUsesParsedExecCounts
+  );
+  await runTest(
+    "Token set helper parses numeric-status tuple counts",
+    testTupleWithNumericFirstValueParsesCount
   );
   await runTest(
     "Metadata-only helper parses del result counts",

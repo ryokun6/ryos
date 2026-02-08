@@ -17,6 +17,26 @@ interface RedisWithDelPipeline {
   pipeline: () => DelPipelineLike;
 }
 
+function isTupleErrorLike(value: unknown): boolean {
+  if (value === null || typeof value === "undefined") {
+    return false;
+  }
+
+  if (value instanceof Error) {
+    return true;
+  }
+
+  if (typeof value === "object") {
+    return true;
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    return true;
+  }
+
+  return false;
+}
+
 function parseNumericCount(value: unknown, seen: Set<unknown> = new Set()): number | null {
   const primitiveCount = normalizeRedisNonNegativeCount(value, -1);
   if (primitiveCount !== -1) {
@@ -29,7 +49,7 @@ function parseNumericCount(value: unknown, seen: Set<unknown> = new Set()): numb
     }
     seen.add(value);
 
-    if (value.length === 2 && value[0] !== null && typeof value[0] !== "undefined") {
+    if (value.length === 2 && isTupleErrorLike(value[0])) {
       return null;
     }
 
