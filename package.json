@@ -67,7 +67,7 @@
     "test:push-apns-guard": "bun run tests/test-push-apns-guard.ts",
     "test:push-apns": "bun run tests/test-push-apns.ts",
     "test:push:config-guards": "bun run test:push-redis-guard && bun run test:push-apns-guard",
-    "test:push:token": "bun run test:push-token",
+    "test:push:token": "bun run test:push-token && bun run test:push-token-parity",
     "test:push:token-parity": "bun run test:push-token-parity",
     "test:push:logout": "bun run test:push-logout",
     "test:push:guards": "bun run test:push-request-guard && bun run test:push-auth-guard && bun run test:push-redis-guard && bun run test:push-apns-guard && bun run test:push-auth-order",

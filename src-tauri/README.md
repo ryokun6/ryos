@@ -116,7 +116,7 @@ From repo root:
 
 - `bun run test:push` — all push suites
 - `bun run test:push:helpers` — helper-focused suites only
-- `bun run test:push:token` — token-normalization helper suite only
+- `bun run test:push:token` — token helper suites (normalization + parity)
 - `bun run test:push:token-parity` — frontend/backend token-parity helper suite only
 - `bun run test:push:logout` — logout-token helper suite only
 - `bun run test:push:config-guards` — Redis/APNs config guard suites only
