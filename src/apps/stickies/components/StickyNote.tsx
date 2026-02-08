@@ -96,14 +96,14 @@ export function StickyNote({
       setDraftPosition(note.position);
       draftPositionRef.current = note.position;
     }
-  }, [note.position.x, note.position.y, isDragging]);
+  }, [note.position, isDragging]);
 
   useEffect(() => {
     if (!isResizing) {
       setDraftSize(note.size);
       draftSizeRef.current = note.size;
     }
-  }, [note.size.width, note.size.height, isResizing]);
+  }, [note.size, isResizing]);
 
   // Handle drag start (mouse)
   const handleDragStart = useCallback(
