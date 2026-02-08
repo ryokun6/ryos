@@ -91,7 +91,9 @@ async function testRedisPositiveCountHelper() {
   assertEq(isRedisPositiveCount("1"), true);
   assertEq(isRedisPositiveCount(" 2 "), true);
   assertEq(isRedisPositiveCount("0"), false);
+  assertEq(isRedisPositiveCount("not-a-number"), false);
   assertEq(isRedisPositiveCount(""), false);
+  assertEq(isRedisPositiveCount(Number.POSITIVE_INFINITY), false);
   assertEq(isRedisPositiveCount(true), true);
   assertEq(isRedisPositiveCount(false), false);
 }
