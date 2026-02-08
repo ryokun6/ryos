@@ -116,6 +116,7 @@ From repo root:
 
 - `bun run test:push` — all push suites
 - `bun run test:push:helpers` — helper-focused suites only
+- `bun run test:push:token` — token-normalization helper suite only
 - `bun run test:push:logout` — logout-token helper suite only
 - `bun run test:push:config-guards` — Redis/APNs config guard suites only
 - `bun run test:push:guards` — request/auth/config guard-focused suites only
@@ -129,6 +130,7 @@ From repo root:
 - `bun run test:push-auth-order` — auth-first failure-path behavior checks
 - `bun run check:push` — lint + all push suites + build
 - `bun run check:push:helpers` — lint + helper suites
+- `bun run check:push:token` — lint + token-normalization helper suite
 - `bun run check:push:logout` — lint + logout helper suite
 - `bun run check:push:config-guards` — lint + Redis/APNs config guard suites
 - `bun run check:push:guards` — lint + guard suites
