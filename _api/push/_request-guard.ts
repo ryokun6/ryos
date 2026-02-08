@@ -11,9 +11,11 @@ interface PushRequestLoggerLike {
 }
 
 const CORS_HEADER_NAME_REGEX = /^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/;
+const CORS_METHOD_NAME_REGEX = /^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/;
 export const PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH = 128;
 export const PUSH_CORS_MAX_REQUESTED_HEADER_COUNT = 50;
 export const PUSH_CORS_MAX_REQUESTED_HEADER_CANDIDATES = 200;
+export const PUSH_CORS_MAX_REQUESTED_METHOD_LENGTH = 32;
 export const PUSH_OPTIONS_VARY_HEADER =
   "Origin, Access-Control-Request-Method, Access-Control-Request-Headers";
 export const PUSH_ALLOWED_METHODS = ["POST", "OPTIONS"] as const;
@@ -97,7 +99,16 @@ function getRequestedCorsMethod(req: VercelRequest): string | undefined {
   }
 
   const normalizedRequestedMethod = requestedMethodValue.trim().toUpperCase();
-  return normalizedRequestedMethod.length > 0 ? normalizedRequestedMethod : undefined;
+  if (normalizedRequestedMethod.length === 0) {
+    return undefined;
+  }
+  if (normalizedRequestedMethod.length > PUSH_CORS_MAX_REQUESTED_METHOD_LENGTH) {
+    return "__INVALID__";
+  }
+  if (!CORS_METHOD_NAME_REGEX.test(normalizedRequestedMethod)) {
+    return "__INVALID__";
+  }
+  return normalizedRequestedMethod;
 }
 
 export function handlePushPostRequestGuards(
