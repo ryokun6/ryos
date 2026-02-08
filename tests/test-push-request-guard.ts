@@ -507,6 +507,68 @@ async function testAllowedOptionsPreflightFallsBackWhenAllRequestedHeadersInvali
   });
 }
 
+async function testAllowedOptionsPreflightFiltersTooLongRequestedHeaders() {
+  await withDevelopmentEnv(async () => {
+    const tooLongHeader = `x-${"a".repeat(130)}`;
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-headers": `${tooLongHeader}, x-valid-header`,
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), "x-valid-header");
+  });
+}
+
+async function testAllowedOptionsPreflightCapsRequestedHeaderCount() {
+  await withDevelopmentEnv(async () => {
+    const requestedHeaders = Array.from(
+      { length: 60 },
+      (_, index) => `x-header-${index + 1}`
+    );
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-headers": requestedHeaders.join(", "),
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Headers"),
+      requestedHeaders.slice(0, 50).join(", ")
+    );
+  });
+}
+
 async function testAllowedOptionsPreflightMergesRequestedHeaderArrayValues() {
   await withDevelopmentEnv(async () => {
     const req = createRequestWithHeaders(
@@ -1383,6 +1445,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard falls back when all requested headers are invalid",
     testAllowedOptionsPreflightFallsBackWhenAllRequestedHeadersInvalid
+  );
+  await runTest(
+    "Push request guard filters overlong requested preflight headers",
+    testAllowedOptionsPreflightFiltersTooLongRequestedHeaders
+  );
+  await runTest(
+    "Push request guard caps requested preflight header count",
+    testAllowedOptionsPreflightCapsRequestedHeaderCount
   );
   await runTest(
     "Push request guard merges requested-header values from arrays",

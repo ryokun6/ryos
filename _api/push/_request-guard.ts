@@ -11,6 +11,8 @@ interface PushRequestLoggerLike {
 }
 
 const CORS_HEADER_NAME_REGEX = /^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/;
+const MAX_REQUESTED_CORS_HEADER_NAME_LENGTH = 128;
+const MAX_REQUESTED_CORS_HEADER_COUNT = 50;
 
 function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   const requestedHeaders = req.headers["access-control-request-headers"];
@@ -32,6 +34,7 @@ function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
     .split(",")
     .map((header) => header.trim())
     .filter((header) => header.length > 0)
+    .filter((header) => header.length <= MAX_REQUESTED_CORS_HEADER_NAME_LENGTH)
     .filter((header) => CORS_HEADER_NAME_REGEX.test(header));
 
   if (normalizedHeaders.length === 0) {
@@ -41,6 +44,9 @@ function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   const seen = new Set<string>();
   const dedupedHeaders: string[] = [];
   for (const header of normalizedHeaders) {
+    if (dedupedHeaders.length >= MAX_REQUESTED_CORS_HEADER_COUNT) {
+      break;
+    }
     const normalizedHeaderKey = header.toLowerCase();
     if (seen.has(normalizedHeaderKey)) continue;
     seen.add(normalizedHeaderKey);
