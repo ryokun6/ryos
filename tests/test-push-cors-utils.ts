@@ -234,6 +234,22 @@ async function testHandlePreflightFiltersInvalidRequestedHeaderTokens() {
   });
 }
 
+async function testHandlePreflightAllowsRequestedHeaderTokensWithPunctuationSet() {
+  const allowedToken = "X_Test-Header.1+2^3`4|5~6!7#8$9%0&1'2*3";
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": allowedToken,
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Allow-Headers"), allowedToken);
+  });
+}
+
 async function testHandlePreflightDedupesRequestedHeaderTokensCaseInsensitively() {
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:3000",
@@ -279,6 +295,21 @@ async function testHandlePreflightFallsBackWhenAllRequestedHeaderTokensInvalid()
       res.getHeader("Access-Control-Allow-Headers"),
       "Content-Type, Authorization, X-Username"
     );
+  });
+}
+
+async function testHandlePreflightRejectsRequestedHeaderTokensWithUnicodeCharacters() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": "X-Valid, X-Ünicode",
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-Valid");
   });
 }
 
@@ -710,6 +741,10 @@ export async function runPushCorsUtilsTests(): Promise<{
     testHandlePreflightFiltersInvalidRequestedHeaderTokens
   );
   await runTest(
+    "CORS preflight helper accepts requested-header tokens with allowed punctuation",
+    testHandlePreflightAllowsRequestedHeaderTokensWithPunctuationSet
+  );
+  await runTest(
     "CORS preflight helper dedupes requested-header tokens case-insensitively",
     testHandlePreflightDedupesRequestedHeaderTokensCaseInsensitively
   );
@@ -720,6 +755,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper falls back when all requested-header tokens are invalid",
     testHandlePreflightFallsBackWhenAllRequestedHeaderTokensInvalid
+  );
+  await runTest(
+    "CORS preflight helper rejects requested-header tokens with unicode characters",
+    testHandlePreflightRejectsRequestedHeaderTokensWithUnicodeCharacters
   );
   await runTest(
     "CORS preflight helper uses requested-header value at scan limit",
