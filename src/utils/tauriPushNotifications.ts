@@ -4,6 +4,10 @@ import { normalizePushToken } from "@/utils/pushToken";
 const IOS_PUSH_PLUGIN = "ios-push";
 export const PUSH_TOKEN_UNAVAILABLE_ERROR = "APNs token is not available yet";
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export interface PushPermissionResult {
   granted: boolean;
 }
@@ -25,6 +29,13 @@ export interface PushRegistrationErrorPayload {
   message: string;
 }
 
+export function normalizePushPermissionResult(payload: unknown): PushPermissionResult {
+  if (isPlainRecord(payload) && payload.granted === true) {
+    return { granted: true };
+  }
+  return { granted: false };
+}
+
 export function normalizeInvokedPushToken(token: unknown): string {
   const normalizedToken = normalizePushToken(token);
   if (!normalizedToken) {
@@ -39,8 +50,15 @@ export function extractNormalizedPushToken(
   return normalizePushToken(payload?.token);
 }
 
+export function normalizePushNotificationPayload(
+  payload: unknown
+): IosPushNotificationPayload {
+  return isPlainRecord(payload) ? (payload as IosPushNotificationPayload) : {};
+}
+
 export async function requestPushPermission(): Promise<PushPermissionResult> {
-  return invoke<PushPermissionResult>(`plugin:${IOS_PUSH_PLUGIN}|request_push_permission`);
+  const payload = await invoke<unknown>(`plugin:${IOS_PUSH_PLUGIN}|request_push_permission`);
+  return normalizePushPermissionResult(payload);
 }
 
 export async function getPushToken(): Promise<string> {
@@ -65,7 +83,7 @@ export async function onPushNotification(
   return addPluginListener<IosPushNotificationPayload>(
     IOS_PUSH_PLUGIN,
     "notification",
-    handler
+    (payload) => handler(normalizePushNotificationPayload(payload))
   );
 }
 
@@ -75,7 +93,7 @@ export async function onPushNotificationTapped(
   return addPluginListener<IosPushNotificationPayload>(
     IOS_PUSH_PLUGIN,
     "notification-tapped",
-    handler
+    (payload) => handler(normalizePushNotificationPayload(payload))
   );
 }
 

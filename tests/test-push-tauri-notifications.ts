@@ -5,6 +5,8 @@
 
 import {
   extractNormalizedPushToken,
+  normalizePushNotificationPayload,
+  normalizePushPermissionResult,
   extractPushAlert,
   normalizeInvokedPushToken,
   PUSH_TOKEN_UNAVAILABLE_ERROR,
@@ -54,6 +56,40 @@ async function testExtractNormalizedPushToken() {
   assertEq(extractNormalizedPushToken(undefined), null);
 }
 
+async function testNormalizePushPermissionResult() {
+  assertEq(
+    JSON.stringify(normalizePushPermissionResult({ granted: true })),
+    JSON.stringify({ granted: true })
+  );
+  assertEq(
+    JSON.stringify(normalizePushPermissionResult({ granted: false })),
+    JSON.stringify({ granted: false })
+  );
+  assertEq(
+    JSON.stringify(normalizePushPermissionResult({})),
+    JSON.stringify({ granted: false })
+  );
+  assertEq(
+    JSON.stringify(normalizePushPermissionResult("bad")),
+    JSON.stringify({ granted: false })
+  );
+}
+
+async function testNormalizePushNotificationPayload() {
+  const normalizedObject = normalizePushNotificationPayload({
+    aps: { alert: "hello" },
+    extra: "value",
+  });
+  assertEq(
+    JSON.stringify(normalizedObject),
+    JSON.stringify({ aps: { alert: "hello" }, extra: "value" })
+  );
+
+  assertEq(JSON.stringify(normalizePushNotificationPayload("bad")), JSON.stringify({}));
+  assertEq(JSON.stringify(normalizePushNotificationPayload(null)), JSON.stringify({}));
+  assertEq(JSON.stringify(normalizePushNotificationPayload([])), JSON.stringify({}));
+}
+
 async function testExtractPushAlert() {
   assertEq(
     JSON.stringify(extractPushAlert({ aps: { alert: "Hello world" } })),
@@ -93,6 +129,14 @@ export async function runPushTauriNotificationsTests(): Promise<{
   await runTest(
     "Tauri push helper normalizes token payloads",
     testExtractNormalizedPushToken
+  );
+  await runTest(
+    "Tauri push helper normalizes permission payloads",
+    testNormalizePushPermissionResult
+  );
+  await runTest(
+    "Tauri push helper normalizes notification payload shapes",
+    testNormalizePushNotificationPayload
   );
   await runTest("Tauri push helper extracts alert payloads", testExtractPushAlert);
 
