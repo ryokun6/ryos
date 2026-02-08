@@ -87,6 +87,9 @@ File: `src/stores/useChatsStore.ts`
   non-JSON content for API paths; failures now degrade gracefully with warnings.
 - Added per-session warning dedupe (`warnChatsStoreOnce`) so repeated fetch
   retries do not spam identical warnings during local frontend-only runs.
+- Added short per-endpoint cooldowns for known-unavailable API paths in
+  frontend-only mode to reduce repeated failing requests while still retrying
+  after cooldown expiry.
 
 ## Validation performed
 
