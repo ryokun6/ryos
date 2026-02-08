@@ -2055,6 +2055,62 @@ async function testRefererHeaderArrayUsesFirstNonEmptyEntryWhenOriginMissing() {
   });
 }
 
+async function testOriginHeaderArrayAllBlankFallsBackToReferer() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequestWithHeaders(
+      "POST",
+      {
+        origin: ["   ", "\t"],
+        referer: "http://localhost:3000/fallback",
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+  });
+}
+
+async function testRefererHeaderArrayUsesFirstNonEmptyValueForPrecedence() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequestWithHeaders(
+      "POST",
+      {
+        referer: ["https://evil.example/path", "http://localhost:3000/safe"],
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 403);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Unauthorized" })
+    );
+  });
+}
+
 async function testInvalidRefererOriginIsRejected() {
   await withRuntimeEnv("development", async () => {
     const req = createRequestWithHeaders(
@@ -2483,6 +2539,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard uses first non-empty referer array value when origin missing",
     testRefererHeaderArrayUsesFirstNonEmptyEntryWhenOriginMissing
+  );
+  await runTest(
+    "Push request guard falls back to referer when origin array is all blank",
+    testOriginHeaderArrayAllBlankFallsBackToReferer
+  );
+  await runTest(
+    "Push request guard uses first non-empty referer array value for precedence",
+    testRefererHeaderArrayUsesFirstNonEmptyValueForPrecedence
   );
   await runTest(
     "Push request guard rejects invalid referer fallback",
