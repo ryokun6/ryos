@@ -98,7 +98,16 @@ export async function unregisterPushTokenForLogout(
   pushToken: string | null,
   deps: UnregisterPushTokenForLogoutDeps = defaultUnregisterDeps
 ): Promise<void> {
-  if (!pushToken) {
+  const normalizedPushToken = typeof pushToken === "string" ? pushToken.trim() : "";
+  if (!normalizedPushToken) {
+    return;
+  }
+
+  if (!PUSH_TOKEN_FORMAT_REGEX.test(normalizedPushToken)) {
+    deps.warn(
+      "[ChatsStore] Skipping push unregister during logout due to invalid token format",
+      { tokenLength: normalizedPushToken.length }
+    );
     return;
   }
 
@@ -121,7 +130,7 @@ export async function unregisterPushTokenForLogout(
           Authorization: `Bearer ${normalizedAuthToken}`,
           "X-Username": normalizedUsername,
         },
-        body: JSON.stringify({ token: pushToken }),
+        body: JSON.stringify({ token: normalizedPushToken }),
       }
     );
 

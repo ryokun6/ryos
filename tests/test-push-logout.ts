@@ -194,7 +194,7 @@ async function testUnregisterSendsScopedTokenRequest() {
   let requestInit: RequestInit | undefined;
   const pushToken = "a".repeat(64);
 
-  await unregisterPushTokenForLogout("  example-user  ", "  auth-token  ", pushToken, {
+  await unregisterPushTokenForLogout("  example-user  ", "  auth-token  ", `  ${pushToken}  `, {
     fetchRuntime: async (url, init) => {
       fetchCalls += 1;
       requestUrl = String(url);
@@ -241,6 +241,37 @@ async function testUnregisterSkipsWhenAuthContextMissing() {
   assertEq(
     warnedMessage,
     "[ChatsStore] Skipping push unregister during logout due to missing auth context"
+  );
+}
+
+async function testUnregisterSkipsAndWarnsForInvalidToken() {
+  let fetchCalls = 0;
+  let warnCalls = 0;
+  let warnedMessage = "";
+  let warnedData: unknown;
+
+  await unregisterPushTokenForLogout("user", "token", "invalid/token", {
+    fetchRuntime: async () => {
+      fetchCalls += 1;
+      return new Response(null, { status: 200 });
+    },
+    getApiUrlRuntime: (path) => path,
+    warn: (message, data) => {
+      warnCalls += 1;
+      warnedMessage = message;
+      warnedData = data;
+    },
+  });
+
+  assertEq(fetchCalls, 0);
+  assertEq(warnCalls, 1);
+  assertEq(
+    warnedMessage,
+    "[ChatsStore] Skipping push unregister during logout due to invalid token format"
+  );
+  assertEq(
+    JSON.stringify(warnedData),
+    JSON.stringify({ tokenLength: "invalid/token".length })
   );
 }
 
@@ -336,6 +367,10 @@ export async function runPushLogoutTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Push logout unregister skips request when auth context is missing",
     testUnregisterSkipsWhenAuthContextMissing
+  );
+  await runTest(
+    "Push logout unregister skips and warns for invalid token format",
+    testUnregisterSkipsAndWarnsForInvalidToken
   );
   await runTest(
     "Push logout unregister warns on network failures",
