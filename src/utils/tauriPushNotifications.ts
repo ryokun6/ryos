@@ -3,6 +3,8 @@ import { normalizePushToken } from "@/utils/pushToken";
 
 const IOS_PUSH_PLUGIN = "ios-push";
 export const PUSH_TOKEN_UNAVAILABLE_ERROR = "APNs token is not available yet";
+export const PUSH_REGISTRATION_ERROR_FALLBACK_MESSAGE =
+  "Could not register for push notifications on this device.";
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -56,6 +58,21 @@ export function normalizePushNotificationPayload(
   return isPlainRecord(payload) ? (payload as IosPushNotificationPayload) : {};
 }
 
+export function normalizePushRegistrationErrorPayload(
+  payload: unknown
+): PushRegistrationErrorPayload {
+  if (isPlainRecord(payload) && typeof payload.message === "string") {
+    const message = payload.message.trim();
+    if (message.length > 0) {
+      return { message };
+    }
+  }
+
+  return {
+    message: PUSH_REGISTRATION_ERROR_FALLBACK_MESSAGE,
+  };
+}
+
 function addPushNotificationListener(
   eventName: "notification" | "notification-tapped",
   handler: (payload: IosPushNotificationPayload) => void
@@ -103,10 +120,10 @@ export async function onPushNotificationTapped(
 export async function onPushRegistrationError(
   handler: (payload: PushRegistrationErrorPayload) => void
 ): Promise<PluginListener> {
-  return addPluginListener<PushRegistrationErrorPayload>(
+  return addPluginListener<unknown>(
     IOS_PUSH_PLUGIN,
     "registration-error",
-    handler
+    (payload) => handler(normalizePushRegistrationErrorPayload(payload))
   );
 }
 

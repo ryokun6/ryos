@@ -7,8 +7,10 @@ import {
   extractNormalizedPushToken,
   normalizePushNotificationPayload,
   normalizePushPermissionResult,
+  normalizePushRegistrationErrorPayload,
   extractPushAlert,
   normalizeInvokedPushToken,
+  PUSH_REGISTRATION_ERROR_FALLBACK_MESSAGE,
   PUSH_TOKEN_UNAVAILABLE_ERROR,
 } from "../src/utils/tauriPushNotifications";
 import {
@@ -98,6 +100,29 @@ async function testNormalizePushNotificationPayload() {
   assertEq(JSON.stringify(normalizePushNotificationPayload([])), JSON.stringify({}));
 }
 
+async function testNormalizePushRegistrationErrorPayload() {
+  assertEq(
+    JSON.stringify(normalizePushRegistrationErrorPayload({ message: "native failure" })),
+    JSON.stringify({ message: "native failure" })
+  );
+  assertEq(
+    JSON.stringify(normalizePushRegistrationErrorPayload({ message: "   trimmed message   " })),
+    JSON.stringify({ message: "trimmed message" })
+  );
+  assertEq(
+    JSON.stringify(normalizePushRegistrationErrorPayload({ message: "   " })),
+    JSON.stringify({ message: PUSH_REGISTRATION_ERROR_FALLBACK_MESSAGE })
+  );
+  assertEq(
+    JSON.stringify(normalizePushRegistrationErrorPayload({ message: 123 })),
+    JSON.stringify({ message: PUSH_REGISTRATION_ERROR_FALLBACK_MESSAGE })
+  );
+  assertEq(
+    JSON.stringify(normalizePushRegistrationErrorPayload("bad")),
+    JSON.stringify({ message: PUSH_REGISTRATION_ERROR_FALLBACK_MESSAGE })
+  );
+}
+
 async function testExtractPushAlert() {
   assertEq(
     JSON.stringify(extractPushAlert({ aps: { alert: "Hello world" } })),
@@ -168,6 +193,10 @@ export async function runPushTauriNotificationsTests(): Promise<{
   await runTest(
     "Tauri push helper normalizes notification payload shapes",
     testNormalizePushNotificationPayload
+  );
+  await runTest(
+    "Tauri push helper normalizes registration-error payloads",
+    testNormalizePushRegistrationErrorPayload
   );
   await runTest("Tauri push helper extracts alert payloads", testExtractPushAlert);
 

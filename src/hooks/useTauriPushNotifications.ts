@@ -10,6 +10,7 @@ import {
   onPushNotificationTapped,
   onPushRegistrationError,
   onPushToken,
+  PUSH_REGISTRATION_ERROR_FALLBACK_MESSAGE,
   requestPushPermission,
 } from "@/utils/tauriPushNotifications";
 
@@ -70,8 +71,8 @@ export function useTauriPushNotifications() {
         const registrationErrorListener = await onPushRegistrationError((payload) => {
           const description =
             typeof payload?.message === "string" && payload.message.trim().length > 0
-              ? payload.message
-              : "Could not register for push notifications on this device.";
+              ? payload.message.trim()
+              : PUSH_REGISTRATION_ERROR_FALLBACK_MESSAGE;
           const now = Date.now();
           const previousError = lastNativeRegistrationErrorRef.current;
           if (
