@@ -9,6 +9,11 @@ import {
   PUSH_TOKEN_MIN_LENGTH,
 } from "../src/utils/pushToken";
 import {
+  normalizePushTokenValue,
+  PUSH_TOKEN_MAX_LENGTH as SHARED_PUSH_TOKEN_MAX_LENGTH,
+  PUSH_TOKEN_MIN_LENGTH as SHARED_PUSH_TOKEN_MIN_LENGTH,
+} from "../shared/pushToken";
+import {
   assertEq,
   clearResults,
   printSummary,
@@ -66,6 +71,23 @@ async function testTokenRejectsWhitespaceAndUnicodeCharacters() {
   assertEq(normalizePushToken(tokenWithUnicode), null);
 }
 
+async function testSrcPushTokenExportsStayInSyncWithSharedModule() {
+  assertEq(PUSH_TOKEN_MIN_LENGTH, SHARED_PUSH_TOKEN_MIN_LENGTH);
+  assertEq(PUSH_TOKEN_MAX_LENGTH, SHARED_PUSH_TOKEN_MAX_LENGTH);
+
+  const samples: unknown[] = [
+    "a".repeat(PUSH_TOKEN_MIN_LENGTH),
+    `  ${"b".repeat(64)}  `,
+    "",
+    "invalid/token",
+    42,
+  ];
+
+  for (const sample of samples) {
+    assertEq(normalizePushToken(sample), normalizePushTokenValue(sample));
+  }
+}
+
 export async function runPushTokenTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-token"));
   clearResults();
@@ -87,6 +109,10 @@ export async function runPushTokenTests(): Promise<{ passed: number; failed: num
   await runTest(
     "Push token normalizer rejects whitespace and unicode characters",
     testTokenRejectsWhitespaceAndUnicodeCharacters
+  );
+  await runTest(
+    "Push token src exports stay in sync with shared module",
+    testSrcPushTokenExportsStayInSyncWithSharedModule
   );
 
   return printSummary();
