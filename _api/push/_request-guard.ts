@@ -28,6 +28,8 @@ export const PUSH_ALLOWED_HEADERS = [
   "X-Username",
 ] as const;
 export const PUSH_ALLOW_HEADERS_VALUE = PUSH_ALLOWED_HEADERS.join(", ");
+const PUSH_ALLOWED_METHODS_LIST = [...PUSH_ALLOWED_METHODS];
+const PUSH_ALLOWED_HEADERS_LIST = [...PUSH_ALLOWED_HEADERS];
 const INVALID_REQUESTED_METHOD = "__INVALID__";
 
 function forEachCommaSeparatedCandidate(
@@ -186,8 +188,8 @@ export function handlePushPostRequestGuards(
     const requestedMethod = getRequestedCorsMethod(req);
     if (requestedMethod && requestedMethod !== PUSH_ALLOWED_METHODS[0]) {
       setCorsHeaders(res, origin, {
-        methods: [...PUSH_ALLOWED_METHODS],
-        headers: [...PUSH_ALLOWED_HEADERS],
+        methods: PUSH_ALLOWED_METHODS_LIST,
+        headers: PUSH_ALLOWED_HEADERS_LIST,
       });
       res.setHeader("Allow", PUSH_ALLOW_HEADER_VALUE);
       logger.response(405, Date.now() - startTime);
@@ -197,8 +199,8 @@ export function handlePushPostRequestGuards(
 
     const requestedCorsHeaders = getRequestedCorsHeaders(req);
     setCorsHeaders(res, origin, {
-      methods: [...PUSH_ALLOWED_METHODS],
-      headers: requestedCorsHeaders ?? [...PUSH_ALLOWED_HEADERS],
+      methods: PUSH_ALLOWED_METHODS_LIST,
+      headers: requestedCorsHeaders ?? PUSH_ALLOWED_HEADERS_LIST,
     });
     logger.response(204, Date.now() - startTime);
     res.status(204).end();
@@ -213,8 +215,8 @@ export function handlePushPostRequestGuards(
   }
 
   setCorsHeaders(res, origin, {
-    methods: [...PUSH_ALLOWED_METHODS],
-    headers: [...PUSH_ALLOWED_HEADERS],
+    methods: PUSH_ALLOWED_METHODS_LIST,
+    headers: PUSH_ALLOWED_HEADERS_LIST,
   });
 
   if (method !== PUSH_ALLOWED_METHODS[0]) {
