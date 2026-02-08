@@ -3,6 +3,8 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 type VercelEnv = "production" | "preview" | "development";
 export const CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES = 50;
+export const CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUE_LENGTH = 1024;
+export const CORS_MAX_PREFLIGHT_ALLOW_HEADERS_LENGTH = 4096;
 
 // Helper to get header value from Node.js IncomingMessage headers
 function getHeader(req: VercelRequest, name: string): string | null {
@@ -47,6 +49,30 @@ function getNonEmptyHeaderValues(
   if (typeof value !== "string") return [];
   const trimmed = value.trim();
   return trimmed.length > 0 ? [trimmed] : [];
+}
+
+function getNormalizedRequestedPreflightHeaders(req: VercelRequest): string | null {
+  const requestedHeaderValues = getNonEmptyHeaderValues(
+    req,
+    "access-control-request-headers",
+    CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES
+  ).filter(
+    (value) => value.length <= CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUE_LENGTH
+  );
+
+  if (requestedHeaderValues.length === 0) {
+    return null;
+  }
+
+  const allowHeaders = requestedHeaderValues.join(", ");
+  if (
+    allowHeaders.length === 0 ||
+    allowHeaders.length > CORS_MAX_PREFLIGHT_ALLOW_HEADERS_LENGTH
+  ) {
+    return null;
+  }
+
+  return allowHeaders;
 }
 
 function splitTrimmedHeaderTokens(value: string): string[] {
@@ -207,15 +233,9 @@ export function handlePreflight(
   }
 
   // Echo back requested headers when provided
-  const requestedHeaderValues = getNonEmptyHeaderValues(
-    req,
-    "access-control-request-headers",
-    CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES
-  );
+  const requestedHeaders = getNormalizedRequestedPreflightHeaders(req);
   const allowHeaders =
-    requestedHeaderValues.length > 0
-      ? requestedHeaderValues.join(", ")
-      : (options.headers || DEFAULT_CORS_HEADERS).join(", ");
+    requestedHeaders ?? (options.headers || DEFAULT_CORS_HEADERS).join(", ");
 
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Methods", (options.methods || DEFAULT_CORS_METHODS).join(", "));
