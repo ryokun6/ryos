@@ -59,10 +59,14 @@ async function testInvalidConcurrencyThrows() {
 
 async function testResolveBoundedConcurrency() {
   assertEq(resolveBoundedConcurrency(undefined, 4), 4);
+  assertEq(resolveBoundedConcurrency(" 6 ", 4), 6);
+  assertEq(resolveBoundedConcurrency("   ", 4), 4);
   assertEq(resolveBoundedConcurrency("6", 4), 6);
   assertEq(resolveBoundedConcurrency("0", 4), 4);
   assertEq(resolveBoundedConcurrency("999", 4), 4);
   assertEq(resolveBoundedConcurrency("not-a-number", 4), 4);
+  assertEq(resolveBoundedConcurrency("10", 4, 1, 10), 10);
+  assertEq(resolveBoundedConcurrency("11", 4, 1, 10), 4);
 }
 
 async function testWorkerErrorPropagation() {
