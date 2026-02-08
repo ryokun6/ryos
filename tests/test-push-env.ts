@@ -10,6 +10,7 @@ import {
   printSummary,
   runTest,
   section,
+  withPatchedEnv,
 } from "./test-utils";
 
 async function testMissingVarsFromEnvObject() {
@@ -45,6 +46,19 @@ async function testUndefinedVarsAreMissing() {
   assertEq(missing.join(","), "TWO");
 }
 
+async function testWithPatchedEnvSupportsAsyncCallback() {
+  const key = "PUSH_ENV_TEST_KEY";
+  const originalValue = process.env[key];
+
+  await withPatchedEnv({ [key]: "patched-value" }, async () => {
+    assertEq(process.env[key], "patched-value");
+    await new Promise((resolve) => setTimeout(resolve, 1));
+    assertEq(process.env[key], "patched-value");
+  });
+
+  assertEq(process.env[key], originalValue);
+}
+
 export async function runPushEnvTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-env"));
   clearResults();
@@ -52,6 +66,10 @@ export async function runPushEnvTests(): Promise<{ passed: number; failed: numbe
   await runTest("Env helper reports blank values as missing", testMissingVarsFromEnvObject);
   await runTest("Env helper passes when required vars exist", testNoMissingVarsFromEnvObject);
   await runTest("Env helper reports undefined vars as missing", testUndefinedVarsAreMissing);
+  await runTest(
+    "withPatchedEnv keeps values patched through async callback",
+    testWithPatchedEnvSupportsAsyncCallback
+  );
 
   return printSummary();
 }

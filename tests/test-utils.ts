@@ -221,8 +221,8 @@ export async function fetchWithAuth(
  */
 export function withPatchedEnv<T>(
   envPatch: Record<string, string | undefined>,
-  run: () => T
-): T {
+  run: () => T | Promise<T>
+): T | Promise<T> {
   const originalValues = new Map<string, string | undefined>();
   for (const [key, value] of Object.entries(envPatch)) {
     originalValues.set(key, process.env[key]);
@@ -233,9 +233,7 @@ export function withPatchedEnv<T>(
     }
   }
 
-  try {
-    return run();
-  } finally {
+  const restore = () => {
     for (const [key, value] of originalValues.entries()) {
       if (typeof value === "undefined") {
         delete process.env[key];
@@ -243,5 +241,17 @@ export function withPatchedEnv<T>(
         process.env[key] = value;
       }
     }
+  };
+
+  try {
+    const result = run();
+    if (result && typeof (result as Promise<T>).then === "function") {
+      return (result as Promise<T>).finally(restore);
+    }
+    restore();
+    return result;
+  } catch (error) {
+    restore();
+    throw error;
   }
 }
