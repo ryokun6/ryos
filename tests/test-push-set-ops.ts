@@ -125,7 +125,7 @@ async function testRemoveTokensAndMetadataUsesParsedExecCounts() {
 
 async function testRemoveTokenMetadataKeysUsesParsedExecCounts() {
   const { redis } = createFakeRedis([
-    [{ result: 1 }, { result: 0 }, ["ignored", 1]],
+    [{ result: 1 }, { result: 0 }, [null, 1]],
   ]);
   const metadataRemoved = await removeTokenMetadataKeys(
     redis,
@@ -193,6 +193,16 @@ async function testMetadataRemovalFallbackWhenExecResultUnparseable() {
     (token) => `push:token:${token}`
   );
   assertEq(metadataRemovedFromOverlarge, 2);
+
+  const { redis: redisWithErroredTuple } = createFakeRedis([
+    [[{ message: "ERR" }, 1], [null, 0]],
+  ]);
+  const metadataRemovedFromErroredTuple = await removeTokenMetadataKeys(
+    redisWithErroredTuple,
+    ["tok1", "tok2"],
+    (token) => `push:token:${token}`
+  );
+  assertEq(metadataRemovedFromErroredTuple, 2);
 }
 
 async function testRemoveTokensAndMetadataFallbackWhenExecResultUnparseable() {

@@ -36,6 +36,10 @@ function parseNumericCount(value: unknown): number | null {
   }
 
   if (Array.isArray(value)) {
+    if (value.length === 2 && value[0] !== null && typeof value[0] !== "undefined") {
+      return null;
+    }
+
     for (let i = value.length - 1; i >= 0; i -= 1) {
       const parsed = parseNumericCount(value[i]);
       if (parsed !== null) {
