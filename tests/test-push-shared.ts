@@ -100,6 +100,27 @@ async function testAuthExtractionFromHeaders() {
   });
   assertEq(lowerCaseAuth.token, "token-lower");
   assertEq(lowerCaseAuth.username, "loweruser");
+
+  const whitespaceHeadersAuth = extractAuthFromHeaders({
+    authorization: "   ",
+    "x-username": "   ",
+  });
+  assertEq(whitespaceHeadersAuth.token, null);
+  assertEq(whitespaceHeadersAuth.username, null);
+
+  const usernameFromSecondArrayEntry = extractAuthFromHeaders({
+    authorization: "Bearer token-456",
+    "x-username": ["   ", "SecondArrayUser"],
+  });
+  assertEq(usernameFromSecondArrayEntry.token, "token-456");
+  assertEq(usernameFromSecondArrayEntry.username, "secondarrayuser");
+
+  const authFromAllWhitespaceHeaderArrays = extractAuthFromHeaders({
+    authorization: ["   ", "\t\t"],
+    "x-username": [" ", "  "],
+  });
+  assertEq(authFromAllWhitespaceHeaderArrays.token, null);
+  assertEq(authFromAllWhitespaceHeaderArrays.username, null);
 }
 
 async function testRedisPositiveCountHelper() {
