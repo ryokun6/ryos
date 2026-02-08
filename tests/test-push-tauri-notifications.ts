@@ -64,6 +64,12 @@ async function testNormalizePushPermissionResult() {
     JSON.stringify(normalizePushPermissionResult({ granted: true })),
     JSON.stringify({ granted: true })
   );
+  const nullPrototypePayload = Object.create(null) as Record<string, unknown>;
+  nullPrototypePayload.granted = true;
+  assertEq(
+    JSON.stringify(normalizePushPermissionResult(nullPrototypePayload)),
+    JSON.stringify({ granted: true })
+  );
   assertEq(
     JSON.stringify(normalizePushPermissionResult({ granted: false })),
     JSON.stringify({ granted: false })
@@ -82,6 +88,10 @@ async function testNormalizePushPermissionResult() {
   );
   assertEq(
     JSON.stringify(normalizePushPermissionResult("bad")),
+    JSON.stringify({ granted: false })
+  );
+  assertEq(
+    JSON.stringify(normalizePushPermissionResult(new Date("2026-01-01T00:00:00.000Z"))),
     JSON.stringify({ granted: false })
   );
 }
