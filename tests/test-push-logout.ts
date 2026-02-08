@@ -244,6 +244,31 @@ async function testUnregisterSkipsWhenAuthContextMissing() {
   );
 }
 
+async function testUnregisterSkipsWhenAuthTokenMissing() {
+  let fetchCalls = 0;
+  let warnCalls = 0;
+  let warnedMessage = "";
+
+  await unregisterPushTokenForLogout("user", "   ", "a".repeat(64), {
+    fetchRuntime: async () => {
+      fetchCalls += 1;
+      return new Response(null, { status: 200 });
+    },
+    getApiUrlRuntime: (path) => path,
+    warn: (message) => {
+      warnCalls += 1;
+      warnedMessage = message;
+    },
+  });
+
+  assertEq(fetchCalls, 0);
+  assertEq(warnCalls, 1);
+  assertEq(
+    warnedMessage,
+    "[ChatsStore] Skipping push unregister during logout due to missing auth context"
+  );
+}
+
 async function testUnregisterSkipsAndWarnsForInvalidToken() {
   let fetchCalls = 0;
   let warnCalls = 0;
@@ -367,6 +392,10 @@ export async function runPushLogoutTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Push logout unregister skips request when auth context is missing",
     testUnregisterSkipsWhenAuthContextMissing
+  );
+  await runTest(
+    "Push logout unregister skips request when auth token is missing",
+    testUnregisterSkipsWhenAuthTokenMissing
   );
   await runTest(
     "Push logout unregister skips and warns for invalid token format",
