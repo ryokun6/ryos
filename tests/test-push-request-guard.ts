@@ -316,6 +316,66 @@ async function testAllowedOptionsPreflightRejectsUnsupportedRequestedMethod() {
   });
 }
 
+async function testAllowedOptionsPreflightUsesFirstNonEmptyRequestedMethodArrayValue() {
+  await withDevelopmentEnv(async () => {
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-method": ["   ", "post"],
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getEndCallCount(), 1);
+    assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
+  });
+}
+
+async function testAllowedOptionsPreflightRejectsWhenFirstNonEmptyRequestedMethodArrayValueUnsupported() {
+  await withDevelopmentEnv(async () => {
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-method": ["DELETE", "POST"],
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 405);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Method not allowed" })
+    );
+    assertEq(mockRes.getHeader("Allow"), "POST, OPTIONS");
+    assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
+  });
+}
+
 async function testAllowedOptionsPreflightEchoesRequestedHeaders() {
   await withDevelopmentEnv(async () => {
     const req = createRequestWithHeaders(
@@ -818,6 +878,7 @@ async function testDisallowedOptionsPreflightRejected() {
     assertEq(mockRes.getEndCallCount(), 0);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
     assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), undefined);
+    assertEq(mockRes.getHeader("Allow"), undefined);
     assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
     assertEq(mockLogger.responseCalls.length, 1);
     assertEq(mockLogger.responseCalls[0].statusCode, 403);
@@ -853,6 +914,7 @@ async function testDisallowedOptionsPreflightWithRequestedHeadersRejectedWithout
     );
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
     assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), undefined);
+    assertEq(mockRes.getHeader("Allow"), undefined);
     assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
     assertEq(mockRes.getEndCallCount(), 0);
   });
@@ -1551,6 +1613,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard rejects preflight when requested method is unsupported",
     testAllowedOptionsPreflightRejectsUnsupportedRequestedMethod
+  );
+  await runTest(
+    "Push request guard uses first non-empty requested-method array value",
+    testAllowedOptionsPreflightUsesFirstNonEmptyRequestedMethodArrayValue
+  );
+  await runTest(
+    "Push request guard rejects when first requested-method array value is unsupported",
+    testAllowedOptionsPreflightRejectsWhenFirstNonEmptyRequestedMethodArrayValueUnsupported
   );
   await runTest(
     "Push request guard echoes requested headers for allowed preflight",
