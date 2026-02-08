@@ -12,6 +12,7 @@ import {
 import {
   assertEq,
   clearResults,
+  createMockPushRequestLoggerHarness,
   createMockVercelResponseHarness,
   printSummary,
   runTest,
@@ -19,31 +20,8 @@ import {
   withPatchedEnv,
 } from "./test-utils";
 
-interface MockLogger {
-  logger: {
-    request: (method: string, url: string) => void;
-    response: (statusCode: number, duration?: number) => void;
-  };
-  requestCalls: Array<{ method: string; url: string }>;
-  responseCalls: Array<{ statusCode: number; duration?: number }>;
-}
-
-function createMockLogger(): MockLogger {
-  const requestCalls: Array<{ method: string; url: string }> = [];
-  const responseCalls: Array<{ statusCode: number; duration?: number }> = [];
-
-  return {
-    logger: {
-      request: (method: string, url: string) => {
-        requestCalls.push({ method, url });
-      },
-      response: (statusCode: number, duration?: number) => {
-        responseCalls.push({ statusCode, duration });
-      },
-    },
-    requestCalls,
-    responseCalls,
-  };
+function createMockLogger() {
+  return createMockPushRequestLoggerHarness();
 }
 
 function createRequest(

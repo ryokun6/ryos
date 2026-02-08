@@ -277,6 +277,15 @@ export interface MockPushLoggerHarness {
   responseCalls: Array<{ statusCode: number; duration?: number }>;
 }
 
+export interface MockPushRequestLoggerHarness {
+  logger: {
+    request: (method: string, url: string) => void;
+    response: (statusCode: number, duration?: number) => void;
+  };
+  requestCalls: Array<{ method: string; url: string }>;
+  responseCalls: Array<{ statusCode: number; duration?: number }>;
+}
+
 export function createMockVercelResponseHarness(): MockVercelResponseHarness {
   let statusCode = 0;
   let jsonPayload: unknown = null;
@@ -338,6 +347,24 @@ export function createMockPushLoggerHarness(options?: {
     logger,
     warnCalls,
     errorCalls,
+    responseCalls,
+  };
+}
+
+export function createMockPushRequestLoggerHarness(): MockPushRequestLoggerHarness {
+  const requestCalls: Array<{ method: string; url: string }> = [];
+  const responseCalls: Array<{ statusCode: number; duration?: number }> = [];
+
+  return {
+    logger: {
+      request: (method: string, url: string) => {
+        requestCalls.push({ method, url });
+      },
+      response: (statusCode: number, duration?: number) => {
+        responseCalls.push({ statusCode, duration });
+      },
+    },
+    requestCalls,
     responseCalls,
   };
 }
