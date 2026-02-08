@@ -118,47 +118,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const payload = normalizedPayload.value;
     const title = payload.title;
     const message = payload.body;
+    const requestedToken = payload.token;
 
     const userTokensKey = getUserTokensKey(username);
-    const rawUserTokens = await redis.smembers<unknown[]>(userTokensKey);
-    const {
-      validTokens: userTokens,
-      invalidTokensToRemove: invalidStoredTokens,
-      skippedNonStringCount: skippedNonStringTokenCount,
-    } = parseStoredPushTokens(rawUserTokens);
-
-    const invalidStoredTokensRemoved = await removeTokensFromUserSet(
-      redis,
-      userTokensKey,
-      invalidStoredTokens
-    );
-
-    if (invalidStoredTokensRemoved > 0 || skippedNonStringTokenCount > 0) {
-      logger.warn("Cleaned invalid stored push tokens before send", {
-        username,
-        invalidStoredTokensRemoved,
-        skippedNonStringTokenCount,
-      });
-    }
-
-    if (userTokens.length === 0) {
-      logger.response(400, Date.now() - startTime);
-      return res.status(400).json({
-        error: "No registered push tokens for this user",
-        invalidStoredTokensRemoved,
-        skippedNonStringTokenCount,
-      });
-    }
-
-    const requestedToken = payload.token;
-    let tokensForOwnershipLookup = userTokens;
+    let invalidStoredTokensRemoved = 0;
+    let skippedNonStringTokenCount = 0;
+    let tokensForOwnershipLookup: string[] = [];
 
     if (requestedToken) {
-      if (!userTokens.includes(requestedToken)) {
+      const isRequestedTokenRegistered = await redis.sismember(
+        userTokensKey,
+        requestedToken
+      );
+      if (!isRequestedTokenRegistered) {
         logger.response(403, Date.now() - startTime);
         return res.status(403).json({ error: "Token is not registered for this user" });
       }
+
       tokensForOwnershipLookup = [requestedToken];
+    } else {
+      const rawUserTokens = await redis.smembers<unknown[]>(userTokensKey);
+      const {
+        validTokens: userTokens,
+        invalidTokensToRemove: invalidStoredTokens,
+        skippedNonStringCount,
+      } = parseStoredPushTokens(rawUserTokens);
+      skippedNonStringTokenCount = skippedNonStringCount;
+
+      invalidStoredTokensRemoved = await removeTokensFromUserSet(
+        redis,
+        userTokensKey,
+        invalidStoredTokens
+      );
+
+      if (invalidStoredTokensRemoved > 0 || skippedNonStringTokenCount > 0) {
+        logger.warn("Cleaned invalid stored push tokens before send", {
+          username,
+          invalidStoredTokensRemoved,
+          skippedNonStringTokenCount,
+        });
+      }
+
+      if (userTokens.length === 0) {
+        logger.response(400, Date.now() - startTime);
+        return res.status(400).json({
+          error: "No registered push tokens for this user",
+          invalidStoredTokensRemoved,
+          skippedNonStringTokenCount,
+        });
+      }
+
+      tokensForOwnershipLookup = userTokens;
     }
 
     const ownershipEntries = await getTokenOwnershipEntries(
