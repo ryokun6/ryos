@@ -148,6 +148,14 @@ async function testRemoveTokenMetadataKeysUsesParsedExecCounts() {
     (token) => `push:token:${token}`
   );
   assertEq(metadataRemoved, 2);
+
+  const { redis: redisWithBooleanCounts } = createFakeRedis([[true, false]]);
+  const metadataRemovedFromBooleanCounts = await removeTokenMetadataKeys(
+    redisWithBooleanCounts,
+    ["tok1", "tok2"],
+    (token) => `push:token:${token}`
+  );
+  assertEq(metadataRemovedFromBooleanCounts, 1);
 }
 
 async function testRemovalFallbackWhenExecResultUnparseable() {
