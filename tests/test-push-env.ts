@@ -95,6 +95,22 @@ async function testWithPatchedEnvRestoresAfterSyncError() {
   assertEq(process.env[key], originalValue);
 }
 
+async function testWithPatchedEnvSupportsThenableReturn() {
+  const key = "PUSH_ENV_TEST_KEY_THENABLE";
+  const originalValue = process.env[key];
+  let seenInsideThenable = "";
+
+  await withPatchedEnv({ [key]: "patched-value" }, () => ({
+    then: (resolve: (value: string) => void) => {
+      seenInsideThenable = process.env[key] || "";
+      resolve("ok");
+    },
+  }));
+
+  assertEq(seenInsideThenable, "patched-value");
+  assertEq(process.env[key], originalValue);
+}
+
 export async function runPushEnvTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-env"));
   clearResults();
@@ -113,6 +129,10 @@ export async function runPushEnvTests(): Promise<{ passed: number; failed: numbe
   await runTest(
     "withPatchedEnv restores values after sync callback throws",
     testWithPatchedEnvRestoresAfterSyncError
+  );
+  await runTest(
+    "withPatchedEnv supports thenable callback return values",
+    testWithPatchedEnvSupportsThenableReturn
   );
 
   return printSummary();
