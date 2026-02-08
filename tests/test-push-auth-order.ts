@@ -22,13 +22,15 @@ type PushHandler = (req: VercelRequest, res: VercelResponse) => Promise<unknown>
 function createRequest(
   method: "POST" | "OPTIONS" | "GET",
   url: string,
-  origin: string = "http://localhost:3000"
+  origin: string = "http://localhost:3000",
+  extraHeaders?: Record<string, string>
 ): VercelRequest {
   return {
     method,
     url,
     headers: {
       origin,
+      ...(extraHeaders || {}),
     },
     body: {},
   } as unknown as VercelRequest;
@@ -88,6 +90,28 @@ async function expectMethodNotAllowedResponse(
   );
   assertEq(mockRes.getHeader("Allow"), "POST, OPTIONS");
   assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+}
+
+async function expectMissingRedisConfigResponse(
+  handler: PushHandler,
+  endpointPath: string
+) {
+  const req = createRequest("POST", endpointPath, "http://localhost:3000", {
+    authorization: "Bearer valid-looking-token",
+    "x-username": "test-user",
+  });
+  const mockRes = createMockVercelResponseHarness();
+
+  await handler(req, mockRes.res);
+
+  assertEq(mockRes.getStatusCode(), 500);
+  assertEq(
+    JSON.stringify(mockRes.getJsonPayload()),
+    JSON.stringify({
+      error: "Redis is not configured.",
+      missingEnvVars: ["REDIS_KV_REST_API_URL", "REDIS_KV_REST_API_TOKEN"],
+    })
+  );
 }
 
 function withMissingPushEnv<T>(run: () => T | Promise<T>): Promise<T> {
@@ -155,6 +179,12 @@ async function testRegisterDisallowedOriginPrecedesMethodGuard() {
   });
 }
 
+async function testRegisterMissingRedisConfigAfterCredentialExtraction() {
+  await withMissingPushEnv(async () => {
+    await expectMissingRedisConfigResponse(pushRegisterHandler, "/api/push/register");
+  });
+}
+
 async function testUnregisterMissingCredentialsTakesPrecedence() {
   await withMissingPushEnv(async () => {
     await expectMissingCredentialsResponse(
@@ -191,6 +221,12 @@ async function testUnregisterDisallowedOriginPrecedesMethodGuard() {
       "/api/push/unregister",
       "GET"
     );
+  });
+}
+
+async function testUnregisterMissingRedisConfigAfterCredentialExtraction() {
+  await withMissingPushEnv(async () => {
+    await expectMissingRedisConfigResponse(pushUnregisterHandler, "/api/push/unregister");
   });
 }
 
@@ -231,6 +267,12 @@ async function testPushTestMethodNotAllowedIncludesAllowHeader() {
 async function testPushTestDisallowedOriginPrecedesMethodGuard() {
   await withMissingPushEnv(async () => {
     await expectUnauthorizedOriginResponse(pushTestHandler, "/api/push/test", "GET");
+  });
+}
+
+async function testPushTestMissingRedisConfigAfterCredentialExtraction() {
+  await withMissingPushEnv(async () => {
+    await expectMissingRedisConfigResponse(pushTestHandler, "/api/push/test");
   });
 }
 
@@ -275,6 +317,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
     testRegisterDisallowedOriginPrecedesMethodGuard
   );
   await runTest(
+    "Push register returns Redis config error after credential extraction",
+    testRegisterMissingRedisConfigAfterCredentialExtraction
+  );
+  await runTest(
     "Push unregister returns 401 before Redis config checks",
     testUnregisterMissingCredentialsTakesPrecedence
   );
@@ -293,6 +339,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
   await runTest(
     "Push unregister disallowed origin takes precedence over method guard",
     testUnregisterDisallowedOriginPrecedesMethodGuard
+  );
+  await runTest(
+    "Push unregister returns Redis config error after credential extraction",
+    testUnregisterMissingRedisConfigAfterCredentialExtraction
   );
   await runTest(
     "Push unregister allows localhost preflight",
@@ -321,6 +371,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
   await runTest(
     "Push test disallowed origin takes precedence over method guard",
     testPushTestDisallowedOriginPrecedesMethodGuard
+  );
+  await runTest(
+    "Push test returns Redis config error after credential extraction",
+    testPushTestMissingRedisConfigAfterCredentialExtraction
   );
 
   return printSummary();
