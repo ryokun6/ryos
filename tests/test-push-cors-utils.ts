@@ -276,6 +276,26 @@ async function testHandlePreflightIgnoresRequestedHeaderValueWhenTooLong() {
   });
 }
 
+async function testHandlePreflightAcceptsRequestedHeaderValueAtLengthLimit() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": [
+      "X".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUE_LENGTH),
+    ],
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(
+      res.getHeader("Access-Control-Allow-Headers"),
+      "X".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUE_LENGTH)
+    );
+  });
+}
+
 async function testHandlePreflightKeepsValidRequestedHeaderValuesWhenSomeAreTooLong() {
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:3000",
@@ -487,6 +507,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper ignores overly long requested-header values",
     testHandlePreflightIgnoresRequestedHeaderValueWhenTooLong
+  );
+  await runTest(
+    "CORS preflight helper accepts requested-header values at length limit",
+    testHandlePreflightAcceptsRequestedHeaderValueAtLengthLimit
   );
   await runTest(
     "CORS preflight helper keeps valid requested-header values when others are too long",
