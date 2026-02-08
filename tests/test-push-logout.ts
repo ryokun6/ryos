@@ -491,6 +491,36 @@ async function testUnregisterNaNTimeoutBehavesAsDisabled() {
   assertEq(warnCalls, 0);
 }
 
+async function testUnregisterStillWorksWhenAbortControllerUnavailable() {
+  const globalWithAbort = globalThis as typeof globalThis & {
+    AbortController?: typeof AbortController;
+  };
+  const originalAbortController = globalWithAbort.AbortController;
+  delete globalWithAbort.AbortController;
+
+  let fetchCalls = 0;
+  let sawSignal = false;
+
+  try {
+    await unregisterPushTokenForLogout("example-user", "auth-token", "a".repeat(64), {
+      fetchRuntime: async (_url, init) => {
+        fetchCalls += 1;
+        sawSignal = Boolean(init?.signal);
+        return new Response(null, { status: 200 });
+      },
+      getApiUrlRuntime: (path) => path,
+      warn: () => undefined,
+    });
+  } finally {
+    if (originalAbortController) {
+      globalWithAbort.AbortController = originalAbortController;
+    }
+  }
+
+  assertEq(fetchCalls, 1);
+  assertEq(sawSignal, false);
+}
+
 export async function runPushLogoutTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-logout"));
   clearResults();
@@ -574,6 +604,10 @@ export async function runPushLogoutTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Push logout unregister treats NaN request timeout as disabled",
     testUnregisterNaNTimeoutBehavesAsDisabled
+  );
+  await runTest(
+    "Push logout unregister works without AbortController support",
+    testUnregisterStillWorksWhenAbortControllerUnavailable
   );
 
   return printSummary();
