@@ -87,11 +87,13 @@ async function testRedisPositiveCountHelper() {
   assertEq(isRedisPositiveCount(1n), true);
   assertEq(isRedisPositiveCount(0n), false);
   assertEq(isRedisPositiveCount(1), true);
+  assertEq(isRedisPositiveCount(1.5), false);
   assertEq(isRedisPositiveCount(2), true);
   assertEq(isRedisPositiveCount(0), false);
   assertEq(isRedisPositiveCount(-1), false);
   assertEq(isRedisPositiveCount("1"), true);
   assertEq(isRedisPositiveCount(" 2 "), true);
+  assertEq(isRedisPositiveCount("0.5"), false);
   assertEq(isRedisPositiveCount("0"), false);
   assertEq(isRedisPositiveCount("not-a-number"), false);
   assertEq(isRedisPositiveCount(""), false);
