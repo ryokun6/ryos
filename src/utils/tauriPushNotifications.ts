@@ -56,6 +56,17 @@ export function normalizePushNotificationPayload(
   return isPlainRecord(payload) ? (payload as IosPushNotificationPayload) : {};
 }
 
+function addPushNotificationListener(
+  eventName: "notification" | "notification-tapped",
+  handler: (payload: IosPushNotificationPayload) => void
+): Promise<PluginListener> {
+  return addPluginListener<IosPushNotificationPayload>(
+    IOS_PUSH_PLUGIN,
+    eventName,
+    (payload) => handler(normalizePushNotificationPayload(payload))
+  );
+}
+
 export async function requestPushPermission(): Promise<PushPermissionResult> {
   const payload = await invoke<unknown>(`plugin:${IOS_PUSH_PLUGIN}|request_push_permission`);
   return normalizePushPermissionResult(payload);
@@ -80,21 +91,13 @@ export async function onPushToken(
 export async function onPushNotification(
   handler: (payload: IosPushNotificationPayload) => void
 ): Promise<PluginListener> {
-  return addPluginListener<IosPushNotificationPayload>(
-    IOS_PUSH_PLUGIN,
-    "notification",
-    (payload) => handler(normalizePushNotificationPayload(payload))
-  );
+  return addPushNotificationListener("notification", handler);
 }
 
 export async function onPushNotificationTapped(
   handler: (payload: IosPushNotificationPayload) => void
 ): Promise<PluginListener> {
-  return addPluginListener<IosPushNotificationPayload>(
-    IOS_PUSH_PLUGIN,
-    "notification-tapped",
-    (payload) => handler(normalizePushNotificationPayload(payload))
-  );
+  return addPushNotificationListener("notification-tapped", handler);
 }
 
 export async function onPushRegistrationError(
