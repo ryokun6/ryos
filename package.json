@@ -11,7 +11,7 @@
     "build": "tsc -b && vite build && cp dist/sw.js dist/version.json .vercel/output/static/ && (cp dist/workbox-*.js .vercel/output/static/ 2>/dev/null || true) && node -e \"const c=require('./.vercel/output/config.json');c.cleanUrls=true;c.trailingSlash=false;require('fs').writeFileSync('./.vercel/output/config.json',JSON.stringify(c,null,2))\"",
     "build:tauri": "bun run scripts/build-tauri.ts",
     "lint": "eslint .",
-    "lint:push": "eslint _api/push _api/_utils/_env.ts _api/_utils/_push-apns.ts shared/pushToken.ts src/hooks/useTauriPushNotifications.ts src/stores/useChatsStore.ts src/utils/pushLogout.ts src/utils/pushToken.ts src/utils/tauriPushNotifications.ts tests/test-push*.ts",
+    "lint:push": "eslint _api/push _api/_utils/_cors.ts _api/_utils/_env.ts _api/_utils/_push-apns.ts shared/pushToken.ts src/hooks/useTauriPushNotifications.ts src/stores/useChatsStore.ts src/utils/pushLogout.ts src/utils/pushToken.ts src/utils/tauriPushNotifications.ts tests/test-push*.ts",
     "preview": "vite preview",
     "generate:icons": "bun run scripts/generate-icon-manifest.ts",
     "generate:infinite-mac-thumbnails": "bun run scripts/generate-infinite-mac-thumbnails.ts",
