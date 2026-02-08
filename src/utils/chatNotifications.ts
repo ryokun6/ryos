@@ -10,6 +10,7 @@ interface RoomNotificationParams {
  * Rules:
  * - If Chats app is closed, room messages should still notify.
  * - If Chats app is open, suppress notifications only for the actively viewed room.
+ * - Room ids are normalized with trim() to tolerate malformed whitespace payloads.
  */
 export const shouldNotifyForRoomMessage = ({
   chatsOpen,
