@@ -49,6 +49,7 @@ export function handlePushPostRequestGuards(
       return true;
     }
 
+    res.setHeader("Vary", "Origin, Access-Control-Request-Headers");
     const requestedCorsHeaders = getRequestedCorsHeaders(req);
     setCorsHeaders(res, origin, {
       methods: ["POST", "OPTIONS"],
@@ -65,6 +66,7 @@ export function handlePushPostRequestGuards(
     return true;
   }
 
+  res.setHeader("Vary", "Origin");
   setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
 
   if (method !== "POST") {

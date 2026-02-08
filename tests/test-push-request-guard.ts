@@ -120,6 +120,7 @@ async function testAllowedPostContinuesWithoutHandling() {
     assertEq(handled, false);
     assertEq(mockRes.getStatusCode(), 0);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+    assertEq(mockRes.getHeader("Vary"), "Origin");
     assertEq(mockLogger.requestCalls.length, 1);
     assertEq(mockLogger.requestCalls[0].method, "POST");
     assertEq(mockLogger.requestCalls[0].url, "/api/push/register");
@@ -148,6 +149,7 @@ async function testDisallowedPostIsRejected() {
       JSON.stringify({ error: "Unauthorized" })
     );
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
+    assertEq(mockRes.getHeader("Vary"), undefined);
     assertEq(mockLogger.responseCalls.length, 1);
     assertEq(mockLogger.responseCalls[0].statusCode, 403);
   });
@@ -171,6 +173,7 @@ async function testAllowedOptionsPreflightHandled() {
     assertEq(mockRes.getStatusCode(), 204);
     assertEq(mockRes.getEndCallCount(), 1);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+    assertEq(mockRes.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
       "Content-Type, Authorization, X-Username"
@@ -203,6 +206,7 @@ async function testAllowedOptionsPreflightEchoesRequestedHeaders() {
 
     assertEq(handled, true);
     assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
       "x-custom-header, authorization"
@@ -266,6 +270,7 @@ async function testAllowedOptionsPreflightUsesFirstRequestedHeaderValue() {
 
     assertEq(handled, true);
     assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
     assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), "x-first, authorization");
   });
 }
@@ -296,6 +301,7 @@ async function testAllowedOptionsPreflightUsesFirstNonEmptyHeaderArrayValue() {
 
     assertEq(handled, true);
     assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
     assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), "x-second, authorization");
   });
 }
@@ -322,6 +328,7 @@ async function testDisallowedOptionsPreflightRejected() {
     );
     assertEq(mockRes.getEndCallCount(), 0);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
+    assertEq(mockRes.getHeader("Vary"), undefined);
     assertEq(mockLogger.responseCalls.length, 1);
     assertEq(mockLogger.responseCalls[0].statusCode, 403);
   });
@@ -349,6 +356,7 @@ async function testUnsupportedMethodSetsAllowHeader() {
     );
     assertEq(mockRes.getHeader("Allow"), "POST, OPTIONS");
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+    assertEq(mockRes.getHeader("Vary"), "Origin");
     assertEq(mockLogger.responseCalls.length, 1);
     assertEq(mockLogger.responseCalls[0].statusCode, 405);
   });
