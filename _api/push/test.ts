@@ -132,6 +132,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         requestedToken
       );
       if (!isRedisPositiveCount(isRequestedTokenRegistered)) {
+        logger.warn("Push test rejected: requested token not in user set", {
+          username,
+          requestedTokenSuffix: requestedToken.slice(-8),
+        });
         logger.response(403, Date.now() - startTime);
         return res.status(403).json({
           error: "Token is not registered for this user",
@@ -165,6 +169,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       if (userTokens.length === 0) {
+        logger.warn("Push test aborted: no valid tokens after cleanup", {
+          username,
+          invalidStoredTokensRemoved,
+          skippedNonStringTokenCount,
+        });
         logger.response(400, Date.now() - startTime);
         return res.status(400).json({
           error: "No registered push tokens for this user",
@@ -193,6 +202,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     if (requestedToken && targetTokens.length === 0) {
+      logger.warn("Push test rejected: requested token failed ownership check", {
+        username,
+        requestedTokenSuffix: requestedToken.slice(-8),
+        staleOwnershipTokensRemoved,
+        pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
+      });
       logger.response(403, Date.now() - startTime);
       return res.status(403).json({
         error: "Token is not registered for this user",
@@ -202,6 +217,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (targetTokens.length === 0) {
+      logger.warn("Push test aborted: no owned tokens after ownership cleanup", {
+        username,
+        staleOwnershipTokensRemoved,
+        pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
+      });
       logger.response(400, Date.now() - startTime);
       return res.status(400).json({
         error: "No owned push tokens for this user",
