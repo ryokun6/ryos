@@ -218,6 +218,28 @@ async function testInvalidPrivateKeyReturnsJwtError() {
   assert(result.reason?.startsWith("JWT_ERROR:"), "Expected JWT_ERROR reason");
 }
 
+async function testInvalidEndpointOverrideReturnsConnectError() {
+  const { privateKey } = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
+  const result = await sendApnsAlert(
+    {
+      keyId: "ABC123DEFG",
+      teamId: "TEAM123ABC",
+      bundleId: "lu.ryo.os",
+      privateKey: privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
+      useSandbox: false,
+      endpointOverride: "https://",
+    },
+    "valid-token-1234567890",
+    {
+      title: "Hello",
+      body: "World",
+    }
+  );
+
+  assertEq(result.ok, false, "Expected invalid endpoint override to fail");
+  assert(result.reason?.startsWith("CONNECT_ERROR:"), "Expected CONNECT_ERROR reason");
+}
+
 function withEnv<T>(envPatch: Record<string, string | undefined>, run: () => T): T {
   const originalValues = new Map<string, string | undefined>();
   for (const [key, value] of Object.entries(envPatch)) {
@@ -316,6 +338,10 @@ export async function runPushApnsTests(): Promise<{ passed: number; failed: numb
     testMissingCaCertFailsTlsHandshake
   );
   await runTest("APNs helper returns JWT error on invalid key", testInvalidPrivateKeyReturnsJwtError);
+  await runTest(
+    "APNs helper returns connect error on invalid endpoint",
+    testInvalidEndpointOverrideReturnsConnectError
+  );
   await runTest("APNs env helper reports missing/normalized vars", testApnsEnvValidationHelpers);
 
   return printSummary();
