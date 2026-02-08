@@ -51,26 +51,45 @@ function forEachCommaSeparatedCandidate(
   return true;
 }
 
+function forEachRequestedHeaderValue(
+  requestedHeaders: string | string[] | undefined,
+  visit: (requestedHeaderValue: string) => boolean
+): boolean {
+  if (Array.isArray(requestedHeaders)) {
+    for (const requestedHeaderValue of requestedHeaders) {
+      if (
+        typeof requestedHeaderValue !== "string" ||
+        requestedHeaderValue.trim().length === 0
+      ) {
+        continue;
+      }
+      if (!visit(requestedHeaderValue)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  if (
+    typeof requestedHeaders === "string" &&
+    requestedHeaders.trim().length > 0
+  ) {
+    return visit(requestedHeaders);
+  }
+
+  return true;
+}
+
 function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   const requestedHeaders = req.headers["access-control-request-headers"];
-  const requestedHeaderValues = Array.isArray(requestedHeaders)
-    ? requestedHeaders.filter(
-        (value): value is string =>
-          typeof value === "string" && value.trim().length > 0
-      )
-    : typeof requestedHeaders === "string" && requestedHeaders.trim().length > 0
-      ? [requestedHeaders]
-      : [];
-
-  if (requestedHeaderValues.length === 0) {
-    return undefined;
-  }
 
   const seen = new Set<string>();
   const dedupedHeaders: string[] = [];
   let processedHeaderCandidateCount = 0;
+  let sawRequestedHeaderValue = false;
 
-  for (const requestedHeaderValue of requestedHeaderValues) {
+  forEachRequestedHeaderValue(requestedHeaders, (requestedHeaderValue) => {
+    sawRequestedHeaderValue = true;
     const shouldContinueScanning = forEachCommaSeparatedCandidate(
       requestedHeaderValue,
       (headerCandidate) => {
@@ -104,8 +123,14 @@ function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
       dedupedHeaders.length >= PUSH_CORS_MAX_REQUESTED_HEADER_COUNT ||
       processedHeaderCandidateCount >= PUSH_CORS_MAX_REQUESTED_HEADER_CANDIDATES
     ) {
-      break;
+      return false;
     }
+
+    return true;
+  });
+
+  if (!sawRequestedHeaderValue) {
+    return undefined;
   }
 
   return dedupedHeaders.length > 0 ? dedupedHeaders : undefined;
