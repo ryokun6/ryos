@@ -415,8 +415,6 @@ export function KaraokeMenuBar({
                 {t("apps.ipod.menu.fontSansSerif")}
               </MenubarCheckboxItem>
 
-              <MenubarSeparator className="h-[2px] bg-black my-1" />
-
               {/* Special style modes */}
               <MenubarCheckboxItem
                 checked={lyricsFont === LyricsFont.SerifRed}
