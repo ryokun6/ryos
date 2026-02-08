@@ -110,6 +110,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         removed: removedFromUserSet,
         metadataRemoved: removedMetadataCount,
         invalidStoredTokensRemoved: 0,
+        skippedNonStringTokenCount: 0,
       });
     }
 
