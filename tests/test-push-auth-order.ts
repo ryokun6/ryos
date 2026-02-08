@@ -82,6 +82,28 @@ async function expectUnauthorizedOriginResponse(
   assertEq(mockRes.getHeader("Allow"), undefined);
 }
 
+async function expectUnauthorizedOriginOptionsWithRequestedMethodResponse(
+  handler: PushHandler,
+  endpointPath: string
+) {
+  const req = createRequest("OPTIONS", endpointPath, "https://evil.example", {
+    "access-control-request-method": "DELETE",
+  });
+  const mockRes = createMockVercelResponseHarness();
+
+  await handler(req, mockRes.res);
+
+  assertEq(mockRes.getStatusCode(), 403);
+  assertEq(
+    JSON.stringify(mockRes.getJsonPayload()),
+    JSON.stringify({ error: "Unauthorized" })
+  );
+  assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
+  assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), undefined);
+  assertEq(mockRes.getHeader("Allow"), undefined);
+  assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
+}
+
 async function expectMethodNotAllowedResponse(
   handler: PushHandler,
   endpointPath: string
@@ -203,6 +225,15 @@ async function testRegisterOptionsUnauthorizedOriginRejected() {
   });
 }
 
+async function testRegisterOptionsUnsupportedRequestedMethodStillRejectedByOrigin() {
+  await withMissingPushEnv(async () => {
+    await expectUnauthorizedOriginOptionsWithRequestedMethodResponse(
+      pushRegisterHandler,
+      "/api/push/register"
+    );
+  });
+}
+
 async function testRegisterOptionsAllowedOriginReturnsNoContent() {
   const req = createRequest("OPTIONS", "/api/push/register");
   const mockRes = createMockVercelResponseHarness();
@@ -267,6 +298,15 @@ async function testUnregisterOptionsUnauthorizedOriginRejected() {
   });
 }
 
+async function testUnregisterOptionsUnsupportedRequestedMethodStillRejectedByOrigin() {
+  await withMissingPushEnv(async () => {
+    await expectUnauthorizedOriginOptionsWithRequestedMethodResponse(
+      pushUnregisterHandler,
+      "/api/push/unregister"
+    );
+  });
+}
+
 async function testUnregisterMethodNotAllowedIncludesAllowHeader() {
   await expectMethodNotAllowedResponse(pushUnregisterHandler, "/api/push/unregister");
 }
@@ -309,6 +349,15 @@ async function testPushTestUnauthorizedOriginTakesPrecedence() {
 async function testPushTestOptionsUnauthorizedOriginRejected() {
   await withMissingPushEnv(async () => {
     await expectUnauthorizedOriginResponse(pushTestHandler, "/api/push/test", "OPTIONS");
+  });
+}
+
+async function testPushTestOptionsUnsupportedRequestedMethodStillRejectedByOrigin() {
+  await withMissingPushEnv(async () => {
+    await expectUnauthorizedOriginOptionsWithRequestedMethodResponse(
+      pushTestHandler,
+      "/api/push/test"
+    );
   });
 }
 
@@ -376,6 +425,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
     testRegisterOptionsUnauthorizedOriginRejected
   );
   await runTest(
+    "Push register origin guard precedes unsupported preflight requested method",
+    testRegisterOptionsUnsupportedRequestedMethodStillRejectedByOrigin
+  );
+  await runTest(
     "Push register allows localhost preflight",
     testRegisterOptionsAllowedOriginReturnsNoContent
   );
@@ -408,6 +461,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
     testUnregisterOptionsUnauthorizedOriginRejected
   );
   await runTest(
+    "Push unregister origin guard precedes unsupported preflight requested method",
+    testUnregisterOptionsUnsupportedRequestedMethodStillRejectedByOrigin
+  );
+  await runTest(
     "Push unregister method guard sets Allow header",
     testUnregisterMethodNotAllowedIncludesAllowHeader
   );
@@ -438,6 +495,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
   await runTest(
     "Push test rejects disallowed-origin preflight",
     testPushTestOptionsUnauthorizedOriginRejected
+  );
+  await runTest(
+    "Push test origin guard precedes unsupported preflight requested method",
+    testPushTestOptionsUnsupportedRequestedMethodStillRejectedByOrigin
   );
   await runTest(
     "Push test allows localhost preflight",
