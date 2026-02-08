@@ -72,6 +72,10 @@ Routes now emit matching realtime events:
   - stale channel recovery
   - warning dedupe behavior
   - channel-name normalization and blank-input guards
+- `tests/test-pusher-client-constructor-wiring.ts`
+  - verifies module-default constructor lookup remains wired
+  - verifies global fallback remains wired
+  - verifies explicit error path for missing constructor remains wired
 - `tests/test-chat-notification-logic.ts`
   - active vs non-active room notification gating
   - missing/empty/whitespace room-id input guards
@@ -113,6 +117,7 @@ File: `src/stores/useChatsStore.ts`
 - Automated:
   - `bun run test:chat-regression`
     - wraps `chat-notifications`, `pusher-client`, `chat-broadcast-wiring`
+  - `bun run test:pusher-constructor-wiring`
   - `bun run test:chat-store-guards`
   - `bun run tests/run-all-tests.ts chat-`
   - `bun run tests/run-all-tests.ts pusher`
