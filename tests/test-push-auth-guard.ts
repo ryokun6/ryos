@@ -10,16 +10,12 @@ import {
 import {
   assertEq,
   clearResults,
+  createMockPushLoggerHarness,
   createMockVercelResponseHarness,
   printSummary,
   runTest,
   section,
 } from "./test-utils";
-
-interface MockLogger {
-  logger: { response: (statusCode: number, duration?: number) => void };
-  responseCalls: Array<{ statusCode: number; duration?: number }>;
-}
 
 interface FakeAuthRedis {
   exists: (key: string) => Promise<number>;
@@ -27,17 +23,8 @@ interface FakeAuthRedis {
   get: (key: string) => Promise<unknown>;
 }
 
-function createMockLogger(): MockLogger {
-  const responseCalls: Array<{ statusCode: number; duration?: number }> = [];
-
-  return {
-    logger: {
-      response: (statusCode: number, duration?: number) => {
-        responseCalls.push({ statusCode, duration });
-      },
-    },
-    responseCalls,
-  };
+function createMockLogger() {
+  return createMockPushLoggerHarness({ includeWarn: false });
 }
 
 function createFakeAuthRedis(
