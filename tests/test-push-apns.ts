@@ -20,6 +20,7 @@ import {
   printSummary,
   runTest,
   section,
+  withPatchedEnv,
 } from "./test-utils";
 
 const TEST_CERT = `-----BEGIN CERTIFICATE-----
@@ -240,30 +241,6 @@ async function testInvalidEndpointOverrideReturnsConnectError() {
   assert(result.reason?.startsWith("CONNECT_ERROR:"), "Expected CONNECT_ERROR reason");
 }
 
-function withEnv<T>(envPatch: Record<string, string | undefined>, run: () => T): T {
-  const originalValues = new Map<string, string | undefined>();
-  for (const [key, value] of Object.entries(envPatch)) {
-    originalValues.set(key, process.env[key]);
-    if (typeof value === "undefined") {
-      delete process.env[key];
-    } else {
-      process.env[key] = value;
-    }
-  }
-
-  try {
-    return run();
-  } finally {
-    for (const [key, value] of originalValues.entries()) {
-      if (typeof value === "undefined") {
-        delete process.env[key];
-      } else {
-        process.env[key] = value;
-      }
-    }
-  }
-}
-
 async function testApnsEnvValidationHelpers() {
   const explicitMissing = getMissingApnsEnvVars({
     APNS_KEY_ID: "ABC123DEFG",
@@ -272,7 +249,7 @@ async function testApnsEnvValidationHelpers() {
   } as NodeJS.ProcessEnv);
   assertEq(explicitMissing.join(","), "APNS_PRIVATE_KEY");
 
-  withEnv(
+  withPatchedEnv(
     {
       APNS_KEY_ID: undefined,
       APNS_TEAM_ID: undefined,
@@ -289,7 +266,7 @@ async function testApnsEnvValidationHelpers() {
     }
   );
 
-  withEnv(
+  withPatchedEnv(
     {
       APNS_KEY_ID: "ABC123DEFG",
       APNS_TEAM_ID: "TEAM123ABC",
@@ -316,7 +293,7 @@ async function testApnsEnvValidationHelpers() {
     }
   );
 
-  withEnv(
+  withPatchedEnv(
     {
       APNS_KEY_ID: "ABC123DEFG",
       APNS_TEAM_ID: "TEAM123ABC",

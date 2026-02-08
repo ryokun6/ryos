@@ -10,34 +10,11 @@ import {
   printSummary,
   runTest,
   section,
+  withPatchedEnv,
 } from "./test-utils";
 
-function withEnv<T>(envPatch: Record<string, string | undefined>, run: () => T): T {
-  const originalValues = new Map<string, string | undefined>();
-  for (const [key, value] of Object.entries(envPatch)) {
-    originalValues.set(key, process.env[key]);
-    if (typeof value === "undefined") {
-      delete process.env[key];
-    } else {
-      process.env[key] = value;
-    }
-  }
-
-  try {
-    return run();
-  } finally {
-    for (const [key, value] of originalValues.entries()) {
-      if (typeof value === "undefined") {
-        delete process.env[key];
-      } else {
-        process.env[key] = value;
-      }
-    }
-  }
-}
-
 async function testMissingRedisEnvVars() {
-  withEnv(
+  withPatchedEnv(
     {
       REDIS_KV_REST_API_URL: undefined,
       REDIS_KV_REST_API_TOKEN: undefined,
@@ -51,7 +28,7 @@ async function testMissingRedisEnvVars() {
 }
 
 async function testWhitespaceRedisEnvVarsTreatedMissing() {
-  withEnv(
+  withPatchedEnv(
     {
       REDIS_KV_REST_API_URL: "   ",
       REDIS_KV_REST_API_TOKEN: "\n",
@@ -65,7 +42,7 @@ async function testWhitespaceRedisEnvVarsTreatedMissing() {
 }
 
 async function testNoMissingRedisEnvVars() {
-  withEnv(
+  withPatchedEnv(
     {
       REDIS_KV_REST_API_URL: "https://example.upstash.io",
       REDIS_KV_REST_API_TOKEN: "token-value",
@@ -85,7 +62,7 @@ async function testMissingRedisEnvVarsFromExplicitEnvObject() {
 }
 
 async function testCreatePushRedisThrowsWithoutEnv() {
-  withEnv(
+  withPatchedEnv(
     {
       REDIS_KV_REST_API_URL: undefined,
       REDIS_KV_REST_API_TOKEN: undefined,
@@ -108,7 +85,7 @@ async function testCreatePushRedisThrowsWithoutEnv() {
 }
 
 async function testCreatePushRedisSucceedsWithEnv() {
-  withEnv(
+  withPatchedEnv(
     {
       REDIS_KV_REST_API_URL: "https://example.upstash.io",
       REDIS_KV_REST_API_TOKEN: "token-value",

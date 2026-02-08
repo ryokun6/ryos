@@ -215,3 +215,33 @@ export async function fetchWithAuth(
   headers.set("X-Username", username);
   return fetch(url, { ...options, headers });
 }
+
+/**
+ * Temporarily patch process.env for the duration of callback.
+ */
+export function withPatchedEnv<T>(
+  envPatch: Record<string, string | undefined>,
+  run: () => T
+): T {
+  const originalValues = new Map<string, string | undefined>();
+  for (const [key, value] of Object.entries(envPatch)) {
+    originalValues.set(key, process.env[key]);
+    if (typeof value === "undefined") {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
+
+  try {
+    return run();
+  } finally {
+    for (const [key, value] of originalValues.entries()) {
+      if (typeof value === "undefined") {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  }
+}

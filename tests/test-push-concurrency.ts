@@ -17,6 +17,7 @@ import {
   printSummary,
   runTest,
   section,
+  withPatchedEnv,
 } from "./test-utils";
 
 async function testPreservesResultOrder() {
@@ -108,32 +109,8 @@ async function testInvalidFallbackBoundsThrows() {
   assertEq(errorMessage, "Fallback concurrency must be within bounds");
 }
 
-function withEnv<T>(envPatch: Record<string, string | undefined>, run: () => T): T {
-  const originalValues = new Map<string, string | undefined>();
-  for (const [key, value] of Object.entries(envPatch)) {
-    originalValues.set(key, process.env[key]);
-    if (typeof value === "undefined") {
-      delete process.env[key];
-    } else {
-      process.env[key] = value;
-    }
-  }
-
-  try {
-    return run();
-  } finally {
-    for (const [key, value] of originalValues.entries()) {
-      if (typeof value === "undefined") {
-        delete process.env[key];
-      } else {
-        process.env[key] = value;
-      }
-    }
-  }
-}
-
 async function testConcurrencyConfigAccessors() {
-  withEnv(
+  withPatchedEnv(
     {
       APNS_SEND_CONCURRENCY: "7",
       PUSH_METADATA_LOOKUP_CONCURRENCY: "12",
@@ -144,7 +121,7 @@ async function testConcurrencyConfigAccessors() {
     }
   );
 
-  withEnv(
+  withPatchedEnv(
     {
       APNS_SEND_CONCURRENCY: "200",
       PUSH_METADATA_LOOKUP_CONCURRENCY: "0",
