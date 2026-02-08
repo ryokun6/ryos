@@ -61,7 +61,8 @@
     "test:push:helpers": "bun run test:push-env && bun run test:push-shared && bun run test:push-redis && bun run test:push-set-ops",
     "test:push:aggregate": "bun run tests/run-all-tests.ts push-",
     "test:push": "bun run test:push-env && bun run test:push-shared && bun run test:push-redis && bun run test:push-request-payloads && bun run test:push-ownership && bun run test:push-set-ops && bun run test:push-payload && bun run test:push-concurrency && bun run test:push-errors && bun run test:push-results && bun run test:push-apns",
-    "check:push": "bun run lint:push && bun run test:push && bun run build"
+    "check:push": "bun run lint:push && bun run test:push && bun run build",
+    "check:push:aggregate": "bun run lint:push && bun run test:push:aggregate && bun run build"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.23",
