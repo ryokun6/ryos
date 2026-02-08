@@ -83,6 +83,15 @@ export async function runChatNotificationLogicTests(): Promise<{
     assert(result === false, "Expected false for missing message room id");
   });
 
+  await runTest("does not notify for empty message room id", async () => {
+    const result = shouldNotifyForRoomMessage({
+      chatsOpen: true,
+      currentRoomId: "room-f",
+      messageRoomId: "",
+    });
+    assert(result === false, "Expected false for empty message room id");
+  });
+
   return printSummary();
 }
 
