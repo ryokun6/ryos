@@ -469,6 +469,23 @@ async function testHandlePreflightIgnoresRequestedHeaderTokenWhenNameTooLong() {
   });
 }
 
+async function testHandlePreflightKeepsValidRequestedHeaderTokenWhenPeerNameTooLong() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": [
+      `${"X".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH + 1)}, X-Valid`,
+    ],
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-Valid");
+  });
+}
+
 async function testHandlePreflightIgnoresRequestedHeaderValueWhenTooLong() {
   const validSizedToken = "A".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH);
   const oversizedRequestedHeaderValue = Array.from(
@@ -835,6 +852,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper ignores requested-header tokens whose names are too long",
     testHandlePreflightIgnoresRequestedHeaderTokenWhenNameTooLong
+  );
+  await runTest(
+    "CORS preflight helper keeps valid requested-header tokens when peer names are too long",
+    testHandlePreflightKeepsValidRequestedHeaderTokenWhenPeerNameTooLong
   );
   await runTest(
     "CORS preflight helper accepts requested-header token names at length limit",
