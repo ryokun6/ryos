@@ -1096,7 +1096,6 @@ export function useInternetExplorerLogic({
       stopGeneration,
       loadSuccess,
       clearErrorDetails,
-      clearNavigationWatchdog,
       handleNavigationError,
       setPrefetchedTitle,
       setUrl,
