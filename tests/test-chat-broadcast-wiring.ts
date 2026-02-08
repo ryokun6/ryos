@@ -88,6 +88,11 @@ export async function runChatBroadcastWiringTests(): Promise<{
     );
   });
 
+  await runTest("leave route clears room presence for deleted private room", async () => {
+    const source = readRoute("_api/rooms/[id]/leave.ts");
+    assertHasCall(source, "deleteRoomPresence", "leave route private deletion cleanup");
+  });
+
   return printSummary();
 }
 
