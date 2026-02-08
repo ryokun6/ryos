@@ -52,6 +52,14 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
     );
   });
 
+  await runTest("readJsonBody accepts json media type variants", async () => {
+    const source = readStoreSource();
+    assert(
+      /contentType\.includes\("json"\)/.test(source),
+      'Expected readJsonBody to gate on contentType.includes("json")'
+    );
+  });
+
   await runTest("dedupes guard warnings with endpoint-specific keys", async () => {
     const source = readStoreSource();
 

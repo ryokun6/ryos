@@ -102,7 +102,7 @@ const readJsonBody = async <T>(
   context: string
 ): Promise<{ ok: true; data: T } | { ok: false; error: string }> => {
   const contentType = response.headers.get("content-type")?.toLowerCase() || "";
-  if (!contentType.includes("application/json")) {
+  if (!contentType.includes("json")) {
     return {
       ok: false,
       error: `${context}: expected JSON but got ${contentType || "unknown content-type"}`,
