@@ -37,15 +37,10 @@ import {
   mergeServerMessagesWithOptimistic,
   sortAndCapRoomMessages,
 } from "./chatsRoomMessages";
-
-// API Response Types
-interface ApiMessage {
-  id: string;
-  roomId: string;
-  username: string;
-  content: string;
-  timestamp: string | number;
-}
+import {
+  type ApiChatMessagePayload as ApiMessage,
+  normalizeApiMessages,
+} from "./chatsMessageNormalization";
 
 interface CreateRoomPayload {
   type: "public" | "private";
@@ -927,19 +922,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             const data = messagesData.data;
             if (data.messages) {
               clearApiUnavailable("room-messages");
-              const fetchedMessages: ChatMessage[] = (data.messages || [])
-                .map((msg: ApiMessage) => ({
-                  ...msg,
-                  content: decodeHtmlEntities(String(msg.content || "")),
-                  timestamp:
-                    typeof msg.timestamp === "string" ||
-                    typeof msg.timestamp === "number"
-                      ? new Date(msg.timestamp).getTime()
-                      : msg.timestamp,
-                }))
-                .sort(
-                  (a: ChatMessage, b: ChatMessage) => a.timestamp - b.timestamp
-                );
+              const fetchedMessages = normalizeApiMessages(data.messages || []);
 
               // Merge with any existing messages to avoid race conditions with realtime pushes
               set((state) => {
@@ -1029,17 +1012,9 @@ export const useChatsStore = create<ChatsStoreState>()(
 
                 Object.entries(messagesMap).forEach(
                   ([roomId, messages]) => {
-                    const processed: ChatMessage[] = (messages as ApiMessage[])
-                      .map((msg) => ({
-                        ...msg,
-                        content: decodeHtmlEntities(String(msg.content || "")),
-                        timestamp:
-                          typeof msg.timestamp === "string" ||
-                          typeof msg.timestamp === "number"
-                            ? new Date(msg.timestamp).getTime()
-                            : msg.timestamp,
-                      }))
-                      .sort((a, b) => a.timestamp - b.timestamp);
+                    const processed = normalizeApiMessages(
+                      messages as ApiMessage[]
+                    );
 
                     const existing = nextRoomMessages[roomId] || [];
                     nextRoomMessages[roomId] = mergeServerMessagesWithOptimistic(
