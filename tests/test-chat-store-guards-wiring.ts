@@ -22,6 +22,8 @@ import {
 
 const readStoreSource = (): string =>
   readFileSync(resolve(process.cwd(), "src/stores/useChatsStore.ts"), "utf-8");
+const readGuardsSource = (): string =>
+  readFileSync(resolve(process.cwd(), "src/stores/chatsStoreApiGuards.ts"), "utf-8");
 
 const countMatches = (source: string, pattern: RegExp): number =>
   source.match(new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`))
@@ -53,7 +55,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
   });
 
   await runTest("readJsonBody accepts json media type variants", async () => {
-    const source = readStoreSource();
+    const source = readGuardsSource();
     assert(
       /contentType\.includes\("json"\)/.test(source),
       'Expected readJsonBody to gate on contentType.includes("json")'
@@ -103,9 +105,11 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
   });
 
   await runTest("uses a positive cooldown duration constant", async () => {
-    const source = readStoreSource();
-    const match = source.match(/API_UNAVAILABLE_COOLDOWN_MS\s*=\s*([0-9_]+)/);
-    assert(match?.[1], "Expected API_UNAVAILABLE_COOLDOWN_MS declaration");
+    const source = readGuardsSource();
+    const match = source.match(
+      /CHAT_API_UNAVAILABLE_COOLDOWN_MS\s*=\s*([0-9_]+)/
+    );
+    assert(match?.[1], "Expected CHAT_API_UNAVAILABLE_COOLDOWN_MS declaration");
     const parsedMs = Number((match?.[1] || "").replaceAll("_", ""));
     assert(parsedMs > 0, "Expected positive API_UNAVAILABLE_COOLDOWN_MS");
   });

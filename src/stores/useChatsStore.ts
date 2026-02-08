@@ -11,6 +11,13 @@ import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/html";
+import {
+  clearApiUnavailable,
+  isApiTemporarilyUnavailable,
+  markApiTemporarilyUnavailable,
+  readJsonBody,
+  warnChatsStoreOnce,
+} from "./chatsStoreApiGuards";
 
 // Recovery mechanism - uses different prefix to avoid reset
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -86,48 +93,6 @@ const getAuthTokenFromRecovery = (): string | null => {
     return decode(encoded);
   }
   return null;
-};
-
-const readJsonBody = async <T>(
-  response: Response,
-  context: string
-): Promise<{ ok: true; data: T } | { ok: false; error: string }> => {
-  const contentType = response.headers.get("content-type")?.toLowerCase() || "";
-  if (!contentType.includes("json")) {
-    return {
-      ok: false,
-      error: `${context}: expected JSON but got ${contentType || "unknown content-type"}`,
-    };
-  }
-
-  try {
-    return { ok: true, data: (await response.json()) as T };
-  } catch {
-    return { ok: false, error: `${context}: invalid JSON response body` };
-  }
-};
-
-const warnedStoreIssues = new Set<string>();
-const warnChatsStoreOnce = (key: string, message: string): void => {
-  if (warnedStoreIssues.has(key)) {
-    return;
-  }
-  warnedStoreIssues.add(key);
-  console.warn(message);
-};
-
-const API_UNAVAILABLE_COOLDOWN_MS = 10_000;
-const apiUnavailableUntil: Record<string, number> = {};
-
-const isApiTemporarilyUnavailable = (key: string): boolean =>
-  Date.now() < (apiUnavailableUntil[key] || 0);
-
-const markApiTemporarilyUnavailable = (key: string): void => {
-  apiUnavailableUntil[key] = Date.now() + API_UNAVAILABLE_COOLDOWN_MS;
-};
-
-const clearApiUnavailable = (key: string): void => {
-  delete apiUnavailableUntil[key];
 };
 
 // Save token refresh time
