@@ -37,6 +37,7 @@ import {
   mergeServerMessagesWithOptimistic,
   sortAndCapRoomMessages,
 } from "./chatsRoomMessages";
+import { mergeIncomingRoomMessage } from "./chatsIncomingMessage";
 import {
   type ApiChatMessagePayload as ApiMessage,
   normalizeApiMessages,
@@ -408,117 +409,17 @@ export const useChatsStore = create<ChatsStoreState>()(
               ...(message as ChatMessage),
               content: incomingContent,
             };
-
-            // If this exact server message already exists, skip
-            if (existingMessages.some((m) => m.id === incoming.id)) {
+            const mergedMessages = mergeIncomingRoomMessage(
+              existingMessages,
+              incoming
+            );
+            if (!mergedMessages) {
               return {};
             }
-
-            // Prefer replacing by clientId when provided by the server
-            const incomingClientId = (incoming as Partial<ChatMessage>)
-              .clientId as string | undefined;
-            if (incomingClientId) {
-              const idxByClientId = existingMessages.findIndex(
-                (m) =>
-                  m.id === incomingClientId || m.clientId === incomingClientId
-              );
-              if (idxByClientId !== -1) {
-                const tempMsg = existingMessages[idxByClientId];
-                const replaced = {
-                  ...incoming,
-                  clientId: tempMsg.clientId || tempMsg.id,
-                } as ChatMessage;
-                const updated = [...existingMessages];
-                updated[idxByClientId] = replaced;
-                return {
-                  roomMessages: {
-                    ...state.roomMessages,
-                    [roomId]: sortAndCapRoomMessages(updated),
-                  },
-                };
-              }
-            }
-
-            // Fallback: replace a temp message by matching username + content (decoded)
-            const tempIndex = existingMessages.findIndex(
-              (m) =>
-                m.id.startsWith("temp_") &&
-                m.username === incoming.username &&
-                m.content === incoming.content
-            );
-
-            if (tempIndex !== -1) {
-              const tempMsg = existingMessages[tempIndex];
-              const replaced = {
-                ...incoming,
-                clientId: tempMsg.clientId || tempMsg.id, // preserve stable client key
-              } as ChatMessage;
-              const updated = [...existingMessages];
-              updated[tempIndex] = replaced; // replace in place to minimise list churn
-              return {
-                roomMessages: {
-                  ...state.roomMessages,
-                  [roomId]: sortAndCapRoomMessages(updated),
-                },
-              };
-            }
-
-            // Second fallback: replace the most recent temp message from same user within time window
-            // This handles cases where server sanitizes content (e.g., profanity filter) so content differs
-            const WINDOW_MS = 5000; // 5s safety window
-            const incomingTs = Number(
-              (incoming as unknown as { timestamp: number }).timestamp
-            );
-            const candidateIndexes: number[] = [];
-            existingMessages.forEach((m, idx) => {
-              if (
-                m.id.startsWith("temp_") &&
-                m.username === incoming.username
-              ) {
-                const dt = Math.abs(Number(m.timestamp) - incomingTs);
-                if (Number.isFinite(dt) && dt <= WINDOW_MS)
-                  candidateIndexes.push(idx);
-              }
-            });
-            if (candidateIndexes.length > 0) {
-              // Choose the closest in time
-              let bestIdx = candidateIndexes[0];
-              let bestDt = Math.abs(
-                Number(existingMessages[bestIdx].timestamp) - incomingTs
-              );
-              for (let i = 1; i < candidateIndexes.length; i++) {
-                const idx = candidateIndexes[i];
-                const dt = Math.abs(
-                  Number(existingMessages[idx].timestamp) - incomingTs
-                );
-                if (dt < bestDt) {
-                  bestIdx = idx;
-                  bestDt = dt;
-                }
-              }
-              const tempMsg = existingMessages[bestIdx];
-              const replaced = {
-                ...incoming,
-                clientId: tempMsg.clientId || tempMsg.id,
-              } as ChatMessage;
-              const updated = [...existingMessages];
-              updated[bestIdx] = replaced;
-              return {
-                roomMessages: {
-                  ...state.roomMessages,
-                  [roomId]: sortAndCapRoomMessages(updated),
-                },
-              };
-            }
-
-            // No optimistic message to replace – append normally
             return {
               roomMessages: {
                 ...state.roomMessages,
-                [roomId]: sortAndCapRoomMessages([
-                  ...existingMessages,
-                  incoming,
-                ]),
+                [roomId]: mergedMessages,
               },
             };
           });
