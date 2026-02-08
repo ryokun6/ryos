@@ -31,6 +31,7 @@ import { runPushConcurrencyTests } from "./test-push-concurrency";
 import { runPushErrorsTests } from "./test-push-errors";
 import { runPushAuthOrderTests } from "./test-push-auth-order";
 import { runPushResultsTests } from "./test-push-results";
+import { runPushApnsGuardTests } from "./test-push-apns-guard";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -119,6 +120,7 @@ async function runAllTests(): Promise<void> {
     { name: "push-errors", run: runPushErrorsTests },
     { name: "push-auth-order", run: runPushAuthOrderTests },
     { name: "push-results", run: runPushResultsTests },
+    { name: "push-apns-guard", run: runPushApnsGuardTests },
     { name: "push-apns", run: runPushApnsTests },
   ];
 

@@ -1,10 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { initLogger } from "../_utils/_logging.js";
-import {
-  getApnsConfigFromEnv,
-  getMissingApnsEnvVars,
-  sendApnsAlert,
-} from "../_utils/_push-apns.js";
+import { sendApnsAlert } from "../_utils/_push-apns.js";
+import { getApnsConfigOrRespond } from "./_apns-guard.js";
 import {
   extractPushAuthCredentialsOrRespond,
   validatePushAuthOrRespond,
@@ -16,7 +13,6 @@ import {
 } from "./_config.js";
 import {
   respondInternalServerError,
-  respondMissingEnvConfig,
 } from "./_errors.js";
 import { getTokenOwnershipEntries, splitTokenOwnership } from "./_ownership.js";
 import { normalizePushTestPayload } from "./_payload.js";
@@ -95,17 +91,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const tokenMetadataLookupConcurrency = getPushMetadataLookupConcurrency();
     const apnsSendConcurrency = getApnsSendConcurrency();
 
-    const apnsConfig = getApnsConfigFromEnv();
-    if (!apnsConfig) {
-      const missingEnvVars = getMissingApnsEnvVars();
-      return respondMissingEnvConfig(
-        res,
-        logger,
-        startTime,
-        "APNs",
-        missingEnvVars
-      );
-    }
+    const apnsConfig = getApnsConfigOrRespond(res, logger, startTime);
+    if (!apnsConfig) return;
 
     const normalizedPayload = normalizePushTestPayload(req.body);
     if (!normalizedPayload.ok) {
