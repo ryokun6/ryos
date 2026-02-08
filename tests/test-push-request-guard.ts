@@ -244,6 +244,36 @@ async function testAllowedOptionsPreflightNormalizesRequestedHeadersList() {
   });
 }
 
+async function testAllowedOptionsPreflightFallsBackToDefaultsForEmptyRequestedHeaders() {
+  await withDevelopmentEnv(async () => {
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-headers": " ,  ,   ",
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Headers"),
+      "Content-Type, Authorization, X-Username"
+    );
+  });
+}
+
 async function testAllowedOptionsPreflightUsesFirstRequestedHeaderValue() {
   await withDevelopmentEnv(async () => {
     const req = createRequestWithHeaders(
@@ -962,6 +992,10 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard normalizes requested preflight header list",
     testAllowedOptionsPreflightNormalizesRequestedHeadersList
+  );
+  await runTest(
+    "Push request guard falls back for empty requested preflight headers",
+    testAllowedOptionsPreflightFallsBackToDefaultsForEmptyRequestedHeaders
   );
   await runTest(
     "Push request guard uses first requested-header value from arrays",
