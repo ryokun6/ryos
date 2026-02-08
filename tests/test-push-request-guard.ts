@@ -526,9 +526,44 @@ async function testDisallowedOptionsPreflightRejected() {
     );
     assertEq(mockRes.getEndCallCount(), 0);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), undefined);
     assertEq(mockRes.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
     assertEq(mockLogger.responseCalls.length, 1);
     assertEq(mockLogger.responseCalls[0].statusCode, 403);
+  });
+}
+
+async function testDisallowedOptionsPreflightWithRequestedHeadersRejectedWithoutEcho() {
+  await withDevelopmentEnv(async () => {
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "https://evil.example",
+        "access-control-request-headers": "x-evil-header, authorization",
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 403);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Unauthorized" })
+    );
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), undefined);
+    assertEq(mockRes.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
+    assertEq(mockRes.getEndCallCount(), 0);
   });
 }
 
@@ -1246,6 +1281,10 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard rejects disallowed preflight",
     testDisallowedOptionsPreflightRejected
+  );
+  await runTest(
+    "Push request guard rejects disallowed preflight without echoing requested headers",
+    testDisallowedOptionsPreflightWithRequestedHeadersRejectedWithoutEcho
   );
   await runTest(
     "Push request guard sets Allow header for unsupported methods",
