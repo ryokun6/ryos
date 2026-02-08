@@ -10,11 +10,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs } from "@/components/ui/tabs";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
-import { getTabStyles } from "@/utils/tabStyles";
 import { useTranslation } from "react-i18next";
+import {
+  ThemedTabsList,
+  ThemedTabsTrigger,
+  ThemedTabsContent,
+} from "@/components/shared/ThemedTabs";
 
 interface LoginDialogProps {
   /* Common */
@@ -66,7 +70,6 @@ export function LoginDialog({
   const [activeTab, setActiveTab] = useState<"login" | "signup">(initialTab);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const tabStyles = getTabStyles(currentTheme);
   const { t } = useTranslation();
   const dialogTitle = t("common.auth.dialogTitle");
 
@@ -91,22 +94,23 @@ export function LoginDialog({
     }
   };
 
+  const themeFont = isXpTheme
+    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+    : "font-geneva-12 text-[12px]";
+
+  const themeFontStyle: React.CSSProperties | undefined = isXpTheme
+    ? {
+        fontFamily: '"Pixelated MS Sans Serif", "ArkPixel", Arial',
+        fontSize: "11px",
+      }
+    : undefined;
+
   const renderLoginForm = () => (
     <div className="space-y-3">
       <div className="space-y-2">
         <Label
-          className={cn(
-            "text-gray-700",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
+          className={cn("text-gray-700", themeFont)}
+          style={themeFontStyle}
         >
           {t("common.auth.username")}
         </Label>
@@ -114,35 +118,15 @@ export function LoginDialog({
           autoFocus={activeTab === "login"}
           value={usernameInput}
           onChange={(e) => onUsernameInputChange(e.target.value)}
-          className={cn(
-            "shadow-none h-8",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
+          className={cn("shadow-none h-8", themeFont)}
+          style={themeFontStyle}
           disabled={isLoginLoading}
         />
       </div>
       <div className="space-y-2">
         <Label
-          className={cn(
-            "text-gray-700",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
+          className={cn("text-gray-700", themeFont)}
+          style={themeFontStyle}
         >
           {t("common.auth.password")}
         </Label>
@@ -150,18 +134,8 @@ export function LoginDialog({
           type="password"
           value={passwordInput}
           onChange={(e) => onPasswordInputChange(e.target.value)}
-          className={cn(
-            "shadow-none h-8",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
+          className={cn("shadow-none h-8", themeFont)}
+          style={themeFontStyle}
           disabled={isLoginLoading}
         />
       </div>
@@ -172,18 +146,8 @@ export function LoginDialog({
     <div className="space-y-3">
       <div className="space-y-2">
         <Label
-          className={cn(
-            "text-gray-700",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
+          className={cn("text-gray-700", themeFont)}
+          style={themeFontStyle}
         >
           {t("common.auth.username")}
         </Label>
@@ -191,35 +155,15 @@ export function LoginDialog({
           autoFocus={activeTab === "signup"}
           value={newUsername}
           onChange={(e) => onNewUsernameChange(e.target.value)}
-          className={cn(
-            "shadow-none h-8",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
+          className={cn("shadow-none h-8", themeFont)}
+          style={themeFontStyle}
           disabled={isSignUpLoading}
         />
       </div>
       <div className="space-y-2">
         <Label
-          className={cn(
-            "text-gray-700",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
+          className={cn("text-gray-700", themeFont)}
+          style={themeFontStyle}
         >
           {t("common.auth.password")}
         </Label>
@@ -227,18 +171,8 @@ export function LoginDialog({
           type="password"
           value={newPassword}
           onChange={(e) => onNewPasswordChange(e.target.value)}
-          className={cn(
-            "shadow-none h-8",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-              ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
+          className={cn("shadow-none h-8", themeFont)}
+          style={themeFontStyle}
           disabled={isSignUpLoading}
         />
       </div>
@@ -291,111 +225,30 @@ export function LoginDialog({
           onValueChange={(v) => setActiveTab(v as "login" | "signup")}
           className="w-full"
         >
-          {isXpTheme ? (
-            <TabsList asChild>
-              <menu
-                role="tablist"
-                className="h-7! flex justify-start! p-0 -mt-1 -mb-[2px] bg-transparent shadow-none grid grid-cols-2 w-full"
-              >
-                <TabsTrigger
-                  value="signup"
-                  className={cn(
-                    "relative px-4 py-1.5 rounded-none bg-white data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:z-10 data-[state=inactive]:border-r-0",
-                    "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                  )}
-                  style={{
-                    fontFamily: '"Pixelated MS Sans Serif", "ArkPixel", Arial',
-                    fontSize: "11px",
-                  }}
-                >
-                  {t("common.auth.createAccount")}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="login"
-                  className={cn(
-                    "relative px-4 py-1.5 rounded-none bg-white data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:z-10",
-                    "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                  )}
-                  style={{
-                    fontFamily: '"Pixelated MS Sans Serif", "ArkPixel", Arial',
-                    fontSize: "11px",
-                  }}
-                >
-                  {t("common.auth.logIn")}
-                </TabsTrigger>
-              </menu>
-            </TabsList>
-          ) : (
-            <TabsList
-              className={cn(
-                tabStyles.tabListClasses,
-                "grid grid-cols-2 w-full"
-              )}
-            >
-              <TabsTrigger
-                value="signup"
-                className={cn(
-                  tabStyles.tabTriggerClasses,
-                  "px-4 py-1.5",
-                  isXpTheme
-                    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                    : "font-geneva-12 text-[12px]"
-                )}
-                style={{
-                  fontFamily: isXpTheme
-                    ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                    : undefined,
-                  fontSize: isXpTheme ? "11px" : undefined,
-                }}
-              >
-                {t("common.auth.createAccount")}
-              </TabsTrigger>
-              <TabsTrigger
-                value="login"
-                className={cn(
-                  tabStyles.tabTriggerClasses,
-                  "px-4 py-1.5",
-                  isXpTheme
-                    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                    : "font-geneva-12 text-[12px]"
-                )}
-                style={{
-                  fontFamily: isXpTheme
-                    ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                    : undefined,
-                  fontSize: isXpTheme ? "11px" : undefined,
-                }}
-              >
-                {t("common.auth.logIn")}
-              </TabsTrigger>
-            </TabsList>
-          )}
+          <ThemedTabsList className="grid grid-cols-2 w-full">
+            <ThemedTabsTrigger value="signup">
+              {t("common.auth.createAccount")}
+            </ThemedTabsTrigger>
+            <ThemedTabsTrigger value="login">
+              {t("common.auth.logIn")}
+            </ThemedTabsTrigger>
+          </ThemedTabsList>
 
           {/* Sign Up */}
-          <TabsContent value="signup" className={tabStyles.tabContentClasses}>
+          <ThemedTabsContent value="signup">
             <div className="p-4">{renderSignUpForm()}</div>
-          </TabsContent>
+          </ThemedTabsContent>
 
           {/* Login */}
-          <TabsContent value="login" className={tabStyles.tabContentClasses}>
+          <ThemedTabsContent value="login">
             <div className="p-4">{renderLoginForm()}</div>
-          </TabsContent>
+          </ThemedTabsContent>
         </Tabs>
 
         {activeError && (
           <p
-            className={cn(
-              "text-red-600 mt-3",
-              isXpTheme
-                ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                : "font-geneva-12 text-[12px]"
-            )}
-            style={{
-              fontFamily: isXpTheme
-                ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                : undefined,
-              fontSize: isXpTheme ? "11px" : undefined,
-            }}
+            className={cn("text-red-600 mt-3", themeFont)}
+            style={themeFontStyle}
           >
             {activeError}
           </p>
@@ -411,18 +264,8 @@ export function LoginDialog({
                 ? !usernameInput.trim() || !passwordInput.trim()
                 : !newUsername.trim())
             }
-            className={cn(
-              "w-full sm:w-auto h-7",
-              isXpTheme
-                ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                : "font-geneva-12 text-[12px]"
-            )}
-            style={{
-              fontFamily: isXpTheme
-                ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                : undefined,
-              fontSize: isXpTheme ? "11px" : undefined,
-            }}
+            className={cn("w-full sm:w-auto h-7", themeFont)}
+            style={themeFontStyle}
           >
             {isActionLoading
               ? activeTab === "login"

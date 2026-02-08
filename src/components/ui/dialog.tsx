@@ -66,6 +66,7 @@ const DialogContent = React.forwardRef<
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacOsxTheme = currentTheme === "macosx";
+  const isSystem7Theme = currentTheme === "system7";
 
   // Function to clean up pointer-events
   const cleanupPointerEvents = React.useCallback(() => {
@@ -125,6 +126,8 @@ const DialogContent = React.forwardRef<
                   backgroundColor: "var(--os-color-window-bg)",
                   backgroundImage: "var(--os-pinstripe-window)",
                 }
+              : isSystem7Theme
+              ? { backgroundColor: "#E3E3E3" }
               : undefined
           }
         >

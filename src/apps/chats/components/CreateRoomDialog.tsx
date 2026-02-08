@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
@@ -20,6 +20,11 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  ThemedTabsList,
+  ThemedTabsTrigger,
+  ThemedTabsContent,
+} from "@/components/shared/ThemedTabs";
 
 interface CreateRoomDialogProps {
   isOpen: boolean;
@@ -147,249 +152,180 @@ export function CreateRoomDialog({
     );
   };
 
+  const themeFont = isXpTheme
+    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+    : "font-geneva-12 text-[12px]";
+
+  const themeFontStyle: React.CSSProperties | undefined = isXpTheme
+    ? {
+        fontFamily: '"Pixelated MS Sans Serif", "ArkPixel", Arial',
+        fontSize: "11px",
+      }
+    : undefined;
+
   const dialogContent = (
-    <div className={isXpTheme ? "pt-2 pb-6 px-4" : "pt-2 pb-6 px-6"}>
+    <div className={isXpTheme ? "pt-2 pb-6 px-4" : "pt-3 pb-6 px-6"}>
       <Tabs
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as "public" | "private")}
+        className="w-full"
       >
-        {isAdmin &&
-          (isXpTheme ? (
-            <TabsList asChild>
-              <menu
-                role="tablist"
-                className="h-7! flex justify-start p-0 -mt-1 -mb-[2px] bg-transparent shadow-none /* Windows XP/98 tab strip */"
-              >
-                <TabsTrigger value="private">{t("apps.chats.sidebar.private")}</TabsTrigger>
-                <TabsTrigger value="public">{t("apps.chats.dialogs.public")}</TabsTrigger>
-              </menu>
-            </TabsList>
-          ) : (
-            <TabsList className="grid grid-cols-2 w-full h-fit mb-4 bg-transparent p-0.5 border border-black">
-              <TabsTrigger
-                value="private"
-                className="relative px-4 py-1.5 rounded-none bg-white data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:z-10 data-[state=inactive]:border-r-0 font-geneva-12 text-[12px]"
-              >
-                {t("apps.chats.sidebar.private")}
-              </TabsTrigger>
-              <TabsTrigger
-                value="public"
-                className="relative px-4 py-1.5 rounded-none bg-white data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:z-10 font-geneva-12 text-[12px]"
-              >
-                {t("apps.chats.dialogs.public")}
-              </TabsTrigger>
-            </TabsList>
-          ))}
-
         {isAdmin && (
-          <TabsContent
-            value="public"
-            className={cn(
-              "mt-0",
-              isXpTheme ? "bg-white border border-[#919b9c] p-4" : ""
-            )}
-          >
-            <div className="space-y-2">
-              <Label
-                htmlFor="room-name"
-                className={cn(
-                  "text-gray-700",
-                  isXpTheme
-                    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                    : "font-geneva-12 text-[12px]"
-                )}
-                style={{
-                  fontFamily: isXpTheme
-                    ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                    : undefined,
-                  fontSize: isXpTheme ? "11px" : undefined,
-                }}
-              >
-                {t("apps.chats.dialogs.roomName")}
-              </Label>
-              <div className="relative">
-                <span
-                  className={cn(
-                    "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none",
-                    isXpTheme
-                      ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                      : "font-geneva-12 text-[12px]"
-                  )}
-                  style={{
-                    fontFamily: isXpTheme
-                      ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                      : undefined,
-                    fontSize: isXpTheme ? "11px" : undefined,
-                  }}
-                >
-                  #
-                </span>
-                <Input
-                  id="room-name"
-                  value={roomName}
-                  onChange={(e) => {
-                    // Remove # if user types it
-                    const value = e.target.value.replace(/^#/, "");
-                    setRoomName(value);
-                  }}
-                  placeholder={t("apps.chats.dialogs.roomNamePlaceholder")}
-                  className={cn(
-                    "shadow-none h-8 pl-6",
-                    isXpTheme
-                      ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                      : "font-geneva-12 text-[12px]"
-                  )}
-                  style={{
-                    fontFamily: isXpTheme
-                      ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                      : undefined,
-                    fontSize: isXpTheme ? "11px" : undefined,
-                  }}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-          </TabsContent>
+          <ThemedTabsList className="grid grid-cols-2 w-full">
+            <ThemedTabsTrigger value="private">
+              {t("apps.chats.sidebar.private")}
+            </ThemedTabsTrigger>
+            <ThemedTabsTrigger value="public">
+              {t("apps.chats.dialogs.public")}
+            </ThemedTabsTrigger>
+          </ThemedTabsList>
         )}
 
-        <TabsContent
-          value="private"
-          className={cn(
-            "mt-0",
-            isXpTheme ? "bg-white border border-[#919b9c] p-4" : ""
-          )}
-        >
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label
-                htmlFor="search-users"
-                className={cn(
-                  "text-gray-700",
-                  isXpTheme
-                    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                    : "font-geneva-12 text-[12px]"
-                )}
-                style={{
-                  fontFamily: isXpTheme
-                    ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                    : undefined,
-                  fontSize: isXpTheme ? "11px" : undefined,
-                }}
-              >
-                {t("apps.chats.dialogs.addUsersToPrivateChat")}
-              </Label>
-              <div className="relative">
-                <Input
-                  id="search-users"
-                  placeholder={t("apps.chats.dialogs.searchUsernamePlaceholder")}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className={cn(
-                    "shadow-none h-8 pr-8",
-                    isXpTheme
-                      ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                      : "font-geneva-12 text-[12px]"
+        {isAdmin && (
+          <ThemedTabsContent value="public">
+            <div className="p-4">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="room-name"
+                  className={cn("text-gray-700", themeFont)}
+                  style={themeFontStyle}
+                >
+                  {t("apps.chats.dialogs.roomName")}
+                </Label>
+                <div className="relative">
+                  <span
+                    className={cn(
+                      "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none",
+                      themeFont
+                    )}
+                    style={themeFontStyle}
+                  >
+                    #
+                  </span>
+                  <Input
+                    id="room-name"
+                    value={roomName}
+                    onChange={(e) => {
+                      // Remove # if user types it
+                      const value = e.target.value.replace(/^#/, "");
+                      setRoomName(value);
+                    }}
+                    placeholder={t("apps.chats.dialogs.roomNamePlaceholder")}
+                    className={cn("shadow-none h-8 pl-6", themeFont)}
+                    style={themeFontStyle}
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+            </div>
+          </ThemedTabsContent>
+        )}
+
+        <ThemedTabsContent value="private">
+          <div className="p-4">
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="search-users"
+                  className={cn("text-gray-700", themeFont)}
+                  style={themeFontStyle}
+                >
+                  {t("apps.chats.dialogs.addUsersToPrivateChat")}
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="search-users"
+                    placeholder={t(
+                      "apps.chats.dialogs.searchUsernamePlaceholder"
+                    )}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className={cn("shadow-none h-8 pr-8", themeFont)}
+                    style={themeFontStyle}
+                    disabled={isLoading}
+                  />
+                  {isSearching && searchTerm.length >= 2 && (
+                    <ActivityIndicator
+                      size="sm"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                    />
                   )}
-                  style={{
-                    fontFamily: isXpTheme
-                      ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                      : undefined,
-                    fontSize: isXpTheme ? "11px" : undefined,
-                  }}
-                  disabled={isLoading}
-                />
-                {isSearching && searchTerm.length >= 2 && (
-                  <ActivityIndicator size="sm" className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500" />
+                </div>
+
+                {/* Selected users tokens */}
+                {selectedUsers.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {selectedUsers.map((username) => (
+                      <Badge
+                        key={username}
+                        variant="secondary"
+                        className={cn(
+                          "py-0.5 pl-2 pr-1 bg-gray-100 hover:bg-gray-200 border-gray-300",
+                          isXpTheme
+                            ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
+                            : "font-geneva-12 text-[11px]"
+                        )}
+                        style={
+                          isXpTheme
+                            ? {
+                                fontFamily:
+                                  '"Pixelated MS Sans Serif", "ArkPixel", Arial',
+                                fontSize: "10px",
+                              }
+                            : undefined
+                        }
+                      >
+                        @{username}
+                        <button
+                          type="button"
+                          onClick={() => toggleUserSelection(username)}
+                          className="ml-1 hover:bg-gray-300 rounded-sm p-0.5"
+                          disabled={isLoading}
+                        >
+                          <X className="h-3 w-3" weight="bold" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
                 )}
               </div>
 
-              {/* Selected users tokens */}
-              {selectedUsers.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {selectedUsers.map((username) => (
-                    <Badge
-                      key={username}
-                      variant="secondary"
-                      className={cn(
-                        "py-0.5 pl-2 pr-1 bg-gray-100 hover:bg-gray-200 border-gray-300",
-                        isXpTheme
-                          ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[10px]"
-                          : "font-geneva-12 text-[11px]"
-                      )}
-                      style={{
-                        fontFamily: isXpTheme
-                          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                          : undefined,
-                        fontSize: isXpTheme ? "10px" : undefined,
-                      }}
-                    >
-                      @{username}
-                      <button
-                        type="button"
-                        onClick={() => toggleUserSelection(username)}
-                        className="ml-1 hover:bg-gray-300 rounded-sm p-0.5"
-                        disabled={isLoading}
+              {/* Show results */}
+              {!isSearching && searchTerm.length >= 2 && users.length > 0 && (
+                <div className="border border-gray-300 rounded max-h-[180px] overflow-y-auto bg-white">
+                  <div className="p-1">
+                    {users.map((user) => (
+                      <label
+                        key={user.username}
+                        className={cn(
+                          "flex items-center p-2 hover:bg-gray-100 cursor-pointer rounded",
+                          themeFont
+                        )}
+                        style={themeFontStyle}
                       >
-                        <X className="h-3 w-3" weight="bold" />
-                      </button>
-                    </Badge>
-                  ))}
+                        <Checkbox
+                          checked={selectedUsers.includes(user.username)}
+                          onCheckedChange={() =>
+                            toggleUserSelection(user.username)
+                          }
+                          className="h-4 w-4"
+                          disabled={isLoading}
+                        />
+                        <span className="ml-2">@{user.username}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
-
-            {/* Show results */}
-            {!isSearching && searchTerm.length >= 2 && users.length > 0 && (
-              <div className="border border-gray-300 rounded max-h-[180px] overflow-y-auto bg-white">
-                <div className="p-1">
-                  {users.map((user) => (
-                    <label
-                      key={user.username}
-                      className={cn(
-                        "flex items-center p-2 hover:bg-gray-100 cursor-pointer rounded",
-                        isXpTheme
-                          ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                          : "font-geneva-12 text-[12px]"
-                      )}
-                      style={{
-                        fontFamily: isXpTheme
-                          ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-                          : undefined,
-                        fontSize: isXpTheme ? "11px" : undefined,
-                      }}
-                    >
-                      <Checkbox
-                        checked={selectedUsers.includes(user.username)}
-                        onCheckedChange={() =>
-                          toggleUserSelection(user.username)
-                        }
-                        className="h-4 w-4"
-                        disabled={isLoading}
-                      />
-                      <span className="ml-2">@{user.username}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
-        </TabsContent>
+        </ThemedTabsContent>
       </Tabs>
 
       {error && (
         <p
-          className={cn(
-            "text-red-600 mt-3",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-                      ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
+          className={cn("text-red-600 mt-3", themeFont)}
+          style={themeFontStyle}
         >
           {error}
         </p>
@@ -400,18 +336,8 @@ export function CreateRoomDialog({
           variant="retro"
           onClick={() => onOpenChange(false)}
           disabled={isLoading}
-          className={cn(
-            "h-7",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-                      ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
+          className={cn("h-7", themeFont)}
+          style={themeFontStyle}
         >
           {t("apps.chats.dialogs.cancel")}
         </Button>
@@ -423,20 +349,12 @@ export function CreateRoomDialog({
             (activeTab === "public" && !roomName.trim()) ||
             (activeTab === "private" && selectedUsers.length === 0)
           }
-          className={cn(
-            "h-7",
-            isXpTheme
-              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-              : "font-geneva-12 text-[12px]"
-          )}
-          style={{
-            fontFamily: isXpTheme
-                      ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
-              : undefined,
-            fontSize: isXpTheme ? "11px" : undefined,
-          }}
+          className={cn("h-7", themeFont)}
+          style={themeFontStyle}
         >
-          {isLoading ? t("apps.chats.dialogs.creating") : t("apps.chats.dialogs.create")}
+          {isLoading
+            ? t("apps.chats.dialogs.creating")
+            : t("apps.chats.dialogs.create")}
         </Button>
       </DialogFooter>
     </div>
@@ -449,20 +367,20 @@ export function CreateRoomDialog({
           "max-w-[400px]",
           isXpTheme && "p-0 overflow-hidden"
         )}
-        style={
-          isXpTheme
-            ? { fontSize: "11px" }
-            : undefined
-        }
+        style={isXpTheme ? { fontSize: "11px" } : undefined}
       >
         {isXpTheme ? (
           <>
-            <DialogHeader>{t("apps.chats.dialogs.newChatTitle")}</DialogHeader>
+            <DialogHeader>
+              {t("apps.chats.dialogs.newChatTitle")}
+            </DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : currentTheme === "macosx" ? (
           <>
-            <DialogHeader>{t("apps.chats.dialogs.newChatTitle")}</DialogHeader>
+            <DialogHeader>
+              {t("apps.chats.dialogs.newChatTitle")}
+            </DialogHeader>
             {dialogContent}
           </>
         ) : (
