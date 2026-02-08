@@ -314,6 +314,37 @@ async function testAllowedOptionsPreflightRejectsUnsupportedRequestedMethod() {
   });
 }
 
+async function testAllowedOptionsPreflightUnsupportedRequestedMethodDoesNotEchoRequestedHeaders() {
+  await withDevelopmentEnv(async () => {
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-method": "DELETE",
+        "access-control-request-headers": "x-custom-header, authorization",
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 405);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Headers"),
+      "Content-Type, Authorization, X-Username"
+    );
+  });
+}
+
 async function testAllowedOptionsPreflightUsesFirstNonEmptyRequestedMethodArrayValue() {
   await withDevelopmentEnv(async () => {
     const req = createRequestWithHeaders(
@@ -1611,6 +1642,10 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard rejects preflight when requested method is unsupported",
     testAllowedOptionsPreflightRejectsUnsupportedRequestedMethod
+  );
+  await runTest(
+    "Push request guard does not echo requested headers when preflight method is unsupported",
+    testAllowedOptionsPreflightUnsupportedRequestedMethodDoesNotEchoRequestedHeaders
   );
   await runTest(
     "Push request guard uses first non-empty requested-method array value",
