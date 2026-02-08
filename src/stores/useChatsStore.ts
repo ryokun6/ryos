@@ -9,7 +9,10 @@ import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
-import { resolvePushTokenForLogout } from "@/utils/pushLogout";
+import {
+  resolvePushTokenForLogout,
+  unregisterPushTokenForLogout,
+} from "@/utils/pushLogout";
 
 // Recovery mechanism - uses different prefix to avoid reset
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -869,24 +872,11 @@ export const useChatsStore = create<ChatsStoreState>()(
           // Inform server to invalidate current token if we have auth
           if (currentUsername && currentToken) {
             const pushTokenForLogout = await resolvePushTokenForLogout();
-            if (pushTokenForLogout) {
-              try {
-                await fetch(getApiUrl("/api/push/unregister"), {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${currentToken}`,
-                    "X-Username": currentUsername,
-                  },
-                  body: JSON.stringify({ token: pushTokenForLogout }),
-                });
-              } catch (err) {
-                console.warn(
-                  "[ChatsStore] Failed to unregister iOS push token during logout:",
-                  err
-                );
-              }
-            }
+            await unregisterPushTokenForLogout(
+              currentUsername,
+              currentToken,
+              pushTokenForLogout
+            );
 
             try {
               await fetch(getApiUrl("/api/auth/logout"), {

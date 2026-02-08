@@ -1,4 +1,4 @@
-import { isTauriIOS } from "@/utils/platform";
+import { getApiUrl, isTauriIOS } from "@/utils/platform";
 import { getPushToken } from "@/utils/tauriPushNotifications";
 
 const PUSH_TOKEN_FORMAT_REGEX = /^[A-Za-z0-9:_\-.]{20,512}$/;
@@ -12,6 +12,20 @@ interface ResolvePushTokenForLogoutDeps {
 const defaultDeps: ResolvePushTokenForLogoutDeps = {
   isTauriIOSRuntime: isTauriIOS,
   getPushTokenRuntime: getPushToken,
+  warn: (message, error) => {
+    console.warn(message, error);
+  },
+};
+
+interface UnregisterPushTokenForLogoutDeps {
+  fetchRuntime: typeof fetch;
+  getApiUrlRuntime: (path: string) => string;
+  warn: (message: string, error?: unknown) => void;
+}
+
+const defaultUnregisterDeps: UnregisterPushTokenForLogoutDeps = {
+  fetchRuntime: fetch,
+  getApiUrlRuntime: getApiUrl,
   warn: (message, error) => {
     console.warn(message, error);
   },
@@ -46,5 +60,33 @@ export async function resolvePushTokenForLogout(
       error
     );
     return null;
+  }
+}
+
+export async function unregisterPushTokenForLogout(
+  username: string,
+  authToken: string,
+  pushToken: string | null,
+  deps: UnregisterPushTokenForLogoutDeps = defaultUnregisterDeps
+): Promise<void> {
+  if (!pushToken) {
+    return;
+  }
+
+  try {
+    await deps.fetchRuntime(deps.getApiUrlRuntime("/api/push/unregister"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+        "X-Username": username,
+      },
+      body: JSON.stringify({ token: pushToken }),
+    });
+  } catch (error) {
+    deps.warn(
+      "[ChatsStore] Failed to unregister iOS push token during logout:",
+      error
+    );
   }
 }

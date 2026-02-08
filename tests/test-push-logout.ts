@@ -3,7 +3,10 @@
  * Tests for push logout token resolution helper.
  */
 
-import { resolvePushTokenForLogout } from "../src/utils/pushLogout";
+import {
+  resolvePushTokenForLogout,
+  unregisterPushTokenForLogout,
+} from "../src/utils/pushLogout";
 import {
   assertEq,
   clearResults,
@@ -116,6 +119,77 @@ async function testReturnsNullAndWarnsOnResolutionError() {
   assertEq(warnedError, expectedError);
 }
 
+async function testUnregisterSkipsWhenTokenMissing() {
+  let fetchCalls = 0;
+  await unregisterPushTokenForLogout("user", "token", null, {
+    fetchRuntime: async () => {
+      fetchCalls += 1;
+      return new Response(null, { status: 200 });
+    },
+    getApiUrlRuntime: (path) => path,
+    warn: () => undefined,
+  });
+
+  assertEq(fetchCalls, 0);
+}
+
+async function testUnregisterSendsScopedTokenRequest() {
+  let fetchCalls = 0;
+  let requestUrl = "";
+  let requestInit: RequestInit | undefined;
+  const pushToken = "a".repeat(64);
+
+  await unregisterPushTokenForLogout("example-user", "auth-token", pushToken, {
+    fetchRuntime: async (url, init) => {
+      fetchCalls += 1;
+      requestUrl = String(url);
+      requestInit = init;
+      return new Response(null, { status: 200 });
+    },
+    getApiUrlRuntime: () => "https://api.example.test/api/push/unregister",
+    warn: () => undefined,
+  });
+
+  assertEq(fetchCalls, 1);
+  assertEq(requestUrl, "https://api.example.test/api/push/unregister");
+  assertEq(requestInit?.method, "POST");
+  assertEq(
+    JSON.stringify(requestInit?.headers),
+    JSON.stringify({
+      "Content-Type": "application/json",
+      Authorization: "Bearer auth-token",
+      "X-Username": "example-user",
+    })
+  );
+  assertEq(requestInit?.body, JSON.stringify({ token: pushToken }));
+}
+
+async function testUnregisterWarnsWhenFetchFails() {
+  const expectedError = new Error("network down");
+  let warnCalls = 0;
+  let warnedMessage = "";
+  let warnedError: unknown;
+
+  await unregisterPushTokenForLogout("example-user", "auth-token", "a".repeat(64), {
+    fetchRuntime: async () => {
+      throw expectedError;
+    },
+    getApiUrlRuntime: (path) => path,
+    warn: (message, error) => {
+      warnCalls += 1;
+      warnedMessage = message;
+      warnedError = error;
+    },
+  });
+
+  assertEq(warnCalls, 1);
+  assertEq(
+    warnedMessage,
+    "[ChatsStore] Failed to unregister iOS push token during logout:"
+  );
+  assertEq(warnedError, expectedError);
+}
+
 export async function runPushLogoutTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-logout"));
   clearResults();
@@ -139,6 +213,18 @@ export async function runPushLogoutTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Push logout resolver returns null and logs on resolution errors",
     testReturnsNullAndWarnsOnResolutionError
+  );
+  await runTest(
+    "Push logout unregister skips network call without token",
+    testUnregisterSkipsWhenTokenMissing
+  );
+  await runTest(
+    "Push logout unregister sends token-scoped request payload",
+    testUnregisterSendsScopedTokenRequest
+  );
+  await runTest(
+    "Push logout unregister warns on network failures",
+    testUnregisterWarnsWhenFetchFails
   );
 
   return printSummary();
