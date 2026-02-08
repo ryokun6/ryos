@@ -164,6 +164,17 @@ async function testSetCorsHeadersTrimsConfiguredMethodsAndHeaders() {
   assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-Test, X-Trace");
 }
 
+async function testSetCorsHeadersFiltersNonStringConfiguredMethodsAndHeaders() {
+  const res = createMockVercelResponseHarness();
+  setCorsHeaders(res.res, "http://localhost:3000", {
+    methods: ["POST", 123 as unknown as string, "   "],
+    headers: ["X-Test", null as unknown as string, "   "],
+  });
+
+  assertEq(res.getHeader("Access-Control-Allow-Methods"), "POST");
+  assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-Test");
+}
+
 async function testSetCorsHeadersAppendsOriginToExistingVaryHeader() {
   const res = createMockVercelResponseHarness();
   (res.res as { setHeader: (name: string, value: unknown) => unknown }).setHeader(
@@ -775,6 +786,24 @@ async function testHandlePreflightTrimsConfiguredMethodsAndHeaders() {
   });
 }
 
+async function testHandlePreflightFiltersNonStringConfiguredMethodsAndHeaders() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:5173",
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res, {
+      methods: ["POST", 123 as unknown as string, "   "],
+      headers: ["X-App-Header", null as unknown as string, "   "],
+    });
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Allow-Methods"), "POST");
+    assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-App-Header");
+  });
+}
+
 async function testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeadersInvalid() {
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:5173",
@@ -890,6 +919,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS header setter trims configured methods and headers",
     testSetCorsHeadersTrimsConfiguredMethodsAndHeaders
+  );
+  await runTest(
+    "CORS header setter filters non-string configured methods and headers",
+    testSetCorsHeadersFiltersNonStringConfiguredMethodsAndHeaders
   );
   await runTest(
     "CORS header setter appends Origin to existing Vary values",
@@ -1014,6 +1047,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper trims configured methods and headers",
     testHandlePreflightTrimsConfiguredMethodsAndHeaders
+  );
+  await runTest(
+    "CORS preflight helper filters non-string configured methods and headers",
+    testHandlePreflightFiltersNonStringConfiguredMethodsAndHeaders
   );
   await runTest(
     "CORS preflight helper falls back to configured allow headers when requested headers are invalid",
