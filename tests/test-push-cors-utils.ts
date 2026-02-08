@@ -249,6 +249,21 @@ async function testHandlePreflightDedupesRequestedHeaderTokensCaseInsensitively(
   });
 }
 
+async function testHandlePreflightDedupesRequestedHeaderTokensAcrossArrayValues() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": ["X-Test", "x-test", "X-Other"],
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-Test, X-Other");
+  });
+}
+
 async function testHandlePreflightFallsBackWhenAllRequestedHeaderTokensInvalid() {
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:3000",
@@ -697,6 +712,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper dedupes requested-header tokens case-insensitively",
     testHandlePreflightDedupesRequestedHeaderTokensCaseInsensitively
+  );
+  await runTest(
+    "CORS preflight helper dedupes requested-header tokens across array values",
+    testHandlePreflightDedupesRequestedHeaderTokensAcrossArrayValues
   );
   await runTest(
     "CORS preflight helper falls back when all requested-header tokens are invalid",
