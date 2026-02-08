@@ -622,6 +622,63 @@ async function testInvalidRefererOriginIsRejected() {
   });
 }
 
+async function testOriginHeaderTakesPrecedenceOverRefererFallback() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequestWithHeaders(
+      "POST",
+      {
+        origin: "https://evil.example",
+        referer: "http://localhost:3000/safe",
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 403);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Unauthorized" })
+    );
+  });
+}
+
+async function testAllowedOriginIgnoresDisallowedReferer() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequestWithHeaders(
+      "POST",
+      {
+        origin: "http://localhost:3000",
+        referer: "https://evil.example/blocked",
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+  });
+}
+
 export async function runPushRequestGuardTests(): Promise<{
   passed: number;
   failed: number;
@@ -720,6 +777,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard rejects invalid referer fallback",
     testInvalidRefererOriginIsRejected
+  );
+  await runTest(
+    "Push request guard prioritizes origin over referer fallback",
+    testOriginHeaderTakesPrecedenceOverRefererFallback
+  );
+  await runTest(
+    "Push request guard uses allowed origin even with disallowed referer",
+    testAllowedOriginIgnoresDisallowedReferer
   );
 
   return printSummary();
