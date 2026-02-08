@@ -132,6 +132,19 @@ async function testNormalizePushRegistrationErrorPayload() {
     JSON.stringify(normalizePushRegistrationErrorPayload("bad")),
     JSON.stringify({ message: PUSH_REGISTRATION_ERROR_FALLBACK_MESSAGE })
   );
+
+  const nullPrototypePayload = Object.create(null) as Record<string, unknown>;
+  nullPrototypePayload.message = "null-prototype-message";
+  assertEq(
+    JSON.stringify(normalizePushRegistrationErrorPayload(nullPrototypePayload)),
+    JSON.stringify({ message: "null-prototype-message" })
+  );
+  assertEq(
+    JSON.stringify(
+      normalizePushRegistrationErrorPayload(new Date("2026-01-01T00:00:00.000Z"))
+    ),
+    JSON.stringify({ message: PUSH_REGISTRATION_ERROR_FALLBACK_MESSAGE })
+  );
 }
 
 async function testExtractPushAlert() {
