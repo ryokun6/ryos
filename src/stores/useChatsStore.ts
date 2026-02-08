@@ -1047,6 +1047,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { ok: false, error: "Invalid response format" };
           } catch (error) {
             console.error("[ChatsStore] Error fetching rooms:", error);
+            markApiTemporarilyUnavailable("rooms");
             return { ok: false, error: "Network error. Please try again." };
           }
         },
@@ -1198,6 +1199,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               `[ChatsStore] Error fetching messages for room ${roomId}:`,
               error
             );
+            markApiTemporarilyUnavailable("room-messages");
             return { ok: false, error: "Network error. Please try again." };
           }
         },
@@ -1352,6 +1354,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               )}:`,
               error
             );
+            markApiTemporarilyUnavailable("bulk-messages");
             return { ok: false, error: "Network error. Please try again." };
           }
         },
