@@ -7,6 +7,7 @@ import type { VercelRequest } from "@vercel/node";
 import {
   handlePushPostRequestGuards,
   PUSH_ALLOW_HEADER_VALUE,
+  PUSH_CORS_MAX_REQUESTED_HEADER_CANDIDATES,
   PUSH_CORS_MAX_REQUESTED_HEADER_COUNT,
   PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH,
   PUSH_OPTIONS_VARY_HEADER,
@@ -798,6 +799,77 @@ async function testAllowedOptionsPreflightCapsRequestedHeaderCount() {
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
       requestedHeaders.slice(0, PUSH_CORS_MAX_REQUESTED_HEADER_COUNT).join(", ")
+    );
+  });
+}
+
+async function testAllowedOptionsPreflightCapturesValidHeaderAtCandidateLimit() {
+  await withDevelopmentEnv(async () => {
+    const candidates = Array.from(
+      { length: PUSH_CORS_MAX_REQUESTED_HEADER_CANDIDATES },
+      (_, index) =>
+        index === PUSH_CORS_MAX_REQUESTED_HEADER_CANDIDATES - 1
+          ? "x-valid-at-limit"
+          : `invalid header ${index + 1}`
+    );
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-headers": candidates.join(", "),
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), "x-valid-at-limit");
+  });
+}
+
+async function testAllowedOptionsPreflightStopsScanningRequestedHeadersBeyondCandidateLimit() {
+  await withDevelopmentEnv(async () => {
+    const candidates = Array.from(
+      { length: PUSH_CORS_MAX_REQUESTED_HEADER_CANDIDATES + 5 },
+      (_, index) =>
+        index === PUSH_CORS_MAX_REQUESTED_HEADER_CANDIDATES
+          ? "x-valid-beyond-limit"
+          : `invalid header ${index + 1}`
+    );
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-headers": candidates.join(", "),
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Headers"),
+      "Content-Type, Authorization, X-Username"
     );
   });
 }
@@ -1797,6 +1869,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard caps requested preflight header count",
     testAllowedOptionsPreflightCapsRequestedHeaderCount
+  );
+  await runTest(
+    "Push request guard captures valid requested header at candidate scan limit",
+    testAllowedOptionsPreflightCapturesValidHeaderAtCandidateLimit
+  );
+  await runTest(
+    "Push request guard stops scanning requested headers beyond candidate limit",
+    testAllowedOptionsPreflightStopsScanningRequestedHeadersBeyondCandidateLimit
   );
   await runTest(
     "Push request guard caps requested preflight header count across repeated values",
