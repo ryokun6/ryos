@@ -47,6 +47,7 @@ import {
   sendRoomMessageRequest,
 } from "./chatsSendMessage";
 import { createRoomRequest, deleteRoomRequest } from "./chatsRoomRequests";
+import { switchPresenceRoomRequest } from "./chatsPresenceRequests";
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -953,21 +954,11 @@ export const useChatsStore = create<ChatsStoreState>()(
           // If switching to a real room and we have a username, handle the API call
           if (username) {
             try {
-              const response = await abortableFetch(
-                "/api/presence/switch",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    previousRoomId: currentRoomId,
-                    nextRoomId: newRoomId,
-                    username,
-                  }),
-                  timeout: 15000,
-                  throwOnHttpError: false,
-                  retry: { maxAttempts: 1, initialDelayMs: 250 },
-                }
-              );
+              const response = await switchPresenceRoomRequest({
+                previousRoomId: currentRoomId,
+                nextRoomId: newRoomId,
+                username,
+              });
 
               if (!response.ok) {
                 const errorData = await response.json().catch(() => ({
