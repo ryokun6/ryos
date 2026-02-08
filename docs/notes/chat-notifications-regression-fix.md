@@ -118,6 +118,8 @@ File: `src/stores/useChatsStore.ts`
 - Automated:
   - `bun run test:chat-regression`
     - wraps `chat-notifications`, `pusher-client`, `chat-broadcast-wiring`
+  - `bun run test:pusher-regression`
+    - runs all `pusher*` suites via the unified test runner
   - `bun run test:pusher-constructor-wiring`
   - `bun run test:chat-store-guards`
   - `bun run tests/run-all-tests.ts chat-`
