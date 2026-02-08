@@ -108,6 +108,18 @@ Set these in your deployment environment to enable test sends:
 - `APNS_SEND_CONCURRENCY` (optional integer `1..20` for test-send fanout concurrency; default `4`)
 - `PUSH_METADATA_LOOKUP_CONCURRENCY` (optional integer `1..20` for Redis token metadata lookups; default `8`)
 
+### Local push backend validation commands
+
+From repo root:
+
+- `bun run test:push` — all push suites
+- `bun run test:push:helpers` — helper-focused suites only
+- `bun run test:push:api` — API-facing suites only
+- `bun run check:push` — lint + all push suites + build
+- `bun run check:push:helpers` — lint + helper suites
+- `bun run check:push:api` — lint + API-facing suites
+- `bun run check:push:aggregate` — lint + aggregate summary suite + build
+
 ## Security
 
 The app uses a Content Security Policy (CSP) configured in `tauri.conf.json` that allows:
