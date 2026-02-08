@@ -5,11 +5,24 @@ import { useChatsStore } from "../../../stores/useChatsStore";
 import { toast } from "@/hooks/useToast";
 import { type ChatRoom, type ChatMessage } from "../../../../src/types/chat";
 import { useChatsStoreShallow } from "@/stores/helpers";
+import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
+import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
     ? `chats-${username.toLowerCase().replace(/[^a-zA-Z0-9_\-.]/g, "_")}`
     : "chats-public";
+
+const HTML_ENTITY_MAP: Record<string, string> = {
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&#39;": "'",
+  "&apos;": "'",
+};
+
+const HTML_ENTITY_PATTERN = /&(amp|lt|gt|quot|#39|apos);/g;
 
 // Decode common HTML entities so toast previews show readable text
 const decodeHtmlEntities = (str: string): string => {
@@ -19,13 +32,11 @@ const decodeHtmlEntities = (str: string): string => {
     txt.innerHTML = str;
     return txt.value;
   }
-  return str
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'");
+  // Single-pass decode to avoid double-unescaping sequences like "&amp;lt;"
+  return str.replace(
+    HTML_ENTITY_PATTERN,
+    (entity) => HTML_ENTITY_MAP[entity] || entity
+  );
 };
 
 export function useChatRoom(
@@ -138,28 +149,44 @@ export function useChatRoom(
 
       // Create event handlers (apply local diffs to avoid refetch)
       const handleRoomCreated = (data: { room: ChatRoom }) => {
+        if (!data?.room?.id) {
+          void fetchRooms();
+          return;
+        }
+
         console.log("[Pusher Hook] Room created:", data.room);
         const { rooms: currentRooms } = useChatsStore.getState();
-        const exists = currentRooms.some((r) => r.id === data.room.id);
-        if (!exists) setRooms([...currentRooms, data.room]);
+        setRooms(upsertChatRoom(currentRooms, data.room));
       };
 
       const handleRoomDeleted = (data: { roomId: string }) => {
+        if (!data?.roomId) {
+          void fetchRooms();
+          return;
+        }
+
         console.log("[Pusher Hook] Room deleted:", data.roomId);
         const { rooms: currentRooms } = useChatsStore.getState();
-        setRooms(currentRooms.filter((r) => r.id !== data.roomId));
+        setRooms(removeChatRoomById(currentRooms, data.roomId));
       };
 
       const handleRoomUpdated = (data: { room: ChatRoom }) => {
+        if (!data?.room?.id) {
+          void fetchRooms();
+          return;
+        }
+
         console.log("[Pusher Hook] Room updated:", data.room);
         const { rooms: currentRooms } = useChatsStore.getState();
-        const next = currentRooms.map((r) =>
-          r.id === data.room.id ? { ...r, ...data.room } : r
-        );
-        setRooms(next);
+        setRooms(upsertChatRoom(currentRooms, data.room));
       };
 
       const handleRoomsUpdated = (data: { rooms: ChatRoom[] }) => {
+        if (!Array.isArray(data?.rooms)) {
+          void fetchRooms();
+          return;
+        }
+
         console.log("[Pusher Hook] Rooms updated:", data.rooms.length, "rooms");
         // Update rooms directly instead of fetching from API
         setRooms(data.rooms);
@@ -189,16 +216,31 @@ export function useChatRoom(
 
       // Create event handlers with unique names to prevent duplicate binding
       const handleRoomMessage = (data: { message: ChatMessage }) => {
+        if (!data?.message?.roomId || !data.message.id) {
+          return;
+        }
+
         console.log("[Pusher Hook] Received room-message:", data.message);
+
+        // Ignore duplicate realtime deliveries for the same server message.
+        const { roomMessages: roomMessagesMap } = useChatsStore.getState();
+        const existingMessages = roomMessagesMap[data.message.roomId] || [];
+        if (existingMessages.some((message) => message.id === data.message.id)) {
+          return;
+        }
+
+        const parsedTimestamp =
+          typeof data.message.timestamp === "string" ||
+          typeof data.message.timestamp === "number"
+            ? new Date(data.message.timestamp).getTime()
+            : Date.now();
 
         // Add message with proper timestamp
         const messageWithTimestamp = {
           ...data.message,
-          timestamp:
-            typeof data.message.timestamp === "string" ||
-            typeof data.message.timestamp === "number"
-              ? new Date(data.message.timestamp).getTime()
-              : data.message.timestamp,
+          timestamp: Number.isFinite(parsedTimestamp)
+            ? parsedTimestamp
+            : Date.now(),
         };
 
         addMessageToRoom(data.message.roomId, messageWithTimestamp);
@@ -212,13 +254,12 @@ export function useChatRoom(
           );
           const preview = decoded.replace(/\s+/g, " ").trim().slice(0, 80);
           toast(`@${data.message.username}`, {
+            id: `chat-room-message-${data.message.id}`,
             description: preview,
             action: {
               label: "Open",
               onClick: () => {
-                // Switch to the room and ensure we are subscribed
-                switchRoom(data.message.roomId);
-                subscribeToRoomChannel(data.message.roomId);
+                openChatRoomFromNotification(data.message.roomId);
               },
             },
           });
@@ -242,7 +283,7 @@ export function useChatRoom(
       roomChannel.bind("room-message", handleRoomMessage);
       roomChannel.bind("message-deleted", handleMessageDeleted);
     },
-    [addMessageToRoom, removeMessageFromRoom, switchRoom, incrementUnread]
+    [addMessageToRoom, removeMessageFromRoom, incrementUnread]
   );
 
   const unsubscribeFromRoomChannel = useCallback((roomId: string) => {

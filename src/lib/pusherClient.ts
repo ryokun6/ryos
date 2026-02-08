@@ -1,11 +1,22 @@
-import Pusher, { Channel } from "pusher-js";
+import type PusherType from "pusher-js";
+import type { Channel } from "pusher-js";
+import "pusher-js";
 
 // App-wide singleton so we don't open/close the WebSocket on every React Strict-Mode remount.
 // Also survives HMR to prevent connection churn during development.
 
 const globalWithPusher = globalThis as typeof globalThis & {
-  __pusherClient?: Pusher;
+  __pusherClient?: PusherType;
+  Pusher?: PusherConstructor;
 };
+
+type PusherConstructor = new (
+  key: string,
+  options: {
+    cluster: string;
+    forceTLS: boolean;
+  }
+) => PusherType;
 
 // Use development Pusher key for local dev and Vercel preview deployments
 const PUSHER_APP_KEY =
@@ -15,8 +26,17 @@ const PUSHER_APP_KEY =
     : "b47fd563805c8c42da1a";
 const PUSHER_CLUSTER = "us3";
 
-export function getPusherClient(): Pusher {
+const getPusherConstructor = (): PusherConstructor => {
+  const constructorFromGlobal = globalWithPusher.Pusher;
+  if (!constructorFromGlobal) {
+    throw new Error("[pusherClient] Pusher constructor not found on global");
+  }
+  return constructorFromGlobal;
+};
+
+export function getPusherClient(): PusherType {
   if (!globalWithPusher.__pusherClient) {
+    const Pusher = getPusherConstructor();
     // Create once and cache
     globalWithPusher.__pusherClient = new Pusher(PUSHER_APP_KEY, {
       cluster: PUSHER_CLUSTER,
