@@ -141,6 +141,24 @@ async function testRemovalFallbackWhenExecResultUnparseable() {
     ["tok1"]
   );
   assertEq(removedCountFromFloat, 1);
+
+  const { redis: redisWithShortResult } = createFakeRedis([[1]]);
+  const removedCountFromShortResult = await removeTokensFromUserSet(
+    redisWithShortResult,
+    "push:user:alice:tokens",
+    ["tok1", "tok2"]
+  );
+  assertEq(removedCountFromShortResult, 2);
+}
+
+async function testMetadataRemovalFallbackWhenExecResultUnparseable() {
+  const { redis } = createFakeRedis([[{ result: 1 }]]);
+  const metadataRemoved = await removeTokenMetadataKeys(
+    redis,
+    ["tok1", "tok2"],
+    (token) => `push:token:${token}`
+  );
+  assertEq(metadataRemoved, 2);
 }
 
 async function testNoOpsSkipPipeline() {
@@ -180,6 +198,10 @@ export async function runPushSetOpsTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Token set helper falls back when exec results are unparseable",
     testRemovalFallbackWhenExecResultUnparseable
+  );
+  await runTest(
+    "Metadata helper falls back when exec results are unparseable",
+    testMetadataRemovalFallbackWhenExecResultUnparseable
   );
   await runTest("Token set helper skips empty operations", testNoOpsSkipPipeline);
 
