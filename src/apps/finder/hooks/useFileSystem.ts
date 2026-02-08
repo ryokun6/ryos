@@ -28,6 +28,11 @@ import {
   getFileIcon,
   getFileTypeFromExtension,
 } from "../utils/filePresentation";
+import {
+  getContentStoreForPath,
+  getDocumentImageStoreForPath,
+  getFolderStoreForPath,
+} from "../utils/storePaths";
 
 // STORES is now imported from @/utils/indexedDB to avoid duplication
 
@@ -767,11 +772,7 @@ export function useFileSystem(
           // Get the file metadata to get the UUID
           const fileMetadata = getFileItem(file.path);
           if (fileMetadata?.uuid) {
-            const storeName = file.path.startsWith("/Documents/")
-              ? STORES.DOCUMENTS
-              : file.path.startsWith("/Images/")
-              ? STORES.IMAGES
-              : STORES.APPLETS;
+            const storeName = getContentStoreForPath(file.path) ?? STORES.APPLETS;
             const contentData = await dbOperations.get<DocumentContent>(
               storeName,
               fileMetadata.uuid // Use UUID instead of name
@@ -1096,13 +1097,7 @@ export function useFileSystem(
           startsWithImages: path.startsWith("/Images/"),
           startsWithApplets: path.startsWith("/Applets/"),
         });
-        const storeName = path.startsWith("/Documents/")
-          ? STORES.DOCUMENTS
-          : path.startsWith("/Images/")
-          ? STORES.IMAGES
-          : path.startsWith("/Applets/")
-          ? STORES.APPLETS
-          : null;
+        const storeName = getContentStoreForPath(path);
         console.log(`[useFileSystem:saveFile] Selected store: ${storeName}`);
         if (storeName) {
           try {
@@ -1181,16 +1176,8 @@ export function useFileSystem(
       try {
         // Determine source and target stores for content
         const sourcePath = sourceFile.path;
-        const sourceStoreName = sourcePath.startsWith("/Documents/")
-          ? STORES.DOCUMENTS
-          : sourcePath.startsWith("/Images/")
-          ? STORES.IMAGES
-          : null;
-        const targetStoreName = targetFolderPath.startsWith("/Documents")
-          ? STORES.DOCUMENTS
-          : targetFolderPath.startsWith("/Images")
-          ? STORES.IMAGES
-          : null;
+        const sourceStoreName = getDocumentImageStoreForPath(sourcePath);
+        const targetStoreName = getFolderStoreForPath(targetFolderPath);
 
         // If content needs to move between different stores
         if (
@@ -1254,11 +1241,7 @@ export function useFileSystem(
 
       // 2. Update content metadata (name field) in IndexedDB if it's a file with content
       if (!itemToRename.isDirectory && itemToRename.uuid) {
-        const storeName = oldPath.startsWith("/Documents/")
-          ? STORES.DOCUMENTS
-          : oldPath.startsWith("/Images/")
-          ? STORES.IMAGES
-          : null;
+        const storeName = getDocumentImageStoreForPath(oldPath);
         if (storeName) {
           try {
             const content = await dbOperations.get<DocumentContent>(
@@ -1326,11 +1309,7 @@ export function useFileSystem(
       removeFileItem(fileMetadata.path);
 
       // 2. Move Content to TRASH DB store
-      const storeName = fileMetadata.path.startsWith("/Documents/")
-        ? STORES.DOCUMENTS
-        : fileMetadata.path.startsWith("/Images/")
-        ? STORES.IMAGES
-        : null;
+      const storeName = getDocumentImageStoreForPath(fileMetadata.path);
       if (storeName && !fileMetadata.isDirectory && fileMetadata.uuid) {
         try {
           const content = await dbOperations.get<DocumentContent>(
@@ -1381,13 +1360,9 @@ export function useFileSystem(
       restoreFileItem(fileMetadata.path);
 
       // 2. Move Content from TRASH DB store back
-      const targetStoreName = fileMetadata.originalPath.startsWith(
-        "/Documents/"
-      )
-        ? STORES.DOCUMENTS
-        : fileMetadata.originalPath.startsWith("/Images/")
-        ? STORES.IMAGES
-        : null;
+      const targetStoreName = getDocumentImageStoreForPath(
+        fileMetadata.originalPath
+      );
       if (targetStoreName && !fileMetadata.isDirectory && fileMetadata.uuid) {
         try {
           const content = await dbOperations.get<DocumentContent>(
@@ -1495,11 +1470,7 @@ export function useFileSystem(
 
             // Calculate size if missing
             if (item.size === undefined || item.size === null) {
-              const storeName = item.path.startsWith("/Documents/")
-                ? STORES.DOCUMENTS
-                : item.path.startsWith("/Images/")
-                ? STORES.IMAGES
-                : null;
+              const storeName = getDocumentImageStoreForPath(item.path);
 
               if (storeName) {
                 try {
