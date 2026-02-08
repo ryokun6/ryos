@@ -378,6 +378,29 @@ async function testProductionAllowsPrimaryOrigin() {
   });
 }
 
+async function testProductionAllowsTailscaleOrigin() {
+  await withRuntimeEnv("production", async () => {
+    const req = createRequest("POST", "https://device.tailb4fa61.ts.net");
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Origin"),
+      "https://device.tailb4fa61.ts.net"
+    );
+  });
+}
+
 async function testPreviewAllowsProjectPreviewOrigin() {
   await withRuntimeEnv("preview", async () => {
     const req = createRequest("POST", "https://ryos-preview-123.vercel.app");
@@ -401,9 +424,98 @@ async function testPreviewAllowsProjectPreviewOrigin() {
   });
 }
 
+async function testPreviewAllowsRyoLuPrefixOrigin() {
+  await withRuntimeEnv("preview", async () => {
+    const req = createRequest("POST", "https://ryo-lu-sandbox.vercel.app");
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Origin"),
+      "https://ryo-lu-sandbox.vercel.app"
+    );
+  });
+}
+
+async function testPreviewAllowsOsRyoPrefixOrigin() {
+  await withRuntimeEnv("preview", async () => {
+    const req = createRequest("POST", "https://os-ryo-feature.vercel.app");
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Origin"),
+      "https://os-ryo-feature.vercel.app"
+    );
+  });
+}
+
 async function testPreviewRejectsNonProjectPreviewOrigin() {
   await withRuntimeEnv("preview", async () => {
     const req = createRequest("POST", "https://other-project.vercel.app");
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 403);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Unauthorized" })
+    );
+  });
+}
+
+async function testDevelopmentAllowsConfiguredLocalhostPort() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequest("POST", "http://localhost:5173");
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:5173");
+  });
+}
+
+async function testDevelopmentRejectsUnknownLocalhostPort() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequest("POST", "http://localhost:8080");
     const mockRes = createMockResponse();
     const mockLogger = createMockLogger();
 
@@ -476,12 +588,32 @@ export async function runPushRequestGuardTests(): Promise<{
     testProductionAllowsPrimaryOrigin
   );
   await runTest(
+    "Push request guard allows tailscale origin in production",
+    testProductionAllowsTailscaleOrigin
+  );
+  await runTest(
     "Push request guard allows configured preview origin",
     testPreviewAllowsProjectPreviewOrigin
   );
   await runTest(
+    "Push request guard allows ryo-lu preview prefix",
+    testPreviewAllowsRyoLuPrefixOrigin
+  );
+  await runTest(
+    "Push request guard allows os-ryo preview prefix",
+    testPreviewAllowsOsRyoPrefixOrigin
+  );
+  await runTest(
     "Push request guard rejects unrelated preview origin",
     testPreviewRejectsNonProjectPreviewOrigin
+  );
+  await runTest(
+    "Push request guard allows configured localhost dev port",
+    testDevelopmentAllowsConfiguredLocalhostPort
+  );
+  await runTest(
+    "Push request guard rejects unknown localhost dev port",
+    testDevelopmentRejectsUnknownLocalhostPort
   );
 
   return printSummary();
