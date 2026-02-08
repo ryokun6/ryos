@@ -153,14 +153,28 @@ async function testExtractPushAlert() {
     JSON.stringify({ title: "Notification", body: "Hello world" })
   );
   assertEq(
+    JSON.stringify(extractPushAlert({ aps: { alert: "   padded body   " } })),
+    JSON.stringify({ title: "Notification", body: "padded body" })
+  );
+  assertEq(
     JSON.stringify(
       extractPushAlert({ aps: { alert: { title: "Title", body: "Body" } } })
     ),
     JSON.stringify({ title: "Title", body: "Body" })
   );
   assertEq(
+    JSON.stringify(
+      extractPushAlert({ aps: { alert: { title: "  Title  ", body: "  Body  " } } })
+    ),
+    JSON.stringify({ title: "Title", body: "Body" })
+  );
+  assertEq(
     JSON.stringify(extractPushAlert({ aps: { alert: { body: "Body only" } } })),
     JSON.stringify({ title: "Notification", body: "Body only" })
+  );
+  assertEq(
+    JSON.stringify(extractPushAlert({ aps: { alert: { title: "   ", body: "   " } } })),
+    JSON.stringify({ title: "Notification", body: "" })
   );
   assertEq(
     JSON.stringify(extractPushAlert({ aps: { alert: { title: "Title only" } } })),

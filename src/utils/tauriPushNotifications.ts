@@ -136,14 +136,17 @@ export function extractPushAlert(payload: IosPushNotificationPayload): {
   title: string;
   body: string;
 } {
+  const normalizeAlertText = (value: unknown): string =>
+    typeof value === "string" ? value.trim() : "";
+
   const alert = payload.aps?.alert;
   if (typeof alert === "string") {
-    return { title: "Notification", body: alert };
+    return { title: "Notification", body: normalizeAlertText(alert) };
   }
 
   if (alert && typeof alert === "object") {
-    const title = typeof alert.title === "string" ? alert.title : "Notification";
-    const body = typeof alert.body === "string" ? alert.body : "";
+    const title = normalizeAlertText(alert.title) || "Notification";
+    const body = normalizeAlertText(alert.body);
     return { title, body };
   }
 
