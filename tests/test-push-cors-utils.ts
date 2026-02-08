@@ -164,6 +164,29 @@ async function testHandlePreflightAllowsOriginAndEchoesRequestedHeaders() {
   });
 }
 
+async function testHandlePreflightMergesRepeatedRequestedHeaderValues() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": [
+      "X-First",
+      "  X-Second, X-Third  ",
+      "   ",
+      "X-Fourth",
+    ],
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(
+      res.getHeader("Access-Control-Allow-Headers"),
+      "X-First, X-Second, X-Third, X-Fourth"
+    );
+  });
+}
+
 async function testHandlePreflightHandlesLowercaseOptionsMethod() {
   const req = createRequest("options", {
     origin: "http://localhost:3000",
@@ -269,6 +292,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper echoes requested headers for allowed origins",
     testHandlePreflightAllowsOriginAndEchoesRequestedHeaders
+  );
+  await runTest(
+    "CORS preflight helper merges repeated requested-header values",
+    testHandlePreflightMergesRepeatedRequestedHeaderValues
   );
   await runTest(
     "CORS preflight helper normalizes lowercase OPTIONS requests",

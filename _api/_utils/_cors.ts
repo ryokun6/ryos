@@ -21,6 +21,20 @@ function getHeader(req: VercelRequest, name: string): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function getNonEmptyHeaderValues(req: VercelRequest, name: string): string[] {
+  const value = req.headers[name.toLowerCase()];
+  if (Array.isArray(value)) {
+    return value
+      .filter((entry): entry is string => typeof entry === "string")
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0);
+  }
+
+  if (typeof value !== "string") return [];
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? [trimmed] : [];
+}
+
 function splitTrimmedHeaderTokens(value: string): string[] {
   return value
     .split(",")
@@ -179,10 +193,13 @@ export function handlePreflight(
   }
 
   // Echo back requested headers when provided
-  const requestedHeaders = getHeader(req, "access-control-request-headers");
+  const requestedHeaderValues = getNonEmptyHeaderValues(
+    req,
+    "access-control-request-headers"
+  );
   const allowHeaders =
-    requestedHeaders && requestedHeaders.trim().length > 0
-      ? requestedHeaders
+    requestedHeaderValues.length > 0
+      ? requestedHeaderValues.join(", ")
       : (options.headers || DEFAULT_CORS_HEADERS).join(", ");
 
   res.setHeader("Access-Control-Allow-Origin", origin);
