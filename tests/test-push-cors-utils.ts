@@ -86,6 +86,7 @@ async function testGetEffectiveOriginUsesFirstNonEmptyRefererArrayEntry() {
 async function testIsAllowedOriginPoliciesByRuntimeEnv() {
   withPatchedEnv({ VERCEL_ENV: "production" }, () => {
     assertEq(isAllowedOrigin("https://os.ryo.lu"), true);
+    assertEq(isAllowedOrigin("https://os.ryo.lu/"), false);
     assertEq(isAllowedOrigin("http://localhost:3000"), false);
     assertEq(isAllowedOrigin("https://devbox.tailb4fa61.ts.net"), true);
   });
@@ -93,6 +94,7 @@ async function testIsAllowedOriginPoliciesByRuntimeEnv() {
   withPatchedEnv({ VERCEL_ENV: "preview" }, () => {
     assertEq(isAllowedOrigin("https://ryos-feature.vercel.app"), true);
     assertEq(isAllowedOrigin("https://ryo-lu-git-main-user.vercel.app"), true);
+    assertEq(isAllowedOrigin("https://RYOS-FEATURE.VERCEL.APP"), true);
     assertEq(isAllowedOrigin("https://other-app.vercel.app"), false);
     assertEq(isAllowedOrigin("https://qa.tailb4fa61.ts.net"), true);
   });
@@ -100,6 +102,7 @@ async function testIsAllowedOriginPoliciesByRuntimeEnv() {
   withPatchedEnv({ VERCEL_ENV: "development" }, () => {
     assertEq(isAllowedOrigin("http://localhost:3000"), true);
     assertEq(isAllowedOrigin("https://127.0.0.1:5173"), true);
+    assertEq(isAllowedOrigin("http://localhost:1234"), false);
     assertEq(isAllowedOrigin("https://os.ryo.lu"), false);
   });
 
