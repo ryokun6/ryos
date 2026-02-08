@@ -98,6 +98,17 @@ async function testNormalizePushNotificationPayload() {
   assertEq(JSON.stringify(normalizePushNotificationPayload("bad")), JSON.stringify({}));
   assertEq(JSON.stringify(normalizePushNotificationPayload(null)), JSON.stringify({}));
   assertEq(JSON.stringify(normalizePushNotificationPayload([])), JSON.stringify({}));
+  assertEq(
+    JSON.stringify(normalizePushNotificationPayload(new Date("2026-01-01T00:00:00.000Z"))),
+    JSON.stringify({})
+  );
+
+  const nullPrototypePayload = Object.create(null) as Record<string, unknown>;
+  nullPrototypePayload.aps = { alert: "from-null-prototype" };
+  assertEq(
+    JSON.stringify(normalizePushNotificationPayload(nullPrototypePayload)),
+    JSON.stringify({ aps: { alert: "from-null-prototype" } })
+  );
 }
 
 async function testNormalizePushRegistrationErrorPayload() {

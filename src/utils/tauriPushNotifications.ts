@@ -7,7 +7,12 @@ export const PUSH_REGISTRATION_ERROR_FALLBACK_MESSAGE =
   "Could not register for push notifications on this device.";
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 export interface PushPermissionResult {
