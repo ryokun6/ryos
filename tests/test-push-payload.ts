@@ -17,6 +17,11 @@ import {
   section,
 } from "./test-utils";
 
+const MIN_LENGTH_TOKEN = "a".repeat(20);
+const MAX_LENGTH_TOKEN = "b".repeat(512);
+const TOO_LONG_TOKEN = "c".repeat(513);
+const INVALID_CHAR_TOKEN = `${"d".repeat(30)}/${"e".repeat(30)}`;
+
 async function testDefaultsForMissingBody() {
   const fromUndefined = normalizePushTestPayload(undefined);
   assertEq(fromUndefined.ok, true);
@@ -98,6 +103,20 @@ async function testTrimsOptionalFields() {
 }
 
 async function testRejectsInvalidTokenAndBadge() {
+  const validMinToken = normalizePushTestPayload({
+    token: MIN_LENGTH_TOKEN,
+  });
+  assertEq(validMinToken.ok, true);
+  if (!validMinToken.ok) return;
+  assertEq(validMinToken.value.token, MIN_LENGTH_TOKEN);
+
+  const validMaxToken = normalizePushTestPayload({
+    token: MAX_LENGTH_TOKEN,
+  });
+  assertEq(validMaxToken.ok, true);
+  if (!validMaxToken.ok) return;
+  assertEq(validMaxToken.value.token, MAX_LENGTH_TOKEN);
+
   const blankToken = normalizePushTestPayload({
     token: "   ",
   });
@@ -112,6 +131,22 @@ async function testRejectsInvalidTokenAndBadge() {
   assertEq(invalidToken.ok, false);
   if (!invalidToken.ok) {
     assertEq(invalidToken.error, "Invalid push token format");
+  }
+
+  const tooLongToken = normalizePushTestPayload({
+    token: TOO_LONG_TOKEN,
+  });
+  assertEq(tooLongToken.ok, false);
+  if (!tooLongToken.ok) {
+    assertEq(tooLongToken.error, "Invalid push token format");
+  }
+
+  const invalidCharacterToken = normalizePushTestPayload({
+    token: INVALID_CHAR_TOKEN,
+  });
+  assertEq(invalidCharacterToken.ok, false);
+  if (!invalidCharacterToken.ok) {
+    assertEq(invalidCharacterToken.error, "Invalid push token format");
   }
 
   const invalidBadgeType = normalizePushTestPayload({
