@@ -2,11 +2,13 @@ import { getApiUrl, isTauriIOS } from "@/utils/platform";
 import { getPushToken } from "@/utils/tauriPushNotifications";
 
 const PUSH_TOKEN_FORMAT_REGEX = /^[A-Za-z0-9:_\-.]{20,512}$/;
+const PUSH_TOKEN_LOOKUP_TIMEOUT_MS = 3_000;
 
 interface ResolvePushTokenForLogoutDeps {
   isTauriIOSRuntime: () => boolean;
   getPushTokenRuntime: () => Promise<string>;
   warn: (message: string, error?: unknown) => void;
+  tokenLookupTimeoutMs?: number;
 }
 
 const defaultDeps: ResolvePushTokenForLogoutDeps = {
@@ -15,6 +17,7 @@ const defaultDeps: ResolvePushTokenForLogoutDeps = {
   warn: (message, error) => {
     console.warn(message, error);
   },
+  tokenLookupTimeoutMs: PUSH_TOKEN_LOOKUP_TIMEOUT_MS,
 };
 
 interface UnregisterPushTokenForLogoutDeps {
@@ -31,6 +34,25 @@ const defaultUnregisterDeps: UnregisterPushTokenForLogoutDeps = {
   },
 };
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    return promise;
+  }
+
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+  return new Promise<T>((resolve, reject) => {
+    timeoutHandle = setTimeout(() => {
+      reject(new Error(`Push token lookup timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    promise.then(resolve).catch(reject);
+  }).finally(() => {
+    if (typeof timeoutHandle !== "undefined") {
+      clearTimeout(timeoutHandle);
+    }
+  });
+}
+
 export async function resolvePushTokenForLogout(
   deps: ResolvePushTokenForLogoutDeps = defaultDeps
 ): Promise<string | null> {
@@ -39,7 +61,10 @@ export async function resolvePushTokenForLogout(
   }
 
   try {
-    const token = await deps.getPushTokenRuntime();
+    const token = await withTimeout(
+      deps.getPushTokenRuntime(),
+      deps.tokenLookupTimeoutMs ?? PUSH_TOKEN_LOOKUP_TIMEOUT_MS
+    );
     const normalizedToken = typeof token === "string" ? token.trim() : "";
     if (normalizedToken.length === 0) {
       return null;

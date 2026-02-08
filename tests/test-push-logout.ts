@@ -119,6 +119,37 @@ async function testReturnsNullAndWarnsOnResolutionError() {
   assertEq(warnedError, expectedError);
 }
 
+async function testReturnsNullAndWarnsOnResolutionTimeout() {
+  let warnCalls = 0;
+  let warnedMessage = "";
+  let warnedError: unknown;
+
+  const token = await resolvePushTokenForLogout({
+    isTauriIOSRuntime: () => true,
+    getPushTokenRuntime: () => new Promise<string>(() => undefined),
+    tokenLookupTimeoutMs: 10,
+    warn: (message, error) => {
+      warnCalls += 1;
+      warnedMessage = message;
+      warnedError = error;
+    },
+  });
+
+  assertEq(token, null);
+  assertEq(warnCalls, 1);
+  assertEq(
+    warnedMessage,
+    "[ChatsStore] Could not resolve iOS push token during logout:"
+  );
+  assertEq(warnedError instanceof Error, true);
+  if (warnedError instanceof Error) {
+    assertEq(
+      warnedError.message,
+      "Push token lookup timed out after 10ms"
+    );
+  }
+}
+
 async function testUnregisterSkipsWhenTokenMissing() {
   let fetchCalls = 0;
   await unregisterPushTokenForLogout("user", "token", null, {
@@ -236,6 +267,10 @@ export async function runPushLogoutTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Push logout resolver returns null and logs on resolution errors",
     testReturnsNullAndWarnsOnResolutionError
+  );
+  await runTest(
+    "Push logout resolver returns null and logs on resolution timeout",
+    testReturnsNullAndWarnsOnResolutionTimeout
   );
   await runTest(
     "Push logout unregister skips network call without token",
