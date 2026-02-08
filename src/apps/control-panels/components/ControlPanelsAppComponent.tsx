@@ -11,7 +11,12 @@ import { appMetadata } from "..";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs } from "@/components/ui/tabs";
+import {
+  ThemedTabsList,
+  ThemedTabsTrigger,
+  ThemedTabsContent,
+} from "@/components/shared/ThemedTabs";
 import {
   Select,
   SelectContent,
@@ -267,50 +272,19 @@ export function ControlPanelsAppComponent({
           }`}
         >
           <Tabs defaultValue={defaultTab} className="w-full h-full">
-            {isWindowsLegacyTheme ? (
-              <TabsList asChild>
-                <menu
-                  role="tablist"
-                  className="h-7! flex justify-start! p-0 -mt-1 -mb-[2px] bg-transparent shadow-none /* Windows XP/98 tab strip */"
-                >
-                  <TabsTrigger value="appearance">
-                    {t("apps.control-panels.appearance")}
-                  </TabsTrigger>
-                  <TabsTrigger value="sound">
-                    {t("apps.control-panels.sound")}
-                  </TabsTrigger>
-                  <TabsTrigger value="system">
-                    {t("apps.control-panels.system")}
-                  </TabsTrigger>
-                </menu>
-              </TabsList>
-            ) : (
-              <TabsList className={tabStyles.tabListClasses}>
-                <TabsTrigger
-                  value="appearance"
-                  className={tabStyles.tabTriggerClasses}
-                >
-                  {t("apps.control-panels.appearance")}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="sound"
-                  className={tabStyles.tabTriggerClasses}
-                >
-                  {t("apps.control-panels.sound")}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="system"
-                  className={tabStyles.tabTriggerClasses}
-                >
-                  {t("apps.control-panels.system")}
-                </TabsTrigger>
-              </TabsList>
-            )}
+            <ThemedTabsList>
+              <ThemedTabsTrigger value="appearance">
+                {t("apps.control-panels.appearance")}
+              </ThemedTabsTrigger>
+              <ThemedTabsTrigger value="sound">
+                {t("apps.control-panels.sound")}
+              </ThemedTabsTrigger>
+              <ThemedTabsTrigger value="system">
+                {t("apps.control-panels.system")}
+              </ThemedTabsTrigger>
+            </ThemedTabsList>
 
-            <TabsContent
-              value="appearance"
-              className={tabStyles.tabContentClasses}
-            >
+            <ThemedTabsContent value="appearance">
               <div className="space-y-4 h-full overflow-y-auto p-4 pt-6">
                 {/* Theme Selector */}
                 <div className="flex items-center justify-between gap-2">
@@ -423,9 +397,9 @@ export function ControlPanelsAppComponent({
 
                 <WallpaperPicker />
               </div>
-            </TabsContent>
+            </ThemedTabsContent>
 
-            <TabsContent value="sound" className={tabStyles.tabContentClasses}>
+            <ThemedTabsContent value="sound">
               <div className="space-y-4 h-full overflow-y-auto p-4 pt-6">
                 {/* UI Sounds toggle + volume */}
                 <div className="flex flex-col gap-1">
@@ -516,9 +490,9 @@ export function ControlPanelsAppComponent({
                   isIOS={isIOS}
                 />
               </div>
-            </TabsContent>
+            </ThemedTabsContent>
 
-            <TabsContent value="system" className={tabStyles.tabContentClasses}>
+            <ThemedTabsContent value="system">
               <div className="space-y-4 h-full overflow-y-auto p-4">
                 {/* User Account Section */}
                 <div className="space-y-2">
@@ -874,7 +848,7 @@ export function ControlPanelsAppComponent({
                   </div>
                 )}
               </div>
-            </TabsContent>
+            </ThemedTabsContent>
           </Tabs>
         </div>
 
