@@ -122,6 +122,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         invalidStoredTokensRemoved: 0,
         skippedNonStringTokenCount: 0,
         pushMetadataLookupConcurrency: 0,
+        removedUserTokenSet: 0,
       });
     }
 
@@ -155,6 +156,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         invalidStoredTokensRemoved,
         skippedNonStringTokenCount,
         pushMetadataLookupConcurrency: 0,
+        removedUserTokenSet: 0,
       });
     }
 
@@ -194,6 +196,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       invalidStoredTokensRemoved,
       skippedNonStringTokenCount,
       pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
+      removedUserTokenSet: userTokenSetRemoved,
     });
   } catch (error) {
     return respondInternalServerError(
