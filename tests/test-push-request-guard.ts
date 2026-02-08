@@ -525,6 +525,27 @@ async function testMissingMethodDefaultsToPost() {
   });
 }
 
+async function testWhitespaceOnlyMethodDefaultsToPost() {
+  await withDevelopmentEnv(async () => {
+    const req = createRawRequest("   ");
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockLogger.requestCalls.length, 1);
+    assertEq(mockLogger.requestCalls[0].method, "POST");
+    assertEq(mockLogger.responseCalls.length, 0);
+  });
+}
+
 async function testLowercaseOptionsMethodHandledAsPreflight() {
   await withDevelopmentEnv(async () => {
     const req = createRawRequest("options");
@@ -1102,6 +1123,10 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard defaults missing method to POST",
     testMissingMethodDefaultsToPost
+  );
+  await runTest(
+    "Push request guard defaults whitespace-only method to POST",
+    testWhitespaceOnlyMethodDefaultsToPost
   );
   await runTest(
     "Push request guard normalizes lowercase OPTIONS method",
