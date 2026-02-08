@@ -116,9 +116,12 @@ export function isTokenMetadataOwnedByUser(
 }
 
 export function extractBearerToken(authHeader: string | null | undefined): string | null {
-  if (!authHeader) return null;
-  if (!authHeader.startsWith("Bearer ")) return null;
-  const token = authHeader.slice(7).trim();
+  if (typeof authHeader !== "string") return null;
+
+  const match = authHeader.trim().match(/^Bearer\s+(.+)$/i);
+  if (!match) return null;
+
+  const token = match[1].trim();
   return token.length > 0 ? token : null;
 }
 

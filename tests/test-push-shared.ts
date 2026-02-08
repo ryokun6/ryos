@@ -50,6 +50,8 @@ async function testUsernameNormalization() {
 async function testBearerTokenExtraction() {
   assertEq(extractBearerToken("Bearer abc.def"), "abc.def");
   assertEq(extractBearerToken("Bearer      token-value    "), "token-value");
+  assertEq(extractBearerToken("bearer lower-case-token"), "lower-case-token");
+  assertEq(extractBearerToken("  BEARER   mixed-case-token  "), "mixed-case-token");
   assertEq(extractBearerToken("Basic abc"), null);
   assertEq(extractBearerToken(undefined), null);
 }
