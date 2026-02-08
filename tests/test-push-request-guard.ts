@@ -1907,6 +1907,87 @@ async function testOriginFallbackToRefererAllowsLocalhost() {
   });
 }
 
+async function testOriginHeaderArrayUsesFirstNonEmptyEntry() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequestWithHeaders(
+      "POST",
+      {
+        origin: ["   ", "http://localhost:3000"],
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+  });
+}
+
+async function testOriginHeaderArrayUsesFirstNonEmptyValueForPrecedence() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequestWithHeaders(
+      "POST",
+      {
+        origin: ["https://evil.example", "http://localhost:3000"],
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 403);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Unauthorized" })
+    );
+  });
+}
+
+async function testRefererHeaderArrayUsesFirstNonEmptyEntryWhenOriginMissing() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequestWithHeaders(
+      "POST",
+      {
+        referer: ["   ", "http://localhost:3000/some/path?query=1"],
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+  });
+}
+
 async function testInvalidRefererOriginIsRejected() {
   await withRuntimeEnv("development", async () => {
     const req = createRequestWithHeaders(
@@ -2311,6 +2392,18 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard allows localhost via referer fallback",
     testOriginFallbackToRefererAllowsLocalhost
+  );
+  await runTest(
+    "Push request guard uses first non-empty origin array value",
+    testOriginHeaderArrayUsesFirstNonEmptyEntry
+  );
+  await runTest(
+    "Push request guard uses first non-empty origin array value for precedence",
+    testOriginHeaderArrayUsesFirstNonEmptyValueForPrecedence
+  );
+  await runTest(
+    "Push request guard uses first non-empty referer array value when origin missing",
+    testRefererHeaderArrayUsesFirstNonEmptyEntryWhenOriginMissing
   );
   await runTest(
     "Push request guard rejects invalid referer fallback",

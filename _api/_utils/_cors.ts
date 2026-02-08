@@ -7,9 +7,18 @@ type VercelEnv = "production" | "preview" | "development";
 function getHeader(req: VercelRequest, name: string): string | null {
   const value = req.headers[name.toLowerCase()];
   if (Array.isArray(value)) {
-    return value[0] || null;
+    for (const entry of value) {
+      if (typeof entry !== "string") continue;
+      const trimmed = entry.trim();
+      if (trimmed.length > 0) {
+        return trimmed;
+      }
+    }
+    return null;
   }
-  return typeof value === "string" ? value : null;
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 const PROD_ALLOWED_ORIGIN = "https://os.ryo.lu";
