@@ -45,6 +45,7 @@
     "test:share-applet": "bun run tests/test-share-applet.ts",
     "test:chat-notifications": "bun run tests/test-chat-notification-logic.ts",
     "test:chat-broadcast-wiring": "bun run tests/test-chat-broadcast-wiring.ts",
+    "test:chat-store-guards": "bun run tests/test-chat-store-guards-wiring.ts",
     "test:pusher-client": "bun run tests/test-pusher-client-refcount.ts",
     "test:chat-regression": "bun run tests/run-all-tests.ts chat- && bun run tests/run-all-tests.ts pusher"
   },

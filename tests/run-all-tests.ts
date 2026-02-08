@@ -19,6 +19,7 @@ import { runRoomsExtraTests } from "./test-rooms-extra";
 import { runChatNotificationLogicTests } from "./test-chat-notification-logic";
 import { runPusherClientRefcountTests } from "./test-pusher-client-refcount";
 import { runChatBroadcastWiringTests } from "./test-chat-broadcast-wiring";
+import { runChatStoreGuardsWiringTests } from "./test-chat-store-guards-wiring";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -96,6 +97,7 @@ async function runAllTests(): Promise<void> {
     { name: "chat-notifications", run: runChatNotificationLogicTests },
     { name: "pusher-client", run: runPusherClientRefcountTests },
     { name: "chat-broadcast-wiring", run: runChatBroadcastWiringTests },
+    { name: "chat-store-guards", run: runChatStoreGuardsWiringTests },
   ];
 
   // Check for specific test to run
