@@ -6,7 +6,7 @@ import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import { SlashCommands } from "../extensions/SlashCommands";
 import { SpeechHighlight } from "../extensions/SpeechHighlight";
-import { Editor } from "@tiptap/core";
+import { EditorContext } from "./EditorContext";
 
 interface EditorProviderProps {
   children?: React.ReactNode;
@@ -41,16 +41,4 @@ export function EditorProvider({ children }: EditorProviderProps) {
       {children}
     </EditorContext.Provider>
   );
-}
-
-import { createContext, useContext } from "react";
-
-const EditorContext = createContext<Editor | null>(null);
-
-export function useEditorContext() {
-  const editor = useContext(EditorContext);
-  if (!editor) {
-    throw new Error("useEditorContext must be used within EditorProvider");
-  }
-  return editor;
 }

@@ -1,4 +1,4 @@
-import { lazy, Suspense, ComponentType, useEffect } from "react";
+import { lazy, Suspense, ComponentType } from "react";
 import { type AppId } from "./appRegistryData";
 import type {
   AppProps,
@@ -10,7 +10,7 @@ import type {
   VideosInitialData,
 } from "@/apps/base/types";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
-import { useAppStore } from "@/stores/useAppStore";
+import { AppLoadSignal } from "./AppLoadSignal";
 
 export type { AppId };
 
@@ -38,32 +38,6 @@ const defaultWindowConstraints: WindowConstraints = {
 // LAZY LOADING WRAPPER
 // ============================================================================
 
-// Signal component to notify store when lazy component is loaded
-const LoadSignal = ({ instanceId }: { instanceId?: string }) => {
-  const markInstanceAsLoaded = useAppStore((state) => state.markInstanceAsLoaded);
-  useEffect(() => {
-    if (instanceId) {
-      // Use requestIdleCallback for non-urgent loading signal, falling back to setTimeout
-      // This ensures we don't block the main thread during heavy app initialization
-      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-        const handle = window.requestIdleCallback(
-          () => {
-            markInstanceAsLoaded(instanceId);
-          },
-          { timeout: 1000 }
-        );
-        return () => window.cancelIdleCallback(handle);
-      } else {
-        const timer = setTimeout(() => {
-          markInstanceAsLoaded(instanceId);
-        }, 50); 
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [instanceId, markInstanceAsLoaded]);
-  return null;
-};
-
 // Cache for lazy components to maintain stable references across HMR
 const lazyComponentCache = new Map<string, ComponentType<AppProps<unknown>>>();
 
@@ -85,7 +59,7 @@ function createLazyComponent<T = unknown>(
   const WrappedComponent = (props: AppProps<T>) => (
     <Suspense fallback={null}>
       <LazyComponent {...props} />
-      <LoadSignal instanceId={props.instanceId} />
+      <AppLoadSignal instanceId={props.instanceId} />
     </Suspense>
   );
   
