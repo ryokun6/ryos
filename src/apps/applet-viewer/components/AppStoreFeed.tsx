@@ -321,8 +321,24 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
       isActive = false;
       abortController.abort();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, applets.length]);
+
+  const scrollToIndex = useCallback((index: number) => {
+    if (index >= 0 && index < appletsLengthRef.current) {
+      const prevIndex = currentIndexRef.current;
+      setCurrentIndex(index);
+      // Note: currentIndexRef.current is automatically updated by useLatestRef
+      
+      // Determine navigation direction
+      if (index > prevIndex) {
+        setNavigationDirection("forward");
+      } else if (index < prevIndex) {
+        setNavigationDirection("backward");
+      } else {
+        setNavigationDirection("none");
+      }
+    }
+  }, []);
 
   // Handle wheel navigation for edge detection and toolbar
   useEffect(() => {
@@ -348,7 +364,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
     return () => {
       container.removeEventListener("wheel", handleWheel);
     };
-  }, [currentIndex, applets.length]);
+  }, [currentIndex, applets.length, scrollToIndex]);
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -368,24 +384,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentIndex, applets.length]);
-
-  const scrollToIndex = (index: number) => {
-    if (index >= 0 && index < appletsLengthRef.current) {
-      const prevIndex = currentIndexRef.current;
-      setCurrentIndex(index);
-      // Note: currentIndexRef.current is automatically updated by useLatestRef
-      
-      // Determine navigation direction
-      if (index > prevIndex) {
-        setNavigationDirection("forward");
-      } else if (index < prevIndex) {
-        setNavigationDirection("backward");
-      } else {
-        setNavigationDirection("none");
-      }
-    }
-  };
+  }, [currentIndex, applets.length, scrollToIndex]);
 
   // Note: Removed useEffect hooks that synced refs with state
   // useLatestRef handles this automatically during render
@@ -401,7 +400,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
         scrollToIndex(currentIndexRef.current - 1);
       }
     },
-  }), []);
+  }), [appletsLengthRef, currentIndexRef, scrollToIndex]);
 
   const handleInstall = async (applet: Applet) => {
     focusWindow?.();
