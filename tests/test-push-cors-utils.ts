@@ -6,6 +6,8 @@
 import type { VercelRequest } from "@vercel/node";
 import {
   CORS_MAX_PREFLIGHT_ALLOW_HEADERS_LENGTH,
+  CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH,
+  CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS,
   CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUE_LENGTH,
   CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES,
   getEffectiveOrigin,
@@ -37,6 +39,8 @@ function createRequest(
 async function testExportedCorsContractConstants() {
   assertEq(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES, 50);
   assertEq(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUE_LENGTH, 1024);
+  assertEq(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH, 128);
+  assertEq(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS, 200);
   assertEq(CORS_MAX_PREFLIGHT_ALLOW_HEADERS_LENGTH, 4096);
 }
 
@@ -211,6 +215,58 @@ async function testHandlePreflightMergesRepeatedRequestedHeaderValues() {
   });
 }
 
+async function testHandlePreflightFiltersInvalidRequestedHeaderTokens() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers":
+      "X-Valid, invalid token, invalid/token, X-Also-Valid",
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(
+      res.getHeader("Access-Control-Allow-Headers"),
+      "X-Valid, X-Also-Valid"
+    );
+  });
+}
+
+async function testHandlePreflightDedupesRequestedHeaderTokensCaseInsensitively() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": "x-test, X-Test, X-TEST, X-Other",
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Allow-Headers"), "x-test, X-Other");
+  });
+}
+
+async function testHandlePreflightFallsBackWhenAllRequestedHeaderTokensInvalid() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": "invalid token, invalid/token, @@@",
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(
+      res.getHeader("Access-Control-Allow-Headers"),
+      "Content-Type, Authorization, X-Username"
+    );
+  });
+}
+
 async function testHandlePreflightUsesRequestedHeaderValueAtScanLimit() {
   const requestedHeaderValues = Array.from(
     { length: CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES },
@@ -256,11 +312,54 @@ async function testHandlePreflightIgnoresRequestedHeaderValuesBeyondScanLimit() 
   });
 }
 
-async function testHandlePreflightIgnoresRequestedHeaderValueWhenTooLong() {
+async function testHandlePreflightUsesRequestedHeaderTokenAtTokenScanLimit() {
+  const candidates = Array.from(
+    { length: CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS },
+    (_, index) =>
+      index === CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS - 1 ? "X-Token-Limit" : " "
+  );
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": candidates.join(","),
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-Token-Limit");
+  });
+}
+
+async function testHandlePreflightIgnoresRequestedHeaderTokenBeyondTokenScanLimit() {
+  const candidates = Array.from(
+    { length: CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS + 1 },
+    (_, index) =>
+      index === CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS ? "X-Beyond-Token-Limit" : " "
+  );
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": candidates.join(","),
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(
+      res.getHeader("Access-Control-Allow-Headers"),
+      "Content-Type, Authorization, X-Username"
+    );
+  });
+}
+
+async function testHandlePreflightIgnoresRequestedHeaderTokenWhenNameTooLong() {
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:3000",
     "access-control-request-headers": [
-      "X".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUE_LENGTH + 1),
+      "X".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH + 1),
     ],
   });
   const res = createMockVercelResponseHarness();
@@ -276,12 +375,20 @@ async function testHandlePreflightIgnoresRequestedHeaderValueWhenTooLong() {
   });
 }
 
-async function testHandlePreflightAcceptsRequestedHeaderValueAtLengthLimit() {
+async function testHandlePreflightIgnoresRequestedHeaderValueWhenTooLong() {
+  const validSizedToken = "A".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH);
+  const oversizedRequestedHeaderValue = Array.from(
+    { length: 8 },
+    (_, index) => `${validSizedToken}${index}`
+  ).join(",");
+  assertEq(
+    oversizedRequestedHeaderValue.length > CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUE_LENGTH,
+    true
+  );
+
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:3000",
-    "access-control-request-headers": [
-      "X".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUE_LENGTH),
-    ],
+    "access-control-request-headers": [oversizedRequestedHeaderValue],
   });
   const res = createMockVercelResponseHarness();
 
@@ -291,7 +398,49 @@ async function testHandlePreflightAcceptsRequestedHeaderValueAtLengthLimit() {
     assertEq(res.getStatusCode(), 204);
     assertEq(
       res.getHeader("Access-Control-Allow-Headers"),
-      "X".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUE_LENGTH)
+      "Content-Type, Authorization, X-Username"
+    );
+  });
+}
+
+async function testHandlePreflightAcceptsRequestedHeaderValueAtLengthLimit() {
+  const tokenA = "A".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH);
+  const tokenB = "B".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH);
+  const tokenC = "C".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH);
+  const tokenD = "D".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH);
+  const tokenE = "E".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH);
+  const tokenF = "F".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH);
+  const tokenG = "G".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH);
+  const tokenH = "H".repeat(121);
+  const requestedHeaderTokens = [
+    tokenA,
+    tokenB,
+    tokenC,
+    tokenD,
+    tokenE,
+    tokenF,
+    tokenG,
+    tokenH,
+  ];
+  const requestedHeaderValue = requestedHeaderTokens.join(",");
+  assertEq(
+    requestedHeaderValue.length,
+    CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUE_LENGTH
+  );
+
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": [requestedHeaderValue],
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(
+      res.getHeader("Access-Control-Allow-Headers"),
+      requestedHeaderTokens.join(", ")
     );
   });
 }
@@ -315,11 +464,11 @@ async function testHandlePreflightKeepsValidRequestedHeaderValuesWhenSomeAreTooL
 }
 
 async function testHandlePreflightFallsBackWhenMergedAllowHeadersWouldBeTooLong() {
-  const repeatedHeaderValue = "X-Header-Value-".padEnd(90, "x");
   const requestedHeaderValues = Array.from(
     { length: CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES },
-    () => repeatedHeaderValue
+    (_, index) => `X-${String(index).padStart(2, "0")}-${"x".repeat(75)}`
   );
+  assertEq(requestedHeaderValues[0].length, 80);
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:3000",
     "access-control-request-headers": requestedHeaderValues,
@@ -339,10 +488,11 @@ async function testHandlePreflightFallsBackWhenMergedAllowHeadersWouldBeTooLong(
 
 async function testHandlePreflightAcceptsMergedAllowHeadersAtLengthLimit() {
   const requestedHeaderValues = [
-    "A".repeat(1024),
-    "B".repeat(1024),
-    "C".repeat(1024),
-    "D".repeat(1018),
+    `A-${"a".repeat(125)}`,
+    ...Array.from(
+      { length: CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES - 1 },
+      (_, index) => `${String(index).padStart(2, "0")}-${"b".repeat(76)}`
+    ),
   ];
   const expectedAllowHeaders = requestedHeaderValues.join(", ");
   assertEq(expectedAllowHeaders.length, CORS_MAX_PREFLIGHT_ALLOW_HEADERS_LENGTH);
@@ -358,6 +508,26 @@ async function testHandlePreflightAcceptsMergedAllowHeadersAtLengthLimit() {
     assertEq(handled, true);
     assertEq(res.getStatusCode(), 204);
     assertEq(res.getHeader("Access-Control-Allow-Headers"), expectedAllowHeaders);
+  });
+}
+
+async function testHandlePreflightAcceptsRequestedHeaderTokenNameAtLengthLimit() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": [
+      "T".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH),
+    ],
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(
+      res.getHeader("Access-Control-Allow-Headers"),
+      "T".repeat(CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH)
+    );
   });
 }
 
@@ -521,12 +691,40 @@ export async function runPushCorsUtilsTests(): Promise<{
     testHandlePreflightMergesRepeatedRequestedHeaderValues
   );
   await runTest(
+    "CORS preflight helper filters invalid requested-header tokens",
+    testHandlePreflightFiltersInvalidRequestedHeaderTokens
+  );
+  await runTest(
+    "CORS preflight helper dedupes requested-header tokens case-insensitively",
+    testHandlePreflightDedupesRequestedHeaderTokensCaseInsensitively
+  );
+  await runTest(
+    "CORS preflight helper falls back when all requested-header tokens are invalid",
+    testHandlePreflightFallsBackWhenAllRequestedHeaderTokensInvalid
+  );
+  await runTest(
     "CORS preflight helper uses requested-header value at scan limit",
     testHandlePreflightUsesRequestedHeaderValueAtScanLimit
   );
   await runTest(
     "CORS preflight helper ignores requested-header values beyond scan limit",
     testHandlePreflightIgnoresRequestedHeaderValuesBeyondScanLimit
+  );
+  await runTest(
+    "CORS preflight helper uses requested-header token at token scan limit",
+    testHandlePreflightUsesRequestedHeaderTokenAtTokenScanLimit
+  );
+  await runTest(
+    "CORS preflight helper ignores requested-header token beyond token scan limit",
+    testHandlePreflightIgnoresRequestedHeaderTokenBeyondTokenScanLimit
+  );
+  await runTest(
+    "CORS preflight helper ignores requested-header tokens whose names are too long",
+    testHandlePreflightIgnoresRequestedHeaderTokenWhenNameTooLong
+  );
+  await runTest(
+    "CORS preflight helper accepts requested-header token names at length limit",
+    testHandlePreflightAcceptsRequestedHeaderTokenNameAtLengthLimit
   );
   await runTest(
     "CORS preflight helper ignores overly long requested-header values",

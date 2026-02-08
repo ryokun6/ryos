@@ -2,8 +2,11 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 type VercelEnv = "production" | "preview" | "development";
+const CORS_HEADER_NAME_REGEX = /^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/;
 export const CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUES = 50;
 export const CORS_MAX_PREFLIGHT_REQUESTED_HEADER_VALUE_LENGTH = 1024;
+export const CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH = 128;
+export const CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS = 200;
 export const CORS_MAX_PREFLIGHT_ALLOW_HEADERS_LENGTH = 4096;
 
 // Helper to get header value from Node.js IncomingMessage headers
@@ -64,7 +67,38 @@ function getNormalizedRequestedPreflightHeaders(req: VercelRequest): string | nu
     return null;
   }
 
-  const allowHeaders = requestedHeaderValues.join(", ");
+  const seen = new Set<string>();
+  const normalizedHeaders: string[] = [];
+  let processedTokenCount = 0;
+
+  for (const headerValue of requestedHeaderValues) {
+    const headerCandidates = headerValue.split(",");
+
+    for (const headerCandidate of headerCandidates) {
+      if (processedTokenCount >= CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS) {
+        break;
+      }
+
+      processedTokenCount += 1;
+      const trimmedHeader = headerCandidate.trim();
+      if (trimmedHeader.length === 0) continue;
+      if (trimmedHeader.length > CORS_MAX_PREFLIGHT_REQUESTED_HEADER_NAME_LENGTH) {
+        continue;
+      }
+      if (!CORS_HEADER_NAME_REGEX.test(trimmedHeader)) continue;
+
+      const key = trimmedHeader.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      normalizedHeaders.push(trimmedHeader);
+    }
+
+    if (processedTokenCount >= CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS) {
+      break;
+    }
+  }
+
+  const allowHeaders = normalizedHeaders.join(", ");
   if (
     allowHeaders.length === 0 ||
     allowHeaders.length > CORS_MAX_PREFLIGHT_ALLOW_HEADERS_LENGTH
