@@ -77,6 +77,13 @@ async function testNoMissingRedisEnvVars() {
   );
 }
 
+async function testMissingRedisEnvVarsFromExplicitEnvObject() {
+  const missing = getMissingPushRedisEnvVars({
+    REDIS_KV_REST_API_URL: "https://example.upstash.io",
+  } as NodeJS.ProcessEnv);
+  assertEq(missing.join(","), "REDIS_KV_REST_API_TOKEN");
+}
+
 async function testCreatePushRedisThrowsWithoutEnv() {
   withEnv(
     {
@@ -124,6 +131,10 @@ export async function runPushRedisTests(): Promise<{ passed: number; failed: num
     testWhitespaceRedisEnvVarsTreatedMissing
   );
   await runTest("Push redis helper passes when env vars exist", testNoMissingRedisEnvVars);
+  await runTest(
+    "Push redis helper supports explicit env object input",
+    testMissingRedisEnvVarsFromExplicitEnvObject
+  );
   await runTest(
     "Push redis factory throws when env vars missing",
     testCreatePushRedisThrowsWithoutEnv
