@@ -238,6 +238,43 @@ async function testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeade
   });
 }
 
+async function testHandlePreflightAppendsVaryDimensionsToExistingHeader() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+  });
+  const res = createMockVercelResponseHarness();
+  (res.res as { setHeader: (name: string, value: unknown) => unknown }).setHeader(
+    "Vary",
+    "Accept-Encoding"
+  );
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(
+      res.getHeader("Vary"),
+      "Accept-Encoding, Origin, Access-Control-Request-Headers"
+    );
+  });
+}
+
+async function testHandlePreflightAvoidsDuplicateVaryDimensions() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+  });
+  const res = createMockVercelResponseHarness();
+  (res.res as { setHeader: (name: string, value: unknown) => unknown }).setHeader(
+    "Vary",
+    "Origin, access-control-request-headers"
+  );
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getHeader("Vary"), "Origin, access-control-request-headers");
+  });
+}
+
 async function testHandlePreflightSkipsNonOptionsRequests() {
   const req = createRequest("POST", {
     origin: "http://localhost:3000",
@@ -308,6 +345,14 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper falls back to configured allow headers",
     testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeaderMissing
+  );
+  await runTest(
+    "CORS preflight helper appends Vary dimensions to existing Vary header",
+    testHandlePreflightAppendsVaryDimensionsToExistingHeader
+  );
+  await runTest(
+    "CORS preflight helper avoids duplicate Vary dimensions",
+    testHandlePreflightAvoidsDuplicateVaryDimensions
   );
   await runTest(
     "CORS preflight helper skips non-OPTIONS requests",
