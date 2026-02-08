@@ -10,6 +10,24 @@ interface PushRequestLoggerLike {
   response: (statusCode: number, duration?: number) => void;
 }
 
+function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
+  const requestedHeaders = req.headers["access-control-request-headers"];
+  const requestedHeadersValue = Array.isArray(requestedHeaders)
+    ? requestedHeaders[0]
+    : requestedHeaders;
+
+  if (typeof requestedHeadersValue !== "string") {
+    return undefined;
+  }
+
+  const normalizedHeaders = requestedHeadersValue
+    .split(",")
+    .map((header) => header.trim())
+    .filter((header) => header.length > 0);
+
+  return normalizedHeaders.length > 0 ? normalizedHeaders : undefined;
+}
+
 export function handlePushPostRequestGuards(
   req: VercelRequest,
   res: VercelResponse,
@@ -28,7 +46,11 @@ export function handlePushPostRequestGuards(
       return true;
     }
 
-    setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
+    const requestedCorsHeaders = getRequestedCorsHeaders(req);
+    setCorsHeaders(res, origin, {
+      methods: ["POST", "OPTIONS"],
+      ...(requestedCorsHeaders ? { headers: requestedCorsHeaders } : {}),
+    });
     logger.response(204, Date.now() - startTime);
     res.status(204).end();
     return true;

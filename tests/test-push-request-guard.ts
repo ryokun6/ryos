@@ -60,7 +60,7 @@ function createRawRequest(
 
 function createRequestWithHeaders(
   method: string | undefined,
-  headers: Record<string, string>,
+  headers: Record<string, string | string[]>,
   url?: string
 ): VercelRequest {
   return {
@@ -171,8 +171,72 @@ async function testAllowedOptionsPreflightHandled() {
     assertEq(mockRes.getStatusCode(), 204);
     assertEq(mockRes.getEndCallCount(), 1);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Headers"),
+      "Content-Type, Authorization, X-Username"
+    );
     assertEq(mockLogger.responseCalls.length, 1);
     assertEq(mockLogger.responseCalls[0].statusCode, 204);
+  });
+}
+
+async function testAllowedOptionsPreflightEchoesRequestedHeaders() {
+  await withDevelopmentEnv(async () => {
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-headers": "x-custom-header, authorization",
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Headers"),
+      "x-custom-header, authorization"
+    );
+  });
+}
+
+async function testAllowedOptionsPreflightUsesFirstRequestedHeaderValue() {
+  await withDevelopmentEnv(async () => {
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-headers": [
+          "x-first, authorization",
+          "x-second",
+        ],
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), "x-first, authorization");
   });
 }
 
@@ -799,6 +863,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard handles localhost preflight",
     testAllowedOptionsPreflightHandled
+  );
+  await runTest(
+    "Push request guard echoes requested headers for allowed preflight",
+    testAllowedOptionsPreflightEchoesRequestedHeaders
+  );
+  await runTest(
+    "Push request guard uses first requested-header value from arrays",
+    testAllowedOptionsPreflightUsesFirstRequestedHeaderValue
   );
   await runTest(
     "Push request guard rejects disallowed preflight",
