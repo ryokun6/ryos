@@ -1,7 +1,5 @@
-import { lazy, Suspense, ComponentType } from "react";
 import { type AppId } from "./appRegistryData";
 import type {
-  AppProps,
   BaseApp,
   ControlPanelsInitialData,
   InternetExplorerInitialData,
@@ -10,7 +8,27 @@ import type {
   VideosInitialData,
 } from "@/apps/base/types";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
-import { AppLoadSignal } from "./AppLoadSignal";
+import { FinderAppComponent } from "@/apps/finder/components/FinderAppComponent";
+import {
+  LazyAdminApp,
+  LazyAppletViewerApp,
+  LazyChatsApp,
+  LazyControlPanelsApp,
+  LazyInfiniteMacApp,
+  LazyInternetExplorerApp,
+  LazyIpodApp,
+  LazyKaraokeApp,
+  LazyMinesweeperApp,
+  LazyPaintApp,
+  LazyPcApp,
+  LazyPhotoBoothApp,
+  LazySoundboardApp,
+  LazyStickiesApp,
+  LazySynthApp,
+  LazyTerminalApp,
+  LazyTextEditApp,
+  LazyVideosApp,
+} from "./appLazyComponents";
 
 export type { AppId };
 
@@ -33,141 +51,6 @@ const defaultWindowConstraints: WindowConstraints = {
   defaultSize: { width: 730, height: 475 },
   minSize: { width: 300, height: 200 },
 };
-
-// ============================================================================
-// LAZY LOADING WRAPPER
-// ============================================================================
-
-// Cache for lazy components to maintain stable references across HMR
-const lazyComponentCache = new Map<string, ComponentType<AppProps<unknown>>>();
-
-// Helper to create a lazy-loaded component with Suspense
-// Uses a cache to maintain stable component references across HMR
-function createLazyComponent<T = unknown>(
-  importFn: () => Promise<{ default: ComponentType<AppProps<T>> }>,
-  cacheKey: string
-): ComponentType<AppProps<T>> {
-  // Return cached component if it exists (prevents HMR issues)
-  const cached = lazyComponentCache.get(cacheKey);
-  if (cached) {
-    return cached as ComponentType<AppProps<T>>;
-  }
-
-  const LazyComponent = lazy(importFn);
-  
-  // Wrap with Suspense to handle loading state
-  const WrappedComponent = (props: AppProps<T>) => (
-    <Suspense fallback={null}>
-      <LazyComponent {...props} />
-      <AppLoadSignal instanceId={props.instanceId} />
-    </Suspense>
-  );
-  
-  // Cache the component
-  lazyComponentCache.set(cacheKey, WrappedComponent as ComponentType<AppProps<unknown>>);
-  
-  return WrappedComponent;
-}
-
-// ============================================================================
-// LAZY-LOADED APP COMPONENTS
-// ============================================================================
-
-// Critical apps (load immediately for perceived performance)
-// Finder is critical - users see it on desktop
-import { FinderAppComponent } from "@/apps/finder/components/FinderAppComponent";
-
-// Lazy-loaded apps (loaded on-demand when opened)
-// Each uses a cache key to maintain stable references across HMR
-const LazyTextEditApp = createLazyComponent<unknown>(
-  () => import("@/apps/textedit/components/TextEditAppComponent").then(m => ({ default: m.TextEditAppComponent })),
-  "textedit"
-);
-
-const LazyInternetExplorerApp = createLazyComponent<InternetExplorerInitialData>(
-  () => import("@/apps/internet-explorer/components/InternetExplorerAppComponent").then(m => ({ default: m.InternetExplorerAppComponent })),
-  "internet-explorer"
-);
-
-const LazyChatsApp = createLazyComponent<unknown>(
-  () => import("@/apps/chats/components/ChatsAppComponent").then(m => ({ default: m.ChatsAppComponent })),
-  "chats"
-);
-
-const LazyControlPanelsApp = createLazyComponent<ControlPanelsInitialData>(
-  () => import("@/apps/control-panels/components/ControlPanelsAppComponent").then(m => ({ default: m.ControlPanelsAppComponent })),
-  "control-panels"
-);
-
-const LazyMinesweeperApp = createLazyComponent<unknown>(
-  () => import("@/apps/minesweeper/components/MinesweeperAppComponent").then(m => ({ default: m.MinesweeperAppComponent })),
-  "minesweeper"
-);
-
-const LazySoundboardApp = createLazyComponent<unknown>(
-  () => import("@/apps/soundboard/components/SoundboardAppComponent").then(m => ({ default: m.SoundboardAppComponent })),
-  "soundboard"
-);
-
-const LazyPaintApp = createLazyComponent<PaintInitialData>(
-  () => import("@/apps/paint/components/PaintAppComponent").then(m => ({ default: m.PaintAppComponent })),
-  "paint"
-);
-
-const LazyVideosApp = createLazyComponent<VideosInitialData>(
-  () => import("@/apps/videos/components/VideosAppComponent").then(m => ({ default: m.VideosAppComponent })),
-  "videos"
-);
-
-const LazyPcApp = createLazyComponent<unknown>(
-  () => import("@/apps/pc/components/PcAppComponent").then(m => ({ default: m.PcAppComponent })),
-  "pc"
-);
-
-const LazyPhotoBoothApp = createLazyComponent<unknown>(
-  () => import("@/apps/photo-booth/components/PhotoBoothComponent").then(m => ({ default: m.PhotoBoothComponent })),
-  "photo-booth"
-);
-
-const LazySynthApp = createLazyComponent<unknown>(
-  () => import("@/apps/synth/components/SynthAppComponent").then(m => ({ default: m.SynthAppComponent })),
-  "synth"
-);
-
-const LazyIpodApp = createLazyComponent<IpodInitialData>(
-  () => import("@/apps/ipod/components/IpodAppComponent").then(m => ({ default: m.IpodAppComponent })),
-  "ipod"
-);
-
-const LazyKaraokeApp = createLazyComponent<IpodInitialData>(
-  () => import("@/apps/karaoke/components/KaraokeAppComponent").then(m => ({ default: m.KaraokeAppComponent })),
-  "karaoke"
-);
-
-const LazyTerminalApp = createLazyComponent<unknown>(
-  () => import("@/apps/terminal/components/TerminalAppComponent").then(m => ({ default: m.TerminalAppComponent })),
-  "terminal"
-);
-
-const LazyAppletViewerApp = createLazyComponent<AppletViewerInitialData>(
-  () => import("@/apps/applet-viewer/components/AppletViewerAppComponent").then(m => ({ default: m.AppletViewerAppComponent })),
-  "applet-viewer"
-);
-
-const LazyAdminApp = createLazyComponent<unknown>(
-  () => import("@/apps/admin/components/AdminAppComponent").then(m => ({ default: m.AdminAppComponent })),
-  "admin"
-);
-
-const LazyStickiesApp = createLazyComponent<unknown>(
-  () => import("@/apps/stickies/components/StickiesAppComponent").then(m => ({ default: m.StickiesAppComponent })),
-  "stickies"
-);
-
-const LazyInfiniteMacApp = createLazyComponent<unknown>(
-  () => import("@/apps/infinite-mac/components/InfiniteMacAppComponent").then(m => ({ default: m.InfiniteMacAppComponent })),
-  "infinite-mac"
-);
 
 // ============================================================================
 // APP METADATA (loaded eagerly - small, isolated from components)
