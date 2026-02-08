@@ -16,7 +16,12 @@ interface RedisWithDelPipeline {
 }
 
 function parseNumericCount(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
+  if (
+    typeof value === "number" &&
+    Number.isFinite(value) &&
+    Number.isInteger(value) &&
+    value >= 0
+  ) {
     return value;
   }
 
@@ -24,7 +29,10 @@ function parseNumericCount(value: unknown): number | null {
     const trimmed = value.trim();
     if (trimmed.length === 0) return null;
     const parsed = Number(trimmed);
-    return Number.isFinite(parsed) ? parsed : null;
+    if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0) {
+      return null;
+    }
+    return parsed;
   }
 
   if (Array.isArray(value)) {

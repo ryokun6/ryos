@@ -126,13 +126,21 @@ async function testRemoveTokenMetadataKeysUsesParsedExecCounts() {
 }
 
 async function testRemovalFallbackWhenExecResultUnparseable() {
-  const { redis } = createFakeRedis([["not-a-count"]]);
-  const removedCount = await removeTokensFromUserSet(
-    redis,
+  const { redis: redisWithText } = createFakeRedis([["not-a-count"]]);
+  const removedCountFromText = await removeTokensFromUserSet(
+    redisWithText,
     "push:user:alice:tokens",
     ["tok1"]
   );
-  assertEq(removedCount, 1);
+  assertEq(removedCountFromText, 1);
+
+  const { redis: redisWithFloat } = createFakeRedis([["1.5"]]);
+  const removedCountFromFloat = await removeTokensFromUserSet(
+    redisWithFloat,
+    "push:user:alice:tokens",
+    ["tok1"]
+  );
+  assertEq(removedCountFromFloat, 1);
 }
 
 async function testNoOpsSkipPipeline() {
