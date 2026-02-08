@@ -43,6 +43,10 @@ import {
   type ApiChatMessagePayload as ApiMessage,
   normalizeApiMessages,
 } from "./chatsMessageNormalization";
+import {
+  createOptimisticChatMessage,
+  sendRoomMessageRequest,
+} from "./chatsSendMessage";
 
 interface CreateRoomPayload {
   type: "public" | "private";
@@ -1121,62 +1125,34 @@ export const useChatsStore = create<ChatsStoreState>()(
         sendMessage: async (roomId: string, content: string) => {
           const username = get().username;
           const authToken = get().authToken;
+          const trimmedContent = content.trim();
 
-          if (!username || !content.trim()) {
+          if (!username || !trimmedContent) {
             return { ok: false, error: "Username and content required" };
           }
 
           // Create optimistic message
-          const tempId = `temp_${Math.random().toString(36).substring(2, 9)}`;
-          const optimisticMessage: ChatMessage = {
-            id: tempId,
-            clientId: tempId,
+          const optimisticMessage = createOptimisticChatMessage(
             roomId,
             username,
-            content: content.trim(),
-            timestamp: Date.now(),
-          };
+            trimmedContent
+          );
 
           // Add optimistic message immediately
           get().addMessageToRoom(roomId, optimisticMessage);
 
           try {
-            const headers: HeadersInit = {
-              "Content-Type": "application/json",
-            };
-
-            if (authToken) {
-              headers["Authorization"] = `Bearer ${authToken}`;
-              headers["X-Username"] = username;
-            }
-
-            const messageUrl = `/api/rooms/${encodeURIComponent(roomId)}/messages`;
-            const messageBody = JSON.stringify({
-              content: content.trim(),
+            const response = await sendRoomMessageRequest({
+              roomId,
+              content: trimmedContent,
+              username,
+              authToken,
+              refreshAuthToken: get().refreshAuthToken,
             });
-
-            const response = authToken
-              ? await makeAuthenticatedRequest(
-                  messageUrl,
-                  {
-                    method: "POST",
-                    headers,
-                    body: messageBody,
-                  },
-                  get().refreshAuthToken
-                )
-              : await abortableFetch(getApiUrl(messageUrl), {
-                  method: "POST",
-                  headers,
-                  body: messageBody,
-                  timeout: 15000,
-                  throwOnHttpError: false,
-                  retry: { maxAttempts: 1, initialDelayMs: 250 },
-                });
 
             if (!response.ok) {
               // Remove optimistic message on failure
-              get().removeMessageFromRoom(roomId, tempId);
+              get().removeMessageFromRoom(roomId, optimisticMessage.id);
               const errorData = await response.json().catch(() => ({
                 error: `HTTP error! status: ${response.status}`,
               }));
@@ -1190,7 +1166,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { ok: true };
           } catch (error) {
             // Remove optimistic message on failure
-            get().removeMessageFromRoom(roomId, tempId);
+            get().removeMessageFromRoom(roomId, optimisticMessage.id);
             console.error("[ChatsStore] Error sending message:", error);
             return { ok: false, error: "Network error. Please try again." };
           }
