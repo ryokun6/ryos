@@ -170,6 +170,23 @@ async function testMockVercelResponseHarnessSupportsHeaderChainingAndCaseInsensi
   assertEq(mockRes.getHeader("ACCESS-control-allow-origin"), "http://localhost:3000");
 }
 
+async function testMockVercelResponseHarnessExposesResponseGetHeaderMethod() {
+  const mockRes = createMockVercelResponseHarness();
+  const responseLike = mockRes.res as {
+    setHeader: (name: string, value: unknown) => unknown;
+    getHeader: (name: string) => unknown;
+  };
+
+  responseLike.setHeader("Vary", "Origin");
+  responseLike.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+
+  assertEq(responseLike.getHeader("vary"), "Origin");
+  assertEq(
+    responseLike.getHeader("ACCESS-control-allow-origin"),
+    "http://localhost:3000"
+  );
+}
+
 async function testMockVercelResponseHarnessSupportsStatusJsonAndEndChaining() {
   const mockRes = createMockVercelResponseHarness();
   const responseLike = mockRes.res as {
@@ -286,6 +303,10 @@ export async function runPushEnvTests(): Promise<{ passed: number; failed: numbe
   await runTest(
     "mock vercel response harness supports chaining and case-insensitive headers",
     testMockVercelResponseHarnessSupportsHeaderChainingAndCaseInsensitiveRead
+  );
+  await runTest(
+    "mock vercel response harness exposes response.getHeader",
+    testMockVercelResponseHarnessExposesResponseGetHeaderMethod
   );
   await runTest(
     "mock vercel response harness supports status/json/end chaining",
