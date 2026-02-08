@@ -109,7 +109,10 @@ async function testRedisPositiveCountHelper() {
 
 async function testNormalizeRedisNonNegativeCountHelper() {
   assertEq(normalizeRedisNonNegativeCount(2), 2);
+  assertEq(normalizeRedisNonNegativeCount(Number.MAX_SAFE_INTEGER), Number.MAX_SAFE_INTEGER);
+  assertEq(normalizeRedisNonNegativeCount(Number.MAX_SAFE_INTEGER + 1), 0);
   assertEq(normalizeRedisNonNegativeCount("3"), 3);
+  assertEq(normalizeRedisNonNegativeCount("9007199254740993"), 0);
   assertEq(normalizeRedisNonNegativeCount(4n), 4);
   assertEq(normalizeRedisNonNegativeCount(true), 1);
   assertEq(normalizeRedisNonNegativeCount(false), 0);

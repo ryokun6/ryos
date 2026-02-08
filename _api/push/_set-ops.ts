@@ -1,3 +1,5 @@
+import { normalizeRedisNonNegativeCount } from "./_shared.js";
+
 interface SremPipelineLike {
   srem: (key: string, member: string) => void;
   exec: () => Promise<unknown>;
@@ -16,31 +18,9 @@ interface RedisWithDelPipeline {
 }
 
 function parseNumericCount(value: unknown, seen: Set<unknown> = new Set()): number | null {
-  if (typeof value === "bigint") {
-    if (value < 0n || value > BigInt(Number.MAX_SAFE_INTEGER)) return null;
-    return Number(value);
-  }
-
-  if (value === true) return 1;
-  if (value === false) return 0;
-
-  if (
-    typeof value === "number" &&
-    Number.isFinite(value) &&
-    Number.isInteger(value) &&
-    value >= 0
-  ) {
-    return value;
-  }
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (trimmed.length === 0) return null;
-    const parsed = Number(trimmed);
-    if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0) {
-      return null;
-    }
-    return parsed;
+  const primitiveCount = normalizeRedisNonNegativeCount(value, -1);
+  if (primitiveCount !== -1) {
+    return primitiveCount;
   }
 
   if (Array.isArray(value)) {

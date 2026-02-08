@@ -140,7 +140,7 @@ export function normalizeRedisNonNegativeCount(
   }
 
   if (typeof value === "number") {
-    if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+    if (!Number.isSafeInteger(value) || value < 0) {
       return fallback;
     }
     return value;
@@ -150,7 +150,7 @@ export function normalizeRedisNonNegativeCount(
     const trimmed = value.trim();
     if (trimmed.length === 0) return fallback;
     const parsed = Number(trimmed);
-    if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0) {
+    if (!Number.isSafeInteger(parsed) || parsed < 0) {
       return fallback;
     }
     return parsed;
