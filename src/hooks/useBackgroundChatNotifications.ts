@@ -147,6 +147,12 @@ export function useBackgroundChatNotifications() {
         return;
       }
 
+      const { roomMessages: roomMessagesMap } = useChatsStore.getState();
+      const existingMessages = roomMessagesMap[data.message.roomId] || [];
+      if (existingMessages.some((message) => message.id === data.message.id)) {
+        return;
+      }
+
       const messageWithTimestamp: ChatMessage = {
         ...data.message,
         timestamp: toTimestamp(data.message.timestamp),

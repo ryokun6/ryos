@@ -192,6 +192,13 @@ export function useChatRoom(
       const handleRoomMessage = (data: { message: ChatMessage }) => {
         console.log("[Pusher Hook] Received room-message:", data.message);
 
+        // Ignore duplicate realtime deliveries for the same server message.
+        const { roomMessages: roomMessagesMap } = useChatsStore.getState();
+        const existingMessages = roomMessagesMap[data.message.roomId] || [];
+        if (existingMessages.some((message) => message.id === data.message.id)) {
+          return;
+        }
+
         // Add message with proper timestamp
         const messageWithTimestamp = {
           ...data.message,
