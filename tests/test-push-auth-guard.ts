@@ -41,10 +41,17 @@ function createMockLogger(): MockLogger {
 }
 
 function createFakeAuthRedis(
-  existsResult: number
-): { redis: FakeAuthRedis; existsCalls: string[]; expireCalls: string[] } {
+  existsResult: number,
+  options?: { throwOnGet?: boolean }
+): {
+  redis: FakeAuthRedis;
+  existsCalls: string[];
+  expireCalls: string[];
+  getCallCount: () => number;
+} {
   const existsCalls: string[] = [];
   const expireCalls: string[] = [];
+  let getCallCount = 0;
 
   return {
     redis: {
@@ -56,10 +63,17 @@ function createFakeAuthRedis(
         expireCalls.push(key);
         return 1;
       },
-      get: async () => null,
+      get: async () => {
+        getCallCount += 1;
+        if (options?.throwOnGet) {
+          throw new Error("Unexpected grace-token lookup");
+        }
+        return null;
+      },
     },
     existsCalls,
     expireCalls,
+    getCallCount: () => getCallCount,
   };
 }
 
@@ -153,7 +167,7 @@ async function testExtractAuthRejectsBlankBearerToken() {
 async function testValidateAuthRejectsInvalidToken() {
   const mockRes = createMockVercelResponseHarness();
   const mockLogger = createMockLogger();
-  const { redis, existsCalls, expireCalls } = createFakeAuthRedis(0);
+  const { redis, existsCalls, expireCalls, getCallCount } = createFakeAuthRedis(0);
 
   const isValid = await validatePushAuthOrRespond(
     redis as Parameters<typeof validatePushAuthOrRespond>[0],
@@ -171,6 +185,7 @@ async function testValidateAuthRejectsInvalidToken() {
   );
   assertEq(existsCalls.length, 1);
   assertEq(expireCalls.length, 0);
+  assertEq(getCallCount(), 0);
   assertEq(mockLogger.responseCalls.length, 1);
   assertEq(mockLogger.responseCalls[0].statusCode, 401);
 }
@@ -178,7 +193,7 @@ async function testValidateAuthRejectsInvalidToken() {
 async function testValidateAuthAcceptsValidTokenAndRefreshesTtl() {
   const mockRes = createMockVercelResponseHarness();
   const mockLogger = createMockLogger();
-  const { redis, existsCalls, expireCalls } = createFakeAuthRedis(1);
+  const { redis, existsCalls, expireCalls, getCallCount } = createFakeAuthRedis(1);
 
   const isValid = await validatePushAuthOrRespond(
     redis as Parameters<typeof validatePushAuthOrRespond>[0],
@@ -192,6 +207,7 @@ async function testValidateAuthAcceptsValidTokenAndRefreshesTtl() {
   assertEq(existsCalls.length, 1);
   assertEq(existsCalls[0].includes(":user:user:"), true);
   assertEq(expireCalls.length, 1);
+  assertEq(getCallCount(), 0);
   assertEq(mockRes.getStatusCode(), 0);
   assertEq(mockLogger.responseCalls.length, 0);
 }
@@ -212,6 +228,23 @@ async function testValidateAuthNormalizesUsernameBeforeLookup() {
   assertEq(isValid, true);
   assertEq(existsCalls.length, 1);
   assertEq(existsCalls[0].includes(":user:mixeduser:"), true);
+}
+
+async function testValidateAuthSkipsGraceLookupPath() {
+  const mockRes = createMockVercelResponseHarness();
+  const mockLogger = createMockLogger();
+  const { redis, getCallCount } = createFakeAuthRedis(0, { throwOnGet: true });
+
+  const isValid = await validatePushAuthOrRespond(
+    redis as Parameters<typeof validatePushAuthOrRespond>[0],
+    { username: "user", token: "expired-token" },
+    mockRes.res,
+    mockLogger.logger,
+    Date.now()
+  );
+
+  assertEq(isValid, false);
+  assertEq(getCallCount(), 0);
 }
 
 export async function runPushAuthGuardTests(): Promise<{ passed: number; failed: number }> {
@@ -245,6 +278,10 @@ export async function runPushAuthGuardTests(): Promise<{ passed: number; failed:
   await runTest(
     "Push auth guard lowercases username for token lookup",
     testValidateAuthNormalizesUsernameBeforeLookup
+  );
+  await runTest(
+    "Push auth guard skips grace-token lookup path",
+    testValidateAuthSkipsGraceLookupPath
   );
 
   return printSummary();
