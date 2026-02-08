@@ -348,6 +348,14 @@ export async function runPusherClientRefcountTests(): Promise<{
     assertEq(calls.length, 0, "Expected no unsubscribe for blank channel name");
   });
 
+  await runTest("ignores undefined channel release", async () => {
+    const { pusher, calls } = createFakePusher();
+    resetGlobalPusherState(pusher);
+
+    unsubscribePusherChannel(undefined as unknown as string);
+    assertEq(calls.length, 0, "Expected no unsubscribe for undefined channel name");
+  });
+
   await runTest("throws when subscribing with whitespace-only channel", async () => {
     const { pusher } = createFakePusher();
     resetGlobalPusherState(pusher);
@@ -362,6 +370,22 @@ export async function runPusherClientRefcountTests(): Promise<{
     }
 
     assert(threw, "Expected blank subscribe channel to throw");
+  });
+
+  await runTest("throws clear error for undefined subscribe channel", async () => {
+    const { pusher } = createFakePusher();
+    resetGlobalPusherState(pusher);
+
+    let threw = false;
+    try {
+      subscribePusherChannel(undefined as unknown as string);
+    } catch (error) {
+      threw =
+        error instanceof Error &&
+        error.message.includes("channelName is required");
+    }
+
+    assert(threw, "Expected undefined subscribe channel to throw clear error");
   });
 
   return printSummary();

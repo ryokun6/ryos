@@ -76,8 +76,9 @@ const warnChannelRecoveryOnce = (key: string, message: string): void => {
   console.warn(`[pusherClient] ${message}`);
 };
 
-const normalizeChannelName = (channelName: string): string =>
-  channelName.trim();
+const normalizeChannelName = (
+  channelName: string | null | undefined
+): string => channelName?.trim() || "";
 
 /**
  * Acquire a shared channel subscription.
