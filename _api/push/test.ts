@@ -151,6 +151,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         logger.warn("Push test rejected: requested token not in user set", {
           username,
           requestedTokenSuffix: getPushTokenSuffix(requestedToken),
+          staleOwnershipTokensRemoved: 0,
+          pushMetadataLookupConcurrency: 0,
+          invalidStoredTokensRemoved: 0,
+          skippedNonStringTokenCount: 0,
         });
         logger.response(403, Date.now() - startTime);
         return res
@@ -221,6 +225,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         requestedTokenSuffix: getPushTokenSuffix(requestedToken),
         staleOwnershipTokensRemoved,
         pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
+        invalidStoredTokensRemoved,
+        skippedNonStringTokenCount,
       });
       logger.response(403, Date.now() - startTime);
       return res.status(403).json(
@@ -238,6 +244,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         username,
         staleOwnershipTokensRemoved,
         pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
+        invalidStoredTokensRemoved,
+        skippedNonStringTokenCount,
       });
       logger.response(400, Date.now() - startTime);
       return res.status(400).json({
