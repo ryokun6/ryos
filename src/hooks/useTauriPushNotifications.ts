@@ -56,11 +56,9 @@ export function useTauriPushNotifications() {
             return;
           }
           const { title, body } = extractPushAlert(payload);
-          if (title || body) {
-            toast(title || "Notification", {
-              description: body || undefined,
-            });
-          }
+          toast(title || "Notification", {
+            description: body || undefined,
+          });
         });
         notificationUnlisten = () => notificationListener.unregister();
 
