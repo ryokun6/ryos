@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -71,23 +71,7 @@ export function CreateRoomDialog({
     }
   }, [isOpen, initialUsers]);
 
-  // Search for users when search term changes (with debouncing)
-  useEffect(() => {
-    if (searchTerm.length < 2) {
-      searchRequestIdRef.current += 1;
-      setUsers([]);
-      setIsSearching(false);
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      searchUsers(searchTerm);
-    }, 300); // 300ms debounce
-
-    return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
-
-  const searchUsers = async (query: string) => {
+  const searchUsers = useCallback(async (query: string) => {
     const requestId = ++searchRequestIdRef.current;
     setIsSearching(true);
     try {
@@ -120,7 +104,23 @@ export function CreateRoomDialog({
         setIsSearching(false);
       }
     }
-  };
+  }, [currentUsername]);
+
+  // Search for users when search term changes (with debouncing)
+  useEffect(() => {
+    if (searchTerm.length < 2) {
+      searchRequestIdRef.current += 1;
+      setUsers([]);
+      setIsSearching(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      searchUsers(searchTerm);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, searchUsers]);
 
   const handleSubmit = async () => {
     setIsLoading(true);

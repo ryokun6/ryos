@@ -1067,6 +1067,10 @@ export function useInternetExplorerLogic({
       setUrl,
       fetchCachedYears,
       currentTheme,
+      getWaybackUrl,
+      localUrl,
+      playElevatorMusic,
+      terminalSoundsEnabled,
     ]
   );
 

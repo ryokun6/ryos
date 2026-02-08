@@ -177,7 +177,7 @@ export function IpodScreen({
         }, delay);
       });
     }
-  }, [menuMode, selectedMenuItem, menuHistory.length]);
+  }, [forceScrollToSelected, menuMode, selectedMenuItem, menuHistory.length]);
 
   // Prepare for a newly opened menu
   useEffect(() => {
@@ -185,7 +185,7 @@ export function IpodScreen({
       const currentMenu = menuHistory[menuHistory.length - 1];
       resetItemRefs(currentMenu.items.length);
     }
-  }, [menuMode, menuHistory.length]);
+  }, [menuMode, menuHistory]);
 
   const shouldShowLyrics = showLyrics;
 
