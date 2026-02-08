@@ -119,6 +119,17 @@ async function testSetCorsHeadersAppendsOriginToExistingVaryHeader() {
   assertEq(res.getHeader("Vary"), "Accept-Encoding, Origin");
 }
 
+async function testSetCorsHeadersDoesNotDuplicateOriginInExistingVaryHeader() {
+  const res = createMockVercelResponseHarness();
+  (res.res as { setHeader: (name: string, value: unknown) => unknown }).setHeader(
+    "Vary",
+    "origin, Accept-Encoding"
+  );
+
+  setCorsHeaders(res.res, "http://localhost:3000");
+  assertEq(res.getHeader("Vary"), "origin, Accept-Encoding");
+}
+
 async function testHandlePreflightRejectsUnauthorizedOrigins() {
   const req = createRequest("OPTIONS", {
     origin: "https://unauthorized.example",
@@ -246,6 +257,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS header setter appends Origin to existing Vary values",
     testSetCorsHeadersAppendsOriginToExistingVaryHeader
+  );
+  await runTest(
+    "CORS header setter avoids duplicate Origin in existing Vary values",
+    testSetCorsHeadersDoesNotDuplicateOriginInExistingVaryHeader
   );
   await runTest(
     "CORS preflight helper rejects unauthorized origins",
