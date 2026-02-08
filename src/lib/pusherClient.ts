@@ -76,9 +76,20 @@ export function subscribePusherChannel(channelName: string): PusherChannel {
     pusher as unknown as { channel: (name: string) => PusherChannel | undefined }
   ).channel(channelName);
 
-  if (currentCount === 0 || !existingChannel) {
+  if (currentCount === 0) {
+    counts[channelName] = 1;
+    if (existingChannel) {
+      return existingChannel;
+    }
     const subscribedChannel = pusher.subscribe(channelName);
-    counts[channelName] = currentCount + 1;
+    counts[channelName] = 1;
+    return subscribedChannel;
+  }
+
+  if (!existingChannel) {
+    const subscribedChannel = pusher.subscribe(channelName);
+    // Count became stale while channel was missing; recover to 1 active holder.
+    counts[channelName] = 1;
     return subscribedChannel;
   }
 

@@ -46,6 +46,7 @@ const createFakePusher = (): {
 } => {
   const calls: FakeCall[] = [];
   const channels: Record<string, FakeChannel> = {};
+  const subscribed = new Set<string>();
 
   const ensureChannel = (channel: string): FakeChannel => {
     if (!channels[channel]) {
@@ -62,12 +63,15 @@ const createFakePusher = (): {
     pusher: {
       subscribe: (channel) => {
         calls.push({ type: "subscribe", channel });
+        subscribed.add(channel);
         return ensureChannel(channel);
       },
       unsubscribe: (channel) => {
         calls.push({ type: "unsubscribe", channel });
+        subscribed.delete(channel);
       },
-      channel: (channel) => ensureChannel(channel),
+      channel: (channel) =>
+        subscribed.has(channel) ? ensureChannel(channel) : undefined,
     },
     calls,
     channels,
@@ -186,13 +190,49 @@ async function main() {
     };
 
     globalWithPusherState.__pusherClient = fakePusher;
-    globalWithPusherState.__pusherChannelRefCounts = { "room-g": 1 };
+    globalWithPusherState.__pusherChannelRefCounts = { "room-g": 5 };
 
     subscribePusherChannel("room-g");
+    unsubscribePusherChannel("room-g");
 
-    assertEq(calls.length, 1, "Expected recovery subscribe when channel is missing");
+    assertEq(
+      calls.length,
+      2,
+      "Expected recovery to reset stale count and unsubscribe on first release"
+    );
     assertEq(calls[0].type, "subscribe");
     assertEq(calls[0].channel, "room-g");
+    assertEq(calls[1].type, "unsubscribe");
+    assertEq(calls[1].channel, "room-g");
+  });
+
+  await runTest("reuses existing channel when count starts at zero", async () => {
+    const calls: FakeCall[] = [];
+    const existingChannel: FakeChannel = {
+      name: "room-h",
+      bind: () => undefined,
+      unbind: () => undefined,
+    };
+    const fakePusher: FakePusher = {
+      subscribe: (channel) => {
+        calls.push({ type: "subscribe", channel });
+        return existingChannel;
+      },
+      unsubscribe: (channel) => {
+        calls.push({ type: "unsubscribe", channel });
+      },
+      channel: () => existingChannel,
+    };
+
+    globalWithPusherState.__pusherClient = fakePusher;
+    globalWithPusherState.__pusherChannelRefCounts = {};
+
+    subscribePusherChannel("room-h");
+    unsubscribePusherChannel("room-h");
+
+    assertEq(calls.length, 1, "Expected no subscribe; only final unsubscribe");
+    assertEq(calls[0].type, "unsubscribe");
+    assertEq(calls[0].channel, "room-h");
   });
 
   const { failed } = printSummary();
