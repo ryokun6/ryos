@@ -101,6 +101,24 @@ export async function runChatNotificationLogicTests(): Promise<{
     assert(result === false, "Expected false for empty message room id");
   });
 
+  await runTest("does not notify for whitespace-only message room id", async () => {
+    const result = shouldNotifyForRoomMessage({
+      chatsOpen: true,
+      currentRoomId: "room-f",
+      messageRoomId: "   ",
+    });
+    assert(result === false, "Expected false for whitespace-only message room id");
+  });
+
+  await runTest("matches active room after trimming room id whitespace", async () => {
+    const result = shouldNotifyForRoomMessage({
+      chatsOpen: true,
+      currentRoomId: " room-trim ",
+      messageRoomId: "room-trim",
+    });
+    assert(result === false, "Expected false when trimmed room IDs are equal");
+  });
+
   return printSummary();
 }
 

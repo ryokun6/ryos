@@ -16,7 +16,8 @@ export const shouldNotifyForRoomMessage = ({
   currentRoomId,
   messageRoomId,
 }: RoomNotificationParams): boolean => {
-  if (!messageRoomId) {
+  const normalizedMessageRoomId = messageRoomId?.trim();
+  if (!normalizedMessageRoomId) {
     return false;
   }
 
@@ -24,5 +25,6 @@ export const shouldNotifyForRoomMessage = ({
     return true;
   }
 
-  return currentRoomId !== messageRoomId;
+  const normalizedCurrentRoomId = currentRoomId?.trim() || null;
+  return normalizedCurrentRoomId !== normalizedMessageRoomId;
 };
