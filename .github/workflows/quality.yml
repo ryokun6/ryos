@@ -34,6 +34,8 @@ jobs:
         run: |
           bun run tests/test-chat-notification-logic.ts
           bun run tests/test-chat-store-guards-wiring.ts
+          bun run tests/test-chat-room-message-merge-logic.ts
+          bun run tests/test-ie-photobooth-regressions-wiring.ts
 
       - name: Generate quality baseline report
         run: bun run quality:report
