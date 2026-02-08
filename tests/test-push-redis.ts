@@ -84,6 +84,29 @@ async function testCreatePushRedisThrowsWithoutEnv() {
   );
 }
 
+async function testCreatePushRedisThrowsOnWhitespaceEnv() {
+  withPatchedEnv(
+    {
+      REDIS_KV_REST_API_URL: "   ",
+      REDIS_KV_REST_API_TOKEN: "token-value",
+    },
+    () => {
+      let errorMessage = "";
+      try {
+        createPushRedis();
+      } catch (error) {
+        errorMessage = error instanceof Error ? error.message : String(error);
+      }
+
+      assertEq(
+        errorMessage.includes("REDIS_KV_REST_API_URL"),
+        true,
+        `Expected URL missing in error message, got "${errorMessage}"`
+      );
+    }
+  );
+}
+
 async function testCreatePushRedisSucceedsWithEnv() {
   withPatchedEnv(
     {
@@ -115,6 +138,10 @@ export async function runPushRedisTests(): Promise<{ passed: number; failed: num
   await runTest(
     "Push redis factory throws when env vars missing",
     testCreatePushRedisThrowsWithoutEnv
+  );
+  await runTest(
+    "Push redis factory rejects whitespace env values",
+    testCreatePushRedisThrowsOnWhitespaceEnv
   );
   await runTest(
     "Push redis factory builds client when env vars set",
