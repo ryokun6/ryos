@@ -4,17 +4,14 @@ import {
   getMissingApnsEnvVars,
   type ApnsConfig,
 } from "../_utils/_push-apns.js";
-import { respondMissingEnvConfig } from "./_errors.js";
-
-interface PushApnsGuardLoggerLike {
-  warn?: (message: string, data?: unknown) => void;
-  error: (message: string, error?: unknown) => void;
-  response: (statusCode: number, duration?: number) => void;
-}
+import {
+  respondMissingEnvConfig,
+  type PushLoggerLike,
+} from "./_errors.js";
 
 export function getApnsConfigOrRespond(
   res: VercelResponse,
-  logger: PushApnsGuardLoggerLike,
+  logger: PushLoggerLike,
   startTime: number
 ): ApnsConfig | null {
   const apnsConfig = getApnsConfigFromEnv();

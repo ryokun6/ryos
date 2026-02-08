@@ -1,6 +1,6 @@
 import type { VercelResponse } from "@vercel/node";
 
-interface PushLoggerLike {
+export interface PushLoggerLike {
   warn?: (message: string, data?: unknown) => void;
   error: (message: string, error?: unknown) => void;
   response: (statusCode: number, duration?: number) => void;
