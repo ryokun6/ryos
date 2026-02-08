@@ -96,10 +96,18 @@ function createRawRequest(
   origin: string = "http://localhost:3000",
   url?: string
 ): VercelRequest {
+  return createRequestWithHeaders(method, { origin }, url);
+}
+
+function createRequestWithHeaders(
+  method: string | undefined,
+  headers: Record<string, string>,
+  url?: string
+): VercelRequest {
   return {
     method,
     url,
-    headers: { origin },
+    headers,
     body: {},
   } as unknown as VercelRequest;
 }
@@ -536,6 +544,57 @@ async function testDevelopmentRejectsUnknownLocalhostPort() {
   });
 }
 
+async function testOriginFallbackToRefererAllowsLocalhost() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequestWithHeaders(
+      "POST",
+      { referer: "http://localhost:3000/some/path?query=1" },
+      "/api/push/register"
+    );
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+  });
+}
+
+async function testInvalidRefererOriginIsRejected() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequestWithHeaders(
+      "POST",
+      { referer: "not-a-valid-url" },
+      "/api/push/register"
+    );
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 403);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Unauthorized" })
+    );
+  });
+}
+
 export async function runPushRequestGuardTests(): Promise<{
   passed: number;
   failed: number;
@@ -614,6 +673,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard rejects unknown localhost dev port",
     testDevelopmentRejectsUnknownLocalhostPort
+  );
+  await runTest(
+    "Push request guard allows localhost via referer fallback",
+    testOriginFallbackToRefererAllowsLocalhost
+  );
+  await runTest(
+    "Push request guard rejects invalid referer fallback",
+    testInvalidRefererOriginIsRejected
   );
 
   return printSummary();
