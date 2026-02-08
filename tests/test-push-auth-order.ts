@@ -61,7 +61,7 @@ function createMockResponse(): MockResponse {
 }
 
 function createRequest(
-  method: "POST" | "OPTIONS",
+  method: "POST" | "OPTIONS" | "GET",
   url: string,
   origin: string = "http://localhost:3000"
 ): VercelRequest {
@@ -108,6 +108,24 @@ async function expectUnauthorizedOriginResponse(
   );
   assertEq(mockRes.getEndCallCount(), 0);
   assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
+}
+
+async function expectMethodNotAllowedResponse(
+  handler: PushHandler,
+  endpointPath: string
+) {
+  const req = createRequest("GET", endpointPath);
+  const mockRes = createMockResponse();
+
+  await handler(req, mockRes.res);
+
+  assertEq(mockRes.getStatusCode(), 405);
+  assertEq(
+    JSON.stringify(mockRes.getJsonPayload()),
+    JSON.stringify({ error: "Method not allowed" })
+  );
+  assertEq(mockRes.getHeader("Allow"), "POST, OPTIONS");
+  assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
 }
 
 function withMissingPushEnv<T>(run: () => T | Promise<T>): Promise<T> {
@@ -161,6 +179,10 @@ async function testRegisterOptionsAllowedOriginReturnsNoContent() {
   assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
 }
 
+async function testRegisterMethodNotAllowedIncludesAllowHeader() {
+  await expectMethodNotAllowedResponse(pushRegisterHandler, "/api/push/register");
+}
+
 async function testUnregisterMissingCredentialsTakesPrecedence() {
   await withMissingPushEnv(async () => {
     await expectMissingCredentialsResponse(
@@ -184,6 +206,10 @@ async function testUnregisterOptionsUnauthorizedOriginRejected() {
       "OPTIONS"
     );
   });
+}
+
+async function testUnregisterMethodNotAllowedIncludesAllowHeader() {
+  await expectMethodNotAllowedResponse(pushUnregisterHandler, "/api/push/unregister");
 }
 
 async function testPushTestMissingCredentialsTakesPrecedence() {
@@ -214,6 +240,10 @@ async function testPushTestOptionsAllowedOriginReturnsNoContent() {
   assertEq(mockRes.getJsonPayload(), null);
   assertEq(mockRes.getEndCallCount(), 1);
   assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+}
+
+async function testPushTestMethodNotAllowedIncludesAllowHeader() {
+  await expectMethodNotAllowedResponse(pushTestHandler, "/api/push/test");
 }
 
 async function testUnregisterOptionsAllowedOriginReturnsNoContent() {
@@ -249,6 +279,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
     testRegisterOptionsAllowedOriginReturnsNoContent
   );
   await runTest(
+    "Push register method guard sets Allow header",
+    testRegisterMethodNotAllowedIncludesAllowHeader
+  );
+  await runTest(
     "Push unregister returns 401 before Redis config checks",
     testUnregisterMissingCredentialsTakesPrecedence
   );
@@ -259,6 +293,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
   await runTest(
     "Push unregister rejects disallowed-origin preflight",
     testUnregisterOptionsUnauthorizedOriginRejected
+  );
+  await runTest(
+    "Push unregister method guard sets Allow header",
+    testUnregisterMethodNotAllowedIncludesAllowHeader
   );
   await runTest(
     "Push unregister allows localhost preflight",
@@ -279,6 +317,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
   await runTest(
     "Push test allows localhost preflight",
     testPushTestOptionsAllowedOriginReturnsNoContent
+  );
+  await runTest(
+    "Push test method guard sets Allow header",
+    testPushTestMethodNotAllowedIncludesAllowHeader
   );
 
   return printSummary();
