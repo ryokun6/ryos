@@ -36,6 +36,10 @@ export interface PushRegistrationErrorPayload {
   message: string;
 }
 
+function normalizeAlertText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 export function normalizePushPermissionResult(payload: unknown): PushPermissionResult {
   if (isPlainRecord(payload) && payload.granted === true) {
     return { granted: true };
@@ -136,9 +140,6 @@ export function extractPushAlert(payload: IosPushNotificationPayload): {
   title: string;
   body: string;
 } {
-  const normalizeAlertText = (value: unknown): string =>
-    typeof value === "string" ? value.trim() : "";
-
   const alert = payload.aps?.alert;
   if (typeof alert === "string") {
     return { title: "Notification", body: normalizeAlertText(alert) };
@@ -154,9 +155,6 @@ export function extractPushAlert(payload: IosPushNotificationPayload): {
 }
 
 export function hasPushAlertContent(payload: IosPushNotificationPayload): boolean {
-  const normalizeAlertText = (value: unknown): string =>
-    typeof value === "string" ? value.trim() : "";
-
   const alert = payload.aps?.alert;
   if (typeof alert === "string") {
     return normalizeAlertText(alert).length > 0;
