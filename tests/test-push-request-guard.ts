@@ -1950,6 +1950,33 @@ async function testOriginHeaderWhitespaceIsTrimmed() {
   });
 }
 
+async function testBlankOriginHeaderFallsBackToReferer() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequestWithHeaders(
+      "POST",
+      {
+        origin: "   ",
+        referer: "http://localhost:3000/through-referer",
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+  });
+}
+
 async function testRefererHeaderWhitespaceIsTrimmed() {
   await withRuntimeEnv("development", async () => {
     const req = createRequestWithHeaders(
@@ -1971,6 +1998,33 @@ async function testRefererHeaderWhitespaceIsTrimmed() {
     assertEq(handled, false);
     assertEq(mockRes.getStatusCode(), 0);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+  });
+}
+
+async function testBlankRefererHeaderWithoutOriginIsRejected() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequestWithHeaders(
+      "POST",
+      { referer: "   " },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 403);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Unauthorized" })
+    );
   });
 }
 
@@ -2552,8 +2606,16 @@ export async function runPushRequestGuardTests(): Promise<{
     testOriginHeaderWhitespaceIsTrimmed
   );
   await runTest(
+    "Push request guard falls back to referer when origin header is blank",
+    testBlankOriginHeaderFallsBackToReferer
+  );
+  await runTest(
     "Push request guard trims whitespace in referer header values",
     testRefererHeaderWhitespaceIsTrimmed
+  );
+  await runTest(
+    "Push request guard rejects blank referer header when origin is missing",
+    testBlankRefererHeaderWithoutOriginIsRejected
   );
   await runTest(
     "Push request guard uses first non-empty origin array value",
