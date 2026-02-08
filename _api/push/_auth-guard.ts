@@ -1,5 +1,6 @@
 import type { VercelResponse } from "@vercel/node";
 import type { IncomingHttpHeaders } from "node:http";
+import type { Redis } from "@upstash/redis";
 import { validateAuth } from "../_utils/auth/index.js";
 import { extractAuthFromHeaders } from "./_shared.js";
 
@@ -29,7 +30,7 @@ export function extractPushAuthCredentialsOrRespond(
 }
 
 export async function validatePushAuthOrRespond(
-  redis: Parameters<typeof validateAuth>[0],
+  redis: Redis,
   credentials: PushAuthCredentials,
   res: VercelResponse,
   logger: PushAuthLoggerLike,
