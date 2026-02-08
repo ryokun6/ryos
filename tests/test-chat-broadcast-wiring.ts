@@ -73,6 +73,18 @@ async function main() {
     assertHasCall(source, "broadcastRoomUpdated", "leave route updates");
   });
 
+  await runTest("leave route removes deleted private room from registry", async () => {
+    const source = readRoute("_api/rooms/[id]/leave.ts");
+    assert(
+      source.includes("CHAT_ROOMS_SET"),
+      "Expected leave route to reference CHAT_ROOMS_SET"
+    );
+    assert(
+      /srem\s*\(\s*CHAT_ROOMS_SET/.test(source),
+      "Expected leave route to remove room id from CHAT_ROOMS_SET on deletion"
+    );
+  });
+
   const { failed } = printSummary();
   process.exit(failed > 0 ? 1 : 0);
 }
