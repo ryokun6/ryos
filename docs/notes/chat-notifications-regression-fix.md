@@ -87,6 +87,7 @@ Routes now emit matching realtime events:
 File: `src/stores/useChatsStore.ts`
 
 - Added `readJsonBody(...)` helper with response `content-type` validation.
+  - accepts JSON media type variants (checks for `json` in content type)
 - Applied to:
   - `fetchRooms`
   - `fetchMessagesForRoom`
