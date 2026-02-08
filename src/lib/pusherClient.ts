@@ -80,6 +80,18 @@ const normalizeChannelName = (
   channelName: string | null | undefined
 ): string => channelName?.trim() || "";
 
+const clearChannelRecoveryWarnings = (channelName: string): void => {
+  if (!globalWithPusher.__pusherChannelRecoveryWarnings) {
+    return;
+  }
+  delete globalWithPusher.__pusherChannelRecoveryWarnings[
+    `missing-channel:${channelName}`
+  ];
+  delete globalWithPusher.__pusherChannelRecoveryWarnings[
+    `underflow:${channelName}`
+  ];
+};
+
 /**
  * Acquire a shared channel subscription.
  * Multiple consumers can subscribe safely without unsubscribing each other.
@@ -102,6 +114,7 @@ export function subscribePusherChannel(channelName: string): PusherChannel {
     // actively subscribed even if a stale channel object exists.
     const subscribedChannel = pusher.subscribe(normalizedChannelName);
     counts[normalizedChannelName] = 1;
+    clearChannelRecoveryWarnings(normalizedChannelName);
     return subscribedChannel;
   }
 
@@ -144,6 +157,7 @@ export function unsubscribePusherChannel(channelName: string): void {
   if (currentCount <= 1) {
     delete counts[normalizedChannelName];
     globalWithPusher.__pusherClient?.unsubscribe(normalizedChannelName);
+    clearChannelRecoveryWarnings(normalizedChannelName);
     return;
   }
 

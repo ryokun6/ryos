@@ -325,6 +325,40 @@ export async function runPusherClientRefcountTests(): Promise<{
     );
   });
 
+  await runTest("re-allows underflow warning after full release reset", async () => {
+    const { pusher, calls } = createFakePusher();
+    resetGlobalPusherState(pusher);
+
+    const originalWarn = console.warn;
+    const warnings: string[] = [];
+    console.warn = (...args: unknown[]) => {
+      warnings.push(args.map(String).join(" "));
+    };
+
+    try {
+      // First underflow warning should emit once.
+      unsubscribePusherChannel("room-k-reset");
+      // Acquire/release clears warning key for this channel.
+      subscribePusherChannel("room-k-reset");
+      unsubscribePusherChannel("room-k-reset");
+      // Underflow again should emit a second warning after reset.
+      unsubscribePusherChannel("room-k-reset");
+    } finally {
+      console.warn = originalWarn;
+    }
+
+    assertEq(calls.length, 2, "Expected one subscribe and one unsubscribe");
+    assertEq(calls[0].type, "subscribe");
+    assertEq(calls[0].channel, "room-k-reset");
+    assertEq(calls[1].type, "unsubscribe");
+    assertEq(calls[1].channel, "room-k-reset");
+    assertEq(
+      warnings.length,
+      2,
+      "Expected underflow warning to emit again after full release reset"
+    );
+  });
+
   console.log(section("Channel name normalization"));
   await runTest("normalizes channel names for subscribe/unsubscribe", async () => {
     const { pusher, calls } = createFakePusher();
