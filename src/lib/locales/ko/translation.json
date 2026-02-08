@@ -2267,6 +2267,26 @@
       }
     }
   },
+  "spotlight": {
+    "placeholder": "ryOS 검색",
+    "sections": {
+      "apps": "응용 프로그램",
+      "documents": "문서",
+      "applets": "애플릿",
+      "music": "음악",
+      "settings": "설정",
+      "commands": "명령어"
+    },
+    "askRyo": "Ryo에게 물어보기",
+    "noResults": "결과 없음",
+    "settings": {
+      "theme": "테마",
+      "wallpaper": "배경화면",
+      "sounds": "사운드 및 음량",
+      "language": "언어",
+      "screenSaver": "화면 보호기"
+    }
+  },
   "common": {
     "aboutThisMac": {
       "builtInMemory": "내장 메모리",
@@ -2485,7 +2505,8 @@
       "aboutThisComputer": "이 컴퓨터에 관하여",
       "ryos98": "98",
       "ryosProfessional": "프로페셔널",
-      "start": "시작"
+      "start": "시작",
+      "run": "실행..."
     },
     "swipeInstructions": {
       "description": "열려 있는 창 사이를 이동하려면 왼쪽 또는 오른쪽으로 스와이프",

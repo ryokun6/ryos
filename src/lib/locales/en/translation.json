@@ -151,7 +151,8 @@
       "start": "Start",
       "aboutThisComputer": "About This Computer",
       "ryosProfessional": "Professional",
-      "ryos98": "98"
+      "ryos98": "98",
+      "run": "Run..."
     },
     "appleMenu": {
       "aboutThisComputer": "About This Computer",
@@ -258,6 +259,26 @@
     },
     "keys": {
       "enter": "Enter"
+    }
+  },
+  "spotlight": {
+    "placeholder": "Search ryOS",
+    "sections": {
+      "apps": "Applications",
+      "documents": "Documents",
+      "applets": "Applets",
+      "music": "Music",
+      "settings": "Settings",
+      "commands": "Commands"
+    },
+    "askRyo": "Ask Ryo",
+    "noResults": "No results found",
+    "settings": {
+      "theme": "Theme",
+      "wallpaper": "Wallpaper",
+      "sounds": "Sounds & Volume",
+      "language": "Language",
+      "screenSaver": "Screen Saver"
     }
   },
   "apps": {

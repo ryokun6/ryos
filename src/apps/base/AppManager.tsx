@@ -12,6 +12,7 @@ import { extractCodeFromPath } from "@/utils/sharedUrl";
 import { toast } from "sonner";
 import { requestCloseWindow } from "@/utils/windowUtils";
 import { useThemeStore } from "@/stores/useThemeStore";
+import { SpotlightSearch } from "@/components/layout/SpotlightSearch";
 
 interface AppManagerProps {
   apps: AnyApp[];
@@ -344,6 +345,11 @@ export function AppManager({ apps }: AppManagerProps) {
         e.preventDefault();
         setIsExposeViewOpen((prev) => !prev);
       }
+      // ⌘+Space / Ctrl+Space to toggle Spotlight Search
+      if (e.key === " " && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent("toggleSpotlight"));
+      }
     };
 
     window.addEventListener("toggleExposeView", handleExposeToggle);
@@ -413,6 +419,9 @@ export function AppManager({ apps }: AppManagerProps) {
           launchApp(appId, initialData, undefined, false, launchOrigin);
         }}
       />
+
+      {/* Spotlight Search */}
+      <SpotlightSearch />
 
       {/* Expose View (Mission Control) - Backdrop and labels */}
       <ExposeView

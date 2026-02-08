@@ -236,6 +236,32 @@ export function StartMenu({ apps }: StartMenuProps) {
                     {getTranslatedAppName(app.id as AppId)}
                   </DropdownMenuItem>
                 ))}
+
+                {/* Separator before Run */}
+                <div
+                  className="border-b mx-2 my-1"
+                  style={{ borderColor: "#9e9e9e" }}
+                />
+
+                {/* Run... — opens Spotlight Search */}
+                <DropdownMenuItem
+                  onClick={() => {
+                    setIsStartMenuOpen(false);
+                    window.dispatchEvent(new CustomEvent("toggleSpotlight"));
+                  }}
+                  className="h-8 px-3 flex items-center gap-2 hover:bg-blue-500 hover:text-white"
+                  style={{
+                    fontSize: "11px",
+                    color: "#000000",
+                    fontFamily: "var(--font-ms-sans)",
+                    imageRendering: "pixelated",
+                  }}
+                >
+                  <div className="w-6 h-6 flex items-center justify-center text-base">
+                    🔍
+                  </div>
+                  {t("common.startMenu.run")}
+                </DropdownMenuItem>
               </div>
             </div>
           </div>

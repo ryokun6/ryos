@@ -27,7 +27,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { StartMenu } from "./StartMenu";
 import { useAppStoreShallow, useAudioSettingsStoreShallow, useDisplaySettingsStoreShallow } from "@/stores/helpers";
 import { Slider } from "@/components/ui/slider";
-import { SpeakerSimpleLow, SpeakerSimpleHigh, SpeakerSimpleSlash, Gear, CaretUp, DotsThree } from "@phosphor-icons/react";
+import { SpeakerSimpleLow, SpeakerSimpleHigh, SpeakerSimpleSlash, Gear, CaretUp, DotsThree, MagnifyingGlass } from "@phosphor-icons/react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getAppIconPath, appRegistry } from "@/config/appRegistry";
@@ -1526,8 +1526,41 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           <VolumeControl />
         </div>
         <Clock enableExposeToggle />
+        <SpotlightMenuBarButton />
       </div>
     </div>
+  );
+}
+
+function SpotlightMenuBarButton() {
+  const currentTheme = useThemeStore((state) => state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+
+  // Only show on Mac themes — Windows themes use Start Menu "Run..."
+  if (isXpTheme) return null;
+
+  const handleClick = () => {
+    window.dispatchEvent(new CustomEvent("toggleSpotlight"));
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="flex items-center justify-center px-1.5 py-0.5"
+      style={{
+        marginLeft: "2px",
+      }}
+      title="Spotlight Search (⌘+Space)"
+      aria-label="Spotlight Search"
+    >
+      <MagnifyingGlass
+        aria-hidden="true"
+        className="h-3.5 w-3.5"
+        weight="bold"
+        style={{ opacity: 0.7 }}
+      />
+    </button>
   );
 }
 
