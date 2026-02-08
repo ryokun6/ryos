@@ -315,6 +315,40 @@ async function testValidateAuthSkipsGraceLookupPath() {
   assertEq(getCallCount(), 0);
 }
 
+async function testValidateAuthPropagatesRedisErrors() {
+  const mockRes = createMockVercelResponseHarness();
+  const mockLogger = createMockLogger();
+
+  const throwingRedis = {
+    exists: async () => {
+      throw new Error("Redis unavailable");
+    },
+    expire: async () => 1,
+    get: async () => null,
+  };
+
+  let threw = false;
+  try {
+    await validatePushAuthOrRespond(
+      throwingRedis as Parameters<typeof validatePushAuthOrRespond>[0],
+      { username: "user", token: "token" },
+      mockRes.res,
+      mockLogger.logger,
+      Date.now()
+    );
+  } catch (error) {
+    threw = true;
+    assertEq(error instanceof Error, true);
+    if (error instanceof Error) {
+      assertEq(error.message, "Redis unavailable");
+    }
+  }
+
+  assertEq(threw, true);
+  assertEq(mockRes.getStatusCode(), 0);
+  assertEq(mockLogger.responseCalls.length, 0);
+}
+
 export async function runPushAuthGuardTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-auth-guard"));
   clearResults();
@@ -362,6 +396,10 @@ export async function runPushAuthGuardTests(): Promise<{ passed: number; failed:
   await runTest(
     "Push auth guard skips grace-token lookup path",
     testValidateAuthSkipsGraceLookupPath
+  );
+  await runTest(
+    "Push auth guard propagates redis errors to caller",
+    testValidateAuthPropagatesRedisErrors
   );
 
   return printSummary();
