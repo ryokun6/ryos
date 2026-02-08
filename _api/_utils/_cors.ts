@@ -341,10 +341,17 @@ function normalizeConfiguredCorsValues(
     return [...fallback];
   }
 
-  const normalizedValues = values
-    .filter((value): value is string => typeof value === "string")
-    .map((value) => value.trim())
-    .filter((value) => value.length > 0);
+  const normalizedValues: string[] = [];
+  const seen = new Set<string>();
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim();
+    if (trimmed.length === 0) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    normalizedValues.push(trimmed);
+  }
 
   if (normalizedValues.length === 0) {
     return [...fallback];

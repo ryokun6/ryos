@@ -175,6 +175,17 @@ async function testSetCorsHeadersFiltersNonStringConfiguredMethodsAndHeaders() {
   assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-Test");
 }
 
+async function testSetCorsHeadersDedupesConfiguredMethodsAndHeadersCaseInsensitively() {
+  const res = createMockVercelResponseHarness();
+  setCorsHeaders(res.res, "http://localhost:3000", {
+    methods: ["POST", "post", "OPTIONS", "options"],
+    headers: ["X-Test", "x-test", "X-Trace", "x-trace"],
+  });
+
+  assertEq(res.getHeader("Access-Control-Allow-Methods"), "POST, OPTIONS");
+  assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-Test, X-Trace");
+}
+
 async function testSetCorsHeadersSupportsZeroMaxAge() {
   const res = createMockVercelResponseHarness();
   setCorsHeaders(res.res, "http://localhost:3000", {
@@ -889,6 +900,24 @@ async function testHandlePreflightFiltersNonStringConfiguredMethodsAndHeaders() 
   });
 }
 
+async function testHandlePreflightDedupesConfiguredMethodsAndHeadersCaseInsensitively() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:5173",
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res, {
+      methods: ["POST", "post", "OPTIONS", "options"],
+      headers: ["X-App-Header", "x-app-header", "X-Trace", "x-trace"],
+    });
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Allow-Methods"), "POST, OPTIONS");
+    assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-App-Header, X-Trace");
+  });
+}
+
 async function testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeadersInvalid() {
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:5173",
@@ -1008,6 +1037,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS header setter filters non-string configured methods and headers",
     testSetCorsHeadersFiltersNonStringConfiguredMethodsAndHeaders
+  );
+  await runTest(
+    "CORS header setter dedupes configured methods and headers case-insensitively",
+    testSetCorsHeadersDedupesConfiguredMethodsAndHeadersCaseInsensitively
   );
   await runTest(
     "CORS header setter supports max-age=0",
@@ -1148,6 +1181,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper filters non-string configured methods and headers",
     testHandlePreflightFiltersNonStringConfiguredMethodsAndHeaders
+  );
+  await runTest(
+    "CORS preflight helper dedupes configured methods and headers case-insensitively",
+    testHandlePreflightDedupesConfiguredMethodsAndHeadersCaseInsensitively
   );
   await runTest(
     "CORS preflight helper supports max-age=0",
