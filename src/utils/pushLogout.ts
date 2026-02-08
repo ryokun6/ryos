@@ -74,15 +74,25 @@ export async function unregisterPushTokenForLogout(
   }
 
   try {
-    await deps.fetchRuntime(deps.getApiUrlRuntime("/api/push/unregister"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${authToken}`,
-        "X-Username": username,
-      },
-      body: JSON.stringify({ token: pushToken }),
-    });
+    const response = await deps.fetchRuntime(
+      deps.getApiUrlRuntime("/api/push/unregister"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+          "X-Username": username,
+        },
+        body: JSON.stringify({ token: pushToken }),
+      }
+    );
+
+    if (!response.ok) {
+      deps.warn(
+        "[ChatsStore] Push unregister during logout returned non-OK response:",
+        { status: response.status }
+      );
+    }
   } catch (error) {
     deps.warn(
       "[ChatsStore] Failed to unregister iOS push token during logout:",

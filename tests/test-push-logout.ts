@@ -190,6 +190,29 @@ async function testUnregisterWarnsWhenFetchFails() {
   assertEq(warnedError, expectedError);
 }
 
+async function testUnregisterWarnsWhenResponseIsNotOk() {
+  let warnCalls = 0;
+  let warnedMessage = "";
+  let warnedData: unknown;
+
+  await unregisterPushTokenForLogout("example-user", "auth-token", "a".repeat(64), {
+    fetchRuntime: async () => new Response(null, { status: 401 }),
+    getApiUrlRuntime: (path) => path,
+    warn: (message, data) => {
+      warnCalls += 1;
+      warnedMessage = message;
+      warnedData = data;
+    },
+  });
+
+  assertEq(warnCalls, 1);
+  assertEq(
+    warnedMessage,
+    "[ChatsStore] Push unregister during logout returned non-OK response:"
+  );
+  assertEq(JSON.stringify(warnedData), JSON.stringify({ status: 401 }));
+}
+
 export async function runPushLogoutTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-logout"));
   clearResults();
@@ -225,6 +248,10 @@ export async function runPushLogoutTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Push logout unregister warns on network failures",
     testUnregisterWarnsWhenFetchFails
+  );
+  await runTest(
+    "Push logout unregister warns on non-OK responses",
+    testUnregisterWarnsWhenResponseIsNotOk
   );
 
   return printSummary();
