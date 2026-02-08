@@ -216,7 +216,7 @@ function WhiteNoiseEffect() {
   useEffect(() => {
     const duration = 1000; // 1 second animation
     const startTime = Date.now();
-    const startBrightness = brightness;
+    const startBrightness = 0;
     const targetBrightness = 1;
 
     const animate = () => {

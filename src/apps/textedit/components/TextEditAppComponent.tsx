@@ -264,7 +264,7 @@ function TextEditContent({
         handleDocumentUpdated as EventListener
       );
     };
-  }, [editor, currentFilePath, setHasUnsavedChanges]);
+  }, [editor, currentFilePath, setHasUnsavedChanges, t]);
 
   // Sync editor when contentJson is externally updated
   useEffect(() => {

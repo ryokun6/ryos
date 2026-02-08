@@ -10,7 +10,7 @@ export function UrgentMessageAnimation() {
     }, 300);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [frames.length]);
 
   return <span className="text-red-400 animate-pulse">{frames[frame]}</span>;
 }

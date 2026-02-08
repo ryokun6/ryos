@@ -134,7 +134,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
       bringInstanceToForeground(instanceId);
       onClose();
     },
-    [instances, restoreInstance, bringInstanceToForeground, onClose]
+    [instances, restoreInstance, bringInstanceToForeground, onClose, t]
   );
 
   // Expose the handleWindowSelect for AppManager

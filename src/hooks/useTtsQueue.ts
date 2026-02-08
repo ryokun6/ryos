@@ -73,7 +73,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     typeof navigator !== "undefined" &&
     /iP(hone|od|ad)/.test(navigator.userAgent);
 
-  const ensureContext = () => {
+  const ensureContext = useCallback(() => {
     // Always use the shared global context
     ctxRef.current = getAudioContext();
     // Detect context change and reset timeline
@@ -100,7 +100,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
       gainNodeRef.current.connect(ctxRef.current.destination);
     }
     return ctxRef.current;
-  };
+  }, [masterVolumeRef, speechVolumeRef]);
 
   /**
    * Process pending requests up to the maximum parallel limit
