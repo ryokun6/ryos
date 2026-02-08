@@ -345,6 +345,27 @@ async function testProductionAllowsPrimaryOrigin() {
   });
 }
 
+async function testProductionAllowsPrimaryOriginPreflight() {
+  await withRuntimeEnv("production", async () => {
+    const req = createRequest("OPTIONS", "https://os.ryo.lu");
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "https://os.ryo.lu");
+    assertEq(mockRes.getEndCallCount(), 1);
+  });
+}
+
 async function testProductionAllowsTailscaleOrigin() {
   await withRuntimeEnv("production", async () => {
     const req = createRequest("POST", "https://device.tailb4fa61.ts.net");
@@ -388,6 +409,30 @@ async function testPreviewAllowsProjectPreviewOrigin() {
       mockRes.getHeader("Access-Control-Allow-Origin"),
       "https://ryos-preview-123.vercel.app"
     );
+  });
+}
+
+async function testPreviewAllowsProjectPreviewOriginPreflight() {
+  await withRuntimeEnv("preview", async () => {
+    const req = createRequest("OPTIONS", "https://ryos-preview-123.vercel.app");
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Origin"),
+      "https://ryos-preview-123.vercel.app"
+    );
+    assertEq(mockRes.getEndCallCount(), 1);
   });
 }
 
@@ -440,6 +485,29 @@ async function testPreviewAllowsOsRyoPrefixOrigin() {
 async function testPreviewRejectsNonProjectPreviewOrigin() {
   await withRuntimeEnv("preview", async () => {
     const req = createRequest("POST", "https://other-project.vercel.app");
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 403);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Unauthorized" })
+    );
+  });
+}
+
+async function testProductionRejectsLocalhostPreflight() {
+  await withRuntimeEnv("production", async () => {
+    const req = createRequest("OPTIONS", "http://localhost:3000");
     const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
@@ -606,12 +674,20 @@ export async function runPushRequestGuardTests(): Promise<{
     testProductionAllowsPrimaryOrigin
   );
   await runTest(
+    "Push request guard allows primary production preflight",
+    testProductionAllowsPrimaryOriginPreflight
+  );
+  await runTest(
     "Push request guard allows tailscale origin in production",
     testProductionAllowsTailscaleOrigin
   );
   await runTest(
     "Push request guard allows configured preview origin",
     testPreviewAllowsProjectPreviewOrigin
+  );
+  await runTest(
+    "Push request guard allows configured preview preflight",
+    testPreviewAllowsProjectPreviewOriginPreflight
   );
   await runTest(
     "Push request guard allows ryo-lu preview prefix",
@@ -624,6 +700,10 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard rejects unrelated preview origin",
     testPreviewRejectsNonProjectPreviewOrigin
+  );
+  await runTest(
+    "Push request guard rejects localhost preflight in production mode",
+    testProductionRejectsLocalhostPreflight
   );
   await runTest(
     "Push request guard allows configured localhost dev port",
