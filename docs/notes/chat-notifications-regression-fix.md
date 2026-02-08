@@ -131,6 +131,8 @@ File: `src/stores/useChatsStore.ts`
 - Automated:
   - `bun run test:chat-regression`
     - wraps `chat-notifications`, `pusher-client`, `chat-broadcast-wiring`
+  - `bun run test:chat-wiring`
+    - runs chat wiring/static guard suites in one command
   - `bun run test:chat-notification-wiring`
   - `bun run test:chat-hook-lifecycle`
   - `bun run test:pusher-regression`
