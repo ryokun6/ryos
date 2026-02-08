@@ -18,14 +18,20 @@ import {
   readJsonBody,
   warnChatsStoreOnce,
 } from "./chatsStoreApiGuards";
+import {
+  AUTH_TOKEN_RECOVERY_KEY,
+  TOKEN_LAST_REFRESH_KEY,
+  TOKEN_REFRESH_THRESHOLD,
+  USERNAME_RECOVERY_KEY,
+  ensureRecoveryKeysAreSet,
+  getAuthTokenFromRecovery,
+  getTokenRefreshTime,
+  getUsernameFromRecovery,
+  saveAuthTokenToRecovery,
+  saveTokenRefreshTime,
+  saveUsernameToRecovery,
+} from "./chatsStoreRecovery";
 
-// Recovery mechanism - uses different prefix to avoid reset
-const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
-const AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
-
-// Token constants
-const TOKEN_REFRESH_THRESHOLD = 83 * 24 * 60 * 60 * 1000; // 83 days in ms (refresh 7 days before 90-day expiry)
-const TOKEN_LAST_REFRESH_KEY = "_token_refresh_time_";
 const MESSAGE_HISTORY_CAP = 500;
 
 const capRoomMessages = (messages: ChatMessage[]): ChatMessage[] =>
@@ -45,68 +51,6 @@ interface CreateRoomPayload {
   name?: string;
   members?: string[];
 }
-
-// Simple encoding/decoding functions
-const encode = (value: string): string => {
-  return btoa(value.split("").reverse().join(""));
-};
-
-const decode = (encoded: string): string | null => {
-  try {
-    return atob(encoded).split("").reverse().join("");
-  } catch (e) {
-    console.error("[ChatsStore] Failed to decode value:", e);
-    return null;
-  }
-};
-
-// Username recovery functions
-const encodeUsername = (username: string): string => encode(username);
-const decodeUsername = (encoded: string): string | null => decode(encoded);
-
-const saveUsernameToRecovery = (username: string | null) => {
-  if (username) {
-    localStorage.setItem(USERNAME_RECOVERY_KEY, encodeUsername(username));
-  }
-};
-
-const getUsernameFromRecovery = (): string | null => {
-  const encoded = localStorage.getItem(USERNAME_RECOVERY_KEY);
-  if (encoded) {
-    return decodeUsername(encoded);
-  }
-  return null;
-};
-
-// Auth token recovery functions
-const saveAuthTokenToRecovery = (token: string | null) => {
-  if (token) {
-    localStorage.setItem(AUTH_TOKEN_RECOVERY_KEY, encode(token));
-  } else {
-    localStorage.removeItem(AUTH_TOKEN_RECOVERY_KEY);
-  }
-};
-
-const getAuthTokenFromRecovery = (): string | null => {
-  const encoded = localStorage.getItem(AUTH_TOKEN_RECOVERY_KEY);
-  if (encoded) {
-    return decode(encoded);
-  }
-  return null;
-};
-
-// Save token refresh time
-const saveTokenRefreshTime = (username: string) => {
-  const key = `${TOKEN_LAST_REFRESH_KEY}${username}`;
-  localStorage.setItem(key, Date.now().toString());
-};
-
-// Get token refresh time
-const getTokenRefreshTime = (username: string): number | null => {
-  const key = `${TOKEN_LAST_REFRESH_KEY}${username}`;
-  const time = localStorage.getItem(key);
-  return time ? parseInt(time, 10) : null;
-};
 
 // API request wrapper with automatic token refresh
 const makeAuthenticatedRequest = async (
@@ -156,24 +100,6 @@ const makeAuthenticatedRequest = async (
     throwOnHttpError: false,
     retry: { maxAttempts: 1, initialDelayMs: 250 },
   });
-};
-
-// Ensure recovery keys are set if values exist in store but not in recovery
-const ensureRecoveryKeysAreSet = (
-  username: string | null,
-  authToken: string | null
-) => {
-  if (username && !localStorage.getItem(USERNAME_RECOVERY_KEY)) {
-    console.log(
-      "[ChatsStore] Setting recovery key for existing username:",
-      username
-    );
-    saveUsernameToRecovery(username);
-  }
-  if (authToken && !localStorage.getItem(AUTH_TOKEN_RECOVERY_KEY)) {
-    console.log("[ChatsStore] Setting recovery key for existing auth token");
-    saveAuthTokenToRecovery(authToken);
-  }
 };
 
 // Define the state structure
