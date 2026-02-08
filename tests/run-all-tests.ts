@@ -18,6 +18,7 @@ import { runAuthExtraTests } from "./test-auth-extra";
 import { runRoomsExtraTests } from "./test-rooms-extra";
 import { runChatNotificationLogicTests } from "./test-chat-notification-logic";
 import { runPusherClientRefcountTests } from "./test-pusher-client-refcount";
+import { runPusherClientConstructorWiringTests } from "./test-pusher-client-constructor-wiring";
 import { runChatBroadcastWiringTests } from "./test-chat-broadcast-wiring";
 import { runChatStoreGuardsWiringTests } from "./test-chat-store-guards-wiring";
 
@@ -96,6 +97,7 @@ async function runAllTests(): Promise<void> {
     { name: "rooms-extra", run: runRoomsExtraTests },
     { name: "chat-notifications", run: runChatNotificationLogicTests },
     { name: "pusher-client", run: runPusherClientRefcountTests },
+    { name: "pusher-constructor-wiring", run: runPusherClientConstructorWiringTests },
     { name: "chat-broadcast-wiring", run: runChatBroadcastWiringTests },
     { name: "chat-store-guards", run: runChatStoreGuardsWiringTests },
   ];
