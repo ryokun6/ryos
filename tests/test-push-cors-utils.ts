@@ -249,6 +249,7 @@ async function testHandlePreflightAllowsOriginAndEchoesRequestedHeaders() {
     assertEq(res.getEndCallCount(), 1);
     assertEq(res.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
     assertEq(res.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+    assertEq(res.getHeader("Access-Control-Allow-Credentials"), "true");
     assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-Test, X-Username");
     assertEq(res.getHeader("Access-Control-Allow-Methods"), "GET, POST, OPTIONS");
   });
@@ -759,6 +760,7 @@ async function testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeade
     const handled = handlePreflight(req, res.res, {
       methods: ["POST", "OPTIONS"],
       headers: ["X-App-Header"],
+      credentials: false,
       maxAge: 300,
     });
     assertEq(handled, true);
@@ -766,6 +768,7 @@ async function testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeade
     assertEq(res.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
     assertEq(res.getHeader("Access-Control-Allow-Methods"), "POST, OPTIONS");
     assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-App-Header");
+    assertEq(res.getHeader("Access-Control-Allow-Credentials"), undefined);
     assertEq(res.getHeader("Access-Control-Max-Age"), "300");
   });
 }

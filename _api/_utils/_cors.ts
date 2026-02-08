@@ -307,11 +307,14 @@ export function handlePreflight(
   const allowHeaders =
     requestedHeaders ?? configuredHeaders.join(", ");
   const normalizedMaxAge = normalizeCorsMaxAge(options.maxAge);
+  const credentialsEnabled = options.credentials !== false;
 
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Methods", configuredMethods.join(", "));
   res.setHeader("Access-Control-Allow-Headers", allowHeaders);
-  res.setHeader("Access-Control-Allow-Credentials", "true");
+  if (credentialsEnabled) {
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
   res.setHeader("Access-Control-Max-Age", String(normalizedMaxAge));
   res.status(204).end();
   return true;
