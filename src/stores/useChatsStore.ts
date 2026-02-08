@@ -27,7 +27,6 @@ import {
   saveUsernameToRecovery,
 } from "./chats/recovery";
 import {
-  capRoomMessages,
   mergeServerMessagesWithOptimistic,
   sortAndCapRoomMessages,
 } from "./chats/roomMessages";
@@ -60,15 +59,14 @@ import {
   getTokenAgeDays,
   isTokenRefreshDue,
 } from "./chats/tokenLifecycle";
-import {
-  LEGACY_CHAT_STORAGE_KEYS,
-} from "./chats/legacyStorage";
 import { clearChatRecoveryStorage } from "./chats/logoutCleanup";
 import { migrateLegacyChatStorageState } from "./chats/migration";
 import {
   checkPasswordStatusRequest,
   setPasswordRequest,
 } from "./chats/passwordApi";
+import { buildPersistedRoomMessages } from "./chats/persistence";
+import { applyIdentityRecoveryOnRehydrate } from "./chats/rehydration";
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -1158,12 +1156,7 @@ export const useChatsStore = create<ChatsStoreState>()(
         isChannelsOpen: state.isChannelsOpen,
         isPrivateOpen: state.isPrivateOpen,
         rooms: state.rooms, // Persist rooms list
-        roomMessages: Object.fromEntries(
-          Object.entries(state.roomMessages).map(([roomId, messages]) => [
-            roomId,
-            capRoomMessages(messages),
-          ])
-        ), // Persist room messages cache (capped)
+        roomMessages: buildPersistedRoomMessages(state.roomMessages), // Persist room messages cache (capped)
         fontSize: state.fontSize, // Persist font size
         unreadCounts: state.unreadCounts,
         hasEverUsedChats: state.hasEverUsedChats,
@@ -1258,51 +1251,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               "authToken:",
               state.authToken ? "present" : "null"
             );
-            // Check if username is null AFTER rehydration
-            if (state.username === null) {
-              // First check the recovery key
-              const recoveredUsername = getUsernameFromRecovery();
-              if (recoveredUsername) {
-                console.log(
-                  `[ChatsStore] Found encoded username '${recoveredUsername}' in recovery storage. Applying.`
-                );
-                state.username = recoveredUsername;
-              } else {
-                // Fallback to checking old key
-                const oldUsernameKey = LEGACY_CHAT_STORAGE_KEYS.USERNAME;
-                const oldUsername = localStorage.getItem(oldUsernameKey);
-                if (oldUsername) {
-                  console.log(
-                    `[ChatsStore] Found old username '${oldUsername}' in localStorage during rehydration check. Applying.`
-                  );
-                  state.username = oldUsername;
-                  // Save to recovery mechanism as well
-                  saveUsernameToRecovery(oldUsername);
-                  localStorage.removeItem(oldUsernameKey);
-                  console.log(
-                    `[ChatsStore] Removed old key '${oldUsernameKey}' after rehydration fix.`
-                  );
-                } else {
-                  console.log(
-                    "[ChatsStore] Username is null, but no username found in recovery or old localStorage during rehydration check."
-                  );
-                }
-              }
-            }
-
-            // Check if auth token is null AFTER rehydration
-            if (state.authToken === null) {
-              const recoveredAuthToken = getAuthTokenFromRecovery();
-              if (recoveredAuthToken) {
-                console.log(
-                  "[ChatsStore] Found encoded auth token in recovery storage. Applying."
-                );
-                state.authToken = recoveredAuthToken;
-              }
-            }
-
-            // Ensure both are saved to recovery
-            ensureRecoveryKeysAreSet(state.username, state.authToken);
+            applyIdentityRecoveryOnRehydrate(state);
           }
         };
       },
