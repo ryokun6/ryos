@@ -232,6 +232,7 @@ async function testUnregisterSendsScopedTokenRequest() {
   let fetchCalls = 0;
   let requestUrl = "";
   let requestInit: RequestInit | undefined;
+  let sawAbortSignal = false;
   const pushToken = "a".repeat(64);
 
   await unregisterPushTokenForLogout("  example-user  ", "  auth-token  ", `  ${pushToken}  `, {
@@ -239,6 +240,7 @@ async function testUnregisterSendsScopedTokenRequest() {
       fetchCalls += 1;
       requestUrl = String(url);
       requestInit = init;
+      sawAbortSignal = Boolean(init?.signal);
       return new Response(null, { status: 200 });
     },
     getApiUrlRuntime: () => "https://api.example.test/api/push/unregister",
@@ -248,6 +250,7 @@ async function testUnregisterSendsScopedTokenRequest() {
   assertEq(fetchCalls, 1);
   assertEq(requestUrl, "https://api.example.test/api/push/unregister");
   assertEq(requestInit?.method, "POST");
+  assertEq(sawAbortSignal, true);
   assertEq(
     JSON.stringify(requestInit?.headers),
     JSON.stringify({
