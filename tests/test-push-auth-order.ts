@@ -23,15 +23,20 @@ interface MockResponse {
   getStatusCode: () => number;
   getJsonPayload: () => unknown;
   getEndCallCount: () => number;
+  getHeader: (name: string) => string | undefined;
 }
 
 function createMockResponse(): MockResponse {
   let statusCode = 0;
   let jsonPayload: unknown = null;
   let endCallCount = 0;
+  const headers = new Map<string, string>();
 
   const response = {
-    setHeader: () => undefined,
+    setHeader: (name: string, value: unknown) => {
+      headers.set(name.toLowerCase(), String(value));
+      return undefined;
+    },
     status(code: number) {
       statusCode = code;
       return this;
@@ -51,6 +56,7 @@ function createMockResponse(): MockResponse {
     getStatusCode: () => statusCode,
     getJsonPayload: () => jsonPayload,
     getEndCallCount: () => endCallCount,
+    getHeader: (name: string) => headers.get(name.toLowerCase()),
   };
 }
 
@@ -101,6 +107,7 @@ async function expectUnauthorizedOriginResponse(
     JSON.stringify({ error: "Unauthorized" })
   );
   assertEq(mockRes.getEndCallCount(), 0);
+  assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
 }
 
 function withMissingPushEnv<T>(run: () => T | Promise<T>): Promise<T> {
@@ -151,6 +158,7 @@ async function testRegisterOptionsAllowedOriginReturnsNoContent() {
   assertEq(mockRes.getStatusCode(), 204);
   assertEq(mockRes.getJsonPayload(), null);
   assertEq(mockRes.getEndCallCount(), 1);
+  assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
 }
 
 async function testUnregisterMissingCredentialsTakesPrecedence() {
@@ -205,6 +213,7 @@ async function testPushTestOptionsAllowedOriginReturnsNoContent() {
   assertEq(mockRes.getStatusCode(), 204);
   assertEq(mockRes.getJsonPayload(), null);
   assertEq(mockRes.getEndCallCount(), 1);
+  assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
 }
 
 async function testUnregisterOptionsAllowedOriginReturnsNoContent() {
@@ -216,6 +225,7 @@ async function testUnregisterOptionsAllowedOriginReturnsNoContent() {
   assertEq(mockRes.getStatusCode(), 204);
   assertEq(mockRes.getJsonPayload(), null);
   assertEq(mockRes.getEndCallCount(), 1);
+  assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
 }
 
 export async function runPushAuthOrderTests(): Promise<{ passed: number; failed: number }> {
