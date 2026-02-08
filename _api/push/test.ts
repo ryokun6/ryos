@@ -144,35 +144,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "No registered push tokens for this user" });
     }
 
-    const ownershipEntries = await getTokenOwnershipEntries(
-      redis,
-      username,
-      userTokens,
-      TOKEN_METADATA_LOOKUP_CONCURRENCY
-    );
-    const {
-      ownedTokens,
-      unownedTokens: staleOwnershipTokens,
-    } = splitTokenOwnership(ownershipEntries);
-
-    if (staleOwnershipTokens.length > 0) {
-      const cleanupPipeline = redis.pipeline();
-      for (const staleToken of staleOwnershipTokens) {
-        cleanupPipeline.srem(userTokensKey, staleToken);
-      }
-      await cleanupPipeline.exec();
-    }
-
     const requestedToken = payload.token;
-
     let targetTokens: string[] = [];
+    let staleOwnershipTokens: string[] = [];
+
     if (requestedToken) {
-      if (!ownedTokens.includes(requestedToken)) {
+      if (!userTokens.includes(requestedToken)) {
         logger.response(403, Date.now() - startTime);
         return res.status(403).json({ error: "Token is not registered for this user" });
       }
-      targetTokens = [requestedToken];
+
+      const ownershipEntries = await getTokenOwnershipEntries(
+        redis,
+        username,
+        [requestedToken],
+        TOKEN_METADATA_LOOKUP_CONCURRENCY
+      );
+      const {
+        ownedTokens,
+        unownedTokens,
+      } = splitTokenOwnership(ownershipEntries);
+      staleOwnershipTokens = unownedTokens;
+
+      if (staleOwnershipTokens.length > 0) {
+        const cleanupPipeline = redis.pipeline();
+        for (const staleToken of staleOwnershipTokens) {
+          cleanupPipeline.srem(userTokensKey, staleToken);
+        }
+        await cleanupPipeline.exec();
+      }
+
+      if (ownedTokens.length === 0) {
+        logger.response(403, Date.now() - startTime);
+        return res.status(403).json({ error: "Token is not registered for this user" });
+      }
+
+      targetTokens = ownedTokens;
     } else {
+      const ownershipEntries = await getTokenOwnershipEntries(
+        redis,
+        username,
+        userTokens,
+        TOKEN_METADATA_LOOKUP_CONCURRENCY
+      );
+      const {
+        ownedTokens,
+        unownedTokens,
+      } = splitTokenOwnership(ownershipEntries);
+      staleOwnershipTokens = unownedTokens;
+
+      if (staleOwnershipTokens.length > 0) {
+        const cleanupPipeline = redis.pipeline();
+        for (const staleToken of staleOwnershipTokens) {
+          cleanupPipeline.srem(userTokensKey, staleToken);
+        }
+        await cleanupPipeline.exec();
+      }
+
       targetTokens = ownedTokens;
     }
 
