@@ -378,6 +378,52 @@ async function testProductionAllowsPrimaryOrigin() {
   });
 }
 
+async function testPreviewAllowsProjectPreviewOrigin() {
+  await withRuntimeEnv("preview", async () => {
+    const req = createRequest("POST", "https://ryos-preview-123.vercel.app");
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Origin"),
+      "https://ryos-preview-123.vercel.app"
+    );
+  });
+}
+
+async function testPreviewRejectsNonProjectPreviewOrigin() {
+  await withRuntimeEnv("preview", async () => {
+    const req = createRequest("POST", "https://other-project.vercel.app");
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 403);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Unauthorized" })
+    );
+  });
+}
+
 export async function runPushRequestGuardTests(): Promise<{
   passed: number;
   failed: number;
@@ -428,6 +474,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard allows primary production origin",
     testProductionAllowsPrimaryOrigin
+  );
+  await runTest(
+    "Push request guard allows configured preview origin",
+    testPreviewAllowsProjectPreviewOrigin
+  );
+  await runTest(
+    "Push request guard rejects unrelated preview origin",
+    testPreviewRejectsNonProjectPreviewOrigin
   );
 
   return printSummary();
