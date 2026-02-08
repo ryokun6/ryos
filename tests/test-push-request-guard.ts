@@ -94,7 +94,7 @@ function createRequest(
 function createRawRequest(
   method: string | undefined,
   origin: string = "http://localhost:3000",
-  url: string = "/api/push/register"
+  url?: string
 ): VercelRequest {
   return {
     method,
@@ -284,6 +284,50 @@ async function testMissingMethodDefaultsToPost() {
   });
 }
 
+async function testLowercaseOptionsMethodHandledAsPreflight() {
+  await withDevelopmentEnv(async () => {
+    const req = createRawRequest("options");
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getEndCallCount(), 1);
+    assertEq(mockLogger.requestCalls.length, 1);
+    assertEq(mockLogger.requestCalls[0].method, "OPTIONS");
+    assertEq(mockLogger.responseCalls.length, 1);
+    assertEq(mockLogger.responseCalls[0].statusCode, 204);
+  });
+}
+
+async function testMissingUrlFallsBackToEndpointPath() {
+  await withDevelopmentEnv(async () => {
+    const req = createRawRequest("POST", "http://localhost:3000", undefined);
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockLogger.requestCalls.length, 1);
+    assertEq(mockLogger.requestCalls[0].url, "/api/push/register");
+  });
+}
+
 export async function runPushRequestGuardTests(): Promise<{
   passed: number;
   failed: number;
@@ -318,6 +362,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard defaults missing method to POST",
     testMissingMethodDefaultsToPost
+  );
+  await runTest(
+    "Push request guard normalizes lowercase OPTIONS method",
+    testLowercaseOptionsMethodHandledAsPreflight
+  );
+  await runTest(
+    "Push request guard falls back to endpoint path when URL missing",
+    testMissingUrlFallsBackToEndpointPath
   );
 
   return printSummary();
