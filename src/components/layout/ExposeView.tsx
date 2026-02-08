@@ -116,7 +116,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
 
       return { icon, label, isEmoji };
     },
-    [files]
+    [files, t]
   );
 
   // Handle window selection (called from AppManager)
@@ -134,7 +134,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
       bringInstanceToForeground(instanceId);
       onClose();
     },
-    [instances, restoreInstance, bringInstanceToForeground, onClose, t]
+    [instances, restoreInstance, bringInstanceToForeground, onClose]
   );
 
   // Expose the handleWindowSelect for AppManager

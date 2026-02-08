@@ -71,7 +71,7 @@ export function StickiesAppComponent({
     if (isWindowOpen && notes.length === 0) {
       handleCreateNote();
     }
-  }, [isWindowOpen]);
+  }, [isWindowOpen, notes.length, handleCreateNote]);
 
   const menuBar = (
     <StickiesMenuBar

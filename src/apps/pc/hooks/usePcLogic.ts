@@ -151,12 +151,13 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
 
   useEffect(() => {
     return () => {
+      const container = containerRef.current;
       if (dosPropsRef.current) {
         console.log("Cleaning up dosbox instance on unmount...");
         dosPropsRef.current.stop().catch(console.error);
         dosPropsRef.current = null;
-        if (containerRef.current) {
-          containerRef.current.innerHTML = "";
+        if (container) {
+          container.innerHTML = "";
         }
       }
     };
