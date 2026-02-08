@@ -31,13 +31,7 @@ import { useLanguageStore } from "@/stores/useLanguageStore";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { detectUserOS } from "@/utils/userOS";
 import { generateHTML, generateJSON } from "@tiptap/core";
-import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import TextAlign from "@tiptap/extension-text-align";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
 import { htmlToMarkdown, markdownToHtml } from "@/utils/markdown";
-import { AnyExtension } from "@tiptap/core";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -51,6 +45,7 @@ import {
   isChatsInForeground,
   showBackgroundedMessageNotification,
 } from "../utils/messageNotifications";
+import { TEXTEDIT_TIPTAP_EXTENSIONS } from "../utils/textEditSerialization";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -156,13 +151,10 @@ const getSystemState = () => {
     let contentMarkdown: string | null = null;
     if (instance.contentJson) {
       try {
-        const htmlStr = generateHTML(instance.contentJson, [
-          StarterKit,
-          Underline,
-          TextAlign.configure({ types: ["heading", "paragraph"] }),
-          TaskList,
-          TaskItem.configure({ nested: true }),
-        ] as AnyExtension[]);
+        const htmlStr = generateHTML(
+          instance.contentJson,
+          TEXTEDIT_TIPTAP_EXTENSIONS
+        );
         contentMarkdown = htmlToMarkdown(htmlStr);
       } catch (err) {
         console.error("Failed to convert TextEdit content to markdown:", err);
@@ -1110,13 +1102,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               if (targetInstanceId) {
                 // Update existing TextEdit instance with content
                 const htmlFragment = markdownToHtml(finalContent);
-                const contentJson = generateJSON(htmlFragment, [
-                  StarterKit,
-                  Underline,
-                  TextAlign.configure({ types: ["heading", "paragraph"] }),
-                  TaskList,
-                  TaskItem.configure({ nested: true }),
-                ] as AnyExtension[]);
+                const contentJson = generateJSON(
+                  htmlFragment,
+                  TEXTEDIT_TIPTAP_EXTENSIONS
+                );
 
                 textEditStore.updateInstance(targetInstanceId, {
                   filePath: path,
@@ -1255,13 +1244,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 for (const [instanceId, instance] of Object.entries(textEditState.instances)) {
                   if (instance.filePath === path) {
                     const updatedHtml = markdownToHtml(updatedContent);
-                    const updatedJson = generateJSON(updatedHtml, [
-                      StarterKit,
-                      Underline,
-                      TextAlign.configure({ types: ["heading", "paragraph"] }),
-                      TaskList,
-                      TaskItem.configure({ nested: true }),
-                    ] as AnyExtension[]);
+                    const updatedJson = generateJSON(
+                      updatedHtml,
+                      TEXTEDIT_TIPTAP_EXTENSIONS
+                    );
 
                     textEditState.updateInstance(instanceId, {
                       contentJson: updatedJson,
