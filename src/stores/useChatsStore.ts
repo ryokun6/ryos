@@ -38,6 +38,7 @@ import {
   sortAndCapRoomMessages,
 } from "./chatsRoomMessages";
 import { mergeIncomingRoomMessage } from "./chatsIncomingMessage";
+import { areChatRoomListsEqual, sortChatRoomsForUi } from "./chatsRoomList";
 import {
   type ApiChatMessagePayload as ApiMessage,
   normalizeApiMessages,
@@ -365,17 +366,9 @@ export const useChatsStore = create<ChatsStoreState>()(
           // Deep comparison to prevent unnecessary updates
           const currentRooms = get().rooms;
           // Apply stable sort to keep UI order consistent (public first, then name, then id)
-          const sortedNewRooms = [...newRooms].sort((a, b) => {
-            const ao = a.type === "private" ? 1 : 0;
-            const bo = b.type === "private" ? 1 : 0;
-            if (ao !== bo) return ao - bo;
-            const an = (a.name || "").toLowerCase();
-            const bn = (b.name || "").toLowerCase();
-            if (an !== bn) return an.localeCompare(bn);
-            return a.id.localeCompare(b.id);
-          });
+          const sortedNewRooms = sortChatRoomsForUi(newRooms);
 
-          if (JSON.stringify(currentRooms) === JSON.stringify(sortedNewRooms)) {
+          if (areChatRoomListsEqual(currentRooms, sortedNewRooms)) {
             console.log(
               "[ChatsStore] setRooms skipped: newRooms are identical to current rooms."
             );
