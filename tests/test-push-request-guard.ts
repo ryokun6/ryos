@@ -621,6 +621,13 @@ async function testUnsupportedMethodSetsAllowHeader() {
     );
     assertEq(mockRes.getHeader("Allow"), "POST, OPTIONS");
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+    assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), "POST, OPTIONS");
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Headers"),
+      "Content-Type, Authorization, X-Username"
+    );
+    assertEq(mockRes.getHeader("Access-Control-Allow-Credentials"), "true");
+    assertEq(mockRes.getHeader("Access-Control-Max-Age"), "86400");
     assertEq(mockRes.getHeader("Vary"), "Origin");
     assertEq(mockLogger.responseCalls.length, 1);
     assertEq(mockLogger.responseCalls[0].statusCode, 405);
