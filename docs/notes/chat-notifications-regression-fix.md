@@ -30,6 +30,10 @@ File: `src/lib/pusherClient.ts`
   - stale refcount + missing channel object is recovered via resubscribe
   - first local holder always performs `subscribe(...)` to guarantee active
     subscription state
+- Added one-time recovery warnings for:
+  - missing-channel refcount recovery
+  - unsubscribe underflow no-op
+  - warnings are de-duplicated to avoid console noise.
 
 ### 2) Frontend listener lifecycle hardening
 
