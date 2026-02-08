@@ -553,7 +553,7 @@ export function useInternetExplorerLogic({
     setDisplayTitle(newTitle);
   }, [status, currentPageTitle, finalUrl, url, year, t, getLoadingTitle]);
 
-  const getWaybackUrl = async (targetUrl: string, year: string) => {
+  const getWaybackUrl = useCallback(async (targetUrl: string, year: string) => {
     const now = new Date();
     const month = String(now.getMonth() + 1).padStart(2, "0");
     const formattedUrl = targetUrl.startsWith("http")
@@ -569,7 +569,7 @@ export function useInternetExplorerLogic({
     return `/api/iframe-check?url=${encodeURIComponent(
       formattedUrl
     )}&year=${year}&month=${month}${themeParam}`;
-  };
+  }, [currentTheme]);
 
   // Ref to keep the most recent navigation token in sync without waiting for a render
   const navTokenRef = useRef<number>(0);

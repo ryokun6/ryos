@@ -185,7 +185,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
 
       executeRequest();
     }
-  }, [endpoint]);
+  }, [endpoint, ttsModelRef, ttsVoiceRef]);
 
   /**
    * Queue a fetch request with parallel limit enforcement
@@ -276,7 +276,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
         }
       });
     },
-    [queuedFetch]
+    [queuedFetch, ensureContext]
   );
 
   /** Cancel all in-flight requests and reset the queue so the next call starts immediately. */
