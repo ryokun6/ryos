@@ -30,6 +30,15 @@ async function testDefaultsForMissingBody() {
   if (!fromEmpty.ok) return;
   assertEq(fromEmpty.value.title, DEFAULT_PUSH_TEST_TITLE);
   assertEq(fromEmpty.value.body, DEFAULT_PUSH_TEST_BODY);
+
+  const fromWhitespace = normalizePushTestPayload({
+    title: "   ",
+    body: "\n\t",
+  });
+  assertEq(fromWhitespace.ok, true);
+  if (!fromWhitespace.ok) return;
+  assertEq(fromWhitespace.value.title, DEFAULT_PUSH_TEST_TITLE);
+  assertEq(fromWhitespace.value.body, DEFAULT_PUSH_TEST_BODY);
 }
 
 async function testRejectsNonObjectBodies() {
