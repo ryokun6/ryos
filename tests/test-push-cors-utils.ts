@@ -337,6 +337,30 @@ async function testHandlePreflightFallsBackWhenMergedAllowHeadersWouldBeTooLong(
   });
 }
 
+async function testHandlePreflightAcceptsMergedAllowHeadersAtLengthLimit() {
+  const requestedHeaderValues = [
+    "A".repeat(1024),
+    "B".repeat(1024),
+    "C".repeat(1024),
+    "D".repeat(1018),
+  ];
+  const expectedAllowHeaders = requestedHeaderValues.join(", ");
+  assertEq(expectedAllowHeaders.length, CORS_MAX_PREFLIGHT_ALLOW_HEADERS_LENGTH);
+
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:3000",
+    "access-control-request-headers": requestedHeaderValues,
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res);
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Allow-Headers"), expectedAllowHeaders);
+  });
+}
+
 async function testHandlePreflightHandlesLowercaseOptionsMethod() {
   const req = createRequest("options", {
     origin: "http://localhost:3000",
@@ -519,6 +543,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper falls back when merged allow-headers would be too long",
     testHandlePreflightFallsBackWhenMergedAllowHeadersWouldBeTooLong
+  );
+  await runTest(
+    "CORS preflight helper accepts merged allow-headers at length limit",
+    testHandlePreflightAcceptsMergedAllowHeadersAtLengthLimit
   );
   await runTest(
     "CORS preflight helper normalizes lowercase OPTIONS requests",
