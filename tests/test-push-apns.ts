@@ -249,6 +249,14 @@ async function testApnsEnvValidationHelpers() {
   } as NodeJS.ProcessEnv);
   assertEq(explicitMissing.join(","), "APNS_PRIVATE_KEY");
 
+  const whitespaceMissing = getMissingApnsEnvVars({
+    APNS_KEY_ID: "ABC123DEFG",
+    APNS_TEAM_ID: "TEAM123ABC",
+    APNS_BUNDLE_ID: "  ",
+    APNS_PRIVATE_KEY: "key",
+  } as NodeJS.ProcessEnv);
+  assertEq(whitespaceMissing.join(","), "APNS_BUNDLE_ID");
+
   withPatchedEnv(
     {
       APNS_KEY_ID: undefined,
