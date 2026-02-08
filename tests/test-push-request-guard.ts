@@ -316,6 +316,38 @@ async function testAllowedOptionsPreflightRejectsUnsupportedRequestedMethod() {
   });
 }
 
+async function testAllowedOptionsPreflightRejectsCommaSeparatedRequestedMethodValue() {
+  await withDevelopmentEnv(async () => {
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-method": "POST, DELETE",
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 405);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Method not allowed" })
+    );
+    assertEq(mockRes.getHeader("Allow"), PUSH_ALLOW_HEADER_VALUE);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
+  });
+}
+
 async function testAllowedOptionsPreflightUnsupportedRequestedMethodDoesNotEchoRequestedHeaders() {
   await withDevelopmentEnv(async () => {
     const req = createRequestWithHeaders(
@@ -1842,6 +1874,10 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard rejects preflight when requested method is unsupported",
     testAllowedOptionsPreflightRejectsUnsupportedRequestedMethod
+  );
+  await runTest(
+    "Push request guard rejects comma-separated requested preflight method value",
+    testAllowedOptionsPreflightRejectsCommaSeparatedRequestedMethodValue
   );
   await runTest(
     "Push request guard does not echo requested headers when preflight method is unsupported",
