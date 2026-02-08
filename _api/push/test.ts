@@ -221,6 +221,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       failureReasons,
       apnsSendConcurrency: APNS_SEND_CONCURRENCY,
       invalidStoredTokensRemoved: invalidStoredTokens.length,
+      skippedNonStringTokenCount,
       staleTokensRemoved: staleTokens.length,
       staleOwnershipTokensRemoved: staleOwnershipTokens.length,
       results,

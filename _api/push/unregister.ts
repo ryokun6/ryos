@@ -137,6 +137,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         removed: invalidStoredTokens.length,
         metadataRemoved: 0,
         invalidStoredTokensRemoved: invalidStoredTokens.length,
+        skippedNonStringTokenCount,
       });
     }
 
@@ -172,6 +173,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       removed: userTokens.length + invalidStoredTokens.length,
       metadataRemoved: ownedTokens.length,
       invalidStoredTokensRemoved: invalidStoredTokens.length,
+      skippedNonStringTokenCount,
     });
   } catch (error) {
     return respondInternalServerError(
