@@ -49,6 +49,8 @@ async function testKeyGeneration() {
   assertEq(getPushTokenSuffix("abc", 0), "");
   assertEq(getPushTokenSuffix("abc", -1), "");
   assertEq(getPushTokenSuffix("abc", 1.5), "");
+  assertEq(getPushTokenSuffix("abc", Number.POSITIVE_INFINITY), "");
+  assertEq(getPushTokenSuffix("abc", Number.NaN), "");
 }
 
 async function testUsernameNormalization() {
