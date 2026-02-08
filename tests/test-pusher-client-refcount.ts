@@ -165,10 +165,16 @@ export async function runPusherClientRefcountTests(): Promise<{
     const { pusher, calls } = createFakePusher();
     resetGlobalPusherState(pusher);
 
-    subscribePusherChannel("room-f");
-    unsubscribePusherChannel("room-f");
-    unsubscribePusherChannel("room-f");
-    unsubscribePusherChannel("room-f");
+    const originalWarn = console.warn;
+    console.warn = () => undefined;
+    try {
+      subscribePusherChannel("room-f");
+      unsubscribePusherChannel("room-f");
+      unsubscribePusherChannel("room-f");
+      unsubscribePusherChannel("room-f");
+    } finally {
+      console.warn = originalWarn;
+    }
 
     assertEq(
       calls.length,
@@ -196,9 +202,16 @@ export async function runPusherClientRefcountTests(): Promise<{
 
     globalWithPusherState.__pusherClient = fakePusher;
     globalWithPusherState.__pusherChannelRefCounts = { "room-g": 5 };
+    globalWithPusherState.__pusherChannelRecoveryWarnings = {};
 
-    subscribePusherChannel("room-g");
-    unsubscribePusherChannel("room-g");
+    const originalWarn = console.warn;
+    console.warn = () => undefined;
+    try {
+      subscribePusherChannel("room-g");
+      unsubscribePusherChannel("room-g");
+    } finally {
+      console.warn = originalWarn;
+    }
 
     assertEq(
       calls.length,
