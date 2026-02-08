@@ -369,6 +369,54 @@ async function testUnregisterWarnsWhenResponseIsNotOk() {
   assertEq(JSON.stringify(warnedData), JSON.stringify({ status: 401 }));
 }
 
+async function testUnregisterWarnsWhenRequestTimesOut() {
+  let warnCalls = 0;
+  let warnedMessage = "";
+  let warnedError: unknown;
+
+  await unregisterPushTokenForLogout("example-user", "auth-token", "a".repeat(64), {
+    fetchRuntime: () => new Promise<Response>(() => undefined),
+    getApiUrlRuntime: (path) => path,
+    requestTimeoutMs: 10,
+    warn: (message, error) => {
+      warnCalls += 1;
+      warnedMessage = message;
+      warnedError = error;
+    },
+  });
+
+  assertEq(warnCalls, 1);
+  assertEq(
+    warnedMessage,
+    "[ChatsStore] Failed to unregister iOS push token during logout:"
+  );
+  assertEq(warnedError instanceof Error, true);
+  if (warnedError instanceof Error) {
+    assertEq(warnedError.message, "Push token unregister request timed out after 10ms");
+  }
+}
+
+async function testUnregisterTimeoutCanBeDisabled() {
+  let fetchCalls = 0;
+  let warnCalls = 0;
+
+  await unregisterPushTokenForLogout("example-user", "auth-token", "a".repeat(64), {
+    fetchRuntime: async () => {
+      fetchCalls += 1;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return new Response(null, { status: 200 });
+    },
+    getApiUrlRuntime: (path) => path,
+    requestTimeoutMs: 0,
+    warn: () => {
+      warnCalls += 1;
+    },
+  });
+
+  assertEq(fetchCalls, 1);
+  assertEq(warnCalls, 0);
+}
+
 export async function runPushLogoutTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-logout"));
   clearResults();
@@ -432,6 +480,14 @@ export async function runPushLogoutTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Push logout unregister warns on non-OK responses",
     testUnregisterWarnsWhenResponseIsNotOk
+  );
+  await runTest(
+    "Push logout unregister warns on request timeout",
+    testUnregisterWarnsWhenRequestTimesOut
+  );
+  await runTest(
+    "Push logout unregister supports disabling request timeout",
+    testUnregisterTimeoutCanBeDisabled
   );
 
   return printSummary();

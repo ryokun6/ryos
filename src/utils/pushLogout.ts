@@ -2,6 +2,7 @@ import { getApiUrl, isTauriIOS } from "@/utils/platform";
 import { normalizePushToken } from "@/utils/pushToken";
 import { getPushToken } from "@/utils/tauriPushNotifications";
 const PUSH_TOKEN_LOOKUP_TIMEOUT_MS = 3_000;
+const PUSH_UNREGISTER_TIMEOUT_MS = 3_000;
 
 interface ResolvePushTokenForLogoutDeps {
   isTauriIOSRuntime: () => boolean;
@@ -23,17 +24,23 @@ interface UnregisterPushTokenForLogoutDeps {
   fetchRuntime: typeof fetch;
   getApiUrlRuntime: (path: string) => string;
   warn: (message: string, error?: unknown) => void;
+  requestTimeoutMs?: number;
 }
 
 const defaultUnregisterDeps: UnregisterPushTokenForLogoutDeps = {
   fetchRuntime: fetch,
   getApiUrlRuntime: getApiUrl,
+  requestTimeoutMs: PUSH_UNREGISTER_TIMEOUT_MS,
   warn: (message, error) => {
     console.warn(message, error);
   },
 };
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  operationLabel: string
+): Promise<T> {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
     return promise;
   }
@@ -41,7 +48,7 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
   return new Promise<T>((resolve, reject) => {
     timeoutHandle = setTimeout(() => {
-      reject(new Error(`Push token lookup timed out after ${timeoutMs}ms`));
+      reject(new Error(`${operationLabel} timed out after ${timeoutMs}ms`));
     }, timeoutMs);
 
     promise.then(resolve).catch(reject);
@@ -62,7 +69,8 @@ export async function resolvePushTokenForLogout(
   try {
     const token = await withTimeout(
       deps.getPushTokenRuntime(),
-      deps.tokenLookupTimeoutMs ?? PUSH_TOKEN_LOOKUP_TIMEOUT_MS
+      deps.tokenLookupTimeoutMs ?? PUSH_TOKEN_LOOKUP_TIMEOUT_MS,
+      "Push token lookup"
     );
     const normalizedToken = normalizePushToken(token);
     if (!normalizedToken) {
@@ -122,17 +130,21 @@ export async function unregisterPushTokenForLogout(
   }
 
   try {
-    const response = await deps.fetchRuntime(
-      deps.getApiUrlRuntime("/api/push/unregister"),
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${normalizedAuthToken}`,
-          "X-Username": normalizedUsername,
-        },
-        body: JSON.stringify({ token: normalizedPushToken }),
-      }
+    const response = await withTimeout(
+      deps.fetchRuntime(
+        deps.getApiUrlRuntime("/api/push/unregister"),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${normalizedAuthToken}`,
+            "X-Username": normalizedUsername,
+          },
+          body: JSON.stringify({ token: normalizedPushToken }),
+        }
+      ),
+      deps.requestTimeoutMs ?? PUSH_UNREGISTER_TIMEOUT_MS,
+      "Push token unregister request"
     );
 
     if (!response.ok) {
