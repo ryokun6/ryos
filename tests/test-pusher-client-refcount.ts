@@ -83,7 +83,10 @@ const resetGlobalPusherState = (pusher: FakePusher) => {
   globalWithPusherState.__pusherChannelRefCounts = {};
 };
 
-async function main() {
+export async function runPusherClientRefcountTests(): Promise<{
+  passed: number;
+  failed: number;
+}> {
   clearResults();
   console.log(header("Pusher Channel Refcount Tests"));
 
@@ -241,8 +244,14 @@ async function main() {
     assertEq(calls[1].channel, "room-h");
   });
 
-  const { failed } = printSummary();
-  process.exit(failed > 0 ? 1 : 0);
+  return printSummary();
 }
 
-void main();
+if (import.meta.main) {
+  runPusherClientRefcountTests()
+    .then(({ failed }) => process.exit(failed > 0 ? 1 : 0))
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    });
+}

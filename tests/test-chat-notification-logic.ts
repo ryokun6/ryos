@@ -16,7 +16,10 @@ import {
 } from "./test-utils";
 import { shouldNotifyForRoomMessage } from "../src/utils/chatNotifications";
 
-async function main() {
+export async function runChatNotificationLogicTests(): Promise<{
+  passed: number;
+  failed: number;
+}> {
   clearResults();
   console.log(header("Chat Notification Logic Tests"));
 
@@ -80,8 +83,14 @@ async function main() {
     assert(result === false, "Expected false for missing message room id");
   });
 
-  const { failed } = printSummary();
-  process.exit(failed > 0 ? 1 : 0);
+  return printSummary();
 }
 
-void main();
+if (import.meta.main) {
+  runChatNotificationLogicTests()
+    .then(({ failed }) => process.exit(failed > 0 ? 1 : 0))
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    });
+}

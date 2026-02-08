@@ -30,7 +30,10 @@ const assertHasCall = (
   assert(callPattern.test(source), `Missing ${fnName} call for ${description}`);
 };
 
-async function main() {
+export async function runChatBroadcastWiringTests(): Promise<{
+  passed: number;
+  failed: number;
+}> {
   clearResults();
   console.log(header("Chat Broadcast Wiring Tests"));
 
@@ -85,8 +88,14 @@ async function main() {
     );
   });
 
-  const { failed } = printSummary();
-  process.exit(failed > 0 ? 1 : 0);
+  return printSummary();
 }
 
-void main();
+if (import.meta.main) {
+  runChatBroadcastWiringTests()
+    .then(({ failed }) => process.exit(failed > 0 ? 1 : 0))
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    });
+}
