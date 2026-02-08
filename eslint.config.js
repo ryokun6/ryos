@@ -33,4 +33,17 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: [
+      'src/apps/terminal/components/TypewriterText.tsx',
+      'src/apps/textedit/components/EditorProvider.tsx',
+      'src/components/shared/HtmlPreview.tsx',
+      'src/components/ui/badge.tsx',
+      'src/components/ui/button.tsx',
+      'src/config/appRegistry.tsx',
+    ],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 )

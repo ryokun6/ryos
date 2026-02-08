@@ -410,7 +410,6 @@ export function useFileSystem(
 
   // Files store selectors (avoid broad store subscriptions)
   const {
-    items: fileItems,
     getItem: getFileItem,
     getItemsInPath,
     updateItemMetadata,
@@ -422,7 +421,6 @@ export function useFileSystem(
     emptyTrash: emptyTrashMetadata,
     reset: resetFilesStore,
   } = useFilesStoreShallow((state) => ({
-    items: state.items,
     getItem: state.getItem,
     getItemsInPath: state.getItemsInPath,
     updateItemMetadata: state.updateItemMetadata,
@@ -465,12 +463,12 @@ export function useFileSystem(
   }, []);
 
   // Define getParentPath inside hook
-  const getParentPath = (path: string): string => {
+  const getParentPath = useCallback((path: string): string => {
     if (path === "/") return "/";
     const parts = path.split("/").filter(Boolean);
     if (parts.length <= 1) return "/";
     return "/" + parts.slice(0, -1).join("/");
-  };
+  }, []);
 
   // --- Lazy Default Content Loader (uses cached filesystem data) --- //
   const ensureDefaultContent = useCallback(
@@ -909,7 +907,7 @@ export function useFileSystem(
     // Add fileStore dependency to re-run if items change
   }, [
     currentPath,
-    fileItems,
+    getItemsInPath,
     ipodTracks,
     videoTracks,
     internetExplorerFavorites,
@@ -1223,13 +1221,13 @@ export function useFileSystem(
       setHistoryIndex(historyIndex - 1);
       setCurrentPath(history[historyIndex - 1]);
     }
-  }, [history, historyIndex]);
+  }, [history, historyIndex, setCurrentPath, setHistoryIndex]);
   const navigateForward = useCallback(() => {
     if (historyIndex < history.length - 1) {
       setHistoryIndex(historyIndex + 1);
       setCurrentPath(history[historyIndex + 1]);
     }
-  }, [history, historyIndex]);
+  }, [history, historyIndex, setCurrentPath, setHistoryIndex]);
   const canNavigateBack = useCallback(() => historyIndex > 0, [historyIndex]);
   const canNavigateForward = useCallback(
     () => historyIndex < history.length - 1,
@@ -1696,7 +1694,7 @@ export function useFileSystem(
       console.error("Error formatting file system:", err);
       setError("Failed to format file system");
     }
-  }, [resetFilesStore]);
+  }, [resetFilesStore, setCurrentPath, setHistory, setHistoryIndex]);
 
   // Calculate trash count based on store data
   const trashItemsCount = getItemsInPath("/Trash").length;
