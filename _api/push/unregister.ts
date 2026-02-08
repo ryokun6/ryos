@@ -153,8 +153,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const tokenMetadataLookupConcurrency = getPushMetadataLookupConcurrency();
-    await redis.del(userTokensKey);
-
     const tokenOwnership = await getTokenOwnershipEntries(
       redis,
       username,
@@ -168,6 +166,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ownedTokens,
       getTokenMetaKey
     );
+    await redis.del(userTokensKey);
 
     logger.info("Unregistered all push tokens for user", {
       username,
