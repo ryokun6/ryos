@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef } from "react";
 import { type PusherChannel, getPusherClient } from "@/lib/pusherClient";
 import { useChatsStoreShallow } from "@/stores/helpers";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { useAppStore } from "@/stores/useAppStore";
-import type { ChatMessage } from "@/types/chat";
+import type { ChatMessage, ChatRoom } from "@/types/chat";
 import { toast } from "sonner";
 import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
 
@@ -51,7 +52,10 @@ interface MessageDeletedPayload {
 }
 
 interface GlobalHandlers {
-  onRoomsChanged: () => void;
+  onRoomCreated: (data: { room: ChatRoom }) => void;
+  onRoomDeleted: (data: { roomId: string }) => void;
+  onRoomUpdated: (data: { room: ChatRoom }) => void;
+  onRoomsUpdated: (data: { rooms: ChatRoom[] }) => void;
 }
 
 interface RoomHandlers {
@@ -65,6 +69,7 @@ export function useBackgroundChatNotifications() {
     authToken,
     rooms,
     fetchRooms,
+    setRooms,
     addMessageToRoom,
     removeMessageFromRoom,
     incrementUnread,
@@ -73,6 +78,7 @@ export function useBackgroundChatNotifications() {
     authToken: state.authToken,
     rooms: state.rooms,
     fetchRooms: state.fetchRooms,
+    setRooms: state.setRooms,
     addMessageToRoom: state.addMessageToRoom,
     removeMessageFromRoom: state.removeMessageFromRoom,
     incrementUnread: state.incrementUnread,
@@ -97,10 +103,10 @@ export function useBackgroundChatNotifications() {
     const handlers = globalHandlersRef.current;
 
     if (channel && handlers) {
-      channel.unbind("room-created", handlers.onRoomsChanged);
-      channel.unbind("room-deleted", handlers.onRoomsChanged);
-      channel.unbind("room-updated", handlers.onRoomsChanged);
-      channel.unbind("rooms-updated", handlers.onRoomsChanged);
+      channel.unbind("room-created", handlers.onRoomCreated);
+      channel.unbind("room-deleted", handlers.onRoomDeleted);
+      channel.unbind("room-updated", handlers.onRoomUpdated);
+      channel.unbind("rooms-updated", handlers.onRoomsUpdated);
     }
 
     if (channel && pusherRef.current) {
@@ -199,19 +205,56 @@ export function useBackgroundChatNotifications() {
 
     const channel = pusherRef.current.subscribe(channelName);
     const handlers: GlobalHandlers = {
-      onRoomsChanged: () => {
-        void fetchRooms();
+      onRoomCreated: (data) => {
+        if (!data?.room) {
+          void fetchRooms();
+          return;
+        }
+
+        const { rooms: currentRooms } = useChatsStore.getState();
+        const exists = currentRooms.some((room) => room.id === data.room.id);
+        if (!exists) {
+          setRooms([...currentRooms, data.room]);
+        }
+      },
+      onRoomDeleted: (data) => {
+        if (!data?.roomId) {
+          void fetchRooms();
+          return;
+        }
+
+        const { rooms: currentRooms } = useChatsStore.getState();
+        setRooms(currentRooms.filter((room) => room.id !== data.roomId));
+      },
+      onRoomUpdated: (data) => {
+        if (!data?.room) {
+          void fetchRooms();
+          return;
+        }
+
+        const { rooms: currentRooms } = useChatsStore.getState();
+        const next = currentRooms.map((room) =>
+          room.id === data.room.id ? { ...room, ...data.room } : room
+        );
+        setRooms(next);
+      },
+      onRoomsUpdated: (data) => {
+        if (!Array.isArray(data?.rooms)) {
+          void fetchRooms();
+          return;
+        }
+        setRooms(data.rooms);
       },
     };
 
-    channel.bind("room-created", handlers.onRoomsChanged);
-    channel.bind("room-deleted", handlers.onRoomsChanged);
-    channel.bind("room-updated", handlers.onRoomsChanged);
-    channel.bind("rooms-updated", handlers.onRoomsChanged);
+    channel.bind("room-created", handlers.onRoomCreated);
+    channel.bind("room-deleted", handlers.onRoomDeleted);
+    channel.bind("room-updated", handlers.onRoomUpdated);
+    channel.bind("rooms-updated", handlers.onRoomsUpdated);
 
     globalChannelRef.current = channel;
     globalHandlersRef.current = handlers;
-  }, [fetchRooms, username, unsubscribeGlobalChannel]);
+  }, [fetchRooms, setRooms, username, unsubscribeGlobalChannel]);
 
   const subscribeToRoomChannel = useCallback(
     (roomId: string) => {
