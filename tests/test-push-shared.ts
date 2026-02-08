@@ -129,16 +129,21 @@ async function testRequestBodyObjectAndTrimHelpers() {
 }
 
 async function testParseStoredPushTokens() {
+  const validToken =
+    "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+  const paddedValidToken = `  ${validToken}  `;
   const parsed = parseStoredPushTokens([
-    "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+    validToken,
     "invalid-token",
     123,
-    "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+    validToken,
+    paddedValidToken,
     "   ",
   ]);
 
   assertEq(parsed.validTokens.length, 1);
-  assertEq(parsed.invalidTokensToRemove.length, 2);
+  assertEq(parsed.invalidTokensToRemove.length, 3);
+  assertEq(parsed.invalidTokensToRemove.includes(paddedValidToken), true);
   assertEq(parsed.skippedNonStringCount, 1);
 
   const emptyParsed = parseStoredPushTokens(null);
