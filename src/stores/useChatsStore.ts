@@ -8,7 +8,6 @@ import {
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
-import { decodeHtmlEntities } from "@/utils/html";
 import {
   clearApiUnavailable,
   isApiTemporarilyUnavailable,
@@ -28,10 +27,7 @@ import {
 } from "./chats/recovery";
 import {
   mergeServerMessagesWithOptimistic,
-  sortAndCapRoomMessages,
 } from "./chats/roomMessages";
-import { mergeIncomingRoomMessage } from "./chats/incomingMessageMerge";
-import { areChatRoomListsEqual, sortChatRoomsForUi } from "./chats/roomList";
 import {
   type ApiChatMessagePayload as ApiMessage,
   normalizeApiMessages,
@@ -67,6 +63,13 @@ import {
 } from "./chats/passwordApi";
 import { buildPersistedRoomMessages } from "./chats/persistence";
 import { applyIdentityRecoveryOnRehydrate } from "./chats/rehydration";
+import {
+  clearRoomMessagesInMap,
+  mergeIncomingRoomMessageInMap,
+  prepareRoomsForSet,
+  removeRoomMessageFromMap,
+  setCurrentRoomMessagesInMap,
+} from "./chats/roomState";
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -362,12 +365,8 @@ export const useChatsStore = create<ChatsStoreState>()(
             return; // Ignore non-array updates
           }
 
-          // Deep comparison to prevent unnecessary updates
-          const currentRooms = get().rooms;
-          // Apply stable sort to keep UI order consistent (public first, then name, then id)
-          const sortedNewRooms = sortChatRoomsForUi(newRooms);
-
-          if (areChatRoomListsEqual(currentRooms, sortedNewRooms)) {
+          const { changed, rooms } = prepareRoomsForSet(get().rooms, newRooms);
+          if (!changed) {
             console.log(
               "[ChatsStore] setRooms skipped: newRooms are identical to current rooms."
             );
@@ -375,71 +374,52 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           console.log("[ChatsStore] setRooms called. Updating rooms.");
-          set({ rooms: sortedNewRooms });
+          set({ rooms });
         },
         setCurrentRoomId: (roomId) => set({ currentRoomId: roomId }),
         setRoomMessagesForCurrentRoom: (messages) => {
           const currentRoomId = get().currentRoomId;
           if (currentRoomId) {
             set((state) => ({
-              roomMessages: {
-                ...state.roomMessages,
-                [currentRoomId]: sortAndCapRoomMessages(messages),
-              },
+              roomMessages: setCurrentRoomMessagesInMap(
+                state.roomMessages,
+                currentRoomId,
+                messages
+              ),
             }));
           }
         },
         addMessageToRoom: (roomId, message) => {
           set((state) => {
-            const existingMessages = state.roomMessages[roomId] || [];
-
-            // Normalize incoming content to match optimistic content
-            const incomingContent = decodeHtmlEntities(
-              String((message as unknown as { content?: string }).content || "")
+            const nextRoomMessages = mergeIncomingRoomMessageInMap(
+              state.roomMessages,
+              roomId,
+              message
             );
-            const incoming: ChatMessage = {
-              ...(message as ChatMessage),
-              content: incomingContent,
-            };
-            const mergedMessages = mergeIncomingRoomMessage(
-              existingMessages,
-              incoming
-            );
-            if (!mergedMessages) {
+            if (!nextRoomMessages) {
               return {};
             }
             return {
-              roomMessages: {
-                ...state.roomMessages,
-                [roomId]: mergedMessages,
-              },
+              roomMessages: nextRoomMessages,
             };
           });
         },
         removeMessageFromRoom: (roomId, messageId) => {
           set((state) => {
-            const existingMessages = state.roomMessages[roomId] || [];
-            const updatedMessages = existingMessages.filter(
-              (m) => m.id !== messageId
+            const result = removeRoomMessageFromMap(
+              state.roomMessages,
+              roomId,
+              messageId
             );
-            // Only update if a message was actually removed
-            if (updatedMessages.length < existingMessages.length) {
-              return {
-                roomMessages: {
-                  ...state.roomMessages,
-                  [roomId]: updatedMessages,
-                },
-              };
+            if (result.changed) {
+              return { roomMessages: result.roomMessages };
             }
             return {}; // No change needed
           });
         },
         clearRoomMessages: (roomId) => {
           set((state) => ({
-            roomMessages: {
-              ...state.roomMessages,
-              [roomId]: [],
-            },
+            roomMessages: clearRoomMessagesInMap(state.roomMessages, roomId),
           }));
         },
         toggleSidebarVisibility: () =>
