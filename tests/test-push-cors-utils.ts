@@ -139,6 +139,20 @@ async function testSetCorsHeadersDefaultAndCustomBehavior() {
   assertEq(customRes.getHeader("Access-Control-Max-Age"), "120");
 }
 
+async function testSetCorsHeadersFallsBackWhenConfiguredMethodsOrHeadersAreEmpty() {
+  const res = createMockVercelResponseHarness();
+  setCorsHeaders(res.res, "http://localhost:3000", {
+    methods: [],
+    headers: ["   ", "\t"],
+  });
+
+  assertEq(res.getHeader("Access-Control-Allow-Methods"), "GET, POST, OPTIONS");
+  assertEq(
+    res.getHeader("Access-Control-Allow-Headers"),
+    "Content-Type, Authorization, X-Username"
+  );
+}
+
 async function testSetCorsHeadersAppendsOriginToExistingVaryHeader() {
   const res = createMockVercelResponseHarness();
   (res.res as { setHeader: (name: string, value: unknown) => unknown }).setHeader(
@@ -711,6 +725,27 @@ async function testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeade
   });
 }
 
+async function testHandlePreflightFallsBackToDefaultsWhenConfiguredMethodsOrHeadersEmpty() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:5173",
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res, {
+      methods: [],
+      headers: ["   ", "\t"],
+    });
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Allow-Methods"), "GET, POST, OPTIONS");
+    assertEq(
+      res.getHeader("Access-Control-Allow-Headers"),
+      "Content-Type, Authorization, X-Username"
+    );
+  });
+}
+
 async function testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeadersInvalid() {
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:5173",
@@ -818,6 +853,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS header setter applies default and custom options",
     testSetCorsHeadersDefaultAndCustomBehavior
+  );
+  await runTest(
+    "CORS header setter falls back when configured methods/headers are empty",
+    testSetCorsHeadersFallsBackWhenConfiguredMethodsOrHeadersAreEmpty
   );
   await runTest(
     "CORS header setter appends Origin to existing Vary values",
@@ -934,6 +973,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper falls back to configured allow headers",
     testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeaderMissing
+  );
+  await runTest(
+    "CORS preflight helper falls back to defaults when configured methods/headers are empty",
+    testHandlePreflightFallsBackToDefaultsWhenConfiguredMethodsOrHeadersEmpty
   );
   await runTest(
     "CORS preflight helper falls back to configured allow headers when requested headers are invalid",

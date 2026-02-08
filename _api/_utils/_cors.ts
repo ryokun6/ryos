@@ -296,11 +296,19 @@ export function handlePreflight(
 
   // Echo back requested headers when provided
   const requestedHeaders = getNormalizedRequestedPreflightHeaders(req);
+  const configuredMethods = normalizeConfiguredCorsValues(
+    options.methods,
+    DEFAULT_CORS_METHODS
+  );
+  const configuredHeaders = normalizeConfiguredCorsValues(
+    options.headers,
+    DEFAULT_CORS_HEADERS
+  );
   const allowHeaders =
-    requestedHeaders ?? (options.headers || DEFAULT_CORS_HEADERS).join(", ");
+    requestedHeaders ?? configuredHeaders.join(", ");
 
   res.setHeader("Access-Control-Allow-Origin", origin);
-  res.setHeader("Access-Control-Allow-Methods", (options.methods || DEFAULT_CORS_METHODS).join(", "));
+  res.setHeader("Access-Control-Allow-Methods", configuredMethods.join(", "));
   res.setHeader("Access-Control-Allow-Headers", allowHeaders);
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Max-Age", String(options.maxAge || 86400));
@@ -321,17 +329,37 @@ export interface SetCorsHeadersOptions {
 const DEFAULT_CORS_METHODS = ["GET", "POST", "OPTIONS"];
 const DEFAULT_CORS_HEADERS = ["Content-Type", "Authorization", "X-Username"];
 
+function normalizeConfiguredCorsValues(
+  values: string[] | undefined,
+  fallback: readonly string[]
+): string[] {
+  if (!Array.isArray(values)) {
+    return [...fallback];
+  }
+
+  const normalizedValues = values
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+
+  if (normalizedValues.length === 0) {
+    return [...fallback];
+  }
+
+  return normalizedValues;
+}
+
 export function setCorsHeaders(
   res: VercelResponse,
   origin: string | null | undefined,
   options: SetCorsHeadersOptions = {}
 ): void {
   const {
-    methods = DEFAULT_CORS_METHODS,
-    headers = DEFAULT_CORS_HEADERS,
     credentials = true,
     maxAge = 86400,
   } = options;
+  const methods = normalizeConfiguredCorsValues(options.methods, DEFAULT_CORS_METHODS);
+  const headers = normalizeConfiguredCorsValues(options.headers, DEFAULT_CORS_HEADERS);
 
   if (origin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
