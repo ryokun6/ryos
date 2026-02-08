@@ -134,6 +134,50 @@ async function testExtractAuthReturnsNormalizedCredentials() {
   assertEq(mockLogger.responseCalls.length, 0);
 }
 
+async function testExtractAuthSupportsArrayHeaders() {
+  const mockRes = createMockResponse();
+  const mockLogger = createMockLogger();
+
+  const credentials = extractPushAuthCredentialsOrRespond(
+    {
+      authorization: ["Bearer first-token", "Bearer ignored-token"],
+      "x-username": ["ArrayUser", "ignored-user"],
+    },
+    mockRes.res,
+    mockLogger.logger,
+    Date.now()
+  );
+
+  assertEq(credentials?.username, "arrayuser");
+  assertEq(credentials?.token, "first-token");
+  assertEq(mockRes.getStatusCode(), 0);
+  assertEq(mockLogger.responseCalls.length, 0);
+}
+
+async function testExtractAuthRejectsBlankBearerToken() {
+  const mockRes = createMockResponse();
+  const mockLogger = createMockLogger();
+
+  const credentials = extractPushAuthCredentialsOrRespond(
+    {
+      authorization: "Bearer     ",
+      "x-username": "valid-user",
+    },
+    mockRes.res,
+    mockLogger.logger,
+    Date.now()
+  );
+
+  assertEq(credentials, null);
+  assertEq(mockRes.getStatusCode(), 401);
+  assertEq(
+    JSON.stringify(mockRes.getJsonPayload()),
+    JSON.stringify({ error: "Unauthorized - missing credentials" })
+  );
+  assertEq(mockLogger.responseCalls.length, 1);
+  assertEq(mockLogger.responseCalls[0].statusCode, 401);
+}
+
 async function testValidateAuthRejectsInvalidToken() {
   const mockRes = createMockResponse();
   const mockLogger = createMockLogger();
@@ -174,9 +218,28 @@ async function testValidateAuthAcceptsValidTokenAndRefreshesTtl() {
 
   assertEq(isValid, true);
   assertEq(existsCalls.length, 1);
+  assertEq(existsCalls[0].includes(":user:user:"), true);
   assertEq(expireCalls.length, 1);
   assertEq(mockRes.getStatusCode(), 0);
   assertEq(mockLogger.responseCalls.length, 0);
+}
+
+async function testValidateAuthNormalizesUsernameBeforeLookup() {
+  const mockRes = createMockResponse();
+  const mockLogger = createMockLogger();
+  const { redis, existsCalls } = createFakeAuthRedis(1);
+
+  const isValid = await validatePushAuthOrRespond(
+    redis as Parameters<typeof validatePushAuthOrRespond>[0],
+    { username: "MixedUser", token: "valid-token" },
+    mockRes.res,
+    mockLogger.logger,
+    Date.now()
+  );
+
+  assertEq(isValid, true);
+  assertEq(existsCalls.length, 1);
+  assertEq(existsCalls[0].includes(":user:mixeduser:"), true);
 }
 
 export async function runPushAuthGuardTests(): Promise<{ passed: number; failed: number }> {
@@ -192,12 +255,24 @@ export async function runPushAuthGuardTests(): Promise<{ passed: number; failed:
     testExtractAuthReturnsNormalizedCredentials
   );
   await runTest(
+    "Push auth guard supports array header values",
+    testExtractAuthSupportsArrayHeaders
+  );
+  await runTest(
+    "Push auth guard rejects blank bearer token payload",
+    testExtractAuthRejectsBlankBearerToken
+  );
+  await runTest(
     "Push auth guard rejects invalid redis token lookup",
     testValidateAuthRejectsInvalidToken
   );
   await runTest(
     "Push auth guard accepts valid token and refreshes TTL",
     testValidateAuthAcceptsValidTokenAndRefreshesTtl
+  );
+  await runTest(
+    "Push auth guard lowercases username for token lookup",
+    testValidateAuthNormalizesUsernameBeforeLookup
   );
 
   return printSummary();
