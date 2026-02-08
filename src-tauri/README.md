@@ -96,6 +96,8 @@ The wrapper includes a local `ios-push` Tauri plugin that bridges APNs into the 
 
 Set these in your deployment environment to enable test sends:
 
+- `REDIS_KV_REST_API_URL` (for push token storage)
+- `REDIS_KV_REST_API_TOKEN` (for push token storage)
 - `APNS_KEY_ID`
 - `APNS_TEAM_ID`
 - `APNS_BUNDLE_ID`
