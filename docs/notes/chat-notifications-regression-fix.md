@@ -37,6 +37,8 @@ File: `src/lib/pusherClient.ts`
   - missing-channel refcount recovery
   - unsubscribe underflow no-op
   - warnings are de-duplicated to avoid console noise.
+  - warning keys are cleared after full channel release so future regressions on
+    the same channel can re-surface a warning.
 
 ### 2) Frontend listener lifecycle hardening
 
@@ -72,6 +74,7 @@ Routes now emit matching realtime events:
   - over-release guard
   - stale channel recovery
   - warning dedupe behavior
+  - warning reset behavior after full channel release
   - channel-name normalization and blank-input guards
 - `tests/test-pusher-client-constructor-wiring.ts`
   - verifies module-default constructor lookup remains wired
