@@ -34,27 +34,59 @@ async function testSkipsResolutionOutsideTauriIos() {
 
 async function testReturnsTrimmedTokenOnIos() {
   let getPushTokenCalls = 0;
+  const validToken = "a".repeat(64);
   const token = await resolvePushTokenForLogout({
     isTauriIOSRuntime: () => true,
     getPushTokenRuntime: async () => {
       getPushTokenCalls += 1;
-      return "  token-123  ";
+      return `  ${validToken}  `;
     },
     warn: () => undefined,
   });
 
-  assertEq(token, "token-123");
+  assertEq(token, validToken);
   assertEq(getPushTokenCalls, 1);
 }
 
 async function testReturnsNullForBlankResolvedToken() {
+  let warnCalls = 0;
   const token = await resolvePushTokenForLogout({
     isTauriIOSRuntime: () => true,
     getPushTokenRuntime: async () => "   ",
-    warn: () => undefined,
+    warn: () => {
+      warnCalls += 1;
+    },
   });
 
   assertEq(token, null);
+  assertEq(warnCalls, 0);
+}
+
+async function testReturnsNullAndWarnsForInvalidResolvedToken() {
+  let warnCalls = 0;
+  let warnedMessage = "";
+  let warnedData: unknown;
+
+  const token = await resolvePushTokenForLogout({
+    isTauriIOSRuntime: () => true,
+    getPushTokenRuntime: async () => "invalid/token",
+    warn: (message, data) => {
+      warnCalls += 1;
+      warnedMessage = message;
+      warnedData = data;
+    },
+  });
+
+  assertEq(token, null);
+  assertEq(warnCalls, 1);
+  assertEq(
+    warnedMessage,
+    "[ChatsStore] Ignoring invalid iOS push token during logout resolution:"
+  );
+  assertEq(
+    JSON.stringify(warnedData),
+    JSON.stringify({ tokenLength: "invalid/token".length })
+  );
 }
 
 async function testReturnsNullAndWarnsOnResolutionError() {
@@ -99,6 +131,10 @@ export async function runPushLogoutTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Push logout resolver returns null for blank token",
     testReturnsNullForBlankResolvedToken
+  );
+  await runTest(
+    "Push logout resolver returns null and logs for invalid token format",
+    testReturnsNullAndWarnsForInvalidResolvedToken
   );
   await runTest(
     "Push logout resolver returns null and logs on resolution errors",
