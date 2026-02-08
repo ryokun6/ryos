@@ -20,9 +20,11 @@ import {
 } from "./_set-ops.js";
 import {
   extractAuthFromHeaders,
+  extractTokenMetadataOwner,
   parseStoredPushTokens,
   getTokenMetaKey,
   getUserTokensKey,
+  type PushTokenMetadata,
 } from "./_shared.js";
 
 export const runtime = "nodejs";
@@ -66,6 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const redis = createPushRedis();
+    const tokenMetadataLookupConcurrency = getPushMetadataLookupConcurrency();
     const { username, token } = extractAuthFromHeaders(req.headers);
     if (!username || !token) {
       logger.response(401, Date.now() - startTime);
@@ -113,6 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         metadataRemoved: removedMetadataCount,
         invalidStoredTokensRemoved: 0,
         skippedNonStringTokenCount: 0,
+        pushMetadataLookupConcurrency: 0,
       });
     }
 
@@ -145,10 +149,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         metadataRemoved: 0,
         invalidStoredTokensRemoved,
         skippedNonStringTokenCount,
+        pushMetadataLookupConcurrency: 0,
       });
     }
 
-    const tokenMetadataLookupConcurrency = getPushMetadataLookupConcurrency();
     await redis.del(userTokensKey);
 
     const tokenOwnership = await getTokenOwnershipEntries(
@@ -171,6 +175,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       removedMetadata: metadataRemoved,
       invalidStoredTokensRemoved,
       skippedNonStringTokenCount,
+      pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
     });
     logger.response(200, Date.now() - startTime);
 
@@ -180,6 +185,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       metadataRemoved,
       invalidStoredTokensRemoved,
       skippedNonStringTokenCount,
+      pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
     });
   } catch (error) {
     return respondInternalServerError(
