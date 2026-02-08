@@ -17,6 +17,11 @@ import {
 
 const VALID_TOKEN =
   "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+const MIN_LENGTH_TOKEN = "a".repeat(20);
+const MAX_LENGTH_TOKEN = "b".repeat(512);
+const TOO_SHORT_TOKEN = "c".repeat(19);
+const TOO_LONG_TOKEN = "d".repeat(513);
+const INVALID_CHAR_TOKEN = `${"e".repeat(30)}/${"f".repeat(30)}`;
 
 async function testRequestBodyMustBeObject() {
   const registerFromArray = normalizeRegisterPushPayload([]);
@@ -134,6 +139,89 @@ async function testUnregisterPayloadSuccessModes() {
   assertEq(singleTokenMode.value.token, VALID_TOKEN);
 }
 
+async function testTokenFormatBoundaries() {
+  const registerMin = normalizeRegisterPushPayload({
+    token: MIN_LENGTH_TOKEN,
+    platform: "ios",
+  });
+  assertEq(registerMin.ok, true);
+  if (!registerMin.ok) return;
+  assertEq(registerMin.value.token, MIN_LENGTH_TOKEN);
+
+  const registerMax = normalizeRegisterPushPayload({
+    token: MAX_LENGTH_TOKEN,
+    platform: "ios",
+  });
+  assertEq(registerMax.ok, true);
+  if (!registerMax.ok) return;
+  assertEq(registerMax.value.token, MAX_LENGTH_TOKEN);
+
+  const registerTooShort = normalizeRegisterPushPayload({
+    token: TOO_SHORT_TOKEN,
+    platform: "ios",
+  });
+  assertEq(registerTooShort.ok, false);
+  if (!registerTooShort.ok) {
+    assertEq(registerTooShort.error, "Invalid push token format");
+  }
+
+  const registerTooLong = normalizeRegisterPushPayload({
+    token: TOO_LONG_TOKEN,
+    platform: "ios",
+  });
+  assertEq(registerTooLong.ok, false);
+  if (!registerTooLong.ok) {
+    assertEq(registerTooLong.error, "Invalid push token format");
+  }
+
+  const registerInvalidCharacter = normalizeRegisterPushPayload({
+    token: INVALID_CHAR_TOKEN,
+    platform: "ios",
+  });
+  assertEq(registerInvalidCharacter.ok, false);
+  if (!registerInvalidCharacter.ok) {
+    assertEq(registerInvalidCharacter.error, "Invalid push token format");
+  }
+
+  const unregisterMin = normalizeUnregisterPushPayload({
+    token: MIN_LENGTH_TOKEN,
+  });
+  assertEq(unregisterMin.ok, true);
+  if (!unregisterMin.ok) return;
+  assertEq(unregisterMin.value.token, MIN_LENGTH_TOKEN);
+
+  const unregisterMax = normalizeUnregisterPushPayload({
+    token: MAX_LENGTH_TOKEN,
+  });
+  assertEq(unregisterMax.ok, true);
+  if (!unregisterMax.ok) return;
+  assertEq(unregisterMax.value.token, MAX_LENGTH_TOKEN);
+
+  const unregisterTooShort = normalizeUnregisterPushPayload({
+    token: TOO_SHORT_TOKEN,
+  });
+  assertEq(unregisterTooShort.ok, false);
+  if (!unregisterTooShort.ok) {
+    assertEq(unregisterTooShort.error, "Invalid push token format");
+  }
+
+  const unregisterTooLong = normalizeUnregisterPushPayload({
+    token: TOO_LONG_TOKEN,
+  });
+  assertEq(unregisterTooLong.ok, false);
+  if (!unregisterTooLong.ok) {
+    assertEq(unregisterTooLong.error, "Invalid push token format");
+  }
+
+  const unregisterInvalidCharacter = normalizeUnregisterPushPayload({
+    token: INVALID_CHAR_TOKEN,
+  });
+  assertEq(unregisterInvalidCharacter.ok, false);
+  if (!unregisterInvalidCharacter.ok) {
+    assertEq(unregisterInvalidCharacter.error, "Invalid push token format");
+  }
+}
+
 export async function runPushRequestPayloadTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-request-payloads"));
   clearResults();
@@ -146,6 +234,7 @@ export async function runPushRequestPayloadTests(): Promise<{ passed: number; fa
   );
   await runTest("Unregister payload validation errors", testUnregisterPayloadValidation);
   await runTest("Unregister payload success modes", testUnregisterPayloadSuccessModes);
+  await runTest("Push payload token format boundaries", testTokenFormatBoundaries);
 
   return printSummary();
 }
