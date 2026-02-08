@@ -9,6 +9,10 @@ import {
   normalizePushTestPayload,
 } from "../_api/push/_payload";
 import {
+  PUSH_TOKEN_MAX_LENGTH,
+  PUSH_TOKEN_MIN_LENGTH,
+} from "../_api/push/_shared";
+import {
   assert,
   assertEq,
   clearResults,
@@ -17,9 +21,9 @@ import {
   section,
 } from "./test-utils";
 
-const MIN_LENGTH_TOKEN = "a".repeat(20);
-const MAX_LENGTH_TOKEN = "b".repeat(512);
-const TOO_LONG_TOKEN = "c".repeat(513);
+const MIN_LENGTH_TOKEN = "a".repeat(PUSH_TOKEN_MIN_LENGTH);
+const MAX_LENGTH_TOKEN = "b".repeat(PUSH_TOKEN_MAX_LENGTH);
+const TOO_LONG_TOKEN = "c".repeat(PUSH_TOKEN_MAX_LENGTH + 1);
 const INVALID_CHAR_TOKEN = `${"d".repeat(30)}/${"e".repeat(30)}`;
 
 async function testDefaultsForMissingBody() {

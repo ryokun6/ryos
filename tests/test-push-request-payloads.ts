@@ -8,6 +8,10 @@ import {
   normalizeUnregisterPushPayload,
 } from "../_api/push/_request-payloads";
 import {
+  PUSH_TOKEN_MAX_LENGTH,
+  PUSH_TOKEN_MIN_LENGTH,
+} from "../_api/push/_shared";
+import {
   assertEq,
   clearResults,
   printSummary,
@@ -17,10 +21,10 @@ import {
 
 const VALID_TOKEN =
   "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
-const MIN_LENGTH_TOKEN = "a".repeat(20);
-const MAX_LENGTH_TOKEN = "b".repeat(512);
-const TOO_SHORT_TOKEN = "c".repeat(19);
-const TOO_LONG_TOKEN = "d".repeat(513);
+const MIN_LENGTH_TOKEN = "a".repeat(PUSH_TOKEN_MIN_LENGTH);
+const MAX_LENGTH_TOKEN = "b".repeat(PUSH_TOKEN_MAX_LENGTH);
+const TOO_SHORT_TOKEN = "c".repeat(PUSH_TOKEN_MIN_LENGTH - 1);
+const TOO_LONG_TOKEN = "d".repeat(PUSH_TOKEN_MAX_LENGTH + 1);
 const INVALID_CHAR_TOKEN = `${"e".repeat(30)}/${"f".repeat(30)}`;
 
 async function testRequestBodyMustBeObject() {
