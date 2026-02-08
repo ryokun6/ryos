@@ -322,6 +322,7 @@ export function useInternetExplorerLogic({
   );
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  const navigationWatchdogRef = useRef<number | null>(null);
   const [hasMoreToScroll] = useState(false);
   const [isUrlDropdownOpen, setIsUrlDropdownOpen] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState<
@@ -331,6 +332,13 @@ export function useInternetExplorerLogic({
   const [isSelectingText, setIsSelectingText] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0);
   const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
+
+  const clearNavigationWatchdog = useCallback(() => {
+    if (navigationWatchdogRef.current !== null) {
+      window.clearTimeout(navigationWatchdogRef.current);
+      navigationWatchdogRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     const updateDropdownStyle = () => {
@@ -579,6 +587,7 @@ export function useInternetExplorerLogic({
       iframeRef.current &&
       iframeRef.current.dataset.navToken === navTokenRef.current.toString()
     ) {
+      clearNavigationWatchdog();
       const iframeSrc = iframeRef.current.src;
       if (
         iframeSrc.includes("/api/iframe-check") &&
@@ -647,6 +656,7 @@ export function useInternetExplorerLogic({
       }
 
       clearErrorDetails();
+      clearNavigationWatchdog();
 
       setTimeout(() => {
         if (
@@ -720,6 +730,7 @@ export function useInternetExplorerLogic({
       iframeRef.current &&
       iframeRef.current.dataset.navToken === navTokenRef.current.toString()
     ) {
+      clearNavigationWatchdog();
       setTimeout(() => {
         if (
           iframeRef.current &&
@@ -787,7 +798,7 @@ export function useInternetExplorerLogic({
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
-      if (isAiLoading) {
+      if (isAiLoading || isFetchingWebsiteContent) {
         stopGeneration();
       }
       if (iframeRef.current && status === "loading") {
@@ -1025,6 +1036,34 @@ export function useInternetExplorerLogic({
           if (iframeRef.current) {
             iframeRef.current.dataset.navToken = newToken.toString();
             iframeRef.current.src = urlToLoad;
+
+            navigationWatchdogRef.current = window.setTimeout(() => {
+              const activeIframe = iframeRef.current;
+              if (!activeIframe) return;
+              if (abortController.signal.aborted) return;
+              if (
+                activeIframe.dataset.navToken !== navTokenRef.current.toString()
+              ) {
+                return;
+              }
+
+              const latestStatus = useInternetExplorerStore.getState().status;
+              if (latestStatus !== "loading") {
+                return;
+              }
+
+              handleNavigationError(
+                {
+                  error: true,
+                  type: "timeout_error",
+                  status: 408,
+                  message: `Timed out while fetching ${normalizedTargetUrl} from ${targetYearParam}.`,
+                  details:
+                    "The request took too long to complete. Please try another year or refresh.",
+                },
+                normalizedTargetUrl
+              );
+            }, 20000);
           }
         }
       } catch (error) {
@@ -1050,12 +1089,14 @@ export function useInternetExplorerLogic({
       finalUrl,
       status,
       isAiLoading,
+      isFetchingWebsiteContent,
       navigateStart,
       setFinalUrl,
       generateFuturisticWebsite,
       stopGeneration,
       loadSuccess,
       clearErrorDetails,
+      clearNavigationWatchdog,
       handleNavigationError,
       setPrefetchedTitle,
       setUrl,
@@ -1364,17 +1405,19 @@ export function useInternetExplorerLogic({
   }, [clearFavorites, setClearFavoritesDialogOpen]);
 
   const handleRefresh = useCallback(() => {
+    clearNavigationWatchdog();
     if (abortControllerRef.current) abortControllerRef.current.abort();
     if (iframeRef.current) iframeRef.current.src = "about:blank";
     handleNavigate(url, year, true);
-  }, [handleNavigate, url, year]);
+  }, [clearNavigationWatchdog, handleNavigate, url, year]);
 
   const handleStop = useCallback(() => {
+    clearNavigationWatchdog();
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
     cancel();
-    if (isAiLoading) {
+    if (isAiLoading || isFetchingWebsiteContent) {
       stopGeneration();
     }
     if (iframeRef.current) {
@@ -1388,6 +1431,8 @@ export function useInternetExplorerLogic({
   }, [
     cancel,
     isAiLoading,
+    isFetchingWebsiteContent,
+    clearNavigationWatchdog,
     stopGeneration,
     clearErrorDetails,
     stopElevatorMusic,
@@ -1775,6 +1820,7 @@ export function useInternetExplorerLogic({
 
   useEffect(() => {
     if (!isWindowOpen) {
+      clearNavigationWatchdog();
       if (stopElevatorMusic) {
         stopElevatorMusic();
       }
@@ -1785,7 +1831,7 @@ export function useInternetExplorerLogic({
         iframeRef.current.src = "about:blank";
       }
     }
-  }, [isWindowOpen, stopElevatorMusic]);
+  }, [clearNavigationWatchdog, isWindowOpen, stopElevatorMusic]);
 
   useEffect(() => {
     const container = favoritesContainerRef.current;
@@ -1811,11 +1857,18 @@ export function useInternetExplorerLogic({
 
   useEffect(() => {
     if (!isAiLoading && !isFetchingWebsiteContent && status !== "loading") {
+      clearNavigationWatchdog();
       if (stopElevatorMusic) {
         stopElevatorMusic();
       }
     }
-  }, [isAiLoading, isFetchingWebsiteContent, status, stopElevatorMusic]);
+  }, [
+    isAiLoading,
+    isFetchingWebsiteContent,
+    status,
+    clearNavigationWatchdog,
+    stopElevatorMusic,
+  ]);
 
   const getDebugStatusMessage = (): ReactNode => {
     if (!(status === "loading" || isAiLoading || isFetchingWebsiteContent))

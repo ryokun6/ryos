@@ -208,6 +208,7 @@ export function useFileSystem(
     emptyTrash: state.emptyTrash,
     reset: state.reset,
   }));
+  const fileItems = useFilesStore((state) => state.items);
   const launchApp = useLaunchApp();
   const {
     tracks: ipodTracks,
@@ -358,6 +359,10 @@ export function useFileSystem(
 
   // Define loadFiles next
   const loadFiles = useCallback(async () => {
+    // Ensure this callback re-computes when file metadata changes.
+    // `getItemsInPath` is stable, so we explicitly depend on `fileItems`.
+    void fileItems;
+
     setIsLoading(true);
     setError(undefined);
 
@@ -683,6 +688,7 @@ export function useFileSystem(
     // Add fileStore dependency to re-run if items change
   }, [
     currentPath,
+    fileItems,
     getItemsInPath,
     ipodTracks,
     videoTracks,
