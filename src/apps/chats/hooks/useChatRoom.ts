@@ -6,6 +6,7 @@ import { toast } from "@/hooks/useToast";
 import { type ChatRoom, type ChatMessage } from "../../../../src/types/chat";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
+import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
@@ -139,28 +140,44 @@ export function useChatRoom(
 
       // Create event handlers (apply local diffs to avoid refetch)
       const handleRoomCreated = (data: { room: ChatRoom }) => {
+        if (!data?.room?.id) {
+          void fetchRooms();
+          return;
+        }
+
         console.log("[Pusher Hook] Room created:", data.room);
         const { rooms: currentRooms } = useChatsStore.getState();
-        const exists = currentRooms.some((r) => r.id === data.room.id);
-        if (!exists) setRooms([...currentRooms, data.room]);
+        setRooms(upsertChatRoom(currentRooms, data.room));
       };
 
       const handleRoomDeleted = (data: { roomId: string }) => {
+        if (!data?.roomId) {
+          void fetchRooms();
+          return;
+        }
+
         console.log("[Pusher Hook] Room deleted:", data.roomId);
         const { rooms: currentRooms } = useChatsStore.getState();
-        setRooms(currentRooms.filter((r) => r.id !== data.roomId));
+        setRooms(removeChatRoomById(currentRooms, data.roomId));
       };
 
       const handleRoomUpdated = (data: { room: ChatRoom }) => {
+        if (!data?.room?.id) {
+          void fetchRooms();
+          return;
+        }
+
         console.log("[Pusher Hook] Room updated:", data.room);
         const { rooms: currentRooms } = useChatsStore.getState();
-        const next = currentRooms.map((r) =>
-          r.id === data.room.id ? { ...r, ...data.room } : r
-        );
-        setRooms(next);
+        setRooms(upsertChatRoom(currentRooms, data.room));
       };
 
       const handleRoomsUpdated = (data: { rooms: ChatRoom[] }) => {
+        if (!Array.isArray(data?.rooms)) {
+          void fetchRooms();
+          return;
+        }
+
         console.log("[Pusher Hook] Rooms updated:", data.rooms.length, "rooms");
         // Update rooms directly instead of fetching from API
         setRooms(data.rooms);

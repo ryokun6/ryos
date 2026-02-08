@@ -6,6 +6,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import type { ChatMessage, ChatRoom } from "@/types/chat";
 import { toast } from "sonner";
 import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
+import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
@@ -212,16 +213,13 @@ export function useBackgroundChatNotifications() {
     const channel = pusherRef.current.subscribe(channelName);
     const handlers: GlobalHandlers = {
       onRoomCreated: (data) => {
-        if (!data?.room) {
+        if (!data?.room?.id) {
           void fetchRooms();
           return;
         }
 
         const { rooms: currentRooms } = useChatsStore.getState();
-        const exists = currentRooms.some((room) => room.id === data.room.id);
-        if (!exists) {
-          setRooms([...currentRooms, data.room]);
-        }
+        setRooms(upsertChatRoom(currentRooms, data.room));
       },
       onRoomDeleted: (data) => {
         if (!data?.roomId) {
@@ -230,19 +228,16 @@ export function useBackgroundChatNotifications() {
         }
 
         const { rooms: currentRooms } = useChatsStore.getState();
-        setRooms(currentRooms.filter((room) => room.id !== data.roomId));
+        setRooms(removeChatRoomById(currentRooms, data.roomId));
       },
       onRoomUpdated: (data) => {
-        if (!data?.room) {
+        if (!data?.room?.id) {
           void fetchRooms();
           return;
         }
 
         const { rooms: currentRooms } = useChatsStore.getState();
-        const next = currentRooms.map((room) =>
-          room.id === data.room.id ? { ...room, ...data.room } : room
-        );
-        setRooms(next);
+        setRooms(upsertChatRoom(currentRooms, data.room));
       },
       onRoomsUpdated: (data) => {
         if (!Array.isArray(data?.rooms)) {
