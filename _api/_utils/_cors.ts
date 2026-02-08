@@ -93,6 +93,8 @@ function getNormalizedRequestedPreflightHeaders(req: VercelRequest): string | nu
   const seen = new Set<string>();
   const normalizedHeaders: string[] = [];
   let processedTokenCount = 0;
+  let normalizedHeadersLength = 0;
+  let exceededAllowHeadersLength = false;
 
   for (const headerValue of requestedHeaderValues) {
     const shouldContinueScanning = forEachCommaSeparatedCandidate(
@@ -112,18 +114,33 @@ function getNormalizedRequestedPreflightHeaders(req: VercelRequest): string | nu
 
       const key = trimmedHeader.toLowerCase();
         if (seen.has(key)) return true;
+        const projectedHeadersLength =
+          normalizedHeadersLength === 0
+            ? trimmedHeader.length
+            : normalizedHeadersLength + 2 + trimmedHeader.length;
+        if (projectedHeadersLength > CORS_MAX_PREFLIGHT_ALLOW_HEADERS_LENGTH) {
+          exceededAllowHeadersLength = true;
+          return false;
+        }
+
       seen.add(key);
       normalizedHeaders.push(trimmedHeader);
+        normalizedHeadersLength = projectedHeadersLength;
         return true;
       }
     );
 
     if (
+      exceededAllowHeadersLength ||
       !shouldContinueScanning ||
       processedTokenCount >= CORS_MAX_PREFLIGHT_REQUESTED_HEADER_TOKENS
     ) {
       break;
     }
+  }
+
+  if (exceededAllowHeadersLength) {
+    return null;
   }
 
   const allowHeaders = normalizedHeaders.join(", ");
