@@ -13,6 +13,7 @@ import {
   getTokenMetaKey,
   getUserTokensKey,
   isTokenMetadataOwnedByUser,
+  isRedisPositiveCount,
   isPushPlatform,
   isValidPushToken,
   normalizePushPlatform,
@@ -80,6 +81,19 @@ async function testAuthExtractionFromHeaders() {
   });
   assertEq(lowerCaseAuth.token, "token-lower");
   assertEq(lowerCaseAuth.username, "loweruser");
+}
+
+async function testRedisPositiveCountHelper() {
+  assertEq(isRedisPositiveCount(1), true);
+  assertEq(isRedisPositiveCount(2), true);
+  assertEq(isRedisPositiveCount(0), false);
+  assertEq(isRedisPositiveCount(-1), false);
+  assertEq(isRedisPositiveCount("1"), true);
+  assertEq(isRedisPositiveCount(" 2 "), true);
+  assertEq(isRedisPositiveCount("0"), false);
+  assertEq(isRedisPositiveCount(""), false);
+  assertEq(isRedisPositiveCount(true), true);
+  assertEq(isRedisPositiveCount(false), false);
 }
 
 async function testPlatformValidation() {
@@ -161,6 +175,7 @@ export async function runPushSharedTests(): Promise<{ passed: number; failed: nu
   await runTest("Username normalization helper", testUsernameNormalization);
   await runTest("Bearer token extraction helper", testBearerTokenExtraction);
   await runTest("Auth extraction from request headers", testAuthExtractionFromHeaders);
+  await runTest("Redis positive-count helper", testRedisPositiveCountHelper);
   await runTest("Push platform validator", testPlatformValidation);
   await runTest("Token metadata ownership helpers", testTokenMetadataOwnershipHelpers);
   await runTest("Push body/trim helper utilities", testRequestBodyObjectAndTrimHelpers);

@@ -30,6 +30,7 @@ import {
 } from "./_set-ops.js";
 import {
   extractAuthFromHeaders,
+  isRedisPositiveCount,
   parseStoredPushTokens,
   getTokenMetaKey,
   getUserTokensKey,
@@ -130,7 +131,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         userTokensKey,
         requestedToken
       );
-      if (!isRequestedTokenRegistered) {
+      if (!isRedisPositiveCount(isRequestedTokenRegistered)) {
         logger.response(403, Date.now() - startTime);
         return res.status(403).json({ error: "Token is not registered for this user" });
       }

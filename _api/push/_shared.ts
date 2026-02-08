@@ -125,6 +125,21 @@ export function extractBearerToken(authHeader: string | null | undefined): strin
   return token.length > 0 ? token : null;
 }
 
+export function isRedisPositiveCount(value: unknown): boolean {
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value > 0;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) return false;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) && parsed > 0;
+  }
+
+  return value === true;
+}
+
 function readSingleHeader(
   headers: IncomingHttpHeaders,
   key: string
