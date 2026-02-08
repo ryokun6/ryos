@@ -1907,6 +1907,54 @@ async function testOriginFallbackToRefererAllowsLocalhost() {
   });
 }
 
+async function testOriginHeaderWhitespaceIsTrimmed() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequestWithHeaders(
+      "POST",
+      { origin: "  http://localhost:3000  " },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+  });
+}
+
+async function testRefererHeaderWhitespaceIsTrimmed() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequestWithHeaders(
+      "POST",
+      { referer: "  http://localhost:3000/some/path?query=1  " },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+  });
+}
+
 async function testOriginHeaderArrayUsesFirstNonEmptyEntry() {
   await withRuntimeEnv("development", async () => {
     const req = createRequestWithHeaders(
@@ -2392,6 +2440,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard allows localhost via referer fallback",
     testOriginFallbackToRefererAllowsLocalhost
+  );
+  await runTest(
+    "Push request guard trims whitespace in origin header values",
+    testOriginHeaderWhitespaceIsTrimmed
+  );
+  await runTest(
+    "Push request guard trims whitespace in referer header values",
+    testRefererHeaderWhitespaceIsTrimmed
   );
   await runTest(
     "Push request guard uses first non-empty origin array value",
