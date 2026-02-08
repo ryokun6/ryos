@@ -30,6 +30,15 @@ function createRequest(
   origin: string = "http://localhost:3000",
   extraHeaders?: Record<string, string>
 ): VercelRequest {
+  return createRawRequest(method, url, origin, extraHeaders);
+}
+
+function createRawRequest(
+  method: string | undefined,
+  url: string,
+  origin: string = "http://localhost:3000",
+  extraHeaders?: Record<string, string>
+): VercelRequest {
   return {
     method,
     url,
@@ -131,6 +140,54 @@ async function expectMethodNotAllowedResponse(
   );
   assertEq(mockRes.getHeader("Access-Control-Allow-Credentials"), "true");
   assertEq(mockRes.getHeader("Access-Control-Max-Age"), "86400");
+  assertEq(mockRes.getHeader("Vary"), "Origin");
+}
+
+async function expectMissingMethodNotAllowedResponse(
+  handler: PushHandler,
+  endpointPath: string
+) {
+  const req = createRawRequest(undefined, endpointPath);
+  const mockRes = createMockVercelResponseHarness();
+
+  await handler(req, mockRes.res);
+
+  assertEq(mockRes.getStatusCode(), 405);
+  assertEq(
+    JSON.stringify(mockRes.getJsonPayload()),
+    JSON.stringify({ error: "Method not allowed" })
+  );
+  assertEq(mockRes.getHeader("Allow"), PUSH_ALLOW_HEADER_VALUE);
+  assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+  assertEq(
+    mockRes.getHeader("Access-Control-Allow-Methods"),
+    PUSH_ALLOW_HEADER_VALUE
+  );
+  assertEq(
+    mockRes.getHeader("Access-Control-Allow-Headers"),
+    PUSH_ALLOW_HEADERS_VALUE
+  );
+  assertEq(mockRes.getHeader("Access-Control-Allow-Credentials"), "true");
+  assertEq(mockRes.getHeader("Access-Control-Max-Age"), "86400");
+  assertEq(mockRes.getHeader("Vary"), "Origin");
+}
+
+async function expectMissingMethodDisallowedOriginUnauthorizedResponse(
+  handler: PushHandler,
+  endpointPath: string
+) {
+  const req = createRawRequest(undefined, endpointPath, "https://evil.example");
+  const mockRes = createMockVercelResponseHarness();
+
+  await handler(req, mockRes.res);
+
+  assertEq(mockRes.getStatusCode(), 403);
+  assertEq(
+    JSON.stringify(mockRes.getJsonPayload()),
+    JSON.stringify({ error: "Unauthorized" })
+  );
+  assertEq(mockRes.getHeader("Allow"), undefined);
+  assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
   assertEq(mockRes.getHeader("Vary"), "Origin");
 }
 
@@ -252,6 +309,13 @@ async function testRegisterMethodNotAllowedIncludesAllowHeader() {
   await expectMethodNotAllowedResponse(pushRegisterHandler, "/api/push/register");
 }
 
+async function testRegisterMissingMethodNotAllowedIncludesAllowHeader() {
+  await expectMissingMethodNotAllowedResponse(
+    pushRegisterHandler,
+    "/api/push/register"
+  );
+}
+
 async function testRegisterOptionsRequestedMethodNotAllowedIncludesAllowHeader() {
   await expectOptionsRequestedMethodNotAllowedResponse(
     pushRegisterHandler,
@@ -273,6 +337,15 @@ async function testRegisterDisallowedOriginPrecedesMethodGuard() {
       pushRegisterHandler,
       "/api/push/register",
       "GET"
+    );
+  });
+}
+
+async function testRegisterDisallowedOriginPrecedesMissingMethodGuard() {
+  await withMissingPushEnv(async () => {
+    await expectMissingMethodDisallowedOriginUnauthorizedResponse(
+      pushRegisterHandler,
+      "/api/push/register"
     );
   });
 }
@@ -321,6 +394,13 @@ async function testUnregisterMethodNotAllowedIncludesAllowHeader() {
   await expectMethodNotAllowedResponse(pushUnregisterHandler, "/api/push/unregister");
 }
 
+async function testUnregisterMissingMethodNotAllowedIncludesAllowHeader() {
+  await expectMissingMethodNotAllowedResponse(
+    pushUnregisterHandler,
+    "/api/push/unregister"
+  );
+}
+
 async function testUnregisterOptionsRequestedMethodNotAllowedIncludesAllowHeader() {
   await expectOptionsRequestedMethodNotAllowedResponse(
     pushUnregisterHandler,
@@ -334,6 +414,15 @@ async function testUnregisterDisallowedOriginPrecedesMethodGuard() {
       pushUnregisterHandler,
       "/api/push/unregister",
       "GET"
+    );
+  });
+}
+
+async function testUnregisterDisallowedOriginPrecedesMissingMethodGuard() {
+  await withMissingPushEnv(async () => {
+    await expectMissingMethodDisallowedOriginUnauthorizedResponse(
+      pushUnregisterHandler,
+      "/api/push/unregister"
     );
   });
 }
@@ -387,6 +476,10 @@ async function testPushTestMethodNotAllowedIncludesAllowHeader() {
   await expectMethodNotAllowedResponse(pushTestHandler, "/api/push/test");
 }
 
+async function testPushTestMissingMethodNotAllowedIncludesAllowHeader() {
+  await expectMissingMethodNotAllowedResponse(pushTestHandler, "/api/push/test");
+}
+
 async function testPushTestOptionsRequestedMethodNotAllowedIncludesAllowHeader() {
   await expectOptionsRequestedMethodNotAllowedResponse(
     pushTestHandler,
@@ -397,6 +490,15 @@ async function testPushTestOptionsRequestedMethodNotAllowedIncludesAllowHeader()
 async function testPushTestDisallowedOriginPrecedesMethodGuard() {
   await withMissingPushEnv(async () => {
     await expectUnauthorizedOriginResponse(pushTestHandler, "/api/push/test", "GET");
+  });
+}
+
+async function testPushTestDisallowedOriginPrecedesMissingMethodGuard() {
+  await withMissingPushEnv(async () => {
+    await expectMissingMethodDisallowedOriginUnauthorizedResponse(
+      pushTestHandler,
+      "/api/push/test"
+    );
   });
 }
 
@@ -447,6 +549,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
     testRegisterMethodNotAllowedIncludesAllowHeader
   );
   await runTest(
+    "Push register missing-method guard sets Allow header",
+    testRegisterMissingMethodNotAllowedIncludesAllowHeader
+  );
+  await runTest(
     "Push register preflight rejects unsupported requested method",
     testRegisterOptionsRequestedMethodNotAllowedIncludesAllowHeader
   );
@@ -457,6 +563,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
   await runTest(
     "Push register disallowed origin takes precedence over method guard",
     testRegisterDisallowedOriginPrecedesMethodGuard
+  );
+  await runTest(
+    "Push register disallowed origin takes precedence over missing-method guard",
+    testRegisterDisallowedOriginPrecedesMissingMethodGuard
   );
   await runTest(
     "Push register returns Redis config error after credential extraction",
@@ -483,12 +593,20 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
     testUnregisterMethodNotAllowedIncludesAllowHeader
   );
   await runTest(
+    "Push unregister missing-method guard sets Allow header",
+    testUnregisterMissingMethodNotAllowedIncludesAllowHeader
+  );
+  await runTest(
     "Push unregister preflight rejects unsupported requested method",
     testUnregisterOptionsRequestedMethodNotAllowedIncludesAllowHeader
   );
   await runTest(
     "Push unregister disallowed origin takes precedence over method guard",
     testUnregisterDisallowedOriginPrecedesMethodGuard
+  );
+  await runTest(
+    "Push unregister disallowed origin takes precedence over missing-method guard",
+    testUnregisterDisallowedOriginPrecedesMissingMethodGuard
   );
   await runTest(
     "Push unregister returns Redis config error after credential extraction",
@@ -523,12 +641,20 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
     testPushTestMethodNotAllowedIncludesAllowHeader
   );
   await runTest(
+    "Push test missing-method guard sets Allow header",
+    testPushTestMissingMethodNotAllowedIncludesAllowHeader
+  );
+  await runTest(
     "Push test preflight rejects unsupported requested method",
     testPushTestOptionsRequestedMethodNotAllowedIncludesAllowHeader
   );
   await runTest(
     "Push test disallowed origin takes precedence over method guard",
     testPushTestDisallowedOriginPrecedesMethodGuard
+  );
+  await runTest(
+    "Push test disallowed origin takes precedence over missing-method guard",
+    testPushTestDisallowedOriginPrecedesMissingMethodGuard
   );
   await runTest(
     "Push test returns Redis config error after credential extraction",
