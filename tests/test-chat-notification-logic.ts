@@ -64,6 +64,15 @@ export async function runChatNotificationLogicTests(): Promise<{
     assert(result === true, "Expected non-active room notifications");
   });
 
+  await runTest("notifies when chats open with undefined active room", async () => {
+    const result = shouldNotifyForRoomMessage({
+      chatsOpen: true,
+      currentRoomId: undefined,
+      messageRoomId: "room-e-2",
+    });
+    assert(result === true, "Expected notifications with undefined active room");
+  });
+
   await runTest("notifies room messages when @ryo is active", async () => {
     const result = shouldNotifyForRoomMessage({
       chatsOpen: true,
