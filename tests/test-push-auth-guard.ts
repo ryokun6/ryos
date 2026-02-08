@@ -164,6 +164,74 @@ async function testExtractAuthRejectsBlankBearerToken() {
   assertEq(mockLogger.responseCalls[0].statusCode, 401);
 }
 
+async function testExtractAuthRejectsMissingUsernameWithBearerToken() {
+  const mockRes = createMockVercelResponseHarness();
+  const mockLogger = createMockLogger();
+
+  const credentials = extractPushAuthCredentialsOrRespond(
+    {
+      authorization: "Bearer token-123",
+      "x-username": "   ",
+    },
+    mockRes.res,
+    mockLogger.logger,
+    Date.now()
+  );
+
+  assertEq(credentials, null);
+  assertEq(mockRes.getStatusCode(), 401);
+  assertEq(
+    JSON.stringify(mockRes.getJsonPayload()),
+    JSON.stringify({ error: "Unauthorized - missing credentials" })
+  );
+  assertEq(mockLogger.responseCalls.length, 1);
+  assertEq(mockLogger.responseCalls[0].statusCode, 401);
+}
+
+async function testExtractAuthRejectsInvalidAuthorizationScheme() {
+  const mockRes = createMockVercelResponseHarness();
+  const mockLogger = createMockLogger();
+
+  const credentials = extractPushAuthCredentialsOrRespond(
+    {
+      authorization: "Basic token-123",
+      "x-username": "valid-user",
+    },
+    mockRes.res,
+    mockLogger.logger,
+    Date.now()
+  );
+
+  assertEq(credentials, null);
+  assertEq(mockRes.getStatusCode(), 401);
+  assertEq(
+    JSON.stringify(mockRes.getJsonPayload()),
+    JSON.stringify({ error: "Unauthorized - missing credentials" })
+  );
+  assertEq(mockLogger.responseCalls.length, 1);
+  assertEq(mockLogger.responseCalls[0].statusCode, 401);
+}
+
+async function testExtractAuthUsesFirstNonEmptyArrayHeaderValues() {
+  const mockRes = createMockVercelResponseHarness();
+  const mockLogger = createMockLogger();
+
+  const credentials = extractPushAuthCredentialsOrRespond(
+    {
+      authorization: ["   ", "Bearer token-from-second"],
+      "x-username": ["   ", "SecondUser"],
+    },
+    mockRes.res,
+    mockLogger.logger,
+    Date.now()
+  );
+
+  assertEq(credentials?.username, "seconduser");
+  assertEq(credentials?.token, "token-from-second");
+  assertEq(mockRes.getStatusCode(), 0);
+  assertEq(mockLogger.responseCalls.length, 0);
+}
+
 async function testValidateAuthRejectsInvalidToken() {
   const mockRes = createMockVercelResponseHarness();
   const mockLogger = createMockLogger();
@@ -266,6 +334,18 @@ export async function runPushAuthGuardTests(): Promise<{ passed: number; failed:
   await runTest(
     "Push auth guard rejects blank bearer token payload",
     testExtractAuthRejectsBlankBearerToken
+  );
+  await runTest(
+    "Push auth guard rejects missing username even with bearer token",
+    testExtractAuthRejectsMissingUsernameWithBearerToken
+  );
+  await runTest(
+    "Push auth guard rejects non-bearer authorization schemes",
+    testExtractAuthRejectsInvalidAuthorizationScheme
+  );
+  await runTest(
+    "Push auth guard uses first non-empty array header values",
+    testExtractAuthUsesFirstNonEmptyArrayHeaderValues
   );
   await runTest(
     "Push auth guard rejects invalid redis token lookup",
