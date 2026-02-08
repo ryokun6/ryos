@@ -145,6 +145,45 @@ async function testRedisGuardReturnsClientWhenEnvConfigured() {
   );
 }
 
+async function testRedisGuardWorksWithoutWarnLogger() {
+  await Promise.resolve(
+    withPatchedEnv(
+      {
+        REDIS_KV_REST_API_URL: undefined,
+        REDIS_KV_REST_API_TOKEN: undefined,
+      },
+      async () => {
+        const mockRes = createMockVercelResponseHarness();
+        let responseCallCount = 0;
+
+        const redis = createPushRedisOrRespond(
+          mockRes.res,
+          {
+            error: () => {
+              // Not expected in this flow.
+            },
+            response: () => {
+              responseCallCount += 1;
+            },
+          },
+          Date.now()
+        );
+
+        assertEq(redis, null);
+        assertEq(responseCallCount, 1);
+        assertEq(mockRes.getStatusCode(), 500);
+        assertEq(
+          JSON.stringify(mockRes.getJsonPayload()),
+          JSON.stringify({
+            error: "Redis is not configured.",
+            missingEnvVars: ["REDIS_KV_REST_API_URL", "REDIS_KV_REST_API_TOKEN"],
+          })
+        );
+      }
+    )
+  );
+}
+
 export async function runPushRedisGuardTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-redis-guard"));
   clearResults();
@@ -160,6 +199,10 @@ export async function runPushRedisGuardTests(): Promise<{ passed: number; failed
   await runTest(
     "Push Redis guard returns client when env vars configured",
     testRedisGuardReturnsClientWhenEnvConfigured
+  );
+  await runTest(
+    "Push Redis guard works when logger.warn is absent",
+    testRedisGuardWorksWithoutWarnLogger
   );
 
   return printSummary();

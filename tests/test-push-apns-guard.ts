@@ -159,6 +159,52 @@ async function testApnsGuardReturnsNormalizedConfigWhenEnvValid() {
   );
 }
 
+async function testApnsGuardWorksWithoutWarnLogger() {
+  await Promise.resolve(
+    withPatchedEnv(
+      {
+        APNS_KEY_ID: undefined,
+        APNS_TEAM_ID: undefined,
+        APNS_BUNDLE_ID: undefined,
+        APNS_PRIVATE_KEY: undefined,
+      },
+      async () => {
+        const mockRes = createMockVercelResponseHarness();
+        let responseCallCount = 0;
+
+        const config = getApnsConfigOrRespond(
+          mockRes.res,
+          {
+            error: () => {
+              // Not expected in this flow.
+            },
+            response: () => {
+              responseCallCount += 1;
+            },
+          },
+          Date.now()
+        );
+
+        assertEq(config, null);
+        assertEq(responseCallCount, 1);
+        assertEq(mockRes.getStatusCode(), 500);
+        assertEq(
+          JSON.stringify(mockRes.getJsonPayload()),
+          JSON.stringify({
+            error: "APNs is not configured.",
+            missingEnvVars: [
+              "APNS_KEY_ID",
+              "APNS_TEAM_ID",
+              "APNS_BUNDLE_ID",
+              "APNS_PRIVATE_KEY",
+            ],
+          })
+        );
+      }
+    )
+  );
+}
+
 export async function runPushApnsGuardTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-apns-guard"));
   clearResults();
@@ -174,6 +220,10 @@ export async function runPushApnsGuardTests(): Promise<{ passed: number; failed:
   await runTest(
     "Push APNs guard returns normalized config when env valid",
     testApnsGuardReturnsNormalizedConfigWhenEnvValid
+  );
+  await runTest(
+    "Push APNs guard works when logger.warn is absent",
+    testApnsGuardWorksWithoutWarnLogger
   );
 
   return printSummary();
