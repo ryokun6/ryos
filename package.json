@@ -64,7 +64,8 @@
     "test:push": "bun run test:push-env && bun run test:push-shared && bun run test:push-redis && bun run test:push-request-payloads && bun run test:push-ownership && bun run test:push-set-ops && bun run test:push-payload && bun run test:push-concurrency && bun run test:push-errors && bun run test:push-results && bun run test:push-apns",
     "check:push": "bun run lint:push && bun run test:push && bun run build",
     "check:push:aggregate": "bun run lint:push && bun run test:push:aggregate && bun run build",
-    "check:push:helpers": "bun run lint:push && bun run test:push:helpers"
+    "check:push:helpers": "bun run lint:push && bun run test:push:helpers",
+    "check:push:api": "bun run lint:push && bun run test:push:api"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.23",
