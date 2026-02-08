@@ -693,6 +693,26 @@ async function testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeade
   });
 }
 
+async function testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeadersInvalid() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:5173",
+    "access-control-request-headers": "invalid token, invalid/token",
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res, {
+      methods: ["POST", "OPTIONS"],
+      headers: ["X-App-Header"],
+      maxAge: 300,
+    });
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
+    assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-App-Header");
+  });
+}
+
 async function testHandlePreflightAppendsVaryDimensionsToExistingHeader() {
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:3000",
@@ -892,6 +912,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper falls back to configured allow headers",
     testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeaderMissing
+  );
+  await runTest(
+    "CORS preflight helper falls back to configured allow headers when requested headers are invalid",
+    testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeadersInvalid
   );
   await runTest(
     "CORS preflight helper appends Vary dimensions to existing Vary header",
