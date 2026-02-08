@@ -7,6 +7,8 @@ import { getMissingRequiredEnvVars } from "../_api/_utils/_env";
 import {
   assertEq,
   clearResults,
+  createMockPushLoggerHarness,
+  createMockVercelResponseHarness,
   printSummary,
   runTest,
   section,
@@ -111,6 +113,47 @@ async function testWithPatchedEnvSupportsThenableReturn() {
   assertEq(process.env[key], originalValue);
 }
 
+async function testMockVercelResponseHarnessSupportsHeaderChainingAndCaseInsensitiveRead() {
+  const mockRes = createMockVercelResponseHarness();
+  const chained = (mockRes.res as { setHeader: (name: string, value: unknown) => unknown })
+    .setHeader("Vary", "Origin")
+    .setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+
+  assertEq(chained, mockRes.res);
+  assertEq(mockRes.getHeader("vary"), "Origin");
+  assertEq(mockRes.getHeader("VARY"), "Origin");
+  assertEq(mockRes.getHeader("ACCESS-control-allow-origin"), "http://localhost:3000");
+}
+
+async function testMockPushLoggerHarnessTracksCallsWhenWarnEnabled() {
+  const mockLogger = createMockPushLoggerHarness();
+  mockLogger.logger.warn?.("warn-message", { code: 1 });
+  mockLogger.logger.error("error-message", new Error("boom"));
+  mockLogger.logger.response(401, 12);
+
+  assertEq(mockLogger.warnCalls.length, 1);
+  assertEq(mockLogger.warnCalls[0].message, "warn-message");
+  assertEq(JSON.stringify(mockLogger.warnCalls[0].data), JSON.stringify({ code: 1 }));
+  assertEq(mockLogger.errorCalls.length, 1);
+  assertEq(mockLogger.errorCalls[0].message, "error-message");
+  assertEq(mockLogger.responseCalls.length, 1);
+  assertEq(mockLogger.responseCalls[0].statusCode, 401);
+  assertEq(mockLogger.responseCalls[0].duration, 12);
+}
+
+async function testMockPushLoggerHarnessCanOmitWarn() {
+  const mockLogger = createMockPushLoggerHarness({ includeWarn: false });
+  assertEq(typeof mockLogger.logger.warn, "undefined");
+  mockLogger.logger.error("error-only");
+  mockLogger.logger.response(500);
+
+  assertEq(mockLogger.warnCalls.length, 0);
+  assertEq(mockLogger.errorCalls.length, 1);
+  assertEq(mockLogger.errorCalls[0].message, "error-only");
+  assertEq(mockLogger.responseCalls.length, 1);
+  assertEq(mockLogger.responseCalls[0].statusCode, 500);
+}
+
 export async function runPushEnvTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-env"));
   clearResults();
@@ -133,6 +176,18 @@ export async function runPushEnvTests(): Promise<{ passed: number; failed: numbe
   await runTest(
     "withPatchedEnv supports thenable callback return values",
     testWithPatchedEnvSupportsThenableReturn
+  );
+  await runTest(
+    "mock vercel response harness supports chaining and case-insensitive headers",
+    testMockVercelResponseHarnessSupportsHeaderChainingAndCaseInsensitiveRead
+  );
+  await runTest(
+    "mock push logger harness tracks calls when warn is enabled",
+    testMockPushLoggerHarnessTracksCallsWhenWarnEnabled
+  );
+  await runTest(
+    "mock push logger harness supports warn-less logger shape",
+    testMockPushLoggerHarnessCanOmitWarn
   );
 
   return printSummary();

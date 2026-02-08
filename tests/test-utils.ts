@@ -283,10 +283,10 @@ export function createMockVercelResponseHarness(): MockVercelResponseHarness {
   let endCallCount = 0;
   const headers = new Map<string, string>();
 
-  const response = {
-    setHeader: (name: string, value: unknown) => {
+  const response: Record<string, unknown> = {
+    setHeader(this: unknown, name: string, value: unknown) {
       headers.set(name.toLowerCase(), String(value));
-      return undefined;
+      return this;
     },
     status(code: number) {
       statusCode = code;
