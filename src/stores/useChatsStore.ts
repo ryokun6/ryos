@@ -49,6 +49,11 @@ import {
 import { createRoomRequest, deleteRoomRequest } from "./chats/roomRequests";
 import { switchPresenceRoomRequest } from "./chats/presenceRequests";
 import { validateCreateUserInput } from "./chats/userValidation";
+import {
+  logoutRequest,
+  refreshAuthTokenRequest,
+  registerUserRequest,
+} from "./chats/authApi";
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -520,22 +525,10 @@ export const useChatsStore = create<ChatsStoreState>()(
           );
 
           try {
-            const response = await abortableFetch(
-              "/api/auth/token/refresh",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  username: currentUsername,
-                  oldToken: currentToken,
-                }),
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
+            const response = await refreshAuthTokenRequest({
+              username: currentUsername,
+              oldToken: currentToken,
+            });
 
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
@@ -652,16 +645,9 @@ export const useChatsStore = create<ChatsStoreState>()(
           // Inform server to invalidate current token if we have auth
           if (currentUsername && currentToken) {
             try {
-              await abortableFetch(getApiUrl("/api/auth/logout"), {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${currentToken}`,
-                  "X-Username": currentUsername,
-                },
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
+              await logoutRequest({
+                username: currentUsername,
+                token: currentToken,
               });
             } catch (err) {
               console.warn(
@@ -1149,17 +1135,10 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await abortableFetch(
-              getApiUrl("/api/auth/register"),
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: trimmedUsername, password }),
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
+            const response = await registerUserRequest({
+              username: trimmedUsername,
+              password,
+            });
 
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
