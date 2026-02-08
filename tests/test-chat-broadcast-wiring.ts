@@ -87,6 +87,23 @@ export async function runChatBroadcastWiringTests(): Promise<{
     assertHasCall(source, "broadcastRoomUpdated", "private leave updates");
   });
 
+  await runTest("room delete route removes room from registry and presence", async () => {
+    const source = readRoute("_api/rooms/[id].ts");
+    assert(
+      source.includes("CHAT_ROOMS_SET"),
+      "Expected room delete route to reference CHAT_ROOMS_SET"
+    );
+    assert(
+      /srem\s*\(\s*CHAT_ROOMS_SET/.test(source),
+      "Expected room delete route to remove room id from CHAT_ROOMS_SET"
+    );
+    assertHasCall(
+      source,
+      "deleteRoomPresence",
+      "room delete route presence cleanup"
+    );
+  });
+
   await runTest("leave route emits delete/update events", async () => {
     const source = readRoute("_api/rooms/[id]/leave.ts");
     assertHasCall(source, "broadcastRoomDeleted", "leave route deletions");
