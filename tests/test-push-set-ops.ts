@@ -177,6 +177,14 @@ async function testMetadataRemovalFallbackWhenExecResultUnparseable() {
     (token) => `push:token:${token}`
   );
   assertEq(metadataRemoved, 2);
+
+  const { redis: redisWithOverlargeCount } = createFakeRedis([[2, 0]]);
+  const metadataRemovedFromOverlarge = await removeTokenMetadataKeys(
+    redisWithOverlargeCount,
+    ["tok1", "tok2"],
+    (token) => `push:token:${token}`
+  );
+  assertEq(metadataRemovedFromOverlarge, 2);
 }
 
 async function testNoOpsSkipPipeline() {
