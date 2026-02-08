@@ -147,60 +147,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const requestedToken = payload.token;
-    let targetTokens: string[] = [];
-    let staleOwnershipTokens: string[] = [];
-    let staleOwnershipTokensRemoved = 0;
+    let tokensForOwnershipLookup = userTokens;
 
     if (requestedToken) {
       if (!userTokens.includes(requestedToken)) {
         logger.response(403, Date.now() - startTime);
         return res.status(403).json({ error: "Token is not registered for this user" });
       }
+      tokensForOwnershipLookup = [requestedToken];
+    }
 
-      const ownershipEntries = await getTokenOwnershipEntries(
-        redis,
-        username,
-        [requestedToken],
-        TOKEN_METADATA_LOOKUP_CONCURRENCY
-      );
-      const {
-        ownedTokens,
-        unownedTokens,
-      } = splitTokenOwnership(ownershipEntries);
-      staleOwnershipTokens = unownedTokens;
+    const ownershipEntries = await getTokenOwnershipEntries(
+      redis,
+      username,
+      tokensForOwnershipLookup,
+      TOKEN_METADATA_LOOKUP_CONCURRENCY
+    );
+    const {
+      ownedTokens: targetTokens,
+      unownedTokens: staleOwnershipTokens,
+    } = splitTokenOwnership(ownershipEntries);
+    const staleOwnershipTokensRemoved = await removeTokensFromUserSet(
+      redis,
+      userTokensKey,
+      staleOwnershipTokens
+    );
 
-      staleOwnershipTokensRemoved = await removeTokensFromUserSet(
-        redis,
-        userTokensKey,
-        staleOwnershipTokens
-      );
-
-      if (ownedTokens.length === 0) {
-        logger.response(403, Date.now() - startTime);
-        return res.status(403).json({ error: "Token is not registered for this user" });
-      }
-
-      targetTokens = ownedTokens;
-    } else {
-      const ownershipEntries = await getTokenOwnershipEntries(
-        redis,
-        username,
-        userTokens,
-        TOKEN_METADATA_LOOKUP_CONCURRENCY
-      );
-      const {
-        ownedTokens,
-        unownedTokens,
-      } = splitTokenOwnership(ownershipEntries);
-      staleOwnershipTokens = unownedTokens;
-
-      staleOwnershipTokensRemoved = await removeTokensFromUserSet(
-        redis,
-        userTokensKey,
-        staleOwnershipTokens
-      );
-
-      targetTokens = ownedTokens;
+    if (requestedToken && targetTokens.length === 0) {
+      logger.response(403, Date.now() - startTime);
+      return res.status(403).json({ error: "Token is not registered for this user" });
     }
 
     if (targetTokens.length === 0) {
