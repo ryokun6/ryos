@@ -120,6 +120,13 @@ async function testAllowedPostContinuesWithoutHandling() {
     assertEq(handled, false);
     assertEq(mockRes.getStatusCode(), 0);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+    assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), "POST, OPTIONS");
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Headers"),
+      "Content-Type, Authorization, X-Username"
+    );
+    assertEq(mockRes.getHeader("Access-Control-Allow-Credentials"), "true");
+    assertEq(mockRes.getHeader("Access-Control-Max-Age"), "86400");
     assertEq(mockRes.getHeader("Vary"), "Origin");
     assertEq(mockLogger.requestCalls.length, 1);
     assertEq(mockLogger.requestCalls[0].method, "POST");
@@ -173,11 +180,14 @@ async function testAllowedOptionsPreflightHandled() {
     assertEq(mockRes.getStatusCode(), 204);
     assertEq(mockRes.getEndCallCount(), 1);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+    assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), "POST, OPTIONS");
     assertEq(mockRes.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
       "Content-Type, Authorization, X-Username"
     );
+    assertEq(mockRes.getHeader("Access-Control-Allow-Credentials"), "true");
+    assertEq(mockRes.getHeader("Access-Control-Max-Age"), "86400");
     assertEq(mockLogger.responseCalls.length, 1);
     assertEq(mockLogger.responseCalls[0].statusCode, 204);
   });
