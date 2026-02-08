@@ -77,6 +77,7 @@ Routes now emit matching realtime events:
   - verifies module-default constructor lookup remains wired
   - verifies global fallback remains wired
   - verifies explicit error path for missing constructor remains wired
+  - verifies `getPusherClient` still instantiates via constructor resolver
 - `tests/test-chat-notification-logic.ts`
   - active vs non-active room notification gating
   - missing/empty/whitespace room-id input guards
