@@ -86,6 +86,8 @@ Routes now emit matching realtime events:
 - `tests/test-chat-notification-integration-wiring.ts`
   - verifies foreground/background chat hooks both call the shared
     `shouldNotifyForRoomMessage` decision utility
+  - verifies both hooks import the shared utility from
+    `@/utils/chatNotifications`
 - `tests/test-chat-hook-channel-lifecycle-wiring.ts`
   - verifies both chat hooks keep using shared ref-counted subscribe/unsubscribe
     helpers
