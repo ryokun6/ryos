@@ -19,10 +19,7 @@ import {
   warnChatsStoreOnce,
 } from "./chats/apiGuards";
 import {
-  AUTH_TOKEN_RECOVERY_KEY,
-  TOKEN_LAST_REFRESH_KEY,
   TOKEN_REFRESH_THRESHOLD,
-  USERNAME_RECOVERY_KEY,
   ensureRecoveryKeysAreSet,
   getAuthTokenFromRecovery,
   getTokenRefreshTime,
@@ -55,6 +52,21 @@ import {
   registerUserRequest,
 } from "./chats/authApi";
 import { readErrorResponseBody } from "./chats/httpErrors";
+import {
+  fetchBulkMessagesRequest,
+  fetchRoomMessagesRequest,
+  fetchRoomsRequest,
+} from "./chats/messageRequests";
+import {
+  getDaysUntilTokenRefresh,
+  getTokenAgeDays,
+  isTokenRefreshDue,
+} from "./chats/tokenLifecycle";
+import {
+  LEGACY_CHAT_STORAGE_KEYS,
+  tryParseLegacyJson,
+} from "./chats/legacyStorage";
+import { clearChatRecoveryStorage } from "./chats/logoutCleanup";
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -585,13 +597,12 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { refreshed: false };
           }
 
-          const tokenAge = Date.now() - lastRefreshTime;
-          const tokenAgeDays = Math.floor(tokenAge / (24 * 60 * 60 * 1000));
+          const tokenAgeDays = getTokenAgeDays(lastRefreshTime);
 
           console.log(`[ChatsStore] Token age: ${tokenAgeDays} days`);
 
           // If token is older than threshold, refresh it
-          if (tokenAge > TOKEN_REFRESH_THRESHOLD) {
+          if (isTokenRefreshDue(lastRefreshTime, TOKEN_REFRESH_THRESHOLD)) {
             console.log(
               `[ChatsStore] Token is ${tokenAgeDays} days old (refresh due - 7 days before 90-day expiry), refreshing...`
             );
@@ -613,10 +624,12 @@ export const useChatsStore = create<ChatsStoreState>()(
               return { refreshed: false };
             }
           } else {
+            const daysUntilRefresh = getDaysUntilTokenRefresh(
+              lastRefreshTime,
+              TOKEN_REFRESH_THRESHOLD
+            );
             console.log(
-              `[ChatsStore] Token is ${tokenAgeDays} days old, next refresh in ${
-                83 - tokenAgeDays
-              } days`
+              `[ChatsStore] Token is ${tokenAgeDays} days old, next refresh in ${daysUntilRefresh} days`
             );
             return { refreshed: false };
           }
@@ -661,15 +674,8 @@ export const useChatsStore = create<ChatsStoreState>()(
             track(APP_ANALYTICS.USER_LOGOUT, { username: currentUsername });
           }
 
-          // Clear recovery keys from localStorage
-          localStorage.removeItem(USERNAME_RECOVERY_KEY);
-          localStorage.removeItem(AUTH_TOKEN_RECOVERY_KEY);
-
-          // Clear token refresh time for current user
-          if (currentUsername) {
-            const tokenRefreshKey = `${TOKEN_LAST_REFRESH_KEY}${currentUsername}`;
-            localStorage.removeItem(tokenRefreshKey);
-          }
+          // Clear recovery keys and refresh timestamp from localStorage
+          clearChatRecoveryStorage(currentUsername);
 
           // Reset only user-specific data, preserve rooms and messages
           set((state) => ({
@@ -701,21 +707,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           const currentUsername = get().username;
 
           try {
-            const queryParams = new URLSearchParams();
-            if (currentUsername) {
-              queryParams.append("username", currentUsername);
-            }
-
-            const url = queryParams.toString() 
-              ? `/api/rooms?${queryParams.toString()}`
-              : "/api/rooms";
-            
-            const response = await abortableFetch(url, {
-              method: "GET",
-              timeout: 15000,
-              throwOnHttpError: false,
-              retry: { maxAttempts: 1, initialDelayMs: 250 },
-            });
+            const response = await fetchRoomsRequest(currentUsername);
             if (!response.ok) {
               const errorData = await readJsonBody<{ error?: string }>(
                 response,
@@ -763,15 +755,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await abortableFetch(
-              `/api/rooms/${encodeURIComponent(roomId)}/messages`,
-              {
-                method: "GET",
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
+            const response = await fetchRoomMessagesRequest(roomId);
             if (!response.ok) {
               const errorData = await readJsonBody<{ error?: string }>(
                 response,
@@ -843,19 +827,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const queryParams = new URLSearchParams({
-              roomIds: roomIds.join(","),
-            });
-
-            const response = await abortableFetch(
-              `/api/messages/bulk?${queryParams.toString()}`,
-              {
-                method: "GET",
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
+            const response = await fetchBulkMessagesRequest(roomIds);
             if (!response.ok) {
               const errorData = await readJsonBody<{ error?: string }>(
                 response,
@@ -1238,20 +1210,24 @@ export const useChatsStore = create<ChatsStoreState>()(
             const migratedState: Partial<ChatsStoreState> = {};
 
             // Migrate AI Messages
-            const oldAiMessagesRaw = localStorage.getItem("chats:messages");
+            const oldAiMessagesRaw = localStorage.getItem(
+              LEGACY_CHAT_STORAGE_KEYS.AI_MESSAGES
+            );
             if (oldAiMessagesRaw) {
-              try {
-                migratedState.aiMessages = JSON.parse(oldAiMessagesRaw);
-              } catch (e) {
+              const parsedAiMessages =
+                tryParseLegacyJson<AIChatMessage[]>(oldAiMessagesRaw);
+              if (parsedAiMessages) {
+                migratedState.aiMessages = parsedAiMessages;
+              } else {
                 console.warn(
                   "Failed to parse old AI messages during migration",
-                  e
+                  oldAiMessagesRaw
                 );
               }
             }
 
             // Migrate Username
-            const oldUsernameKey = "chats:chatRoomUsername"; // Define old key
+            const oldUsernameKey = LEGACY_CHAT_STORAGE_KEYS.USERNAME;
             const oldUsername = localStorage.getItem(oldUsernameKey);
             if (oldUsername) {
               migratedState.username = oldUsername;
@@ -1265,14 +1241,14 @@ export const useChatsStore = create<ChatsStoreState>()(
 
             // Migrate Last Opened Room ID
             const oldCurrentRoomId = localStorage.getItem(
-              "chats:lastOpenedRoomId"
+              LEGACY_CHAT_STORAGE_KEYS.LAST_OPENED_ROOM_ID
             );
             if (oldCurrentRoomId)
               migratedState.currentRoomId = oldCurrentRoomId;
 
             // Migrate Sidebar Visibility
             const oldSidebarVisibleRaw = localStorage.getItem(
-              "chats:sidebarVisible"
+              LEGACY_CHAT_STORAGE_KEYS.SIDEBAR_VISIBLE
             );
             if (oldSidebarVisibleRaw) {
               // Check if it's explicitly "false", otherwise default to true (initial state)
@@ -1280,31 +1256,35 @@ export const useChatsStore = create<ChatsStoreState>()(
             }
 
             // Migrate Cached Rooms
-            const oldCachedRoomsRaw = localStorage.getItem("chats:cachedRooms");
+            const oldCachedRoomsRaw = localStorage.getItem(
+              LEGACY_CHAT_STORAGE_KEYS.CACHED_ROOMS
+            );
             if (oldCachedRoomsRaw) {
-              try {
-                migratedState.rooms = JSON.parse(oldCachedRoomsRaw);
-              } catch (e) {
+              const parsedRooms = tryParseLegacyJson<ChatRoom[]>(oldCachedRoomsRaw);
+              if (parsedRooms) {
+                migratedState.rooms = parsedRooms;
+              } else {
                 console.warn(
                   "Failed to parse old cached rooms during migration",
-                  e
+                  oldCachedRoomsRaw
                 );
               }
             }
 
             // Migrate Cached Room Messages
             const oldCachedRoomMessagesRaw = localStorage.getItem(
-              "chats:cachedRoomMessages"
-            ); // Assuming this key
+              LEGACY_CHAT_STORAGE_KEYS.CACHED_ROOM_MESSAGES
+            );
             if (oldCachedRoomMessagesRaw) {
-              try {
-                migratedState.roomMessages = JSON.parse(
-                  oldCachedRoomMessagesRaw
-                );
-              } catch (e) {
+              const parsedRoomMessages = tryParseLegacyJson<
+                Record<string, ChatMessage[]>
+              >(oldCachedRoomMessagesRaw);
+              if (parsedRoomMessages) {
+                migratedState.roomMessages = parsedRoomMessages;
+              } else {
                 console.warn(
                   "Failed to parse old cached room messages during migration",
-                  e
+                  oldCachedRoomMessagesRaw
                 );
               }
             }
@@ -1312,11 +1292,11 @@ export const useChatsStore = create<ChatsStoreState>()(
             console.log("[ChatsStore] Migration data:", migratedState);
 
             // Clean up old keys (Optional - uncomment if desired after confirming migration)
-            // localStorage.removeItem('chats:messages');
-            // localStorage.removeItem('chats:lastOpenedRoomId');
-            // localStorage.removeItem('chats:sidebarVisible');
-            // localStorage.removeItem('chats:cachedRooms');
-            // localStorage.removeItem('chats:cachedRoomMessages');
+            // localStorage.removeItem(LEGACY_CHAT_STORAGE_KEYS.AI_MESSAGES);
+            // localStorage.removeItem(LEGACY_CHAT_STORAGE_KEYS.LAST_OPENED_ROOM_ID);
+            // localStorage.removeItem(LEGACY_CHAT_STORAGE_KEYS.SIDEBAR_VISIBLE);
+            // localStorage.removeItem(LEGACY_CHAT_STORAGE_KEYS.CACHED_ROOMS);
+            // localStorage.removeItem(LEGACY_CHAT_STORAGE_KEYS.CACHED_ROOM_MESSAGES);
             // console.log("[ChatsStore] Old localStorage keys potentially removed.");
 
             const finalMigratedState = {
@@ -1386,7 +1366,7 @@ export const useChatsStore = create<ChatsStoreState>()(
                 state.username = recoveredUsername;
               } else {
                 // Fallback to checking old key
-                const oldUsernameKey = "chats:chatRoomUsername";
+                const oldUsernameKey = LEGACY_CHAT_STORAGE_KEYS.USERNAME;
                 const oldUsername = localStorage.getItem(oldUsernameKey);
                 if (oldUsername) {
                   console.log(
