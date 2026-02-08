@@ -109,7 +109,7 @@ export const validatePublicUrl = async (rawUrl: string): Promise<URL> => {
   let parsed: URL;
   try {
     parsed = new URL(rawUrl);
-  } catch (error) {
+  } catch {
     throw new SsrfBlockedError("Invalid URL format");
   }
 
