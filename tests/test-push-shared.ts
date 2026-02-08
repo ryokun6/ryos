@@ -87,6 +87,13 @@ async function testAuthExtractionFromHeaders() {
   assertEq(authFromArrayHeaders.token, "token-from-array");
   assertEq(authFromArrayHeaders.username, "arrayuser");
 
+  const authFromArrayHeadersWithEmptyFirstValue = extractAuthFromHeaders({
+    authorization: ["   ", "Bearer token-from-second"],
+    "x-username": ["   ", "SecondUser"],
+  });
+  assertEq(authFromArrayHeadersWithEmptyFirstValue.token, "token-from-second");
+  assertEq(authFromArrayHeadersWithEmptyFirstValue.username, "seconduser");
+
   const lowerCaseAuth = extractAuthFromHeaders({
     authorization: "   bearer token-lower",
     "x-username": "LowerUser",

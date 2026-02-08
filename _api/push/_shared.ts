@@ -185,8 +185,13 @@ function readSingleHeader(
   key: string
 ): string | undefined {
   const value = headers[key];
-  if (Array.isArray(value)) return value[0];
-  return typeof value === "string" ? value : undefined;
+  if (Array.isArray(value)) {
+    return value.find(
+      (entry): entry is string =>
+        typeof entry === "string" && entry.trim().length > 0
+    );
+  }
+  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }
 
 export function extractAuthFromHeaders(
