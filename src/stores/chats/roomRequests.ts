@@ -1,7 +1,7 @@
 import {
   type RefreshTokenHandler,
   makeAuthenticatedRequest,
-} from "./chatsStoreAuthRequests";
+} from "./authRequests";
 
 export interface CreateRoomPayload {
   type: "public" | "private";

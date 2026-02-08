@@ -1,5 +1,5 @@
 import type { ChatMessage } from "@/types/chat";
-import { sortAndCapRoomMessages } from "./chatsRoomMessages";
+import { sortAndCapRoomMessages } from "./roomMessages";
 
 const INCOMING_TEMP_MATCH_WINDOW_MS = 5_000;
 
@@ -7,12 +7,10 @@ export const mergeIncomingRoomMessage = (
   existingMessages: ChatMessage[],
   incoming: ChatMessage
 ): ChatMessage[] | null => {
-  // If this exact server message already exists, skip
   if (existingMessages.some((message) => message.id === incoming.id)) {
     return null;
   }
 
-  // Prefer replacing by clientId when provided by the server
   const incomingClientId = incoming.clientId;
   if (incomingClientId) {
     const indexByClientId = existingMessages.findIndex(
@@ -31,7 +29,6 @@ export const mergeIncomingRoomMessage = (
     }
   }
 
-  // Fallback: replace a temp message by matching username + content (decoded)
   const tempIndex = existingMessages.findIndex(
     (message) =>
       message.id.startsWith("temp_") &&
@@ -43,15 +40,13 @@ export const mergeIncomingRoomMessage = (
     const tempMessage = existingMessages[tempIndex];
     const replaced = {
       ...incoming,
-      clientId: tempMessage.clientId || tempMessage.id, // preserve stable client key
+      clientId: tempMessage.clientId || tempMessage.id,
     } satisfies ChatMessage;
     const updated = [...existingMessages];
-    updated[tempIndex] = replaced; // replace in place to minimise list churn
+    updated[tempIndex] = replaced;
     return sortAndCapRoomMessages(updated);
   }
 
-  // Second fallback: replace the most recent temp message from same user within time window
-  // This handles cases where server sanitizes content (e.g., profanity filter) so content differs
   const incomingTs = Number(incoming.timestamp);
   const candidateIndexes: number[] = [];
   existingMessages.forEach((message, idx) => {
@@ -64,9 +59,10 @@ export const mergeIncomingRoomMessage = (
   });
 
   if (candidateIndexes.length > 0) {
-    // Choose the closest in time
     let bestIndex = candidateIndexes[0];
-    let bestDelta = Math.abs(Number(existingMessages[bestIndex].timestamp) - incomingTs);
+    let bestDelta = Math.abs(
+      Number(existingMessages[bestIndex].timestamp) - incomingTs
+    );
     for (let i = 1; i < candidateIndexes.length; i++) {
       const idx = candidateIndexes[i];
       const delta = Math.abs(Number(existingMessages[idx].timestamp) - incomingTs);
@@ -85,6 +81,5 @@ export const mergeIncomingRoomMessage = (
     return sortAndCapRoomMessages(updated);
   }
 
-  // No optimistic message to replace – append normally
   return sortAndCapRoomMessages([...existingMessages, incoming]);
 };

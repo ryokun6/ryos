@@ -4,7 +4,7 @@ import { getApiUrl } from "@/utils/platform";
 import {
   type RefreshTokenHandler,
   makeAuthenticatedRequest,
-} from "./chatsStoreAuthRequests";
+} from "./authRequests";
 
 export const createOptimisticChatMessage = (
   roomId: string,

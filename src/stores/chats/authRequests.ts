@@ -20,7 +20,6 @@ export const makeAuthenticatedRequest = async (
     retry: { maxAttempts: 1, initialDelayMs: 250 },
   });
 
-  // If not 401 or no auth header, return as-is
   if (
     initialResponse.status !== 401 ||
     !options.headers ||
@@ -31,7 +30,6 @@ export const makeAuthenticatedRequest = async (
 
   console.log("[ChatsStore] Received 401, attempting token refresh...");
 
-  // Attempt to refresh the token
   const refreshResult = await refreshToken();
 
   if (!refreshResult.ok || !refreshResult.token) {
@@ -41,7 +39,6 @@ export const makeAuthenticatedRequest = async (
     return initialResponse;
   }
 
-  // Retry the request with the new token
   const newHeaders = {
     ...options.headers,
     Authorization: `Bearer ${refreshResult.token}`,

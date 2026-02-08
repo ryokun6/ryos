@@ -16,10 +16,8 @@ export const mergeServerMessagesWithOptimistic = (
   fetchedMessages: ChatMessage[]
 ): ChatMessage[] => {
   const byId = new Map<string, ChatMessage>();
-
-  // Collect temp (optimistic) messages separately for deduplication
-  // Only messages with temp_ prefix IDs are considered optimistic
   const tempMessages: ChatMessage[] = [];
+
   for (const message of existingMessages) {
     if (message.id.startsWith("temp_")) {
       tempMessages.push(message);
@@ -28,7 +26,6 @@ export const mergeServerMessagesWithOptimistic = (
     }
   }
 
-  // Overlay fetched server messages
   for (const message of fetchedMessages) {
     const prev = byId.get(message.id);
     if (prev?.clientId) {
@@ -38,17 +35,13 @@ export const mergeServerMessagesWithOptimistic = (
     }
   }
 
-  // Auto-delete temp messages that match server messages by clientId,
-  // or by username + content + time window.
   const usedTempIds = new Set<string>();
 
   for (const temp of tempMessages) {
     const tempClientId = temp.clientId || temp.id;
     let matched = false;
 
-    // Check if any server message matches this temp message
     for (const serverMessage of fetchedMessages) {
-      // Match by clientId if the server echoes it back
       if (serverMessage.clientId && serverMessage.clientId === tempClientId) {
         const existingServerMessage = byId.get(serverMessage.id);
         if (existingServerMessage) {
@@ -61,7 +54,6 @@ export const mergeServerMessagesWithOptimistic = (
         break;
       }
 
-      // Match by username + content + time window
       if (
         serverMessage.username === temp.username &&
         serverMessage.content === temp.content &&
@@ -79,7 +71,6 @@ export const mergeServerMessagesWithOptimistic = (
       }
     }
 
-    // If no match found, keep the temp message (might still be in flight)
     if (!matched && !usedTempIds.has(temp.id)) {
       byId.set(temp.id, temp);
       usedTempIds.add(temp.id);

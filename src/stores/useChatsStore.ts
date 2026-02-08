@@ -17,7 +17,7 @@ import {
   markApiTemporarilyUnavailable,
   readJsonBody,
   warnChatsStoreOnce,
-} from "./chatsStoreApiGuards";
+} from "./chats/apiGuards";
 import {
   AUTH_TOKEN_RECOVERY_KEY,
   TOKEN_LAST_REFRESH_KEY,
@@ -30,24 +30,25 @@ import {
   saveAuthTokenToRecovery,
   saveTokenRefreshTime,
   saveUsernameToRecovery,
-} from "./chatsStoreRecovery";
+} from "./chats/recovery";
 import {
   capRoomMessages,
   mergeServerMessagesWithOptimistic,
   sortAndCapRoomMessages,
-} from "./chatsRoomMessages";
-import { mergeIncomingRoomMessage } from "./chatsIncomingMessage";
-import { areChatRoomListsEqual, sortChatRoomsForUi } from "./chatsRoomList";
+} from "./chats/roomMessages";
+import { mergeIncomingRoomMessage } from "./chats/incomingMessageMerge";
+import { areChatRoomListsEqual, sortChatRoomsForUi } from "./chats/roomList";
 import {
   type ApiChatMessagePayload as ApiMessage,
   normalizeApiMessages,
-} from "./chatsMessageNormalization";
+} from "./chats/messageNormalization";
 import {
   createOptimisticChatMessage,
   sendRoomMessageRequest,
-} from "./chatsSendMessage";
-import { createRoomRequest, deleteRoomRequest } from "./chatsRoomRequests";
-import { switchPresenceRoomRequest } from "./chatsPresenceRequests";
+} from "./chats/sendMessage";
+import { createRoomRequest, deleteRoomRequest } from "./chats/roomRequests";
+import { switchPresenceRoomRequest } from "./chats/presenceRequests";
+import { validateCreateUserInput } from "./chats/userValidation";
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -1136,31 +1137,14 @@ export const useChatsStore = create<ChatsStoreState>()(
         },
         createUser: async (username: string, password: string) => {
           const trimmedUsername = username.trim();
-          if (!trimmedUsername) {
-            return { ok: false, error: "Username cannot be empty" };
-          }
-
-          // Client-side validation mirroring server rules to provide instant feedback
-          const isValid = /^[a-z](?:[a-z0-9]|[-_](?=[a-z0-9])){2,29}$/i.test(
-            trimmedUsername
-          );
-          if (!isValid) {
+          const validationError = validateCreateUserInput({
+            username: trimmedUsername,
+            password,
+          });
+          if (validationError) {
             return {
               ok: false,
-              error:
-                "Invalid username: use 3-30 letters/numbers; '-' or '_' allowed between characters; no spaces or symbols",
-            };
-          }
-
-          // Require password client-side and enforce minimum length consistent with server
-          if (!password || password.trim().length === 0) {
-            return { ok: false, error: "Password is required" };
-          }
-          const PASSWORD_MIN_LENGTH = 8; // Keep in sync with server
-          if (password.length < PASSWORD_MIN_LENGTH) {
-            return {
-              ok: false,
-              error: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+              error: validationError,
             };
           }
 

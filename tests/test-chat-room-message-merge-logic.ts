@@ -8,7 +8,7 @@ import {
   capRoomMessages,
   mergeServerMessagesWithOptimistic,
   sortAndCapRoomMessages,
-} from "../src/stores/chatsRoomMessages";
+} from "../src/stores/chats/roomMessages";
 import {
   assert,
   assertEq,

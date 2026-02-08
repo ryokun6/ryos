@@ -1,6 +1,6 @@
 export const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
 export const AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
-export const TOKEN_REFRESH_THRESHOLD = 83 * 24 * 60 * 60 * 1000; // 83 days in ms (refresh 7 days before 90-day expiry)
+export const TOKEN_REFRESH_THRESHOLD = 83 * 24 * 60 * 60 * 1000;
 export const TOKEN_LAST_REFRESH_KEY = "_token_refresh_time_";
 
 const encode = (value: string): string => {

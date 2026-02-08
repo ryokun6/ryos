@@ -23,7 +23,7 @@ import {
 const readStoreSource = (): string =>
   readFileSync(resolve(process.cwd(), "src/stores/useChatsStore.ts"), "utf-8");
 const readGuardsSource = (): string =>
-  readFileSync(resolve(process.cwd(), "src/stores/chatsStoreApiGuards.ts"), "utf-8");
+  readFileSync(resolve(process.cwd(), "src/stores/chats/apiGuards.ts"), "utf-8");
 
 const countMatches = (source: string, pattern: RegExp): number =>
   source.match(new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`))
