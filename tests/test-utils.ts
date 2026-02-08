@@ -288,17 +288,17 @@ export function createMockVercelResponseHarness(): MockVercelResponseHarness {
       headers.set(name.toLowerCase(), String(value));
       return this;
     },
-    status(code: number) {
+    status(this: unknown, code: number) {
       statusCode = code;
       return this;
     },
-    json(payload: unknown) {
+    json(this: unknown, payload: unknown) {
       jsonPayload = payload;
-      return payload;
+      return this;
     },
-    end: () => {
+    end(this: unknown) {
       endCallCount += 1;
-      return undefined;
+      return this;
     },
   };
 

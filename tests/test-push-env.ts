@@ -113,6 +113,31 @@ async function testWithPatchedEnvSupportsThenableReturn() {
   assertEq(process.env[key], originalValue);
 }
 
+async function testWithPatchedEnvRestoresAfterRejectedThenable() {
+  const key = "PUSH_ENV_TEST_KEY_REJECTED_THENABLE";
+  const originalValue = process.env[key];
+  let seenInsideThenable = "";
+  let errorMessage = "";
+
+  try {
+    await withPatchedEnv({ [key]: "patched-value" }, () => ({
+      then: (
+        _resolve: (value: string) => void,
+        reject?: (error: Error) => void
+      ) => {
+        seenInsideThenable = process.env[key] || "";
+        reject?.(new Error("expected-thenable-rejection"));
+      },
+    }));
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : String(error);
+  }
+
+  assertEq(seenInsideThenable, "patched-value");
+  assertEq(errorMessage, "expected-thenable-rejection");
+  assertEq(process.env[key], originalValue);
+}
+
 async function testMockVercelResponseHarnessSupportsHeaderChainingAndCaseInsensitiveRead() {
   const mockRes = createMockVercelResponseHarness();
   const chained = (mockRes.res as { setHeader: (name: string, value: unknown) => unknown })
@@ -123,6 +148,28 @@ async function testMockVercelResponseHarnessSupportsHeaderChainingAndCaseInsensi
   assertEq(mockRes.getHeader("vary"), "Origin");
   assertEq(mockRes.getHeader("VARY"), "Origin");
   assertEq(mockRes.getHeader("ACCESS-control-allow-origin"), "http://localhost:3000");
+}
+
+async function testMockVercelResponseHarnessSupportsStatusJsonAndEndChaining() {
+  const mockRes = createMockVercelResponseHarness();
+  const responseLike = mockRes.res as {
+    status: (code: number) => unknown;
+    json: (payload: unknown) => unknown;
+    end: () => unknown;
+  };
+
+  const statusResult = responseLike.status(201);
+  const jsonResult = (statusResult as { json: (payload: unknown) => unknown }).json({
+    ok: true,
+  });
+  const endResult = (jsonResult as { end: () => unknown }).end();
+
+  assertEq(statusResult, mockRes.res);
+  assertEq(jsonResult, mockRes.res);
+  assertEq(endResult, mockRes.res);
+  assertEq(mockRes.getStatusCode(), 201);
+  assertEq(JSON.stringify(mockRes.getJsonPayload()), JSON.stringify({ ok: true }));
+  assertEq(mockRes.getEndCallCount(), 1);
 }
 
 async function testMockPushLoggerHarnessTracksCallsWhenWarnEnabled() {
@@ -178,8 +225,16 @@ export async function runPushEnvTests(): Promise<{ passed: number; failed: numbe
     testWithPatchedEnvSupportsThenableReturn
   );
   await runTest(
+    "withPatchedEnv restores values after thenable rejection",
+    testWithPatchedEnvRestoresAfterRejectedThenable
+  );
+  await runTest(
     "mock vercel response harness supports chaining and case-insensitive headers",
     testMockVercelResponseHarnessSupportsHeaderChainingAndCaseInsensitiveRead
+  );
+  await runTest(
+    "mock vercel response harness supports status/json/end chaining",
+    testMockVercelResponseHarnessSupportsStatusJsonAndEndChaining
   );
   await runTest(
     "mock push logger harness tracks calls when warn is enabled",
