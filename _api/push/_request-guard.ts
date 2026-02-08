@@ -56,13 +56,13 @@ export function handlePushPostRequestGuards(
   logger.request(method, req.url || endpointPath);
 
   if (method === "OPTIONS") {
+    res.setHeader("Vary", "Origin, Access-Control-Request-Headers");
     if (!isAllowedOrigin(origin)) {
       logger.response(403, Date.now() - startTime);
       res.status(403).json({ error: "Unauthorized" });
       return true;
     }
 
-    res.setHeader("Vary", "Origin, Access-Control-Request-Headers");
     const requestedCorsHeaders = getRequestedCorsHeaders(req);
     setCorsHeaders(res, origin, {
       methods: ["POST", "OPTIONS"],
@@ -73,13 +73,13 @@ export function handlePushPostRequestGuards(
     return true;
   }
 
+  res.setHeader("Vary", "Origin");
   if (!isAllowedOrigin(origin)) {
     logger.response(403, Date.now() - startTime);
     res.status(403).json({ error: "Unauthorized" });
     return true;
   }
 
-  res.setHeader("Vary", "Origin");
   setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
 
   if (method !== "POST") {

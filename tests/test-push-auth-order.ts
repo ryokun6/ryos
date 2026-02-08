@@ -62,6 +62,8 @@ async function expectUnauthorizedOriginResponse(
 ) {
   const req = createRequest(method, endpointPath, "https://evil.example");
   const mockRes = createMockVercelResponseHarness();
+  const expectedVary =
+    method === "OPTIONS" ? "Origin, Access-Control-Request-Headers" : "Origin";
 
   await handler(req, mockRes.res);
 
@@ -72,6 +74,7 @@ async function expectUnauthorizedOriginResponse(
   );
   assertEq(mockRes.getEndCallCount(), 0);
   assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
+  assertEq(mockRes.getHeader("Vary"), expectedVary);
   assertEq(mockRes.getHeader("Allow"), undefined);
 }
 

@@ -149,7 +149,7 @@ async function testDisallowedPostIsRejected() {
       JSON.stringify({ error: "Unauthorized" })
     );
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
-    assertEq(mockRes.getHeader("Vary"), undefined);
+    assertEq(mockRes.getHeader("Vary"), "Origin");
     assertEq(mockLogger.responseCalls.length, 1);
     assertEq(mockLogger.responseCalls[0].statusCode, 403);
   });
@@ -389,7 +389,7 @@ async function testDisallowedOptionsPreflightRejected() {
     );
     assertEq(mockRes.getEndCallCount(), 0);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
-    assertEq(mockRes.getHeader("Vary"), undefined);
+    assertEq(mockRes.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
     assertEq(mockLogger.responseCalls.length, 1);
     assertEq(mockLogger.responseCalls[0].statusCode, 403);
   });
