@@ -209,6 +209,7 @@ async function testParseStoredPushTokens() {
   assertEq(parsed.validTokens.length, 1);
   assertEq(parsed.invalidTokensToRemove.length, 3);
   assertEq(parsed.invalidTokensToRemove.includes(paddedValidToken), true);
+  assertEq(parsed.invalidTokensToRemove.includes("   "), true);
   assertEq(parsed.skippedNonStringCount, 1);
 
   const emptyParsed = parseStoredPushTokens(null);
