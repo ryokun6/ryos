@@ -56,6 +56,11 @@ async function main() {
     assertHasCall(source, "broadcastRoomUpdated", "presence switch");
   });
 
+  await runTest("join route emits room-updated", async () => {
+    const source = readRoute("_api/rooms/[id]/join.ts");
+    assertHasCall(source, "broadcastRoomUpdated", "room join");
+  });
+
   await runTest("room delete/leave route emits delete/update events", async () => {
     const source = readRoute("_api/rooms/[id].ts");
     assertHasCall(source, "broadcastRoomDeleted", "room delete / private leave");
