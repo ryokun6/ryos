@@ -30,7 +30,11 @@ export const PUSH_ALLOWED_HEADERS = [
 export const PUSH_ALLOW_HEADERS_VALUE = PUSH_ALLOWED_HEADERS.join(", ");
 const PUSH_ALLOWED_METHODS_LIST = [...PUSH_ALLOWED_METHODS];
 const PUSH_ALLOWED_HEADERS_LIST = [...PUSH_ALLOWED_HEADERS];
-const INVALID_REQUESTED_METHOD = "__INVALID__";
+
+type RequestedCorsMethodResult =
+  | { kind: "none" }
+  | { kind: "invalid" }
+  | { kind: "value"; method: string };
 
 function forEachCommaSeparatedCandidate(
   value: string,
@@ -141,27 +145,27 @@ function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   return dedupedHeaders.length > 0 ? dedupedHeaders : undefined;
 }
 
-function getRequestedCorsMethod(req: VercelRequest): string | undefined {
+function getRequestedCorsMethod(req: VercelRequest): RequestedCorsMethodResult {
   const requestedMethodValue = getNonEmptyHeaderValues(
     req.headers["access-control-request-method"],
     PUSH_CORS_MAX_REQUESTED_METHOD_VALUES
   )[0];
 
   if (typeof requestedMethodValue !== "string") {
-    return undefined;
+    return { kind: "none" };
   }
 
   const normalizedRequestedMethod = requestedMethodValue.trim().toUpperCase();
   if (normalizedRequestedMethod.length === 0) {
-    return undefined;
+    return { kind: "none" };
   }
   if (normalizedRequestedMethod.length > PUSH_CORS_MAX_REQUESTED_METHOD_LENGTH) {
-    return INVALID_REQUESTED_METHOD;
+    return { kind: "invalid" };
   }
   if (!CORS_METHOD_NAME_REGEX.test(normalizedRequestedMethod)) {
-    return INVALID_REQUESTED_METHOD;
+    return { kind: "invalid" };
   }
-  return normalizedRequestedMethod;
+  return { kind: "value", method: normalizedRequestedMethod };
 }
 
 function respondMethodNotAllowed(
@@ -201,7 +205,11 @@ export function handlePushPostRequestGuards(
     }
 
     const requestedMethod = getRequestedCorsMethod(req);
-    if (requestedMethod && requestedMethod !== PUSH_ALLOWED_METHODS[0]) {
+    if (
+      requestedMethod.kind === "invalid" ||
+      (requestedMethod.kind === "value" &&
+        requestedMethod.method !== PUSH_ALLOWED_METHODS[0])
+    ) {
       respondMethodNotAllowed(res, logger, startTime, origin);
       return true;
     }
