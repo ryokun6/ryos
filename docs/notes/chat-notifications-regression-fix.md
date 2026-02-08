@@ -70,7 +70,8 @@ Routes now emit matching realtime events:
   - stale channel recovery
 - `tests/test-chat-notification-logic.ts`
   - active vs non-active room notification gating
-  - missing/empty room-id input guards
+  - missing/empty/whitespace room-id input guards
+  - trimmed room-id equivalence handling
   - undefined active-room fallback behavior
 - `tests/test-chat-broadcast-wiring.ts`
   - verifies critical REST routes still call expected broadcast functions
