@@ -865,10 +865,10 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           const currentUsername = get().username;
           const currentToken = get().authToken;
-          const pushTokenForLogout = await resolvePushTokenForLogout();
 
           // Inform server to invalidate current token if we have auth
           if (currentUsername && currentToken) {
+            const pushTokenForLogout = await resolvePushTokenForLogout();
             if (pushTokenForLogout) {
               try {
                 await fetch(getApiUrl("/api/push/unregister"), {
