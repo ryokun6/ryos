@@ -12,6 +12,7 @@ import type { ChatMessage, ChatRoom } from "@/types/chat";
 import { toast } from "sonner";
 import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
 import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
+import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
@@ -183,9 +184,13 @@ export function useBackgroundChatNotifications() {
       const { currentRoomId } = useChatsStore.getState();
       const chatsOpen = isChatsAppOpen();
 
-      // Keep behavior aligned with in-app listener during open/close handoff:
-      // if Chats is open and currently viewing this room, do not increment unread/toast.
-      if (chatsOpen && currentRoomId === messageWithTimestamp.roomId) {
+      if (
+        !shouldNotifyForRoomMessage({
+          chatsOpen,
+          currentRoomId,
+          messageRoomId: messageWithTimestamp.roomId,
+        })
+      ) {
         return;
       }
 

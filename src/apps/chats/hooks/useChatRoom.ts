@@ -11,6 +11,7 @@ import { type ChatRoom, type ChatMessage } from "../../../../src/types/chat";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
 import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
+import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
@@ -285,23 +286,29 @@ export function useChatRoom(
 
           // Show toast if the message is for a room that is not currently open
           const { currentRoomId: activeRoomId } = useChatsStore.getState();
-          if (activeRoomId !== data.message.roomId) {
-            incrementUnread(data.message.roomId);
-            const decoded = decodeHtmlEntities(
-              String(data.message.content || "")
-            );
-            const preview = decoded.replace(/\s+/g, " ").trim().slice(0, 80);
-            toast(`@${data.message.username}`, {
-              id: `chat-room-message-${data.message.id}`,
-              description: preview,
-              action: {
-                label: "Open",
-                onClick: () => {
-                  openChatRoomFromNotification(data.message.roomId);
-                },
-              },
-            });
+          if (
+            !shouldNotifyForRoomMessage({
+              chatsOpen: true,
+              currentRoomId: activeRoomId,
+              messageRoomId: data.message.roomId,
+            })
+          ) {
+            return;
           }
+
+          incrementUnread(data.message.roomId);
+          const decoded = decodeHtmlEntities(String(data.message.content || ""));
+          const preview = decoded.replace(/\s+/g, " ").trim().slice(0, 80);
+          toast(`@${data.message.username}`, {
+            id: `chat-room-message-${data.message.id}`,
+            description: preview,
+            action: {
+              label: "Open",
+              onClick: () => {
+                openChatRoomFromNotification(data.message.roomId);
+              },
+            },
+          });
         },
         onMessageDeleted: (data) => {
           console.log("[Pusher Hook] Message deleted:", data.messageId);
