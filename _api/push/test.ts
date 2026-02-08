@@ -45,6 +45,17 @@ const APNS_STALE_REASONS = new Set([
   "DeviceTokenNotForTopic",
 ]);
 
+function createTokenNotRegisteredResponse(
+  staleOwnershipTokensRemoved: number,
+  pushMetadataLookupConcurrency: number
+) {
+  return {
+    error: "Token is not registered for this user",
+    staleOwnershipTokensRemoved,
+    pushMetadataLookupConcurrency,
+  };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { logger } = initLogger();
   const startTime = Date.now();
@@ -137,11 +148,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           requestedTokenSuffix: requestedToken.slice(-8),
         });
         logger.response(403, Date.now() - startTime);
-        return res.status(403).json({
-          error: "Token is not registered for this user",
-          staleOwnershipTokensRemoved: 0,
-          pushMetadataLookupConcurrency: 0,
-        });
+        return res.status(403).json(createTokenNotRegisteredResponse(0, 0));
       }
 
       tokensForOwnershipLookup = [requestedToken];
@@ -209,11 +216,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
       });
       logger.response(403, Date.now() - startTime);
-      return res.status(403).json({
-        error: "Token is not registered for this user",
-        staleOwnershipTokensRemoved,
-        pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
-      });
+      return res.status(403).json(
+        createTokenNotRegisteredResponse(
+          staleOwnershipTokensRemoved,
+          tokenMetadataLookupConcurrency
+        )
+      );
     }
 
     if (targetTokens.length === 0) {
