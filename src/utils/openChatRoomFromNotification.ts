@@ -9,9 +9,14 @@ export const openChatRoomFromNotification = (roomId: string): void => {
   const appStore = useAppStore.getState();
   appStore.launchApp("chats");
 
+  const chatsStore = useChatsStore.getState();
+
   if (!roomId) {
+    void chatsStore.fetchRooms();
     return;
   }
 
-  void useChatsStore.getState().switchRoom(roomId);
+  void chatsStore.switchRoom(roomId);
+  // Refresh visible rooms so sidebar/channel metadata catches up quickly.
+  void chatsStore.fetchRooms();
 };
