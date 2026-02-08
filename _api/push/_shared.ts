@@ -165,6 +165,7 @@ export function normalizeRedisNonNegativeCount(
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (trimmed.length === 0) return normalizedFallback;
+    if (!/^\d+$/.test(trimmed)) return normalizedFallback;
     const parsed = Number(trimmed);
     if (!Number.isSafeInteger(parsed) || parsed < 0) {
       return normalizedFallback;
