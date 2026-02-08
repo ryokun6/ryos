@@ -48,12 +48,16 @@ const APNS_STALE_REASONS = new Set([
 
 function createTokenNotRegisteredResponse(
   staleOwnershipTokensRemoved: number,
-  pushMetadataLookupConcurrency: number
+  pushMetadataLookupConcurrency: number,
+  invalidStoredTokensRemoved: number = 0,
+  skippedNonStringTokenCount: number = 0
 ) {
   return {
     error: "Token is not registered for this user",
     staleOwnershipTokensRemoved,
     pushMetadataLookupConcurrency,
+    invalidStoredTokensRemoved,
+    skippedNonStringTokenCount,
   };
 }
 
@@ -149,7 +153,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           requestedTokenSuffix: getPushTokenSuffix(requestedToken),
         });
         logger.response(403, Date.now() - startTime);
-        return res.status(403).json(createTokenNotRegisteredResponse(0, 0));
+        return res
+          .status(403)
+          .json(createTokenNotRegisteredResponse(0, 0, 0, 0));
       }
 
       tokensForOwnershipLookup = [requestedToken];
@@ -220,7 +226,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json(
         createTokenNotRegisteredResponse(
           staleOwnershipTokensRemoved,
-          tokenMetadataLookupConcurrency
+          tokenMetadataLookupConcurrency,
+          invalidStoredTokensRemoved,
+          skippedNonStringTokenCount
         )
       );
     }
@@ -236,6 +244,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         error: "No owned push tokens for this user",
         staleOwnershipTokensRemoved,
         pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
+        invalidStoredTokensRemoved,
+        skippedNonStringTokenCount,
       });
     }
 
