@@ -20,6 +20,7 @@ import { runPushApnsTests } from "./test-push-apns";
 import { runPushEnvTests } from "./test-push-env";
 import { runPushSharedTests } from "./test-push-shared";
 import { runPushRedisTests } from "./test-push-redis";
+import { runPushRequestGuardTests } from "./test-push-request-guard";
 import { runPushRequestPayloadTests } from "./test-push-request-payloads";
 import { runPushOwnershipTests } from "./test-push-ownership";
 import { runPushSetOpsTests } from "./test-push-set-ops";
@@ -105,6 +106,7 @@ async function runAllTests(): Promise<void> {
     { name: "push-env", run: runPushEnvTests },
     { name: "push-shared", run: runPushSharedTests },
     { name: "push-redis", run: runPushRedisTests },
+    { name: "push-request-guard", run: runPushRequestGuardTests },
     { name: "push-request-payloads", run: runPushRequestPayloadTests },
     { name: "push-ownership", run: runPushOwnershipTests },
     { name: "push-set-ops", run: runPushSetOpsTests },
