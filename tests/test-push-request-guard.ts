@@ -104,15 +104,22 @@ function createRawRequest(
   } as unknown as VercelRequest;
 }
 
-function withDevelopmentEnv<T>(run: () => T | Promise<T>): Promise<T> {
+function withRuntimeEnv<T>(
+  env: "development" | "preview" | "production",
+  run: () => T | Promise<T>
+): Promise<T> {
   return Promise.resolve(
     withPatchedEnv(
       {
-        VERCEL_ENV: "development",
+        VERCEL_ENV: env,
       },
       run
     )
   );
+}
+
+function withDevelopmentEnv<T>(run: () => T | Promise<T>): Promise<T> {
+  return withRuntimeEnv("development", run);
 }
 
 async function testAllowedPostContinuesWithoutHandling() {
@@ -328,6 +335,49 @@ async function testMissingUrlFallsBackToEndpointPath() {
   });
 }
 
+async function testProductionRejectsLocalhostOrigin() {
+  await withRuntimeEnv("production", async () => {
+    const req = createRequest("POST", "http://localhost:3000");
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 403);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Unauthorized" })
+    );
+  });
+}
+
+async function testProductionAllowsPrimaryOrigin() {
+  await withRuntimeEnv("production", async () => {
+    const req = createRequest("POST", "https://os.ryo.lu");
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "https://os.ryo.lu");
+  });
+}
+
 export async function runPushRequestGuardTests(): Promise<{
   passed: number;
   failed: number;
@@ -370,6 +420,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard falls back to endpoint path when URL missing",
     testMissingUrlFallsBackToEndpointPath
+  );
+  await runTest(
+    "Push request guard rejects localhost origin in production mode",
+    testProductionRejectsLocalhostOrigin
+  );
+  await runTest(
+    "Push request guard allows primary production origin",
+    testProductionAllowsPrimaryOrigin
   );
 
   return printSummary();
