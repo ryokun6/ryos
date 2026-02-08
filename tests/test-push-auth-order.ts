@@ -94,7 +94,7 @@ async function expectMissingCredentialsResponse(
 async function expectUnauthorizedOriginResponse(
   handler: PushHandler,
   endpointPath: string,
-  method: "POST" | "OPTIONS" = "POST"
+  method: "POST" | "OPTIONS" | "GET" = "POST"
 ) {
   const req = createRequest(method, endpointPath, "https://evil.example");
   const mockRes = createMockResponse();
@@ -108,6 +108,7 @@ async function expectUnauthorizedOriginResponse(
   );
   assertEq(mockRes.getEndCallCount(), 0);
   assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
+  assertEq(mockRes.getHeader("Allow"), undefined);
 }
 
 async function expectMethodNotAllowedResponse(
@@ -183,6 +184,16 @@ async function testRegisterMethodNotAllowedIncludesAllowHeader() {
   await expectMethodNotAllowedResponse(pushRegisterHandler, "/api/push/register");
 }
 
+async function testRegisterDisallowedOriginPrecedesMethodGuard() {
+  await withMissingPushEnv(async () => {
+    await expectUnauthorizedOriginResponse(
+      pushRegisterHandler,
+      "/api/push/register",
+      "GET"
+    );
+  });
+}
+
 async function testUnregisterMissingCredentialsTakesPrecedence() {
   await withMissingPushEnv(async () => {
     await expectMissingCredentialsResponse(
@@ -210,6 +221,16 @@ async function testUnregisterOptionsUnauthorizedOriginRejected() {
 
 async function testUnregisterMethodNotAllowedIncludesAllowHeader() {
   await expectMethodNotAllowedResponse(pushUnregisterHandler, "/api/push/unregister");
+}
+
+async function testUnregisterDisallowedOriginPrecedesMethodGuard() {
+  await withMissingPushEnv(async () => {
+    await expectUnauthorizedOriginResponse(
+      pushUnregisterHandler,
+      "/api/push/unregister",
+      "GET"
+    );
+  });
 }
 
 async function testPushTestMissingCredentialsTakesPrecedence() {
@@ -244,6 +265,12 @@ async function testPushTestOptionsAllowedOriginReturnsNoContent() {
 
 async function testPushTestMethodNotAllowedIncludesAllowHeader() {
   await expectMethodNotAllowedResponse(pushTestHandler, "/api/push/test");
+}
+
+async function testPushTestDisallowedOriginPrecedesMethodGuard() {
+  await withMissingPushEnv(async () => {
+    await expectUnauthorizedOriginResponse(pushTestHandler, "/api/push/test", "GET");
+  });
 }
 
 async function testUnregisterOptionsAllowedOriginReturnsNoContent() {
@@ -283,6 +310,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
     testRegisterMethodNotAllowedIncludesAllowHeader
   );
   await runTest(
+    "Push register disallowed origin takes precedence over method guard",
+    testRegisterDisallowedOriginPrecedesMethodGuard
+  );
+  await runTest(
     "Push unregister returns 401 before Redis config checks",
     testUnregisterMissingCredentialsTakesPrecedence
   );
@@ -297,6 +328,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
   await runTest(
     "Push unregister method guard sets Allow header",
     testUnregisterMethodNotAllowedIncludesAllowHeader
+  );
+  await runTest(
+    "Push unregister disallowed origin takes precedence over method guard",
+    testUnregisterDisallowedOriginPrecedesMethodGuard
   );
   await runTest(
     "Push unregister allows localhost preflight",
@@ -321,6 +356,10 @@ export async function runPushAuthOrderTests(): Promise<{ passed: number; failed:
   await runTest(
     "Push test method guard sets Allow header",
     testPushTestMethodNotAllowedIncludesAllowHeader
+  );
+  await runTest(
+    "Push test disallowed origin takes precedence over method guard",
+    testPushTestDisallowedOriginPrecedesMethodGuard
   );
 
   return printSummary();
