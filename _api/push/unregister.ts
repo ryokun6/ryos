@@ -14,7 +14,10 @@ import {
 import { getTokenOwnershipEntries, splitTokenOwnership } from "./_ownership.js";
 import { normalizeUnregisterPushPayload } from "./_request-payloads.js";
 import { createPushRedis, getMissingPushRedisEnvVars } from "./_redis.js";
-import { removeTokensFromUserSet } from "./_set-ops.js";
+import {
+  removeTokenMetadataKeys,
+  removeTokensFromUserSet,
+} from "./_set-ops.js";
 import {
   extractAuthFromHeaders,
   parseStoredPushTokens,
@@ -156,18 +159,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
     const { ownedTokens } = splitTokenOwnership(tokenOwnership);
 
-    if (ownedTokens.length > 0) {
-      const pipeline = redis.pipeline();
-      for (const ownedToken of ownedTokens) {
-        pipeline.del(getTokenMetaKey(ownedToken));
-      }
-      await pipeline.exec();
-    }
+    const metadataRemoved = await removeTokenMetadataKeys(
+      redis,
+      ownedTokens,
+      getTokenMetaKey
+    );
 
     logger.info("Unregistered all push tokens for user", {
       username,
       removed: userTokens.length + invalidStoredTokensRemoved,
-      removedMetadata: ownedTokens.length,
+      removedMetadata: metadataRemoved,
       invalidStoredTokensRemoved,
       skippedNonStringTokenCount,
     });
@@ -176,7 +177,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({
       success: true,
       removed: userTokens.length + invalidStoredTokensRemoved,
-      metadataRemoved: ownedTokens.length,
+      metadataRemoved,
       invalidStoredTokensRemoved,
       skippedNonStringTokenCount,
     });

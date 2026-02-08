@@ -6,6 +6,7 @@
 import {
   getDistinctNonEmptyTokens,
   removeTokensAndMetadata,
+  removeTokenMetadataKeys,
   removeTokensFromUserSet,
 } from "../_api/push/_set-ops";
 import {
@@ -16,7 +17,7 @@ import {
   section,
 } from "./test-utils";
 
-function createFakeRedis() {
+function createFakeRedis(execResultsQueue: unknown[] = []) {
   const sremCalls: Array<{ key: string; member: string }> = [];
   const delCalls: Array<{ key: string }> = [];
   let execCount = 0;
@@ -32,7 +33,7 @@ function createFakeRedis() {
         },
         async exec() {
           execCount += 1;
-          return [];
+          return execResultsQueue[execCount - 1] ?? [];
         },
       };
     },
@@ -91,6 +92,49 @@ async function testRemoveTokensAndMetadata() {
   assertEq(getExecCount(), 1);
 }
 
+async function testRemoveTokensFromUserSetUsesParsedExecCounts() {
+  const { redis } = createFakeRedis([[1, 0, 1]]);
+  const removedCount = await removeTokensFromUserSet(
+    redis,
+    "push:user:alice:tokens",
+    ["tok1", "tok2", "tok3"]
+  );
+  assertEq(removedCount, 2);
+}
+
+async function testRemoveTokensAndMetadataUsesParsedExecCounts() {
+  const { redis } = createFakeRedis([[[null, 1], [null, 0], [null, 1], [null, 1]]]);
+  const removedCount = await removeTokensAndMetadata(
+    redis,
+    "push:user:alice:tokens",
+    ["tok1", "tok2"],
+    (token) => `push:token:${token}`
+  );
+  assertEq(removedCount, 2);
+}
+
+async function testRemoveTokenMetadataKeysUsesParsedExecCounts() {
+  const { redis } = createFakeRedis([
+    [{ result: 1 }, { result: 0 }, ["ignored", 1]],
+  ]);
+  const metadataRemoved = await removeTokenMetadataKeys(
+    redis,
+    ["tok1", "tok2", "tok3"],
+    (token) => `push:token:${token}`
+  );
+  assertEq(metadataRemoved, 2);
+}
+
+async function testRemovalFallbackWhenExecResultUnparseable() {
+  const { redis } = createFakeRedis([["not-a-count"]]);
+  const removedCount = await removeTokensFromUserSet(
+    redis,
+    "push:user:alice:tokens",
+    ["tok1"]
+  );
+  assertEq(removedCount, 1);
+}
+
 async function testNoOpsSkipPipeline() {
   const { redis, getExecCount } = createFakeRedis();
   const removedFromSet = await removeTokensFromUserSet(redis, "key", []);
@@ -113,6 +157,22 @@ export async function runPushSetOpsTests(): Promise<{ passed: number; failed: nu
   await runTest("Token set helper deduplicates non-empty tokens", testDistinctTokenNormalization);
   await runTest("Token set helper removes tokens from user set", testRemoveTokensFromUserSet);
   await runTest("Token set helper removes tokens and metadata", testRemoveTokensAndMetadata);
+  await runTest(
+    "Token set helper parses srem results for removal counts",
+    testRemoveTokensFromUserSetUsesParsedExecCounts
+  );
+  await runTest(
+    "Token+metadata helper parses srem results for removal counts",
+    testRemoveTokensAndMetadataUsesParsedExecCounts
+  );
+  await runTest(
+    "Metadata-only helper parses del result counts",
+    testRemoveTokenMetadataKeysUsesParsedExecCounts
+  );
+  await runTest(
+    "Token set helper falls back when exec results are unparseable",
+    testRemovalFallbackWhenExecResultUnparseable
+  );
   await runTest("Token set helper skips empty operations", testNoOpsSkipPipeline);
 
   return printSummary();
