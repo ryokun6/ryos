@@ -240,6 +240,36 @@ async function testAllowedOptionsPreflightUsesFirstRequestedHeaderValue() {
   });
 }
 
+async function testAllowedOptionsPreflightUsesFirstNonEmptyHeaderArrayValue() {
+  await withDevelopmentEnv(async () => {
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-headers": [
+          "   ",
+          "x-second, authorization",
+        ],
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), "x-second, authorization");
+  });
+}
+
 async function testDisallowedOptionsPreflightRejected() {
   await withDevelopmentEnv(async () => {
     const req = createRequest("OPTIONS", "https://evil.example");
@@ -871,6 +901,10 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard uses first requested-header value from arrays",
     testAllowedOptionsPreflightUsesFirstRequestedHeaderValue
+  );
+  await runTest(
+    "Push request guard uses first non-empty requested-header array value",
+    testAllowedOptionsPreflightUsesFirstNonEmptyHeaderArrayValue
   );
   await runTest(
     "Push request guard rejects disallowed preflight",

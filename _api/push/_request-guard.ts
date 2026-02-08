@@ -13,7 +13,10 @@ interface PushRequestLoggerLike {
 function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   const requestedHeaders = req.headers["access-control-request-headers"];
   const requestedHeadersValue = Array.isArray(requestedHeaders)
-    ? requestedHeaders[0]
+    ? requestedHeaders.find(
+        (value): value is string =>
+          typeof value === "string" && value.trim().length > 0
+      )
     : requestedHeaders;
 
   if (typeof requestedHeadersValue !== "string") {
