@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef } from "react";
-import { type PusherChannel, getPusherClient } from "@/lib/pusherClient";
+import {
+  type PusherChannel,
+  getPusherClient,
+  subscribePusherChannel,
+  unsubscribePusherChannel,
+} from "@/lib/pusherClient";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useAppStore } from "@/stores/useAppStore";
@@ -124,8 +129,8 @@ export function useBackgroundChatNotifications() {
       channel.unbind("rooms-updated", handlers.onRoomsUpdated);
     }
 
-    if (channel && pusherRef.current) {
-      pusherRef.current.unsubscribe(channel.name);
+    if (channel) {
+      unsubscribePusherChannel(channel.name);
     }
 
     globalChannelRef.current = null;
@@ -141,8 +146,8 @@ export function useBackgroundChatNotifications() {
       channel.unbind("message-deleted", handlers.onMessageDeleted);
     }
 
-    if (channel && pusherRef.current) {
-      pusherRef.current.unsubscribe(`room-${roomId}`);
+    if (channel) {
+      unsubscribePusherChannel(channel.name);
     }
 
     delete roomChannelsRef.current[roomId];
@@ -228,7 +233,7 @@ export function useBackgroundChatNotifications() {
       return;
     }
 
-    const channel = pusherRef.current.subscribe(channelName);
+    const channel = subscribePusherChannel(channelName);
     const handlers: GlobalHandlers = {
       onRoomCreated: (data) => {
         if (!data?.room?.id) {
@@ -281,7 +286,7 @@ export function useBackgroundChatNotifications() {
         return;
       }
 
-      const channel = pusherRef.current.subscribe(`room-${roomId}`);
+      const channel = subscribePusherChannel(`room-${roomId}`);
       const handlers: RoomHandlers = {
         onRoomMessage: handleRoomMessage,
         onMessageDeleted: handleMessageDeleted,

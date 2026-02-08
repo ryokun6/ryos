@@ -5,6 +5,7 @@ import Pusher, { type Channel } from "pusher-js";
 
 const globalWithPusher = globalThis as typeof globalThis & {
   __pusherClient?: Pusher;
+  __pusherChannelRefCounts?: Record<string, number>;
 };
 
 // Use development Pusher key for local dev and Vercel preview deployments
@@ -27,6 +28,51 @@ export function getPusherClient(): Pusher {
 }
 
 export type PusherChannel = Channel;
+
+const getChannelRefCounts = (): Record<string, number> => {
+  if (!globalWithPusher.__pusherChannelRefCounts) {
+    globalWithPusher.__pusherChannelRefCounts = {};
+  }
+  return globalWithPusher.__pusherChannelRefCounts;
+};
+
+/**
+ * Acquire a shared channel subscription.
+ * Multiple consumers can subscribe safely without unsubscribing each other.
+ */
+export function subscribePusherChannel(channelName: string): PusherChannel {
+  const pusher = getPusherClient();
+  const counts = getChannelRefCounts();
+  const currentCount = counts[channelName] || 0;
+
+  if (currentCount === 0) {
+    pusher.subscribe(channelName);
+  }
+
+  counts[channelName] = currentCount + 1;
+  return pusher.channel(channelName);
+}
+
+/**
+ * Release a shared channel subscription.
+ * Actual unsubscribe happens only when the final consumer releases it.
+ */
+export function unsubscribePusherChannel(channelName: string): void {
+  if (!channelName) {
+    return;
+  }
+
+  const counts = getChannelRefCounts();
+  const currentCount = counts[channelName] || 0;
+
+  if (currentCount <= 1) {
+    delete counts[channelName];
+    globalWithPusher.__pusherClient?.unsubscribe(channelName);
+    return;
+  }
+
+  counts[channelName] = currentCount - 1;
+}
 
 // HMR cleanup - don't disconnect during HMR, the singleton survives via globalThis
 if (import.meta.hot) {
