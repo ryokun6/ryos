@@ -62,6 +62,18 @@ export async function runPusherClientConstructorWiringTests(): Promise<{
     );
   });
 
+  await runTest("getPusherClient instantiates via constructor resolver", async () => {
+    const source = readPusherClientSource();
+    assert(
+      /const Pusher = getPusherConstructor\(\);/.test(source),
+      "Expected getPusherClient to call getPusherConstructor()"
+    );
+    assert(
+      /new Pusher\(PUSHER_APP_KEY/.test(source),
+      "Expected getPusherClient to instantiate with resolved constructor"
+    );
+  });
+
   return printSummary();
 }
 
