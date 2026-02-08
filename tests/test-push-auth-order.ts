@@ -89,6 +89,8 @@ async function expectMissingCredentialsResponse(
     JSON.stringify(mockRes.getJsonPayload()),
     JSON.stringify({ error: "Unauthorized - missing credentials" })
   );
+  assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+  assertEq(mockRes.getHeader("Allow"), undefined);
 }
 
 async function expectUnauthorizedOriginResponse(
