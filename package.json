@@ -48,6 +48,7 @@
     "test:chat-store-guards": "bun run tests/test-chat-store-guards-wiring.ts",
     "test:pusher-client": "bun run tests/test-pusher-client-refcount.ts",
     "test:pusher-constructor-wiring": "bun run tests/test-pusher-client-constructor-wiring.ts",
+    "test:pusher-regression": "bun run tests/run-all-tests.ts pusher",
     "test:chat-regression": "bun run tests/run-all-tests.ts chat- && bun run tests/run-all-tests.ts pusher"
   },
   "dependencies": {
