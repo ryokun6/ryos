@@ -18,6 +18,12 @@ export const PUSH_OPTIONS_VARY_HEADER =
   "Origin, Access-Control-Request-Method, Access-Control-Request-Headers";
 export const PUSH_ALLOWED_METHODS = ["POST", "OPTIONS"] as const;
 export const PUSH_ALLOW_HEADER_VALUE = PUSH_ALLOWED_METHODS.join(", ");
+export const PUSH_ALLOWED_HEADERS = [
+  "Content-Type",
+  "Authorization",
+  "X-Username",
+] as const;
+export const PUSH_ALLOW_HEADERS_VALUE = PUSH_ALLOWED_HEADERS.join(", ");
 
 function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   const requestedHeaders = req.headers["access-control-request-headers"];
@@ -117,7 +123,10 @@ export function handlePushPostRequestGuards(
 
     const requestedMethod = getRequestedCorsMethod(req);
     if (requestedMethod && requestedMethod !== PUSH_ALLOWED_METHODS[0]) {
-      setCorsHeaders(res, origin, { methods: [...PUSH_ALLOWED_METHODS] });
+      setCorsHeaders(res, origin, {
+        methods: [...PUSH_ALLOWED_METHODS],
+        headers: [...PUSH_ALLOWED_HEADERS],
+      });
       res.setHeader("Allow", PUSH_ALLOW_HEADER_VALUE);
       logger.response(405, Date.now() - startTime);
       res.status(405).json({ error: "Method not allowed" });
@@ -127,7 +136,7 @@ export function handlePushPostRequestGuards(
     const requestedCorsHeaders = getRequestedCorsHeaders(req);
     setCorsHeaders(res, origin, {
       methods: [...PUSH_ALLOWED_METHODS],
-      ...(requestedCorsHeaders ? { headers: requestedCorsHeaders } : {}),
+      headers: requestedCorsHeaders ?? [...PUSH_ALLOWED_HEADERS],
     });
     logger.response(204, Date.now() - startTime);
     res.status(204).end();
@@ -141,7 +150,10 @@ export function handlePushPostRequestGuards(
     return true;
   }
 
-  setCorsHeaders(res, origin, { methods: [...PUSH_ALLOWED_METHODS] });
+  setCorsHeaders(res, origin, {
+    methods: [...PUSH_ALLOWED_METHODS],
+    headers: [...PUSH_ALLOWED_HEADERS],
+  });
 
   if (method !== PUSH_ALLOWED_METHODS[0]) {
     res.setHeader("Allow", PUSH_ALLOW_HEADER_VALUE);

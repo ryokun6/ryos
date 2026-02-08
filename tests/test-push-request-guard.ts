@@ -5,6 +5,7 @@
 
 import type { VercelRequest } from "@vercel/node";
 import {
+  PUSH_ALLOW_HEADERS_VALUE,
   handlePushPostRequestGuards,
   PUSH_ALLOW_HEADER_VALUE,
   PUSH_CORS_MAX_REQUESTED_HEADER_CANDIDATES,
@@ -108,7 +109,7 @@ async function testAllowedPostContinuesWithoutHandling() {
     assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), PUSH_ALLOW_HEADER_VALUE);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
-      "Content-Type, Authorization, X-Username"
+      PUSH_ALLOW_HEADERS_VALUE
     );
     assertEq(mockRes.getHeader("Access-Control-Allow-Credentials"), "true");
     assertEq(mockRes.getHeader("Access-Control-Max-Age"), "86400");
@@ -236,7 +237,7 @@ async function testAllowedOptionsPreflightHandled() {
     assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
-      "Content-Type, Authorization, X-Username"
+      PUSH_ALLOW_HEADERS_VALUE
     );
     assertEq(mockRes.getHeader("Access-Control-Allow-Credentials"), "true");
     assertEq(mockRes.getHeader("Access-Control-Max-Age"), "86400");
@@ -305,7 +306,7 @@ async function testAllowedOptionsPreflightRejectsUnsupportedRequestedMethod() {
     assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), PUSH_ALLOW_HEADER_VALUE);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
-      "Content-Type, Authorization, X-Username"
+      PUSH_ALLOW_HEADERS_VALUE
     );
     assertEq(mockRes.getHeader("Access-Control-Allow-Credentials"), "true");
     assertEq(mockRes.getHeader("Access-Control-Max-Age"), "86400");
@@ -374,7 +375,7 @@ async function testAllowedOptionsPreflightUnsupportedRequestedMethodDoesNotEchoR
     assertEq(mockRes.getStatusCode(), 405);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
-      "Content-Type, Authorization, X-Username"
+      PUSH_ALLOW_HEADERS_VALUE
     );
   });
 }
@@ -676,7 +677,7 @@ async function testAllowedOptionsPreflightFallsBackToDefaultsForEmptyRequestedHe
     assertEq(mockRes.getStatusCode(), 204);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
-      "Content-Type, Authorization, X-Username"
+      PUSH_ALLOW_HEADERS_VALUE
     );
   });
 }
@@ -737,7 +738,7 @@ async function testAllowedOptionsPreflightFallsBackWhenAllRequestedHeadersInvali
     assertEq(mockRes.getStatusCode(), 204);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
-      "Content-Type, Authorization, X-Username"
+      PUSH_ALLOW_HEADERS_VALUE
     );
   });
 }
@@ -901,7 +902,7 @@ async function testAllowedOptionsPreflightStopsScanningRequestedHeadersBeyondCan
     assertEq(mockRes.getStatusCode(), 204);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
-      "Content-Type, Authorization, X-Username"
+      PUSH_ALLOW_HEADERS_VALUE
     );
   });
 }
@@ -938,7 +939,7 @@ async function testAllowedOptionsPreflightCandidateLimitAppliesAcrossRepeatedHea
     assertEq(mockRes.getStatusCode(), 204);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
-      "Content-Type, Authorization, X-Username"
+      PUSH_ALLOW_HEADERS_VALUE
     );
   });
 }
@@ -1206,7 +1207,7 @@ async function testUnsupportedMethodSetsAllowHeader() {
     assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), PUSH_ALLOW_HEADER_VALUE);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
-      "Content-Type, Authorization, X-Username"
+      PUSH_ALLOW_HEADERS_VALUE
     );
     assertEq(mockRes.getHeader("Access-Control-Allow-Credentials"), "true");
     assertEq(mockRes.getHeader("Access-Control-Max-Age"), "86400");

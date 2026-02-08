@@ -8,6 +8,7 @@ import pushRegisterHandler from "../_api/push/register";
 import pushUnregisterHandler from "../_api/push/unregister";
 import pushTestHandler from "../_api/push/test";
 import {
+  PUSH_ALLOW_HEADERS_VALUE,
   PUSH_ALLOW_HEADER_VALUE,
   PUSH_OPTIONS_VARY_HEADER,
 } from "../_api/push/_request-guard";
@@ -126,7 +127,7 @@ async function expectMethodNotAllowedResponse(
   );
   assertEq(
     mockRes.getHeader("Access-Control-Allow-Headers"),
-    "Content-Type, Authorization, X-Username"
+    PUSH_ALLOW_HEADERS_VALUE
   );
   assertEq(mockRes.getHeader("Access-Control-Allow-Credentials"), "true");
   assertEq(mockRes.getHeader("Access-Control-Max-Age"), "86400");
@@ -157,7 +158,7 @@ async function expectOptionsRequestedMethodNotAllowedResponse(
   );
   assertEq(
     mockRes.getHeader("Access-Control-Allow-Headers"),
-    "Content-Type, Authorization, X-Username"
+    PUSH_ALLOW_HEADERS_VALUE
   );
   assertEq(mockRes.getHeader("Access-Control-Allow-Credentials"), "true");
   assertEq(mockRes.getHeader("Access-Control-Max-Age"), "86400");
