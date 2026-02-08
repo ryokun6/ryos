@@ -13,6 +13,7 @@ import {
   runTest,
   printSummary,
   clearResults,
+  assert,
   assertEq,
 } from "./test-utils";
 import {
@@ -322,6 +323,45 @@ export async function runPusherClientRefcountTests(): Promise<{
       true,
       "Expected missing-channel recovery warning message"
     );
+  });
+
+  console.log(section("Channel name normalization"));
+  await runTest("normalizes channel names for subscribe/unsubscribe", async () => {
+    const { pusher, calls } = createFakePusher();
+    resetGlobalPusherState(pusher);
+
+    subscribePusherChannel(" room-k ");
+    unsubscribePusherChannel("room-k");
+
+    assertEq(calls.length, 2, "Expected normalized subscribe/unsubscribe pair");
+    assertEq(calls[0].type, "subscribe");
+    assertEq(calls[0].channel, "room-k");
+    assertEq(calls[1].type, "unsubscribe");
+    assertEq(calls[1].channel, "room-k");
+  });
+
+  await runTest("ignores whitespace-only channel release", async () => {
+    const { pusher, calls } = createFakePusher();
+    resetGlobalPusherState(pusher);
+
+    unsubscribePusherChannel("   ");
+    assertEq(calls.length, 0, "Expected no unsubscribe for blank channel name");
+  });
+
+  await runTest("throws when subscribing with whitespace-only channel", async () => {
+    const { pusher } = createFakePusher();
+    resetGlobalPusherState(pusher);
+
+    let threw = false;
+    try {
+      subscribePusherChannel("   ");
+    } catch (error) {
+      threw =
+        error instanceof Error &&
+        error.message.includes("channelName is required");
+    }
+
+    assert(threw, "Expected blank subscribe channel to throw");
   });
 
   return printSummary();

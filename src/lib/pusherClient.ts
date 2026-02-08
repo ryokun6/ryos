@@ -76,38 +76,46 @@ const warnChannelRecoveryOnce = (key: string, message: string): void => {
   console.warn(`[pusherClient] ${message}`);
 };
 
+const normalizeChannelName = (channelName: string): string =>
+  channelName.trim();
+
 /**
  * Acquire a shared channel subscription.
  * Multiple consumers can subscribe safely without unsubscribing each other.
  */
 export function subscribePusherChannel(channelName: string): PusherChannel {
+  const normalizedChannelName = normalizeChannelName(channelName);
+  if (!normalizedChannelName) {
+    throw new Error("[pusherClient] channelName is required");
+  }
+
   const pusher = getPusherClient();
   const counts = getChannelRefCounts();
-  const currentCount = counts[channelName] || 0;
+  const currentCount = counts[normalizedChannelName] || 0;
   const existingChannel = (
     pusher as unknown as { channel: (name: string) => PusherChannel | undefined }
-  ).channel(channelName);
+  ).channel(normalizedChannelName);
 
   if (currentCount === 0) {
     // Always call subscribe for the first local holder to ensure the channel is
     // actively subscribed even if a stale channel object exists.
-    const subscribedChannel = pusher.subscribe(channelName);
-    counts[channelName] = 1;
+    const subscribedChannel = pusher.subscribe(normalizedChannelName);
+    counts[normalizedChannelName] = 1;
     return subscribedChannel;
   }
 
   if (!existingChannel) {
-    const subscribedChannel = pusher.subscribe(channelName);
+    const subscribedChannel = pusher.subscribe(normalizedChannelName);
     // Count became stale while channel was missing; recover to 1 active holder.
     warnChannelRecoveryOnce(
-      `missing-channel:${channelName}`,
-      `Recovered missing channel "${channelName}" while refcount was ${currentCount}`
+      `missing-channel:${normalizedChannelName}`,
+      `Recovered missing channel "${normalizedChannelName}" while refcount was ${currentCount}`
     );
-    counts[channelName] = 1;
+    counts[normalizedChannelName] = 1;
     return subscribedChannel;
   }
 
-  counts[channelName] = currentCount + 1;
+  counts[normalizedChannelName] = currentCount + 1;
   return existingChannel;
 }
 
@@ -116,28 +124,29 @@ export function subscribePusherChannel(channelName: string): PusherChannel {
  * Actual unsubscribe happens only when the final consumer releases it.
  */
 export function unsubscribePusherChannel(channelName: string): void {
-  if (!channelName) {
+  const normalizedChannelName = normalizeChannelName(channelName);
+  if (!normalizedChannelName) {
     return;
   }
 
   const counts = getChannelRefCounts();
-  const currentCount = counts[channelName] || 0;
+  const currentCount = counts[normalizedChannelName] || 0;
 
   if (currentCount <= 0) {
     warnChannelRecoveryOnce(
-      `underflow:${channelName}`,
-      `Ignored unsubscribe underflow for "${channelName}"`
+      `underflow:${normalizedChannelName}`,
+      `Ignored unsubscribe underflow for "${normalizedChannelName}"`
     );
     return;
   }
 
   if (currentCount <= 1) {
-    delete counts[channelName];
-    globalWithPusher.__pusherClient?.unsubscribe(channelName);
+    delete counts[normalizedChannelName];
+    globalWithPusher.__pusherClient?.unsubscribe(normalizedChannelName);
     return;
   }
 
-  counts[channelName] = currentCount - 1;
+  counts[normalizedChannelName] = currentCount - 1;
 }
 
 // HMR cleanup - don't disconnect during HMR, the singleton survives via globalThis
