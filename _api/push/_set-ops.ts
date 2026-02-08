@@ -16,6 +16,14 @@ interface RedisWithDelPipeline {
 }
 
 function parseNumericCount(value: unknown, seen: Set<unknown> = new Set()): number | null {
+  if (typeof value === "bigint") {
+    if (value < 0n || value > BigInt(Number.MAX_SAFE_INTEGER)) return null;
+    return Number(value);
+  }
+
+  if (value === true) return 1;
+  if (value === false) return 0;
+
   if (
     typeof value === "number" &&
     Number.isFinite(value) &&

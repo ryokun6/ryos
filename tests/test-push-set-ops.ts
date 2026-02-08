@@ -93,7 +93,7 @@ async function testRemoveTokensAndMetadata() {
 }
 
 async function testRemoveTokensFromUserSetUsesParsedExecCounts() {
-  const { redis } = createFakeRedis([[1, 0, 1]]);
+  const { redis } = createFakeRedis([[1n, false, true]]);
   const removedCount = await removeTokensFromUserSet(
     redis,
     "push:user:alice:tokens",
@@ -175,6 +175,16 @@ async function testRemovalFallbackWhenExecResultUnparseable() {
     ["tok1"]
   );
   assertEq(removedCountFromNegative, 1);
+
+  const { redis: redisWithHugeBigint } = createFakeRedis([
+    [BigInt(Number.MAX_SAFE_INTEGER) + 1n],
+  ]);
+  const removedCountFromHugeBigint = await removeTokensFromUserSet(
+    redisWithHugeBigint,
+    "push:user:alice:tokens",
+    ["tok1"]
+  );
+  assertEq(removedCountFromHugeBigint, 1);
 
   const { redis: redisWithErroredTuple } = createFakeRedis([
     [[{ message: "ERR" }, 1]],
