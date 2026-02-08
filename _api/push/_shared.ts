@@ -74,6 +74,18 @@ export function getTokenMetaKey(token: string): string {
   return `push:token:${token}`;
 }
 
+export function getPushTokenSuffix(token: string, suffixLength: number = 8): string {
+  if (typeof token !== "string" || token.length === 0) {
+    return "";
+  }
+
+  if (!Number.isSafeInteger(suffixLength) || suffixLength <= 0) {
+    return "";
+  }
+
+  return token.slice(-suffixLength);
+}
+
 export function isValidPushToken(token: string): boolean {
   return PUSH_TOKEN_REGEX.test(token);
 }

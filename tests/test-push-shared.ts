@@ -9,6 +9,7 @@ import {
   extractTokenMetadataOwner,
   getOptionalTrimmedString,
   parseStoredPushTokens,
+  getPushTokenSuffix,
   getRequestBodyObject,
   getTokenMetaKey,
   getUserTokensKey,
@@ -41,6 +42,11 @@ async function testTokenValidation() {
 async function testKeyGeneration() {
   assertEq(getUserTokensKey("ryo"), "push:user:ryo:tokens");
   assertEq(getTokenMetaKey("token123"), "push:token:token123");
+  assertEq(getPushTokenSuffix("abcdef0123"), "cdef0123");
+  assertEq(getPushTokenSuffix("abcdef0123", 4), "0123");
+  assertEq(getPushTokenSuffix("abc", 10), "abc");
+  assertEq(getPushTokenSuffix("", 4), "");
+  assertEq(getPushTokenSuffix("abc", 0), "");
 }
 
 async function testUsernameNormalization() {

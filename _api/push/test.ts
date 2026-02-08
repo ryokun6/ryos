@@ -30,6 +30,7 @@ import {
 } from "./_set-ops.js";
 import {
   extractAuthFromHeaders,
+  getPushTokenSuffix,
   isRedisPositiveCount,
   parseStoredPushTokens,
   getTokenMetaKey,
@@ -145,7 +146,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!isRedisPositiveCount(isRequestedTokenRegistered)) {
         logger.warn("Push test rejected: requested token not in user set", {
           username,
-          requestedTokenSuffix: requestedToken.slice(-8),
+          requestedTokenSuffix: getPushTokenSuffix(requestedToken),
         });
         logger.response(403, Date.now() - startTime);
         return res.status(403).json(createTokenNotRegisteredResponse(0, 0));
@@ -211,7 +212,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (requestedToken && targetTokens.length === 0) {
       logger.warn("Push test rejected: requested token failed ownership check", {
         username,
-        requestedTokenSuffix: requestedToken.slice(-8),
+        requestedTokenSuffix: getPushTokenSuffix(requestedToken),
         staleOwnershipTokensRemoved,
         pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
       });

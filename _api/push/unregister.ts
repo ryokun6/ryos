@@ -23,6 +23,7 @@ import {
   extractTokenMetadataOwner,
   normalizeRedisNonNegativeCount,
   parseStoredPushTokens,
+  getPushTokenSuffix,
   getTokenMetaKey,
   getUserTokensKey,
   type PushTokenMetadata,
@@ -109,7 +110,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       logger.info("Unregistered push token", {
         username,
-        tokenSuffix: pushToken.slice(-8),
+        tokenSuffix: getPushTokenSuffix(pushToken),
         removedFromUserSet,
         removedMetadataCount,
       });

@@ -15,6 +15,7 @@ import {
   PUSH_TOKEN_TTL_SECONDS,
   extractAuthFromHeaders,
   extractTokenMetadataOwner,
+  getPushTokenSuffix,
   getTokenMetaKey,
   getUserTokensKey,
   type PushTokenMetadata,
@@ -105,7 +106,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     logger.info("Registered push token", {
       username,
       platform,
-      tokenSuffix: pushToken.slice(-8),
+      tokenSuffix: getPushTokenSuffix(pushToken),
       transferredFromUser: previousUsername && previousUsername !== username ? previousUsername : null,
     });
     logger.response(200, Date.now() - startTime);
