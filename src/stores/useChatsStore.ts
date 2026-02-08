@@ -18,7 +18,6 @@ import {
   readJsonBody,
   warnChatsStoreOnce,
 } from "./chatsStoreApiGuards";
-import { makeAuthenticatedRequest } from "./chatsStoreAuthRequests";
 import {
   AUTH_TOKEN_RECOVERY_KEY,
   TOKEN_LAST_REFRESH_KEY,
@@ -47,12 +46,7 @@ import {
   createOptimisticChatMessage,
   sendRoomMessageRequest,
 } from "./chatsSendMessage";
-
-interface CreateRoomPayload {
-  type: "public" | "private";
-  name?: string;
-  members?: string[];
-}
+import { createRoomRequest, deleteRoomRequest } from "./chatsRoomRequests";
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -1030,28 +1024,14 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const payload: CreateRoomPayload = { type };
-            if (type === "public") {
-              payload.name = name.trim();
-            } else {
-              payload.members = members;
-            }
-
-            const headers: HeadersInit = {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${get().authToken}`,
-              "X-Username": username,
-            };
-
-            const response = await makeAuthenticatedRequest(
-              "/api/rooms",
-              {
-                method: "POST",
-                headers,
-                body: JSON.stringify(payload),
-              },
-              get().refreshAuthToken
-            );
+            const response = await createRoomRequest({
+              name,
+              type,
+              members,
+              authToken: get().authToken!,
+              username,
+              refreshAuthToken: get().refreshAuthToken,
+            });
 
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
@@ -1084,20 +1064,12 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const headers: HeadersInit = {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${authToken}`,
-              "X-Username": username,
-            };
-
-            const response = await makeAuthenticatedRequest(
-              `/api/rooms/${encodeURIComponent(roomId)}`,
-              {
-                method: "DELETE",
-                headers,
-              },
-              get().refreshAuthToken
-            );
+            const response = await deleteRoomRequest({
+              roomId,
+              authToken,
+              username,
+              refreshAuthToken: get().refreshAuthToken,
+            });
 
             if (!response.ok) {
               const errorData = await response.json().catch(() => ({
