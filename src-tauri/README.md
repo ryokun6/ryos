@@ -117,6 +117,7 @@ From repo root:
 - `bun run test:push:guards` — request/auth guard-focused suites only
 - `bun run test:push:api` — API-facing suites only
 - `bun run test:push-auth-guard` — shared auth extraction/validation helper tests
+- `bun run test:push-redis-guard` — shared Redis config guard helper tests
 - `bun run test:push-request-guard` — shared push request/CORS guard helper tests
 - `bun run test:push-auth-order` — auth-first failure-path behavior checks
 - `bun run check:push` — lint + all push suites + build

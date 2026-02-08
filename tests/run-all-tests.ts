@@ -21,6 +21,7 @@ import { runPushEnvTests } from "./test-push-env";
 import { runPushAuthGuardTests } from "./test-push-auth-guard";
 import { runPushSharedTests } from "./test-push-shared";
 import { runPushRedisTests } from "./test-push-redis";
+import { runPushRedisGuardTests } from "./test-push-redis-guard";
 import { runPushRequestGuardTests } from "./test-push-request-guard";
 import { runPushRequestPayloadTests } from "./test-push-request-payloads";
 import { runPushOwnershipTests } from "./test-push-ownership";
@@ -108,6 +109,7 @@ async function runAllTests(): Promise<void> {
     { name: "push-auth-guard", run: runPushAuthGuardTests },
     { name: "push-shared", run: runPushSharedTests },
     { name: "push-redis", run: runPushRedisTests },
+    { name: "push-redis-guard", run: runPushRedisGuardTests },
     { name: "push-request-guard", run: runPushRequestGuardTests },
     { name: "push-request-payloads", run: runPushRequestPayloadTests },
     { name: "push-ownership", run: runPushOwnershipTests },

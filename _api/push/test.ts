@@ -21,7 +21,7 @@ import {
 import { getTokenOwnershipEntries, splitTokenOwnership } from "./_ownership.js";
 import { normalizePushTestPayload } from "./_payload.js";
 import { handlePushPostRequestGuards } from "./_request-guard.js";
-import { createPushRedis, getMissingPushRedisEnvVars } from "./_redis.js";
+import { createPushRedisOrRespond } from "./_redis-guard.js";
 import { summarizePushSendResults } from "./_results.js";
 import {
   removeTokensAndMetadata,
@@ -80,18 +80,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { username } = credentials;
 
-    const missingRedisEnvVars = getMissingPushRedisEnvVars();
-    if (missingRedisEnvVars.length > 0) {
-      return respondMissingEnvConfig(
-        res,
-        logger,
-        startTime,
-        "Redis",
-        missingRedisEnvVars
-      );
-    }
+    const redis = createPushRedisOrRespond(res, logger, startTime);
+    if (!redis) return;
 
-    const redis = createPushRedis();
     const isAuthorized = await validatePushAuthOrRespond(
       redis,
       credentials,
