@@ -13,6 +13,8 @@ interface PushRequestLoggerLike {
 const CORS_HEADER_NAME_REGEX = /^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/;
 export const PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH = 128;
 export const PUSH_CORS_MAX_REQUESTED_HEADER_COUNT = 50;
+const PUSH_OPTIONS_VARY_HEADER =
+  "Origin, Access-Control-Request-Method, Access-Control-Request-Headers";
 
 function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   const requestedHeaders = req.headers["access-control-request-headers"];
@@ -58,6 +60,25 @@ function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   return dedupedHeaders.length > 0 ? dedupedHeaders : undefined;
 }
 
+function getRequestedCorsMethod(req: VercelRequest): string | undefined {
+  const requestedMethod = req.headers["access-control-request-method"];
+  const requestedMethodValue = Array.isArray(requestedMethod)
+    ? requestedMethod.find(
+        (value): value is string =>
+          typeof value === "string" && value.trim().length > 0
+      )
+    : typeof requestedMethod === "string" && requestedMethod.trim().length > 0
+      ? requestedMethod
+      : undefined;
+
+  if (typeof requestedMethodValue !== "string") {
+    return undefined;
+  }
+
+  const normalizedRequestedMethod = requestedMethodValue.trim().toUpperCase();
+  return normalizedRequestedMethod.length > 0 ? normalizedRequestedMethod : undefined;
+}
+
 export function handlePushPostRequestGuards(
   req: VercelRequest,
   res: VercelResponse,
@@ -72,10 +93,19 @@ export function handlePushPostRequestGuards(
   logger.request(method, req.url || endpointPath);
 
   if (method === "OPTIONS") {
-    res.setHeader("Vary", "Origin, Access-Control-Request-Headers");
+    res.setHeader("Vary", PUSH_OPTIONS_VARY_HEADER);
     if (!isAllowedOrigin(origin)) {
       logger.response(403, Date.now() - startTime);
       res.status(403).json({ error: "Unauthorized" });
+      return true;
+    }
+
+    const requestedMethod = getRequestedCorsMethod(req);
+    if (requestedMethod && requestedMethod !== "POST") {
+      setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
+      res.setHeader("Allow", "POST, OPTIONS");
+      logger.response(405, Date.now() - startTime);
+      res.status(405).json({ error: "Method not allowed" });
       return true;
     }
 
