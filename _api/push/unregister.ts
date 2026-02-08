@@ -68,7 +68,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const redis = createPushRedis();
-    const tokenMetadataLookupConcurrency = getPushMetadataLookupConcurrency();
     const { username, token } = extractAuthFromHeaders(req.headers);
     if (!username || !token) {
       logger.response(401, Date.now() - startTime);
@@ -153,6 +152,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    const tokenMetadataLookupConcurrency = getPushMetadataLookupConcurrency();
     await redis.del(userTokensKey);
 
     const tokenOwnership = await getTokenOwnershipEntries(
