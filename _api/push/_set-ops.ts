@@ -82,6 +82,8 @@ function sumCommandCounts(commandResults: unknown[]): number | null {
 }
 
 export function getDistinctNonEmptyTokens(tokens: string[]): string[] {
+  // Intentionally keeps whitespace-only strings as-is so callers can remove
+  // those exact malformed entries from Redis sets.
   const seen = new Set<string>();
   for (const token of tokens) {
     if (typeof token !== "string") continue;

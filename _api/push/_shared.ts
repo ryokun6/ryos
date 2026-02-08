@@ -145,6 +145,8 @@ export function normalizeRedisNonNegativeCount(
   value: unknown,
   fallback: number = 0
 ): number {
+  // Normalizes common Redis client return shapes into non-negative counts.
+  // Uses safe-integer bounds to avoid lossy numeric coercion.
   if (typeof value === "bigint") {
     if (value < 0n) return fallback;
     if (value > BigInt(Number.MAX_SAFE_INTEGER)) return fallback;
