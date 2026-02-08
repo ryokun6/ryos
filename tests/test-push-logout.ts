@@ -172,16 +172,20 @@ async function testTimeoutCanBeDisabledForLookup() {
 
 async function testUnregisterSkipsWhenTokenMissing() {
   let fetchCalls = 0;
+  let warnCalls = 0;
   await unregisterPushTokenForLogout("user", "token", null, {
     fetchRuntime: async () => {
       fetchCalls += 1;
       return new Response(null, { status: 200 });
     },
     getApiUrlRuntime: (path) => path,
-    warn: () => undefined,
+    warn: () => {
+      warnCalls += 1;
+    },
   });
 
   assertEq(fetchCalls, 0);
+  assertEq(warnCalls, 0);
 }
 
 async function testUnregisterSendsScopedTokenRequest() {
