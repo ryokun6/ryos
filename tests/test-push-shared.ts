@@ -136,6 +136,7 @@ async function testNormalizeRedisNonNegativeCountHelper() {
   assertEq(normalizeRedisNonNegativeCount(BigInt(Number.MAX_SAFE_INTEGER) + 1n), 0);
 
   assertEq(normalizeRedisNonNegativeCount(-1, 7), 7);
+  assertEq(normalizeRedisNonNegativeCount("bad", -1), -1);
   assertEq(normalizeRedisNonNegativeCount(-1, Number.NaN), 0);
   assertEq(normalizeRedisNonNegativeCount(-1, 1.5), 0);
 }
