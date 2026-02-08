@@ -433,6 +433,35 @@ async function testUnsupportedMethodSetsAllowHeader() {
   });
 }
 
+async function testWhitespacePaddedGetMethodTriggersMethodGuard() {
+  await withDevelopmentEnv(async () => {
+    const req = createRawRequest("  get  ");
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 405);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Method not allowed" })
+    );
+    assertEq(mockRes.getHeader("Allow"), "POST, OPTIONS");
+    assertEq(mockRes.getHeader("Vary"), "Origin");
+    assertEq(mockLogger.requestCalls.length, 1);
+    assertEq(mockLogger.requestCalls[0].method, "GET");
+    assertEq(mockLogger.responseCalls.length, 1);
+    assertEq(mockLogger.responseCalls[0].statusCode, 405);
+  });
+}
+
 async function testLowercasePostMethodIsNormalized() {
   await withDevelopmentEnv(async () => {
     const req = createRawRequest("post");
@@ -1057,6 +1086,10 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard sets Allow header for unsupported methods",
     testUnsupportedMethodSetsAllowHeader
+  );
+  await runTest(
+    "Push request guard trims GET method before method guard",
+    testWhitespacePaddedGetMethodTriggersMethodGuard
   );
   await runTest(
     "Push request guard normalizes lowercase POST method",
