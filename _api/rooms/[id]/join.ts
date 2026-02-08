@@ -11,6 +11,7 @@ import { initLogger } from "../../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../../_utils/_cors.js";
 import { getRoom, setRoom } from "../_helpers/_redis.js";
 import { setRoomPresence, refreshRoomUserCount } from "../_helpers/_presence.js";
+import { broadcastRoomUpdated } from "../_helpers/_pusher.js";
 import type { Room } from "../_helpers/_types.js";
 
 export const runtime = "nodejs";
@@ -106,6 +107,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     const userCount = await refreshRoomUserCount(roomId);
     const updatedRoom: Room = { ...roomData, userCount };
     await setRoom(roomId, updatedRoom);
+    await broadcastRoomUpdated(roomId);
 
     logger.info("User joined room", { roomId, username, userCount });
     logger.response(200, Date.now() - startTime);

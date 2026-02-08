@@ -8,9 +8,14 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
 import { validateAuth } from "../../../_utils/auth/index.js";
 import { assertValidRoomId } from "../../../_utils/_validation.js";
-import { roomExists, deleteMessage as deleteMessageFromRedis } from "../../_helpers/_redis.js";
+import {
+  getRoom,
+  roomExists,
+  deleteMessage as deleteMessageFromRedis,
+} from "../../_helpers/_redis.js";
 import { initLogger } from "../../../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../../../_utils/_cors.js";
+import { broadcastMessageDeleted } from "../../_helpers/_pusher.js";
 
 export const runtime = "nodejs";
 
@@ -97,12 +102,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: "Room not found" });
     }
 
+    const roomData = await getRoom(roomId);
+    if (!roomData) {
+      logger.warn("Room not found during message deletion", { roomId });
+      logger.response(404, Date.now() - startTime);
+      return res.status(404).json({ error: "Room not found" });
+    }
+
     const deleted = await deleteMessageFromRedis(roomId, messageId);
     if (!deleted) {
       logger.warn("Message not found", { roomId, messageId });
       logger.response(404, Date.now() - startTime);
       return res.status(404).json({ error: "Message not found" });
     }
+
+    await broadcastMessageDeleted(roomId, messageId, roomData);
+    logger.info("Pusher message-deleted broadcast sent", { roomId, messageId });
 
     logger.info("Message deleted", { roomId, messageId });
     logger.response(200, Date.now() - startTime);

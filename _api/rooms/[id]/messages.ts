@@ -32,6 +32,7 @@ import { ensureUserExists } from "../_helpers/_users.js";
 import type { Message, Room, User } from "../_helpers/_types.js";
 import { initLogger } from "../../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../../_utils/_cors.js";
+import { broadcastNewMessage } from "../_helpers/_pusher.js";
 
 export const runtime = "nodejs";
 
@@ -312,6 +313,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await setUser(username, updatedUser);
       await createRedis().expire(`chat:users:${username}`, USER_EXPIRATION_TIME);
       await refreshRoomPresence(roomId, username);
+
+      await broadcastNewMessage(roomId, message, roomData);
+      logger.info("Pusher room-message broadcast sent", { roomId, messageId: message.id });
 
       logger.info("Message sent", { username, roomId, messageId: message.id });
       logger.response(201, Date.now() - startTime);

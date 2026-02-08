@@ -16,6 +16,7 @@ import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_
 import { getRoomsWithCountsFast } from "./_helpers/_presence.js";
 import { generateId, getCurrentTimestamp, setRoom, registerRoom } from "./_helpers/_redis.js";
 import { setRoomPresence } from "./_helpers/_presence.js";
+import { broadcastRoomCreated } from "./_helpers/_pusher.js";
 import type { Room } from "./_helpers/_types.js";
 
 export const runtime = "nodejs";
@@ -162,6 +163,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       if (type === "private") {
         await Promise.all(normalizedMembers.map((member: string) => setRoomPresence(roomId, member)));
       }
+
+      await broadcastRoomCreated(room);
+      logger.info("Pusher room-created broadcast sent", { roomId, type });
 
       logger.info("Room created", { roomId, type, name: roomName, username });
       logger.response(201, Date.now() - startTime);
