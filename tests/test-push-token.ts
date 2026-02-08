@@ -44,6 +44,24 @@ async function testTokenBoundaryValidation() {
   assertEq(normalizePushToken(invalidCharacter), null);
 }
 
+async function testTokenAllowedCharacterSet() {
+  const allowedCharsetToken = `A1:_-.${"b".repeat(30)}`;
+  const normalized = normalizePushToken(allowedCharsetToken);
+  assertEq(normalized, allowedCharsetToken);
+}
+
+async function testTokenRejectsWhitespaceAndUnicodeCharacters() {
+  const tokenWithSpace = `abc def${"a".repeat(20)}`;
+  const tokenWithTab = `abc\tdef${"b".repeat(20)}`;
+  const tokenWithNewline = `abc\ndef${"c".repeat(20)}`;
+  const tokenWithUnicode = `π-token-${"d".repeat(20)}`;
+
+  assertEq(normalizePushToken(tokenWithSpace), null);
+  assertEq(normalizePushToken(tokenWithTab), null);
+  assertEq(normalizePushToken(tokenWithNewline), null);
+  assertEq(normalizePushToken(tokenWithUnicode), null);
+}
+
 export async function runPushTokenTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-token"));
   clearResults();
@@ -57,6 +75,14 @@ export async function runPushTokenTests(): Promise<{ passed: number; failed: num
   await runTest(
     "Push token normalizer enforces token length and charset boundaries",
     testTokenBoundaryValidation
+  );
+  await runTest(
+    "Push token normalizer accepts allowed punctuation characters",
+    testTokenAllowedCharacterSet
+  );
+  await runTest(
+    "Push token normalizer rejects whitespace and unicode characters",
+    testTokenRejectsWhitespaceAndUnicodeCharacters
   );
 
   return printSummary();
