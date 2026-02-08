@@ -15,6 +15,11 @@ export function getMissingPushRedisEnvVars(
 }
 
 export function createPushRedis(): Redis {
+  const missing = getMissingPushRedisEnvVars();
+  if (missing.length > 0) {
+    throw new Error(`Missing Redis env vars: ${missing.join(", ")}`);
+  }
+
   return new Redis({
     url: process.env.REDIS_KV_REST_API_URL as string,
     token: process.env.REDIS_KV_REST_API_TOKEN as string,

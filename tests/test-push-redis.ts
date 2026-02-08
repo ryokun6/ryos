@@ -3,7 +3,7 @@
  * Tests for push Redis env helper utilities.
  */
 
-import { getMissingPushRedisEnvVars } from "../_api/push/_redis";
+import { createPushRedis, getMissingPushRedisEnvVars } from "../_api/push/_redis";
 import {
   assertEq,
   clearResults,
@@ -77,6 +77,43 @@ async function testNoMissingRedisEnvVars() {
   );
 }
 
+async function testCreatePushRedisThrowsWithoutEnv() {
+  withEnv(
+    {
+      REDIS_KV_REST_API_URL: undefined,
+      REDIS_KV_REST_API_TOKEN: undefined,
+    },
+    () => {
+      let errorMessage = "";
+      try {
+        createPushRedis();
+      } catch (error) {
+        errorMessage = error instanceof Error ? error.message : String(error);
+      }
+
+      assertEq(
+        errorMessage.includes("Missing Redis env vars"),
+        true,
+        `Expected missing-env error, got "${errorMessage}"`
+      );
+    }
+  );
+}
+
+async function testCreatePushRedisSucceedsWithEnv() {
+  withEnv(
+    {
+      REDIS_KV_REST_API_URL: "https://example.upstash.io",
+      REDIS_KV_REST_API_TOKEN: "token-value",
+    },
+    () => {
+      const redis = createPushRedis();
+      assertEq(typeof redis === "object", true);
+      assertEq(typeof (redis as { get: unknown }).get === "function", true);
+    }
+  );
+}
+
 export async function runPushRedisTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-redis"));
   clearResults();
@@ -87,6 +124,14 @@ export async function runPushRedisTests(): Promise<{ passed: number; failed: num
     testWhitespaceRedisEnvVarsTreatedMissing
   );
   await runTest("Push redis helper passes when env vars exist", testNoMissingRedisEnvVars);
+  await runTest(
+    "Push redis factory throws when env vars missing",
+    testCreatePushRedisThrowsWithoutEnv
+  );
+  await runTest(
+    "Push redis factory builds client when env vars set",
+    testCreatePushRedisSucceedsWithEnv
+  );
 
   return printSummary();
 }
