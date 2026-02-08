@@ -28,7 +28,8 @@ File: `src/lib/pusherClient.ts`
 - Hardened edge cases:
   - extra release calls are ignored safely
   - stale refcount + missing channel object is recovered via resubscribe
-  - existing channel object with zero count is reused without duplicate subscribe
+  - first local holder always performs `subscribe(...)` to guarantee active
+    subscription state
 
 ### 2) Frontend listener lifecycle hardening
 
@@ -53,6 +54,9 @@ Routes now emit matching realtime events:
 - `_api/rooms/[id]/leave.ts` → room update/delete broadcasts
 - `_api/rooms/[id]/join.ts` → `broadcastRoomUpdated`
 - `_api/presence/switch.ts` → `broadcastRoomUpdated` for previous/next rooms
+- `_api/rooms/[id]/leave.ts` additionally removes deleted private rooms from
+  `CHAT_ROOMS_SET` and clears room presence zset, preventing stale room registry
+  entries during leave-driven private room deletion
 
 ## Regression tests added
 
@@ -64,13 +68,27 @@ Routes now emit matching realtime events:
   - active vs non-active room notification gating
 - `tests/test-chat-broadcast-wiring.ts`
   - verifies critical REST routes still call expected broadcast functions
+  - verifies leave-route private-room registry cleanup wiring
+
+### 4) Chat store response guardrails
+
+File: `src/stores/useChatsStore.ts`
+
+- Added `readJsonBody(...)` helper with response `content-type` validation.
+- Applied to:
+  - `fetchRooms`
+  - `fetchMessagesForRoom`
+  - `fetchBulkMessages`
+- This prevents noisy JSON parse exceptions when frontend-only dev mode returns
+  non-JSON content for API paths; failures now degrade gracefully with warnings.
 
 ## Validation performed
 
 - Automated:
-  - `bun run test:pusher-client`
-  - `bun run test:chat-notifications`
-  - `bun run test:chat-broadcast-wiring`
+  - `bun run test:chat-regression`
+    - wraps `chat-notifications`, `pusher-client`, `chat-broadcast-wiring`
+  - `bun run tests/run-all-tests.ts chat-`
+  - `bun run tests/run-all-tests.ts pusher`
   - `bun run build`
 - Manual browser sanity:
   - repeated Chats close/reopen cycles
