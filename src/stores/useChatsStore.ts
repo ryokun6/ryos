@@ -116,6 +116,15 @@ const readJsonBody = async <T>(
   }
 };
 
+const warnedStoreIssues = new Set<string>();
+const warnChatsStoreOnce = (key: string, message: string): void => {
+  if (warnedStoreIssues.has(key)) {
+    return;
+  }
+  warnedStoreIssues.add(key);
+  console.warn(message);
+};
+
 // Save token refresh time
 const saveTokenRefreshTime = (username: string) => {
   const key = `${TOKEN_LAST_REFRESH_KEY}${username}`;
@@ -1005,7 +1014,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               "fetchRooms success response"
             );
             if (!roomsData.ok) {
-              console.warn(`[ChatsStore] ${roomsData.error}`);
+              warnChatsStoreOnce("fetchRooms-success-response", `[ChatsStore] ${roomsData.error}`);
               return { ok: false, error: "Rooms API unavailable" };
             }
 
@@ -1055,7 +1064,10 @@ export const useChatsStore = create<ChatsStoreState>()(
               "fetchMessagesForRoom success response"
             );
             if (!messagesData.ok) {
-              console.warn(`[ChatsStore] ${messagesData.error}`);
+              warnChatsStoreOnce(
+                "fetchMessagesForRoom-success-response",
+                `[ChatsStore] ${messagesData.error}`
+              );
               return { ok: false, error: "Messages API unavailable" };
             }
 
@@ -1204,7 +1216,10 @@ export const useChatsStore = create<ChatsStoreState>()(
               messagesMap?: Record<string, ApiMessage[]>;
             }>(response, "fetchBulkMessages success response");
             if (!bulkData.ok) {
-              console.warn(`[ChatsStore] ${bulkData.error}`);
+              warnChatsStoreOnce(
+                "fetchBulkMessages-success-response",
+                `[ChatsStore] ${bulkData.error}`
+              );
               return { ok: false, error: "Bulk messages API unavailable" };
             }
 
