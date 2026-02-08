@@ -83,6 +83,10 @@ Routes now emit matching realtime events:
   - missing/empty/whitespace room-id input guards
   - trimmed room-id equivalence handling
   - undefined active-room fallback behavior
+- `tests/test-chat-hook-channel-lifecycle-wiring.ts`
+  - verifies both chat hooks keep using shared ref-counted subscribe/unsubscribe
+    helpers
+  - verifies both hooks keep scoped handler unbinds (no broad event unbinds)
 - `tests/test-chat-broadcast-wiring.ts`
   - verifies critical REST routes still call expected broadcast functions
   - verifies presence-switch broadcasts both previous and next room updates
@@ -119,6 +123,7 @@ File: `src/stores/useChatsStore.ts`
 - Automated:
   - `bun run test:chat-regression`
     - wraps `chat-notifications`, `pusher-client`, `chat-broadcast-wiring`
+  - `bun run test:chat-hook-lifecycle`
   - `bun run test:pusher-regression`
     - runs all `pusher*` suites via the unified test runner
   - `bun run test:pusher-constructor-wiring`
