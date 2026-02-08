@@ -5,7 +5,11 @@
  */
 
 import { isValidPushToken } from "../_api/push/_shared";
-import { normalizePushToken } from "../src/utils/pushToken";
+import {
+  normalizePushToken,
+  PUSH_TOKEN_MAX_LENGTH,
+  PUSH_TOKEN_MIN_LENGTH,
+} from "../src/utils/pushToken";
 import {
   assertEq,
   clearResults,
@@ -15,11 +19,11 @@ import {
 } from "./test-utils";
 
 const SAMPLE_VALUES: unknown[] = [
-  "a".repeat(20),
-  "b".repeat(512),
+  "a".repeat(PUSH_TOKEN_MIN_LENGTH),
+  "b".repeat(PUSH_TOKEN_MAX_LENGTH),
   "A1:_-.".repeat(4) + "c".repeat(10),
-  "d".repeat(19),
-  "e".repeat(513),
+  "d".repeat(PUSH_TOKEN_MIN_LENGTH - 1),
+  "e".repeat(PUSH_TOKEN_MAX_LENGTH + 1),
   "invalid/token",
   "invalid token",
   "  f".repeat(20),
@@ -58,7 +62,11 @@ async function testCanonicalStringInputsMatchBackendValidation() {
 }
 
 async function testGeneratedAllowedTokensMatchBackendValidation() {
-  for (let length = 20; length <= 120; length += 10) {
+  for (
+    let length = PUSH_TOKEN_MIN_LENGTH;
+    length <= 120;
+    length += 10
+  ) {
     let token = "";
     for (let index = 0; index < length; index += 1) {
       token += ALLOWED_CHARS[(length + index) % ALLOWED_CHARS.length];

@@ -3,7 +3,11 @@
  * Tests for shared push token normalization helper.
  */
 
-import { normalizePushToken } from "../src/utils/pushToken";
+import {
+  normalizePushToken,
+  PUSH_TOKEN_MAX_LENGTH,
+  PUSH_TOKEN_MIN_LENGTH,
+} from "../src/utils/pushToken";
 import {
   assertEq,
   clearResults,
@@ -31,10 +35,10 @@ async function testAcceptsAndTrimsValidValues() {
 }
 
 async function testTokenBoundaryValidation() {
-  const minToken = "a".repeat(20);
-  const maxToken = "b".repeat(512);
-  const tooShort = "c".repeat(19);
-  const tooLong = "d".repeat(513);
+  const minToken = "a".repeat(PUSH_TOKEN_MIN_LENGTH);
+  const maxToken = "b".repeat(PUSH_TOKEN_MAX_LENGTH);
+  const tooShort = "c".repeat(PUSH_TOKEN_MIN_LENGTH - 1);
+  const tooLong = "d".repeat(PUSH_TOKEN_MAX_LENGTH + 1);
   const invalidCharacter = `${"e".repeat(30)}/${"f".repeat(30)}`;
 
   assertEq(normalizePushToken(minToken), minToken);

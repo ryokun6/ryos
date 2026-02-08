@@ -1,4 +1,9 @@
-const PUSH_TOKEN_FORMAT_REGEX = /^[A-Za-z0-9:_\-.]{20,512}$/;
+export const PUSH_TOKEN_MIN_LENGTH = 20;
+export const PUSH_TOKEN_MAX_LENGTH = 512;
+
+const PUSH_TOKEN_FORMAT_REGEX = new RegExp(
+  `^[A-Za-z0-9:_\\-.]{${PUSH_TOKEN_MIN_LENGTH},${PUSH_TOKEN_MAX_LENGTH}}$`
+);
 
 export function normalizePushToken(value: unknown): string | null {
   if (typeof value !== "string") {
