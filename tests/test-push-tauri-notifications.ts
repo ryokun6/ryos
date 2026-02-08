@@ -5,6 +5,7 @@
 
 import {
   extractNormalizedPushToken,
+  hasPushAlertContent,
   normalizePushNotificationPayload,
   normalizePushPermissionResult,
   normalizePushRegistrationErrorPayload,
@@ -205,6 +206,19 @@ async function testExtractPushAlert() {
   );
 }
 
+async function testHasPushAlertContent() {
+  assertEq(hasPushAlertContent({ aps: { alert: "Hello" } }), true);
+  assertEq(hasPushAlertContent({ aps: { alert: "   " } }), false);
+  assertEq(hasPushAlertContent({ aps: { alert: { title: "Title" } } }), true);
+  assertEq(hasPushAlertContent({ aps: { alert: { body: "Body" } } }), true);
+  assertEq(
+    hasPushAlertContent({ aps: { alert: { title: "   ", body: "   " } } }),
+    false
+  );
+  assertEq(hasPushAlertContent({ aps: { alert: 123 as unknown as string } }), false);
+  assertEq(hasPushAlertContent({}), false);
+}
+
 export async function runPushTauriNotificationsTests(): Promise<{
   passed: number;
   failed: number;
@@ -237,6 +251,10 @@ export async function runPushTauriNotificationsTests(): Promise<{
     testNormalizePushRegistrationErrorPayload
   );
   await runTest("Tauri push helper extracts alert payloads", testExtractPushAlert);
+  await runTest(
+    "Tauri push helper detects alert payload visibility",
+    testHasPushAlertContent
+  );
 
   return printSummary();
 }

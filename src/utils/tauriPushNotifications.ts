@@ -152,3 +152,22 @@ export function extractPushAlert(payload: IosPushNotificationPayload): {
 
   return { title: "Notification", body: "" };
 }
+
+export function hasPushAlertContent(payload: IosPushNotificationPayload): boolean {
+  const normalizeAlertText = (value: unknown): string =>
+    typeof value === "string" ? value.trim() : "";
+
+  const alert = payload.aps?.alert;
+  if (typeof alert === "string") {
+    return normalizeAlertText(alert).length > 0;
+  }
+
+  if (alert && typeof alert === "object") {
+    return (
+      normalizeAlertText(alert.title).length > 0 ||
+      normalizeAlertText(alert.body).length > 0
+    );
+  }
+
+  return false;
+}

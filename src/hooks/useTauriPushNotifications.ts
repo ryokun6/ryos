@@ -6,6 +6,7 @@ import { normalizePushToken } from "@/utils/pushToken";
 import {
   extractPushAlert,
   getPushToken,
+  hasPushAlertContent,
   onPushNotification,
   onPushNotificationTapped,
   onPushRegistrationError,
@@ -51,6 +52,9 @@ export function useTauriPushNotifications() {
         tokenUnlisten = () => tokenListener.unregister();
 
         const notificationListener = await onPushNotification((payload) => {
+          if (!hasPushAlertContent(payload)) {
+            return;
+          }
           const { title, body } = extractPushAlert(payload);
           if (title || body) {
             toast(title || "Notification", {
