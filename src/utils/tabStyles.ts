@@ -37,9 +37,10 @@ export function getTabStyles(currentTheme: OsThemeId): TabStyleConfig {
   const tabTriggerBase = `relative flex-1 ${isMacOSXTheme ? "" : "h-6"} px-2 ${
     isMacOSXTheme ? "" : "-mb-[1px]"
   } rounded-t shadow-none! text-[16px]`;
-  const tabContentBase = `mt-0 h-[calc(100%-2rem)] ${
-    isMacOSXTheme ? "" : "bg-white"
-  } border border-black/20`;
+  const tabContentBase = "mt-0 h-[calc(100%-2rem)]";
+  // Default content style (non-themed fallback) — kept separate to avoid
+  // conflicting bg/border classes when a theme provides its own.
+  const tabContentDefault = "bg-white border border-black/20";
 
   return {
     tabListClasses: `${tabListBase} ${
@@ -49,7 +50,11 @@ export function getTabStyles(currentTheme: OsThemeId): TabStyleConfig {
       isSystem7Theme ? tabTriggerSystem7 : isMacOSXTheme ? tabTriggerMacOSX : ""
     }`,
     tabContentClasses: `${tabContentBase} ${
-      isSystem7Theme ? tabContentSystem7 : isMacOSXTheme ? tabContentMacOSX : ""
+      isSystem7Theme
+        ? tabContentSystem7
+        : isMacOSXTheme
+        ? tabContentMacOSX
+        : tabContentDefault
     }`,
     separatorStyle: { borderColor: separatorColor },
   };
