@@ -119,7 +119,7 @@ From repo root:
 
 - `bun run test:push` — all push suites
 - `bun run test:push:helpers` — helper-focused suites only
-- `bun run test:push:cors-utils` — shared CORS helper suite only (origin/referer parsing, requested-header token filtering/dedupe, preflight vary merge/dedupe, bounded echoed requested headers and scan limits, max-age normalization, optional preflight credential-header suppression)
+- `bun run test:push:cors-utils` — shared CORS helper suite only (origin/referer parsing, requested-header token filtering/dedupe, preflight vary merge/dedupe, bounded echoed requested headers and scan limits, max-age normalization, optional preflight credential-header suppression, configured method/header normalization)
 - `bun run test:push:token` — token helper suites (shared format + normalization + parity)
 - `bun run test:push:token-shared` — shared token-format helper suite only
 - `bun run test:push:token-parity` — frontend/backend token-parity helper suite only
