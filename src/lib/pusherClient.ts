@@ -72,13 +72,18 @@ export function subscribePusherChannel(channelName: string): PusherChannel {
   const pusher = getPusherClient();
   const counts = getChannelRefCounts();
   const currentCount = counts[channelName] || 0;
+  const existingChannel = (
+    pusher as unknown as { channel: (name: string) => PusherChannel | undefined }
+  ).channel(channelName);
 
-  if (currentCount === 0) {
-    pusher.subscribe(channelName);
+  if (currentCount === 0 || !existingChannel) {
+    const subscribedChannel = pusher.subscribe(channelName);
+    counts[channelName] = currentCount + 1;
+    return subscribedChannel;
   }
 
   counts[channelName] = currentCount + 1;
-  return pusher.channel(channelName);
+  return existingChannel;
 }
 
 /**

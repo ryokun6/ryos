@@ -31,7 +31,7 @@ interface FakeChannel {
 interface FakePusher {
   subscribe: (channel: string) => FakeChannel;
   unsubscribe: (channel: string) => void;
-  channel: (channel: string) => FakeChannel;
+  channel: (channel: string) => FakeChannel | undefined;
 }
 
 const globalWithPusherState = globalThis as typeof globalThis & {
@@ -170,6 +170,29 @@ async function main() {
     assertEq(calls[0].channel, "room-f");
     assertEq(calls[1].type, "unsubscribe");
     assertEq(calls[1].channel, "room-f");
+  });
+
+  await runTest("re-subscribes if channel lookup is missing", async () => {
+    const calls: FakeCall[] = [];
+    const fakePusher: FakePusher = {
+      subscribe: (channel) => {
+        calls.push({ type: "subscribe", channel });
+        return { name: channel, bind: () => undefined, unbind: () => undefined };
+      },
+      unsubscribe: (channel) => {
+        calls.push({ type: "unsubscribe", channel });
+      },
+      channel: () => undefined,
+    };
+
+    globalWithPusherState.__pusherClient = fakePusher;
+    globalWithPusherState.__pusherChannelRefCounts = { "room-g": 1 };
+
+    subscribePusherChannel("room-g");
+
+    assertEq(calls.length, 1, "Expected recovery subscribe when channel is missing");
+    assertEq(calls[0].type, "subscribe");
+    assertEq(calls[0].channel, "room-g");
   });
 
   const { failed } = printSummary();
