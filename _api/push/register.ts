@@ -1,15 +1,11 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { validateAuth } from "../_utils/auth/index.js";
-import {
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  setCorsHeaders,
-} from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
 import {
   respondInternalServerError,
   respondMissingEnvConfig,
 } from "./_errors.js";
+import { handlePushPostRequestGuards } from "./_request-guard.js";
 import { createPushRedis, getMissingPushRedisEnvVars } from "./_redis.js";
 import {
   PUSH_TOKEN_TTL_SECONDS,
@@ -28,31 +24,17 @@ export const maxDuration = 15;
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { logger } = initLogger();
   const startTime = Date.now();
-  const origin = getEffectiveOrigin(req);
 
-  logger.request(req.method || "POST", req.url || "/api/push/register");
-
-  if (req.method === "OPTIONS") {
-    if (!isAllowedOrigin(origin)) {
-      logger.response(403, Date.now() - startTime);
-      return res.status(403).json({ error: "Unauthorized" });
-    }
-    setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
-    logger.response(204, Date.now() - startTime);
-    return res.status(204).end();
-  }
-
-  if (!isAllowedOrigin(origin)) {
-    logger.response(403, Date.now() - startTime);
-    return res.status(403).json({ error: "Unauthorized" });
-  }
-
-  setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
-
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST, OPTIONS");
-    logger.response(405, Date.now() - startTime);
-    return res.status(405).json({ error: "Method not allowed" });
+  if (
+    handlePushPostRequestGuards(
+      req,
+      res,
+      logger,
+      startTime,
+      "/api/push/register"
+    )
+  ) {
+    return;
   }
 
   try {
