@@ -166,8 +166,12 @@ export function useBackgroundChatNotifications() {
 
       addMessageToRoom(messageWithTimestamp.roomId, messageWithTimestamp);
 
-      // Skip toast/unread updates if Chats is already open; the in-app listener handles those.
-      if (isChatsAppOpen()) {
+      const { currentRoomId } = useChatsStore.getState();
+      const chatsOpen = isChatsAppOpen();
+
+      // Keep behavior aligned with in-app listener during open/close handoff:
+      // if Chats is open and currently viewing this room, do not increment unread/toast.
+      if (chatsOpen && currentRoomId === messageWithTimestamp.roomId) {
         return;
       }
 
