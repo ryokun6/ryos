@@ -170,6 +170,26 @@ async function testTimeoutCanBeDisabledForLookup() {
   assertEq(warnCalls, 0);
 }
 
+async function testNegativeLookupTimeoutBehavesAsDisabled() {
+  let warnCalls = 0;
+  const validToken = "y".repeat(64);
+
+  const token = await resolvePushTokenForLogout({
+    isTauriIOSRuntime: () => true,
+    getPushTokenRuntime: async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return validToken;
+    },
+    tokenLookupTimeoutMs: -1,
+    warn: () => {
+      warnCalls += 1;
+    },
+  });
+
+  assertEq(token, validToken);
+  assertEq(warnCalls, 0);
+}
+
 async function testUnregisterSkipsWhenTokenMissing() {
   let fetchCalls = 0;
   let warnCalls = 0;
@@ -380,6 +400,10 @@ export async function runPushLogoutTests(): Promise<{ passed: number; failed: nu
   await runTest(
     "Push logout resolver supports disabling lookup timeout",
     testTimeoutCanBeDisabledForLookup
+  );
+  await runTest(
+    "Push logout resolver treats negative timeout as disabled",
+    testNegativeLookupTimeoutBehavesAsDisabled
   );
   await runTest(
     "Push logout unregister skips network call without token",
