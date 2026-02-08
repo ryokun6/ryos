@@ -262,6 +262,7 @@ export interface MockVercelResponseHarness {
   res: VercelResponse;
   getStatusCode: () => number;
   getJsonPayload: () => unknown;
+  getSendPayload: () => unknown;
   getEndCallCount: () => number;
   getHeader: (name: string) => string | undefined;
 }
@@ -289,6 +290,7 @@ export interface MockPushRequestLoggerHarness {
 export function createMockVercelResponseHarness(): MockVercelResponseHarness {
   let statusCode = 0;
   let jsonPayload: unknown = null;
+  let sendPayload: unknown = null;
   let endCallCount = 0;
   const headers = new Map<string, string>();
 
@@ -305,6 +307,10 @@ export function createMockVercelResponseHarness(): MockVercelResponseHarness {
       jsonPayload = payload;
       return this;
     },
+    send(this: unknown, payload: unknown) {
+      sendPayload = payload;
+      return this;
+    },
     end(this: unknown) {
       endCallCount += 1;
       return this;
@@ -315,6 +321,7 @@ export function createMockVercelResponseHarness(): MockVercelResponseHarness {
     res: response as unknown as VercelResponse,
     getStatusCode: () => statusCode,
     getJsonPayload: () => jsonPayload,
+    getSendPayload: () => sendPayload,
     getEndCallCount: () => endCallCount,
     getHeader: (name: string) => headers.get(name.toLowerCase()),
   };

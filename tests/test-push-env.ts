@@ -192,6 +192,24 @@ async function testMockVercelResponseHarnessSupportsStatusJsonAndEndChaining() {
   assertEq(mockRes.getEndCallCount(), 1);
 }
 
+async function testMockVercelResponseHarnessSupportsSendChaining() {
+  const mockRes = createMockVercelResponseHarness();
+  const responseLike = mockRes.res as {
+    status: (code: number) => unknown;
+    send: (payload: unknown) => unknown;
+  };
+
+  const statusResult = responseLike.status(403);
+  const sendResult = (statusResult as { send: (payload: unknown) => unknown }).send(
+    "Unauthorized"
+  );
+
+  assertEq(statusResult, mockRes.res);
+  assertEq(sendResult, mockRes.res);
+  assertEq(mockRes.getStatusCode(), 403);
+  assertEq(mockRes.getSendPayload(), "Unauthorized");
+}
+
 async function testMockPushLoggerHarnessTracksCallsWhenWarnEnabled() {
   const mockLogger = createMockPushLoggerHarness();
   mockLogger.logger.warn?.("warn-message", { code: 1 });
@@ -272,6 +290,10 @@ export async function runPushEnvTests(): Promise<{ passed: number; failed: numbe
   await runTest(
     "mock vercel response harness supports status/json/end chaining",
     testMockVercelResponseHarnessSupportsStatusJsonAndEndChaining
+  );
+  await runTest(
+    "mock vercel response harness supports status/send chaining",
+    testMockVercelResponseHarnessSupportsSendChaining
   );
   await runTest(
     "mock push logger harness tracks calls when warn is enabled",

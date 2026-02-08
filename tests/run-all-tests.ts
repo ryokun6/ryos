@@ -17,6 +17,7 @@ import { runMediaTests } from "./test-media";
 import { runAuthExtraTests } from "./test-auth-extra";
 import { runRoomsExtraTests } from "./test-rooms-extra";
 import { runPushApnsTests } from "./test-push-apns";
+import { runPushCorsUtilsTests } from "./test-push-cors-utils";
 import { runPushEnvTests } from "./test-push-env";
 import { runPushLogoutTests } from "./test-push-logout";
 import { runPushTauriNotificationsTests } from "./test-push-tauri-notifications";
@@ -112,6 +113,7 @@ async function runAllTests(): Promise<void> {
     { name: "auth-extra", run: runAuthExtraTests },
     { name: "rooms-extra", run: runRoomsExtraTests },
     { name: "push-env", run: runPushEnvTests },
+    { name: "push-cors-utils", run: runPushCorsUtilsTests },
     { name: "push-token-shared", run: runPushTokenSharedTests },
     { name: "push-token", run: runPushTokenTests },
     { name: "push-token-parity", run: runPushTokenParityTests },
