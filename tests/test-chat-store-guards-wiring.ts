@@ -52,6 +52,27 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
     );
   });
 
+  await runTest("dedupes guard warnings with endpoint-specific keys", async () => {
+    const source = readStoreSource();
+
+    assert(
+      /warnChatsStoreOnce\s*\(\s*"fetchRooms-success-response"/.test(source),
+      "Expected dedupe warning key for fetchRooms"
+    );
+    assert(
+      /warnChatsStoreOnce\s*\(\s*"fetchMessagesForRoom-success-response"/.test(
+        source
+      ),
+      "Expected dedupe warning key for fetchMessagesForRoom"
+    );
+    assert(
+      /warnChatsStoreOnce\s*\(\s*"fetchBulkMessages-success-response"/.test(
+        source
+      ),
+      "Expected dedupe warning key for fetchBulkMessages"
+    );
+  });
+
   console.log(section("Cooldown availability checks"));
   await runTest("checks cooldown gate for each chat fetch endpoint", async () => {
     const source = readStoreSource();
@@ -71,6 +92,14 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
       1,
       "Expected bulk-messages fetcher cooldown gate"
     );
+  });
+
+  await runTest("uses a positive cooldown duration constant", async () => {
+    const source = readStoreSource();
+    const match = source.match(/API_UNAVAILABLE_COOLDOWN_MS\s*=\s*([0-9_]+)/);
+    assert(match?.[1], "Expected API_UNAVAILABLE_COOLDOWN_MS declaration");
+    const parsedMs = Number((match?.[1] || "").replaceAll("_", ""));
+    assert(parsedMs > 0, "Expected positive API_UNAVAILABLE_COOLDOWN_MS");
   });
 
   await runTest("marks cooldown from parse guard and network failures", async () => {
