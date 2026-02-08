@@ -77,6 +77,24 @@ async function testWithPatchedEnvRestoresAfterAsyncError() {
   assertEq(process.env[key], originalValue);
 }
 
+async function testWithPatchedEnvRestoresAfterSyncError() {
+  const key = "PUSH_ENV_TEST_KEY_SYNC_ERROR";
+  const originalValue = process.env[key];
+  let errorMessage = "";
+
+  try {
+    withPatchedEnv({ [key]: "patched-value" }, () => {
+      assertEq(process.env[key], "patched-value");
+      throw new Error("expected-sync-test-error");
+    });
+  } catch (error) {
+    errorMessage = error instanceof Error ? error.message : String(error);
+  }
+
+  assertEq(errorMessage, "expected-sync-test-error");
+  assertEq(process.env[key], originalValue);
+}
+
 export async function runPushEnvTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-env"));
   clearResults();
@@ -91,6 +109,10 @@ export async function runPushEnvTests(): Promise<{ passed: number; failed: numbe
   await runTest(
     "withPatchedEnv restores values after async callback throws",
     testWithPatchedEnvRestoresAfterAsyncError
+  );
+  await runTest(
+    "withPatchedEnv restores values after sync callback throws",
+    testWithPatchedEnvRestoresAfterSyncError
   );
 
   return printSummary();
