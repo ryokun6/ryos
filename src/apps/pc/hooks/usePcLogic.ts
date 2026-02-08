@@ -127,6 +127,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
 
   useEffect(() => {
     if (!isWindowOpen && dosPropsRef.current) {
+      const container = containerRef.current;
       console.log("Stopping dosbox instance...");
       dosPropsRef.current
         .stop()
@@ -134,16 +135,16 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
           console.log("Dosbox instance stopped");
           dosPropsRef.current = null;
           setIsGameRunning(false);
-          if (containerRef.current) {
-            containerRef.current.innerHTML = "";
+          if (container) {
+            container.innerHTML = "";
           }
         })
         .catch((error) => {
           console.error("Error stopping dosbox:", error);
           dosPropsRef.current = null;
           setIsGameRunning(false);
-          if (containerRef.current) {
-            containerRef.current.innerHTML = "";
+          if (container) {
+            container.innerHTML = "";
           }
         });
     }

@@ -98,11 +98,12 @@ export function useSound(soundPath: string, volume: number = 0.3) {
     gainNodeRef.current.connect(getAudioContext().destination);
 
     return () => {
+      const activeSources = instanceSourcesRef.current;
       if (gainNodeRef.current) {
         gainNodeRef.current.disconnect();
       }
       // Stop all instance sources on cleanup
-      instanceSourcesRef.current.forEach((source) => {
+      activeSources.forEach((source) => {
         try {
           source.stop();
           source.disconnect();
@@ -110,7 +111,7 @@ export function useSound(soundPath: string, volume: number = 0.3) {
           // Source may have already ended
         }
       });
-      instanceSourcesRef.current.clear();
+      activeSources.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only create gain node once on mount

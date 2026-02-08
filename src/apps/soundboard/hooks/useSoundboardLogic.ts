@@ -107,6 +107,7 @@ export function useSoundboardLogic({
   const [showWaveforms, setShowWaveforms] = useState(!isMobileSafari);
   const [showEmojis, setShowEmojis] = useState(true);
   const activeSlotRef = useRef<number | null>(null);
+  const lastResetBoardIdRef = useRef<string | null>(null);
 
   const handleRecordingComplete = (base64Data: string, format: string) => {
     const activeSlot = activeSlotRef.current;
@@ -161,13 +162,17 @@ export function useSoundboardLogic({
   }, [micPermissionGranted, selectedDeviceId, storeSetSelectedDeviceId]);
 
   useEffect(() => {
+    if (lastResetBoardIdRef.current === activeBoardId) {
+      return;
+    }
+    lastResetBoardIdRef.current = activeBoardId;
     playbackStates.forEach((state, index) => {
       if (state.isPlaying) {
         stopSound(index);
       }
     });
     storeResetPlaybackStates();
-  }, [activeBoardId]);
+  }, [activeBoardId, playbackStates, stopSound, storeResetPlaybackStates]);
 
   const startRecording = (index: number) => {
     activeSlotRef.current = index;

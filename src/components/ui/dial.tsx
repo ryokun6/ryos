@@ -129,7 +129,7 @@ const Dial = React.forwardRef<HTMLDivElement, DialProps>(
         document.removeEventListener("mouseup", handleGlobalMouseUp);
         document.removeEventListener("touchend", handleGlobalTouchEnd);
       };
-    }, [isDragging, isDraggingValue, startX, startValue, min, max, step]);
+    }, [isDragging, isDraggingValue, startX, startValue, min, max, step, handleMove]);
 
     // Size classes
     const sizeClasses = {
