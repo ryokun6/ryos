@@ -81,6 +81,8 @@ The wrapper includes a local `ios-push` Tauri plugin that bridges APNs into the 
   - `POST /api/push/register`
   - `POST /api/push/unregister`
   - `POST /api/push/test` (authenticated test send)
+- On logout, the frontend resolves the local APNs token and attempts a token-scoped
+  unregister request before auth logout (best effort).
 
 ### iOS native setup (required on macOS/Xcode)
 
