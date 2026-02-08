@@ -116,7 +116,7 @@ From repo root:
 
 - `bun run test:push` — all push suites
 - `bun run test:push:helpers` — helper-focused suites only
-- `bun run test:push:token` — token helper suites (normalization + parity)
+- `bun run test:push:token` — token helper suites (shared format + normalization + parity)
 - `bun run test:push:token-shared` — shared token-format helper suite only
 - `bun run test:push:token-parity` — frontend/backend token-parity helper suite only
 - `bun run test:push:tauri` — tauri-bridge helper suite only
@@ -136,7 +136,7 @@ From repo root:
 - `bun run test:push-auth-order` — auth-first failure-path behavior checks
 - `bun run check:push` — lint + all push suites + build
 - `bun run check:push:helpers` — lint + helper suites
-- `bun run check:push:token` — lint + token-normalization helper suite
+- `bun run check:push:token` — lint + token helper suites (shared format + normalization + parity)
 - `bun run check:push:token-shared` — lint + shared token-format helper suite
 - `bun run check:push:token-parity` — lint + token-parity helper suite
 - `bun run check:push:tauri` — lint + tauri helper suite
