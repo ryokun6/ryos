@@ -8,6 +8,7 @@ import {
   assertEq,
   clearResults,
   createMockPushLoggerHarness,
+  createMockPushRequestLoggerHarness,
   createMockVercelResponseHarness,
   printSummary,
   runTest,
@@ -220,6 +221,19 @@ async function testMockPushLoggerHarnessCanOmitWarn() {
   assertEq(mockLogger.responseCalls[0].statusCode, 500);
 }
 
+async function testMockPushRequestLoggerHarnessTracksRequestAndResponseCalls() {
+  const mockLogger = createMockPushRequestLoggerHarness();
+  mockLogger.logger.request("POST", "/api/push/register");
+  mockLogger.logger.response(204, 8);
+
+  assertEq(mockLogger.requestCalls.length, 1);
+  assertEq(mockLogger.requestCalls[0].method, "POST");
+  assertEq(mockLogger.requestCalls[0].url, "/api/push/register");
+  assertEq(mockLogger.responseCalls.length, 1);
+  assertEq(mockLogger.responseCalls[0].statusCode, 204);
+  assertEq(mockLogger.responseCalls[0].duration, 8);
+}
+
 export async function runPushEnvTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-env"));
   clearResults();
@@ -266,6 +280,10 @@ export async function runPushEnvTests(): Promise<{ passed: number; failed: numbe
   await runTest(
     "mock push logger harness supports warn-less logger shape",
     testMockPushLoggerHarnessCanOmitWarn
+  );
+  await runTest(
+    "mock push request logger harness tracks request and response calls",
+    testMockPushRequestLoggerHarnessTracksRequestAndResponseCalls
   );
 
   return printSummary();
