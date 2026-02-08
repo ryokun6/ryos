@@ -862,6 +862,29 @@ async function testAllowedOriginIgnoresDisallowedReferer() {
   });
 }
 
+async function testMissingOriginAndRefererIsRejected() {
+  await withRuntimeEnv("development", async () => {
+    const req = createRequestWithHeaders("POST", {}, "/api/push/register");
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 403);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Unauthorized" })
+    );
+  });
+}
+
 async function testUnknownRuntimeEnvFallsBackToDevelopmentRules() {
   await withCustomRuntimeEnv("staging", async () => {
     const req = createRequest("POST", "http://localhost:3000");
@@ -1035,6 +1058,10 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard uses allowed origin even with disallowed referer",
     testAllowedOriginIgnoresDisallowedReferer
+  );
+  await runTest(
+    "Push request guard rejects requests missing origin and referer",
+    testMissingOriginAndRefererIsRejected
   );
   await runTest(
     "Push request guard falls back to development rules for unknown runtime env",
