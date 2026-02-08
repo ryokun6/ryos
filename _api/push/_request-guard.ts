@@ -18,7 +18,7 @@ export function handlePushPostRequestGuards(
   endpointPath: string
 ): boolean {
   const origin = getEffectiveOrigin(req);
-  const method = (req.method || "POST").toUpperCase();
+  const method = (req.method || "POST").trim().toUpperCase();
   logger.request(method, req.url || endpointPath);
 
   if (method === "OPTIONS") {

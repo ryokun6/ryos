@@ -251,6 +251,27 @@ async function testLowercasePostMethodIsNormalized() {
   });
 }
 
+async function testWhitespacePaddedPostMethodIsNormalized() {
+  await withDevelopmentEnv(async () => {
+    const req = createRawRequest("  post  ");
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockLogger.requestCalls.length, 1);
+    assertEq(mockLogger.requestCalls[0].method, "POST");
+    assertEq(mockLogger.responseCalls.length, 0);
+  });
+}
+
 async function testMissingMethodDefaultsToPost() {
   await withDevelopmentEnv(async () => {
     const req = createRawRequest(undefined);
@@ -275,6 +296,30 @@ async function testMissingMethodDefaultsToPost() {
 async function testLowercaseOptionsMethodHandledAsPreflight() {
   await withDevelopmentEnv(async () => {
     const req = createRawRequest("options");
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getEndCallCount(), 1);
+    assertEq(mockLogger.requestCalls.length, 1);
+    assertEq(mockLogger.requestCalls[0].method, "OPTIONS");
+    assertEq(mockLogger.responseCalls.length, 1);
+    assertEq(mockLogger.responseCalls[0].statusCode, 204);
+  });
+}
+
+async function testWhitespacePaddedOptionsMethodHandledAsPreflight() {
+  await withDevelopmentEnv(async () => {
+    const req = createRawRequest("  options ");
     const mockRes = createMockVercelResponseHarness();
     const mockLogger = createMockLogger();
 
@@ -768,12 +813,20 @@ export async function runPushRequestGuardTests(): Promise<{
     testLowercasePostMethodIsNormalized
   );
   await runTest(
+    "Push request guard normalizes whitespace-padded POST method",
+    testWhitespacePaddedPostMethodIsNormalized
+  );
+  await runTest(
     "Push request guard defaults missing method to POST",
     testMissingMethodDefaultsToPost
   );
   await runTest(
     "Push request guard normalizes lowercase OPTIONS method",
     testLowercaseOptionsMethodHandledAsPreflight
+  );
+  await runTest(
+    "Push request guard normalizes whitespace-padded OPTIONS method",
+    testWhitespacePaddedOptionsMethodHandledAsPreflight
   );
   await runTest(
     "Push request guard falls back to endpoint path when URL missing",
