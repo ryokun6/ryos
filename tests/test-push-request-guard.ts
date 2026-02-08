@@ -517,6 +517,37 @@ async function testAllowedOptionsPreflightFiltersTooLongRequestedHeaders() {
   });
 }
 
+async function testAllowedOptionsPreflightAcceptsMaxLengthRequestedHeader() {
+  await withDevelopmentEnv(async () => {
+    const maxLengthHeader = `x-${"a".repeat(PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH - 2)}`;
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-headers": `${maxLengthHeader}, authorization`,
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Headers"),
+      `${maxLengthHeader}, authorization`
+    );
+  });
+}
+
 async function testAllowedOptionsPreflightCapsRequestedHeaderCount() {
   await withDevelopmentEnv(async () => {
     const requestedHeaders = Array.from(
@@ -1474,6 +1505,10 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard filters overlong requested preflight headers",
     testAllowedOptionsPreflightFiltersTooLongRequestedHeaders
+  );
+  await runTest(
+    "Push request guard accepts max-length requested preflight headers",
+    testAllowedOptionsPreflightAcceptsMaxLengthRequestedHeader
   );
   await runTest(
     "Push request guard caps requested preflight header count",
