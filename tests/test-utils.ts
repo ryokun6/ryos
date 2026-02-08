@@ -299,6 +299,9 @@ export function createMockVercelResponseHarness(): MockVercelResponseHarness {
       headers.set(name.toLowerCase(), String(value));
       return this;
     },
+    getHeader(name: string) {
+      return headers.get(name.toLowerCase());
+    },
     status(this: unknown, code: number) {
       statusCode = code;
       return this;

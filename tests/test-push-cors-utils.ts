@@ -84,6 +84,7 @@ async function testSetCorsHeadersDefaultAndCustomBehavior() {
   const defaultRes = createMockVercelResponseHarness();
   setCorsHeaders(defaultRes.res, "http://localhost:3000");
   assertEq(defaultRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+  assertEq(defaultRes.getHeader("Vary"), "Origin");
   assertEq(defaultRes.getHeader("Access-Control-Allow-Methods"), "GET, POST, OPTIONS");
   assertEq(
     defaultRes.getHeader("Access-Control-Allow-Headers"),
@@ -100,10 +101,22 @@ async function testSetCorsHeadersDefaultAndCustomBehavior() {
     maxAge: 120,
   });
   assertEq(customRes.getHeader("Access-Control-Allow-Origin"), undefined);
+  assertEq(customRes.getHeader("Vary"), undefined);
   assertEq(customRes.getHeader("Access-Control-Allow-Methods"), "POST, OPTIONS");
   assertEq(customRes.getHeader("Access-Control-Allow-Headers"), "X-Test");
   assertEq(customRes.getHeader("Access-Control-Allow-Credentials"), undefined);
   assertEq(customRes.getHeader("Access-Control-Max-Age"), "120");
+}
+
+async function testSetCorsHeadersAppendsOriginToExistingVaryHeader() {
+  const res = createMockVercelResponseHarness();
+  (res.res as { setHeader: (name: string, value: unknown) => unknown }).setHeader(
+    "Vary",
+    "Accept-Encoding"
+  );
+
+  setCorsHeaders(res.res, "http://localhost:3000");
+  assertEq(res.getHeader("Vary"), "Accept-Encoding, Origin");
 }
 
 async function testHandlePreflightRejectsUnauthorizedOrigins() {
@@ -117,6 +130,7 @@ async function testHandlePreflightRejectsUnauthorizedOrigins() {
     assertEq(handled, true);
     assertEq(res.getStatusCode(), 403);
     assertEq(res.getSendPayload(), "Unauthorized");
+    assertEq(res.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
   });
 }
 
@@ -132,6 +146,7 @@ async function testHandlePreflightAllowsOriginAndEchoesRequestedHeaders() {
     assertEq(handled, true);
     assertEq(res.getStatusCode(), 204);
     assertEq(res.getEndCallCount(), 1);
+    assertEq(res.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
     assertEq(res.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
     assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-Test, X-Username");
     assertEq(res.getHeader("Access-Control-Allow-Methods"), "GET, POST, OPTIONS");
@@ -149,6 +164,7 @@ async function testHandlePreflightHandlesLowercaseOptionsMethod() {
     assertEq(handled, true);
     assertEq(res.getStatusCode(), 204);
     assertEq(res.getEndCallCount(), 1);
+    assertEq(res.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
   });
 }
 
@@ -163,6 +179,7 @@ async function testHandlePreflightHandlesWhitespacePaddedOptionsMethod() {
     assertEq(handled, true);
     assertEq(res.getStatusCode(), 204);
     assertEq(res.getEndCallCount(), 1);
+    assertEq(res.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
   });
 }
 
@@ -180,6 +197,7 @@ async function testHandlePreflightFallsBackToConfiguredHeadersWhenRequestedHeade
     });
     assertEq(handled, true);
     assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Vary"), "Origin, Access-Control-Request-Headers");
     assertEq(res.getHeader("Access-Control-Allow-Methods"), "POST, OPTIONS");
     assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-App-Header");
     assertEq(res.getHeader("Access-Control-Max-Age"), "300");
@@ -224,6 +242,10 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS header setter applies default and custom options",
     testSetCorsHeadersDefaultAndCustomBehavior
+  );
+  await runTest(
+    "CORS header setter appends Origin to existing Vary values",
+    testSetCorsHeadersAppendsOriginToExistingVaryHeader
   );
   await runTest(
     "CORS preflight helper rejects unauthorized origins",

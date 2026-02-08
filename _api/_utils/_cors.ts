@@ -21,6 +21,50 @@ function getHeader(req: VercelRequest, name: string): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function splitTrimmedHeaderTokens(value: string): string[] {
+  return value
+    .split(",")
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0);
+}
+
+function appendVaryHeaders(res: VercelResponse, tokens: string[]): void {
+  const responseWithGetHeader = res as unknown as {
+    getHeader?: (name: string) => unknown;
+  };
+  const existingRaw = responseWithGetHeader.getHeader?.("Vary");
+
+  const existingValues: string[] = [];
+  if (typeof existingRaw === "string") {
+    existingValues.push(...splitTrimmedHeaderTokens(existingRaw));
+  } else if (Array.isArray(existingRaw)) {
+    for (const value of existingRaw) {
+      if (typeof value === "string") {
+        existingValues.push(...splitTrimmedHeaderTokens(value));
+      }
+    }
+  }
+
+  const mergedValues: string[] = [];
+  const seen = new Set<string>();
+
+  const addValue = (value: string) => {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) return;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    mergedValues.push(trimmed);
+  };
+
+  for (const value of existingValues) addValue(value);
+  for (const value of tokens) addValue(value);
+
+  if (mergedValues.length > 0) {
+    res.setHeader("Vary", mergedValues.join(", "));
+  }
+}
+
 const PROD_ALLOWED_ORIGIN = "https://os.ryo.lu";
 const TAILSCALE_ALLOWED_SUFFIX = ".tailb4fa61.ts.net";
 const LOCALHOST_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
@@ -125,6 +169,8 @@ export function handlePreflight(
   const normalizedMethod =
     typeof req.method === "string" ? req.method.trim().toUpperCase() : "";
   if (normalizedMethod !== "OPTIONS") return false;
+
+  appendVaryHeaders(res, ["Origin", "Access-Control-Request-Headers"]);
   
   const origin = getEffectiveOrigin(req);
   if (!origin || !isAllowedOrigin(origin)) {
@@ -175,6 +221,7 @@ export function setCorsHeaders(
 
   if (origin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
+    appendVaryHeaders(res, ["Origin"]);
   }
   res.setHeader("Access-Control-Allow-Methods", methods.join(", "));
   res.setHeader("Access-Control-Allow-Headers", headers.join(", "));
