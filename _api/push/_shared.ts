@@ -126,6 +126,10 @@ export function extractBearerToken(authHeader: string | null | undefined): strin
 }
 
 export function isRedisPositiveCount(value: unknown): boolean {
+  if (typeof value === "bigint") {
+    return value > 0n;
+  }
+
   if (typeof value === "number") {
     return Number.isFinite(value) && value > 0;
   }

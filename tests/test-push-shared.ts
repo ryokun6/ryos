@@ -84,6 +84,8 @@ async function testAuthExtractionFromHeaders() {
 }
 
 async function testRedisPositiveCountHelper() {
+  assertEq(isRedisPositiveCount(1n), true);
+  assertEq(isRedisPositiveCount(0n), false);
   assertEq(isRedisPositiveCount(1), true);
   assertEq(isRedisPositiveCount(2), true);
   assertEq(isRedisPositiveCount(0), false);
