@@ -114,6 +114,7 @@ From repo root:
 
 - `bun run test:push` — all push suites
 - `bun run test:push:helpers` — helper-focused suites only
+- `bun run test:push:config-guards` — Redis/APNs config guard suites only
 - `bun run test:push:guards` — request/auth/config guard-focused suites only
 - `bun run test:push:api` — API-facing suites only
 - `bun run test:push-auth-guard` — shared auth extraction/validation helper tests
@@ -123,6 +124,7 @@ From repo root:
 - `bun run test:push-auth-order` — auth-first failure-path behavior checks
 - `bun run check:push` — lint + all push suites + build
 - `bun run check:push:helpers` — lint + helper suites
+- `bun run check:push:config-guards` — lint + Redis/APNs config guard suites
 - `bun run check:push:guards` — lint + guard suites
 - `bun run check:push:api` — lint + API-facing suites
 - `bun run check:push:aggregate` — lint + aggregate summary suite + build
