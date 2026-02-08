@@ -26,6 +26,7 @@ export const PUSH_ALLOWED_HEADERS = [
   "X-Username",
 ] as const;
 export const PUSH_ALLOW_HEADERS_VALUE = PUSH_ALLOWED_HEADERS.join(", ");
+const INVALID_REQUESTED_METHOD = "__INVALID__";
 
 function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
   const requestedHeaders = req.headers["access-control-request-headers"];
@@ -103,10 +104,10 @@ function getRequestedCorsMethod(req: VercelRequest): string | undefined {
     return undefined;
   }
   if (normalizedRequestedMethod.length > PUSH_CORS_MAX_REQUESTED_METHOD_LENGTH) {
-    return "__INVALID__";
+    return INVALID_REQUESTED_METHOD;
   }
   if (!CORS_METHOD_NAME_REGEX.test(normalizedRequestedMethod)) {
-    return "__INVALID__";
+    return INVALID_REQUESTED_METHOD;
   }
   return normalizedRequestedMethod;
 }
