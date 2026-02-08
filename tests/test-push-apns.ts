@@ -265,6 +265,13 @@ function withEnv<T>(envPatch: Record<string, string | undefined>, run: () => T):
 }
 
 async function testApnsEnvValidationHelpers() {
+  const explicitMissing = getMissingApnsEnvVars({
+    APNS_KEY_ID: "ABC123DEFG",
+    APNS_TEAM_ID: "TEAM123ABC",
+    APNS_BUNDLE_ID: "lu.ryo.os",
+  } as NodeJS.ProcessEnv);
+  assertEq(explicitMissing.join(","), "APNS_PRIVATE_KEY");
+
   withEnv(
     {
       APNS_KEY_ID: undefined,
