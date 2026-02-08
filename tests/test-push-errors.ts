@@ -4,7 +4,10 @@
  */
 
 import type { VercelResponse } from "@vercel/node";
-import { respondInternalServerError } from "../_api/push/_errors";
+import {
+  respondInternalServerError,
+  respondMissingEnvConfig,
+} from "../_api/push/_errors";
 import {
   assertEq,
   clearResults,
@@ -63,11 +66,71 @@ async function testRespondInternalServerError() {
   );
 }
 
+async function testRespondMissingEnvConfig() {
+  const loggedWarnings: Array<{ message: string; data: unknown }> = [];
+  const loggedResponses: Array<{ statusCode: number; duration?: number }> = [];
+  let statusCode = 0;
+  let responsePayload: unknown = null;
+
+  const logger = {
+    warn: (message: string, data?: unknown) => {
+      loggedWarnings.push({ message, data });
+    },
+    error: () => {
+      // not expected in this test
+    },
+    response: (code: number, duration?: number) => {
+      loggedResponses.push({ statusCode: code, duration });
+    },
+  };
+
+  const res = {
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      responsePayload = payload;
+      return payload;
+    },
+  };
+
+  const result = respondMissingEnvConfig(
+    res as unknown as VercelResponse,
+    logger,
+    Date.now() - 25,
+    "Redis",
+    ["REDIS_KV_REST_API_URL", "REDIS_KV_REST_API_TOKEN"]
+  );
+
+  assertEq(statusCode, 500);
+  assertEq(
+    JSON.stringify(responsePayload),
+    JSON.stringify({
+      error: "Redis is not configured.",
+      missingEnvVars: ["REDIS_KV_REST_API_URL", "REDIS_KV_REST_API_TOKEN"],
+    })
+  );
+  assertEq(loggedWarnings.length, 1);
+  assertEq(loggedWarnings[0].message, "Redis is not configured");
+  assertEq(loggedResponses.length, 1);
+  assertEq(loggedResponses[0].statusCode, 500);
+  assertEq(typeof loggedResponses[0].duration === "number", true);
+  assertEq(
+    JSON.stringify(result),
+    JSON.stringify({
+      error: "Redis is not configured.",
+      missingEnvVars: ["REDIS_KV_REST_API_URL", "REDIS_KV_REST_API_TOKEN"],
+    })
+  );
+}
+
 export async function runPushErrorsTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-errors"));
   clearResults();
 
   await runTest("Push internal server error helper", testRespondInternalServerError);
+  await runTest("Push missing-env responder helper", testRespondMissingEnvConfig);
 
   return printSummary();
 }

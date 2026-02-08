@@ -16,7 +16,10 @@ import {
   getApnsSendConcurrency,
   getPushMetadataLookupConcurrency,
 } from "./_config.js";
-import { respondInternalServerError } from "./_errors.js";
+import {
+  respondInternalServerError,
+  respondMissingEnvConfig,
+} from "./_errors.js";
 import { getTokenOwnershipEntries, splitTokenOwnership } from "./_ownership.js";
 import { normalizePushTestPayload } from "./_payload.js";
 import { createPushRedis, getMissingPushRedisEnvVars } from "./_redis.js";
@@ -67,11 +70,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const missingRedisEnvVars = getMissingPushRedisEnvVars();
     if (missingRedisEnvVars.length > 0) {
-      logger.response(500, Date.now() - startTime);
-      return res.status(500).json({
-        error: "Redis is not configured.",
-        missingEnvVars: missingRedisEnvVars,
-      });
+      return respondMissingEnvConfig(
+        res,
+        logger,
+        startTime,
+        "Redis",
+        missingRedisEnvVars
+      );
     }
 
     const redis = createPushRedis();
@@ -92,11 +97,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const apnsConfig = getApnsConfigFromEnv();
     if (!apnsConfig) {
       const missingEnvVars = getMissingApnsEnvVars();
-      logger.response(500, Date.now() - startTime);
-      return res.status(500).json({
-        error: "APNs is not configured.",
-        missingEnvVars,
-      });
+      return respondMissingEnvConfig(
+        res,
+        logger,
+        startTime,
+        "APNs",
+        missingEnvVars
+      );
     }
 
     const normalizedPayload = normalizePushTestPayload(req.body);

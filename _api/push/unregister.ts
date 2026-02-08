@@ -7,7 +7,10 @@ import {
 } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
 import { getPushMetadataLookupConcurrency } from "./_config.js";
-import { respondInternalServerError } from "./_errors.js";
+import {
+  respondInternalServerError,
+  respondMissingEnvConfig,
+} from "./_errors.js";
 import { getTokenOwnershipEntries, splitTokenOwnership } from "./_ownership.js";
 import { normalizeUnregisterPushPayload } from "./_request-payloads.js";
 import { createPushRedis, getMissingPushRedisEnvVars } from "./_redis.js";
@@ -50,11 +53,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const missingRedisEnvVars = getMissingPushRedisEnvVars();
     if (missingRedisEnvVars.length > 0) {
-      logger.response(500, Date.now() - startTime);
-      return res.status(500).json({
-        error: "Redis is not configured.",
-        missingEnvVars: missingRedisEnvVars,
-      });
+      return respondMissingEnvConfig(
+        res,
+        logger,
+        startTime,
+        "Redis",
+        missingRedisEnvVars
+      );
     }
 
     const redis = createPushRedis();
