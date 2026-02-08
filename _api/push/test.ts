@@ -133,7 +133,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
       if (!isRedisPositiveCount(isRequestedTokenRegistered)) {
         logger.response(403, Date.now() - startTime);
-        return res.status(403).json({ error: "Token is not registered for this user" });
+        return res.status(403).json({
+          error: "Token is not registered for this user",
+          staleOwnershipTokensRemoved: 0,
+          pushMetadataLookupConcurrency: 0,
+        });
       }
 
       tokensForOwnershipLookup = [requestedToken];
