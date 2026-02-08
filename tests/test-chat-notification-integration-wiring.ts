@@ -26,6 +26,10 @@ const assertUsesSharedNotificationGate = (
   label: string
 ): void => {
   assert(
+    /from\s+["']@\/utils\/chatNotifications["']/.test(source),
+    `${label}: expected shared chatNotifications utility import`
+  );
+  assert(
     /shouldNotifyForRoomMessage/.test(source),
     `${label}: expected shouldNotifyForRoomMessage usage`
   );
