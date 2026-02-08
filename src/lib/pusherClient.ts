@@ -125,6 +125,8 @@ if (import.meta.hot) {
   import.meta.hot.dispose(() => {
     // Intentionally keep the connection alive during HMR
     // The globalThis singleton will be reused by the new module
+    // Reset channel refcounts to avoid stale holder counts across code reloads.
+    globalWithPusher.__pusherChannelRefCounts = {};
     console.debug("[pusherClient] HMR: keeping connection alive");
   });
 }
