@@ -5,6 +5,8 @@
 
 import type { VercelRequest } from "@vercel/node";
 import {
+  PUSH_ALLOWED_HEADERS,
+  PUSH_ALLOWED_METHODS,
   PUSH_ALLOW_HEADERS_VALUE,
   handlePushPostRequestGuards,
   PUSH_ALLOW_HEADER_VALUE,
@@ -90,6 +92,23 @@ function withCustomRuntimeEnv<T>(
       run
     )
   );
+}
+
+async function testExportedPushRequestGuardContractConstants() {
+  assertEq(PUSH_ALLOWED_METHODS.join(","), "POST,OPTIONS");
+  assertEq(PUSH_ALLOW_HEADER_VALUE, "POST, OPTIONS");
+  assertEq(PUSH_ALLOWED_HEADERS.join(","), "Content-Type,Authorization,X-Username");
+  assertEq(PUSH_ALLOW_HEADERS_VALUE, "Content-Type, Authorization, X-Username");
+  assertEq(
+    PUSH_OPTIONS_VARY_HEADER,
+    "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
+  );
+  assertEq(PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH, 128);
+  assertEq(PUSH_CORS_MAX_REQUESTED_HEADER_COUNT, 50);
+  assertEq(PUSH_CORS_MAX_REQUESTED_HEADER_CANDIDATES, 200);
+  assertEq(PUSH_CORS_MAX_REQUESTED_HEADER_VALUES, 50);
+  assertEq(PUSH_CORS_MAX_REQUESTED_METHOD_LENGTH, 32);
+  assertEq(PUSH_CORS_MAX_REQUESTED_METHOD_VALUES, 20);
 }
 
 async function testAllowedPostContinuesWithoutHandling() {
@@ -2193,6 +2212,10 @@ export async function runPushRequestGuardTests(): Promise<{
   console.log(section("push-request-guard"));
   clearResults();
 
+  await runTest(
+    "Push request guard exports stable CORS contract constants",
+    testExportedPushRequestGuardContractConstants
+  );
   await runTest(
     "Push request guard allows localhost POST passthrough",
     testAllowedPostContinuesWithoutHandling
