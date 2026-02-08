@@ -88,6 +88,10 @@ export async function resolvePushTokenForLogout(
   }
 }
 
+/**
+ * Best-effort token-scoped unregister for logout flows.
+ * Does not throw on network/API failures to avoid blocking logout UX.
+ */
 export async function unregisterPushTokenForLogout(
   username: string,
   authToken: string,
