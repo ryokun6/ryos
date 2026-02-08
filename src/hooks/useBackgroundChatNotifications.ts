@@ -159,6 +159,7 @@ export function useBackgroundChatNotifications() {
       const preview = decoded.replace(/\s+/g, " ").trim().slice(0, 80);
 
       toast(`@${messageWithTimestamp.username}`, {
+        id: `chat-room-message-${messageWithTimestamp.id}`,
         description: preview,
         action: {
           label: "Open",

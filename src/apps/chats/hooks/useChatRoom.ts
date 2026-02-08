@@ -213,6 +213,7 @@ export function useChatRoom(
           );
           const preview = decoded.replace(/\s+/g, " ").trim().slice(0, 80);
           toast(`@${data.message.username}`, {
+            id: `chat-room-message-${data.message.id}`,
             description: preview,
             action: {
               label: "Open",
