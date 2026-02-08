@@ -495,35 +495,3 @@ export function SpotlightSearch() {
   return createPortal(overlay, document.body);
 }
 
-// Button for the menu bar (Mac themes)
-export function SpotlightButton() {
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-
-  // Only show on Mac themes
-  if (isXpTheme) return null;
-
-  const handleClick = () => {
-    window.dispatchEvent(new CustomEvent("toggleSpotlight"));
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      className="flex items-center justify-center px-1.5 py-0.5"
-      style={{ marginLeft: "4px" }}
-      title="Spotlight Search (⌘+Space)"
-      aria-label="Spotlight Search"
-    >
-      <MagnifyingGlass
-        aria-hidden="true"
-        className="h-3.5 w-3.5"
-        weight="bold"
-        style={{
-          opacity: 0.75,
-        }}
-      />
-    </button>
-  );
-}
