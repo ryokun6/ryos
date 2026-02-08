@@ -20,6 +20,7 @@ import { runPushApnsTests } from "./test-push-apns";
 import { runPushEnvTests } from "./test-push-env";
 import { runPushLogoutTests } from "./test-push-logout";
 import { runPushTauriNotificationsTests } from "./test-push-tauri-notifications";
+import { runPushTokenSharedTests } from "./test-push-token-shared";
 import { runPushTokenTests } from "./test-push-token";
 import { runPushTokenParityTests } from "./test-push-token-parity";
 import { runPushAuthGuardTests } from "./test-push-auth-guard";
@@ -111,6 +112,7 @@ async function runAllTests(): Promise<void> {
     { name: "auth-extra", run: runAuthExtraTests },
     { name: "rooms-extra", run: runRoomsExtraTests },
     { name: "push-env", run: runPushEnvTests },
+    { name: "push-token-shared", run: runPushTokenSharedTests },
     { name: "push-token", run: runPushTokenTests },
     { name: "push-token-parity", run: runPushTokenParityTests },
     { name: "push-tauri-notifications", run: runPushTauriNotificationsTests },
