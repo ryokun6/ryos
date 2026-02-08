@@ -164,6 +164,21 @@ function getRequestedCorsMethod(req: VercelRequest): string | undefined {
   return normalizedRequestedMethod;
 }
 
+function respondMethodNotAllowed(
+  res: VercelResponse,
+  logger: PushRequestLoggerLike,
+  startTime: number,
+  origin: string | null
+): void {
+  setCorsHeaders(res, origin, {
+    methods: PUSH_ALLOWED_METHODS_LIST,
+    headers: PUSH_ALLOWED_HEADERS_LIST,
+  });
+  res.setHeader("Allow", PUSH_ALLOW_HEADER_VALUE);
+  logger.response(405, Date.now() - startTime);
+  res.status(405).json({ error: "Method not allowed" });
+}
+
 export function handlePushPostRequestGuards(
   req: VercelRequest,
   res: VercelResponse,
@@ -187,13 +202,7 @@ export function handlePushPostRequestGuards(
 
     const requestedMethod = getRequestedCorsMethod(req);
     if (requestedMethod && requestedMethod !== PUSH_ALLOWED_METHODS[0]) {
-      setCorsHeaders(res, origin, {
-        methods: PUSH_ALLOWED_METHODS_LIST,
-        headers: PUSH_ALLOWED_HEADERS_LIST,
-      });
-      res.setHeader("Allow", PUSH_ALLOW_HEADER_VALUE);
-      logger.response(405, Date.now() - startTime);
-      res.status(405).json({ error: "Method not allowed" });
+      respondMethodNotAllowed(res, logger, startTime, origin);
       return true;
     }
 
@@ -220,9 +229,7 @@ export function handlePushPostRequestGuards(
   });
 
   if (method !== PUSH_ALLOWED_METHODS[0]) {
-    res.setHeader("Allow", PUSH_ALLOW_HEADER_VALUE);
-    logger.response(405, Date.now() - startTime);
-    res.status(405).json({ error: "Method not allowed" });
+    respondMethodNotAllowed(res, logger, startTime, origin);
     return true;
   }
 
