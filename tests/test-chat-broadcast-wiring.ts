@@ -30,6 +30,11 @@ const assertHasCall = (
   assert(callPattern.test(source), `Missing ${fnName} call for ${description}`);
 };
 
+const countCalls = (source: string, fnName: string): number => {
+  const callPattern = new RegExp(`\\b${fnName}\\s*\\(`, "g");
+  return source.match(callPattern)?.length || 0;
+};
+
 export async function runChatBroadcastWiringTests(): Promise<{
   passed: number;
   failed: number;
@@ -57,6 +62,18 @@ export async function runChatBroadcastWiringTests(): Promise<{
   await runTest("presence switch route emits room-updated", async () => {
     const source = readRoute("_api/presence/switch.ts");
     assertHasCall(source, "broadcastRoomUpdated", "presence switch");
+    assert(
+      countCalls(source, "broadcastRoomUpdated") >= 2,
+      "Expected presence switch to broadcast updates for both previous and next rooms"
+    );
+    assert(
+      /broadcastRoomUpdated\s*\(\s*previousRoomId\s*\)/.test(source),
+      "Expected presence switch to broadcast previousRoomId update"
+    );
+    assert(
+      /broadcastRoomUpdated\s*\(\s*nextRoomId\s*\)/.test(source),
+      "Expected presence switch to broadcast nextRoomId update"
+    );
   });
 
   await runTest("join route emits room-updated", async () => {
