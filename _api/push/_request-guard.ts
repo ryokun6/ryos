@@ -193,8 +193,8 @@ export function handlePushPostRequestGuards(
   const origin = getEffectiveOrigin(req);
   const normalizedMethod =
     typeof req.method === "string" ? req.method.trim() : "";
-  const method = normalizedMethod.length > 0 ? normalizedMethod.toUpperCase() : "POST";
-  logger.request(method, req.url || endpointPath);
+  const method = normalizedMethod.length > 0 ? normalizedMethod.toUpperCase() : "";
+  logger.request(method || "UNKNOWN", req.url || endpointPath);
 
   if (method === "OPTIONS") {
     res.setHeader("Vary", PUSH_OPTIONS_VARY_HEADER);

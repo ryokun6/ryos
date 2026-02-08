@@ -1523,7 +1523,7 @@ async function testWhitespacePaddedPostMethodIsNormalized() {
   });
 }
 
-async function testMissingMethodDefaultsToPost() {
+async function testMissingMethodIsRejected() {
   await withDevelopmentEnv(async () => {
     const req = createRawRequest(undefined);
     const mockRes = createMockVercelResponseHarness();
@@ -1537,14 +1537,21 @@ async function testMissingMethodDefaultsToPost() {
       "/api/push/register"
     );
 
-    assertEq(handled, false);
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 405);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Method not allowed" })
+    );
+    assertEq(mockRes.getHeader("Allow"), PUSH_ALLOW_HEADER_VALUE);
     assertEq(mockLogger.requestCalls.length, 1);
-    assertEq(mockLogger.requestCalls[0].method, "POST");
-    assertEq(mockLogger.responseCalls.length, 0);
+    assertEq(mockLogger.requestCalls[0].method, "UNKNOWN");
+    assertEq(mockLogger.responseCalls.length, 1);
+    assertEq(mockLogger.responseCalls[0].statusCode, 405);
   });
 }
 
-async function testWhitespaceOnlyMethodDefaultsToPost() {
+async function testWhitespaceOnlyMethodIsRejected() {
   await withDevelopmentEnv(async () => {
     const req = createRawRequest("   ");
     const mockRes = createMockVercelResponseHarness();
@@ -1558,10 +1565,17 @@ async function testWhitespaceOnlyMethodDefaultsToPost() {
       "/api/push/register"
     );
 
-    assertEq(handled, false);
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 405);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Method not allowed" })
+    );
+    assertEq(mockRes.getHeader("Allow"), PUSH_ALLOW_HEADER_VALUE);
     assertEq(mockLogger.requestCalls.length, 1);
-    assertEq(mockLogger.requestCalls[0].method, "POST");
-    assertEq(mockLogger.responseCalls.length, 0);
+    assertEq(mockLogger.requestCalls[0].method, "UNKNOWN");
+    assertEq(mockLogger.responseCalls.length, 1);
+    assertEq(mockLogger.responseCalls[0].statusCode, 405);
   });
 }
 
@@ -2530,12 +2544,12 @@ export async function runPushRequestGuardTests(): Promise<{
     testWhitespacePaddedPostMethodIsNormalized
   );
   await runTest(
-    "Push request guard defaults missing method to POST",
-    testMissingMethodDefaultsToPost
+    "Push request guard rejects requests with missing method",
+    testMissingMethodIsRejected
   );
   await runTest(
-    "Push request guard defaults whitespace-only method to POST",
-    testWhitespaceOnlyMethodDefaultsToPost
+    "Push request guard rejects requests with whitespace-only method",
+    testWhitespaceOnlyMethodIsRejected
   );
   await runTest(
     "Push request guard normalizes lowercase OPTIONS method",
