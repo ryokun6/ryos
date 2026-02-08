@@ -115,6 +115,7 @@ From repo root:
 - `bun run test:push` — all push suites
 - `bun run test:push:helpers` — helper-focused suites only
 - `bun run test:push:api` — API-facing suites only
+- `bun run test:push-auth-order` — auth-first failure-path behavior checks
 - `bun run check:push` — lint + all push suites + build
 - `bun run check:push:helpers` — lint + helper suites
 - `bun run check:push:api` — lint + API-facing suites

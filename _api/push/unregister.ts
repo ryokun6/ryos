@@ -58,6 +58,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const { username, token } = extractAuthFromHeaders(req.headers);
+    if (!username || !token) {
+      logger.response(401, Date.now() - startTime);
+      return res.status(401).json({ error: "Unauthorized - missing credentials" });
+    }
+
     const missingRedisEnvVars = getMissingPushRedisEnvVars();
     if (missingRedisEnvVars.length > 0) {
       return respondMissingEnvConfig(
@@ -70,12 +76,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const redis = createPushRedis();
-    const { username, token } = extractAuthFromHeaders(req.headers);
-    if (!username || !token) {
-      logger.response(401, Date.now() - startTime);
-      return res.status(401).json({ error: "Unauthorized - missing credentials" });
-    }
-
     const authResult = await validateAuth(redis, username, token, {
       allowExpired: false,
     });
