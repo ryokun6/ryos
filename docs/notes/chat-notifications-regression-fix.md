@@ -31,6 +31,7 @@ File: `src/lib/pusherClient.ts`
   - first local holder always performs `subscribe(...)` to guarantee active
     subscription state
   - channel names are normalized via `trim()` across subscribe/unsubscribe
+  - undefined/null/blank channel names are treated safely during normalization
   - blank channel subscriptions throw fast with a clear error
 - Added one-time recovery warnings for:
   - missing-channel refcount recovery
