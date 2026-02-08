@@ -125,12 +125,60 @@ async function testRespondMissingEnvConfig() {
   );
 }
 
+async function testRespondMissingEnvConfigWithoutWarnLogger() {
+  let statusCode = 0;
+  let responsePayload: unknown = null;
+  let loggedResponseCount = 0;
+
+  const logger = {
+    error: () => {
+      // not expected
+    },
+    response: () => {
+      loggedResponseCount += 1;
+    },
+  };
+
+  const res = {
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      responsePayload = payload;
+      return payload;
+    },
+  };
+
+  respondMissingEnvConfig(
+    res as unknown as VercelResponse,
+    logger,
+    Date.now(),
+    "APNs",
+    ["APNS_KEY_ID"]
+  );
+
+  assertEq(statusCode, 500);
+  assertEq(loggedResponseCount, 1);
+  assertEq(
+    JSON.stringify(responsePayload),
+    JSON.stringify({
+      error: "APNs is not configured.",
+      missingEnvVars: ["APNS_KEY_ID"],
+    })
+  );
+}
+
 export async function runPushErrorsTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("push-errors"));
   clearResults();
 
   await runTest("Push internal server error helper", testRespondInternalServerError);
   await runTest("Push missing-env responder helper", testRespondMissingEnvConfig);
+  await runTest(
+    "Push missing-env responder works without warn logger",
+    testRespondMissingEnvConfigWithoutWarnLogger
+  );
 
   return printSummary();
 }
