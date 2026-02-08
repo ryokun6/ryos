@@ -171,12 +171,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ownedTokens,
       getTokenMetaKey
     );
-    await redis.del(userTokensKey);
+    const userTokenSetRemoved = normalizeRedisNonNegativeCount(
+      await redis.del(userTokensKey)
+    );
 
     logger.info("Unregistered all push tokens for user", {
       username,
       removed: userTokens.length + invalidStoredTokensRemoved,
       removedMetadata: metadataRemoved,
+      removedUserTokenSet: userTokenSetRemoved,
       invalidStoredTokensRemoved,
       skippedNonStringTokenCount,
       pushMetadataLookupConcurrency: tokenMetadataLookupConcurrency,
