@@ -40,17 +40,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   logger.request(req.method || "POST", req.url || "/api/push/unregister");
 
   if (req.method === "OPTIONS") {
+    if (!isAllowedOrigin(origin)) {
+      logger.response(403, Date.now() - startTime);
+      return res.status(403).json({ error: "Unauthorized" });
+    }
     setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
     logger.response(204, Date.now() - startTime);
     return res.status(204).end();
   }
 
-  setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
-
   if (!isAllowedOrigin(origin)) {
     logger.response(403, Date.now() - startTime);
     return res.status(403).json({ error: "Unauthorized" });
   }
+
+  setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
 
   if (req.method !== "POST") {
     logger.response(405, Date.now() - startTime);
