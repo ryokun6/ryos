@@ -162,6 +162,41 @@ async function testDisallowedPostIsRejected() {
   });
 }
 
+async function testDisallowedPostWithRequestedHeadersIsRejectedWithoutEcho() {
+  await withDevelopmentEnv(async () => {
+    const req = createRequestWithHeaders(
+      "POST",
+      {
+        origin: "https://evil.example",
+        "access-control-request-headers": "x-evil-header, authorization",
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 403);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Unauthorized" })
+    );
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), undefined);
+    assertEq(mockRes.getHeader("Vary"), "Origin");
+    assertEq(mockLogger.responseCalls.length, 1);
+    assertEq(mockLogger.responseCalls[0].statusCode, 403);
+  });
+}
+
 async function testAllowedOptionsPreflightHandled() {
   await withDevelopmentEnv(async () => {
     const req = createRequest("OPTIONS");
@@ -1163,6 +1198,10 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard rejects disallowed-origin POST",
     testDisallowedPostIsRejected
+  );
+  await runTest(
+    "Push request guard rejects disallowed POST without echoing requested headers",
+    testDisallowedPostWithRequestedHeadersIsRejectedWithoutEcho
   );
   await runTest(
     "Push request guard handles localhost preflight",
