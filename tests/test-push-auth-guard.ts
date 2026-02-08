@@ -212,6 +212,30 @@ async function testExtractAuthRejectsInvalidAuthorizationScheme() {
   assertEq(mockLogger.responseCalls[0].statusCode, 401);
 }
 
+async function testExtractAuthRejectsWhenFirstNonEmptyArrayAuthorizationIsInvalid() {
+  const mockRes = createMockVercelResponseHarness();
+  const mockLogger = createMockLogger();
+
+  const credentials = extractPushAuthCredentialsOrRespond(
+    {
+      authorization: ["Basic token-123", "Bearer valid-token"],
+      "x-username": "valid-user",
+    },
+    mockRes.res,
+    mockLogger.logger,
+    Date.now()
+  );
+
+  assertEq(credentials, null);
+  assertEq(mockRes.getStatusCode(), 401);
+  assertEq(
+    JSON.stringify(mockRes.getJsonPayload()),
+    JSON.stringify({ error: "Unauthorized - missing credentials" })
+  );
+  assertEq(mockLogger.responseCalls.length, 1);
+  assertEq(mockLogger.responseCalls[0].statusCode, 401);
+}
+
 async function testExtractAuthUsesFirstNonEmptyArrayHeaderValues() {
   const mockRes = createMockVercelResponseHarness();
   const mockLogger = createMockLogger();
@@ -376,6 +400,10 @@ export async function runPushAuthGuardTests(): Promise<{ passed: number; failed:
   await runTest(
     "Push auth guard rejects non-bearer authorization schemes",
     testExtractAuthRejectsInvalidAuthorizationScheme
+  );
+  await runTest(
+    "Push auth guard rejects when first non-empty array authorization is non-bearer",
+    testExtractAuthRejectsWhenFirstNonEmptyArrayAuthorizationIsInvalid
   );
   await runTest(
     "Push auth guard uses first non-empty array header values",
