@@ -77,10 +77,8 @@ export function subscribePusherChannel(channelName: string): PusherChannel {
   ).channel(channelName);
 
   if (currentCount === 0) {
-    counts[channelName] = 1;
-    if (existingChannel) {
-      return existingChannel;
-    }
+    // Always call subscribe for the first local holder to ensure the channel is
+    // actively subscribed even if a stale channel object exists.
     const subscribedChannel = pusher.subscribe(channelName);
     counts[channelName] = 1;
     return subscribedChannel;

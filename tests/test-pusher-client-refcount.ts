@@ -206,7 +206,7 @@ async function main() {
     assertEq(calls[1].channel, "room-g");
   });
 
-  await runTest("reuses existing channel when count starts at zero", async () => {
+  await runTest("subscribes when count starts at zero even with channel object", async () => {
     const calls: FakeCall[] = [];
     const existingChannel: FakeChannel = {
       name: "room-h",
@@ -230,9 +230,15 @@ async function main() {
     subscribePusherChannel("room-h");
     unsubscribePusherChannel("room-h");
 
-    assertEq(calls.length, 1, "Expected no subscribe; only final unsubscribe");
-    assertEq(calls[0].type, "unsubscribe");
+    assertEq(
+      calls.length,
+      2,
+      "Expected explicit subscribe then unsubscribe for zero-count acquisition"
+    );
+    assertEq(calls[0].type, "subscribe");
     assertEq(calls[0].channel, "room-h");
+    assertEq(calls[1].type, "unsubscribe");
+    assertEq(calls[1].channel, "room-h");
   });
 
   const { failed } = printSummary();
