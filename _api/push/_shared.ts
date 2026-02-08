@@ -145,34 +145,36 @@ export function normalizeRedisNonNegativeCount(
   value: unknown,
   fallback: number = 0
 ): number {
+  const normalizedFallback = Number.isSafeInteger(fallback) ? fallback : 0;
+
   // Normalizes common Redis client return shapes into non-negative counts.
   // Uses safe-integer bounds to avoid lossy numeric coercion.
   if (typeof value === "bigint") {
-    if (value < 0n) return fallback;
-    if (value > BigInt(Number.MAX_SAFE_INTEGER)) return fallback;
+    if (value < 0n) return normalizedFallback;
+    if (value > BigInt(Number.MAX_SAFE_INTEGER)) return normalizedFallback;
     return Number(value);
   }
 
   if (typeof value === "number") {
     if (!Number.isSafeInteger(value) || value < 0) {
-      return fallback;
+      return normalizedFallback;
     }
     return value;
   }
 
   if (typeof value === "string") {
     const trimmed = value.trim();
-    if (trimmed.length === 0) return fallback;
+    if (trimmed.length === 0) return normalizedFallback;
     const parsed = Number(trimmed);
     if (!Number.isSafeInteger(parsed) || parsed < 0) {
-      return fallback;
+      return normalizedFallback;
     }
     return parsed;
   }
 
   if (value === true) return 1;
   if (value === false) return 0;
-  return fallback;
+  return normalizedFallback;
 }
 
 function readSingleHeader(
