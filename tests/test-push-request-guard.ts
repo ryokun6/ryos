@@ -374,6 +374,62 @@ async function testAllowedOptionsPreflightUsesFirstNonEmptyRequestedMethodArrayV
   });
 }
 
+async function testAllowedOptionsPreflightIgnoresBlankRequestedMethodValue() {
+  await withDevelopmentEnv(async () => {
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-method": "   ",
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getEndCallCount(), 1);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
+  });
+}
+
+async function testAllowedOptionsPreflightIgnoresAllBlankRequestedMethodArrayValues() {
+  await withDevelopmentEnv(async () => {
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-method": ["   ", "\t"],
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getEndCallCount(), 1);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
+  });
+}
+
 async function testAllowedOptionsPreflightRejectsWhenFirstNonEmptyRequestedMethodArrayValueUnsupported() {
   await withDevelopmentEnv(async () => {
     const req = createRequestWithHeaders(
@@ -1651,6 +1707,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard uses first non-empty requested-method array value",
     testAllowedOptionsPreflightUsesFirstNonEmptyRequestedMethodArrayValue
+  );
+  await runTest(
+    "Push request guard ignores blank requested preflight method value",
+    testAllowedOptionsPreflightIgnoresBlankRequestedMethodValue
+  );
+  await runTest(
+    "Push request guard ignores all-blank requested preflight method array values",
+    testAllowedOptionsPreflightIgnoresAllBlankRequestedMethodArrayValues
   );
   await runTest(
     "Push request guard rejects when first requested-method array value is unsupported",
