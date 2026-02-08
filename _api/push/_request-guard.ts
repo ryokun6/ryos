@@ -28,7 +28,20 @@ function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
     .map((header) => header.trim())
     .filter((header) => header.length > 0);
 
-  return normalizedHeaders.length > 0 ? normalizedHeaders : undefined;
+  if (normalizedHeaders.length === 0) {
+    return undefined;
+  }
+
+  const seen = new Set<string>();
+  const dedupedHeaders: string[] = [];
+  for (const header of normalizedHeaders) {
+    const normalizedHeaderKey = header.toLowerCase();
+    if (seen.has(normalizedHeaderKey)) continue;
+    seen.add(normalizedHeaderKey);
+    dedupedHeaders.push(header);
+  }
+
+  return dedupedHeaders.length > 0 ? dedupedHeaders : undefined;
 }
 
 export function handlePushPostRequestGuards(
