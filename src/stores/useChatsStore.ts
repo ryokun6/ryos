@@ -97,6 +97,25 @@ const decodeHtmlEntities = (str: string): string =>
     .replace(/&#39;/g, "'")
     .replace(/&apos;/g, "'");
 
+const readJsonBody = async <T>(
+  response: Response,
+  context: string
+): Promise<{ ok: true; data: T } | { ok: false; error: string }> => {
+  const contentType = response.headers.get("content-type")?.toLowerCase() || "";
+  if (!contentType.includes("application/json")) {
+    return {
+      ok: false,
+      error: `${context}: expected JSON but got ${contentType || "unknown content-type"}`,
+    };
+  }
+
+  try {
+    return { ok: true, data: (await response.json()) as T };
+  } catch {
+    return { ok: false, error: `${context}: invalid JSON response body` };
+  }
+};
+
 // Save token refresh time
 const saveTokenRefreshTime = (username: string) => {
   const key = `${TOKEN_LAST_REFRESH_KEY}${username}`;
@@ -969,16 +988,28 @@ export const useChatsStore = create<ChatsStoreState>()(
               retry: { maxAttempts: 1, initialDelayMs: 250 },
             });
             if (!response.ok) {
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
+              const errorData = await readJsonBody<{ error?: string }>(
+                response,
+                "fetchRooms error response"
+              );
               return {
                 ok: false,
-                error: errorData.error || "Failed to fetch rooms",
+                error: errorData.ok
+                  ? errorData.data.error || "Failed to fetch rooms"
+                  : `HTTP error! status: ${response.status}`,
               };
             }
 
-            const data = await response.json();
+            const roomsData = await readJsonBody<{ rooms?: ChatRoom[] }>(
+              response,
+              "fetchRooms success response"
+            );
+            if (!roomsData.ok) {
+              console.warn(`[ChatsStore] ${roomsData.error}`);
+              return { ok: false, error: "Rooms API unavailable" };
+            }
+
+            const data = roomsData.data;
             if (data.rooms && Array.isArray(data.rooms)) {
               // Normalize ordering via setRooms to enforce alphabetical sections
               get().setRooms(data.rooms);
@@ -1007,16 +1038,28 @@ export const useChatsStore = create<ChatsStoreState>()(
               }
             );
             if (!response.ok) {
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
+              const errorData = await readJsonBody<{ error?: string }>(
+                response,
+                "fetchMessagesForRoom error response"
+              );
               return {
                 ok: false,
-                error: errorData.error || "Failed to fetch messages",
+                error: errorData.ok
+                  ? errorData.data.error || "Failed to fetch messages"
+                  : `HTTP error! status: ${response.status}`,
               };
             }
 
-            const data = await response.json();
+            const messagesData = await readJsonBody<{ messages?: ApiMessage[] }>(
+              response,
+              "fetchMessagesForRoom success response"
+            );
+            if (!messagesData.ok) {
+              console.warn(`[ChatsStore] ${messagesData.error}`);
+              return { ok: false, error: "Messages API unavailable" };
+            }
+
+            const data = messagesData.data;
             if (data.messages) {
               const fetchedMessages: ChatMessage[] = (data.messages || [])
                 .map((msg: ApiMessage) => ({
@@ -1145,22 +1188,34 @@ export const useChatsStore = create<ChatsStoreState>()(
               }
             );
             if (!response.ok) {
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
+              const errorData = await readJsonBody<{ error?: string }>(
+                response,
+                "fetchBulkMessages error response"
+              );
               return {
                 ok: false,
-                error: errorData.error || "Failed to fetch messages",
+                error: errorData.ok
+                  ? errorData.data.error || "Failed to fetch messages"
+                  : `HTTP error! status: ${response.status}`,
               };
             }
 
-            const data = await response.json();
-            if (data.messagesMap) {
+            const bulkData = await readJsonBody<{
+              messagesMap?: Record<string, ApiMessage[]>;
+            }>(response, "fetchBulkMessages success response");
+            if (!bulkData.ok) {
+              console.warn(`[ChatsStore] ${bulkData.error}`);
+              return { ok: false, error: "Bulk messages API unavailable" };
+            }
+
+            const data = bulkData.data;
+            const messagesMap = data.messagesMap;
+            if (messagesMap) {
               // Process and sort messages for each room like fetchMessagesForRoom does
               set((state) => {
                 const nextRoomMessages = { ...state.roomMessages };
 
-                Object.entries(data.messagesMap).forEach(
+                Object.entries(messagesMap).forEach(
                   ([roomId, messages]) => {
                     const processed: ChatMessage[] = (messages as ApiMessage[])
                       .map((msg) => ({
