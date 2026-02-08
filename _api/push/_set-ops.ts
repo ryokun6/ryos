@@ -1,11 +1,18 @@
-interface PipelineLike {
+interface SremPipelineLike {
   srem: (key: string, member: string) => void;
-  del: (key: string) => void;
   exec: () => Promise<unknown>;
 }
 
-interface RedisWithPipeline {
-  pipeline: () => PipelineLike;
+interface DelPipelineLike extends SremPipelineLike {
+  del: (key: string) => void;
+}
+
+interface RedisWithSremPipeline {
+  pipeline: () => SremPipelineLike;
+}
+
+interface RedisWithDelPipeline {
+  pipeline: () => DelPipelineLike;
 }
 
 export function getDistinctNonEmptyTokens(tokens: string[]): string[] {
@@ -19,7 +26,7 @@ export function getDistinctNonEmptyTokens(tokens: string[]): string[] {
 }
 
 export async function removeTokensFromUserSet(
-  redis: RedisWithPipeline,
+  redis: RedisWithSremPipeline,
   userTokensKey: string,
   tokens: string[]
 ): Promise<number> {
@@ -38,7 +45,7 @@ export async function removeTokensFromUserSet(
 }
 
 export async function removeTokensAndMetadata(
-  redis: RedisWithPipeline,
+  redis: RedisWithDelPipeline,
   userTokensKey: string,
   tokens: string[],
   getTokenMetaKey: (token: string) => string
