@@ -124,7 +124,7 @@ From repo root:
 - `bun run test:push:tauri` — tauri-bridge helper suite only
 - `bun run test:push:logout` — logout-token helper suite only
 - `bun run test:push:config-guards` — Redis/APNs config guard suites only
-- `bun run test:push:guards` — request/auth/config guard-focused suites only
+- `bun run test:push:guards` — shared CORS + request/auth/config guard-focused suites only
 - `bun run test:push:api` — API-facing suites only
 - `bun run test:push-token` — shared push-token normalization helper tests
 - `bun run test:push-cors-utils` — shared CORS origin/preflight helper tests
