@@ -32,6 +32,9 @@ const SAMPLE_VALUES: unknown[] = [
   123,
 ];
 
+const ALLOWED_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789:_-.";
+const INVALID_CHARS = ["/", " ", "\t", "\n", "@", ",", "π"];
+
 async function testNormalizedTokensAlwaysPassBackendValidator() {
   for (const value of SAMPLE_VALUES) {
     const normalized = normalizePushToken(value);
@@ -54,6 +57,28 @@ async function testCanonicalStringInputsMatchBackendValidation() {
   }
 }
 
+async function testGeneratedAllowedTokensMatchBackendValidation() {
+  for (let length = 20; length <= 120; length += 10) {
+    let token = "";
+    for (let index = 0; index < length; index += 1) {
+      token += ALLOWED_CHARS[(length + index) % ALLOWED_CHARS.length];
+    }
+
+    const normalized = normalizePushToken(token);
+    assertEq(normalized, token);
+    assertEq(isValidPushToken(token), true);
+  }
+}
+
+async function testGeneratedInvalidTokensMatchBackendValidation() {
+  for (const invalidChar of INVALID_CHARS) {
+    const token = `validprefix${invalidChar}${"a".repeat(25)}`;
+    const normalized = normalizePushToken(token);
+    assertEq(normalized, null);
+    assertEq(isValidPushToken(token), false);
+  }
+}
+
 export async function runPushTokenParityTests(): Promise<{
   passed: number;
   failed: number;
@@ -68,6 +93,14 @@ export async function runPushTokenParityTests(): Promise<{
   await runTest(
     "Canonical token strings match frontend/backend validation parity",
     testCanonicalStringInputsMatchBackendValidation
+  );
+  await runTest(
+    "Generated allowed tokens match backend validation",
+    testGeneratedAllowedTokensMatchBackendValidation
+  );
+  await runTest(
+    "Generated invalid tokens match backend validation",
+    testGeneratedInvalidTokensMatchBackendValidation
   );
 
   return printSummary();
