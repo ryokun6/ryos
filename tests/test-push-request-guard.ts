@@ -89,6 +89,20 @@ function withDevelopmentEnv<T>(run: () => T | Promise<T>): Promise<T> {
   return withRuntimeEnv("development", run);
 }
 
+function withCustomRuntimeEnv<T>(
+  env: string,
+  run: () => T | Promise<T>
+): Promise<T> {
+  return Promise.resolve(
+    withPatchedEnv(
+      {
+        VERCEL_ENV: env,
+      },
+      run
+    )
+  );
+}
+
 async function testAllowedPostContinuesWithoutHandling() {
   await withDevelopmentEnv(async () => {
     const req = createRequest("POST");
@@ -679,6 +693,49 @@ async function testAllowedOriginIgnoresDisallowedReferer() {
   });
 }
 
+async function testUnknownRuntimeEnvFallsBackToDevelopmentRules() {
+  await withCustomRuntimeEnv("staging", async () => {
+    const req = createRequest("POST", "http://localhost:3000");
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
+  });
+}
+
+async function testTailscaleAllowedInPreviewMode() {
+  await withRuntimeEnv("preview", async () => {
+    const req = createRequest("POST", "https://desktop.tailb4fa61.ts.net");
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockRes.getStatusCode(), 0);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Origin"),
+      "https://desktop.tailb4fa61.ts.net"
+    );
+  });
+}
+
 export async function runPushRequestGuardTests(): Promise<{
   passed: number;
   failed: number;
@@ -785,6 +842,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard uses allowed origin even with disallowed referer",
     testAllowedOriginIgnoresDisallowedReferer
+  );
+  await runTest(
+    "Push request guard falls back to development rules for unknown runtime env",
+    testUnknownRuntimeEnvFallsBackToDevelopmentRules
+  );
+  await runTest(
+    "Push request guard allows tailscale origin in preview mode",
+    testTailscaleAllowedInPreviewMode
   );
 
   return printSummary();
