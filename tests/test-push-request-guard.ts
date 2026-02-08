@@ -11,7 +11,9 @@ import {
   PUSH_CORS_MAX_REQUESTED_HEADER_CANDIDATES,
   PUSH_CORS_MAX_REQUESTED_HEADER_COUNT,
   PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH,
+  PUSH_CORS_MAX_REQUESTED_HEADER_VALUES,
   PUSH_CORS_MAX_REQUESTED_METHOD_LENGTH,
+  PUSH_CORS_MAX_REQUESTED_METHOD_VALUES,
   PUSH_OPTIONS_VARY_HEADER,
 } from "../_api/push/_request-guard";
 import {
@@ -531,6 +533,79 @@ async function testAllowedOptionsPreflightIgnoresAllBlankRequestedMethodArrayVal
   });
 }
 
+async function testAllowedOptionsPreflightUsesRequestedMethodAtValueScanLimit() {
+  await withDevelopmentEnv(async () => {
+    const requestedMethodValues = [
+      ...Array.from(
+        { length: PUSH_CORS_MAX_REQUESTED_METHOD_VALUES - 1 },
+        () => "   "
+      ),
+      "DELETE",
+    ];
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-method": requestedMethodValues,
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 405);
+    assertEq(
+      JSON.stringify(mockRes.getJsonPayload()),
+      JSON.stringify({ error: "Method not allowed" })
+    );
+    assertEq(mockRes.getHeader("Allow"), PUSH_ALLOW_HEADER_VALUE);
+  });
+}
+
+async function testAllowedOptionsPreflightIgnoresRequestedMethodBeyondValueScanLimit() {
+  await withDevelopmentEnv(async () => {
+    const requestedMethodValues = [
+      ...Array.from(
+        { length: PUSH_CORS_MAX_REQUESTED_METHOD_VALUES },
+        () => "   "
+      ),
+      "DELETE",
+    ];
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-method": requestedMethodValues,
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(mockRes.getEndCallCount(), 1);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
+  });
+}
+
 async function testAllowedOptionsPreflightRejectsWhenFirstNonEmptyRequestedMethodArrayValueUnsupported() {
   await withDevelopmentEnv(async () => {
     const req = createRequestWithHeaders(
@@ -726,6 +801,80 @@ async function testAllowedOptionsPreflightFallsBackToDefaultsForEmptyRequestedHe
       {
         origin: "http://localhost:3000",
         "access-control-request-headers": " ,  ,   ",
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Headers"),
+      PUSH_ALLOW_HEADERS_VALUE
+    );
+  });
+}
+
+async function testAllowedOptionsPreflightUsesRequestedHeaderValueAtValueScanLimit() {
+  await withDevelopmentEnv(async () => {
+    const requestedHeaderValues = [
+      ...Array.from(
+        { length: PUSH_CORS_MAX_REQUESTED_HEADER_VALUES - 1 },
+        () => "   "
+      ),
+      "x-valid-at-header-value-limit",
+    ];
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-headers": requestedHeaderValues,
+      },
+      "/api/push/register"
+    );
+    const mockRes = createMockVercelResponseHarness();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, true);
+    assertEq(mockRes.getStatusCode(), 204);
+    assertEq(
+      mockRes.getHeader("Access-Control-Allow-Headers"),
+      "x-valid-at-header-value-limit"
+    );
+  });
+}
+
+async function testAllowedOptionsPreflightIgnoresRequestedHeaderValueBeyondValueScanLimit() {
+  await withDevelopmentEnv(async () => {
+    const requestedHeaderValues = [
+      ...Array.from(
+        { length: PUSH_CORS_MAX_REQUESTED_HEADER_VALUES },
+        () => "   "
+      ),
+      "x-valid-beyond-header-value-limit",
+    ];
+    const req = createRequestWithHeaders(
+      "OPTIONS",
+      {
+        origin: "http://localhost:3000",
+        "access-control-request-headers": requestedHeaderValues,
       },
       "/api/push/register"
     );
@@ -1972,6 +2121,14 @@ export async function runPushRequestGuardTests(): Promise<{
     testAllowedOptionsPreflightIgnoresAllBlankRequestedMethodArrayValues
   );
   await runTest(
+    "Push request guard uses requested preflight method at value scan limit",
+    testAllowedOptionsPreflightUsesRequestedMethodAtValueScanLimit
+  );
+  await runTest(
+    "Push request guard ignores requested preflight method beyond value scan limit",
+    testAllowedOptionsPreflightIgnoresRequestedMethodBeyondValueScanLimit
+  );
+  await runTest(
     "Push request guard rejects when first requested-method array value is unsupported",
     testAllowedOptionsPreflightRejectsWhenFirstNonEmptyRequestedMethodArrayValueUnsupported
   );
@@ -1998,6 +2155,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard falls back for empty requested preflight headers",
     testAllowedOptionsPreflightFallsBackToDefaultsForEmptyRequestedHeaders
+  );
+  await runTest(
+    "Push request guard uses requested header value at value scan limit",
+    testAllowedOptionsPreflightUsesRequestedHeaderValueAtValueScanLimit
+  );
+  await runTest(
+    "Push request guard ignores requested header value beyond value scan limit",
+    testAllowedOptionsPreflightIgnoresRequestedHeaderValueBeyondValueScanLimit
   );
   await runTest(
     "Push request guard filters invalid requested preflight headers",

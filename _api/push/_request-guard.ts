@@ -15,7 +15,9 @@ const CORS_METHOD_NAME_REGEX = /^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/;
 export const PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH = 128;
 export const PUSH_CORS_MAX_REQUESTED_HEADER_COUNT = 50;
 export const PUSH_CORS_MAX_REQUESTED_HEADER_CANDIDATES = 200;
+export const PUSH_CORS_MAX_REQUESTED_HEADER_VALUES = 50;
 export const PUSH_CORS_MAX_REQUESTED_METHOD_LENGTH = 32;
+export const PUSH_CORS_MAX_REQUESTED_METHOD_VALUES = 20;
 export const PUSH_OPTIONS_VARY_HEADER =
   "Origin, Access-Control-Request-Method, Access-Control-Request-Headers";
 export const PUSH_ALLOWED_METHODS = ["POST", "OPTIONS"] as const;
@@ -51,45 +53,52 @@ function forEachCommaSeparatedCandidate(
   return true;
 }
 
-function forEachRequestedHeaderValue(
+function getNonEmptyHeaderValues(
   requestedHeaders: string | string[] | undefined,
-  visit: (requestedHeaderValue: string) => boolean
-): boolean {
+  maxValues: number
+): string[] {
   if (Array.isArray(requestedHeaders)) {
-    for (const requestedHeaderValue of requestedHeaders) {
+    const values: string[] = [];
+    for (let index = 0; index < requestedHeaders.length; index += 1) {
+      if (index >= maxValues) {
+        break;
+      }
+      const requestedHeaderValue = requestedHeaders[index];
       if (
         typeof requestedHeaderValue !== "string" ||
         requestedHeaderValue.trim().length === 0
       ) {
         continue;
       }
-      if (!visit(requestedHeaderValue)) {
-        return false;
-      }
+      values.push(requestedHeaderValue);
     }
-    return true;
+    return values;
   }
 
   if (
     typeof requestedHeaders === "string" &&
     requestedHeaders.trim().length > 0
   ) {
-    return visit(requestedHeaders);
+    return [requestedHeaders];
   }
 
-  return true;
+  return [];
 }
 
 function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
-  const requestedHeaders = req.headers["access-control-request-headers"];
+  const requestedHeaderValues = getNonEmptyHeaderValues(
+    req.headers["access-control-request-headers"],
+    PUSH_CORS_MAX_REQUESTED_HEADER_VALUES
+  );
+  if (requestedHeaderValues.length === 0) {
+    return undefined;
+  }
 
   const seen = new Set<string>();
   const dedupedHeaders: string[] = [];
   let processedHeaderCandidateCount = 0;
-  let sawRequestedHeaderValue = false;
 
-  forEachRequestedHeaderValue(requestedHeaders, (requestedHeaderValue) => {
-    sawRequestedHeaderValue = true;
+  for (const requestedHeaderValue of requestedHeaderValues) {
     const shouldContinueScanning = forEachCommaSeparatedCandidate(
       requestedHeaderValue,
       (headerCandidate) => {
@@ -123,29 +132,18 @@ function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
       dedupedHeaders.length >= PUSH_CORS_MAX_REQUESTED_HEADER_COUNT ||
       processedHeaderCandidateCount >= PUSH_CORS_MAX_REQUESTED_HEADER_CANDIDATES
     ) {
-      return false;
+      break;
     }
-
-    return true;
-  });
-
-  if (!sawRequestedHeaderValue) {
-    return undefined;
   }
 
   return dedupedHeaders.length > 0 ? dedupedHeaders : undefined;
 }
 
 function getRequestedCorsMethod(req: VercelRequest): string | undefined {
-  const requestedMethod = req.headers["access-control-request-method"];
-  const requestedMethodValue = Array.isArray(requestedMethod)
-    ? requestedMethod.find(
-        (value): value is string =>
-          typeof value === "string" && value.trim().length > 0
-      )
-    : typeof requestedMethod === "string" && requestedMethod.trim().length > 0
-      ? requestedMethod
-      : undefined;
+  const requestedMethodValue = getNonEmptyHeaderValues(
+    req.headers["access-control-request-method"],
+    PUSH_CORS_MAX_REQUESTED_METHOD_VALUES
+  )[0];
 
   if (typeof requestedMethodValue !== "string") {
     return undefined;
