@@ -15,6 +15,12 @@ import {
   PUSH_TOKEN_MIN_LENGTH,
 } from "../src/utils/pushToken";
 import {
+  isPushTokenFormat,
+  normalizePushTokenValue,
+  PUSH_TOKEN_MAX_LENGTH as SHARED_PUSH_TOKEN_MAX_LENGTH,
+  PUSH_TOKEN_MIN_LENGTH as SHARED_PUSH_TOKEN_MIN_LENGTH,
+} from "../shared/pushToken";
+import {
   assertEq,
   clearResults,
   printSummary,
@@ -44,6 +50,8 @@ const ALLOWED_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 const INVALID_CHARS = ["/", " ", "\t", "\n", "@", ",", "π"];
 
 async function testTokenLengthConstantsStayInSync() {
+  assertEq(PUSH_TOKEN_MIN_LENGTH, SHARED_PUSH_TOKEN_MIN_LENGTH);
+  assertEq(PUSH_TOKEN_MAX_LENGTH, SHARED_PUSH_TOKEN_MAX_LENGTH);
   assertEq(PUSH_TOKEN_MIN_LENGTH, BACKEND_PUSH_TOKEN_MIN_LENGTH);
   assertEq(PUSH_TOKEN_MAX_LENGTH, BACKEND_PUSH_TOKEN_MAX_LENGTH);
 }
@@ -66,6 +74,29 @@ async function testCanonicalStringInputsMatchBackendValidation() {
       normalized !== null,
       isValidPushToken(value),
       `Mismatch for canonical token value: "${value}"`
+    );
+  }
+}
+
+async function testFrontendAndSharedNormalizersStayInSync() {
+  for (const value of SAMPLE_VALUES) {
+    assertEq(
+      normalizePushToken(value),
+      normalizePushTokenValue(value),
+      `Mismatch between frontend and shared token normalization for value: ${String(value)}`
+    );
+  }
+}
+
+async function testBackendAndSharedValidatorsStayInSyncForCanonicalStrings() {
+  for (const value of SAMPLE_VALUES) {
+    if (typeof value !== "string") continue;
+    if (value !== value.trim()) continue;
+
+    assertEq(
+      isValidPushToken(value),
+      isPushTokenFormat(value),
+      `Mismatch between backend and shared token validation for value: ${value}`
     );
   }
 }
@@ -114,6 +145,14 @@ export async function runPushTokenParityTests(): Promise<{
   await runTest(
     "Canonical token strings match frontend/backend validation parity",
     testCanonicalStringInputsMatchBackendValidation
+  );
+  await runTest(
+    "Frontend and shared token normalizers stay in sync",
+    testFrontendAndSharedNormalizersStayInSync
+  );
+  await runTest(
+    "Backend and shared token validators stay in sync for canonical strings",
+    testBackendAndSharedValidatorsStayInSyncForCanonicalStrings
   );
   await runTest(
     "Generated allowed tokens match backend validation",
