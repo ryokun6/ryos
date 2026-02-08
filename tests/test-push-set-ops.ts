@@ -175,6 +175,16 @@ async function testRemovalFallbackWhenExecResultUnparseable() {
     ["tok1"]
   );
   assertEq(removedCountFromNegative, 1);
+
+  const { redis: redisWithErroredTuple } = createFakeRedis([
+    [[{ message: "ERR" }, 1]],
+  ]);
+  const removedCountFromErroredTuple = await removeTokensFromUserSet(
+    redisWithErroredTuple,
+    "push:user:alice:tokens",
+    ["tok1"]
+  );
+  assertEq(removedCountFromErroredTuple, 1);
 }
 
 async function testMetadataRemovalFallbackWhenExecResultUnparseable() {
@@ -223,6 +233,17 @@ async function testRemoveTokensAndMetadataFallbackWhenExecResultUnparseable() {
     (token) => `push:token:${token}`
   );
   assertEq(removedFromOverlarge, 2);
+
+  const { redis: redisWithErroredTuple } = createFakeRedis([
+    [[{ message: "ERR" }, 1], [null, 1], [null, 1], [null, 1]],
+  ]);
+  const removedFromErroredTuple = await removeTokensAndMetadata(
+    redisWithErroredTuple,
+    "push:user:alice:tokens",
+    ["tok1", "tok2"],
+    (token) => `push:token:${token}`
+  );
+  assertEq(removedFromErroredTuple, 2);
 }
 
 async function testNoOpsSkipPipeline() {
