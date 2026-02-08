@@ -16,6 +16,12 @@ export const openChatRoomFromNotification = (
     typeof roomId === "string" && roomId.trim().length > 0 ? roomId : null;
 
   void chatsStore.switchRoom(targetRoomId);
-  // Refresh visible rooms so sidebar/channel metadata catches up quickly.
-  void chatsStore.fetchRooms();
+
+  // If this room is not currently visible in state, refresh rooms to surface it.
+  if (
+    targetRoomId &&
+    !chatsStore.rooms.some((room) => room.id === targetRoomId)
+  ) {
+    void chatsStore.fetchRooms();
+  }
 };
