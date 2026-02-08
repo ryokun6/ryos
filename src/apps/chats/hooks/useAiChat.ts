@@ -82,27 +82,6 @@ import {
  * Priority: Low - current architecture works well for the use case.
  */
 
-// Track newly created TextEdit instances for fallback mechanism
-const recentlyCreatedTextEditInstances = new Map<
-  string,
-  { instanceId: string; timestamp: number }
->();
-
-// Helper to add a newly created instance to tracking
-const trackNewTextEditInstance = (instanceId: string) => {
-  recentlyCreatedTextEditInstances.set(instanceId, {
-    instanceId,
-    timestamp: Date.now(),
-  });
-  // Clean up old entries (older than 5 minutes)
-  const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-  for (const [id, data] of recentlyCreatedTextEditInstances.entries()) {
-    if (data.timestamp < fiveMinutesAgo) {
-      recentlyCreatedTextEditInstances.delete(id);
-    }
-  }
-};
-
 // Replace or update the getSystemState function to use stores
 const getSystemState = () => {
   const appStore = useAppStore.getState();
@@ -1162,7 +1141,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   windowTitle,
                   true
                 );
-                trackNewTextEditInstance(targetInstanceId);
               }
 
               const outputKey = isNewFile ? "createdDocument" : "updatedDocument";
