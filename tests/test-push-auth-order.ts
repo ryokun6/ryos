@@ -7,6 +7,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import pushRegisterHandler from "../_api/push/register";
 import pushUnregisterHandler from "../_api/push/unregister";
 import pushTestHandler from "../_api/push/test";
+import { PUSH_OPTIONS_VARY_HEADER } from "../_api/push/_request-guard";
 import {
   assertEq,
   clearResults,
@@ -63,9 +64,7 @@ async function expectUnauthorizedOriginResponse(
   const req = createRequest(method, endpointPath, "https://evil.example");
   const mockRes = createMockVercelResponseHarness();
   const expectedVary =
-    method === "OPTIONS"
-      ? "Origin, Access-Control-Request-Method, Access-Control-Request-Headers"
-      : "Origin";
+    method === "OPTIONS" ? PUSH_OPTIONS_VARY_HEADER : "Origin";
 
   await handler(req, mockRes.res);
 

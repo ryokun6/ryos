@@ -8,6 +8,7 @@ import {
   handlePushPostRequestGuards,
   PUSH_CORS_MAX_REQUESTED_HEADER_COUNT,
   PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH,
+  PUSH_OPTIONS_VARY_HEADER,
 } from "../_api/push/_request-guard";
 import {
   assertEq,
@@ -19,9 +20,6 @@ import {
   section,
   withPatchedEnv,
 } from "./test-utils";
-
-const OPTIONS_VARY_HEADER =
-  "Origin, Access-Control-Request-Method, Access-Control-Request-Headers";
 
 function createMockLogger() {
   return createMockPushRequestLoggerHarness();
@@ -233,7 +231,7 @@ async function testAllowedOptionsPreflightHandled() {
     assertEq(mockRes.getEndCallCount(), 1);
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), "http://localhost:3000");
     assertEq(mockRes.getHeader("Access-Control-Allow-Methods"), "POST, OPTIONS");
-    assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
       "Content-Type, Authorization, X-Username"
@@ -269,7 +267,7 @@ async function testAllowedOptionsPreflightWithRequestedPostMethodHandled() {
     assertEq(handled, true);
     assertEq(mockRes.getStatusCode(), 204);
     assertEq(mockRes.getEndCallCount(), 1);
-    assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
   });
 }
 
@@ -309,7 +307,7 @@ async function testAllowedOptionsPreflightRejectsUnsupportedRequestedMethod() {
     );
     assertEq(mockRes.getHeader("Access-Control-Allow-Credentials"), "true");
     assertEq(mockRes.getHeader("Access-Control-Max-Age"), "86400");
-    assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
     assertEq(mockRes.getEndCallCount(), 0);
     assertEq(mockLogger.responseCalls.length, 1);
     assertEq(mockLogger.responseCalls[0].statusCode, 405);
@@ -340,7 +338,7 @@ async function testAllowedOptionsPreflightUsesFirstNonEmptyRequestedMethodArrayV
     assertEq(handled, true);
     assertEq(mockRes.getStatusCode(), 204);
     assertEq(mockRes.getEndCallCount(), 1);
-    assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
   });
 }
 
@@ -372,7 +370,7 @@ async function testAllowedOptionsPreflightRejectsWhenFirstNonEmptyRequestedMetho
       JSON.stringify({ error: "Method not allowed" })
     );
     assertEq(mockRes.getHeader("Allow"), "POST, OPTIONS");
-    assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
   });
 }
 
@@ -399,7 +397,7 @@ async function testAllowedOptionsPreflightEchoesRequestedHeaders() {
 
     assertEq(handled, true);
     assertEq(mockRes.getStatusCode(), 204);
-    assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
       "x-custom-header, authorization"
@@ -785,7 +783,7 @@ async function testAllowedOptionsPreflightMergesRequestedHeaderArrayValues() {
 
     assertEq(handled, true);
     assertEq(mockRes.getStatusCode(), 204);
-    assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
     assertEq(
       mockRes.getHeader("Access-Control-Allow-Headers"),
       "x-first, authorization, x-second"
@@ -819,7 +817,7 @@ async function testAllowedOptionsPreflightUsesFirstNonEmptyHeaderArrayValue() {
 
     assertEq(handled, true);
     assertEq(mockRes.getStatusCode(), 204);
-    assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
     assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), "x-second, authorization");
   });
 }
@@ -850,7 +848,7 @@ async function testAllowedOptionsPreflightCombinesArrayValuesAfterFilteringInval
 
     assertEq(handled, true);
     assertEq(mockRes.getStatusCode(), 204);
-    assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
     assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), "x-valid-header, authorization");
   });
 }
@@ -879,7 +877,7 @@ async function testDisallowedOptionsPreflightRejected() {
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
     assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), undefined);
     assertEq(mockRes.getHeader("Allow"), undefined);
-    assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
     assertEq(mockLogger.responseCalls.length, 1);
     assertEq(mockLogger.responseCalls[0].statusCode, 403);
   });
@@ -915,7 +913,7 @@ async function testDisallowedOptionsPreflightWithRequestedHeadersRejectedWithout
     assertEq(mockRes.getHeader("Access-Control-Allow-Origin"), undefined);
     assertEq(mockRes.getHeader("Access-Control-Allow-Headers"), undefined);
     assertEq(mockRes.getHeader("Allow"), undefined);
-    assertEq(mockRes.getHeader("Vary"), OPTIONS_VARY_HEADER);
+    assertEq(mockRes.getHeader("Vary"), PUSH_OPTIONS_VARY_HEADER);
     assertEq(mockRes.getEndCallCount(), 0);
   });
 }

@@ -13,7 +13,7 @@ interface PushRequestLoggerLike {
 const CORS_HEADER_NAME_REGEX = /^[A-Za-z0-9!#$%&'*+.^_`|~-]+$/;
 export const PUSH_CORS_MAX_REQUESTED_HEADER_NAME_LENGTH = 128;
 export const PUSH_CORS_MAX_REQUESTED_HEADER_COUNT = 50;
-const PUSH_OPTIONS_VARY_HEADER =
+export const PUSH_OPTIONS_VARY_HEADER =
   "Origin, Access-Control-Request-Method, Access-Control-Request-Headers";
 
 function getRequestedCorsHeaders(req: VercelRequest): string[] | undefined {
