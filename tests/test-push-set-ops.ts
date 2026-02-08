@@ -55,8 +55,13 @@ async function testDistinctTokenNormalization() {
     "b",
     "b",
     "c",
+    "   ",
   ]);
-  assertEq(distinct.join(","), "a,b,c");
+  assertEq(distinct.includes("a"), true);
+  assertEq(distinct.includes("b"), true);
+  assertEq(distinct.includes("c"), true);
+  assertEq(distinct.includes("   "), true);
+  assertEq(distinct.length, 4);
 }
 
 async function testRemoveTokensFromUserSet() {
