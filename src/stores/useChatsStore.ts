@@ -54,6 +54,7 @@ import {
   refreshAuthTokenRequest,
   registerUserRequest,
 } from "./chats/authApi";
+import { readErrorResponseBody } from "./chats/httpErrors";
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -531,9 +532,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             });
 
             if (!response.ok) {
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
+              const errorData = await readErrorResponseBody(response);
               console.error("[ChatsStore] Error refreshing token:", errorData);
               return {
                 ok: false,
@@ -948,9 +947,7 @@ export const useChatsStore = create<ChatsStoreState>()(
               });
 
               if (!response.ok) {
-                const errorData = await response.json().catch(() => ({
-                  error: `HTTP error! status: ${response.status}`,
-                }));
+                const errorData = await readErrorResponseBody(response);
                 console.error("[ChatsStore] Error switching rooms:", errorData);
                 // Don't revert the room change on API error, just log it
               } else {
@@ -1012,9 +1009,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             });
 
             if (!response.ok) {
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
+              const errorData = await readErrorResponseBody(response);
               return {
                 ok: false,
                 error: errorData.error || "Failed to create room",
@@ -1050,9 +1045,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             });
 
             if (!response.ok) {
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
+              const errorData = await readErrorResponseBody(response);
               return {
                 ok: false,
                 error: errorData.error || "Failed to delete room",
@@ -1103,9 +1096,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             if (!response.ok) {
               // Remove optimistic message on failure
               get().removeMessageFromRoom(roomId, optimisticMessage.id);
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
+              const errorData = await readErrorResponseBody(response);
               return {
                 ok: false,
                 error: errorData.error || "Failed to send message",
@@ -1141,9 +1132,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             });
 
             if (!response.ok) {
-              const errorData = await response.json().catch(() => ({
-                error: `HTTP error! status: ${response.status}`,
-              }));
+              const errorData = await readErrorResponseBody(response);
               return {
                 ok: false,
                 error: errorData.error || "Failed to create user",
