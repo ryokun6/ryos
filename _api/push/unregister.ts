@@ -14,6 +14,7 @@ import {
 import { getTokenOwnershipEntries, splitTokenOwnership } from "./_ownership.js";
 import { normalizeUnregisterPushPayload } from "./_request-payloads.js";
 import { createPushRedis, getMissingPushRedisEnvVars } from "./_redis.js";
+import { removeTokensFromUserSet } from "./_set-ops.js";
 import {
   extractAuthFromHeaders,
   parseStoredPushTokens,
@@ -119,18 +120,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       skippedNonStringCount: skippedNonStringTokenCount,
     } = parseStoredPushTokens(rawUserTokens);
 
-    if (invalidStoredTokens.length > 0) {
-      const cleanupPipeline = redis.pipeline();
-      for (const invalidToken of invalidStoredTokens) {
-        cleanupPipeline.srem(userTokensKey, invalidToken);
-      }
-      await cleanupPipeline.exec();
-    }
+    const invalidStoredTokensRemoved = await removeTokensFromUserSet(
+      redis,
+      userTokensKey,
+      invalidStoredTokens
+    );
 
-    if (invalidStoredTokens.length > 0 || skippedNonStringTokenCount > 0) {
+    if (invalidStoredTokensRemoved > 0 || skippedNonStringTokenCount > 0) {
       logger.warn("Cleaned invalid stored push tokens during unregister", {
         username,
-        invalidStoredTokensRemoved: invalidStoredTokens.length,
+        invalidStoredTokensRemoved,
         skippedNonStringTokenCount,
       });
     }
@@ -139,9 +138,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       logger.response(200, Date.now() - startTime);
       return res.status(200).json({
         success: true,
-        removed: invalidStoredTokens.length,
+        removed: invalidStoredTokensRemoved,
         metadataRemoved: 0,
-        invalidStoredTokensRemoved: invalidStoredTokens.length,
+        invalidStoredTokensRemoved,
         skippedNonStringTokenCount,
       });
     }
@@ -166,18 +165,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     logger.info("Unregistered all push tokens for user", {
       username,
-      removed: userTokens.length + invalidStoredTokens.length,
+      removed: userTokens.length + invalidStoredTokensRemoved,
       removedMetadata: ownedTokens.length,
-      invalidStoredTokensRemoved: invalidStoredTokens.length,
+      invalidStoredTokensRemoved,
       skippedNonStringTokenCount,
     });
     logger.response(200, Date.now() - startTime);
 
     return res.status(200).json({
       success: true,
-      removed: userTokens.length + invalidStoredTokens.length,
+      removed: userTokens.length + invalidStoredTokensRemoved,
       metadataRemoved: ownedTokens.length,
-      invalidStoredTokensRemoved: invalidStoredTokens.length,
+      invalidStoredTokensRemoved,
       skippedNonStringTokenCount,
     });
   } catch (error) {

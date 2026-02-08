@@ -25,6 +25,10 @@ import { normalizePushTestPayload } from "./_payload.js";
 import { createPushRedis, getMissingPushRedisEnvVars } from "./_redis.js";
 import { summarizePushSendResults } from "./_results.js";
 import {
+  removeTokensAndMetadata,
+  removeTokensFromUserSet,
+} from "./_set-ops.js";
+import {
   extractAuthFromHeaders,
   parseStoredPushTokens,
   getTokenMetaKey,
@@ -123,18 +127,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       skippedNonStringCount: skippedNonStringTokenCount,
     } = parseStoredPushTokens(rawUserTokens);
 
-    if (invalidStoredTokens.length > 0) {
-      const cleanupPipeline = redis.pipeline();
-      for (const invalidToken of invalidStoredTokens) {
-        cleanupPipeline.srem(userTokensKey, invalidToken);
-      }
-      await cleanupPipeline.exec();
-    }
+    const invalidStoredTokensRemoved = await removeTokensFromUserSet(
+      redis,
+      userTokensKey,
+      invalidStoredTokens
+    );
 
-    if (invalidStoredTokens.length > 0 || skippedNonStringTokenCount > 0) {
+    if (invalidStoredTokensRemoved > 0 || skippedNonStringTokenCount > 0) {
       logger.warn("Cleaned invalid stored push tokens before send", {
         username,
-        invalidStoredTokensRemoved: invalidStoredTokens.length,
+        invalidStoredTokensRemoved,
         skippedNonStringTokenCount,
       });
     }
@@ -147,6 +149,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const requestedToken = payload.token;
     let targetTokens: string[] = [];
     let staleOwnershipTokens: string[] = [];
+    let staleOwnershipTokensRemoved = 0;
 
     if (requestedToken) {
       if (!userTokens.includes(requestedToken)) {
@@ -166,13 +169,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } = splitTokenOwnership(ownershipEntries);
       staleOwnershipTokens = unownedTokens;
 
-      if (staleOwnershipTokens.length > 0) {
-        const cleanupPipeline = redis.pipeline();
-        for (const staleToken of staleOwnershipTokens) {
-          cleanupPipeline.srem(userTokensKey, staleToken);
-        }
-        await cleanupPipeline.exec();
-      }
+      staleOwnershipTokensRemoved = await removeTokensFromUserSet(
+        redis,
+        userTokensKey,
+        staleOwnershipTokens
+      );
 
       if (ownedTokens.length === 0) {
         logger.response(403, Date.now() - startTime);
@@ -193,13 +194,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } = splitTokenOwnership(ownershipEntries);
       staleOwnershipTokens = unownedTokens;
 
-      if (staleOwnershipTokens.length > 0) {
-        const cleanupPipeline = redis.pipeline();
-        for (const staleToken of staleOwnershipTokens) {
-          cleanupPipeline.srem(userTokensKey, staleToken);
-        }
-        await cleanupPipeline.exec();
-      }
+      staleOwnershipTokensRemoved = await removeTokensFromUserSet(
+        redis,
+        userTokensKey,
+        staleOwnershipTokens
+      );
 
       targetTokens = ownedTokens;
     }
@@ -225,15 +224,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const staleTokens = results
       .filter((result) => !result.ok && result.reason && APNS_STALE_REASONS.has(result.reason))
       .map((result) => result.token);
-
-    if (staleTokens.length > 0) {
-      const pipeline = redis.pipeline();
-      for (const staleToken of staleTokens) {
-        pipeline.srem(userTokensKey, staleToken);
-        pipeline.del(getTokenMetaKey(staleToken));
-      }
-      await pipeline.exec();
-    }
+    const staleTokensRemoved = await removeTokensAndMetadata(
+      redis,
+      userTokensKey,
+      staleTokens,
+      getTokenMetaKey
+    );
 
     const { successCount, failureCount, failureReasons } = summarizePushSendResults(results);
 
@@ -243,10 +239,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       failureCount,
       failureReasons,
       apnsSendConcurrency: APNS_SEND_CONCURRENCY,
-      invalidStoredTokensRemoved: invalidStoredTokens.length,
+      invalidStoredTokensRemoved,
       skippedNonStringTokenCount,
-      staleTokensRemoved: staleTokens.length,
-      staleOwnershipTokensRemoved: staleOwnershipTokens.length,
+      staleTokensRemoved,
+      staleOwnershipTokensRemoved,
     });
     logger.response(200, Date.now() - startTime);
 
@@ -255,10 +251,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       failureCount,
       failureReasons,
       apnsSendConcurrency: APNS_SEND_CONCURRENCY,
-      invalidStoredTokensRemoved: invalidStoredTokens.length,
+      invalidStoredTokensRemoved,
       skippedNonStringTokenCount,
-      staleTokensRemoved: staleTokens.length,
-      staleOwnershipTokensRemoved: staleOwnershipTokens.length,
+      staleTokensRemoved,
+      staleOwnershipTokensRemoved,
       results,
     });
   } catch (error) {

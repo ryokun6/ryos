@@ -22,6 +22,7 @@ import { runPushSharedTests } from "./test-push-shared";
 import { runPushRedisTests } from "./test-push-redis";
 import { runPushRequestPayloadTests } from "./test-push-request-payloads";
 import { runPushOwnershipTests } from "./test-push-ownership";
+import { runPushSetOpsTests } from "./test-push-set-ops";
 import { runPushPayloadTests } from "./test-push-payload";
 import { runPushConcurrencyTests } from "./test-push-concurrency";
 import { runPushErrorsTests } from "./test-push-errors";
@@ -105,6 +106,7 @@ async function runAllTests(): Promise<void> {
     { name: "push-redis", run: runPushRedisTests },
     { name: "push-request-payloads", run: runPushRequestPayloadTests },
     { name: "push-ownership", run: runPushOwnershipTests },
+    { name: "push-set-ops", run: runPushSetOpsTests },
     { name: "push-payload", run: runPushPayloadTests },
     { name: "push-concurrency", run: runPushConcurrencyTests },
     { name: "push-errors", run: runPushErrorsTests },
