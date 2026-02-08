@@ -1,6 +1,9 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { validateAuth } from "../_utils/auth/index.js";
 import { initLogger } from "../_utils/_logging.js";
+import {
+  extractPushAuthCredentialsOrRespond,
+  validatePushAuthOrRespond,
+} from "./_auth-guard.js";
 import {
   respondInternalServerError,
   respondMissingEnvConfig,
@@ -9,7 +12,6 @@ import { handlePushPostRequestGuards } from "./_request-guard.js";
 import { createPushRedis, getMissingPushRedisEnvVars } from "./_redis.js";
 import {
   PUSH_TOKEN_TTL_SECONDS,
-  extractAuthFromHeaders,
   extractTokenMetadataOwner,
   getPushTokenSuffix,
   getTokenMetaKey,
@@ -38,11 +40,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { username, token } = extractAuthFromHeaders(req.headers);
-    if (!username || !token) {
-      logger.response(401, Date.now() - startTime);
-      return res.status(401).json({ error: "Unauthorized - missing credentials" });
-    }
+    const credentials = extractPushAuthCredentialsOrRespond(
+      req.headers,
+      res,
+      logger,
+      startTime
+    );
+    if (!credentials) return;
+
+    const { username } = credentials;
 
     const missingRedisEnvVars = getMissingPushRedisEnvVars();
     if (missingRedisEnvVars.length > 0) {
@@ -56,13 +62,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const redis = createPushRedis();
-    const authResult = await validateAuth(redis, username, token, {
-      allowExpired: false,
-    });
-    if (!authResult.valid || authResult.expired) {
-      logger.response(401, Date.now() - startTime);
-      return res.status(401).json({ error: "Unauthorized - invalid token" });
-    }
+    const isAuthorized = await validatePushAuthOrRespond(
+      redis,
+      credentials,
+      res,
+      logger,
+      startTime
+    );
+    if (!isAuthorized) return;
 
     const parsedPayload = normalizeRegisterPushPayload(req.body);
     if (!parsedPayload.ok) {

@@ -1,0 +1,213 @@
+#!/usr/bin/env bun
+/**
+ * Tests for shared push auth guard helpers.
+ */
+
+import type { VercelResponse } from "@vercel/node";
+import {
+  extractPushAuthCredentialsOrRespond,
+  validatePushAuthOrRespond,
+} from "../_api/push/_auth-guard";
+import {
+  assertEq,
+  clearResults,
+  printSummary,
+  runTest,
+  section,
+} from "./test-utils";
+
+interface MockResponse {
+  res: VercelResponse;
+  getStatusCode: () => number;
+  getJsonPayload: () => unknown;
+}
+
+interface MockLogger {
+  logger: { response: (statusCode: number, duration?: number) => void };
+  responseCalls: Array<{ statusCode: number; duration?: number }>;
+}
+
+interface FakeAuthRedis {
+  exists: (key: string) => Promise<number>;
+  expire: (key: string, ttl: number) => Promise<number>;
+  get: (key: string) => Promise<unknown>;
+}
+
+function createMockResponse(): MockResponse {
+  let statusCode = 0;
+  let jsonPayload: unknown = null;
+
+  const response = {
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      jsonPayload = payload;
+      return payload;
+    },
+  };
+
+  return {
+    res: response as unknown as VercelResponse,
+    getStatusCode: () => statusCode,
+    getJsonPayload: () => jsonPayload,
+  };
+}
+
+function createMockLogger(): MockLogger {
+  const responseCalls: Array<{ statusCode: number; duration?: number }> = [];
+
+  return {
+    logger: {
+      response: (statusCode: number, duration?: number) => {
+        responseCalls.push({ statusCode, duration });
+      },
+    },
+    responseCalls,
+  };
+}
+
+function createFakeAuthRedis(
+  existsResult: number
+): { redis: FakeAuthRedis; existsCalls: string[]; expireCalls: string[] } {
+  const existsCalls: string[] = [];
+  const expireCalls: string[] = [];
+
+  return {
+    redis: {
+      exists: async (key: string) => {
+        existsCalls.push(key);
+        return existsResult;
+      },
+      expire: async (key: string) => {
+        expireCalls.push(key);
+        return 1;
+      },
+      get: async () => null,
+    },
+    existsCalls,
+    expireCalls,
+  };
+}
+
+async function testExtractAuthMissingCredentialsResponse() {
+  const mockRes = createMockResponse();
+  const mockLogger = createMockLogger();
+
+  const credentials = extractPushAuthCredentialsOrRespond(
+    {
+      origin: "http://localhost:3000",
+    },
+    mockRes.res,
+    mockLogger.logger,
+    Date.now()
+  );
+
+  assertEq(credentials, null);
+  assertEq(mockRes.getStatusCode(), 401);
+  assertEq(
+    JSON.stringify(mockRes.getJsonPayload()),
+    JSON.stringify({ error: "Unauthorized - missing credentials" })
+  );
+  assertEq(mockLogger.responseCalls.length, 1);
+  assertEq(mockLogger.responseCalls[0].statusCode, 401);
+}
+
+async function testExtractAuthReturnsNormalizedCredentials() {
+  const mockRes = createMockResponse();
+  const mockLogger = createMockLogger();
+
+  const credentials = extractPushAuthCredentialsOrRespond(
+    {
+      authorization: "bearer token-123",
+      "x-username": "  ExampleUser  ",
+    },
+    mockRes.res,
+    mockLogger.logger,
+    Date.now()
+  );
+
+  assertEq(credentials?.username, "exampleuser");
+  assertEq(credentials?.token, "token-123");
+  assertEq(mockRes.getStatusCode(), 0);
+  assertEq(mockLogger.responseCalls.length, 0);
+}
+
+async function testValidateAuthRejectsInvalidToken() {
+  const mockRes = createMockResponse();
+  const mockLogger = createMockLogger();
+  const { redis, existsCalls, expireCalls } = createFakeAuthRedis(0);
+
+  const isValid = await validatePushAuthOrRespond(
+    redis as Parameters<typeof validatePushAuthOrRespond>[0],
+    { username: "user", token: "invalid-token" },
+    mockRes.res,
+    mockLogger.logger,
+    Date.now()
+  );
+
+  assertEq(isValid, false);
+  assertEq(mockRes.getStatusCode(), 401);
+  assertEq(
+    JSON.stringify(mockRes.getJsonPayload()),
+    JSON.stringify({ error: "Unauthorized - invalid token" })
+  );
+  assertEq(existsCalls.length, 1);
+  assertEq(expireCalls.length, 0);
+  assertEq(mockLogger.responseCalls.length, 1);
+  assertEq(mockLogger.responseCalls[0].statusCode, 401);
+}
+
+async function testValidateAuthAcceptsValidTokenAndRefreshesTtl() {
+  const mockRes = createMockResponse();
+  const mockLogger = createMockLogger();
+  const { redis, existsCalls, expireCalls } = createFakeAuthRedis(1);
+
+  const isValid = await validatePushAuthOrRespond(
+    redis as Parameters<typeof validatePushAuthOrRespond>[0],
+    { username: "user", token: "valid-token" },
+    mockRes.res,
+    mockLogger.logger,
+    Date.now()
+  );
+
+  assertEq(isValid, true);
+  assertEq(existsCalls.length, 1);
+  assertEq(expireCalls.length, 1);
+  assertEq(mockRes.getStatusCode(), 0);
+  assertEq(mockLogger.responseCalls.length, 0);
+}
+
+export async function runPushAuthGuardTests(): Promise<{ passed: number; failed: number }> {
+  console.log(section("push-auth-guard"));
+  clearResults();
+
+  await runTest(
+    "Push auth guard rejects missing credentials",
+    testExtractAuthMissingCredentialsResponse
+  );
+  await runTest(
+    "Push auth guard extracts normalized credentials",
+    testExtractAuthReturnsNormalizedCredentials
+  );
+  await runTest(
+    "Push auth guard rejects invalid redis token lookup",
+    testValidateAuthRejectsInvalidToken
+  );
+  await runTest(
+    "Push auth guard accepts valid token and refreshes TTL",
+    testValidateAuthAcceptsValidTokenAndRefreshesTtl
+  );
+
+  return printSummary();
+}
+
+if (import.meta.main) {
+  runPushAuthGuardTests()
+    .then(({ failed }) => process.exit(failed > 0 ? 1 : 0))
+    .catch((error) => {
+      console.error("Test runner error:", error);
+      process.exit(1);
+    });
+}

@@ -1,11 +1,14 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { validateAuth } from "../_utils/auth/index.js";
 import { initLogger } from "../_utils/_logging.js";
 import {
   getApnsConfigFromEnv,
   getMissingApnsEnvVars,
   sendApnsAlert,
 } from "../_utils/_push-apns.js";
+import {
+  extractPushAuthCredentialsOrRespond,
+  validatePushAuthOrRespond,
+} from "./_auth-guard.js";
 import { mapWithConcurrency } from "./_concurrency.js";
 import {
   getApnsSendConcurrency,
@@ -25,7 +28,6 @@ import {
   removeTokensFromUserSet,
 } from "./_set-ops.js";
 import {
-  extractAuthFromHeaders,
   getPushTokenSuffix,
   isRedisPositiveCount,
   parseStoredPushTokens,
@@ -68,11 +70,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { username, token } = extractAuthFromHeaders(req.headers);
-    if (!username || !token) {
-      logger.response(401, Date.now() - startTime);
-      return res.status(401).json({ error: "Unauthorized - missing credentials" });
-    }
+    const credentials = extractPushAuthCredentialsOrRespond(
+      req.headers,
+      res,
+      logger,
+      startTime
+    );
+    if (!credentials) return;
+
+    const { username } = credentials;
 
     const missingRedisEnvVars = getMissingPushRedisEnvVars();
     if (missingRedisEnvVars.length > 0) {
@@ -86,13 +92,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const redis = createPushRedis();
-    const authResult = await validateAuth(redis, username, token, {
-      allowExpired: false,
-    });
-    if (!authResult.valid || authResult.expired) {
-      logger.response(401, Date.now() - startTime);
-      return res.status(401).json({ error: "Unauthorized - invalid token" });
-    }
+    const isAuthorized = await validatePushAuthOrRespond(
+      redis,
+      credentials,
+      res,
+      logger,
+      startTime
+    );
+    if (!isAuthorized) return;
 
     const tokenMetadataLookupConcurrency = getPushMetadataLookupConcurrency();
     const apnsSendConcurrency = getApnsSendConcurrency();
