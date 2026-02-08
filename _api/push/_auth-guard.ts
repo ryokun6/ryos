@@ -2,11 +2,10 @@ import type { VercelResponse } from "@vercel/node";
 import type { IncomingHttpHeaders } from "node:http";
 import type { Redis } from "@upstash/redis";
 import { validateAuth } from "../_utils/auth/index.js";
+import type { PushLoggerLike } from "./_errors.js";
 import { extractAuthFromHeaders } from "./_shared.js";
 
-interface PushAuthLoggerLike {
-  response: (statusCode: number, duration?: number) => void;
-}
+type PushAuthLoggerLike = Pick<PushLoggerLike, "response">;
 
 export interface PushAuthCredentials {
   username: string;
