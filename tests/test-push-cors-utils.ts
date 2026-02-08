@@ -175,6 +175,29 @@ async function testSetCorsHeadersFiltersNonStringConfiguredMethodsAndHeaders() {
   assertEq(res.getHeader("Access-Control-Allow-Headers"), "X-Test");
 }
 
+async function testSetCorsHeadersSupportsZeroMaxAge() {
+  const res = createMockVercelResponseHarness();
+  setCorsHeaders(res.res, "http://localhost:3000", {
+    maxAge: 0,
+  });
+
+  assertEq(res.getHeader("Access-Control-Max-Age"), "0");
+}
+
+async function testSetCorsHeadersFallsBackForInvalidMaxAge() {
+  const negativeRes = createMockVercelResponseHarness();
+  setCorsHeaders(negativeRes.res, "http://localhost:3000", {
+    maxAge: -1,
+  });
+  assertEq(negativeRes.getHeader("Access-Control-Max-Age"), "86400");
+
+  const nanRes = createMockVercelResponseHarness();
+  setCorsHeaders(nanRes.res, "http://localhost:3000", {
+    maxAge: Number.NaN,
+  });
+  assertEq(nanRes.getHeader("Access-Control-Max-Age"), "86400");
+}
+
 async function testSetCorsHeadersAppendsOriginToExistingVaryHeader() {
   const res = createMockVercelResponseHarness();
   (res.res as { setHeader: (name: string, value: unknown) => unknown }).setHeader(
@@ -805,6 +828,46 @@ async function testHandlePreflightTrimsConfiguredMethodsAndHeaders() {
   });
 }
 
+async function testHandlePreflightSupportsZeroMaxAge() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:5173",
+  });
+  const res = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const handled = handlePreflight(req, res.res, {
+      maxAge: 0,
+    });
+    assertEq(handled, true);
+    assertEq(res.getStatusCode(), 204);
+    assertEq(res.getHeader("Access-Control-Max-Age"), "0");
+  });
+}
+
+async function testHandlePreflightFallsBackForInvalidMaxAge() {
+  const req = createRequest("OPTIONS", {
+    origin: "http://localhost:5173",
+  });
+  const negativeRes = createMockVercelResponseHarness();
+  const nanRes = createMockVercelResponseHarness();
+
+  await withPatchedEnv({ VERCEL_ENV: "development" }, async () => {
+    const negativeHandled = handlePreflight(req, negativeRes.res, {
+      maxAge: -1,
+    });
+    assertEq(negativeHandled, true);
+    assertEq(negativeRes.getStatusCode(), 204);
+    assertEq(negativeRes.getHeader("Access-Control-Max-Age"), "86400");
+
+    const nanHandled = handlePreflight(req, nanRes.res, {
+      maxAge: Number.NaN,
+    });
+    assertEq(nanHandled, true);
+    assertEq(nanRes.getStatusCode(), 204);
+    assertEq(nanRes.getHeader("Access-Control-Max-Age"), "86400");
+  });
+}
+
 async function testHandlePreflightFiltersNonStringConfiguredMethodsAndHeaders() {
   const req = createRequest("OPTIONS", {
     origin: "http://localhost:5173",
@@ -944,6 +1007,14 @@ export async function runPushCorsUtilsTests(): Promise<{
     testSetCorsHeadersFiltersNonStringConfiguredMethodsAndHeaders
   );
   await runTest(
+    "CORS header setter supports max-age=0",
+    testSetCorsHeadersSupportsZeroMaxAge
+  );
+  await runTest(
+    "CORS header setter falls back for invalid max-age values",
+    testSetCorsHeadersFallsBackForInvalidMaxAge
+  );
+  await runTest(
     "CORS header setter appends Origin to existing Vary values",
     testSetCorsHeadersAppendsOriginToExistingVaryHeader
   );
@@ -1074,6 +1145,14 @@ export async function runPushCorsUtilsTests(): Promise<{
   await runTest(
     "CORS preflight helper filters non-string configured methods and headers",
     testHandlePreflightFiltersNonStringConfiguredMethodsAndHeaders
+  );
+  await runTest(
+    "CORS preflight helper supports max-age=0",
+    testHandlePreflightSupportsZeroMaxAge
+  );
+  await runTest(
+    "CORS preflight helper falls back for invalid max-age values",
+    testHandlePreflightFallsBackForInvalidMaxAge
   );
   await runTest(
     "CORS preflight helper falls back to configured allow headers when requested headers are invalid",

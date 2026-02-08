@@ -306,12 +306,13 @@ export function handlePreflight(
   );
   const allowHeaders =
     requestedHeaders ?? configuredHeaders.join(", ");
+  const normalizedMaxAge = normalizeCorsMaxAge(options.maxAge);
 
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Access-Control-Allow-Methods", configuredMethods.join(", "));
   res.setHeader("Access-Control-Allow-Headers", allowHeaders);
   res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Max-Age", String(options.maxAge || 86400));
+  res.setHeader("Access-Control-Max-Age", String(normalizedMaxAge));
   res.status(204).end();
   return true;
 }
@@ -349,17 +350,23 @@ function normalizeConfiguredCorsValues(
   return normalizedValues;
 }
 
+function normalizeCorsMaxAge(maxAge: number | undefined): number {
+  if (typeof maxAge !== "number" || !Number.isFinite(maxAge) || maxAge < 0) {
+    return 86400;
+  }
+
+  return Math.floor(maxAge);
+}
+
 export function setCorsHeaders(
   res: VercelResponse,
   origin: string | null | undefined,
   options: SetCorsHeadersOptions = {}
 ): void {
-  const {
-    credentials = true,
-    maxAge = 86400,
-  } = options;
+  const { credentials = true } = options;
   const methods = normalizeConfiguredCorsValues(options.methods, DEFAULT_CORS_METHODS);
   const headers = normalizeConfiguredCorsValues(options.headers, DEFAULT_CORS_HEADERS);
+  const normalizedMaxAge = normalizeCorsMaxAge(options.maxAge);
 
   if (origin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
@@ -370,5 +377,5 @@ export function setCorsHeaders(
   if (credentials) {
     res.setHeader("Access-Control-Allow-Credentials", "true");
   }
-  res.setHeader("Access-Control-Max-Age", String(maxAge));
+  res.setHeader("Access-Control-Max-Age", String(normalizedMaxAge));
 }
