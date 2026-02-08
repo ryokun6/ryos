@@ -81,6 +81,8 @@ File: `src/stores/useChatsStore.ts`
   - `fetchBulkMessages`
 - This prevents noisy JSON parse exceptions when frontend-only dev mode returns
   non-JSON content for API paths; failures now degrade gracefully with warnings.
+- Added per-session warning dedupe (`warnChatsStoreOnce`) so repeated fetch
+  retries do not spam identical warnings during local frontend-only runs.
 
 ## Validation performed
 
