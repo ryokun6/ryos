@@ -20,7 +20,8 @@ export const PUSH_CORS_MAX_REQUESTED_METHOD_LENGTH = 32;
 export const PUSH_CORS_MAX_REQUESTED_METHOD_VALUES = 20;
 export const PUSH_OPTIONS_VARY_HEADER =
   "Origin, Access-Control-Request-Method, Access-Control-Request-Headers";
-export const PUSH_ALLOWED_METHODS = ["POST", "OPTIONS"] as const;
+export const PUSH_ALLOWED_REQUEST_METHOD = "POST";
+export const PUSH_ALLOWED_METHODS = [PUSH_ALLOWED_REQUEST_METHOD, "OPTIONS"] as const;
 export const PUSH_ALLOW_HEADER_VALUE = PUSH_ALLOWED_METHODS.join(", ");
 export const PUSH_ALLOWED_HEADERS = [
   "Content-Type",
@@ -208,7 +209,7 @@ export function handlePushPostRequestGuards(
     if (
       requestedMethod.kind === "invalid" ||
       (requestedMethod.kind === "value" &&
-        requestedMethod.method !== PUSH_ALLOWED_METHODS[0])
+        requestedMethod.method !== PUSH_ALLOWED_REQUEST_METHOD)
     ) {
       respondMethodNotAllowed(res, logger, startTime, origin);
       return true;
@@ -236,7 +237,7 @@ export function handlePushPostRequestGuards(
     headers: PUSH_ALLOWED_HEADERS_LIST,
   });
 
-  if (method !== PUSH_ALLOWED_METHODS[0]) {
+  if (method !== PUSH_ALLOWED_REQUEST_METHOD) {
     respondMethodNotAllowed(res, logger, startTime, origin);
     return true;
   }

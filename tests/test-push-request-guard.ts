@@ -7,6 +7,7 @@ import type { VercelRequest } from "@vercel/node";
 import {
   PUSH_ALLOWED_HEADERS,
   PUSH_ALLOWED_METHODS,
+  PUSH_ALLOWED_REQUEST_METHOD,
   PUSH_ALLOW_HEADERS_VALUE,
   handlePushPostRequestGuards,
   PUSH_ALLOW_HEADER_VALUE,
@@ -95,6 +96,7 @@ function withCustomRuntimeEnv<T>(
 }
 
 async function testExportedPushRequestGuardContractConstants() {
+  assertEq(PUSH_ALLOWED_REQUEST_METHOD, "POST");
   assertEq(PUSH_ALLOWED_METHODS.join(","), "POST,OPTIONS");
   assertEq(PUSH_ALLOW_HEADER_VALUE, "POST, OPTIONS");
   assertEq(PUSH_ALLOWED_HEADERS.join(","), "Content-Type,Authorization,X-Username");
