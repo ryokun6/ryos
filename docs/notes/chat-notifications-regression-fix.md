@@ -76,6 +76,7 @@ Routes now emit matching realtime events:
 - `tests/test-chat-broadcast-wiring.ts`
   - verifies critical REST routes still call expected broadcast functions
   - verifies presence-switch broadcasts both previous and next room updates
+  - verifies room-delete route registry/presence cleanup wiring
   - verifies leave-route private-room registry cleanup wiring
 - `tests/test-chat-store-guards-wiring.ts`
   - verifies chat store JSON response guard contexts stay wired
@@ -108,6 +109,7 @@ File: `src/stores/useChatsStore.ts`
 - Automated:
   - `bun run test:chat-regression`
     - wraps `chat-notifications`, `pusher-client`, `chat-broadcast-wiring`
+  - `bun run test:chat-store-guards`
   - `bun run tests/run-all-tests.ts chat-`
   - `bun run tests/run-all-tests.ts pusher`
   - `bun run build`
