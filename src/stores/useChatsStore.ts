@@ -8,8 +8,6 @@ import {
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/html";
 import {
   clearApiUnavailable,
@@ -64,9 +62,13 @@ import {
 } from "./chats/tokenLifecycle";
 import {
   LEGACY_CHAT_STORAGE_KEYS,
-  tryParseLegacyJson,
 } from "./chats/legacyStorage";
 import { clearChatRecoveryStorage } from "./chats/logoutCleanup";
+import { migrateLegacyChatStorageState } from "./chats/migration";
+import {
+  checkPasswordStatusRequest,
+  setPasswordRequest,
+} from "./chats/passwordApi";
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -287,19 +289,10 @@ export const useChatsStore = create<ChatsStoreState>()(
             currentUsername
           );
           try {
-            const response = await abortableFetch(
-              "/api/auth/password/check",
-              {
-                method: "GET",
-                headers: {
-                  Authorization: `Bearer ${currentToken}`,
-                  "X-Username": currentUsername,
-                },
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
+            const response = await checkPasswordStatusRequest({
+              username: currentUsername,
+              authToken: currentToken,
+            });
 
             console.log(
               "[ChatsStore] checkHasPassword: Response status",
@@ -339,21 +332,11 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await abortableFetch(
-              getApiUrl("/api/auth/password/set"),
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${currentToken}`,
-                  "X-Username": currentUsername,
-                },
-                body: JSON.stringify({ password }),
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
-            );
+            const response = await setPasswordRequest({
+              username: currentUsername,
+              authToken: currentToken,
+              password,
+            });
 
             if (!response.ok) {
               const data = await response.json();
@@ -1207,87 +1190,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             `[ChatsStore] Migrating from old localStorage keys to version ${STORE_VERSION}...`
           );
           try {
-            const migratedState: Partial<ChatsStoreState> = {};
-
-            // Migrate AI Messages
-            const oldAiMessagesRaw = localStorage.getItem(
-              LEGACY_CHAT_STORAGE_KEYS.AI_MESSAGES
-            );
-            if (oldAiMessagesRaw) {
-              const parsedAiMessages =
-                tryParseLegacyJson<AIChatMessage[]>(oldAiMessagesRaw);
-              if (parsedAiMessages) {
-                migratedState.aiMessages = parsedAiMessages;
-              } else {
-                console.warn(
-                  "Failed to parse old AI messages during migration",
-                  oldAiMessagesRaw
-                );
-              }
-            }
-
-            // Migrate Username
-            const oldUsernameKey = LEGACY_CHAT_STORAGE_KEYS.USERNAME;
-            const oldUsername = localStorage.getItem(oldUsernameKey);
-            if (oldUsername) {
-              migratedState.username = oldUsername;
-              // Save to recovery mechanism as well
-              saveUsernameToRecovery(oldUsername);
-              localStorage.removeItem(oldUsernameKey); // Remove here during primary migration
-              console.log(
-                `[ChatsStore] Migrated and removed '${oldUsernameKey}' key during version upgrade.`
-              );
-            }
-
-            // Migrate Last Opened Room ID
-            const oldCurrentRoomId = localStorage.getItem(
-              LEGACY_CHAT_STORAGE_KEYS.LAST_OPENED_ROOM_ID
-            );
-            if (oldCurrentRoomId)
-              migratedState.currentRoomId = oldCurrentRoomId;
-
-            // Migrate Sidebar Visibility
-            const oldSidebarVisibleRaw = localStorage.getItem(
-              LEGACY_CHAT_STORAGE_KEYS.SIDEBAR_VISIBLE
-            );
-            if (oldSidebarVisibleRaw) {
-              // Check if it's explicitly "false", otherwise default to true (initial state)
-              migratedState.isSidebarVisible = oldSidebarVisibleRaw !== "false";
-            }
-
-            // Migrate Cached Rooms
-            const oldCachedRoomsRaw = localStorage.getItem(
-              LEGACY_CHAT_STORAGE_KEYS.CACHED_ROOMS
-            );
-            if (oldCachedRoomsRaw) {
-              const parsedRooms = tryParseLegacyJson<ChatRoom[]>(oldCachedRoomsRaw);
-              if (parsedRooms) {
-                migratedState.rooms = parsedRooms;
-              } else {
-                console.warn(
-                  "Failed to parse old cached rooms during migration",
-                  oldCachedRoomsRaw
-                );
-              }
-            }
-
-            // Migrate Cached Room Messages
-            const oldCachedRoomMessagesRaw = localStorage.getItem(
-              LEGACY_CHAT_STORAGE_KEYS.CACHED_ROOM_MESSAGES
-            );
-            if (oldCachedRoomMessagesRaw) {
-              const parsedRoomMessages = tryParseLegacyJson<
-                Record<string, ChatMessage[]>
-              >(oldCachedRoomMessagesRaw);
-              if (parsedRoomMessages) {
-                migratedState.roomMessages = parsedRoomMessages;
-              } else {
-                console.warn(
-                  "Failed to parse old cached room messages during migration",
-                  oldCachedRoomMessagesRaw
-                );
-              }
-            }
+            const migratedState = migrateLegacyChatStorageState();
 
             console.log("[ChatsStore] Migration data:", migratedState);
 
