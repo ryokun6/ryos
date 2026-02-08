@@ -93,6 +93,8 @@ File: `src/stores/useChatsStore.ts`
 - Added short per-endpoint cooldowns for known-unavailable API paths in
   frontend-only mode to reduce repeated failing requests while still retrying
   after cooldown expiry.
+- Network-level fetch failures now also mark the same short cooldown windows,
+  reducing repeated failing requests during transient backend outages.
 
 ## Validation performed
 
