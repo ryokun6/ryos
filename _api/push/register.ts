@@ -84,6 +84,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { token: pushToken, platform } = parsedPayload.value;
 
     const tokenMetaKey = getTokenMetaKey(pushToken);
+    const currentUserTokensKey = getUserTokensKey(username);
     const existingMeta = await redis.get<Partial<PushTokenMetadata> | null>(tokenMetaKey);
     const previousUsername = extractTokenMetadataOwner(existingMeta);
 
@@ -97,7 +98,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (previousUsername && previousUsername !== username) {
       pipeline.srem(getUserTokensKey(previousUsername), pushToken);
     }
-    pipeline.sadd(getUserTokensKey(username), pushToken);
+    pipeline.sadd(currentUserTokensKey, pushToken);
     pipeline.set(tokenMetaKey, metadata, { ex: PUSH_TOKEN_TTL_SECONDS });
     await pipeline.exec();
 
