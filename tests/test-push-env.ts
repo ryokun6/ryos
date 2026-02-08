@@ -138,6 +138,25 @@ async function testWithPatchedEnvRestoresAfterRejectedThenable() {
   assertEq(process.env[key], originalValue);
 }
 
+async function testWithPatchedEnvSupportsNestedAsyncPatches() {
+  const key = "PUSH_ENV_TEST_KEY_NESTED";
+  const originalValue = process.env[key];
+
+  await withPatchedEnv({ [key]: "outer" }, async () => {
+    assertEq(process.env[key], "outer");
+
+    await withPatchedEnv({ [key]: "inner" }, async () => {
+      assertEq(process.env[key], "inner");
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      assertEq(process.env[key], "inner");
+    });
+
+    assertEq(process.env[key], "outer");
+  });
+
+  assertEq(process.env[key], originalValue);
+}
+
 async function testMockVercelResponseHarnessSupportsHeaderChainingAndCaseInsensitiveRead() {
   const mockRes = createMockVercelResponseHarness();
   const chained = (mockRes.res as { setHeader: (name: string, value: unknown) => unknown })
@@ -227,6 +246,10 @@ export async function runPushEnvTests(): Promise<{ passed: number; failed: numbe
   await runTest(
     "withPatchedEnv restores values after thenable rejection",
     testWithPatchedEnvRestoresAfterRejectedThenable
+  );
+  await runTest(
+    "withPatchedEnv supports nested async patches",
+    testWithPatchedEnvSupportsNestedAsyncPatches
   );
   await runTest(
     "mock vercel response harness supports chaining and case-insensitive headers",
