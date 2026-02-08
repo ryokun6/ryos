@@ -18,9 +18,10 @@ export function handlePushPostRequestGuards(
   endpointPath: string
 ): boolean {
   const origin = getEffectiveOrigin(req);
-  logger.request(req.method || "POST", req.url || endpointPath);
+  const method = (req.method || "POST").toUpperCase();
+  logger.request(method, req.url || endpointPath);
 
-  if (req.method === "OPTIONS") {
+  if (method === "OPTIONS") {
     if (!isAllowedOrigin(origin)) {
       logger.response(403, Date.now() - startTime);
       res.status(403).json({ error: "Unauthorized" });
@@ -41,7 +42,7 @@ export function handlePushPostRequestGuards(
 
   setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
 
-  if (req.method !== "POST") {
+  if (method !== "POST") {
     res.setHeader("Allow", "POST, OPTIONS");
     logger.response(405, Date.now() - startTime);
     res.status(405).json({ error: "Method not allowed" });

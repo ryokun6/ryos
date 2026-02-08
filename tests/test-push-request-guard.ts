@@ -88,6 +88,14 @@ function createRequest(
   origin: string = "http://localhost:3000",
   url: string = "/api/push/register"
 ): VercelRequest {
+  return createRawRequest(method, origin, url);
+}
+
+function createRawRequest(
+  method: string | undefined,
+  origin: string = "http://localhost:3000",
+  url: string = "/api/push/register"
+): VercelRequest {
   return {
     method,
     url,
@@ -234,6 +242,48 @@ async function testUnsupportedMethodSetsAllowHeader() {
   });
 }
 
+async function testLowercasePostMethodIsNormalized() {
+  await withDevelopmentEnv(async () => {
+    const req = createRawRequest("post");
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockLogger.requestCalls.length, 1);
+    assertEq(mockLogger.requestCalls[0].method, "POST");
+    assertEq(mockLogger.responseCalls.length, 0);
+  });
+}
+
+async function testMissingMethodDefaultsToPost() {
+  await withDevelopmentEnv(async () => {
+    const req = createRawRequest(undefined);
+    const mockRes = createMockResponse();
+    const mockLogger = createMockLogger();
+
+    const handled = handlePushPostRequestGuards(
+      req,
+      mockRes.res,
+      mockLogger.logger,
+      Date.now(),
+      "/api/push/register"
+    );
+
+    assertEq(handled, false);
+    assertEq(mockLogger.requestCalls.length, 1);
+    assertEq(mockLogger.requestCalls[0].method, "POST");
+    assertEq(mockLogger.responseCalls.length, 0);
+  });
+}
+
 export async function runPushRequestGuardTests(): Promise<{
   passed: number;
   failed: number;
@@ -260,6 +310,14 @@ export async function runPushRequestGuardTests(): Promise<{
   await runTest(
     "Push request guard sets Allow header for unsupported methods",
     testUnsupportedMethodSetsAllowHeader
+  );
+  await runTest(
+    "Push request guard normalizes lowercase POST method",
+    testLowercasePostMethodIsNormalized
+  );
+  await runTest(
+    "Push request guard defaults missing method to POST",
+    testMissingMethodDefaultsToPost
   );
 
   return printSummary();
