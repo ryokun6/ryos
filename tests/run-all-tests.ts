@@ -16,6 +16,13 @@ import { runAiTests } from "./test-ai";
 import { runMediaTests } from "./test-media";
 import { runAuthExtraTests } from "./test-auth-extra";
 import { runRoomsExtraTests } from "./test-rooms-extra";
+import { runChatNotificationLogicTests } from "./test-chat-notification-logic";
+import { runChatNotificationIntegrationWiringTests } from "./test-chat-notification-integration-wiring";
+import { runPusherClientRefcountTests } from "./test-pusher-client-refcount";
+import { runPusherClientConstructorWiringTests } from "./test-pusher-client-constructor-wiring";
+import { runChatBroadcastWiringTests } from "./test-chat-broadcast-wiring";
+import { runChatStoreGuardsWiringTests } from "./test-chat-store-guards-wiring";
+import { runChatHookChannelLifecycleWiringTests } from "./test-chat-hook-channel-lifecycle-wiring";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -90,6 +97,13 @@ async function runAllTests(): Promise<void> {
     { name: "media", run: runMediaTests },
     { name: "auth-extra", run: runAuthExtraTests },
     { name: "rooms-extra", run: runRoomsExtraTests },
+    { name: "chat-notifications", run: runChatNotificationLogicTests },
+    { name: "chat-notification-wiring", run: runChatNotificationIntegrationWiringTests },
+    { name: "chat-hook-lifecycle-wiring", run: runChatHookChannelLifecycleWiringTests },
+    { name: "pusher-client", run: runPusherClientRefcountTests },
+    { name: "pusher-constructor-wiring", run: runPusherClientConstructorWiringTests },
+    { name: "chat-broadcast-wiring", run: runChatBroadcastWiringTests },
+    { name: "chat-store-guards", run: runChatStoreGuardsWiringTests },
   ];
 
   // Check for specific test to run

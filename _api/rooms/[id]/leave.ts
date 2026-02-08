@@ -10,8 +10,17 @@ import { isProfaneUsername, assertValidRoomId, assertValidUsername } from "../..
 import { initLogger } from "../../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../../_utils/_cors.js";
 import { getRoom, setRoom } from "../_helpers/_redis.js";
-import { CHAT_ROOM_PREFIX, CHAT_ROOM_USERS_PREFIX } from "../_helpers/_constants.js";
-import { removeRoomPresence, refreshRoomUserCount } from "../_helpers/_presence.js";
+import {
+  CHAT_ROOM_PREFIX,
+  CHAT_ROOM_USERS_PREFIX,
+  CHAT_ROOMS_SET,
+} from "../_helpers/_constants.js";
+import {
+  deleteRoomPresence,
+  removeRoomPresence,
+  refreshRoomUserCount,
+} from "../_helpers/_presence.js";
+import { broadcastRoomDeleted, broadcastRoomUpdated } from "../_helpers/_pusher.js";
 import type { Room } from "../_helpers/_types.js";
 
 export const runtime = "nodejs";
@@ -106,11 +115,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
           pipeline.del(`${CHAT_ROOM_PREFIX}${roomId}`);
           pipeline.del(`chat:messages:${roomId}`);
           pipeline.del(`${CHAT_ROOM_USERS_PREFIX}${roomId}`);
+          pipeline.srem(CHAT_ROOMS_SET, roomId);
           await pipeline.exec();
+          await deleteRoomPresence(roomId);
+
+          await broadcastRoomDeleted(roomId, roomData.type, roomData.members || []);
+          logger.info("Pusher room-deleted broadcast sent", {
+            roomId,
+            scope: "private-last-member",
+          });
         } else {
           const updatedRoom: Room = { ...roomData, members: updatedMembers, userCount };
           await setRoom(roomId, updatedRoom);
+          await broadcastRoomUpdated(roomId);
+          await broadcastRoomDeleted(roomId, roomData.type, [username]);
+          logger.info("Pusher private leave broadcasts sent", {
+            roomId,
+            remainingMembers: updatedMembers.length,
+            leftUser: username,
+          });
         }
+      } else {
+        await broadcastRoomUpdated(roomId);
       }
     }
 

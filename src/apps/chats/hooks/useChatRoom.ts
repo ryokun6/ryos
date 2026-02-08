@@ -1,12 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { PusherChannel } from "@/lib/pusherClient";
-import { getPusherClient } from "@/lib/pusherClient";
+import {
+  getPusherClient,
+  subscribePusherChannel,
+  unsubscribePusherChannel,
+} from "@/lib/pusherClient";
 import { useChatsStore } from "../../../stores/useChatsStore";
 import { toast } from "@/hooks/useToast";
 import { type ChatRoom, type ChatMessage } from "../../../../src/types/chat";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
 import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
+import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
@@ -38,6 +43,18 @@ const decodeHtmlEntities = (str: string): string => {
     (entity) => HTML_ENTITY_MAP[entity] || entity
   );
 };
+
+interface GlobalHandlers {
+  onRoomCreated: (data: { room: ChatRoom }) => void;
+  onRoomDeleted: (data: { roomId: string }) => void;
+  onRoomUpdated: (data: { room: ChatRoom }) => void;
+  onRoomsUpdated: (data: { rooms: ChatRoom[] }) => void;
+}
+
+interface RoomHandlers {
+  onRoomMessage: (data: { message: ChatMessage }) => void;
+  onMessageDeleted: (data: { messageId: string; roomId: string }) => void;
+}
 
 export function useChatRoom(
   isWindowOpen: boolean,
@@ -90,7 +107,9 @@ export function useChatRoom(
   // Pusher refs
   const pusherRef = useRef<ReturnType<typeof getPusherClient> | null>(null);
   const globalChannelRef = useRef<PusherChannel | null>(null);
+  const globalHandlersRef = useRef<GlobalHandlers | null>(null);
   const roomChannelsRef = useRef<Record<string, PusherChannel>>({});
+  const roomHandlersRef = useRef<Record<string, RoomHandlers>>({});
   const hasInitialized = useRef(false);
 
   // Dialog states (only room-related)
@@ -124,6 +143,25 @@ export function useChatRoom(
     });
   }, []);
 
+  const unsubscribeGlobalChannel = useCallback(() => {
+    const channel = globalChannelRef.current;
+    const handlers = globalHandlersRef.current;
+
+    if (channel && handlers) {
+      channel.unbind("room-created", handlers.onRoomCreated);
+      channel.unbind("room-deleted", handlers.onRoomDeleted);
+      channel.unbind("room-updated", handlers.onRoomUpdated);
+      channel.unbind("rooms-updated", handlers.onRoomsUpdated);
+    }
+
+    if (channel) {
+      unsubscribePusherChannel(channel.name);
+    }
+
+    globalChannelRef.current = null;
+    globalHandlersRef.current = null;
+  }, []);
+
   const subscribeToGlobalChannel = useCallback(() => {
     if (!pusherRef.current) return;
 
@@ -137,121 +175,129 @@ export function useChatRoom(
       console.log(
         `[Pusher Hook] Unsubscribing from old global channel: ${globalChannelRef.current.name}`
       );
-      pusherRef.current.unsubscribe(globalChannelRef.current.name);
-      globalChannelRef.current = null;
+      unsubscribeGlobalChannel();
     }
 
     if (!globalChannelRef.current) {
       console.log(
         `[Pusher Hook] Subscribing to global channel: ${channelName}`
       );
-      globalChannelRef.current = pusherRef.current.subscribe(channelName);
+      const channel = subscribePusherChannel(channelName);
 
       // Create event handlers (apply local diffs to avoid refetch)
-      const handleRoomCreated = (data: { room: ChatRoom }) => {
-        if (!data?.room?.id) {
-          void fetchRooms();
-          return;
-        }
+      const handlers: GlobalHandlers = {
+        onRoomCreated: (data) => {
+          if (!data?.room?.id) {
+            void fetchRooms();
+            return;
+          }
 
-        console.log("[Pusher Hook] Room created:", data.room);
-        const { rooms: currentRooms } = useChatsStore.getState();
-        setRooms(upsertChatRoom(currentRooms, data.room));
+          console.log("[Pusher Hook] Room created:", data.room);
+          const { rooms: currentRooms } = useChatsStore.getState();
+          setRooms(upsertChatRoom(currentRooms, data.room));
+        },
+        onRoomDeleted: (data) => {
+          if (!data?.roomId) {
+            void fetchRooms();
+            return;
+          }
+
+          console.log("[Pusher Hook] Room deleted:", data.roomId);
+          const { rooms: currentRooms } = useChatsStore.getState();
+          setRooms(removeChatRoomById(currentRooms, data.roomId));
+        },
+        onRoomUpdated: (data) => {
+          if (!data?.room?.id) {
+            void fetchRooms();
+            return;
+          }
+
+          console.log("[Pusher Hook] Room updated:", data.room);
+          const { rooms: currentRooms } = useChatsStore.getState();
+          setRooms(upsertChatRoom(currentRooms, data.room));
+        },
+        onRoomsUpdated: (data) => {
+          if (!Array.isArray(data?.rooms)) {
+            void fetchRooms();
+            return;
+          }
+
+          console.log(
+            "[Pusher Hook] Rooms updated:",
+            data.rooms.length,
+            "rooms"
+          );
+          // Update rooms directly instead of fetching from API
+          setRooms(data.rooms);
+        },
       };
-
-      const handleRoomDeleted = (data: { roomId: string }) => {
-        if (!data?.roomId) {
-          void fetchRooms();
-          return;
-        }
-
-        console.log("[Pusher Hook] Room deleted:", data.roomId);
-        const { rooms: currentRooms } = useChatsStore.getState();
-        setRooms(removeChatRoomById(currentRooms, data.roomId));
-      };
-
-      const handleRoomUpdated = (data: { room: ChatRoom }) => {
-        if (!data?.room?.id) {
-          void fetchRooms();
-          return;
-        }
-
-        console.log("[Pusher Hook] Room updated:", data.room);
-        const { rooms: currentRooms } = useChatsStore.getState();
-        setRooms(upsertChatRoom(currentRooms, data.room));
-      };
-
-      const handleRoomsUpdated = (data: { rooms: ChatRoom[] }) => {
-        if (!Array.isArray(data?.rooms)) {
-          void fetchRooms();
-          return;
-        }
-
-        console.log("[Pusher Hook] Rooms updated:", data.rooms.length, "rooms");
-        // Update rooms directly instead of fetching from API
-        setRooms(data.rooms);
-      };
-
-      // Unbind any existing handlers first (safety measure)
-      globalChannelRef.current.unbind("room-created");
-      globalChannelRef.current.unbind("room-deleted");
-      globalChannelRef.current.unbind("room-updated");
-      globalChannelRef.current.unbind("rooms-updated");
 
       // Bind the handlers
-      globalChannelRef.current.bind("room-created", handleRoomCreated);
-      globalChannelRef.current.bind("room-deleted", handleRoomDeleted);
-      globalChannelRef.current.bind("room-updated", handleRoomUpdated);
-      globalChannelRef.current.bind("rooms-updated", handleRoomsUpdated);
+      channel.bind("room-created", handlers.onRoomCreated);
+      channel.bind("room-deleted", handlers.onRoomDeleted);
+      channel.bind("room-updated", handlers.onRoomUpdated);
+      channel.bind("rooms-updated", handlers.onRoomsUpdated);
+
+      globalChannelRef.current = channel;
+      globalHandlersRef.current = handlers;
     }
-  }, [username, fetchRooms, setRooms]);
+  }, [username, fetchRooms, setRooms, unsubscribeGlobalChannel]);
 
   const subscribeToRoomChannel = useCallback(
     (roomId: string) => {
       if (!pusherRef.current || roomChannelsRef.current[roomId]) return;
 
       console.log(`[Pusher Hook] Subscribing to room channel: room-${roomId}`);
-      const roomChannel = pusherRef.current.subscribe(`room-${roomId}`);
-      roomChannelsRef.current[roomId] = roomChannel;
+      const roomChannel = subscribePusherChannel(`room-${roomId}`);
 
       // Create event handlers with unique names to prevent duplicate binding
-      const handleRoomMessage = (data: { message: ChatMessage }) => {
-        if (!data?.message?.roomId || !data.message.id) {
-          return;
-        }
+      const handlers: RoomHandlers = {
+        onRoomMessage: (data) => {
+          if (!data?.message?.roomId || !data.message.id) {
+            return;
+          }
 
-        console.log("[Pusher Hook] Received room-message:", data.message);
+          console.log("[Pusher Hook] Received room-message:", data.message);
 
-        // Ignore duplicate realtime deliveries for the same server message.
-        const { roomMessages: roomMessagesMap } = useChatsStore.getState();
-        const existingMessages = roomMessagesMap[data.message.roomId] || [];
-        if (existingMessages.some((message) => message.id === data.message.id)) {
-          return;
-        }
+          // Ignore duplicate realtime deliveries for the same server message.
+          const { roomMessages: roomMessagesMap } = useChatsStore.getState();
+          const existingMessages = roomMessagesMap[data.message.roomId] || [];
+          if (
+            existingMessages.some((message) => message.id === data.message.id)
+          ) {
+            return;
+          }
 
-        const parsedTimestamp =
-          typeof data.message.timestamp === "string" ||
-          typeof data.message.timestamp === "number"
-            ? new Date(data.message.timestamp).getTime()
-            : Date.now();
+          const parsedTimestamp =
+            typeof data.message.timestamp === "string" ||
+            typeof data.message.timestamp === "number"
+              ? new Date(data.message.timestamp).getTime()
+              : Date.now();
 
-        // Add message with proper timestamp
-        const messageWithTimestamp = {
-          ...data.message,
-          timestamp: Number.isFinite(parsedTimestamp)
-            ? parsedTimestamp
-            : Date.now(),
-        };
+          // Add message with proper timestamp
+          const messageWithTimestamp = {
+            ...data.message,
+            timestamp: Number.isFinite(parsedTimestamp)
+              ? parsedTimestamp
+              : Date.now(),
+          };
 
-        addMessageToRoom(data.message.roomId, messageWithTimestamp);
+          addMessageToRoom(data.message.roomId, messageWithTimestamp);
 
-        // Show toast if the message is for a room that is not currently open
-        const { currentRoomId: activeRoomId } = useChatsStore.getState();
-        if (activeRoomId !== data.message.roomId) {
+          // Show toast if the message is for a room that is not currently open
+          const { currentRoomId: activeRoomId } = useChatsStore.getState();
+          if (
+            !shouldNotifyForRoomMessage({
+              chatsOpen: true,
+              currentRoomId: activeRoomId,
+              messageRoomId: data.message.roomId,
+            })
+          ) {
+            return;
+          }
+
           incrementUnread(data.message.roomId);
-          const decoded = decodeHtmlEntities(
-            String(data.message.content || "")
-          );
+          const decoded = decodeHtmlEntities(String(data.message.content || ""));
           const preview = decoded.replace(/\s+/g, " ").trim().slice(0, 80);
           toast(`@${data.message.username}`, {
             id: `chat-room-message-${data.message.id}`,
@@ -263,37 +309,43 @@ export function useChatRoom(
               },
             },
           });
-        }
+        },
+        onMessageDeleted: (data) => {
+          console.log("[Pusher Hook] Message deleted:", data.messageId);
+          // Remove the message locally so UI reflects deletion
+          removeMessageFromRoom(data.roomId, data.messageId);
+        },
       };
-
-      const handleMessageDeleted = (data: {
-        messageId: string;
-        roomId: string;
-      }) => {
-        console.log("[Pusher Hook] Message deleted:", data.messageId);
-        // Remove the message locally so UI reflects deletion
-        removeMessageFromRoom(data.roomId, data.messageId);
-      };
-
-      // Unbind any existing handlers first (safety measure)
-      roomChannel.unbind("room-message");
-      roomChannel.unbind("message-deleted");
 
       // Bind the handlers
-      roomChannel.bind("room-message", handleRoomMessage);
-      roomChannel.bind("message-deleted", handleMessageDeleted);
+      roomChannel.bind("room-message", handlers.onRoomMessage);
+      roomChannel.bind("message-deleted", handlers.onMessageDeleted);
+
+      roomChannelsRef.current[roomId] = roomChannel;
+      roomHandlersRef.current[roomId] = handlers;
     },
     [addMessageToRoom, removeMessageFromRoom, incrementUnread]
   );
 
   const unsubscribeFromRoomChannel = useCallback((roomId: string) => {
-    if (!pusherRef.current || !roomChannelsRef.current[roomId]) return;
+    const channel = roomChannelsRef.current[roomId];
+    const handlers = roomHandlersRef.current[roomId];
+
+    if (!channel) {
+      return;
+    }
 
     console.log(
       `[Pusher Hook] Unsubscribing from room channel: room-${roomId}`
     );
-    pusherRef.current.unsubscribe(`room-${roomId}`);
+    if (handlers) {
+      channel.unbind("room-message", handlers.onRoomMessage);
+      channel.unbind("message-deleted", handlers.onMessageDeleted);
+    }
+
+    unsubscribePusherChannel(channel.name);
     delete roomChannelsRef.current[roomId];
+    delete roomHandlersRef.current[roomId];
   }, []);
 
   // --- Room Management ---
@@ -534,17 +586,14 @@ export function useChatRoom(
       });
 
       // Unsubscribe from global channel
-      if (globalChannelRef.current && pusherRef.current) {
-        pusherRef.current.unsubscribe(globalChannelRef.current.name);
-        globalChannelRef.current = null;
-      }
+      unsubscribeGlobalChannel();
 
       // NOTE: We intentionally do NOT disconnect the global Pusher singleton here.
       // We only unsubscribe from channels we've created. The underlying WebSocket
       // stays open, preventing rapid connect/disconnect cycles under React
       // Strict-Mode development re-mounts.
     };
-  }, [unsubscribeFromRoomChannel]);
+  }, [unsubscribeFromRoomChannel, unsubscribeGlobalChannel]);
 
   return {
     // State

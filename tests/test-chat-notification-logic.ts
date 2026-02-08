@@ -1,0 +1,132 @@
+#!/usr/bin/env bun
+/**
+ * Unit tests for room notification gating logic.
+ *
+ * This protects the user-facing expectation:
+ * show notifications for non-active channels whether Chats is open or closed.
+ */
+
+import {
+  header,
+  section,
+  runTest,
+  printSummary,
+  clearResults,
+  assert,
+} from "./test-utils";
+import { shouldNotifyForRoomMessage } from "../src/utils/chatNotifications";
+
+export async function runChatNotificationLogicTests(): Promise<{
+  passed: number;
+  failed: number;
+}> {
+  clearResults();
+  console.log(header("Chat Notification Logic Tests"));
+
+  console.log(section("Closed chats behavior"));
+  await runTest("notifies when chats is closed", async () => {
+    const result = shouldNotifyForRoomMessage({
+      chatsOpen: false,
+      currentRoomId: "room-a",
+      messageRoomId: "room-a",
+    });
+    assert(result === true, "Expected notifications while chats is closed");
+  });
+
+  await runTest("notifies closed chats even with stale active room", async () => {
+    const result = shouldNotifyForRoomMessage({
+      chatsOpen: false,
+      currentRoomId: "room-b",
+      messageRoomId: "room-b",
+    });
+    assert(
+      result === true,
+      "Expected closed chats to notify regardless of stored currentRoomId"
+    );
+  });
+
+  console.log(section("Open chats behavior"));
+  await runTest("suppresses notifications for active room", async () => {
+    const result = shouldNotifyForRoomMessage({
+      chatsOpen: true,
+      currentRoomId: "room-c",
+      messageRoomId: "room-c",
+    });
+    assert(result === false, "Expected active room notifications to be suppressed");
+  });
+
+  await runTest("notifies for non-active room", async () => {
+    const result = shouldNotifyForRoomMessage({
+      chatsOpen: true,
+      currentRoomId: "room-c",
+      messageRoomId: "room-d",
+    });
+    assert(result === true, "Expected non-active room notifications");
+  });
+
+  await runTest("notifies when chats open with undefined active room", async () => {
+    const result = shouldNotifyForRoomMessage({
+      chatsOpen: true,
+      currentRoomId: undefined,
+      messageRoomId: "room-e-2",
+    });
+    assert(result === true, "Expected notifications with undefined active room");
+  });
+
+  await runTest("notifies room messages when @ryo is active", async () => {
+    const result = shouldNotifyForRoomMessage({
+      chatsOpen: true,
+      currentRoomId: null,
+      messageRoomId: "room-e",
+    });
+    assert(result === true, "Expected room notification when @ryo is active");
+  });
+
+  console.log(section("Input validation"));
+  await runTest("does not notify without message room id", async () => {
+    const result = shouldNotifyForRoomMessage({
+      chatsOpen: true,
+      currentRoomId: "room-f",
+      messageRoomId: null,
+    });
+    assert(result === false, "Expected false for missing message room id");
+  });
+
+  await runTest("does not notify for empty message room id", async () => {
+    const result = shouldNotifyForRoomMessage({
+      chatsOpen: true,
+      currentRoomId: "room-f",
+      messageRoomId: "",
+    });
+    assert(result === false, "Expected false for empty message room id");
+  });
+
+  await runTest("does not notify for whitespace-only message room id", async () => {
+    const result = shouldNotifyForRoomMessage({
+      chatsOpen: true,
+      currentRoomId: "room-f",
+      messageRoomId: "   ",
+    });
+    assert(result === false, "Expected false for whitespace-only message room id");
+  });
+
+  await runTest("matches active room after trimming room id whitespace", async () => {
+    const result = shouldNotifyForRoomMessage({
+      chatsOpen: true,
+      currentRoomId: " room-trim ",
+      messageRoomId: "room-trim",
+    });
+    assert(result === false, "Expected false when trimmed room IDs are equal");
+  });
+
+  return printSummary();
+}
+
+if (import.meta.main) {
+  runChatNotificationLogicTests()
+    .then(({ failed }) => process.exit(failed > 0 ? 1 : 0))
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    });
+}

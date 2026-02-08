@@ -42,7 +42,17 @@
     "test:lyrics": "bun run tests/test-lyrics.ts",
     "test:speech": "bun run tests/test-speech.ts",
     "test:translate-lyrics": "bun run tests/test-translate-lyrics.ts",
-    "test:share-applet": "bun run tests/test-share-applet.ts"
+    "test:share-applet": "bun run tests/test-share-applet.ts",
+    "test:chat-notifications": "bun run tests/test-chat-notification-logic.ts",
+    "test:chat-notification-wiring": "bun run tests/test-chat-notification-integration-wiring.ts",
+    "test:chat-broadcast-wiring": "bun run tests/test-chat-broadcast-wiring.ts",
+    "test:chat-hook-lifecycle": "bun run tests/test-chat-hook-channel-lifecycle-wiring.ts",
+    "test:chat-store-guards": "bun run tests/test-chat-store-guards-wiring.ts",
+    "test:chat-wiring": "bun run test:chat-notification-wiring && bun run test:chat-hook-lifecycle && bun run test:chat-broadcast-wiring && bun run test:chat-store-guards",
+    "test:pusher-client": "bun run tests/test-pusher-client-refcount.ts",
+    "test:pusher-constructor-wiring": "bun run tests/test-pusher-client-constructor-wiring.ts",
+    "test:pusher-regression": "bun run tests/run-all-tests.ts pusher",
+    "test:chat-regression": "bun run tests/run-all-tests.ts chat- && bun run tests/run-all-tests.ts pusher"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.23",

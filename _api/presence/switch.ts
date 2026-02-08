@@ -10,6 +10,7 @@ import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_
 import { initLogger } from "../_utils/_logging.js";
 import { getRoom, setRoom } from "../rooms/_helpers/_redis.js";
 import { setRoomPresence, removeRoomPresence, refreshRoomUserCount } from "../rooms/_helpers/_presence.js";
+import { broadcastRoomUpdated } from "../rooms/_helpers/_pusher.js";
 import { ensureUserExists } from "../rooms/_helpers/_users.js";
 
 export const runtime = "nodejs";
@@ -90,6 +91,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       if (roomData && roomData.type !== "private") {
         await removeRoomPresence(previousRoomId, username);
         await refreshRoomUserCount(previousRoomId);
+        await broadcastRoomUpdated(previousRoomId);
       }
     }
 
@@ -104,6 +106,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       await setRoomPresence(nextRoomId, username);
       const userCount = await refreshRoomUserCount(nextRoomId);
       await setRoom(nextRoomId, { ...roomData, userCount });
+      await broadcastRoomUpdated(nextRoomId);
     }
 
     logger.info("Room switched", { username, previousRoomId, nextRoomId });
