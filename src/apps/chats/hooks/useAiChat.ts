@@ -40,6 +40,7 @@ import { AnyExtension } from "@tiptap/core";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -502,18 +503,14 @@ const showBackgroundedMessageNotification = (message: UIMessage) => {
 
   // Show notification similar to room chat toasts
   toast(`@Ryo`, {
+    id: `chat-ai-message-${message.id}`,
     description: preview + (textContent.length > 100 ? "…" : ""),
     duration: 6000,
     action: {
       label: "Open",
       onClick: () => {
-        // Bring chats app to foreground
-        const appStore = useAppStore.getState();
-        const chatsInstances = appStore.getInstancesByAppId("chats");
-        const openChatsInstance = chatsInstances.find((inst) => inst.isOpen);
-        if (openChatsInstance) {
-          appStore.bringInstanceToForeground(openChatsInstance.instanceId);
-        }
+        // Open/focus Chats and switch to @Ryo context.
+        openChatRoomFromNotification(null);
       },
     },
   });
