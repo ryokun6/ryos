@@ -8,7 +8,8 @@ import {
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
-import { getApiUrl } from "@/utils/platform";
+import { getApiUrl, isTauriIOS } from "@/utils/platform";
+import { getPushToken } from "@/utils/tauriPushNotifications";
 
 // Recovery mechanism - uses different prefix to avoid reset
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -107,6 +108,24 @@ const getTokenRefreshTime = (username: string): number | null => {
   const key = `${TOKEN_LAST_REFRESH_KEY}${username}`;
   const time = localStorage.getItem(key);
   return time ? parseInt(time, 10) : null;
+};
+
+const getPushTokenForLogout = async (): Promise<string | null> => {
+  if (!isTauriIOS()) {
+    return null;
+  }
+
+  try {
+    const token = await getPushToken();
+    const normalizedToken = typeof token === "string" ? token.trim() : "";
+    return normalizedToken.length > 0 ? normalizedToken : null;
+  } catch (error) {
+    console.warn(
+      "[ChatsStore] Could not resolve iOS push token during logout:",
+      error
+    );
+    return null;
+  }
 };
 
 // API request wrapper with automatic token refresh
@@ -864,24 +883,27 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           const currentUsername = get().username;
           const currentToken = get().authToken;
+          const pushTokenForLogout = await getPushTokenForLogout();
 
           // Inform server to invalidate current token if we have auth
           if (currentUsername && currentToken) {
-            try {
-              await fetch(getApiUrl("/api/push/unregister"), {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${currentToken}`,
-                  "X-Username": currentUsername,
-                },
-                body: JSON.stringify({}),
-              });
-            } catch (err) {
-              console.warn(
-                "[ChatsStore] Failed to unregister push tokens during logout:",
-                err
-              );
+            if (pushTokenForLogout) {
+              try {
+                await fetch(getApiUrl("/api/push/unregister"), {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${currentToken}`,
+                    "X-Username": currentUsername,
+                  },
+                  body: JSON.stringify({ token: pushTokenForLogout }),
+                });
+              } catch (err) {
+                console.warn(
+                  "[ChatsStore] Failed to unregister iOS push token during logout:",
+                  err
+                );
+              }
             }
 
             try {
