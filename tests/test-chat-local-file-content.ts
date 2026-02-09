@@ -855,6 +855,43 @@ export async function runChatLocalFileContentTests(): Promise<{
     assertEq(capturedDbContent, "new body");
   });
 
+  await runTest("writeDocumentFileWithMode throws when append target content is unavailable", async () => {
+    await withMockDbGet(
+      async () => undefined,
+      async () => {
+        await withMockFileItems(
+          {
+            "/Documents/broken.md": {
+              path: "/Documents/broken.md",
+              name: "broken.md",
+              isDirectory: false,
+              status: "active",
+              uuid: "uuid-broken",
+            },
+          },
+          async () => {
+            let thrown: Error | null = null;
+            try {
+              await writeDocumentFileWithMode({
+                path: "/Documents/broken.md",
+                fileName: "broken.md",
+                incomingContent: " +append",
+                mode: "append",
+              });
+            } catch (error) {
+              thrown = error as Error;
+            }
+
+            assertEq(
+              thrown?.message,
+              "Failed to load existing document content",
+            );
+          },
+        );
+      },
+    );
+  });
+
   return printSummary();
 }
 

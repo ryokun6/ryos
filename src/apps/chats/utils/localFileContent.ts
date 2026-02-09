@@ -321,10 +321,20 @@ export const writeDocumentFileWithMode = async ({
 }): Promise<{ isNewFile: boolean; finalContent: string }> => {
   const existingItem = useFilesStore.getState().items[path];
   const isNewFile = !existingItem || existingItem.status !== "active";
-  const existingContentForMerge =
-    !isNewFile && mode !== "overwrite" && existingItem?.uuid
-      ? await readOptionalTextContentFromStore(STORES.DOCUMENTS, existingItem.uuid)
-      : null;
+  let existingContentForMerge: string | null = null;
+  if (!isNewFile && mode !== "overwrite") {
+    if (!existingItem?.uuid) {
+      throw new Error("Existing document is missing content metadata");
+    }
+
+    existingContentForMerge = await readOptionalTextContentFromStore(
+      STORES.DOCUMENTS,
+      existingItem.uuid,
+    );
+    if (existingContentForMerge == null) {
+      throw new Error("Failed to load existing document content");
+    }
+  }
 
   const finalContent = mergeContentByWriteMode({
     mode,
