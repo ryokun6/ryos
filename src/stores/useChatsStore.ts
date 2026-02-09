@@ -30,7 +30,6 @@ import {
   sendRoomMessageRequest,
 } from "./chats/sendMessage";
 import { createRoomRequest, deleteRoomRequest } from "./chats/roomRequests";
-import { switchPresenceRoomRequest } from "./chats/presenceRequests";
 import { validateCreateUserInput } from "./chats/userValidation";
 import {
   logoutRequest,
@@ -66,6 +65,7 @@ import {
   fetchRoomMessagesPayload,
   fetchRoomsPayload,
 } from "./chats/messagePayloads";
+import { syncPresenceOnRoomSwitch } from "./chats/roomSwitchFlow";
 import {
   clearUnreadCount,
   incrementUnreadCount,
@@ -767,33 +767,14 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           // If switching to a real room and we have a username, handle the API call
           if (username) {
-            try {
-              const response = await switchPresenceRoomRequest({
+            await syncPresenceOnRoomSwitch({
                 previousRoomId: currentRoomId,
                 nextRoomId: newRoomId,
                 username,
-              });
-
-              if (!response.ok) {
-                const errorData = await readErrorResponseBody(response);
-                console.error("[ChatsStore] Error switching rooms:", errorData);
-                // Don't revert the room change on API error, just log it
-              } else {
-                console.log("[ChatsStore] Room switch API call successful");
-                // Immediately refresh rooms to show updated presence counts
-                // This ensures the UI reflects the change immediately rather than waiting for Pusher
-                setTimeout(() => {
-                  console.log("[ChatsStore] Refreshing rooms after switch");
-                  get().fetchRooms();
-                }, 50); // Small delay to let the server finish processing
-              }
-            } catch (error) {
-              console.error(
-                "[ChatsStore] Network error switching rooms:",
-                error
-              );
-              // Don't revert the room change on network error, just log it
-            }
+              onRoomsRefresh: () => {
+                void get().fetchRooms();
+              },
+            });
           }
 
           // Always fetch messages for the new room to ensure latest content
