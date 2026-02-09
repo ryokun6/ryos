@@ -65,6 +65,17 @@ import {
   fetchRoomMessagesPayload,
   fetchRoomsPayload,
 } from "./chats/messagePayloads";
+import {
+  clearUnreadCount,
+  incrementUnreadCount,
+  resolveNextFontSize,
+  sanitizeMessageRenderLimit,
+  toggleBoolean,
+} from "./chats/uiState";
+import {
+  schedulePasswordStatusCheck,
+  shouldCheckPasswordStatus,
+} from "./chats/identityState";
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -240,10 +251,10 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           // Check password status when username changes (if we have a token)
           const currentToken = get().authToken;
-          if (username && currentToken) {
-            setTimeout(() => {
+          if (shouldCheckPasswordStatus(username, currentToken)) {
+            schedulePasswordStatusCheck(() => {
               get().checkHasPassword();
-            }, 100);
+            });
           } else if (!username) {
             // Clear password status when username is cleared
             set({ hasPassword: null });
@@ -256,10 +267,10 @@ export const useChatsStore = create<ChatsStoreState>()(
 
           // Check password status when token changes (if we have a username)
           const currentUsername = get().username;
-          if (token && currentUsername) {
-            setTimeout(() => {
+          if (shouldCheckPasswordStatus(currentUsername, token)) {
+            schedulePasswordStatusCheck(() => {
               get().checkHasPassword();
-            }, 100);
+            });
           } else if (!token) {
             // Clear password status when token is cleared
             set({ hasPassword: null });
@@ -419,21 +430,18 @@ export const useChatsStore = create<ChatsStoreState>()(
         },
         toggleSidebarVisibility: () =>
           set((state) => ({
-            isSidebarVisible: !state.isSidebarVisible,
+            isSidebarVisible: toggleBoolean(state.isSidebarVisible),
           })),
         toggleChannelsOpen: () =>
-          set((state) => ({ isChannelsOpen: !state.isChannelsOpen })),
+          set((state) => ({ isChannelsOpen: toggleBoolean(state.isChannelsOpen) })),
         togglePrivateOpen: () =>
-          set((state) => ({ isPrivateOpen: !state.isPrivateOpen })),
+          set((state) => ({ isPrivateOpen: toggleBoolean(state.isPrivateOpen) })),
         setFontSize: (sizeOrFn) =>
           set((state) => ({
-            fontSize:
-              typeof sizeOrFn === "function"
-                ? sizeOrFn(state.fontSize)
-                : sizeOrFn,
+            fontSize: resolveNextFontSize(state.fontSize, sizeOrFn),
           })),
         setMessageRenderLimit: (limit: number) =>
-          set(() => ({ messageRenderLimit: Math.max(20, Math.floor(limit)) })),
+          set(() => ({ messageRenderLimit: sanitizeMessageRenderLimit(limit) })),
         ensureAuthToken: async () => {
           const currentUsername = get().username;
           const currentToken = get().authToken;
@@ -990,16 +998,12 @@ export const useChatsStore = create<ChatsStoreState>()(
         },
         incrementUnread: (roomId) => {
           set((state) => ({
-            unreadCounts: {
-              ...state.unreadCounts,
-              [roomId]: (state.unreadCounts[roomId] || 0) + 1,
-            },
+            unreadCounts: incrementUnreadCount(state.unreadCounts, roomId),
           }));
         },
         clearUnread: (roomId) => {
           set((state) => {
-            const { [roomId]: _removed, ...rest } = state.unreadCounts;
-            return { unreadCounts: rest };
+            return { unreadCounts: clearUnreadCount(state.unreadCounts, roomId) };
           });
         },
         setHasEverUsedChats: (value: boolean) => {
