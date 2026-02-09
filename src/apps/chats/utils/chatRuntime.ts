@@ -195,10 +195,25 @@ export const mergeMessagesWithTimestamps = (
   sdkMessages: UIMessage[],
   storedMessages: AIChatMessage[],
 ): AIChatMessage[] => {
+  const normalizeDate = (value: unknown): Date | null => {
+    if (value instanceof Date && Number.isFinite(value.getTime())) {
+      return value;
+    }
+
+    if (typeof value === "string" || typeof value === "number") {
+      const parsed = new Date(value);
+      if (Number.isFinite(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    return null;
+  };
+
   const createdAtById = new Map<string, Date>();
   storedMessages.forEach((storedMessage) => {
-    const createdAt = storedMessage.metadata?.createdAt;
-    if (createdAt instanceof Date) {
+    const createdAt = normalizeDate(storedMessage.metadata?.createdAt);
+    if (createdAt) {
       createdAtById.set(storedMessage.id, createdAt);
     }
   });
@@ -206,12 +221,18 @@ export const mergeMessagesWithTimestamps = (
   return sdkMessages.map((message) => {
     const typedMessage = message as AIChatMessage;
     const fallbackCreatedAt = createdAtById.get(message.id);
+    const uiMessageCreatedAt = normalizeDate(
+      (message as UIMessage & { createdAt?: Date | string | number }).createdAt,
+    );
 
     return {
       ...message,
       metadata: {
         createdAt:
-          typedMessage.metadata?.createdAt || fallbackCreatedAt || new Date(),
+          normalizeDate(typedMessage.metadata?.createdAt) ||
+          uiMessageCreatedAt ||
+          fallbackCreatedAt ||
+          new Date(),
       },
     } as AIChatMessage;
   });
