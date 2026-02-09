@@ -2348,6 +2348,10 @@ export const fetchBulkMessagesPayload = async (
   | { ok: true; messagesMap: Record<string, ApiChatMessagePayload[]> }
   | { ok: false; error: string }
 > => {
+  if (roomIds.length === 0) {
+    return { ok: true, messagesMap: {} };
+  }
+
   const result = await runGuardedPayloadFlow<
     { messagesMap?: Record<string, ApiChatMessagePayload[]> },
     Record<string, ApiChatMessagePayload[]>
