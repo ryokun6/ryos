@@ -260,8 +260,9 @@ const createAuthenticatedHeaders = (
 };
 
 let tempMessageCounter = 0;
+const tempMessageSessionNonce = Math.random().toString(36).slice(2, 8);
 const createTempMessageId = (): string =>
-  `temp_${Date.now().toString(36)}_${(tempMessageCounter++).toString(36)}`;
+  `temp_${Date.now().toString(36)}_${tempMessageSessionNonce}_${(tempMessageCounter++).toString(36)}`;
 
 const withJsonHeaders = (headers?: HeadersInit): Headers => {
   const nextHeaders = toHeaders(headers);
