@@ -21,6 +21,8 @@ export interface SpotlightResult {
   subtitle?: string;
   icon: string;
   isEmoji?: boolean;
+  /** Optional thumbnail URL (cover art, favicon, image preview) */
+  thumbnail?: string;
   action: () => void;
   keywords?: string[];
 }
@@ -221,15 +223,22 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
         matchesQuery(trimmed, track.title, track.artist, track.album)
       )
       .slice(0, MAX_RESULTS_PER_TYPE)
-      .map((track) => ({
-        id: `music-${track.id}`,
-        type: "music" as const,
-        title: track.title,
-        subtitle: track.artist || undefined,
-        icon: "🎵",
-        isEmoji: true,
-        action: () => launchApp("ipod", { initialData: { videoId: track.id } }),
-      }));
+      .map((track) => {
+        // Use Kugou cover art, fall back to YouTube thumbnail
+        const coverUrl = track.cover
+          ? track.cover.replace("{size}", "100").replace(/^http:\/\//, "https://")
+          : `https://i.ytimg.com/vi/${track.id}/default.jpg`;
+        return {
+          id: `music-${track.id}`,
+          type: "music" as const,
+          title: track.title,
+          subtitle: track.artist || undefined,
+          icon: "🎵",
+          isEmoji: true,
+          thumbnail: coverUrl,
+          action: () => launchApp("ipod", { initialData: { videoId: track.id } }),
+        };
+      });
     results.push(...musicResults);
 
     // 5. Settings

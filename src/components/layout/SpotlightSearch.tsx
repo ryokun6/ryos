@@ -202,7 +202,8 @@ export function SpotlightSearch() {
   const subtitleColor = "rgba(0,0,0,0.4)";
   const inputFontSize = isSystem7 ? "12px" : isMac ? "13px" : "11px";
   const sectionFontSize = isSystem7 ? "10px" : isMac ? "11px" : "10px";
-  const rowPy = isMac ? "4px" : "3px";
+  const rowPy = isMac ? "3px" : "3px";
+  const iconPx = isMac ? 20 : 18; // icon size in px
 
   if (!isOpen) return null;
 
@@ -370,10 +371,27 @@ export function SpotlightSearch() {
                               setSelectedIndex(result.globalIndex)
                             }
                           >
-                            {/* Icon */}
-                            {result.isEmoji ? (
+                            {/* Icon / Thumbnail */}
+                            {result.thumbnail ? (
+                              <img
+                                src={result.thumbnail}
+                                alt=""
+                                className="flex-shrink-0 object-cover"
+                                style={{
+                                  width: iconPx,
+                                  height: iconPx,
+                                  borderRadius: currentTheme === "macosx" ? "3px" : "1px",
+                                }}
+                                loading="lazy"
+                                onError={(e) => {
+                                  // Hide broken thumbnails
+                                  (e.target as HTMLImageElement).style.display = "none";
+                                }}
+                              />
+                            ) : result.isEmoji ? (
                               <span
-                                className="flex-shrink-0 flex items-center justify-center leading-none w-4 h-4 text-sm"
+                                className="flex-shrink-0 flex items-center justify-center leading-none"
+                                style={{ width: iconPx, height: iconPx, fontSize: `${iconPx - 4}px` }}
                               >
                                 {result.icon}
                               </span>
@@ -381,7 +399,8 @@ export function SpotlightSearch() {
                               <ThemedIcon
                                 name={result.icon}
                                 alt=""
-                                className="flex-shrink-0 w-4 h-4 [image-rendering:pixelated]"
+                                className="flex-shrink-0 [image-rendering:pixelated]"
+                                style={{ width: iconPx, height: iconPx }}
                               />
                             )}
 
