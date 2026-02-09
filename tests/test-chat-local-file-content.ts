@@ -11,6 +11,7 @@ import {
   readOptionalTextContentFromStore,
   readTextContentFromStore,
   requireActiveFileWithUuid,
+  saveDocumentTextFile,
 } from "../src/apps/chats/utils/localFileContent";
 import { useFilesStore } from "../src/stores/useFilesStore";
 import {
@@ -536,6 +537,75 @@ export async function runChatLocalFileContentTests(): Promise<{
     );
 
     assertEq(capturedAddItemSize, new Blob(["fallback body"]).size);
+  });
+
+  await runTest("saveDocumentTextFile persists content and returns saved metadata", async () => {
+    let capturedStore = "";
+    let capturedName = "";
+    let capturedUuid = "";
+    let capturedContent = "";
+
+    await withMockDbPut(
+      async <T>(storeName: string, item: T, key?: IDBValidKey) => {
+        capturedStore = storeName;
+        capturedUuid = String(key);
+        capturedName = (item as { name: string }).name;
+        capturedContent = (item as { content: string }).content;
+      },
+      async () => {
+        await withMockFileItems({}, async () => {
+          await withMockAddItem(async (item) => {
+            const currentItems = useFilesStore.getState().items;
+            useFilesStore.setState({
+              items: {
+                ...currentItems,
+                [item.path]: {
+                  ...item,
+                  status: "active",
+                  uuid: "uuid-generated",
+                },
+              },
+            });
+          }, async () => {
+            const savedItem = await saveDocumentTextFile({
+              path: "/Documents/new.md",
+              fileName: "new.md",
+              content: "hello world",
+            });
+
+            assertEq(savedItem.uuid, "uuid-generated");
+          });
+        });
+      },
+    );
+
+    assertEq(capturedStore, STORES.DOCUMENTS);
+    assertEq(capturedUuid, "uuid-generated");
+    assertEq(capturedName, "new.md");
+    assertEq(capturedContent, "hello world");
+  });
+
+  await runTest("saveDocumentTextFile throws when metadata uuid is unavailable", async () => {
+    await withMockDbPut(async () => {}, async () => {
+      await withMockFileItems({}, async () => {
+        await withMockAddItem(async () => {
+          // Simulate addItem failure to persist metadata
+        }, async () => {
+          let thrown: Error | null = null;
+          try {
+            await saveDocumentTextFile({
+              path: "/Documents/bad.md",
+              fileName: "bad.md",
+              content: "content",
+            });
+          } catch (error) {
+            thrown = error as Error;
+          }
+
+          assertEq(thrown?.message, "Failed to save document metadata");
+        });
+      });
+    });
   });
 
   return printSummary();

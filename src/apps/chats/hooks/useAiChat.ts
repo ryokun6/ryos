@@ -16,7 +16,6 @@ import { AppId } from "@/config/appIds";
 import { appRegistry } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
-import { dbOperations, type DocumentContent } from "@/apps/finder/utils/fileDatabase";
 import { STORES } from "@/utils/indexedDB";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useTextEditStore } from "@/stores/useTextEditStore";
@@ -55,6 +54,7 @@ import {
   persistUpdatedLocalFileContent,
   readLocalFileTextOrThrow,
   readOptionalTextContentFromStore,
+  saveDocumentTextFile,
 } from "../utils/localFileContent";
 import {
   handleLaunchApp,
@@ -908,28 +908,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 existingContent: existingContentForMerge,
               });
 
-              // Save metadata to file store (addItem generates UUID for new files, preserves for existing)
-              useFilesStore.getState().addItem({
+              await saveDocumentTextFile({
                 path,
-                name: fileName,
-                isDirectory: false,
-                type: "markdown",
-                size: new Blob([finalContent]).size,
-                icon: "📄",
+                fileName,
+                content: finalContent,
               });
-
-              // Get the saved item with UUID
-              const savedItem = useFilesStore.getState().items[path];
-              if (!savedItem?.uuid) {
-                throw new Error("Failed to save document metadata");
-              }
-
-              // Save content to IndexedDB
-              await dbOperations.put<DocumentContent>(
-                STORES.DOCUMENTS,
-                { name: fileName, content: finalContent },
-                savedItem.uuid,
-              );
 
               // Find existing TextEdit instance for this file
               let targetInstanceId: string | null = null;

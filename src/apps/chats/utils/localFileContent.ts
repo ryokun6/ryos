@@ -214,3 +214,35 @@ export const persistUpdatedLocalFileContent = async ({
     size,
   });
 };
+
+export const saveDocumentTextFile = async ({
+  path,
+  fileName,
+  content,
+}: {
+  path: string;
+  fileName: string;
+  content: string;
+}): Promise<ActiveFileWithUuid> => {
+  useFilesStore.getState().addItem({
+    path,
+    name: fileName,
+    isDirectory: false,
+    type: "markdown",
+    size: new Blob([content]).size,
+    icon: "📄",
+  });
+
+  const savedItem = useFilesStore.getState().items[path];
+  if (!savedItem?.uuid) {
+    throw new Error("Failed to save document metadata");
+  }
+
+  await dbOperations.put<DocumentContent>(
+    STORES.DOCUMENTS,
+    { name: fileName, content },
+    savedItem.uuid,
+  );
+
+  return savedItem as ActiveFileWithUuid;
+};
