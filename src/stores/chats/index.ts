@@ -24,17 +24,27 @@ export {
   checkAndRefreshTokenFlow,
   CHAT_PASSWORD_MIN_LENGTH,
   CHAT_USERNAME_PATTERN,
+  checkPasswordStatusRequest,
+  clearChatRecoveryStorage,
+  fetchPasswordStatus,
   getDaysUntilTokenRefresh,
   getTokenAgeDays,
   getTokenAgeMs,
   isTokenRefreshDue,
+  notifyServerOnLogout,
   parseRefreshTokenResponse,
   parseRegisterUserResponse,
   refreshAuthTokenForUser,
+  runCheckHasPasswordFlow,
   runCreateUserFlow,
+  runSetPasswordFlow,
   schedulePasswordStatusCheck,
+  setPasswordRequest,
+  submitPassword,
   shouldCheckPasswordStatus,
+  trackLogoutAnalytics,
   validateCreateUserInput,
+  buildPostLogoutState,
 } from "./authFlows";
 export {
   logoutRequest,
@@ -43,18 +53,12 @@ export {
 } from "./authApi";
 export { readErrorResponseBody } from "./httpErrors";
 export {
-  buildPostLogoutState,
-  clearChatRecoveryStorage,
-  notifyServerOnLogout,
-  trackLogoutAnalytics,
-} from "./logoutFlow";
-export { buildPersistedRoomMessages } from "./persistence";
-export {
   createChatsOnRehydrateStorage,
   migrateChatsPersistedState,
 } from "./persistLifecycle";
 export {
   capRoomMessages,
+  buildPersistedRoomMessages,
   clearRoomMessagesInMap,
   mergeFetchedBulkMessages,
   mergeFetchedMessagesForRoom,
@@ -78,9 +82,3 @@ export {
   sanitizeMessageRenderLimit,
   toggleBoolean,
 } from "./uiState";
-export {
-  fetchPasswordStatus,
-  runCheckHasPasswordFlow,
-  runSetPasswordFlow,
-  submitPassword,
-} from "./passwordFlow";
