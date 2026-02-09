@@ -30,6 +30,7 @@ import { runChatRoomMessageMergeLogicTests } from "./test-chat-room-message-merg
 import { runChatTranscriptTests } from "./test-chat-transcript";
 import { runChatTextEditDocumentSyncCoreTests } from "./test-chat-textedit-document-sync-core";
 import { runChatFileToolValidationTests } from "./test-chat-file-tool-validation";
+import { runChatFileEditOperationTests } from "./test-chat-file-edit-operation";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -114,6 +115,7 @@ async function runAllTests(): Promise<void> {
     { name: "chat-room-message-merge-logic", run: runChatRoomMessageMergeLogicTests },
     { name: "chat-transcript", run: runChatTranscriptTests },
     { name: "chat-textedit-document-sync-core", run: runChatTextEditDocumentSyncCoreTests },
+    { name: "chat-file-edit-operation", run: runChatFileEditOperationTests },
     { name: "pusher-client", run: runPusherClientRefcountTests },
     { name: "pusher-constructor-wiring", run: runPusherClientConstructorWiringTests },
     { name: "chat-broadcast-wiring", run: runChatBroadcastWiringTests },

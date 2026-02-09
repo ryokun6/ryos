@@ -45,18 +45,14 @@ import {
 } from "../utils/chatRuntime";
 import { getSystemState } from "../utils/systemState";
 import {
-  replaceAndPersistLocalFileContent,
-  type LocalFileReplacementAttempt,
   readLocalFileTextOrThrow,
   writeDocumentFileWithMode,
 } from "../utils/localFileContent";
 import {
-  getEditTargetMessageBundle,
-  getEditReplacementFailureMessage,
-  resolveEditTarget,
   validateDocumentWriteInput,
   validateFileEditInput,
 } from "../utils/chatFileToolValidation";
+import { executeChatFileEditOperation } from "../utils/chatFileEditOperation";
 import { syncTextEditDocumentForPath } from "../utils/textEditDocumentSync";
 import {
   handleLaunchApp,
@@ -927,17 +923,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const normalizedPath = editValidation.path;
             const oldString = editValidation.oldString;
             const newString = editValidation.newString;
-            const editTarget = resolveEditTarget(normalizedPath);
-            if (!editTarget.ok) {
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: i18n.t(editTarget.errorKey, editTarget.errorParams),
-              });
-              result = "";
-              break;
-            }
 
             console.log("[ToolCall] edit:", {
               path: normalizedPath,
@@ -945,60 +930,31 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               new_string: newString.substring(0, 50) + "...",
             });
 
-            const publishReplacementFailure = (
-              replacement: LocalFileReplacementAttempt,
-            ): void => {
-              if (replacement.ok) {
-                return;
-              }
-
-              const descriptor = getEditReplacementFailureMessage({
-                reason: replacement.reason,
-                occurrences: replacement.occurrences,
-              });
-
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText:
-                  "errorParams" in descriptor
-                    ? i18n.t(descriptor.errorKey, descriptor.errorParams)
-                    : i18n.t(descriptor.errorKey),
-              });
-
-            };
-
             try {
-              const isDocumentTarget = editTarget.target === "document";
-              const messageBundle = getEditTargetMessageBundle({
-                target: editTarget.target,
+              const editResult = await executeChatFileEditOperation({
                 path: normalizedPath,
-              });
-              const replacement = await replaceAndPersistLocalFileContent({
-                path: normalizedPath,
-                storeName: isDocumentTarget ? STORES.DOCUMENTS : STORES.APPLETS,
                 oldString,
                 newString,
-                errors: {
-                  notFound: messageBundle.notFound,
-                  missingContent: messageBundle.missingContent,
-                  readFailed: messageBundle.readFailed,
-                },
-                resolveRecordName: (fileItem) =>
-                  isDocumentTarget ? fileItem.name : fileItem.uuid,
               });
 
-              if (!replacement.ok) {
-                publishReplacementFailure(replacement);
+              if (!editResult.ok) {
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText:
+                    "errorParams" in editResult.error
+                      ? i18n.t(editResult.error.errorKey, editResult.error.errorParams)
+                      : i18n.t(editResult.error.errorKey),
+                });
                 result = "";
                 break;
               }
 
-              if (isDocumentTarget) {
+              if (editResult.target === "document") {
                 syncTextEditDocumentForPath({
                   path: normalizedPath,
-                  content: replacement.updatedContent,
+                  content: editResult.updatedContent,
                   launchIfMissing: false,
                   bringToForeground: false,
                   includeFilePathOnUpdate: false,
@@ -1008,7 +964,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               addToolResult({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
-                output: i18n.t(messageBundle.successKey, {
+                output: i18n.t(editResult.successKey, {
                   path: normalizedPath,
                 }),
               });
