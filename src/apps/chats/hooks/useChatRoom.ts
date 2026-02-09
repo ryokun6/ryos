@@ -348,6 +348,13 @@ export function useChatRoom(
     delete roomHandlersRef.current[roomId];
   }, []);
 
+  const unsubscribeAllRoomChannels = useCallback(() => {
+    const roomIds = Object.keys(roomChannelsRef.current);
+    roomIds.forEach((roomId) => {
+      unsubscribeFromRoomChannel(roomId);
+    });
+  }, [unsubscribeFromRoomChannel]);
+
   // --- Room Management ---
   const handleRoomSelect = useCallback(
     async (newRoomId: string | null) => {
@@ -581,9 +588,7 @@ export function useChatRoom(
       console.log("[Pusher Hook] Cleaning up...");
 
       // Unsubscribe from all room channels
-      Object.keys(roomChannelsRef.current).forEach((roomId) => {
-        unsubscribeFromRoomChannel(roomId);
-      });
+      unsubscribeAllRoomChannels();
 
       // Unsubscribe from global channel
       unsubscribeGlobalChannel();
@@ -593,7 +598,7 @@ export function useChatRoom(
       // stays open, preventing rapid connect/disconnect cycles under React
       // Strict-Mode development re-mounts.
     };
-  }, [unsubscribeFromRoomChannel, unsubscribeGlobalChannel]);
+  }, [unsubscribeAllRoomChannels, unsubscribeGlobalChannel]);
 
   return {
     // State

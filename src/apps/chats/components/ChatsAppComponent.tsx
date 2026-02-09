@@ -3,12 +3,7 @@ import { AppProps } from "../../base/types";
 import type { ChatsInitialData } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { ChatsMenuBar } from "./ChatsMenuBar";
-import { HelpDialog } from "@/components/dialogs/HelpDialog";
-import { AboutDialog } from "@/components/dialogs/AboutDialog";
-import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { LogoutDialog } from "@/components/dialogs/LogoutDialog";
-import { InputDialog } from "@/components/dialogs/InputDialog";
-import { CreateRoomDialog } from "./CreateRoomDialog";
+import { ChatsDialogs } from "./ChatsDialogs";
 import { helpItems, appMetadata } from "..";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useChatRoom } from "../hooks/useChatRoom";
@@ -19,29 +14,25 @@ import { ChatMessages } from "./ChatMessages";
 import { ChatInput } from "./ChatInput";
 import { ChatRoomSidebar } from "./ChatRoomSidebar";
 import { useChatsStore } from "@/stores/useChatsStore";
-import type { AIChatMessage } from "@/types/chat";
 import {
   type ChatMessage as AppChatMessage,
   type ChatRoom,
 } from "@/types/chat";
-import { Button } from "@/components/ui/button";
 import { useRyoChat } from "../hooks/useRyoChat";
+import { Button } from "@/components/ui/button";
 import { CaretDown } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
-import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { toast } from "sonner";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useOffline } from "@/hooks/useOffline";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { useTranslation } from "react-i18next";
-
-// Define the expected message structure locally, matching ChatMessages internal type
-interface DisplayMessage extends Omit<AIChatMessage, "role"> {
-  username?: string;
-  role: AIChatMessage["role"] | "human";
-  serverId?: string; // Real server ID for room messages
-}
+import {
+  buildDisplayMessages,
+  extractPreviousUserMessages,
+} from "../utils/messages";
+import { useChatsFrameLayout } from "../hooks/useChatsFrameLayout";
 
 export function ChatsAppComponent({
   isWindowOpen,
@@ -305,6 +296,7 @@ export function ChatsAppComponent({
       username,
       sendRoomMessage,
       handleAiSubmit,
+      t,
       input,
       handleInputChange,
       handleRyoMention,
@@ -350,103 +342,19 @@ export function ChatsAppComponent({
     setFontSize(13); // Reset to default
   }, [setFontSize]);
 
-  // Determine if the current WindowFrame width is narrower than the Tailwind `md` breakpoint (768px)
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const chatRootRef = useRef<HTMLDivElement | null>(null);
-  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
-  const [isFrameNarrow, setIsFrameNarrow] = useState(false);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const updateWidth = (width: number) => {
-      setIsFrameNarrow(width < 550);
-    };
-
-    // Initial measurement
-    updateWidth(containerRef.current.getBoundingClientRect().width);
-
-    const observer = new ResizeObserver((entries) => {
-      if (entries[0]) {
-        updateWidth(entries[0].contentRect.width);
-      }
-    });
-
-    observer.observe(containerRef.current);
-
-    return () => observer.disconnect();
-  }, []);
-
-  // Derive message count for effect dependencies
   const messageCount = currentRoomId
     ? Array.isArray(currentRoomMessages)
       ? currentRoomMessages.length
       : 0
     : messages.length;
 
-  // Measure scrollbar width of the chat messages scroller and expose as CSS var --sbw on chat root
-  useEffect(() => {
-    const root = chatRootRef.current;
-    const container = messagesContainerRef.current;
-    if (!root || !container) return;
-
-    let scroller: HTMLElement | null = null;
-
-    const findScroller = (): HTMLElement | null => {
-      const elements = container.querySelectorAll<HTMLElement>("*");
-      for (const el of elements) {
-        const style = window.getComputedStyle(el);
-        if (
-          (style.overflowY === "auto" || style.overflowY === "scroll") &&
-          el.clientHeight > 0 &&
-          el.scrollHeight > el.clientHeight + 1
-        ) {
-          return el;
-        }
-      }
-      return null;
-    };
-
-    const update = () => {
-      if (!root) return;
-      if (!scroller) scroller = findScroller();
-      if (scroller) {
-        const sbw = scroller.offsetWidth - scroller.clientWidth;
-        root.style.setProperty("--sbw", `${Math.max(0, sbw)}px`);
-      } else {
-        root.style.setProperty("--sbw", "0px");
-      }
-    };
-
-    update();
-
-    const resizeObs = new ResizeObserver(() => update());
-    const mutationObs = new MutationObserver(() => update());
-    resizeObs.observe(container);
-    if (scroller) resizeObs.observe(scroller);
-    mutationObs.observe(container, { childList: true, subtree: true });
-    window.addEventListener("resize", update);
-
-    return () => {
-      resizeObs.disconnect();
-      mutationObs.disconnect();
-      window.removeEventListener("resize", update);
-    };
-    // Re-evaluate when room changes or message count changes (structure might swap)
-  }, [currentRoomId, messageCount]);
-
-  // Automatically show sidebar when switching from narrow to wide
-  const prevFrameNarrowRef = useRef(isFrameNarrow);
-
-  useEffect(() => {
-    if (prevFrameNarrowRef.current && !isFrameNarrow) {
-      // We transitioned from narrow -> wide
-      if (!sidebarVisibleBool) {
-        toggleSidebarVisibility();
-      }
-    }
-    prevFrameNarrowRef.current = isFrameNarrow;
-  }, [isFrameNarrow, sidebarVisibleBool, toggleSidebarVisibility]);
+  const { containerRef, chatRootRef, messagesContainerRef, isFrameNarrow } =
+    useChatsFrameLayout({
+      currentRoomId,
+      messageCount,
+      isSidebarVisible: sidebarVisibleBool,
+      onToggleSidebar: toggleSidebarVisibility,
+    });
 
   // Password status is now automatically checked by the store when username/token changes
 
@@ -487,7 +395,7 @@ export function ChatsAppComponent({
   const handleSendMessage = useCallback((username: string) => {
     setPrefilledUser(username);
     setIsNewRoomDialogOpen(true);
-  }, []);
+  }, [setIsNewRoomDialogOpen]);
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -530,24 +438,14 @@ export function ChatsAppComponent({
 
   if (!isWindowOpen) return null;
 
-  // Explicitly type the array using the local DisplayMessage interface
-  const currentMessagesToDisplay: DisplayMessage[] = currentRoomId
-    ? currentRoomMessagesLimited.map((msg: AppChatMessage) => ({
-        // For room messages, use clientId (if present) for stable rendering key
-        id: msg.clientId || msg.id,
-        serverId: msg.id,
-        role: msg.username === username ? "user" : "human",
-        parts: [{ type: "text" as const, text: msg.content }], // Convert to v5 parts format
-        metadata: {
-          createdAt: new Date(msg.timestamp),
-        },
-        username: msg.username,
-      }))
-    : messages.slice(-messageRenderLimit).map((msg: AIChatMessage) => ({
-        ...msg,
-        // metadata with createdAt is already present from AIChatMessage
-        username: msg.role === "user" ? username || "You" : "Ryo",
-      }));
+  const currentMessagesToDisplay = buildDisplayMessages({
+    currentRoomId,
+    currentRoomMessagesLimited,
+    aiMessages: messages,
+    messageRenderLimit,
+    username,
+  });
+  const previousUserMessages = extractPreviousUserMessages(aiMessages);
 
   return (
     <>
@@ -829,163 +727,86 @@ export function ChatsAppComponent({
                       </Button>
                     )
                   ) : (
-                    // AI Chat or in a room with username set
-                    (() => {
-                      const userMessages = aiMessages.filter(
-                        (msg: AIChatMessage) => msg.role === "user"
-                      );
-                      // Extract text from parts for suggestions
-                      const prevMessagesContent = Array.from(
-                        new Set(
-                          userMessages.map((msg) => {
-                            if (!msg.parts) return "";
-                            return msg.parts
-                              .filter((p) => p.type === "text")
-                              .map(
-                                (p) =>
-                                  (p as { type: string; text?: string }).text ||
-                                  ""
-                              )
-                              .join("");
-                          })
-                        )
-                      )
-                        .filter(Boolean)
-                        .reverse() as string[];
-
-                      return (
-                        <ChatInput
-                          input={input}
-                          isLoading={isLoading || isRyoLoading}
-                          isForeground={isForeground}
-                          onInputChange={handleInputChange}
-                          onSubmit={handleSubmit}
-                          onStop={handleStop}
-                          isSpeechPlaying={isSpeaking}
-                          onDirectMessageSubmit={handleDirectSubmit}
-                          onNudge={handleNudgeClick}
-                          previousMessages={prevMessagesContent}
-                          showNudgeButton={!currentRoomId}
-                          isInChatRoom={!!currentRoomId}
-                          rateLimitError={rateLimitError}
-                          isOffline={isOffline}
-                          needsUsername={needsUsername && !username}
-                          selectedImage={selectedImage}
-                          onImageChange={handleImageChange}
-                        />
-                      );
-                    })()
+                    <ChatInput
+                      input={input}
+                      isLoading={isLoading || isRyoLoading}
+                      isForeground={isForeground}
+                      onInputChange={handleInputChange}
+                      onSubmit={handleSubmit}
+                      onStop={handleStop}
+                      isSpeechPlaying={isSpeaking}
+                      onDirectMessageSubmit={handleDirectSubmit}
+                      onNudge={handleNudgeClick}
+                      previousMessages={previousUserMessages}
+                      showNudgeButton={!currentRoomId}
+                      isInChatRoom={!!currentRoomId}
+                      rateLimitError={rateLimitError}
+                      isOffline={isOffline}
+                      needsUsername={needsUsername && !username}
+                      selectedImage={selectedImage}
+                      onImageChange={handleImageChange}
+                    />
                   )}
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <HelpDialog
-          isOpen={isHelpDialogOpen}
-          onOpenChange={setIsHelpDialogOpen}
-          helpItems={translatedHelpItems}
-          appId="chats"
-        />
-        <AboutDialog
-          isOpen={isAboutDialogOpen}
-          onOpenChange={setIsAboutDialogOpen}
-          metadata={appMetadata}
-          appId="chats"
-        />
-        <ConfirmDialog
-          isOpen={isClearDialogOpen}
-          onOpenChange={setIsClearDialogOpen}
-          onConfirm={confirmClearChats}
-          title={t("apps.chats.dialogs.clearChatsTitle")}
-          description={t("apps.chats.dialogs.clearChatsDescription")}
-        />
-        <InputDialog
-          isOpen={isSaveDialogOpen}
-          onOpenChange={setIsSaveDialogOpen}
-          onSubmit={handleSaveSubmit}
-          title={t("apps.chats.dialogs.saveTranscriptTitle")}
-          description={t("apps.chats.dialogs.saveTranscriptDescription")}
-          value={saveFileName}
-          onChange={setSaveFileName}
-        />
-        <LoginDialog
-          initialTab="signup"
-          isOpen={isUsernameDialogOpen}
-          onOpenChange={(open) => {
-            console.log(
-              `[ChatApp Debug] Username LoginDialog onOpenChange called with: ${open}`
-            );
-            setIsUsernameDialogOpen(open);
-          }}
-          /* Login props (not used in sign-up but required) */
-          usernameInput={verifyUsernameInput}
-          onUsernameInputChange={setVerifyUsernameInput}
-          passwordInput={verifyPasswordInput}
-          onPasswordInputChange={setVerifyPasswordInput}
-          onLoginSubmit={async () => {
-            await handleVerifyTokenSubmit(verifyPasswordInput, true);
-          }}
-          isLoginLoading={isVerifyingToken}
-          loginError={verifyError}
-          /* Sign-up props */
+        <ChatsDialogs
+          translatedHelpItems={translatedHelpItems}
+          appMetadata={appMetadata}
+          isHelpDialogOpen={isHelpDialogOpen}
+          setIsHelpDialogOpen={setIsHelpDialogOpen}
+          isAboutDialogOpen={isAboutDialogOpen}
+          setIsAboutDialogOpen={setIsAboutDialogOpen}
+          isClearDialogOpen={isClearDialogOpen}
+          setIsClearDialogOpen={setIsClearDialogOpen}
+          confirmClearChats={confirmClearChats}
+          isSaveDialogOpen={isSaveDialogOpen}
+          setIsSaveDialogOpen={setIsSaveDialogOpen}
+          handleSaveSubmit={handleSaveSubmit}
+          saveFileName={saveFileName}
+          setSaveFileName={setSaveFileName}
+          isUsernameDialogOpen={isUsernameDialogOpen}
+          setIsUsernameDialogOpen={setIsUsernameDialogOpen}
+          verifyUsernameInput={verifyUsernameInput}
+          setVerifyUsernameInput={setVerifyUsernameInput}
+          verifyPasswordInput={verifyPasswordInput}
+          setVerifyPasswordInput={setVerifyPasswordInput}
+          handleVerifyTokenSubmit={handleVerifyTokenSubmit}
+          isVerifyingToken={isVerifyingToken}
+          verifyError={verifyError}
           newUsername={newUsername}
-          onNewUsernameChange={setNewUsername}
+          setNewUsername={setNewUsername}
           newPassword={newPassword}
-          onNewPasswordChange={setNewPassword}
-          onSignUpSubmit={submitUsernameDialog}
-          isSignUpLoading={isSettingUsername}
-          signUpError={usernameError}
-        />
-        <CreateRoomDialog
-          isOpen={isNewRoomDialogOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              setPrefilledUser(""); // Reset prefilled user when dialog closes
-            }
-            setIsNewRoomDialogOpen(open);
-          }}
-          onSubmit={handleAddRoom}
+          setNewPassword={setNewPassword}
+          submitUsernameDialog={submitUsernameDialog}
+          isSettingUsername={isSettingUsername}
+          usernameError={usernameError}
+          isNewRoomDialogOpen={isNewRoomDialogOpen}
+          setIsNewRoomDialogOpen={setIsNewRoomDialogOpen}
+          setPrefilledUser={setPrefilledUser}
+          prefilledUser={prefilledUser}
+          handleAddRoom={handleAddRoom}
           isAdmin={isAdmin}
-          currentUsername={username}
-          initialUsers={prefilledUser ? [prefilledUser] : []}
-        />
-        <ConfirmDialog
-          isOpen={isDeleteRoomDialogOpen}
-          onOpenChange={setIsDeleteRoomDialogOpen}
-          onConfirm={confirmDeleteRoom}
-          title={
-            roomToDelete?.type === "private"
-              ? t("apps.chats.dialogs.leaveConversationTitle")
-              : t("apps.chats.dialogs.deleteChatRoomTitle")
-          }
-          description={
-            roomToDelete?.type === "private"
-              ? t("apps.chats.dialogs.leaveConversationDescription", { name: roomToDelete.name })
-              : t("apps.chats.dialogs.deleteChatRoomDescription", { name: roomToDelete?.name })
-          }
-        />
-        <LogoutDialog
-          isOpen={isLogoutConfirmDialogOpen}
-          onOpenChange={setIsLogoutConfirmDialogOpen}
-          onConfirm={confirmLogout}
+          username={username}
+          isDeleteRoomDialogOpen={isDeleteRoomDialogOpen}
+          setIsDeleteRoomDialogOpen={setIsDeleteRoomDialogOpen}
+          confirmDeleteRoom={confirmDeleteRoom}
+          roomToDelete={roomToDelete}
+          isLogoutConfirmDialogOpen={isLogoutConfirmDialogOpen}
+          setIsLogoutConfirmDialogOpen={setIsLogoutConfirmDialogOpen}
+          confirmLogout={confirmLogout}
           hasPassword={hasPassword}
-          onSetPassword={promptSetPassword}
-        />
-        <InputDialog
-          isOpen={isPasswordDialogOpen}
-          onOpenChange={setIsPasswordDialogOpen}
-          onSubmit={handleSetPassword}
-          title={t("apps.chats.dialogs.setPasswordTitle")}
-          description={t("apps.chats.dialogs.setPasswordDescription")}
-          value={passwordInput}
-          onChange={(value) => {
-            setPasswordInput(value);
-            setPasswordError(null);
-          }}
-          isLoading={isSettingPassword}
-          errorMessage={passwordError}
-          submitLabel={t("apps.chats.dialogs.setPasswordButton")}
+          promptSetPassword={promptSetPassword}
+          isPasswordDialogOpen={isPasswordDialogOpen}
+          setIsPasswordDialogOpen={setIsPasswordDialogOpen}
+          handleSetPassword={handleSetPassword}
+          passwordInput={passwordInput}
+          setPasswordInput={setPasswordInput}
+          isSettingPassword={isSettingPassword}
+          passwordError={passwordError}
+          setPasswordError={setPasswordError}
         />
       </WindowFrame>
     </>
