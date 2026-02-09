@@ -16,9 +16,14 @@ import {
 
 type ToolResult = Parameters<ToolContext["addToolResult"]>[0];
 
-const createToolContext = () => {
+const createToolContext = ({
+  includeAppHandlers = true,
+}: {
+  includeAppHandlers?: boolean;
+} = {}) => {
   const toolResults: ToolResult[] = [];
   const launches: Array<{ appId: string; options?: unknown }> = [];
+  const closedIds: string[] = [];
   const context: ToolContext = {
     launchApp: (appId, options) => {
       launches.push({ appId, options });
@@ -28,11 +33,24 @@ const createToolContext = () => {
       toolResults.push(result);
     },
     detectUserOS: () => "Linux",
+    appHandlers: includeAppHandlers
+      ? {
+          translate: (key) => `translated:${key}`,
+          getInstancesByAppId: () => [
+            { instanceId: "x", isOpen: true },
+            { instanceId: "y", isOpen: false },
+          ],
+          closeWindowByInstanceId: (instanceId) => {
+            closedIds.push(instanceId);
+          },
+        }
+      : undefined,
   };
 
   return {
     context,
     launches,
+    closedIds,
     toolResults,
   };
 };
@@ -54,6 +72,18 @@ export async function runChatAppHandlersTests(): Promise<{
     assertEq(result, "");
     assertEq(toolResults.length, 1);
     assertEq((toolResults[0] as { state?: string }).state, "output-error");
+  });
+
+  await runTest("uses context-level translation dependency fallback", async () => {
+    const { context, toolResults } = createToolContext();
+    const result = handleLaunchApp({ id: "" }, "tc-ctx-translate", context);
+
+    assertEq(result, "");
+    assertEq(toolResults.length, 1);
+    assertEq(
+      (toolResults[0] as { errorText?: string }).errorText,
+      "translated:apps.chats.toolCalls.noAppIdProvided",
+    );
   });
 
   await runTest("emits error when app id is invalid", async () => {
@@ -92,7 +122,7 @@ export async function runChatAppHandlersTests(): Promise<{
   });
 
   await runTest("emits error when close dependencies are unavailable", async () => {
-    const { context, toolResults } = createToolContext();
+    const { context, toolResults } = createToolContext({ includeAppHandlers: false });
     const result = handleCloseApp({ id: "chats" }, "tc-5", context);
 
     assertEq(result, "");
@@ -123,6 +153,15 @@ export async function runChatAppHandlersTests(): Promise<{
     assertEq(closedIds.length, 2);
     assertEq(closedIds[0], "a");
     assertEq(closedIds[1], "c");
+  });
+
+  await runTest("uses context-level close dependencies when not explicitly provided", async () => {
+    const { context, closedIds } = createToolContext();
+    const result = handleCloseApp({ id: "chats" }, "tc-context-close", context);
+
+    assertEq(result, "Closed Chats");
+    assertEq(closedIds.length, 1);
+    assertEq(closedIds[0], "x");
   });
 
   return printSummary();
