@@ -29,4 +29,13 @@ export const handleGenerateHtml: ToolHandler = (input, toolCallId, context) => {
 
   console.log("[ToolCall] generateHtml:", { htmlLength: html.length });
   console.log("[ToolCall] Generated HTML:", html.substring(0, 100) + "...");
+  context.addToolResult({
+    tool: "generateHtml",
+    toolCallId,
+    output: translateOrFallback(
+      context.translate,
+      "apps.chats.toolCalls.generatedHtml",
+      "Generated HTML",
+    ),
+  });
 };

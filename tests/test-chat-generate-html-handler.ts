@@ -44,12 +44,16 @@ export async function runChatGenerateHtmlHandlerTests(): Promise<{
   });
 
   console.log(section("Valid payload behavior"));
-  await runTest("does not emit errors for non-empty html", async () => {
+  await runTest("emits success output for non-empty html", async () => {
     const results: ToolResult[] = [];
     const context = createContext(results);
 
     await handleGenerateHtml({ html: "<div>hello</div>" }, "tc-2", context);
-    assertEq(results.length, 0);
+    assertEq(results.length, 1);
+    assertEq(
+      (results[0] as { output?: unknown }).output,
+      "apps.chats.toolCalls.generatedHtml",
+    );
   });
 
   return printSummary();

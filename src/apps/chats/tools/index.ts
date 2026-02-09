@@ -149,11 +149,21 @@ registerToolHandler("generateHtml", async (input, toolCallId, context) => {
 });
 registerToolHandler("launchApp", async (input, toolCallId, context) => {
   const { handleLaunchApp } = await import("./appHandlers");
-  handleLaunchApp(input as { id: string; url?: string; year?: string }, toolCallId, context);
+  const output = handleLaunchApp(
+    input as { id: string; url?: string; year?: string },
+    toolCallId,
+    context,
+  );
+  if (output) {
+    context.addToolResult({ tool: "launchApp", toolCallId, output });
+  }
 });
 registerToolHandler("closeApp", async (input, toolCallId, context) => {
   const { handleCloseApp } = await import("./appHandlers");
-  handleCloseApp(input as { id: string }, toolCallId, context);
+  const output = handleCloseApp(input as { id: string }, toolCallId, context);
+  if (output) {
+    context.addToolResult({ tool: "closeApp", toolCallId, output });
+  }
 });
 registerToolHandler("list", (input, toolCallId, context) =>
   executeVfsToolFromContext("list", input, toolCallId, context),

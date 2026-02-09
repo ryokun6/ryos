@@ -17,9 +17,14 @@ import {
 
 type ToolResult = Parameters<ToolContext["addToolResult"]>[0];
 
-const createContext = () => {
+const createContext = ({
+  includeAppHandlers = false,
+}: {
+  includeAppHandlers?: boolean;
+} = {}) => {
   const results: ToolResult[] = [];
   const launches: Array<{ appId: string; options?: unknown }> = [];
+  const closedInstanceIds: string[] = [];
   const context: ToolContext = {
     launchApp: (appId, options) => {
       launches.push({ appId, options });
@@ -30,8 +35,20 @@ const createContext = () => {
     },
     detectUserOS: () => "Linux",
     translate: (key) => key,
+    appHandlers: includeAppHandlers
+      ? {
+          translate: (key) => key,
+          getInstancesByAppId: () => [
+            { instanceId: "win-1", isOpen: true },
+            { instanceId: "win-2", isOpen: false },
+          ],
+          closeWindowByInstanceId: (instanceId) => {
+            closedInstanceIds.push(instanceId);
+          },
+        }
+      : undefined,
   };
-  return { context, results, launches };
+  return { context, results, launches, closedInstanceIds };
 };
 
 export async function runChatToolsRegistryTests(): Promise<{
@@ -72,6 +89,22 @@ export async function runChatToolsRegistryTests(): Promise<{
     assertEq((results[0] as { state?: string }).state, "output-error");
   });
 
+  await runTest("emits generateHtml success output through registry", async () => {
+    const { context, results } = createContext();
+    const executed = await executeToolHandler(
+      "generateHtml",
+      { html: "<div>ok</div>" },
+      "tc-html-success",
+      context,
+    );
+    assertEq(executed, true);
+    assertEq(results.length, 1);
+    assertEq(
+      (results[0] as { output?: unknown }).output,
+      "apps.chats.toolCalls.generatedHtml",
+    );
+  });
+
   await runTest("executes launchApp validation through registry", async () => {
     const { context, results } = createContext();
     const executed = await executeToolHandler(
@@ -83,6 +116,37 @@ export async function runChatToolsRegistryTests(): Promise<{
     assertEq(executed, true);
     assertEq(results.length, 1);
     assertEq((results[0] as { state?: string }).state, "output-error");
+  });
+
+  await runTest("emits launchApp success output through registry", async () => {
+    const { context, results, launches } = createContext();
+    const executed = await executeToolHandler(
+      "launchApp",
+      { id: "chats" },
+      "tc-launch-success",
+      context,
+    );
+    assertEq(executed, true);
+    assertEq(launches.length, 1);
+    assertEq(results.length, 1);
+    assertEq((results[0] as { output?: unknown }).output, "Launched Chats");
+  });
+
+  await runTest("emits closeApp success output through registry", async () => {
+    const { context, results, closedInstanceIds } = createContext({
+      includeAppHandlers: true,
+    });
+    const executed = await executeToolHandler(
+      "closeApp",
+      { id: "chats" },
+      "tc-close-success",
+      context,
+    );
+    assertEq(executed, true);
+    assertEq(closedInstanceIds.length, 1);
+    assertEq(closedInstanceIds[0], "win-1");
+    assertEq(results.length, 1);
+    assertEq((results[0] as { output?: unknown }).output, "Closed Chats");
   });
 
   await runTest("returns VFS error when context dependencies are missing", async () => {
