@@ -5,8 +5,12 @@
 
 import type { ChatMessage } from "../src/types/chat";
 import {
+  clearRoomMessagesInMap,
   capRoomMessages,
+  mergeIncomingRoomMessageInMap,
+  removeRoomMessageFromMap,
   mergeServerMessagesWithOptimistic,
+  setCurrentRoomMessagesInMap,
   sortAndCapRoomMessages,
 } from "../src/stores/chats/authFlows";
 import {
@@ -165,6 +169,77 @@ export async function runChatRoomMessageMergeLogicTests(): Promise<{
     assertEq(result[0]?.id, "srv-4");
     assertEq(result[0]?.clientId, "cid-existing");
     assertEq(result[0]?.content, "new");
+  });
+
+  console.log(section("Room message map helpers"));
+  await runTest("setCurrentRoomMessagesInMap no-ops for equivalent room state", async () => {
+    const existing = [createMessage({ id: "m1", timestamp: 1 })];
+    const roomMap = { "room-1": existing };
+    const next = setCurrentRoomMessagesInMap(roomMap, "room-1", [...existing]);
+    assert(next === roomMap, "Expected no-op reference when room messages are unchanged");
+  });
+
+  await runTest("mergeIncomingRoomMessageInMap decodes HTML entities for new messages", async () => {
+    const roomMap = { "room-1": [] as ChatMessage[] };
+    const next = mergeIncomingRoomMessageInMap(
+      roomMap,
+      "room-1",
+      createMessage({
+        id: "m-html",
+        timestamp: 10,
+        content: "Tom &amp; Jerry",
+      }),
+    );
+    assert(next !== null, "Expected room message map update");
+    assertEq(next?.["room-1"]?.[0]?.content, "Tom & Jerry");
+  });
+
+  await runTest("mergeIncomingRoomMessageInMap returns null for duplicate id/content", async () => {
+    const roomMap = {
+      "room-1": [
+        createMessage({
+          id: "m-dupe",
+          timestamp: 20,
+          content: "same",
+        }),
+      ],
+    };
+    const next = mergeIncomingRoomMessageInMap(
+      roomMap,
+      "room-1",
+      createMessage({
+        id: "m-dupe",
+        timestamp: 20,
+        content: "same",
+      }),
+    );
+    assertEq(next, null);
+  });
+
+  await runTest("removeRoomMessageFromMap reports unchanged for missing message", async () => {
+    const roomMap = {
+      "room-1": [createMessage({ id: "m1", timestamp: 1 })],
+    };
+    const result = removeRoomMessageFromMap(roomMap, "room-1", "missing");
+    assertEq(result.changed, false);
+    assert(result.roomMessages === roomMap, "Expected same room map reference when unchanged");
+  });
+
+  await runTest("clearRoomMessagesInMap clears only target room when populated", async () => {
+    const roomMap = {
+      "room-1": [createMessage({ id: "m1", timestamp: 1 })],
+      "room-2": [createMessage({ id: "m2", timestamp: 2, roomId: "room-2" })],
+    };
+    const next = clearRoomMessagesInMap(roomMap, "room-1");
+    assert(next !== roomMap, "Expected new room map reference when clearing messages");
+    assertEq(next["room-1"]?.length, 0);
+    assertEq(next["room-2"]?.length, 1);
+  });
+
+  await runTest("clearRoomMessagesInMap no-ops when room already empty", async () => {
+    const roomMap = { "room-1": [] as ChatMessage[] };
+    const next = clearRoomMessagesInMap(roomMap, "room-1");
+    assert(next === roomMap, "Expected no-op reference for already-empty room");
   });
 
   return printSummary();

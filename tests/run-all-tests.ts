@@ -26,6 +26,7 @@ import { runChatHookChannelLifecycleWiringTests } from "./test-chat-hook-channel
 import { runChatRuntimeUtilsTests } from "./test-chat-runtime-utils";
 import { runChatStoreStateHelpersTests } from "./test-chat-store-state-helpers";
 import { runChatLocalFileContentTests } from "./test-chat-local-file-content";
+import { runChatRoomMessageMergeLogicTests } from "./test-chat-room-message-merge-logic";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -106,6 +107,7 @@ async function runAllTests(): Promise<void> {
     { name: "chat-runtime-utils", run: runChatRuntimeUtilsTests },
     { name: "chat-store-state-helpers", run: runChatStoreStateHelpersTests },
     { name: "chat-local-file-content", run: runChatLocalFileContentTests },
+    { name: "chat-room-message-merge-logic", run: runChatRoomMessageMergeLogicTests },
     { name: "pusher-client", run: runPusherClientRefcountTests },
     { name: "pusher-constructor-wiring", run: runPusherClientConstructorWiringTests },
     { name: "chat-broadcast-wiring", run: runChatBroadcastWiringTests },
