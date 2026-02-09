@@ -263,6 +263,21 @@ const runChatRequest = (
     withChatRequestDefaults(options)
   );
 
+const withQueryParams = (
+  path: string,
+  params: Record<string, string | null | undefined>
+): string => {
+  const queryParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== null && value !== undefined && value !== "") {
+      queryParams.append(key, value);
+    }
+  });
+
+  const query = queryParams.toString();
+  return query ? `${path}?${query}` : path;
+};
+
 const warnedStoreIssues = new Set<string>();
 
 const warnChatsStoreOnce = (key: string, message: string): void => {
@@ -1367,14 +1382,7 @@ export const logIfNetworkResultError = (
 const fetchRoomsRequest = async (
   username: string | null
 ): Promise<Response> => {
-  const queryParams = new URLSearchParams();
-  if (username) {
-    queryParams.append("username", username);
-  }
-
-  const url = queryParams.toString()
-    ? `/api/rooms?${queryParams.toString()}`
-    : "/api/rooms";
+  const url = withQueryParams("/api/rooms", { username });
 
   return runChatRequest(url, {
     method: "GET",
@@ -1391,11 +1399,9 @@ const fetchRoomMessagesRequest = async (
 const fetchBulkMessagesRequest = async (
   roomIds: string[]
 ): Promise<Response> => {
-  const queryParams = new URLSearchParams({
+  return runChatRequest(withQueryParams("/api/messages/bulk", {
     roomIds: roomIds.join(","),
-  });
-
-  return runChatRequest(`/api/messages/bulk?${queryParams.toString()}`, {
+  }), {
     method: "GET",
   });
 };
