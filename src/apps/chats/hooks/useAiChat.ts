@@ -49,6 +49,7 @@ import {
 import { TEXTEDIT_TIPTAP_EXTENSIONS } from "../utils/textEditSerialization";
 import { getSystemState } from "../utils/systemState";
 import {
+  replaceSingleOccurrence,
   readLocalFileTextOrThrow,
   readOptionalTextContentFromStore,
 } from "../utils/localFileContent";
@@ -1014,10 +1015,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             console.log("[ToolCall] edit:", { path, old_string: old_string.substring(0, 50) + "...", new_string: new_string.substring(0, 50) + "..." });
 
-            // Normalize line endings
-            const normalizedOldString = old_string.replace(/\r\n?/g, "\n");
-            const normalizedNewString = new_string.replace(/\r\n?/g, "\n");
-
             try {
               if (path.startsWith("/Documents/")) {
                 // Edit document - read directly from file system (independent of TextEdit instances)
@@ -1029,36 +1026,33 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     readFailed: `Failed to read document content: ${path}`,
                   });
 
-                // Normalize existing content
-                const normalizedExisting = existingContent.replace(/\r\n?/g, "\n");
+                const replacement = replaceSingleOccurrence(
+                  existingContent,
+                  old_string,
+                  new_string,
+                );
 
-                // Check for uniqueness - count occurrences
-                const occurrences = normalizedExisting.split(normalizedOldString).length - 1;
-                
-                if (occurrences === 0) {
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    state: "output-error",
-                    errorText: i18n.t("apps.chats.toolCalls.oldStringNotFound"),
-                  });
+                if (!replacement.ok) {
+                  if (replacement.reason === "not_found") {
+                    addToolResult({
+                      tool: toolCall.toolName,
+                      toolCallId: toolCall.toolCallId,
+                      state: "output-error",
+                      errorText: i18n.t("apps.chats.toolCalls.oldStringNotFound"),
+                    });
+                  } else {
+                    addToolResult({
+                      tool: toolCall.toolName,
+                      toolCallId: toolCall.toolCallId,
+                      state: "output-error",
+                      errorText: i18n.t("apps.chats.toolCalls.oldStringMultipleMatches", { count: replacement.occurrences }),
+                    });
+                  }
                   result = "";
                   break;
                 }
 
-                if (occurrences > 1) {
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    state: "output-error",
-                    errorText: i18n.t("apps.chats.toolCalls.oldStringMultipleMatches", { count: occurrences }),
-                  });
-                  result = "";
-                  break;
-                }
-
-                // Replace exactly one occurrence
-                const updatedContent = normalizedExisting.replace(normalizedOldString, normalizedNewString);
+                const updatedContent = replacement.updatedContent;
 
                 // Save updated content to IndexedDB
                 await dbOperations.put<DocumentContent>(
@@ -1107,36 +1101,33 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     readFailed: `Failed to read applet content: ${path}`,
                   });
 
-                // Normalize existing content
-                const normalizedExisting = existingContent.replace(/\r\n?/g, "\n");
+                const replacement = replaceSingleOccurrence(
+                  existingContent,
+                  old_string,
+                  new_string,
+                );
 
-                // Check for uniqueness - count occurrences
-                const occurrences = normalizedExisting.split(normalizedOldString).length - 1;
-                
-                if (occurrences === 0) {
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    state: "output-error",
-                    errorText: i18n.t("apps.chats.toolCalls.oldStringNotFound"),
-                  });
+                if (!replacement.ok) {
+                  if (replacement.reason === "not_found") {
+                    addToolResult({
+                      tool: toolCall.toolName,
+                      toolCallId: toolCall.toolCallId,
+                      state: "output-error",
+                      errorText: i18n.t("apps.chats.toolCalls.oldStringNotFound"),
+                    });
+                  } else {
+                    addToolResult({
+                      tool: toolCall.toolName,
+                      toolCallId: toolCall.toolCallId,
+                      state: "output-error",
+                      errorText: i18n.t("apps.chats.toolCalls.oldStringMultipleMatches", { count: replacement.occurrences }),
+                    });
+                  }
                   result = "";
                   break;
                 }
 
-                if (occurrences > 1) {
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    state: "output-error",
-                    errorText: i18n.t("apps.chats.toolCalls.oldStringMultipleMatches", { count: occurrences }),
-                  });
-                  result = "";
-                  break;
-                }
-
-                // Replace exactly one occurrence
-                const updatedContent = normalizedExisting.replace(normalizedOldString, normalizedNewString);
+                const updatedContent = replacement.updatedContent;
 
                 // Save to IndexedDB
                 await dbOperations.put<DocumentContent>(

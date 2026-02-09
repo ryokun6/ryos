@@ -3,6 +3,7 @@
 import { dbOperations } from "../src/apps/finder/utils/fileDatabase";
 import { STORES } from "../src/utils/indexedDB";
 import {
+  replaceSingleOccurrence,
   readLocalFileTextOrThrow,
   readOptionalTextContentFromStore,
   readTextContentFromStore,
@@ -238,6 +239,40 @@ export async function runChatLocalFileContentTests(): Promise<{
 
   await runTest("does not leak mocked dbOperations.get between tests", async () => {
     assert(typeof dbOperations.get === "function", "Expected db get function");
+  });
+
+  console.log(section("Text edit replacement"));
+  await runTest("replaces exactly one occurrence after normalizing line endings", async () => {
+    const result = replaceSingleOccurrence(
+      "line-a\r\nline-b\r\nline-c",
+      "line-b\nline-c",
+      "line-b\nline-d",
+    );
+    assertEq(result.ok, true);
+    if (!result.ok) {
+      throw new Error("Expected replacement success");
+    }
+    assertEq(result.updatedContent, "line-a\nline-b\nline-d");
+  });
+
+  await runTest("returns not_found when old string is missing", async () => {
+    const result = replaceSingleOccurrence("a\nb\nc", "x", "y");
+    assertEq(result.ok, false);
+    if (result.ok) {
+      throw new Error("Expected replacement failure");
+    }
+    assertEq(result.reason, "not_found");
+    assertEq(result.occurrences, 0);
+  });
+
+  await runTest("returns multiple_matches when old string is ambiguous", async () => {
+    const result = replaceSingleOccurrence("foo foo foo", "foo", "bar");
+    assertEq(result.ok, false);
+    if (result.ok) {
+      throw new Error("Expected replacement failure");
+    }
+    assertEq(result.reason, "multiple_matches");
+    assertEq(result.occurrences, 3);
   });
 
   return printSummary();

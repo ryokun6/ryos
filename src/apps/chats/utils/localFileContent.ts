@@ -87,3 +87,37 @@ export const readLocalFileTextOrThrow = async (
 
   return { fileItem, content };
 };
+
+export const normalizeLineEndings = (value: string): string =>
+  value.replace(/\r\n?/g, "\n");
+
+export type SingleReplacementResult =
+  | { ok: true; updatedContent: string }
+  | { ok: false; reason: "not_found" | "multiple_matches"; occurrences: number };
+
+export const replaceSingleOccurrence = (
+  source: string,
+  oldString: string,
+  newString: string,
+): SingleReplacementResult => {
+  const normalizedSource = normalizeLineEndings(source);
+  const normalizedOldString = normalizeLineEndings(oldString);
+  const normalizedNewString = normalizeLineEndings(newString);
+
+  const occurrences = normalizedSource.split(normalizedOldString).length - 1;
+  if (occurrences === 0) {
+    return { ok: false, reason: "not_found", occurrences };
+  }
+
+  if (occurrences > 1) {
+    return { ok: false, reason: "multiple_matches", occurrences };
+  }
+
+  return {
+    ok: true,
+    updatedContent: normalizedSource.replace(
+      normalizedOldString,
+      normalizedNewString,
+    ),
+  };
+};
