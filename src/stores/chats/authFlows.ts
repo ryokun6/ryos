@@ -1725,6 +1725,9 @@ export const mergeIncomingRoomMessageInMap = (
   if (!mergedMessages) {
     return null;
   }
+  if (areChatMessageListsEqual(existingMessages, mergedMessages)) {
+    return null;
+  }
 
   return {
     ...roomMessages,
