@@ -1439,7 +1439,9 @@ export const prepareRoomsForSet = (
 };
 
 export const capRoomMessages = (messages: ChatMessage[]): ChatMessage[] =>
-  messages.slice(-MESSAGE_HISTORY_CAP);
+  messages.length > MESSAGE_HISTORY_CAP
+    ? messages.slice(-MESSAGE_HISTORY_CAP)
+    : messages;
 
 export const sortAndCapRoomMessages = (
   messages: ChatMessage[]
