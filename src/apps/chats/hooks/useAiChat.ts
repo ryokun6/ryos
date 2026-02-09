@@ -18,7 +18,6 @@ import { getTranslatedAppName } from "@/utils/i18n";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { STORES } from "@/utils/indexedDB";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
-import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { detectUserOS } from "@/utils/userOS";
@@ -1603,35 +1602,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           action: {
             label: "Open",
             onClick: () => {
-              // Check if this file is already open in a TextEdit instance
-              const textEditStore = useTextEditStore.getState();
-              const existingInstanceId = textEditStore.getInstanceIdByPath(filePath);
-
-              if (existingInstanceId) {
-                // Verify the instance actually exists in AppStore
-                const appStore = useAppStore.getState();
-                const instanceExists = !!appStore.instances[existingInstanceId];
-
-                if (instanceExists) {
-                  // File is already open - update content and bring to foreground
-                  appStore.updateInstanceInitialData(existingInstanceId, {
-                    path: filePath,
-                    content: transcript,
-                  });
-                  appStore.bringInstanceToForeground(existingInstanceId);
-                } else {
-                  // Stale instance reference - clean it up and open new instance
-                  textEditStore.removeInstance(existingInstanceId);
-                  launchApp("textedit", {
-                    initialData: { path: filePath, content: transcript },
-                  });
-                }
-              } else {
-                // File not open - launch new TextEdit instance
-                launchApp("textedit", {
-                  initialData: { path: filePath, content: transcript },
-                });
-              }
+              syncTextEditDocumentForPath({
+                path: filePath,
+                content: transcript,
+                fileName: finalFileName,
+                launchIfMissing: true,
+                bringToForeground: true,
+                includeFilePathOnUpdate: true,
+              });
             },
           },
         });
@@ -1642,7 +1620,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         });
       }
     },
-    [username, saveFile, launchApp],
+    [username, saveFile],
   );
 
   // Stop both chat streaming and TTS queue
