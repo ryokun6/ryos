@@ -1,6 +1,9 @@
 #!/usr/bin/env bun
 
-import { validateDocumentWriteInput } from "../src/apps/chats/utils/chatFileToolValidation";
+import {
+  validateDocumentWriteInput,
+  validateFileEditInput,
+} from "../src/apps/chats/utils/chatFileToolValidation";
 import {
   assertEq,
   clearResults,
@@ -93,6 +96,45 @@ export async function runChatFileToolValidationTests(): Promise<{
     assertEq(result.ok, true);
     if (result.ok) {
       assertEq(result.fileName, "notes.md");
+    }
+  });
+
+  console.log(section("Edit input validation"));
+  await runTest("rejects missing edit parameters", async () => {
+    const result = validateFileEditInput({
+      path: "",
+      oldString: "old",
+      newString: "new",
+    });
+    assertEq(result.ok, false);
+    if (!result.ok) {
+      assertEq(result.errorKey, "apps.chats.toolCalls.missingEditParameters");
+    }
+  });
+
+  await runTest("rejects non-string edit payloads", async () => {
+    const result = validateFileEditInput({
+      path: "/Documents/file.md",
+      oldString: null,
+      newString: 5,
+    });
+    assertEq(result.ok, false);
+    if (!result.ok) {
+      assertEq(result.errorKey, "apps.chats.toolCalls.missingEditParameters");
+    }
+  });
+
+  await runTest("returns normalized edit payload on valid input", async () => {
+    const result = validateFileEditInput({
+      path: "/Documents/file.md",
+      oldString: "old",
+      newString: "new",
+    });
+    assertEq(result.ok, true);
+    if (result.ok) {
+      assertEq(result.path, "/Documents/file.md");
+      assertEq(result.oldString, "old");
+      assertEq(result.newString, "new");
     }
   });
 

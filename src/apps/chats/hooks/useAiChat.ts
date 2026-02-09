@@ -50,7 +50,10 @@ import {
   readLocalFileTextOrThrow,
   writeDocumentFileWithMode,
 } from "../utils/localFileContent";
-import { validateDocumentWriteInput } from "../utils/chatFileToolValidation";
+import {
+  validateDocumentWriteInput,
+  validateFileEditInput,
+} from "../utils/chatFileToolValidation";
 import { syncTextEditDocumentForPath } from "../utils/textEditDocumentSync";
 import {
   handleLaunchApp,
@@ -898,18 +901,30 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               new_string: string;
             };
 
-            if (!path || typeof old_string !== "string" || typeof new_string !== "string") {
+            const editValidation = validateFileEditInput({
+              path,
+              oldString: old_string,
+              newString: new_string,
+            });
+            if (!editValidation.ok) {
               addToolResult({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: i18n.t("apps.chats.toolCalls.missingEditParameters"),
+                errorText: i18n.t(editValidation.errorKey),
               });
               result = "";
               break;
             }
+            const normalizedPath = editValidation.path;
+            const oldString = editValidation.oldString;
+            const newString = editValidation.newString;
 
-            console.log("[ToolCall] edit:", { path, old_string: old_string.substring(0, 50) + "...", new_string: new_string.substring(0, 50) + "..." });
+            console.log("[ToolCall] edit:", {
+              path: normalizedPath,
+              old_string: oldString.substring(0, 50) + "...",
+              new_string: newString.substring(0, 50) + "...",
+            });
 
             const publishReplacementFailure = (
               replacement: LocalFileReplacementAttempt,
@@ -940,17 +955,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             };
 
             try {
-              if (path.startsWith("/Documents/")) {
+              if (normalizedPath.startsWith("/Documents/")) {
                 // Edit document - read directly from file system (independent of TextEdit instances)
                 const replacement = await replaceAndPersistLocalFileContent({
-                  path,
+                  path: normalizedPath,
                   storeName: STORES.DOCUMENTS,
-                  oldString: old_string,
-                  newString: new_string,
+                  oldString,
+                  newString,
                   errors: {
-                    notFound: `Document not found: ${path}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`,
-                    missingContent: `Document not found: ${path}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`,
-                    readFailed: `Failed to read document content: ${path}`,
+                    notFound: `Document not found: ${normalizedPath}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`,
+                    missingContent: `Document not found: ${normalizedPath}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`,
+                    readFailed: `Failed to read document content: ${normalizedPath}`,
                   },
                   resolveRecordName: (fileItem) => fileItem.name,
                 });
@@ -964,7 +979,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 const { updatedContent } = replacement;
 
                 syncTextEditDocumentForPath({
-                  path,
+                  path: normalizedPath,
                   content: updatedContent,
                   launchIfMissing: false,
                   bringToForeground: false,
@@ -974,20 +989,22 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: i18n.t("apps.chats.toolCalls.editedDocument", { path }),
+                  output: i18n.t("apps.chats.toolCalls.editedDocument", {
+                    path: normalizedPath,
+                  }),
                 });
                 result = "";
-              } else if (path.startsWith("/Applets/")) {
+              } else if (normalizedPath.startsWith("/Applets/")) {
                 // Edit applet HTML
                 const replacement = await replaceAndPersistLocalFileContent({
-                  path,
+                  path: normalizedPath,
                   storeName: STORES.APPLETS,
-                  oldString: old_string,
-                  newString: new_string,
+                  oldString,
+                  newString,
                   errors: {
-                    notFound: `Applet not found: ${path}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`,
-                    missingContent: `Applet not found: ${path}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`,
-                    readFailed: `Failed to read applet content: ${path}`,
+                    notFound: `Applet not found: ${normalizedPath}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`,
+                    missingContent: `Applet not found: ${normalizedPath}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`,
+                    readFailed: `Failed to read applet content: ${normalizedPath}`,
                   },
                   resolveRecordName: (fileItem) => fileItem.uuid,
                 });
@@ -1001,7 +1018,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: i18n.t("apps.chats.toolCalls.editedApplet", { path }),
+                  output: i18n.t("apps.chats.toolCalls.editedApplet", {
+                    path: normalizedPath,
+                  }),
                 });
                 result = "";
               } else {
@@ -1009,7 +1028,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   state: "output-error",
-                  errorText: i18n.t("apps.chats.toolCalls.invalidPathForEdit", { path }),
+                  errorText: i18n.t("apps.chats.toolCalls.invalidPathForEdit", {
+                    path: normalizedPath,
+                  }),
                 });
                 result = "";
               }

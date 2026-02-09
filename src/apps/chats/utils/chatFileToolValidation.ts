@@ -21,6 +21,20 @@ export type WriteValidationSuccess = {
 
 export type WriteValidationResult = WriteValidationFailure | WriteValidationSuccess;
 
+export type EditValidationFailure = {
+  ok: false;
+  errorKey: "apps.chats.toolCalls.missingEditParameters";
+};
+
+export type EditValidationSuccess = {
+  ok: true;
+  path: string;
+  oldString: string;
+  newString: string;
+};
+
+export type EditValidationResult = EditValidationFailure | EditValidationSuccess;
+
 export const validateDocumentWriteInput = ({
   path,
   content,
@@ -56,4 +70,28 @@ export const validateDocumentWriteInput = ({
   }
 
   return { ok: true, fileName };
+};
+
+export const validateFileEditInput = ({
+  path,
+  oldString,
+  newString,
+}: {
+  path: string;
+  oldString: unknown;
+  newString: unknown;
+}): EditValidationResult => {
+  if (!path || typeof oldString !== "string" || typeof newString !== "string") {
+    return {
+      ok: false,
+      errorKey: "apps.chats.toolCalls.missingEditParameters",
+    };
+  }
+
+  return {
+    ok: true,
+    path,
+    oldString,
+    newString,
+  };
 };
