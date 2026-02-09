@@ -133,13 +133,30 @@ const DEFAULT_CHAT_RETRY: ChatRetryConfig = {
   initialDelayMs: 250,
 };
 
+const normalizeRetryConfig = (
+  retry?: ChatRetryConfig
+): ChatRetryConfig => {
+  if (!retry) {
+    return DEFAULT_CHAT_RETRY;
+  }
+
+  const maxAttempts = Number.isFinite(retry.maxAttempts)
+    ? Math.max(1, Math.floor(retry.maxAttempts))
+    : DEFAULT_CHAT_RETRY.maxAttempts;
+  const initialDelayMs = Number.isFinite(retry.initialDelayMs)
+    ? Math.max(0, Math.floor(retry.initialDelayMs))
+    : DEFAULT_CHAT_RETRY.initialDelayMs;
+
+  return {
+    maxAttempts,
+    initialDelayMs,
+  };
+};
+
 const withChatRequestDefaults = (
   options: ChatRequestOptions
 ): ChatRequestOptions => {
-  const mergedRetry: ChatRetryConfig = {
-    ...DEFAULT_CHAT_RETRY,
-    ...(options.retry || {}),
-  };
+  const mergedRetry = normalizeRetryConfig(options.retry);
 
   return {
     timeout: 15000,
