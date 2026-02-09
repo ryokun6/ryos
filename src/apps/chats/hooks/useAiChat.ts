@@ -9,12 +9,9 @@ import type { AIChatMessage } from "@/types/chat";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { getApiUrl } from "@/utils/platform";
-import { useIpodStore } from "@/stores/useIpodStore";
 import { toast } from "@/hooks/useToast";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { AppId } from "@/config/appIds";
-import { appRegistry } from "@/config/appRegistry";
-import { getTranslatedAppName } from "@/utils/i18n";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useFilesStore } from "@/stores/useFilesStore";
@@ -39,6 +36,10 @@ import {
 } from "../utils/chatRuntime";
 import { getSystemState } from "../utils/systemState";
 import { syncTextEditDocumentForPath } from "../utils/textEditDocumentSync";
+import {
+  createChatListToolDependencies,
+  createChatOpenToolDependencies,
+} from "../utils/chatToolDependencyResolvers";
 import {
   handleChatEditToolCall,
   handleChatListToolCall,
@@ -118,6 +119,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const handleImageChange = useCallback((imageData: string | null) => {
     setSelectedImage(imageData);
   }, []);
+  const listToolDependencies = useMemo(
+    () => createChatListToolDependencies(),
+    [],
+  );
+  const openToolDependencies = useMemo(
+    () => createChatOpenToolDependencies({ launchApp }),
+    [launchApp],
+  );
 
   // Track how many characters of each assistant message have already been sent to TTS
   const speechProgressRef = useRef<Record<string, number>>({});
@@ -383,51 +392,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCallId: toolCall.toolCallId,
               addToolResult,
               t: i18n.t,
-              listDependencies: {
-                getMusicItems: () => {
-                  const ipodStore = useIpodStore.getState();
-                  return ipodStore.tracks.map((track) => ({
-                    path: `/Music/${track.id}`,
-                    id: track.id,
-                    title: track.title,
-                    artist: track.artist,
-                  }));
-                },
-                getSharedApplets: async () => {
-                  const response = await abortableFetch(
-                    getApiUrl("/api/share-applet?list=true"),
-                    {
-                      timeout: 15000,
-                      retry: { maxAttempts: 2, initialDelayMs: 500 },
-                    },
-                  );
-                  const data = await response.json();
-                  return Array.isArray(data?.applets) ? data.applets : [];
-                },
-                getApplications: () =>
-                  Object.entries(appRegistry)
-                    .filter(([id]) => id !== "finder")
-                    .map(([id, app]) => ({
-                      path: `/Applications/${id}`,
-                      name: app.name,
-                    })),
-                getFileItems: (root) => {
-                  const filesStore = useFilesStore.getState();
-                  return Object.values(filesStore.items)
-                    .filter(
-                      (item) =>
-                        item.status === "active" &&
-                        item.path.startsWith(`${root}/`) &&
-                        !item.isDirectory &&
-                        item.path !== `${root}/`,
-                    )
-                    .map((file) => ({
-                      path: file.path,
-                      name: file.name,
-                      type: file.type,
-                    }));
-                },
-              },
+              listDependencies: listToolDependencies,
             });
             result = "";
             break;
@@ -441,36 +406,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCallId: toolCall.toolCallId,
               addToolResult,
               t: i18n.t,
-              launchApp: (appId, options) => {
-                launchApp(appId as AppId, options as never);
-              },
-              resolveApplicationName: (appId) => {
-                const typedAppId = appId as AppId;
-                return appRegistry[typedAppId]
-                  ? getTranslatedAppName(typedAppId)
-                  : null;
-              },
-              playMusicTrack: (songId) => {
-                const ipodState = useIpodStore.getState();
-                const track = ipodState.tracks.find((candidate) => candidate.id === songId);
-                if (!track) {
-                  return { ok: false, error: `Song not found: ${songId}` };
-                }
-
-                const appState = useAppStore.getState();
-                const ipodInstances = appState.getInstancesByAppId("ipod");
-                if (!ipodInstances.some((inst) => inst.isOpen)) {
-                  launchApp("ipod");
-                }
-
-                ipodState.setCurrentSongId(songId);
-                ipodState.setIsPlaying(true);
-                return {
-                  ok: true,
-                  title: track.title,
-                  artist: track.artist,
-                };
-              },
+              ...openToolDependencies,
             });
             result = "";
             break;

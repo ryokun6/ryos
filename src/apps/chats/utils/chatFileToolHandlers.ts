@@ -39,6 +39,12 @@ type BaseToolCallContext = {
   t: TranslateFn;
 };
 
+export type ChatOpenToolDependencies = {
+  playMusicTrack: (songId: string) => { ok: true; title: string; artist?: string } | { ok: false; error: string };
+  resolveApplicationName: (appId: string) => string | null;
+  launchApp: (appId: string, options?: Record<string, unknown>) => void;
+};
+
 const publishToolError = ({
   toolName,
   toolCallId,
@@ -297,10 +303,7 @@ export const handleChatOpenToolCall = async ({
   path: unknown;
   executeOpenOperation?: ExecuteOpenOperationFn;
   executeSharedAppletReadOperation?: ExecuteSharedAppletReadOperationFn;
-  playMusicTrack: (songId: string) => { ok: true; title: string; artist?: string } | { ok: false; error: string };
-  resolveApplicationName: (appId: string) => string | null;
-  launchApp: (appId: string, options?: Record<string, unknown>) => void;
-}): Promise<void> => {
+} & ChatOpenToolDependencies): Promise<void> => {
   const normalizedPath = normalizeToolPath(path);
   console.log("[ToolCall] open:", { path: normalizedPath });
 
