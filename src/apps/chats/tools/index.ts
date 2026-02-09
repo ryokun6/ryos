@@ -168,9 +168,7 @@ const executeVfsToolFromContext = async (
     toolCallId,
     addToolResult: context.addToolResult,
     t: context.translate ?? ((key) => key),
-    listDependencies: context.vfs.listDependencies as never,
-    openDependencies: context.vfs.openDependencies as never,
-    syncTextEdit: context.vfs.syncTextEdit,
+    ...context.vfs,
   });
 };
 

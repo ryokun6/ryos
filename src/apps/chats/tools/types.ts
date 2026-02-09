@@ -1,5 +1,6 @@
 import type { AppId } from "@/config/appIds";
 import type { LaunchAppOptions } from "@/hooks/useLaunchApp";
+import type { ChatVfsToolContextDependencies } from "../utils/chatFileToolHandlers";
 
 /**
  * Tool Handler Types
@@ -24,20 +25,7 @@ export interface ToolContext {
   /** Optional dependencies used by app launch/close handlers */
   appHandlers?: AppHandlerDependencies;
   /** Optional dependencies used by VFS (list/open/read/write/edit) handlers */
-  vfs?: {
-    listDependencies: unknown;
-    openDependencies: unknown;
-    syncTextEdit: (
-      options: {
-        path: string;
-        content: string;
-        fileName?: string;
-        launchIfMissing: boolean;
-        bringToForeground: boolean;
-        includeFilePathOnUpdate: boolean;
-      },
-    ) => void;
-  };
+  vfs?: ChatVfsToolContextDependencies;
 }
 
 export interface AppHandlerDependencies {

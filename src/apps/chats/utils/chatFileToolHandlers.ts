@@ -14,8 +14,11 @@ import {
   validateFileEditInput,
 } from "./chatFileToolValidation";
 
-type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
-type AddToolResult = (result: ToolResultPayload) => void;
+export type TranslateFn = (
+  key: string,
+  params?: Record<string, unknown>,
+) => string;
+export type AddToolResult = (result: ToolResultPayload) => void;
 
 type ExecuteWriteOperationFn = typeof executeChatFileWriteOperation;
 type ExecuteEditOperationFn = typeof executeChatFileEditOperation;
@@ -23,7 +26,7 @@ type ExecuteOpenOperationFn = typeof executeChatFileOpenOperation;
 type ExecuteReadOperationFn = typeof executeChatFileReadOperation;
 type ExecuteSharedAppletReadOperationFn = typeof executeChatSharedAppletReadOperation;
 type ExecuteListOperationFn = typeof executeChatListOperation;
-type SyncTextEditFn = (options: {
+export type SyncTextEditFn = (options: {
   path: string;
   content: string;
   fileName?: string;
@@ -571,7 +574,13 @@ export const handleChatListToolCall = async ({
   }
 };
 
-type VfsToolName = "list" | "open" | "read" | "write" | "edit";
+export type VfsToolName = "list" | "open" | "read" | "write" | "edit";
+
+export type ChatVfsToolContextDependencies = {
+  listDependencies: ChatListOperationDependencies;
+  openDependencies: ChatOpenToolDependencies;
+  syncTextEdit: SyncTextEditFn;
+};
 
 export const handleChatVfsToolCall = async ({
   toolName,
@@ -593,9 +602,7 @@ export const handleChatVfsToolCall = async ({
   toolCallId: string;
   addToolResult: AddToolResult;
   t: TranslateFn;
-  listDependencies: ChatListOperationDependencies;
-  openDependencies: ChatOpenToolDependencies;
-  syncTextEdit: SyncTextEditFn;
+} & ChatVfsToolContextDependencies & {
   listHandler?: typeof handleChatListToolCall;
   openHandler?: typeof handleChatOpenToolCall;
   readHandler?: typeof handleChatReadToolCall;
