@@ -49,6 +49,24 @@ interface Selection {
   path?: Point[]; // For lasso selections
 }
 
+const compareImageData = (img1: ImageData, img2: ImageData): boolean => {
+  if (img1.width !== img2.width || img1.height !== img2.height) return false;
+
+  // Compare a sample of pixels to determine if images are significantly different
+  // This is more performant than comparing every pixel
+  const data1 = img1.data;
+  const data2 = img2.data;
+  const length = data1.length;
+  const sampleSize = Math.min(1000, length / 4); // Sample at most 1000 pixels
+  const step = Math.floor(length / (sampleSize * 4));
+
+  for (let i = 0; i < length; i += step) {
+    if (data1[i] !== data2[i]) return false;
+  }
+
+  return true;
+};
+
 export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
   (
     {
@@ -315,7 +333,16 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
         context.fillRect(0, 0, canvas.width, canvas.height);
 
         // Save initial canvas state
-        saveToHistory();
+        const initialImageData = context.getImageData(
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+        historyRef.current = [initialImageData];
+        historyIndexRef.current = 0;
+        onCanUndoChange(false);
+        onCanRedoChange(false);
       }
 
       // Load and update the pattern
@@ -355,7 +382,14 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
       };
 
       img.src = `/patterns/Property 1=${patternNum}.svg`;
-    }, [selectedPattern]);
+    }, [
+      selectedPattern,
+      canvasHeight,
+      canvasWidth,
+      onCanRedoChange,
+      onCanUndoChange,
+      strokeWidth,
+    ]);
 
     useEffect(() => {
       if (contextRef.current) {
@@ -435,26 +469,6 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
         onContentChange?.();
       }
     }, [onCanUndoChange, onCanRedoChange, onContentChange, isLoadingFile, selection]);
-
-    // Helper function to compare ImageData
-    const compareImageData = useCallback((img1: ImageData, img2: ImageData) => {
-      if (img1.width !== img2.width || img1.height !== img2.height)
-        return false;
-
-      // Compare a sample of pixels to determine if images are significantly different
-      // This is more performant than comparing every pixel
-      const data1 = img1.data;
-      const data2 = img2.data;
-      const length = data1.length;
-      const sampleSize = Math.min(1000, length / 4); // Sample at most 1000 pixels
-      const step = Math.floor(length / (sampleSize * 4));
-
-      for (let i = 0; i < length; i += step) {
-        if (data1[i] !== data2[i]) return false;
-      }
-
-      return true;
-    }, []);
 
     // Helper function to extract selection region with mask support
     const extractSelectionRegion = useCallback(() => {
@@ -921,6 +935,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
         clearSelection,
         handlePaste,
         onContentChange,
+        selection,
       ]
     );
 
@@ -987,20 +1002,6 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
       };
     };
 
-    const isPointInSelection = (point: Point, sel: Selection): boolean => {
-      if (sel.type === "rectangle") {
-        return (
-          point.x >= sel.startX &&
-          point.x <= sel.startX + sel.width &&
-          point.y >= sel.startY &&
-          point.y <= sel.startY + sel.height
-        );
-      } else if (sel.type === "lasso" && sel.path) {
-        return isPointInLassoPath(point, sel.path);
-      }
-      return false;
-    };
-
     // Point-in-polygon test for lasso selection
     const isPointInLassoPath = useCallback((point: Point, path: Point[]): boolean => {
       if (path.length < 3) return false;
@@ -1020,7 +1021,22 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
       return inside;
     }, []);
 
-    const floodFill = (startX: number, startY: number) => {
+    const isPointInSelection = useCallback((point: Point, sel: Selection): boolean => {
+      if (sel.type === "rectangle") {
+        return (
+          point.x >= sel.startX &&
+          point.x <= sel.startX + sel.width &&
+          point.y >= sel.startY &&
+          point.y <= sel.startY + sel.height
+        );
+      }
+      if (sel.type === "lasso" && sel.path) {
+        return isPointInLassoPath(point, sel.path);
+      }
+      return false;
+    }, [isPointInLassoPath]);
+
+    const floodFill = useCallback((startX: number, startY: number) => {
       const canvas = canvasRef.current;
       const context = contextRef.current;
       if (!canvas || !context || !patternRef.current) return;
@@ -1170,7 +1186,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
       // Put the modified image data back
       context.putImageData(imageData, 0, 0);
       saveToHistory();
-    };
+    }, [saveToHistory]);
 
     const renderText = (text: string) => {
       if (!contextRef.current || !patternRef.current || !textPosition) return;
@@ -1380,6 +1396,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
         setSelection,
         setTextPosition,
         setIsTyping,
+        sprayAtPoint,
       ]
     );
 
@@ -1555,7 +1572,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
           }
         }
       },
-      [selectedTool, isDraggingSelection, selection]
+      [selectedTool, isDraggingSelection, selection, sprayAtPoint]
     );
 
     const stopDrawing = useCallback(

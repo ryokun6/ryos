@@ -489,7 +489,14 @@ export function usePhotoBoothLogic({
         }
       }
     }
-  }, [selectedCameraId, stopCamera, detectIsBackCamera]);
+  }, [
+    selectedCameraId,
+    stopCamera,
+    detectIsBackCamera,
+    isForegroundRef,
+    isWindowOpenRef,
+    t,
+  ]);
 
   useEffect(() => {
     if (isWindowOpen && isForeground) {
@@ -534,7 +541,7 @@ export function usePhotoBoothLogic({
       isChrome,
       isSecureContext: window.isSecureContext,
     });
-  }, []);
+  }, [isChrome, isIOS]);
 
   // Force visibility refresh for Chrome
   useEffect(() => {
@@ -617,7 +624,7 @@ export function usePhotoBoothLogic({
       videoElement.removeEventListener("canplay", handleCanPlay);
       clearTimeout(recoveryTimer);
     };
-  }, [stream]);
+  }, [stream, isIOS]);
 
   // Fix playback issues on Chrome in production
   useEffect(() => {
@@ -717,7 +724,7 @@ export function usePhotoBoothLogic({
     };
 
     getCameras();
-  }, []);
+  }, [selectedCameraId]);
 
   const handlePhoto = (photoDataUrl: string) => {
     // Trigger flash effect

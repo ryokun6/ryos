@@ -211,10 +211,10 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
     setHasUnsavedChanges(false);
   };
 
-  const handleConfirmNew = useCallback(() => {
+  const handleConfirmNew = () => {
     handleClear();
     setIsConfirmNewDialogOpen(false);
-  }, [handleClear]);
+  };
 
   const handleSave = async () => {
     if (!canvasRef.current) return;

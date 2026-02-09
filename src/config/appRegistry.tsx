@@ -1,7 +1,5 @@
-import { lazy, Suspense, ComponentType, useEffect } from "react";
 import { type AppId } from "./appRegistryData";
 import type {
-  AppProps,
   BaseApp,
   ControlPanelsInitialData,
   InternetExplorerInitialData,
@@ -10,7 +8,7 @@ import type {
   VideosInitialData,
 } from "@/apps/base/types";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
-import { useAppStore } from "@/stores/useAppStore";
+import { createLazyComponent } from "./lazyAppComponent";
 
 export type { AppId };
 
@@ -33,67 +31,6 @@ const defaultWindowConstraints: WindowConstraints = {
   defaultSize: { width: 730, height: 475 },
   minSize: { width: 300, height: 200 },
 };
-
-// ============================================================================
-// LAZY LOADING WRAPPER
-// ============================================================================
-
-// Signal component to notify store when lazy component is loaded
-const LoadSignal = ({ instanceId }: { instanceId?: string }) => {
-  const markInstanceAsLoaded = useAppStore((state) => state.markInstanceAsLoaded);
-  useEffect(() => {
-    if (instanceId) {
-      // Use requestIdleCallback for non-urgent loading signal, falling back to setTimeout
-      // This ensures we don't block the main thread during heavy app initialization
-      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-        const handle = window.requestIdleCallback(
-          () => {
-            markInstanceAsLoaded(instanceId);
-          },
-          { timeout: 1000 }
-        );
-        return () => window.cancelIdleCallback(handle);
-      } else {
-        const timer = setTimeout(() => {
-          markInstanceAsLoaded(instanceId);
-        }, 50); 
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [instanceId, markInstanceAsLoaded]);
-  return null;
-};
-
-// Cache for lazy components to maintain stable references across HMR
-const lazyComponentCache = new Map<string, ComponentType<AppProps<unknown>>>();
-
-// Helper to create a lazy-loaded component with Suspense
-// Uses a cache to maintain stable component references across HMR
-function createLazyComponent<T = unknown>(
-  importFn: () => Promise<{ default: ComponentType<AppProps<T>> }>,
-  cacheKey: string
-): ComponentType<AppProps<T>> {
-  // Return cached component if it exists (prevents HMR issues)
-  const cached = lazyComponentCache.get(cacheKey);
-  if (cached) {
-    return cached as ComponentType<AppProps<T>>;
-  }
-
-  const LazyComponent = lazy(importFn);
-  
-  // Wrap with Suspense to handle loading state
-  const WrappedComponent = (props: AppProps<T>) => (
-    <Suspense fallback={null}>
-      <LazyComponent {...props} />
-      <LoadSignal instanceId={props.instanceId} />
-    </Suspense>
-  );
-  
-  // Cache the component
-  lazyComponentCache.set(cacheKey, WrappedComponent as ComponentType<AppProps<unknown>>);
-  
-  return WrappedComponent;
-}
 
 // ============================================================================
 // LAZY-LOADED APP COMPONENTS

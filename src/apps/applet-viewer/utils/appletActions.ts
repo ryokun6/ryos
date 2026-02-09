@@ -48,20 +48,20 @@ export const useAppletActions = () => {
   );
 
   // Check if an applet is installed
-  const isAppletInstalled = (appletId: string): boolean => {
+  const isAppletInstalled = useCallback((appletId: string): boolean => {
     return files.some((f) => {
       const fileItem = getFileItem(f.path);
       return fileItem?.shareId === appletId;
     });
-  };
+  }, [files, getFileItem]);
 
   // Get installed applet file item
-  const getInstalledApplet = (appletId: string) => {
+  const getInstalledApplet = useCallback((appletId: string) => {
     return files.find((f) => {
       const fileItem = getFileItem(f.path);
       return fileItem?.shareId === appletId;
     });
-  };
+  }, [files, getFileItem]);
 
   // Check if installed applet needs update
   const pendingStoreCreatedAtUpdates = useRef<Set<string>>(new Set());

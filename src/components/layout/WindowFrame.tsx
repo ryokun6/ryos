@@ -76,19 +76,25 @@ export function WindowFrame({
 }: WindowFrameProps) {
   const { t } = useTranslation();
   const config = getWindowConfig(appId);
-  const defaultConstraints = {
-    minWidth: config.minSize?.width,
-    minHeight: config.minSize?.height,
-    maxWidth: config.maxSize?.width,
-    maxHeight: config.maxSize?.height,
-    defaultSize: config.defaultSize,
-  };
+  const defaultConstraints = useMemo(
+    () => ({
+      minWidth: config.minSize?.width,
+      minHeight: config.minSize?.height,
+      maxWidth: config.maxSize?.width,
+      maxHeight: config.maxSize?.height,
+      defaultSize: config.defaultSize,
+    }),
+    [config]
+  );
 
   // Merge provided constraints with defaults from config
-  const mergedConstraints = {
-    ...defaultConstraints,
-    ...windowConstraints,
-  };
+  const mergedConstraints = useMemo(
+    () => ({
+      ...defaultConstraints,
+      ...windowConstraints,
+    }),
+    [defaultConstraints, windowConstraints]
+  );
 
   const [isOpen, setIsOpen] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
@@ -232,7 +238,7 @@ export function WindowFrame({
     // Remove initial mount state after animation
     const timer = setTimeout(() => setIsInitialMount(false), 200);
     return () => clearTimeout(timer);
-  }, []); // Play sound when component mounts
+  }, [playWindowOpen, skipInitialSound]); // Play sound when component mounts
 
   // Sync window title to the app store for the dock context menu
   useEffect(() => {
@@ -253,7 +259,7 @@ export function WindowFrame({
     wasMinimizedRef.current = isMinimized;
   }, [isMinimized, playZoomMaximize]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (interceptClose) {
       // Call the parent's onClose handler for interception (like confirmation dialogs)
       onClose?.();
@@ -265,7 +271,7 @@ export function WindowFrame({
       playWindowClose();
       setIsClosing(true);
     }
-  };
+  }, [interceptClose, onClose, vibrateClose, playWindowClose]);
 
   // Called when close animation completes
   const handleCloseAnimationComplete = useCallback(() => {
@@ -348,7 +354,7 @@ export function WindowFrame({
         handleCloseRequest
       );
     };
-  }, [instanceId]);
+  }, [instanceId, handleClose]);
 
   const {
     windowPosition,
@@ -359,7 +365,6 @@ export function WindowFrame({
     handleResizeStart,
     setWindowSize,
     setWindowPosition,
-    getSafeAreaBottomInset,
     snapZone,
     computeInsets: computeWindowInsets,
   } = useWindowManager({ appId, instanceId });
@@ -384,7 +389,7 @@ export function WindowFrame({
     }
 
     return null;
-  }, [appId, instanceId, currentTheme, instances]);
+  }, [appId, instanceId]);
 
   // Calculate dock icon or taskbar item position relative to window center (used for both minimize and restore animations)
   const dockIconOffset = useMemo(() => {
@@ -652,13 +657,18 @@ export function WindowFrame({
       }
     },
     [
+      computeWindowInsets,
+      instanceId,
       isMaximized,
       mergedConstraints,
+      playWindowCollapse,
+      playWindowExpand,
+      setWindowPosition,
+      setWindowSize,
+      updateInstanceWindowState,
+      vibrateMaximize,
       windowPosition,
       windowSize,
-      appId,
-      getSafeAreaBottomInset,
-      updateInstanceWindowState,
     ]
   );
 

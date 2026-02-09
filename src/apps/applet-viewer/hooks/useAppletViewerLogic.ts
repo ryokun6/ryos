@@ -1314,12 +1314,20 @@ export function useAppletViewerLogic({
         isActive = false;
         controller.abort();
       };
-    } else if (!shareCode && sharedContent) {
+    } else if (!shareCode) {
       setSharedContent("");
       setSharedName(undefined);
       setSharedTitle(undefined);
     }
-  }, [shareCode]);
+  }, [
+    shareCode,
+    appletPath,
+    files,
+    getFileItem,
+    instanceId,
+    saveFile,
+    updateFileItemMetadata,
+  ]);
 
   useEffect(() => {
     const iframe = iframeRef.current;
