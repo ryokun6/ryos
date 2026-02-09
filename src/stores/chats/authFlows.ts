@@ -5,6 +5,9 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/html";
 import { getApiUrl } from "@/utils/platform";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared constants
+// ─────────────────────────────────────────────────────────────────────────────
 const PASSWORD_CHECK_DELAY_MS = 100;
 const AUTHENTICATION_REQUIRED_ERROR = "Authentication required";
 const INVALID_RESPONSE_FORMAT_ERROR = "Invalid response format";
@@ -21,6 +24,10 @@ const SEND_MESSAGE_FAILED_ERROR = "Failed to send message";
 const SWITCH_ROOM_FAILED_ERROR = "Failed to switch rooms";
 const FETCH_ROOMS_FAILED_ERROR = "Failed to fetch rooms";
 const FETCH_MESSAGES_FAILED_ERROR = "Failed to fetch messages";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Recovery / persistence key helpers
+// ─────────────────────────────────────────────────────────────────────────────
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
 const AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
 export const TOKEN_REFRESH_THRESHOLD = 83 * 24 * 60 * 60 * 1000;
@@ -100,6 +107,9 @@ export const ensureRecoveryKeysAreSet = (
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Transport + response parsing helpers
+// ─────────────────────────────────────────────────────────────────────────────
 type ChatRetryConfig = {
   maxAttempts: number;
   initialDelayMs: number;
@@ -286,6 +296,9 @@ const readJsonBody = async <T>(
   }
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Auth API + authentication lifecycle
+// ─────────────────────────────────────────────────────────────────────────────
 type RefreshTokenResult = {
   ok: boolean;
   error?: string;
@@ -726,6 +739,9 @@ export const checkAndRefreshTokenFlow = async ({
   return { refreshed: false };
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Password flows
+// ─────────────────────────────────────────────────────────────────────────────
 interface PasswordAuthContext {
   username: string;
   authToken: string;
@@ -984,6 +1000,9 @@ export const buildPostLogoutState = <State extends LogoutStateShape>(
   currentRoomId: null,
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Persist migration + rehydration lifecycle
+// ─────────────────────────────────────────────────────────────────────────────
 const LEGACY_CHAT_STORAGE_KEYS = {
   AI_MESSAGES: "chats:messages",
   USERNAME: "chats:chatRoomUsername",
@@ -1235,6 +1254,9 @@ export const createChatsOnRehydrateStorage = <
   };
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Room/message state + transport flows
+// ─────────────────────────────────────────────────────────────────────────────
 const MESSAGE_HISTORY_CAP = 500;
 const MATCH_WINDOW_MS = 10_000;
 const INCOMING_TEMP_MATCH_WINDOW_MS = 5_000;
@@ -2160,6 +2182,9 @@ export const fetchBulkMessagesPayload = async (
   return result;
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Grouped helper exports for store consumption
+// ─────────────────────────────────────────────────────────────────────────────
 export const chatsStoreAuthHelpers = {
   buildPostLogoutState,
   checkAndRefreshTokenFlow,
