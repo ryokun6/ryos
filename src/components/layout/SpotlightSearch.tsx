@@ -11,6 +11,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { isTauri, isTauriWindows } from "@/utils/platform";
 
 // Section header labels by result type
 const SECTION_TYPE_ORDER: SpotlightResult["type"][] = [
@@ -222,13 +223,18 @@ export function SpotlightSearch() {
     ? `fixed z-[10004] right-2 ${useTwoColumn ? "w-[380px]" : "w-[260px]"}`
     : "fixed z-[10004] w-[320px]";
 
+  // In Tauri on Mac (WebKit), the menubar is taller (32px) to accommodate traffic lights
+  const isTauriApp = isTauri();
+  const isTauriMacMenubar = isTauriApp && !isTauriWindows() && isMac;
+  const menubarTop = isTauriMacMenubar ? "32px" : "var(--os-metrics-menubar-height, 25px)";
+
   const panelTopStyle: React.CSSProperties = isMobile
     ? {
-        top: "calc(var(--os-metrics-menubar-height, 25px) + 8px)",
+        top: `calc(${menubarTop} + 8px)`,
         left: "50%",
       }
     : isMac
-    ? { top: "var(--os-metrics-menubar-height, 25px)" }
+    ? { top: menubarTop }
     : { top: "28%", left: "50%" };
 
   const overlay = (
