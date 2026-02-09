@@ -4,7 +4,6 @@
 
 import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore } from "@/stores/useIpodStore";
-import i18n from "@/lib/i18n";
 import type { ToolContext } from "./types";
 import {
   ciIncludes,
@@ -24,6 +23,15 @@ export interface IpodControlInput {
   enableTranslation?: string | null;
   enableFullscreen?: boolean;
 }
+
+type TranslateFn = (
+  key: string,
+  params?: Record<string, unknown>,
+) => string;
+
+const resolveTranslator = (context: ToolContext): TranslateFn =>
+  context.translate ??
+  ((key: string, _params?: Record<string, unknown>) => key);
 
 /**
  * Ensure iPod app is open
@@ -45,7 +53,8 @@ const ensureIpodIsOpen = (launchApp: ToolContext["launchApp"]) => {
 const applyIpodSettings = (
   enableVideo: boolean | undefined,
   enableTranslation: string | null | undefined,
-  enableFullscreen: boolean | undefined
+  enableFullscreen: boolean | undefined,
+  t: TranslateFn,
 ): string[] => {
   const ipod = useIpodStore.getState();
   const stateChanges: string[] = [];
@@ -53,11 +62,11 @@ const applyIpodSettings = (
   if (enableVideo !== undefined) {
     if (enableVideo && !ipod.showVideo) {
       ipod.setShowVideo(true);
-      stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOnVideo"));
+      stateChanges.push(t("apps.chats.toolCalls.ipodTurnedOnVideo"));
       console.log("[ToolCall] Video enabled.");
     } else if (!enableVideo && ipod.showVideo) {
       ipod.setShowVideo(false);
-      stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffVideo"));
+      stateChanges.push(t("apps.chats.toolCalls.ipodTurnedOffVideo"));
       console.log("[ToolCall] Video disabled.");
     }
   }
@@ -65,13 +74,13 @@ const applyIpodSettings = (
   if (enableTranslation !== undefined) {
     if (shouldDisableTranslation(enableTranslation)) {
       ipod.setLyricsTranslationLanguage(null);
-      stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffLyricsTranslation"));
+      stateChanges.push(t("apps.chats.toolCalls.ipodTurnedOffLyricsTranslation"));
       console.log("[ToolCall] Lyrics translation disabled.");
     } else if (enableTranslation) {
       ipod.setLyricsTranslationLanguage(enableTranslation);
       const langName = getLanguageName(enableTranslation);
       stateChanges.push(
-        i18n.t("apps.chats.toolCalls.ipodTranslatedLyricsTo", { langName })
+        t("apps.chats.toolCalls.ipodTranslatedLyricsTo", { langName })
       );
       console.log(`[ToolCall] Lyrics translation enabled for language: ${enableTranslation}.`);
     }
@@ -80,11 +89,11 @@ const applyIpodSettings = (
   if (enableFullscreen !== undefined) {
     if (enableFullscreen && !ipod.isFullScreen) {
       ipod.toggleFullScreen();
-      stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOnFullScreen"));
+      stateChanges.push(t("apps.chats.toolCalls.ipodTurnedOnFullScreen"));
       console.log("[ToolCall] Fullscreen enabled.");
     } else if (!enableFullscreen && ipod.isFullScreen) {
       ipod.toggleFullScreen();
-      stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffFullScreen"));
+      stateChanges.push(t("apps.chats.toolCalls.ipodTurnedOffFullScreen"));
       console.log("[ToolCall] Fullscreen disabled.");
     }
   }
@@ -100,7 +109,8 @@ const handlePlaybackState = (
   input: IpodControlInput,
   toolCallId: string,
   context: ToolContext,
-  isIOS: boolean
+  isIOS: boolean,
+  t: TranslateFn,
 ): void => {
   const ipod = useIpodStore.getState();
 
@@ -109,9 +119,10 @@ const handlePlaybackState = (
     const stateChanges = applyIpodSettings(
       input.enableVideo,
       input.enableTranslation,
-      input.enableFullscreen
+      input.enableFullscreen,
+      t,
     );
-    const resultParts = [i18n.t("apps.chats.toolCalls.ipodReady")];
+    const resultParts = [t("apps.chats.toolCalls.ipodReady")];
     if (stateChanges.length > 0) {
       resultParts.push(...stateChanges);
     }
@@ -139,7 +150,8 @@ const handlePlaybackState = (
   const stateChanges = applyIpodSettings(
     input.enableVideo,
     input.enableTranslation,
-    input.enableFullscreen
+    input.enableFullscreen,
+    t,
   );
   const updatedIpod = useIpodStore.getState();
   const nowPlaying = updatedIpod.isPlaying;
@@ -151,12 +163,12 @@ const handlePlaybackState = (
   if (track) {
     const trackDesc = formatTrackDescription(track.title, track.artist);
     playbackState = nowPlaying
-      ? i18n.t("apps.chats.toolCalls.ipodPlayingTrack", { trackDesc })
-      : i18n.t("apps.chats.toolCalls.ipodPausedTrack", { trackDesc });
+      ? t("apps.chats.toolCalls.ipodPlayingTrack", { trackDesc })
+      : t("apps.chats.toolCalls.ipodPausedTrack", { trackDesc });
   } else {
     playbackState = nowPlaying
-      ? i18n.t("apps.chats.toolCalls.ipodPlaying")
-      : i18n.t("apps.chats.toolCalls.ipodPaused");
+      ? t("apps.chats.toolCalls.ipodPlaying")
+      : t("apps.chats.toolCalls.ipodPaused");
   }
 
   const resultParts = [playbackState, ...stateChanges];
@@ -177,7 +189,8 @@ const handlePlayKnown = (
   input: IpodControlInput,
   toolCallId: string,
   context: ToolContext,
-  isIOS: boolean
+  isIOS: boolean,
+  t: TranslateFn,
 ): void => {
   const { id, title, artist, enableVideo, enableTranslation, enableFullscreen } = input;
   const ipodState = useIpodStore.getState();
@@ -185,7 +198,7 @@ const handlePlayKnown = (
 
   // If no identifiers provided, fall back to toggle/play behavior
   if (!id && !title && !artist) {
-    handlePlaybackState("toggle", input, toolCallId, context, isIOS);
+    handlePlaybackState("toggle", input, toolCallId, context, isIOS, t);
     return;
   }
 
@@ -224,7 +237,7 @@ const handlePlayKnown = (
   }
 
   if (finalCandidateIndices.length === 0) {
-    const errorMsg = i18n.t("apps.chats.toolCalls.ipodSongNotFound");
+    const errorMsg = t("apps.chats.toolCalls.ipodSongNotFound");
     context.addToolResult({
       tool: "ipodControl",
       toolCallId,
@@ -244,12 +257,17 @@ const handlePlayKnown = (
 
   // On iOS, don't auto-play - just select the track
   if (isIOS) {
-    const stateChanges = applyIpodSettings(enableVideo, enableTranslation, enableFullscreen);
+    const stateChanges = applyIpodSettings(
+      enableVideo,
+      enableTranslation,
+      enableFullscreen,
+      t,
+    );
     const trackDescForMsg = track.artist
       ? `${track.title} by ${track.artist}`
       : track.title;
     const resultParts = [
-      i18n.t("apps.chats.toolCalls.ipodSelected", { trackDesc: trackDescForMsg }),
+      t("apps.chats.toolCalls.ipodSelected", { trackDesc: trackDescForMsg }),
     ];
     if (stateChanges.length > 0) {
       resultParts.push(...stateChanges);
@@ -267,13 +285,18 @@ const handlePlayKnown = (
 
   setIsPlaying(true);
 
-  const stateChanges = applyIpodSettings(enableVideo, enableTranslation, enableFullscreen);
+  const stateChanges = applyIpodSettings(
+    enableVideo,
+    enableTranslation,
+    enableFullscreen,
+    t,
+  );
   const trackDescForMsg = track.artist
-    ? i18n.t("apps.chats.toolCalls.playingByArtist", {
+    ? t("apps.chats.toolCalls.playingByArtist", {
         title: track.title,
         artist: track.artist,
       })
-    : i18n.t("apps.chats.toolCalls.playing", { title: track.title });
+    : t("apps.chats.toolCalls.playing", { title: track.title });
 
   const resultParts = [trackDescForMsg, ...stateChanges];
   context.addToolResult({
@@ -292,7 +315,8 @@ const handleAddAndPlay = async (
   input: IpodControlInput,
   toolCallId: string,
   context: ToolContext,
-  isIOS: boolean
+  isIOS: boolean,
+  t: TranslateFn,
 ): Promise<void> => {
   const { id, enableVideo, enableTranslation, enableFullscreen } = input;
 
@@ -315,11 +339,16 @@ const handleAddAndPlay = async (
       .addTrackFromVideoId(id, !isIOS);
 
     if (addedTrack) {
-      const stateChanges = applyIpodSettings(enableVideo, enableTranslation, enableFullscreen);
+      const stateChanges = applyIpodSettings(
+        enableVideo,
+        enableTranslation,
+        enableFullscreen,
+        t,
+      );
 
       const resultParts = isIOS
-        ? [i18n.t("apps.chats.toolCalls.ipodAdded", { title: addedTrack.title })]
-        : [i18n.t("apps.chats.toolCalls.ipodAddedAndPlaying", { title: addedTrack.title })];
+        ? [t("apps.chats.toolCalls.ipodAdded", { title: addedTrack.title })]
+        : [t("apps.chats.toolCalls.ipodAddedAndPlaying", { title: addedTrack.title })];
 
       if (stateChanges.length > 0) {
         resultParts.push(...stateChanges);
@@ -337,7 +366,7 @@ const handleAddAndPlay = async (
           : `[ToolCall] Added '${addedTrack.title}' to iPod and started playing.`
       );
     } else {
-      const errorMsg = i18n.t("apps.chats.toolCalls.ipodFailedToAdd", { id });
+      const errorMsg = t("apps.chats.toolCalls.ipodFailedToAdd", { id });
       context.addToolResult({
         tool: "ipodControl",
         toolCallId,
@@ -351,9 +380,9 @@ const handleAddAndPlay = async (
 
     let errorMsg: string;
     if (errorMessage.includes("Failed to fetch video info")) {
-      errorMsg = i18n.t("apps.chats.toolCalls.ipodCannotAdd", { id });
+      errorMsg = t("apps.chats.toolCalls.ipodCannotAdd", { id });
     } else {
-      errorMsg = i18n.t("apps.chats.toolCalls.ipodFailedToAddWithError", {
+      errorMsg = t("apps.chats.toolCalls.ipodFailedToAddWithError", {
         id,
         error: errorMessage,
       });
@@ -375,7 +404,8 @@ const handleNavigation = (
   action: "next" | "previous",
   input: IpodControlInput,
   toolCallId: string,
-  context: ToolContext
+  context: ToolContext,
+  t: TranslateFn,
 ): void => {
   const { enableVideo, enableTranslation, enableFullscreen } = input;
   const ipodState = useIpodStore.getState();
@@ -385,7 +415,12 @@ const handleNavigation = (
     navigate();
   }
 
-  const stateChanges = applyIpodSettings(enableVideo, enableTranslation, enableFullscreen);
+  const stateChanges = applyIpodSettings(
+    enableVideo,
+    enableTranslation,
+    enableFullscreen,
+    t,
+  );
 
   const updatedIpod = useIpodStore.getState();
   const track = updatedIpod.currentSongId 
@@ -396,8 +431,8 @@ const handleNavigation = (
     const desc = formatTrackDescription(track.title, track.artist);
     const resultParts = [
       action === "next"
-        ? i18n.t("apps.chats.toolCalls.ipodSkippedTo", { trackDesc: desc })
-        : i18n.t("apps.chats.toolCalls.ipodWentBackTo", { trackDesc: desc }),
+        ? t("apps.chats.toolCalls.ipodSkippedTo", { trackDesc: desc })
+        : t("apps.chats.toolCalls.ipodWentBackTo", { trackDesc: desc }),
     ];
     if (stateChanges.length > 0) {
       resultParts.push(...stateChanges);
@@ -415,8 +450,8 @@ const handleNavigation = (
 
   const resultParts = [
     action === "next"
-      ? i18n.t("apps.chats.toolCalls.ipodSkippedToNext")
-      : i18n.t("apps.chats.toolCalls.ipodWentBackToPrevious"),
+      ? t("apps.chats.toolCalls.ipodSkippedToNext")
+      : t("apps.chats.toolCalls.ipodWentBackToPrevious"),
   ];
   if (stateChanges.length > 0) {
     resultParts.push(...stateChanges);
@@ -440,6 +475,7 @@ export const handleIpodControl = async (
   toolCallId: string,
   context: ToolContext
 ): Promise<void> => {
+  const t = resolveTranslator(context);
   const {
     action = "toggle",
     enableVideo,
@@ -458,27 +494,32 @@ export const handleIpodControl = async (
 
   // Handle different actions
   if (normalizedAction === "toggle" || normalizedAction === "play" || normalizedAction === "pause") {
-    handlePlaybackState(normalizedAction, input, toolCallId, context, isIOS);
+    handlePlaybackState(normalizedAction, input, toolCallId, context, isIOS, t);
     return;
   }
 
   if (normalizedAction === "playKnown") {
-    handlePlayKnown(input, toolCallId, context, isIOS);
+    handlePlayKnown(input, toolCallId, context, isIOS, t);
     return;
   }
 
   if (normalizedAction === "addAndPlay") {
-    await handleAddAndPlay(input, toolCallId, context, isIOS);
+    await handleAddAndPlay(input, toolCallId, context, isIOS, t);
     return;
   }
 
   if (normalizedAction === "next" || normalizedAction === "previous") {
-    handleNavigation(normalizedAction, input, toolCallId, context);
+    handleNavigation(normalizedAction, input, toolCallId, context, t);
     return;
   }
 
   // Apply settings even if action is unhandled
-  const stateChanges = applyIpodSettings(enableVideo, enableTranslation, enableFullscreen);
+  const stateChanges = applyIpodSettings(
+    enableVideo,
+    enableTranslation,
+    enableFullscreen,
+    t,
+  );
 
   if (stateChanges.length > 0) {
     context.addToolResult({
