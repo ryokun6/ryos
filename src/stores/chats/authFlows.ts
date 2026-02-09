@@ -2392,7 +2392,7 @@ export const fetchBulkMessagesPayload = async (
 // ─────────────────────────────────────────────────────────────────────────────
 // Grouped helper exports for store consumption
 // ─────────────────────────────────────────────────────────────────────────────
-export const chatsStoreAuthHelpers = {
+export const chatsStoreAuthHelpers = Object.freeze({
   buildPostLogoutState,
   checkAndRefreshTokenFlow,
   clearChatRecoveryStorage,
@@ -2404,9 +2404,9 @@ export const chatsStoreAuthHelpers = {
   schedulePasswordStatusCheck,
   shouldCheckPasswordStatus,
   trackLogoutAnalytics,
-} as const;
+} as const);
 
-export const chatsStorePersistenceHelpers = {
+export const chatsStorePersistenceHelpers = Object.freeze({
   createChatsOnRehydrateStorage,
   ensureRecoveryKeysAreSet,
   getAuthTokenFromRecovery,
@@ -2417,9 +2417,9 @@ export const chatsStorePersistenceHelpers = {
   saveTokenRefreshTime,
   saveUsernameToRecovery,
   TOKEN_REFRESH_THRESHOLD,
-} as const;
+} as const);
 
-export const chatsStoreRoomHelpers = {
+export const chatsStoreRoomHelpers = Object.freeze({
   buildPersistedRoomMessages,
   clearRoomMessagesInMap,
   clearUnreadCount,
@@ -2441,4 +2441,4 @@ export const chatsStoreRoomHelpers = {
   setCurrentRoomMessagesInMap,
   syncPresenceOnRoomSwitch,
   toggleBoolean,
-} as const;
+} as const);
