@@ -89,7 +89,12 @@ export const saveTokenRefreshTime = (username: string): void => {
 export const getTokenRefreshTime = (username: string): number | null => {
   const key = `${TOKEN_LAST_REFRESH_KEY}${username}`;
   const time = localStorage.getItem(key);
-  return time ? parseInt(time, 10) : null;
+  if (!time) {
+    return null;
+  }
+
+  const parsedTime = parseInt(time, 10);
+  return Number.isFinite(parsedTime) ? parsedTime : null;
 };
 
 export const ensureRecoveryKeysAreSet = (
@@ -718,7 +723,7 @@ export const checkAndRefreshTokenFlow = async ({
   }
 
   const lastRefreshTime = getTokenRefreshTime(username);
-  if (!lastRefreshTime) {
+  if (lastRefreshTime === null) {
     saveTokenRefreshTime(username);
     return { refreshed: false };
   }
