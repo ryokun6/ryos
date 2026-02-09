@@ -387,6 +387,48 @@ export async function runChatFileToolHandlersTests(): Promise<{
     );
   });
 
+  await runTest("rejects missing identifier segments in open paths", async () => {
+    const collector = createCollector();
+
+    await handleChatOpenToolCall({
+      path: "/Music/   ",
+      toolName: "open",
+      toolCallId: "tc-14",
+      addToolResult: collector.addToolResult,
+      t,
+      launchApp: () => {},
+      resolveApplicationName: () => null,
+      playMusicTrack: () => ({ ok: false, error: "should not run" }),
+    });
+
+    await handleChatOpenToolCall({
+      path: "/Applications/   ",
+      toolName: "open",
+      toolCallId: "tc-15",
+      addToolResult: collector.addToolResult,
+      t,
+      launchApp: () => {},
+      resolveApplicationName: () => null,
+      playMusicTrack: () => ({ ok: false, error: "should not run" }),
+    });
+
+    await handleChatOpenToolCall({
+      path: "/Applets Store/   ",
+      toolName: "open",
+      toolCallId: "tc-16",
+      addToolResult: collector.addToolResult,
+      t,
+      launchApp: () => {},
+      resolveApplicationName: () => null,
+      playMusicTrack: () => ({ ok: false, error: "should not run" }),
+    });
+
+    assertEq(collector.results.length, 3);
+    assertEq((collector.results[0] as { state?: string }).state, "output-error");
+    assertEq((collector.results[1] as { state?: string }).state, "output-error");
+    assertEq((collector.results[2] as { state?: string }).state, "output-error");
+  });
+
   return printSummary();
 }
 

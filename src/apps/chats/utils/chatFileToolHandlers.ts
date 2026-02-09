@@ -319,7 +319,17 @@ export const handleChatOpenToolCall = async ({
 
   try {
     if (normalizedPath.startsWith("/Music/")) {
-      const songId = normalizedPath.replace("/Music/", "");
+      const songId = normalizedPath.replace("/Music/", "").trim();
+      if (!songId) {
+        publishToolError({
+          toolName,
+          toolCallId,
+          addToolResult,
+          errorText: t("apps.chats.toolCalls.invalidPath", { path: normalizedPath }),
+        });
+        return;
+      }
+
       const playResult = playMusicTrack(songId);
       if (!playResult.ok) {
         publishToolError({
@@ -343,9 +353,19 @@ export const handleChatOpenToolCall = async ({
     }
 
     if (normalizedPath.startsWith("/Applets Store/")) {
-      const shareId = normalizedPath.replace("/Applets Store/", "");
+      const shareId = normalizedPath.replace("/Applets Store/", "").trim();
+      if (!shareId) {
+        publishToolError({
+          toolName,
+          toolCallId,
+          addToolResult,
+          errorText: t("apps.chats.toolCalls.invalidPath", { path: normalizedPath }),
+        });
+        return;
+      }
+
       const sharedAppletResult = await executeSharedAppletReadOperation({
-        path: normalizedPath,
+        path: `/Applets Store/${shareId}`,
       });
       const appletName = sharedAppletResult.ok
         ? sharedAppletResult.payload.title ??
@@ -365,7 +385,17 @@ export const handleChatOpenToolCall = async ({
     }
 
     if (normalizedPath.startsWith("/Applications/")) {
-      const appId = normalizedPath.replace("/Applications/", "");
+      const appId = normalizedPath.replace("/Applications/", "").trim();
+      if (!appId) {
+        publishToolError({
+          toolName,
+          toolCallId,
+          addToolResult,
+          errorText: t("apps.chats.toolCalls.invalidPath", { path: normalizedPath }),
+        });
+        return;
+      }
+
       const translatedName = resolveApplicationName(appId);
       if (!translatedName) {
         publishToolError({
