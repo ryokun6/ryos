@@ -1,14 +1,4 @@
 export {
-  createOptimisticChatMessage,
-  createRoomRequest,
-  deleteRoomRequest,
-  runCreateRoomFlow,
-  runDeleteRoomFlow,
-  runSendMessageFlow,
-  sendRoomMessageRequest,
-  syncPresenceOnRoomSwitch,
-} from "./roomActionFlows";
-export {
   applyRefreshedAuthToken,
   applySuccessfulRegistration,
   checkAndRefreshTokenFlow,
@@ -62,6 +52,9 @@ export {
   capRoomMessages,
   buildPersistedRoomMessages,
   clearRoomMessagesInMap,
+  createOptimisticChatMessage,
+  createRoomRequest,
+  deleteRoomRequest,
   incrementUnreadCount,
   mergeFetchedBulkMessages,
   mergeFetchedMessagesForRoom,
@@ -73,6 +66,11 @@ export {
   sanitizeMessageRenderLimit,
   sortAndCapRoomMessages,
   setCurrentRoomMessagesInMap,
+  runCreateRoomFlow,
+  runDeleteRoomFlow,
+  runSendMessageFlow,
+  sendRoomMessageRequest,
+  syncPresenceOnRoomSwitch,
   toggleBoolean,
 } from "./roomState";
 export {
