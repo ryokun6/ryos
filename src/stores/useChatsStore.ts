@@ -44,13 +44,15 @@ import {
   isTokenRefreshDue,
 } from "./chats/tokenLifecycle";
 import { clearChatRecoveryStorage } from "./chats/logoutCleanup";
-import { migrateLegacyChatStorageState } from "./chats/migration";
 import {
   checkPasswordStatusRequest,
   setPasswordRequest,
 } from "./chats/passwordApi";
 import { buildPersistedRoomMessages } from "./chats/persistence";
-import { applyIdentityRecoveryOnRehydrate } from "./chats/rehydration";
+import {
+  createChatsOnRehydrateStorage,
+  migrateChatsPersistedState,
+} from "./chats/persistLifecycle";
 import {
   clearRoomMessagesInMap,
   mergeIncomingRoomMessageInMap,
@@ -1025,100 +1027,14 @@ export const useChatsStore = create<ChatsStoreState>()(
         unreadCounts: state.unreadCounts,
         hasEverUsedChats: state.hasEverUsedChats,
       }),
-      // --- Migration from old localStorage keys ---
-      migrate: (persistedState, version) => {
-        console.log(
-          "[ChatsStore] Migrate function started. Version:",
+      migrate: (persistedState, version) =>
+        migrateChatsPersistedState<ChatsStoreState>({
+          persistedState,
           version,
-          "Persisted state exists:",
-          !!persistedState
-        );
-        if (persistedState) {
-          console.log(
-            "[ChatsStore] Persisted state type for rooms:",
-            typeof (persistedState as ChatsStoreState).rooms,
-            "Is Array:",
-            Array.isArray((persistedState as ChatsStoreState).rooms)
-          );
-        }
-
-        if (version < STORE_VERSION && !persistedState) {
-          console.log(
-            `[ChatsStore] Migrating from old localStorage keys to version ${STORE_VERSION}...`
-          );
-          try {
-            const migratedState = migrateLegacyChatStorageState();
-
-            console.log("[ChatsStore] Migration data:", migratedState);
-
-            // Clean up old keys (Optional - uncomment if desired after confirming migration)
-            // localStorage.removeItem(LEGACY_CHAT_STORAGE_KEYS.AI_MESSAGES);
-            // localStorage.removeItem(LEGACY_CHAT_STORAGE_KEYS.LAST_OPENED_ROOM_ID);
-            // localStorage.removeItem(LEGACY_CHAT_STORAGE_KEYS.SIDEBAR_VISIBLE);
-            // localStorage.removeItem(LEGACY_CHAT_STORAGE_KEYS.CACHED_ROOMS);
-            // localStorage.removeItem(LEGACY_CHAT_STORAGE_KEYS.CACHED_ROOM_MESSAGES);
-            // console.log("[ChatsStore] Old localStorage keys potentially removed.");
-
-            const finalMigratedState = {
-              ...getInitialState(),
-              ...migratedState,
-            } as ChatsStoreState;
-            console.log(
-              "[ChatsStore] Final migrated state:",
-              finalMigratedState
-            );
-            console.log(
-              "[ChatsStore] Migrated rooms type:",
-              typeof finalMigratedState.rooms,
-              "Is Array:",
-              Array.isArray(finalMigratedState.rooms)
-            );
-            return finalMigratedState;
-          } catch (e) {
-            console.error("[ChatsStore] Migration failed:", e);
-          }
-        }
-        // If persistedState exists, use it (already in new format or newer version)
-        if (persistedState) {
-          console.log("[ChatsStore] Using persisted state.");
-          const state = persistedState as ChatsStoreState;
-          const finalState = { ...state };
-
-          // If there's a username or auth token, save them to the recovery mechanism
-          if (finalState.username || finalState.authToken) {
-            ensureRecoveryKeysAreSet(finalState.username, finalState.authToken);
-          }
-
-          console.log("[ChatsStore] Final state from persisted:", finalState);
-          console.log(
-            "[ChatsStore] Persisted state rooms type:",
-            typeof finalState.rooms,
-            "Is Array:",
-            Array.isArray(finalState.rooms)
-          );
-          return finalState;
-        }
-        // Fallback to initial state if migration fails or no persisted state
-        console.log("[ChatsStore] Falling back to initial state.");
-        return { ...getInitialState() } as ChatsStoreState;
-      },
-      // --- Rehydration Check for Null Username ---
-      onRehydrateStorage: () => {
-        console.log("[ChatsStore] Rehydrating storage...");
-        return (state, error) => {
-          if (error) {
-            console.error("[ChatsStore] Error during rehydration:", error);
-          } else if (state) {
-            console.log(
-              "[ChatsStore] Rehydration complete. Current state username:",
-              state.username,
-              "authToken:",
-              state.authToken ? "present" : "null"
-            );
-            applyIdentityRecoveryOnRehydrate(state);
-          }
-        };
-      },
+          storeVersion: STORE_VERSION,
+          getInitialState: () => getInitialState() as ChatsStoreState,
+        }),
+      onRehydrateStorage: createChatsOnRehydrateStorage<ChatsStoreState>,
     }
   )
 );
