@@ -280,7 +280,7 @@ export function SpotlightSearch() {
 
   const panelTopStyle: React.CSSProperties = isMobile
     ? {
-        top: isSystem7 ? `calc(${menubarTop} + 44px - 1px)` : `calc(${menubarTop} + 44px)`,
+        top: isSystem7 ? `calc(${menubarTop} + 32px - 1px)` : `calc(${menubarTop} + 32px)`,
         left: "50%",
       }
     : isMac
