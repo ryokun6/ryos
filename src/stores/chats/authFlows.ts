@@ -6,6 +6,7 @@ import { decodeHtmlEntities } from "@/utils/html";
 import { getApiUrl } from "@/utils/platform";
 
 const PASSWORD_CHECK_DELAY_MS = 100;
+const AUTHENTICATION_REQUIRED_ERROR = "Authentication required";
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
 const AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
 export const TOKEN_REFRESH_THRESHOLD = 83 * 24 * 60 * 60 * 1000;
@@ -694,6 +695,23 @@ interface PasswordAuthContext {
   authToken: string;
 }
 
+const requireAuthContext = (
+  username: string | null,
+  authToken: string | null
+): { ok: true; auth: PasswordAuthContext } | { ok: false; error: string } => {
+  if (!username || !authToken) {
+    return { ok: false, error: AUTHENTICATION_REQUIRED_ERROR };
+  }
+
+  return {
+    ok: true,
+    auth: {
+      username,
+      authToken,
+    },
+  };
+};
+
 const checkPasswordStatusRequest = async ({
   username,
   authToken,
@@ -773,15 +791,19 @@ export const runCheckHasPasswordFlow = async ({
   authToken,
   setHasPassword,
 }: PasswordActionContext): Promise<{ ok: boolean; error?: string }> => {
-  if (!username || !authToken) {
+  const authContext = requireAuthContext(username, authToken);
+  if (!authContext.ok) {
     console.log("[ChatsStore] checkHasPassword: No username or token, setting null");
     setHasPassword(null);
-    return { ok: false, error: "Authentication required" };
+    return authContext;
   }
 
-  console.log("[ChatsStore] checkHasPassword: Checking for user", username);
+  console.log(
+    "[ChatsStore] checkHasPassword: Checking for user",
+    authContext.auth.username
+  );
   try {
-    const result = await fetchPasswordStatus({ username, authToken });
+    const result = await fetchPasswordStatus(authContext.auth);
 
     if (result.ok) {
       console.log("[ChatsStore] checkHasPassword: Result", result);
@@ -812,14 +834,15 @@ export const runSetPasswordFlow = async ({
   password,
   setHasPassword,
 }: SetPasswordFlowContext): Promise<{ ok: boolean; error?: string }> => {
-  if (!username || !authToken) {
-    return { ok: false, error: "Authentication required" };
+  const authContext = requireAuthContext(username, authToken);
+  if (!authContext.ok) {
+    return authContext;
   }
 
   try {
     const result = await submitPassword({
-      username,
-      authToken,
+      username: authContext.auth.username,
+      authToken: authContext.auth.authToken,
       password,
     });
 
@@ -1690,13 +1713,13 @@ export const runCreateRoomFlow = async ({
   if (!effectiveAuthToken) {
     const tokenResult = await ensureAuthToken();
     if (!tokenResult.ok) {
-      return { ok: false, error: "Authentication required" };
+      return { ok: false, error: AUTHENTICATION_REQUIRED_ERROR };
     }
     effectiveAuthToken = getCurrentAuthToken();
   }
 
   if (!effectiveAuthToken) {
-    return { ok: false, error: "Authentication required" };
+    return { ok: false, error: AUTHENTICATION_REQUIRED_ERROR };
   }
 
   try {
@@ -1743,15 +1766,16 @@ export const runDeleteRoomFlow = async ({
   refreshAuthToken,
   onDeletedCurrentRoom,
 }: DeleteRoomFlowParams): Promise<{ ok: boolean; error?: string }> => {
-  if (!username || !authToken) {
-    return { ok: false, error: "Authentication required" };
+  const authContext = requireAuthContext(username, authToken);
+  if (!authContext.ok) {
+    return authContext;
   }
 
   try {
     const response = await deleteRoomRequest({
       roomId,
-      authToken,
-      username,
+      authToken: authContext.auth.authToken,
+      username: authContext.auth.username,
       refreshAuthToken,
     });
 
