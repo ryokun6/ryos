@@ -7,10 +7,10 @@ import {
 } from "@/types/chat";
 import i18n from "@/lib/i18n";
 import {
-  applyRefreshedAuthToken,
   applySuccessfulRegistration,
   buildPostLogoutState,
   buildPersistedRoomMessages,
+  checkAndRefreshTokenFlow,
   clearChatRecoveryStorage,
   clearRoomMessagesInMap,
   clearUnreadCount,
@@ -21,23 +21,19 @@ import {
   fetchRoomMessagesPayload,
   fetchRoomsPayload,
   getAuthTokenFromRecovery,
-  getDaysUntilTokenRefresh,
-  getTokenAgeDays,
   getTokenRefreshTime,
   getUsernameFromRecovery,
   incrementUnreadCount,
-  isTokenRefreshDue,
   logIfNetworkResultError,
   mergeFetchedBulkMessages,
   mergeFetchedMessagesForRoom,
   mergeIncomingRoomMessageInMap,
   migrateChatsPersistedState,
   notifyServerOnLogout,
-  parseRefreshTokenResponse,
   parseRegisterUserResponse,
   prepareRoomsForSet,
   readErrorResponseBody,
-  refreshAuthTokenRequest,
+  refreshAuthTokenForUser,
   registerUserRequest,
   removeRoomMessageFromMap,
   resolveNextFontSize,
@@ -475,39 +471,20 @@ export const useChatsStore = create<ChatsStoreState>()(
           );
 
           try {
-            const response = await refreshAuthTokenRequest({
+            const result = await refreshAuthTokenForUser({
               username: currentUsername,
-              oldToken: currentToken,
+              currentToken,
+              setAuthToken: (token) => set({ authToken: token }),
+              saveAuthTokenToRecovery,
+              saveTokenRefreshTime,
             });
-
-            if (!response.ok) {
-              const errorData = await readErrorResponseBody(response);
-              console.error("[ChatsStore] Error refreshing token:", errorData);
-              return {
-                ok: false,
-                error: errorData.error || "Failed to refresh token",
-              };
-            }
-
-            const data = await response.json();
-            const parsedRefresh = parseRefreshTokenResponse(data);
-            if (parsedRefresh.ok) {
+            if (result.ok) {
               console.log("[ChatsStore] Auth token refreshed successfully");
-              applyRefreshedAuthToken({
-                username: currentUsername,
-                token: parsedRefresh.token,
-                setAuthToken: (token) => set({ authToken: token }),
-                saveAuthTokenToRecovery,
-                saveTokenRefreshTime,
-              });
-              return { ok: true, token: parsedRefresh.token };
-            } else {
-              console.error("[ChatsStore] Invalid response format for token refresh");
-              return {
-                ok: false,
-                error: parsedRefresh.error,
-              };
+              return result;
             }
+
+            console.error("[ChatsStore] Error refreshing token:", result.error);
+            return result;
           } catch (error) {
             console.error("[ChatsStore] Error refreshing token:", error);
             return { ok: false, error: "Network error while refreshing token" };
@@ -524,54 +501,14 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { refreshed: false };
           }
 
-          // Get last refresh time
-          const lastRefreshTime = getTokenRefreshTime(currentUsername);
-
-          if (!lastRefreshTime) {
-            // No refresh time recorded, save current time (assume token is fresh)
-            console.log(
-              "[ChatsStore] No refresh time found, recording current time"
-            );
-            saveTokenRefreshTime(currentUsername);
-            return { refreshed: false };
-          }
-
-          const tokenAgeDays = getTokenAgeDays(lastRefreshTime);
-
-          console.log(`[ChatsStore] Token age: ${tokenAgeDays} days`);
-
-          // If token is older than threshold, refresh it
-          if (isTokenRefreshDue(lastRefreshTime, TOKEN_REFRESH_THRESHOLD)) {
-            console.log(
-              `[ChatsStore] Token is ${tokenAgeDays} days old (refresh due - 7 days before 90-day expiry), refreshing...`
-            );
-
-            const refreshResult = await get().refreshAuthToken();
-
-            if (refreshResult.ok) {
-              // Update refresh time on successful refresh
-              saveTokenRefreshTime(currentUsername);
-              console.log(
-                "[ChatsStore] Token refreshed automatically (7 days before expiry)"
-              );
-              return { refreshed: true };
-            } else {
-              console.error(
-                "[ChatsStore] Failed to refresh token (will retry next hour):",
-                refreshResult.error
-              );
-              return { refreshed: false };
-            }
-          } else {
-            const daysUntilRefresh = getDaysUntilTokenRefresh(
-              lastRefreshTime,
-              TOKEN_REFRESH_THRESHOLD
-            );
-            console.log(
-              `[ChatsStore] Token is ${tokenAgeDays} days old, next refresh in ${daysUntilRefresh} days`
-            );
-            return { refreshed: false };
-          }
+          return checkAndRefreshTokenFlow({
+            username: currentUsername,
+            currentToken,
+            refreshThresholdMs: TOKEN_REFRESH_THRESHOLD,
+            getTokenRefreshTime,
+            saveTokenRefreshTime,
+            refreshAuthToken: get().refreshAuthToken,
+          });
         },
         reset: () => {
           // Before resetting, ensure we have the username and auth token saved

@@ -32,6 +32,10 @@ export {
   getTokenAgeDays,
   isTokenRefreshDue,
 } from "./tokenLifecycle";
+export {
+  checkAndRefreshTokenFlow,
+  refreshAuthTokenForUser,
+} from "./tokenRefreshFlow";
 export { clearChatRecoveryStorage } from "./logoutCleanup";
 export {
   buildPostLogoutState,
