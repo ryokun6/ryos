@@ -1,5 +1,5 @@
 import type { ChatMessage } from "@/types/chat";
-import { capRoomMessages } from "./roomMessages";
+import { capRoomMessages } from "./roomState";
 
 export const buildPersistedRoomMessages = (
   roomMessages: Record<string, ChatMessage[]>

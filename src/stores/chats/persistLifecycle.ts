@@ -1,11 +1,27 @@
 import type { AIChatMessage, ChatMessage, ChatRoom } from "@/types/chat";
-import { LEGACY_CHAT_STORAGE_KEYS, tryParseLegacyJson } from "./legacyStorage";
 import {
   ensureRecoveryKeysAreSet,
   getAuthTokenFromRecovery,
   getUsernameFromRecovery,
   saveUsernameToRecovery,
 } from "./recovery";
+
+const LEGACY_CHAT_STORAGE_KEYS = {
+  AI_MESSAGES: "chats:messages",
+  USERNAME: "chats:chatRoomUsername",
+  LAST_OPENED_ROOM_ID: "chats:lastOpenedRoomId",
+  SIDEBAR_VISIBLE: "chats:sidebarVisible",
+  CACHED_ROOMS: "chats:cachedRooms",
+  CACHED_ROOM_MESSAGES: "chats:cachedRoomMessages",
+} as const;
+
+const tryParseLegacyJson = <T>(value: string): T | null => {
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
+};
 
 interface PersistLifecycleParams<State> {
   persistedState: unknown;

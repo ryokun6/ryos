@@ -8,12 +8,14 @@ export {
   saveTokenRefreshTime,
   saveUsernameToRecovery,
 } from "./recovery";
-export { createOptimisticChatMessage, sendRoomMessageRequest } from "./sendMessage";
-export { createRoomRequest, deleteRoomRequest } from "./roomRequests";
 export {
+  createOptimisticChatMessage,
+  createRoomRequest,
+  deleteRoomRequest,
   runCreateRoomFlow,
   runDeleteRoomFlow,
   runSendMessageFlow,
+  sendRoomMessageRequest,
   syncPresenceOnRoomSwitch,
 } from "./roomActionFlows";
 export {
@@ -52,13 +54,17 @@ export {
   migrateChatsPersistedState,
 } from "./persistLifecycle";
 export {
+  capRoomMessages,
   clearRoomMessagesInMap,
+  mergeFetchedBulkMessages,
+  mergeFetchedMessagesForRoom,
   mergeIncomingRoomMessageInMap,
+  mergeServerMessagesWithOptimistic,
   prepareRoomsForSet,
   removeRoomMessageFromMap,
+  sortAndCapRoomMessages,
   setCurrentRoomMessagesInMap,
 } from "./roomState";
-export { mergeFetchedBulkMessages, mergeFetchedMessagesForRoom } from "./roomMessageState";
 export {
   fetchBulkMessagesPayload,
   fetchRoomMessagesPayload,
