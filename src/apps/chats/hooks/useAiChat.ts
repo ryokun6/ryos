@@ -323,7 +323,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             result = handleLaunchApp(
               toolCall.input as LaunchAppInput,
               toolCall.toolCallId,
-              toolContext
+              toolContext,
+              { translate: i18n.t },
             );
             break;
           }
@@ -331,7 +332,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             result = handleCloseApp(
               toolCall.input as CloseAppInput,
               toolCall.toolCallId,
-              toolContext
+              toolContext,
+              { translate: i18n.t },
             );
             break;
           }

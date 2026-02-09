@@ -7,7 +7,6 @@ import { appRegistry } from "@/config/appRegistry";
 import { requestCloseWindow } from "@/utils/windowUtils";
 import type { AppId } from "@/config/appIds";
 import type { LaunchAppOptions } from "@/hooks/useLaunchApp";
-import i18n from "@/lib/i18n";
 import type { ToolContext } from "./types";
 
 export interface LaunchAppInput {
@@ -24,6 +23,24 @@ type AppHandlersDependencies = {
   getAppNameById?: (appId: AppId) => string;
   getInstancesByAppId?: (appId: AppId) => Array<{ instanceId: string; isOpen: boolean }>;
   closeWindowByInstanceId?: (instanceId: string) => void;
+  translate?: (key: string, params?: Record<string, unknown>) => string;
+};
+
+const translateError = ({
+  dependencies,
+  key,
+  fallback,
+  params,
+}: {
+  dependencies: AppHandlersDependencies;
+  key: string;
+  fallback: string;
+  params?: Record<string, unknown>;
+}): string => {
+  const translated = dependencies.translate?.(key, params);
+  return typeof translated === "string" && translated.trim().length > 0
+    ? translated
+    : fallback;
 };
 
 const resolveRegisteredApp = (
@@ -59,7 +76,11 @@ export const handleLaunchApp = (
       tool: "launchApp",
       toolCallId,
       state: "output-error",
-      errorText: i18n.t("apps.chats.toolCalls.noAppIdProvided"),
+      errorText: translateError({
+        dependencies,
+        key: "apps.chats.toolCalls.noAppIdProvided",
+        fallback: "No app ID provided",
+      }),
     });
     return "";
   }
@@ -113,7 +134,11 @@ export const handleCloseApp = (
       tool: "closeApp",
       toolCallId,
       state: "output-error",
-      errorText: i18n.t("apps.chats.toolCalls.noAppIdProvided"),
+      errorText: translateError({
+        dependencies,
+        key: "apps.chats.toolCalls.noAppIdProvided",
+        fallback: "No app ID provided",
+      }),
     });
     return "";
   }
