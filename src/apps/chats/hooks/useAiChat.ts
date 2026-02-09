@@ -129,6 +129,14 @@ type RateLimitErrorState = {
   message: string;
 };
 
+const isRateLimitErrorState = (
+  value: Record<string, unknown>,
+): value is RateLimitErrorState =>
+  typeof value.isAuthenticated === "boolean" &&
+  typeof value.count === "number" &&
+  typeof value.limit === "number" &&
+  typeof value.message === "string";
+
 /**
  * NOTE: Future refactoring opportunity (tracked in codebase analysis)
  * 
@@ -1395,10 +1403,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       const parsedErrorData = tryParseJsonFromErrorMessage(errorMessage);
       if (parsedErrorData) {
         if (isRateLimitErrorCode(parsedErrorData.error)) {
-          setRateLimitError(parsedErrorData as RateLimitErrorState);
+          const rateLimitErrorPayload: RateLimitErrorState =
+            isRateLimitErrorState(parsedErrorData)
+              ? parsedErrorData
+              : {
+                  isAuthenticated: false,
+                  count: 0,
+                  limit: 0,
+                  message: "Rate limit exceeded",
+                };
+          setRateLimitError(rateLimitErrorPayload);
 
           // If anonymous user hit limit, set flag to require username
-          if (!(parsedErrorData.isAuthenticated as boolean | undefined)) {
+          if (!rateLimitErrorPayload.isAuthenticated) {
             setNeedsUsername(true);
           }
 
