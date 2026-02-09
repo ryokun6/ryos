@@ -160,6 +160,15 @@ const readErrorMessage = async (
   return errorData.error || fallback;
 };
 
+const logAndBuildErrorResult = (
+  message: string,
+  error: unknown,
+  userError: string = NETWORK_ERROR_MESSAGE
+): { ok: false; error: string } => {
+  console.error(message, error);
+  return { ok: false, error: userError };
+};
+
 const toHeaders = (headers?: HeadersInit): Headers => {
   const normalized = new Headers();
   if (!headers) {
@@ -573,8 +582,7 @@ export const runCreateUserFlow = async ({
 
     return { ok: true };
   } catch (error) {
-    console.error("[ChatsStore] Error creating user:", error);
-    return { ok: false, error: NETWORK_ERROR_MESSAGE };
+    return logAndBuildErrorResult("[ChatsStore] Error creating user:", error);
   }
 };
 
@@ -873,12 +881,12 @@ export const runCheckHasPasswordFlow = async ({
     setHasPassword(null);
     return { ok: false, error: result.error };
   } catch (error) {
-    console.error("[ChatsStore] Error checking password status:", error);
     setHasPassword(null);
-    return {
-      ok: false,
-      error: "Network error while checking password",
-    };
+    return logAndBuildErrorResult(
+      "[ChatsStore] Error checking password status:",
+      error,
+      "Network error while checking password"
+    );
   }
 };
 
@@ -914,8 +922,11 @@ export const runSetPasswordFlow = async ({
     setHasPassword(true);
     return { ok: true };
   } catch (error) {
-    console.error("[ChatsStore] Error setting password:", error);
-    return { ok: false, error: "Network error while setting password" };
+    return logAndBuildErrorResult(
+      "[ChatsStore] Error setting password:",
+      error,
+      "Network error while setting password"
+    );
   }
 };
 
@@ -1864,8 +1875,7 @@ export const runCreateRoomFlow = async ({
 
     return { ok: false, error: INVALID_RESPONSE_FORMAT_ERROR };
   } catch (error) {
-    console.error("[ChatsStore] Error creating room:", error);
-    return { ok: false, error: NETWORK_ERROR_MESSAGE };
+    return logAndBuildErrorResult("[ChatsStore] Error creating room:", error);
   }
 };
 
@@ -1907,8 +1917,7 @@ export const runDeleteRoomFlow = async ({
     onDeletedCurrentRoom();
     return { ok: true };
   } catch (error) {
-    console.error("[ChatsStore] Error deleting room:", error);
-    return { ok: false, error: NETWORK_ERROR_MESSAGE };
+    return logAndBuildErrorResult("[ChatsStore] Error deleting room:", error);
   }
 };
 
@@ -1963,8 +1972,7 @@ export const runSendMessageFlow = async ({
     return { ok: true };
   } catch (error) {
     removeMessageFromRoom(roomId, optimisticMessage.id);
-    console.error("[ChatsStore] Error sending message:", error);
-    return { ok: false, error: NETWORK_ERROR_MESSAGE };
+    return logAndBuildErrorResult("[ChatsStore] Error sending message:", error);
   }
 };
 
