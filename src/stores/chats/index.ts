@@ -55,7 +55,11 @@ export {
   createOptimisticChatMessage,
   createRoomRequest,
   deleteRoomRequest,
+  fetchBulkMessagesPayload,
+  fetchRoomMessagesPayload,
+  fetchRoomsPayload,
   incrementUnreadCount,
+  logIfNetworkResultError,
   mergeFetchedBulkMessages,
   mergeFetchedMessagesForRoom,
   mergeIncomingRoomMessageInMap,
@@ -73,9 +77,3 @@ export {
   syncPresenceOnRoomSwitch,
   toggleBoolean,
 } from "./roomState";
-export {
-  fetchBulkMessagesPayload,
-  fetchRoomMessagesPayload,
-  fetchRoomsPayload,
-  logIfNetworkResultError,
-} from "./messagePayloads";
