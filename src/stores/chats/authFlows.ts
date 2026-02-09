@@ -201,6 +201,24 @@ const createAuthenticatedHeaders = (
   return headers;
 };
 
+const withJsonHeaders = (headers?: HeadersInit): Headers => {
+  const nextHeaders = toHeaders(headers);
+  if (!nextHeaders.has("content-type")) {
+    nextHeaders.set("Content-Type", "application/json");
+  }
+  return nextHeaders;
+};
+
+const runChatRequest = (
+  url: string,
+  options: ChatRequestOptions,
+  usePlatformUrl: boolean = false
+): Promise<Response> =>
+  abortableFetch(
+    usePlatformUrl ? getApiUrl(url) : url,
+    withChatRequestDefaults(options)
+  );
+
 const warnedStoreIssues = new Set<string>();
 
 const warnChatsStoreOnce = (key: string, message: string): void => {
@@ -257,12 +275,7 @@ const makeAuthenticatedRequest = async (
   options: RequestInit,
   refreshToken: RefreshTokenHandler
 ): Promise<Response> => {
-  const initialResponse = await abortableFetch(
-    url,
-    withChatRequestDefaults({
-      ...options,
-    })
-  );
+  const initialResponse = await runChatRequest(url, { ...options });
 
   if (
     initialResponse.status !== 401 ||
@@ -284,13 +297,10 @@ const makeAuthenticatedRequest = async (
   const newHeaders = withAuthorizationHeader(options.headers, refreshResult.token);
 
   console.log("[ChatsStore] Retrying request with refreshed token");
-  return abortableFetch(
-    url,
-    withChatRequestDefaults({
-      ...options,
-      headers: newHeaders,
-    })
-  );
+  return runChatRequest(url, {
+    ...options,
+    headers: newHeaders,
+  });
 };
 
 interface RefreshTokenRequestParams {
@@ -302,19 +312,14 @@ const refreshAuthTokenRequest = async ({
   username,
   oldToken,
 }: RefreshTokenRequestParams): Promise<Response> =>
-  abortableFetch(
-    "/api/auth/token/refresh",
-    withChatRequestDefaults({
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username,
-        oldToken,
-      }),
-    })
-  );
+  runChatRequest("/api/auth/token/refresh", {
+    method: "POST",
+    headers: withJsonHeaders(),
+    body: JSON.stringify({
+      username,
+      oldToken,
+    }),
+  });
 
 interface RegisterUserRequestParams {
   username: string;
@@ -325,13 +330,14 @@ const registerUserRequest = async ({
   username,
   password,
 }: RegisterUserRequestParams): Promise<Response> =>
-  abortableFetch(
-    getApiUrl("/api/auth/register"),
-    withChatRequestDefaults({
+  runChatRequest(
+    "/api/auth/register",
+    {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: withJsonHeaders(),
       body: JSON.stringify({ username, password }),
-    })
+    },
+    true
   );
 
 interface LogoutRequestParams {
@@ -343,12 +349,13 @@ const logoutRequest = async ({
   username,
   token,
 }: LogoutRequestParams): Promise<Response> =>
-  abortableFetch(
-    getApiUrl("/api/auth/logout"),
-    withChatRequestDefaults({
+  runChatRequest(
+    "/api/auth/logout",
+    {
       method: "POST",
       headers: createAuthenticatedHeaders(token, username, true),
-    })
+    },
+    true
   );
 
 const CHAT_USERNAME_PATTERN =
@@ -691,13 +698,10 @@ const checkPasswordStatusRequest = async ({
   username,
   authToken,
 }: PasswordAuthContext): Promise<Response> =>
-  abortableFetch(
-    "/api/auth/password/check",
-    withChatRequestDefaults({
-      method: "GET",
-      headers: createAuthenticatedHeaders(authToken, username),
-    })
-  );
+  runChatRequest("/api/auth/password/check", {
+    method: "GET",
+    headers: createAuthenticatedHeaders(authToken, username),
+  });
 
 const fetchPasswordStatus = async ({
   username,
@@ -727,13 +731,14 @@ const setPasswordRequest = async ({
   authToken,
   password,
 }: SetPasswordContext): Promise<Response> =>
-  abortableFetch(
-    getApiUrl("/api/auth/password/set"),
-    withChatRequestDefaults({
+  runChatRequest(
+    "/api/auth/password/set",
+    {
       method: "POST",
       headers: createAuthenticatedHeaders(authToken, username, true),
       body: JSON.stringify({ password }),
-    })
+    },
+    true
   );
 
 const submitPassword = async ({
@@ -1190,23 +1195,17 @@ const fetchRoomsRequest = async (
     ? `/api/rooms?${queryParams.toString()}`
     : "/api/rooms";
 
-  return abortableFetch(
-    url,
-    withChatRequestDefaults({
-      method: "GET",
-    })
-  );
+  return runChatRequest(url, {
+    method: "GET",
+  });
 };
 
 const fetchRoomMessagesRequest = async (
   roomId: string
 ): Promise<Response> =>
-  abortableFetch(
-    `/api/rooms/${encodeURIComponent(roomId)}/messages`,
-    withChatRequestDefaults({
-      method: "GET",
-    })
-  );
+  runChatRequest(`/api/rooms/${encodeURIComponent(roomId)}/messages`, {
+    method: "GET",
+  });
 
 const fetchBulkMessagesRequest = async (
   roomIds: string[]
@@ -1215,12 +1214,9 @@ const fetchBulkMessagesRequest = async (
     roomIds: roomIds.join(","),
   });
 
-  return abortableFetch(
-    `/api/messages/bulk?${queryParams.toString()}`,
-    withChatRequestDefaults({
-      method: "GET",
-    })
-  );
+  return runChatRequest(`/api/messages/bulk?${queryParams.toString()}`, {
+    method: "GET",
+  });
 };
 
 const sortChatRoomsForUi = (rooms: ChatRoom[]): ChatRoom[] =>
@@ -1636,9 +1632,7 @@ const sendRoomMessageRequest = async ({
   authToken,
   refreshAuthToken,
 }: SendRoomMessageRequestParams): Promise<Response> => {
-  const unauthenticatedHeaders = new Headers({
-    "Content-Type": "application/json",
-  });
+  const unauthenticatedHeaders = withJsonHeaders();
   const headers = authToken
     ? createAuthenticatedHeaders(authToken, username, true)
     : unauthenticatedHeaders;
@@ -1656,13 +1650,14 @@ const sendRoomMessageRequest = async ({
         },
         refreshAuthToken
       )
-    : abortableFetch(
-        getApiUrl(messageUrl),
-        withChatRequestDefaults({
+    : runChatRequest(
+        messageUrl,
+        {
           method: "POST",
           headers: unauthenticatedHeaders,
           body: messageBody,
-        })
+        },
+        true
       );
 };
 
@@ -1845,18 +1840,15 @@ export const syncPresenceOnRoomSwitch = async ({
   onRoomsRefresh,
 }: SyncPresenceOnRoomSwitchParams): Promise<void> => {
   try {
-    const response = await abortableFetch(
-      "/api/presence/switch",
-      withChatRequestDefaults({
+    const response = await runChatRequest("/api/presence/switch", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: withJsonHeaders(),
         body: JSON.stringify({
           previousRoomId,
           nextRoomId,
           username,
         }),
-      })
-    );
+      });
 
     if (!response.ok) {
       const errorMessage = await readErrorMessage(
