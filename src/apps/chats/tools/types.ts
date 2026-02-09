@@ -1,3 +1,6 @@
+import type { AppId } from "@/config/appIds";
+import type { LaunchAppOptions } from "@/hooks/useLaunchApp";
+
 /**
  * Tool Handler Types
  *
@@ -11,7 +14,7 @@
  */
 export interface ToolContext {
   /** Function to launch an app by ID */
-  launchApp: (appId: string, options?: { initialData?: unknown; multiWindow?: boolean }) => string;
+  launchApp: (appId: AppId, options?: LaunchAppOptions) => string;
   /** Function to add tool result back to the chat */
   addToolResult: (result: ToolResultPayload) => void;
   /** Detect user's operating system */

@@ -11,7 +11,6 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { getApiUrl } from "@/utils/platform";
 import { toast } from "@/hooks/useToast";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
-import { AppId } from "@/config/appIds";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useFilesStore } from "@/stores/useFilesStore";
@@ -305,7 +304,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       // Create tool context for extracted handlers
       const toolContext: ToolContext = {
-        launchApp: (appId, options) => launchApp(appId as AppId, options),
+        launchApp,
         addToolResult,
         detectUserOS,
       };
