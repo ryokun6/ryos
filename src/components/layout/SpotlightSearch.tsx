@@ -212,17 +212,23 @@ export function SpotlightSearch() {
   if (!isOpen) return null;
 
   // ── Position: Tiger-style dropdown for Mac, centered for Windows & mobile ──
+  // NOTE: Don't use Tailwind -translate-x-1/2 — framer-motion's animate overrides CSS transform.
+  // Instead, use left + marginLeft or framer-motion x property for centering.
+  const needsCenter = isMobile || !isMac;
   const panelPositionClass = isMobile
-    ? "fixed z-[10004] left-1/2 -translate-x-1/2 w-[calc(100vw-32px)] max-w-[360px]"
+    ? "fixed z-[10004] w-[calc(100vw-32px)] max-w-[360px]"
     : isMac
     ? "fixed z-[10004] right-2 w-[280px]"
-    : "fixed z-[10004] left-1/2 -translate-x-1/2 w-[320px]";
+    : "fixed z-[10004] w-[320px]";
 
-  const panelTopStyle = isMobile
-    ? { top: "calc(var(--os-metrics-menubar-height, 25px) + 8px)" }
+  const panelTopStyle: React.CSSProperties = isMobile
+    ? {
+        top: "calc(var(--os-metrics-menubar-height, 25px) + 8px)",
+        left: "50%",
+      }
     : isMac
     ? { top: "calc(var(--os-metrics-menubar-height, 25px) + 2px)" }
-    : { top: "28%" };
+    : { top: "28%", left: "50%" };
 
   const overlay = (
     <AnimatePresence>
@@ -242,9 +248,9 @@ export function SpotlightSearch() {
           <motion.div
             className={panelPositionClass}
             style={panelTopStyle}
-            initial={{ opacity: 0, scale: 0.98, y: -4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: -4 }}
+            initial={{ opacity: 0, scale: 0.98, y: -4, x: needsCenter ? "-50%" : 0 }}
+            animate={{ opacity: 1, scale: 1, y: 0, x: needsCenter ? "-50%" : 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: -4, x: needsCenter ? "-50%" : 0 }}
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
             onKeyDown={handleKeyDown}
           >
