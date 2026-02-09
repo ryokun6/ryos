@@ -10,6 +10,11 @@ export {
 } from "./recovery";
 export { createOptimisticChatMessage, sendRoomMessageRequest } from "./sendMessage";
 export { createRoomRequest, deleteRoomRequest } from "./roomRequests";
+export {
+  runCreateRoomFlow,
+  runDeleteRoomFlow,
+  runSendMessageFlow,
+} from "./roomActionFlows";
 export { validateCreateUserInput } from "./userValidation";
 export {
   logoutRequest,

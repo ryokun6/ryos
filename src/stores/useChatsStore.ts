@@ -15,9 +15,6 @@ import {
   clearRoomMessagesInMap,
   clearUnreadCount,
   createChatsOnRehydrateStorage,
-  createOptimisticChatMessage,
-  createRoomRequest,
-  deleteRoomRequest,
   ensureRecoveryKeysAreSet,
   fetchBulkMessagesPayload,
   fetchPasswordStatus,
@@ -48,8 +45,10 @@ import {
   saveAuthTokenToRecovery,
   saveTokenRefreshTime,
   saveUsernameToRecovery,
+  runCreateRoomFlow,
+  runDeleteRoomFlow,
+  runSendMessageFlow,
   schedulePasswordStatusCheck,
-  sendRoomMessageRequest,
   setCurrentRoomMessagesInMap,
   shouldCheckPasswordStatus,
   submitPassword,
@@ -723,136 +722,41 @@ export const useChatsStore = create<ChatsStoreState>()(
           name: string,
           type: "public" | "private" = "public",
           members: string[] = []
-        ) => {
-          const username = get().username;
-          const authToken = get().authToken;
-
-          if (!username) {
-            return { ok: false, error: "Username required" };
-          }
-
-          if (!authToken) {
-            // Try to ensure auth token exists
-            const tokenResult = await get().ensureAuthToken();
-            if (!tokenResult.ok) {
-              return { ok: false, error: "Authentication required" };
-            }
-          }
-
-          try {
-            const response = await createRoomRequest({
-              name,
-              type,
-              members,
-              authToken: get().authToken!,
-              username,
-              refreshAuthToken: get().refreshAuthToken,
-            });
-
-            if (!response.ok) {
-              const errorData = await readErrorResponseBody(response);
-              return {
-                ok: false,
-                error: errorData.error || "Failed to create room",
-              };
-            }
-
-            const data = await response.json();
-            if (data.room) {
-              // Room will be added via Pusher update, so we don't need to manually add it
-              return { ok: true, roomId: data.room.id };
-            }
-
-            return { ok: false, error: "Invalid response format" };
-          } catch (error) {
-            console.error("[ChatsStore] Error creating room:", error);
-            return { ok: false, error: "Network error. Please try again." };
-          }
-        },
-        deleteRoom: async (roomId: string) => {
-          const username = get().username;
-          const authToken = get().authToken;
-
-          if (!username || !authToken) {
-            return { ok: false, error: "Authentication required" };
-          }
-
-          try {
-            const response = await deleteRoomRequest({
-              roomId,
-              authToken,
-              username,
-              refreshAuthToken: get().refreshAuthToken,
-            });
-
-            if (!response.ok) {
-              const errorData = await readErrorResponseBody(response);
-              return {
-                ok: false,
-                error: errorData.error || "Failed to delete room",
-              };
-            }
-
-            // Room will be removed via Pusher update
-            // If we're currently in this room, switch to @ryo
-            const currentRoomId = get().currentRoomId;
-            if (currentRoomId === roomId) {
-              set({ currentRoomId: null });
-            }
-
-            return { ok: true };
-          } catch (error) {
-            console.error("[ChatsStore] Error deleting room:", error);
-            return { ok: false, error: "Network error. Please try again." };
-          }
-        },
-        sendMessage: async (roomId: string, content: string) => {
-          const username = get().username;
-          const authToken = get().authToken;
-          const trimmedContent = content.trim();
-
-          if (!username || !trimmedContent) {
-            return { ok: false, error: "Username and content required" };
-          }
-
-          // Create optimistic message
-          const optimisticMessage = createOptimisticChatMessage(
+        ) =>
+          runCreateRoomFlow({
+            name,
+            type,
+            members,
+            username: get().username,
+            authToken: get().authToken,
+            ensureAuthToken: get().ensureAuthToken,
+            getCurrentAuthToken: () => get().authToken,
+            refreshAuthToken: get().refreshAuthToken,
+          }),
+        deleteRoom: async (roomId: string) =>
+          runDeleteRoomFlow({
             roomId,
-            username,
-            trimmedContent
-          );
-
-          // Add optimistic message immediately
-          get().addMessageToRoom(roomId, optimisticMessage);
-
-          try {
-            const response = await sendRoomMessageRequest({
-              roomId,
-              content: trimmedContent,
-              username,
-              authToken,
-              refreshAuthToken: get().refreshAuthToken,
-            });
-
-            if (!response.ok) {
-              // Remove optimistic message on failure
-              get().removeMessageFromRoom(roomId, optimisticMessage.id);
-              const errorData = await readErrorResponseBody(response);
-              return {
-                ok: false,
-                error: errorData.error || "Failed to send message",
-              };
-            }
-
-            // Real message will be added via Pusher, which will replace the optimistic one
-            return { ok: true };
-          } catch (error) {
-            // Remove optimistic message on failure
-            get().removeMessageFromRoom(roomId, optimisticMessage.id);
-            console.error("[ChatsStore] Error sending message:", error);
-            return { ok: false, error: "Network error. Please try again." };
-          }
-        },
+            username: get().username,
+            authToken: get().authToken,
+            refreshAuthToken: get().refreshAuthToken,
+            onDeletedCurrentRoom: () => {
+              // Room will be removed via Pusher update
+              // If we're currently in this room, switch to @ryo
+              if (get().currentRoomId === roomId) {
+                set({ currentRoomId: null });
+              }
+            },
+          }),
+        sendMessage: async (roomId: string, content: string) =>
+          runSendMessageFlow({
+            roomId,
+            content,
+            username: get().username,
+            authToken: get().authToken,
+            refreshAuthToken: get().refreshAuthToken,
+            addMessageToRoom: get().addMessageToRoom,
+            removeMessageFromRoom: get().removeMessageFromRoom,
+          }),
         createUser: async (username: string, password: string) => {
           const trimmedUsername = username.trim();
           const validationError = validateCreateUserInput({
