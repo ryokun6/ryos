@@ -44,6 +44,7 @@ import {
 } from "../utils/chatRuntime";
 import { getSystemState } from "../utils/systemState";
 import { executeChatFileOpenOperation } from "../utils/chatFileOpenOperation";
+import { executeChatSharedAppletReadOperation } from "../utils/chatSharedAppletReadOperation";
 import { resolveToolErrorText } from "../utils/chatFileToolValidation";
 import { syncTextEditDocumentForPath } from "../utils/textEditDocumentSync";
 import {
@@ -621,23 +622,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               } else if (path.startsWith("/Applets Store/")) {
                 // Open shared applet preview
                 const shareId = path.replace("/Applets Store/", "");
-                
-                // Fetch applet metadata to get the name
-                let appletName = shareId;
-                try {
-                  const response = await abortableFetch(
-                    getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareId)}`),
-                    {
-                      timeout: 15000,
-                      retry: { maxAttempts: 1, initialDelayMs: 250 },
-                    }
-                  );
-                  const data = await response.json();
-                  appletName = data.title || data.name || shareId;
-                } catch {
-                  // Fall back to shareId if fetch fails
-                }
-                
+
+                const sharedAppletResult = await executeChatSharedAppletReadOperation({ path });
+                const appletName = sharedAppletResult.ok
+                  ? sharedAppletResult.payload.title ??
+                    sharedAppletResult.payload.name ??
+                    shareId
+                  : shareId;
+
                 launchApp("applet-viewer", {
                   initialData: { path: "", content: "", shareCode: shareId },
                 });

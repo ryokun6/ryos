@@ -66,20 +66,25 @@ export async function runChatSharedAppletReadOperationTests(): Promise<{
 
   console.log(section("Remote payload mapping"));
   await runTest("maps fetched payload and installed path into response object", async () => {
+    let capturedShareId = "";
     const result = await executeChatSharedAppletReadOperation({
-      path: "/Applets Store/demo-id",
-      fetchSharedApplet: async () => ({
+      path: "  /Applets Store/demo-id  ",
+      fetchSharedApplet: async (shareId) => {
+        capturedShareId = shareId;
+        return {
         title: "Demo Applet",
         name: "Demo",
         icon: "🧪",
         createdBy: "ryo",
         content: "<html>demo</html>",
-      }),
+        };
+      },
       resolveInstalledPath: () => "/Applets/Demo",
     });
 
     assertEq(result.ok, true);
     if (result.ok) {
+      assertEq(capturedShareId, "demo-id");
       assertEq(result.payload.id, "demo-id");
       assertEq(result.payload.title, "Demo Applet");
       assertEq(result.payload.installedPath, "/Applets/Demo");
