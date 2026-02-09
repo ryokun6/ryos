@@ -7,8 +7,8 @@ import {
   markApiTemporarilyUnavailable,
   readJsonBody,
   warnChatsStoreOnce,
-} from "./apiGuards";
-import { withChatRequestDefaults } from "./requestConfig";
+  withChatRequestDefaults,
+} from "./transport";
 
 export interface ApiChatMessagePayload {
   id: string;

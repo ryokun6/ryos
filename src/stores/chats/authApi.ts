@@ -1,6 +1,6 @@
 import { abortableFetch } from "@/utils/abortableFetch";
 import { getApiUrl } from "@/utils/platform";
-import { withChatRequestDefaults } from "./requestConfig";
+import { withChatRequestDefaults } from "./transport";
 
 export type RefreshTokenResult = {
   ok: boolean;

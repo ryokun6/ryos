@@ -1,3 +1,55 @@
+export type ChatRetryConfig = {
+  maxAttempts: number;
+  initialDelayMs: number;
+};
+
+export type ChatRequestOptions = RequestInit & {
+  timeout?: number;
+  throwOnHttpError?: boolean;
+  retry?: ChatRetryConfig;
+};
+
+const DEFAULT_CHAT_RETRY: ChatRetryConfig = {
+  maxAttempts: 1,
+  initialDelayMs: 250,
+};
+
+export const withChatRequestDefaults = (
+  options: ChatRequestOptions
+): ChatRequestOptions => {
+  const mergedRetry: ChatRetryConfig = {
+    ...DEFAULT_CHAT_RETRY,
+    ...(options.retry || {}),
+  };
+
+  return {
+    timeout: 15000,
+    throwOnHttpError: false,
+    ...options,
+    retry: mergedRetry,
+  };
+};
+
+export interface ErrorResponseBody {
+  error: string;
+}
+
+export const readErrorResponseBody = async (
+  response: Response
+): Promise<ErrorResponseBody> => {
+  const fallbackError = `HTTP error! status: ${response.status}`;
+  const parsed = (await response.json().catch(() => ({
+    error: fallbackError,
+  }))) as { error?: unknown };
+
+  return {
+    error:
+      typeof parsed.error === "string" && parsed.error.length > 0
+        ? parsed.error
+        : fallbackError,
+  };
+};
+
 const warnedStoreIssues = new Set<string>();
 
 export const warnChatsStoreOnce = (key: string, message: string): void => {

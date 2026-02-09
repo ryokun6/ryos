@@ -20,10 +20,10 @@ import {
   assertEq,
 } from "./test-utils";
 
-const readStoreSource = (): string =>
-  readFileSync(resolve(process.cwd(), "src/stores/useChatsStore.ts"), "utf-8");
 const readGuardsSource = (): string =>
-  readFileSync(resolve(process.cwd(), "src/stores/chats/apiGuards.ts"), "utf-8");
+  readFileSync(resolve(process.cwd(), "src/stores/chats/transport.ts"), "utf-8");
+const readPayloadSource = (): string =>
+  readFileSync(resolve(process.cwd(), "src/stores/chats/messagePayloads.ts"), "utf-8");
 
 const countMatches = (source: string, pattern: RegExp): number =>
   source.match(new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`))
@@ -38,7 +38,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
 
   console.log(section("JSON response guard wiring"));
   await runTest("uses readJsonBody for rooms/messages success payloads", async () => {
-    const source = readStoreSource();
+    const source = readPayloadSource();
 
     assert(
       source.includes('"fetchRooms success response"'),
@@ -63,7 +63,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
   });
 
   await runTest("dedupes guard warnings with endpoint-specific keys", async () => {
-    const source = readStoreSource();
+    const source = readPayloadSource();
 
     assert(
       /warnChatsStoreOnce\s*\(\s*"fetchRooms-success-response"/.test(source),
@@ -85,7 +85,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
 
   console.log(section("Cooldown availability checks"));
   await runTest("checks cooldown gate for each chat fetch endpoint", async () => {
-    const source = readStoreSource();
+    const source = readPayloadSource();
 
     assertEq(
       countMatches(source, /isApiTemporarilyUnavailable\("rooms"\)/),
@@ -115,7 +115,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
   });
 
   await runTest("marks cooldown from parse guard and network failures", async () => {
-    const source = readStoreSource();
+    const source = readPayloadSource();
 
     assertEq(
       countMatches(source, /markApiTemporarilyUnavailable\("rooms"\)/),
@@ -135,7 +135,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
   });
 
   await runTest("clears cooldown after successful payload parse", async () => {
-    const source = readStoreSource();
+    const source = readPayloadSource();
 
     assertEq(
       countMatches(source, /clearApiUnavailable\("rooms"\)/),

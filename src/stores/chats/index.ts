@@ -51,7 +51,11 @@ export {
   refreshAuthTokenRequest,
   registerUserRequest,
 } from "./authApi";
-export { readErrorResponseBody } from "./httpErrors";
+export {
+  CHAT_API_UNAVAILABLE_COOLDOWN_MS,
+  readErrorResponseBody,
+  withChatRequestDefaults,
+} from "./transport";
 export {
   createChatsOnRehydrateStorage,
   migrateChatsPersistedState,

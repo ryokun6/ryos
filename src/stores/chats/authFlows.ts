@@ -9,13 +9,15 @@ import {
   refreshAuthTokenRequest,
   registerUserRequest,
 } from "./authApi";
-import { readErrorResponseBody } from "./httpErrors";
 import {
   AUTH_TOKEN_RECOVERY_KEY,
   TOKEN_LAST_REFRESH_KEY,
   USERNAME_RECOVERY_KEY,
 } from "./recovery";
-import { withChatRequestDefaults } from "./requestConfig";
+import {
+  readErrorResponseBody,
+  withChatRequestDefaults,
+} from "./transport";
 
 const PASSWORD_CHECK_DELAY_MS = 100;
 

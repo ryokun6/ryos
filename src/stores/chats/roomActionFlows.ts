@@ -1,13 +1,15 @@
 import { abortableFetch } from "@/utils/abortableFetch";
 import type { ChatMessage } from "@/types/chat";
 import { getApiUrl } from "@/utils/platform";
-import { readErrorResponseBody } from "./httpErrors";
 import {
   type RefreshTokenHandler,
   type RefreshTokenResult,
   makeAuthenticatedRequest,
 } from "./authApi";
-import { withChatRequestDefaults } from "./requestConfig";
+import {
+  readErrorResponseBody,
+  withChatRequestDefaults,
+} from "./transport";
 
 export interface CreateRoomPayload {
   type: "public" | "private";
