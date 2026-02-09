@@ -122,6 +122,45 @@ export const replaceSingleOccurrence = (
   };
 };
 
+export type LocalFileReplacementAttempt =
+  | { ok: true; fileItem: ActiveFileWithUuid; updatedContent: string }
+  | { ok: false; reason: "not_found" | "multiple_matches"; occurrences: number };
+
+export const attemptLocalFileReplacement = async ({
+  path,
+  storeName,
+  oldString,
+  newString,
+  errors,
+}: {
+  path: string;
+  storeName: LocalContentStore;
+  oldString: string;
+  newString: string;
+  errors: {
+    notFound: string;
+    missingContent: string;
+    readFailed: string;
+  };
+}): Promise<LocalFileReplacementAttempt> => {
+  const { fileItem, content } = await readLocalFileTextOrThrow(
+    path,
+    storeName,
+    errors,
+  );
+
+  const replacement = replaceSingleOccurrence(content, oldString, newString);
+  if (!replacement.ok) {
+    return replacement;
+  }
+
+  return {
+    ok: true,
+    fileItem,
+    updatedContent: replacement.updatedContent,
+  };
+};
+
 export type WriteMode = "overwrite" | "append" | "prepend";
 
 export const mergeContentByWriteMode = ({

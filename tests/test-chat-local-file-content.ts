@@ -3,6 +3,7 @@
 import { dbOperations } from "../src/apps/finder/utils/fileDatabase";
 import { STORES } from "../src/utils/indexedDB";
 import {
+  attemptLocalFileReplacement,
   mergeContentByWriteMode,
   persistUpdatedLocalFileContent,
   replaceSingleOccurrence,
@@ -313,6 +314,82 @@ export async function runChatLocalFileContentTests(): Promise<{
     }
     assertEq(result.reason, "multiple_matches");
     assertEq(result.occurrences, 3);
+  });
+
+  await runTest("attemptLocalFileReplacement returns updated file payload on unique match", async () => {
+    await withMockFileItems(
+      {
+        "/Documents/edit.md": {
+          path: "/Documents/edit.md",
+          name: "edit.md",
+          isDirectory: false,
+          status: "active",
+          uuid: "uuid-edit",
+        },
+      },
+      async () => {
+        await withMockDbGet(
+          async <T>() => ({ name: "edit.md", content: "hello old world" } as T),
+          async () => {
+            const replacement = await attemptLocalFileReplacement({
+              path: "/Documents/edit.md",
+              storeName: STORES.DOCUMENTS,
+              oldString: "old",
+              newString: "new",
+              errors: {
+                notFound: "nf",
+                missingContent: "missing",
+                readFailed: "rf",
+              },
+            });
+            assertEq(replacement.ok, true);
+            if (!replacement.ok) {
+              throw new Error("Expected replacement success");
+            }
+            assertEq(replacement.fileItem.uuid, "uuid-edit");
+            assertEq(replacement.updatedContent, "hello new world");
+          },
+        );
+      },
+    );
+  });
+
+  await runTest("attemptLocalFileReplacement returns multiple-match metadata", async () => {
+    await withMockFileItems(
+      {
+        "/Documents/edit.md": {
+          path: "/Documents/edit.md",
+          name: "edit.md",
+          isDirectory: false,
+          status: "active",
+          uuid: "uuid-edit",
+        },
+      },
+      async () => {
+        await withMockDbGet(
+          async <T>() => ({ name: "edit.md", content: "same same same" } as T),
+          async () => {
+            const replacement = await attemptLocalFileReplacement({
+              path: "/Documents/edit.md",
+              storeName: STORES.DOCUMENTS,
+              oldString: "same",
+              newString: "diff",
+              errors: {
+                notFound: "nf",
+                missingContent: "missing",
+                readFailed: "rf",
+              },
+            });
+            assertEq(replacement.ok, false);
+            if (replacement.ok) {
+              throw new Error("Expected replacement failure");
+            }
+            assertEq(replacement.reason, "multiple_matches");
+            assertEq(replacement.occurrences, 3);
+          },
+        );
+      },
+    );
   });
 
   console.log(section("Write mode merge"));
