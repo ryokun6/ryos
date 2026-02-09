@@ -994,6 +994,16 @@
   --os-color-selection-glow: rgba(0, 0, 0, 0.22);
 }
 
+/* ── Spotlight Search panel: prevent macOS theme global font-size overrides ── */
+:root[data-os-theme="macosx"] .spotlight-panel,
+:root[data-os-theme="macosx"] .spotlight-panel div,
+:root[data-os-theme="macosx"] .spotlight-panel p,
+:root[data-os-theme="macosx"] .spotlight-panel span,
+:root[data-os-theme="macosx"] .spotlight-panel button,
+:root[data-os-theme="macosx"] .spotlight-panel input {
+  font-size: unset !important;
+}
+
 /* Shadow utilities */
 .shadow-os-window {
   box-shadow: var(--os-window-shadow);

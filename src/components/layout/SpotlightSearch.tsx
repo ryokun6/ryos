@@ -248,7 +248,7 @@ export function SpotlightSearch() {
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
             onKeyDown={handleKeyDown}
           >
-            <div style={{ ...containerStyles, fontFamily }} className="overflow-hidden">
+            <div style={{ ...containerStyles, fontFamily }} className="overflow-hidden spotlight-panel">
               {/* Search Input Row */}
               <div className={cn("flex items-center gap-1.5", inputPadding)}>
                 <MagnifyingGlass
