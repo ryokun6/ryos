@@ -12,6 +12,7 @@ import {
   readTextContentFromStore,
   requireActiveFileWithUuid,
   saveDocumentTextFile,
+  writeDocumentFileWithMode,
 } from "../src/apps/chats/utils/localFileContent";
 import { useFilesStore } from "../src/stores/useFilesStore";
 import {
@@ -654,6 +655,98 @@ export async function runChatLocalFileContentTests(): Promise<{
     assertEq(updatePath, "/Documents/existing.md");
     assertEq(updateSize, new Blob(["updated existing body"]).size);
     assertEq(capturedUuid, "uuid-existing");
+  });
+
+  console.log(section("Mode-based document write"));
+  await runTest("writeDocumentFileWithMode appends onto existing document content", async () => {
+    let capturedDbContent = "";
+    await withMockDbGet(
+      async <T>(_storeName: string, key: string) => {
+        if (key === "uuid-existing-write") {
+          return { name: "existing.md", content: "existing" } as T;
+        }
+        return undefined;
+      },
+      async () => {
+        await withMockDbPut(
+          async <T>(_storeName: string, item: T) => {
+            capturedDbContent = (item as { content: string }).content;
+          },
+          async () => {
+            await withMockFileItems(
+              {
+                "/Documents/existing.md": {
+                  path: "/Documents/existing.md",
+                  name: "existing.md",
+                  isDirectory: false,
+                  status: "active",
+                  uuid: "uuid-existing-write",
+                },
+              },
+              async () => {
+                const result = await writeDocumentFileWithMode({
+                  path: "/Documents/existing.md",
+                  fileName: "existing.md",
+                  incomingContent: " +append",
+                  mode: "append",
+                });
+                assertEq(result.isNewFile, false);
+                assertEq(result.finalContent, "existing +append");
+              },
+            );
+          },
+        );
+      },
+    );
+
+    assertEq(capturedDbContent, "existing +append");
+  });
+
+  await runTest("writeDocumentFileWithMode creates new document on overwrite mode", async () => {
+    let dbGetCalled = false;
+    let capturedDbContent = "";
+
+    await withMockDbGet(
+      async () => {
+        dbGetCalled = true;
+        return undefined;
+      },
+      async () => {
+        await withMockDbPut(
+          async <T>(_storeName: string, item: T) => {
+            capturedDbContent = (item as { content: string }).content;
+          },
+          async () => {
+            await withMockFileItems({}, async () => {
+              await withMockAddItem(async (item) => {
+                useFilesStore.setState({
+                  items: {
+                    ...useFilesStore.getState().items,
+                    [item.path]: {
+                      ...item,
+                      status: "active",
+                      uuid: "uuid-created-write",
+                    },
+                  },
+                });
+              }, async () => {
+                const result = await writeDocumentFileWithMode({
+                  path: "/Documents/new-write.md",
+                  fileName: "new-write.md",
+                  incomingContent: "new body",
+                  mode: "overwrite",
+                });
+                assertEq(result.isNewFile, true);
+                assertEq(result.finalContent, "new body");
+              });
+            });
+          },
+        );
+      },
+    );
+
+    assertEq(dbGetCalled, false);
+    assertEq(capturedDbContent, "new body");
   });
 
   return printSummary();

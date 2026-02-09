@@ -262,3 +262,36 @@ export const saveDocumentTextFile = async ({
 
   return savedItem as ActiveFileWithUuid;
 };
+
+export const writeDocumentFileWithMode = async ({
+  path,
+  fileName,
+  incomingContent,
+  mode,
+}: {
+  path: string;
+  fileName: string;
+  incomingContent: string;
+  mode: WriteMode;
+}): Promise<{ isNewFile: boolean; finalContent: string }> => {
+  const existingItem = useFilesStore.getState().items[path];
+  const isNewFile = !existingItem || existingItem.status !== "active";
+  const existingContentForMerge =
+    !isNewFile && mode !== "overwrite" && existingItem?.uuid
+      ? await readOptionalTextContentFromStore(STORES.DOCUMENTS, existingItem.uuid)
+      : null;
+
+  const finalContent = mergeContentByWriteMode({
+    mode,
+    incomingContent,
+    existingContent: existingContentForMerge,
+  });
+
+  await saveDocumentTextFile({
+    path,
+    fileName,
+    content: finalContent,
+  });
+
+  return { isNewFile, finalContent };
+};

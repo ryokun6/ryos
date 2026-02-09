@@ -47,11 +47,9 @@ import { getSystemState } from "../utils/systemState";
 import {
   attemptLocalFileReplacement,
   type LocalFileReplacementAttempt,
-  mergeContentByWriteMode,
   persistUpdatedLocalFileContent,
   readLocalFileTextOrThrow,
-  readOptionalTextContentFromStore,
-  saveDocumentTextFile,
+  writeDocumentFileWithMode,
 } from "../utils/localFileContent";
 import { syncTextEditDocumentForPath } from "../utils/textEditDocumentSync";
 import {
@@ -885,28 +883,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             console.log("[ToolCall] write:", { path, mode, contentLength: content?.length });
 
             try {
-              // Check if file exists for append/prepend modes
-              const existingItem = useFilesStore.getState().items[path];
-              const isNewFile = !existingItem || existingItem.status !== "active";
-
-              const existingContentForMerge =
-                !isNewFile && mode !== "overwrite" && existingItem?.uuid
-                  ? await readOptionalTextContentFromStore(
-                      STORES.DOCUMENTS,
-                      existingItem.uuid,
-                    )
-                  : null;
-
-              const finalContent = mergeContentByWriteMode({
-                mode,
-                incomingContent: content || "",
-                existingContent: existingContentForMerge,
-              });
-
-              await saveDocumentTextFile({
+              const { isNewFile, finalContent } = await writeDocumentFileWithMode({
                 path,
                 fileName,
-                content: finalContent,
+                incomingContent: content || "",
+                mode,
               });
 
               syncTextEditDocumentForPath({
