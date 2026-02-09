@@ -100,6 +100,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const loginToastAction = useMemo(
+    () =>
+      onPromptSetUsername
+        ? {
+            label: "Login",
+            onClick: onPromptSetUsername,
+          }
+        : undefined,
+    [onPromptSetUsername],
+  );
   const handleInputChange = useCallback(
     (
       e:
@@ -202,13 +212,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       console.error("AI Chat Error:", err);
 
-      const loginToastAction = onPromptSetUsername
-        ? {
-            label: "Login",
-            onClick: onPromptSetUsername,
-          }
-        : undefined;
-
       // Helper function to handle authentication errors consistently
       const handleAuthError = (message?: string) => {
         console.error("Authentication error - clearing invalid token");
@@ -263,7 +266,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         description: errorMessage || "Failed to get response.",
       });
     },
-    [onPromptSetUsername],
+    [loginToastAction],
   );
 
   const {
