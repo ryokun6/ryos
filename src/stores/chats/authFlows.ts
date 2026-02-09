@@ -1294,6 +1294,21 @@ const CHAT_ENDPOINT_KEYS = {
   BULK_MESSAGES: "bulk-messages",
 } as const;
 
+const CHAT_PAYLOAD_WARNING_KEYS = {
+  ROOMS: "fetchRooms-success-response",
+  ROOM_MESSAGES: "fetchMessagesForRoom-success-response",
+  BULK_MESSAGES: "fetchBulkMessages-success-response",
+} as const;
+
+const CHAT_PAYLOAD_UNAVAILABLE_ERRORS = {
+  ROOMS_TEMPORARY: "Rooms API temporarily unavailable",
+  ROOMS_UNAVAILABLE: "Rooms API unavailable",
+  ROOM_MESSAGES_TEMPORARY: "Messages API temporarily unavailable",
+  ROOM_MESSAGES_UNAVAILABLE: "Messages API unavailable",
+  BULK_MESSAGES_TEMPORARY: "Bulk messages API temporarily unavailable",
+  BULK_MESSAGES_UNAVAILABLE: "Bulk messages API unavailable",
+} as const;
+
 interface ApiChatMessagePayload {
   id: string;
   roomId: string;
@@ -2184,13 +2199,13 @@ export const fetchRoomsPayload = async (
 ): Promise<{ ok: true; rooms: ChatRoom[] } | { ok: false; error: string }> => {
   const result = await runGuardedPayloadFlow<{ rooms?: ChatRoom[] }, ChatRoom[]>({
     endpointKey: CHAT_ENDPOINT_KEYS.ROOMS,
-    endpointUnavailableError: "Rooms API temporarily unavailable",
+    endpointUnavailableError: CHAT_PAYLOAD_UNAVAILABLE_ERRORS.ROOMS_TEMPORARY,
     request: () => fetchRoomsRequest(username),
     errorContext: "fetchRooms error response",
     successContext: "fetchRooms success response",
     fallbackHttpError: FETCH_ROOMS_FAILED_ERROR,
-    successWarningKey: "fetchRooms-success-response",
-    successUnavailableError: "Rooms API unavailable",
+    successWarningKey: CHAT_PAYLOAD_WARNING_KEYS.ROOMS,
+    successUnavailableError: CHAT_PAYLOAD_UNAVAILABLE_ERRORS.ROOMS_UNAVAILABLE,
     extractValue: (body) => (Array.isArray(body.rooms) ? body.rooms : null),
   });
 
@@ -2210,13 +2225,15 @@ export const fetchRoomMessagesPayload = async (
     ApiChatMessagePayload[]
   >({
     endpointKey: CHAT_ENDPOINT_KEYS.ROOM_MESSAGES,
-    endpointUnavailableError: "Messages API temporarily unavailable",
+    endpointUnavailableError:
+      CHAT_PAYLOAD_UNAVAILABLE_ERRORS.ROOM_MESSAGES_TEMPORARY,
     request: () => fetchRoomMessagesRequest(roomId),
     errorContext: "fetchMessagesForRoom error response",
     successContext: "fetchMessagesForRoom success response",
     fallbackHttpError: FETCH_MESSAGES_FAILED_ERROR,
-    successWarningKey: "fetchMessagesForRoom-success-response",
-    successUnavailableError: "Messages API unavailable",
+    successWarningKey: CHAT_PAYLOAD_WARNING_KEYS.ROOM_MESSAGES,
+    successUnavailableError:
+      CHAT_PAYLOAD_UNAVAILABLE_ERRORS.ROOM_MESSAGES_UNAVAILABLE,
     extractValue: (body) => (Array.isArray(body.messages) ? body.messages : null),
   });
 
@@ -2237,13 +2254,15 @@ export const fetchBulkMessagesPayload = async (
     Record<string, ApiChatMessagePayload[]>
   >({
     endpointKey: CHAT_ENDPOINT_KEYS.BULK_MESSAGES,
-    endpointUnavailableError: "Bulk messages API temporarily unavailable",
+    endpointUnavailableError:
+      CHAT_PAYLOAD_UNAVAILABLE_ERRORS.BULK_MESSAGES_TEMPORARY,
     request: () => fetchBulkMessagesRequest(roomIds),
     errorContext: "fetchBulkMessages error response",
     successContext: "fetchBulkMessages success response",
     fallbackHttpError: FETCH_MESSAGES_FAILED_ERROR,
-    successWarningKey: "fetchBulkMessages-success-response",
-    successUnavailableError: "Bulk messages API unavailable",
+    successWarningKey: CHAT_PAYLOAD_WARNING_KEYS.BULK_MESSAGES,
+    successUnavailableError:
+      CHAT_PAYLOAD_UNAVAILABLE_ERRORS.BULK_MESSAGES_UNAVAILABLE,
     extractValue: (body) =>
       body.messagesMap && typeof body.messagesMap === "object"
         ? body.messagesMap

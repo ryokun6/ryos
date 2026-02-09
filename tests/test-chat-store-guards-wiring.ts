@@ -64,20 +64,42 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
     const source = readChatHelpersSource();
 
     assert(
-      /successWarningKey:\s*"fetchRooms-success-response"/.test(source),
+      /ROOMS:\s*"fetchRooms-success-response"/.test(source),
       "Expected dedupe warning key for fetchRooms"
     );
     assert(
-      /successWarningKey:\s*"fetchMessagesForRoom-success-response"/.test(
+      /ROOM_MESSAGES:\s*"fetchMessagesForRoom-success-response"/.test(
         source
       ),
       "Expected dedupe warning key for fetchMessagesForRoom"
     );
     assert(
-      /successWarningKey:\s*"fetchBulkMessages-success-response"/.test(
+      /BULK_MESSAGES:\s*"fetchBulkMessages-success-response"/.test(
         source
       ),
       "Expected dedupe warning key for fetchBulkMessages"
+    );
+
+    assertEq(
+      countMatches(source, /successWarningKey:\s*CHAT_PAYLOAD_WARNING_KEYS\.ROOMS/),
+      1,
+      "Expected room warning key usage"
+    );
+    assertEq(
+      countMatches(
+        source,
+        /successWarningKey:\s*CHAT_PAYLOAD_WARNING_KEYS\.ROOM_MESSAGES/
+      ),
+      1,
+      "Expected room-messages warning key usage"
+    );
+    assertEq(
+      countMatches(
+        source,
+        /successWarningKey:\s*CHAT_PAYLOAD_WARNING_KEYS\.BULK_MESSAGES/
+      ),
+      1,
+      "Expected bulk-messages warning key usage"
     );
   });
 
