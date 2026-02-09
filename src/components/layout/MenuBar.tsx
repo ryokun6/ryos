@@ -1519,7 +1519,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           }}
         />
       )}
-      <div className={`${isPhone ? "flex-shrink-0 px-2" : "ml-auto"} flex items-center`}>
+      <div className={`${isPhone ? "flex-shrink-0 pl-1 pr-0.5" : "ml-auto"} flex items-center`}>
         <OfflineIndicator />
         <ExposeButton />
         <div className="hidden sm:flex">
@@ -1547,18 +1547,18 @@ function SpotlightMenuBarButton() {
     <button
       type="button"
       onClick={handleClick}
-      className="flex items-center justify-center px-1.5 py-0.5"
+      className="flex items-center justify-center px-1 py-0.5"
       style={{
         marginLeft: "2px",
+        color: "inherit",
       }}
       title="Spotlight Search (⌘+Space)"
       aria-label="Spotlight Search"
     >
       <MagnifyingGlass
         aria-hidden="true"
-        className="h-3.5 w-3.5"
+        size={12}
         weight="bold"
-        style={{ opacity: 0.7 }}
       />
     </button>
   );

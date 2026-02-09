@@ -157,10 +157,10 @@ export function SpotlightSearch() {
       } as React.CSSProperties;
     }
     if (isSystem7) {
-      // Match System 7 window frame: 1px black border + classic Mac shadow
+      // Match System 7 window frame: 2px black border + classic Mac shadow
       return {
         background: "#FFFFFF",
-        border: "1px solid #000000",
+        border: "2px solid #000000",
         borderRadius: "0px",
         boxShadow: "2px 2px 0px 0px rgba(0, 0, 0, 0.5)",
       } as React.CSSProperties;
