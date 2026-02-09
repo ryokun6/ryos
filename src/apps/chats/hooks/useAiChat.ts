@@ -40,6 +40,7 @@ import {
   createChatListToolDependencies,
   createChatOpenToolDependencies,
 } from "../utils/chatToolDependencyResolvers";
+import { executeChatToolCall } from "../utils/chatToolCallExecutor";
 import {
   executeToolHandler,
   type ToolContext,
@@ -302,32 +303,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         },
       };
 
-      try {
-        const wasExecuted = await executeToolHandler(
-          toolCall.toolName,
-          toolCall.input as unknown,
-          toolCall.toolCallId,
-          toolContext,
-        );
-        if (!wasExecuted) {
-          console.warn("Unhandled tool call:", toolCall.toolName);
-          addToolResult({
-            tool: toolCall.toolName,
-            toolCallId: toolCall.toolCallId,
-            state: "output-error",
-            errorText: i18n.t("apps.chats.toolCalls.unknownError"),
-          });
-        }
-      } catch (err) {
-        console.error("Error executing tool call:", err);
-        // Send error result
-        addToolResult({
-          tool: toolCall.toolName,
+      await executeChatToolCall({
+        toolCall: {
+          toolName: toolCall.toolName,
           toolCallId: toolCall.toolCallId,
-          state: "output-error",
-          errorText: err instanceof Error ? err.message : i18n.t("apps.chats.toolCalls.unknownError"),
-        });
-      }
+          input: toolCall.input,
+        },
+        toolContext,
+        addToolResult,
+        t: i18n.t,
+        executeTool: executeToolHandler,
+      });
     },
 
     onFinish: ({ messages }) => {
