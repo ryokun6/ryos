@@ -296,6 +296,17 @@ const readJsonBody = async <T>(
   }
 };
 
+const readRequiredJsonBody = async <T>(
+  response: Response,
+  context: string
+): Promise<{ ok: true; data: T } | { ok: false; error: string }> => {
+  const body = await readJsonBody<T>(response, context);
+  if (!body.ok) {
+    return { ok: false, error: INVALID_RESPONSE_FORMAT_ERROR };
+  }
+  return body;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Auth API + authentication lifecycle
 // ─────────────────────────────────────────────────────────────────────────────
@@ -570,12 +581,12 @@ export const runCreateUserFlow = async ({
       };
     }
 
-    const registerData = await readJsonBody<RegisterUserResponseData>(
+    const registerData = await readRequiredJsonBody<RegisterUserResponseData>(
       response,
       "createUser success response"
     );
     if (!registerData.ok) {
-      return { ok: false, error: INVALID_RESPONSE_FORMAT_ERROR };
+      return registerData;
     }
 
     const parsedRegister = parseRegisterUserResponse(registerData.data);
@@ -657,12 +668,12 @@ export const refreshAuthTokenForUser = async ({
     };
   }
 
-  const refreshData = await readJsonBody<RefreshTokenResponseData>(
+  const refreshData = await readRequiredJsonBody<RefreshTokenResponseData>(
     response,
     "refreshAuthToken success response"
   );
   if (!refreshData.ok) {
-    return { ok: false, error: INVALID_RESPONSE_FORMAT_ERROR };
+    return refreshData;
   }
 
   const parsedRefresh = parseRefreshTokenResponse(refreshData.data);
@@ -818,8 +829,15 @@ const fetchPasswordStatus = async ({
     return { ok: false, error: PASSWORD_STATUS_CHECK_FAILED_ERROR };
   }
 
-  const data = (await response.json()) as { hasPassword?: unknown };
-  return { ok: true, hasPassword: Boolean(data.hasPassword) };
+  const passwordStatusData = await readRequiredJsonBody<{ hasPassword?: unknown }>(
+    response,
+    "checkPasswordStatus success response"
+  );
+  if (!passwordStatusData.ok) {
+    return passwordStatusData;
+  }
+
+  return { ok: true, hasPassword: Boolean(passwordStatusData.data.hasPassword) };
 };
 
 interface SetPasswordContext extends PasswordAuthContext {
@@ -1883,12 +1901,12 @@ export const runCreateRoomFlow = async ({
       };
     }
 
-    const createRoomData = await readJsonBody<{ room?: { id: string } }>(
+    const createRoomData = await readRequiredJsonBody<{ room?: { id: string } }>(
       response,
       "createRoom success response"
     );
     if (!createRoomData.ok) {
-      return { ok: false, error: INVALID_RESPONSE_FORMAT_ERROR };
+      return createRoomData;
     }
 
     if (createRoomData.data.room?.id) {
