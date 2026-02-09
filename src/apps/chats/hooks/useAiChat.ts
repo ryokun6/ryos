@@ -43,6 +43,7 @@ import {
 } from "../utils/messageNotifications";
 import {
   areMessageIdListsEqual,
+  collectCompletedLineSegments,
   classifyChatError,
   cleanTextForSpeech,
   mergeMessagesWithTimestamps,
@@ -1418,12 +1419,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     // but if content.length has grown, we have new content to speak
     if (progress >= content.length) return;
 
-    let scanPos = progress;
-    const processChunk = (endPos: number) => {
-      const rawChunk = content.slice(scanPos, endPos);
+    const processChunk = (startPos: number, endPos: number, nextPos: number) => {
+      const rawChunk = content.slice(startPos, endPos);
       const cleaned = cleanTextForSpeech(rawChunk);
       if (cleaned) {
-        const seg = { messageId: lastMsg.id, start: scanPos, end: endPos };
+        const seg = { messageId: lastMsg.id, start: startPos, end: endPos };
         highlightQueueRef.current.push(seg);
         if (!highlightSegment) {
           // Delay highlighting slightly so text sync aligns closer to actual speech start
@@ -1439,28 +1439,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           setHighlightSegment(highlightQueueRef.current[0] || null);
         });
       }
-      scanPos = endPos;
-      speechProgressRef.current[lastMsg.id] = scanPos;
+      speechProgressRef.current[lastMsg.id] = nextPos;
     };
 
-    // Iterate over any *completed* lines since the last progress marker.
-    while (scanPos < content.length) {
-      const nextNlIdx = content.indexOf("\n", scanPos);
-      if (nextNlIdx === -1) {
-        // No further newlines - wait for more content or let onFinish handle the rest
-        break;
-      }
-
-      // We have a newline that marks the end of a full chunk.
-      processChunk(nextNlIdx);
-
-      // Skip the newline (and potential carriage-return) characters.
-      scanPos = nextNlIdx + 1;
-      if (content[scanPos] === "\r") scanPos += 1;
-
-      // Record updated progress so subsequent effect runs start after the newline
-      speechProgressRef.current[lastMsg.id] = scanPos;
-    }
+    const completedSegments = collectCompletedLineSegments(content, progress);
+    completedSegments.forEach(({ start, end, nextStart }) => {
+      processChunk(start, end, nextStart);
+    });
   }, [currentSdkMessages, isLoading, speechEnabled, speak, highlightSegment]);
 
   // Clear rate limit error when username is set

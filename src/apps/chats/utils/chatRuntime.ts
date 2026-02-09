@@ -175,3 +175,38 @@ export const mergeMessagesWithTimestamps = (
     } as AIChatMessage;
   });
 };
+
+export type CompletedLineSegment = {
+  start: number;
+  end: number;
+  nextStart: number;
+};
+
+export const collectCompletedLineSegments = (
+  content: string,
+  startPosition: number,
+): CompletedLineSegment[] => {
+  const segments: CompletedLineSegment[] = [];
+  let scanPos = startPosition;
+
+  while (scanPos < content.length) {
+    const nextNlIdx = content.indexOf("\n", scanPos);
+    if (nextNlIdx === -1) {
+      break;
+    }
+
+    let nextStart = nextNlIdx + 1;
+    if (content[nextStart] === "\r") {
+      nextStart += 1;
+    }
+
+    segments.push({
+      start: scanPos,
+      end: nextNlIdx,
+      nextStart,
+    });
+    scanPos = nextStart;
+  }
+
+  return segments;
+};
