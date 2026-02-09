@@ -48,6 +48,7 @@ export function SpotlightSearch() {
   const results = useSpotlightSearch(query);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const proxyInputRef = useRef<HTMLInputElement>(null);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isSystem7 = currentTheme === "system7";
@@ -59,6 +60,11 @@ export function SpotlightSearch() {
   useEffect(() => {
     if (!isOpen) return;
     const focusInput = () => inputRef.current?.focus();
+    // On mobile, the proxy input already has the keyboard open — transfer focus quickly
+    if (isMobile) {
+      requestAnimationFrame(focusInput);
+      return;
+    }
     const delay = isXpTheme ? 150 : 0;
     const id = setTimeout(() => {
       requestAnimationFrame(focusInput);
@@ -71,16 +77,23 @@ export function SpotlightSearch() {
       clearTimeout(id);
       if (reclaimId) clearTimeout(reclaimId);
     };
-  }, [isOpen, isXpTheme]);
+  }, [isOpen, isXpTheme, isMobile]);
 
-  // Listen for toggleSpotlight events
+  // Listen for toggleSpotlight events.
+  // On mobile, pre-focus a proxy input to open the keyboard within the user gesture chain,
+  // then the real input will steal focus once it mounts.
   useEffect(() => {
     const handler = () => {
-      useSpotlightStore.getState().toggle();
+      const state = useSpotlightStore.getState();
+      if (!state.isOpen && isMobile && proxyInputRef.current) {
+        // Focus proxy input immediately in the user-gesture call stack to raise the keyboard
+        proxyInputRef.current.focus();
+      }
+      state.toggle();
     };
     window.addEventListener("toggleSpotlight", handler);
     return () => window.removeEventListener("toggleSpotlight", handler);
-  }, []);
+  }, [isMobile]);
 
   // Close Spotlight when Expose view opens (mutual exclusion)
   useEffect(() => {
@@ -221,7 +234,34 @@ export function SpotlightSearch() {
   const rowPy = isMac ? "3px" : "3px";
   const iconPx = isMac ? 20 : 18; // icon size in px
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    // On mobile, render a hidden proxy input so we can focus it during the user-gesture
+    // call stack (before React re-renders with isOpen=true) to raise the keyboard.
+    if (isMobile) {
+      return createPortal(
+        <input
+          ref={proxyInputRef}
+          aria-hidden="true"
+          tabIndex={-1}
+          style={{
+            position: "fixed",
+            opacity: 0,
+            pointerEvents: "none",
+            top: 0,
+            left: 0,
+            width: 0,
+            height: 0,
+            fontSize: "16px", // prevent iOS Safari zoom
+            border: "none",
+            padding: 0,
+            margin: 0,
+          }}
+        />,
+        document.body
+      );
+    }
+    return null;
+  }
 
   // ── Position ─────────────────────────────────────────────────────
   const needsCenter = isMobile || !isMac;
@@ -240,7 +280,7 @@ export function SpotlightSearch() {
 
   const panelTopStyle: React.CSSProperties = isMobile
     ? {
-        top: isSystem7 ? `calc(${menubarTop} + 8px - 1px)` : `calc(${menubarTop} + 8px)`,
+        top: isSystem7 ? `calc(${menubarTop} + 44px - 1px)` : `calc(${menubarTop} + 44px)`,
         left: "50%",
       }
     : isMac
