@@ -200,8 +200,17 @@ export const persistUpdatedLocalFileContent = async ({
     fileItem.uuid,
   );
 
-  useFilesStore.getState().addItem({
+  const filesStore = useFilesStore.getState();
+  const size = new Blob([content]).size;
+  const existingItem = filesStore.items[fileItem.path];
+
+  if (existingItem) {
+    filesStore.updateItemMetadata(fileItem.path, { size });
+    return;
+  }
+
+  filesStore.addItem({
     ...fileItem,
-    size: new Blob([content]).size,
+    size,
   });
 };

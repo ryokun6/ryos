@@ -77,6 +77,19 @@ const withMockAddItem = async (
   }
 };
 
+const withMockUpdateItemMetadata = async (
+  mockUpdateItemMetadata: ReturnType<typeof useFilesStore.getState>["updateItemMetadata"],
+  run: () => Promise<void>,
+): Promise<void> => {
+  const originalUpdateItemMetadata = useFilesStore.getState().updateItemMetadata;
+  useFilesStore.setState({ updateItemMetadata: mockUpdateItemMetadata });
+  try {
+    await run();
+  } finally {
+    useFilesStore.setState({ updateItemMetadata: originalUpdateItemMetadata });
+  }
+};
+
 export async function runChatLocalFileContentTests(): Promise<{
   passed: number;
   failed: number;
@@ -440,12 +453,13 @@ export async function runChatLocalFileContentTests(): Promise<{
   });
 
   console.log(section("Content persistence"));
-  await runTest("persists updated local file content and refreshes metadata size", async () => {
+  await runTest("persists updated local file content and refreshes existing metadata size", async () => {
     let capturedStore = "";
     let capturedName = "";
     let capturedUuid = "";
     let capturedContent = "";
-    let capturedAddItemSize: number | undefined;
+    let capturedUpdatePath = "";
+    let capturedUpdateSize: number | undefined;
 
     await withMockDbPut(
       async <T>(storeName: string, item: T, key?: IDBValidKey) => {
@@ -455,22 +469,35 @@ export async function runChatLocalFileContentTests(): Promise<{
         capturedContent = (item as { content: string }).content;
       },
       async () => {
-        await withMockAddItem(async (item) => {
-          capturedAddItemSize = item.size;
-        }, async () => {
-          await persistUpdatedLocalFileContent({
-            fileItem: {
+        await withMockFileItems(
+          {
+            "/Documents/test.md": {
               path: "/Documents/test.md",
               name: "test.md",
               isDirectory: false,
               status: "active",
               uuid: "uuid-42",
             },
-            storeName: STORES.DOCUMENTS,
-            content: "updated body",
-            recordName: "test.md",
+          },
+          async () => {
+            await withMockUpdateItemMetadata(async (path, updates) => {
+              capturedUpdatePath = path;
+              capturedUpdateSize = updates.size;
+            }, async () => {
+              await persistUpdatedLocalFileContent({
+                fileItem: {
+                  path: "/Documents/test.md",
+                  name: "test.md",
+                  isDirectory: false,
+                  status: "active",
+                  uuid: "uuid-42",
+                },
+                storeName: STORES.DOCUMENTS,
+                content: "updated body",
+                recordName: "test.md",
+              });
+            });
           });
-        });
       },
     );
 
@@ -478,7 +505,37 @@ export async function runChatLocalFileContentTests(): Promise<{
     assertEq(capturedUuid, "uuid-42");
     assertEq(capturedName, "test.md");
     assertEq(capturedContent, "updated body");
-    assertEq(capturedAddItemSize, new Blob(["updated body"]).size);
+    assertEq(capturedUpdatePath, "/Documents/test.md");
+    assertEq(capturedUpdateSize, new Blob(["updated body"]).size);
+  });
+
+  await runTest("falls back to addItem metadata write when store item is missing", async () => {
+    let capturedAddItemSize: number | undefined;
+    await withMockDbPut(
+      async () => {},
+      async () => {
+        await withMockFileItems({}, async () => {
+          await withMockAddItem(async (item) => {
+            capturedAddItemSize = item.size;
+          }, async () => {
+            await persistUpdatedLocalFileContent({
+              fileItem: {
+                path: "/Documents/missing.md",
+                name: "missing.md",
+                isDirectory: false,
+                status: "active",
+                uuid: "uuid-missing",
+              },
+              storeName: STORES.DOCUMENTS,
+              content: "fallback body",
+              recordName: "missing.md",
+            });
+          });
+        });
+      },
+    );
+
+    assertEq(capturedAddItemSize, new Blob(["fallback body"]).size);
   });
 
   return printSummary();
