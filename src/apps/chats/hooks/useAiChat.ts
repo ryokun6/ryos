@@ -193,6 +193,79 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   const setHighlightSegmentRef = useRef(setHighlightSegment);
   setHighlightSegmentRef.current = setHighlightSegment;
 
+  const handleChatError = useCallback(
+    (err: Error) => {
+      // Workaround for AI SDK v6 bug with stopWhen and tool calls (GitHub issue #10291)
+      // The finish event emits {"type":"finish","finishReason":"tool-calls"} which fails validation
+      // This is a known issue and the error can be safely ignored as the chat still works
+      const errorMessage = err instanceof Error ? err.message : String(err);
+
+      console.error("AI Chat Error:", err);
+
+      const loginToastAction = onPromptSetUsername
+        ? {
+            label: "Login",
+            onClick: onPromptSetUsername,
+          }
+        : undefined;
+
+      // Helper function to handle authentication errors consistently
+      const handleAuthError = (message?: string) => {
+        console.error("Authentication error - clearing invalid token");
+
+        // Clear the invalid auth token
+        const setAuthToken = useChatsStore.getState().setAuthToken;
+        setAuthToken(null);
+
+        // Show user-friendly error message with action button
+        toast.error("Login Required", {
+          description: message || "Please login to continue chatting.",
+          duration: 5000,
+          action: loginToastAction,
+        });
+
+        // Prompt for username
+        setNeedsUsername(true);
+      };
+
+      const classification = classifyChatError(errorMessage);
+      switch (classification.kind) {
+        case "ignore_type_validation":
+          console.warn(
+            "[AI SDK v6 Bug] Type validation error (ignored):",
+            errorMessage.substring(0, 100) + "...",
+          );
+          return;
+        case "rate_limit":
+          setRateLimitError(classification.payload);
+          if (!classification.payload.isAuthenticated) {
+            setNeedsUsername(true);
+          }
+
+          if (!classification.parsed) {
+            toast.error("Rate Limit Exceeded", {
+              description:
+                "You've reached the message limit. Please login to continue.",
+              duration: 5000,
+              action: loginToastAction,
+            });
+          }
+          return;
+        case "auth":
+          handleAuthError(classification.message);
+          return;
+        default:
+          break;
+      }
+
+      // For non-rate-limit errors, show the generic error toast
+      toast.error("AI Error", {
+        description: errorMessage || "Failed to get response.",
+      });
+    },
+    [onPromptSetUsername],
+  );
+
   const {
     messages: currentSdkMessages,
     status,
@@ -1296,75 +1369,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
     },
 
-    onError: (err) => {
-      // Workaround for AI SDK v6 bug with stopWhen and tool calls (GitHub issue #10291)
-      // The finish event emits {"type":"finish","finishReason":"tool-calls"} which fails validation
-      // This is a known issue and the error can be safely ignored as the chat still works
-      const errorMessage = err instanceof Error ? err.message : String(err);
-
-      console.error("AI Chat Error:", err);
-
-      const loginToastAction = onPromptSetUsername
-        ? {
-            label: "Login",
-            onClick: onPromptSetUsername,
-          }
-        : undefined;
-
-      // Helper function to handle authentication errors consistently
-      const handleAuthError = (message?: string) => {
-        console.error("Authentication error - clearing invalid token");
-
-        // Clear the invalid auth token
-        const setAuthToken = useChatsStore.getState().setAuthToken;
-        setAuthToken(null);
-
-        // Show user-friendly error message with action button
-        toast.error("Login Required", {
-          description: message || "Please login to continue chatting.",
-          duration: 5000,
-          action: loginToastAction,
-        });
-
-        // Prompt for username
-        setNeedsUsername(true);
-      };
-
-      const classification = classifyChatError(errorMessage);
-      switch (classification.kind) {
-        case "ignore_type_validation":
-          console.warn(
-            "[AI SDK v6 Bug] Type validation error (ignored):",
-            errorMessage.substring(0, 100) + "...",
-          );
-          return;
-        case "rate_limit":
-          setRateLimitError(classification.payload);
-          if (!classification.payload.isAuthenticated) {
-            setNeedsUsername(true);
-          }
-
-          if (!classification.parsed) {
-            toast.error("Rate Limit Exceeded", {
-              description:
-                "You've reached the message limit. Please login to continue.",
-              duration: 5000,
-              action: loginToastAction,
-            });
-          }
-          return;
-        case "auth":
-          handleAuthError(classification.message);
-          return;
-        default:
-          break;
-      }
-
-      // For non-rate-limit errors, show the generic error toast
-      toast.error("AI Error", {
-        description: errorMessage || "Failed to get response.",
-      });
-    },
+    onError: handleChatError,
   });
 
   // Ensure all messages have metadata with timestamps (runs synchronously during render)
