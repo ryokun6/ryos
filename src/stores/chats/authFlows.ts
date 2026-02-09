@@ -1885,7 +1885,7 @@ export const resolveNextFontSize = (
 };
 
 export const sanitizeMessageRenderLimit = (limit: number): number =>
-  Math.max(20, Math.floor(limit));
+  Math.max(20, Number.isFinite(limit) ? Math.floor(limit) : 20);
 
 export const incrementUnreadCount = (
   unreadCounts: Record<string, number>,
