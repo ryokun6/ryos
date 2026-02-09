@@ -5,7 +5,7 @@ import {
   type RefreshTokenHandler,
   type RefreshTokenResult,
   makeAuthenticatedRequest,
-} from "./authApi";
+} from "./authFlows";
 import {
   readErrorResponseBody,
   withChatRequestDefaults,

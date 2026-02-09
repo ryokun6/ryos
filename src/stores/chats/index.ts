@@ -45,12 +45,11 @@ export {
   trackLogoutAnalytics,
   validateCreateUserInput,
   buildPostLogoutState,
-} from "./authFlows";
-export {
   logoutRequest,
+  makeAuthenticatedRequest,
   refreshAuthTokenRequest,
   registerUserRequest,
-} from "./authApi";
+} from "./authFlows";
 export {
   CHAT_API_UNAVAILABLE_COOLDOWN_MS,
   readErrorResponseBody,
