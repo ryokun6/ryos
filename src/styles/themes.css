@@ -995,13 +995,27 @@
 }
 
 /* ── Spotlight Search panel: prevent macOS theme global font-size overrides ── */
+/* The macOS theme sets font-size !important on div, p, button, input, label.
+   We counter with inherit !important so inline styles on each element win. */
 :root[data-os-theme="macosx"] .spotlight-panel,
 :root[data-os-theme="macosx"] .spotlight-panel div,
 :root[data-os-theme="macosx"] .spotlight-panel p,
 :root[data-os-theme="macosx"] .spotlight-panel span,
 :root[data-os-theme="macosx"] .spotlight-panel button,
-:root[data-os-theme="macosx"] .spotlight-panel input {
-  font-size: unset !important;
+:root[data-os-theme="macosx"] .spotlight-panel label {
+  font-size: inherit !important;
+}
+:root[data-os-theme="macosx"] .spotlight-panel input.spotlight-input {
+  font-size: 13px !important;
+}
+:root[data-os-theme="macosx"] .spotlight-panel .spotlight-section-header {
+  font-size: 11px !important;
+}
+:root[data-os-theme="macosx"] .spotlight-panel .spotlight-row {
+  font-size: 13px !important;
+}
+:root[data-os-theme="macosx"] .spotlight-panel .spotlight-no-results {
+  font-size: 13px !important;
 }
 
 /* Shadow utilities */

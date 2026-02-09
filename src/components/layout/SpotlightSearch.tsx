@@ -11,7 +11,6 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { cn } from "@/lib/utils";
 
 // Section header labels by result type
 const SECTION_TYPE_ORDER: SpotlightResult["type"][] = [
@@ -199,20 +198,15 @@ export function SpotlightSearch() {
     : "LucidaGrande, 'Lucida Grande', ui-sans-serif, system-ui, sans-serif";
 
   // ── Sizing constants ─────────────────────────────────────────────
-  const iconSize = isMac ? "w-4 h-4" : "w-4 h-4";
-  const emojiSize = isMac ? "text-sm w-4 h-4" : "text-sm w-4 h-4";
   const fontSize = isSystem7 ? "11px" : isMac ? "13px" : "11px";
-  const subtitleFontSize = isSystem7 ? "10px" : isMac ? "11px" : "10px";
+  const subtitleColor = "rgba(0,0,0,0.4)";
   const inputFontSize = isSystem7 ? "12px" : isMac ? "13px" : "11px";
   const sectionFontSize = isSystem7 ? "10px" : isMac ? "11px" : "10px";
-  const rowPadding = isMac ? "px-3 py-[5px]" : "px-3 py-[4px]";
-  const inputPadding = isMac ? "px-3 py-[6px]" : "px-2 py-[5px]";
+  const rowPy = isMac ? "4px" : "3px";
 
   if (!isOpen) return null;
 
-  // ── Position: Tiger-style dropdown for Mac, centered for Windows & mobile ──
-  // NOTE: Don't use Tailwind -translate-x-1/2 — framer-motion's animate overrides CSS transform.
-  // Instead, use left + marginLeft or framer-motion x property for centering.
+  // ── Position ─────────────────────────────────────────────────────
   const needsCenter = isMobile || !isMac;
   const panelPositionClass = isMobile
     ? "fixed z-[10004] w-[calc(100vw-32px)] max-w-[360px]"
@@ -255,7 +249,10 @@ export function SpotlightSearch() {
           >
             <div style={{ ...containerStyles, fontFamily }} className="overflow-hidden spotlight-panel">
               {/* Search Input Row */}
-              <div className={cn("flex items-center gap-1.5", inputPadding)}>
+              <div
+                className="flex items-center gap-1.5"
+                style={{ padding: isMac ? "6px 10px" : "5px 8px" }}
+              >
                 <MagnifyingGlass
                   className="flex-shrink-0 w-3.5 h-3.5 opacity-50"
                   weight="bold"
@@ -266,6 +263,7 @@ export function SpotlightSearch() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={t("spotlight.placeholder")}
+                  className="spotlight-input"
                   style={{
                     outline: "none",
                     width: "100%",
@@ -274,6 +272,7 @@ export function SpotlightSearch() {
                     fontFamily,
                     border: "none",
                     padding: 0,
+                    lineHeight: "1.4",
                   }}
                   autoComplete="off"
                   autoCorrect="off"
@@ -310,8 +309,9 @@ export function SpotlightSearch() {
                       {/* Section header */}
                       {group.type !== "ai" && query.trim() && (
                         <div
-                          className="select-none px-3 pt-1.5 pb-0.5"
+                          className="spotlight-section-header select-none"
                           style={{
+                            padding: "4px 10px 2px",
                             fontSize: sectionFontSize,
                             fontWeight: 600,
                             color:
@@ -325,13 +325,14 @@ export function SpotlightSearch() {
                             textTransform: "uppercase",
                             letterSpacing: "0.04em",
                             fontFamily,
+                            lineHeight: "1.3",
                           }}
                         >
                           {t(getSectionKey(group.type))}
                         </div>
                       )}
 
-                      {/* Result items */}
+                      {/* Result items — single line: icon | title — subtitle */}
                       {group.items.map((result) => {
                         const isSelected = result.globalIndex === selectedIndex;
                         return (
@@ -339,11 +340,9 @@ export function SpotlightSearch() {
                             key={result.id}
                             type="button"
                             data-spotlight-index={result.globalIndex}
-                            className={cn(
-                              "w-full flex items-center gap-2 cursor-default",
-                              rowPadding
-                            )}
+                            className="spotlight-row w-full flex items-center gap-2 cursor-default"
                             style={{
+                              padding: `${rowPy} 10px`,
                               background: isSelected
                                 ? getSelectedBg()
                                 : "transparent",
@@ -351,6 +350,8 @@ export function SpotlightSearch() {
                                 ? getSelectedTextColor()
                                 : undefined,
                               fontFamily,
+                              fontSize,
+                              lineHeight: "1.3",
                               borderRadius:
                                 currentTheme === "macosx" ? "4px" : "0px",
                               margin:
@@ -359,7 +360,7 @@ export function SpotlightSearch() {
                                 currentTheme === "macosx"
                                   ? "calc(100% - 6px)"
                                   : "100%",
-                              minHeight: isMobile ? "36px" : undefined,
+                              minHeight: isMobile ? "32px" : undefined,
                             }}
                             onClick={() => {
                               result.action();
@@ -372,10 +373,7 @@ export function SpotlightSearch() {
                             {/* Icon */}
                             {result.isEmoji ? (
                               <span
-                                className={cn(
-                                  "flex-shrink-0 flex items-center justify-center leading-none",
-                                  emojiSize
-                                )}
+                                className="flex-shrink-0 flex items-center justify-center leading-none w-4 h-4 text-sm"
                               >
                                 {result.icon}
                               </span>
@@ -383,36 +381,26 @@ export function SpotlightSearch() {
                               <ThemedIcon
                                 name={result.icon}
                                 alt=""
-                                className={cn(
-                                  "flex-shrink-0 [image-rendering:pixelated]",
-                                  iconSize
-                                )}
+                                className="flex-shrink-0 w-4 h-4 [image-rendering:pixelated]"
                               />
                             )}
 
-                            {/* Title + Subtitle */}
-                            <div className="flex-1 min-w-0 text-left">
-                              <div
-                                className="truncate"
-                                style={{ fontSize, lineHeight: "1.3" }}
-                              >
-                                {result.title}
-                              </div>
+                            {/* Single line: Title — Subtitle */}
+                            <span className="truncate">
+                              {result.title}
                               {result.subtitle && result.type !== "ai" && (
-                                <div
-                                  className="truncate"
+                                <span
                                   style={{
-                                    fontSize: subtitleFontSize,
-                                    lineHeight: "1.2",
                                     color: isSelected
-                                      ? "rgba(255,255,255,0.7)"
-                                      : "rgba(0,0,0,0.4)",
+                                      ? "rgba(255,255,255,0.6)"
+                                      : subtitleColor,
                                   }}
                                 >
+                                  {" — "}
                                   {result.subtitle}
-                                </div>
+                                </span>
                               )}
-                            </div>
+                            </span>
                           </button>
                         );
                       })}
@@ -424,9 +412,10 @@ export function SpotlightSearch() {
               {/* No results */}
               {results.length === 0 && query.trim() && (
                 <div
-                  className="text-center py-4"
+                  className="spotlight-no-results text-center"
                   style={{
-                    fontSize: subtitleFontSize,
+                    padding: "12px 10px",
+                    fontSize,
                     color: "rgba(0,0,0,0.4)",
                     fontFamily,
                   }}
