@@ -61,17 +61,22 @@ export {
   migrateChatsPersistedState,
 } from "./persistLifecycle";
 export {
+  clearUnreadCount,
   capRoomMessages,
   buildPersistedRoomMessages,
   clearRoomMessagesInMap,
+  incrementUnreadCount,
   mergeFetchedBulkMessages,
   mergeFetchedMessagesForRoom,
   mergeIncomingRoomMessageInMap,
   mergeServerMessagesWithOptimistic,
   prepareRoomsForSet,
   removeRoomMessageFromMap,
+  resolveNextFontSize,
+  sanitizeMessageRenderLimit,
   sortAndCapRoomMessages,
   setCurrentRoomMessagesInMap,
+  toggleBoolean,
 } from "./roomState";
 export {
   fetchBulkMessagesPayload,
@@ -79,10 +84,3 @@ export {
   fetchRoomsPayload,
   logIfNetworkResultError,
 } from "./messagePayloads";
-export {
-  clearUnreadCount,
-  incrementUnreadCount,
-  resolveNextFontSize,
-  sanitizeMessageRenderLimit,
-  toggleBoolean,
-} from "./uiState";
