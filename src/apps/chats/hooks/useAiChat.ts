@@ -322,6 +322,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             );
             if (!wasExecuted) {
               console.warn(`[ToolCall] No handler registered for ${toolCall.toolName}`);
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: i18n.t("apps.chats.toolCalls.unknownError"),
+              });
             }
             result = ""; // Handler manages its own result
             break;
@@ -347,7 +353,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           }
           default:
             console.warn("Unhandled tool call:", toolCall.toolName);
-            result = "Tool executed";
+            addToolResult({
+              tool: toolCall.toolName,
+              toolCallId: toolCall.toolCallId,
+              state: "output-error",
+              errorText: i18n.t("apps.chats.toolCalls.unknownError"),
+            });
+            result = "";
             break;
         }
 
