@@ -1328,6 +1328,36 @@ export const sortAndCapRoomMessages = (
 ): ChatMessage[] =>
   capRoomMessages([...messages].sort((a, b) => a.timestamp - b.timestamp));
 
+const getStableMessageClientId = (
+  message: Pick<ChatMessage, "id" | "clientId">
+): string => message.clientId || message.id;
+
+const withClientId = (
+  message: ChatMessage,
+  clientId: string
+): ChatMessage => ({
+  ...message,
+  clientId,
+});
+
+const replaceMessageAtIndex = (
+  messages: ChatMessage[],
+  targetIndex: number,
+  incoming: ChatMessage
+): ChatMessage[] => {
+  const targetMessage = messages[targetIndex];
+  if (!targetMessage) {
+    return sortAndCapRoomMessages(messages);
+  }
+
+  const updated = [...messages];
+  updated[targetIndex] = withClientId(
+    incoming,
+    getStableMessageClientId(targetMessage)
+  );
+  return sortAndCapRoomMessages(updated);
+};
+
 export const mergeServerMessagesWithOptimistic = (
   existingMessages: ChatMessage[],
   fetchedMessages: ChatMessage[]
@@ -1346,7 +1376,7 @@ export const mergeServerMessagesWithOptimistic = (
   for (const message of fetchedMessages) {
     const prev = byId.get(message.id);
     if (prev?.clientId) {
-      byId.set(message.id, { ...message, clientId: prev.clientId });
+      byId.set(message.id, withClientId(message, prev.clientId));
     } else {
       byId.set(message.id, message);
     }
@@ -1355,17 +1385,17 @@ export const mergeServerMessagesWithOptimistic = (
   const usedTempIds = new Set<string>();
 
   for (const temp of tempMessages) {
-    const tempClientId = temp.clientId || temp.id;
+    const tempClientId = getStableMessageClientId(temp);
     let matched = false;
 
     for (const serverMessage of fetchedMessages) {
       if (serverMessage.clientId && serverMessage.clientId === tempClientId) {
         const existingServerMessage = byId.get(serverMessage.id);
         if (existingServerMessage) {
-          byId.set(serverMessage.id, {
-            ...existingServerMessage,
-            clientId: tempClientId,
-          });
+          byId.set(
+            serverMessage.id,
+            withClientId(existingServerMessage, tempClientId)
+          );
         }
         matched = true;
         break;
@@ -1378,10 +1408,10 @@ export const mergeServerMessagesWithOptimistic = (
       ) {
         const existingServerMessage = byId.get(serverMessage.id);
         if (existingServerMessage) {
-          byId.set(serverMessage.id, {
-            ...existingServerMessage,
-            clientId: tempClientId,
-          });
+          byId.set(
+            serverMessage.id,
+            withClientId(existingServerMessage, tempClientId)
+          );
         }
         matched = true;
         break;
@@ -1412,14 +1442,7 @@ const mergeIncomingRoomMessage = (
         message.id === incomingClientId || message.clientId === incomingClientId
     );
     if (indexByClientId !== -1) {
-      const tempMessage = existingMessages[indexByClientId];
-      const replaced = {
-        ...incoming,
-        clientId: tempMessage.clientId || tempMessage.id,
-      } satisfies ChatMessage;
-      const updated = [...existingMessages];
-      updated[indexByClientId] = replaced;
-      return sortAndCapRoomMessages(updated);
+      return replaceMessageAtIndex(existingMessages, indexByClientId, incoming);
     }
   }
 
@@ -1431,14 +1454,7 @@ const mergeIncomingRoomMessage = (
   );
 
   if (tempIndex !== -1) {
-    const tempMessage = existingMessages[tempIndex];
-    const replaced = {
-      ...incoming,
-      clientId: tempMessage.clientId || tempMessage.id,
-    } satisfies ChatMessage;
-    const updated = [...existingMessages];
-    updated[tempIndex] = replaced;
-    return sortAndCapRoomMessages(updated);
+    return replaceMessageAtIndex(existingMessages, tempIndex, incoming);
   }
 
   const incomingTs = Number(incoming.timestamp);
@@ -1465,14 +1481,7 @@ const mergeIncomingRoomMessage = (
         bestDelta = delta;
       }
     }
-    const tempMessage = existingMessages[bestIndex];
-    const replaced = {
-      ...incoming,
-      clientId: tempMessage.clientId || tempMessage.id,
-    } satisfies ChatMessage;
-    const updated = [...existingMessages];
-    updated[bestIndex] = replaced;
-    return sortAndCapRoomMessages(updated);
+    return replaceMessageAtIndex(existingMessages, bestIndex, incoming);
   }
 
   return sortAndCapRoomMessages([...existingMessages, incoming]);
