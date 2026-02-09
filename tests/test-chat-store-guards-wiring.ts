@@ -20,9 +20,7 @@ import {
   assertEq,
 } from "./test-utils";
 
-const readGuardsSource = (): string =>
-  readFileSync(resolve(process.cwd(), "src/stores/chats/authFlows.ts"), "utf-8");
-const readPayloadSource = (): string =>
+const readChatHelpersSource = (): string =>
   readFileSync(resolve(process.cwd(), "src/stores/chats/authFlows.ts"), "utf-8");
 
 const countMatches = (source: string, pattern: RegExp): number =>
@@ -38,7 +36,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
 
   console.log(section("JSON response guard wiring"));
   await runTest("uses readJsonBody for rooms/messages success payloads", async () => {
-    const source = readPayloadSource();
+    const source = readChatHelpersSource();
 
     assert(
       source.includes('"fetchRooms success response"'),
@@ -55,7 +53,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
   });
 
   await runTest("readJsonBody accepts json media type variants", async () => {
-    const source = readGuardsSource();
+    const source = readChatHelpersSource();
     assert(
       /contentType\.includes\("json"\)/.test(source),
       'Expected readJsonBody to gate on contentType.includes("json")'
@@ -63,7 +61,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
   });
 
   await runTest("dedupes guard warnings with endpoint-specific keys", async () => {
-    const source = readPayloadSource();
+    const source = readChatHelpersSource();
 
     assert(
       /successWarningKey:\s*"fetchRooms-success-response"/.test(source),
@@ -85,7 +83,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
 
   console.log(section("Cooldown availability checks"));
   await runTest("checks cooldown gate for each chat fetch endpoint", async () => {
-    const source = readPayloadSource();
+    const source = readChatHelpersSource();
 
     assert(
       /ROOMS:\s*"rooms"/.test(source),
@@ -118,7 +116,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
   });
 
   await runTest("uses a positive cooldown duration constant", async () => {
-    const source = readGuardsSource();
+    const source = readChatHelpersSource();
     const match = source.match(
       /CHAT_API_UNAVAILABLE_COOLDOWN_MS\s*=\s*([0-9_]+)/
     );
@@ -128,7 +126,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
   });
 
   await runTest("marks cooldown from parse guard and network failures", async () => {
-    const source = readPayloadSource();
+    const source = readChatHelpersSource();
 
     assertEq(
       countMatches(source, /markApiTemporarilyUnavailable\(endpointKey\)/),
@@ -138,7 +136,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
   });
 
   await runTest("clears cooldown after successful payload parse", async () => {
-    const source = readPayloadSource();
+    const source = readChatHelpersSource();
 
     assertEq(
       countMatches(source, /clearApiUnavailable\(endpointKey\)/),
