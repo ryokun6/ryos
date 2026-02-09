@@ -47,11 +47,15 @@ import { getSystemState } from "../utils/systemState";
 import {
   readLocalFileTextOrThrow,
 } from "../utils/localFileContent";
+import {
+  resolveToolErrorText,
+} from "../utils/chatFileToolValidation";
 import { syncTextEditDocumentForPath } from "../utils/textEditDocumentSync";
 import {
   handleChatEditToolCall,
   handleChatWriteToolCall,
 } from "../utils/chatFileToolHandlers";
+import { executeChatFileReadOperation } from "../utils/chatFileReadOperation";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -785,24 +789,31 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 });
                 result = "";
               } else if (path.startsWith("/Applets/") || path.startsWith("/Documents/")) {
-                // Read local file content
-                const isApplet = path.startsWith("/Applets/");
-                const storeName = isApplet ? STORES.APPLETS : STORES.DOCUMENTS;
-                const { fileItem, content } = await readLocalFileTextOrThrow(
-                  path,
-                  storeName,
-                  {
-                    notFound: `File not found: ${path}`,
-                    missingContent: `File missing content: ${path}`,
-                    readFailed: `Failed to read file content: ${path}`,
-                  },
-                );
+                const readResult = await executeChatFileReadOperation({ path });
+                if (!readResult.ok) {
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    state: "output-error",
+                    errorText: resolveToolErrorText(i18n.t, readResult.error),
+                  });
+                  result = "";
+                  break;
+                }
 
-                const fileLabel = isApplet ? i18n.t("apps.chats.toolCalls.applet") : i18n.t("apps.chats.toolCalls.document");
+                const fileLabel =
+                  readResult.target === "applet"
+                    ? i18n.t("apps.chats.toolCalls.applet")
+                    : i18n.t("apps.chats.toolCalls.document");
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: i18n.t("apps.chats.toolCalls.fileContent", { fileLabel, fileName: fileItem.name, charCount: content.length }) + `\n\n${content}`,
+                  output:
+                    i18n.t("apps.chats.toolCalls.fileContent", {
+                      fileLabel,
+                      fileName: readResult.fileName,
+                      charCount: readResult.content.length,
+                    }) + `\n\n${readResult.content}`,
                 });
                 result = "";
               } else {

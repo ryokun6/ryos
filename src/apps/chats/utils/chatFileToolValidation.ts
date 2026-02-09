@@ -79,6 +79,18 @@ export type EditReplacementFailure = {
   occurrences: number;
 };
 
+export type LocalFileReadTarget = "applet" | "document";
+
+export type LocalFileReadValidationResult =
+  | { ok: true; target: LocalFileReadTarget }
+  | {
+      ok: false;
+      errorKey:
+        | "apps.chats.toolCalls.noPathProvided"
+        | "apps.chats.toolCalls.invalidPathForRead";
+      errorParams?: { path: string };
+    };
+
 export const getEditReplacementFailureMessage = (
   failure: EditReplacementFailure,
 ):
@@ -94,6 +106,31 @@ export const getEditReplacementFailureMessage = (
   return {
     errorKey: "apps.chats.toolCalls.oldStringMultipleMatches",
     errorParams: { count: failure.occurrences },
+  };
+};
+
+export const resolveLocalFileReadTarget = (
+  path: string,
+): LocalFileReadValidationResult => {
+  if (!path) {
+    return {
+      ok: false,
+      errorKey: "apps.chats.toolCalls.noPathProvided",
+    };
+  }
+
+  if (path.startsWith("/Applets/")) {
+    return { ok: true, target: "applet" };
+  }
+
+  if (path.startsWith("/Documents/")) {
+    return { ok: true, target: "document" };
+  }
+
+  return {
+    ok: false,
+    errorKey: "apps.chats.toolCalls.invalidPathForRead",
+    errorParams: { path },
   };
 };
 
