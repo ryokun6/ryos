@@ -7,6 +7,11 @@ import { getApiUrl } from "@/utils/platform";
 
 const PASSWORD_CHECK_DELAY_MS = 100;
 const AUTHENTICATION_REQUIRED_ERROR = "Authentication required";
+const INVALID_RESPONSE_FORMAT_ERROR = "Invalid response format";
+const USERNAME_REQUIRED_ERROR = "Username required";
+const USERNAME_AND_CONTENT_REQUIRED_ERROR = "Username and content required";
+const NETWORK_ERROR_MESSAGE = "Network error. Please try again.";
+const PASSWORD_STATUS_CHECK_FAILED_ERROR = "Failed to check password status";
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
 const AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
 export const TOKEN_REFRESH_THRESHOLD = 83 * 24 * 60 * 60 * 1000;
@@ -432,7 +437,7 @@ const parseRegisterUserResponse = (
   | { ok: true; username: string; token?: string }
   | { ok: false; error: string } => {
   if (!data.user?.username) {
-    return { ok: false, error: "Invalid response format" };
+    return { ok: false, error: INVALID_RESPONSE_FORMAT_ERROR };
   }
 
   return {
@@ -553,7 +558,7 @@ export const runCreateUserFlow = async ({
     return { ok: true };
   } catch (error) {
     console.error("[ChatsStore] Error creating user:", error);
-    return { ok: false, error: "Network error. Please try again." };
+    return { ok: false, error: NETWORK_ERROR_MESSAGE };
   }
 };
 
@@ -733,7 +738,7 @@ const fetchPasswordStatus = async ({
   });
 
   if (!response.ok) {
-    return { ok: false, error: "Failed to check password status" };
+    return { ok: false, error: PASSWORD_STATUS_CHECK_FAILED_ERROR };
   }
 
   const data = (await response.json()) as { hasPassword?: unknown };
@@ -1169,7 +1174,6 @@ export const createChatsOnRehydrateStorage = <
 const MESSAGE_HISTORY_CAP = 500;
 const MATCH_WINDOW_MS = 10_000;
 const INCOMING_TEMP_MATCH_WINDOW_MS = 5_000;
-const NETWORK_ERROR_MESSAGE = "Network error. Please try again.";
 const CHAT_ENDPOINT_KEYS = {
   ROOMS: "rooms",
   ROOM_MESSAGES: "room-messages",
@@ -1764,7 +1768,7 @@ export const runCreateRoomFlow = async ({
   refreshAuthToken,
 }: CreateRoomFlowParams): Promise<{ ok: boolean; error?: string; roomId?: string }> => {
   if (!username) {
-    return { ok: false, error: "Username required" };
+    return { ok: false, error: USERNAME_REQUIRED_ERROR };
   }
 
   let effectiveAuthToken = authToken;
@@ -1802,7 +1806,7 @@ export const runCreateRoomFlow = async ({
       return { ok: true, roomId: data.room.id };
     }
 
-    return { ok: false, error: "Invalid response format" };
+    return { ok: false, error: INVALID_RESPONSE_FORMAT_ERROR };
   } catch (error) {
     console.error("[ChatsStore] Error creating room:", error);
     return { ok: false, error: NETWORK_ERROR_MESSAGE };
@@ -1873,7 +1877,7 @@ export const runSendMessageFlow = async ({
 }: SendMessageFlowParams): Promise<{ ok: boolean; error?: string }> => {
   const trimmedContent = content.trim();
   if (!username || !trimmedContent) {
-    return { ok: false, error: "Username and content required" };
+    return { ok: false, error: USERNAME_AND_CONTENT_REQUIRED_ERROR };
   }
 
   const optimisticMessage = createOptimisticChatMessage(
@@ -2008,7 +2012,7 @@ const runGuardedPayloadFlow = async <TSuccessBody, TValue>({
       return { ok: true, value };
     }
 
-    return { ok: false, error: "Invalid response format" };
+    return { ok: false, error: INVALID_RESPONSE_FORMAT_ERROR };
   } catch {
     markApiTemporarilyUnavailable(endpointKey);
     return { ok: false, error: NETWORK_ERROR_MESSAGE };
