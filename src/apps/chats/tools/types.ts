@@ -23,6 +23,21 @@ export interface ToolContext {
   translate?: (key: string, params?: Record<string, unknown>) => string;
   /** Optional dependencies used by app launch/close handlers */
   appHandlers?: AppHandlerDependencies;
+  /** Optional dependencies used by VFS (list/open/read/write/edit) handlers */
+  vfs?: {
+    listDependencies: unknown;
+    openDependencies: unknown;
+    syncTextEdit: (
+      options: {
+        path: string;
+        content: string;
+        fileName?: string;
+        launchIfMissing: boolean;
+        bringToForeground: boolean;
+        includeFilePathOnUpdate: boolean;
+      },
+    ) => void;
+  };
 }
 
 export interface AppHandlerDependencies {

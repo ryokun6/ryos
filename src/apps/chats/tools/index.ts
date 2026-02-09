@@ -141,6 +141,38 @@ import { handleInfiniteMacControl } from "./infiniteMacHandler";
 import { handleLaunchApp, handleCloseApp } from "./appHandlers";
 import { handleAquarium } from "./aquariumHandler";
 import { handleGenerateHtml } from "./generateHtmlHandler";
+import { handleChatVfsToolCall } from "../utils/chatFileToolHandlers";
+
+const resolveUnknownToolError = (context: ToolContext): string =>
+  context.translate?.("apps.chats.toolCalls.unknownError") ?? "Unknown error";
+
+const executeVfsToolFromContext = async (
+  toolName: "list" | "open" | "read" | "write" | "edit",
+  input: unknown,
+  toolCallId: string,
+  context: ToolContext,
+): Promise<void> => {
+  if (!context.vfs) {
+    context.addToolResult({
+      tool: toolName,
+      toolCallId,
+      state: "output-error",
+      errorText: resolveUnknownToolError(context),
+    });
+    return;
+  }
+
+  await handleChatVfsToolCall({
+    toolName,
+    input: (input ?? {}) as Record<string, unknown>,
+    toolCallId,
+    addToolResult: context.addToolResult,
+    t: context.translate ?? ((key) => key),
+    listDependencies: context.vfs.listDependencies as never,
+    openDependencies: context.vfs.openDependencies as never,
+    syncTextEdit: context.vfs.syncTextEdit,
+  });
+};
 
 registerToolHandler("aquarium", handleAquarium);
 registerToolHandler("generateHtml", handleGenerateHtml);
@@ -150,6 +182,21 @@ registerToolHandler("launchApp", (input, toolCallId, context) => {
 registerToolHandler("closeApp", (input, toolCallId, context) => {
   handleCloseApp(input as { id: string }, toolCallId, context);
 });
+registerToolHandler("list", (input, toolCallId, context) =>
+  executeVfsToolFromContext("list", input, toolCallId, context),
+);
+registerToolHandler("open", (input, toolCallId, context) =>
+  executeVfsToolFromContext("open", input, toolCallId, context),
+);
+registerToolHandler("read", (input, toolCallId, context) =>
+  executeVfsToolFromContext("read", input, toolCallId, context),
+);
+registerToolHandler("write", (input, toolCallId, context) =>
+  executeVfsToolFromContext("write", input, toolCallId, context),
+);
+registerToolHandler("edit", (input, toolCallId, context) =>
+  executeVfsToolFromContext("edit", input, toolCallId, context),
+);
 registerToolHandler("settings", handleSettings);
 registerToolHandler("ipodControl", handleIpodControl);
 registerToolHandler("karaokeControl", handleKaraokeControl);

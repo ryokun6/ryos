@@ -41,9 +41,6 @@ import {
   createChatOpenToolDependencies,
 } from "../utils/chatToolDependencyResolvers";
 import {
-  handleChatVfsToolCall,
-} from "../utils/chatFileToolHandlers";
-import {
   executeToolHandler,
   type ToolContext,
 } from "../tools";
@@ -298,6 +295,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             useAppStore.getState().getInstancesByAppId(appId),
           closeWindowByInstanceId: requestCloseWindow,
         },
+        vfs: {
+          listDependencies: listToolDependencies,
+          openDependencies: openToolDependencies,
+          syncTextEdit: syncTextEditDocumentForPath,
+        },
       };
 
       try {
@@ -313,7 +315,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           case "karaokeControl":
           case "settings":
           case "stickiesControl":
-          case "infiniteMacControl": {
+          case "infiniteMacControl":
+          case "list":
+          case "open":
+          case "read":
+          case "write":
+          case "edit": {
             const wasExecuted = await executeToolHandler(
               toolCall.toolName,
               toolCall.input,
@@ -330,25 +337,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               });
             }
             result = ""; // Handler manages its own result
-            break;
-          }
-          // === Unified VFS Tools ===
-          case "list":
-          case "open":
-          case "read":
-          case "write":
-          case "edit": {
-            await handleChatVfsToolCall({
-              toolName: toolCall.toolName,
-              input: toolCall.input as Record<string, unknown>,
-              toolCallId: toolCall.toolCallId,
-              addToolResult,
-              t: i18n.t,
-              listDependencies: listToolDependencies,
-              openDependencies: openToolDependencies,
-              syncTextEdit: syncTextEditDocumentForPath,
-            });
-            result = "";
             break;
           }
           default:
