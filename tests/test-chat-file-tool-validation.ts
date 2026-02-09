@@ -111,6 +111,18 @@ export async function runChatFileToolValidationTests(): Promise<{
     }
   });
 
+  await runTest("accepts uppercase markdown extension in filename", async () => {
+    const result = validateDocumentWriteInput({
+      path: "/Documents/NOTES.MD",
+      content: "hello",
+      mode: "overwrite",
+    });
+    assertEq(result.ok, true);
+    if (result.ok) {
+      assertEq(result.fileName, "NOTES.MD");
+    }
+  });
+
   await runTest("trims path whitespace before write validation", async () => {
     const result = validateDocumentWriteInput({
       path: "   /Documents/trimmed.md  ",

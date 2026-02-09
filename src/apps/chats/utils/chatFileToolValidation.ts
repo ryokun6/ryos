@@ -31,6 +31,9 @@ const isWriteMode = (value: unknown): value is WriteMode =>
 export const sanitizeWriteMode = (mode: unknown): WriteMode =>
   isWriteMode(mode) ? mode : "overwrite";
 
+const isMarkdownFileName = (fileName: string): boolean =>
+  fileName.toLowerCase().endsWith(".md");
+
 export type EditValidationFailure = {
   ok: false;
   errorKey: "apps.chats.toolCalls.missingEditParameters";
@@ -154,7 +157,7 @@ export const validateDocumentWriteInput = ({
   }
 
   const fileName = normalizedPath.split("/").pop() || "";
-  if (!fileName.endsWith(".md")) {
+  if (!isMarkdownFileName(fileName)) {
     return {
       ok: false,
       errorKey: "apps.chats.toolCalls.invalidFilename",
