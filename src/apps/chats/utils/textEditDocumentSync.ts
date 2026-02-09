@@ -52,6 +52,7 @@ export const syncTextEditDocumentForPath = ({
     },
     {
       appInstances: appStore.instances,
+      foregroundInstanceId: appStore.foregroundInstanceId,
       textEditInstances: textEditStore.instances,
       removeTextEditInstance: textEditStore.removeInstance,
       updateTextEditInstance: textEditStore.updateInstance,

@@ -149,6 +149,36 @@ export async function runChatTextEditDocumentSyncCoreTests(): Promise<{
     assertEq(calls.launched.length, 1);
   });
 
+  await runTest("prefers foreground live instance when multiple match same path", async () => {
+    const { dependencies } = createDependencies({
+      appInstances: { "inst-a": {}, "inst-b": {} },
+      foregroundInstanceId: "inst-b",
+      textEditInstances: {
+        "inst-a": { filePath: "/Documents/test.md" },
+        "inst-b": { filePath: "/Documents/test.md" },
+      },
+    });
+
+    const result = syncTextEditDocumentForPathCore(createOptions(), dependencies);
+    assertEq(result.instanceId, "inst-b");
+    assertEq(result.updated, true);
+  });
+
+  await runTest("falls back to most recently iterated live instance without foreground match", async () => {
+    const { dependencies } = createDependencies({
+      appInstances: { "inst-a": {}, "inst-b": {} },
+      foregroundInstanceId: "other-inst",
+      textEditInstances: {
+        "inst-a": { filePath: "/Documents/test.md" },
+        "inst-b": { filePath: "/Documents/test.md" },
+      },
+    });
+
+    const result = syncTextEditDocumentForPathCore(createOptions(), dependencies);
+    assertEq(result.instanceId, "inst-b");
+    assertEq(result.updated, true);
+  });
+
   await runTest("returns no-op result when missing and launch is disabled", async () => {
     const { dependencies, calls } = createDependencies({
       appInstances: {},

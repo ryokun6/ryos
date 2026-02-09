@@ -19,6 +19,7 @@ export type TextEditInstanceLike = {
 
 export type TextEditDocumentSyncDependencies<TContentJson> = {
   appInstances: Record<string, unknown>;
+  foregroundInstanceId?: string | null;
   textEditInstances: Record<string, TextEditInstanceLike>;
   removeTextEditInstance: (instanceId: string) => void;
   updateTextEditInstance: (
@@ -45,6 +46,8 @@ export const findLiveTextEditInstanceIdByPath = <TContentJson>(
   path: string,
   dependencies: TextEditDocumentSyncDependencies<TContentJson>,
 ): string | null => {
+  const liveMatches: string[] = [];
+
   for (const [instanceId, instance] of Object.entries(
     dependencies.textEditInstances,
   )) {
@@ -53,13 +56,23 @@ export const findLiveTextEditInstanceIdByPath = <TContentJson>(
     }
 
     if (dependencies.appInstances[instanceId]) {
-      return instanceId;
+      liveMatches.push(instanceId);
+      continue;
     }
 
     dependencies.removeTextEditInstance(instanceId);
   }
 
-  return null;
+  if (liveMatches.length === 0) {
+    return null;
+  }
+
+  const foregroundId = dependencies.foregroundInstanceId;
+  if (foregroundId && liveMatches.includes(foregroundId)) {
+    return foregroundId;
+  }
+
+  return liveMatches[liveMatches.length - 1] || null;
 };
 
 export const syncTextEditDocumentForPathCore = <TContentJson>(
