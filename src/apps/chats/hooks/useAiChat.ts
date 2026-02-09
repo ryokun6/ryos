@@ -61,6 +61,74 @@ import {
   type InfiniteMacControlInput,
 } from "../tools";
 
+const CODE_BLOCK_PATTERN = /```[\s\S]*?```/g;
+const HTML_TAG_PATTERN = /<[^>]*>/g;
+const URGENT_PREFIX_PATTERN = /^!+\s*/;
+const LEADING_SPEECH_PUNCTUATION_PATTERN = /^[\s.!?。，！？；：]+/;
+
+const RATE_LIMIT_ERROR_CODE = "rate_limit_exceeded";
+const AUTH_ERROR_CODES = [
+  "authentication_failed",
+  "unauthorized",
+  "username mismatch",
+] as const;
+const AUTH_ERROR_MESSAGE_TOKENS = [
+  "401",
+  "unauthorized",
+  "authentication_failed",
+  "authentication failed",
+  "username mismatch",
+] as const;
+
+const isKnownAiSdkTypeValidationError = (message: string): boolean =>
+  message.includes("AI_TypeValidationError") ||
+  message.includes("Type validation failed");
+
+const cleanTextForSpeech = (text: string): string =>
+  text
+    .replace(CODE_BLOCK_PATTERN, "")
+    .replace(HTML_TAG_PATTERN, "")
+    .replace(URGENT_PREFIX_PATTERN, "")
+    .replace(LEADING_SPEECH_PUNCTUATION_PATTERN, "")
+    .trim();
+
+const tryParseJsonFromErrorMessage = (
+  message: string,
+): Record<string, unknown> | null => {
+  const jsonMatch = message.match(/\{.*\}/);
+  if (!jsonMatch) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(jsonMatch[0]) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+};
+
+const isRateLimitErrorCode = (errorCode: unknown): boolean =>
+  errorCode === RATE_LIMIT_ERROR_CODE;
+
+const isAuthenticationErrorCode = (errorCode: unknown): boolean =>
+  typeof errorCode === "string" &&
+  AUTH_ERROR_CODES.some((value) => value === errorCode.toLowerCase());
+
+const isRateLimitErrorMessage = (message: string): boolean =>
+  message.includes("429") || message.includes(RATE_LIMIT_ERROR_CODE);
+
+const isAuthenticationErrorMessage = (message: string): boolean => {
+  const normalized = message.toLowerCase();
+  return AUTH_ERROR_MESSAGE_TOKENS.some((token) => normalized.includes(token));
+};
+
+type RateLimitErrorState = {
+  isAuthenticated: boolean;
+  count: number;
+  limit: number;
+  message: string;
+};
+
 /**
  * NOTE: Future refactoring opportunity (tracked in codebase analysis)
  * 
@@ -146,27 +214,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   // Queue-based TTS – speaks chunks as they arrive
   const { speak, stop: stopTts, isSpeaking } = useTtsQueue();
 
-  // Strip any number of leading exclamation marks (urgent markers) plus following spaces,
-  // then remove any leading standalone punctuation that may remain.
-  const cleanTextForSpeech = (text: string) => {
-    // First, remove HTML code blocks (```html...``` or similar)
-    const withoutCodeBlocks = text
-      .replace(/```[\s\S]*?```/g, "") // Remove all code blocks
-      .replace(/<[^>]*>/g, "") // Remove any HTML tags
-      .replace(/^!+\s*/, "") // remove !!!!!! prefix
-      .replace(/^[\s.!?。，！？；：]+/, "") // remove leftover punctuation/space at start
-      .trim();
-
-    return withoutCodeBlocks;
-  };
-
   // Rate limit state
-  const [rateLimitError, setRateLimitError] = useState<{
-    isAuthenticated: boolean;
-    count: number;
-    limit: number;
-    message: string;
-  } | null>(null);
+  const [rateLimitError, setRateLimitError] = useState<RateLimitErrorState | null>(
+    null,
+  );
   const [needsUsername, setNeedsUsername] = useState(false);
 
   const chatTransport = useMemo(() => {
@@ -1310,10 +1361,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // The finish event emits {"type":"finish","finishReason":"tool-calls"} which fails validation
       // This is a known issue and the error can be safely ignored as the chat still works
       const errorMessage = err instanceof Error ? err.message : String(err);
-      if (
-        errorMessage.includes("AI_TypeValidationError") ||
-        errorMessage.includes("Type validation failed")
-      ) {
+      if (isKnownAiSdkTypeValidationError(errorMessage)) {
         console.warn("[AI SDK v6 Bug] Type validation error (ignored):", errorMessage.substring(0, 100) + "...");
         return; // Ignore this error - it's a known SDK issue
       }
@@ -1344,84 +1392,55 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         setNeedsUsername(true);
       };
 
-      // Check if this is a rate limit error (status 429)
-      // The AI SDK wraps errors in a specific format
-      if (err.message) {
-        // Try to extract the JSON error body from the error message
-        // The AI SDK typically includes the response body in the error message
-        const jsonMatch = err.message.match(/\{.*\}/);
+      const parsedErrorData = tryParseJsonFromErrorMessage(errorMessage);
+      if (parsedErrorData) {
+        if (isRateLimitErrorCode(parsedErrorData.error)) {
+          setRateLimitError(parsedErrorData as RateLimitErrorState);
 
-        if (jsonMatch) {
-          try {
-            const errorData = JSON.parse(jsonMatch[0]);
-
-            if (errorData.error === "rate_limit_exceeded") {
-              setRateLimitError(errorData);
-
-              // If anonymous user hit limit, set flag to require username
-              if (!errorData.isAuthenticated) {
-                setNeedsUsername(true);
-              }
-
-              // Don't show the raw error, just indicate that rate limit was hit
-              // The UI will handle showing the proper message
-              return; // Exit early to prevent showing generic error toast
-            }
-
-            // Handle authentication failed error
-            if (
-              errorData.error === "authentication_failed" ||
-              errorData.error === "unauthorized" ||
-              errorData.error === "username mismatch"
-            ) {
-              handleAuthError("Your session has expired. Please login again.");
-              return; // Exit early to prevent showing generic error toast
-            }
-          } catch (parseError) {
-            console.error("Failed to parse error response:", parseError);
+          // If anonymous user hit limit, set flag to require username
+          if (!(parsedErrorData.isAuthenticated as boolean | undefined)) {
+            setNeedsUsername(true);
           }
+
+          // Don't show the raw error, just indicate that rate limit was hit
+          // The UI will handle showing the proper message
+          return; // Exit early to prevent showing generic error toast
         }
 
-        // Check if error message contains 429 status
-        if (
-          err.message.includes("429") ||
-          err.message.includes("rate_limit_exceeded")
-        ) {
-          // Generic rate limit message if we couldn't parse the details
-          setNeedsUsername(true);
-          toast.error("Rate Limit Exceeded", {
-            description:
-              "You've reached the message limit. Please login to continue.",
-            duration: 5000,
-            action: onPromptSetUsername
-              ? {
-                  label: "Login",
-                  onClick: onPromptSetUsername,
-                }
-              : undefined,
-          });
-          return;
+        if (isAuthenticationErrorCode(parsedErrorData.error)) {
+          handleAuthError("Your session has expired. Please login again.");
+          return; // Exit early to prevent showing generic error toast
         }
+      }
 
-        // Check if error message contains 401 status (authentication error)
-        // This catches various 401 error formats
-        if (
-          err.message.includes("401") ||
-          err.message.includes("Unauthorized") ||
-          err.message.includes("unauthorized") ||
-          err.message.includes("authentication_failed") ||
-          err.message.includes("Authentication failed") ||
-          err.message.includes("username mismatch") ||
-          err.message.includes("Username mismatch")
-        ) {
-          handleAuthError();
-          return;
-        }
+      // Check if error message contains 429 status
+      if (isRateLimitErrorMessage(errorMessage)) {
+        // Generic rate limit message if we couldn't parse the details
+        setNeedsUsername(true);
+        toast.error("Rate Limit Exceeded", {
+          description:
+            "You've reached the message limit. Please login to continue.",
+          duration: 5000,
+          action: onPromptSetUsername
+            ? {
+                label: "Login",
+                onClick: onPromptSetUsername,
+              }
+            : undefined,
+        });
+        return;
+      }
+
+      // Check if error message contains 401 status (authentication error)
+      // This catches various 401 error formats
+      if (isAuthenticationErrorMessage(errorMessage)) {
+        handleAuthError();
+        return;
       }
 
       // For non-rate-limit errors, show the generic error toast
       toast.error("AI Error", {
-        description: err.message || "Failed to get response.",
+        description: errorMessage || "Failed to get response.",
       });
     },
   });
