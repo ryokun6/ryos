@@ -7,7 +7,6 @@ import {
 } from "@/types/chat";
 import i18n from "@/lib/i18n";
 import {
-  applySuccessfulRegistration,
   buildPostLogoutState,
   buildPersistedRoomMessages,
   checkAndRefreshTokenFlow,
@@ -30,13 +29,11 @@ import {
   mergeIncomingRoomMessageInMap,
   migrateChatsPersistedState,
   notifyServerOnLogout,
-  parseRegisterUserResponse,
   prepareRoomsForSet,
-  readErrorResponseBody,
   refreshAuthTokenForUser,
-  registerUserRequest,
   removeRoomMessageFromMap,
   resolveNextFontSize,
+  runCreateUserFlow,
   sanitizeMessageRenderLimit,
   saveAuthTokenToRecovery,
   saveTokenRefreshTime,
@@ -52,7 +49,6 @@ import {
   TOKEN_REFRESH_THRESHOLD,
   trackLogoutAnalytics,
   toggleBoolean,
-  validateCreateUserInput,
 } from "./chats";
 
 // Define the state structure
@@ -694,57 +690,18 @@ export const useChatsStore = create<ChatsStoreState>()(
             addMessageToRoom: get().addMessageToRoom,
             removeMessageFromRoom: get().removeMessageFromRoom,
           }),
-        createUser: async (username: string, password: string) => {
-          const trimmedUsername = username.trim();
-          const validationError = validateCreateUserInput({
-            username: trimmedUsername,
+        createUser: async (username: string, password: string) =>
+          runCreateUserFlow({
+            username,
             password,
-          });
-          if (validationError) {
-            return {
-              ok: false,
-              error: validationError,
-            };
-          }
-
-          try {
-            const response = await registerUserRequest({
-              username: trimmedUsername,
-              password,
-            });
-
-            if (!response.ok) {
-              const errorData = await readErrorResponseBody(response);
-              return {
-                ok: false,
-                error: errorData.error || "Failed to create user",
-              };
-            }
-
-            const data = await response.json();
-            const parsedRegister = parseRegisterUserResponse(data);
-            if (parsedRegister.ok) {
-              applySuccessfulRegistration({
-                username: parsedRegister.username,
-                token: parsedRegister.token,
-                setUsername: (username) => set({ username }),
-                setAuthToken: (token) => set({ authToken: token }),
-                saveAuthTokenToRecovery,
-                saveTokenRefreshTime,
-                onCheckHasPassword: () => {
-                  get().checkHasPassword();
-                },
-              });
-
-              return { ok: true };
-            }
-
-            return { ok: false, error: parsedRegister.error };
-          } catch (error) {
-            console.error("[ChatsStore] Error creating user:", error);
-            return { ok: false, error: "Network error. Please try again." };
-          }
-        },
+            setUsername: (nextUsername) => set({ username: nextUsername }),
+            setAuthToken: (nextToken) => set({ authToken: nextToken }),
+            saveAuthTokenToRecovery,
+            saveTokenRefreshTime,
+            onCheckHasPassword: () => {
+              get().checkHasPassword();
+            },
+          }),
         incrementUnread: (roomId) => {
           set((state) => ({
             unreadCounts: incrementUnreadCount(state.unreadCounts, roomId),

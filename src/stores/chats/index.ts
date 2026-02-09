@@ -75,3 +75,4 @@ export {
 export { parseRegisterUserResponse } from "./registrationResponse";
 export { fetchPasswordStatus, submitPassword } from "./passwordFlow";
 export { logIfNetworkResultError } from "./errorLogging";
+export { runCreateUserFlow } from "./createUserFlow";
