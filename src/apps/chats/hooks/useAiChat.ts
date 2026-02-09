@@ -41,11 +41,7 @@ import {
   createChatOpenToolDependencies,
 } from "../utils/chatToolDependencyResolvers";
 import {
-  handleChatEditToolCall,
-  handleChatListToolCall,
-  handleChatOpenToolCall,
-  handleChatReadToolCall,
-  handleChatWriteToolCall,
+  handleChatVfsToolCall,
 } from "../utils/chatFileToolHandlers";
 import {
   executeToolHandler,
@@ -332,87 +328,70 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           }
           // === Unified VFS Tools ===
           case "list": {
-            const { path, query, limit } = toolCall.input as {
-              path: string;
-              query?: string;
-              limit?: number;
-            };
-
-            await handleChatListToolCall({
-              path,
-              query,
-              limit,
+            await handleChatVfsToolCall({
               toolName: toolCall.toolName,
+              input: toolCall.input as Record<string, unknown>,
               toolCallId: toolCall.toolCallId,
               addToolResult,
               t: i18n.t,
               listDependencies: listToolDependencies,
+              openDependencies: openToolDependencies,
+              syncTextEdit: syncTextEditDocumentForPath,
             });
             result = "";
             break;
           }
           case "open": {
-            const { path } = toolCall.input as { path: string };
-
-            await handleChatOpenToolCall({
-              path,
+            await handleChatVfsToolCall({
               toolName: toolCall.toolName,
+              input: toolCall.input as Record<string, unknown>,
               toolCallId: toolCall.toolCallId,
               addToolResult,
               t: i18n.t,
-              ...openToolDependencies,
+              listDependencies: listToolDependencies,
+              openDependencies: openToolDependencies,
+              syncTextEdit: syncTextEditDocumentForPath,
             });
             result = "";
             break;
           }
           case "read": {
-            const { path } = toolCall.input as { path: string };
-
-            await handleChatReadToolCall({
-              path,
+            await handleChatVfsToolCall({
               toolName: toolCall.toolName,
+              input: toolCall.input as Record<string, unknown>,
               toolCallId: toolCall.toolCallId,
               addToolResult,
               t: i18n.t,
+              listDependencies: listToolDependencies,
+              openDependencies: openToolDependencies,
+              syncTextEdit: syncTextEditDocumentForPath,
             });
             result = "";
             break;
           }
           case "write": {
-            const { path, content, mode = "overwrite" } = toolCall.input as {
-              path: string;
-              content: string;
-              mode?: "overwrite" | "append" | "prepend";
-            };
-
-            await handleChatWriteToolCall({
-              path,
-              content,
-              mode,
+            await handleChatVfsToolCall({
               toolName: toolCall.toolName,
+              input: toolCall.input as Record<string, unknown>,
               toolCallId: toolCall.toolCallId,
               addToolResult,
               t: i18n.t,
+              listDependencies: listToolDependencies,
+              openDependencies: openToolDependencies,
               syncTextEdit: syncTextEditDocumentForPath,
             });
             result = "";
             break;
           }
           case "edit": {
-            const { path, old_string, new_string } = toolCall.input as {
-              path: string;
-              old_string: string;
-              new_string: string;
-            };
-
-            await handleChatEditToolCall({
-              path,
-              oldString: old_string,
-              newString: new_string,
+            await handleChatVfsToolCall({
               toolName: toolCall.toolName,
+              input: toolCall.input as Record<string, unknown>,
               toolCallId: toolCall.toolCallId,
               addToolResult,
               t: i18n.t,
+              listDependencies: listToolDependencies,
+              openDependencies: openToolDependencies,
               syncTextEdit: syncTextEditDocumentForPath,
             });
             result = "";

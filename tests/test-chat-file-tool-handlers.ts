@@ -5,6 +5,7 @@ import {
   handleChatListToolCall,
   handleChatOpenToolCall,
   handleChatReadToolCall,
+  handleChatVfsToolCall,
   handleChatWriteToolCall,
 } from "../src/apps/chats/utils/chatFileToolHandlers";
 import {
@@ -427,6 +428,109 @@ export async function runChatFileToolHandlersTests(): Promise<{
     assertEq((collector.results[0] as { state?: string }).state, "output-error");
     assertEq((collector.results[1] as { state?: string }).state, "output-error");
     assertEq((collector.results[2] as { state?: string }).state, "output-error");
+  });
+
+  console.log(section("VFS dispatcher"));
+  await runTest("dispatches write/edit/list/open/read by toolName", async () => {
+    const collector = createCollector();
+    const calls: string[] = [];
+
+    const resultList = await handleChatVfsToolCall({
+      toolName: "list",
+      input: { path: "/Documents" },
+      toolCallId: "tc-17",
+      addToolResult: collector.addToolResult,
+      t,
+      listDependencies,
+      openDependencies: {
+        launchApp: () => {},
+        resolveApplicationName: () => null,
+        playMusicTrack: () => ({ ok: false, error: "unused" }),
+      },
+      syncTextEdit: () => {},
+      listHandler: async () => {
+        calls.push("list");
+      },
+    });
+
+    const resultOpen = await handleChatVfsToolCall({
+      toolName: "open",
+      input: { path: "/Documents/file.md" },
+      toolCallId: "tc-18",
+      addToolResult: collector.addToolResult,
+      t,
+      listDependencies,
+      openDependencies: {
+        launchApp: () => {},
+        resolveApplicationName: () => null,
+        playMusicTrack: () => ({ ok: false, error: "unused" }),
+      },
+      syncTextEdit: () => {},
+      openHandler: async () => {
+        calls.push("open");
+      },
+    });
+
+    const resultRead = await handleChatVfsToolCall({
+      toolName: "read",
+      input: { path: "/Documents/file.md" },
+      toolCallId: "tc-19",
+      addToolResult: collector.addToolResult,
+      t,
+      listDependencies,
+      openDependencies: {
+        launchApp: () => {},
+        resolveApplicationName: () => null,
+        playMusicTrack: () => ({ ok: false, error: "unused" }),
+      },
+      syncTextEdit: () => {},
+      readHandler: async () => {
+        calls.push("read");
+      },
+    });
+
+    const resultWrite = await handleChatVfsToolCall({
+      toolName: "write",
+      input: { path: "/Documents/file.md", content: "x", mode: "overwrite" },
+      toolCallId: "tc-20",
+      addToolResult: collector.addToolResult,
+      t,
+      listDependencies,
+      openDependencies: {
+        launchApp: () => {},
+        resolveApplicationName: () => null,
+        playMusicTrack: () => ({ ok: false, error: "unused" }),
+      },
+      syncTextEdit: () => {},
+      writeHandler: async () => {
+        calls.push("write");
+      },
+    });
+
+    const resultEdit = await handleChatVfsToolCall({
+      toolName: "edit",
+      input: { path: "/Documents/file.md", old_string: "a", new_string: "b" },
+      toolCallId: "tc-21",
+      addToolResult: collector.addToolResult,
+      t,
+      listDependencies,
+      openDependencies: {
+        launchApp: () => {},
+        resolveApplicationName: () => null,
+        playMusicTrack: () => ({ ok: false, error: "unused" }),
+      },
+      syncTextEdit: () => {},
+      editHandler: async () => {
+        calls.push("edit");
+      },
+    });
+
+    assertEq(resultList, true);
+    assertEq(resultOpen, true);
+    assertEq(resultRead, true);
+    assertEq(resultWrite, true);
+    assertEq(resultEdit, true);
+    assertEq(calls.join(","), "list,open,read,write,edit");
   });
 
   return printSummary();

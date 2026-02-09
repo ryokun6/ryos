@@ -570,3 +570,102 @@ export const handleChatListToolCall = async ({
     });
   }
 };
+
+type VfsToolName = "list" | "open" | "read" | "write" | "edit";
+
+export const handleChatVfsToolCall = async ({
+  toolName,
+  input,
+  toolCallId,
+  addToolResult,
+  t,
+  listDependencies,
+  openDependencies,
+  syncTextEdit,
+  listHandler = handleChatListToolCall,
+  openHandler = handleChatOpenToolCall,
+  readHandler = handleChatReadToolCall,
+  writeHandler = handleChatWriteToolCall,
+  editHandler = handleChatEditToolCall,
+}: {
+  toolName: VfsToolName;
+  input: Record<string, unknown>;
+  toolCallId: string;
+  addToolResult: AddToolResult;
+  t: TranslateFn;
+  listDependencies: ChatListOperationDependencies;
+  openDependencies: ChatOpenToolDependencies;
+  syncTextEdit: SyncTextEditFn;
+  listHandler?: typeof handleChatListToolCall;
+  openHandler?: typeof handleChatOpenToolCall;
+  readHandler?: typeof handleChatReadToolCall;
+  writeHandler?: typeof handleChatWriteToolCall;
+  editHandler?: typeof handleChatEditToolCall;
+}): Promise<boolean> => {
+  if (toolName === "list") {
+    await listHandler({
+      path: input.path,
+      query: input.query,
+      limit: input.limit,
+      toolName,
+      toolCallId,
+      addToolResult,
+      t,
+      listDependencies,
+    });
+    return true;
+  }
+
+  if (toolName === "open") {
+    await openHandler({
+      path: input.path,
+      toolName,
+      toolCallId,
+      addToolResult,
+      t,
+      ...openDependencies,
+    });
+    return true;
+  }
+
+  if (toolName === "read") {
+    await readHandler({
+      path: input.path,
+      toolName,
+      toolCallId,
+      addToolResult,
+      t,
+    });
+    return true;
+  }
+
+  if (toolName === "write") {
+    await writeHandler({
+      path: input.path as string,
+      content: input.content as string,
+      mode: input.mode as "overwrite" | "append" | "prepend" | undefined,
+      toolName,
+      toolCallId,
+      addToolResult,
+      t,
+      syncTextEdit,
+    });
+    return true;
+  }
+
+  if (toolName === "edit") {
+    await editHandler({
+      path: input.path as string,
+      oldString: input.old_string as string,
+      newString: input.new_string as string,
+      toolName,
+      toolCallId,
+      addToolResult,
+      t,
+      syncTextEdit,
+    });
+    return true;
+  }
+
+  return false;
+};
