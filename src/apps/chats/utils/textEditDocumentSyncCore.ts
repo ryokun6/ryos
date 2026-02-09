@@ -20,6 +20,7 @@ export type TextEditInstanceLike = {
 export type TextEditDocumentSyncDependencies<TContentJson> = {
   appInstances: Record<string, unknown>;
   foregroundInstanceId?: string | null;
+  instanceOrder?: string[];
   textEditInstances: Record<string, TextEditInstanceLike>;
   removeTextEditInstance: (instanceId: string) => void;
   updateTextEditInstance: (
@@ -70,6 +71,16 @@ export const findLiveTextEditInstanceIdByPath = <TContentJson>(
   const foregroundId = dependencies.foregroundInstanceId;
   if (foregroundId && liveMatches.includes(foregroundId)) {
     return foregroundId;
+  }
+
+  if (dependencies.instanceOrder && dependencies.instanceOrder.length > 0) {
+    const liveMatchSet = new Set(liveMatches);
+    for (let index = dependencies.instanceOrder.length - 1; index >= 0; index--) {
+      const instanceId = dependencies.instanceOrder[index];
+      if (instanceId && liveMatchSet.has(instanceId)) {
+        return instanceId;
+      }
+    }
   }
 
   return liveMatches[liveMatches.length - 1] || null;

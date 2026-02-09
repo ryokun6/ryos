@@ -180,6 +180,22 @@ export async function runChatTextEditDocumentSyncCoreTests(): Promise<{
     assertEq(result.updated, true);
   });
 
+  await runTest("prefers top-most instance from instanceOrder when provided", async () => {
+    const { dependencies } = createDependencies({
+      appInstances: { "inst-a": {}, "inst-b": {} },
+      foregroundInstanceId: null,
+      instanceOrder: ["inst-b", "inst-a"],
+      textEditInstances: {
+        "inst-a": { filePath: "/Documents/test.md" },
+        "inst-b": { filePath: "/Documents/test.md" },
+      },
+    });
+
+    const result = syncTextEditDocumentForPathCore(createOptions(), dependencies);
+    assertEq(result.instanceId, "inst-a");
+    assertEq(result.updated, true);
+  });
+
   await runTest("returns no-op result when missing and launch is disabled", async () => {
     const { dependencies, calls } = createDependencies({
       appInstances: {},
