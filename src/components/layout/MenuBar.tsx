@@ -1547,7 +1547,7 @@ function SpotlightMenuBarButton() {
     <button
       type="button"
       onClick={handleClick}
-      className="flex items-center justify-center px-1 py-0.5"
+      className="flex items-center justify-center pl-1 pr-1 py-0.5 sm:pr-2"
       style={{
         marginLeft: "2px",
         color: "inherit",
@@ -1557,7 +1557,7 @@ function SpotlightMenuBarButton() {
     >
       <MagnifyingGlass
         aria-hidden="true"
-        size={12}
+        size={14}
         weight="bold"
       />
     </button>
