@@ -21,7 +21,7 @@ import {
 } from "./test-utils";
 
 const readGuardsSource = (): string =>
-  readFileSync(resolve(process.cwd(), "src/stores/chats/transport.ts"), "utf-8");
+  readFileSync(resolve(process.cwd(), "src/stores/chats/authFlows.ts"), "utf-8");
 const readPayloadSource = (): string =>
   readFileSync(resolve(process.cwd(), "src/stores/chats/roomState.ts"), "utf-8");
 

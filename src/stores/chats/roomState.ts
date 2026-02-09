@@ -3,19 +3,17 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/html";
 import { getApiUrl } from "@/utils/platform";
 import {
-  type RefreshTokenHandler,
-  type RefreshTokenResult,
-  makeAuthenticatedRequest,
-} from "./authFlows";
-import {
   clearApiUnavailable,
   isApiTemporarilyUnavailable,
   markApiTemporarilyUnavailable,
   readErrorResponseBody,
   readJsonBody,
+  type RefreshTokenHandler,
+  type RefreshTokenResult,
+  makeAuthenticatedRequest,
   warnChatsStoreOnce,
   withChatRequestDefaults,
-} from "./transport";
+} from "./authFlows";
 
 const MESSAGE_HISTORY_CAP = 500;
 const MATCH_WINDOW_MS = 10_000;

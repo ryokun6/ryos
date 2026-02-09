@@ -2,6 +2,7 @@ export {
   applyRefreshedAuthToken,
   applySuccessfulRegistration,
   checkAndRefreshTokenFlow,
+  CHAT_API_UNAVAILABLE_COOLDOWN_MS,
   CHAT_PASSWORD_MIN_LENGTH,
   CHAT_USERNAME_PATTERN,
   checkPasswordStatusRequest,
@@ -28,13 +29,11 @@ export {
   logoutRequest,
   makeAuthenticatedRequest,
   refreshAuthTokenRequest,
-  registerUserRequest,
-} from "./authFlows";
-export {
-  CHAT_API_UNAVAILABLE_COOLDOWN_MS,
   readErrorResponseBody,
+  registerUserRequest,
+  warnChatsStoreOnce,
   withChatRequestDefaults,
-} from "./transport";
+} from "./authFlows";
 export {
   TOKEN_REFRESH_THRESHOLD,
   createChatsOnRehydrateStorage,
