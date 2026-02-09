@@ -50,6 +50,7 @@ import { TEXTEDIT_TIPTAP_EXTENSIONS } from "../utils/textEditSerialization";
 import { getSystemState } from "../utils/systemState";
 import {
   mergeContentByWriteMode,
+  persistUpdatedLocalFileContent,
   replaceSingleOccurrence,
   readLocalFileTextOrThrow,
   readOptionalTextContentFromStore,
@@ -1019,7 +1020,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             try {
               if (path.startsWith("/Documents/")) {
                 // Edit document - read directly from file system (independent of TextEdit instances)
-                const filesStore = useFilesStore.getState();
                 const { fileItem, content: existingContent } =
                   await readLocalFileTextOrThrow(path, STORES.DOCUMENTS, {
                     notFound: `Document not found: ${path}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`,
@@ -1055,17 +1055,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
                 const updatedContent = replacement.updatedContent;
 
-                // Save updated content to IndexedDB
-                await dbOperations.put<DocumentContent>(
-                  STORES.DOCUMENTS,
-                  { name: fileItem.name, content: updatedContent },
-                  fileItem.uuid,
-                );
-
-                // Update file size in metadata
-                filesStore.addItem({
-                  ...fileItem,
-                  size: new Blob([updatedContent]).size,
+                await persistUpdatedLocalFileContent({
+                  fileItem,
+                  storeName: STORES.DOCUMENTS,
+                  content: updatedContent,
+                  recordName: fileItem.name,
                 });
 
                 // Also update any open TextEdit instance showing this file
@@ -1094,7 +1088,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 result = "";
               } else if (path.startsWith("/Applets/")) {
                 // Edit applet HTML
-                const filesStore = useFilesStore.getState();
                 const { fileItem, content: existingContent } =
                   await readLocalFileTextOrThrow(path, STORES.APPLETS, {
                     notFound: `Applet not found: ${path}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`,
@@ -1130,17 +1123,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
                 const updatedContent = replacement.updatedContent;
 
-                // Save to IndexedDB
-                await dbOperations.put<DocumentContent>(
-                  STORES.APPLETS,
-                  { name: fileItem.uuid, content: updatedContent },
-                  fileItem.uuid,
-                );
-
-                // Update file size in metadata
-                filesStore.addItem({
-                  ...fileItem,
-                  size: new Blob([updatedContent]).size,
+                await persistUpdatedLocalFileContent({
+                  fileItem,
+                  storeName: STORES.APPLETS,
+                  content: updatedContent,
+                  recordName: fileItem.uuid,
                 });
 
                 addToolResult({

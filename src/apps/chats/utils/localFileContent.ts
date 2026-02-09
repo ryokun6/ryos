@@ -143,3 +143,26 @@ export const mergeContentByWriteMode = ({
 
   return `${existingContent}${incomingContent}`;
 };
+
+export const persistUpdatedLocalFileContent = async ({
+  fileItem,
+  storeName,
+  content,
+  recordName,
+}: {
+  fileItem: ActiveFileWithUuid;
+  storeName: LocalContentStore;
+  content: string;
+  recordName: string;
+}): Promise<void> => {
+  await dbOperations.put<DocumentContent>(
+    storeName,
+    { name: recordName, content },
+    fileItem.uuid,
+  );
+
+  useFilesStore.getState().addItem({
+    ...fileItem,
+    size: new Blob([content]).size,
+  });
+};

@@ -4,6 +4,7 @@ import { dbOperations } from "../src/apps/finder/utils/fileDatabase";
 import { STORES } from "../src/utils/indexedDB";
 import {
   mergeContentByWriteMode,
+  persistUpdatedLocalFileContent,
   replaceSingleOccurrence,
   readLocalFileTextOrThrow,
   readOptionalTextContentFromStore,
@@ -49,6 +50,32 @@ const withMockDbGet = async (
   }
 };
 
+const withMockDbPut = async (
+  mockPut: typeof dbOperations.put,
+  run: () => Promise<void>,
+): Promise<void> => {
+  const originalPut = dbOperations.put;
+  dbOperations.put = mockPut;
+  try {
+    await run();
+  } finally {
+    dbOperations.put = originalPut;
+  }
+};
+
+const withMockAddItem = async (
+  mockAddItem: ReturnType<typeof useFilesStore.getState>["addItem"],
+  run: () => Promise<void>,
+): Promise<void> => {
+  const originalAddItem = useFilesStore.getState().addItem;
+  useFilesStore.setState({ addItem: mockAddItem });
+  try {
+    await run();
+  } finally {
+    useFilesStore.setState({ addItem: originalAddItem });
+  }
+};
+
 export async function runChatLocalFileContentTests(): Promise<{
   passed: number;
   failed: number;
@@ -76,6 +103,18 @@ export async function runChatLocalFileContentTests(): Promise<{
   await runTest("requires UUID for active file", async () => {
     await withMockFileItems(
       {
+        "/": {
+          path: "/",
+          name: "/",
+          isDirectory: true,
+          status: "active",
+        },
+        "/Documents": {
+          path: "/Documents",
+          name: "Documents",
+          isDirectory: true,
+          status: "active",
+        },
         "/Documents/test.md": {
           path: "/Documents/test.md",
           name: "test.md",
@@ -321,6 +360,48 @@ export async function runChatLocalFileContentTests(): Promise<{
       }),
       "new",
     );
+  });
+
+  console.log(section("Content persistence"));
+  await runTest("persists updated local file content and refreshes metadata size", async () => {
+    let capturedStore = "";
+    let capturedName = "";
+    let capturedUuid = "";
+    let capturedContent = "";
+    let capturedAddItemSize: number | undefined;
+
+    await withMockDbPut(
+      async <T>(storeName: string, item: T, key?: IDBValidKey) => {
+        capturedStore = storeName;
+        capturedUuid = String(key);
+        capturedName = (item as { name: string }).name;
+        capturedContent = (item as { content: string }).content;
+      },
+      async () => {
+        await withMockAddItem(async (item) => {
+          capturedAddItemSize = item.size;
+        }, async () => {
+          await persistUpdatedLocalFileContent({
+            fileItem: {
+              path: "/Documents/test.md",
+              name: "test.md",
+              isDirectory: false,
+              status: "active",
+              uuid: "uuid-42",
+            },
+            storeName: STORES.DOCUMENTS,
+            content: "updated body",
+            recordName: "test.md",
+          });
+        });
+      },
+    );
+
+    assertEq(capturedStore, STORES.DOCUMENTS);
+    assertEq(capturedUuid, "uuid-42");
+    assertEq(capturedName, "test.md");
+    assertEq(capturedContent, "updated body");
+    assertEq(capturedAddItemSize, new Blob(["updated body"]).size);
   });
 
   return printSummary();
