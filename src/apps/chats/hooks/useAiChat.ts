@@ -48,7 +48,10 @@ import {
 } from "../utils/chatRuntime";
 import { TEXTEDIT_TIPTAP_EXTENSIONS } from "../utils/textEditSerialization";
 import { getSystemState } from "../utils/systemState";
-import { readLocalFileTextOrThrow } from "../utils/localFileContent";
+import {
+  readLocalFileTextOrThrow,
+  readOptionalTextContentFromStore,
+} from "../utils/localFileContent";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -890,11 +893,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               // Determine final content based on mode
               let finalContent = content || "";
               if (!isNewFile && mode !== "overwrite" && existingItem?.uuid) {
-                const existingData = await dbOperations.get<DocumentContent>(STORES.DOCUMENTS, existingItem.uuid);
-                if (existingData?.content) {
-                  const existingContent = typeof existingData.content === "string"
-                    ? existingData.content
-                    : await existingData.content.text();
+                const existingContent = await readOptionalTextContentFromStore(
+                  STORES.DOCUMENTS,
+                  existingItem.uuid,
+                );
+                if (typeof existingContent === "string") {
                   finalContent = mode === "prepend"
                     ? content + existingContent
                     : existingContent + content;

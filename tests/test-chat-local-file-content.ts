@@ -4,6 +4,7 @@ import { dbOperations } from "../src/apps/finder/utils/fileDatabase";
 import { STORES } from "../src/utils/indexedDB";
 import {
   readLocalFileTextOrThrow,
+  readOptionalTextContentFromStore,
   readTextContentFromStore,
   requireActiveFileWithUuid,
 } from "../src/apps/chats/utils/localFileContent";
@@ -162,6 +163,29 @@ export async function runChatLocalFileContentTests(): Promise<{
       }
       assertEq(thrown?.message, "read-failed");
     });
+  });
+
+  await runTest("returns null for optional content read when record is missing", async () => {
+    await withMockDbGet(async () => undefined, async () => {
+      const content = await readOptionalTextContentFromStore(
+        STORES.DOCUMENTS,
+        "uuid-missing",
+      );
+      assertEq(content, null);
+    });
+  });
+
+  await runTest("reads optional content when record exists", async () => {
+    await withMockDbGet(
+      async <T>() => ({ name: "test", content: "optional" } as T),
+      async () => {
+        const content = await readOptionalTextContentFromStore(
+          STORES.DOCUMENTS,
+          "uuid-1",
+        );
+        assertEq(content, "optional");
+      },
+    );
   });
 
   await runTest("composes metadata and content reads in readLocalFileTextOrThrow", async () => {

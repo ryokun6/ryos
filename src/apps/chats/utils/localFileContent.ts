@@ -45,6 +45,26 @@ export const readTextContentFromStore = async (
   throw new Error(failedReadMessage);
 };
 
+export const readOptionalTextContentFromStore = async (
+  storeName: LocalContentStore,
+  uuid: string,
+): Promise<string | null> => {
+  const contentData = await dbOperations.get<DocumentContent>(storeName, uuid);
+  if (!contentData || contentData.content == null) {
+    return null;
+  }
+
+  if (typeof contentData.content === "string") {
+    return contentData.content;
+  }
+
+  if (contentData.content instanceof Blob) {
+    return contentData.content.text();
+  }
+
+  return null;
+};
+
 export const readLocalFileTextOrThrow = async (
   path: string,
   storeName: LocalContentStore,
