@@ -1302,15 +1302,19 @@ interface ApiChatMessagePayload {
   timestamp: string | number;
 }
 
+const normalizeApiTimestamp = (
+  rawTimestamp: string | number
+): number => {
+  const parsedTimestamp = new Date(rawTimestamp).getTime();
+  return Number.isFinite(parsedTimestamp) ? parsedTimestamp : 0;
+};
+
 const normalizeApiMessage = (
   message: ApiChatMessagePayload
 ): ChatMessage => ({
   ...message,
   content: decodeHtmlEntities(String(message.content || "")),
-  timestamp:
-    typeof message.timestamp === "string" || typeof message.timestamp === "number"
-      ? new Date(message.timestamp).getTime()
-      : message.timestamp,
+  timestamp: normalizeApiTimestamp(message.timestamp),
 });
 
 const normalizeApiMessages = (
