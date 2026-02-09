@@ -5,7 +5,6 @@
  * to improve DRY compliance and maintainability.
  */
 
-import i18n from "@/lib/i18n";
 import { detectUserOS as detectUserOSUtil } from "@/utils/userOS";
 
 // ============================================================================
@@ -188,9 +187,7 @@ export const shouldDisableTranslation = (
  */
 export const getIOSRestrictionMessage = (appName: "iPod" | "Karaoke"): string => {
   if (appName === "iPod") {
-    return i18n.t("apps.chats.toolCalls.ipodReady");
+    return "iPod is ready. Tap play to start music";
   }
-  return i18n.t("apps.chats.toolCalls.karaokeReady", {
-    defaultValue: "Karaoke is ready. Tap play to start",
-  });
+  return "Karaoke is ready. Tap play to start";
 };
