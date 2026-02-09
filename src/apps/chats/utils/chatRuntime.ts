@@ -49,16 +49,57 @@ export const cleanTextForSpeech = (text: string): string =>
 export const tryParseJsonFromErrorMessage = (
   message: string,
 ): Record<string, unknown> | null => {
-  const jsonMatch = message.match(/\{.*\}/);
-  if (!jsonMatch) {
-    return null;
+  for (let start = 0; start < message.length; start++) {
+    if (message[start] !== "{") {
+      continue;
+    }
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+
+    for (let end = start; end < message.length; end++) {
+      const char = message[end];
+
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (char === "\\") {
+        escaped = true;
+        continue;
+      }
+
+      if (char === "\"") {
+        inString = !inString;
+        continue;
+      }
+
+      if (inString) {
+        continue;
+      }
+
+      if (char === "{") {
+        depth += 1;
+      } else if (char === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          const snippet = message.slice(start, end + 1);
+          try {
+            const parsed = JSON.parse(snippet);
+            if (parsed && typeof parsed === "object") {
+              return parsed as Record<string, unknown>;
+            }
+          } catch {
+            break;
+          }
+        }
+      }
+    }
   }
 
-  try {
-    return JSON.parse(jsonMatch[0]) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
+  return null;
 };
 
 export const isRateLimitErrorCode = (errorCode: unknown): boolean =>
