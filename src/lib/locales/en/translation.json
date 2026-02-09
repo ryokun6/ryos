@@ -284,6 +284,10 @@
       "sounds": "Sounds & Volume",
       "language": "Language",
       "screenSaver": "Screen Saver"
+    },
+    "ariaLabels": {
+      "clearSearch": "Clear search",
+      "spotlightSearch": "Spotlight Search (⌘+Space)"
     }
   },
   "apps": {

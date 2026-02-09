@@ -1534,6 +1534,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
 }
 
 function SpotlightMenuBarButton() {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isSpotlightOpen = useSpotlightStore((state) => state.isOpen);
@@ -1562,8 +1563,8 @@ function SpotlightMenuBarButton() {
         height: "20px",
         padding: 0,
       }}
-      title="Spotlight Search (⌘+Space)"
-      aria-label="Spotlight Search"
+      title={t("spotlight.ariaLabels.spotlightSearch")}
+      aria-label={t("spotlight.ariaLabels.spotlightSearch")}
     >
       <MagnifyingGlass
         aria-hidden="true"

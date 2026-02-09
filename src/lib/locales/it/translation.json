@@ -125,7 +125,11 @@
         "delete": "Elimina utente",
         "lastActive": "Ultima attività",
         "loading": "Caricamento profilo...",
+        "memories": "Ricordi",
+        "memoryKey": "Chiave",
+        "memorySummary": "Riepilogo",
         "messages": "Messaggi",
+        "noMemories": "Nessun ricordo memorizzato",
         "noMessages": "Nessun messaggio trovato",
         "noReason": "Nessun motivo fornito",
         "notFound": "Utente non trovato",
@@ -553,6 +557,29 @@
         "foundSongsPlural": "Trovate {{count}} canzoni",
         "foundVideos": "Trovati {{count}} video",
         "generating": "Generazione…",
+        "infiniteMac": {
+          "capturedScreen": "Schermata catturata",
+          "capturingScreen": "Cattura schermata in corso…",
+          "clicked": "Cliccato in ({{x}}, {{y}})",
+          "clicking": "Clic in corso…",
+          "doubleClicked": "Doppio clic in ({{x}}, {{y}})",
+          "doubleClicking": "Doppio clic in corso…",
+          "gettingStatus": "Recupero stato in corso…",
+          "movedMouse": "Spostato a ({{x}}, {{y}})",
+          "movingMouse": "Spostamento mouse in corso…",
+          "paused": "In pausa",
+          "pausing": "Messa in pausa…",
+          "pressedKey": "Tasto {{key}} premuto",
+          "pressingKey": "Pressione tasto in corso…",
+          "resumed": "Ripreso",
+          "resuming": "Ripresa in corso…",
+          "rightClicked": "Clic destro in ({{x}}, {{y}})",
+          "startedSystem": "Avviato {{system}}",
+          "startingSystem": "Avvio {{system}}…",
+          "statusNotRunning": "Nessun sistema in esecuzione",
+          "statusRunning": "{{system}} in esecuzione",
+          "systemLoading": "{{system}} in caricamento…"
+        },
         "invalidFilename": "Nome file non valido: {{fileName}}. I file documento devono terminare con l'estensione .md (es. /Documents/my-notes.md)",
         "invalidPath": "Percorso non valido: {{path}}",
         "invalidPathForEdit": "Percorso non valido per la modifica: {{path}}. Usa /Documents/* o /Applets/*",
@@ -1325,12 +1352,12 @@
         "enableRomanization": "Attiva romanizzazione",
         "exportLibrary": "Esporta libreria...",
         "file": "File",
+        "fontGoldGlow": "Bagliore dorato",
+        "fontGradient": "Sfumatura",
         "fontRounded": "Arrotondato",
         "fontSansSerif": "Sans Serif",
         "fontSerif": "Serif",
         "fontSerifRed": "Serif (Rosso)",
-        "fontGoldGlow": "Bagliore dorato",
-        "fontGradient": "Sfumatura",
         "fullScreen": "Schermo intero",
         "furigana": "Furigana",
         "importLibrary": "Importa libreria...",
@@ -1388,12 +1415,12 @@
       "name": "iPod",
       "status": {
         "added": "♬ Aggiunta",
+        "fontGoldGlow": "Carattere: Bagliore dorato",
+        "fontGradient": "Carattere: Sfumatura",
         "fontRounded": "Carattere: Arrotondato",
         "fontSansSerif": "Carattere: Sans Serif",
         "fontSerif": "Carattere: Serif",
         "fontSerifRed": "Carattere: Serif (Rosso)",
-        "fontGoldGlow": "Carattere: Bagliore dorato",
-        "fontGradient": "Carattere: Sfumatura",
         "furiganaOff": "Furigana disattivato",
         "furiganaOn": "Furigana attivato",
         "layoutAlternating": "Layout: Alternato",
@@ -2267,30 +2294,6 @@
       }
     }
   },
-  "spotlight": {
-    "placeholder": "Cerca in ryOS",
-    "sections": {
-      "apps": "Applicazioni",
-      "documents": "Documenti",
-      "applets": "Applet",
-      "music": "Musica",
-      "settings": "Impostazioni",
-      "commands": "Comandi"
-    },
-    "topHits": "Più rilevanti",
-    "askRyo": "Chiedi a Ryo",
-    "noResults": "Nessun risultato",
-    "hintClose": "chiudi",
-    "hintOpen": "apri",
-    "hintNavigate": "naviga",
-    "settings": {
-      "theme": "Tema",
-      "wallpaper": "Sfondo",
-      "sounds": "Suoni e volume",
-      "language": "Lingua",
-      "screenSaver": "Salvaschermo"
-    }
-  },
   "common": {
     "aboutThisMac": {
       "builtInMemory": "Memoria integrata",
@@ -2492,10 +2495,10 @@
     },
     "startMenu": {
       "aboutThisComputer": "Informazioni su questo computer",
+      "run": "Esegui...",
       "ryos98": "98",
       "ryosProfessional": "Professional",
-      "start": "Avvio",
-      "run": "Esegui..."
+      "start": "Avvio"
     },
     "swipeInstructions": {
       "description": "Scorri a sinistra o a destra per spostarti tra le finestre aperte",
@@ -2562,5 +2565,34 @@
       "spanish": "Spagnolo",
       "title": "Lingua"
     }
+  },
+  "spotlight": {
+    "ariaLabels": {
+      "clearSearch": "Cancella ricerca",
+      "spotlightSearch": "Ricerca Spotlight (⌘+Spazio)"
+    },
+    "askRyo": "Chiedi a Ryo",
+    "hintClose": "chiudi",
+    "hintNavigate": "naviga",
+    "hintOpen": "apri",
+    "noResults": "Nessun risultato",
+    "placeholder": "Cerca in ryOS",
+    "sections": {
+      "applets": "Applet",
+      "apps": "Applicazioni",
+      "commands": "Comandi",
+      "documents": "Documenti",
+      "music": "Musica",
+      "settings": "Impostazioni"
+    },
+    "settings": {
+      "language": "Lingua",
+      "screenSaver": "Salvaschermo",
+      "sounds": "Suoni e volume",
+      "theme": "Tema",
+      "wallpaper": "Sfondo"
+    },
+    "title": "Spotlight",
+    "topHits": "Più rilevanti"
   }
 }

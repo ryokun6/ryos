@@ -125,7 +125,11 @@
         "delete": "Удалить пользователя",
         "lastActive": "Последняя активность",
         "loading": "Загрузка профиля...",
+        "memories": "Воспоминания",
+        "memoryKey": "Клавиша",
+        "memorySummary": "Сводка",
         "messages": "Сообщения",
+        "noMemories": "Воспоминания не сохранены",
         "noMessages": "Сообщения не найдены",
         "noReason": "Причина не указана",
         "notFound": "Пользователь не найден",
@@ -553,6 +557,29 @@
         "foundSongsPlural": "Найдено {{count}} песен",
         "foundVideos": "Найдено {{count}} видео",
         "generating": "Генерация…",
+        "infiniteMac": {
+          "capturedScreen": "Экран захвачен",
+          "capturingScreen": "Захват экрана…",
+          "clicked": "Кликнуто в ({{x}}, {{y}})",
+          "clicking": "Нажатие…",
+          "doubleClicked": "Двойной клик в ({{x}}, {{y}})",
+          "doubleClicking": "Двойное нажатие…",
+          "gettingStatus": "Получение статуса…",
+          "movedMouse": "Перемещено в ({{x}}, {{y}})",
+          "movingMouse": "Перемещение мыши…",
+          "paused": "Приостановлено",
+          "pausing": "Приостановка…",
+          "pressedKey": "Нажата клавиша {{key}}",
+          "pressingKey": "Нажатие клавиши…",
+          "resumed": "Возобновлено",
+          "resuming": "Возобновление…",
+          "rightClicked": "Клик правой кнопкой в ({{x}}, {{y}})",
+          "startedSystem": "Запущено {{system}}",
+          "startingSystem": "Запуск {{system}}…",
+          "statusNotRunning": "Система не запущена",
+          "statusRunning": "{{system}} запущена",
+          "systemLoading": "{{system}} загружается…"
+        },
         "invalidFilename": "Недопустимое имя файла: {{fileName}}. Файлы документов должны иметь расширение .md (например, /Documents/my-notes.md)",
         "invalidPath": "Недопустимый путь: {{path}}",
         "invalidPathForEdit": "Недопустимый путь для редактирования: {{path}}. Используйте /Documents/* или /Applets/*",
@@ -1325,12 +1352,12 @@
         "enableRomanization": "Включить романизацию",
         "exportLibrary": "Экспорт медиатеки...",
         "file": "Файл",
+        "fontGoldGlow": "Золотое сияние",
+        "fontGradient": "Градиент",
         "fontRounded": "Скругленный",
         "fontSansSerif": "Без засечек",
         "fontSerif": "С засечками",
         "fontSerifRed": "Serif (Красный)",
-        "fontGoldGlow": "Золотое сияние",
-        "fontGradient": "Градиент",
         "fullScreen": "На весь экран",
         "furigana": "Фуригана",
         "importLibrary": "Импорт медиатеки...",
@@ -1388,12 +1415,12 @@
       "name": "iPod",
       "status": {
         "added": "♬ Добавлено",
+        "fontGoldGlow": "Шрифт: Золотое сияние",
+        "fontGradient": "Шрифт: Градиент",
         "fontRounded": "Шрифт: Скругленный",
         "fontSansSerif": "Шрифт: Без засечек",
         "fontSerif": "Шрифт: С засечками",
         "fontSerifRed": "Шрифт: Serif (Красный)",
-        "fontGoldGlow": "Шрифт: Золотое сияние",
-        "fontGradient": "Шрифт: Градиент",
         "furiganaOff": "Фуригана выкл.",
         "furiganaOn": "Фуригана вкл.",
         "layoutAlternating": "Макет: Чередующийся",
@@ -2267,30 +2294,6 @@
       }
     }
   },
-  "spotlight": {
-    "placeholder": "Поиск в ryOS",
-    "sections": {
-      "apps": "Приложения",
-      "documents": "Документы",
-      "applets": "Апплеты",
-      "music": "Музыка",
-      "settings": "Настройки",
-      "commands": "Команды"
-    },
-    "topHits": "Лучшие результаты",
-    "askRyo": "Спросить Ryo",
-    "noResults": "Ничего не найдено",
-    "hintClose": "закрыть",
-    "hintOpen": "открыть",
-    "hintNavigate": "навигация",
-    "settings": {
-      "theme": "Тема",
-      "wallpaper": "Обои",
-      "sounds": "Звуки и громкость",
-      "language": "Язык",
-      "screenSaver": "Заставка"
-    }
-  },
   "common": {
     "aboutThisMac": {
       "builtInMemory": "Встроенная память",
@@ -2492,10 +2495,10 @@
     },
     "startMenu": {
       "aboutThisComputer": "Об этом компьютере",
+      "run": "Выполнить...",
       "ryos98": "98",
       "ryosProfessional": "Professional",
-      "start": "Пуск",
-      "run": "Выполнить..."
+      "start": "Пуск"
     },
     "swipeInstructions": {
       "description": "Проведите влево или вправо, чтобы перемещаться между открытыми окнами",
@@ -2562,5 +2565,34 @@
       "spanish": "Español",
       "title": "Язык"
     }
+  },
+  "spotlight": {
+    "ariaLabels": {
+      "clearSearch": "Очистить поиск",
+      "spotlightSearch": "Поиск Spotlight (⌘+Пробел)"
+    },
+    "askRyo": "Спросить Ryo",
+    "hintClose": "закрыть",
+    "hintNavigate": "навигация",
+    "hintOpen": "открыть",
+    "noResults": "Ничего не найдено",
+    "placeholder": "Поиск в ryOS",
+    "sections": {
+      "applets": "Апплеты",
+      "apps": "Приложения",
+      "commands": "Команды",
+      "documents": "Документы",
+      "music": "Музыка",
+      "settings": "Настройки"
+    },
+    "settings": {
+      "language": "Язык",
+      "screenSaver": "Заставка",
+      "sounds": "Звуки и громкость",
+      "theme": "Тема",
+      "wallpaper": "Обои"
+    },
+    "title": "Spotlight",
+    "topHits": "Лучшие результаты"
   }
 }

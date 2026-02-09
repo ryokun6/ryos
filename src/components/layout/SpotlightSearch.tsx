@@ -322,7 +322,7 @@ export function SpotlightSearch() {
                           color: "#8E8E93",
                           marginLeft: "2px",
                         }}
-                        aria-label="Clear search"
+                        aria-label={t("spotlight.ariaLabels.clearSearch")}
                       >
                         <XCircle size={16} weight="fill" />
                       </button>
@@ -400,6 +400,10 @@ export function SpotlightSearch() {
                         </tr>
                         {groupedResults.flatMap((group, groupIdx) => {
                           const rows: React.ReactNode[] = [];
+                          const sectionLabel = t(
+                            group.items[0]?.sectionLabel ||
+                              getSectionKey(group.type)
+                          );
                           if (groupIdx > 0) {
                             rows.push(
                               <tr key={`spacer-${group.type}`}>
@@ -538,7 +542,8 @@ export function SpotlightSearch() {
                                       <span className="truncate">
                                         {result.title}
                                         {result.subtitle &&
-                                          result.type !== "ai" && (
+                                          result.type !== "ai" &&
+                                          result.subtitle !== sectionLabel && (
                                             <span
                                               style={{
                                                 color: isSelected

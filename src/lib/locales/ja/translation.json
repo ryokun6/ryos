@@ -125,7 +125,11 @@
         "delete": "ユーザーを削除",
         "lastActive": "最終アクティブ",
         "loading": "プロフィールを読み込み中...",
+        "memories": "思い出",
+        "memoryKey": "キー",
+        "memorySummary": "概要",
         "messages": "メッセージ",
+        "noMemories": "思い出がありません",
         "noMessages": "メッセージが見つかりませんでした",
         "noReason": "理由が指定されていません",
         "notFound": "ユーザーが見つかりませんでした",
@@ -553,6 +557,29 @@
         "foundSongsPlural": "{{count}} 曲が見つかりました",
         "foundVideos": "{{count}}件の動画が見つかりました",
         "generating": "生成中…",
+        "infiniteMac": {
+          "capturedScreen": "画面キャプチャ",
+          "capturingScreen": "画面をキャプチャ中…",
+          "clicked": "({{x}}, {{y}})でクリックしました",
+          "clicking": "クリック中…",
+          "doubleClicked": "({{x}}, {{y}})でダブルクリックしました",
+          "doubleClicking": "ダブルクリック中…",
+          "gettingStatus": "ステータスを取得中…",
+          "movedMouse": "({{x}}, {{y}})に移動しました",
+          "movingMouse": "マウスを移動中…",
+          "paused": "一時停止",
+          "pausing": "一時停止中…",
+          "pressedKey": "{{key}}を押しました",
+          "pressingKey": "キーを押下中…",
+          "resumed": "再開",
+          "resuming": "再開中…",
+          "rightClicked": "({{x}}, {{y}})で右クリックしました",
+          "startedSystem": "{{system}} が起動しました",
+          "startingSystem": "{{system}} を起動中…",
+          "statusNotRunning": "システムが実行されていません",
+          "statusRunning": "{{system}} を実行中",
+          "systemLoading": "{{system}} を読み込み中…"
+        },
         "invalidFilename": "無効なファイル名: {{fileName}}。ドキュメントファイルは.md拡張子で終わる必要があります (例: /Documents/my-notes.md)",
         "invalidPath": "無効なパス: {{path}}",
         "invalidPathForEdit": "編集用の無効なパス: {{path}}。/Documents/* または /Applets/* を使用してください",
@@ -1325,12 +1352,12 @@
         "enableRomanization": "読み仮名を有効化",
         "exportLibrary": "ライブラリを書き出す...",
         "file": "ファイル",
+        "fontGoldGlow": "ゴールド",
+        "fontGradient": "グラデーション",
         "fontRounded": "丸ゴシック",
         "fontSansSerif": "ゴシック",
         "fontSerif": "明朝",
         "fontSerifRed": "明朝（赤）",
-        "fontGoldGlow": "ゴールド",
-        "fontGradient": "グラデーション",
         "fullScreen": "全画面表示",
         "furigana": "フリガナ",
         "importLibrary": "ライブラリを読み込む...",
@@ -1388,12 +1415,12 @@
       "name": "iPod",
       "status": {
         "added": "♬ 追加しました",
+        "fontGoldGlow": "フォント: ゴールド",
+        "fontGradient": "フォント: グラデーション",
         "fontRounded": "フォント: 丸ゴシック",
         "fontSansSerif": "フォント: ゴシック",
         "fontSerif": "フォント: 明朝",
         "fontSerifRed": "フォント: 明朝（赤）",
-        "fontGoldGlow": "フォント: ゴールド",
-        "fontGradient": "フォント: グラデーション",
         "furiganaOff": "フリガナ オフ",
         "furiganaOn": "フリガナ オン",
         "layoutAlternating": "レイアウト: 交互",
@@ -2267,30 +2294,6 @@
       }
     }
   },
-  "spotlight": {
-    "placeholder": "ryOS を検索",
-    "sections": {
-      "apps": "アプリケーション",
-      "documents": "書類",
-      "applets": "アプレット",
-      "music": "ミュージック",
-      "settings": "設定",
-      "commands": "コマンド"
-    },
-    "topHits": "トップヒット",
-    "askRyo": "Ryo に聞く",
-    "noResults": "結果が見つかりません",
-    "hintClose": "閉じる",
-    "hintOpen": "開く",
-    "hintNavigate": "移動",
-    "settings": {
-      "theme": "テーマ",
-      "wallpaper": "壁紙",
-      "sounds": "サウンドと音量",
-      "language": "言語",
-      "screenSaver": "スクリーンセーバー"
-    }
-  },
   "common": {
     "aboutThisMac": {
       "builtInMemory": "内蔵メモリ",
@@ -2507,10 +2510,10 @@
     },
     "startMenu": {
       "aboutThisComputer": "このコンピュータについて",
+      "run": "ファイル名を指定して実行...",
       "ryos98": "98",
       "ryosProfessional": "プロフェッショナル",
-      "start": "スタート",
-      "run": "ファイル名を指定して実行..."
+      "start": "スタート"
     },
     "swipeInstructions": {
       "description": "開いているウィンドウ間を移動するには左右にスワイプ",
@@ -2577,5 +2580,34 @@
       "spanish": "Español",
       "title": "言語"
     }
+  },
+  "spotlight": {
+    "ariaLabels": {
+      "clearSearch": "検索をクリア",
+      "spotlightSearch": "Spotlight検索 (⌘+Space)"
+    },
+    "askRyo": "Ryo に聞く",
+    "hintClose": "閉じる",
+    "hintNavigate": "移動",
+    "hintOpen": "開く",
+    "noResults": "結果が見つかりません",
+    "placeholder": "ryOS を検索",
+    "sections": {
+      "applets": "アプレット",
+      "apps": "アプリケーション",
+      "commands": "コマンド",
+      "documents": "書類",
+      "music": "ミュージック",
+      "settings": "設定"
+    },
+    "settings": {
+      "language": "言語",
+      "screenSaver": "スクリーンセーバー",
+      "sounds": "サウンドと音量",
+      "theme": "テーマ",
+      "wallpaper": "壁紙"
+    },
+    "title": "Spotlight",
+    "topHits": "トップヒット"
   }
 }

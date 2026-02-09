@@ -254,8 +254,7 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
         type: "setting" as const,
         title: t(setting.titleKey),
         subtitle: t("spotlight.sections.settings"),
-        icon: setting.icon,
-        isEmoji: true,
+        icon: getAppIconPath("control-panels"),
         action: () =>
           launchApp("control-panels", { initialData: { defaultTab: setting.tab } }),
       }));
@@ -271,8 +270,7 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
         type: "command" as const,
         title: cmd.name,
         subtitle: cmd.description,
-        icon: "⌨️",
-        isEmoji: true,
+        icon: getAppIconPath("terminal"),
         action: () => launchApp("terminal"),
       }));
     results.push(...cmdResults);

@@ -125,7 +125,11 @@
         "delete": "사용자 삭제",
         "lastActive": "마지막 활동",
         "loading": "프로필 로드 중...",
+        "memories": "추억",
+        "memoryKey": "키",
+        "memorySummary": "요약",
         "messages": "메시지",
+        "noMemories": "저장된 추억 없음",
         "noMessages": "메시지를 찾을 수 없음",
         "noReason": "사유 없음",
         "notFound": "사용자를 찾을 수 없음",
@@ -553,6 +557,29 @@
         "foundSongsPlural": "{{count}}곡 찾음",
         "foundVideos": "{{count}}개의 동영상을 찾았습니다.",
         "generating": "생성 중…",
+        "infiniteMac": {
+          "capturedScreen": "화면 캡처됨",
+          "capturingScreen": "화면 캡처 중…",
+          "clicked": "({{x}}, {{y}})에서 클릭됨",
+          "clicking": "클릭 중…",
+          "doubleClicked": "({{x}}, {{y}})에서 두 번 클릭됨",
+          "doubleClicking": "두 번 클릭 중…",
+          "gettingStatus": "상태 가져오는 중…",
+          "movedMouse": "({{x}}, {{y}})로 이동됨",
+          "movingMouse": "마우스 이동 중…",
+          "paused": "일시 중지됨",
+          "pausing": "일시 중지 중…",
+          "pressedKey": "{{key}} 눌림",
+          "pressingKey": "키 누르는 중…",
+          "resumed": "다시 시작됨",
+          "resuming": "다시 시작 중…",
+          "rightClicked": "({{x}}, {{y}})에서 마우스 오른쪽 버튼 클릭됨",
+          "startedSystem": "{{system}} 시작됨",
+          "startingSystem": "{{system}} 시작 중…",
+          "statusNotRunning": "실행 중인 시스템 없음",
+          "statusRunning": "{{system}} 실행 중",
+          "systemLoading": "{{system}} 로드 중…"
+        },
         "invalidFilename": "잘못된 파일 이름: {{fileName}}. 문서 파일은 .md 확장자로 끝나야 합니다 (예: /Documents/my-notes.md)",
         "invalidPath": "잘못된 경로: {{path}}",
         "invalidPathForEdit": "편집에 유효하지 않은 경로: {{path}}. /Documents/* 또는 /Applets/*를 사용하세요.",
@@ -1325,12 +1352,12 @@
         "enableRomanization": "발음 표기 활성화",
         "exportLibrary": "보관함 내보내기...",
         "file": "파일",
+        "fontGoldGlow": "골드 글로우",
+        "fontGradient": "그라데이션",
         "fontRounded": "둥근",
         "fontSansSerif": "산세리프",
         "fontSerif": "세리프",
         "fontSerifRed": "세리프 (빨강)",
-        "fontGoldGlow": "골드 글로우",
-        "fontGradient": "그라데이션",
         "fullScreen": "전체 화면",
         "furigana": "후리가나",
         "importLibrary": "보관함 가져오기...",
@@ -1388,12 +1415,12 @@
       "name": "iPod",
       "status": {
         "added": "♬ 추가됨",
+        "fontGoldGlow": "글꼴: 골드 글로우",
+        "fontGradient": "글꼴: 그라데이션",
         "fontRounded": "글꼴: 둥근",
         "fontSansSerif": "글꼴: 산세리프",
         "fontSerif": "글꼴: 세리프",
         "fontSerifRed": "글꼴: 세리프 (빨강)",
-        "fontGoldGlow": "글꼴: 골드 글로우",
-        "fontGradient": "글꼴: 그라데이션",
         "furiganaOff": "후리가나 끄기",
         "furiganaOn": "후리가나 켜기",
         "layoutAlternating": "레이아웃: 교차",
@@ -2267,30 +2294,6 @@
       }
     }
   },
-  "spotlight": {
-    "placeholder": "ryOS 검색",
-    "sections": {
-      "apps": "응용 프로그램",
-      "documents": "문서",
-      "applets": "애플릿",
-      "music": "음악",
-      "settings": "설정",
-      "commands": "명령어"
-    },
-    "topHits": "인기 항목",
-    "askRyo": "Ryo에게 물어보기",
-    "noResults": "결과 없음",
-    "hintClose": "닫기",
-    "hintOpen": "열기",
-    "hintNavigate": "탐색",
-    "settings": {
-      "theme": "테마",
-      "wallpaper": "배경화면",
-      "sounds": "사운드 및 음량",
-      "language": "언어",
-      "screenSaver": "화면 보호기"
-    }
-  },
   "common": {
     "aboutThisMac": {
       "builtInMemory": "내장 메모리",
@@ -2507,10 +2510,10 @@
     },
     "startMenu": {
       "aboutThisComputer": "이 컴퓨터에 관하여",
+      "run": "실행...",
       "ryos98": "98",
       "ryosProfessional": "프로페셔널",
-      "start": "시작",
-      "run": "실행..."
+      "start": "시작"
     },
     "swipeInstructions": {
       "description": "열려 있는 창 사이를 이동하려면 왼쪽 또는 오른쪽으로 스와이프",
@@ -2577,5 +2580,34 @@
       "spanish": "Español",
       "title": "언어"
     }
+  },
+  "spotlight": {
+    "ariaLabels": {
+      "clearSearch": "검색 지우기",
+      "spotlightSearch": "Spotlight 검색 (⌘+Space)"
+    },
+    "askRyo": "Ryo에게 물어보기",
+    "hintClose": "닫기",
+    "hintNavigate": "탐색",
+    "hintOpen": "열기",
+    "noResults": "결과 없음",
+    "placeholder": "ryOS 검색",
+    "sections": {
+      "applets": "애플릿",
+      "apps": "응용 프로그램",
+      "commands": "명령어",
+      "documents": "문서",
+      "music": "음악",
+      "settings": "설정"
+    },
+    "settings": {
+      "language": "언어",
+      "screenSaver": "화면 보호기",
+      "sounds": "사운드 및 음량",
+      "theme": "테마",
+      "wallpaper": "배경화면"
+    },
+    "title": "Spotlight",
+    "topHits": "인기 항목"
   }
 }
