@@ -2439,6 +2439,9 @@
       "failedToFetchFurigana": "Error al obtener furigana",
       "failedToFetchSoramimi": "Error al obtener soramimi"
     },
+    "expose": {
+      "noWindows": "No hay ventanas abiertas"
+    },
     "htmlPreview": {
       "bannerFallbackTitle": "Applet sin título",
       "codePreviewTitle": "Vista previa de código de ryOS",
@@ -2583,9 +2586,9 @@
       "commands": "Comandos",
       "documents": "Documentos",
       "music": "Música",
+      "settings": "Ajustes",
       "sites": "Sitios",
-      "videos": "Vídeos",
-      "settings": "Ajustes"
+      "videos": "Vídeos"
     },
     "settings": {
       "language": "Idioma",

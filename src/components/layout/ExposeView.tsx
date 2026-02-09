@@ -50,9 +50,11 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   // Track previous isOpen state to detect changes
   const prevIsOpen = usePrevious(isOpen);
 
-  // Get all open instances (excluding minimized)
+  // Get all open instances (excluding minimized and stickies)
   const openInstances = useMemo(() => {
-    return Object.values(instances).filter((inst) => inst.isOpen && !inst.isMinimized);
+    return Object.values(instances).filter(
+      (inst) => inst.isOpen && !inst.isMinimized && inst.appId !== "stickies"
+    );
   }, [instances]);
 
   // Set expose mode when view opens/closes
@@ -188,13 +190,26 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
 
           {/* Window labels overlay */}
           <motion.div
-            className="fixed inset-0 z-[10001] pointer-events-none"
+            className="fixed inset-0 z-[10001] pointer-events-none flex items-center justify-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
           >
-            {openInstances.map((instance, index) => {
+            {openInstances.length === 0 ? (
+              <div
+                className={`text-white ${isMacOSXTheme ? "font-bold" : "drop-shadow-lg"}`}
+                style={{
+                  textShadow: isMacOSXTheme
+                    ? "rgba(0, 0, 0, 0.9) 0px 1px 0px, rgba(0, 0, 0, 0.85) 0px 1px 3px, rgba(0, 0, 0, 0.45) 0px 2px 3px"
+                    : undefined,
+                  fontSize: "1rem",
+                }}
+              >
+                {t("common.expose.noWindows")}
+              </div>
+            ) : (
+            openInstances.map((instance, index) => {
               const isApplet = instance.appId === "applet-viewer";
               const appletInfo = isApplet ? getAppletInfo(instance) : null;
               const displayIcon =
@@ -259,7 +274,8 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
                   </div>
                 </div>
               );
-            })}
+            })
+            )}
           </motion.div>
         </>
       )}

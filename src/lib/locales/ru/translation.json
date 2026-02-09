@@ -2439,6 +2439,9 @@
       "failedToFetchFurigana": "Не удалось получить фуригану",
       "failedToFetchSoramimi": "Не удалось получить сорамими"
     },
+    "expose": {
+      "noWindows": "[TODO] No windows"
+    },
     "htmlPreview": {
       "bannerFallbackTitle": "Безымянный апплет",
       "codePreviewTitle": "Предварительный просмотр кода ryOS",
@@ -2583,9 +2586,9 @@
       "commands": "Команды",
       "documents": "Документы",
       "music": "Музыка",
+      "settings": "Настройки",
       "sites": "Сайты",
-      "videos": "Видео",
-      "settings": "Настройки"
+      "videos": "Видео"
     },
     "settings": {
       "language": "Язык",

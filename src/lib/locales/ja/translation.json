@@ -2439,6 +2439,9 @@
       "failedToFetchFurigana": "フリガナの取得に失敗しました",
       "failedToFetchSoramimi": "ソラミミの取得に失敗しました"
     },
+    "expose": {
+      "noWindows": "開いているウィンドウはありません"
+    },
     "htmlPreview": {
       "bannerFallbackTitle": "無題のアプレット",
       "codePreviewTitle": "ryOSコードプレビュー",
@@ -2598,9 +2601,9 @@
       "commands": "コマンド",
       "documents": "書類",
       "music": "ミュージック",
+      "settings": "設定",
       "sites": "サイト",
-      "videos": "ビデオ",
-      "settings": "設定"
+      "videos": "ビデオ"
     },
     "settings": {
       "language": "言語",

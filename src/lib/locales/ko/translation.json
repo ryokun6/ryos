@@ -2439,6 +2439,9 @@
       "failedToFetchFurigana": "후리가나 가져오기 실패",
       "failedToFetchSoramimi": "소라미미 가져오기 실패"
     },
+    "expose": {
+      "noWindows": "열려 있는 윈도우 없음"
+    },
     "htmlPreview": {
       "bannerFallbackTitle": "제목 없는 Applet",
       "codePreviewTitle": "ryOS 코드 미리보기",
@@ -2598,9 +2601,9 @@
       "commands": "명령어",
       "documents": "문서",
       "music": "음악",
+      "settings": "설정",
       "sites": "사이트",
-      "videos": "비디오",
-      "settings": "설정"
+      "videos": "비디오"
     },
     "settings": {
       "language": "언어",

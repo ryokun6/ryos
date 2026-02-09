@@ -137,6 +137,9 @@
       "turnMagnificationOn": "Turn Magnification On",
       "turnMagnificationOff": "Turn Magnification Off"
     },
+    "expose": {
+      "noWindows": "No open windows"
+    },
     "window": {
       "minimize": "Minimize",
       "maximize": "Maximize",

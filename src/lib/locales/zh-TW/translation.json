@@ -2439,6 +2439,9 @@
       "failedToFetchFurigana": "無法取得假名",
       "failedToFetchSoramimi": "無法取得空耳"
     },
+    "expose": {
+      "noWindows": "沒有開啟的視窗"
+    },
     "htmlPreview": {
       "bannerFallbackTitle": "未命名 Applet",
       "codePreviewTitle": "ryOS 程式碼預覽",
@@ -2598,9 +2601,9 @@
       "commands": "指令",
       "documents": "文件",
       "music": "音樂",
+      "settings": "設定",
       "sites": "網站",
-      "videos": "影片",
-      "settings": "設定"
+      "videos": "影片"
     },
     "settings": {
       "language": "語言",

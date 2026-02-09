@@ -380,6 +380,7 @@ export function AppManager({ apps }: AppManagerProps) {
       {/* App Instances */}
       {Object.values(instances).map((instance) => {
         if (!instance.isOpen) return null;
+        if (exposeMode && instance.appId === "stickies") return null;
 
         const appId = instance.appId as AppId;
         const zIndex = getZIndexForInstance(instance.instanceId);

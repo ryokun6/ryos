@@ -2439,6 +2439,9 @@
       "failedToFetchFurigana": "Impossibile recuperare furigana",
       "failedToFetchSoramimi": "Impossibile recuperare soramimi"
     },
+    "expose": {
+      "noWindows": "[TODO] No windows"
+    },
     "htmlPreview": {
       "bannerFallbackTitle": "Applet senza titolo",
       "codePreviewTitle": "Anteprima codice ryOS",
@@ -2583,9 +2586,9 @@
       "commands": "Comandi",
       "documents": "Documenti",
       "music": "Musica",
+      "settings": "Impostazioni",
       "sites": "Siti",
-      "videos": "Video",
-      "settings": "Impostazioni"
+      "videos": "Video"
     },
     "settings": {
       "language": "Lingua",
