@@ -93,7 +93,12 @@ export const getTokenRefreshTime = (username: string): number | null => {
     return null;
   }
 
-  const parsedTime = parseInt(time, 10);
+  const normalized = time.trim();
+  if (!/^\d+$/.test(normalized)) {
+    return null;
+  }
+
+  const parsedTime = Number(normalized);
   return Number.isFinite(parsedTime) ? parsedTime : null;
 };
 
