@@ -54,14 +54,24 @@ export function SpotlightSearch() {
   const isMac = currentTheme === "macosx" || isSystem7;
   const isMobile = useIsMobile();
 
-  // Focus input when opening
+  // Focus input when opening. For XP/98, Start menu dropdown steals focus on close
+  // so we delay and re-focus to reclaim after its cleanup.
   useEffect(() => {
-    if (isOpen) {
-      requestAnimationFrame(() => {
-        inputRef.current?.focus();
-      });
-    }
-  }, [isOpen]);
+    if (!isOpen) return;
+    const focusInput = () => inputRef.current?.focus();
+    const delay = isXpTheme ? 150 : 0;
+    const id = setTimeout(() => {
+      requestAnimationFrame(focusInput);
+      if (isXpTheme) {
+        reclaimId = setTimeout(() => requestAnimationFrame(focusInput), 100);
+      }
+    }, delay);
+    let reclaimId: ReturnType<typeof setTimeout> | undefined;
+    return () => {
+      clearTimeout(id);
+      if (reclaimId) clearTimeout(reclaimId);
+    };
+  }, [isOpen, isXpTheme]);
 
   // Listen for toggleSpotlight events
   useEffect(() => {
