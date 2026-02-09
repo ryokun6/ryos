@@ -139,7 +139,6 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
         id: `app-${appId}`,
         type: "app" as const,
         title: getTranslatedAppName(appId),
-        subtitle: appRegistry[appId]?.description,
         icon: getAppIconPath(appId),
         action: () => launchApp(appId),
       }));
@@ -168,7 +167,6 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
         id: `app-${app.id}`,
         type: "app" as const,
         title: getTranslatedAppName(app.id),
-        subtitle: appRegistry[app.id]?.description,
         icon: getAppIconPath(app.id),
         action: () => launchApp(app.id),
       }));
@@ -188,7 +186,7 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
         id: `doc-${item.path}`,
         type: "document" as const,
         title: item.name,
-        subtitle: item.path,
+        subtitle: "Documents",
         icon: "📄",
         isEmoji: true,
         action: () => launchApp("textedit", { initialData: { path: item.path } }),
@@ -209,7 +207,7 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
         id: `applet-${item.path}`,
         type: "applet" as const,
         title: item.name.replace(/\.(html|app)$/i, ""),
-        subtitle: item.path,
+        subtitle: "Applets",
         icon: item.icon && !item.icon.startsWith("/") ? item.icon : "📦",
         isEmoji: true,
         action: () =>
