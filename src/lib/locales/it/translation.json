@@ -2267,6 +2267,30 @@
       }
     }
   },
+  "spotlight": {
+    "placeholder": "Cerca in ryOS",
+    "sections": {
+      "apps": "Applicazioni",
+      "documents": "Documenti",
+      "applets": "Applet",
+      "music": "Musica",
+      "settings": "Impostazioni",
+      "commands": "Comandi"
+    },
+    "topHits": "Più rilevanti",
+    "askRyo": "Chiedi a Ryo",
+    "noResults": "Nessun risultato",
+    "hintClose": "chiudi",
+    "hintOpen": "apri",
+    "hintNavigate": "naviga",
+    "settings": {
+      "theme": "Tema",
+      "wallpaper": "Sfondo",
+      "sounds": "Suoni e volume",
+      "language": "Lingua",
+      "screenSaver": "Salvaschermo"
+    }
+  },
   "common": {
     "aboutThisMac": {
       "builtInMemory": "Memoria integrata",
@@ -2470,7 +2494,8 @@
       "aboutThisComputer": "Informazioni su questo computer",
       "ryos98": "98",
       "ryosProfessional": "Professional",
-      "start": "Avvio"
+      "start": "Avvio",
+      "run": "Esegui..."
     },
     "swipeInstructions": {
       "description": "Scorri a sinistra o a destra per spostarti tra le finestre aperte",

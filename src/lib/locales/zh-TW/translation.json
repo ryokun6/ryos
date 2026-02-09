@@ -2267,6 +2267,30 @@
       }
     }
   },
+  "spotlight": {
+    "placeholder": "搜尋 ryOS",
+    "sections": {
+      "apps": "應用程式",
+      "documents": "文件",
+      "applets": "小工具",
+      "music": "音樂",
+      "settings": "設定",
+      "commands": "指令"
+    },
+    "topHits": "常用項目",
+    "askRyo": "詢問 Ryo",
+    "noResults": "找不到結果",
+    "hintClose": "關閉",
+    "hintOpen": "開啟",
+    "hintNavigate": "瀏覽",
+    "settings": {
+      "theme": "主題",
+      "wallpaper": "桌布",
+      "sounds": "聲音與音量",
+      "language": "語言",
+      "screenSaver": "螢幕保護程式"
+    }
+  },
   "common": {
     "aboutThisMac": {
       "builtInMemory": "內建記憶體",
@@ -2485,7 +2509,8 @@
       "aboutThisComputer": "關於這部電腦",
       "ryos98": "98",
       "ryosProfessional": "專業版",
-      "start": "開始"
+      "start": "開始",
+      "run": "執行..."
     },
     "swipeInstructions": {
       "description": "向左或向右滑動以在開啟的視窗之間導覽",

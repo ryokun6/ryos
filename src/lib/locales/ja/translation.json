@@ -2267,6 +2267,30 @@
       }
     }
   },
+  "spotlight": {
+    "placeholder": "ryOS を検索",
+    "sections": {
+      "apps": "アプリケーション",
+      "documents": "書類",
+      "applets": "アプレット",
+      "music": "ミュージック",
+      "settings": "設定",
+      "commands": "コマンド"
+    },
+    "topHits": "トップヒット",
+    "askRyo": "Ryo に聞く",
+    "noResults": "結果が見つかりません",
+    "hintClose": "閉じる",
+    "hintOpen": "開く",
+    "hintNavigate": "移動",
+    "settings": {
+      "theme": "テーマ",
+      "wallpaper": "壁紙",
+      "sounds": "サウンドと音量",
+      "language": "言語",
+      "screenSaver": "スクリーンセーバー"
+    }
+  },
   "common": {
     "aboutThisMac": {
       "builtInMemory": "内蔵メモリ",
@@ -2485,7 +2509,8 @@
       "aboutThisComputer": "このコンピュータについて",
       "ryos98": "98",
       "ryosProfessional": "プロフェッショナル",
-      "start": "スタート"
+      "start": "スタート",
+      "run": "ファイル名を指定して実行..."
     },
     "swipeInstructions": {
       "description": "開いているウィンドウ間を移動するには左右にスワイプ",

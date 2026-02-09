@@ -994,6 +994,71 @@
   --os-color-selection-glow: rgba(0, 0, 0, 0.22);
 }
 
+/* ── Spotlight Search panel: prevent macOS theme global font-size overrides ── */
+/* The macOS theme sets font-size !important on div, p, button, input, label.
+   We counter with inherit !important so inline styles on each element win. */
+:root[data-os-theme="macosx"] .spotlight-panel,
+:root[data-os-theme="macosx"] .spotlight-panel div,
+:root[data-os-theme="macosx"] .spotlight-panel p,
+:root[data-os-theme="macosx"] .spotlight-panel span,
+:root[data-os-theme="macosx"] .spotlight-panel button,
+:root[data-os-theme="macosx"] .spotlight-panel label {
+  font-size: inherit !important;
+}
+:root[data-os-theme="macosx"] .spotlight-panel input.spotlight-input {
+  font-size: 13px !important;
+}
+:root[data-os-theme="macosx"] .spotlight-panel .spotlight-section-header {
+  font-size: 11px !important;
+}
+:root[data-os-theme="macosx"] .spotlight-panel .spotlight-row {
+  font-size: 13px !important;
+}
+:root[data-os-theme="macosx"] .spotlight-panel .spotlight-no-results {
+  font-size: 13px !important;
+}
+
+/* System 7 Spotlight: use normal antialiased rendering (not pixelated) */
+:root[data-os-theme="system7"] .spotlight-panel,
+:root[data-os-theme="system7"] .spotlight-panel * {
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
+}
+
+/* XP / Win98 Spotlight: reset button styles from xp-custom.css / 98-custom.css
+   Those stylesheets apply background + 3D box-shadow to ALL <button> elements.
+   Spotlight rows are <button> so they inherit the raised 3D look. Reset them.
+   Use :not([data-selected]) to preserve the selection highlight background. */
+:root[data-os-theme="xp"] .spotlight-panel button:not([data-selected]),
+:root[data-os-theme="win98"] .spotlight-panel button:not([data-selected]) {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+:root[data-os-theme="xp"] .spotlight-panel button[data-selected],
+:root[data-os-theme="win98"] .spotlight-panel button[data-selected] {
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+:root[data-os-theme="xp"] .spotlight-panel button:active,
+:root[data-os-theme="win98"] .spotlight-panel button:active,
+:root[data-os-theme="xp"] .spotlight-panel button:focus,
+:root[data-os-theme="win98"] .spotlight-panel button:focus {
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* XP / Win98 Spotlight: reset input styles */
+:root[data-os-theme="xp"] .spotlight-panel input,
+:root[data-os-theme="win98"] .spotlight-panel input {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
 /* Shadow utilities */
 .shadow-os-window {
   box-shadow: var(--os-window-shadow);

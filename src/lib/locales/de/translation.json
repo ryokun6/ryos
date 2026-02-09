@@ -2267,6 +2267,30 @@
       }
     }
   },
+  "spotlight": {
+    "placeholder": "ryOS durchsuchen",
+    "sections": {
+      "apps": "Programme",
+      "documents": "Dokumente",
+      "applets": "Applets",
+      "music": "Musik",
+      "settings": "Einstellungen",
+      "commands": "Befehle"
+    },
+    "topHits": "Top-Treffer",
+    "askRyo": "Ryo fragen",
+    "noResults": "Keine Ergebnisse",
+    "hintClose": "schließen",
+    "hintOpen": "öffnen",
+    "hintNavigate": "navigieren",
+    "settings": {
+      "theme": "Design",
+      "wallpaper": "Hintergrundbild",
+      "sounds": "Töne & Lautstärke",
+      "language": "Sprache",
+      "screenSaver": "Bildschirmschoner"
+    }
+  },
   "common": {
     "aboutThisMac": {
       "builtInMemory": "Arbeitsspeicher",
@@ -2485,7 +2509,8 @@
       "aboutThisComputer": "Über diesen Computer",
       "ryos98": "98",
       "ryosProfessional": "Professional",
-      "start": "Start"
+      "start": "Start",
+      "run": "Ausführen..."
     },
     "swipeInstructions": {
       "description": "Zum Navigieren zwischen geöffneten Fenstern nach links oder rechts wischen",

@@ -201,8 +201,10 @@ export function StartMenu({ apps }: StartMenuProps) {
                   style={{ borderColor: "#9e9e9e" }}
                 />
 
-                {/* Apps */}
-                {apps.map((app) => (
+                {/* Apps — filter out admin-only apps */}
+                {apps
+                  .filter((app) => app.id !== "admin")
+                  .map((app) => (
                   <DropdownMenuItem
                     key={app.id}
                     onClick={() => handleAppClick(app.id)}
@@ -237,6 +239,31 @@ export function StartMenu({ apps }: StartMenuProps) {
                   </DropdownMenuItem>
                 ))}
               </div>
+
+              {/* Run... — pinned at bottom, outside scrollable area */}
+              <div
+                className="border-t mx-0"
+                style={{ borderColor: "#9e9e9e" }}
+              />
+              <DropdownMenuItem
+                onClick={() => {
+                  setIsStartMenuOpen(false);
+                  window.dispatchEvent(new CustomEvent("toggleSpotlight"));
+                }}
+                className="h-8 px-3 flex items-center gap-2 hover:bg-blue-500 hover:text-white flex-shrink-0"
+                style={{
+                  fontSize: "11px",
+                  color: "#000000",
+                  fontFamily: "var(--font-ms-sans)",
+                  imageRendering: "pixelated",
+                }}
+              >
+                <div className="w-6 h-6 flex items-center justify-center text-base">
+                  🔍
+                </div>
+                <span className="flex-1">{t("common.startMenu.run")}</span>
+                <span className="text-[10px] opacity-50">Ctrl+Space</span>
+              </DropdownMenuItem>
             </div>
           </div>
         </DropdownMenuContent>

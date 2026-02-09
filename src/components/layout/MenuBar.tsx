@@ -27,7 +27,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { StartMenu } from "./StartMenu";
 import { useAppStoreShallow, useAudioSettingsStoreShallow, useDisplaySettingsStoreShallow } from "@/stores/helpers";
 import { Slider } from "@/components/ui/slider";
-import { SpeakerSimpleLow, SpeakerSimpleHigh, SpeakerSimpleSlash, Gear, CaretUp, DotsThree } from "@phosphor-icons/react";
+import { SpeakerSimpleLow, SpeakerSimpleHigh, SpeakerSimpleSlash, Gear, CaretUp, DotsThree, MagnifyingGlass } from "@phosphor-icons/react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getAppIconPath, appRegistry } from "@/config/appRegistry";
@@ -1519,15 +1519,48 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           }}
         />
       )}
-      <div className={`${isPhone ? "flex-shrink-0 px-2" : "ml-auto"} flex items-center`}>
+      <div className={`${isPhone ? "flex-shrink-0 pl-1 pr-0.5" : "ml-auto"} flex items-center`}>
         <OfflineIndicator />
         <ExposeButton />
         <div className="hidden sm:flex">
           <VolumeControl />
         </div>
         <Clock enableExposeToggle />
+        <SpotlightMenuBarButton />
       </div>
     </div>
+  );
+}
+
+function SpotlightMenuBarButton() {
+  const currentTheme = useThemeStore((state) => state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+
+  // Only show on Mac themes — Windows themes use Start Menu "Run..."
+  if (isXpTheme) return null;
+
+  const handleClick = () => {
+    window.dispatchEvent(new CustomEvent("toggleSpotlight"));
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="flex items-center justify-center px-1 py-0.5"
+      style={{
+        marginLeft: "2px",
+        color: "inherit",
+      }}
+      title="Spotlight Search (⌘+Space)"
+      aria-label="Spotlight Search"
+    >
+      <MagnifyingGlass
+        aria-hidden="true"
+        size={12}
+        weight="bold"
+      />
+    </button>
   );
 }
 

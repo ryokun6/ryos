@@ -2267,6 +2267,30 @@
       }
     }
   },
+  "spotlight": {
+    "placeholder": "Поиск в ryOS",
+    "sections": {
+      "apps": "Приложения",
+      "documents": "Документы",
+      "applets": "Апплеты",
+      "music": "Музыка",
+      "settings": "Настройки",
+      "commands": "Команды"
+    },
+    "topHits": "Лучшие результаты",
+    "askRyo": "Спросить Ryo",
+    "noResults": "Ничего не найдено",
+    "hintClose": "закрыть",
+    "hintOpen": "открыть",
+    "hintNavigate": "навигация",
+    "settings": {
+      "theme": "Тема",
+      "wallpaper": "Обои",
+      "sounds": "Звуки и громкость",
+      "language": "Язык",
+      "screenSaver": "Заставка"
+    }
+  },
   "common": {
     "aboutThisMac": {
       "builtInMemory": "Встроенная память",
@@ -2470,7 +2494,8 @@
       "aboutThisComputer": "Об этом компьютере",
       "ryos98": "98",
       "ryosProfessional": "Professional",
-      "start": "Пуск"
+      "start": "Пуск",
+      "run": "Выполнить..."
     },
     "swipeInstructions": {
       "description": "Проведите влево или вправо, чтобы перемещаться между открытыми окнами",
