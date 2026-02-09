@@ -25,6 +25,9 @@ export type WriteValidationResult = WriteValidationFailure | WriteValidationSucc
 export const normalizeToolPath = (path: unknown): string =>
   typeof path === "string" ? path.trim() : "";
 
+export const normalizeToolText = (value: unknown): string | null =>
+  typeof value === "string" ? value : null;
+
 const isWriteMode = (value: unknown): value is WriteMode =>
   value === "overwrite" || value === "append" || value === "prepend";
 
@@ -138,10 +141,11 @@ export const validateDocumentWriteInput = ({
   mode,
 }: {
   path: unknown;
-  content: string;
+  content: unknown;
   mode: unknown;
 }): WriteValidationResult => {
   const normalizedPath = normalizeToolPath(path);
+  const normalizedContent = normalizeToolText(content);
   const normalizedMode = sanitizeWriteMode(mode);
 
   if (!normalizedPath) {
@@ -165,7 +169,10 @@ export const validateDocumentWriteInput = ({
     };
   }
 
-  if (!content && normalizedMode === "overwrite") {
+  if (
+    normalizedContent == null ||
+    (normalizedMode === "overwrite" && normalizedContent.trim().length === 0)
+  ) {
     return { ok: false, errorKey: "apps.chats.toolCalls.noContentProvided" };
   }
 
@@ -182,11 +189,14 @@ export const validateFileEditInput = ({
   newString: unknown;
 }): EditValidationResult => {
   const normalizedPath = normalizeToolPath(path);
+  const normalizedOldString = normalizeToolText(oldString);
+  const normalizedNewString = normalizeToolText(newString);
 
   if (
     !normalizedPath ||
-    typeof oldString !== "string" ||
-    typeof newString !== "string"
+    normalizedOldString == null ||
+    normalizedOldString.length === 0 ||
+    normalizedNewString == null
   ) {
     return {
       ok: false,
@@ -197,7 +207,7 @@ export const validateFileEditInput = ({
   return {
     ok: true,
     path: normalizedPath,
-    oldString,
-    newString,
+    oldString: normalizedOldString,
+    newString: normalizedNewString,
   };
 };

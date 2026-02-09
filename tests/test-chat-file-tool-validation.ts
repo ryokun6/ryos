@@ -3,6 +3,7 @@
 import {
   getEditTargetMessageBundle,
   normalizeToolPath,
+  normalizeToolText,
   sanitizeWriteMode,
   getEditReplacementFailureMessage,
   resolveEditTarget,
@@ -98,6 +99,18 @@ export async function runChatFileToolValidationTests(): Promise<{
     }
   });
 
+  await runTest("rejects non-string write content payloads", async () => {
+    const result = validateDocumentWriteInput({
+      path: "/Documents/demo.md",
+      content: null,
+      mode: "append",
+    });
+    assertEq(result.ok, false);
+    if (!result.ok) {
+      assertEq(result.errorKey, "apps.chats.toolCalls.noContentProvided");
+    }
+  });
+
   await runTest("returns parsed filename for valid write input", async () => {
     const result = validateDocumentWriteInput({
       path: "/Documents/notes.md",
@@ -173,6 +186,18 @@ export async function runChatFileToolValidationTests(): Promise<{
       path: "/Documents/file.md",
       oldString: null,
       newString: 5,
+    });
+    assertEq(result.ok, false);
+    if (!result.ok) {
+      assertEq(result.errorKey, "apps.chats.toolCalls.missingEditParameters");
+    }
+  });
+
+  await runTest("rejects empty old string in edit payload", async () => {
+    const result = validateFileEditInput({
+      path: "/Documents/file.md",
+      oldString: "",
+      newString: "new",
     });
     assertEq(result.ok, false);
     if (!result.ok) {
@@ -284,6 +309,12 @@ export async function runChatFileToolValidationTests(): Promise<{
     assertEq(normalizeToolPath("  /Documents/a.md "), "/Documents/a.md");
     assertEq(normalizeToolPath(5), "");
     assertEq(normalizeToolPath(null), "");
+  });
+
+  await runTest("normalizeToolText accepts strings and rejects non-strings", async () => {
+    assertEq(normalizeToolText("text"), "text");
+    assertEq(normalizeToolText(5), null);
+    assertEq(normalizeToolText(undefined), null);
   });
 
   return printSummary();
