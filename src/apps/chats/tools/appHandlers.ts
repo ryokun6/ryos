@@ -2,9 +2,7 @@
  * App Launch/Close Tool Handlers
  */
 
-import { useAppStore } from "@/stores/useAppStore";
-import { appRegistry } from "@/config/appRegistry";
-import { requestCloseWindow } from "@/utils/windowUtils";
+import { appIds, appNames } from "@/config/appRegistryData";
 import type { AppId } from "@/config/appIds";
 import type { LaunchAppOptions } from "@/hooks/useLaunchApp";
 import type { ToolContext } from "./types";
@@ -48,13 +46,13 @@ const resolveRegisteredApp = (
   getAppNameById?: (appId: AppId) => string,
 ): { appId: AppId; appName: string } | null => {
   const appId = id as AppId;
-  if (!appRegistry[appId]) {
+  if (!appIds.includes(appId)) {
     return null;
   }
 
   return {
     appId,
-    appName: getAppNameById ? getAppNameById(appId) : appRegistry[appId].name,
+    appName: getAppNameById ? getAppNameById(appId) : appNames[appId],
   };
 };
 
@@ -157,14 +155,18 @@ export const handleCloseApp = (
   const { appId, appName } = resolvedApp;
   console.log("[ToolCall] closeApp:", id);
 
-  // Close all instances of the specified app
-  const getInstancesByAppId =
-    dependencies.getInstancesByAppId ??
-    ((targetAppId: AppId) => useAppStore.getState().getInstancesByAppId(targetAppId));
-  const closeWindowByInstanceId =
-    dependencies.closeWindowByInstanceId ?? requestCloseWindow;
+  if (!dependencies.getInstancesByAppId || !dependencies.closeWindowByInstanceId) {
+    context.addToolResult({
+      tool: "closeApp",
+      toolCallId,
+      state: "output-error",
+      errorText: "Close app dependencies unavailable",
+    });
+    return "";
+  }
 
-  const appInstances = getInstancesByAppId(appId);
+  // Close all instances of the specified app
+  const appInstances = dependencies.getInstancesByAppId(appId);
   const openInstances = appInstances.filter((inst) => inst.isOpen);
 
   if (openInstances.length === 0) {
@@ -174,7 +176,7 @@ export const handleCloseApp = (
 
   // Close all open instances of this app (with animation and sound)
   openInstances.forEach((instance) => {
-    closeWindowByInstanceId(instance.instanceId);
+    dependencies.closeWindowByInstanceId?.(instance.instanceId);
   });
 
   console.log(

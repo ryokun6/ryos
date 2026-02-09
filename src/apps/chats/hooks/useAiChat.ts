@@ -16,6 +16,7 @@ import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { detectUserOS } from "@/utils/userOS";
+import { requestCloseWindow } from "@/utils/windowUtils";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -333,7 +334,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               toolCall.input as CloseAppInput,
               toolCall.toolCallId,
               toolContext,
-              { translate: i18n.t },
+              {
+                translate: i18n.t,
+                getInstancesByAppId: (appId) =>
+                  useAppStore.getState().getInstancesByAppId(appId),
+                closeWindowByInstanceId: requestCloseWindow,
+              },
             );
             break;
           }
