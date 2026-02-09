@@ -78,13 +78,17 @@ export const handleChatWriteToolCall = async ({
   executeWriteOperation = executeChatFileWriteOperation,
   syncTextEdit,
 }: BaseToolCallContext & {
-  path: string;
-  content: string;
-  mode?: "overwrite" | "append" | "prepend";
+  path: unknown;
+  content: unknown;
+  mode?: unknown;
   executeWriteOperation?: ExecuteWriteOperationFn;
   syncTextEdit: SyncTextEditFn;
 }): Promise<void> => {
-  console.log("[ToolCall] write:", { path, mode, contentLength: content?.length });
+  console.log("[ToolCall] write:", {
+    path,
+    mode,
+    contentLength: typeof content === "string" ? content.length : undefined,
+  });
 
   try {
     const writeResult = await executeWriteOperation({
@@ -140,9 +144,9 @@ export const handleChatEditToolCall = async ({
   executeEditOperation = executeChatFileEditOperation,
   syncTextEdit,
 }: BaseToolCallContext & {
-  path: string;
-  oldString: string;
-  newString: string;
+  path: unknown;
+  oldString: unknown;
+  newString: unknown;
   executeEditOperation?: ExecuteEditOperationFn;
   syncTextEdit: SyncTextEditFn;
 }): Promise<void> => {
@@ -648,9 +652,9 @@ export const handleChatVfsToolCall = async ({
 
   if (toolName === "write") {
     await writeHandler({
-      path: input.path as string,
-      content: input.content as string,
-      mode: input.mode as "overwrite" | "append" | "prepend" | undefined,
+      path: input.path,
+      content: input.content,
+      mode: input.mode,
       toolName,
       toolCallId,
       addToolResult,
@@ -662,9 +666,9 @@ export const handleChatVfsToolCall = async ({
 
   if (toolName === "edit") {
     await editHandler({
-      path: input.path as string,
-      oldString: input.old_string as string,
-      newString: input.new_string as string,
+      path: input.path,
+      oldString: input.old_string,
+      newString: input.new_string,
       toolName,
       toolCallId,
       addToolResult,
