@@ -1751,6 +1751,34 @@ export const clearRoomMessagesInMap = (
   [roomId]: [],
 });
 
+const areChatMessageListsEqual = (
+  currentMessages: ChatMessage[],
+  nextMessages: ChatMessage[]
+): boolean => {
+  if (currentMessages.length !== nextMessages.length) {
+    return false;
+  }
+
+  for (let i = 0; i < currentMessages.length; i++) {
+    const current = currentMessages[i];
+    const next = nextMessages[i];
+    if (
+      !current ||
+      !next ||
+      current.id !== next.id ||
+      current.clientId !== next.clientId ||
+      current.roomId !== next.roomId ||
+      current.username !== next.username ||
+      current.content !== next.content ||
+      current.timestamp !== next.timestamp
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 export const mergeFetchedMessagesForRoom = (
   roomMessages: Record<string, ChatMessage[]>,
   roomId: string,
@@ -1759,6 +1787,10 @@ export const mergeFetchedMessagesForRoom = (
   const existing = roomMessages[roomId] || [];
   const fetchedMessages = normalizeApiMessages(apiMessages || []);
   const merged = mergeServerMessagesWithOptimistic(existing, fetchedMessages);
+
+  if (areChatMessageListsEqual(existing, merged)) {
+    return roomMessages;
+  }
 
   return {
     ...roomMessages,
@@ -1770,18 +1802,26 @@ export const mergeFetchedBulkMessages = (
   roomMessages: Record<string, ChatMessage[]>,
   messagesMap: Record<string, ApiChatMessagePayload[]>
 ): Record<string, ChatMessage[]> => {
-  const nextRoomMessages = { ...roomMessages };
+  let nextRoomMessages = roomMessages;
+  let changed = false;
 
   Object.entries(messagesMap).forEach(([roomId, messages]) => {
     const processed = normalizeApiMessages(messages);
-    const existing = nextRoomMessages[roomId] || [];
-    nextRoomMessages[roomId] = mergeServerMessagesWithOptimistic(
-      existing,
-      processed
-    );
+    const existing = roomMessages[roomId] || [];
+    const merged = mergeServerMessagesWithOptimistic(existing, processed);
+    if (areChatMessageListsEqual(existing, merged)) {
+      return;
+    }
+
+    if (!changed) {
+      nextRoomMessages = { ...roomMessages };
+      changed = true;
+    }
+
+    nextRoomMessages[roomId] = merged;
   });
 
-  return nextRoomMessages;
+  return changed ? nextRoomMessages : roomMessages;
 };
 
 export const buildPersistedRoomMessages = (
