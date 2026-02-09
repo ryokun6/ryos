@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { MagnifyingGlass, XCircle } from "@phosphor-icons/react";
+import { XCircle } from "@phosphor-icons/react";
 import { useSpotlightStore } from "@/stores/useSpotlightStore";
 import {
   useSpotlightSearch,
@@ -160,10 +160,10 @@ export function SpotlightSearch() {
       } as React.CSSProperties;
     }
     if (isSystem7) {
-      // Match System 7 window frame: 2px black border + classic Mac shadow
+      // Match System 7 window frame: 1px black border + classic Mac shadow
       return {
         background: "#FFFFFF",
-        border: "2px solid #000000",
+        border: "1px solid #000000",
         borderRadius: "0px",
         boxShadow: "2px 2px 0px 0px rgba(0, 0, 0, 0.5)",
       } as React.CSSProperties;
@@ -230,11 +230,11 @@ export function SpotlightSearch() {
 
   const panelTopStyle: React.CSSProperties = isMobile
     ? {
-        top: `calc(${menubarTop} + 8px)`,
+        top: isSystem7 ? `calc(${menubarTop} + 8px - 1px)` : `calc(${menubarTop} + 8px)`,
         left: "50%",
       }
     : isMac
-    ? { top: menubarTop }
+    ? { top: isSystem7 ? `calc(${menubarTop} - 1px)` : menubarTop }
     : { top: "28%", left: "50%" };
 
   const overlay = (
@@ -343,13 +343,9 @@ export function SpotlightSearch() {
                 </div>
               ) : (
                 <div
-                  className="flex items-center gap-1.5"
+                  className="flex items-center"
                   style={{ padding: isMac ? "6px 10px" : "5px 8px" }}
                 >
-                  <MagnifyingGlass
-                    className="flex-shrink-0 w-3.5 h-3.5 opacity-50"
-                    weight="bold"
-                  />
                   <input
                     ref={inputRef}
                     type="text"
@@ -378,13 +374,20 @@ export function SpotlightSearch() {
               {/* Divider between input and results (not needed for macosx — blue header has border) */}
               {results.length > 0 && currentTheme !== "macosx" && (
                 <div
-                  style={{
-                    height: "1px",
-                    background: isSystem7
-                      ? "#000"
-                      : "rgba(0,0,0,0.1)",
-                    margin: isMac ? "0 4px" : "0",
-                  }}
+                  style={
+                    isSystem7
+                      ? {
+                          height: "1px",
+                          margin: 0,
+                          borderTop: "1px dotted #000000",
+                          background: "transparent",
+                        }
+                      : {
+                          height: "1px",
+                          background: "rgba(0,0,0,0.1)",
+                          margin: isMac ? "0 4px" : "0",
+                        }
+                  }
                 />
               )}
 

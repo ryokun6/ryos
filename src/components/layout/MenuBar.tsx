@@ -1555,9 +1555,7 @@ function SpotlightMenuBarButton() {
         marginLeft: "2px",
         marginRight: "4px",
         color: isSpotlightOpen ? "#FFFFFF" : "inherit",
-        background: isSpotlightOpen
-          ? "linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%)"
-          : "transparent",
+        background: isSpotlightOpen ? "#000000" : "transparent",
         borderRadius: "50%",
         width: "20px",
         height: "20px",
