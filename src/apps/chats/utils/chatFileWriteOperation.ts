@@ -1,4 +1,5 @@
 import {
+  normalizeToolPath,
   type WriteValidationFailure,
   validateDocumentWriteInput,
 } from "./chatFileToolValidation";
@@ -52,7 +53,7 @@ export const executeChatFileWriteOperation = async ({
     };
   }
 
-  const normalizedPath = typeof path === "string" ? path.trim() : "";
+  const normalizedPath = normalizeToolPath(path);
   const incomingContent = typeof content === "string" ? content : "";
   const writeResult = await writeDocumentWithMode({
     path: normalizedPath,
