@@ -9,74 +9,56 @@ import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import {
-  TOKEN_REFRESH_THRESHOLD,
+  buildPostLogoutState,
+  buildPersistedRoomMessages,
+  clearChatRecoveryStorage,
+  clearRoomMessagesInMap,
+  clearUnreadCount,
+  createChatsOnRehydrateStorage,
+  createOptimisticChatMessage,
+  createRoomRequest,
+  deleteRoomRequest,
   ensureRecoveryKeysAreSet,
+  fetchBulkMessagesPayload,
+  fetchPasswordStatus,
+  fetchRoomMessagesPayload,
+  fetchRoomsPayload,
   getAuthTokenFromRecovery,
+  getDaysUntilTokenRefresh,
+  getTokenAgeDays,
   getTokenRefreshTime,
   getUsernameFromRecovery,
+  incrementUnreadCount,
+  isTokenRefreshDue,
+  logIfNetworkResultError,
+  mergeFetchedBulkMessages,
+  mergeFetchedMessagesForRoom,
+  mergeIncomingRoomMessageInMap,
+  migrateChatsPersistedState,
+  notifyServerOnLogout,
+  parseRefreshTokenResponse,
+  parseRegisterUserResponse,
+  prepareRoomsForSet,
+  readErrorResponseBody,
+  refreshAuthTokenRequest,
+  registerUserRequest,
+  removeRoomMessageFromMap,
+  resolveNextFontSize,
+  sanitizeMessageRenderLimit,
   saveAuthTokenToRecovery,
   saveTokenRefreshTime,
   saveUsernameToRecovery,
-} from "./chats/recovery";
-import {
-  createOptimisticChatMessage,
-  sendRoomMessageRequest,
-} from "./chats/sendMessage";
-import { createRoomRequest, deleteRoomRequest } from "./chats/roomRequests";
-import { validateCreateUserInput } from "./chats/userValidation";
-import {
-  refreshAuthTokenRequest,
-  registerUserRequest,
-} from "./chats/authApi";
-import { parseRefreshTokenResponse } from "./chats/authResponse";
-import { readErrorResponseBody } from "./chats/httpErrors";
-import {
-  getDaysUntilTokenRefresh,
-  getTokenAgeDays,
-  isTokenRefreshDue,
-} from "./chats/tokenLifecycle";
-import { clearChatRecoveryStorage } from "./chats/logoutCleanup";
-import {
-  buildPostLogoutState,
-  notifyServerOnLogout,
-  trackLogoutAnalytics,
-} from "./chats/logoutFlow";
-import { buildPersistedRoomMessages } from "./chats/persistence";
-import {
-  createChatsOnRehydrateStorage,
-  migrateChatsPersistedState,
-} from "./chats/persistLifecycle";
-import {
-  clearRoomMessagesInMap,
-  mergeIncomingRoomMessageInMap,
-  prepareRoomsForSet,
-  removeRoomMessageFromMap,
-  setCurrentRoomMessagesInMap,
-} from "./chats/roomState";
-import {
-  mergeFetchedBulkMessages,
-  mergeFetchedMessagesForRoom,
-} from "./chats/roomMessageState";
-import {
-  fetchBulkMessagesPayload,
-  fetchRoomMessagesPayload,
-  fetchRoomsPayload,
-} from "./chats/messagePayloads";
-import { syncPresenceOnRoomSwitch } from "./chats/roomSwitchFlow";
-import {
-  clearUnreadCount,
-  incrementUnreadCount,
-  resolveNextFontSize,
-  sanitizeMessageRenderLimit,
-  toggleBoolean,
-} from "./chats/uiState";
-import {
   schedulePasswordStatusCheck,
+  sendRoomMessageRequest,
+  setCurrentRoomMessagesInMap,
   shouldCheckPasswordStatus,
-} from "./chats/identityState";
-import { parseRegisterUserResponse } from "./chats/registrationResponse";
-import { fetchPasswordStatus, submitPassword } from "./chats/passwordFlow";
-import { logIfNetworkResultError } from "./chats/errorLogging";
+  submitPassword,
+  syncPresenceOnRoomSwitch,
+  TOKEN_REFRESH_THRESHOLD,
+  trackLogoutAnalytics,
+  toggleBoolean,
+  validateCreateUserInput,
+} from "./chats";
 
 // Define the state structure
 export interface ChatsStoreState {
