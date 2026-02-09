@@ -338,6 +338,7 @@ export function SpotlightSearch() {
                             type="button"
                             data-spotlight-index={result.globalIndex}
                             className="spotlight-row w-full flex items-center gap-2 cursor-default"
+                            data-selected={isSelected || undefined}
                             style={{
                               padding: `${rowPy} 10px`,
                               background: isSelected
