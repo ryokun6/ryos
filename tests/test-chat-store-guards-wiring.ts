@@ -87,18 +87,31 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
   await runTest("checks cooldown gate for each chat fetch endpoint", async () => {
     const source = readPayloadSource();
 
+    assert(
+      /ROOMS:\s*"rooms"/.test(source),
+      "Expected ROOMS endpoint key constant"
+    );
+    assert(
+      /ROOM_MESSAGES:\s*"room-messages"/.test(source),
+      "Expected ROOM_MESSAGES endpoint key constant"
+    );
+    assert(
+      /BULK_MESSAGES:\s*"bulk-messages"/.test(source),
+      "Expected BULK_MESSAGES endpoint key constant"
+    );
+
     assertEq(
-      countMatches(source, /endpointKey:\s*"rooms"/),
+      countMatches(source, /endpointKey:\s*CHAT_ENDPOINT_KEYS\.ROOMS/),
       1,
       "Expected rooms fetcher cooldown gate"
     );
     assertEq(
-      countMatches(source, /endpointKey:\s*"room-messages"/),
+      countMatches(source, /endpointKey:\s*CHAT_ENDPOINT_KEYS\.ROOM_MESSAGES/),
       1,
       "Expected room-messages fetcher cooldown gate"
     );
     assertEq(
-      countMatches(source, /endpointKey:\s*"bulk-messages"/),
+      countMatches(source, /endpointKey:\s*CHAT_ENDPOINT_KEYS\.BULK_MESSAGES/),
       1,
       "Expected bulk-messages fetcher cooldown gate"
     );

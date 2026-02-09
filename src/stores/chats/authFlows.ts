@@ -1170,6 +1170,11 @@ const MESSAGE_HISTORY_CAP = 500;
 const MATCH_WINDOW_MS = 10_000;
 const INCOMING_TEMP_MATCH_WINDOW_MS = 5_000;
 const NETWORK_ERROR_MESSAGE = "Network error. Please try again.";
+const CHAT_ENDPOINT_KEYS = {
+  ROOMS: "rooms",
+  ROOM_MESSAGES: "room-messages",
+  BULK_MESSAGES: "bulk-messages",
+} as const;
 
 interface ApiChatMessagePayload {
   id: string;
@@ -1961,7 +1966,7 @@ export const fetchRoomsPayload = async (
   username: string | null
 ): Promise<{ ok: true; rooms: ChatRoom[] } | { ok: false; error: string }> => {
   const result = await runGuardedPayloadFlow<{ rooms?: ChatRoom[] }, ChatRoom[]>({
-    endpointKey: "rooms",
+    endpointKey: CHAT_ENDPOINT_KEYS.ROOMS,
     endpointUnavailableError: "Rooms API temporarily unavailable",
     request: () => fetchRoomsRequest(username),
     errorContext: "fetchRooms error response",
@@ -1987,7 +1992,7 @@ export const fetchRoomMessagesPayload = async (
     { messages?: ApiChatMessagePayload[] },
     ApiChatMessagePayload[]
   >({
-    endpointKey: "room-messages",
+    endpointKey: CHAT_ENDPOINT_KEYS.ROOM_MESSAGES,
     endpointUnavailableError: "Messages API temporarily unavailable",
     request: () => fetchRoomMessagesRequest(roomId),
     errorContext: "fetchMessagesForRoom error response",
@@ -2014,7 +2019,7 @@ export const fetchBulkMessagesPayload = async (
     { messagesMap?: Record<string, ApiChatMessagePayload[]> },
     Record<string, ApiChatMessagePayload[]>
   >({
-    endpointKey: "bulk-messages",
+    endpointKey: CHAT_ENDPOINT_KEYS.BULK_MESSAGES,
     endpointUnavailableError: "Bulk messages API temporarily unavailable",
     request: () => fetchBulkMessagesRequest(roomIds),
     errorContext: "fetchBulkMessages error response",
