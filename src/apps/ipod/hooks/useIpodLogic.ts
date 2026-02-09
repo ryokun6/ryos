@@ -55,7 +55,7 @@ export function useIpodLogic({
   initialData,
   instanceId,
 }: UseIpodLogicOptions) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { play: playClickSound } = useSound(Sounds.BUTTON_CLICK);
   const { play: playScrollSound } = useSound(Sounds.IPOD_CLICK_WHEEL);
   const vibrate = useVibration(100, 50);
@@ -1443,7 +1443,7 @@ export function useIpodLogic({
   // Resolve "auto" translation language to actual ryOS locale
   const effectiveTranslationLanguage = useMemo(
     () => getEffectiveTranslationLanguage(lyricsTranslationLanguage),
-    [lyricsTranslationLanguage, i18n.language]
+    [lyricsTranslationLanguage]
   );
 
   const fullScreenLyricsControls = useLyrics({
@@ -1637,7 +1637,7 @@ export function useIpodLogic({
         }, 500);
       }
     },
-    [showStatus, isPlaying, lyricOffset]
+    [showStatus, isPlaying, lyricOffset, setIsPlaying]
   );
 
   // Fullscreen callbacks
