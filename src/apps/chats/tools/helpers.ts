@@ -6,6 +6,7 @@
  */
 
 import { detectUserOS as detectUserOSUtil } from "@/utils/userOS";
+import type { ToolContext } from "./types";
 
 // ============================================================================
 // Short ID Mapping for AI Communication
@@ -191,3 +192,9 @@ export const getIOSRestrictionMessage = (appName: "iPod" | "Karaoke"): string =>
   }
   return "Karaoke is ready. Tap play to start";
 };
+
+export const resolveToolTranslator = (
+  context: ToolContext,
+): ((key: string, params?: Record<string, unknown>) => string) =>
+  context.translate ??
+  ((key: string, _params?: Record<string, unknown>) => key);

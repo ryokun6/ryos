@@ -21,6 +21,7 @@ import {
   type MacPreset,
 } from "@/stores/useInfiniteMacStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { resolveToolTranslator } from "./helpers";
 
 /**
  * Systems that support absolute mouse coordinates
@@ -115,9 +116,7 @@ export const handleInfiniteMacControl = async (
   toolCallId: string,
   context: ToolContext
 ): Promise<void> => {
-  const t =
-    context.translate ??
-    ((key: string, _params?: Record<string, unknown>) => key);
+  const t = resolveToolTranslator(context);
   const { action, system, x, y, button = "left", key } = input;
   const store = useInfiniteMacStore.getState();
 

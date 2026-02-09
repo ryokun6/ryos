@@ -9,6 +9,7 @@ import { themes } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
 import { forceRefreshCache } from "@/utils/prefetch";
 import type { ToolContext } from "./types";
+import { resolveToolTranslator } from "./helpers";
 
 export interface SettingsInput {
   language?: string;
@@ -54,9 +55,7 @@ export const handleSettings = (
   toolCallId: string,
   context: ToolContext
 ): void => {
-  const t =
-    context.translate ??
-    ((key: string, _params?: Record<string, unknown>) => key);
+  const t = resolveToolTranslator(context);
   const { language, theme, masterVolume, speechEnabled, checkForUpdates } = input;
 
   const changes: string[] = [];

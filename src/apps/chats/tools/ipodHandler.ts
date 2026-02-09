@@ -12,6 +12,7 @@ import {
   shouldDisableTranslation,
   getLanguageName,
   isIOSDevice,
+  resolveToolTranslator,
 } from "./helpers";
 
 export interface IpodControlInput {
@@ -28,10 +29,6 @@ type TranslateFn = (
   key: string,
   params?: Record<string, unknown>,
 ) => string;
-
-const resolveTranslator = (context: ToolContext): TranslateFn =>
-  context.translate ??
-  ((key: string, _params?: Record<string, unknown>) => key);
 
 /**
  * Ensure iPod app is open
@@ -475,7 +472,7 @@ export const handleIpodControl = async (
   toolCallId: string,
   context: ToolContext
 ): Promise<void> => {
-  const t = resolveTranslator(context);
+  const t = resolveToolTranslator(context);
   const {
     action = "toggle",
     enableVideo,

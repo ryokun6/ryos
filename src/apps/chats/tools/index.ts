@@ -42,6 +42,7 @@
  */
 
 import type { ToolHandler, ToolHandlerEntry, ToolContext } from "./types";
+import { resolveToolTranslator } from "./helpers";
 
 // Re-export types and helpers for convenience
 export * from "./types";
@@ -134,7 +135,7 @@ const executeVfsToolFromContext = async (
     input,
     toolCallId,
     addToolResult: context.addToolResult,
-    t: context.translate ?? ((key) => key),
+    t: resolveToolTranslator(context),
     ...context.vfs,
   });
 };

@@ -5,7 +5,12 @@
 import type { ToolContext } from "./types";
 import { useStickiesStore, type StickyColor } from "@/stores/useStickiesStore";
 import { useAppStore } from "@/stores/useAppStore";
-import { createShortIdMap, resolveId, type ShortIdMap } from "./helpers";
+import {
+  createShortIdMap,
+  resolveId,
+  resolveToolTranslator,
+  type ShortIdMap,
+} from "./helpers";
 
 export interface StickiesControlInput {
   action: "list" | "create" | "update" | "delete" | "clear";
@@ -41,9 +46,7 @@ export const handleStickiesControl = (
   toolCallId: string,
   context: ToolContext
 ): void => {
-  const t =
-    context.translate ??
-    ((key: string, _params?: Record<string, unknown>) => key);
+  const t = resolveToolTranslator(context);
   const { action, id, content, color, position, size } = input;
   const store = useStickiesStore.getState();
 
