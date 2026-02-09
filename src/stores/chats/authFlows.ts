@@ -1841,49 +1841,89 @@ export const syncPresenceOnRoomSwitch = async ({
   }
 };
 
-export const fetchRoomsPayload = async (
-  username: string | null
-): Promise<{ ok: true; rooms: ChatRoom[] } | { ok: false; error: string }> => {
-  if (isApiTemporarilyUnavailable("rooms")) {
-    return { ok: false, error: "Rooms API temporarily unavailable" };
+interface GuardedPayloadFlowParams<TSuccessBody, TValue> {
+  endpointKey: string;
+  endpointUnavailableError: string;
+  request: () => Promise<Response>;
+  errorContext: string;
+  successContext: string;
+  fallbackHttpError: string;
+  successWarningKey: string;
+  successUnavailableError: string;
+  extractValue: (body: TSuccessBody) => TValue | null;
+}
+
+const runGuardedPayloadFlow = async <TSuccessBody, TValue>({
+  endpointKey,
+  endpointUnavailableError,
+  request,
+  errorContext,
+  successContext,
+  fallbackHttpError,
+  successWarningKey,
+  successUnavailableError,
+  extractValue,
+}: GuardedPayloadFlowParams<TSuccessBody, TValue>): Promise<
+  { ok: true; value: TValue } | { ok: false; error: string }
+> => {
+  if (isApiTemporarilyUnavailable(endpointKey)) {
+    return { ok: false, error: endpointUnavailableError };
   }
 
   try {
-    const response = await fetchRoomsRequest(username);
+    const response = await request();
     if (!response.ok) {
       const errorData = await readJsonBody<{ error?: string }>(
         response,
-        "fetchRooms error response"
+        errorContext
       );
       return {
         ok: false,
         error: errorData.ok
-          ? errorData.data.error || "Failed to fetch rooms"
+          ? errorData.data.error || fallbackHttpError
           : `HTTP error! status: ${response.status}`,
       };
     }
 
-    const roomsData = await readJsonBody<{ rooms?: ChatRoom[] }>(
-      response,
-      "fetchRooms success response"
-    );
-    if (!roomsData.ok) {
-      warnChatsStoreOnce("fetchRooms-success-response", `[ChatsStore] ${roomsData.error}`);
-      markApiTemporarilyUnavailable("rooms");
-      return { ok: false, error: "Rooms API unavailable" };
+    const payloadData = await readJsonBody<TSuccessBody>(response, successContext);
+    if (!payloadData.ok) {
+      warnChatsStoreOnce(successWarningKey, `[ChatsStore] ${payloadData.error}`);
+      markApiTemporarilyUnavailable(endpointKey);
+      return { ok: false, error: successUnavailableError };
     }
 
-    const rooms = roomsData.data.rooms;
-    if (rooms && Array.isArray(rooms)) {
-      clearApiUnavailable("rooms");
-      return { ok: true, rooms };
+    const value = extractValue(payloadData.data);
+    if (value !== null) {
+      clearApiUnavailable(endpointKey);
+      return { ok: true, value };
     }
 
     return { ok: false, error: "Invalid response format" };
   } catch {
-    markApiTemporarilyUnavailable("rooms");
+    markApiTemporarilyUnavailable(endpointKey);
     return { ok: false, error: NETWORK_ERROR_MESSAGE };
   }
+};
+
+export const fetchRoomsPayload = async (
+  username: string | null
+): Promise<{ ok: true; rooms: ChatRoom[] } | { ok: false; error: string }> => {
+  const result = await runGuardedPayloadFlow<{ rooms?: ChatRoom[] }, ChatRoom[]>({
+    endpointKey: "rooms",
+    endpointUnavailableError: "Rooms API temporarily unavailable",
+    request: () => fetchRoomsRequest(username),
+    errorContext: "fetchRooms error response",
+    successContext: "fetchRooms success response",
+    fallbackHttpError: "Failed to fetch rooms",
+    successWarningKey: "fetchRooms-success-response",
+    successUnavailableError: "Rooms API unavailable",
+    extractValue: (body) => (Array.isArray(body.rooms) ? body.rooms : null),
+  });
+
+  if (result.ok) {
+    return { ok: true, rooms: result.value };
+  }
+  return result;
 };
 
 export const fetchRoomMessagesPayload = async (
@@ -1891,48 +1931,25 @@ export const fetchRoomMessagesPayload = async (
 ): Promise<
   { ok: true; messages: ApiChatMessagePayload[] } | { ok: false; error: string }
 > => {
-  if (isApiTemporarilyUnavailable("room-messages")) {
-    return { ok: false, error: "Messages API temporarily unavailable" };
+  const result = await runGuardedPayloadFlow<
+    { messages?: ApiChatMessagePayload[] },
+    ApiChatMessagePayload[]
+  >({
+    endpointKey: "room-messages",
+    endpointUnavailableError: "Messages API temporarily unavailable",
+    request: () => fetchRoomMessagesRequest(roomId),
+    errorContext: "fetchMessagesForRoom error response",
+    successContext: "fetchMessagesForRoom success response",
+    fallbackHttpError: "Failed to fetch messages",
+    successWarningKey: "fetchMessagesForRoom-success-response",
+    successUnavailableError: "Messages API unavailable",
+    extractValue: (body) => (Array.isArray(body.messages) ? body.messages : null),
+  });
+
+  if (result.ok) {
+    return { ok: true, messages: result.value };
   }
-
-  try {
-    const response = await fetchRoomMessagesRequest(roomId);
-    if (!response.ok) {
-      const errorData = await readJsonBody<{ error?: string }>(
-        response,
-        "fetchMessagesForRoom error response"
-      );
-      return {
-        ok: false,
-        error: errorData.ok
-          ? errorData.data.error || "Failed to fetch messages"
-          : `HTTP error! status: ${response.status}`,
-      };
-    }
-
-    const messagesData = await readJsonBody<{ messages?: ApiChatMessagePayload[] }>(
-      response,
-      "fetchMessagesForRoom success response"
-    );
-    if (!messagesData.ok) {
-      warnChatsStoreOnce(
-        "fetchMessagesForRoom-success-response",
-        `[ChatsStore] ${messagesData.error}`
-      );
-      markApiTemporarilyUnavailable("room-messages");
-      return { ok: false, error: "Messages API unavailable" };
-    }
-
-    if (messagesData.data.messages) {
-      clearApiUnavailable("room-messages");
-      return { ok: true, messages: messagesData.data.messages };
-    }
-
-    return { ok: false, error: "Invalid response format" };
-  } catch {
-    markApiTemporarilyUnavailable("room-messages");
-    return { ok: false, error: NETWORK_ERROR_MESSAGE };
-  }
+  return result;
 };
 
 export const fetchBulkMessagesPayload = async (
@@ -1941,45 +1958,26 @@ export const fetchBulkMessagesPayload = async (
   | { ok: true; messagesMap: Record<string, ApiChatMessagePayload[]> }
   | { ok: false; error: string }
 > => {
-  if (isApiTemporarilyUnavailable("bulk-messages")) {
-    return { ok: false, error: "Bulk messages API temporarily unavailable" };
+  const result = await runGuardedPayloadFlow<
+    { messagesMap?: Record<string, ApiChatMessagePayload[]> },
+    Record<string, ApiChatMessagePayload[]>
+  >({
+    endpointKey: "bulk-messages",
+    endpointUnavailableError: "Bulk messages API temporarily unavailable",
+    request: () => fetchBulkMessagesRequest(roomIds),
+    errorContext: "fetchBulkMessages error response",
+    successContext: "fetchBulkMessages success response",
+    fallbackHttpError: "Failed to fetch messages",
+    successWarningKey: "fetchBulkMessages-success-response",
+    successUnavailableError: "Bulk messages API unavailable",
+    extractValue: (body) =>
+      body.messagesMap && typeof body.messagesMap === "object"
+        ? body.messagesMap
+        : null,
+  });
+
+  if (result.ok) {
+    return { ok: true, messagesMap: result.value };
   }
-
-  try {
-    const response = await fetchBulkMessagesRequest(roomIds);
-    if (!response.ok) {
-      const errorData = await readJsonBody<{ error?: string }>(
-        response,
-        "fetchBulkMessages error response"
-      );
-      return {
-        ok: false,
-        error: errorData.ok
-          ? errorData.data.error || "Failed to fetch messages"
-          : `HTTP error! status: ${response.status}`,
-      };
-    }
-
-    const bulkData = await readJsonBody<{
-      messagesMap?: Record<string, ApiChatMessagePayload[]>;
-    }>(response, "fetchBulkMessages success response");
-    if (!bulkData.ok) {
-      warnChatsStoreOnce(
-        "fetchBulkMessages-success-response",
-        `[ChatsStore] ${bulkData.error}`
-      );
-      markApiTemporarilyUnavailable("bulk-messages");
-      return { ok: false, error: "Bulk messages API unavailable" };
-    }
-
-    if (bulkData.data.messagesMap) {
-      clearApiUnavailable("bulk-messages");
-      return { ok: true, messagesMap: bulkData.data.messagesMap };
-    }
-
-    return { ok: false, error: "Invalid response format" };
-  } catch {
-    markApiTemporarilyUnavailable("bulk-messages");
-    return { ok: false, error: NETWORK_ERROR_MESSAGE };
-  }
+  return result;
 };

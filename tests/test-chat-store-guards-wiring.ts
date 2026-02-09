@@ -66,17 +66,17 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
     const source = readPayloadSource();
 
     assert(
-      /warnChatsStoreOnce\s*\(\s*"fetchRooms-success-response"/.test(source),
+      /successWarningKey:\s*"fetchRooms-success-response"/.test(source),
       "Expected dedupe warning key for fetchRooms"
     );
     assert(
-      /warnChatsStoreOnce\s*\(\s*"fetchMessagesForRoom-success-response"/.test(
+      /successWarningKey:\s*"fetchMessagesForRoom-success-response"/.test(
         source
       ),
       "Expected dedupe warning key for fetchMessagesForRoom"
     );
     assert(
-      /warnChatsStoreOnce\s*\(\s*"fetchBulkMessages-success-response"/.test(
+      /successWarningKey:\s*"fetchBulkMessages-success-response"/.test(
         source
       ),
       "Expected dedupe warning key for fetchBulkMessages"
@@ -88,17 +88,17 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
     const source = readPayloadSource();
 
     assertEq(
-      countMatches(source, /isApiTemporarilyUnavailable\("rooms"\)/),
+      countMatches(source, /endpointKey:\s*"rooms"/),
       1,
       "Expected rooms fetcher cooldown gate"
     );
     assertEq(
-      countMatches(source, /isApiTemporarilyUnavailable\("room-messages"\)/),
+      countMatches(source, /endpointKey:\s*"room-messages"/),
       1,
       "Expected room-messages fetcher cooldown gate"
     );
     assertEq(
-      countMatches(source, /isApiTemporarilyUnavailable\("bulk-messages"\)/),
+      countMatches(source, /endpointKey:\s*"bulk-messages"/),
       1,
       "Expected bulk-messages fetcher cooldown gate"
     );
@@ -118,19 +118,9 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
     const source = readPayloadSource();
 
     assertEq(
-      countMatches(source, /markApiTemporarilyUnavailable\("rooms"\)/),
+      countMatches(source, /markApiTemporarilyUnavailable\(endpointKey\)/),
       2,
-      "Expected rooms cooldown marking in guard + network catch"
-    );
-    assertEq(
-      countMatches(source, /markApiTemporarilyUnavailable\("room-messages"\)/),
-      2,
-      "Expected room-messages cooldown marking in guard + network catch"
-    );
-    assertEq(
-      countMatches(source, /markApiTemporarilyUnavailable\("bulk-messages"\)/),
-      2,
-      "Expected bulk-messages cooldown marking in guard + network catch"
+      "Expected endpoint-key cooldown marking in parse + network paths"
     );
   });
 
@@ -138,19 +128,9 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
     const source = readPayloadSource();
 
     assertEq(
-      countMatches(source, /clearApiUnavailable\("rooms"\)/),
+      countMatches(source, /clearApiUnavailable\(endpointKey\)/),
       1,
-      "Expected rooms cooldown clear path"
-    );
-    assertEq(
-      countMatches(source, /clearApiUnavailable\("room-messages"\)/),
-      1,
-      "Expected room-messages cooldown clear path"
-    );
-    assertEq(
-      countMatches(source, /clearApiUnavailable\("bulk-messages"\)/),
-      1,
-      "Expected bulk-messages cooldown clear path"
+      "Expected endpoint-key cooldown clear path"
     );
   });
 
