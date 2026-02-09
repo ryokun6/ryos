@@ -25,7 +25,6 @@ import {
 import { createRoomRequest, deleteRoomRequest } from "./chats/roomRequests";
 import { validateCreateUserInput } from "./chats/userValidation";
 import {
-  logoutRequest,
   refreshAuthTokenRequest,
   registerUserRequest,
 } from "./chats/authApi";
@@ -37,6 +36,11 @@ import {
   isTokenRefreshDue,
 } from "./chats/tokenLifecycle";
 import { clearChatRecoveryStorage } from "./chats/logoutCleanup";
+import {
+  buildPostLogoutState,
+  notifyServerOnLogout,
+  trackLogoutAnalytics,
+} from "./chats/logoutFlow";
 import { buildPersistedRoomMessages } from "./chats/persistence";
 import {
   createChatsOnRehydrateStorage,
@@ -72,6 +76,7 @@ import {
 } from "./chats/identityState";
 import { parseRegisterUserResponse } from "./chats/registrationResponse";
 import { fetchPasswordStatus, submitPassword } from "./chats/passwordFlow";
+import { logIfNetworkResultError } from "./chats/errorLogging";
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -604,38 +609,14 @@ export const useChatsStore = create<ChatsStoreState>()(
           const currentUsername = get().username;
           const currentToken = get().authToken;
 
-          // Inform server to invalidate current token if we have auth
-          if (currentUsername && currentToken) {
-            try {
-              await logoutRequest({
-                username: currentUsername,
-                token: currentToken,
-              });
-            } catch (err) {
-              console.warn(
-                "[ChatsStore] Failed to notify server during logout:",
-                err
-              );
-            }
-          }
-
-          // Track user logout analytics before clearing data
-          if (currentUsername) {
-            track(APP_ANALYTICS.USER_LOGOUT, { username: currentUsername });
-          }
+          await notifyServerOnLogout(currentUsername, currentToken);
+          trackLogoutAnalytics(currentUsername);
 
           // Clear recovery keys and refresh timestamp from localStorage
           clearChatRecoveryStorage(currentUsername);
 
           // Reset only user-specific data, preserve rooms and messages
-          set((state) => ({
-            ...state,
-            aiMessages: [getInitialAiMessage()],
-            username: null,
-            authToken: null,
-            hasPassword: null,
-            currentRoomId: null,
-          }));
+          set((state) => buildPostLogoutState(state, getInitialAiMessage()));
 
           // Re-fetch rooms to show only public rooms visible to anonymous users
           try {
@@ -653,9 +634,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           console.log("[ChatsStore] Fetching rooms...");
           const result = await fetchRoomsPayload(get().username);
           if (!result.ok) {
-            if (result.error === "Network error. Please try again.") {
-              console.error("[ChatsStore] Error fetching rooms");
-            }
+            logIfNetworkResultError("[ChatsStore] Error fetching rooms", result.error);
             return { ok: false, error: result.error };
           }
 
@@ -669,11 +648,10 @@ export const useChatsStore = create<ChatsStoreState>()(
           console.log(`[ChatsStore] Fetching messages for room ${roomId}...`);
           const result = await fetchRoomMessagesPayload(roomId);
           if (!result.ok) {
-            if (result.error === "Network error. Please try again.") {
-              console.error(
-                `[ChatsStore] Error fetching messages for room ${roomId}`
-              );
-            }
+            logIfNetworkResultError(
+              `[ChatsStore] Error fetching messages for room ${roomId}`,
+              result.error
+            );
             return { ok: false, error: result.error };
           }
 
@@ -698,13 +676,12 @@ export const useChatsStore = create<ChatsStoreState>()(
           );
           const result = await fetchBulkMessagesPayload(roomIds);
           if (!result.ok) {
-            if (result.error === "Network error. Please try again.") {
-              console.error(
-                `[ChatsStore] Error fetching messages for rooms ${roomIds.join(
-                  ", "
-                )}`
-              );
-            }
+            logIfNetworkResultError(
+              `[ChatsStore] Error fetching messages for rooms ${roomIds.join(
+                ", "
+              )}`,
+              result.error
+            );
             return { ok: false, error: result.error };
           }
 
