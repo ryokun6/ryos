@@ -19,13 +19,6 @@ import {
   saveUsernameToRecovery,
 } from "./chats/recovery";
 import {
-  mergeServerMessagesWithOptimistic,
-} from "./chats/roomMessages";
-import {
-  type ApiChatMessagePayload as ApiMessage,
-  normalizeApiMessages,
-} from "./chats/messageNormalization";
-import {
   createOptimisticChatMessage,
   sendRoomMessageRequest,
 } from "./chats/sendMessage";
@@ -60,6 +53,10 @@ import {
   removeRoomMessageFromMap,
   setCurrentRoomMessagesInMap,
 } from "./chats/roomState";
+import {
+  mergeFetchedBulkMessages,
+  mergeFetchedMessagesForRoom,
+} from "./chats/roomMessageState";
 import {
   fetchBulkMessagesPayload,
   fetchRoomMessagesPayload,
@@ -692,20 +689,13 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { ok: false, error: result.error };
           }
 
-          const fetchedMessages = normalizeApiMessages(result.messages || []);
-
-          // Merge with any existing messages to avoid race conditions with realtime pushes
           set((state) => {
-            const existing = state.roomMessages[roomId] || [];
-            const merged = mergeServerMessagesWithOptimistic(
-              existing,
-              fetchedMessages
-            );
             return {
-              roomMessages: {
-                ...state.roomMessages,
-                [roomId]: merged,
-              },
+              roomMessages: mergeFetchedMessagesForRoom(
+                state.roomMessages,
+                roomId,
+                result.messages
+              ),
             };
           });
 
@@ -730,21 +720,13 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { ok: false, error: result.error };
           }
 
-          // Process and sort messages for each room like fetchMessagesForRoom does
           set((state) => {
-            const nextRoomMessages = { ...state.roomMessages };
-
-            Object.entries(result.messagesMap).forEach(([roomId, messages]) => {
-              const processed = normalizeApiMessages(messages as ApiMessage[]);
-
-              const existing = nextRoomMessages[roomId] || [];
-              nextRoomMessages[roomId] = mergeServerMessagesWithOptimistic(
-                existing,
-                processed
-              );
-            });
-
-            return { roomMessages: nextRoomMessages };
+            return {
+              roomMessages: mergeFetchedBulkMessages(
+                state.roomMessages,
+                result.messagesMap
+              ),
+            };
           });
 
           return { ok: true };
