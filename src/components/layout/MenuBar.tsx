@@ -396,7 +396,7 @@ function Clock({ enableExposeToggle = false }: ClockProps) {
     // biome-ignore lint/a11y/noStaticElementInteractions: Window drag handle for Tauri
     <div
       role="presentation"
-      className={`${isXpTheme ? "" : "ml-auto mr-1 sm:mr-2"}`}
+      className={`${isXpTheme ? "" : "ml-auto mr-1 sm:mr-2"} whitespace-nowrap`}
       style={{
         textShadow:
           currentTheme === "macosx"
