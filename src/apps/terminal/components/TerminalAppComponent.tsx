@@ -1,7 +1,8 @@
 import type { CSSProperties } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { WindowFrame } from "@/components/layout/WindowFrame";
-import { AppProps, TerminalInitialData } from "@/apps/base/types";
+import { AppProps } from "@/apps/base/types";
+import type { TerminalInitialData } from "@/apps/base/types";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { TerminalMenuBar } from "./TerminalMenuBar";
@@ -74,11 +75,12 @@ export function TerminalAppComponent({
   isWindowOpen,
   isForeground = true,
   skipInitialSound,
-  initialData,
+  initialData: rawInitialData,
   instanceId,
   onNavigateNext,
   onNavigatePrevious,
-}: AppProps<TerminalInitialData>) {
+}: AppProps) {
+  const initialData = rawInitialData as TerminalInitialData | undefined;
   const {
     translatedHelpItems,
     isHelpDialogOpen,

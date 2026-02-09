@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { AppProps, ChatsInitialData } from "../../base/types";
+import { AppProps } from "../../base/types";
+import type { ChatsInitialData } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { ChatsMenuBar } from "./ChatsMenuBar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -47,11 +48,12 @@ export function ChatsAppComponent({
   onClose,
   isForeground,
   skipInitialSound,
-  initialData,
+  initialData: rawInitialData,
   instanceId,
   onNavigateNext,
   onNavigatePrevious,
-}: AppProps<ChatsInitialData>) {
+}: AppProps) {
+  const initialData = rawInitialData as ChatsInitialData | undefined;
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("chats", helpItems);
   const aiMessages = useChatsStore((state) => state.aiMessages);
