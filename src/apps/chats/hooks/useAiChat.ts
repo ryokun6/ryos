@@ -1228,16 +1228,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     },
 
     onFinish: ({ messages }) => {
-      // Ensure all messages have metadata with createdAt
-      const finalMessages: AIChatMessage[] = (messages as UIMessage[]).map(
-        (msg) =>
-          ({
-            ...msg,
-            metadata: {
-              createdAt:
-                (msg as AIChatMessage).metadata?.createdAt || new Date(),
-            },
-          }) as AIChatMessage,
+      // Ensure all messages preserve metadata timestamps when possible.
+      const finalMessages: AIChatMessage[] = mergeMessagesWithTimestamps(
+        messages as UIMessage[],
+        currentSdkMessagesRef.current,
       );
       console.log(
         `AI finished, syncing ${finalMessages.length} final messages to store.`,
