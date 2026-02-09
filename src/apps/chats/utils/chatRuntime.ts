@@ -257,6 +257,11 @@ export const collectCompletedLineSegments = (
       break;
     }
 
+    const end =
+      nextNlIdx > scanPos && content[nextNlIdx - 1] === "\r"
+        ? nextNlIdx - 1
+        : nextNlIdx;
+
     let nextStart = nextNlIdx + 1;
     if (content[nextStart] === "\r") {
       nextStart += 1;
@@ -264,7 +269,7 @@ export const collectCompletedLineSegments = (
 
     segments.push({
       start: scanPos,
-      end: nextNlIdx,
+      end,
       nextStart,
     });
     scanPos = nextStart;
