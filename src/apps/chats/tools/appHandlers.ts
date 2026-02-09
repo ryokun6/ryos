@@ -20,13 +20,35 @@ export interface CloseAppInput {
   id: string;
 }
 
+type AppHandlersDependencies = {
+  getAppNameById?: (appId: AppId) => string;
+  getInstancesByAppId?: (appId: AppId) => Array<{ instanceId: string; isOpen: boolean }>;
+  closeWindowByInstanceId?: (instanceId: string) => void;
+};
+
+const resolveRegisteredApp = (
+  id: string,
+  getAppNameById?: (appId: AppId) => string,
+): { appId: AppId; appName: string } | null => {
+  const appId = id as AppId;
+  if (!appRegistry[appId]) {
+    return null;
+  }
+
+  return {
+    appId,
+    appName: getAppNameById ? getAppNameById(appId) : appRegistry[appId].name,
+  };
+};
+
 /**
  * Handle launchApp tool call
  */
 export const handleLaunchApp = (
   input: LaunchAppInput,
   toolCallId: string,
-  context: ToolContext
+  context: ToolContext,
+  dependencies: AppHandlersDependencies = {},
 ): string => {
   const { id, url, year } = input;
 
@@ -42,7 +64,18 @@ export const handleLaunchApp = (
     return "";
   }
 
-  const appName = appRegistry[id as AppId]?.name || id;
+  const resolvedApp = resolveRegisteredApp(id, dependencies.getAppNameById);
+  if (!resolvedApp) {
+    context.addToolResult({
+      tool: "launchApp",
+      toolCallId,
+      state: "output-error",
+      errorText: `Application not found: ${id}`,
+    });
+    return "";
+  }
+
+  const { appId, appName } = resolvedApp;
   console.log("[ToolCall] launchApp:", { id, url, year });
 
   const launchOptions: LaunchAppOptions = {};
@@ -50,10 +83,10 @@ export const handleLaunchApp = (
     launchOptions.initialData = { url, year: year || "current" };
   }
 
-  context.launchApp(id as AppId, launchOptions);
+  context.launchApp(appId, launchOptions);
 
   let result = `Launched ${appName}`;
-  if (id === "internet-explorer") {
+  if (appId === "internet-explorer") {
     const urlPart = url ? ` to ${url}` : "";
     const yearPart = year && year !== "current" ? ` in ${year}` : "";
     result += `${urlPart}${yearPart}`;
@@ -68,7 +101,8 @@ export const handleLaunchApp = (
 export const handleCloseApp = (
   input: CloseAppInput,
   toolCallId: string,
-  context: ToolContext
+  context: ToolContext,
+  dependencies: AppHandlersDependencies = {},
 ): string => {
   const { id } = input;
 
@@ -84,12 +118,28 @@ export const handleCloseApp = (
     return "";
   }
 
-  const appName = appRegistry[id as AppId]?.name || id;
+  const resolvedApp = resolveRegisteredApp(id, dependencies.getAppNameById);
+  if (!resolvedApp) {
+    context.addToolResult({
+      tool: "closeApp",
+      toolCallId,
+      state: "output-error",
+      errorText: `Application not found: ${id}`,
+    });
+    return "";
+  }
+
+  const { appId, appName } = resolvedApp;
   console.log("[ToolCall] closeApp:", id);
 
   // Close all instances of the specified app
-  const appStore = useAppStore.getState();
-  const appInstances = appStore.getInstancesByAppId(id as AppId);
+  const getInstancesByAppId =
+    dependencies.getInstancesByAppId ??
+    ((targetAppId: AppId) => useAppStore.getState().getInstancesByAppId(targetAppId));
+  const closeWindowByInstanceId =
+    dependencies.closeWindowByInstanceId ?? requestCloseWindow;
+
+  const appInstances = getInstancesByAppId(appId);
   const openInstances = appInstances.filter((inst) => inst.isOpen);
 
   if (openInstances.length === 0) {
@@ -99,7 +149,7 @@ export const handleCloseApp = (
 
   // Close all open instances of this app (with animation and sound)
   openInstances.forEach((instance) => {
-    requestCloseWindow(instance.instanceId);
+    closeWindowByInstanceId(instance.instanceId);
   });
 
   console.log(
