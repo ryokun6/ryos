@@ -224,10 +224,15 @@ export const mergeMessagesWithTimestamps = (
     const uiMessageCreatedAt = normalizeDate(
       (message as UIMessage & { createdAt?: Date | string | number }).createdAt,
     );
+    const existingMetadata =
+      typedMessage.metadata && typeof typedMessage.metadata === "object"
+        ? typedMessage.metadata
+        : {};
 
     return {
       ...message,
       metadata: {
+        ...existingMetadata,
         createdAt:
           normalizeDate(typedMessage.metadata?.createdAt) ||
           uiMessageCreatedAt ||

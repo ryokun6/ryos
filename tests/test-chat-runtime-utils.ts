@@ -148,6 +148,28 @@ export async function runChatRuntimeUtilsTests(): Promise<{
     );
   });
 
+  await runTest("preserves non-createdAt metadata fields during timestamp merge", async () => {
+    const merged = mergeMessagesWithTimestamps(
+      [
+        asUiMessage({
+          id: "m-meta",
+          role: "assistant",
+          parts: [],
+          metadata: {
+            createdAt: "2026-01-01T00:00:00.000Z",
+            source: "tool-call",
+          },
+        }),
+      ],
+      [],
+    );
+    assertEq(merged[0]?.metadata?.source, "tool-call");
+    assertEq(
+      merged[0]?.metadata?.createdAt?.toISOString(),
+      "2026-01-01T00:00:00.000Z",
+    );
+  });
+
   await runTest("uses current date when all timestamps are invalid", async () => {
     const before = Date.now();
     const merged = mergeMessagesWithTimestamps(
