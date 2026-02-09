@@ -608,6 +608,54 @@ export async function runChatLocalFileContentTests(): Promise<{
     });
   });
 
+  await runTest("saveDocumentTextFile updates existing active file without re-adding metadata", async () => {
+    let addItemCalled = false;
+    let updatePath = "";
+    let updateSize: number | undefined;
+    let capturedUuid = "";
+
+    await withMockDbPut(
+      async <T>(_storeName: string, _item: T, key?: IDBValidKey) => {
+        capturedUuid = String(key);
+      },
+      async () => {
+        await withMockFileItems(
+          {
+            "/Documents/existing.md": {
+              path: "/Documents/existing.md",
+              name: "existing.md",
+              isDirectory: false,
+              status: "active",
+              uuid: "uuid-existing",
+            },
+          },
+          async () => {
+            await withMockAddItem(async () => {
+              addItemCalled = true;
+            }, async () => {
+              await withMockUpdateItemMetadata(async (path, updates) => {
+                updatePath = path;
+                updateSize = updates.size;
+              }, async () => {
+                const savedItem = await saveDocumentTextFile({
+                  path: "/Documents/existing.md",
+                  fileName: "existing.md",
+                  content: "updated existing body",
+                });
+                assertEq(savedItem.uuid, "uuid-existing");
+              });
+            });
+          },
+        );
+      },
+    );
+
+    assertEq(addItemCalled, false);
+    assertEq(updatePath, "/Documents/existing.md");
+    assertEq(updateSize, new Blob(["updated existing body"]).size);
+    assertEq(capturedUuid, "uuid-existing");
+  });
+
   return printSummary();
 }
 

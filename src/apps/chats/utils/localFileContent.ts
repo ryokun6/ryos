@@ -224,7 +224,23 @@ export const saveDocumentTextFile = async ({
   fileName: string;
   content: string;
 }): Promise<ActiveFileWithUuid> => {
-  useFilesStore.getState().addItem({
+  const filesStore = useFilesStore.getState();
+  const existingItem = filesStore.items[path];
+
+  if (existingItem?.status === "active" && existingItem.uuid) {
+    await persistUpdatedLocalFileContent({
+      fileItem: existingItem as ActiveFileWithUuid,
+      storeName: STORES.DOCUMENTS,
+      content,
+      recordName: fileName,
+    });
+    return (
+      (useFilesStore.getState().items[path] as ActiveFileWithUuid | undefined) ||
+      (existingItem as ActiveFileWithUuid)
+    );
+  }
+
+  filesStore.addItem({
     path,
     name: fileName,
     isDirectory: false,
