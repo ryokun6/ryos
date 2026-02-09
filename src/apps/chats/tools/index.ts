@@ -106,42 +106,8 @@ export const getRegisteredTools = (): string[] => {
 };
 
 // ============================================================================
-// Import and export individual handlers
+// Register tool handlers for automatic dispatch (lazy-loaded modules)
 // ============================================================================
-
-export { handleLaunchApp, handleCloseApp } from "./appHandlers";
-export type { LaunchAppInput, CloseAppInput } from "./appHandlers";
-
-export { handleSettings } from "./settingsHandler";
-export type { SettingsInput } from "./settingsHandler";
-
-export { handleIpodControl } from "./ipodHandler";
-export type { IpodControlInput } from "./ipodHandler";
-
-export { handleKaraokeControl } from "./karaokeHandler";
-export type { KaraokeControlInput } from "./karaokeHandler";
-
-export { handleStickiesControl } from "./stickiesHandler";
-export type { StickiesControlInput } from "./stickiesHandler";
-
-export { handleInfiniteMacControl } from "./infiniteMacHandler";
-export type { InfiniteMacControlInput } from "./infiniteMacHandler";
-export { handleAquarium } from "./aquariumHandler";
-export { handleGenerateHtml } from "./generateHtmlHandler";
-
-// ============================================================================
-// Register tool handlers for automatic dispatch (optional)
-// ============================================================================
-
-import { handleSettings } from "./settingsHandler";
-import { handleIpodControl } from "./ipodHandler";
-import { handleKaraokeControl } from "./karaokeHandler";
-import { handleStickiesControl } from "./stickiesHandler";
-import { handleInfiniteMacControl } from "./infiniteMacHandler";
-import { handleLaunchApp, handleCloseApp } from "./appHandlers";
-import { handleAquarium } from "./aquariumHandler";
-import { handleGenerateHtml } from "./generateHtmlHandler";
-import { handleChatVfsToolCall } from "../utils/chatFileToolHandlers";
 
 const resolveUnknownToolError = (context: ToolContext): string =>
   context.translate?.("apps.chats.toolCalls.unknownError") ?? "Unknown error";
@@ -162,6 +128,7 @@ const executeVfsToolFromContext = async (
     return;
   }
 
+  const { handleChatVfsToolCall } = await import("../utils/chatFileToolHandlers");
   await handleChatVfsToolCall({
     toolName,
     input,
@@ -172,12 +139,20 @@ const executeVfsToolFromContext = async (
   });
 };
 
-registerToolHandler("aquarium", handleAquarium);
-registerToolHandler("generateHtml", handleGenerateHtml);
-registerToolHandler("launchApp", (input, toolCallId, context) => {
+registerToolHandler("aquarium", async (input, toolCallId, context) => {
+  const { handleAquarium } = await import("./aquariumHandler");
+  await handleAquarium(input, toolCallId, context);
+});
+registerToolHandler("generateHtml", async (input, toolCallId, context) => {
+  const { handleGenerateHtml } = await import("./generateHtmlHandler");
+  await handleGenerateHtml(input, toolCallId, context);
+});
+registerToolHandler("launchApp", async (input, toolCallId, context) => {
+  const { handleLaunchApp } = await import("./appHandlers");
   handleLaunchApp(input as { id: string; url?: string; year?: string }, toolCallId, context);
 });
-registerToolHandler("closeApp", (input, toolCallId, context) => {
+registerToolHandler("closeApp", async (input, toolCallId, context) => {
+  const { handleCloseApp } = await import("./appHandlers");
   handleCloseApp(input as { id: string }, toolCallId, context);
 });
 registerToolHandler("list", (input, toolCallId, context) =>
@@ -195,10 +170,25 @@ registerToolHandler("write", (input, toolCallId, context) =>
 registerToolHandler("edit", (input, toolCallId, context) =>
   executeVfsToolFromContext("edit", input, toolCallId, context),
 );
-registerToolHandler("settings", handleSettings);
-registerToolHandler("ipodControl", handleIpodControl);
-registerToolHandler("karaokeControl", handleKaraokeControl);
-registerToolHandler("stickiesControl", handleStickiesControl);
-registerToolHandler("infiniteMacControl", handleInfiniteMacControl);
+registerToolHandler("settings", async (input, toolCallId, context) => {
+  const { handleSettings } = await import("./settingsHandler");
+  handleSettings(input as never, toolCallId, context);
+});
+registerToolHandler("ipodControl", async (input, toolCallId, context) => {
+  const { handleIpodControl } = await import("./ipodHandler");
+  await handleIpodControl(input as never, toolCallId, context);
+});
+registerToolHandler("karaokeControl", async (input, toolCallId, context) => {
+  const { handleKaraokeControl } = await import("./karaokeHandler");
+  await handleKaraokeControl(input as never, toolCallId, context);
+});
+registerToolHandler("stickiesControl", async (input, toolCallId, context) => {
+  const { handleStickiesControl } = await import("./stickiesHandler");
+  handleStickiesControl(input as never, toolCallId, context);
+});
+registerToolHandler("infiniteMacControl", async (input, toolCallId, context) => {
+  const { handleInfiniteMacControl } = await import("./infiniteMacHandler");
+  await handleInfiniteMacControl(input as never, toolCallId, context);
+});
 
 // launchApp/closeApp use optional `context.appHandlers` dependencies.

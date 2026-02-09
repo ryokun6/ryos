@@ -5,7 +5,6 @@
 import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
-import i18n from "@/lib/i18n";
 import type { ToolContext } from "./types";
 import {
   ciIncludes,
@@ -146,6 +145,15 @@ export interface KaraokeControlInput {
   enableFullscreen?: boolean;
 }
 
+type TranslateFn = (
+  key: string,
+  params?: Record<string, unknown>,
+) => string;
+
+const resolveTranslator = (context: ToolContext): TranslateFn =>
+  context.translate ??
+  ((key: string, _params?: Record<string, unknown>) => key);
+
 /**
  * Ensure Karaoke app is open
  */
@@ -164,7 +172,8 @@ const ensureKaraokeIsOpen = (launchApp: ToolContext["launchApp"]) => {
  */
 const applyKaraokeSettings = (
   enableTranslation: string | null | undefined,
-  enableFullscreen: boolean | undefined
+  enableFullscreen: boolean | undefined,
+  t: TranslateFn,
 ): string[] => {
   const ipod = useIpodStore.getState();
   const karaoke = useKaraokeStore.getState();
@@ -173,13 +182,13 @@ const applyKaraokeSettings = (
   if (enableTranslation !== undefined) {
     if (shouldDisableTranslation(enableTranslation)) {
       ipod.setLyricsTranslationLanguage(null);
-      stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffLyricsTranslation"));
+      stateChanges.push(t("apps.chats.toolCalls.ipodTurnedOffLyricsTranslation"));
       console.log("[ToolCall] Karaoke lyrics translation disabled.");
     } else if (enableTranslation) {
       ipod.setLyricsTranslationLanguage(enableTranslation);
       const langName = getLanguageName(enableTranslation);
       stateChanges.push(
-        i18n.t("apps.chats.toolCalls.ipodTranslatedLyricsTo", { langName })
+        t("apps.chats.toolCalls.ipodTranslatedLyricsTo", { langName })
       );
       console.log(`[ToolCall] Karaoke lyrics translation enabled for language: ${enableTranslation}.`);
     }
@@ -188,11 +197,11 @@ const applyKaraokeSettings = (
   if (enableFullscreen !== undefined) {
     if (enableFullscreen && !karaoke.isFullScreen) {
       karaoke.toggleFullScreen();
-      stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOnFullScreen"));
+      stateChanges.push(t("apps.chats.toolCalls.ipodTurnedOnFullScreen"));
       console.log("[ToolCall] Karaoke fullscreen enabled.");
     } else if (!enableFullscreen && karaoke.isFullScreen) {
       karaoke.toggleFullScreen();
-      stateChanges.push(i18n.t("apps.chats.toolCalls.ipodTurnedOffFullScreen"));
+      stateChanges.push(t("apps.chats.toolCalls.ipodTurnedOffFullScreen"));
       console.log("[ToolCall] Karaoke fullscreen disabled.");
     }
   }
@@ -208,15 +217,20 @@ const handlePlaybackState = (
   input: KaraokeControlInput,
   toolCallId: string,
   context: ToolContext,
-  isIOS: boolean
+  isIOS: boolean,
+  t: TranslateFn,
 ): void => {
   const karaoke = useKaraokeStore.getState();
 
   // On iOS, don't auto-play
   if (isIOS && (action === "play" || action === "toggle")) {
-    const stateChanges = applyKaraokeSettings(input.enableTranslation, input.enableFullscreen);
+    const stateChanges = applyKaraokeSettings(
+      input.enableTranslation,
+      input.enableFullscreen,
+      t,
+    );
     const resultParts = [
-      i18n.t("apps.chats.toolCalls.karaokeReady", { defaultValue: "Karaoke is ready. Tap play to start" }),
+      t("apps.chats.toolCalls.karaokeReady", { defaultValue: "Karaoke is ready. Tap play to start" }),
     ];
     if (stateChanges.length > 0) {
       resultParts.push(...stateChanges);
@@ -242,7 +256,11 @@ const handlePlaybackState = (
       break;
   }
 
-  const stateChanges = applyKaraokeSettings(input.enableTranslation, input.enableFullscreen);
+  const stateChanges = applyKaraokeSettings(
+    input.enableTranslation,
+    input.enableFullscreen,
+    t,
+  );
   const updatedKaraoke = useKaraokeStore.getState();
   const nowPlaying = updatedKaraoke.isPlaying;
   const ipodTracks = useIpodStore.getState().tracks;
@@ -254,18 +272,18 @@ const handlePlaybackState = (
   if (track) {
     const trackDesc = formatTrackDescription(track.title, track.artist);
     playbackState = nowPlaying
-      ? i18n.t("apps.chats.toolCalls.karaokePlayingTrack", {
+      ? t("apps.chats.toolCalls.karaokePlayingTrack", {
           trackDesc,
           defaultValue: `Karaoke is now playing ${trackDesc}`,
         })
-      : i18n.t("apps.chats.toolCalls.karaokePausedTrack", {
+      : t("apps.chats.toolCalls.karaokePausedTrack", {
           trackDesc,
           defaultValue: `Karaoke paused ${trackDesc}`,
         });
   } else {
     playbackState = nowPlaying
-      ? i18n.t("apps.chats.toolCalls.karaokePlaying", { defaultValue: "Karaoke is now playing" })
-      : i18n.t("apps.chats.toolCalls.karaokePaused", { defaultValue: "Karaoke is now paused" });
+      ? t("apps.chats.toolCalls.karaokePlaying", { defaultValue: "Karaoke is now playing" })
+      : t("apps.chats.toolCalls.karaokePaused", { defaultValue: "Karaoke is now paused" });
   }
 
   const resultParts = [playbackState, ...stateChanges];
@@ -286,7 +304,8 @@ const handlePlayKnown = (
   input: KaraokeControlInput,
   toolCallId: string,
   context: ToolContext,
-  isIOS: boolean
+  isIOS: boolean,
+  t: TranslateFn,
 ): void => {
   const { id, title, artist, enableTranslation, enableFullscreen } = input;
   const ipodState = useIpodStore.getState();
@@ -294,7 +313,7 @@ const handlePlayKnown = (
 
   // If no identifiers provided, fall back to toggle/play behavior
   if (!id && !title && !artist) {
-    handlePlaybackState("toggle", input, toolCallId, context, isIOS);
+    handlePlaybackState("toggle", input, toolCallId, context, isIOS, t);
     return;
   }
 
@@ -331,7 +350,7 @@ const handlePlayKnown = (
   }
 
   if (candidateIndices.length === 0) {
-    const errorMsg = i18n.t("apps.chats.toolCalls.karaokeSongNotFound", {
+    const errorMsg = t("apps.chats.toolCalls.karaokeSongNotFound", {
       defaultValue: "Could not find the requested song in the library",
     });
     context.addToolResult({
@@ -352,10 +371,14 @@ const handlePlayKnown = (
 
   // On iOS, don't auto-play
   if (isIOS) {
-    const stateChanges = applyKaraokeSettings(enableTranslation, enableFullscreen);
+    const stateChanges = applyKaraokeSettings(
+      enableTranslation,
+      enableFullscreen,
+      t,
+    );
     const trackDescForMsg = track.artist ? `${track.title} by ${track.artist}` : track.title;
     const resultParts = [
-      i18n.t("apps.chats.toolCalls.karaokeSelected", {
+      t("apps.chats.toolCalls.karaokeSelected", {
         trackDesc: trackDescForMsg,
         defaultValue: `Selected ${trackDescForMsg}. Tap play to start`,
       }),
@@ -374,10 +397,14 @@ const handlePlayKnown = (
 
   setIsPlaying(true);
 
-  const stateChanges = applyKaraokeSettings(enableTranslation, enableFullscreen);
+  const stateChanges = applyKaraokeSettings(
+    enableTranslation,
+    enableFullscreen,
+    t,
+  );
   const trackDescForMsg = track.artist
-    ? i18n.t("apps.chats.toolCalls.playingByArtist", { title: track.title, artist: track.artist })
-    : i18n.t("apps.chats.toolCalls.playing", { title: track.title });
+    ? t("apps.chats.toolCalls.playingByArtist", { title: track.title, artist: track.artist })
+    : t("apps.chats.toolCalls.playing", { title: track.title });
 
   const resultParts = [trackDescForMsg, ...stateChanges];
   context.addToolResult({
@@ -396,12 +423,13 @@ const handleAddAndPlay = async (
   input: KaraokeControlInput,
   toolCallId: string,
   context: ToolContext,
-  isIOS: boolean
+  isIOS: boolean,
+  t: TranslateFn,
 ): Promise<void> => {
   const { id, enableTranslation, enableFullscreen } = input;
 
   if (!id) {
-    const errorMsg = i18n.t("apps.chats.toolCalls.karaokeNoIdProvided", {
+    const errorMsg = t("apps.chats.toolCalls.karaokeNoIdProvided", {
       defaultValue: "No YouTube ID or URL provided for addAndPlay",
     });
     context.addToolResult({
@@ -427,17 +455,21 @@ const handleAddAndPlay = async (
         setIsPlaying(true);
       }
 
-      const stateChanges = applyKaraokeSettings(enableTranslation, enableFullscreen);
+      const stateChanges = applyKaraokeSettings(
+        enableTranslation,
+        enableFullscreen,
+        t,
+      );
 
       const resultParts = isIOS
         ? [
-            i18n.t("apps.chats.toolCalls.karaokeAdded", {
+            t("apps.chats.toolCalls.karaokeAdded", {
               title: addedTrack.title,
               defaultValue: `Added '${addedTrack.title}' to library. Tap play to start in Karaoke`,
             }),
           ]
         : [
-            i18n.t("apps.chats.toolCalls.karaokeAddedAndPlaying", {
+            t("apps.chats.toolCalls.karaokeAddedAndPlaying", {
               title: addedTrack.title,
               defaultValue: `Added '${addedTrack.title}' and started playing in Karaoke`,
             }),
@@ -459,7 +491,7 @@ const handleAddAndPlay = async (
           : `[ToolCall] Added '${addedTrack.title}' and started playing in Karaoke.`
       );
     } else {
-      const errorMsg = i18n.t("apps.chats.toolCalls.karaokeFailedToAdd", {
+      const errorMsg = t("apps.chats.toolCalls.karaokeFailedToAdd", {
         id,
         defaultValue: `Failed to add ${id} to library`,
       });
@@ -476,12 +508,12 @@ const handleAddAndPlay = async (
 
     let errorMsg: string;
     if (errorMessage.includes("Failed to fetch video info")) {
-      errorMsg = i18n.t("apps.chats.toolCalls.karaokeCannotAdd", {
+      errorMsg = t("apps.chats.toolCalls.karaokeCannotAdd", {
         id,
         defaultValue: `Cannot add ${id}: Video unavailable or invalid`,
       });
     } else {
-      errorMsg = i18n.t("apps.chats.toolCalls.karaokeFailedToAddWithError", {
+      errorMsg = t("apps.chats.toolCalls.karaokeFailedToAddWithError", {
         id,
         error: errorMessage,
         defaultValue: `Failed to add ${id}: ${errorMessage}`,
@@ -504,7 +536,8 @@ const handleNavigation = (
   action: "next" | "previous",
   input: KaraokeControlInput,
   toolCallId: string,
-  context: ToolContext
+  context: ToolContext,
+  t: TranslateFn,
 ): void => {
   const { enableTranslation, enableFullscreen } = input;
   const karaokeState = useKaraokeStore.getState();
@@ -514,7 +547,11 @@ const handleNavigation = (
     navigate();
   }
 
-  const stateChanges = applyKaraokeSettings(enableTranslation, enableFullscreen);
+  const stateChanges = applyKaraokeSettings(
+    enableTranslation,
+    enableFullscreen,
+    t,
+  );
 
   const updatedKaraoke = useKaraokeStore.getState();
   const ipodTracks = useIpodStore.getState().tracks;
@@ -526,8 +563,8 @@ const handleNavigation = (
     const desc = formatTrackDescription(track.title, track.artist);
     const resultParts = [
       action === "next"
-        ? i18n.t("apps.chats.toolCalls.karaokeSkippedTo", { trackDesc: desc, defaultValue: `Skipped to ${desc}` })
-        : i18n.t("apps.chats.toolCalls.karaokeWentBackTo", { trackDesc: desc, defaultValue: `Went back to ${desc}` }),
+        ? t("apps.chats.toolCalls.karaokeSkippedTo", { trackDesc: desc, defaultValue: `Skipped to ${desc}` })
+        : t("apps.chats.toolCalls.karaokeWentBackTo", { trackDesc: desc, defaultValue: `Went back to ${desc}` }),
     ];
     if (stateChanges.length > 0) {
       resultParts.push(...stateChanges);
@@ -544,8 +581,8 @@ const handleNavigation = (
 
   const resultParts = [
     action === "next"
-      ? i18n.t("apps.chats.toolCalls.karaokeSkippedToNext", { defaultValue: "Skipped to next track" })
-      : i18n.t("apps.chats.toolCalls.karaokeWentBackToPrevious", { defaultValue: "Went back to previous track" }),
+      ? t("apps.chats.toolCalls.karaokeSkippedToNext", { defaultValue: "Skipped to next track" })
+      : t("apps.chats.toolCalls.karaokeWentBackToPrevious", { defaultValue: "Went back to previous track" }),
   ];
   if (stateChanges.length > 0) {
     resultParts.push(...stateChanges);
@@ -569,6 +606,7 @@ export const handleKaraokeControl = async (
   toolCallId: string,
   context: ToolContext
 ): Promise<void> => {
+  const t = resolveTranslator(context);
   const { action = "toggle", enableTranslation, enableFullscreen } = input;
 
   console.log("[ToolCall] karaokeControl:", input);
@@ -582,27 +620,40 @@ export const handleKaraokeControl = async (
 
   // Handle different actions
   if (normalizedAction === "toggle" || normalizedAction === "play" || normalizedAction === "pause") {
-    handlePlaybackState(normalizedAction as "toggle" | "play" | "pause", input, toolCallId, context, isIOS);
+    handlePlaybackState(
+      normalizedAction as "toggle" | "play" | "pause",
+      input,
+      toolCallId,
+      context,
+      isIOS,
+      t,
+    );
     return;
   }
 
   if (normalizedAction === "playknown") {
-    handlePlayKnown(input, toolCallId, context, isIOS);
+    handlePlayKnown(input, toolCallId, context, isIOS, t);
     return;
   }
 
   if (normalizedAction === "addandplay") {
-    await handleAddAndPlay(input, toolCallId, context, isIOS);
+    await handleAddAndPlay(input, toolCallId, context, isIOS, t);
     return;
   }
 
   if (normalizedAction === "next" || normalizedAction === "previous") {
-    handleNavigation(normalizedAction as "next" | "previous", input, toolCallId, context);
+    handleNavigation(
+      normalizedAction as "next" | "previous",
+      input,
+      toolCallId,
+      context,
+      t,
+    );
     return;
   }
 
   // Apply settings even if action is unhandled
-  const stateChanges = applyKaraokeSettings(enableTranslation, enableFullscreen);
+  const stateChanges = applyKaraokeSettings(enableTranslation, enableFullscreen, t);
 
   if (stateChanges.length > 0) {
     context.addToolResult({
