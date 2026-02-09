@@ -3,6 +3,7 @@ import type { AIChatMessage } from "@/types/chat";
 
 const CODE_BLOCK_PATTERN = /```[\s\S]*?```/g;
 const HTML_TAG_PATTERN = /<[^>]*>/g;
+const ANGLE_BRACKET_PATTERN = /[<>]/g;
 const URGENT_PREFIX_PATTERN = /^!+\s*/;
 const LEADING_SPEECH_PUNCTUATION_PATTERN = /^[\s.!?。，！？；：]+/;
 
@@ -42,6 +43,8 @@ export const cleanTextForSpeech = (text: string): string =>
   text
     .replace(CODE_BLOCK_PATTERN, "")
     .replace(HTML_TAG_PATTERN, "")
+    // Strip any stray angle brackets left by malformed tags (e.g. "<script")
+    .replace(ANGLE_BRACKET_PATTERN, "")
     .replace(URGENT_PREFIX_PATTERN, "")
     .replace(LEADING_SPEECH_PUNCTUATION_PATTERN, "")
     .trim();

@@ -3,6 +3,7 @@
 import type { UIMessage } from "@ai-sdk/react";
 import type { AIChatMessage } from "../src/types/chat";
 import {
+  cleanTextForSpeech,
   classifyChatError,
   collectCompletedLineSegments,
   mergeMessagesWithTimestamps,
@@ -88,6 +89,18 @@ export async function runChatRuntimeUtilsTests(): Promise<{
       classification.message,
       "Your session has expired. Please login again.",
     );
+  });
+
+  console.log(section("Speech cleanup"));
+  await runTest("strips code fences and html tags for speech", async () => {
+    const cleaned = cleanTextForSpeech("Hello ```const x = 1``` <b>world</b>");
+    assertEq(cleaned, "Hello  world");
+  });
+
+  await runTest("removes malformed angle bracket remnants like script openings", async () => {
+    const cleaned = cleanTextForSpeech("<script alert('x') normal text");
+    assertEq(cleaned.includes("<script"), false);
+    assertEq(cleaned.startsWith("script"), true);
   });
 
   console.log(section("Timestamp merge"));
