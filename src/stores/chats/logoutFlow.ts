@@ -2,6 +2,11 @@ import type { AIChatMessage } from "@/types/chat";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import { track } from "@vercel/analytics";
 import { logoutRequest } from "./authApi";
+import {
+  AUTH_TOKEN_RECOVERY_KEY,
+  TOKEN_LAST_REFRESH_KEY,
+  USERNAME_RECOVERY_KEY,
+} from "./recovery";
 
 export const notifyServerOnLogout = async (
   username: string | null,
@@ -24,6 +29,16 @@ export const notifyServerOnLogout = async (
 export const trackLogoutAnalytics = (username: string | null): void => {
   if (username) {
     track(APP_ANALYTICS.USER_LOGOUT, { username });
+  }
+};
+
+export const clearChatRecoveryStorage = (username: string | null): void => {
+  localStorage.removeItem(USERNAME_RECOVERY_KEY);
+  localStorage.removeItem(AUTH_TOKEN_RECOVERY_KEY);
+
+  if (username) {
+    const tokenRefreshKey = `${TOKEN_LAST_REFRESH_KEY}${username}`;
+    localStorage.removeItem(tokenRefreshKey);
   }
 };
 

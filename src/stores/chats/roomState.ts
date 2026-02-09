@@ -1,8 +1,25 @@
 import type { ChatMessage, ChatRoom } from "@/types/chat";
 import { decodeHtmlEntities } from "@/utils/html";
 import { mergeIncomingRoomMessage } from "./incomingMessageMerge";
-import { areChatRoomListsEqual, sortChatRoomsForUi } from "./roomList";
 import { sortAndCapRoomMessages } from "./roomMessages";
+
+const sortChatRoomsForUi = (rooms: ChatRoom[]): ChatRoom[] =>
+  [...rooms].sort((a, b) => {
+    const aOrder = a.type === "private" ? 1 : 0;
+    const bOrder = b.type === "private" ? 1 : 0;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+
+    const aName = (a.name || "").toLowerCase();
+    const bName = (b.name || "").toLowerCase();
+    if (aName !== bName) return aName.localeCompare(bName);
+
+    return a.id.localeCompare(b.id);
+  });
+
+const areChatRoomListsEqual = (
+  currentRooms: ChatRoom[],
+  nextRooms: ChatRoom[]
+): boolean => JSON.stringify(currentRooms) === JSON.stringify(nextRooms);
 
 export const prepareRoomsForSet = (
   currentRooms: ChatRoom[],

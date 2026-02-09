@@ -14,6 +14,7 @@ export {
   runCreateRoomFlow,
   runDeleteRoomFlow,
   runSendMessageFlow,
+  syncPresenceOnRoomSwitch,
 } from "./roomActionFlows";
 export { validateCreateUserInput } from "./userValidation";
 export {
@@ -21,24 +22,25 @@ export {
   refreshAuthTokenRequest,
   registerUserRequest,
 } from "./authApi";
-export { parseRefreshTokenResponse } from "./authResponse";
+export {
+  parseRefreshTokenResponse,
+  parseRegisterUserResponse,
+} from "./authParsers";
 export {
   applyRefreshedAuthToken,
   applySuccessfulRegistration,
 } from "./authStateUpdates";
 export { readErrorResponseBody } from "./httpErrors";
 export {
+  checkAndRefreshTokenFlow,
   getDaysUntilTokenRefresh,
   getTokenAgeDays,
   isTokenRefreshDue,
-} from "./tokenLifecycle";
-export {
-  checkAndRefreshTokenFlow,
   refreshAuthTokenForUser,
 } from "./tokenRefreshFlow";
-export { clearChatRecoveryStorage } from "./logoutCleanup";
 export {
   buildPostLogoutState,
+  clearChatRecoveryStorage,
   notifyServerOnLogout,
   trackLogoutAnalytics,
 } from "./logoutFlow";
@@ -59,8 +61,8 @@ export {
   fetchBulkMessagesPayload,
   fetchRoomMessagesPayload,
   fetchRoomsPayload,
+  logIfNetworkResultError,
 } from "./messagePayloads";
-export { syncPresenceOnRoomSwitch } from "./roomSwitchFlow";
 export {
   clearUnreadCount,
   incrementUnreadCount,
@@ -72,8 +74,10 @@ export {
   schedulePasswordStatusCheck,
   shouldCheckPasswordStatus,
 } from "./identityState";
-export { parseRegisterUserResponse } from "./registrationResponse";
-export { fetchPasswordStatus, submitPassword } from "./passwordFlow";
-export { runCheckHasPasswordFlow, runSetPasswordFlow } from "./passwordActionFlows";
-export { logIfNetworkResultError } from "./errorLogging";
+export {
+  fetchPasswordStatus,
+  submitPassword,
+  runCheckHasPasswordFlow,
+  runSetPasswordFlow,
+} from "./passwordFlow";
 export { runCreateUserFlow } from "./createUserFlow";

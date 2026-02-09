@@ -1,7 +1,7 @@
 import { applySuccessfulRegistration } from "./authStateUpdates";
 import { registerUserRequest } from "./authApi";
 import { readErrorResponseBody } from "./httpErrors";
-import { parseRegisterUserResponse } from "./registrationResponse";
+import { parseRegisterUserResponse } from "./authParsers";
 import { validateCreateUserInput } from "./userValidation";
 
 interface CreateUserFlowParams {

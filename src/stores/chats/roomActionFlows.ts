@@ -1,3 +1,4 @@
+import { abortableFetch } from "@/utils/abortableFetch";
 import type { ChatMessage } from "@/types/chat";
 import { readErrorResponseBody } from "./httpErrors";
 import { createRoomRequest, deleteRoomRequest } from "./roomRequests";
@@ -6,6 +7,7 @@ import {
   sendRoomMessageRequest,
 } from "./sendMessage";
 import type { RefreshTokenResult } from "./authRequests";
+import { withChatRequestDefaults } from "./requestConfig";
 
 interface CreateRoomFlowParams {
   name: string;
@@ -172,5 +174,48 @@ export const runSendMessageFlow = async ({
     removeMessageFromRoom(roomId, optimisticMessage.id);
     console.error("[ChatsStore] Error sending message:", error);
     return { ok: false, error: "Network error. Please try again." };
+  }
+};
+
+interface SyncPresenceOnRoomSwitchParams {
+  previousRoomId: string | null;
+  nextRoomId: string | null;
+  username: string;
+  onRoomsRefresh: () => void;
+}
+
+export const syncPresenceOnRoomSwitch = async ({
+  previousRoomId,
+  nextRoomId,
+  username,
+  onRoomsRefresh,
+}: SyncPresenceOnRoomSwitchParams): Promise<void> => {
+  try {
+    const response = await abortableFetch(
+      "/api/presence/switch",
+      withChatRequestDefaults({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          previousRoomId,
+          nextRoomId,
+          username,
+        }),
+      })
+    );
+
+    if (!response.ok) {
+      const errorData = await readErrorResponseBody(response);
+      console.error("[ChatsStore] Error switching rooms:", errorData);
+      return;
+    }
+
+    console.log("[ChatsStore] Room switch API call successful");
+    setTimeout(() => {
+      console.log("[ChatsStore] Refreshing rooms after switch");
+      onRoomsRefresh();
+    }, 50);
+  } catch (error) {
+    console.error("[ChatsStore] Network error switching rooms:", error);
   }
 };
