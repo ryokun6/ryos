@@ -173,6 +173,11 @@ export function ChatsAppComponent({
     ) {
       prefillAppliedRef.current = initialData.prefillMessage;
 
+      // Switch to @ryo channel if currently in a chat room
+      if (currentRoomId) {
+        handleRoomSelect(null);
+      }
+
       if (initialData.autoSend) {
         // Auto-send directly using handleDirectMessageSubmit which takes the
         // message as a parameter, avoiding the stale-closure race condition
@@ -185,7 +190,7 @@ export function ChatsAppComponent({
         } as React.ChangeEvent<HTMLInputElement>);
       }
     }
-  }, [initialData?.prefillMessage, initialData?.autoSend, handleInputChange, handleDirectMessageSubmit]);
+  }, [initialData?.prefillMessage, initialData?.autoSend, handleInputChange, handleDirectMessageSubmit, currentRoomId, handleRoomSelect]);
 
   // Safety check: ensure rooms is an array before finding
   const currentRoom =

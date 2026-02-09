@@ -211,8 +211,7 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
         type: "document" as const,
         title: item.name,
         subtitle: "Documents",
-        icon: "📄",
-        isEmoji: true,
+        icon: "file-text.png",
         action: () => launchApp("textedit", { initialData: { path: item.path } }),
       }));
     results.push(...docResults);
@@ -232,8 +231,7 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
         type: "applet" as const,
         title: item.name.replace(/\.(html|app)$/i, ""),
         subtitle: "Applets",
-        icon: item.icon && !item.icon.startsWith("/") ? item.icon : "📦",
-        isEmoji: true,
+        icon: item.icon && !item.icon.startsWith("/") ? item.icon : "applets.png",
         action: () =>
           launchApp("applet-viewer", { initialData: { path: item.path, content: "" } }),
       }));
@@ -255,8 +253,7 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
           type: "music" as const,
           title: track.title,
           subtitle: track.artist || undefined,
-          icon: "🎵",
-          isEmoji: true,
+          icon: getAppIconPath("ipod"),
           thumbnail: coverUrl,
           action: () => launchApp("ipod", { initialData: { videoId: track.id } }),
         };

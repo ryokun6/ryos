@@ -261,29 +261,31 @@ export function SpotlightSearch() {
                 <div
                   className="flex items-center gap-2.5"
                   style={{
-                    padding: "6px 8px 6px 12px",
+                    padding: isMobile ? "6px 6px" : "6px 8px 6px 12px",
                     background: "linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%)",
                     borderBottom: "1px solid rgba(0,0,0,0.15)",
                   }}
                 >
-                  <span
-                    className="spotlight-title"
-                    style={{
-                      fontFamily,
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      color: "#FFFFFF",
-                      textShadow: "0 1px 1px rgba(0,0,0,0.3)",
-                      whiteSpace: "nowrap",
-                      flexShrink: 0,
-                      userSelect: "none",
-                      width: isMobile ? "auto" : "100px",
-                      textAlign: "right",
-                      display: "inline-block",
-                    }}
-                  >
-                    {t("spotlight.title", "Spotlight")}
-                  </span>
+                  {!isMobile && (
+                    <span
+                      className="spotlight-title"
+                      style={{
+                        fontFamily,
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        color: "#FFFFFF",
+                        textShadow: "0 1px 1px rgba(0,0,0,0.3)",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                        userSelect: "none",
+                        width: "100px",
+                        textAlign: "right",
+                        display: "inline-block",
+                      }}
+                    >
+                      {t("spotlight.title", "Spotlight")}
+                    </span>
+                  )}
                   <div
                     className="flex items-center flex-1"
                     style={{
@@ -591,7 +593,7 @@ export function SpotlightSearch() {
                         <div
                           className="spotlight-section-header select-none"
                           style={{
-                            padding: "4px 10px 2px",
+                            padding: isMobile ? "6px 12px 2px" : "4px 12px 2px",
                             fontSize: sectionFontSize,
                             fontWeight: "normal",
                             color: "rgba(0,0,0,0.4)",
