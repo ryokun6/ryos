@@ -2440,7 +2440,7 @@
       "failedToFetchSoramimi": "Impossibile recuperare soramimi"
     },
     "expose": {
-      "noWindows": "[TODO] No windows"
+      "noWindows": "Nessuna finestra aperta"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "Applet senza titolo",

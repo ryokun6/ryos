@@ -231,7 +231,8 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
         type: "applet" as const,
         title: item.name.replace(/\.(html|app)$/i, ""),
         subtitle: "Applets",
-        icon: item.icon && !item.icon.startsWith("/") ? item.icon : "applets.png",
+        icon: item.icon && !item.icon.startsWith("/") && !item.icon.startsWith("http") ? item.icon : "applets.png",
+        isEmoji: !!(item.icon && !item.icon.startsWith("/") && !item.icon.startsWith("http") && item.icon.length <= 10),
         action: () =>
           launchApp("applet-viewer", { initialData: { path: item.path, content: "" } }),
       }));

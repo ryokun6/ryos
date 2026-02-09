@@ -2440,7 +2440,7 @@
       "failedToFetchSoramimi": "Не удалось получить сорамими"
     },
     "expose": {
-      "noWindows": "[TODO] No windows"
+      "noWindows": "Нет открытых окон"
     },
     "htmlPreview": {
       "bannerFallbackTitle": "Безымянный апплет",
