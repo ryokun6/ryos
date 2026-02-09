@@ -3,10 +3,14 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { MagnifyingGlass } from "@phosphor-icons/react";
 import { useSpotlightStore } from "@/stores/useSpotlightStore";
-import { useSpotlightSearch, type SpotlightResult } from "@/hooks/useSpotlightSearch";
+import {
+  useSpotlightSearch,
+  type SpotlightResult,
+} from "@/hooks/useSpotlightSearch";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useTranslation } from "react-i18next";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { cn } from "@/lib/utils";
 
 // Section header labels by result type
@@ -43,11 +47,12 @@ export function SpotlightSearch() {
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isSystem7 = currentTheme === "system7";
+  const isMac = currentTheme === "macosx" || isSystem7;
+  const isMobile = useIsMobile();
 
   // Focus input when opening
   useEffect(() => {
     if (isOpen) {
-      // Small delay to ensure the element is mounted
       requestAnimationFrame(() => {
         inputRef.current?.focus();
       });
@@ -122,18 +127,15 @@ export function SpotlightSearch() {
       type: SpotlightResult["type"];
       items: Array<SpotlightResult & { globalIndex: number }>;
     }> = [];
-    let globalIndex = 0;
 
     for (const type of SECTION_TYPE_ORDER) {
       const items = results
         .filter((r) => r.type === type)
-        .map((r) => ({ ...r, globalIndex: globalIndex++ }));
+        .map((r) => ({ ...r, globalIndex: 0 }));
       if (items.length > 0) {
-        // Don't add "ai" as a separate group header — just show the item
         groups.push({ type, items });
       }
     }
-    // Reconcile globalIndex with actual sequential indices
     let idx = 0;
     for (const group of groups) {
       for (const item of group.items) {
@@ -143,105 +145,84 @@ export function SpotlightSearch() {
     return groups;
   })();
 
-  // Theme-specific styles
+  // ── Theme-specific container styles ──────────────────────────────
   const containerStyles = (() => {
     if (currentTheme === "macosx") {
       return {
-        background: "rgba(255, 255, 255, 0.82)",
-        backdropFilter: "blur(40px)",
-        WebkitBackdropFilter: "blur(40px)",
-        borderRadius: "12px",
+        background: "rgba(232, 232, 232, 0.95)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderRadius: "6px",
         boxShadow:
-          "0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(0, 0, 0, 0.15), inset 0 0.5px 0 rgba(255, 255, 255, 0.5)",
+          "0 6px 20px rgba(0, 0, 0, 0.28), 0 0 0 0.5px rgba(0, 0, 0, 0.2)",
         border: "none",
       } as React.CSSProperties;
     }
     if (isSystem7) {
       return {
         background: "#FFFFFF",
-        border: "2px solid #000000",
+        border: "1px solid #000000",
         borderRadius: "0px",
-        boxShadow: "2px 2px 0 #000000",
+        boxShadow: "1px 1px 0 #000000",
       } as React.CSSProperties;
     }
     if (currentTheme === "xp") {
       return {
-        background: "#ECE9D8",
-        border: "2px solid #0055E5",
-        borderRadius: "4px",
-        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.3)",
+        background: "#FFFFFF",
+        border: "1px solid #7F9DB9",
+        borderRadius: "3px",
+        boxShadow: "0 3px 12px rgba(0, 0, 0, 0.25)",
       } as React.CSSProperties;
     }
     // Win98
     return {
-      background: "#C0C0C0",
+      background: "#FFFFFF",
       borderRadius: "0px",
       boxShadow:
-        "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf, 2px 2px 8px rgba(0, 0, 0, 0.3)",
+        "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf, 2px 2px 6px rgba(0, 0, 0, 0.2)",
     } as React.CSSProperties;
   })();
 
-  const inputStyles = (() => {
-    const base: React.CSSProperties = {
-      outline: "none",
-      width: "100%",
-    };
-    if (currentTheme === "macosx") {
-      return {
-        ...base,
-        background: "transparent",
-        fontSize: "18px",
-        padding: "12px 12px 12px 0",
-        border: "none",
-        fontFamily:
-          "LucidaGrande, 'Lucida Grande', ui-sans-serif, system-ui, sans-serif",
-      };
-    }
-    if (isSystem7) {
-      return {
-        ...base,
-        background: "#FFFFFF",
-        fontSize: "12px",
-        padding: "6px 8px 6px 0",
-        border: "none",
-        fontFamily: "var(--font-geneva-12)",
-      };
-    }
-    if (currentTheme === "xp") {
-      return {
-        ...base,
-        background: "#FFFFFF",
-        fontSize: "12px",
-        padding: "6px 8px 6px 0",
-        border: "1px solid #7F9DB9",
-        borderRadius: "2px",
-        fontFamily: "var(--font-ms-sans)",
-      };
-    }
-    // Win98
-    return {
-      ...base,
-      background: "#FFFFFF",
-      fontSize: "11px",
-      padding: "4px 6px 4px 0",
-      fontFamily: "var(--font-ms-sans)",
-      boxShadow:
-        "inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey",
-    };
-  })();
-
+  // ── Selection colors ─────────────────────────────────────────────
   const getSelectedBg = () => {
-    if (currentTheme === "macosx") return "rgba(0, 95, 255, 0.12)";
+    if (currentTheme === "macosx") return "#1A68D1";
     if (isSystem7) return "#000000";
     return "#0055E5";
   };
 
-  const getSelectedTextColor = () => {
-    if (currentTheme === "macosx") return undefined; // keep default
-    return "#FFFFFF";
-  };
+  const getSelectedTextColor = () => "#FFFFFF";
+
+  // ── Font family per theme ────────────────────────────────────────
+  const fontFamily = isXpTheme
+    ? "var(--font-ms-sans)"
+    : isSystem7
+    ? "var(--font-geneva-12)"
+    : "LucidaGrande, 'Lucida Grande', ui-sans-serif, system-ui, sans-serif";
+
+  // ── Sizing constants ─────────────────────────────────────────────
+  const iconSize = isMac ? "w-4 h-4" : "w-4 h-4";
+  const emojiSize = isMac ? "text-sm w-4 h-4" : "text-sm w-4 h-4";
+  const fontSize = isSystem7 ? "11px" : isMac ? "13px" : "11px";
+  const subtitleFontSize = isSystem7 ? "10px" : isMac ? "11px" : "10px";
+  const inputFontSize = isSystem7 ? "12px" : isMac ? "13px" : "11px";
+  const sectionFontSize = isSystem7 ? "10px" : isMac ? "11px" : "10px";
+  const rowPadding = isMac ? "px-3 py-[5px]" : "px-3 py-[4px]";
+  const inputPadding = isMac ? "px-3 py-[6px]" : "px-2 py-[5px]";
 
   if (!isOpen) return null;
+
+  // ── Position: Tiger-style dropdown for Mac, centered for Windows & mobile ──
+  const panelPositionClass = isMobile
+    ? "fixed z-[10004] left-1/2 -translate-x-1/2 w-[calc(100vw-32px)] max-w-[360px]"
+    : isMac
+    ? "fixed z-[10004] right-2 w-[280px]"
+    : "fixed z-[10004] left-1/2 -translate-x-1/2 w-[320px]";
+
+  const panelTopStyle = isMobile
+    ? { top: "calc(var(--os-metrics-menubar-height, 25px) + 8px)" }
+    : isMac
+    ? { top: "calc(var(--os-metrics-menubar-height, 25px) + 2px)" }
+    : { top: "28%" };
 
   const overlay = (
     <AnimatePresence>
@@ -250,44 +231,28 @@ export function SpotlightSearch() {
           {/* Backdrop */}
           <motion.div
             className="fixed inset-0 z-[10003]"
-            style={{ background: "rgba(0, 0, 0, 0.15)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={{ duration: 0.1 }}
             onClick={reset}
           />
 
           {/* Spotlight Panel */}
           <motion.div
-            className="fixed z-[10004] left-1/2 w-[90vw] max-w-[520px]"
-            style={{
-              top: "22%",
-              transform: "translateX(-50%)",
-            }}
-            initial={{ opacity: 0, scale: 0.96, y: -8 }}
+            className={panelPositionClass}
+            style={panelTopStyle}
+            initial={{ opacity: 0, scale: 0.98, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: -8 }}
-            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            exit={{ opacity: 0, scale: 0.98, y: -4 }}
+            transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
             onKeyDown={handleKeyDown}
           >
-            <div style={containerStyles} className="overflow-hidden">
-              {/* Search Input */}
-              <div
-                className={cn(
-                  "flex items-center gap-2",
-                  currentTheme === "macosx" && "px-4",
-                  isSystem7 && "px-3 pt-2",
-                  isXpTheme && "p-3"
-                )}
-              >
+            <div style={{ ...containerStyles, fontFamily }} className="overflow-hidden">
+              {/* Search Input Row */}
+              <div className={cn("flex items-center gap-1.5", inputPadding)}>
                 <MagnifyingGlass
-                  className={cn(
-                    "flex-shrink-0",
-                    currentTheme === "macosx" && "w-5 h-5 text-black/40",
-                    isSystem7 && "w-3 h-3",
-                    isXpTheme && "w-4 h-4"
-                  )}
+                  className="flex-shrink-0 w-3.5 h-3.5 opacity-50"
                   weight="bold"
                 />
                 <input
@@ -296,7 +261,15 @@ export function SpotlightSearch() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={t("spotlight.placeholder")}
-                  style={inputStyles}
+                  style={{
+                    outline: "none",
+                    width: "100%",
+                    background: "transparent",
+                    fontSize: inputFontSize,
+                    fontFamily,
+                    border: "none",
+                    padding: 0,
+                  }}
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
@@ -307,12 +280,16 @@ export function SpotlightSearch() {
               {/* Divider */}
               {results.length > 0 && (
                 <div
-                  className={cn(
-                    currentTheme === "macosx" && "h-px bg-black/10 mx-2",
-                    isSystem7 && "h-px bg-black mx-1",
-                    currentTheme === "xp" && "h-px bg-[#7F9DB9] mx-2",
-                    currentTheme === "win98" && "h-px bg-gray-500 mx-1"
-                  )}
+                  style={{
+                    height: "1px",
+                    background:
+                      currentTheme === "macosx"
+                        ? "rgba(0,0,0,0.12)"
+                        : isSystem7
+                        ? "#000"
+                        : "#C0C0C0",
+                    margin: "0 4px",
+                  }}
                 />
               )}
 
@@ -320,35 +297,29 @@ export function SpotlightSearch() {
               {results.length > 0 && (
                 <div
                   ref={listRef}
-                  className={cn(
-                    "overflow-y-auto",
-                    currentTheme === "macosx" && "max-h-[360px] py-1",
-                    isSystem7 && "max-h-[300px] py-1",
-                    isXpTheme && "max-h-[320px] py-1"
-                  )}
+                  className="overflow-y-auto"
+                  style={{ maxHeight: isMobile ? "50vh" : "320px", padding: "2px 0" }}
                 >
                   {groupedResults.map((group) => (
                     <div key={group.type}>
-                      {/* Section header (skip for AI fallback) */}
+                      {/* Section header */}
                       {group.type !== "ai" && query.trim() && (
                         <div
-                          className={cn(
-                            "select-none",
-                            currentTheme === "macosx" &&
-                              "px-4 py-1.5 text-[11px] font-semibold text-black/40 uppercase tracking-wider",
-                            isSystem7 &&
-                              "px-3 py-1 text-[10px] font-bold text-black/60",
-                            currentTheme === "xp" &&
-                              "px-3 py-1 text-[10px] font-bold text-[#003399]",
-                            currentTheme === "win98" &&
-                              "px-3 py-1 text-[10px] font-bold text-gray-600"
-                          )}
+                          className="select-none px-3 pt-1.5 pb-0.5"
                           style={{
-                            fontFamily: isXpTheme
-                              ? "var(--font-ms-sans)"
-                              : isSystem7
-                              ? "var(--font-geneva-12)"
-                              : undefined,
+                            fontSize: sectionFontSize,
+                            fontWeight: 600,
+                            color:
+                              currentTheme === "macosx"
+                                ? "rgba(0,0,0,0.4)"
+                                : isSystem7
+                                ? "rgba(0,0,0,0.55)"
+                                : currentTheme === "xp"
+                                ? "#003399"
+                                : "#666",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.04em",
+                            fontFamily,
                           }}
                         >
                           {t(getSectionKey(group.type))}
@@ -357,20 +328,15 @@ export function SpotlightSearch() {
 
                       {/* Result items */}
                       {group.items.map((result) => {
-                        const isSelected =
-                          result.globalIndex === selectedIndex;
+                        const isSelected = result.globalIndex === selectedIndex;
                         return (
                           <button
                             key={result.id}
                             type="button"
                             data-spotlight-index={result.globalIndex}
                             className={cn(
-                              "w-full flex items-center gap-3 cursor-default transition-colors",
-                              currentTheme === "macosx" &&
-                                "px-4 py-2 rounded-lg mx-1",
-                              isSystem7 && "px-3 py-1.5",
-                              currentTheme === "xp" && "px-3 py-1.5",
-                              currentTheme === "win98" && "px-3 py-1.5"
+                              "w-full flex items-center gap-2 cursor-default",
+                              rowPadding
                             )}
                             style={{
                               background: isSelected
@@ -379,12 +345,16 @@ export function SpotlightSearch() {
                               color: isSelected
                                 ? getSelectedTextColor()
                                 : undefined,
-                              fontFamily: isXpTheme
-                                ? "var(--font-ms-sans)"
-                                : isSystem7
-                                ? "var(--font-geneva-12)"
-                                : undefined,
-                              width: currentTheme === "macosx" ? "calc(100% - 8px)" : "100%",
+                              fontFamily,
+                              borderRadius:
+                                currentTheme === "macosx" ? "4px" : "0px",
+                              margin:
+                                currentTheme === "macosx" ? "0 3px" : "0",
+                              width:
+                                currentTheme === "macosx"
+                                  ? "calc(100% - 6px)"
+                                  : "100%",
+                              minHeight: isMobile ? "36px" : undefined,
                             }}
                             onClick={() => {
                               result.action();
@@ -398,10 +368,8 @@ export function SpotlightSearch() {
                             {result.isEmoji ? (
                               <span
                                 className={cn(
-                                  "flex-shrink-0 flex items-center justify-center",
-                                  currentTheme === "macosx"
-                                    ? "text-xl w-8 h-8"
-                                    : "text-base w-5 h-5"
+                                  "flex-shrink-0 flex items-center justify-center leading-none",
+                                  emojiSize
                                 )}
                               >
                                 {result.icon}
@@ -412,57 +380,34 @@ export function SpotlightSearch() {
                                 alt=""
                                 className={cn(
                                   "flex-shrink-0 [image-rendering:pixelated]",
-                                  currentTheme === "macosx"
-                                    ? "w-8 h-8"
-                                    : "w-5 h-5"
+                                  iconSize
                                 )}
                               />
                             )}
 
-                            {/* Text */}
+                            {/* Title + Subtitle */}
                             <div className="flex-1 min-w-0 text-left">
                               <div
-                                className={cn(
-                                  "truncate",
-                                  currentTheme === "macosx" &&
-                                    "text-[14px] font-medium",
-                                  isSystem7 && "text-[12px]",
-                                  isXpTheme && "text-[12px]"
-                                )}
+                                className="truncate"
+                                style={{ fontSize, lineHeight: "1.3" }}
                               >
                                 {result.title}
                               </div>
                               {result.subtitle && result.type !== "ai" && (
                                 <div
-                                  className={cn(
-                                    "truncate",
-                                    currentTheme === "macosx" &&
-                                      "text-[11px] text-black/40",
-                                    isSystem7 && "text-[10px] text-black/50",
-                                    isXpTheme && "text-[10px]"
-                                  )}
+                                  className="truncate"
                                   style={{
-                                    color:
-                                      isSelected && !currentTheme.startsWith("mac")
-                                        ? "rgba(255,255,255,0.7)"
-                                        : undefined,
+                                    fontSize: subtitleFontSize,
+                                    lineHeight: "1.2",
+                                    color: isSelected
+                                      ? "rgba(255,255,255,0.7)"
+                                      : "rgba(0,0,0,0.4)",
                                   }}
                                 >
                                   {result.subtitle}
                                 </div>
                               )}
                             </div>
-
-                            {/* Type badge (macOS only, subtle) */}
-                            {currentTheme === "macosx" &&
-                              result.type !== "ai" &&
-                              query.trim() && (
-                                <span className="text-[10px] text-black/25 flex-shrink-0 uppercase tracking-wider">
-                                  {result.type === "app"
-                                    ? "⏎"
-                                    : ""}
-                                </span>
-                              )}
                           </button>
                         );
                       })}
@@ -474,38 +419,17 @@ export function SpotlightSearch() {
               {/* No results */}
               {results.length === 0 && query.trim() && (
                 <div
-                  className={cn(
-                    "text-center py-6",
-                    currentTheme === "macosx" && "text-sm text-black/40",
-                    isSystem7 && "text-[12px] text-black/50",
-                    isXpTheme && "text-[11px] text-gray-500"
-                  )}
+                  className="text-center py-4"
                   style={{
-                    fontFamily: isXpTheme
-                      ? "var(--font-ms-sans)"
-                      : isSystem7
-                      ? "var(--font-geneva-12)"
-                      : undefined,
+                    fontSize: subtitleFontSize,
+                    color: "rgba(0,0,0,0.4)",
+                    fontFamily,
                   }}
                 >
                   {t("spotlight.noResults")}
                 </div>
               )}
-
-              {/* Bottom padding for macOS */}
-              {currentTheme === "macosx" && results.length > 0 && (
-                <div className="h-1" />
-              )}
             </div>
-
-            {/* Keyboard shortcut hint — below the panel */}
-            {currentTheme === "macosx" && (
-              <div className="text-center mt-2 text-[11px] text-white/40 select-none"
-                style={{ textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}
-              >
-                esc {t("spotlight.hintClose")} · ↵ {t("spotlight.hintOpen")} · ↑↓ {t("spotlight.hintNavigate")}
-              </div>
-            )}
           </motion.div>
         </>
       )}
@@ -514,4 +438,3 @@ export function SpotlightSearch() {
 
   return createPortal(overlay, document.body);
 }
-
