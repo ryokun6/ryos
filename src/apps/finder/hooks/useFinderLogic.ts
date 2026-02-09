@@ -781,7 +781,7 @@ export function useFinderLogic({
     restoreFromTrash(selectedFile);
   };
 
-  const handleNewFolder = () => {
+  const handleNewFolder = useCallback(() => {
     // Find a unique default name
     let folderIndex = 0;
     let defaultName = t("apps.finder.defaultNames.untitledFolder");
@@ -794,7 +794,7 @@ export function useFinderLogic({
     }
     setNewFolderName(defaultName);
     setIsNewFolderDialogOpen(true);
-  };
+  }, [currentPath, getFileItem, t]);
 
   const handleNewFolderSubmit = (name: string) => {
     if (!name || !name.trim()) return;

@@ -43,6 +43,13 @@ interface ExtendedDisplayFileItem extends Omit<DisplayFileItem, "content"> {
   status?: "active" | "trashed"; // Include status for potential UI differences
 }
 
+const getParentPath = (path: string): string => {
+  if (path === "/") return "/";
+  const parts = path.split("/").filter(Boolean);
+  if (parts.length <= 1) return "/";
+  return `/${parts.slice(0, -1).join("/")}`;
+};
+
 // Generic CRUD operations
 export const dbOperations = {
   async getAll<T>(storeName: string): Promise<T[]> {
@@ -410,7 +417,6 @@ export function useFileSystem(
 
   // Files store selectors (avoid broad store subscriptions)
   const {
-    items: fileItems,
     getItem: getFileItem,
     getItemsInPath,
     updateItemMetadata,
@@ -422,7 +428,6 @@ export function useFileSystem(
     emptyTrash: emptyTrashMetadata,
     reset: resetFilesStore,
   } = useFilesStoreShallow((state) => ({
-    items: state.items,
     getItem: state.getItem,
     getItemsInPath: state.getItemsInPath,
     updateItemMetadata: state.updateItemMetadata,
@@ -463,14 +468,6 @@ export function useFileSystem(
       objectUrlsRef.current.clear();
     };
   }, []);
-
-  // Define getParentPath inside hook
-  const getParentPath = (path: string): string => {
-    if (path === "/") return "/";
-    const parts = path.split("/").filter(Boolean);
-    if (parts.length <= 1) return "/";
-    return "/" + parts.slice(0, -1).join("/");
-  };
 
   // --- Lazy Default Content Loader (uses cached filesystem data) --- //
   const ensureDefaultContent = useCallback(
@@ -909,7 +906,7 @@ export function useFileSystem(
     // Add fileStore dependency to re-run if items change
   }, [
     currentPath,
-    fileItems,
+    getItemsInPath,
     ipodTracks,
     videoTracks,
     internetExplorerFavorites,
@@ -1217,19 +1214,19 @@ export function useFileSystem(
     if (currentPath === "/") return;
     const parentPath = getParentPath(currentPath);
     navigateToPath(parentPath); // navigateToPath is defined above
-  }, [currentPath, navigateToPath, getParentPath]);
+  }, [currentPath, navigateToPath]);
   const navigateBack = useCallback(() => {
     if (historyIndex > 0) {
       setHistoryIndex(historyIndex - 1);
       setCurrentPath(history[historyIndex - 1]);
     }
-  }, [history, historyIndex]);
+  }, [history, historyIndex, setCurrentPath, setHistoryIndex]);
   const navigateForward = useCallback(() => {
     if (historyIndex < history.length - 1) {
       setHistoryIndex(historyIndex + 1);
       setCurrentPath(history[historyIndex + 1]);
     }
-  }, [history, historyIndex]);
+  }, [history, historyIndex, setCurrentPath, setHistoryIndex]);
   const canNavigateBack = useCallback(() => historyIndex > 0, [historyIndex]);
   const canNavigateForward = useCallback(
     () => historyIndex < history.length - 1,
@@ -1518,7 +1515,7 @@ export function useFileSystem(
         }
       }
     },
-    [getFileItem, renameFileItem, getParentPath]
+    [getFileItem, renameFileItem]
   );
 
   // --- Create Folder --- //
@@ -1696,7 +1693,7 @@ export function useFileSystem(
       console.error("Error formatting file system:", err);
       setError("Failed to format file system");
     }
-  }, [resetFilesStore]);
+  }, [resetFilesStore, setCurrentPath, setHistory, setHistoryIndex]);
 
   // Calculate trash count based on store data
   const trashItemsCount = getItemsInPath("/Trash").length;
