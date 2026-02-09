@@ -3,6 +3,7 @@
 import {
   sanitizeWriteMode,
   getEditReplacementFailureMessage,
+  resolveEditTarget,
   validateDocumentWriteInput,
   validateFileEditInput,
 } from "../src/apps/chats/utils/chatFileToolValidation";
@@ -164,6 +165,28 @@ export async function runChatFileToolValidationTests(): Promise<{
       assertEq(result.path, "/Documents/file.md");
       assertEq(result.oldString, "old");
       assertEq(result.newString, "new");
+    }
+  });
+
+  await runTest("resolves edit targets for documents and applets", async () => {
+    const documentTarget = resolveEditTarget("/Documents/file.md");
+    const appletTarget = resolveEditTarget("/Applets/demo.html");
+    assertEq(documentTarget.ok, true);
+    assertEq(appletTarget.ok, true);
+    if (documentTarget.ok) {
+      assertEq(documentTarget.target, "document");
+    }
+    if (appletTarget.ok) {
+      assertEq(appletTarget.target, "applet");
+    }
+  });
+
+  await runTest("rejects edit target outside supported roots", async () => {
+    const result = resolveEditTarget("/Music/song.mp3");
+    assertEq(result.ok, false);
+    if (!result.ok) {
+      assertEq(result.errorKey, "apps.chats.toolCalls.invalidPathForEdit");
+      assertEq(result.errorParams?.path, "/Music/song.mp3");
     }
   });
 

@@ -52,6 +52,7 @@ import {
 } from "../utils/localFileContent";
 import {
   getEditReplacementFailureMessage,
+  resolveEditTarget,
   validateDocumentWriteInput,
   validateFileEditInput,
 } from "../utils/chatFileToolValidation";
@@ -925,6 +926,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             const normalizedPath = editValidation.path;
             const oldString = editValidation.oldString;
             const newString = editValidation.newString;
+            const editTarget = resolveEditTarget(normalizedPath);
+            if (!editTarget.ok) {
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText: i18n.t(editTarget.errorKey, editTarget.errorParams),
+              });
+              result = "";
+              break;
+            }
 
             console.log("[ToolCall] edit:", {
               path: normalizedPath,
@@ -957,85 +969,54 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             };
 
             try {
-              if (normalizedPath.startsWith("/Documents/")) {
-                // Edit document - read directly from file system (independent of TextEdit instances)
-                const replacement = await replaceAndPersistLocalFileContent({
-                  path: normalizedPath,
-                  storeName: STORES.DOCUMENTS,
-                  oldString,
-                  newString,
-                  errors: {
-                    notFound: `Document not found: ${normalizedPath}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`,
-                    missingContent: `Document not found: ${normalizedPath}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`,
-                    readFailed: `Failed to read document content: ${normalizedPath}`,
-                  },
-                  resolveRecordName: (fileItem) => fileItem.name,
-                });
+              const isDocumentTarget = editTarget.target === "document";
+              const replacement = await replaceAndPersistLocalFileContent({
+                path: normalizedPath,
+                storeName: isDocumentTarget ? STORES.DOCUMENTS : STORES.APPLETS,
+                oldString,
+                newString,
+                errors: {
+                  notFound: isDocumentTarget
+                    ? `Document not found: ${normalizedPath}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`
+                    : `Applet not found: ${normalizedPath}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`,
+                  missingContent: isDocumentTarget
+                    ? `Document not found: ${normalizedPath}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`
+                    : `Applet not found: ${normalizedPath}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`,
+                  readFailed: isDocumentTarget
+                    ? `Failed to read document content: ${normalizedPath}`
+                    : `Failed to read applet content: ${normalizedPath}`,
+                },
+                resolveRecordName: (fileItem) =>
+                  isDocumentTarget ? fileItem.name : fileItem.uuid,
+              });
 
-                if (!replacement.ok) {
-                  publishReplacementFailure(replacement);
-                  result = "";
-                  break;
-                }
+              if (!replacement.ok) {
+                publishReplacementFailure(replacement);
+                result = "";
+                break;
+              }
 
-                const { updatedContent } = replacement;
-
+              if (isDocumentTarget) {
                 syncTextEditDocumentForPath({
                   path: normalizedPath,
-                  content: updatedContent,
+                  content: replacement.updatedContent,
                   launchIfMissing: false,
                   bringToForeground: false,
                   includeFilePathOnUpdate: false,
                 });
-
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: i18n.t("apps.chats.toolCalls.editedDocument", {
-                    path: normalizedPath,
-                  }),
-                });
-                result = "";
-              } else if (normalizedPath.startsWith("/Applets/")) {
-                // Edit applet HTML
-                const replacement = await replaceAndPersistLocalFileContent({
-                  path: normalizedPath,
-                  storeName: STORES.APPLETS,
-                  oldString,
-                  newString,
-                  errors: {
-                    notFound: `Applet not found: ${normalizedPath}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`,
-                    missingContent: `Applet not found: ${normalizedPath}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`,
-                    readFailed: `Failed to read applet content: ${normalizedPath}`,
-                  },
-                  resolveRecordName: (fileItem) => fileItem.uuid,
-                });
-
-                if (!replacement.ok) {
-                  publishReplacementFailure(replacement);
-                  result = "";
-                  break;
-                }
-
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: i18n.t("apps.chats.toolCalls.editedApplet", {
-                    path: normalizedPath,
-                  }),
-                });
-                result = "";
-              } else {
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  state: "output-error",
-                  errorText: i18n.t("apps.chats.toolCalls.invalidPathForEdit", {
-                    path: normalizedPath,
-                  }),
-                });
-                result = "";
               }
+
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                output: i18n.t(
+                  isDocumentTarget
+                    ? "apps.chats.toolCalls.editedDocument"
+                    : "apps.chats.toolCalls.editedApplet",
+                  { path: normalizedPath },
+                ),
+              });
+              result = "";
             } catch (err) {
               console.error("edit error:", err);
               addToolResult({

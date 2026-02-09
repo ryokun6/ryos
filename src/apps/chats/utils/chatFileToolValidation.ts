@@ -42,6 +42,16 @@ export type EditValidationSuccess = {
 
 export type EditValidationResult = EditValidationFailure | EditValidationSuccess;
 
+export type EditTarget = "document" | "applet";
+
+export type EditTargetValidationResult =
+  | { ok: true; target: EditTarget }
+  | {
+      ok: false;
+      errorKey: "apps.chats.toolCalls.invalidPathForEdit";
+      errorParams: { path: string };
+    };
+
 export type EditReplacementFailure = {
   reason: "not_found" | "multiple_matches";
   occurrences: number;
@@ -62,6 +72,24 @@ export const getEditReplacementFailureMessage = (
   return {
     errorKey: "apps.chats.toolCalls.oldStringMultipleMatches",
     errorParams: { count: failure.occurrences },
+  };
+};
+
+export const resolveEditTarget = (
+  path: string,
+): EditTargetValidationResult => {
+  if (path.startsWith("/Documents/")) {
+    return { ok: true, target: "document" };
+  }
+
+  if (path.startsWith("/Applets/")) {
+    return { ok: true, target: "applet" };
+  }
+
+  return {
+    ok: false,
+    errorKey: "apps.chats.toolCalls.invalidPathForEdit",
+    errorParams: { path },
   };
 };
 
