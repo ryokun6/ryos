@@ -20,8 +20,8 @@ import {
   assertEq,
 } from "./test-utils";
 
-const readStoreSource = (): string =>
-  readFileSync(resolve(process.cwd(), "src/stores/useChatsStore.ts"), "utf-8");
+const readChatHelpersSource = (): string =>
+  readFileSync(resolve(process.cwd(), "src/stores/chats/authFlows.ts"), "utf-8");
 
 const countMatches = (source: string, pattern: RegExp): number =>
   source.match(new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`))
@@ -36,7 +36,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
 
   console.log(section("JSON response guard wiring"));
   await runTest("uses readJsonBody for rooms/messages success payloads", async () => {
-    const source = readStoreSource();
+    const source = readChatHelpersSource();
 
     assert(
       source.includes('"fetchRooms success response"'),
@@ -53,7 +53,7 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
   });
 
   await runTest("readJsonBody accepts json media type variants", async () => {
-    const source = readStoreSource();
+    const source = readChatHelpersSource();
     assert(
       /contentType\.includes\("json"\)/.test(source),
       'Expected readJsonBody to gate on contentType.includes("json")'
@@ -61,92 +61,109 @@ export async function runChatStoreGuardsWiringTests(): Promise<{
   });
 
   await runTest("dedupes guard warnings with endpoint-specific keys", async () => {
-    const source = readStoreSource();
+    const source = readChatHelpersSource();
 
     assert(
-      /warnChatsStoreOnce\s*\(\s*"fetchRooms-success-response"/.test(source),
+      /ROOMS:\s*"fetchRooms-success-response"/.test(source),
       "Expected dedupe warning key for fetchRooms"
     );
     assert(
-      /warnChatsStoreOnce\s*\(\s*"fetchMessagesForRoom-success-response"/.test(
+      /ROOM_MESSAGES:\s*"fetchMessagesForRoom-success-response"/.test(
         source
       ),
       "Expected dedupe warning key for fetchMessagesForRoom"
     );
     assert(
-      /warnChatsStoreOnce\s*\(\s*"fetchBulkMessages-success-response"/.test(
+      /BULK_MESSAGES:\s*"fetchBulkMessages-success-response"/.test(
         source
       ),
       "Expected dedupe warning key for fetchBulkMessages"
+    );
+
+    assertEq(
+      countMatches(source, /successWarningKey:\s*CHAT_PAYLOAD_WARNING_KEYS\.ROOMS/),
+      1,
+      "Expected room warning key usage"
+    );
+    assertEq(
+      countMatches(
+        source,
+        /successWarningKey:\s*CHAT_PAYLOAD_WARNING_KEYS\.ROOM_MESSAGES/
+      ),
+      1,
+      "Expected room-messages warning key usage"
+    );
+    assertEq(
+      countMatches(
+        source,
+        /successWarningKey:\s*CHAT_PAYLOAD_WARNING_KEYS\.BULK_MESSAGES/
+      ),
+      1,
+      "Expected bulk-messages warning key usage"
     );
   });
 
   console.log(section("Cooldown availability checks"));
   await runTest("checks cooldown gate for each chat fetch endpoint", async () => {
-    const source = readStoreSource();
+    const source = readChatHelpersSource();
+
+    assert(
+      /ROOMS:\s*"rooms"/.test(source),
+      "Expected ROOMS endpoint key constant"
+    );
+    assert(
+      /ROOM_MESSAGES:\s*"room-messages"/.test(source),
+      "Expected ROOM_MESSAGES endpoint key constant"
+    );
+    assert(
+      /BULK_MESSAGES:\s*"bulk-messages"/.test(source),
+      "Expected BULK_MESSAGES endpoint key constant"
+    );
 
     assertEq(
-      countMatches(source, /isApiTemporarilyUnavailable\("rooms"\)/),
+      countMatches(source, /endpointKey:\s*CHAT_ENDPOINT_KEYS\.ROOMS/),
       1,
       "Expected rooms fetcher cooldown gate"
     );
     assertEq(
-      countMatches(source, /isApiTemporarilyUnavailable\("room-messages"\)/),
+      countMatches(source, /endpointKey:\s*CHAT_ENDPOINT_KEYS\.ROOM_MESSAGES/),
       1,
       "Expected room-messages fetcher cooldown gate"
     );
     assertEq(
-      countMatches(source, /isApiTemporarilyUnavailable\("bulk-messages"\)/),
+      countMatches(source, /endpointKey:\s*CHAT_ENDPOINT_KEYS\.BULK_MESSAGES/),
       1,
       "Expected bulk-messages fetcher cooldown gate"
     );
   });
 
   await runTest("uses a positive cooldown duration constant", async () => {
-    const source = readStoreSource();
-    const match = source.match(/API_UNAVAILABLE_COOLDOWN_MS\s*=\s*([0-9_]+)/);
-    assert(match?.[1], "Expected API_UNAVAILABLE_COOLDOWN_MS declaration");
+    const source = readChatHelpersSource();
+    const match = source.match(
+      /CHAT_API_UNAVAILABLE_COOLDOWN_MS\s*=\s*([0-9_]+)/
+    );
+    assert(match?.[1], "Expected CHAT_API_UNAVAILABLE_COOLDOWN_MS declaration");
     const parsedMs = Number((match?.[1] || "").replaceAll("_", ""));
     assert(parsedMs > 0, "Expected positive API_UNAVAILABLE_COOLDOWN_MS");
   });
 
   await runTest("marks cooldown from parse guard and network failures", async () => {
-    const source = readStoreSource();
+    const source = readChatHelpersSource();
 
     assertEq(
-      countMatches(source, /markApiTemporarilyUnavailable\("rooms"\)/),
+      countMatches(source, /markApiTemporarilyUnavailable\(endpointKey\)/),
       2,
-      "Expected rooms cooldown marking in guard + network catch"
-    );
-    assertEq(
-      countMatches(source, /markApiTemporarilyUnavailable\("room-messages"\)/),
-      2,
-      "Expected room-messages cooldown marking in guard + network catch"
-    );
-    assertEq(
-      countMatches(source, /markApiTemporarilyUnavailable\("bulk-messages"\)/),
-      2,
-      "Expected bulk-messages cooldown marking in guard + network catch"
+      "Expected endpoint-key cooldown marking in parse + network paths"
     );
   });
 
   await runTest("clears cooldown after successful payload parse", async () => {
-    const source = readStoreSource();
+    const source = readChatHelpersSource();
 
     assertEq(
-      countMatches(source, /clearApiUnavailable\("rooms"\)/),
+      countMatches(source, /clearApiUnavailable\(endpointKey\)/),
       1,
-      "Expected rooms cooldown clear path"
-    );
-    assertEq(
-      countMatches(source, /clearApiUnavailable\("room-messages"\)/),
-      1,
-      "Expected room-messages cooldown clear path"
-    );
-    assertEq(
-      countMatches(source, /clearApiUnavailable\("bulk-messages"\)/),
-      1,
-      "Expected bulk-messages cooldown clear path"
+      "Expected endpoint-key cooldown clear path"
     );
   });
 

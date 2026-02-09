@@ -296,7 +296,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       isActive = false;
       controller.abort();
     };
-  }, [selectedApplet, isSharedApplet]);
+  }, [selectedApplet, isSharedApplet, selectedAppletContent]);
 
   // Ensure macOSX theme uses Lucida Grande/system/emoji-safe fonts inside iframe content
   const ensureMacFonts = (content: string): string => {
@@ -432,7 +432,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       const createdBy = (applet.createdBy || "").toLowerCase();
       return displayName.includes(query) || createdBy.includes(query);
     });
-  }, [applets, searchQuery]);
+  }, [applets, searchQuery, t]);
 
   // Separate into updates available, installed (no updates), featured (not installed), and all (not installed, not featured)
   // Sort each group by createdAt descending (latest first)

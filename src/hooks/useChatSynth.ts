@@ -551,7 +551,7 @@ export function useChatSynth() {
     } else {
       //console.debug("Skipping note: Minimum time between notes not met.");
     }
-  }, [isAudioReady, vibrate, initializeAudio]); // Add initializeAudio dependency
+  }, [isAudioReady, vibrate, initializeAudio, currentPresetKey]); // Add initializeAudio dependency
 
   // ---------------------------------------------------------------
   // Reactively update synth volume when the global chatSynthVolume

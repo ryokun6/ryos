@@ -69,7 +69,7 @@ const Dial = React.forwardRef<HTMLDivElement, DialProps>(
       setStartValue(value);
     };
 
-    const handleMove = (clientX: number, isDraggingTarget: boolean) => {
+    const handleMove = React.useCallback((clientX: number, isDraggingTarget: boolean) => {
       if (!isDraggingTarget) return;
 
       // Calculate horizontal movement (positive = right, negative = left)
@@ -92,7 +92,7 @@ const Dial = React.forwardRef<HTMLDivElement, DialProps>(
       }
 
       onChange(newValue);
-    };
+    }, [max, min, onChange, startValue, startX, step]);
 
     // Add and remove event listeners
     React.useEffect(() => {
@@ -129,7 +129,7 @@ const Dial = React.forwardRef<HTMLDivElement, DialProps>(
         document.removeEventListener("mouseup", handleGlobalMouseUp);
         document.removeEventListener("touchend", handleGlobalTouchEnd);
       };
-    }, [isDragging, isDraggingValue, startX, startValue, min, max, step]);
+    }, [isDragging, isDraggingValue, startX, startValue, min, max, step, handleMove]);
 
     // Size classes
     const sizeClasses = {

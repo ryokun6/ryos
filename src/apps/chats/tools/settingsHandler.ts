@@ -7,9 +7,9 @@ import { useLanguageStore } from "@/stores/useLanguageStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { themes } from "@/themes";
 import type { OsThemeId } from "@/themes/types";
-import i18n from "@/lib/i18n";
 import { forceRefreshCache } from "@/utils/prefetch";
 import type { ToolContext } from "./types";
+import { resolveToolTranslator } from "./helpers";
 
 export interface SettingsInput {
   language?: string;
@@ -22,7 +22,10 @@ export interface SettingsInput {
 /**
  * Get display name for a language code using translations
  */
-const getLanguageDisplayName = (langCode: string): string => {
+const getLanguageDisplayName = (
+  langCode: string,
+  t: (key: string) => string,
+): string => {
   const langMap: Record<string, string> = {
     en: "apps.ipod.translationLanguages.english",
     "zh-TW": "apps.ipod.translationLanguages.chinese",
@@ -37,7 +40,7 @@ const getLanguageDisplayName = (langCode: string): string => {
   };
   const key = langMap[langCode];
   if (key) {
-    const translated = i18n.t(key);
+    const translated = t(key);
     // If translation doesn't exist, fall back to code
     return translated !== key ? translated : langCode;
   }
@@ -52,6 +55,7 @@ export const handleSettings = (
   toolCallId: string,
   context: ToolContext
 ): void => {
+  const t = resolveToolTranslator(context);
   const { language, theme, masterVolume, speechEnabled, checkForUpdates } = input;
 
   const changes: string[] = [];
@@ -65,8 +69,8 @@ export const handleSettings = (
       language as "en" | "zh-TW" | "ja" | "ko" | "fr" | "de" | "es" | "pt" | "it" | "ru"
     );
     changes.push(
-      i18n.t("apps.chats.toolCalls.settingsLanguageChanged", {
-        language: getLanguageDisplayName(language),
+      t("apps.chats.toolCalls.settingsLanguageChanged", {
+        language: getLanguageDisplayName(language, t),
       })
     );
     console.log(`[ToolCall] Language changed to: ${language}`);
@@ -78,7 +82,7 @@ export const handleSettings = (
       themeStore.setTheme(theme);
       const themeName = themes[theme]?.name || theme;
       changes.push(
-        i18n.t("apps.chats.toolCalls.settingsThemeChanged", {
+        t("apps.chats.toolCalls.settingsThemeChanged", {
           theme: themeName,
         })
       );
@@ -91,7 +95,7 @@ export const handleSettings = (
     audioSettingsStore.setMasterVolume(masterVolume);
     const volumePercent = Math.round(masterVolume * 100);
     changes.push(
-      i18n.t("apps.chats.toolCalls.settingsMasterVolumeSet", {
+      t("apps.chats.toolCalls.settingsMasterVolumeSet", {
         volume: volumePercent,
       })
     );
@@ -103,8 +107,8 @@ export const handleSettings = (
     audioSettingsStore.setSpeechEnabled(speechEnabled);
     changes.push(
       speechEnabled
-        ? i18n.t("apps.chats.toolCalls.settingsSpeechEnabled")
-        : i18n.t("apps.chats.toolCalls.settingsSpeechDisabled")
+        ? t("apps.chats.toolCalls.settingsSpeechEnabled")
+        : t("apps.chats.toolCalls.settingsSpeechDisabled")
     );
     console.log(`[ToolCall] Speech ${speechEnabled ? "enabled" : "disabled"}`);
   }
@@ -112,7 +116,7 @@ export const handleSettings = (
   // Check for updates
   if (checkForUpdates) {
     forceRefreshCache();
-    changes.push(i18n.t("apps.chats.toolCalls.settingsCheckingForUpdates"));
+    changes.push(t("apps.chats.toolCalls.settingsCheckingForUpdates"));
     console.log("[ToolCall] Checking for updates...");
   }
 
@@ -129,7 +133,7 @@ export const handleSettings = (
     context.addToolResult({
       tool: "settings",
       toolCallId,
-      output: i18n.t("apps.chats.toolCalls.settingsNoChanges"),
+      output: t("apps.chats.toolCalls.settingsNoChanges"),
     });
   }
 };

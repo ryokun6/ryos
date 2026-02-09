@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "generate:icons": "bun run scripts/generate-icon-manifest.ts",
+    "quality:report": "bun run scripts/quality-report.ts",
     "generate:infinite-mac-thumbnails": "bun run scripts/generate-infinite-mac-thumbnails.ts",
     "generate:average-colors": "bun run scripts/compute-average-colors.ts",
     "generate:wallpapers": "bun run scripts/generate-wallpaper-manifest.ts",

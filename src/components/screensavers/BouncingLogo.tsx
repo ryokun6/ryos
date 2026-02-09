@@ -18,6 +18,9 @@ export function BouncingLogo() {
   const [position, setPosition] = useState({ x: 100, y: 100 });
   const [velocity, setVelocity] = useState({ x: 2, y: 2 });
   const [colorIndex, setColorIndex] = useState(0);
+  const positionRef = useRef(position);
+  const velocityRef = useRef(velocity);
+  const colorIndexRef = useRef(colorIndex);
 
   // Calculate logo size based on viewport width (30% of viewport width)
   const getLogoSize = useCallback(() => {
@@ -46,9 +49,9 @@ export function BouncingLogo() {
     if (!container) return;
 
     let animationId: number;
-    let currentPos = { ...position };
-    const currentVel = { ...velocity };
-    let currentColor = colorIndex;
+    let currentPos = { ...positionRef.current };
+    const currentVel = { ...velocityRef.current };
+    let currentColor = colorIndexRef.current;
 
     const animate = () => {
       const bounds = container.getBoundingClientRect();
@@ -72,10 +75,13 @@ export function BouncingLogo() {
 
       if (bounced) {
         currentColor = (currentColor + 1) % COLORS.length;
+        colorIndexRef.current = currentColor;
         setColorIndex(currentColor);
       }
 
       currentPos = { x: newX, y: newY };
+      positionRef.current = currentPos;
+      velocityRef.current = { ...currentVel };
       setPosition(currentPos);
       setVelocity(currentVel);
 

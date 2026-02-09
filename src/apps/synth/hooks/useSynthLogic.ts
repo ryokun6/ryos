@@ -337,8 +337,6 @@ export const useSynthLogic = ({
       bitcrusherRef.current = bitcrusher;
       analyzerRef.current = analyzer;
 
-      // Initialize synth with current preset
-      updateSynthParams(currentPreset);
       synthInitializedRef.current = true;
     })();
 
@@ -365,10 +363,6 @@ export const useSynthLogic = ({
     };
 
     initSynth();
-
-    // Add keyboard event handlers
-    document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("keyup", handleKeyUp);
 
     return () => {
       disposed = true;
@@ -411,10 +405,8 @@ export const useSynthLogic = ({
       const analyzer = analyzerRef.current;
       analyzerRef.current = null;
       analyzer?.dispose();
-      document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("keyup", handleKeyUp);
     };
-  }, [isWindowOpen]);
+  }, [isWindowOpen, createSynthNodes]);
 
   // Presets and currentPreset are now automatically saved by the Zustand store
 
@@ -560,7 +552,7 @@ export const useSynthLogic = ({
     } finally {
       initPromiseRef.current = null;
     }
-  }, [createSynthNodes]);
+  }, [createSynthNodes, octaveOffsetRef]);
 
   // Kick off audio init on any first interaction in the synth window
   useEffect(() => {
@@ -621,7 +613,7 @@ export const useSynthLogic = ({
       // If the user released before init finished, play a short tap for feedback
       synthRef.current.triggerAttackRelease(shiftedNote, 0.08, now);
     },
-    [ensureToneStarted, setSustainedNotes]
+    [ensureToneStarted, setSustainedNotes, octaveOffsetRef]
   );
 
   const releaseNote = useCallback((note: string) => {
@@ -646,7 +638,7 @@ export const useSynthLogic = ({
       synthRef.current.triggerRelease(shiftedNote, now);
     }
     delete activeShiftedNotesRef.current[note];
-  }, [setSustainedNotes]);
+  }, [setSustainedNotes, octaveOffsetRef]);
 
   // Release all currently active notes regardless of current octave or sources
   const releaseAllNotes = useCallback(() => {
@@ -880,6 +872,26 @@ export const useSynthLogic = ({
       releaseNote(note);
     }
   };
+  const handleKeyDownRef = useLatestRef(handleKeyDown);
+  const handleKeyUpRef = useLatestRef(handleKeyUp);
+
+  useEffect(() => {
+    if (!isWindowOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      handleKeyDownRef.current(event);
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      handleKeyUpRef.current(event);
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keyup", onKeyUp);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keyup", onKeyUp);
+    };
+  }, [isWindowOpen, handleKeyDownRef, handleKeyUpRef]);
 
   // Add visibility change effect to release notes when app goes to background
   useEffect(() => {

@@ -23,6 +23,25 @@ import { runPusherClientConstructorWiringTests } from "./test-pusher-client-cons
 import { runChatBroadcastWiringTests } from "./test-chat-broadcast-wiring";
 import { runChatStoreGuardsWiringTests } from "./test-chat-store-guards-wiring";
 import { runChatHookChannelLifecycleWiringTests } from "./test-chat-hook-channel-lifecycle-wiring";
+import { runChatRuntimeUtilsTests } from "./test-chat-runtime-utils";
+import { runChatStoreStateHelpersTests } from "./test-chat-store-state-helpers";
+import { runChatLocalFileContentTests } from "./test-chat-local-file-content";
+import { runChatRoomMessageMergeLogicTests } from "./test-chat-room-message-merge-logic";
+import { runChatTranscriptTests } from "./test-chat-transcript";
+import { runChatTextEditDocumentSyncCoreTests } from "./test-chat-textedit-document-sync-core";
+import { runChatFileToolValidationTests } from "./test-chat-file-tool-validation";
+import { runChatFileEditOperationTests } from "./test-chat-file-edit-operation";
+import { runChatFileWriteOperationTests } from "./test-chat-file-write-operation";
+import { runChatFileToolHandlersTests } from "./test-chat-file-tool-handlers";
+import { runChatFileReadOperationTests } from "./test-chat-file-read-operation";
+import { runChatSharedAppletReadOperationTests } from "./test-chat-shared-applet-read-operation";
+import { runChatFileOpenOperationTests } from "./test-chat-file-open-operation";
+import { runChatListOperationTests } from "./test-chat-list-operation";
+import { runChatAppHandlersTests } from "./test-chat-app-handlers";
+import { runChatGenerateHtmlHandlerTests } from "./test-chat-generate-html-handler";
+import { runChatAquariumHandlerTests } from "./test-chat-aquarium-handler";
+import { runChatToolCallExecutorTests } from "./test-chat-tool-call-executor";
+import { runChatToolsRegistryTests } from "./test-chat-tools-registry";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -100,6 +119,25 @@ async function runAllTests(): Promise<void> {
     { name: "chat-notifications", run: runChatNotificationLogicTests },
     { name: "chat-notification-wiring", run: runChatNotificationIntegrationWiringTests },
     { name: "chat-hook-lifecycle-wiring", run: runChatHookChannelLifecycleWiringTests },
+    { name: "chat-file-tool-validation", run: runChatFileToolValidationTests },
+    { name: "chat-runtime-utils", run: runChatRuntimeUtilsTests },
+    { name: "chat-store-state-helpers", run: runChatStoreStateHelpersTests },
+    { name: "chat-local-file-content", run: runChatLocalFileContentTests },
+    { name: "chat-room-message-merge-logic", run: runChatRoomMessageMergeLogicTests },
+    { name: "chat-transcript", run: runChatTranscriptTests },
+    { name: "chat-textedit-document-sync-core", run: runChatTextEditDocumentSyncCoreTests },
+    { name: "chat-file-edit-operation", run: runChatFileEditOperationTests },
+    { name: "chat-file-write-operation", run: runChatFileWriteOperationTests },
+    { name: "chat-file-tool-handlers", run: runChatFileToolHandlersTests },
+    { name: "chat-file-read-operation", run: runChatFileReadOperationTests },
+    { name: "chat-shared-applet-read-operation", run: runChatSharedAppletReadOperationTests },
+    { name: "chat-file-open-operation", run: runChatFileOpenOperationTests },
+    { name: "chat-list-operation", run: runChatListOperationTests },
+    { name: "chat-app-handlers", run: runChatAppHandlersTests },
+    { name: "chat-generate-html-handler", run: runChatGenerateHtmlHandlerTests },
+    { name: "chat-aquarium-handler", run: runChatAquariumHandlerTests },
+    { name: "chat-tool-call-executor", run: runChatToolCallExecutorTests },
+    { name: "chat-tools-registry", run: runChatToolsRegistryTests },
     { name: "pusher-client", run: runPusherClientRefcountTests },
     { name: "pusher-constructor-wiring", run: runPusherClientConstructorWiringTests },
     { name: "chat-broadcast-wiring", run: runChatBroadcastWiringTests },

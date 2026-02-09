@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from "react";
+import { useRef, useEffect, useMemo, useCallback } from "react";
 import ReactPlayer from "react-player";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -111,7 +111,7 @@ export function IpodScreen({
   };
 
   // Scroll to selected item
-  const forceScrollToSelected = () => {
+  const forceScrollToSelected = useCallback(() => {
     if (!menuMode || menuHistory.length === 0) return;
 
     const container = document.querySelector(
@@ -160,7 +160,7 @@ export function IpodScreen({
     }
 
     needScrollRef.current = false;
-  };
+  }, [menuMode, menuHistory, selectedMenuItem]);
 
   // Trigger scroll on various conditions
   useEffect(() => {
@@ -177,7 +177,7 @@ export function IpodScreen({
         }, delay);
       });
     }
-  }, [menuMode, selectedMenuItem, menuHistory.length]);
+  }, [forceScrollToSelected, menuMode, selectedMenuItem, menuHistory.length]);
 
   // Prepare for a newly opened menu
   useEffect(() => {
@@ -185,7 +185,7 @@ export function IpodScreen({
       const currentMenu = menuHistory[menuHistory.length - 1];
       resetItemRefs(currentMenu.items.length);
     }
-  }, [menuMode, menuHistory.length]);
+  }, [menuMode, menuHistory]);
 
   const shouldShowLyrics = showLyrics;
 

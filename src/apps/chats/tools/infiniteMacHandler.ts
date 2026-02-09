@@ -21,7 +21,7 @@ import {
   type MacPreset,
 } from "@/stores/useInfiniteMacStore";
 import { useAppStore } from "@/stores/useAppStore";
-import i18n from "@/lib/i18n";
+import { resolveToolTranslator } from "./helpers";
 
 /**
  * Systems that support absolute mouse coordinates
@@ -116,6 +116,7 @@ export const handleInfiniteMacControl = async (
   toolCallId: string,
   context: ToolContext
 ): Promise<void> => {
+  const t = resolveToolTranslator(context);
   const { action, system, x, y, button = "left", key } = input;
   const store = useInfiniteMacStore.getState();
 
@@ -634,7 +635,7 @@ export const handleInfiniteMacControl = async (
       tool: "infiniteMacControl",
       toolCallId,
       state: "output-error",
-      errorText: error instanceof Error ? error.message : i18n.t("apps.chats.toolCalls.unknownError"),
+      errorText: error instanceof Error ? error.message : t("apps.chats.toolCalls.unknownError"),
     });
   }
 };

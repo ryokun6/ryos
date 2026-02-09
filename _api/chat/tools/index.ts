@@ -33,7 +33,7 @@
  * ```
  */
 
-import type { ServerToolContext, MemoryWriteInput, MemoryReadInput, MemoryDeleteInput } from "./types.js";
+import type { MemoryWriteInput, MemoryReadInput, MemoryDeleteInput } from "./types.js";
 import * as schemas from "./schemas.js";
 import {
   executeGenerateHtml,

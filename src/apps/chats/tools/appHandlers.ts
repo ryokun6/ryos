@@ -2,13 +2,10 @@
  * App Launch/Close Tool Handlers
  */
 
-import { useAppStore } from "@/stores/useAppStore";
-import { appRegistry } from "@/config/appRegistry";
-import { requestCloseWindow } from "@/utils/windowUtils";
+import { appIds, appNames } from "@/config/appRegistryData";
 import type { AppId } from "@/config/appIds";
 import type { LaunchAppOptions } from "@/hooks/useLaunchApp";
-import i18n from "@/lib/i18n";
-import type { ToolContext } from "./types";
+import type { AppHandlerDependencies, ToolContext } from "./types";
 
 export interface LaunchAppInput {
   id: string;
@@ -20,15 +17,53 @@ export interface CloseAppInput {
   id: string;
 }
 
+const translateError = ({
+  dependencies,
+  key,
+  fallback,
+  params,
+}: {
+  dependencies: AppHandlerDependencies;
+  key: string;
+  fallback: string;
+  params?: Record<string, unknown>;
+}): string => {
+  const translated = dependencies.translate?.(key, params);
+  return typeof translated === "string" && translated.trim().length > 0
+    ? translated
+    : fallback;
+};
+
+const resolveRegisteredApp = (
+  id: string,
+  getAppNameById?: (appId: AppId) => string,
+): { appId: AppId; appName: string } | null => {
+  const appId = id as AppId;
+  if (!appIds.includes(appId)) {
+    return null;
+  }
+
+  return {
+    appId,
+    appName: getAppNameById ? getAppNameById(appId) : appNames[appId],
+  };
+};
+
 /**
  * Handle launchApp tool call
  */
 export const handleLaunchApp = (
-  input: LaunchAppInput,
+  input: LaunchAppInput | unknown,
   toolCallId: string,
-  context: ToolContext
+  context: ToolContext,
+  dependencies?: AppHandlerDependencies,
 ): string => {
-  const { id, url, year } = input;
+  const resolvedDependencies = dependencies ?? context.appHandlers ?? {};
+  const payload =
+    input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+  const id = typeof payload.id === "string" ? payload.id.trim() : "";
+  const url = typeof payload.url === "string" ? payload.url : undefined;
+  const year = typeof payload.year === "string" ? payload.year : undefined;
 
   // Validate required parameter
   if (!id) {
@@ -37,12 +72,27 @@ export const handleLaunchApp = (
       tool: "launchApp",
       toolCallId,
       state: "output-error",
-      errorText: i18n.t("apps.chats.toolCalls.noAppIdProvided"),
+      errorText: translateError({
+        dependencies: resolvedDependencies,
+        key: "apps.chats.toolCalls.noAppIdProvided",
+        fallback: "No app ID provided",
+      }),
     });
     return "";
   }
 
-  const appName = appRegistry[id as AppId]?.name || id;
+  const resolvedApp = resolveRegisteredApp(id, resolvedDependencies.getAppNameById);
+  if (!resolvedApp) {
+    context.addToolResult({
+      tool: "launchApp",
+      toolCallId,
+      state: "output-error",
+      errorText: `Application not found: ${id}`,
+    });
+    return "";
+  }
+
+  const { appId, appName } = resolvedApp;
   console.log("[ToolCall] launchApp:", { id, url, year });
 
   const launchOptions: LaunchAppOptions = {};
@@ -50,10 +100,10 @@ export const handleLaunchApp = (
     launchOptions.initialData = { url, year: year || "current" };
   }
 
-  context.launchApp(id as AppId, launchOptions);
+  context.launchApp(appId, launchOptions);
 
   let result = `Launched ${appName}`;
-  if (id === "internet-explorer") {
+  if (appId === "internet-explorer") {
     const urlPart = url ? ` to ${url}` : "";
     const yearPart = year && year !== "current" ? ` in ${year}` : "";
     result += `${urlPart}${yearPart}`;
@@ -66,11 +116,15 @@ export const handleLaunchApp = (
  * Handle closeApp tool call
  */
 export const handleCloseApp = (
-  input: CloseAppInput,
+  input: CloseAppInput | unknown,
   toolCallId: string,
-  context: ToolContext
+  context: ToolContext,
+  dependencies?: AppHandlerDependencies,
 ): string => {
-  const { id } = input;
+  const resolvedDependencies = dependencies ?? context.appHandlers ?? {};
+  const payload =
+    input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+  const id = typeof payload.id === "string" ? payload.id.trim() : "";
 
   // Validate required parameter
   if (!id) {
@@ -79,17 +133,41 @@ export const handleCloseApp = (
       tool: "closeApp",
       toolCallId,
       state: "output-error",
-      errorText: i18n.t("apps.chats.toolCalls.noAppIdProvided"),
+      errorText: translateError({
+        dependencies: resolvedDependencies,
+        key: "apps.chats.toolCalls.noAppIdProvided",
+        fallback: "No app ID provided",
+      }),
     });
     return "";
   }
 
-  const appName = appRegistry[id as AppId]?.name || id;
+  const resolvedApp = resolveRegisteredApp(id, resolvedDependencies.getAppNameById);
+  if (!resolvedApp) {
+    context.addToolResult({
+      tool: "closeApp",
+      toolCallId,
+      state: "output-error",
+      errorText: `Application not found: ${id}`,
+    });
+    return "";
+  }
+
+  const { appId, appName } = resolvedApp;
   console.log("[ToolCall] closeApp:", id);
 
+  if (!resolvedDependencies.getInstancesByAppId || !resolvedDependencies.closeWindowByInstanceId) {
+    context.addToolResult({
+      tool: "closeApp",
+      toolCallId,
+      state: "output-error",
+      errorText: "Close app dependencies unavailable",
+    });
+    return "";
+  }
+
   // Close all instances of the specified app
-  const appStore = useAppStore.getState();
-  const appInstances = appStore.getInstancesByAppId(id as AppId);
+  const appInstances = resolvedDependencies.getInstancesByAppId(appId);
   const openInstances = appInstances.filter((inst) => inst.isOpen);
 
   if (openInstances.length === 0) {
@@ -99,7 +177,7 @@ export const handleCloseApp = (
 
   // Close all open instances of this app (with animation and sound)
   openInstances.forEach((instance) => {
-    requestCloseWindow(instance.instanceId);
+    resolvedDependencies.closeWindowByInstanceId?.(instance.instanceId);
   });
 
   console.log(

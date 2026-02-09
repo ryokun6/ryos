@@ -309,6 +309,7 @@ export function ChatsAppComponent({
       handleInputChange,
       handleRyoMention,
       detectAndProcessMention,
+      t,
     ]
   );
 
@@ -487,7 +488,7 @@ export function ChatsAppComponent({
   const handleSendMessage = useCallback((username: string) => {
     setPrefilledUser(username);
     setIsNewRoomDialogOpen(true);
-  }, []);
+  }, [setPrefilledUser, setIsNewRoomDialogOpen]);
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";

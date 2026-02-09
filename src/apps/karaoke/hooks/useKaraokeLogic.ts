@@ -47,7 +47,7 @@ export function useKaraokeLogic({
   initialData,
   instanceId,
 }: UseKaraokeLogicOptions) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const isOffline = useOffline();
   const translatedHelpItems = useTranslatedHelpItems("karaoke", helpItems);
 
@@ -307,7 +307,7 @@ export function useKaraokeLogic({
   // Resolve "auto" translation language to actual ryOS locale
   const effectiveTranslationLanguage = useMemo(
     () => getEffectiveTranslationLanguage(lyricsTranslationLanguage),
-    [lyricsTranslationLanguage, i18n.language]
+    [lyricsTranslationLanguage]
   );
 
   const lyricsControls = useLyrics({
@@ -648,7 +648,7 @@ export function useKaraokeLogic({
     } else {
       nextTrack();
     }
-  }, [loopCurrent, nextTrack, isFullScreen]);
+  }, [loopCurrent, nextTrack, isFullScreen, setIsPlaying]);
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
     setElapsedTime(state.playedSeconds);
@@ -660,7 +660,7 @@ export function useKaraokeLogic({
       return;
     }
     setIsPlaying(true);
-  }, []);
+  }, [setIsPlaying]);
 
   const handlePause = useCallback(() => {
     // Don't update state if we're in the middle of a track switch
@@ -668,7 +668,7 @@ export function useKaraokeLogic({
       return;
     }
     setIsPlaying(false);
-  }, []);
+  }, [setIsPlaying]);
 
   // Main player pause handler - ignore pause when switching to fullscreen or switching tracks
   const handleMainPlayerPause = useCallback(() => {
@@ -677,7 +677,7 @@ export function useKaraokeLogic({
     if (!isFullScreen && !isTrackSwitchingRef.current) {
       setIsPlaying(false);
     }
-  }, [isFullScreen]);
+  }, [isFullScreen, setIsPlaying]);
 
   // Handle player ready
   const handleReady = useCallback(() => {}, []);
@@ -751,7 +751,7 @@ export function useKaraokeLogic({
         }, 500);
       }
     },
-    [showStatus, isFullScreen, isPlaying, currentTrack?.lyricOffset]
+    [showStatus, isFullScreen, isPlaying, currentTrack?.lyricOffset, setIsPlaying]
   );
 
   // Alignment cycle

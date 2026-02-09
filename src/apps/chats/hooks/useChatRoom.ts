@@ -12,37 +12,12 @@ import { useChatsStoreShallow } from "@/stores/helpers";
 import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
 import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
 import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
+import { decodeHtmlEntities } from "@/utils/html";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
     ? `chats-${username.toLowerCase().replace(/[^a-zA-Z0-9_\-.]/g, "_")}`
     : "chats-public";
-
-const HTML_ENTITY_MAP: Record<string, string> = {
-  "&amp;": "&",
-  "&lt;": "<",
-  "&gt;": ">",
-  "&quot;": '"',
-  "&#39;": "'",
-  "&apos;": "'",
-};
-
-const HTML_ENTITY_PATTERN = /&(amp|lt|gt|quot|#39|apos);/g;
-
-// Decode common HTML entities so toast previews show readable text
-const decodeHtmlEntities = (str: string): string => {
-  if (!str) return str;
-  if (typeof window !== "undefined" && typeof document !== "undefined") {
-    const txt = document.createElement("textarea");
-    txt.innerHTML = str;
-    return txt.value;
-  }
-  // Single-pass decode to avoid double-unescaping sequences like "&amp;lt;"
-  return str.replace(
-    HTML_ENTITY_PATTERN,
-    (entity) => HTML_ENTITY_MAP[entity] || entity
-  );
-};
 
 interface GlobalHandlers {
   onRoomCreated: (data: { room: ChatRoom }) => void;
@@ -575,25 +550,28 @@ export function useChatRoom(
     });
   }, [isWindowOpen, rooms, subscribeToRoomChannel, unsubscribeFromRoomChannel]);
 
+  const cleanupPusherSubscriptions = useCallback(() => {
+    // Snapshot current keys first to avoid mutating while iterating.
+    const roomIds = Object.keys(roomChannelsRef.current);
+    roomIds.forEach((roomId) => {
+      unsubscribeFromRoomChannel(roomId);
+    });
+
+    unsubscribeGlobalChannel();
+  }, [unsubscribeFromRoomChannel, unsubscribeGlobalChannel]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       console.log("[Pusher Hook] Cleaning up...");
-
-      // Unsubscribe from all room channels
-      Object.keys(roomChannelsRef.current).forEach((roomId) => {
-        unsubscribeFromRoomChannel(roomId);
-      });
-
-      // Unsubscribe from global channel
-      unsubscribeGlobalChannel();
+      cleanupPusherSubscriptions();
 
       // NOTE: We intentionally do NOT disconnect the global Pusher singleton here.
       // We only unsubscribe from channels we've created. The underlying WebSocket
       // stays open, preventing rapid connect/disconnect cycles under React
       // Strict-Mode development re-mounts.
     };
-  }, [unsubscribeFromRoomChannel, unsubscribeGlobalChannel]);
+  }, [cleanupPusherSubscriptions]);
 
   return {
     // State

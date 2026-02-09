@@ -1,0 +1,571 @@
+#!/usr/bin/env bun
+
+import {
+  handleChatEditToolCall,
+  handleChatListToolCall,
+  handleChatOpenToolCall,
+  handleChatReadToolCall,
+  handleChatVfsToolCall,
+  handleChatWriteToolCall,
+} from "../src/apps/chats/utils/chatFileToolHandlers";
+import {
+  assertEq,
+  clearResults,
+  header,
+  printSummary,
+  runTest,
+  section,
+} from "./test-utils";
+
+type ToolResult =
+  | { state?: "output-available"; tool: string; toolCallId: string; output: unknown }
+  | { state: "output-error"; tool: string; toolCallId: string; errorText: string };
+
+const createCollector = () => {
+  const results: ToolResult[] = [];
+  return {
+    results,
+    addToolResult: (result: ToolResult) => {
+      results.push(result);
+    },
+  };
+};
+
+const t = (key: string, params?: Record<string, unknown>): string =>
+  `${key}${params ? `:${JSON.stringify(params)}` : ""}`;
+
+const listDependencies = {
+  getMusicItems: () => [{ path: "/Music/1", id: "1", title: "Song", artist: "Ryo" }],
+  getSharedApplets: async () => [{ id: "demo", title: "Demo Applet", createdAt: 1 }],
+  getApplications: () => [{ path: "/Applications/chats", name: "Chats" }],
+  getFileItems: (_root: "/Applets" | "/Documents") => [
+    { path: "/Documents/file.md", name: "file.md", type: "markdown" },
+  ],
+};
+
+export async function runChatFileToolHandlersTests(): Promise<{
+  passed: number;
+  failed: number;
+}> {
+  clearResults();
+  console.log(header("Chat File Tool Handlers Tests"));
+
+  console.log(section("Write handler"));
+  await runTest("emits validation error from write operation failure", async () => {
+    const collector = createCollector();
+    await handleChatWriteToolCall({
+      path: "/Music/song.mp3",
+      content: "hello",
+      mode: "overwrite",
+      toolName: "write",
+      toolCallId: "tc-1",
+      addToolResult: collector.addToolResult,
+      t,
+      syncTextEdit: () => {},
+      executeWriteOperation: async () => ({
+        ok: false,
+        error: {
+          ok: false,
+          errorKey: "apps.chats.toolCalls.invalidPathForWrite",
+          errorParams: { path: "/Music/song.mp3" },
+        },
+      }),
+    });
+
+    assertEq(collector.results.length, 1);
+    assertEq((collector.results[0] as { state?: string }).state, "output-error");
+  });
+
+  await runTest("syncs textedit and emits output when write succeeds", async () => {
+    const collector = createCollector();
+    let syncCalled = false;
+    await handleChatWriteToolCall({
+      path: "/Documents/file.md",
+      content: "hello",
+      mode: "overwrite",
+      toolName: "write",
+      toolCallId: "tc-2",
+      addToolResult: collector.addToolResult,
+      t,
+      executeWriteOperation: async () => ({
+        ok: true,
+        path: "/Documents/file.md",
+        fileName: "file.md",
+        mode: "overwrite",
+        finalContent: "final",
+        successKey: "apps.chats.toolCalls.createdDocument",
+      }),
+      syncTextEdit: () => {
+        syncCalled = true;
+      },
+    });
+
+    assertEq(syncCalled, true);
+    assertEq(collector.results.length, 1);
+    assertEq(
+      (collector.results[0] as { output?: unknown }).output,
+      'apps.chats.toolCalls.createdDocument:{"path":"/Documents/file.md"}',
+    );
+  });
+
+  console.log(section("Edit handler"));
+  await runTest("emits validation error when edit input is invalid", async () => {
+    const collector = createCollector();
+    await handleChatEditToolCall({
+      path: "",
+      oldString: "old",
+      newString: "new",
+      toolName: "edit",
+      toolCallId: "tc-3",
+      addToolResult: collector.addToolResult,
+      t,
+      syncTextEdit: () => {},
+      executeEditOperation: async () => {
+        throw new Error("should not run");
+      },
+    });
+
+    assertEq(collector.results.length, 1);
+    assertEq((collector.results[0] as { state?: string }).state, "output-error");
+  });
+
+  await runTest("syncs textedit only for document edit targets", async () => {
+    const collector = createCollector();
+    let documentSyncCount = 0;
+    await handleChatEditToolCall({
+      path: "/Documents/file.md",
+      oldString: "old",
+      newString: "new",
+      toolName: "edit",
+      toolCallId: "tc-4",
+      addToolResult: collector.addToolResult,
+      t,
+      executeEditOperation: async () => ({
+        ok: true,
+        target: "document",
+        path: "/Documents/file.md",
+        successKey: "apps.chats.toolCalls.editedDocument",
+        updatedContent: "updated",
+      }),
+      syncTextEdit: () => {
+        documentSyncCount += 1;
+      },
+    });
+
+    await handleChatEditToolCall({
+      path: "/Applets/demo.html",
+      oldString: "old",
+      newString: "new",
+      toolName: "edit",
+      toolCallId: "tc-5",
+      addToolResult: collector.addToolResult,
+      t,
+      executeEditOperation: async () => ({
+        ok: true,
+        target: "applet",
+        path: "/Applets/demo.html",
+        successKey: "apps.chats.toolCalls.editedApplet",
+        updatedContent: "updated",
+      }),
+      syncTextEdit: () => {
+        documentSyncCount += 1;
+      },
+    });
+
+    assertEq(documentSyncCount, 1);
+    assertEq(collector.results.length, 2);
+  });
+
+  console.log(section("Read handler"));
+  await runTest("emits error result when shared applet read fails", async () => {
+    const collector = createCollector();
+    await handleChatReadToolCall({
+      path: "/Applets Store/demo",
+      toolName: "read",
+      toolCallId: "tc-6",
+      addToolResult: collector.addToolResult,
+      t,
+      executeSharedAppletReadOperation: async () => ({
+        ok: false,
+        error: {
+          errorKey: "apps.chats.toolCalls.invalidPathForRead",
+          errorParams: { path: "/Applets Store/demo" },
+        },
+      }),
+    });
+
+    assertEq(collector.results.length, 1);
+    assertEq((collector.results[0] as { state?: string }).state, "output-error");
+  });
+
+  await runTest("returns JSON payload for shared applet read success", async () => {
+    const collector = createCollector();
+    await handleChatReadToolCall({
+      path: "/Applets Store/demo",
+      toolName: "read",
+      toolCallId: "tc-7",
+      addToolResult: collector.addToolResult,
+      t,
+      executeSharedAppletReadOperation: async () => ({
+        ok: true,
+        payload: {
+          id: "demo",
+          title: "Demo",
+          name: "Demo",
+          icon: null,
+          createdBy: "ryo",
+          installedPath: "/Applets/Demo",
+          content: "<html></html>",
+        },
+      }),
+    });
+
+    assertEq(collector.results.length, 1);
+    assertEq(
+      (collector.results[0] as { output?: unknown }).output,
+      JSON.stringify(
+        {
+          id: "demo",
+          title: "Demo",
+          name: "Demo",
+          icon: null,
+          createdBy: "ryo",
+          installedPath: "/Applets/Demo",
+          content: "<html></html>",
+        },
+        null,
+        2,
+      ),
+    );
+  });
+
+  await runTest("formats local file read content with translated label", async () => {
+    const collector = createCollector();
+    await handleChatReadToolCall({
+      path: "/Documents/file.md",
+      toolName: "read",
+      toolCallId: "tc-8",
+      addToolResult: collector.addToolResult,
+      t,
+      executeReadOperation: async () => ({
+        ok: true,
+        target: "document",
+        path: "/Documents/file.md",
+        fileName: "file.md",
+        content: "body",
+      }),
+    });
+
+    assertEq(collector.results.length, 1);
+    assertEq(
+      (collector.results[0] as { output?: unknown }).output,
+      'apps.chats.toolCalls.fileContent:{"fileLabel":"apps.chats.toolCalls.document","fileName":"file.md","charCount":4}\n\nbody',
+    );
+  });
+
+  console.log(section("List handler"));
+  await runTest("emits translated error when list operation fails", async () => {
+    const collector = createCollector();
+    await handleChatListToolCall({
+      path: "/bad",
+      query: "x",
+      limit: 5,
+      listDependencies,
+      toolName: "list",
+      toolCallId: "tc-9",
+      addToolResult: collector.addToolResult,
+      t,
+      executeListOperation: async () => ({
+        ok: false,
+        error: {
+          errorKey: "apps.chats.toolCalls.invalidPathForList",
+          errorParams: { path: "/bad" },
+        },
+      }),
+    });
+
+    assertEq(collector.results.length, 1);
+    assertEq((collector.results[0] as { state?: string }).state, "output-error");
+  });
+
+  await runTest("formats shared applet list payload on success", async () => {
+    const collector = createCollector();
+    await handleChatListToolCall({
+      path: "/Applets Store",
+      query: "demo",
+      limit: 3,
+      listDependencies,
+      toolName: "list",
+      toolCallId: "tc-10",
+      addToolResult: collector.addToolResult,
+      t,
+      executeListOperation: async () => ({
+        ok: true,
+        target: "shared-applets",
+        hasKeyword: true,
+        query: "demo",
+        items: [{ path: "/Applets Store/demo", id: "demo", title: "Demo Applet" }],
+      }),
+    });
+
+    assertEq(collector.results.length, 1);
+    assertEq(
+      (collector.results[0] as { output?: unknown }).output,
+      'apps.chats.toolCalls.foundSharedApplets:{"count":1}:\n[\n  {\n    "path": "/Applets Store/demo",\n    "id": "demo",\n    "title": "Demo Applet"\n  }\n]',
+    );
+  });
+
+  console.log(section("Open handler"));
+  await runTest("emits no-path validation error", async () => {
+    const collector = createCollector();
+    await handleChatOpenToolCall({
+      path: "",
+      toolName: "open",
+      toolCallId: "tc-11",
+      addToolResult: collector.addToolResult,
+      t,
+      launchApp: () => {},
+      resolveApplicationName: () => null,
+      playMusicTrack: () => ({ ok: false, error: "should not run" }),
+    });
+
+    assertEq(collector.results.length, 1);
+    assertEq((collector.results[0] as { state?: string }).state, "output-error");
+  });
+
+  await runTest("opens local file when open operation succeeds", async () => {
+    const collector = createCollector();
+    let launched = "";
+    await handleChatOpenToolCall({
+      path: "/Documents/file.md",
+      toolName: "open",
+      toolCallId: "tc-12",
+      addToolResult: collector.addToolResult,
+      t,
+      launchApp: (appId) => {
+        launched = appId;
+      },
+      resolveApplicationName: () => null,
+      playMusicTrack: () => ({ ok: false, error: "should not run" }),
+      executeOpenOperation: async () => ({
+        ok: true,
+        target: "document",
+        path: "/Documents/file.md",
+        fileName: "file.md",
+        content: "body",
+        launchAppId: "textedit",
+        launchOptions: {
+          multiWindow: true,
+          initialData: { path: "/Documents/file.md", content: "body" },
+        },
+        successKey: "apps.chats.toolCalls.openedDocument",
+      }),
+    });
+
+    assertEq(launched, "textedit");
+    assertEq(
+      (collector.results[0] as { output?: unknown }).output,
+      'apps.chats.toolCalls.openedDocument:{"fileName":"file.md"}',
+    );
+  });
+
+  await runTest("plays music track and emits playing message", async () => {
+    const collector = createCollector();
+    await handleChatOpenToolCall({
+      path: "/Music/track-1",
+      toolName: "open",
+      toolCallId: "tc-13",
+      addToolResult: collector.addToolResult,
+      t,
+      launchApp: () => {},
+      resolveApplicationName: () => null,
+      playMusicTrack: () => ({ ok: true, title: "Song", artist: "Ryo" }),
+    });
+
+    assertEq(
+      (collector.results[0] as { output?: unknown }).output,
+      'apps.chats.toolCalls.playingTrackByArtist:{"title":"Song","artist":"Ryo"}',
+    );
+  });
+
+  await runTest("rejects missing identifier segments in open paths", async () => {
+    const collector = createCollector();
+
+    await handleChatOpenToolCall({
+      path: "/Music/   ",
+      toolName: "open",
+      toolCallId: "tc-14",
+      addToolResult: collector.addToolResult,
+      t,
+      launchApp: () => {},
+      resolveApplicationName: () => null,
+      playMusicTrack: () => ({ ok: false, error: "should not run" }),
+    });
+
+    await handleChatOpenToolCall({
+      path: "/Applications/   ",
+      toolName: "open",
+      toolCallId: "tc-15",
+      addToolResult: collector.addToolResult,
+      t,
+      launchApp: () => {},
+      resolveApplicationName: () => null,
+      playMusicTrack: () => ({ ok: false, error: "should not run" }),
+    });
+
+    await handleChatOpenToolCall({
+      path: "/Applets Store/   ",
+      toolName: "open",
+      toolCallId: "tc-16",
+      addToolResult: collector.addToolResult,
+      t,
+      launchApp: () => {},
+      resolveApplicationName: () => null,
+      playMusicTrack: () => ({ ok: false, error: "should not run" }),
+    });
+
+    assertEq(collector.results.length, 3);
+    assertEq((collector.results[0] as { state?: string }).state, "output-error");
+    assertEq((collector.results[1] as { state?: string }).state, "output-error");
+    assertEq((collector.results[2] as { state?: string }).state, "output-error");
+  });
+
+  console.log(section("VFS dispatcher"));
+  await runTest("dispatches write/edit/list/open/read by toolName", async () => {
+    const collector = createCollector();
+    const calls: string[] = [];
+
+    const resultList = await handleChatVfsToolCall({
+      toolName: "list",
+      input: { path: "/Documents" },
+      toolCallId: "tc-17",
+      addToolResult: collector.addToolResult,
+      t,
+      listDependencies,
+      openDependencies: {
+        launchApp: () => {},
+        resolveApplicationName: () => null,
+        playMusicTrack: () => ({ ok: false, error: "unused" }),
+      },
+      syncTextEdit: () => {},
+      listHandler: async () => {
+        calls.push("list");
+      },
+    });
+
+    const resultOpen = await handleChatVfsToolCall({
+      toolName: "open",
+      input: { path: "/Documents/file.md" },
+      toolCallId: "tc-18",
+      addToolResult: collector.addToolResult,
+      t,
+      listDependencies,
+      openDependencies: {
+        launchApp: () => {},
+        resolveApplicationName: () => null,
+        playMusicTrack: () => ({ ok: false, error: "unused" }),
+      },
+      syncTextEdit: () => {},
+      openHandler: async () => {
+        calls.push("open");
+      },
+    });
+
+    const resultRead = await handleChatVfsToolCall({
+      toolName: "read",
+      input: { path: "/Documents/file.md" },
+      toolCallId: "tc-19",
+      addToolResult: collector.addToolResult,
+      t,
+      listDependencies,
+      openDependencies: {
+        launchApp: () => {},
+        resolveApplicationName: () => null,
+        playMusicTrack: () => ({ ok: false, error: "unused" }),
+      },
+      syncTextEdit: () => {},
+      readHandler: async () => {
+        calls.push("read");
+      },
+    });
+
+    const resultWrite = await handleChatVfsToolCall({
+      toolName: "write",
+      input: { path: "/Documents/file.md", content: "x", mode: "overwrite" },
+      toolCallId: "tc-20",
+      addToolResult: collector.addToolResult,
+      t,
+      listDependencies,
+      openDependencies: {
+        launchApp: () => {},
+        resolveApplicationName: () => null,
+        playMusicTrack: () => ({ ok: false, error: "unused" }),
+      },
+      syncTextEdit: () => {},
+      writeHandler: async () => {
+        calls.push("write");
+      },
+    });
+
+    const resultEdit = await handleChatVfsToolCall({
+      toolName: "edit",
+      input: { path: "/Documents/file.md", old_string: "a", new_string: "b" },
+      toolCallId: "tc-21",
+      addToolResult: collector.addToolResult,
+      t,
+      listDependencies,
+      openDependencies: {
+        launchApp: () => {},
+        resolveApplicationName: () => null,
+        playMusicTrack: () => ({ ok: false, error: "unused" }),
+      },
+      syncTextEdit: () => {},
+      editHandler: async () => {
+        calls.push("edit");
+      },
+    });
+
+    assertEq(resultList, true);
+    assertEq(resultOpen, true);
+    assertEq(resultRead, true);
+    assertEq(resultWrite, true);
+    assertEq(resultEdit, true);
+    assertEq(calls.join(","), "list,open,read,write,edit");
+  });
+
+  await runTest("normalizes non-object VFS input to empty object", async () => {
+    const collector = createCollector();
+    let observedPath: unknown = "__unset__";
+    const dispatched = await handleChatVfsToolCall({
+      toolName: "read",
+      input: null,
+      toolCallId: "tc-22",
+      addToolResult: collector.addToolResult,
+      t,
+      listDependencies,
+      openDependencies: {
+        launchApp: () => {},
+        resolveApplicationName: () => null,
+        playMusicTrack: () => ({ ok: false, error: "unused" }),
+      },
+      syncTextEdit: () => {},
+      readHandler: async ({ path }) => {
+        observedPath = path;
+      },
+    });
+
+    assertEq(dispatched, true);
+    assertEq(observedPath, undefined);
+  });
+
+  return printSummary();
+}
+
+if (import.meta.main) {
+  runChatFileToolHandlersTests()
+    .then(({ failed }) => process.exit(failed > 0 ? 1 : 0))
+    .catch((error) => {
+      console.error(error);
+      process.exit(1);
+    });
+}

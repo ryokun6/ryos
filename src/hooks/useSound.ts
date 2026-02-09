@@ -93,6 +93,7 @@ export function useSound(soundPath: string, volume: number = 0.3) {
     // Create gain node for volume control
     gainNodeRef.current = getAudioContext().createGain();
     gainNodeRef.current.gain.value = volume * uiVolume * masterVolume;
+    const instanceSources = instanceSourcesRef.current;
 
     // Connect to destination
     gainNodeRef.current.connect(getAudioContext().destination);
@@ -102,7 +103,7 @@ export function useSound(soundPath: string, volume: number = 0.3) {
         gainNodeRef.current.disconnect();
       }
       // Stop all instance sources on cleanup
-      instanceSourcesRef.current.forEach((source) => {
+      instanceSources.forEach((source) => {
         try {
           source.stop();
           source.disconnect();
@@ -110,7 +111,7 @@ export function useSound(soundPath: string, volume: number = 0.3) {
           // Source may have already ended
         }
       });
-      instanceSourcesRef.current.clear();
+      instanceSources.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only create gain node once on mount

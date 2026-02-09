@@ -193,13 +193,13 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
     canvasRef.current?.redo();
   };
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     canvasRef.current?.clear();
     setLastFilePath(null);
     setHasUnsavedChanges(false);
     setCanvasWidth(589);
     setCanvasHeight(418);
-  };
+  }, [setLastFilePath]);
 
   const handleNewFile = () => {
     if (hasUnsavedChanges) {

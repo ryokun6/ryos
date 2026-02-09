@@ -105,7 +105,7 @@ export function useAuth() {
     }
 
     setIsSettingUsername(false);
-  }, [newUsername, newPassword, createUser]);
+  }, [newUsername, newPassword, createUser, logout, username]);
 
   // Token verification management
   const promptVerifyToken = useCallback(() => {
@@ -254,7 +254,7 @@ export function useAuth() {
         setIsVerifyingToken(false);
       }
     },
-    [setAuthToken, setUsername, username, verifyUsernameInput]
+    [authToken, logout, setAuthToken, setUsername, username, verifyUsernameInput]
   );
 
   // Check if user has a password set (now uses store)

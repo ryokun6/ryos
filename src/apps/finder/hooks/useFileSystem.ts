@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { FileItem as DisplayFileItem } from "../components/FileList";
-import { ensureIndexedDBInitialized, STORES } from "@/utils/indexedDB";
+import { STORES } from "@/utils/indexedDB";
 // Re-export STORES for backward compatibility (other modules import from here)
 export { STORES };
-import { getNonFinderApps, AppId, getAppIconPath } from "@/config/appRegistry";
+import { dbOperations, type DocumentContent } from "../utils/fileDatabase";
+export { dbOperations, type DocumentContent };
+import { getNonFinderApps, AppId } from "@/config/appRegistry";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import {
@@ -22,15 +24,17 @@ import {
 } from "@/stores/helpers";
 import { formatKugouImageUrl } from "@/apps/ipod/constants";
 import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  getFileIcon,
+  getFileTypeFromExtension,
+} from "../utils/filePresentation";
+import {
+  getContentStoreForPath,
+  getDocumentImageStoreForPath,
+  getFolderStoreForPath,
+} from "../utils/storePaths";
 
 // STORES is now imported from @/utils/indexedDB to avoid duplication
-
-// Interface for content stored in IndexedDB
-export interface DocumentContent {
-  name: string; // Used as the key in IndexedDB
-  content: string | Blob;
-  contentUrl?: string; // URL for Blob content (managed temporarily)
-}
 
 // Type for items displayed in the UI (might include contentUrl)
 interface ExtendedDisplayFileItem extends Omit<DisplayFileItem, "content"> {
@@ -41,234 +45,6 @@ interface ExtendedDisplayFileItem extends Omit<DisplayFileItem, "content"> {
   originalPath?: string; // For trash items
   deletedAt?: number; // For trash items
   status?: "active" | "trashed"; // Include status for potential UI differences
-}
-
-// Generic CRUD operations
-export const dbOperations = {
-  async getAll<T>(storeName: string): Promise<T[]> {
-    const db = await ensureIndexedDBInitialized();
-    return new Promise((resolve, reject) => {
-      try {
-        const transaction = db.transaction(storeName, "readonly");
-        const store = transaction.objectStore(storeName);
-        const request = store.getAll();
-
-        request.onsuccess = () => {
-          db.close();
-          resolve(request.result);
-        };
-        request.onerror = () => {
-          db.close();
-          reject(request.error);
-        };
-      } catch (error) {
-        db.close();
-        console.error(`Error getting all items from ${storeName}:`, error);
-        resolve([]);
-      }
-    });
-  },
-
-  async get<T>(storeName: string, key: string): Promise<T | undefined> {
-    console.log(
-      `[dbOperations] Getting key "${key}" from store "${storeName}"`
-    );
-    const db = await ensureIndexedDBInitialized();
-    return new Promise((resolve, reject) => {
-      try {
-        const transaction = db.transaction(storeName, "readonly");
-        const store = transaction.objectStore(storeName);
-        const request = store.get(key);
-
-        request.onsuccess = () => {
-          console.log(
-            `[dbOperations] Get success for key "${key}". Result:`,
-            request.result
-          );
-          db.close();
-          resolve(request.result);
-        };
-        request.onerror = () => {
-          console.error(
-            `[dbOperations] Get error for key "${key}":`,
-            request.error
-          );
-          db.close();
-          reject(request.error);
-        };
-      } catch (error) {
-        console.error(`[dbOperations] Get exception for key "${key}":`, error);
-        db.close();
-        resolve(undefined);
-      }
-    });
-  },
-
-  async put<T>(storeName: string, item: T, key?: IDBValidKey): Promise<void> {
-    const db = await ensureIndexedDBInitialized();
-    return new Promise((resolve, reject) => {
-      try {
-        const transaction = db.transaction(storeName, "readwrite");
-        const store = transaction.objectStore(storeName);
-        const request = store.put(item, key);
-
-        request.onsuccess = () => {
-          db.close();
-          resolve();
-        };
-        request.onerror = () => {
-          db.close();
-          reject(request.error);
-        };
-      } catch (error) {
-        db.close();
-        console.error(`Error putting item in ${storeName}:`, error);
-        reject(error);
-      }
-    });
-  },
-
-  async delete(storeName: string, key: string): Promise<void> {
-    const db = await ensureIndexedDBInitialized();
-    return new Promise((resolve, reject) => {
-      try {
-        const transaction = db.transaction(storeName, "readwrite");
-        const store = transaction.objectStore(storeName);
-        const request = store.delete(key);
-
-        request.onsuccess = () => {
-          db.close();
-          resolve();
-        };
-        request.onerror = () => {
-          db.close();
-          reject(request.error);
-        };
-      } catch (error) {
-        db.close();
-        console.error(`Error deleting item from ${storeName}:`, error);
-        reject(error);
-      }
-    });
-  },
-
-  async clear(storeName: string): Promise<void> {
-    const db = await ensureIndexedDBInitialized();
-    return new Promise((resolve, reject) => {
-      try {
-        const transaction = db.transaction(storeName, "readwrite");
-        const store = transaction.objectStore(storeName);
-        const request = store.clear();
-
-        request.onsuccess = () => {
-          db.close();
-          resolve();
-        };
-        request.onerror = () => {
-          db.close();
-          reject(request.error);
-        };
-      } catch (error) {
-        db.close();
-        console.error(`Error clearing ${storeName}:`, error);
-        reject(error);
-      }
-    });
-  },
-};
-
-// --- Helper Functions --- //
-
-// Get specific type from extension
-function getFileTypeFromExtension(fileName: string): string {
-  const ext = fileName.split(".").pop()?.toLowerCase() || "unknown";
-  switch (ext) {
-    case "app":
-      return "application";
-    case "md":
-      return "markdown";
-    case "txt":
-      return "text";
-    case "png":
-      return ext;
-    case "jpg":
-    case "jpeg":
-      return "jpg"; // Standardize to jpg for jpeg/jpg files
-    case "gif":
-      return ext;
-    case "webp":
-      return ext;
-    case "bmp":
-      return ext;
-    default:
-      return "unknown";
-  }
-}
-
-// Get icon based on FileSystemItem metadata
-function getFileIcon(item: FileSystemItem): string {
-  // Handle aliases/shortcuts first
-  if (item.aliasType && item.aliasTarget) {
-    if (item.aliasType === "app") {
-      // For app aliases, resolve icon from app registry
-      try {
-        const iconPath = getAppIconPath(item.aliasTarget as AppId);
-        if (iconPath) {
-          return iconPath;
-        }
-      } catch (err) {
-        console.warn(`[getFileIcon] Failed to resolve icon for app alias ${item.aliasTarget}:`, err);
-      }
-      return "/icons/default/application.png";
-    } else if (item.aliasType === "file") {
-      // For file aliases, resolve icon from target file
-      const fileStore = useFilesStore.getState();
-      const targetFile = fileStore.getItem(item.aliasTarget);
-      if (targetFile) {
-        // Recursively get icon for target (in case target is also an alias)
-        return getFileIcon(targetFile);
-      }
-      return "/icons/default/file.png";
-    }
-  }
-
-  // Use stored icon if available (but only if not an alias, since aliases should resolve)
-  if (item.icon && item.icon.trim() !== "") {
-    return item.icon;
-  }
-
-  if (item.isDirectory) {
-    // Special handling for Trash icon based on content
-    if (item.path === "/Trash") {
-      // We need a way to know if trash is empty. We'll use local state for now.
-      // This will be updated when trashItems state changes.
-      return "/icons/trash-empty.png"; // Placeholder, will be updated by effect
-    }
-    return "/icons/directory.png";
-  }
-
-  switch (item.type) {
-    case "png":
-    case "jpg":
-    case "jpeg":
-    case "gif":
-    case "webp":
-    case "bmp":
-      return "/icons/image.png";
-    case "markdown":
-    case "text":
-      return "/icons/file-text.png";
-    case "application": // Should ideally use item.icon from registry
-      return item.icon || "/icons/file.png"; // Use item.icon if available
-    case "Music":
-      return "/icons/sound.png";
-    case "Video":
-      return "/icons/video-tape.png";
-    case "site-link":
-      return "/icons/site.png";
-    default:
-      return "/icons/file.png";
-  }
 }
 
 // --- Global flags for cross-instance coordination --- //
@@ -410,7 +186,6 @@ export function useFileSystem(
 
   // Files store selectors (avoid broad store subscriptions)
   const {
-    items: fileItems,
     getItem: getFileItem,
     getItemsInPath,
     updateItemMetadata,
@@ -422,7 +197,6 @@ export function useFileSystem(
     emptyTrash: emptyTrashMetadata,
     reset: resetFilesStore,
   } = useFilesStoreShallow((state) => ({
-    items: state.items,
     getItem: state.getItem,
     getItemsInPath: state.getItemsInPath,
     updateItemMetadata: state.updateItemMetadata,
@@ -434,6 +208,7 @@ export function useFileSystem(
     emptyTrash: state.emptyTrash,
     reset: state.reset,
   }));
+  const fileItems = useFilesStore((state) => state.items);
   const launchApp = useLaunchApp();
   const {
     tracks: ipodTracks,
@@ -465,12 +240,12 @@ export function useFileSystem(
   }, []);
 
   // Define getParentPath inside hook
-  const getParentPath = (path: string): string => {
+  const getParentPath = useCallback((path: string): string => {
     if (path === "/") return "/";
     const parts = path.split("/").filter(Boolean);
     if (parts.length <= 1) return "/";
     return "/" + parts.slice(0, -1).join("/");
-  };
+  }, []);
 
   // --- Lazy Default Content Loader (uses cached filesystem data) --- //
   const ensureDefaultContent = useCallback(
@@ -584,6 +359,10 @@ export function useFileSystem(
 
   // Define loadFiles next
   const loadFiles = useCallback(async () => {
+    // Ensure this callback re-computes when file metadata changes.
+    // `getItemsInPath` is stable, so we explicitly depend on `fileItems`.
+    void fileItems;
+
     setIsLoading(true);
     setError(undefined);
 
@@ -910,6 +689,7 @@ export function useFileSystem(
   }, [
     currentPath,
     fileItems,
+    getItemsInPath,
     ipodTracks,
     videoTracks,
     internetExplorerFavorites,
@@ -998,11 +778,7 @@ export function useFileSystem(
           // Get the file metadata to get the UUID
           const fileMetadata = getFileItem(file.path);
           if (fileMetadata?.uuid) {
-            const storeName = file.path.startsWith("/Documents/")
-              ? STORES.DOCUMENTS
-              : file.path.startsWith("/Images/")
-              ? STORES.IMAGES
-              : STORES.APPLETS;
+            const storeName = getContentStoreForPath(file.path) ?? STORES.APPLETS;
             const contentData = await dbOperations.get<DocumentContent>(
               storeName,
               fileMetadata.uuid // Use UUID instead of name
@@ -1223,13 +999,13 @@ export function useFileSystem(
       setHistoryIndex(historyIndex - 1);
       setCurrentPath(history[historyIndex - 1]);
     }
-  }, [history, historyIndex]);
+  }, [history, historyIndex, setCurrentPath, setHistoryIndex]);
   const navigateForward = useCallback(() => {
     if (historyIndex < history.length - 1) {
       setHistoryIndex(historyIndex + 1);
       setCurrentPath(history[historyIndex + 1]);
     }
-  }, [history, historyIndex]);
+  }, [history, historyIndex, setCurrentPath, setHistoryIndex]);
   const canNavigateBack = useCallback(() => historyIndex > 0, [historyIndex]);
   const canNavigateForward = useCallback(
     () => historyIndex < history.length - 1,
@@ -1327,13 +1103,7 @@ export function useFileSystem(
           startsWithImages: path.startsWith("/Images/"),
           startsWithApplets: path.startsWith("/Applets/"),
         });
-        const storeName = path.startsWith("/Documents/")
-          ? STORES.DOCUMENTS
-          : path.startsWith("/Images/")
-          ? STORES.IMAGES
-          : path.startsWith("/Applets/")
-          ? STORES.APPLETS
-          : null;
+        const storeName = getContentStoreForPath(path);
         console.log(`[useFileSystem:saveFile] Selected store: ${storeName}`);
         if (storeName) {
           try {
@@ -1412,16 +1182,8 @@ export function useFileSystem(
       try {
         // Determine source and target stores for content
         const sourcePath = sourceFile.path;
-        const sourceStoreName = sourcePath.startsWith("/Documents/")
-          ? STORES.DOCUMENTS
-          : sourcePath.startsWith("/Images/")
-          ? STORES.IMAGES
-          : null;
-        const targetStoreName = targetFolderPath.startsWith("/Documents")
-          ? STORES.DOCUMENTS
-          : targetFolderPath.startsWith("/Images")
-          ? STORES.IMAGES
-          : null;
+        const sourceStoreName = getDocumentImageStoreForPath(sourcePath);
+        const targetStoreName = getFolderStoreForPath(targetFolderPath);
 
         // If content needs to move between different stores
         if (
@@ -1485,11 +1247,7 @@ export function useFileSystem(
 
       // 2. Update content metadata (name field) in IndexedDB if it's a file with content
       if (!itemToRename.isDirectory && itemToRename.uuid) {
-        const storeName = oldPath.startsWith("/Documents/")
-          ? STORES.DOCUMENTS
-          : oldPath.startsWith("/Images/")
-          ? STORES.IMAGES
-          : null;
+        const storeName = getDocumentImageStoreForPath(oldPath);
         if (storeName) {
           try {
             const content = await dbOperations.get<DocumentContent>(
@@ -1557,11 +1315,7 @@ export function useFileSystem(
       removeFileItem(fileMetadata.path);
 
       // 2. Move Content to TRASH DB store
-      const storeName = fileMetadata.path.startsWith("/Documents/")
-        ? STORES.DOCUMENTS
-        : fileMetadata.path.startsWith("/Images/")
-        ? STORES.IMAGES
-        : null;
+      const storeName = getDocumentImageStoreForPath(fileMetadata.path);
       if (storeName && !fileMetadata.isDirectory && fileMetadata.uuid) {
         try {
           const content = await dbOperations.get<DocumentContent>(
@@ -1612,13 +1366,9 @@ export function useFileSystem(
       restoreFileItem(fileMetadata.path);
 
       // 2. Move Content from TRASH DB store back
-      const targetStoreName = fileMetadata.originalPath.startsWith(
-        "/Documents/"
-      )
-        ? STORES.DOCUMENTS
-        : fileMetadata.originalPath.startsWith("/Images/")
-        ? STORES.IMAGES
-        : null;
+      const targetStoreName = getDocumentImageStoreForPath(
+        fileMetadata.originalPath
+      );
       if (targetStoreName && !fileMetadata.isDirectory && fileMetadata.uuid) {
         try {
           const content = await dbOperations.get<DocumentContent>(
@@ -1696,7 +1446,7 @@ export function useFileSystem(
       console.error("Error formatting file system:", err);
       setError("Failed to format file system");
     }
-  }, [resetFilesStore]);
+  }, [resetFilesStore, setCurrentPath, setHistory, setHistoryIndex]);
 
   // Calculate trash count based on store data
   const trashItemsCount = getItemsInPath("/Trash").length;
@@ -1726,11 +1476,7 @@ export function useFileSystem(
 
             // Calculate size if missing
             if (item.size === undefined || item.size === null) {
-              const storeName = item.path.startsWith("/Documents/")
-                ? STORES.DOCUMENTS
-                : item.path.startsWith("/Images/")
-                ? STORES.IMAGES
-                : null;
+              const storeName = getDocumentImageStoreForPath(item.path);
 
               if (storeName) {
                 try {

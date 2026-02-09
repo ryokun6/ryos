@@ -96,6 +96,14 @@ export function useLyrics({
   selectedMatch,
   auth,
 }: UseLyricsParams): LyricsState {
+  const authCredentials = useMemo(
+    () =>
+      auth?.username && auth?.authToken
+        ? { username: auth.username, authToken: auth.authToken }
+        : undefined,
+    [auth?.username, auth?.authToken]
+  );
+
   // State
   const [originalLines, setOriginalLines] = useState<LyricLine[]>([]);
   const [translatedLines, setTranslatedLines] = useState<LyricLine[] | null>(null);
@@ -210,9 +218,9 @@ export function useLyrics({
 
     // Build headers with optional auth
     const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (auth?.username && auth?.authToken) {
-      headers["Authorization"] = `Bearer ${auth.authToken}`;
-      headers["X-Username"] = auth.username;
+    if (authCredentials) {
+      headers["Authorization"] = `Bearer ${authCredentials.authToken}`;
+      headers["X-Username"] = authCredentials.username;
     }
 
     abortableFetch(getApiUrl(`/api/songs/${effectSongId}`), {
@@ -282,7 +290,7 @@ export function useLyrics({
       // Reset loading state on cleanup to prevent stuck indicators
       setIsFetchingOriginal(false);
     };
-  }, [songId, title, artist, isRefetchRequest, markRefetchHandled, selectedMatch, translateTo, includeFurigana, includeSoramimi, soramimiTargetLanguage]);
+  }, [songId, title, artist, isRefetchRequest, markRefetchHandled, selectedMatch, translateTo, includeFurigana, includeSoramimi, soramimiTargetLanguage, authCredentials]);
 
   // ==========================================================================
   // Effect: Translate lyrics
@@ -334,7 +342,7 @@ export function useLyrics({
       force: isCacheBustRequest,
       signal: controller.signal,
       prefetchedInfo: !isCacheBustRequest ? prefetchedInfo : undefined,
-      auth,
+      auth: authCredentials,
       onProgress: (progress) => {
         if (!controller.signal.aborted && effectSongId === currentSongIdRef.current) {
           setTranslationProgress(progress.percentage);
@@ -383,7 +391,7 @@ export function useLyrics({
       setIsTranslating(false);
       setTranslationProgress(undefined);
     };
-  }, [songId, originalLines, translateTo, isFetchingOriginal, isCacheBustRequest, markCacheBustHandled]);
+  }, [songId, originalLines, translateTo, isFetchingOriginal, isCacheBustRequest, markCacheBustHandled, authCredentials]);
 
   // ==========================================================================
   // Current line tracking

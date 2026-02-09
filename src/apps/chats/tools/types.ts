@@ -1,3 +1,7 @@
+import type { AppId } from "@/config/appIds";
+import type { LaunchAppOptions } from "@/hooks/useLaunchApp";
+import type { ChatVfsToolContextDependencies } from "../utils/chatFileToolHandlers";
+
 /**
  * Tool Handler Types
  *
@@ -11,11 +15,26 @@
  */
 export interface ToolContext {
   /** Function to launch an app by ID */
-  launchApp: (appId: string, options?: { initialData?: unknown; multiWindow?: boolean }) => string;
+  launchApp: (appId: AppId, options?: LaunchAppOptions) => string;
   /** Function to add tool result back to the chat */
   addToolResult: (result: ToolResultPayload) => void;
   /** Detect user's operating system */
   detectUserOS: () => string;
+  /** Optional translation function for tool handlers */
+  translate?: (key: string, params?: Record<string, unknown>) => string;
+  /** Optional dependencies used by app launch/close handlers */
+  appHandlers?: AppHandlerDependencies;
+  /** Optional dependencies used by VFS (list/open/read/write/edit) handlers */
+  vfs?: ChatVfsToolContextDependencies;
+}
+
+export interface AppHandlerDependencies {
+  getAppNameById?: (appId: AppId) => string;
+  getInstancesByAppId?: (
+    appId: AppId,
+  ) => Array<{ instanceId: string; isOpen: boolean }>;
+  closeWindowByInstanceId?: (instanceId: string) => void;
+  translate?: (key: string, params?: Record<string, unknown>) => string;
 }
 
 /**

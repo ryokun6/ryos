@@ -102,7 +102,7 @@ export function FileIcon({
         setImgSrc(content);
       }
     }
-  }, [contentUrl, content]); // Don't include fallbackToIcon in deps
+  }, [contentUrl, content, fallbackToIcon]);
 
   const isImage = () => {
     const ext = name.split(".").pop()?.toLowerCase();

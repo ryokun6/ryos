@@ -85,7 +85,7 @@ export const Waveform = forwardRef<HTMLDivElement, WaveformProps>(
         isMounted = false;
         cleanup(); // Cleanup on unmount
       };
-    }, [audioData, audioFormat, onWaveformCreate, isPlaying]); // isPlaying is now a dependency
+    }, [audioData, audioFormat, onWaveformCreate, isPlaying, t]); // isPlaying is now a dependency
 
     return (
       <div

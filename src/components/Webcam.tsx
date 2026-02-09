@@ -55,6 +55,60 @@ export function Webcam({
   const isBackCameraRef = useLatestRef(isBackCamera);
   const onPhotoRef = useLatestRef(onPhoto);
 
+  const stopCamera = useCallback(() => {
+    if (internalStream && !isPreview) {
+      internalStream.getTracks().forEach((track) => track.stop());
+      setInternalStream(null);
+    }
+
+    if (!controlledStream && videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    if (!controlledStream) {
+      activeDeviceIdRef.current = null;
+      startedInternallyRef.current = false;
+    }
+  }, [controlledStream, internalStream, isPreview]);
+
+  const startCamera = useCallback(async () => {
+    try {
+      startedInternallyRef.current = true;
+
+      if (internalStream) {
+        internalStream.getTracks().forEach((track) => track.stop());
+      }
+
+      const constraints = {
+        audio: false,
+        video: {
+          deviceId: selectedCameraId ? { exact: selectedCameraId } : undefined,
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+        },
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      const track = mediaStream.getVideoTracks()[0];
+
+      activeDeviceIdRef.current =
+        track?.getSettings().deviceId ?? selectedCameraId ?? null;
+
+      setInternalStream(mediaStream);
+      setError(null);
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.play().catch(console.error);
+      }
+    } catch (err) {
+      console.error("Camera error:", err);
+      setError(err instanceof Error ? err.message : t("common.errors.failedToAccessCamera"));
+      activeDeviceIdRef.current = null;
+      startedInternallyRef.current = false;
+    }
+  }, [internalStream, selectedCameraId, t]);
+
   // Start camera when component mounts or shared stream changes
   useEffect(() => {
     const videoEl = videoRef.current;
@@ -120,6 +174,8 @@ export function Webcam({
     selectedCameraId,
     internalStream,
     autoStart,
+    startCamera,
+    stopCamera,
   ]);
 
   // Real-time WebGL preview loop for distortion filters
@@ -262,60 +318,6 @@ export function Webcam({
 
   // Listen for webcam-capture events
   useCustomEventListener("webcam-capture", handleCapture);
-
-  const startCamera = async () => {
-    try {
-      startedInternallyRef.current = true;
-
-      if (internalStream) {
-        internalStream.getTracks().forEach((track) => track.stop());
-      }
-
-      const constraints = {
-        audio: false,
-        video: {
-          deviceId: selectedCameraId ? { exact: selectedCameraId } : undefined,
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-        },
-      };
-
-      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      const track = mediaStream.getVideoTracks()[0];
-
-      activeDeviceIdRef.current =
-        track?.getSettings().deviceId ?? selectedCameraId ?? null;
-
-      setInternalStream(mediaStream);
-      setError(null);
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.play().catch(console.error);
-      }
-    } catch (err) {
-      console.error("Camera error:", err);
-      setError(err instanceof Error ? err.message : t("common.errors.failedToAccessCamera"));
-      activeDeviceIdRef.current = null;
-      startedInternallyRef.current = false;
-    }
-  };
-
-  const stopCamera = () => {
-    if (internalStream && !isPreview) {
-      internalStream.getTracks().forEach((track) => track.stop());
-      setInternalStream(null);
-    }
-
-    if (!controlledStream && videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-
-    if (!controlledStream) {
-      activeDeviceIdRef.current = null;
-      startedInternallyRef.current = false;
-    }
-  };
 
   return (
     <div className={`relative ${className}`}>
