@@ -548,8 +548,15 @@ export const runCreateUserFlow = async ({
       };
     }
 
-    const data = await response.json();
-    const parsedRegister = parseRegisterUserResponse(data);
+    const registerData = await readJsonBody<RegisterUserResponseData>(
+      response,
+      "createUser success response"
+    );
+    if (!registerData.ok) {
+      return { ok: false, error: INVALID_RESPONSE_FORMAT_ERROR };
+    }
+
+    const parsedRegister = parseRegisterUserResponse(registerData.data);
     if (!parsedRegister.ok) {
       return { ok: false, error: parsedRegister.error };
     }
@@ -629,8 +636,15 @@ export const refreshAuthTokenForUser = async ({
     };
   }
 
-  const data = await response.json();
-  const parsedRefresh = parseRefreshTokenResponse(data);
+  const refreshData = await readJsonBody<RefreshTokenResponseData>(
+    response,
+    "refreshAuthToken success response"
+  );
+  if (!refreshData.ok) {
+    return { ok: false, error: INVALID_RESPONSE_FORMAT_ERROR };
+  }
+
+  const parsedRefresh = parseRefreshTokenResponse(refreshData.data);
   if (!parsedRefresh.ok) {
     return { ok: false, error: parsedRefresh.error };
   }
@@ -1836,9 +1850,16 @@ export const runCreateRoomFlow = async ({
       };
     }
 
-    const data = (await response.json()) as { room?: { id: string } };
-    if (data.room?.id) {
-      return { ok: true, roomId: data.room.id };
+    const createRoomData = await readJsonBody<{ room?: { id: string } }>(
+      response,
+      "createRoom success response"
+    );
+    if (!createRoomData.ok) {
+      return { ok: false, error: INVALID_RESPONSE_FORMAT_ERROR };
+    }
+
+    if (createRoomData.data.room?.id) {
+      return { ok: true, roomId: createRoomData.data.room.id };
     }
 
     return { ok: false, error: INVALID_RESPONSE_FORMAT_ERROR };
