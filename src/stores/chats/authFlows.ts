@@ -12,6 +12,15 @@ const USERNAME_REQUIRED_ERROR = "Username required";
 const USERNAME_AND_CONTENT_REQUIRED_ERROR = "Username and content required";
 const NETWORK_ERROR_MESSAGE = "Network error. Please try again.";
 const PASSWORD_STATUS_CHECK_FAILED_ERROR = "Failed to check password status";
+const CREATE_USER_FAILED_ERROR = "Failed to create user";
+const REFRESH_TOKEN_FAILED_ERROR = "Failed to refresh token";
+const SET_PASSWORD_FAILED_ERROR = "Failed to set password";
+const CREATE_ROOM_FAILED_ERROR = "Failed to create room";
+const DELETE_ROOM_FAILED_ERROR = "Failed to delete room";
+const SEND_MESSAGE_FAILED_ERROR = "Failed to send message";
+const SWITCH_ROOM_FAILED_ERROR = "Failed to switch rooms";
+const FETCH_ROOMS_FAILED_ERROR = "Failed to fetch rooms";
+const FETCH_MESSAGES_FAILED_ERROR = "Failed to fetch messages";
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
 const AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
 export const TOKEN_REFRESH_THRESHOLD = 83 * 24 * 60 * 60 * 1000;
@@ -535,7 +544,7 @@ export const runCreateUserFlow = async ({
     if (!response.ok) {
       return {
         ok: false,
-        error: await readErrorMessage(response, "Failed to create user"),
+        error: await readErrorMessage(response, CREATE_USER_FAILED_ERROR),
       };
     }
 
@@ -616,7 +625,7 @@ export const refreshAuthTokenForUser = async ({
   if (!response.ok) {
     return {
       ok: false,
-      error: await readErrorMessage(response, "Failed to refresh token"),
+      error: await readErrorMessage(response, REFRESH_TOKEN_FAILED_ERROR),
     };
   }
 
@@ -700,6 +709,36 @@ interface PasswordAuthContext {
   authToken: string;
 }
 
+interface ResolveRequiredAuthTokenParams {
+  authToken: string | null;
+  ensureAuthToken: () => Promise<{ ok: boolean; error?: string }>;
+  getCurrentAuthToken: () => string | null;
+}
+
+const resolveRequiredAuthToken = async ({
+  authToken,
+  ensureAuthToken,
+  getCurrentAuthToken,
+}: ResolveRequiredAuthTokenParams): Promise<
+  { ok: true; authToken: string } | { ok: false; error: string }
+> => {
+  if (authToken) {
+    return { ok: true, authToken };
+  }
+
+  const tokenResult = await ensureAuthToken();
+  if (!tokenResult.ok) {
+    return { ok: false, error: AUTHENTICATION_REQUIRED_ERROR };
+  }
+
+  const recoveredAuthToken = getCurrentAuthToken();
+  if (!recoveredAuthToken) {
+    return { ok: false, error: AUTHENTICATION_REQUIRED_ERROR };
+  }
+
+  return { ok: true, authToken: recoveredAuthToken };
+};
+
 const requireAuthContext = (
   username: string | null,
   authToken: string | null
@@ -778,7 +817,7 @@ const submitPassword = async ({
   if (!response.ok) {
     return {
       ok: false,
-      error: await readErrorMessage(response, "Failed to set password"),
+      error: await readErrorMessage(response, SET_PASSWORD_FAILED_ERROR),
     };
   }
 
@@ -854,7 +893,7 @@ export const runSetPasswordFlow = async ({
     if (!result.ok) {
       return {
         ok: false,
-        error: result.error || "Failed to set password",
+        error: result.error || SET_PASSWORD_FAILED_ERROR,
       };
     }
 
@@ -1771,17 +1810,13 @@ export const runCreateRoomFlow = async ({
     return { ok: false, error: USERNAME_REQUIRED_ERROR };
   }
 
-  let effectiveAuthToken = authToken;
-  if (!effectiveAuthToken) {
-    const tokenResult = await ensureAuthToken();
-    if (!tokenResult.ok) {
-      return { ok: false, error: AUTHENTICATION_REQUIRED_ERROR };
-    }
-    effectiveAuthToken = getCurrentAuthToken();
-  }
-
-  if (!effectiveAuthToken) {
-    return { ok: false, error: AUTHENTICATION_REQUIRED_ERROR };
+  const authTokenResult = await resolveRequiredAuthToken({
+    authToken,
+    ensureAuthToken,
+    getCurrentAuthToken,
+  });
+  if (!authTokenResult.ok) {
+    return authTokenResult;
   }
 
   try {
@@ -1789,7 +1824,7 @@ export const runCreateRoomFlow = async ({
       name,
       type,
       members,
-      authToken: effectiveAuthToken,
+      authToken: authTokenResult.authToken,
       username,
       refreshAuthToken,
     });
@@ -1797,7 +1832,7 @@ export const runCreateRoomFlow = async ({
     if (!response.ok) {
       return {
         ok: false,
-        error: await readErrorMessage(response, "Failed to create room"),
+        error: await readErrorMessage(response, CREATE_ROOM_FAILED_ERROR),
       };
     }
 
@@ -1844,7 +1879,7 @@ export const runDeleteRoomFlow = async ({
     if (!response.ok) {
       return {
         ok: false,
-        error: await readErrorMessage(response, "Failed to delete room"),
+        error: await readErrorMessage(response, DELETE_ROOM_FAILED_ERROR),
       };
     }
 
@@ -1900,7 +1935,7 @@ export const runSendMessageFlow = async ({
       removeMessageFromRoom(roomId, optimisticMessage.id);
       return {
         ok: false,
-        error: await readErrorMessage(response, "Failed to send message"),
+        error: await readErrorMessage(response, SEND_MESSAGE_FAILED_ERROR),
       };
     }
 
@@ -1939,7 +1974,7 @@ export const syncPresenceOnRoomSwitch = async ({
     if (!response.ok) {
       const errorMessage = await readErrorMessage(
         response,
-        "Failed to switch rooms"
+        SWITCH_ROOM_FAILED_ERROR
       );
       console.error("[ChatsStore] Error switching rooms:", errorMessage);
       return;
@@ -2028,7 +2063,7 @@ export const fetchRoomsPayload = async (
     request: () => fetchRoomsRequest(username),
     errorContext: "fetchRooms error response",
     successContext: "fetchRooms success response",
-    fallbackHttpError: "Failed to fetch rooms",
+    fallbackHttpError: FETCH_ROOMS_FAILED_ERROR,
     successWarningKey: "fetchRooms-success-response",
     successUnavailableError: "Rooms API unavailable",
     extractValue: (body) => (Array.isArray(body.rooms) ? body.rooms : null),
@@ -2054,7 +2089,7 @@ export const fetchRoomMessagesPayload = async (
     request: () => fetchRoomMessagesRequest(roomId),
     errorContext: "fetchMessagesForRoom error response",
     successContext: "fetchMessagesForRoom success response",
-    fallbackHttpError: "Failed to fetch messages",
+    fallbackHttpError: FETCH_MESSAGES_FAILED_ERROR,
     successWarningKey: "fetchMessagesForRoom-success-response",
     successUnavailableError: "Messages API unavailable",
     extractValue: (body) => (Array.isArray(body.messages) ? body.messages : null),
@@ -2081,7 +2116,7 @@ export const fetchBulkMessagesPayload = async (
     request: () => fetchBulkMessagesRequest(roomIds),
     errorContext: "fetchBulkMessages error response",
     successContext: "fetchBulkMessages success response",
-    fallbackHttpError: "Failed to fetch messages",
+    fallbackHttpError: FETCH_MESSAGES_FAILED_ERROR,
     successWarningKey: "fetchBulkMessages-success-response",
     successUnavailableError: "Bulk messages API unavailable",
     extractValue: (body) =>
