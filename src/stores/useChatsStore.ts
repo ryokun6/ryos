@@ -37,10 +37,6 @@ import {
   isTokenRefreshDue,
 } from "./chats/tokenLifecycle";
 import { clearChatRecoveryStorage } from "./chats/logoutCleanup";
-import {
-  checkPasswordStatusRequest,
-  setPasswordRequest,
-} from "./chats/passwordApi";
 import { buildPersistedRoomMessages } from "./chats/persistence";
 import {
   createChatsOnRehydrateStorage,
@@ -75,6 +71,7 @@ import {
   shouldCheckPasswordStatus,
 } from "./chats/identityState";
 import { parseRegisterUserResponse } from "./chats/registrationResponse";
+import { fetchPasswordStatus, submitPassword } from "./chats/passwordFlow";
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -295,27 +292,19 @@ export const useChatsStore = create<ChatsStoreState>()(
             currentUsername
           );
           try {
-            const response = await checkPasswordStatusRequest({
+            const result = await fetchPasswordStatus({
               username: currentUsername,
               authToken: currentToken,
             });
 
-            console.log(
-              "[ChatsStore] checkHasPassword: Response status",
-              response.status
-            );
-            if (response.ok) {
-              const data = await response.json();
-              console.log("[ChatsStore] checkHasPassword: Result", data);
-              set({ hasPassword: data.hasPassword });
+            if (result.ok) {
+              console.log("[ChatsStore] checkHasPassword: Result", result);
+              set({ hasPassword: result.hasPassword });
               return { ok: true };
             } else {
-              console.log(
-                "[ChatsStore] checkHasPassword: Failed with status",
-                response.status
-              );
+              console.log("[ChatsStore] checkHasPassword: Failed");
               set({ hasPassword: null });
-              return { ok: false, error: "Failed to check password status" };
+              return { ok: false, error: result.error };
             }
           } catch (error) {
             console.error(
@@ -338,17 +327,16 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await setPasswordRequest({
+            const result = await submitPassword({
               username: currentUsername,
               authToken: currentToken,
               password,
             });
 
-            if (!response.ok) {
-              const data = await response.json();
+            if (!result.ok) {
               return {
                 ok: false,
-                error: data.error || "Failed to set password",
+                error: result.error || "Failed to set password",
               };
             }
 
