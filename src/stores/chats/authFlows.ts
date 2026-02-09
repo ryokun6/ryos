@@ -350,6 +350,19 @@ const readRequiredJsonBody = async <T>(
   return body;
 };
 
+const parseRequiredJsonBody = async <TBody, TParsed>(
+  response: Response,
+  context: string,
+  parse: (data: TBody) => { ok: true; value: TParsed } | { ok: false; error: string }
+): Promise<{ ok: true; value: TParsed } | { ok: false; error: string }> => {
+  const body = await readRequiredJsonBody<TBody>(response, context);
+  if (!body.ok) {
+    return body;
+  }
+
+  return parse(body.data);
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Auth API + authentication lifecycle
 // ─────────────────────────────────────────────────────────────────────────────
@@ -498,9 +511,9 @@ interface RefreshTokenResponseData {
 
 const parseRefreshTokenResponse = (
   data: RefreshTokenResponseData
-): { ok: true; token: string } | { ok: false; error: string } => {
+): { ok: true; value: string } | { ok: false; error: string } => {
   if (data.token) {
-    return { ok: true, token: data.token };
+    return { ok: true, value: data.token };
   }
 
   return {
@@ -519,7 +532,7 @@ interface RegisterUserResponseData {
 const parseRegisterUserResponse = (
   data: RegisterUserResponseData
 ):
-  | { ok: true; username: string; token?: string }
+  | { ok: true; value: { username: string; token?: string } }
   | { ok: false; error: string } => {
   if (!data.user?.username) {
     return { ok: false, error: INVALID_RESPONSE_FORMAT_ERROR };
@@ -527,8 +540,10 @@ const parseRegisterUserResponse = (
 
   return {
     ok: true,
-    username: data.user.username,
-    token: data.token,
+    value: {
+      username: data.user.username,
+      token: data.token,
+    },
   };
 };
 
@@ -624,22 +639,21 @@ export const runCreateUserFlow = async ({
       };
     }
 
-    const registerData = await readRequiredJsonBody<RegisterUserResponseData>(
+    const parsedRegister = await parseRequiredJsonBody<
+      RegisterUserResponseData,
+      { username: string; token?: string }
+    >(
       response,
-      "createUser success response"
+      "createUser success response",
+      parseRegisterUserResponse
     );
-    if (!registerData.ok) {
-      return registerData;
-    }
-
-    const parsedRegister = parseRegisterUserResponse(registerData.data);
     if (!parsedRegister.ok) {
-      return { ok: false, error: parsedRegister.error };
+      return parsedRegister;
     }
 
     applySuccessfulRegistration({
-      username: parsedRegister.username,
-      token: parsedRegister.token,
+      username: parsedRegister.value.username,
+      token: parsedRegister.value.token,
       setUsername,
       setAuthToken,
       saveAuthTokenToRecovery,
@@ -711,27 +725,23 @@ export const refreshAuthTokenForUser = async ({
     };
   }
 
-  const refreshData = await readRequiredJsonBody<RefreshTokenResponseData>(
+  const parsedRefresh = await parseRequiredJsonBody<RefreshTokenResponseData, string>(
     response,
-    "refreshAuthToken success response"
+    "refreshAuthToken success response",
+    parseRefreshTokenResponse
   );
-  if (!refreshData.ok) {
-    return refreshData;
-  }
-
-  const parsedRefresh = parseRefreshTokenResponse(refreshData.data);
   if (!parsedRefresh.ok) {
-    return { ok: false, error: parsedRefresh.error };
+    return parsedRefresh;
   }
 
   applyRefreshedAuthToken({
     username,
-    token: parsedRefresh.token,
+    token: parsedRefresh.value,
     setAuthToken,
     saveAuthTokenToRecovery,
     saveTokenRefreshTime,
   });
-  return { ok: true, token: parsedRefresh.token };
+  return { ok: true, token: parsedRefresh.value };
 };
 
 interface CheckAndRefreshTokenFlowParams {
