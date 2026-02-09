@@ -145,10 +145,10 @@ import { handleGenerateHtml } from "./generateHtmlHandler";
 registerToolHandler("aquarium", handleAquarium);
 registerToolHandler("generateHtml", handleGenerateHtml);
 registerToolHandler("launchApp", (input, toolCallId, context) => {
-  handleLaunchApp(input as { id: string; url?: string; year?: string }, toolCallId, context, context.appHandlers);
+  handleLaunchApp(input as { id: string; url?: string; year?: string }, toolCallId, context);
 });
 registerToolHandler("closeApp", (input, toolCallId, context) => {
-  handleCloseApp(input as { id: string }, toolCallId, context, context.appHandlers);
+  handleCloseApp(input as { id: string }, toolCallId, context);
 });
 registerToolHandler("settings", handleSettings);
 registerToolHandler("ipodControl", handleIpodControl);

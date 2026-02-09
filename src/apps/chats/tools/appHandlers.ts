@@ -56,8 +56,9 @@ export const handleLaunchApp = (
   input: LaunchAppInput,
   toolCallId: string,
   context: ToolContext,
-  dependencies: AppHandlerDependencies = {},
+  dependencies?: AppHandlerDependencies,
 ): string => {
+  const resolvedDependencies = dependencies ?? context.appHandlers ?? {};
   const { id, url, year } = input;
 
   // Validate required parameter
@@ -68,7 +69,7 @@ export const handleLaunchApp = (
       toolCallId,
       state: "output-error",
       errorText: translateError({
-        dependencies,
+        dependencies: resolvedDependencies,
         key: "apps.chats.toolCalls.noAppIdProvided",
         fallback: "No app ID provided",
       }),
@@ -76,7 +77,7 @@ export const handleLaunchApp = (
     return "";
   }
 
-  const resolvedApp = resolveRegisteredApp(id, dependencies.getAppNameById);
+  const resolvedApp = resolveRegisteredApp(id, resolvedDependencies.getAppNameById);
   if (!resolvedApp) {
     context.addToolResult({
       tool: "launchApp",
@@ -114,8 +115,9 @@ export const handleCloseApp = (
   input: CloseAppInput,
   toolCallId: string,
   context: ToolContext,
-  dependencies: AppHandlerDependencies = {},
+  dependencies?: AppHandlerDependencies,
 ): string => {
+  const resolvedDependencies = dependencies ?? context.appHandlers ?? {};
   const { id } = input;
 
   // Validate required parameter
@@ -126,7 +128,7 @@ export const handleCloseApp = (
       toolCallId,
       state: "output-error",
       errorText: translateError({
-        dependencies,
+        dependencies: resolvedDependencies,
         key: "apps.chats.toolCalls.noAppIdProvided",
         fallback: "No app ID provided",
       }),
@@ -134,7 +136,7 @@ export const handleCloseApp = (
     return "";
   }
 
-  const resolvedApp = resolveRegisteredApp(id, dependencies.getAppNameById);
+  const resolvedApp = resolveRegisteredApp(id, resolvedDependencies.getAppNameById);
   if (!resolvedApp) {
     context.addToolResult({
       tool: "closeApp",
@@ -148,7 +150,7 @@ export const handleCloseApp = (
   const { appId, appName } = resolvedApp;
   console.log("[ToolCall] closeApp:", id);
 
-  if (!dependencies.getInstancesByAppId || !dependencies.closeWindowByInstanceId) {
+  if (!resolvedDependencies.getInstancesByAppId || !resolvedDependencies.closeWindowByInstanceId) {
     context.addToolResult({
       tool: "closeApp",
       toolCallId,
@@ -159,7 +161,7 @@ export const handleCloseApp = (
   }
 
   // Close all instances of the specified app
-  const appInstances = dependencies.getInstancesByAppId(appId);
+  const appInstances = resolvedDependencies.getInstancesByAppId(appId);
   const openInstances = appInstances.filter((inst) => inst.isOpen);
 
   if (openInstances.length === 0) {
@@ -169,7 +171,7 @@ export const handleCloseApp = (
 
   // Close all open instances of this app (with animation and sound)
   openInstances.forEach((instance) => {
-    dependencies.closeWindowByInstanceId?.(instance.instanceId);
+    resolvedDependencies.closeWindowByInstanceId?.(instance.instanceId);
   });
 
   console.log(
