@@ -48,6 +48,7 @@ import {
   readLocalFileTextOrThrow,
 } from "../utils/localFileContent";
 import {
+  resolveToolErrorText,
   validateFileEditInput,
 } from "../utils/chatFileToolValidation";
 import { executeChatFileEditOperation } from "../utils/chatFileEditOperation";
@@ -849,10 +850,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   state: "output-error",
-                  errorText:
-                    "errorParams" in writeError
-                      ? i18n.t(writeError.errorKey, writeError.errorParams)
-                      : i18n.t(writeError.errorKey),
+                  errorText: resolveToolErrorText(i18n.t, writeError),
                 });
                 result = "";
                 break;
@@ -932,10 +930,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
                   state: "output-error",
-                  errorText:
-                    "errorParams" in editResult.error
-                      ? i18n.t(editResult.error.errorKey, editResult.error.errorParams)
-                      : i18n.t(editResult.error.errorKey),
+                  errorText: resolveToolErrorText(i18n.t, editResult.error),
                 });
                 result = "";
                 break;

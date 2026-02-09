@@ -22,11 +22,24 @@ export type WriteValidationSuccess = {
 
 export type WriteValidationResult = WriteValidationFailure | WriteValidationSuccess;
 
+export type ToolErrorDescriptor = {
+  errorKey: string;
+  errorParams?: Record<string, unknown>;
+};
+
 export const normalizeToolPath = (path: unknown): string =>
   typeof path === "string" ? path.trim() : "";
 
 export const normalizeToolText = (value: unknown): string | null =>
   typeof value === "string" ? value : null;
+
+export const resolveToolErrorText = (
+  translate: (key: string, params?: Record<string, unknown>) => string,
+  descriptor: ToolErrorDescriptor,
+): string =>
+  descriptor.errorParams
+    ? translate(descriptor.errorKey, descriptor.errorParams)
+    : translate(descriptor.errorKey);
 
 const isWriteMode = (value: unknown): value is WriteMode =>
   value === "overwrite" || value === "append" || value === "prepend";

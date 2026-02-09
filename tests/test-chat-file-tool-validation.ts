@@ -4,6 +4,7 @@ import {
   getEditTargetMessageBundle,
   normalizeToolPath,
   normalizeToolText,
+  resolveToolErrorText,
   sanitizeWriteMode,
   getEditReplacementFailureMessage,
   resolveEditTarget,
@@ -315,6 +316,22 @@ export async function runChatFileToolValidationTests(): Promise<{
     assertEq(normalizeToolText("text"), "text");
     assertEq(normalizeToolText(5), null);
     assertEq(normalizeToolText(undefined), null);
+  });
+
+  await runTest("resolveToolErrorText passes translation params when provided", async () => {
+    const translated = resolveToolErrorText(
+      (key, params) => `${key}:${params ? JSON.stringify(params) : "none"}`,
+      { errorKey: "key.with.params", errorParams: { value: 1 } },
+    );
+    assertEq(translated, 'key.with.params:{"value":1}');
+  });
+
+  await runTest("resolveToolErrorText works without translation params", async () => {
+    const translated = resolveToolErrorText(
+      (key, params) => `${key}:${params ? "has-params" : "none"}`,
+      { errorKey: "key.no.params" },
+    );
+    assertEq(translated, "key.no.params:none");
   });
 
   return printSummary();
