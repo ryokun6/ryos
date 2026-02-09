@@ -49,6 +49,7 @@ import {
 import { TEXTEDIT_TIPTAP_EXTENSIONS } from "../utils/textEditSerialization";
 import { getSystemState } from "../utils/systemState";
 import {
+  mergeContentByWriteMode,
   replaceSingleOccurrence,
   readLocalFileTextOrThrow,
   readOptionalTextContentFromStore,
@@ -891,19 +892,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               const existingItem = useFilesStore.getState().items[path];
               const isNewFile = !existingItem || existingItem.status !== "active";
 
-              // Determine final content based on mode
-              let finalContent = content || "";
-              if (!isNewFile && mode !== "overwrite" && existingItem?.uuid) {
-                const existingContent = await readOptionalTextContentFromStore(
-                  STORES.DOCUMENTS,
-                  existingItem.uuid,
-                );
-                if (typeof existingContent === "string") {
-                  finalContent = mode === "prepend"
-                    ? content + existingContent
-                    : existingContent + content;
-                }
-              }
+              const existingContentForMerge =
+                !isNewFile && mode !== "overwrite" && existingItem?.uuid
+                  ? await readOptionalTextContentFromStore(
+                      STORES.DOCUMENTS,
+                      existingItem.uuid,
+                    )
+                  : null;
+
+              const finalContent = mergeContentByWriteMode({
+                mode,
+                incomingContent: content || "",
+                existingContent: existingContentForMerge,
+              });
 
               // Save metadata to file store (addItem generates UUID for new files, preserves for existing)
               useFilesStore.getState().addItem({

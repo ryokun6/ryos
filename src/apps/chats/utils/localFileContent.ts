@@ -121,3 +121,25 @@ export const replaceSingleOccurrence = (
     ),
   };
 };
+
+export type WriteMode = "overwrite" | "append" | "prepend";
+
+export const mergeContentByWriteMode = ({
+  mode,
+  incomingContent,
+  existingContent,
+}: {
+  mode: WriteMode;
+  incomingContent: string;
+  existingContent: string | null;
+}): string => {
+  if (mode === "overwrite" || existingContent == null) {
+    return incomingContent;
+  }
+
+  if (mode === "prepend") {
+    return `${incomingContent}${existingContent}`;
+  }
+
+  return `${existingContent}${incomingContent}`;
+};

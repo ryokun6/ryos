@@ -3,6 +3,7 @@
 import { dbOperations } from "../src/apps/finder/utils/fileDatabase";
 import { STORES } from "../src/utils/indexedDB";
 import {
+  mergeContentByWriteMode,
   replaceSingleOccurrence,
   readLocalFileTextOrThrow,
   readOptionalTextContentFromStore,
@@ -273,6 +274,53 @@ export async function runChatLocalFileContentTests(): Promise<{
     }
     assertEq(result.reason, "multiple_matches");
     assertEq(result.occurrences, 3);
+  });
+
+  console.log(section("Write mode merge"));
+  await runTest("overwrite mode ignores existing content", async () => {
+    const merged = mergeContentByWriteMode({
+      mode: "overwrite",
+      incomingContent: "new",
+      existingContent: "old",
+    });
+    assertEq(merged, "new");
+  });
+
+  await runTest("append mode concatenates existing then incoming content", async () => {
+    const merged = mergeContentByWriteMode({
+      mode: "append",
+      incomingContent: " +new",
+      existingContent: "old",
+    });
+    assertEq(merged, "old +new");
+  });
+
+  await runTest("prepend mode concatenates incoming then existing content", async () => {
+    const merged = mergeContentByWriteMode({
+      mode: "prepend",
+      incomingContent: "new+ ",
+      existingContent: "old",
+    });
+    assertEq(merged, "new+ old");
+  });
+
+  await runTest("append/prepend fall back to incoming content when existing is null", async () => {
+    assertEq(
+      mergeContentByWriteMode({
+        mode: "append",
+        incomingContent: "new",
+        existingContent: null,
+      }),
+      "new",
+    );
+    assertEq(
+      mergeContentByWriteMode({
+        mode: "prepend",
+        incomingContent: "new",
+        existingContent: null,
+      }),
+      "new",
+    );
   });
 
   return printSummary();
