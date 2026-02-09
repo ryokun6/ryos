@@ -19,6 +19,8 @@ export interface ToolContext {
   addToolResult: (result: ToolResultPayload) => void;
   /** Detect user's operating system */
   detectUserOS: () => string;
+  /** Optional translation function for tool handlers */
+  translate?: (key: string, params?: Record<string, unknown>) => string;
   /** Optional dependencies used by app launch/close handlers */
   appHandlers?: AppHandlerDependencies;
 }

@@ -127,6 +127,7 @@ export type { StickiesControlInput } from "./stickiesHandler";
 export { handleInfiniteMacControl } from "./infiniteMacHandler";
 export type { InfiniteMacControlInput } from "./infiniteMacHandler";
 export { handleAquarium } from "./aquariumHandler";
+export { handleGenerateHtml } from "./generateHtmlHandler";
 
 // ============================================================================
 // Register tool handlers for automatic dispatch (optional)
@@ -139,8 +140,10 @@ import { handleStickiesControl } from "./stickiesHandler";
 import { handleInfiniteMacControl } from "./infiniteMacHandler";
 import { handleLaunchApp, handleCloseApp } from "./appHandlers";
 import { handleAquarium } from "./aquariumHandler";
+import { handleGenerateHtml } from "./generateHtmlHandler";
 
 registerToolHandler("aquarium", handleAquarium);
+registerToolHandler("generateHtml", handleGenerateHtml);
 registerToolHandler("launchApp", (input, toolCallId, context) => {
   handleLaunchApp(input as { id: string; url?: string; year?: string }, toolCallId, context, context.appHandlers);
 });

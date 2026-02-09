@@ -40,7 +40,6 @@ import {
   createChatListToolDependencies,
   createChatOpenToolDependencies,
 } from "../utils/chatToolDependencyResolvers";
-import { handleChatGenerateHtmlToolCall } from "../utils/chatGenerateHtmlToolHandler";
 import {
   handleChatEditToolCall,
   handleChatListToolCall,
@@ -296,6 +295,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         launchApp,
         addToolResult,
         detectUserOS,
+        translate: i18n.t,
         appHandlers: {
           translate: i18n.t,
           getInstancesByAppId: (appId) =>
@@ -310,6 +310,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
         switch (toolCall.toolName) {
           case "aquarium":
+          case "generateHtml":
           case "launchApp":
           case "closeApp":
           case "ipodControl":
@@ -327,18 +328,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               console.warn(`[ToolCall] No handler registered for ${toolCall.toolName}`);
             }
             result = ""; // Handler manages its own result
-            break;
-          }
-          case "generateHtml": {
-            const { html } = toolCall.input as { html: string };
-            handleChatGenerateHtmlToolCall({
-              html,
-              toolName: toolCall.toolName,
-              toolCallId: toolCall.toolCallId,
-              addToolResult,
-              t: i18n.t,
-            });
-            result = "";
             break;
           }
           // === Unified VFS Tools ===
