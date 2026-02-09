@@ -1826,13 +1826,23 @@ export const mergeFetchedBulkMessages = (
 
 export const buildPersistedRoomMessages = (
   roomMessages: Record<string, ChatMessage[]>
-): Record<string, ChatMessage[]> =>
-  Object.fromEntries(
-    Object.entries(roomMessages).map(([roomId, messages]) => [
-      roomId,
-      capRoomMessages(messages),
-    ])
-  );
+): Record<string, ChatMessage[]> => {
+  let nextRoomMessages: Record<string, ChatMessage[]> | null = null;
+
+  Object.entries(roomMessages).forEach(([roomId, messages]) => {
+    const cappedMessages = capRoomMessages(messages);
+    if (cappedMessages === messages) {
+      return;
+    }
+
+    if (!nextRoomMessages) {
+      nextRoomMessages = { ...roomMessages };
+    }
+    nextRoomMessages[roomId] = cappedMessages;
+  });
+
+  return nextRoomMessages || roomMessages;
+};
 
 export const toggleBoolean = (value: boolean): boolean => !value;
 
