@@ -16,7 +16,6 @@ import { AppId } from "@/config/appIds";
 import { appRegistry } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
-import { STORES } from "@/utils/indexedDB";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useChatsStoreShallow } from "@/stores/helpers";
@@ -44,9 +43,8 @@ import {
   type RateLimitErrorState,
 } from "../utils/chatRuntime";
 import { getSystemState } from "../utils/systemState";
-import {
-  readLocalFileTextOrThrow,
-} from "../utils/localFileContent";
+import { executeChatFileOpenOperation } from "../utils/chatFileOpenOperation";
+import { resolveToolErrorText } from "../utils/chatFileToolValidation";
 import { syncTextEditDocumentForPath } from "../utils/textEditDocumentSync";
 import {
   handleChatEditToolCall,
@@ -665,50 +663,47 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 });
                 result = "";
               } else if (path.startsWith("/Applets/")) {
-                // Open applet in viewer
-                const { fileItem, content } = await readLocalFileTextOrThrow(
-                  path,
-                  STORES.APPLETS,
-                  {
-                    notFound: `Applet not found: ${path}`,
-                    missingContent: `Applet missing content: ${path}`,
-                    readFailed: `Failed to read applet content: ${path}`,
-                  },
-                );
+                const openResult = await executeChatFileOpenOperation({ path });
+                if (!openResult.ok) {
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    state: "output-error",
+                    errorText: resolveToolErrorText(i18n.t, openResult.error),
+                  });
+                  result = "";
+                  break;
+                }
 
-                launchApp("applet-viewer", {
-                  initialData: { path, content },
-                });
-
+                launchApp(openResult.launchAppId, openResult.launchOptions);
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: i18n.t("apps.chats.toolCalls.openedFile", { fileName: fileItem.name }),
+                  output: i18n.t(openResult.successKey, {
+                    fileName: openResult.fileName,
+                  }),
                 });
                 result = "";
               } else if (path.startsWith("/Documents/")) {
-                // Open document in TextEdit
-                const { fileItem, content } = await readLocalFileTextOrThrow(
-                  path,
-                  STORES.DOCUMENTS,
-                  {
-                    notFound: `Document not found: ${path}`,
-                    missingContent: `Document missing content: ${path}`,
-                    readFailed: `Failed to read document content: ${path}`,
-                  },
-                );
+                const openResult = await executeChatFileOpenOperation({ path });
+                if (!openResult.ok) {
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    state: "output-error",
+                    errorText: resolveToolErrorText(i18n.t, openResult.error),
+                  });
+                  result = "";
+                  break;
+                }
 
-                // Pass initialData directly to launchApp (consistent with Terminal/Finder approach)
-                // TextEdit will handle markdown-to-HTML conversion internally
-                launchApp("textedit", {
-                  multiWindow: true,
-                  initialData: { path, content },
-                });
-
+                launchApp(openResult.launchAppId, openResult.launchOptions);
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,
-                  output: i18n.t("apps.chats.toolCalls.openedDocument", { fileName: fileItem.name }),
+                  output: i18n.t(openResult.successKey, {
+                    fileName: openResult.fileName,
+                  }),
                 });
                 result = "";
               } else {
