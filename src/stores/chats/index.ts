@@ -17,6 +17,10 @@ export {
   registerUserRequest,
 } from "./authApi";
 export { parseRefreshTokenResponse } from "./authResponse";
+export {
+  applyRefreshedAuthToken,
+  applySuccessfulRegistration,
+} from "./authStateUpdates";
 export { readErrorResponseBody } from "./httpErrors";
 export {
   getDaysUntilTokenRefresh,

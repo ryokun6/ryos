@@ -5,10 +5,10 @@ import {
   type ChatMessage,
   type AIChatMessage,
 } from "@/types/chat";
-import { track } from "@vercel/analytics";
-import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import {
+  applyRefreshedAuthToken,
+  applySuccessfulRegistration,
   buildPostLogoutState,
   buildPersistedRoomMessages,
   clearChatRecoveryStorage,
@@ -494,10 +494,13 @@ export const useChatsStore = create<ChatsStoreState>()(
             const parsedRefresh = parseRefreshTokenResponse(data);
             if (parsedRefresh.ok) {
               console.log("[ChatsStore] Auth token refreshed successfully");
-              set({ authToken: parsedRefresh.token });
-              saveAuthTokenToRecovery(parsedRefresh.token);
-              // Save token refresh time
-              saveTokenRefreshTime(currentUsername);
+              applyRefreshedAuthToken({
+                username: currentUsername,
+                token: parsedRefresh.token,
+                setAuthToken: (token) => set({ authToken: token }),
+                saveAuthTokenToRecovery,
+                saveTokenRefreshTime,
+              });
               return { ok: true, token: parsedRefresh.token };
             } else {
               console.error("[ChatsStore] Invalid response format for token refresh");
@@ -880,25 +883,16 @@ export const useChatsStore = create<ChatsStoreState>()(
             const data = await response.json();
             const parsedRegister = parseRegisterUserResponse(data);
             if (parsedRegister.ok) {
-              set({ username: parsedRegister.username });
-
-              if (parsedRegister.token) {
-                set({ authToken: parsedRegister.token });
-                saveAuthTokenToRecovery(parsedRegister.token);
-                // Save initial token creation time
-                saveTokenRefreshTime(parsedRegister.username);
-              }
-
-              // Check password status after user creation
-              if (parsedRegister.token) {
-                setTimeout(() => {
-                  get().checkHasPassword();
-                }, 100); // Small delay to ensure token is set
-              }
-
-              // Track user creation analytics
-              track(APP_ANALYTICS.USER_CREATE, {
+              applySuccessfulRegistration({
                 username: parsedRegister.username,
+                token: parsedRegister.token,
+                setUsername: (username) => set({ username }),
+                setAuthToken: (token) => set({ authToken: token }),
+                saveAuthTokenToRecovery,
+                saveTokenRefreshTime,
+                onCheckHasPassword: () => {
+                  get().checkHasPassword();
+                },
               });
 
               return { ok: true };
