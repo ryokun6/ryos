@@ -29,6 +29,7 @@ import { runChatLocalFileContentTests } from "./test-chat-local-file-content";
 import { runChatRoomMessageMergeLogicTests } from "./test-chat-room-message-merge-logic";
 import { runChatTranscriptTests } from "./test-chat-transcript";
 import { runChatTextEditDocumentSyncCoreTests } from "./test-chat-textedit-document-sync-core";
+import { runChatFileToolValidationTests } from "./test-chat-file-tool-validation";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -106,6 +107,7 @@ async function runAllTests(): Promise<void> {
     { name: "chat-notifications", run: runChatNotificationLogicTests },
     { name: "chat-notification-wiring", run: runChatNotificationIntegrationWiringTests },
     { name: "chat-hook-lifecycle-wiring", run: runChatHookChannelLifecycleWiringTests },
+    { name: "chat-file-tool-validation", run: runChatFileToolValidationTests },
     { name: "chat-runtime-utils", run: runChatRuntimeUtilsTests },
     { name: "chat-store-state-helpers", run: runChatStoreStateHelpersTests },
     { name: "chat-local-file-content", run: runChatLocalFileContentTests },

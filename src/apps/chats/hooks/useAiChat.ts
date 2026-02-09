@@ -50,6 +50,7 @@ import {
   readLocalFileTextOrThrow,
   writeDocumentFileWithMode,
 } from "../utils/localFileContent";
+import { validateDocumentWriteInput } from "../utils/chatFileToolValidation";
 import { syncTextEditDocumentForPath } from "../utils/textEditDocumentSync";
 import {
   handleLaunchApp,
@@ -832,52 +833,25 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               mode?: "overwrite" | "append" | "prepend";
             };
 
-            if (!path) {
+            const writeValidation = validateDocumentWriteInput({
+              path,
+              content,
+              mode,
+            });
+            if (!writeValidation.ok) {
               addToolResult({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
                 state: "output-error",
-                errorText: i18n.t("apps.chats.toolCalls.noPathProvided"),
+                errorText:
+                  "errorParams" in writeValidation
+                    ? i18n.t(writeValidation.errorKey, writeValidation.errorParams)
+                    : i18n.t(writeValidation.errorKey),
               });
               result = "";
               break;
             }
-
-            // Validate path format for documents
-            if (!path.startsWith("/Documents/")) {
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: i18n.t("apps.chats.toolCalls.invalidPathForWrite", { path }),
-              });
-              result = "";
-              break;
-            }
-
-            // Validate filename has .md extension
-            const fileName = path.split("/").pop() || "";
-            if (!fileName.endsWith(".md")) {
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: i18n.t("apps.chats.toolCalls.invalidFilename", { fileName }),
-              });
-              result = "";
-              break;
-            }
-
-            if (!content && mode === "overwrite") {
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: i18n.t("apps.chats.toolCalls.noContentProvided"),
-              });
-              result = "";
-              break;
-            }
+            const fileName = writeValidation.fileName;
 
             console.log("[ToolCall] write:", { path, mode, contentLength: content?.length });
 
