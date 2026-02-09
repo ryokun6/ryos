@@ -17,9 +17,16 @@ export type WriteValidationFailure =
 export type WriteValidationSuccess = {
   ok: true;
   fileName: string;
+  mode: WriteMode;
 };
 
 export type WriteValidationResult = WriteValidationFailure | WriteValidationSuccess;
+
+const isWriteMode = (value: unknown): value is WriteMode =>
+  value === "overwrite" || value === "append" || value === "prepend";
+
+export const sanitizeWriteMode = (mode: unknown): WriteMode =>
+  isWriteMode(mode) ? mode : "overwrite";
 
 export type EditValidationFailure = {
   ok: false;
@@ -65,8 +72,10 @@ export const validateDocumentWriteInput = ({
 }: {
   path: string;
   content: string;
-  mode: WriteMode;
+  mode: unknown;
 }): WriteValidationResult => {
+  const normalizedMode = sanitizeWriteMode(mode);
+
   if (!path) {
     return { ok: false, errorKey: "apps.chats.toolCalls.noPathProvided" };
   }
@@ -88,11 +97,11 @@ export const validateDocumentWriteInput = ({
     };
   }
 
-  if (!content && mode === "overwrite") {
+  if (!content && normalizedMode === "overwrite") {
     return { ok: false, errorKey: "apps.chats.toolCalls.noContentProvided" };
   }
 
-  return { ok: true, fileName };
+  return { ok: true, fileName, mode: normalizedMode };
 };
 
 export const validateFileEditInput = ({

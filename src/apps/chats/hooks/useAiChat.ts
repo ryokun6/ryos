@@ -856,15 +856,20 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               break;
             }
             const fileName = writeValidation.fileName;
+            const normalizedMode = writeValidation.mode;
 
-            console.log("[ToolCall] write:", { path, mode, contentLength: content?.length });
+            console.log("[ToolCall] write:", {
+              path,
+              mode: normalizedMode,
+              contentLength: content?.length,
+            });
 
             try {
               const { isNewFile, finalContent } = await writeDocumentFileWithMode({
                 path,
                 fileName,
                 incomingContent: content || "",
-                mode,
+                mode: normalizedMode,
               });
 
               syncTextEditDocumentForPath({

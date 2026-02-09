@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
 import {
+  sanitizeWriteMode,
   getEditReplacementFailureMessage,
   validateDocumentWriteInput,
   validateFileEditInput,
@@ -86,6 +87,12 @@ export async function runChatFileToolValidationTests(): Promise<{
 
     assertEq(append.ok, true);
     assertEq(prepend.ok, true);
+    if (append.ok) {
+      assertEq(append.mode, "append");
+    }
+    if (prepend.ok) {
+      assertEq(prepend.mode, "prepend");
+    }
   });
 
   await runTest("returns parsed filename for valid write input", async () => {
@@ -97,6 +104,27 @@ export async function runChatFileToolValidationTests(): Promise<{
     assertEq(result.ok, true);
     if (result.ok) {
       assertEq(result.fileName, "notes.md");
+      assertEq(result.mode, "overwrite");
+    }
+  });
+
+  await runTest("sanitizes invalid write mode to overwrite", async () => {
+    assertEq(sanitizeWriteMode("append"), "append");
+    assertEq(sanitizeWriteMode("prepend"), "prepend");
+    assertEq(sanitizeWriteMode("overwrite"), "overwrite");
+    assertEq(sanitizeWriteMode("invalid"), "overwrite");
+    assertEq(sanitizeWriteMode(undefined), "overwrite");
+  });
+
+  await runTest("valid write input returns sanitized overwrite mode", async () => {
+    const result = validateDocumentWriteInput({
+      path: "/Documents/notes.md",
+      content: "hello",
+      mode: "invalid-mode",
+    });
+    assertEq(result.ok, true);
+    if (result.ok) {
+      assertEq(result.mode, "overwrite");
     }
   });
 
