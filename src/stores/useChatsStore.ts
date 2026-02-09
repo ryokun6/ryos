@@ -37,6 +37,7 @@ import {
   refreshAuthTokenRequest,
   registerUserRequest,
 } from "./chats/authApi";
+import { parseRefreshTokenResponse } from "./chats/authResponse";
 import { readErrorResponseBody } from "./chats/httpErrors";
 import {
   getDaysUntilTokenRefresh,
@@ -76,6 +77,7 @@ import {
   schedulePasswordStatusCheck,
   shouldCheckPasswordStatus,
 } from "./chats/identityState";
+import { parseRegisterUserResponse } from "./chats/registrationResponse";
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -517,20 +519,19 @@ export const useChatsStore = create<ChatsStoreState>()(
             }
 
             const data = await response.json();
-            if (data.token) {
+            const parsedRefresh = parseRefreshTokenResponse(data);
+            if (parsedRefresh.ok) {
               console.log("[ChatsStore] Auth token refreshed successfully");
-              set({ authToken: data.token });
-              saveAuthTokenToRecovery(data.token);
+              set({ authToken: parsedRefresh.token });
+              saveAuthTokenToRecovery(parsedRefresh.token);
               // Save token refresh time
               saveTokenRefreshTime(currentUsername);
-              return { ok: true, token: data.token };
+              return { ok: true, token: parsedRefresh.token };
             } else {
-              console.error(
-                "[ChatsStore] Invalid response format for token refresh"
-              );
+              console.error("[ChatsStore] Invalid response format for token refresh");
               return {
                 ok: false,
-                error: "Invalid response format for token refresh",
+                error: parsedRefresh.error,
               };
             }
           } catch (error) {
@@ -967,30 +968,33 @@ export const useChatsStore = create<ChatsStoreState>()(
             }
 
             const data = await response.json();
-            if (data.user) {
-              set({ username: data.user.username });
+            const parsedRegister = parseRegisterUserResponse(data);
+            if (parsedRegister.ok) {
+              set({ username: parsedRegister.username });
 
-              if (data.token) {
-                set({ authToken: data.token });
-                saveAuthTokenToRecovery(data.token);
+              if (parsedRegister.token) {
+                set({ authToken: parsedRegister.token });
+                saveAuthTokenToRecovery(parsedRegister.token);
                 // Save initial token creation time
-                saveTokenRefreshTime(data.user.username);
+                saveTokenRefreshTime(parsedRegister.username);
               }
 
               // Check password status after user creation
-              if (data.token) {
+              if (parsedRegister.token) {
                 setTimeout(() => {
                   get().checkHasPassword();
                 }, 100); // Small delay to ensure token is set
               }
 
               // Track user creation analytics
-              track(APP_ANALYTICS.USER_CREATE, { username: data.user.username });
+              track(APP_ANALYTICS.USER_CREATE, {
+                username: parsedRegister.username,
+              });
 
               return { ok: true };
             }
 
-            return { ok: false, error: "Invalid response format" };
+            return { ok: false, error: parsedRegister.error };
           } catch (error) {
             console.error("[ChatsStore] Error creating user:", error);
             return { ok: false, error: "Network error. Please try again." };
