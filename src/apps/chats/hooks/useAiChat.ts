@@ -305,7 +305,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       try {
         const wasExecuted = await executeToolHandler(
           toolCall.toolName,
-          toolCall.input,
+          toolCall.input as unknown,
           toolCall.toolCallId,
           toolContext,
         );

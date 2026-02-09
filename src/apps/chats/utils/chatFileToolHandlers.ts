@@ -602,7 +602,7 @@ export const handleChatVfsToolCall = async ({
   editHandler = handleChatEditToolCall,
 }: {
   toolName: VfsToolName;
-  input: Record<string, unknown>;
+  input: unknown;
   toolCallId: string;
   addToolResult: AddToolResult;
   t: TranslateFn;
@@ -613,11 +613,16 @@ export const handleChatVfsToolCall = async ({
   writeHandler?: typeof handleChatWriteToolCall;
   editHandler?: typeof handleChatEditToolCall;
 }): Promise<boolean> => {
+  const normalizedInput =
+    input && typeof input === "object"
+      ? (input as Record<string, unknown>)
+      : {};
+
   if (toolName === "list") {
     await listHandler({
-      path: input.path,
-      query: input.query,
-      limit: input.limit,
+      path: normalizedInput.path,
+      query: normalizedInput.query,
+      limit: normalizedInput.limit,
       toolName,
       toolCallId,
       addToolResult,
@@ -629,7 +634,7 @@ export const handleChatVfsToolCall = async ({
 
   if (toolName === "open") {
     await openHandler({
-      path: input.path,
+      path: normalizedInput.path,
       toolName,
       toolCallId,
       addToolResult,
@@ -641,7 +646,7 @@ export const handleChatVfsToolCall = async ({
 
   if (toolName === "read") {
     await readHandler({
-      path: input.path,
+      path: normalizedInput.path,
       toolName,
       toolCallId,
       addToolResult,
@@ -652,9 +657,9 @@ export const handleChatVfsToolCall = async ({
 
   if (toolName === "write") {
     await writeHandler({
-      path: input.path,
-      content: input.content,
-      mode: input.mode,
+      path: normalizedInput.path,
+      content: normalizedInput.content,
+      mode: normalizedInput.mode,
       toolName,
       toolCallId,
       addToolResult,
@@ -666,9 +671,9 @@ export const handleChatVfsToolCall = async ({
 
   if (toolName === "edit") {
     await editHandler({
-      path: input.path,
-      oldString: input.old_string,
-      newString: input.new_string,
+      path: normalizedInput.path,
+      oldString: normalizedInput.old_string,
+      newString: normalizedInput.new_string,
       toolName,
       toolCallId,
       addToolResult,

@@ -533,6 +533,31 @@ export async function runChatFileToolHandlersTests(): Promise<{
     assertEq(calls.join(","), "list,open,read,write,edit");
   });
 
+  await runTest("normalizes non-object VFS input to empty object", async () => {
+    const collector = createCollector();
+    let observedPath: unknown = "__unset__";
+    const dispatched = await handleChatVfsToolCall({
+      toolName: "read",
+      input: null,
+      toolCallId: "tc-22",
+      addToolResult: collector.addToolResult,
+      t,
+      listDependencies,
+      openDependencies: {
+        launchApp: () => {},
+        resolveApplicationName: () => null,
+        playMusicTrack: () => ({ ok: false, error: "unused" }),
+      },
+      syncTextEdit: () => {},
+      readHandler: async ({ path }) => {
+        observedPath = path;
+      },
+    });
+
+    assertEq(dispatched, true);
+    assertEq(observedPath, undefined);
+  });
+
   return printSummary();
 }
 

@@ -164,7 +164,7 @@ const executeVfsToolFromContext = async (
 
   await handleChatVfsToolCall({
     toolName,
-    input: (input ?? {}) as Record<string, unknown>,
+    input,
     toolCallId,
     addToolResult: context.addToolResult,
     t: context.translate ?? ((key) => key),
