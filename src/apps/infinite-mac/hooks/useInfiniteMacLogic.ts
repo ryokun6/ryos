@@ -329,7 +329,7 @@ export function useInfiniteMacLogic({
                   // Sync to store for AI tool access
                   setLastScreenData(screenData);
                 }
-              } catch (e) {
+              } catch {
                 // Conversion failed, log for debugging
                 console.log("Failed to convert screen data:", typeof pixelData, pixelData);
               }
