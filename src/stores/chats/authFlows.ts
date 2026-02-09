@@ -1260,10 +1260,54 @@ const sortChatRoomsForUi = (rooms: ChatRoom[]): ChatRoom[] =>
     return a.id.localeCompare(b.id);
   });
 
+const areStringArraysEqual = (
+  currentValues?: string[],
+  nextValues?: string[]
+): boolean => {
+  if (!currentValues && !nextValues) {
+    return true;
+  }
+  if (!currentValues || !nextValues) {
+    return false;
+  }
+  if (currentValues.length !== nextValues.length) {
+    return false;
+  }
+  for (let i = 0; i < currentValues.length; i++) {
+    if (currentValues[i] !== nextValues[i]) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const areChatRoomsEqual = (currentRoom: ChatRoom, nextRoom: ChatRoom): boolean =>
+  currentRoom.id === nextRoom.id &&
+  currentRoom.name === nextRoom.name &&
+  currentRoom.type === nextRoom.type &&
+  currentRoom.createdAt === nextRoom.createdAt &&
+  currentRoom.userCount === nextRoom.userCount &&
+  areStringArraysEqual(currentRoom.users, nextRoom.users) &&
+  areStringArraysEqual(currentRoom.members, nextRoom.members);
+
 const areChatRoomListsEqual = (
   currentRooms: ChatRoom[],
   nextRooms: ChatRoom[]
-): boolean => JSON.stringify(currentRooms) === JSON.stringify(nextRooms);
+): boolean => {
+  if (currentRooms.length !== nextRooms.length) {
+    return false;
+  }
+
+  for (let i = 0; i < currentRooms.length; i++) {
+    const currentRoom = currentRooms[i];
+    const nextRoom = nextRooms[i];
+    if (!currentRoom || !nextRoom || !areChatRoomsEqual(currentRoom, nextRoom)) {
+      return false;
+    }
+  }
+
+  return true;
+};
 
 export const prepareRoomsForSet = (
   currentRooms: ChatRoom[],
