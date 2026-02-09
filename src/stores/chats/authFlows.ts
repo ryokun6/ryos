@@ -1698,10 +1698,18 @@ export const setCurrentRoomMessagesInMap = (
   roomMessages: Record<string, ChatMessage[]>,
   currentRoomId: string,
   messages: ChatMessage[]
-): Record<string, ChatMessage[]> => ({
-  ...roomMessages,
-  [currentRoomId]: sortAndCapRoomMessages(messages),
-});
+): Record<string, ChatMessage[]> => {
+  const nextMessages = sortAndCapRoomMessages(messages);
+  const existingMessages = roomMessages[currentRoomId] || [];
+  if (areChatMessageListsEqual(existingMessages, nextMessages)) {
+    return roomMessages;
+  }
+
+  return {
+    ...roomMessages,
+    [currentRoomId]: nextMessages,
+  };
+};
 
 export const mergeIncomingRoomMessageInMap = (
   roomMessages: Record<string, ChatMessage[]>,
@@ -1746,10 +1754,17 @@ export const removeRoomMessageFromMap = (
 export const clearRoomMessagesInMap = (
   roomMessages: Record<string, ChatMessage[]>,
   roomId: string
-): Record<string, ChatMessage[]> => ({
-  ...roomMessages,
-  [roomId]: [],
-});
+): Record<string, ChatMessage[]> => {
+  const existingMessages = roomMessages[roomId] || [];
+  if (existingMessages.length === 0) {
+    return roomMessages;
+  }
+
+  return {
+    ...roomMessages,
+    [roomId]: [],
+  };
+};
 
 const areChatMessageListsEqual = (
   currentMessages: ChatMessage[],
