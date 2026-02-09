@@ -1472,6 +1472,10 @@ export const prepareRoomsForSet = (
   currentRooms: ChatRoom[],
   incomingRooms: ChatRoom[]
 ): { changed: boolean; rooms: ChatRoom[] } => {
+  if (currentRooms === incomingRooms) {
+    return { changed: false, rooms: currentRooms };
+  }
+
   const sortedRooms = sortChatRoomsForUi(incomingRooms);
   return {
     changed: !areChatRoomListsEqual(currentRooms, sortedRooms),
