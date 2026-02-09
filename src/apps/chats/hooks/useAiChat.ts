@@ -327,62 +327,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             break;
           }
           // === Unified VFS Tools ===
-          case "list": {
-            await handleChatVfsToolCall({
-              toolName: toolCall.toolName,
-              input: toolCall.input as Record<string, unknown>,
-              toolCallId: toolCall.toolCallId,
-              addToolResult,
-              t: i18n.t,
-              listDependencies: listToolDependencies,
-              openDependencies: openToolDependencies,
-              syncTextEdit: syncTextEditDocumentForPath,
-            });
-            result = "";
-            break;
-          }
-          case "open": {
-            await handleChatVfsToolCall({
-              toolName: toolCall.toolName,
-              input: toolCall.input as Record<string, unknown>,
-              toolCallId: toolCall.toolCallId,
-              addToolResult,
-              t: i18n.t,
-              listDependencies: listToolDependencies,
-              openDependencies: openToolDependencies,
-              syncTextEdit: syncTextEditDocumentForPath,
-            });
-            result = "";
-            break;
-          }
-          case "read": {
-            await handleChatVfsToolCall({
-              toolName: toolCall.toolName,
-              input: toolCall.input as Record<string, unknown>,
-              toolCallId: toolCall.toolCallId,
-              addToolResult,
-              t: i18n.t,
-              listDependencies: listToolDependencies,
-              openDependencies: openToolDependencies,
-              syncTextEdit: syncTextEditDocumentForPath,
-            });
-            result = "";
-            break;
-          }
-          case "write": {
-            await handleChatVfsToolCall({
-              toolName: toolCall.toolName,
-              input: toolCall.input as Record<string, unknown>,
-              toolCallId: toolCall.toolCallId,
-              addToolResult,
-              t: i18n.t,
-              listDependencies: listToolDependencies,
-              openDependencies: openToolDependencies,
-              syncTextEdit: syncTextEditDocumentForPath,
-            });
-            result = "";
-            break;
-          }
+          case "list":
+          case "open":
+          case "read":
+          case "write":
           case "edit": {
             await handleChatVfsToolCall({
               toolName: toolCall.toolName,
