@@ -1025,6 +1025,34 @@
   font-smooth: auto !important;
 }
 
+/* XP / Win98 Spotlight: reset button styles from xp-custom.css / 98-custom.css
+   Those stylesheets apply background + 3D box-shadow to ALL <button> elements.
+   Spotlight rows are <button> so they inherit the raised 3D look. Reset them. */
+:root[data-os-theme="xp"] .spotlight-panel button,
+:root[data-os-theme="win98"] .spotlight-panel button {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+:root[data-os-theme="xp"] .spotlight-panel button:active,
+:root[data-os-theme="win98"] .spotlight-panel button:active,
+:root[data-os-theme="xp"] .spotlight-panel button:focus,
+:root[data-os-theme="win98"] .spotlight-panel button:focus {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* XP / Win98 Spotlight: reset input styles */
+:root[data-os-theme="xp"] .spotlight-panel input,
+:root[data-os-theme="win98"] .spotlight-panel input {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
 /* Shadow utilities */
 .shadow-os-window {
   box-shadow: var(--os-window-shadow);
