@@ -1,5 +1,3 @@
-export { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR } from "./hooks/useInfiniteMacLogic";
-
 export const appMetadata = {
   name: "Infinite Mac",
   version: "1.0.0",
@@ -30,7 +28,8 @@ export const helpItems = [
   {
     icon: "⏸️",
     title: "Pause / Resume",
-    description: "Use View ▸ Pause or Resume to save resources when not interacting",
+    description:
+      "Use View ▸ Pause or Resume to save resources when not interacting",
   },
   {
     icon: "📸",
@@ -40,6 +39,7 @@ export const helpItems = [
   {
     icon: "🔙",
     title: "Back to Systems",
-    description: "Use File ▸ Back to Systems to return to the preset grid",
+    description:
+      "Use File ▸ Back to Systems to return to the preset grid",
   },
 ];

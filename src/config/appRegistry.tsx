@@ -221,7 +221,7 @@ import { appMetadata as stickiesMetadata, helpItems as stickiesHelpItems } from 
 import {
   appMetadata as infiniteMacMetadata,
   helpItems as infiniteMacHelpItems,
-} from "@/apps/infinite-mac";
+} from "@/apps/infinite-mac/metadata";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/hooks/useInfiniteMacLogic";
 
 // ============================================================================
