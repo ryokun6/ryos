@@ -46,13 +46,12 @@ import {
 import { getSystemState } from "../utils/systemState";
 import {
   readLocalFileTextOrThrow,
-  writeDocumentFileWithMode,
 } from "../utils/localFileContent";
 import {
-  validateDocumentWriteInput,
   validateFileEditInput,
 } from "../utils/chatFileToolValidation";
 import { executeChatFileEditOperation } from "../utils/chatFileEditOperation";
+import { executeChatFileWriteOperation } from "../utils/chatFileWriteOperation";
 import { syncTextEditDocumentForPath } from "../utils/textEditDocumentSync";
 import {
   handleLaunchApp,
@@ -835,43 +834,33 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               mode?: "overwrite" | "append" | "prepend";
             };
 
-            const writeValidation = validateDocumentWriteInput({
-              path,
-              content,
-              mode,
-            });
-            if (!writeValidation.ok) {
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText:
-                  "errorParams" in writeValidation
-                    ? i18n.t(writeValidation.errorKey, writeValidation.errorParams)
-                    : i18n.t(writeValidation.errorKey),
-              });
-              result = "";
-              break;
-            }
-            const fileName = writeValidation.fileName;
-            const normalizedMode = writeValidation.mode;
-
-            console.log("[ToolCall] write:", {
-              path,
-              mode: normalizedMode,
-              contentLength: content?.length,
-            });
+            console.log("[ToolCall] write:", { path, mode, contentLength: content?.length });
 
             try {
-              const { isNewFile, finalContent } = await writeDocumentFileWithMode({
+              const writeResult = await executeChatFileWriteOperation({
                 path,
-                fileName,
-                incomingContent: content || "",
-                mode: normalizedMode,
+                content,
+                mode,
               });
 
+              if (!writeResult.ok) {
+                const writeError = writeResult.error;
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText:
+                    "errorParams" in writeError
+                      ? i18n.t(writeError.errorKey, writeError.errorParams)
+                      : i18n.t(writeError.errorKey),
+                });
+                result = "";
+                break;
+              }
+
+              const { path: normalizedPath, finalContent, fileName } = writeResult;
               syncTextEditDocumentForPath({
-                path,
+                path: normalizedPath,
                 content: finalContent,
                 fileName,
                 launchIfMissing: true,
@@ -879,11 +868,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 includeFilePathOnUpdate: true,
               });
 
-              const outputKey = isNewFile ? "createdDocument" : "updatedDocument";
               addToolResult({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
-                output: i18n.t(`apps.chats.toolCalls.${outputKey}`, { path }),
+                output: i18n.t(writeResult.successKey, {
+                  path: normalizedPath,
+                }),
               });
               result = "";
             } catch (err) {
