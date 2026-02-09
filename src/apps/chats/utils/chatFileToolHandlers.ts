@@ -4,6 +4,10 @@ import { executeChatFileReadOperation } from "./chatFileReadOperation";
 import { executeChatSharedAppletReadOperation } from "./chatSharedAppletReadOperation";
 import { executeChatFileWriteOperation } from "./chatFileWriteOperation";
 import {
+  executeChatListOperation,
+  type ChatListOperationDependencies,
+} from "./chatListOperation";
+import {
   normalizeToolPath,
   resolveToolErrorText,
   validateFileEditInput,
@@ -16,6 +20,7 @@ type ExecuteWriteOperationFn = typeof executeChatFileWriteOperation;
 type ExecuteEditOperationFn = typeof executeChatFileEditOperation;
 type ExecuteReadOperationFn = typeof executeChatFileReadOperation;
 type ExecuteSharedAppletReadOperationFn = typeof executeChatSharedAppletReadOperation;
+type ExecuteListOperationFn = typeof executeChatListOperation;
 type SyncTextEditFn = (options: {
   path: string;
   content: string;
@@ -271,6 +276,122 @@ export const handleChatReadToolCall = async ({
       addToolResult,
       errorText:
         error instanceof Error ? error.message : t("apps.chats.toolCalls.failedToReadFile"),
+    });
+  }
+};
+
+export const handleChatListToolCall = async ({
+  path,
+  query,
+  limit,
+  listDependencies,
+  toolName,
+  toolCallId,
+  addToolResult,
+  t,
+  executeListOperation = executeChatListOperation,
+}: BaseToolCallContext & {
+  path: unknown;
+  query?: unknown;
+  limit?: unknown;
+  listDependencies: ChatListOperationDependencies;
+  executeListOperation?: ExecuteListOperationFn;
+}): Promise<void> => {
+  console.log("[ToolCall] list:", { path, query, limit });
+
+  try {
+    const listResult = await executeListOperation({
+      path,
+      query,
+      limit,
+      dependencies: listDependencies,
+    });
+
+    if (!listResult.ok) {
+      publishToolError({
+        toolName,
+        toolCallId,
+        addToolResult,
+        errorText: resolveToolErrorText(t, listResult.error),
+      });
+      return;
+    }
+
+    if (listResult.target === "music") {
+      const resultMessage =
+        listResult.items.length > 0
+          ? `${listResult.items.length === 1
+              ? t("apps.chats.toolCalls.foundSongsInMusic", {
+                  count: listResult.items.length,
+                })
+              : t("apps.chats.toolCalls.foundSongsInMusicPlural", {
+                  count: listResult.items.length,
+                })}:\n${JSON.stringify(listResult.items, null, 2)}`
+          : t("apps.chats.toolCalls.musicLibraryEmpty");
+      addToolResult({ tool: toolName, toolCallId, output: resultMessage });
+      return;
+    }
+
+    if (listResult.target === "shared-applets") {
+      const resultMessage =
+        listResult.items.length > 0
+          ? `${listResult.items.length === 1
+              ? t("apps.chats.toolCalls.foundSharedApplets", {
+                  count: listResult.items.length,
+                })
+              : t("apps.chats.toolCalls.foundSharedAppletsPlural", {
+                  count: listResult.items.length,
+                })}:\n${JSON.stringify(listResult.items, null, 2)}`
+          : listResult.hasKeyword
+            ? t("apps.chats.toolCalls.noSharedAppletsMatched", {
+                query: listResult.query,
+              })
+            : t("apps.chats.toolCalls.noSharedAppletsAvailable");
+      addToolResult({ tool: toolName, toolCallId, output: resultMessage });
+      return;
+    }
+
+    if (listResult.target === "applications") {
+      const appsMessage =
+        listResult.items.length === 1
+          ? t("apps.chats.toolCalls.foundApplicationsList", {
+              count: listResult.items.length,
+            })
+          : t("apps.chats.toolCalls.foundApplicationsListPlural", {
+              count: listResult.items.length,
+            });
+      addToolResult({
+        tool: toolName,
+        toolCallId,
+        output: `${appsMessage}:\n${JSON.stringify(listResult.items, null, 2)}`,
+      });
+      return;
+    }
+
+    const resultMessage =
+      listResult.items.length > 0
+        ? `${listResult.items.length === 1
+            ? t("apps.chats.toolCalls.foundFileType", {
+                count: listResult.items.length,
+                fileType: listResult.fileType,
+              })
+            : t("apps.chats.toolCalls.foundFileTypePlural", {
+                count: listResult.items.length,
+                fileType: listResult.fileType,
+              })}:\n${JSON.stringify(listResult.items, null, 2)}`
+        : t("apps.chats.toolCalls.noFileTypeFound", {
+            fileType: listResult.fileType,
+            path: listResult.root,
+          });
+    addToolResult({ tool: toolName, toolCallId, output: resultMessage });
+  } catch (error) {
+    console.error("list error:", error);
+    publishToolError({
+      toolName,
+      toolCallId,
+      addToolResult,
+      errorText:
+        error instanceof Error ? error.message : t("apps.chats.toolCalls.failedToListItems"),
     });
   }
 };

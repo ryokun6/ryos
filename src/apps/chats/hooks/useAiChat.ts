@@ -24,11 +24,6 @@ import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
 import {
-  computeMatchScore,
-  deriveScoreThreshold,
-  normalizeSearchText,
-} from "../utils/searchScoring";
-import {
   getAssistantVisibleText,
   isChatsInForeground,
   showBackgroundedMessageNotification,
@@ -49,6 +44,7 @@ import { resolveToolErrorText } from "../utils/chatFileToolValidation";
 import { syncTextEditDocumentForPath } from "../utils/textEditDocumentSync";
 import {
   handleChatEditToolCall,
+  handleChatListToolCall,
   handleChatReadToolCall,
   handleChatWriteToolCall,
 } from "../utils/chatFileToolHandlers";
@@ -381,195 +377,61 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               limit?: number;
             };
 
-            if (!path) {
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: i18n.t("apps.chats.toolCalls.noPathProvided"),
-              });
-              result = "";
-              break;
-            }
-
-            console.log("[ToolCall] list:", { path, query, limit });
-
-            try {
-              // Route based on path
-              if (path === "/Music") {
-                // List iPod library
-                const ipodStore = useIpodStore.getState();
-                const library = ipodStore.tracks.map((track) => ({
-                  path: `/Music/${track.id}`,
-                  id: track.id,
-                  title: track.title,
-                  artist: track.artist,
-                }));
-
-                const resultMessage =
-                  library.length > 0
-                    ? `${library.length === 1 
-                        ? i18n.t("apps.chats.toolCalls.foundSongsInMusic", { count: library.length })
-                        : i18n.t("apps.chats.toolCalls.foundSongsInMusicPlural", { count: library.length })}:\n${JSON.stringify(library, null, 2)}`
-                    : i18n.t("apps.chats.toolCalls.musicLibraryEmpty");
-
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: resultMessage,
-                });
-                result = "";
-              } else if (path === "/Applets Store") {
-                // List shared applets from store
-                const normalizedKeyword = query
-                  ? normalizeSearchText(query.trim())
-                  : "";
-                const keywordTokens = normalizedKeyword
-                  ? normalizedKeyword.split(/\s+/).filter(Boolean)
-                  : [];
-                const hasKeyword = normalizedKeyword.length > 0;
-                const maxResults = limit
-                  ? Math.min(Math.max(limit, 1), 100)
-                  : 50;
-
-                const response = await abortableFetch(
-                  getApiUrl("/api/share-applet?list=true"),
-                  {
-                    timeout: 15000,
-                    retry: { maxAttempts: 2, initialDelayMs: 500 },
-                  }
-                );
-
-                const data = await response.json();
-                const allApplets: Array<{
-                  id: string;
-                  title?: string;
-                  name?: string;
-                  icon?: string;
-                  createdAt?: number;
-                  createdBy?: string;
-                }> = Array.isArray(data?.applets) ? data.applets : [];
-
-                const scoreThreshold = hasKeyword
-                  ? deriveScoreThreshold(normalizedKeyword.length)
-                  : 0;
-
-                const scoredApplets = allApplets.map((applet) => {
-                  const normalizedFields = [
-                    typeof applet.title === "string" ? normalizeSearchText(applet.title) : "",
-                    typeof applet.name === "string" ? normalizeSearchText(applet.name) : "",
-                    typeof applet.createdBy === "string" ? normalizeSearchText(applet.createdBy) : "",
-                  ].filter((value) => value.length > 0);
-
-                  const score = hasKeyword
-                    ? normalizedFields.reduce((best, field) => {
-                        const fieldScore = computeMatchScore(field, normalizedKeyword, keywordTokens);
-                        return fieldScore > best ? fieldScore : best;
-                      }, 0)
-                    : 1;
-
-                  return { applet, score };
-                });
-
-                const filteredApplets = hasKeyword
-                  ? scoredApplets.filter(({ score }) => score >= scoreThreshold)
-                  : scoredApplets;
-
-                filteredApplets.sort((a, b) => {
-                  if (hasKeyword && b.score !== a.score) return b.score - a.score;
-                  return (b.applet.createdAt ?? 0) - (a.applet.createdAt ?? 0);
-                });
-
-                const limitedApplets = filteredApplets.slice(0, maxResults).map(({ applet }) => ({
-                  path: `/Applets Store/${applet.id}`,
-                  id: applet.id,
-                  title: applet.title ?? applet.name ?? "Untitled",
-                  name: applet.name,
-                }));
-
-                const resultMessage = limitedApplets.length > 0
-                  ? `${limitedApplets.length === 1
-                      ? i18n.t("apps.chats.toolCalls.foundSharedApplets", { count: limitedApplets.length })
-                      : i18n.t("apps.chats.toolCalls.foundSharedAppletsPlural", { count: limitedApplets.length })}:\n${JSON.stringify(limitedApplets, null, 2)}`
-                  : hasKeyword
-                    ? i18n.t("apps.chats.toolCalls.noSharedAppletsMatched", { query })
-                    : i18n.t("apps.chats.toolCalls.noSharedAppletsAvailable");
-
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: resultMessage,
-                });
-                result = "";
-              } else if (path === "/Applications") {
-                // List installed applications
-                const apps = Object.entries(appRegistry)
-                  .filter(([id]) => id !== "finder")
-                  .map(([id, app]) => ({
-                    path: `/Applications/${id}`,
-                    name: app.name,
+            await handleChatListToolCall({
+              path,
+              query,
+              limit,
+              toolName: toolCall.toolName,
+              toolCallId: toolCall.toolCallId,
+              addToolResult,
+              t: i18n.t,
+              listDependencies: {
+                getMusicItems: () => {
+                  const ipodStore = useIpodStore.getState();
+                  return ipodStore.tracks.map((track) => ({
+                    path: `/Music/${track.id}`,
+                    id: track.id,
+                    title: track.title,
+                    artist: track.artist,
                   }));
-
-                const appsMessage = apps.length === 1
-                  ? i18n.t("apps.chats.toolCalls.foundApplicationsList", { count: apps.length })
-                  : i18n.t("apps.chats.toolCalls.foundApplicationsListPlural", { count: apps.length });
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: `${appsMessage}:\n${JSON.stringify(apps, null, 2)}`,
-                });
-                result = "";
-              } else if (path === "/Applets" || path === "/Documents") {
-                // List files from file system
-                const filesStore = useFilesStore.getState();
-                const allItems = Object.values(filesStore.items);
-
-                const files = allItems.filter(
-                  (item) =>
-                    item.status === "active" &&
-                    item.path.startsWith(`${path}/`) &&
-                    !item.isDirectory &&
-                    item.path !== `${path}/`,
-                );
-
-                const fileList = files.map((file) => ({
-                  path: file.path,
-                  name: file.name,
-                  type: file.type,
-                }));
-
-                const fileType = path === "/Applets" ? "applet" : "document";
-                const resultMessage = fileList.length > 0
-                  ? `${fileList.length === 1
-                      ? i18n.t("apps.chats.toolCalls.foundFileType", { count: fileList.length, fileType })
-                      : i18n.t("apps.chats.toolCalls.foundFileTypePlural", { count: fileList.length, fileType })}:\n${JSON.stringify(fileList, null, 2)}`
-                  : i18n.t("apps.chats.toolCalls.noFileTypeFound", { fileType, path });
-
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: resultMessage,
-                });
-                result = "";
-              } else {
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  state: "output-error",
-                  errorText: i18n.t("apps.chats.toolCalls.invalidPathForList", { path }),
-                });
-                result = "";
-              }
-            } catch (err) {
-              console.error("list error:", err);
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: err instanceof Error ? err.message : i18n.t("apps.chats.toolCalls.failedToListItems"),
-              });
-              result = "";
-            }
+                },
+                getSharedApplets: async () => {
+                  const response = await abortableFetch(
+                    getApiUrl("/api/share-applet?list=true"),
+                    {
+                      timeout: 15000,
+                      retry: { maxAttempts: 2, initialDelayMs: 500 },
+                    },
+                  );
+                  const data = await response.json();
+                  return Array.isArray(data?.applets) ? data.applets : [];
+                },
+                getApplications: () =>
+                  Object.entries(appRegistry)
+                    .filter(([id]) => id !== "finder")
+                    .map(([id, app]) => ({
+                      path: `/Applications/${id}`,
+                      name: app.name,
+                    })),
+                getFileItems: (root) => {
+                  const filesStore = useFilesStore.getState();
+                  return Object.values(filesStore.items)
+                    .filter(
+                      (item) =>
+                        item.status === "active" &&
+                        item.path.startsWith(`${root}/`) &&
+                        !item.isDirectory &&
+                        item.path !== `${root}/`,
+                    )
+                    .map((file) => ({
+                      path: file.path,
+                      name: file.name,
+                      type: file.type,
+                    }));
+                },
+              },
+            });
+            result = "";
             break;
           }
           case "open": {

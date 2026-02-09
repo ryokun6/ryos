@@ -2,6 +2,7 @@
 
 import {
   handleChatEditToolCall,
+  handleChatListToolCall,
   handleChatReadToolCall,
   handleChatWriteToolCall,
 } from "../src/apps/chats/utils/chatFileToolHandlers";
@@ -30,6 +31,15 @@ const createCollector = () => {
 
 const t = (key: string, params?: Record<string, unknown>): string =>
   `${key}${params ? `:${JSON.stringify(params)}` : ""}`;
+
+const listDependencies = {
+  getMusicItems: () => [{ path: "/Music/1", id: "1", title: "Song", artist: "Ryo" }],
+  getSharedApplets: async () => [{ id: "demo", title: "Demo Applet", createdAt: 1 }],
+  getApplications: () => [{ path: "/Applications/chats", name: "Chats" }],
+  getFileItems: (_root: "/Applets" | "/Documents") => [
+    { path: "/Documents/file.md", name: "file.md", type: "markdown" },
+  ],
+};
 
 export async function runChatFileToolHandlersTests(): Promise<{
   passed: number;
@@ -248,6 +258,58 @@ export async function runChatFileToolHandlersTests(): Promise<{
     assertEq(
       (collector.results[0] as { output?: unknown }).output,
       'apps.chats.toolCalls.fileContent:{"fileLabel":"apps.chats.toolCalls.document","fileName":"file.md","charCount":4}\n\nbody',
+    );
+  });
+
+  console.log(section("List handler"));
+  await runTest("emits translated error when list operation fails", async () => {
+    const collector = createCollector();
+    await handleChatListToolCall({
+      path: "/bad",
+      query: "x",
+      limit: 5,
+      listDependencies,
+      toolName: "list",
+      toolCallId: "tc-9",
+      addToolResult: collector.addToolResult,
+      t,
+      executeListOperation: async () => ({
+        ok: false,
+        error: {
+          errorKey: "apps.chats.toolCalls.invalidPathForList",
+          errorParams: { path: "/bad" },
+        },
+      }),
+    });
+
+    assertEq(collector.results.length, 1);
+    assertEq((collector.results[0] as { state?: string }).state, "output-error");
+  });
+
+  await runTest("formats shared applet list payload on success", async () => {
+    const collector = createCollector();
+    await handleChatListToolCall({
+      path: "/Applets Store",
+      query: "demo",
+      limit: 3,
+      listDependencies,
+      toolName: "list",
+      toolCallId: "tc-10",
+      addToolResult: collector.addToolResult,
+      t,
+      executeListOperation: async () => ({
+        ok: true,
+        target: "shared-applets",
+        hasKeyword: true,
+        query: "demo",
+        items: [{ path: "/Applets Store/demo", id: "demo", title: "Demo Applet" }],
+      }),
+    });
+
+    assertEq(collector.results.length, 1);
+    assertEq(
+      (collector.results[0] as { output?: unknown }).output,
+      'apps.chats.toolCalls.foundSharedApplets:{"count":1}:\n[\n  {\n    "path": "/Applets Store/demo",\n    "id": "demo",\n    "title": "Demo Applet"\n  }\n]',
     );
   });
 
