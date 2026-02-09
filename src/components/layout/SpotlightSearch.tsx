@@ -149,10 +149,8 @@ export function SpotlightSearch() {
   const containerStyles = (() => {
     if (currentTheme === "macosx") {
       return {
-        background: "rgba(248, 248, 248, 0.85)",
+        background: "rgba(248, 248, 248, 0.97)",
         backgroundImage: "var(--os-pinstripe-menubar)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
         borderRadius: "6px",
         boxShadow:
           "0 6px 20px rgba(0, 0, 0, 0.28), 0 0 0 0.5px rgba(0, 0, 0, 0.2)",
