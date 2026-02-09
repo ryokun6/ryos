@@ -2009,3 +2009,54 @@ export const fetchBulkMessagesPayload = async (
   }
   return result;
 };
+
+export const chatsStoreAuthHelpers = {
+  buildPostLogoutState,
+  checkAndRefreshTokenFlow,
+  clearChatRecoveryStorage,
+  notifyServerOnLogout,
+  refreshAuthTokenForUser,
+  runCheckHasPasswordFlow,
+  runCreateUserFlow,
+  runSetPasswordFlow,
+  schedulePasswordStatusCheck,
+  shouldCheckPasswordStatus,
+  trackLogoutAnalytics,
+} as const;
+
+export const chatsStorePersistenceHelpers = {
+  createChatsOnRehydrateStorage,
+  ensureRecoveryKeysAreSet,
+  getAuthTokenFromRecovery,
+  getTokenRefreshTime,
+  getUsernameFromRecovery,
+  migrateChatsPersistedState,
+  saveAuthTokenToRecovery,
+  saveTokenRefreshTime,
+  saveUsernameToRecovery,
+  TOKEN_REFRESH_THRESHOLD,
+} as const;
+
+export const chatsStoreRoomHelpers = {
+  buildPersistedRoomMessages,
+  clearRoomMessagesInMap,
+  clearUnreadCount,
+  fetchBulkMessagesPayload,
+  fetchRoomMessagesPayload,
+  fetchRoomsPayload,
+  incrementUnreadCount,
+  logIfNetworkResultError,
+  mergeFetchedBulkMessages,
+  mergeFetchedMessagesForRoom,
+  mergeIncomingRoomMessageInMap,
+  prepareRoomsForSet,
+  removeRoomMessageFromMap,
+  resolveNextFontSize,
+  sanitizeMessageRenderLimit,
+  runCreateRoomFlow,
+  runDeleteRoomFlow,
+  runSendMessageFlow,
+  setCurrentRoomMessagesInMap,
+  syncPresenceOnRoomSwitch,
+  toggleBoolean,
+} as const;

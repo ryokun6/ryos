@@ -7,49 +7,61 @@ import {
 } from "@/types/chat";
 import i18n from "@/lib/i18n";
 import {
+  chatsStoreAuthHelpers,
+  chatsStorePersistenceHelpers,
+  chatsStoreRoomHelpers,
+} from "./chats/authFlows";
+
+const {
   buildPostLogoutState,
-  buildPersistedRoomMessages,
   checkAndRefreshTokenFlow,
   clearChatRecoveryStorage,
-  clearRoomMessagesInMap,
-  clearUnreadCount,
+  notifyServerOnLogout,
+  refreshAuthTokenForUser,
+  runCheckHasPasswordFlow,
+  runCreateUserFlow,
+  runSetPasswordFlow,
+  schedulePasswordStatusCheck,
+  shouldCheckPasswordStatus,
+  trackLogoutAnalytics,
+} = chatsStoreAuthHelpers;
+
+const {
   createChatsOnRehydrateStorage,
   ensureRecoveryKeysAreSet,
-  fetchBulkMessagesPayload,
-  fetchRoomMessagesPayload,
-  fetchRoomsPayload,
   getAuthTokenFromRecovery,
   getTokenRefreshTime,
   getUsernameFromRecovery,
+  migrateChatsPersistedState,
+  saveAuthTokenToRecovery,
+  saveTokenRefreshTime,
+  saveUsernameToRecovery,
+  TOKEN_REFRESH_THRESHOLD,
+} = chatsStorePersistenceHelpers;
+
+const {
+  buildPersistedRoomMessages,
+  clearRoomMessagesInMap,
+  clearUnreadCount,
+  fetchBulkMessagesPayload,
+  fetchRoomMessagesPayload,
+  fetchRoomsPayload,
   incrementUnreadCount,
   logIfNetworkResultError,
   mergeFetchedBulkMessages,
   mergeFetchedMessagesForRoom,
   mergeIncomingRoomMessageInMap,
-  migrateChatsPersistedState,
-  notifyServerOnLogout,
   prepareRoomsForSet,
-  refreshAuthTokenForUser,
   removeRoomMessageFromMap,
   resolveNextFontSize,
-  runCheckHasPasswordFlow,
+  sanitizeMessageRenderLimit,
   runCreateRoomFlow,
-  runCreateUserFlow,
   runDeleteRoomFlow,
   runSendMessageFlow,
-  runSetPasswordFlow,
-  sanitizeMessageRenderLimit,
-  saveAuthTokenToRecovery,
-  saveTokenRefreshTime,
-  saveUsernameToRecovery,
-  schedulePasswordStatusCheck,
   setCurrentRoomMessagesInMap,
-  shouldCheckPasswordStatus,
   syncPresenceOnRoomSwitch,
-  TOKEN_REFRESH_THRESHOLD,
-  trackLogoutAnalytics,
   toggleBoolean,
-} from "./chats/authFlows";
+} = chatsStoreRoomHelpers;
 
 // Define the state structure
 export interface ChatsStoreState {
