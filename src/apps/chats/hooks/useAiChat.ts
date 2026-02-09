@@ -40,6 +40,7 @@ import {
   createChatListToolDependencies,
   createChatOpenToolDependencies,
 } from "../utils/chatToolDependencyResolvers";
+import { handleChatGenerateHtmlToolCall } from "../utils/chatGenerateHtmlToolHandler";
 import {
   handleChatEditToolCall,
   handleChatListToolCall,
@@ -334,24 +335,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           }
           case "generateHtml": {
             const { html } = toolCall.input as { html: string };
-
-            // Validate required parameter
-            if (!html) {
-              console.error(
-                "[ToolCall] generateHtml: Missing required 'html' parameter",
-              );
-              break;
-            }
-
-            console.log("[ToolCall] generateHtml:", {
-              htmlLength: html.length,
+            handleChatGenerateHtmlToolCall({
+              html,
+              toolName: toolCall.toolName,
+              toolCallId: toolCall.toolCallId,
+              addToolResult,
+              t: i18n.t,
             });
-
-            // HTML will be handled by ChatMessages via HtmlPreview
-            console.log(
-              "[ToolCall] Generated HTML:",
-              html.substring(0, 100) + "...",
-            );
+            result = "";
             break;
           }
           // === Unified VFS Tools ===

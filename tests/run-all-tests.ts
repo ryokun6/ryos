@@ -38,6 +38,7 @@ import { runChatSharedAppletReadOperationTests } from "./test-chat-shared-applet
 import { runChatFileOpenOperationTests } from "./test-chat-file-open-operation";
 import { runChatListOperationTests } from "./test-chat-list-operation";
 import { runChatAppHandlersTests } from "./test-chat-app-handlers";
+import { runChatGenerateHtmlToolHandlerTests } from "./test-chat-generate-html-tool-handler";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -130,6 +131,7 @@ async function runAllTests(): Promise<void> {
     { name: "chat-file-open-operation", run: runChatFileOpenOperationTests },
     { name: "chat-list-operation", run: runChatListOperationTests },
     { name: "chat-app-handlers", run: runChatAppHandlersTests },
+    { name: "chat-generate-html-tool-handler", run: runChatGenerateHtmlToolHandlerTests },
     { name: "pusher-client", run: runPusherClientRefcountTests },
     { name: "pusher-constructor-wiring", run: runPusherClientConstructorWiringTests },
     { name: "chat-broadcast-wiring", run: runChatBroadcastWiringTests },
