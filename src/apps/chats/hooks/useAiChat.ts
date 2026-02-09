@@ -48,21 +48,12 @@ import {
   handleChatWriteToolCall,
 } from "../utils/chatFileToolHandlers";
 import {
-  handleLaunchApp,
+  executeToolHandler,
   handleCloseApp,
-  handleSettings,
-  handleIpodControl,
-  handleKaraokeControl,
-  handleStickiesControl,
-  handleInfiniteMacControl,
+  handleLaunchApp,
   type ToolContext,
-  type LaunchAppInput,
   type CloseAppInput,
-  type SettingsInput,
-  type IpodControlInput,
-  type KaraokeControlInput,
-  type StickiesControlInput,
-  type InfiniteMacControlInput,
+  type LaunchAppInput,
 } from "../tools";
 
 /**
@@ -343,21 +334,20 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             );
             break;
           }
-          case "ipodControl": {
-            await handleIpodControl(
-              toolCall.input as IpodControlInput,
+          case "ipodControl":
+          case "karaokeControl":
+          case "settings":
+          case "stickiesControl":
+          case "infiniteMacControl": {
+            const wasExecuted = await executeToolHandler(
+              toolCall.toolName,
+              toolCall.input,
               toolCall.toolCallId,
-              toolContext
+              toolContext,
             );
-            result = ""; // Handler manages its own result
-            break;
-          }
-          case "karaokeControl": {
-            await handleKaraokeControl(
-              toolCall.input as KaraokeControlInput,
-              toolCall.toolCallId,
-              toolContext
-            );
+            if (!wasExecuted) {
+              console.warn(`[ToolCall] No handler registered for ${toolCall.toolName}`);
+            }
             result = ""; // Handler manages its own result
             break;
           }
@@ -469,33 +459,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               syncTextEdit: syncTextEditDocumentForPath,
             });
             result = "";
-            break;
-          }
-          case "settings": {
-            handleSettings(
-              toolCall.input as SettingsInput,
-              toolCall.toolCallId,
-              toolContext
-            );
-            result = ""; // Handler manages its own result
-            break;
-          }
-          case "stickiesControl": {
-            handleStickiesControl(
-              toolCall.input as StickiesControlInput,
-              toolCall.toolCallId,
-              toolContext
-            );
-            result = ""; // Handler manages its own result
-            break;
-          }
-          case "infiniteMacControl": {
-            await handleInfiniteMacControl(
-              toolCall.input as InfiniteMacControlInput,
-              toolCall.toolCallId,
-              toolContext
-            );
-            result = ""; // Handler manages its own result
             break;
           }
           default:
