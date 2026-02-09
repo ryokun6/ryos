@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
 import {
+  getEditTargetMessageBundle,
   sanitizeWriteMode,
   getEditReplacementFailureMessage,
   resolveEditTarget,
@@ -188,6 +189,34 @@ export async function runChatFileToolValidationTests(): Promise<{
       assertEq(result.errorKey, "apps.chats.toolCalls.invalidPathForEdit");
       assertEq(result.errorParams?.path, "/Music/song.mp3");
     }
+  });
+
+  await runTest("builds document and applet edit message bundles", async () => {
+    const documentBundle = getEditTargetMessageBundle({
+      target: "document",
+      path: "/Documents/file.md",
+    });
+    const appletBundle = getEditTargetMessageBundle({
+      target: "applet",
+      path: "/Applets/demo.html",
+    });
+
+    assertEq(
+      documentBundle.successKey,
+      "apps.chats.toolCalls.editedDocument",
+    );
+    assertEq(
+      appletBundle.successKey,
+      "apps.chats.toolCalls.editedApplet",
+    );
+    assertEq(
+      documentBundle.readFailed,
+      "Failed to read document content: /Documents/file.md",
+    );
+    assertEq(
+      appletBundle.readFailed,
+      "Failed to read applet content: /Applets/demo.html",
+    );
   });
 
   console.log(section("Edit replacement failure mapping"));

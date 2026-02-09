@@ -93,6 +93,39 @@ export const resolveEditTarget = (
   };
 };
 
+export const getEditTargetMessageBundle = ({
+  target,
+  path,
+}: {
+  target: EditTarget;
+  path: string;
+}): {
+  notFound: string;
+  missingContent: string;
+  readFailed: string;
+  successKey:
+    | "apps.chats.toolCalls.editedDocument"
+    | "apps.chats.toolCalls.editedApplet";
+} => {
+  if (target === "document") {
+    const notFoundMessage = `Document not found: ${path}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`;
+    return {
+      notFound: notFoundMessage,
+      missingContent: notFoundMessage,
+      readFailed: `Failed to read document content: ${path}`,
+      successKey: "apps.chats.toolCalls.editedDocument",
+    };
+  }
+
+  const notFoundMessage = `Applet not found: ${path}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`;
+  return {
+    notFound: notFoundMessage,
+    missingContent: notFoundMessage,
+    readFailed: `Failed to read applet content: ${path}`,
+    successKey: "apps.chats.toolCalls.editedApplet",
+  };
+};
+
 export const validateDocumentWriteInput = ({
   path,
   content,

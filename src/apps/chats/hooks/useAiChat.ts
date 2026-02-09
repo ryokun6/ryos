@@ -51,6 +51,7 @@ import {
   writeDocumentFileWithMode,
 } from "../utils/localFileContent";
 import {
+  getEditTargetMessageBundle,
   getEditReplacementFailureMessage,
   resolveEditTarget,
   validateDocumentWriteInput,
@@ -970,21 +971,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             try {
               const isDocumentTarget = editTarget.target === "document";
+              const messageBundle = getEditTargetMessageBundle({
+                target: editTarget.target,
+                path: normalizedPath,
+              });
               const replacement = await replaceAndPersistLocalFileContent({
                 path: normalizedPath,
                 storeName: isDocumentTarget ? STORES.DOCUMENTS : STORES.APPLETS,
                 oldString,
                 newString,
                 errors: {
-                  notFound: isDocumentTarget
-                    ? `Document not found: ${normalizedPath}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`
-                    : `Applet not found: ${normalizedPath}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`,
-                  missingContent: isDocumentTarget
-                    ? `Document not found: ${normalizedPath}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`
-                    : `Applet not found: ${normalizedPath}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`,
-                  readFailed: isDocumentTarget
-                    ? `Failed to read document content: ${normalizedPath}`
-                    : `Failed to read applet content: ${normalizedPath}`,
+                  notFound: messageBundle.notFound,
+                  missingContent: messageBundle.missingContent,
+                  readFailed: messageBundle.readFailed,
                 },
                 resolveRecordName: (fileItem) =>
                   isDocumentTarget ? fileItem.name : fileItem.uuid,
@@ -1009,12 +1008,9 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               addToolResult({
                 tool: toolCall.toolName,
                 toolCallId: toolCall.toolCallId,
-                output: i18n.t(
-                  isDocumentTarget
-                    ? "apps.chats.toolCalls.editedDocument"
-                    : "apps.chats.toolCalls.editedApplet",
-                  { path: normalizedPath },
-                ),
+                output: i18n.t(messageBundle.successKey, {
+                  path: normalizedPath,
+                }),
               });
               result = "";
             } catch (err) {
