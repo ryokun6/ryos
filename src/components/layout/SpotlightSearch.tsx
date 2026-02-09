@@ -380,11 +380,11 @@ export function SpotlightSearch() {
                       className="flex items-center flex-1"
                       style={{
                         background: "#FFFFFF",
-                        borderRadius: isMobile ? "10px" : "12px",
+                        borderRadius: isMobile ? "24px" : "12px",
                         border: "none",
                         boxShadow: "inset 0 1px 2px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.15), 0 1px 0 rgba(255,255,255,0.2)",
-                        padding: isMobile ? "4px 8px" : "3px 6px 3px 10px",
-                        minHeight: isMobile ? "30px" : "22px",
+                        padding: isMobile ? "2px 6px 2px 12px" : "3px 6px 3px 10px",
+                        minHeight: isMobile ? "28px" : "22px",
                       }}
                     >
                       <input
