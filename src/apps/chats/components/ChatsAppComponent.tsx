@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { AppProps } from "../../base/types";
+import { AppProps, ChatsInitialData } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { ChatsMenuBar } from "./ChatsMenuBar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -47,10 +47,11 @@ export function ChatsAppComponent({
   onClose,
   isForeground,
   skipInitialSound,
+  initialData,
   instanceId,
   onNavigateNext,
   onNavigatePrevious,
-}: AppProps) {
+}: AppProps<ChatsInitialData>) {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("chats", helpItems);
   const aiMessages = useChatsStore((state) => state.aiMessages);
@@ -162,6 +163,29 @@ export function ChatsAppComponent({
 
   // Send message dialog state
   const [prefilledUser, setPrefilledUser] = useState<string>("");
+
+  // Pre-fill (and optionally auto-send) chat input from initialData (e.g. from Spotlight search)
+  const prefillAppliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      initialData?.prefillMessage &&
+      initialData.prefillMessage !== prefillAppliedRef.current
+    ) {
+      prefillAppliedRef.current = initialData.prefillMessage;
+
+      if (initialData.autoSend) {
+        // Auto-send directly using handleDirectMessageSubmit which takes the
+        // message as a parameter, avoiding the stale-closure race condition
+        // where handleAiSubmit would read the old (empty) input state.
+        handleDirectMessageSubmit(initialData.prefillMessage);
+      } else {
+        // Just pre-fill the input field
+        handleInputChange({
+          target: { value: initialData.prefillMessage },
+        } as React.ChangeEvent<HTMLInputElement>);
+      }
+    }
+  }, [initialData?.prefillMessage, initialData?.autoSend, handleInputChange, handleDirectMessageSubmit]);
 
   // Safety check: ensure rooms is an array before finding
   const currentRoom =

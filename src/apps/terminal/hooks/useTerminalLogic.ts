@@ -42,6 +42,7 @@ import type { AIChatMessage } from "@/types/chat";
 
 interface UseTerminalLogicOptions {
   isForeground?: boolean;
+  initialData?: { prefillCommand?: string };
 }
 
 // Helper function to detect user's operating system
@@ -262,6 +263,7 @@ export const cleanUrgentPrefix = (content: string): string => {
 
 export const useTerminalLogic = ({
   isForeground = true,
+  initialData,
 }: UseTerminalLogicOptions = {}) => {
   const translatedHelpItems = useTranslatedHelpItems(
     "terminal",
@@ -318,6 +320,20 @@ export const useTerminalLogic = ({
 
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
+  const prefillAppliedRef = useRef<string | null>(null);
+
+  // Pre-fill command from initialData (e.g. from Spotlight search)
+  useEffect(() => {
+    if (
+      initialData?.prefillCommand &&
+      initialData.prefillCommand !== prefillAppliedRef.current
+    ) {
+      prefillAppliedRef.current = initialData.prefillCommand;
+      setCurrentCommand(initialData.prefillCommand);
+      // Focus the input so user can immediately press Enter or edit
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+  }, [initialData?.prefillCommand]);
 
   const { currentPath, files, navigateToPath, saveFile, moveToTrash } =
     useFileSystem(storedPath);

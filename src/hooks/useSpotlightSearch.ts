@@ -4,6 +4,8 @@ import { appRegistry, getAppIconPath, getNonFinderApps } from "@/config/appRegis
 import type { AppId } from "@/config/appRegistry";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { useInternetExplorerStore, type Favorite } from "@/stores/useInternetExplorerStore";
+import { useVideoStore } from "@/stores/useVideoStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { getTranslatedAppName } from "@/utils/i18n";
 
@@ -14,6 +16,8 @@ export interface SpotlightResult {
     | "document"
     | "applet"
     | "music"
+    | "site"
+    | "video"
     | "setting"
     | "command"
     | "ai";
@@ -111,7 +115,20 @@ const SEARCHABLE_COMMANDS = [
 ];
 
 const MAX_RESULTS_PER_TYPE = 4;
-const MAX_TOTAL_RESULTS = 10;
+const MAX_TOTAL_RESULTS = 12;
+
+/** Flatten nested favorites tree into a flat list of non-folder bookmarks */
+function flattenFavorites(favorites: Favorite[]): Favorite[] {
+  const result: Favorite[] = [];
+  for (const fav of favorites) {
+    if (fav.isDirectory && fav.children) {
+      result.push(...flattenFavorites(fav.children));
+    } else if (fav.url) {
+      result.push(fav);
+    }
+  }
+  return result;
+}
 
 function matchesQuery(query: string, ...fields: (string | undefined)[]): boolean {
   const q = query.toLowerCase();
@@ -125,6 +142,8 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
   const launchApp = useLaunchApp();
   const fileItems = useFilesStore((state) => state.items);
   const tracks = useIpodStore((state) => state.tracks);
+  const favorites = useInternetExplorerStore((state) => state.favorites);
+  const videos = useVideoStore((state) => state.videos);
 
   return useMemo(() => {
     const trimmed = query.trim();
@@ -244,7 +263,53 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
       });
     results.push(...musicResults);
 
-    // 5. Settings
+    // 5. Sites (bookmarks)
+    const flatFavs = flattenFavorites(favorites);
+    const siteResults = flatFavs
+      .filter((fav) =>
+        matchesQuery(trimmed, fav.title, fav.url)
+      )
+      .slice(0, MAX_RESULTS_PER_TYPE)
+      .map((fav) => {
+        let hostname: string | undefined;
+        try {
+          hostname = fav.url ? new URL(fav.url).hostname.replace(/^www\./, "") : undefined;
+        } catch {
+          hostname = fav.url;
+        }
+        return {
+          id: `site-${fav.url}`,
+          type: "site" as const,
+          title: fav.title,
+          subtitle: hostname,
+          icon: getAppIconPath("internet-explorer"),
+          thumbnail: fav.favicon || undefined,
+          action: () =>
+            launchApp("internet-explorer", {
+              initialData: { url: fav.url, year: fav.year || "current" },
+            }),
+        };
+      });
+    results.push(...siteResults);
+
+    // 6. Videos
+    const videoResults = videos
+      .filter((video) =>
+        matchesQuery(trimmed, video.title, video.artist)
+      )
+      .slice(0, MAX_RESULTS_PER_TYPE)
+      .map((video) => ({
+        id: `video-${video.id}`,
+        type: "video" as const,
+        title: video.title,
+        subtitle: video.artist || undefined,
+        icon: getAppIconPath("videos"),
+        thumbnail: `https://i.ytimg.com/vi/${video.id}/default.jpg`,
+        action: () => launchApp("videos", { initialData: { videoId: video.id } }),
+      }));
+    results.push(...videoResults);
+
+    // 7. Settings
     const settingResults = SEARCHABLE_SETTINGS.filter((setting) =>
       matchesQuery(trimmed, t(setting.titleKey), ...setting.keywords)
     )
@@ -260,7 +325,7 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
       }));
     results.push(...settingResults);
 
-    // 6. Terminal Commands
+    // 8. Terminal Commands
     const cmdResults = SEARCHABLE_COMMANDS.filter((cmd) =>
       matchesQuery(trimmed, cmd.name, cmd.description, ...cmd.keywords)
     )
@@ -271,20 +336,20 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
         title: cmd.name,
         subtitle: cmd.description,
         icon: getAppIconPath("terminal"),
-        action: () => launchApp("terminal"),
+        action: () => launchApp("terminal", { initialData: { prefillCommand: cmd.name } }),
       }));
     results.push(...cmdResults);
 
-    // 7. AI Fallback — always present when there's a query
+    // 9. AI Fallback — always present when there's a query
     results.push({
       id: "ai-ask-ryo",
       type: "ai" as const,
-      title: `${t("spotlight.askRyo")}: ${trimmed}`,
+      title: `${t("spotlight.askRyo")} \u201C${trimmed}\u201D`,
       icon: getAppIconPath("chats"),
-      action: () => launchApp("chats"),
+      action: () => launchApp("chats", { initialData: { prefillMessage: trimmed, autoSend: true } }),
     });
 
     // Cap total
     return results.slice(0, MAX_TOTAL_RESULTS);
-  }, [query, t, launchApp, fileItems, tracks]);
+  }, [query, t, launchApp, fileItems, tracks, favorites, videos]);
 }

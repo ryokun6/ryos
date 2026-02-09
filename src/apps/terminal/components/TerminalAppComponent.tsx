@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { WindowFrame } from "@/components/layout/WindowFrame";
-import { AppProps } from "@/apps/base/types";
+import { AppProps, TerminalInitialData } from "@/apps/base/types";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { TerminalMenuBar } from "./TerminalMenuBar";
@@ -74,10 +74,11 @@ export function TerminalAppComponent({
   isWindowOpen,
   isForeground = true,
   skipInitialSound,
+  initialData,
   instanceId,
   onNavigateNext,
   onNavigatePrevious,
-}: AppProps) {
+}: AppProps<TerminalInitialData>) {
   const {
     translatedHelpItems,
     isHelpDialogOpen,
@@ -126,7 +127,7 @@ export function TerminalAppComponent({
     handleClearTerminal,
     isXpTheme,
     shouldApplyMarkdown,
-  } = useTerminalLogic({ isForeground });
+  } = useTerminalLogic({ isForeground, initialData });
 
   // Animation variants for terminal lines
   const lineVariants = {

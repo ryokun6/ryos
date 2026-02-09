@@ -108,6 +108,15 @@ export interface FinderInitialData {
   path?: string;
 }
 
+export interface TerminalInitialData {
+  prefillCommand?: string;
+}
+
+export interface ChatsInitialData {
+  prefillMessage?: string;
+  autoSend?: boolean;
+}
+
 // Union type for all possible app configurations
 export type AnyApp =
   | BaseApp<ControlPanelsInitialData>
@@ -117,6 +126,8 @@ export type AnyApp =
   | BaseApp<PaintInitialData>
   | BaseApp<VideosInitialData>
   | BaseApp<AppletViewerInitialData>
+  | BaseApp<TerminalInitialData>
+  | BaseApp<ChatsInitialData>
   | BaseApp<unknown>; // For apps without specific initialData
 
 // Type for the initialData that could be any of the specific types
@@ -129,6 +140,8 @@ export type AnyInitialData =
   | VideosInitialData
   | FinderInitialData
   | AppletViewerInitialData
+  | TerminalInitialData
+  | ChatsInitialData
   | unknown;
 
 // Theme-aware menu bar pattern:

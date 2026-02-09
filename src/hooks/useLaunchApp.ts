@@ -17,6 +17,9 @@ export const useLaunchApp = () => {
     (state) => state.bringInstanceToForeground
   );
   const restoreInstance = useAppStore((state) => state.restoreInstance);
+  const updateInstanceInitialData = useAppStore(
+    (state) => state.updateInstanceInitialData
+  );
 
   const launchApp = (appId: AppId, options?: LaunchAppOptions) => {
     console.log(`[useLaunchApp] Launch event received for ${appId}`, options);
@@ -143,6 +146,10 @@ export const useLaunchApp = () => {
             `[useLaunchApp] All instances of ${appId} were minimized, restored and bringing ${lastRestoredId} to foreground`
           );
           bringInstanceToForeground(lastRestoredId);
+          // Update initialData if provided (e.g. pre-fill commands from Spotlight)
+          if (initialData) {
+            updateInstanceInitialData(lastRestoredId, initialData);
+          }
           return lastRestoredId;
         }
       }
