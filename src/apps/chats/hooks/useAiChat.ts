@@ -309,11 +309,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         let result: string = "Tool executed successfully";
 
         switch (toolCall.toolName) {
-          case "aquarium": {
-            // Visual renders in the message bubble; nothing to do here.
-            result = "Aquarium displayed";
-            break;
-          }
+          case "aquarium":
           case "launchApp":
           case "closeApp":
           case "ipodControl":
