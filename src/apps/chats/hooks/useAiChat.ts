@@ -45,9 +45,8 @@ import {
 } from "../utils/chatRuntime";
 import { getSystemState } from "../utils/systemState";
 import {
-  attemptLocalFileReplacement,
+  replaceAndPersistLocalFileContent,
   type LocalFileReplacementAttempt,
-  persistUpdatedLocalFileContent,
   readLocalFileTextOrThrow,
   writeDocumentFileWithMode,
 } from "../utils/localFileContent";
@@ -969,7 +968,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             try {
               if (path.startsWith("/Documents/")) {
                 // Edit document - read directly from file system (independent of TextEdit instances)
-                const replacement = await attemptLocalFileReplacement({
+                const replacement = await replaceAndPersistLocalFileContent({
                   path,
                   storeName: STORES.DOCUMENTS,
                   oldString: old_string,
@@ -979,6 +978,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     missingContent: `Document not found: ${path}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`,
                     readFailed: `Failed to read document content: ${path}`,
                   },
+                  resolveRecordName: (fileItem) => fileItem.name,
                 });
 
                 if (!replacement.ok) {
@@ -987,14 +987,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   break;
                 }
 
-                const { fileItem, updatedContent } = replacement;
-
-                await persistUpdatedLocalFileContent({
-                  fileItem,
-                  storeName: STORES.DOCUMENTS,
-                  content: updatedContent,
-                  recordName: fileItem.name,
-                });
+                const { updatedContent } = replacement;
 
                 syncTextEditDocumentForPath({
                   path,
@@ -1012,7 +1005,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 result = "";
               } else if (path.startsWith("/Applets/")) {
                 // Edit applet HTML
-                const replacement = await attemptLocalFileReplacement({
+                const replacement = await replaceAndPersistLocalFileContent({
                   path,
                   storeName: STORES.APPLETS,
                   oldString: old_string,
@@ -1022,6 +1015,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                     missingContent: `Applet not found: ${path}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`,
                     readFailed: `Failed to read applet content: ${path}`,
                   },
+                  resolveRecordName: (fileItem) => fileItem.uuid,
                 });
 
                 if (!replacement.ok) {
@@ -1029,15 +1023,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   result = "";
                   break;
                 }
-
-                const { fileItem, updatedContent } = replacement;
-
-                await persistUpdatedLocalFileContent({
-                  fileItem,
-                  storeName: STORES.APPLETS,
-                  content: updatedContent,
-                  recordName: fileItem.uuid,
-                });
 
                 addToolResult({
                   tool: toolCall.toolName,

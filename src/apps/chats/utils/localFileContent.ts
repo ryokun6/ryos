@@ -161,6 +161,51 @@ export const attemptLocalFileReplacement = async ({
   };
 };
 
+export type PersistedLocalFileReplacementResult =
+  | { ok: true; fileItem: ActiveFileWithUuid; updatedContent: string }
+  | { ok: false; reason: "not_found" | "multiple_matches"; occurrences: number };
+
+export const replaceAndPersistLocalFileContent = async ({
+  path,
+  storeName,
+  oldString,
+  newString,
+  errors,
+  resolveRecordName,
+}: {
+  path: string;
+  storeName: LocalContentStore;
+  oldString: string;
+  newString: string;
+  errors: {
+    notFound: string;
+    missingContent: string;
+    readFailed: string;
+  };
+  resolveRecordName: (fileItem: ActiveFileWithUuid) => string;
+}): Promise<PersistedLocalFileReplacementResult> => {
+  const replacement = await attemptLocalFileReplacement({
+    path,
+    storeName,
+    oldString,
+    newString,
+    errors,
+  });
+
+  if (!replacement.ok) {
+    return replacement;
+  }
+
+  await persistUpdatedLocalFileContent({
+    fileItem: replacement.fileItem,
+    storeName,
+    content: replacement.updatedContent,
+    recordName: resolveRecordName(replacement.fileItem),
+  });
+
+  return replacement;
+};
+
 export type WriteMode = "overwrite" | "append" | "prepend";
 
 export const mergeContentByWriteMode = ({

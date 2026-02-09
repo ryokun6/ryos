@@ -6,6 +6,7 @@ import {
   attemptLocalFileReplacement,
   mergeContentByWriteMode,
   persistUpdatedLocalFileContent,
+  replaceAndPersistLocalFileContent,
   replaceSingleOccurrence,
   readLocalFileTextOrThrow,
   readOptionalTextContentFromStore,
@@ -405,6 +406,111 @@ export async function runChatLocalFileContentTests(): Promise<{
         );
       },
     );
+  });
+
+  await runTest("replaceAndPersistLocalFileContent persists successful replacement", async () => {
+    let persistedRecordName = "";
+    let persistedContent = "";
+    let updateSize: number | undefined;
+    await withMockFileItems(
+      {
+        "/Documents/edit.md": {
+          path: "/Documents/edit.md",
+          name: "edit.md",
+          isDirectory: false,
+          status: "active",
+          uuid: "uuid-edit",
+        },
+      },
+      async () => {
+        await withMockDbGet(
+          async <T>() => ({ name: "edit.md", content: "replace me" } as T),
+          async () => {
+            await withMockDbPut(
+              async <T>(_storeName: string, item: T) => {
+                persistedRecordName = (item as { name: string }).name;
+                persistedContent = (item as { content: string }).content;
+              },
+              async () => {
+                await withMockUpdateItemMetadata(async (_path, updates) => {
+                  updateSize = updates.size;
+                }, async () => {
+                  const replacement = await replaceAndPersistLocalFileContent({
+                    path: "/Documents/edit.md",
+                    storeName: STORES.DOCUMENTS,
+                    oldString: "replace",
+                    newString: "updated",
+                    errors: {
+                      notFound: "nf",
+                      missingContent: "missing",
+                      readFailed: "rf",
+                    },
+                    resolveRecordName: (fileItem) => fileItem.name,
+                  });
+                  assertEq(replacement.ok, true);
+                  if (!replacement.ok) {
+                    throw new Error("Expected persisted replacement success");
+                  }
+                  assertEq(replacement.updatedContent, "updated me");
+                });
+              },
+            );
+          },
+        );
+      },
+    );
+
+    assertEq(persistedRecordName, "edit.md");
+    assertEq(persistedContent, "updated me");
+    assertEq(updateSize, new Blob(["updated me"]).size);
+  });
+
+  await runTest("replaceAndPersistLocalFileContent short-circuits on failed match", async () => {
+    let dbPutCalled = false;
+    await withMockFileItems(
+      {
+        "/Documents/edit.md": {
+          path: "/Documents/edit.md",
+          name: "edit.md",
+          isDirectory: false,
+          status: "active",
+          uuid: "uuid-edit",
+        },
+      },
+      async () => {
+        await withMockDbGet(
+          async <T>() => ({ name: "edit.md", content: "same same" } as T),
+          async () => {
+            await withMockDbPut(
+              async () => {
+                dbPutCalled = true;
+              },
+              async () => {
+                const replacement = await replaceAndPersistLocalFileContent({
+                  path: "/Documents/edit.md",
+                  storeName: STORES.DOCUMENTS,
+                  oldString: "same",
+                  newString: "diff",
+                  errors: {
+                    notFound: "nf",
+                    missingContent: "missing",
+                    readFailed: "rf",
+                  },
+                  resolveRecordName: (fileItem) => fileItem.name,
+                });
+                assertEq(replacement.ok, false);
+                if (replacement.ok) {
+                  throw new Error("Expected replacement failure");
+                }
+                assertEq(replacement.reason, "multiple_matches");
+              },
+            );
+          },
+        );
+      },
+    );
+
+    assertEq(dbPutCalled, false);
   });
 
   console.log(section("Write mode merge"));
