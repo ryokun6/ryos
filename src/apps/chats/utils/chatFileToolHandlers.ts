@@ -1,13 +1,21 @@
 import type { ToolResultPayload } from "../tools/types";
 import { executeChatFileEditOperation } from "./chatFileEditOperation";
+import { executeChatFileReadOperation } from "./chatFileReadOperation";
+import { executeChatSharedAppletReadOperation } from "./chatSharedAppletReadOperation";
 import { executeChatFileWriteOperation } from "./chatFileWriteOperation";
-import { resolveToolErrorText, validateFileEditInput } from "./chatFileToolValidation";
+import {
+  normalizeToolPath,
+  resolveToolErrorText,
+  validateFileEditInput,
+} from "./chatFileToolValidation";
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
 type AddToolResult = (result: ToolResultPayload) => void;
 
 type ExecuteWriteOperationFn = typeof executeChatFileWriteOperation;
 type ExecuteEditOperationFn = typeof executeChatFileEditOperation;
+type ExecuteReadOperationFn = typeof executeChatFileReadOperation;
+type ExecuteSharedAppletReadOperationFn = typeof executeChatSharedAppletReadOperation;
 type SyncTextEditFn = (options: {
   path: string;
   content: string;
@@ -187,6 +195,82 @@ export const handleChatEditToolCall = async ({
       addToolResult,
       errorText:
         error instanceof Error ? error.message : t("apps.chats.toolCalls.failedToEditFile"),
+    });
+  }
+};
+
+export const handleChatReadToolCall = async ({
+  path,
+  toolName,
+  toolCallId,
+  addToolResult,
+  t,
+  executeReadOperation = executeChatFileReadOperation,
+  executeSharedAppletReadOperation = executeChatSharedAppletReadOperation,
+}: BaseToolCallContext & {
+  path: unknown;
+  executeReadOperation?: ExecuteReadOperationFn;
+  executeSharedAppletReadOperation?: ExecuteSharedAppletReadOperationFn;
+}): Promise<void> => {
+  const normalizedPath = normalizeToolPath(path);
+  console.log("[ToolCall] read:", { path: normalizedPath });
+
+  try {
+    if (normalizedPath.startsWith("/Applets Store/")) {
+      const sharedAppletResult = await executeSharedAppletReadOperation({
+        path: normalizedPath,
+      });
+      if (!sharedAppletResult.ok) {
+        publishToolError({
+          toolName,
+          toolCallId,
+          addToolResult,
+          errorText: resolveToolErrorText(t, sharedAppletResult.error),
+        });
+        return;
+      }
+
+      addToolResult({
+        tool: toolName,
+        toolCallId,
+        output: JSON.stringify(sharedAppletResult.payload, null, 2),
+      });
+      return;
+    }
+
+    const localReadResult = await executeReadOperation({ path: normalizedPath });
+    if (!localReadResult.ok) {
+      publishToolError({
+        toolName,
+        toolCallId,
+        addToolResult,
+        errorText: resolveToolErrorText(t, localReadResult.error),
+      });
+      return;
+    }
+
+    const fileLabel =
+      localReadResult.target === "applet"
+        ? t("apps.chats.toolCalls.applet")
+        : t("apps.chats.toolCalls.document");
+    addToolResult({
+      tool: toolName,
+      toolCallId,
+      output:
+        t("apps.chats.toolCalls.fileContent", {
+          fileLabel,
+          fileName: localReadResult.fileName,
+          charCount: localReadResult.content.length,
+        }) + `\n\n${localReadResult.content}`,
+    });
+  } catch (error) {
+    console.error("read error:", error);
+    publishToolError({
+      toolName,
+      toolCallId,
+      addToolResult,
+      errorText:
+        error instanceof Error ? error.message : t("apps.chats.toolCalls.failedToReadFile"),
     });
   }
 };

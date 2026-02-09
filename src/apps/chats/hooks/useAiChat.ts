@@ -47,15 +47,12 @@ import { getSystemState } from "../utils/systemState";
 import {
   readLocalFileTextOrThrow,
 } from "../utils/localFileContent";
-import {
-  resolveToolErrorText,
-} from "../utils/chatFileToolValidation";
 import { syncTextEditDocumentForPath } from "../utils/textEditDocumentSync";
 import {
   handleChatEditToolCall,
+  handleChatReadToolCall,
   handleChatWriteToolCall,
 } from "../utils/chatFileToolHandlers";
-import { executeChatFileReadOperation } from "../utils/chatFileReadOperation";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -738,103 +735,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           case "read": {
             const { path } = toolCall.input as { path: string };
 
-            if (!path) {
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: i18n.t("apps.chats.toolCalls.noPathProvided"),
-              });
-              result = "";
-              break;
-            }
-
-            console.log("[ToolCall] read:", { path });
-
-            try {
-              if (path.startsWith("/Applets Store/")) {
-                // Fetch shared applet content
-                const shareId = path.replace("/Applets Store/", "");
-                const response = await abortableFetch(
-                  getApiUrl(`/api/share-applet?id=${encodeURIComponent(shareId)}`),
-                  {
-                    timeout: 15000,
-                    retry: { maxAttempts: 2, initialDelayMs: 500 },
-                  }
-                );
-
-                const data = await response.json();
-                const filesStore = useFilesStore.getState();
-                const installedEntry = Object.values(filesStore.items).find(
-                  (item) =>
-                    item.status === "active" &&
-                    typeof item.shareId === "string" &&
-                    item.shareId.toLowerCase() === shareId.toLowerCase(),
-                );
-
-                const payload = {
-                  id: shareId,
-                  title: data?.title ?? null,
-                  name: data?.name ?? null,
-                  icon: data?.icon ?? null,
-                  createdBy: data?.createdBy ?? null,
-                  installedPath: installedEntry?.path ?? null,
-                  content: typeof data?.content === "string" ? data.content : "",
-                };
-
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: JSON.stringify(payload, null, 2),
-                });
-                result = "";
-              } else if (path.startsWith("/Applets/") || path.startsWith("/Documents/")) {
-                const readResult = await executeChatFileReadOperation({ path });
-                if (!readResult.ok) {
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    state: "output-error",
-                    errorText: resolveToolErrorText(i18n.t, readResult.error),
-                  });
-                  result = "";
-                  break;
-                }
-
-                const fileLabel =
-                  readResult.target === "applet"
-                    ? i18n.t("apps.chats.toolCalls.applet")
-                    : i18n.t("apps.chats.toolCalls.document");
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output:
-                    i18n.t("apps.chats.toolCalls.fileContent", {
-                      fileLabel,
-                      fileName: readResult.fileName,
-                      charCount: readResult.content.length,
-                    }) + `\n\n${readResult.content}`,
-                });
-                result = "";
-              } else {
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  state: "output-error",
-                  errorText: i18n.t("apps.chats.toolCalls.invalidPathForRead", { path }),
-                });
-                result = "";
-              }
-            } catch (err) {
-              console.error("read error:", err);
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: err instanceof Error ? err.message : i18n.t("apps.chats.toolCalls.failedToReadFile"),
-              });
-              result = "";
-            }
+            await handleChatReadToolCall({
+              path,
+              toolName: toolCall.toolName,
+              toolCallId: toolCall.toolCallId,
+              addToolResult,
+              t: i18n.t,
+            });
+            result = "";
             break;
           }
           case "write": {

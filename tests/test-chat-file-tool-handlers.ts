@@ -2,6 +2,7 @@
 
 import {
   handleChatEditToolCall,
+  handleChatReadToolCall,
   handleChatWriteToolCall,
 } from "../src/apps/chats/utils/chatFileToolHandlers";
 import {
@@ -161,6 +162,93 @@ export async function runChatFileToolHandlersTests(): Promise<{
 
     assertEq(documentSyncCount, 1);
     assertEq(collector.results.length, 2);
+  });
+
+  console.log(section("Read handler"));
+  await runTest("emits error result when shared applet read fails", async () => {
+    const collector = createCollector();
+    await handleChatReadToolCall({
+      path: "/Applets Store/demo",
+      toolName: "read",
+      toolCallId: "tc-6",
+      addToolResult: collector.addToolResult,
+      t,
+      executeSharedAppletReadOperation: async () => ({
+        ok: false,
+        error: {
+          errorKey: "apps.chats.toolCalls.invalidPathForRead",
+          errorParams: { path: "/Applets Store/demo" },
+        },
+      }),
+    });
+
+    assertEq(collector.results.length, 1);
+    assertEq((collector.results[0] as { state?: string }).state, "output-error");
+  });
+
+  await runTest("returns JSON payload for shared applet read success", async () => {
+    const collector = createCollector();
+    await handleChatReadToolCall({
+      path: "/Applets Store/demo",
+      toolName: "read",
+      toolCallId: "tc-7",
+      addToolResult: collector.addToolResult,
+      t,
+      executeSharedAppletReadOperation: async () => ({
+        ok: true,
+        payload: {
+          id: "demo",
+          title: "Demo",
+          name: "Demo",
+          icon: null,
+          createdBy: "ryo",
+          installedPath: "/Applets/Demo",
+          content: "<html></html>",
+        },
+      }),
+    });
+
+    assertEq(collector.results.length, 1);
+    assertEq(
+      (collector.results[0] as { output?: unknown }).output,
+      JSON.stringify(
+        {
+          id: "demo",
+          title: "Demo",
+          name: "Demo",
+          icon: null,
+          createdBy: "ryo",
+          installedPath: "/Applets/Demo",
+          content: "<html></html>",
+        },
+        null,
+        2,
+      ),
+    );
+  });
+
+  await runTest("formats local file read content with translated label", async () => {
+    const collector = createCollector();
+    await handleChatReadToolCall({
+      path: "/Documents/file.md",
+      toolName: "read",
+      toolCallId: "tc-8",
+      addToolResult: collector.addToolResult,
+      t,
+      executeReadOperation: async () => ({
+        ok: true,
+        target: "document",
+        path: "/Documents/file.md",
+        fileName: "file.md",
+        content: "body",
+      }),
+    });
+
+    assertEq(collector.results.length, 1);
+    assertEq(
+      (collector.results[0] as { output?: unknown }).output,
+      'apps.chats.toolCalls.fileContent:{"fileLabel":"apps.chats.toolCalls.document","fileName":"file.md","charCount":4}\n\nbody',
+    );
   });
 
   return printSummary();
