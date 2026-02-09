@@ -997,6 +997,7 @@
 /* ── Spotlight Search panel: pinstripe background + prevent font-size overrides ── */
 :root[data-os-theme="macosx"] .spotlight-panel {
   background: var(--os-pinstripe-window) !important;
+  background-attachment: fixed !important;
 }
 :root[data-os-theme="macosx"] .spotlight-panel table,
 :root[data-os-theme="macosx"] .spotlight-panel tbody {

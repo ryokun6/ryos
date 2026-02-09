@@ -266,7 +266,7 @@ export function SpotlightSearch() {
     : { top: "28%", left: "50%" };
 
   // Mobile input sizing
-  const mobileInputPadding = "8px 10px";
+  const mobileInputPadding = "6px 10px";
   const mobileInputFontSize = "16px"; // also prevents iOS Safari zoom
 
   // Don't render anything until spotlight has been opened at least once
@@ -351,7 +351,7 @@ export function SpotlightSearch() {
                   <div
                     className="flex items-center gap-2.5"
                     style={{
-                      padding: isMobile ? "8px 8px" : "6px 8px 6px 12px",
+                      padding: isMobile ? "7px 8px" : "6px 8px 6px 12px",
                       background: "linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%)",
                       borderBottom: "1px solid rgba(0,0,0,0.15)",
                     }}
@@ -383,8 +383,8 @@ export function SpotlightSearch() {
                         borderRadius: isMobile ? "10px" : "12px",
                         border: "none",
                         boxShadow: "inset 0 1px 2px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.15), 0 1px 0 rgba(255,255,255,0.2)",
-                        padding: isMobile ? "6px 10px" : "3px 6px 3px 10px",
-                        minHeight: isMobile ? "36px" : "22px",
+                        padding: isMobile ? "4px 8px" : "3px 6px 3px 10px",
+                        minHeight: isMobile ? "30px" : "22px",
                       }}
                     >
                       <input
