@@ -41,6 +41,7 @@ import { runChatAppHandlersTests } from "./test-chat-app-handlers";
 import { runChatGenerateHtmlHandlerTests } from "./test-chat-generate-html-handler";
 import { runChatAquariumHandlerTests } from "./test-chat-aquarium-handler";
 import { runChatToolCallExecutorTests } from "./test-chat-tool-call-executor";
+import { runChatToolsRegistryTests } from "./test-chat-tools-registry";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -136,6 +137,7 @@ async function runAllTests(): Promise<void> {
     { name: "chat-generate-html-handler", run: runChatGenerateHtmlHandlerTests },
     { name: "chat-aquarium-handler", run: runChatAquariumHandlerTests },
     { name: "chat-tool-call-executor", run: runChatToolCallExecutorTests },
+    { name: "chat-tools-registry", run: runChatToolsRegistryTests },
     { name: "pusher-client", run: runPusherClientRefcountTests },
     { name: "pusher-constructor-wiring", run: runPusherClientConstructorWiringTests },
     { name: "chat-broadcast-wiring", run: runChatBroadcastWiringTests },
