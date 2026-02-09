@@ -137,6 +137,14 @@ const readErrorResponseBody = async (
   };
 };
 
+const readErrorMessage = async (
+  response: Response,
+  fallback: string
+): Promise<string> => {
+  const errorData = await readErrorResponseBody(response);
+  return errorData.error || fallback;
+};
+
 const warnedStoreIssues = new Set<string>();
 
 const warnChatsStoreOnce = (key: string, message: string): void => {
@@ -464,10 +472,9 @@ export const runCreateUserFlow = async ({
     });
 
     if (!response.ok) {
-      const errorData = await readErrorResponseBody(response);
       return {
         ok: false,
-        error: errorData.error || "Failed to create user",
+        error: await readErrorMessage(response, "Failed to create user"),
       };
     }
 
@@ -546,10 +553,9 @@ export const refreshAuthTokenForUser = async ({
   });
 
   if (!response.ok) {
-    const errorData = await readErrorResponseBody(response);
     return {
       ok: false,
-      error: errorData.error || "Failed to refresh token",
+      error: await readErrorMessage(response, "Failed to refresh token"),
     };
   }
 
@@ -701,10 +707,9 @@ const submitPassword = async ({
   });
 
   if (!response.ok) {
-    const errorData = await readErrorResponseBody(response);
     return {
       ok: false,
-      error: errorData.error || "Failed to set password",
+      error: await readErrorMessage(response, "Failed to set password"),
     };
   }
 
@@ -1679,10 +1684,9 @@ export const runCreateRoomFlow = async ({
     });
 
     if (!response.ok) {
-      const errorData = await readErrorResponseBody(response);
       return {
         ok: false,
-        error: errorData.error || "Failed to create room",
+        error: await readErrorMessage(response, "Failed to create room"),
       };
     }
 
@@ -1726,10 +1730,9 @@ export const runDeleteRoomFlow = async ({
     });
 
     if (!response.ok) {
-      const errorData = await readErrorResponseBody(response);
       return {
         ok: false,
-        error: errorData.error || "Failed to delete room",
+        error: await readErrorMessage(response, "Failed to delete room"),
       };
     }
 
@@ -1783,10 +1786,9 @@ export const runSendMessageFlow = async ({
 
     if (!response.ok) {
       removeMessageFromRoom(roomId, optimisticMessage.id);
-      const errorData = await readErrorResponseBody(response);
       return {
         ok: false,
-        error: errorData.error || "Failed to send message",
+        error: await readErrorMessage(response, "Failed to send message"),
       };
     }
 
@@ -1826,8 +1828,11 @@ export const syncPresenceOnRoomSwitch = async ({
     );
 
     if (!response.ok) {
-      const errorData = await readErrorResponseBody(response);
-      console.error("[ChatsStore] Error switching rooms:", errorData);
+      const errorMessage = await readErrorMessage(
+        response,
+        "Failed to switch rooms"
+      );
+      console.error("[ChatsStore] Error switching rooms:", errorMessage);
       return;
     }
 
