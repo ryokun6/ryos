@@ -34,6 +34,7 @@ import {
   isChatsInForeground,
   showBackgroundedMessageNotification,
 } from "../utils/messageNotifications";
+import { buildChatTranscript } from "../utils/chatTranscript";
 import {
   areMessageIdListsEqual,
   collectCompletedLineSegments,
@@ -1561,21 +1562,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     async (fileName: string) => {
       // Use messagesWithTimestamps from ref to get messages with proper timestamps
       const messagesForTranscript = currentSdkMessagesRef.current;
-      const transcript = messagesForTranscript
-        .map((msg: AIChatMessage) => {
-          const createdAt = msg.metadata?.createdAt;
-          const time = createdAt
-            ? new Date(createdAt).toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              })
-            : "";
-          const sender = msg.role === "user" ? username || "You" : "Ryo";
-          const content = getAssistantVisibleText(msg);
-          return `**${sender}** (${time}):\n${content}`;
-        })
-        .join("\n\n");
+      const transcript = buildChatTranscript({
+        messages: messagesForTranscript,
+        username,
+        getVisibleText: getAssistantVisibleText,
+      });
 
       const finalFileName = fileName.endsWith(".md")
         ? fileName
