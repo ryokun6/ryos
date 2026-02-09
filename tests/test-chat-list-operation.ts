@@ -76,6 +76,7 @@ export async function runChatListOperationTests(): Promise<{
     if (result.ok) {
       assertEq(result.target, "music");
       assertEq(result.items.length, 2);
+      assertEq(result.items[0]?.title, "Song A");
     }
   });
 
@@ -117,6 +118,26 @@ export async function runChatListOperationTests(): Promise<{
       assertEq(appletsResult.target, "files");
       assertEq(appletsResult.fileType, "applet");
       assertEq(appletsResult.items[0]?.name, "demo.html");
+    }
+  });
+
+  await runTest("sorts applications alphabetically for stable results", async () => {
+    const result = await executeChatListOperation({
+      path: "/Applications",
+      dependencies: {
+        ...baseDependencies,
+        getApplications: () => [
+          { path: "/Applications/videos", name: "Videos" },
+          { path: "/Applications/chats", name: "Chats" },
+        ],
+      },
+    });
+
+    assertEq(result.ok, true);
+    if (result.ok) {
+      assertEq(result.target, "applications");
+      assertEq(result.items[0]?.name, "Chats");
+      assertEq(result.items[1]?.name, "Videos");
     }
   });
 

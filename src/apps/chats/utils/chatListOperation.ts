@@ -138,7 +138,18 @@ const buildSharedAppletItems = ({
 
   filtered.sort((a, b) => {
     if (hasKeyword && b.score !== a.score) return b.score - a.score;
-    return (b.applet.createdAt ?? 0) - (a.applet.createdAt ?? 0);
+    const createdAtDelta = (b.applet.createdAt ?? 0) - (a.applet.createdAt ?? 0);
+    if (createdAtDelta !== 0) {
+      return createdAtDelta;
+    }
+
+    const aLabel = (a.applet.title ?? a.applet.name ?? a.applet.id).toLowerCase();
+    const bLabel = (b.applet.title ?? b.applet.name ?? b.applet.id).toLowerCase();
+    if (aLabel !== bLabel) {
+      return aLabel.localeCompare(bLabel);
+    }
+
+    return a.applet.id.localeCompare(b.applet.id);
   });
 
   return {
@@ -169,7 +180,14 @@ export const executeChatListOperation = async ({
   }
 
   if (normalizedPath === "/Music") {
-    return { ok: true, target: "music", items: dependencies.getMusicItems() };
+    const items = [...dependencies.getMusicItems()].sort((a, b) => {
+      const titleDelta = a.title.localeCompare(b.title);
+      if (titleDelta !== 0) {
+        return titleDelta;
+      }
+      return a.id.localeCompare(b.id);
+    });
+    return { ok: true, target: "music", items };
   }
 
   if (normalizedPath === "/Applets Store") {
@@ -191,21 +209,31 @@ export const executeChatListOperation = async ({
   }
 
   if (normalizedPath === "/Applications") {
+    const items = [...dependencies.getApplications()].sort((a, b) => {
+      const nameDelta = a.name.localeCompare(b.name);
+      if (nameDelta !== 0) {
+        return nameDelta;
+      }
+      return a.path.localeCompare(b.path);
+    });
     return {
       ok: true,
       target: "applications",
-      items: dependencies.getApplications(),
+      items,
     };
   }
 
   const listableRoot = resolveListableRoot(normalizedPath);
   if (listableRoot) {
+    const items = [...dependencies.getFileItems(listableRoot)].sort((a, b) =>
+      a.path.localeCompare(b.path),
+    );
     return {
       ok: true,
       target: "files",
       root: listableRoot,
       fileType: listableRoot === "/Applets" ? "applet" : "document",
-      items: dependencies.getFileItems(listableRoot),
+      items,
     };
   }
 
