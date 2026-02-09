@@ -122,6 +122,23 @@ const isAuthenticationErrorMessage = (message: string): boolean => {
   return AUTH_ERROR_MESSAGE_TOKENS.some((token) => normalized.includes(token));
 };
 
+const areMessageIdListsEqual = (
+  leftMessages: Array<{ id: string }>,
+  rightMessages: Array<{ id: string }>,
+): boolean => {
+  if (leftMessages.length !== rightMessages.length) {
+    return false;
+  }
+
+  for (let i = 0; i < leftMessages.length; i++) {
+    if (leftMessages[i]?.id !== rightMessages[i]?.id) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 type RateLimitErrorState = {
   isAuthenticated: boolean;
   count: number;
@@ -1497,12 +1514,11 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   useEffect(() => {
     // If aiMessages (from store) differs from the SDK state, update SDK.
     // This handles loading persisted messages.
-    // Avoid deep comparison issues by comparing lengths and last message ID/content
     if (
-      aiMessages.length !== currentSdkMessages.length ||
-      (aiMessages.length > 0 &&
-        aiMessages[aiMessages.length - 1].id !==
-          currentSdkMessages[currentSdkMessages.length - 1]?.id)
+      !areMessageIdListsEqual(
+        aiMessages,
+        currentSdkMessages as Array<{ id: string }>,
+      )
     ) {
       console.log("Syncing Zustand store messages to SDK.");
       setSdkMessages(aiMessages);
