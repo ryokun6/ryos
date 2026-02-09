@@ -74,5 +74,6 @@ export {
 } from "./identityState";
 export { parseRegisterUserResponse } from "./registrationResponse";
 export { fetchPasswordStatus, submitPassword } from "./passwordFlow";
+export { runCheckHasPasswordFlow, runSetPasswordFlow } from "./passwordActionFlows";
 export { logIfNetworkResultError } from "./errorLogging";
 export { runCreateUserFlow } from "./createUserFlow";

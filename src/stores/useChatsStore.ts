@@ -16,7 +16,6 @@ import {
   createChatsOnRehydrateStorage,
   ensureRecoveryKeysAreSet,
   fetchBulkMessagesPayload,
-  fetchPasswordStatus,
   fetchRoomMessagesPayload,
   fetchRoomsPayload,
   getAuthTokenFromRecovery,
@@ -33,6 +32,7 @@ import {
   refreshAuthTokenForUser,
   removeRoomMessageFromMap,
   resolveNextFontSize,
+  runCheckHasPasswordFlow,
   runCreateUserFlow,
   sanitizeMessageRenderLimit,
   saveAuthTokenToRecovery,
@@ -41,10 +41,10 @@ import {
   runCreateRoomFlow,
   runDeleteRoomFlow,
   runSendMessageFlow,
+  runSetPasswordFlow,
   schedulePasswordStatusCheck,
   setCurrentRoomMessagesInMap,
   shouldCheckPasswordStatus,
-  submitPassword,
   syncPresenceOnRoomSwitch,
   TOKEN_REFRESH_THRESHOLD,
   trackLogoutAnalytics,
@@ -253,79 +253,19 @@ export const useChatsStore = create<ChatsStoreState>()(
         setHasPassword: (hasPassword) => {
           set({ hasPassword });
         },
-        checkHasPassword: async () => {
-          const currentUsername = get().username;
-          const currentToken = get().authToken;
-
-          if (!currentUsername || !currentToken) {
-            console.log(
-              "[ChatsStore] checkHasPassword: No username or token, setting null"
-            );
-            set({ hasPassword: null });
-            return { ok: false, error: "Authentication required" };
-          }
-
-          console.log(
-            "[ChatsStore] checkHasPassword: Checking for user",
-            currentUsername
-          );
-          try {
-            const result = await fetchPasswordStatus({
-              username: currentUsername,
-              authToken: currentToken,
-            });
-
-            if (result.ok) {
-              console.log("[ChatsStore] checkHasPassword: Result", result);
-              set({ hasPassword: result.hasPassword });
-              return { ok: true };
-            } else {
-              console.log("[ChatsStore] checkHasPassword: Failed");
-              set({ hasPassword: null });
-              return { ok: false, error: result.error };
-            }
-          } catch (error) {
-            console.error(
-              "[ChatsStore] Error checking password status:",
-              error
-            );
-            set({ hasPassword: null });
-            return {
-              ok: false,
-              error: "Network error while checking password",
-            };
-          }
-        },
-        setPassword: async (password) => {
-          const currentUsername = get().username;
-          const currentToken = get().authToken;
-
-          if (!currentUsername || !currentToken) {
-            return { ok: false, error: "Authentication required" };
-          }
-
-          try {
-            const result = await submitPassword({
-              username: currentUsername,
-              authToken: currentToken,
-              password,
-            });
-
-            if (!result.ok) {
-              return {
-                ok: false,
-                error: result.error || "Failed to set password",
-              };
-            }
-
-            // Update local state to reflect password has been set
-            set({ hasPassword: true });
-            return { ok: true };
-          } catch (error) {
-            console.error("[ChatsStore] Error setting password:", error);
-            return { ok: false, error: "Network error while setting password" };
-          }
-        },
+        checkHasPassword: async () =>
+          runCheckHasPasswordFlow({
+            username: get().username,
+            authToken: get().authToken,
+            setHasPassword: (value) => set({ hasPassword: value }),
+          }),
+        setPassword: async (password) =>
+          runSetPasswordFlow({
+            username: get().username,
+            authToken: get().authToken,
+            password,
+            setHasPassword: (value) => set({ hasPassword: value }),
+          }),
         setRooms: (newRooms) => {
           // Ensure incoming data is an array
           if (!Array.isArray(newRooms)) {
