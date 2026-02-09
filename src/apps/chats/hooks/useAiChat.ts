@@ -1393,6 +1393,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       console.error("AI Chat Error:", err);
 
+      const loginToastAction = onPromptSetUsername
+        ? {
+            label: "Login",
+            onClick: onPromptSetUsername,
+          }
+        : undefined;
+
       // Helper function to handle authentication errors consistently
       const handleAuthError = (message?: string) => {
         console.error("Authentication error - clearing invalid token");
@@ -1405,12 +1412,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         toast.error("Login Required", {
           description: message || "Please login to continue chatting.",
           duration: 5000,
-          action: onPromptSetUsername
-            ? {
-                label: "Login",
-                onClick: onPromptSetUsername,
-              }
-            : undefined,
+          action: loginToastAction,
         });
 
         // Prompt for username
@@ -1455,12 +1457,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           description:
             "You've reached the message limit. Please login to continue.",
           duration: 5000,
-          action: onPromptSetUsername
-            ? {
-                label: "Login",
-                onClick: onPromptSetUsername,
-              }
-            : undefined,
+          action: loginToastAction,
         });
         return;
       }
