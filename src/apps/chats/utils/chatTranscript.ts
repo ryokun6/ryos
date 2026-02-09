@@ -35,6 +35,9 @@ export const buildChatTranscript = ({
       const sender = message.role === "user" ? username || "You" : "Ryo";
       const timestamp = formatTranscriptTimestamp(message.metadata?.createdAt);
       const content = getVisibleText(message);
-      return `**${sender}** (${timestamp}):\n${content}`;
+      const header = timestamp
+        ? `**${sender}** (${timestamp}):`
+        : `**${sender}**:`;
+      return `${header}\n${content}`;
     })
     .join("\n\n");

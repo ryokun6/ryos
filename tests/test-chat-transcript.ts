@@ -100,6 +100,30 @@ export async function runChatTranscriptTests(): Promise<{
     );
   });
 
+  await runTest("omits empty timestamp parentheses when message timestamp is missing", async () => {
+    const transcript = buildChatTranscript({
+      messages: [
+        asAiMessage({
+          id: "assistant-no-time",
+          role: "assistant",
+          parts: [],
+          metadata: {},
+        }),
+      ],
+      username: "alice",
+      getVisibleText: () => "No time content",
+    });
+
+    assert(
+      transcript.includes("**Ryo**:"),
+      "Expected sender header without timestamp parentheses",
+    );
+    assert(
+      !transcript.includes("()"),
+      "Did not expect empty timestamp parentheses in transcript",
+    );
+  });
+
   return printSummary();
 }
 
