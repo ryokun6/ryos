@@ -2,6 +2,7 @@
 
 import {
   getEditTargetMessageBundle,
+  normalizeToolPath,
   sanitizeWriteMode,
   getEditReplacementFailureMessage,
   resolveEditTarget,
@@ -110,6 +111,18 @@ export async function runChatFileToolValidationTests(): Promise<{
     }
   });
 
+  await runTest("trims path whitespace before write validation", async () => {
+    const result = validateDocumentWriteInput({
+      path: "   /Documents/trimmed.md  ",
+      content: "hello",
+      mode: "overwrite",
+    });
+    assertEq(result.ok, true);
+    if (result.ok) {
+      assertEq(result.fileName, "trimmed.md");
+    }
+  });
+
   await runTest("sanitizes invalid write mode to overwrite", async () => {
     assertEq(sanitizeWriteMode("append"), "append");
     assertEq(sanitizeWriteMode("prepend"), "prepend");
@@ -166,6 +179,18 @@ export async function runChatFileToolValidationTests(): Promise<{
       assertEq(result.path, "/Documents/file.md");
       assertEq(result.oldString, "old");
       assertEq(result.newString, "new");
+    }
+  });
+
+  await runTest("normalizes edit path by trimming surrounding whitespace", async () => {
+    const result = validateFileEditInput({
+      path: "  /Documents/file.md  ",
+      oldString: "old",
+      newString: "new",
+    });
+    assertEq(result.ok, true);
+    if (result.ok) {
+      assertEq(result.path, "/Documents/file.md");
     }
   });
 
@@ -241,6 +266,12 @@ export async function runChatFileToolValidationTests(): Promise<{
       "errorParams" in descriptor ? descriptor.errorParams?.count : undefined,
       3,
     );
+  });
+
+  await runTest("normalizeToolPath trims string inputs and rejects non-strings", async () => {
+    assertEq(normalizeToolPath("  /Documents/a.md "), "/Documents/a.md");
+    assertEq(normalizeToolPath(5), "");
+    assertEq(normalizeToolPath(null), "");
   });
 
   return printSummary();

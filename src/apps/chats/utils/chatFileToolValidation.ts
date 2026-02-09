@@ -22,6 +22,9 @@ export type WriteValidationSuccess = {
 
 export type WriteValidationResult = WriteValidationFailure | WriteValidationSuccess;
 
+export const normalizeToolPath = (path: unknown): string =>
+  typeof path === "string" ? path.trim() : "";
+
 const isWriteMode = (value: unknown): value is WriteMode =>
   value === "overwrite" || value === "append" || value === "prepend";
 
@@ -131,25 +134,26 @@ export const validateDocumentWriteInput = ({
   content,
   mode,
 }: {
-  path: string;
+  path: unknown;
   content: string;
   mode: unknown;
 }): WriteValidationResult => {
+  const normalizedPath = normalizeToolPath(path);
   const normalizedMode = sanitizeWriteMode(mode);
 
-  if (!path) {
+  if (!normalizedPath) {
     return { ok: false, errorKey: "apps.chats.toolCalls.noPathProvided" };
   }
 
-  if (!path.startsWith("/Documents/")) {
+  if (!normalizedPath.startsWith("/Documents/")) {
     return {
       ok: false,
       errorKey: "apps.chats.toolCalls.invalidPathForWrite",
-      errorParams: { path },
+      errorParams: { path: normalizedPath },
     };
   }
 
-  const fileName = path.split("/").pop() || "";
+  const fileName = normalizedPath.split("/").pop() || "";
   if (!fileName.endsWith(".md")) {
     return {
       ok: false,
@@ -170,11 +174,17 @@ export const validateFileEditInput = ({
   oldString,
   newString,
 }: {
-  path: string;
+  path: unknown;
   oldString: unknown;
   newString: unknown;
 }): EditValidationResult => {
-  if (!path || typeof oldString !== "string" || typeof newString !== "string") {
+  const normalizedPath = normalizeToolPath(path);
+
+  if (
+    !normalizedPath ||
+    typeof oldString !== "string" ||
+    typeof newString !== "string"
+  ) {
     return {
       ok: false,
       errorKey: "apps.chats.toolCalls.missingEditParameters",
@@ -183,7 +193,7 @@ export const validateFileEditInput = ({
 
   return {
     ok: true,
-    path,
+    path: normalizedPath,
     oldString,
     newString,
   };
