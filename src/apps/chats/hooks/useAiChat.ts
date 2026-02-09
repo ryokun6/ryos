@@ -51,6 +51,7 @@ import {
 } from "../utils/chatRuntime";
 import { TEXTEDIT_TIPTAP_EXTENSIONS } from "../utils/textEditSerialization";
 import { getSystemState } from "../utils/systemState";
+import { readLocalFileTextOrThrow } from "../utils/localFileContent";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -664,32 +665,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 result = "";
               } else if (path.startsWith("/Applets/")) {
                 // Open applet in viewer
-                const filesStore = useFilesStore.getState();
-                const fileItem = filesStore.items[path];
-
-                if (!fileItem || fileItem.status !== "active") {
-                  throw new Error(`Applet not found: ${path}`);
-                }
-
-                if (!fileItem.uuid) {
-                  throw new Error(`Applet missing content: ${path}`);
-                }
-
-                const contentData = await dbOperations.get<DocumentContent>(
+                const { fileItem, content } = await readLocalFileTextOrThrow(
+                  path,
                   STORES.APPLETS,
-                  fileItem.uuid,
+                  {
+                    notFound: `Applet not found: ${path}`,
+                    missingContent: `Applet missing content: ${path}`,
+                    readFailed: `Failed to read applet content: ${path}`,
+                  },
                 );
-
-                if (!contentData || !contentData.content) {
-                  throw new Error(`Failed to read applet content: ${path}`);
-                }
-
-                let content: string;
-                if (contentData.content instanceof Blob) {
-                  content = await contentData.content.text();
-                } else {
-                  content = contentData.content;
-                }
 
                 launchApp("applet-viewer", {
                   initialData: { path, content },
@@ -703,32 +687,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 result = "";
               } else if (path.startsWith("/Documents/")) {
                 // Open document in TextEdit
-                const filesStore = useFilesStore.getState();
-                const fileItem = filesStore.items[path];
-
-                if (!fileItem || fileItem.status !== "active") {
-                  throw new Error(`Document not found: ${path}`);
-                }
-
-                if (!fileItem.uuid) {
-                  throw new Error(`Document missing content: ${path}`);
-                }
-
-                const contentData = await dbOperations.get<DocumentContent>(
+                const { fileItem, content } = await readLocalFileTextOrThrow(
+                  path,
                   STORES.DOCUMENTS,
-                  fileItem.uuid,
+                  {
+                    notFound: `Document not found: ${path}`,
+                    missingContent: `Document missing content: ${path}`,
+                    readFailed: `Failed to read document content: ${path}`,
+                  },
                 );
-
-                if (!contentData || !contentData.content) {
-                  throw new Error(`Failed to read document content: ${path}`);
-                }
-
-                let content: string;
-                if (contentData.content instanceof Blob) {
-                  content = await contentData.content.text();
-                } else {
-                  content = contentData.content;
-                }
 
                 // Pass initialData directly to launchApp (consistent with Terminal/Finder approach)
                 // TextEdit will handle markdown-to-HTML conversion internally
@@ -820,32 +787,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               } else if (path.startsWith("/Applets/") || path.startsWith("/Documents/")) {
                 // Read local file content
                 const isApplet = path.startsWith("/Applets/");
-                const filesStore = useFilesStore.getState();
-                const fileItem = filesStore.items[path];
-
-                if (!fileItem || fileItem.status !== "active") {
-                  throw new Error(`File not found: ${path}`);
-                }
-
-                if (!fileItem.uuid) {
-                  throw new Error(`File missing content: ${path}`);
-                }
-
                 const storeName = isApplet ? STORES.APPLETS : STORES.DOCUMENTS;
-                const contentData = await dbOperations.get<DocumentContent>(storeName, fileItem.uuid);
-
-                if (!contentData || contentData.content == null) {
-                  throw new Error(`Failed to read file content: ${path}`);
-                }
-
-                let content: string;
-                if (typeof contentData.content === "string") {
-                  content = contentData.content;
-                } else if (contentData.content instanceof Blob) {
-                  content = await contentData.content.text();
-                } else {
-                  throw new Error("Unsupported content type");
-                }
+                const { fileItem, content } = await readLocalFileTextOrThrow(
+                  path,
+                  storeName,
+                  {
+                    notFound: `File not found: ${path}`,
+                    missingContent: `File missing content: ${path}`,
+                    readFailed: `Failed to read file content: ${path}`,
+                  },
+                );
 
                 const fileLabel = isApplet ? i18n.t("apps.chats.toolCalls.applet") : i18n.t("apps.chats.toolCalls.document");
                 addToolResult({
@@ -1071,21 +1022,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               if (path.startsWith("/Documents/")) {
                 // Edit document - read directly from file system (independent of TextEdit instances)
                 const filesStore = useFilesStore.getState();
-                const fileItem = filesStore.items[path];
-
-                if (!fileItem || fileItem.status !== "active" || !fileItem.uuid) {
-                  throw new Error(`Document not found: ${path}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`);
-                }
-
-                // Read existing content from IndexedDB
-                const contentData = await dbOperations.get<DocumentContent>(STORES.DOCUMENTS, fileItem.uuid);
-                if (!contentData?.content) {
-                  throw new Error(`Failed to read document content: ${path}`);
-                }
-
-                const existingContent = typeof contentData.content === "string"
-                  ? contentData.content
-                  : await contentData.content.text();
+                const { fileItem, content: existingContent } =
+                  await readLocalFileTextOrThrow(path, STORES.DOCUMENTS, {
+                    notFound: `Document not found: ${path}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`,
+                    missingContent: `Document not found: ${path}. Use write tool to create new documents, or list({ path: "/Documents" }) to see available files.`,
+                    readFailed: `Failed to read document content: ${path}`,
+                  });
 
                 // Normalize existing content
                 const normalizedExisting = existingContent.replace(/\r\n?/g, "\n");
@@ -1158,20 +1100,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               } else if (path.startsWith("/Applets/")) {
                 // Edit applet HTML
                 const filesStore = useFilesStore.getState();
-                const fileItem = filesStore.items[path];
-
-                if (!fileItem || fileItem.status !== "active" || !fileItem.uuid) {
-                  throw new Error(`Applet not found: ${path}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`);
-                }
-
-                const contentData = await dbOperations.get<DocumentContent>(STORES.APPLETS, fileItem.uuid);
-                if (!contentData?.content) {
-                  throw new Error(`Failed to read applet content: ${path}`);
-                }
-
-                const existingContent = typeof contentData.content === "string"
-                  ? contentData.content
-                  : await contentData.content.text();
+                const { fileItem, content: existingContent } =
+                  await readLocalFileTextOrThrow(path, STORES.APPLETS, {
+                    notFound: `Applet not found: ${path}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`,
+                    missingContent: `Applet not found: ${path}. Use generateHtml tool to create new applets, or list({ path: "/Applets" }) to see available files.`,
+                    readFailed: `Failed to read applet content: ${path}`,
+                  });
 
                 // Normalize existing content
                 const normalizedExisting = existingContent.replace(/\r\n?/g, "\n");
