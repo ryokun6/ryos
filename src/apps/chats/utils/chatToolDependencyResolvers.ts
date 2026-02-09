@@ -10,7 +10,9 @@ import type { LaunchAppOptions } from "@/hooks/useLaunchApp";
 import type { ChatListOperationDependencies } from "./chatListOperation";
 import type { ChatOpenToolDependencies } from "./chatFileToolHandlers";
 
-export const createChatListToolDependencies = (): ChatListOperationDependencies => ({
+type PartialListDependencies = Partial<ChatListOperationDependencies>;
+
+const defaultListDependencies: ChatListOperationDependencies = {
   getMusicItems: () => {
     const ipodStore = useIpodStore.getState();
     return ipodStore.tracks.map((track) => ({
@@ -51,39 +53,58 @@ export const createChatListToolDependencies = (): ChatListOperationDependencies 
         type: file.type,
       }));
   },
+};
+
+export const createChatListToolDependencies = (
+  overrides: PartialListDependencies = {},
+): ChatListOperationDependencies => ({
+  getMusicItems: overrides.getMusicItems ?? defaultListDependencies.getMusicItems,
+  getSharedApplets:
+    overrides.getSharedApplets ?? defaultListDependencies.getSharedApplets,
+  getApplications:
+    overrides.getApplications ?? defaultListDependencies.getApplications,
+  getFileItems: overrides.getFileItems ?? defaultListDependencies.getFileItems,
 });
 
 export const createChatOpenToolDependencies = ({
   launchApp,
+  playMusicTrack,
+  resolveApplicationName,
 }: {
   launchApp: (appId: AppId, options?: LaunchAppOptions) => string;
+  playMusicTrack?: ChatOpenToolDependencies["playMusicTrack"];
+  resolveApplicationName?: ChatOpenToolDependencies["resolveApplicationName"];
 }): ChatOpenToolDependencies => ({
   launchApp: (appId, options) => {
     launchApp(appId as AppId, options as LaunchAppOptions);
   },
-  resolveApplicationName: (appId) => {
-    const typedAppId = appId as AppId;
-    return appRegistry[typedAppId] ? getTranslatedAppName(typedAppId) : null;
-  },
-  playMusicTrack: (songId) => {
-    const ipodState = useIpodStore.getState();
-    const track = ipodState.tracks.find((candidate) => candidate.id === songId);
-    if (!track) {
-      return { ok: false, error: `Song not found: ${songId}` };
-    }
+  resolveApplicationName:
+    resolveApplicationName ??
+    ((appId) => {
+      const typedAppId = appId as AppId;
+      return appRegistry[typedAppId] ? getTranslatedAppName(typedAppId) : null;
+    }),
+  playMusicTrack:
+    playMusicTrack ??
+    ((songId) => {
+      const ipodState = useIpodStore.getState();
+      const track = ipodState.tracks.find((candidate) => candidate.id === songId);
+      if (!track) {
+        return { ok: false, error: `Song not found: ${songId}` };
+      }
 
-    const appState = useAppStore.getState();
-    const ipodInstances = appState.getInstancesByAppId("ipod");
-    if (!ipodInstances.some((inst) => inst.isOpen)) {
-      launchApp("ipod");
-    }
+      const appState = useAppStore.getState();
+      const ipodInstances = appState.getInstancesByAppId("ipod");
+      if (!ipodInstances.some((inst) => inst.isOpen)) {
+        launchApp("ipod");
+      }
 
-    ipodState.setCurrentSongId(songId);
-    ipodState.setIsPlaying(true);
-    return {
-      ok: true,
-      title: track.title,
-      artist: track.artist,
-    };
-  },
+      ipodState.setCurrentSongId(songId);
+      ipodState.setIsPlaying(true);
+      return {
+        ok: true,
+        title: track.title,
+        artist: track.artist,
+      };
+    }),
 });
