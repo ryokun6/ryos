@@ -506,7 +506,7 @@ export function useTerminalSounds() {
     }, nextInterval);
 
     timeoutIds.push(timeoutId);
-  }, [getRandomNote]);
+  }, []);
 
   // Play occasional swelling pad chord
   const playSwellPad = useCallback(() => {
@@ -754,7 +754,7 @@ export function useTerminalSounds() {
   const mooSynthRef = useRef<Tone.Synth | null>(null);
 
   // Shared function to initialize Tone.js once
-  const initializeToneOnce = async () => {
+  const initializeToneOnce = useCallback(async () => {
     // If the underlying AudioContext has been closed (can happen on iOS when the
     // page is backgrounded for a while) we need to reset Tone with a fresh
     // context and dispose of any stale synth instances that belong to the old
@@ -812,7 +812,7 @@ export function useTerminalSounds() {
       }
     }
     return true;
-  };
+  }, [isInitialized]);
 
   const handleFirstInteraction = useCallback(() => {
     initializeToneOnce();
@@ -844,7 +844,7 @@ export function useTerminalSounds() {
         }
       }
     },
-    [isMuted, isInitialized]
+    [isMuted, initializeToneOnce]
   );
 
   // Play elevator music (atmospheric background sound)
@@ -888,7 +888,7 @@ export function useTerminalSounds() {
     }
   }, [
     isMuted,
-    isInitialized,
+    initializeToneOnce,
     setupAmbientEnvironment,
     setupFuturisticEnvironment,
     generateEnoSequence,
@@ -953,7 +953,7 @@ export function useTerminalSounds() {
         console.debug("Error playing ding sound:", error);
       }
     }
-  }, [isMuted, isInitialized]);
+  }, [isMuted, initializeToneOnce]);
 
   // Play moo sound for cowsay command
   const playMooSound = useCallback(async () => {
@@ -970,7 +970,7 @@ export function useTerminalSounds() {
         console.debug("Error playing moo sound:", error);
       }
     }
-  }, [isMuted, isInitialized]);
+  }, [isMuted, initializeToneOnce]);
 
   const toggleMute = useCallback(() => {
     setTerminalSoundsEnabled(!useAudioSettingsStore.getState().terminalSoundsEnabled);

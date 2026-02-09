@@ -230,7 +230,7 @@ export const Waveform3D: React.FC<Waveform3DProps> = ({ analyzer }) => {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [camera, highColor, isMobile, lowColor, material, mesh, renderer, scene]);
+  }, [analyzerRef, camera, highColor, isMobile, lowColor, material, mesh, renderer, scene]);
 
   useEffect(() => {
     return () => {
