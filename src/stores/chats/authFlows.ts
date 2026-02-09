@@ -1356,11 +1356,14 @@ const normalizeApiTimestamp = (
   return Number.isFinite(parsedTimestamp) ? parsedTimestamp : 0;
 };
 
+const decodeMessageContent = (content: unknown): string =>
+  decodeHtmlEntities(String(content || ""));
+
 const normalizeApiMessage = (
   message: ApiChatMessagePayload
 ): ChatMessage => ({
   ...message,
-  content: decodeHtmlEntities(String(message.content || "")),
+  content: decodeMessageContent(message.content),
   timestamp: normalizeApiTimestamp(message.timestamp),
 });
 
@@ -1691,7 +1694,7 @@ export const mergeIncomingRoomMessageInMap = (
   const existingMessages = roomMessages[roomId] || [];
   const incoming: ChatMessage = {
     ...message,
-    content: decodeHtmlEntities(String(message.content || "")),
+    content: decodeMessageContent(message.content),
   };
   const mergedMessages = mergeIncomingRoomMessage(existingMessages, incoming);
   if (!mergedMessages) {
