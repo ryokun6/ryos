@@ -303,64 +303,19 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       };
 
       try {
-        // Default result message
-        let result: string = "Tool executed successfully";
-
-        switch (toolCall.toolName) {
-          case "aquarium":
-          case "generateHtml":
-          case "launchApp":
-          case "closeApp":
-          case "ipodControl":
-          case "karaokeControl":
-          case "settings":
-          case "stickiesControl":
-          case "infiniteMacControl":
-          case "list":
-          case "open":
-          case "read":
-          case "write":
-          case "edit": {
-            const wasExecuted = await executeToolHandler(
-              toolCall.toolName,
-              toolCall.input,
-              toolCall.toolCallId,
-              toolContext,
-            );
-            if (!wasExecuted) {
-              console.warn(`[ToolCall] No handler registered for ${toolCall.toolName}`);
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: i18n.t("apps.chats.toolCalls.unknownError"),
-              });
-            }
-            result = ""; // Handler manages its own result
-            break;
-          }
-          default:
-            console.warn("Unhandled tool call:", toolCall.toolName);
-            addToolResult({
-              tool: toolCall.toolName,
-              toolCallId: toolCall.toolCallId,
-              state: "output-error",
-              errorText: i18n.t("apps.chats.toolCalls.unknownError"),
-            });
-            result = "";
-            break;
-        }
-
-        // Send the result back to the chat
-        if (result) {
-          console.log(
-            `[onToolCall] Adding result for ${toolCall.toolName}:`,
-            result,
-          );
+        const wasExecuted = await executeToolHandler(
+          toolCall.toolName,
+          toolCall.input,
+          toolCall.toolCallId,
+          toolContext,
+        );
+        if (!wasExecuted) {
+          console.warn("Unhandled tool call:", toolCall.toolName);
           addToolResult({
             tool: toolCall.toolName,
             toolCallId: toolCall.toolCallId,
-            output: result,
+            state: "output-error",
+            errorText: i18n.t("apps.chats.toolCalls.unknownError"),
           });
         }
       } catch (err) {
