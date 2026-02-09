@@ -1718,6 +1718,9 @@ export const clearUnreadCount = (
   unreadCounts: Record<string, number>,
   roomId: string
 ): Record<string, number> => {
+  if (!(roomId in unreadCounts)) {
+    return unreadCounts;
+  }
   const { [roomId]: _removed, ...rest } = unreadCounts;
   return rest;
 };
