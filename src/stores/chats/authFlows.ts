@@ -6,10 +6,10 @@ import { decodeHtmlEntities } from "@/utils/html";
 import { getApiUrl } from "@/utils/platform";
 
 const PASSWORD_CHECK_DELAY_MS = 100;
-export const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
-export const AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
+const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
+const AUTH_TOKEN_RECOVERY_KEY = "_auth_recovery_key_";
 export const TOKEN_REFRESH_THRESHOLD = 83 * 24 * 60 * 60 * 1000;
-export const TOKEN_LAST_REFRESH_KEY = "_token_refresh_time_";
+const TOKEN_LAST_REFRESH_KEY = "_token_refresh_time_";
 
 const encode = (value: string): string => {
   return btoa(value.split("").reverse().join(""));
@@ -85,12 +85,12 @@ export const ensureRecoveryKeysAreSet = (
   }
 };
 
-export type ChatRetryConfig = {
+type ChatRetryConfig = {
   maxAttempts: number;
   initialDelayMs: number;
 };
 
-export type ChatRequestOptions = RequestInit & {
+type ChatRequestOptions = RequestInit & {
   timeout?: number;
   throwOnHttpError?: boolean;
   retry?: ChatRetryConfig;
@@ -101,7 +101,7 @@ const DEFAULT_CHAT_RETRY: ChatRetryConfig = {
   initialDelayMs: 250,
 };
 
-export const withChatRequestDefaults = (
+const withChatRequestDefaults = (
   options: ChatRequestOptions
 ): ChatRequestOptions => {
   const mergedRetry: ChatRetryConfig = {
@@ -117,11 +117,11 @@ export const withChatRequestDefaults = (
   };
 };
 
-export interface ErrorResponseBody {
+interface ErrorResponseBody {
   error: string;
 }
 
-export const readErrorResponseBody = async (
+const readErrorResponseBody = async (
   response: Response
 ): Promise<ErrorResponseBody> => {
   const fallbackError = `HTTP error! status: ${response.status}`;
@@ -139,7 +139,7 @@ export const readErrorResponseBody = async (
 
 const warnedStoreIssues = new Set<string>();
 
-export const warnChatsStoreOnce = (key: string, message: string): void => {
+const warnChatsStoreOnce = (key: string, message: string): void => {
   if (warnedStoreIssues.has(key)) {
     return;
   }
@@ -147,21 +147,21 @@ export const warnChatsStoreOnce = (key: string, message: string): void => {
   console.warn(message);
 };
 
-export const CHAT_API_UNAVAILABLE_COOLDOWN_MS = 10_000;
+const CHAT_API_UNAVAILABLE_COOLDOWN_MS = 10_000;
 const apiUnavailableUntil: Record<string, number> = {};
 
-export const isApiTemporarilyUnavailable = (key: string): boolean =>
+const isApiTemporarilyUnavailable = (key: string): boolean =>
   Date.now() < (apiUnavailableUntil[key] || 0);
 
-export const markApiTemporarilyUnavailable = (key: string): void => {
+const markApiTemporarilyUnavailable = (key: string): void => {
   apiUnavailableUntil[key] = Date.now() + CHAT_API_UNAVAILABLE_COOLDOWN_MS;
 };
 
-export const clearApiUnavailable = (key: string): void => {
+const clearApiUnavailable = (key: string): void => {
   delete apiUnavailableUntil[key];
 };
 
-export const readJsonBody = async <T>(
+const readJsonBody = async <T>(
   response: Response,
   context: string
 ): Promise<{ ok: true; data: T } | { ok: false; error: string }> => {
@@ -180,15 +180,15 @@ export const readJsonBody = async <T>(
   }
 };
 
-export type RefreshTokenResult = {
+type RefreshTokenResult = {
   ok: boolean;
   error?: string;
   token?: string;
 };
 
-export type RefreshTokenHandler = () => Promise<RefreshTokenResult>;
+type RefreshTokenHandler = () => Promise<RefreshTokenResult>;
 
-export const makeAuthenticatedRequest = async (
+const makeAuthenticatedRequest = async (
   url: string,
   options: RequestInit,
   refreshToken: RefreshTokenHandler
@@ -238,7 +238,7 @@ interface RefreshTokenRequestParams {
   oldToken: string;
 }
 
-export const refreshAuthTokenRequest = async ({
+const refreshAuthTokenRequest = async ({
   username,
   oldToken,
 }: RefreshTokenRequestParams): Promise<Response> =>
@@ -261,7 +261,7 @@ interface RegisterUserRequestParams {
   password: string;
 }
 
-export const registerUserRequest = async ({
+const registerUserRequest = async ({
   username,
   password,
 }: RegisterUserRequestParams): Promise<Response> =>
@@ -279,7 +279,7 @@ interface LogoutRequestParams {
   token: string;
 }
 
-export const logoutRequest = async ({
+const logoutRequest = async ({
   username,
   token,
 }: LogoutRequestParams): Promise<Response> =>
@@ -295,16 +295,16 @@ export const logoutRequest = async ({
     })
   );
 
-export const CHAT_USERNAME_PATTERN =
+const CHAT_USERNAME_PATTERN =
   /^[a-z](?:[a-z0-9]|[-_](?=[a-z0-9])){2,29}$/i;
-export const CHAT_PASSWORD_MIN_LENGTH = 8;
+const CHAT_PASSWORD_MIN_LENGTH = 8;
 
 interface ValidateCreateUserInputParams {
   username: string;
   password: string;
 }
 
-export const validateCreateUserInput = ({
+const validateCreateUserInput = ({
   username,
   password,
 }: ValidateCreateUserInputParams): string | null => {
@@ -342,7 +342,7 @@ interface RefreshTokenResponseData {
   token?: string;
 }
 
-export const parseRefreshTokenResponse = (
+const parseRefreshTokenResponse = (
   data: RefreshTokenResponseData
 ): { ok: true; token: string } | { ok: false; error: string } => {
   if (data.token) {
@@ -362,7 +362,7 @@ interface RegisterUserResponseData {
   token?: string;
 }
 
-export const parseRegisterUserResponse = (
+const parseRegisterUserResponse = (
   data: RegisterUserResponseData
 ):
   | { ok: true; username: string; token?: string }
@@ -386,7 +386,7 @@ interface ApplyRefreshedAuthTokenParams {
   saveTokenRefreshTime: (username: string) => void;
 }
 
-export const applyRefreshedAuthToken = ({
+const applyRefreshedAuthToken = ({
   username,
   token,
   setAuthToken,
@@ -408,7 +408,7 @@ interface ApplySuccessfulRegistrationParams {
   onCheckHasPassword: () => void;
 }
 
-export const applySuccessfulRegistration = ({
+const applySuccessfulRegistration = ({
   username,
   token,
   setUsername,
@@ -494,24 +494,24 @@ export const runCreateUserFlow = async ({
   }
 };
 
-export const getTokenAgeMs = (
+const getTokenAgeMs = (
   lastRefreshTime: number,
   now: number = Date.now()
 ): number => now - lastRefreshTime;
 
-export const getTokenAgeDays = (
+const getTokenAgeDays = (
   lastRefreshTime: number,
   now: number = Date.now()
 ): number =>
   Math.floor(getTokenAgeMs(lastRefreshTime, now) / (24 * 60 * 60 * 1000));
 
-export const isTokenRefreshDue = (
+const isTokenRefreshDue = (
   lastRefreshTime: number,
   refreshThresholdMs: number,
   now: number = Date.now()
 ): boolean => getTokenAgeMs(lastRefreshTime, now) > refreshThresholdMs;
 
-export const getDaysUntilTokenRefresh = (
+const getDaysUntilTokenRefresh = (
   lastRefreshTime: number,
   refreshThresholdMs: number,
   now: number = Date.now()
@@ -633,7 +633,7 @@ interface PasswordAuthContext {
   authToken: string;
 }
 
-export const checkPasswordStatusRequest = async ({
+const checkPasswordStatusRequest = async ({
   username,
   authToken,
 }: PasswordAuthContext): Promise<Response> =>
@@ -648,7 +648,7 @@ export const checkPasswordStatusRequest = async ({
     })
   );
 
-export const fetchPasswordStatus = async ({
+const fetchPasswordStatus = async ({
   username,
   authToken,
 }: PasswordAuthContext): Promise<
@@ -671,7 +671,7 @@ interface SetPasswordContext extends PasswordAuthContext {
   password: string;
 }
 
-export const setPasswordRequest = async ({
+const setPasswordRequest = async ({
   username,
   authToken,
   password,
@@ -689,7 +689,7 @@ export const setPasswordRequest = async ({
     })
   );
 
-export const submitPassword = async ({
+const submitPassword = async ({
   username,
   authToken,
   password,
@@ -1097,7 +1097,7 @@ const MATCH_WINDOW_MS = 10_000;
 const INCOMING_TEMP_MATCH_WINDOW_MS = 5_000;
 const NETWORK_ERROR_MESSAGE = "Network error. Please try again.";
 
-export interface ApiChatMessagePayload {
+interface ApiChatMessagePayload {
   id: string;
   roomId: string;
   username: string;
@@ -1105,7 +1105,7 @@ export interface ApiChatMessagePayload {
   timestamp: string | number;
 }
 
-export const normalizeApiMessage = (
+const normalizeApiMessage = (
   message: ApiChatMessagePayload
 ): ChatMessage => ({
   ...message,
@@ -1116,7 +1116,7 @@ export const normalizeApiMessage = (
       : message.timestamp,
 });
 
-export const normalizeApiMessages = (
+const normalizeApiMessages = (
   messages: ApiChatMessagePayload[]
 ): ChatMessage[] =>
   messages
@@ -1132,7 +1132,7 @@ export const logIfNetworkResultError = (
   }
 };
 
-export const fetchRoomsRequest = async (
+const fetchRoomsRequest = async (
   username: string | null
 ): Promise<Response> => {
   const queryParams = new URLSearchParams();
@@ -1152,7 +1152,7 @@ export const fetchRoomsRequest = async (
   );
 };
 
-export const fetchRoomMessagesRequest = async (
+const fetchRoomMessagesRequest = async (
   roomId: string
 ): Promise<Response> =>
   abortableFetch(
@@ -1162,7 +1162,7 @@ export const fetchRoomMessagesRequest = async (
     })
   );
 
-export const fetchBulkMessagesRequest = async (
+const fetchBulkMessagesRequest = async (
   roomIds: string[]
 ): Promise<Response> => {
   const queryParams = new URLSearchParams({
@@ -1491,7 +1491,7 @@ export const clearUnreadCount = (
   return rest;
 };
 
-export interface CreateRoomPayload {
+interface CreateRoomPayload {
   type: "public" | "private";
   name?: string;
   members?: string[];
@@ -1506,7 +1506,7 @@ interface CreateRoomRequestParams {
   refreshAuthToken: RefreshTokenHandler;
 }
 
-export const createRoomRequest = async ({
+const createRoomRequest = async ({
   name,
   type,
   members,
@@ -1545,7 +1545,7 @@ interface DeleteRoomRequestParams {
   refreshAuthToken: RefreshTokenHandler;
 }
 
-export const deleteRoomRequest = async ({
+const deleteRoomRequest = async ({
   roomId,
   authToken,
   username,
@@ -1567,7 +1567,7 @@ export const deleteRoomRequest = async ({
   );
 };
 
-export const createOptimisticChatMessage = (
+const createOptimisticChatMessage = (
   roomId: string,
   username: string,
   content: string
@@ -1591,7 +1591,7 @@ interface SendRoomMessageRequestParams {
   refreshAuthToken: RefreshTokenHandler;
 }
 
-export const sendRoomMessageRequest = async ({
+const sendRoomMessageRequest = async ({
   roomId,
   content,
   username,
