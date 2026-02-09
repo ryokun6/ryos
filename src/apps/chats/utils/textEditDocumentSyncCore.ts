@@ -40,7 +40,7 @@ export type TextEditDocumentSyncDependencies<TContentJson> = {
 };
 
 export const buildTextEditWindowTitle = (fileName?: string): string =>
-  (fileName || "").replace(/\.md$/, "") || "Untitled";
+  (fileName || "").replace(/\.md$/i, "") || "Untitled";
 
 export const findLiveTextEditInstanceIdByPath = <TContentJson>(
   path: string,

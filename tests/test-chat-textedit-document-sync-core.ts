@@ -89,6 +89,7 @@ export async function runChatTextEditDocumentSyncCoreTests(): Promise<{
   console.log(section("Window title helper"));
   await runTest("strips .md extension and defaults to Untitled", async () => {
     assertEq(buildTextEditWindowTitle("notes.md"), "notes");
+    assertEq(buildTextEditWindowTitle("notes.MD"), "notes");
     assertEq(buildTextEditWindowTitle(""), "Untitled");
     assertEq(buildTextEditWindowTitle(undefined), "Untitled");
   });
