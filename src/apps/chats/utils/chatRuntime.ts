@@ -1,3 +1,6 @@
+import type { UIMessage } from "@ai-sdk/react";
+import type { AIChatMessage } from "@/types/chat";
+
 const CODE_BLOCK_PATTERN = /```[\s\S]*?```/g;
 const HTML_TAG_PATTERN = /<[^>]*>/g;
 const URGENT_PREFIX_PATTERN = /^!+\s*/;
@@ -90,3 +93,29 @@ export const isRateLimitErrorState = (
   typeof value.count === "number" &&
   typeof value.limit === "number" &&
   typeof value.message === "string";
+
+export const mergeMessagesWithTimestamps = (
+  sdkMessages: UIMessage[],
+  storedMessages: AIChatMessage[],
+): AIChatMessage[] => {
+  const createdAtById = new Map<string, Date>();
+  storedMessages.forEach((storedMessage) => {
+    const createdAt = storedMessage.metadata?.createdAt;
+    if (createdAt instanceof Date) {
+      createdAtById.set(storedMessage.id, createdAt);
+    }
+  });
+
+  return sdkMessages.map((message) => {
+    const typedMessage = message as AIChatMessage;
+    const fallbackCreatedAt = createdAtById.get(message.id);
+
+    return {
+      ...message,
+      metadata: {
+        createdAt:
+          typedMessage.metadata?.createdAt || fallbackCreatedAt || new Date(),
+      },
+    } as AIChatMessage;
+  });
+};

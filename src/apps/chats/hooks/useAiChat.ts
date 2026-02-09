@@ -50,6 +50,7 @@ import {
   isRateLimitErrorCode,
   isRateLimitErrorMessage,
   isRateLimitErrorState,
+  mergeMessagesWithTimestamps,
   type RateLimitErrorState,
   tryParseJsonFromErrorMessage,
 } from "../utils/chatRuntime";
@@ -1397,28 +1398,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
   // Ensure all messages have metadata with timestamps (runs synchronously during render)
   const messagesWithTimestamps = useMemo<AIChatMessage[]>(() => {
-    const createdAtById = new Map<string, Date>();
-    aiMessages.forEach((storedMessage) => {
-      const createdAt = storedMessage.metadata?.createdAt;
-      if (createdAt instanceof Date) {
-        createdAtById.set(storedMessage.id, createdAt);
-      }
-    });
-
-    return (currentSdkMessages as UIMessage[]).map((msg) => {
-      const currentMsg = msg as AIChatMessage;
-      const fallbackCreatedAt = createdAtById.get(msg.id);
-
-      return {
-        ...msg,
-        metadata: {
-          createdAt:
-            currentMsg.metadata?.createdAt ||
-            fallbackCreatedAt ||
-            new Date(),
-        },
-      } as AIChatMessage;
-    });
+    return mergeMessagesWithTimestamps(currentSdkMessages as UIMessage[], aiMessages);
   }, [currentSdkMessages, aiMessages]);
 
   // Ref to hold the latest SDK messages for use in callbacks
