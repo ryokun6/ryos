@@ -3,7 +3,7 @@ import { decodeHtmlEntities } from "@/utils/html";
 import {
   type ApiChatMessagePayload,
   normalizeApiMessages,
-} from "./messageNormalization";
+} from "./messagePayloads";
 
 const MESSAGE_HISTORY_CAP = 500;
 const MATCH_WINDOW_MS = 10_000;

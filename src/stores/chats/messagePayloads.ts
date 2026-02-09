@@ -1,6 +1,6 @@
-import type { ChatRoom } from "@/types/chat";
+import type { ChatMessage, ChatRoom } from "@/types/chat";
 import { abortableFetch } from "@/utils/abortableFetch";
-import type { ApiChatMessagePayload } from "./messageNormalization";
+import { decodeHtmlEntities } from "@/utils/html";
 import {
   clearApiUnavailable,
   isApiTemporarilyUnavailable,
@@ -9,6 +9,32 @@ import {
   warnChatsStoreOnce,
 } from "./apiGuards";
 import { withChatRequestDefaults } from "./requestConfig";
+
+export interface ApiChatMessagePayload {
+  id: string;
+  roomId: string;
+  username: string;
+  content: string;
+  timestamp: string | number;
+}
+
+export const normalizeApiMessage = (
+  message: ApiChatMessagePayload
+): ChatMessage => ({
+  ...message,
+  content: decodeHtmlEntities(String(message.content || "")),
+  timestamp:
+    typeof message.timestamp === "string" || typeof message.timestamp === "number"
+      ? new Date(message.timestamp).getTime()
+      : message.timestamp,
+});
+
+export const normalizeApiMessages = (
+  messages: ApiChatMessagePayload[]
+): ChatMessage[] =>
+  messages
+    .map((message) => normalizeApiMessage(message))
+    .sort((a, b) => a.timestamp - b.timestamp);
 
 const NETWORK_ERROR_MESSAGE = "Network error. Please try again.";
 
