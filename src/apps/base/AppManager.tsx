@@ -348,14 +348,23 @@ export function AppManager({ apps }: AppManagerProps) {
       // ⌘+Space / Ctrl+Space to toggle Spotlight Search
       if (e.key === " " && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
+        // Close Expose if open before toggling Spotlight
+        setIsExposeViewOpen(false);
         window.dispatchEvent(new CustomEvent("toggleSpotlight"));
       }
     };
 
+    // Close Expose when Spotlight opens via any trigger (icon click, Start Menu "Run...")
+    const handleSpotlightToggle = () => {
+      setIsExposeViewOpen(false);
+    };
+
     window.addEventListener("toggleExposeView", handleExposeToggle);
+    window.addEventListener("toggleSpotlight", handleSpotlightToggle);
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("toggleExposeView", handleExposeToggle);
+      window.removeEventListener("toggleSpotlight", handleSpotlightToggle);
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);

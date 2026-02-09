@@ -2279,6 +2279,9 @@
     },
     "askRyo": "Ryo fragen",
     "noResults": "Keine Ergebnisse",
+    "hintClose": "schließen",
+    "hintOpen": "öffnen",
+    "hintNavigate": "navigieren",
     "settings": {
       "theme": "Design",
       "wallpaper": "Hintergrundbild",

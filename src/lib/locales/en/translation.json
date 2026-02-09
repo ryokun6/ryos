@@ -273,6 +273,9 @@
     },
     "askRyo": "Ask Ryo",
     "noResults": "No results found",
+    "hintClose": "close",
+    "hintOpen": "open",
+    "hintNavigate": "navigate",
     "settings": {
       "theme": "Theme",
       "wallpaper": "Wallpaper",

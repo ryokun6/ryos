@@ -63,6 +63,17 @@ export function SpotlightSearch() {
     return () => window.removeEventListener("toggleSpotlight", handler);
   }, []);
 
+  // Close Spotlight when Expose view opens (mutual exclusion)
+  useEffect(() => {
+    const handler = () => {
+      if (useSpotlightStore.getState().isOpen) {
+        useSpotlightStore.getState().reset();
+      }
+    };
+    window.addEventListener("toggleExposeView", handler);
+    return () => window.removeEventListener("toggleExposeView", handler);
+  }, []);
+
   // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -486,6 +497,15 @@ export function SpotlightSearch() {
                 <div className="h-1" />
               )}
             </div>
+
+            {/* Keyboard shortcut hint — below the panel */}
+            {currentTheme === "macosx" && (
+              <div className="text-center mt-2 text-[11px] text-white/40 select-none"
+                style={{ textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}
+              >
+                esc {t("spotlight.hintClose")} · ↵ {t("spotlight.hintOpen")} · ↑↓ {t("spotlight.hintNavigate")}
+              </div>
+            )}
           </motion.div>
         </>
       )}

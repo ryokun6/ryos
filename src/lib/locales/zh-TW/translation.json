@@ -2279,6 +2279,9 @@
     },
     "askRyo": "詢問 Ryo",
     "noResults": "找不到結果",
+    "hintClose": "關閉",
+    "hintOpen": "開啟",
+    "hintNavigate": "瀏覽",
     "settings": {
       "theme": "主題",
       "wallpaper": "桌布",

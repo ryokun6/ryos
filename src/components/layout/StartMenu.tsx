@@ -260,7 +260,8 @@ export function StartMenu({ apps }: StartMenuProps) {
                   <div className="w-6 h-6 flex items-center justify-center text-base">
                     🔍
                   </div>
-                  {t("common.startMenu.run")}
+                  <span className="flex-1">{t("common.startMenu.run")}</span>
+                  <span className="text-[10px] opacity-50">Ctrl+Space</span>
                 </DropdownMenuItem>
               </div>
             </div>

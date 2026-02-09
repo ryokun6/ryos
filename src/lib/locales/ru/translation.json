@@ -2279,6 +2279,9 @@
     },
     "askRyo": "Спросить Ryo",
     "noResults": "Ничего не найдено",
+    "hintClose": "закрыть",
+    "hintOpen": "открыть",
+    "hintNavigate": "навигация",
     "settings": {
       "theme": "Тема",
       "wallpaper": "Обои",

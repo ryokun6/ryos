@@ -2279,6 +2279,9 @@
     },
     "askRyo": "Preguntar a Ryo",
     "noResults": "Sin resultados",
+    "hintClose": "cerrar",
+    "hintOpen": "abrir",
+    "hintNavigate": "navegar",
     "settings": {
       "theme": "Tema",
       "wallpaper": "Fondo de pantalla",

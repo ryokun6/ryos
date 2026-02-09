@@ -2279,6 +2279,9 @@
     },
     "askRyo": "Ryo に聞く",
     "noResults": "結果が見つかりません",
+    "hintClose": "閉じる",
+    "hintOpen": "開く",
+    "hintNavigate": "移動",
     "settings": {
       "theme": "テーマ",
       "wallpaper": "壁紙",
