@@ -136,12 +136,18 @@ import { handleIpodControl } from "./ipodHandler";
 import { handleKaraokeControl } from "./karaokeHandler";
 import { handleStickiesControl } from "./stickiesHandler";
 import { handleInfiniteMacControl } from "./infiniteMacHandler";
+import { handleLaunchApp, handleCloseApp } from "./appHandlers";
 
+registerToolHandler("launchApp", (input, toolCallId, context) => {
+  handleLaunchApp(input as { id: string; url?: string; year?: string }, toolCallId, context, context.appHandlers);
+});
+registerToolHandler("closeApp", (input, toolCallId, context) => {
+  handleCloseApp(input as { id: string }, toolCallId, context, context.appHandlers);
+});
 registerToolHandler("settings", handleSettings);
 registerToolHandler("ipodControl", handleIpodControl);
 registerToolHandler("karaokeControl", handleKaraokeControl);
 registerToolHandler("stickiesControl", handleStickiesControl);
 registerToolHandler("infiniteMacControl", handleInfiniteMacControl);
 
-// Note: launchApp and closeApp handlers require additional context
-// so they are called directly from useAiChat rather than through the registry
+// launchApp/closeApp use optional `context.appHandlers` dependencies.

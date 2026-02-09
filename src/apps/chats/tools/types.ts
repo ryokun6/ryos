@@ -19,6 +19,17 @@ export interface ToolContext {
   addToolResult: (result: ToolResultPayload) => void;
   /** Detect user's operating system */
   detectUserOS: () => string;
+  /** Optional dependencies used by app launch/close handlers */
+  appHandlers?: AppHandlerDependencies;
+}
+
+export interface AppHandlerDependencies {
+  getAppNameById?: (appId: AppId) => string;
+  getInstancesByAppId?: (
+    appId: AppId,
+  ) => Array<{ instanceId: string; isOpen: boolean }>;
+  closeWindowByInstanceId?: (instanceId: string) => void;
+  translate?: (key: string, params?: Record<string, unknown>) => string;
 }
 
 /**

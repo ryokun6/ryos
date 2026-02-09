@@ -49,11 +49,7 @@ import {
 } from "../utils/chatFileToolHandlers";
 import {
   executeToolHandler,
-  handleCloseApp,
-  handleLaunchApp,
   type ToolContext,
-  type CloseAppInput,
-  type LaunchAppInput,
 } from "../tools";
 
 /**
@@ -299,6 +295,12 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         launchApp,
         addToolResult,
         detectUserOS,
+        appHandlers: {
+          translate: i18n.t,
+          getInstancesByAppId: (appId) =>
+            useAppStore.getState().getInstancesByAppId(appId),
+          closeWindowByInstanceId: requestCloseWindow,
+        },
       };
 
       try {
@@ -311,29 +313,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             result = "Aquarium displayed";
             break;
           }
-          case "launchApp": {
-            result = handleLaunchApp(
-              toolCall.input as LaunchAppInput,
-              toolCall.toolCallId,
-              toolContext,
-              { translate: i18n.t },
-            );
-            break;
-          }
-          case "closeApp": {
-            result = handleCloseApp(
-              toolCall.input as CloseAppInput,
-              toolCall.toolCallId,
-              toolContext,
-              {
-                translate: i18n.t,
-                getInstancesByAppId: (appId) =>
-                  useAppStore.getState().getInstancesByAppId(appId),
-                closeWindowByInstanceId: requestCloseWindow,
-              },
-            );
-            break;
-          }
+          case "launchApp":
+          case "closeApp":
           case "ipodControl":
           case "karaokeControl":
           case "settings":

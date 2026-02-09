@@ -5,7 +5,7 @@
 import { appIds, appNames } from "@/config/appRegistryData";
 import type { AppId } from "@/config/appIds";
 import type { LaunchAppOptions } from "@/hooks/useLaunchApp";
-import type { ToolContext } from "./types";
+import type { AppHandlerDependencies, ToolContext } from "./types";
 
 export interface LaunchAppInput {
   id: string;
@@ -17,20 +17,13 @@ export interface CloseAppInput {
   id: string;
 }
 
-type AppHandlersDependencies = {
-  getAppNameById?: (appId: AppId) => string;
-  getInstancesByAppId?: (appId: AppId) => Array<{ instanceId: string; isOpen: boolean }>;
-  closeWindowByInstanceId?: (instanceId: string) => void;
-  translate?: (key: string, params?: Record<string, unknown>) => string;
-};
-
 const translateError = ({
   dependencies,
   key,
   fallback,
   params,
 }: {
-  dependencies: AppHandlersDependencies;
+  dependencies: AppHandlerDependencies;
   key: string;
   fallback: string;
   params?: Record<string, unknown>;
@@ -63,7 +56,7 @@ export const handleLaunchApp = (
   input: LaunchAppInput,
   toolCallId: string,
   context: ToolContext,
-  dependencies: AppHandlersDependencies = {},
+  dependencies: AppHandlerDependencies = {},
 ): string => {
   const { id, url, year } = input;
 
@@ -121,7 +114,7 @@ export const handleCloseApp = (
   input: CloseAppInput,
   toolCallId: string,
   context: ToolContext,
-  dependencies: AppHandlersDependencies = {},
+  dependencies: AppHandlerDependencies = {},
 ): string => {
   const { id } = input;
 
