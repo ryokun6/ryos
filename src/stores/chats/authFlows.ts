@@ -145,6 +145,62 @@ const readErrorMessage = async (
   return errorData.error || fallback;
 };
 
+const toHeaders = (headers?: HeadersInit): Headers => {
+  const normalized = new Headers();
+  if (!headers) {
+    return normalized;
+  }
+
+  if (headers instanceof Headers) {
+    headers.forEach((value, key) => {
+      normalized.set(key, value);
+    });
+    return normalized;
+  }
+
+  if (Array.isArray(headers)) {
+    headers.forEach(([key, value]) => {
+      normalized.set(key, value);
+    });
+    return normalized;
+  }
+
+  Object.entries(headers).forEach(([key, value]) => {
+    if (typeof value === "string") {
+      normalized.set(key, value);
+    }
+  });
+  return normalized;
+};
+
+const hasAuthorizationHeader = (headers?: HeadersInit): boolean =>
+  toHeaders(headers).has("authorization");
+
+const withAuthorizationHeader = (
+  headers: HeadersInit | undefined,
+  authToken: string
+): Headers => {
+  const nextHeaders = toHeaders(headers);
+  nextHeaders.set("Authorization", `Bearer ${authToken}`);
+  return nextHeaders;
+};
+
+const createAuthenticatedHeaders = (
+  authToken: string,
+  username?: string,
+  includeJsonContentType: boolean = false
+): Headers => {
+  const headers = new Headers();
+  if (includeJsonContentType) {
+    headers.set("Content-Type", "application/json");
+  }
+  headers.set("Authorization", `Bearer ${authToken}`);
+  if (username) {
+    headers.set("X-Username", username);
+  }
+  return headers;
+};
+
 const warnedStoreIssues = new Set<string>();
 
 const warnChatsStoreOnce = (key: string, message: string): void => {
@@ -210,8 +266,7 @@ const makeAuthenticatedRequest = async (
 
   if (
     initialResponse.status !== 401 ||
-    !options.headers ||
-    !("Authorization" in options.headers)
+    !hasAuthorizationHeader(options.headers)
   ) {
     return initialResponse;
   }
@@ -226,10 +281,7 @@ const makeAuthenticatedRequest = async (
     return initialResponse;
   }
 
-  const newHeaders = {
-    ...options.headers,
-    Authorization: `Bearer ${refreshResult.token}`,
-  };
+  const newHeaders = withAuthorizationHeader(options.headers, refreshResult.token);
 
   console.log("[ChatsStore] Retrying request with refreshed token");
   return abortableFetch(
@@ -295,11 +347,7 @@ const logoutRequest = async ({
     getApiUrl("/api/auth/logout"),
     withChatRequestDefaults({
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        "X-Username": username,
-      },
+      headers: createAuthenticatedHeaders(token, username, true),
     })
   );
 
@@ -647,10 +695,7 @@ const checkPasswordStatusRequest = async ({
     "/api/auth/password/check",
     withChatRequestDefaults({
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-        "X-Username": username,
-      },
+      headers: createAuthenticatedHeaders(authToken, username),
     })
   );
 
@@ -686,11 +731,7 @@ const setPasswordRequest = async ({
     getApiUrl("/api/auth/password/set"),
     withChatRequestDefaults({
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${authToken}`,
-        "X-Username": username,
-      },
+      headers: createAuthenticatedHeaders(authToken, username, true),
       body: JSON.stringify({ password }),
     })
   );
@@ -1526,11 +1567,7 @@ const createRoomRequest = async ({
     payload.members = members;
   }
 
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${authToken}`,
-    "X-Username": username,
-  };
+  const headers = createAuthenticatedHeaders(authToken, username, true);
 
   return makeAuthenticatedRequest(
     "/api/rooms",
@@ -1556,11 +1593,7 @@ const deleteRoomRequest = async ({
   username,
   refreshAuthToken,
 }: DeleteRoomRequestParams): Promise<Response> => {
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${authToken}`,
-    "X-Username": username,
-  };
+  const headers = createAuthenticatedHeaders(authToken, username, true);
 
   return makeAuthenticatedRequest(
     `/api/rooms/${encodeURIComponent(roomId)}`,
@@ -1603,14 +1636,12 @@ const sendRoomMessageRequest = async ({
   authToken,
   refreshAuthToken,
 }: SendRoomMessageRequestParams): Promise<Response> => {
-  const headers: HeadersInit = {
+  const unauthenticatedHeaders = new Headers({
     "Content-Type": "application/json",
-  };
-
-  if (authToken) {
-    headers.Authorization = `Bearer ${authToken}`;
-    headers["X-Username"] = username;
-  }
+  });
+  const headers = authToken
+    ? createAuthenticatedHeaders(authToken, username, true)
+    : unauthenticatedHeaders;
 
   const messageUrl = `/api/rooms/${encodeURIComponent(roomId)}/messages`;
   const messageBody = JSON.stringify({ content });
@@ -1629,7 +1660,7 @@ const sendRoomMessageRequest = async ({
         getApiUrl(messageUrl),
         withChatRequestDefaults({
           method: "POST",
-          headers,
+          headers: unauthenticatedHeaders,
           body: messageBody,
         })
       );
