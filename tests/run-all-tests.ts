@@ -32,6 +32,7 @@ import { runChatTextEditDocumentSyncCoreTests } from "./test-chat-textedit-docum
 import { runChatFileToolValidationTests } from "./test-chat-file-tool-validation";
 import { runChatFileEditOperationTests } from "./test-chat-file-edit-operation";
 import { runChatFileWriteOperationTests } from "./test-chat-file-write-operation";
+import { runChatFileToolHandlersTests } from "./test-chat-file-tool-handlers";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -118,6 +119,7 @@ async function runAllTests(): Promise<void> {
     { name: "chat-textedit-document-sync-core", run: runChatTextEditDocumentSyncCoreTests },
     { name: "chat-file-edit-operation", run: runChatFileEditOperationTests },
     { name: "chat-file-write-operation", run: runChatFileWriteOperationTests },
+    { name: "chat-file-tool-handlers", run: runChatFileToolHandlersTests },
     { name: "pusher-client", run: runPusherClientRefcountTests },
     { name: "pusher-constructor-wiring", run: runPusherClientConstructorWiringTests },
     { name: "chat-broadcast-wiring", run: runChatBroadcastWiringTests },

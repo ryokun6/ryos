@@ -47,13 +47,11 @@ import { getSystemState } from "../utils/systemState";
 import {
   readLocalFileTextOrThrow,
 } from "../utils/localFileContent";
-import {
-  resolveToolErrorText,
-  validateFileEditInput,
-} from "../utils/chatFileToolValidation";
-import { executeChatFileEditOperation } from "../utils/chatFileEditOperation";
-import { executeChatFileWriteOperation } from "../utils/chatFileWriteOperation";
 import { syncTextEditDocumentForPath } from "../utils/textEditDocumentSync";
+import {
+  handleChatEditToolCall,
+  handleChatWriteToolCall,
+} from "../utils/chatFileToolHandlers";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -835,55 +833,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               mode?: "overwrite" | "append" | "prepend";
             };
 
-            console.log("[ToolCall] write:", { path, mode, contentLength: content?.length });
-
-            try {
-              const writeResult = await executeChatFileWriteOperation({
-                path,
-                content,
-                mode,
-              });
-
-              if (!writeResult.ok) {
-                const writeError = writeResult.error;
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  state: "output-error",
-                  errorText: resolveToolErrorText(i18n.t, writeError),
-                });
-                result = "";
-                break;
-              }
-
-              const { path: normalizedPath, finalContent, fileName } = writeResult;
-              syncTextEditDocumentForPath({
-                path: normalizedPath,
-                content: finalContent,
-                fileName,
-                launchIfMissing: true,
-                bringToForeground: true,
-                includeFilePathOnUpdate: true,
-              });
-
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                output: i18n.t(writeResult.successKey, {
-                  path: normalizedPath,
-                }),
-              });
-              result = "";
-            } catch (err) {
-              console.error("write error:", err);
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: err instanceof Error ? err.message : i18n.t("apps.chats.toolCalls.failedToWriteFile"),
-              });
-              result = "";
-            }
+            await handleChatWriteToolCall({
+              path,
+              content,
+              mode,
+              toolName: toolCall.toolName,
+              toolCallId: toolCall.toolCallId,
+              addToolResult,
+              t: i18n.t,
+              syncTextEdit: syncTextEditDocumentForPath,
+            });
+            result = "";
             break;
           }
           case "edit": {
@@ -893,77 +853,17 @@ export function useAiChat(onPromptSetUsername?: () => void) {
               new_string: string;
             };
 
-            const editValidation = validateFileEditInput({
+            await handleChatEditToolCall({
               path,
               oldString: old_string,
               newString: new_string,
+              toolName: toolCall.toolName,
+              toolCallId: toolCall.toolCallId,
+              addToolResult,
+              t: i18n.t,
+              syncTextEdit: syncTextEditDocumentForPath,
             });
-            if (!editValidation.ok) {
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: i18n.t(editValidation.errorKey),
-              });
-              result = "";
-              break;
-            }
-            const normalizedPath = editValidation.path;
-            const oldString = editValidation.oldString;
-            const newString = editValidation.newString;
-
-            console.log("[ToolCall] edit:", {
-              path: normalizedPath,
-              old_string: oldString.substring(0, 50) + "...",
-              new_string: newString.substring(0, 50) + "...",
-            });
-
-            try {
-              const editResult = await executeChatFileEditOperation({
-                path: normalizedPath,
-                oldString,
-                newString,
-              });
-
-              if (!editResult.ok) {
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  state: "output-error",
-                  errorText: resolveToolErrorText(i18n.t, editResult.error),
-                });
-                result = "";
-                break;
-              }
-
-              if (editResult.target === "document") {
-                syncTextEditDocumentForPath({
-                  path: normalizedPath,
-                  content: editResult.updatedContent,
-                  launchIfMissing: false,
-                  bringToForeground: false,
-                  includeFilePathOnUpdate: false,
-                });
-              }
-
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                output: i18n.t(editResult.successKey, {
-                  path: normalizedPath,
-                }),
-              });
-              result = "";
-            } catch (err) {
-              console.error("edit error:", err);
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: err instanceof Error ? err.message : i18n.t("apps.chats.toolCalls.failedToEditFile"),
-              });
-              result = "";
-            }
+            result = "";
             break;
           }
           case "settings": {
