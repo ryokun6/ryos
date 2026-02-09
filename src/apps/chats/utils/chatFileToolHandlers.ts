@@ -1,5 +1,6 @@
 import type { ToolResultPayload } from "../tools/types";
 import { executeChatFileEditOperation } from "./chatFileEditOperation";
+import { executeChatFileOpenOperation } from "./chatFileOpenOperation";
 import { executeChatFileReadOperation } from "./chatFileReadOperation";
 import { executeChatSharedAppletReadOperation } from "./chatSharedAppletReadOperation";
 import { executeChatFileWriteOperation } from "./chatFileWriteOperation";
@@ -18,6 +19,7 @@ type AddToolResult = (result: ToolResultPayload) => void;
 
 type ExecuteWriteOperationFn = typeof executeChatFileWriteOperation;
 type ExecuteEditOperationFn = typeof executeChatFileEditOperation;
+type ExecuteOpenOperationFn = typeof executeChatFileOpenOperation;
 type ExecuteReadOperationFn = typeof executeChatFileReadOperation;
 type ExecuteSharedAppletReadOperationFn = typeof executeChatSharedAppletReadOperation;
 type ExecuteListOperationFn = typeof executeChatListOperation;
@@ -276,6 +278,146 @@ export const handleChatReadToolCall = async ({
       addToolResult,
       errorText:
         error instanceof Error ? error.message : t("apps.chats.toolCalls.failedToReadFile"),
+    });
+  }
+};
+
+export const handleChatOpenToolCall = async ({
+  path,
+  toolName,
+  toolCallId,
+  addToolResult,
+  t,
+  executeOpenOperation = executeChatFileOpenOperation,
+  executeSharedAppletReadOperation = executeChatSharedAppletReadOperation,
+  playMusicTrack,
+  resolveApplicationName,
+  launchApp,
+}: BaseToolCallContext & {
+  path: unknown;
+  executeOpenOperation?: ExecuteOpenOperationFn;
+  executeSharedAppletReadOperation?: ExecuteSharedAppletReadOperationFn;
+  playMusicTrack: (songId: string) => { ok: true; title: string; artist?: string } | { ok: false; error: string };
+  resolveApplicationName: (appId: string) => string | null;
+  launchApp: (appId: string, options?: Record<string, unknown>) => void;
+}): Promise<void> => {
+  const normalizedPath = normalizeToolPath(path);
+  console.log("[ToolCall] open:", { path: normalizedPath });
+
+  if (!normalizedPath) {
+    publishToolError({
+      toolName,
+      toolCallId,
+      addToolResult,
+      errorText: t("apps.chats.toolCalls.noPathProvided"),
+    });
+    return;
+  }
+
+  try {
+    if (normalizedPath.startsWith("/Music/")) {
+      const songId = normalizedPath.replace("/Music/", "");
+      const playResult = playMusicTrack(songId);
+      if (!playResult.ok) {
+        publishToolError({
+          toolName,
+          toolCallId,
+          addToolResult,
+          errorText: playResult.error,
+        });
+        return;
+      }
+
+      const playingMessage = playResult.artist
+        ? t("apps.chats.toolCalls.playingTrackByArtist", {
+            title: playResult.title,
+            artist: playResult.artist,
+          })
+        : t("apps.chats.toolCalls.playingTrack", { title: playResult.title });
+
+      addToolResult({ tool: toolName, toolCallId, output: playingMessage });
+      return;
+    }
+
+    if (normalizedPath.startsWith("/Applets Store/")) {
+      const shareId = normalizedPath.replace("/Applets Store/", "");
+      const sharedAppletResult = await executeSharedAppletReadOperation({
+        path: normalizedPath,
+      });
+      const appletName = sharedAppletResult.ok
+        ? sharedAppletResult.payload.title ??
+          sharedAppletResult.payload.name ??
+          shareId
+        : shareId;
+
+      launchApp("applet-viewer", {
+        initialData: { path: "", content: "", shareCode: shareId },
+      });
+      addToolResult({
+        tool: toolName,
+        toolCallId,
+        output: t("apps.chats.toolCalls.openedApplet", { appletName }),
+      });
+      return;
+    }
+
+    if (normalizedPath.startsWith("/Applications/")) {
+      const appId = normalizedPath.replace("/Applications/", "");
+      const translatedName = resolveApplicationName(appId);
+      if (!translatedName) {
+        publishToolError({
+          toolName,
+          toolCallId,
+          addToolResult,
+          errorText: `Application not found: ${appId}`,
+        });
+        return;
+      }
+
+      launchApp(appId);
+      addToolResult({
+        tool: toolName,
+        toolCallId,
+        output: t("apps.chats.toolCalls.launchedApp", { appName: translatedName }),
+      });
+      return;
+    }
+
+    if (normalizedPath.startsWith("/Applets/") || normalizedPath.startsWith("/Documents/")) {
+      const openResult = await executeOpenOperation({ path: normalizedPath });
+      if (!openResult.ok) {
+        publishToolError({
+          toolName,
+          toolCallId,
+          addToolResult,
+          errorText: resolveToolErrorText(t, openResult.error),
+        });
+        return;
+      }
+
+      launchApp(openResult.launchAppId, openResult.launchOptions);
+      addToolResult({
+        tool: toolName,
+        toolCallId,
+        output: t(openResult.successKey, { fileName: openResult.fileName }),
+      });
+      return;
+    }
+
+    publishToolError({
+      toolName,
+      toolCallId,
+      addToolResult,
+      errorText: t("apps.chats.toolCalls.invalidPath", { path: normalizedPath }),
+    });
+  } catch (error) {
+    console.error("open error:", error);
+    publishToolError({
+      toolName,
+      toolCallId,
+      addToolResult,
+      errorText:
+        error instanceof Error ? error.message : t("apps.chats.toolCalls.failedToOpen"),
     });
   }
 };

@@ -3,6 +3,7 @@
 import {
   handleChatEditToolCall,
   handleChatListToolCall,
+  handleChatOpenToolCall,
   handleChatReadToolCall,
   handleChatWriteToolCall,
 } from "../src/apps/chats/utils/chatFileToolHandlers";
@@ -310,6 +311,79 @@ export async function runChatFileToolHandlersTests(): Promise<{
     assertEq(
       (collector.results[0] as { output?: unknown }).output,
       'apps.chats.toolCalls.foundSharedApplets:{"count":1}:\n[\n  {\n    "path": "/Applets Store/demo",\n    "id": "demo",\n    "title": "Demo Applet"\n  }\n]',
+    );
+  });
+
+  console.log(section("Open handler"));
+  await runTest("emits no-path validation error", async () => {
+    const collector = createCollector();
+    await handleChatOpenToolCall({
+      path: "",
+      toolName: "open",
+      toolCallId: "tc-11",
+      addToolResult: collector.addToolResult,
+      t,
+      launchApp: () => {},
+      resolveApplicationName: () => null,
+      playMusicTrack: () => ({ ok: false, error: "should not run" }),
+    });
+
+    assertEq(collector.results.length, 1);
+    assertEq((collector.results[0] as { state?: string }).state, "output-error");
+  });
+
+  await runTest("opens local file when open operation succeeds", async () => {
+    const collector = createCollector();
+    let launched = "";
+    await handleChatOpenToolCall({
+      path: "/Documents/file.md",
+      toolName: "open",
+      toolCallId: "tc-12",
+      addToolResult: collector.addToolResult,
+      t,
+      launchApp: (appId) => {
+        launched = appId;
+      },
+      resolveApplicationName: () => null,
+      playMusicTrack: () => ({ ok: false, error: "should not run" }),
+      executeOpenOperation: async () => ({
+        ok: true,
+        target: "document",
+        path: "/Documents/file.md",
+        fileName: "file.md",
+        content: "body",
+        launchAppId: "textedit",
+        launchOptions: {
+          multiWindow: true,
+          initialData: { path: "/Documents/file.md", content: "body" },
+        },
+        successKey: "apps.chats.toolCalls.openedDocument",
+      }),
+    });
+
+    assertEq(launched, "textedit");
+    assertEq(
+      (collector.results[0] as { output?: unknown }).output,
+      'apps.chats.toolCalls.openedDocument:{"fileName":"file.md"}',
+    );
+  });
+
+  await runTest("plays music track and emits playing message", async () => {
+    const collector = createCollector();
+    await handleChatOpenToolCall({
+      path: "/Music/track-1",
+      toolName: "open",
+      toolCallId: "tc-13",
+      addToolResult: collector.addToolResult,
+      t,
+      launchApp: () => {},
+      resolveApplicationName: () => null,
+      playMusicTrack: () => ({ ok: true, title: "Song", artist: "Ryo" }),
+    });
+
+    assertEq(
+      (collector.results[0] as { output?: unknown }).output,
+      'apps.chats.toolCalls.playingTrackByArtist:{"title":"Song","artist":"Ryo"}',
     );
   });
 

@@ -38,13 +38,11 @@ import {
   type RateLimitErrorState,
 } from "../utils/chatRuntime";
 import { getSystemState } from "../utils/systemState";
-import { executeChatFileOpenOperation } from "../utils/chatFileOpenOperation";
-import { executeChatSharedAppletReadOperation } from "../utils/chatSharedAppletReadOperation";
-import { resolveToolErrorText } from "../utils/chatFileToolValidation";
 import { syncTextEditDocumentForPath } from "../utils/textEditDocumentSync";
 import {
   handleChatEditToolCall,
   handleChatListToolCall,
+  handleChatOpenToolCall,
   handleChatReadToolCall,
   handleChatWriteToolCall,
 } from "../utils/chatFileToolHandlers";
@@ -437,32 +435,28 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           case "open": {
             const { path } = toolCall.input as { path: string };
 
-            if (!path) {
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: i18n.t("apps.chats.toolCalls.noPathProvided"),
-              });
-              result = "";
-              break;
-            }
-
-            console.log("[ToolCall] open:", { path });
-
-            try {
-              // Route based on path prefix
-              if (path.startsWith("/Music/")) {
-                // Play iPod song by ID
-                const songId = path.replace("/Music/", "");
+            await handleChatOpenToolCall({
+              path,
+              toolName: toolCall.toolName,
+              toolCallId: toolCall.toolCallId,
+              addToolResult,
+              t: i18n.t,
+              launchApp: (appId, options) => {
+                launchApp(appId as AppId, options as never);
+              },
+              resolveApplicationName: (appId) => {
+                const typedAppId = appId as AppId;
+                return appRegistry[typedAppId]
+                  ? getTranslatedAppName(typedAppId)
+                  : null;
+              },
+              playMusicTrack: (songId) => {
                 const ipodState = useIpodStore.getState();
-                const track = ipodState.tracks.find((t) => t.id === songId);
-
+                const track = ipodState.tracks.find((candidate) => candidate.id === songId);
                 if (!track) {
-                  throw new Error(`Song not found: ${songId}`);
+                  return { ok: false, error: `Song not found: ${songId}` };
                 }
 
-                // Ensure iPod is open
                 const appState = useAppStore.getState();
                 const ipodInstances = appState.getInstancesByAppId("ipod");
                 if (!ipodInstances.some((inst) => inst.isOpen)) {
@@ -471,114 +465,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
                 ipodState.setCurrentSongId(songId);
                 ipodState.setIsPlaying(true);
-
-                const playingMessage = track.artist
-                  ? i18n.t("apps.chats.toolCalls.playingTrackByArtist", { title: track.title, artist: track.artist })
-                  : i18n.t("apps.chats.toolCalls.playingTrack", { title: track.title });
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: playingMessage,
-                });
-                result = "";
-              } else if (path.startsWith("/Applets Store/")) {
-                // Open shared applet preview
-                const shareId = path.replace("/Applets Store/", "");
-
-                const sharedAppletResult = await executeChatSharedAppletReadOperation({ path });
-                const appletName = sharedAppletResult.ok
-                  ? sharedAppletResult.payload.title ??
-                    sharedAppletResult.payload.name ??
-                    shareId
-                  : shareId;
-
-                launchApp("applet-viewer", {
-                  initialData: { path: "", content: "", shareCode: shareId },
-                });
-
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: i18n.t("apps.chats.toolCalls.openedApplet", { appletName }),
-                });
-                result = "";
-              } else if (path.startsWith("/Applications/")) {
-                // Launch application
-                const appId = path.replace("/Applications/", "") as AppId;
-                if (!appRegistry[appId]) {
-                  throw new Error(`Application not found: ${appId}`);
-                }
-
-                launchApp(appId);
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: i18n.t("apps.chats.toolCalls.launchedApp", { appName: getTranslatedAppName(appId) }),
-                });
-                result = "";
-              } else if (path.startsWith("/Applets/")) {
-                const openResult = await executeChatFileOpenOperation({ path });
-                if (!openResult.ok) {
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    state: "output-error",
-                    errorText: resolveToolErrorText(i18n.t, openResult.error),
-                  });
-                  result = "";
-                  break;
-                }
-
-                launchApp(openResult.launchAppId, openResult.launchOptions);
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: i18n.t(openResult.successKey, {
-                    fileName: openResult.fileName,
-                  }),
-                });
-                result = "";
-              } else if (path.startsWith("/Documents/")) {
-                const openResult = await executeChatFileOpenOperation({ path });
-                if (!openResult.ok) {
-                  addToolResult({
-                    tool: toolCall.toolName,
-                    toolCallId: toolCall.toolCallId,
-                    state: "output-error",
-                    errorText: resolveToolErrorText(i18n.t, openResult.error),
-                  });
-                  result = "";
-                  break;
-                }
-
-                launchApp(openResult.launchAppId, openResult.launchOptions);
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  output: i18n.t(openResult.successKey, {
-                    fileName: openResult.fileName,
-                  }),
-                });
-                result = "";
-              } else {
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  state: "output-error",
-                  errorText: i18n.t("apps.chats.toolCalls.invalidPath", { path }),
-                });
-                result = "";
-              }
-            } catch (err) {
-              console.error("open error:", err);
-              addToolResult({
-                tool: toolCall.toolName,
-                toolCallId: toolCall.toolCallId,
-                state: "output-error",
-                errorText: err instanceof Error ? err.message : i18n.t("apps.chats.toolCalls.failedToOpen"),
-              });
-              result = "";
-            }
+                return {
+                  ok: true,
+                  title: track.title,
+                  artist: track.artist,
+                };
+              },
+            });
+            result = "";
             break;
           }
           case "read": {
