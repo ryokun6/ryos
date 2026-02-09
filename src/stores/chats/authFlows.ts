@@ -1878,8 +1878,11 @@ export const toggleBoolean = (value: boolean): boolean => !value;
 export const resolveNextFontSize = (
   currentSize: number,
   sizeOrFn: number | ((prevSize: number) => number)
-): number =>
-  typeof sizeOrFn === "function" ? sizeOrFn(currentSize) : sizeOrFn;
+): number => {
+  const nextSize =
+    typeof sizeOrFn === "function" ? sizeOrFn(currentSize) : sizeOrFn;
+  return Number.isFinite(nextSize) ? nextSize : currentSize;
+};
 
 export const sanitizeMessageRenderLimit = (limit: number): number =>
   Math.max(20, Math.floor(limit));
