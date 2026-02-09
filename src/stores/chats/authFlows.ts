@@ -1305,6 +1305,22 @@ interface ApiChatMessagePayload {
 const normalizeApiTimestamp = (
   rawTimestamp: string | number
 ): number => {
+  if (typeof rawTimestamp === "number" && Number.isFinite(rawTimestamp)) {
+    return rawTimestamp;
+  }
+
+  if (typeof rawTimestamp === "string") {
+    const trimmed = rawTimestamp.trim();
+    if (trimmed.length === 0) {
+      return 0;
+    }
+
+    const asNumber = Number(trimmed);
+    if (Number.isFinite(asNumber)) {
+      return asNumber;
+    }
+  }
+
   const parsedTimestamp = new Date(rawTimestamp).getTime();
   return Number.isFinite(parsedTimestamp) ? parsedTimestamp : 0;
 };
