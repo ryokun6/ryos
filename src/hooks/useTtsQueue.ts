@@ -73,7 +73,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     typeof navigator !== "undefined" &&
     /iP(hone|od|ad)/.test(navigator.userAgent);
 
-  const ensureContext = () => {
+  const ensureContext = useCallback(() => {
     // Always use the shared global context
     ctxRef.current = getAudioContext();
     // Detect context change and reset timeline
@@ -100,7 +100,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
       gainNodeRef.current.connect(ctxRef.current.destination);
     }
     return ctxRef.current;
-  };
+  }, [masterVolumeRef, speechVolumeRef]);
 
   /**
    * Process pending requests up to the maximum parallel limit
@@ -185,7 +185,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
 
       executeRequest();
     }
-  }, [endpoint]);
+  }, [endpoint, ttsModelRef, ttsVoiceRef]);
 
   /**
    * Queue a fetch request with parallel limit enforcement
@@ -276,7 +276,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
         }
       });
     },
-    [queuedFetch]
+    [queuedFetch, ensureContext]
   );
 
   /** Cancel all in-flight requests and reset the queue so the next call starts immediately. */

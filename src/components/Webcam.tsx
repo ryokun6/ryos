@@ -120,6 +120,8 @@ export function Webcam({
     selectedCameraId,
     internalStream,
     autoStart,
+    startCamera,
+    stopCamera,
   ]);
 
   // Real-time WebGL preview loop for distortion filters
@@ -263,7 +265,7 @@ export function Webcam({
   // Listen for webcam-capture events
   useCustomEventListener("webcam-capture", handleCapture);
 
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     try {
       startedInternallyRef.current = true;
 
@@ -299,9 +301,9 @@ export function Webcam({
       activeDeviceIdRef.current = null;
       startedInternallyRef.current = false;
     }
-  };
+  }, [internalStream, selectedCameraId, t]);
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (internalStream && !isPreview) {
       internalStream.getTracks().forEach((track) => track.stop());
       setInternalStream(null);
@@ -315,7 +317,7 @@ export function Webcam({
       activeDeviceIdRef.current = null;
       startedInternallyRef.current = false;
     }
-  };
+  }, [internalStream, isPreview, controlledStream]);
 
   return (
     <div className={`relative ${className}`}>
