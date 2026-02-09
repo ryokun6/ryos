@@ -27,6 +27,13 @@ export type RateLimitErrorState = {
   message: string;
 };
 
+export const DEFAULT_RATE_LIMIT_ERROR_STATE: RateLimitErrorState = {
+  isAuthenticated: false,
+  count: 0,
+  limit: 0,
+  message: "Rate limit exceeded",
+};
+
 export const isKnownAiSdkTypeValidationError = (message: string): boolean =>
   message.includes("AI_TypeValidationError") ||
   message.includes("Type validation failed");
@@ -93,6 +100,55 @@ export const isRateLimitErrorState = (
   typeof value.count === "number" &&
   typeof value.limit === "number" &&
   typeof value.message === "string";
+
+export type ChatErrorClassification =
+  | { kind: "ignore_type_validation" }
+  | { kind: "rate_limit"; payload: RateLimitErrorState; parsed: boolean }
+  | { kind: "auth"; message?: string }
+  | { kind: "other" };
+
+export const classifyChatError = (
+  message: string,
+): ChatErrorClassification => {
+  const parsedError = tryParseJsonFromErrorMessage(message);
+
+  if (isKnownAiSdkTypeValidationError(message)) {
+    return { kind: "ignore_type_validation" };
+  }
+
+  if (parsedError) {
+    if (isRateLimitErrorCode(parsedError.error)) {
+      return {
+        kind: "rate_limit",
+        parsed: true,
+        payload: isRateLimitErrorState(parsedError)
+          ? parsedError
+          : DEFAULT_RATE_LIMIT_ERROR_STATE,
+      };
+    }
+
+    if (isAuthenticationErrorCode(parsedError.error)) {
+      return {
+        kind: "auth",
+        message: "Your session has expired. Please login again.",
+      };
+    }
+  }
+
+  if (isRateLimitErrorMessage(message)) {
+    return {
+      kind: "rate_limit",
+      parsed: false,
+      payload: DEFAULT_RATE_LIMIT_ERROR_STATE,
+    };
+  }
+
+  if (isAuthenticationErrorMessage(message)) {
+    return { kind: "auth" };
+  }
+
+  return { kind: "other" };
+};
 
 export const mergeMessagesWithTimestamps = (
   sdkMessages: UIMessage[],

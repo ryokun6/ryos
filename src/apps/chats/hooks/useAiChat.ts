@@ -43,16 +43,10 @@ import {
 } from "../utils/messageNotifications";
 import {
   areMessageIdListsEqual,
+  classifyChatError,
   cleanTextForSpeech,
-  isAuthenticationErrorCode,
-  isAuthenticationErrorMessage,
-  isKnownAiSdkTypeValidationError,
-  isRateLimitErrorCode,
-  isRateLimitErrorMessage,
-  isRateLimitErrorState,
   mergeMessagesWithTimestamps,
   type RateLimitErrorState,
-  tryParseJsonFromErrorMessage,
 } from "../utils/chatRuntime";
 import { TEXTEDIT_TIPTAP_EXTENSIONS } from "../utils/textEditSerialization";
 import { getSystemState } from "../utils/systemState";
@@ -1306,10 +1300,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // The finish event emits {"type":"finish","finishReason":"tool-calls"} which fails validation
       // This is a known issue and the error can be safely ignored as the chat still works
       const errorMessage = err instanceof Error ? err.message : String(err);
-      if (isKnownAiSdkTypeValidationError(errorMessage)) {
-        console.warn("[AI SDK v6 Bug] Type validation error (ignored):", errorMessage.substring(0, 100) + "...");
-        return; // Ignore this error - it's a known SDK issue
-      }
 
       console.error("AI Chat Error:", err);
 
@@ -1339,54 +1329,34 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         setNeedsUsername(true);
       };
 
-      const parsedErrorData = tryParseJsonFromErrorMessage(errorMessage);
-      if (parsedErrorData) {
-        if (isRateLimitErrorCode(parsedErrorData.error)) {
-          const rateLimitErrorPayload: RateLimitErrorState =
-            isRateLimitErrorState(parsedErrorData)
-              ? parsedErrorData
-              : {
-                  isAuthenticated: false,
-                  count: 0,
-                  limit: 0,
-                  message: "Rate limit exceeded",
-                };
-          setRateLimitError(rateLimitErrorPayload);
-
-          // If anonymous user hit limit, set flag to require username
-          if (!rateLimitErrorPayload.isAuthenticated) {
+      const classification = classifyChatError(errorMessage);
+      switch (classification.kind) {
+        case "ignore_type_validation":
+          console.warn(
+            "[AI SDK v6 Bug] Type validation error (ignored):",
+            errorMessage.substring(0, 100) + "...",
+          );
+          return;
+        case "rate_limit":
+          setRateLimitError(classification.payload);
+          if (!classification.payload.isAuthenticated) {
             setNeedsUsername(true);
           }
 
-          // Don't show the raw error, just indicate that rate limit was hit
-          // The UI will handle showing the proper message
-          return; // Exit early to prevent showing generic error toast
-        }
-
-        if (isAuthenticationErrorCode(parsedErrorData.error)) {
-          handleAuthError("Your session has expired. Please login again.");
-          return; // Exit early to prevent showing generic error toast
-        }
-      }
-
-      // Check if error message contains 429 status
-      if (isRateLimitErrorMessage(errorMessage)) {
-        // Generic rate limit message if we couldn't parse the details
-        setNeedsUsername(true);
-        toast.error("Rate Limit Exceeded", {
-          description:
-            "You've reached the message limit. Please login to continue.",
-          duration: 5000,
-          action: loginToastAction,
-        });
-        return;
-      }
-
-      // Check if error message contains 401 status (authentication error)
-      // This catches various 401 error formats
-      if (isAuthenticationErrorMessage(errorMessage)) {
-        handleAuthError();
-        return;
+          if (!classification.parsed) {
+            toast.error("Rate Limit Exceeded", {
+              description:
+                "You've reached the message limit. Please login to continue.",
+              duration: 5000,
+              action: loginToastAction,
+            });
+          }
+          return;
+        case "auth":
+          handleAuthError(classification.message);
+          return;
+        default:
+          break;
       }
 
       // For non-rate-limit errors, show the generic error toast
