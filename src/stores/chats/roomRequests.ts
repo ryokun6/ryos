@@ -1,7 +1,7 @@
 import {
   type RefreshTokenHandler,
   makeAuthenticatedRequest,
-} from "./authRequests";
+} from "./authApi";
 
 export interface CreateRoomPayload {
   type: "public" | "private";

@@ -6,7 +6,7 @@ import {
   createOptimisticChatMessage,
   sendRoomMessageRequest,
 } from "./sendMessage";
-import type { RefreshTokenResult } from "./authRequests";
+import type { RefreshTokenResult } from "./authApi";
 import { withChatRequestDefaults } from "./requestConfig";
 
 interface CreateRoomFlowParams {

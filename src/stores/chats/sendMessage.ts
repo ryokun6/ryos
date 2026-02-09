@@ -4,7 +4,7 @@ import { getApiUrl } from "@/utils/platform";
 import {
   type RefreshTokenHandler,
   makeAuthenticatedRequest,
-} from "./authRequests";
+} from "./authApi";
 import { withChatRequestDefaults } from "./requestConfig";
 
 export const createOptimisticChatMessage = (
