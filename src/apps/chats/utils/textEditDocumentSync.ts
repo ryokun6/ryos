@@ -3,21 +3,13 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { markdownToHtml } from "@/utils/markdown";
 import { TEXTEDIT_TIPTAP_EXTENSIONS } from "./textEditSerialization";
+import {
+  syncTextEditDocumentForPathCore,
+  type SyncTextEditDocumentOptions,
+  type SyncTextEditDocumentResult,
+} from "./textEditDocumentSyncCore";
 
-export type SyncTextEditDocumentOptions = {
-  path: string;
-  content: string;
-  fileName?: string;
-  launchIfMissing: boolean;
-  bringToForeground: boolean;
-  includeFilePathOnUpdate: boolean;
-};
-
-export type SyncTextEditDocumentResult = {
-  instanceId: string | null;
-  updated: boolean;
-  launched: boolean;
-};
+export type { SyncTextEditDocumentOptions, SyncTextEditDocumentResult };
 
 const buildTextEditContentJson = (content: string): JSONContent => {
   const htmlFragment = markdownToHtml(content);
@@ -39,25 +31,6 @@ const dispatchDocumentUpdatedEvent = (
   );
 };
 
-const findLiveTextEditInstanceIdByPath = (path: string): string | null => {
-  const appStore = useAppStore.getState();
-  const textEditStore = useTextEditStore.getState();
-
-  for (const [instanceId, instance] of Object.entries(textEditStore.instances)) {
-    if (instance.filePath !== path) {
-      continue;
-    }
-
-    if (appStore.instances[instanceId]) {
-      return instanceId;
-    }
-
-    textEditStore.removeInstance(instanceId);
-  }
-
-  return null;
-};
-
 export const syncTextEditDocumentForPath = ({
   path,
   content,
@@ -68,47 +41,25 @@ export const syncTextEditDocumentForPath = ({
 }: SyncTextEditDocumentOptions): SyncTextEditDocumentResult => {
   const appStore = useAppStore.getState();
   const textEditStore = useTextEditStore.getState();
-  const liveInstanceId = findLiveTextEditInstanceIdByPath(path);
-
-  if (liveInstanceId) {
-    const contentJson = buildTextEditContentJson(content);
-    textEditStore.updateInstance(liveInstanceId, {
-      ...(includeFilePathOnUpdate ? { filePath: path } : {}),
-      contentJson,
-      hasUnsavedChanges: false,
-    });
-    dispatchDocumentUpdatedEvent(path, contentJson);
-
-    if (bringToForeground) {
-      appStore.bringInstanceToForeground(liveInstanceId);
-    }
-
-    return {
-      instanceId: liveInstanceId,
-      updated: true,
-      launched: false,
-    };
-  }
-
-  if (!launchIfMissing) {
-    return {
-      instanceId: null,
-      updated: false,
-      launched: false,
-    };
-  }
-
-  const windowTitle = (fileName || "").replace(/\.md$/, "") || "Untitled";
-  const launchedInstanceId = appStore.launchApp(
-    "textedit",
-    { path, content },
-    windowTitle,
-    true,
+  return syncTextEditDocumentForPathCore(
+    {
+      path,
+      content,
+      fileName,
+      launchIfMissing,
+      bringToForeground,
+      includeFilePathOnUpdate,
+    },
+    {
+      appInstances: appStore.instances,
+      textEditInstances: textEditStore.instances,
+      removeTextEditInstance: textEditStore.removeInstance,
+      updateTextEditInstance: textEditStore.updateInstance,
+      bringToForeground: appStore.bringInstanceToForeground,
+      launchTextEdit: (initialData, windowTitle) =>
+        appStore.launchApp("textedit", initialData, windowTitle, true),
+      buildContentJson: buildTextEditContentJson,
+      dispatchDocumentUpdated: dispatchDocumentUpdatedEvent,
+    },
   );
-
-  return {
-    instanceId: launchedInstanceId,
-    updated: false,
-    launched: true,
-  };
 };
