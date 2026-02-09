@@ -50,6 +50,7 @@ import { TEXTEDIT_TIPTAP_EXTENSIONS } from "../utils/textEditSerialization";
 import { getSystemState } from "../utils/systemState";
 import {
   attemptLocalFileReplacement,
+  type LocalFileReplacementAttempt,
   mergeContentByWriteMode,
   persistUpdatedLocalFileContent,
   readLocalFileTextOrThrow,
@@ -1017,6 +1018,34 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
             console.log("[ToolCall] edit:", { path, old_string: old_string.substring(0, 50) + "...", new_string: new_string.substring(0, 50) + "..." });
 
+            const publishReplacementFailure = (
+              replacement: LocalFileReplacementAttempt,
+            ): void => {
+              if (replacement.ok) {
+                return;
+              }
+
+              if (replacement.reason === "not_found") {
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText: i18n.t("apps.chats.toolCalls.oldStringNotFound"),
+                });
+              } else {
+                addToolResult({
+                  tool: toolCall.toolName,
+                  toolCallId: toolCall.toolCallId,
+                  state: "output-error",
+                  errorText: i18n.t(
+                    "apps.chats.toolCalls.oldStringMultipleMatches",
+                    { count: replacement.occurrences },
+                  ),
+                });
+              }
+
+            };
+
             try {
               if (path.startsWith("/Documents/")) {
                 // Edit document - read directly from file system (independent of TextEdit instances)
@@ -1033,21 +1062,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 });
 
                 if (!replacement.ok) {
-                  if (replacement.reason === "not_found") {
-                    addToolResult({
-                      tool: toolCall.toolName,
-                      toolCallId: toolCall.toolCallId,
-                      state: "output-error",
-                      errorText: i18n.t("apps.chats.toolCalls.oldStringNotFound"),
-                    });
-                  } else {
-                    addToolResult({
-                      tool: toolCall.toolName,
-                      toolCallId: toolCall.toolCallId,
-                      state: "output-error",
-                      errorText: i18n.t("apps.chats.toolCalls.oldStringMultipleMatches", { count: replacement.occurrences }),
-                    });
-                  }
+                  publishReplacementFailure(replacement);
                   result = "";
                   break;
                 }
@@ -1100,21 +1115,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 });
 
                 if (!replacement.ok) {
-                  if (replacement.reason === "not_found") {
-                    addToolResult({
-                      tool: toolCall.toolName,
-                      toolCallId: toolCall.toolCallId,
-                      state: "output-error",
-                      errorText: i18n.t("apps.chats.toolCalls.oldStringNotFound"),
-                    });
-                  } else {
-                    addToolResult({
-                      tool: toolCall.toolName,
-                      toolCallId: toolCall.toolCallId,
-                      state: "output-error",
-                      errorText: i18n.t("apps.chats.toolCalls.oldStringMultipleMatches", { count: replacement.occurrences }),
-                    });
-                  }
+                  publishReplacementFailure(replacement);
                   result = "";
                   break;
                 }
