@@ -15,12 +15,9 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { AppId } from "@/config/appIds";
 import { appRegistry } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
-import {
-  useFileSystem,
-  dbOperations,
-  STORES,
-  type DocumentContent,
-} from "@/apps/finder/hooks/useFileSystem";
+import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
+import { dbOperations, type DocumentContent } from "@/apps/finder/utils/fileDatabase";
+import { STORES } from "@/utils/indexedDB";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";

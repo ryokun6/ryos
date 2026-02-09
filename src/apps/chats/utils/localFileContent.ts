@@ -1,8 +1,5 @@
-import {
-  dbOperations,
-  STORES,
-  type DocumentContent,
-} from "@/apps/finder/hooks/useFileSystem";
+import { dbOperations, type DocumentContent } from "@/apps/finder/utils/fileDatabase";
+import { STORES } from "@/utils/indexedDB";
 import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
 
 export type ActiveFileWithUuid = FileSystemItem & { uuid: string };
