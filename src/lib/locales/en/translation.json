@@ -271,6 +271,7 @@
       "settings": "Settings",
       "commands": "Commands"
     },
+    "topHits": "Top Hits",
     "askRyo": "Ask Ryo",
     "noResults": "No results found",
     "hintClose": "close",

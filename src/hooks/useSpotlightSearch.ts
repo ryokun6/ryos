@@ -23,6 +23,8 @@ export interface SpotlightResult {
   isEmoji?: boolean;
   /** Optional thumbnail URL (cover art, favicon, image preview) */
   thumbnail?: string;
+  /** Override section header label (e.g. "Top Hits" for empty state) */
+  sectionLabel?: string;
   action: () => void;
   keywords?: string[];
 }
@@ -142,6 +144,7 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
         type: "app" as const,
         title: getTranslatedAppName(appId),
         icon: getAppIconPath(appId),
+        sectionLabel: "spotlight.topHits",
         action: () => launchApp(appId),
       }));
     }

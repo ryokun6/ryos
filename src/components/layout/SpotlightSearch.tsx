@@ -307,8 +307,8 @@ export function SpotlightSearch() {
                 >
                   {groupedResults.map((group) => (
                     <div key={group.type}>
-                      {/* Section header */}
-                      {group.type !== "ai" && query.trim() && (
+                      {/* Section header — always shown (use sectionLabel override or category) */}
+                      {group.type !== "ai" && (
                         <div
                           className="spotlight-section-header select-none"
                           style={{
@@ -329,7 +329,7 @@ export function SpotlightSearch() {
                             lineHeight: "1.3",
                           }}
                         >
-                          {t(getSectionKey(group.type))}
+                          {t(group.items[0]?.sectionLabel || getSectionKey(group.type))}
                         </div>
                       )}
 
