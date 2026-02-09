@@ -1018,6 +1018,13 @@
   font-size: 13px !important;
 }
 
+/* System 7 Spotlight: use normal antialiased rendering (not pixelated) */
+:root[data-os-theme="system7"] .spotlight-panel,
+:root[data-os-theme="system7"] .spotlight-panel * {
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
+}
+
 /* Shadow utilities */
 .shadow-os-window {
   box-shadow: var(--os-window-shadow);

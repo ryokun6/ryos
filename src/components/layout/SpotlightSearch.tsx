@@ -157,27 +157,29 @@ export function SpotlightSearch() {
       } as React.CSSProperties;
     }
     if (isSystem7) {
+      // Match System 7 window frame: 1px black border + classic Mac shadow
       return {
         background: "#FFFFFF",
         border: "1px solid #000000",
         borderRadius: "0px",
-        boxShadow: "1px 1px 0 #000000",
+        boxShadow: "2px 2px 0px 0px rgba(0, 0, 0, 0.5)",
       } as React.CSSProperties;
     }
     if (currentTheme === "xp") {
+      // Clean XP menu style — thin border, soft shadow
       return {
         background: "#FFFFFF",
-        border: "1px solid #7F9DB9",
-        borderRadius: "3px",
-        boxShadow: "0 3px 12px rgba(0, 0, 0, 0.25)",
+        border: "1px solid #ACA899",
+        borderRadius: "2px",
+        boxShadow: "2px 2px 6px rgba(0, 0, 0, 0.2)",
       } as React.CSSProperties;
     }
-    // Win98
+    // Win98 — simple raised border like a classic menu popup
     return {
       background: "#FFFFFF",
+      border: "1px solid #808080",
       borderRadius: "0px",
-      boxShadow:
-        "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf, 2px 2px 6px rgba(0, 0, 0, 0.2)",
+      boxShadow: "1px 1px 0 #000000",
     } as React.CSSProperties;
   })();
 
@@ -185,7 +187,8 @@ export function SpotlightSearch() {
   const getSelectedBg = () => {
     if (currentTheme === "macosx") return "#1A68D1";
     if (isSystem7) return "#000000";
-    return "#0055E5";
+    if (currentTheme === "win98") return "#000080";
+    return "#316AC5"; // XP Luna
   };
 
   const getSelectedTextColor = () => "#FFFFFF";
@@ -194,7 +197,7 @@ export function SpotlightSearch() {
   const fontFamily = isXpTheme
     ? "var(--font-ms-sans)"
     : isSystem7
-    ? "var(--font-geneva-12)"
+    ? "'Geneva-12', 'ArkPixel', system-ui, sans-serif"
     : "LucidaGrande, 'Lucida Grande', ui-sans-serif, system-ui, sans-serif";
 
   // ── Sizing constants ─────────────────────────────────────────────
@@ -282,7 +285,7 @@ export function SpotlightSearch() {
                 />
               </div>
 
-              {/* Divider */}
+              {/* Divider between input and results */}
               {results.length > 0 && (
                 <div
                   style={{
@@ -292,8 +295,8 @@ export function SpotlightSearch() {
                         ? "rgba(0,0,0,0.12)"
                         : isSystem7
                         ? "#000"
-                        : "#C0C0C0",
-                    margin: "0 4px",
+                        : "rgba(0,0,0,0.1)",
+                    margin: isMac ? "0 4px" : "0",
                   }}
                 />
               )}
@@ -315,14 +318,7 @@ export function SpotlightSearch() {
                             padding: "4px 10px 2px",
                             fontSize: sectionFontSize,
                             fontWeight: 600,
-                            color:
-                              currentTheme === "macosx"
-                                ? "rgba(0,0,0,0.4)"
-                                : isSystem7
-                                ? "rgba(0,0,0,0.55)"
-                                : currentTheme === "xp"
-                                ? "#003399"
-                                : "#666",
+                            color: "rgba(0,0,0,0.4)",
                             textTransform: "uppercase",
                             letterSpacing: "0.04em",
                             fontFamily,
