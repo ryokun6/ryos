@@ -74,6 +74,15 @@ export async function runChatAppHandlersTests(): Promise<{
     assertEq((toolResults[0] as { state?: string }).state, "output-error");
   });
 
+  await runTest("handles non-object launch payloads safely", async () => {
+    const { context, toolResults } = createToolContext();
+    const result = handleLaunchApp(null, "tc-launch-null", context);
+
+    assertEq(result, "");
+    assertEq(toolResults.length, 1);
+    assertEq((toolResults[0] as { state?: string }).state, "output-error");
+  });
+
   await runTest("uses context-level translation dependency fallback", async () => {
     const { context, toolResults } = createToolContext();
     const result = handleLaunchApp({ id: "" }, "tc-ctx-translate", context);
@@ -119,6 +128,15 @@ export async function runChatAppHandlersTests(): Promise<{
     assertEq(result, "");
     assertEq(toolResults.length, 1);
     assertEq((toolResults[0] as { errorText?: string }).errorText, "Application not found: missing-app");
+  });
+
+  await runTest("handles non-object close payloads safely", async () => {
+    const { context, toolResults } = createToolContext();
+    const result = handleCloseApp(null, "tc-close-null", context);
+
+    assertEq(result, "");
+    assertEq(toolResults.length, 1);
+    assertEq((toolResults[0] as { state?: string }).state, "output-error");
   });
 
   await runTest("emits error when close dependencies are unavailable", async () => {

@@ -53,13 +53,17 @@ const resolveRegisteredApp = (
  * Handle launchApp tool call
  */
 export const handleLaunchApp = (
-  input: LaunchAppInput,
+  input: LaunchAppInput | unknown,
   toolCallId: string,
   context: ToolContext,
   dependencies?: AppHandlerDependencies,
 ): string => {
   const resolvedDependencies = dependencies ?? context.appHandlers ?? {};
-  const { id, url, year } = input;
+  const payload =
+    input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+  const id = typeof payload.id === "string" ? payload.id.trim() : "";
+  const url = typeof payload.url === "string" ? payload.url : undefined;
+  const year = typeof payload.year === "string" ? payload.year : undefined;
 
   // Validate required parameter
   if (!id) {
@@ -112,13 +116,15 @@ export const handleLaunchApp = (
  * Handle closeApp tool call
  */
 export const handleCloseApp = (
-  input: CloseAppInput,
+  input: CloseAppInput | unknown,
   toolCallId: string,
   context: ToolContext,
   dependencies?: AppHandlerDependencies,
 ): string => {
   const resolvedDependencies = dependencies ?? context.appHandlers ?? {};
-  const { id } = input;
+  const payload =
+    input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+  const id = typeof payload.id === "string" ? payload.id.trim() : "";
 
   // Validate required parameter
   if (!id) {
