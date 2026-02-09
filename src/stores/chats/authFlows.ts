@@ -1464,6 +1464,10 @@ const withClientId = (
   clientId,
 });
 
+const buildMessageContentKey = (
+  message: Pick<ChatMessage, "username" | "content">
+): string => `${message.username}\u0000${message.content}`;
+
 const replaceMessageAtIndex = (
   messages: ChatMessage[],
   targetIndex: number,
@@ -1507,38 +1511,55 @@ export const mergeServerMessagesWithOptimistic = (
   }
 
   const usedTempIds = new Set<string>();
+  const fetchedByClientId = new Map<string, ChatMessage>();
+  const fetchedByContentKey = new Map<string, ChatMessage[]>();
+
+  for (const fetchedMessage of fetchedMessages) {
+    if (fetchedMessage.clientId && !fetchedByClientId.has(fetchedMessage.clientId)) {
+      fetchedByClientId.set(fetchedMessage.clientId, fetchedMessage);
+    }
+
+    const contentKey = buildMessageContentKey(fetchedMessage);
+    const keyedMessages = fetchedByContentKey.get(contentKey);
+    if (keyedMessages) {
+      keyedMessages.push(fetchedMessage);
+    } else {
+      fetchedByContentKey.set(contentKey, [fetchedMessage]);
+    }
+  }
 
   for (const temp of tempMessages) {
     const tempClientId = getStableMessageClientId(temp);
     let matched = false;
 
-    for (const serverMessage of fetchedMessages) {
-      if (serverMessage.clientId && serverMessage.clientId === tempClientId) {
-        const existingServerMessage = byId.get(serverMessage.id);
-        if (existingServerMessage) {
-          byId.set(
-            serverMessage.id,
-            withClientId(existingServerMessage, tempClientId)
-          );
-        }
-        matched = true;
-        break;
+    const serverByClientId = fetchedByClientId.get(tempClientId);
+    if (serverByClientId) {
+      const existingServerMessage = byId.get(serverByClientId.id);
+      if (existingServerMessage) {
+        byId.set(
+          serverByClientId.id,
+          withClientId(existingServerMessage, tempClientId)
+        );
       }
+      matched = true;
+    }
 
-      if (
-        serverMessage.username === temp.username &&
-        serverMessage.content === temp.content &&
-        Math.abs(serverMessage.timestamp - temp.timestamp) <= MATCH_WINDOW_MS
-      ) {
-        const existingServerMessage = byId.get(serverMessage.id);
-        if (existingServerMessage) {
-          byId.set(
-            serverMessage.id,
-            withClientId(existingServerMessage, tempClientId)
-          );
+    if (!matched) {
+      const candidateMessages = fetchedByContentKey.get(buildMessageContentKey(temp));
+      if (candidateMessages) {
+        for (const candidate of candidateMessages) {
+          if (Math.abs(candidate.timestamp - temp.timestamp) <= MATCH_WINDOW_MS) {
+            const existingServerMessage = byId.get(candidate.id);
+            if (existingServerMessage) {
+              byId.set(
+                candidate.id,
+                withClientId(existingServerMessage, tempClientId)
+              );
+            }
+            matched = true;
+            break;
+          }
         }
-        matched = true;
-        break;
       }
     }
 
