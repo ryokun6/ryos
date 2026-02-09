@@ -1,6 +1,11 @@
-import { applyIdentityRecoveryOnRehydrate } from "./rehydration";
-import { migrateLegacyChatStorageState } from "./migration";
-import { ensureRecoveryKeysAreSet } from "./recovery";
+import type { AIChatMessage, ChatMessage, ChatRoom } from "@/types/chat";
+import { LEGACY_CHAT_STORAGE_KEYS, tryParseLegacyJson } from "./legacyStorage";
+import {
+  ensureRecoveryKeysAreSet,
+  getAuthTokenFromRecovery,
+  getUsernameFromRecovery,
+  saveUsernameToRecovery,
+} from "./recovery";
 
 interface PersistLifecycleParams<State> {
   persistedState: unknown;
@@ -14,6 +19,135 @@ interface RehydratableChatsState {
   authToken: string | null;
   rooms?: unknown;
 }
+
+interface LegacyMigratedState {
+  aiMessages?: AIChatMessage[];
+  username?: string;
+  currentRoomId?: string;
+  isSidebarVisible?: boolean;
+  rooms?: ChatRoom[];
+  roomMessages?: Record<string, ChatMessage[]>;
+}
+
+const migrateLegacyChatStorageState = (): LegacyMigratedState => {
+  const migratedState: LegacyMigratedState = {};
+
+  const oldAiMessagesRaw = localStorage.getItem(LEGACY_CHAT_STORAGE_KEYS.AI_MESSAGES);
+  if (oldAiMessagesRaw) {
+    const parsedAiMessages = tryParseLegacyJson<AIChatMessage[]>(oldAiMessagesRaw);
+    if (parsedAiMessages) {
+      migratedState.aiMessages = parsedAiMessages;
+    } else {
+      console.warn(
+        "Failed to parse old AI messages during migration",
+        oldAiMessagesRaw
+      );
+    }
+  }
+
+  const oldUsernameKey = LEGACY_CHAT_STORAGE_KEYS.USERNAME;
+  const oldUsername = localStorage.getItem(oldUsernameKey);
+  if (oldUsername) {
+    migratedState.username = oldUsername;
+    saveUsernameToRecovery(oldUsername);
+    localStorage.removeItem(oldUsernameKey);
+    console.log(
+      `[ChatsStore] Migrated and removed '${oldUsernameKey}' key during version upgrade.`
+    );
+  }
+
+  const oldCurrentRoomId = localStorage.getItem(
+    LEGACY_CHAT_STORAGE_KEYS.LAST_OPENED_ROOM_ID
+  );
+  if (oldCurrentRoomId) {
+    migratedState.currentRoomId = oldCurrentRoomId;
+  }
+
+  const oldSidebarVisibleRaw = localStorage.getItem(
+    LEGACY_CHAT_STORAGE_KEYS.SIDEBAR_VISIBLE
+  );
+  if (oldSidebarVisibleRaw) {
+    migratedState.isSidebarVisible = oldSidebarVisibleRaw !== "false";
+  }
+
+  const oldCachedRoomsRaw = localStorage.getItem(
+    LEGACY_CHAT_STORAGE_KEYS.CACHED_ROOMS
+  );
+  if (oldCachedRoomsRaw) {
+    const parsedRooms = tryParseLegacyJson<ChatRoom[]>(oldCachedRoomsRaw);
+    if (parsedRooms) {
+      migratedState.rooms = parsedRooms;
+    } else {
+      console.warn(
+        "Failed to parse old cached rooms during migration",
+        oldCachedRoomsRaw
+      );
+    }
+  }
+
+  const oldCachedRoomMessagesRaw = localStorage.getItem(
+    LEGACY_CHAT_STORAGE_KEYS.CACHED_ROOM_MESSAGES
+  );
+  if (oldCachedRoomMessagesRaw) {
+    const parsedRoomMessages = tryParseLegacyJson<Record<string, ChatMessage[]>>(
+      oldCachedRoomMessagesRaw
+    );
+    if (parsedRoomMessages) {
+      migratedState.roomMessages = parsedRoomMessages;
+    } else {
+      console.warn(
+        "Failed to parse old cached room messages during migration",
+        oldCachedRoomMessagesRaw
+      );
+    }
+  }
+
+  return migratedState;
+};
+
+const applyIdentityRecoveryOnRehydrate = (
+  state: RehydratableChatsState
+): void => {
+  if (state.username === null) {
+    const recoveredUsername = getUsernameFromRecovery();
+    if (recoveredUsername) {
+      console.log(
+        `[ChatsStore] Found encoded username '${recoveredUsername}' in recovery storage. Applying.`
+      );
+      state.username = recoveredUsername;
+    } else {
+      const oldUsernameKey = LEGACY_CHAT_STORAGE_KEYS.USERNAME;
+      const oldUsername = localStorage.getItem(oldUsernameKey);
+      if (oldUsername) {
+        console.log(
+          `[ChatsStore] Found old username '${oldUsername}' in localStorage during rehydration check. Applying.`
+        );
+        state.username = oldUsername;
+        saveUsernameToRecovery(oldUsername);
+        localStorage.removeItem(oldUsernameKey);
+        console.log(
+          `[ChatsStore] Removed old key '${oldUsernameKey}' after rehydration fix.`
+        );
+      } else {
+        console.log(
+          "[ChatsStore] Username is null, but no username found in recovery or old localStorage during rehydration check."
+        );
+      }
+    }
+  }
+
+  if (state.authToken === null) {
+    const recoveredAuthToken = getAuthTokenFromRecovery();
+    if (recoveredAuthToken) {
+      console.log(
+        "[ChatsStore] Found encoded auth token in recovery storage. Applying."
+      );
+      state.authToken = recoveredAuthToken;
+    }
+  }
+
+  ensureRecoveryKeysAreSet(state.username, state.authToken);
+};
 
 export const migrateChatsPersistedState = <State>({
   persistedState,
