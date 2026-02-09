@@ -994,7 +994,14 @@
   --os-color-selection-glow: rgba(0, 0, 0, 0.22);
 }
 
-/* ── Spotlight Search panel: prevent macOS theme global font-size overrides ── */
+/* ── Spotlight Search panel: pinstripe background + prevent font-size overrides ── */
+:root[data-os-theme="macosx"] .spotlight-panel {
+  background: var(--os-pinstripe-window) !important;
+}
+:root[data-os-theme="macosx"] .spotlight-panel table,
+:root[data-os-theme="macosx"] .spotlight-panel tbody {
+  background: transparent !important;
+}
 /* The macOS theme sets font-size !important on div, p, button, input, label.
    We counter with inherit !important so inline styles on each element win. */
 :root[data-os-theme="macosx"] .spotlight-panel,
@@ -1006,7 +1013,10 @@
   font-size: inherit !important;
 }
 :root[data-os-theme="macosx"] .spotlight-panel input.spotlight-input {
-  font-size: 13px !important;
+  font-size: 12px !important;
+}
+:root[data-os-theme="macosx"] .spotlight-panel .spotlight-title {
+  font-size: 12px !important;
 }
 :root[data-os-theme="macosx"] .spotlight-panel .spotlight-section-header {
   font-size: 11px !important;

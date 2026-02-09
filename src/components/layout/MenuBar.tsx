@@ -44,6 +44,7 @@ import { useTranslation } from "react-i18next";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { isTauri, isTauriWindows } from "@/utils/platform";
+import { useSpotlightStore } from "@/stores/useSpotlightStore";
 
 // Helper function to get app name (using translations)
 const getAppName = (appId: string): string => {
@@ -1535,6 +1536,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
 function SpotlightMenuBarButton() {
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isSpotlightOpen = useSpotlightStore((state) => state.isOpen);
 
   // Only show on Mac themes — Windows themes use Start Menu "Run..."
   if (isXpTheme) return null;
@@ -1547,10 +1549,18 @@ function SpotlightMenuBarButton() {
     <button
       type="button"
       onClick={handleClick}
-      className="flex items-center justify-center pl-1 pr-1 py-0.5 sm:pr-2"
+      className="flex items-center justify-center"
       style={{
         marginLeft: "2px",
-        color: "inherit",
+        marginRight: "4px",
+        color: isSpotlightOpen ? "#FFFFFF" : "inherit",
+        background: isSpotlightOpen
+          ? "linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%)"
+          : "transparent",
+        borderRadius: "50%",
+        width: "20px",
+        height: "20px",
+        padding: 0,
       }}
       title="Spotlight Search (⌘+Space)"
       aria-label="Spotlight Search"

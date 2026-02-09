@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { MagnifyingGlass, XCircle } from "@phosphor-icons/react";
 import { useSpotlightStore } from "@/stores/useSpotlightStore";
 import {
   useSpotlightSearch,
@@ -78,6 +78,30 @@ export function SpotlightSearch() {
     return () => window.removeEventListener("toggleExposeView", handler);
   }, []);
 
+  // Group results by type for section headers
+  const groupedResults = (() => {
+    const groups: Array<{
+      type: SpotlightResult["type"];
+      items: Array<SpotlightResult & { globalIndex: number }>;
+    }> = [];
+
+    for (const type of SECTION_TYPE_ORDER) {
+      const items = results
+        .filter((r) => r.type === type)
+        .map((r) => ({ ...r, globalIndex: 0 }));
+      if (items.length > 0) {
+        groups.push({ type, items });
+      }
+    }
+    let idx = 0;
+    for (const group of groups) {
+      for (const item of group.items) {
+        item.globalIndex = idx++;
+      }
+    }
+    return groups;
+  })();
+
   // Keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -120,40 +144,14 @@ export function SpotlightSearch() {
     }
   }, [selectedIndex]);
 
-  // Group results by type for section headers
-  const groupedResults = (() => {
-    const groups: Array<{
-      type: SpotlightResult["type"];
-      items: Array<SpotlightResult & { globalIndex: number }>;
-    }> = [];
-
-    for (const type of SECTION_TYPE_ORDER) {
-      const items = results
-        .filter((r) => r.type === type)
-        .map((r) => ({ ...r, globalIndex: 0 }));
-      if (items.length > 0) {
-        groups.push({ type, items });
-      }
-    }
-    let idx = 0;
-    for (const group of groups) {
-      for (const item of group.items) {
-        item.globalIndex = idx++;
-      }
-    }
-    return groups;
-  })();
-
   // ── Theme-specific container styles ──────────────────────────────
   const containerStyles = (() => {
     if (currentTheme === "macosx") {
       return {
-        background: "rgba(248, 248, 248, 0.97)",
-        backgroundImage: "var(--os-pinstripe-menubar)",
-        borderRadius: "6px",
-        boxShadow:
-          "0 6px 20px rgba(0, 0, 0, 0.28), 0 0 0 0.5px rgba(0, 0, 0, 0.2)",
+        background: "var(--os-pinstripe-window)",
+        borderRadius: isMobile ? "var(--os-metrics-radius, 0.45rem)" : "0px",
         border: "none",
+        boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
       } as React.CSSProperties;
     }
     if (isSystem7) {
@@ -185,7 +183,7 @@ export function SpotlightSearch() {
 
   // ── Selection colors ─────────────────────────────────────────────
   const getSelectedBg = () => {
-    if (currentTheme === "macosx") return "#1A68D1";
+    if (currentTheme === "macosx") return "var(--os-color-selection-bg)";
     if (isSystem7) return "#000000";
     if (currentTheme === "win98") return "#000080";
     return "#316AC5"; // XP Luna
@@ -212,10 +210,12 @@ export function SpotlightSearch() {
 
   // ── Position ─────────────────────────────────────────────────────
   const needsCenter = isMobile || !isMac;
+  const useTwoColumn =
+    currentTheme === "macosx" && !isMobile && groupedResults.length > 0;
   const panelPositionClass = isMobile
     ? "fixed z-[10004] w-[calc(100vw-32px)] max-w-[360px]"
     : isMac
-    ? "fixed z-[10004] right-2 w-[280px]"
+    ? `fixed z-[10004] right-2 ${useTwoColumn ? "w-[380px]" : "w-[260px]"}`
     : "fixed z-[10004] w-[320px]";
 
   const panelTopStyle: React.CSSProperties = isMobile
@@ -224,7 +224,7 @@ export function SpotlightSearch() {
         left: "50%",
       }
     : isMac
-    ? { top: "calc(var(--os-metrics-menubar-height, 25px) + 2px)" }
+    ? { top: "var(--os-metrics-menubar-height, 25px)" }
     : { top: "28%", left: "50%" };
 
   const overlay = (
@@ -253,62 +253,329 @@ export function SpotlightSearch() {
           >
             <div style={{ ...containerStyles, fontFamily }} className="overflow-hidden spotlight-panel">
               {/* Search Input Row */}
-              <div
-                className="flex items-center gap-1.5"
-                style={{ padding: isMac ? "6px 10px" : "5px 8px" }}
-              >
-                <MagnifyingGlass
-                  className="flex-shrink-0 w-3.5 h-3.5 opacity-50"
-                  weight="bold"
-                />
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t("spotlight.placeholder")}
-                  className="spotlight-input"
+              {currentTheme === "macosx" ? (
+                <div
+                  className="flex items-center gap-2.5"
                   style={{
-                    outline: "none",
-                    width: "100%",
-                    background: "transparent",
-                    fontSize: inputFontSize,
-                    fontFamily,
-                    border: "none",
-                    padding: 0,
-                    lineHeight: "1.4",
+                    padding: "6px 8px 6px 12px",
+                    background: "linear-gradient(180deg, #609de9 0%, #3d84e5 50%, #3170dc 100%)",
+                    borderBottom: "1px solid rgba(0,0,0,0.15)",
                   }}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                />
-              </div>
+                >
+                  <span
+                    className="spotlight-title"
+                    style={{
+                      fontFamily,
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "#FFFFFF",
+                      textShadow: "0 1px 1px rgba(0,0,0,0.3)",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
+                      userSelect: "none",
+                      width: isMobile ? "auto" : "100px",
+                      textAlign: "right",
+                      display: "inline-block",
+                    }}
+                  >
+                    {t("spotlight.title", "Spotlight")}
+                  </span>
+                  <div
+                    className="flex items-center flex-1"
+                    style={{
+                      background: "#FFFFFF",
+                      borderRadius: "12px",
+                      border: "none",
+                      boxShadow: "inset 0 1px 2px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.15), 0 1px 0 rgba(255,255,255,0.2)",
+                      padding: "3px 6px 3px 10px",
+                      minHeight: "22px",
+                    }}
+                  >
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder={t("spotlight.placeholder")}
+                      className="spotlight-input"
+                      style={{
+                        outline: "none",
+                        width: "100%",
+                        background: "transparent",
+                        fontSize: "12px",
+                        fontFamily,
+                        border: "none",
+                        padding: 0,
+                        lineHeight: "1.4",
+                      }}
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
+                    />
+                    {query && (
+                      <button
+                        type="button"
+                        onClick={() => setQuery("")}
+                        className="flex-shrink-0 flex items-center justify-center"
+                        style={{
+                          color: "#8E8E93",
+                          marginLeft: "2px",
+                        }}
+                        aria-label="Clear search"
+                      >
+                        <XCircle size={16} weight="fill" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="flex items-center gap-1.5"
+                  style={{ padding: isMac ? "6px 10px" : "5px 8px" }}
+                >
+                  <MagnifyingGlass
+                    className="flex-shrink-0 w-3.5 h-3.5 opacity-50"
+                    weight="bold"
+                  />
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={t("spotlight.placeholder")}
+                    className="spotlight-input"
+                    style={{
+                      outline: "none",
+                      width: "100%",
+                      background: "transparent",
+                      fontSize: inputFontSize,
+                      fontFamily,
+                      border: "none",
+                      padding: 0,
+                      lineHeight: "1.4",
+                    }}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                  />
+                </div>
+              )}
 
-              {/* Divider between input and results */}
-              {results.length > 0 && (
+              {/* Divider between input and results (not needed for macosx — blue header has border) */}
+              {results.length > 0 && currentTheme !== "macosx" && (
                 <div
                   style={{
                     height: "1px",
-                    background:
-                      currentTheme === "macosx"
-                        ? "rgba(0,0,0,0.12)"
-                        : isSystem7
-                        ? "#000"
-                        : "rgba(0,0,0,0.1)",
+                    background: isSystem7
+                      ? "#000"
+                      : "rgba(0,0,0,0.1)",
                     margin: isMac ? "0 4px" : "0",
                   }}
                 />
               )}
 
-              {/* Results */}
-              {results.length > 0 && (
-                <div
-                  ref={listRef}
-                  className="overflow-y-auto"
-                  style={{ maxHeight: isMobile ? "50vh" : "320px", padding: "2px 0" }}
-                >
-                  {groupedResults.map((group) => (
+              {/* Results — two-column (headers left) for macosx desktop, single-column otherwise */}
+              {results.length > 0 &&
+                (useTwoColumn ? (
+                  <div
+                    ref={listRef}
+                    className="overflow-y-auto"
+                    style={{ maxHeight: "320px" }}
+                  >
+                    <table
+                      className="w-full border-collapse"
+                      style={{ fontFamily, tableLayout: "fixed" }}
+                    >
+                      <colgroup>
+                        <col style={{ width: "120px" }} />
+                        <col />
+                      </colgroup>
+                      <tbody>
+                        {/* Top spacer */}
+                        <tr>
+                          <td style={{ height: "4px", padding: 0, borderRight: "1px solid rgba(0,0,0,0.1)" }} />
+                          <td style={{ height: "4px", padding: 0, background: "rgba(0,0,0,0.04)" }} />
+                        </tr>
+                        {groupedResults.flatMap((group, groupIdx) => {
+                          const rows: React.ReactNode[] = [];
+                          if (groupIdx > 0) {
+                            rows.push(
+                              <tr key={`spacer-${group.type}`}>
+                                <td
+                                  style={{
+                                    height: "8px",
+                                    padding: 0,
+                                    borderRight: "1px solid rgba(0,0,0,0.1)",
+                                  }}
+                                />
+                                <td
+                                  style={{
+                                    height: "8px",
+                                    padding: 0,
+                                    background: "rgba(0,0,0,0.04)",
+                                  }}
+                                />
+                              </tr>
+                            );
+                          }
+                          group.items.forEach((result, idx) => {
+                            const isSelected = result.globalIndex === selectedIndex;
+                            rows.push(
+                            <tr
+                              key={result.id}
+                              style={{
+                                background: isSelected
+                                  ? getSelectedBg()
+                                  : "transparent",
+                              }}
+                            >
+                              <td
+                                className="spotlight-section-header align-top select-none"
+                                style={{
+                                  width: "120px",
+                                  padding: "4px 8px",
+                                  textAlign: "right",
+                                  fontSize: sectionFontSize,
+                                  fontWeight: "normal",
+                                  color: isSelected
+                                    ? getSelectedTextColor()
+                                    : "rgba(0,0,0,0.5)",
+                                  lineHeight: "1.3",
+                                  background: "transparent",
+                                  borderRight: isSelected
+                                    ? "none"
+                                    : "1px solid rgba(0,0,0,0.1)",
+                                  verticalAlign: "middle",
+                                }}
+                              >
+                                {idx === 0 && group.type !== "ai"
+                                  ? t(
+                                      group.items[0]?.sectionLabel ||
+                                        getSectionKey(group.type)
+                                    )
+                                  : ""}
+                              </td>
+                              <td
+                                style={{
+                                  padding: 0,
+                                  background: isSelected
+                                    ? "transparent"
+                                    : "rgba(0,0,0,0.04)",
+                                  border: "none",
+                                  verticalAlign: "middle",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                <button
+                                      type="button"
+                                      data-spotlight-index={result.globalIndex}
+                                      className="spotlight-row w-full flex items-center gap-2 cursor-default text-left overflow-hidden"
+                                      data-selected={
+                                        isSelected ? true : undefined
+                                      }
+                                      style={{
+                                        padding: `${rowPy} 10px`,
+                                        background: "transparent",
+                                        color: isSelected
+                                            ? getSelectedTextColor()
+                                            : undefined,
+                                        fontFamily,
+                                        fontSize,
+                                        lineHeight: "1.3",
+                                        border: "none",
+                                        margin: 0,
+                                        width: "100%",
+                                      }}
+                                      onClick={() => {
+                                        result.action();
+                                        reset();
+                                      }}
+                                      onMouseEnter={() =>
+                                        setSelectedIndex(result.globalIndex)
+                                      }
+                                    >
+                                      {result.thumbnail ? (
+                                        <img
+                                          src={result.thumbnail}
+                                          alt=""
+                                          className="flex-shrink-0 object-cover"
+                                          style={{
+                                            width: iconPx,
+                                            height: iconPx,
+                                            borderRadius: "3px",
+                                          }}
+                                          loading="lazy"
+                                          onError={(e) => {
+                                            (
+                                              e.target as HTMLImageElement
+                                            ).style.display = "none";
+                                          }}
+                                        />
+                                      ) : result.isEmoji ? (
+                                        <span
+                                          className="flex-shrink-0 flex items-center justify-center leading-none"
+                                          style={{
+                                            width: iconPx,
+                                            height: iconPx,
+                                            fontSize: `${iconPx - 4}px`,
+                                          }}
+                                        >
+                                          {result.icon}
+                                        </span>
+                                      ) : (
+                                        <ThemedIcon
+                                          name={result.icon}
+                                          alt=""
+                                          className="flex-shrink-0 [image-rendering:pixelated]"
+                                          style={{
+                                            width: iconPx,
+                                            height: iconPx,
+                                          }}
+                                        />
+                                      )}
+                                      <span className="truncate">
+                                        {result.title}
+                                        {result.subtitle &&
+                                          result.type !== "ai" && (
+                                            <span
+                                              style={{
+                                                color: isSelected
+                                                    ? "rgba(255,255,255,0.6)"
+                                                    : subtitleColor,
+                                              }}
+                                            >
+                                              {" — "}
+                                              {result.subtitle}
+                                            </span>
+                                          )}
+                                      </span>
+                                    </button>
+                              </td>
+                            </tr>
+                            );
+                          });
+                          return rows;
+                        })}
+                        {/* Bottom spacer */}
+                        <tr>
+                          <td style={{ height: "4px", padding: 0, borderRight: "1px solid rgba(0,0,0,0.1)" }} />
+                          <td style={{ height: "4px", padding: 0, background: "rgba(0,0,0,0.04)" }} />
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div
+                    ref={listRef}
+                    className="overflow-y-auto"
+                    style={{
+                      maxHeight: isMobile ? "50vh" : "320px",
+                      padding: "2px 0",
+                    }}
+                  >
+                    {groupedResults.map((group) => (
                     <div key={group.type}>
                       {/* Section header — always shown (use sectionLabel override or category) */}
                       {group.type !== "ai" && (
@@ -317,10 +584,8 @@ export function SpotlightSearch() {
                           style={{
                             padding: "4px 10px 2px",
                             fontSize: sectionFontSize,
-                            fontWeight: 600,
+                            fontWeight: "normal",
                             color: "rgba(0,0,0,0.4)",
-                            textTransform: "uppercase",
-                            letterSpacing: "0.04em",
                             fontFamily,
                             lineHeight: "1.3",
                           }}
@@ -350,14 +615,9 @@ export function SpotlightSearch() {
                               fontFamily,
                               fontSize,
                               lineHeight: "1.3",
-                              borderRadius:
-                                currentTheme === "macosx" ? "4px" : "0px",
-                              margin:
-                                currentTheme === "macosx" ? "0 3px" : "0",
-                              width:
-                                currentTheme === "macosx"
-                                  ? "calc(100% - 6px)"
-                                  : "100%",
+                              borderRadius: "0px",
+                              margin: "0",
+                              width: "100%",
                               minHeight: isMobile ? "32px" : undefined,
                             }}
                             onClick={() => {
@@ -422,8 +682,8 @@ export function SpotlightSearch() {
                       })}
                     </div>
                   ))}
-                </div>
-              )}
+                  </div>
+                ))}
 
               {/* No results */}
               {results.length === 0 && query.trim() && (

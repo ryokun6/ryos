@@ -262,6 +262,7 @@
     }
   },
   "spotlight": {
+    "title": "Spotlight",
     "placeholder": "Search ryOS",
     "sections": {
       "apps": "Applications",
