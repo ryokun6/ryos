@@ -22,8 +22,6 @@ import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { detectUserOS } from "@/utils/userOS";
-import { generateJSON } from "@tiptap/core";
-import { markdownToHtml } from "@/utils/markdown";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
@@ -45,7 +43,6 @@ import {
   mergeMessagesWithTimestamps,
   type RateLimitErrorState,
 } from "../utils/chatRuntime";
-import { TEXTEDIT_TIPTAP_EXTENSIONS } from "../utils/textEditSerialization";
 import { getSystemState } from "../utils/systemState";
 import {
   attemptLocalFileReplacement,
@@ -56,6 +53,7 @@ import {
   readOptionalTextContentFromStore,
   saveDocumentTextFile,
 } from "../utils/localFileContent";
+import { syncTextEditDocumentForPath } from "../utils/textEditDocumentSync";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -887,9 +885,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             console.log("[ToolCall] write:", { path, mode, contentLength: content?.length });
 
             try {
-              const appStore = useAppStore.getState();
-              const textEditStore = useTextEditStore.getState();
-
               // Check if file exists for append/prepend modes
               const existingItem = useFilesStore.getState().items[path];
               const isNewFile = !existingItem || existingItem.status !== "active";
@@ -914,53 +909,14 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 content: finalContent,
               });
 
-              // Find existing TextEdit instance for this file
-              let targetInstanceId: string | null = null;
-              for (const [instanceId, instance] of Object.entries(textEditStore.instances)) {
-                if (instance.filePath === path) {
-                  // Verify instance actually exists in AppStore
-                  if (appStore.instances[instanceId]) {
-                    targetInstanceId = instanceId;
-                  } else {
-                    // Stale instance reference - clean it up
-                    textEditStore.removeInstance(instanceId);
-                  }
-                  break;
-                }
-              }
-
-              if (targetInstanceId) {
-                // Update existing TextEdit instance with content
-                const htmlFragment = markdownToHtml(finalContent);
-                const contentJson = generateJSON(
-                  htmlFragment,
-                  TEXTEDIT_TIPTAP_EXTENSIONS
-                );
-
-                textEditStore.updateInstance(targetInstanceId, {
-                  filePath: path,
-                  contentJson,
-                  hasUnsavedChanges: false, // Already saved to disk
-                });
-
-                // Dispatch event to update the editor content
-                window.dispatchEvent(
-                  new CustomEvent("documentUpdated", {
-                    detail: { path, content: JSON.stringify(contentJson) },
-                  })
-                );
-
-                appStore.bringInstanceToForeground(targetInstanceId);
-              } else {
-                // Create new TextEdit instance with initialData (same pattern as Finder)
-                const windowTitle = fileName.replace(/\.md$/, "") || "Untitled";
-                targetInstanceId = appStore.launchApp(
-                  "textedit",
-                  { path, content: finalContent },
-                  windowTitle,
-                  true
-                );
-              }
+              syncTextEditDocumentForPath({
+                path,
+                content: finalContent,
+                fileName,
+                launchIfMissing: true,
+                bringToForeground: true,
+                includeFilePathOnUpdate: true,
+              });
 
               const outputKey = isNewFile ? "createdDocument" : "updatedDocument";
               addToolResult({
@@ -1059,23 +1015,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   recordName: fileItem.name,
                 });
 
-                // Also update any open TextEdit instance showing this file
-                const textEditState = useTextEditStore.getState();
-                for (const [instanceId, instance] of Object.entries(textEditState.instances)) {
-                  if (instance.filePath === path) {
-                    const updatedHtml = markdownToHtml(updatedContent);
-                    const updatedJson = generateJSON(
-                      updatedHtml,
-                      TEXTEDIT_TIPTAP_EXTENSIONS
-                    );
-
-                    textEditState.updateInstance(instanceId, {
-                      contentJson: updatedJson,
-                      hasUnsavedChanges: false, // Already saved to disk
-                    });
-                    break;
-                  }
-                }
+                syncTextEditDocumentForPath({
+                  path,
+                  content: updatedContent,
+                  launchIfMissing: false,
+                  bringToForeground: false,
+                  includeFilePathOnUpdate: false,
+                });
 
                 addToolResult({
                   tool: toolCall.toolName,
