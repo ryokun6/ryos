@@ -51,6 +51,7 @@ import {
   writeDocumentFileWithMode,
 } from "../utils/localFileContent";
 import {
+  getEditReplacementFailureMessage,
   validateDocumentWriteInput,
   validateFileEditInput,
 } from "../utils/chatFileToolValidation";
@@ -933,24 +934,20 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 return;
               }
 
-              if (replacement.reason === "not_found") {
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  state: "output-error",
-                  errorText: i18n.t("apps.chats.toolCalls.oldStringNotFound"),
-                });
-              } else {
-                addToolResult({
-                  tool: toolCall.toolName,
-                  toolCallId: toolCall.toolCallId,
-                  state: "output-error",
-                  errorText: i18n.t(
-                    "apps.chats.toolCalls.oldStringMultipleMatches",
-                    { count: replacement.occurrences },
-                  ),
-                });
-              }
+              const descriptor = getEditReplacementFailureMessage({
+                reason: replacement.reason,
+                occurrences: replacement.occurrences,
+              });
+
+              addToolResult({
+                tool: toolCall.toolName,
+                toolCallId: toolCall.toolCallId,
+                state: "output-error",
+                errorText:
+                  "errorParams" in descriptor
+                    ? i18n.t(descriptor.errorKey, descriptor.errorParams)
+                    : i18n.t(descriptor.errorKey),
+              });
 
             };
 

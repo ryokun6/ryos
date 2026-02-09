@@ -35,6 +35,29 @@ export type EditValidationSuccess = {
 
 export type EditValidationResult = EditValidationFailure | EditValidationSuccess;
 
+export type EditReplacementFailure = {
+  reason: "not_found" | "multiple_matches";
+  occurrences: number;
+};
+
+export const getEditReplacementFailureMessage = (
+  failure: EditReplacementFailure,
+):
+  | { errorKey: "apps.chats.toolCalls.oldStringNotFound" }
+  | {
+      errorKey: "apps.chats.toolCalls.oldStringMultipleMatches";
+      errorParams: { count: number };
+    } => {
+  if (failure.reason === "not_found") {
+    return { errorKey: "apps.chats.toolCalls.oldStringNotFound" };
+  }
+
+  return {
+    errorKey: "apps.chats.toolCalls.oldStringMultipleMatches",
+    errorParams: { count: failure.occurrences },
+  };
+};
+
 export const validateDocumentWriteInput = ({
   path,
   content,

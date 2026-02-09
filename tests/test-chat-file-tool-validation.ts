@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
 import {
+  getEditReplacementFailureMessage,
   validateDocumentWriteInput,
   validateFileEditInput,
 } from "../src/apps/chats/utils/chatFileToolValidation";
@@ -136,6 +137,30 @@ export async function runChatFileToolValidationTests(): Promise<{
       assertEq(result.oldString, "old");
       assertEq(result.newString, "new");
     }
+  });
+
+  console.log(section("Edit replacement failure mapping"));
+  await runTest("maps not_found replacement failures to oldStringNotFound key", async () => {
+    const descriptor = getEditReplacementFailureMessage({
+      reason: "not_found",
+      occurrences: 0,
+    });
+    assertEq(descriptor.errorKey, "apps.chats.toolCalls.oldStringNotFound");
+  });
+
+  await runTest("maps multiple_matches failures to count-aware translation key", async () => {
+    const descriptor = getEditReplacementFailureMessage({
+      reason: "multiple_matches",
+      occurrences: 3,
+    });
+    assertEq(
+      descriptor.errorKey,
+      "apps.chats.toolCalls.oldStringMultipleMatches",
+    );
+    assertEq(
+      "errorParams" in descriptor ? descriptor.errorParams?.count : undefined,
+      3,
+    );
   });
 
   return printSummary();
