@@ -7,7 +7,7 @@ import {
   AUTH_TOKEN_RECOVERY_KEY,
   TOKEN_LAST_REFRESH_KEY,
   USERNAME_RECOVERY_KEY,
-} from "./recovery";
+} from "./persistLifecycle";
 import {
   readErrorResponseBody,
   withChatRequestDefaults,

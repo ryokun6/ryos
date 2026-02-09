@@ -1,14 +1,4 @@
 export {
-  TOKEN_REFRESH_THRESHOLD,
-  ensureRecoveryKeysAreSet,
-  getAuthTokenFromRecovery,
-  getTokenRefreshTime,
-  getUsernameFromRecovery,
-  saveAuthTokenToRecovery,
-  saveTokenRefreshTime,
-  saveUsernameToRecovery,
-} from "./recovery";
-export {
   createOptimisticChatMessage,
   createRoomRequest,
   deleteRoomRequest,
@@ -56,8 +46,16 @@ export {
   withChatRequestDefaults,
 } from "./transport";
 export {
+  TOKEN_REFRESH_THRESHOLD,
   createChatsOnRehydrateStorage,
+  ensureRecoveryKeysAreSet,
+  getAuthTokenFromRecovery,
+  getTokenRefreshTime,
+  getUsernameFromRecovery,
   migrateChatsPersistedState,
+  saveAuthTokenToRecovery,
+  saveTokenRefreshTime,
+  saveUsernameToRecovery,
 } from "./persistLifecycle";
 export {
   clearUnreadCount,
