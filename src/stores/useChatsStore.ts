@@ -9,13 +9,6 @@ import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import {
-  clearApiUnavailable,
-  isApiTemporarilyUnavailable,
-  markApiTemporarilyUnavailable,
-  readJsonBody,
-  warnChatsStoreOnce,
-} from "./chats/apiGuards";
-import {
   TOKEN_REFRESH_THRESHOLD,
   ensureRecoveryKeysAreSet,
   getAuthTokenFromRecovery,
@@ -46,11 +39,6 @@ import {
 } from "./chats/authApi";
 import { readErrorResponseBody } from "./chats/httpErrors";
 import {
-  fetchBulkMessagesRequest,
-  fetchRoomMessagesRequest,
-  fetchRoomsRequest,
-} from "./chats/messageRequests";
-import {
   getDaysUntilTokenRefresh,
   getTokenAgeDays,
   isTokenRefreshDue,
@@ -70,6 +58,11 @@ import {
   removeRoomMessageFromMap,
   setCurrentRoomMessagesInMap,
 } from "./chats/roomState";
+import {
+  fetchBulkMessagesPayload,
+  fetchRoomMessagesPayload,
+  fetchRoomsPayload,
+} from "./chats/messagePayloads";
 
 // Define the state structure
 export interface ChatsStoreState {
@@ -662,119 +655,50 @@ export const useChatsStore = create<ChatsStoreState>()(
         },
         fetchRooms: async () => {
           console.log("[ChatsStore] Fetching rooms...");
-          if (isApiTemporarilyUnavailable("rooms")) {
-            return { ok: false, error: "Rooms API temporarily unavailable" };
+          const result = await fetchRoomsPayload(get().username);
+          if (!result.ok) {
+            if (result.error === "Network error. Please try again.") {
+              console.error("[ChatsStore] Error fetching rooms");
+            }
+            return { ok: false, error: result.error };
           }
-          const currentUsername = get().username;
 
-          try {
-            const response = await fetchRoomsRequest(currentUsername);
-            if (!response.ok) {
-              const errorData = await readJsonBody<{ error?: string }>(
-                response,
-                "fetchRooms error response"
-              );
-              return {
-                ok: false,
-                error: errorData.ok
-                  ? errorData.data.error || "Failed to fetch rooms"
-                  : `HTTP error! status: ${response.status}`,
-              };
-            }
-
-            const roomsData = await readJsonBody<{ rooms?: ChatRoom[] }>(
-              response,
-              "fetchRooms success response"
-            );
-            if (!roomsData.ok) {
-              warnChatsStoreOnce("fetchRooms-success-response", `[ChatsStore] ${roomsData.error}`);
-              markApiTemporarilyUnavailable("rooms");
-              return { ok: false, error: "Rooms API unavailable" };
-            }
-
-            const data = roomsData.data;
-            if (data.rooms && Array.isArray(data.rooms)) {
-              clearApiUnavailable("rooms");
-              // Normalize ordering via setRooms to enforce alphabetical sections
-              get().setRooms(data.rooms);
-              return { ok: true };
-            }
-
-            return { ok: false, error: "Invalid response format" };
-          } catch (error) {
-            console.error("[ChatsStore] Error fetching rooms:", error);
-            markApiTemporarilyUnavailable("rooms");
-            return { ok: false, error: "Network error. Please try again." };
-          }
+          // Normalize ordering via setRooms to enforce alphabetical sections
+          get().setRooms(result.rooms);
+          return { ok: true };
         },
         fetchMessagesForRoom: async (roomId: string) => {
           if (!roomId) return { ok: false, error: "Room ID required" };
 
           console.log(`[ChatsStore] Fetching messages for room ${roomId}...`);
-          if (isApiTemporarilyUnavailable("room-messages")) {
-            return { ok: false, error: "Messages API temporarily unavailable" };
+          const result = await fetchRoomMessagesPayload(roomId);
+          if (!result.ok) {
+            if (result.error === "Network error. Please try again.") {
+              console.error(
+                `[ChatsStore] Error fetching messages for room ${roomId}`
+              );
+            }
+            return { ok: false, error: result.error };
           }
 
-          try {
-            const response = await fetchRoomMessagesRequest(roomId);
-            if (!response.ok) {
-              const errorData = await readJsonBody<{ error?: string }>(
-                response,
-                "fetchMessagesForRoom error response"
-              );
-              return {
-                ok: false,
-                error: errorData.ok
-                  ? errorData.data.error || "Failed to fetch messages"
-                  : `HTTP error! status: ${response.status}`,
-              };
-            }
+          const fetchedMessages = normalizeApiMessages(result.messages || []);
 
-            const messagesData = await readJsonBody<{ messages?: ApiMessage[] }>(
-              response,
-              "fetchMessagesForRoom success response"
+          // Merge with any existing messages to avoid race conditions with realtime pushes
+          set((state) => {
+            const existing = state.roomMessages[roomId] || [];
+            const merged = mergeServerMessagesWithOptimistic(
+              existing,
+              fetchedMessages
             );
-            if (!messagesData.ok) {
-              warnChatsStoreOnce(
-                "fetchMessagesForRoom-success-response",
-                `[ChatsStore] ${messagesData.error}`
-              );
-              markApiTemporarilyUnavailable("room-messages");
-              return { ok: false, error: "Messages API unavailable" };
-            }
+            return {
+              roomMessages: {
+                ...state.roomMessages,
+                [roomId]: merged,
+              },
+            };
+          });
 
-            const data = messagesData.data;
-            if (data.messages) {
-              clearApiUnavailable("room-messages");
-              const fetchedMessages = normalizeApiMessages(data.messages || []);
-
-              // Merge with any existing messages to avoid race conditions with realtime pushes
-              set((state) => {
-                const existing = state.roomMessages[roomId] || [];
-                const merged = mergeServerMessagesWithOptimistic(
-                  existing,
-                  fetchedMessages
-                );
-                return {
-                  roomMessages: {
-                    ...state.roomMessages,
-                    [roomId]: merged,
-                  },
-                };
-              });
-
-              return { ok: true };
-            }
-
-            return { ok: false, error: "Invalid response format" };
-          } catch (error) {
-            console.error(
-              `[ChatsStore] Error fetching messages for room ${roomId}:`,
-              error
-            );
-            markApiTemporarilyUnavailable("room-messages");
-            return { ok: false, error: "Network error. Please try again." };
-          }
+          return { ok: true };
         },
         fetchBulkMessages: async (roomIds: string[]) => {
           if (roomIds.length === 0)
@@ -783,76 +707,36 @@ export const useChatsStore = create<ChatsStoreState>()(
           console.log(
             `[ChatsStore] Fetching messages for rooms: ${roomIds.join(", ")}...`
           );
-          if (isApiTemporarilyUnavailable("bulk-messages")) {
-            return { ok: false, error: "Bulk messages API temporarily unavailable" };
+          const result = await fetchBulkMessagesPayload(roomIds);
+          if (!result.ok) {
+            if (result.error === "Network error. Please try again.") {
+              console.error(
+                `[ChatsStore] Error fetching messages for rooms ${roomIds.join(
+                  ", "
+                )}`
+              );
+            }
+            return { ok: false, error: result.error };
           }
 
-          try {
-            const response = await fetchBulkMessagesRequest(roomIds);
-            if (!response.ok) {
-              const errorData = await readJsonBody<{ error?: string }>(
-                response,
-                "fetchBulkMessages error response"
+          // Process and sort messages for each room like fetchMessagesForRoom does
+          set((state) => {
+            const nextRoomMessages = { ...state.roomMessages };
+
+            Object.entries(result.messagesMap).forEach(([roomId, messages]) => {
+              const processed = normalizeApiMessages(messages as ApiMessage[]);
+
+              const existing = nextRoomMessages[roomId] || [];
+              nextRoomMessages[roomId] = mergeServerMessagesWithOptimistic(
+                existing,
+                processed
               );
-              return {
-                ok: false,
-                error: errorData.ok
-                  ? errorData.data.error || "Failed to fetch messages"
-                  : `HTTP error! status: ${response.status}`,
-              };
-            }
+            });
 
-            const bulkData = await readJsonBody<{
-              messagesMap?: Record<string, ApiMessage[]>;
-            }>(response, "fetchBulkMessages success response");
-            if (!bulkData.ok) {
-              warnChatsStoreOnce(
-                "fetchBulkMessages-success-response",
-                `[ChatsStore] ${bulkData.error}`
-              );
-              markApiTemporarilyUnavailable("bulk-messages");
-              return { ok: false, error: "Bulk messages API unavailable" };
-            }
+            return { roomMessages: nextRoomMessages };
+          });
 
-            const data = bulkData.data;
-            const messagesMap = data.messagesMap;
-            if (messagesMap) {
-              clearApiUnavailable("bulk-messages");
-              // Process and sort messages for each room like fetchMessagesForRoom does
-              set((state) => {
-                const nextRoomMessages = { ...state.roomMessages };
-
-                Object.entries(messagesMap).forEach(
-                  ([roomId, messages]) => {
-                    const processed = normalizeApiMessages(
-                      messages as ApiMessage[]
-                    );
-
-                    const existing = nextRoomMessages[roomId] || [];
-                    nextRoomMessages[roomId] = mergeServerMessagesWithOptimistic(
-                      existing,
-                      processed
-                    );
-                  }
-                );
-
-                return { roomMessages: nextRoomMessages };
-              });
-
-              return { ok: true };
-            }
-
-            return { ok: false, error: "Invalid response format" };
-          } catch (error) {
-            console.error(
-              `[ChatsStore] Error fetching messages for rooms ${roomIds.join(
-                ", "
-              )}:`,
-              error
-            );
-            markApiTemporarilyUnavailable("bulk-messages");
-            return { ok: false, error: "Network error. Please try again." };
-          }
+          return { ok: true };
         },
         switchRoom: async (newRoomId: string | null) => {
           const currentRoomId = get().currentRoomId;
