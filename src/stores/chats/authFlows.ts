@@ -24,6 +24,8 @@ const SEND_MESSAGE_FAILED_ERROR = "Failed to send message";
 const SWITCH_ROOM_FAILED_ERROR = "Failed to switch rooms";
 const FETCH_ROOMS_FAILED_ERROR = "Failed to fetch rooms";
 const FETCH_MESSAGES_FAILED_ERROR = "Failed to fetch messages";
+const PASSWORD_STATUS_NETWORK_ERROR = "Network error while checking password";
+const SET_PASSWORD_NETWORK_ERROR = "Network error while setting password";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Recovery / persistence key helpers
@@ -234,6 +236,9 @@ const createAuthenticatedHeaders = (
   }
   return headers;
 };
+
+const createTempMessageId = (): string =>
+  `temp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
 const withJsonHeaders = (headers?: HeadersInit): Headers => {
   const nextHeaders = toHeaders(headers);
@@ -919,7 +924,7 @@ export const runCheckHasPasswordFlow = async ({
     return logAndBuildErrorResult(
       "[ChatsStore] Error checking password status:",
       error,
-      "Network error while checking password"
+      PASSWORD_STATUS_NETWORK_ERROR
     );
   }
 };
@@ -959,7 +964,7 @@ export const runSetPasswordFlow = async ({
     return logAndBuildErrorResult(
       "[ChatsStore] Error setting password:",
       error,
-      "Network error while setting password"
+      SET_PASSWORD_NETWORK_ERROR
     );
   }
 };
@@ -1798,7 +1803,7 @@ const createOptimisticChatMessage = (
   username: string,
   content: string
 ): ChatMessage => {
-  const tempId = `temp_${Math.random().toString(36).substring(2, 9)}`;
+  const tempId = createTempMessageId();
   return {
     id: tempId,
     clientId: tempId,
