@@ -1887,15 +1887,24 @@ export const sanitizeMessageRenderLimit = (limit: number): number =>
 export const incrementUnreadCount = (
   unreadCounts: Record<string, number>,
   roomId: string
-): Record<string, number> => ({
-  ...unreadCounts,
-  [roomId]: (unreadCounts[roomId] || 0) + 1,
-});
+): Record<string, number> => {
+  if (!roomId) {
+    return unreadCounts;
+  }
+
+  return {
+    ...unreadCounts,
+    [roomId]: (unreadCounts[roomId] || 0) + 1,
+  };
+};
 
 export const clearUnreadCount = (
   unreadCounts: Record<string, number>,
   roomId: string
 ): Record<string, number> => {
+  if (!roomId) {
+    return unreadCounts;
+  }
   if (!(roomId in unreadCounts)) {
     return unreadCounts;
   }
