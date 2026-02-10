@@ -78,6 +78,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "DOM assignment hardening",
       "script task-marker baseline cap",
       "YAML merge-marker failure coverage",
+      "JSON merge-marker failure coverage",
       "documentation markdown merge-marker failure coverage",
       "`schemaVersion` type/positivity validation coverage",
       "`passed`/failed-status consistency",
