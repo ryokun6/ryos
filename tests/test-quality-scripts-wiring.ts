@@ -89,6 +89,10 @@ export async function runQualityScriptsWiringTests(): Promise<{
       qualityAll.includes("bun run quality:verify"),
       "quality:all must include quality:verify"
     );
+    assert(
+      !qualityAll.includes("bun run quality:all:ci"),
+      "quality:all must not invoke quality:all:ci"
+    );
   });
 
   await runTest("quality:all:ci generates report and runs full suite", async () => {
@@ -115,6 +119,10 @@ export async function runQualityScriptsWiringTests(): Promise<{
     assert(
       !qualityAllCi.includes("bun run quality:check &&"),
       "quality:all:ci should not rerun plain quality:check after JSON generation"
+    );
+    assert(
+      !qualityAllCi.includes("bun run quality:all"),
+      "quality:all:ci must not invoke quality:all"
     );
   });
 
