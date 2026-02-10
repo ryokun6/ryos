@@ -105,6 +105,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - no unresolved task markers in source (`TODO`, `FIXME`, `HACK`, `XXX`)
   - file-size regression checks (max files over 1500 LOC and max single-file LOC cap).
   - allowlisted `dangerouslySetInnerHTML` usage (only permitted in `HtmlPreview` stream renderer).
+  - allowlisted `biome-ignore lint/correctness/useExhaustiveDependencies` usage (currently only permitted in `useStreamingFetch`).
 
 ### Low priority
 

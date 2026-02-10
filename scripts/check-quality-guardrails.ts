@@ -103,6 +103,15 @@ const DANGEROUSLY_SET_INNER_HTML_GUARDRAIL: AllowlistedPatternGuardrail = {
   maxAllowedTotal: 2,
 };
 
+const BIOME_EXHAUSTIVE_DEPS_BYPASS_GUARDRAIL: AllowlistedPatternGuardrail = {
+  name: "biome exhaustive-deps bypass comments",
+  roots: ["src", "_api"],
+  extensions: [".ts", ".tsx"],
+  pattern: /biome-ignore\s+lint\/correctness\/useExhaustiveDependencies/g,
+  allowedFiles: new Set(["src/hooks/useStreamingFetch.ts"]),
+  maxAllowedTotal: 1,
+};
+
 const gatherFiles = async (
   root: string,
   extensions: ReadonlyArray<string>
@@ -281,19 +290,23 @@ const run = async (): Promise<void> => {
     }
   }
 
-  const dangerouslySetInnerHtmlResult = await checkAllowlistedPattern(
-    cwd,
-    DANGEROUSLY_SET_INNER_HTML_GUARDRAIL
-  );
-  const dangerousStatus = dangerouslySetInnerHtmlResult.passed ? "PASS" : "FAIL";
-  console.log(
-    `${dangerousStatus.padEnd(4)} ${DANGEROUSLY_SET_INNER_HTML_GUARDRAIL.name}: ${dangerouslySetInnerHtmlResult.total} (allowed <= ${DANGEROUSLY_SET_INNER_HTML_GUARDRAIL.maxAllowedTotal}, files allowlisted: ${DANGEROUSLY_SET_INNER_HTML_GUARDRAIL.allowedFiles.size})`
-  );
+  const allowlistedPatternGuardrails = [
+    DANGEROUSLY_SET_INNER_HTML_GUARDRAIL,
+    BIOME_EXHAUSTIVE_DEPS_BYPASS_GUARDRAIL,
+  ];
 
-  if (!dangerouslySetInnerHtmlResult.passed) {
-    hasViolation = true;
-    for (const offender of dangerouslySetInnerHtmlResult.disallowedMatches) {
-      console.log(`      - ${offender.path} (${offender.count})`);
+  for (const guardrail of allowlistedPatternGuardrails) {
+    const result = await checkAllowlistedPattern(cwd, guardrail);
+    const status = result.passed ? "PASS" : "FAIL";
+    console.log(
+      `${status.padEnd(4)} ${guardrail.name}: ${result.total} (allowed <= ${guardrail.maxAllowedTotal}, files allowlisted: ${guardrail.allowedFiles.size})`
+    );
+
+    if (!result.passed) {
+      hasViolation = true;
+      for (const offender of result.disallowedMatches) {
+        console.log(`      - ${offender.path} (${offender.count})`);
+      }
     }
   }
 

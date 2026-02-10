@@ -93,6 +93,10 @@ export async function runQualityGuardrailTests(): Promise<{
       out.includes("dangerouslySetInnerHTML usage"),
       "Missing dangerouslySetInnerHTML allowlist guardrail"
     );
+    assert(
+      out.includes("biome exhaustive-deps bypass comments"),
+      "Missing biome exhaustive-deps bypass allowlist guardrail"
+    );
   });
 
   console.log(section("Failure behavior"));
@@ -228,6 +232,37 @@ export async function runQualityGuardrailTests(): Promise<{
       rmSync(qualityRoot, { recursive: true, force: true });
     }
   });
+
+  await runTest(
+    "fails when biome exhaustive-deps bypass appears outside allowlist",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src"), { recursive: true });
+        writeFileSync(
+          join(root, "src", "BadBypass.ts"),
+          `// biome-ignore lint/correctness/useExhaustiveDependencies: test\nexport const y = 1;\n`,
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for disallowed biome bypass comment, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes(
+            "FAIL biome exhaustive-deps bypass comments"
+          ),
+          "Expected biome exhaustive-deps bypass guardrail failure"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
 
   await runTest("fails when large file guardrail is exceeded", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
