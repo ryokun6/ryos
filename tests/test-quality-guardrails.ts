@@ -214,6 +214,7 @@ export async function runQualityGuardrailTests(): Promise<{
     );
     assert(out.includes("@ts-nocheck comments"), "Missing ts-nocheck guardrail");
     assert(out.includes("innerHTML assignments"), "Missing innerHTML guardrail");
+    assert(out.includes("outerHTML assignments"), "Missing outerHTML guardrail");
     assert(out.includes("execSync usage"), "Missing execSync guardrail");
     assert(
       out.includes("child_process exec import usage"),
@@ -789,6 +790,32 @@ export async function runQualityGuardrailTests(): Promise<{
       assert(
         (result.stdout || "").includes("FAIL innerHTML assignments"),
         "Expected innerHTML guardrail failure for js sources"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when outerHTML assignment is introduced in JavaScript", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "BadOuterHtml.js"),
+        `const el = document.createElement("div");\nel.outerHTML = "<div>y</div>";\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for outerHTML in js, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL outerHTML assignments"),
+        "Expected outerHTML guardrail failure for js sources"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });

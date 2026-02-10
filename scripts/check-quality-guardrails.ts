@@ -83,6 +83,13 @@ const GUARDRAILS: GuardrailCheck[] = [
     maxAllowed: 0,
   },
   {
+    name: "outerHTML assignments",
+    roots: ["src"],
+    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    pattern: /outerHTML\s*=/g,
+    maxAllowed: 0,
+  },
+  {
     name: "execSync usage",
     roots: ["scripts", "src", "_api"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],
