@@ -70,6 +70,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "Allowlisted `dangerouslySetInnerHTML` usage only",
       "`schemaVersion` plus `totalChecks` and",
       "`failedChecks` metadata.",
+      "cap-overflow failures print offending allowlisted file paths for triage",
       "failed-check offender previews (top 5 per check)",
       "When count metadata is omitted, summary rendering derives counts from `checks`",
       "Most content checks scan TypeScript and JavaScript sources (`.ts/.tsx/.js/.jsx`)",
