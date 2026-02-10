@@ -15,6 +15,7 @@ interface LandscapeVideoBackgroundProps {
 /**
  * Cycles through landscape video wallpapers with crossfade transitions.
  * Loads video list from the wallpaper manifest.
+ * Follows the same video playback patterns as Desktop.tsx for reliability.
  */
 export function LandscapeVideoBackground({
   isActive,
@@ -22,11 +23,10 @@ export function LandscapeVideoBackground({
 }: LandscapeVideoBackgroundProps) {
   const [videos, setVideos] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [nextIndex, setNextIndex] = useState(1);
-  const [isCrossfading, setIsCrossfading] = useState(false);
+  const [showSecond, setShowSecond] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const currentVideoRef = useRef<HTMLVideoElement>(null);
-  const nextVideoRef = useRef<HTMLVideoElement>(null);
+  const videoARef = useRef<HTMLVideoElement>(null);
+  const videoBRef = useRef<HTMLVideoElement>(null);
 
   // Load video wallpaper list from manifest
   useEffect(() => {
@@ -38,8 +38,6 @@ export function LandscapeVideoBackground({
         // Shuffle the list so it's different each session
         const shuffled = [...videoPaths].sort(() => Math.random() - 0.5);
         setVideos(shuffled);
-        setCurrentIndex(0);
-        setNextIndex(shuffled.length > 1 ? 1 : 0);
       })
       .catch((err) => {
         console.warn("[LandscapeVideoBackground] Failed to load manifest:", err);
@@ -49,24 +47,58 @@ export function LandscapeVideoBackground({
     };
   }, []);
 
-  // Advance to next video with crossfade
+  // Attempt to play a video element safely
+  const safePlay = useCallback((video: HTMLVideoElement) => {
+    if (video.readyState >= 3) {
+      video.play().catch((err) => {
+        console.warn("[LandscapeVideoBackground] Could not play video:", err);
+      });
+    } else {
+      const handleCanPlay = () => {
+        video.play().catch((err) => {
+          console.warn("[LandscapeVideoBackground] Could not play video:", err);
+        });
+        video.removeEventListener("canplaythrough", handleCanPlay);
+      };
+      video.addEventListener("canplaythrough", handleCanPlay);
+    }
+  }, []);
+
+  // Set source and play on a video element
+  const loadAndPlay = useCallback(
+    (video: HTMLVideoElement, src: string) => {
+      video.src = src;
+      video.load();
+      safePlay(video);
+    },
+    [safePlay]
+  );
+
+  // Initialize the first video once video list is loaded
+  useEffect(() => {
+    if (videos.length === 0 || !videoARef.current) return;
+    loadAndPlay(videoARef.current, videos[0]);
+    setCurrentIndex(0);
+    setShowSecond(false);
+  }, [videos, loadAndPlay]);
+
+  // Advance to the next video with crossfade
   const advanceVideo = useCallback(() => {
     if (videos.length <= 1) return;
 
-    setIsCrossfading(true);
+    const nextIdx = (currentIndex + 1) % videos.length;
+    // Load the next video into the hidden element
+    const incomingRef = showSecond ? videoARef : videoBRef;
+    if (incomingRef.current) {
+      loadAndPlay(incomingRef.current, videos[nextIdx]);
+    }
 
-    // After crossfade completes, swap videos
-    setTimeout(() => {
-      setCurrentIndex((prev) => {
-        const next = (prev + 1) % videos.length;
-        setNextIndex((next + 1) % videos.length);
-        return next;
-      });
-      setIsCrossfading(false);
-    }, CROSSFADE_MS);
-  }, [videos.length]);
+    // Start crossfade: show the incoming element
+    setShowSecond((prev) => !prev);
+    setCurrentIndex(nextIdx);
+  }, [videos, currentIndex, showSecond, loadAndPlay]);
 
-  // Schedule video advancement timer
+  // Schedule periodic advancement
   useEffect(() => {
     if (!isActive || videos.length <= 1) return;
 
@@ -80,7 +112,7 @@ export function LandscapeVideoBackground({
     };
   }, [isActive, currentIndex, videos.length, advanceVideo]);
 
-  // Also advance when video naturally ends
+  // Also advance when the current video naturally ends
   const handleVideoEnded = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -89,41 +121,57 @@ export function LandscapeVideoBackground({
     advanceVideo();
   }, [advanceVideo]);
 
+  // Resume playback on visibility change (tab switch back)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState !== "visible") return;
+      const active = showSecond ? videoBRef.current : videoARef.current;
+      if (active && active.paused && active.src) {
+        safePlay(active);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
+  }, [showSecond, safePlay]);
+
   if (videos.length === 0) {
     return <div className={`bg-black ${className}`} />;
   }
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
-      {/* Current video */}
+      {/* Video A */}
       <video
-        ref={currentVideoRef}
-        key={`current-${currentIndex}`}
-        src={videos[currentIndex]}
+        ref={videoARef}
         autoPlay
         muted
         loop={videos.length === 1}
         playsInline
-        onEnded={handleVideoEnded}
+        preload="auto"
+        data-webkit-playsinline="true"
+        onEnded={!showSecond ? handleVideoEnded : undefined}
         className="absolute inset-0 w-full h-full object-cover"
         style={{
-          opacity: 1,
+          opacity: showSecond ? 0 : 1,
           transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
         }}
       />
 
-      {/* Next video (preloaded, fades in during crossfade) */}
+      {/* Video B */}
       {videos.length > 1 && (
         <video
-          ref={nextVideoRef}
-          key={`next-${nextIndex}`}
-          src={videos[nextIndex]}
+          ref={videoBRef}
           autoPlay
           muted
+          loop={false}
           playsInline
+          preload="auto"
+          data-webkit-playsinline="true"
+          onEnded={showSecond ? handleVideoEnded : undefined}
           className="absolute inset-0 w-full h-full object-cover"
           style={{
-            opacity: isCrossfading ? 1 : 0,
+            opacity: showSecond ? 1 : 0,
             transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
           }}
         />
