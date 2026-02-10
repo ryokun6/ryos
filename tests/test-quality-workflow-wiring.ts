@@ -135,6 +135,10 @@ export async function runQualityWorkflowWiringTests(): Promise<{
       /if-no-files-found:\s*ignore/.test(source),
       "Expected artifact upload to ignore missing file edge cases"
     );
+    assert(
+      /Upload quality report artifact[\s\S]*if:\s*always\(\)/.test(source),
+      "Expected artifact upload to run with if: always()"
+    );
   });
 
   return printSummary();
