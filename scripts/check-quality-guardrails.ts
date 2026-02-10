@@ -250,6 +250,15 @@ const DANGEROUSLY_SET_INNER_HTML_GUARDRAIL: AllowlistedPatternGuardrail = {
   maxAllowedTotal: 2,
 };
 
+const SRCDOC_ASSIGNMENTS_GUARDRAIL: AllowlistedPatternGuardrail = {
+  name: "srcdoc assignments",
+  roots: ["src"],
+  extensions: CODE_EXTENSIONS,
+  pattern: /\bsrcdoc\b\s*(?:\+?=)|\[\s*["'`]srcdoc["'`]\s*\]\s*(?:\+?=)/g,
+  allowedFiles: new Set(["src/components/shared/HtmlPreview.tsx"]),
+  maxAllowedTotal: 2,
+};
+
 const BIOME_EXHAUSTIVE_DEPS_BYPASS_GUARDRAIL: AllowlistedPatternGuardrail = {
   name: "biome exhaustive-deps bypass comments",
   roots: ["src", "_api"],
@@ -512,6 +521,7 @@ const run = async (): Promise<void> => {
 
   const allowlistedPatternGuardrails = [
     DANGEROUSLY_SET_INNER_HTML_GUARDRAIL,
+    SRCDOC_ASSIGNMENTS_GUARDRAIL,
     BIOME_EXHAUSTIVE_DEPS_BYPASS_GUARDRAIL,
   ];
 

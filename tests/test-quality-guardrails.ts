@@ -137,6 +137,7 @@ export async function runQualityGuardrailTests(): Promise<{
       "large TypeScript files",
       "very large script files",
       "dangerouslySetInnerHTML usage",
+      "srcdoc assignments",
       "biome exhaustive-deps bypass comments",
     ];
     assertEq(
@@ -2140,6 +2141,87 @@ export async function runQualityGuardrailTests(): Promise<{
         assert(
           (result.stdout || "").includes("PASS innerHTML assignments"),
           "Expected innerHTML guardrail pass for substring-only variable names"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest("fails when srcdoc assignment is introduced in JavaScript", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "BadSrcdoc.js"),
+        `const iframe = document.createElement("iframe");\niframe.srcdoc = "<script>alert(1)</script>";\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for srcdoc assignment in js, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL srcdoc assignments"),
+        "Expected srcdoc guardrail failure for js sources"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when bracket srcdoc assignment is introduced in JavaScript", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "BadSrcdocBracket.js"),
+        `const iframe = document.createElement("iframe");\niframe["srcdoc"] = "<script>alert(1)</script>";\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for bracket srcdoc assignment in js, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL srcdoc assignments"),
+        "Expected srcdoc guardrail failure for bracket assignment syntax"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest(
+    "passes when variable name merely contains srcdoc substring",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src"), { recursive: true });
+        writeFileSync(
+          join(root, "src", "SafeSrcdocSubstring.js"),
+          `const mysrcdoc = "<div>x</div>";\nconsole.log(mysrcdoc);\n`,
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 for srcdoc substring variable name, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS srcdoc assignments"),
+          "Expected srcdoc guardrail pass for substring-only variable names"
         );
       } finally {
         rmSync(qualityRoot, { recursive: true, force: true });

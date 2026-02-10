@@ -45,6 +45,9 @@ bun run quality:all:ci
 - No `@ts-nocheck` comments in source or scripts
 - No `innerHTML` assignments/mutations (`=`, `+=`) in `src`
   (including bracket-access forms)
+- No non-allowlisted `srcdoc` assignments/mutations (`=`, `+=`) in `src`
+  (including bracket-access forms; exact-member matching)
+  - allowlisted only in `src/components/shared/HtmlPreview.tsx` with a total cap of 2
 - No `outerHTML` assignments/mutations (`=`, `+=`) in `src`
   (including bracket-access forms)
 - No `insertAdjacentHTML(...)` usage in `src` (including bracket-access forms)

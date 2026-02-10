@@ -108,11 +108,12 @@ Large files remain the biggest quality risk (all >1500 LOC):
 - ✅ Added `bun run quality:check` (script: `scripts/check-quality-guardrails.ts`) to enforce:
   - suppression regression checks (`eslint-disable`, `@ts-ignore`, `@ts-nocheck`, `innerHTML =`, `execSync(`, `shell: true` including quoted/computed keys, spaced unquoted key syntax, spaced computed syntax, template-computed key syntax, and variable-computed key aliases)
     across application source and scripts
-  - DOM assignment hardening (`innerHTML =`, `outerHTML =`,
-    `innerHTML +=`, `outerHTML +=` including bracket access, `insertAdjacentHTML(...)` including bracket access,
+  - DOM assignment hardening (`innerHTML =`, `outerHTML =`, `srcdoc =`,
+    `innerHTML +=`, `outerHTML +=`, `srcdoc +=` including bracket access, `insertAdjacentHTML(...)` including bracket access,
     `document.write(...)` / `document.writeln(...)`, including bracket/optional-bracket access,
     spaced-dot member access, spacing-tolerant matching, and exact-member matching
-    to reduce substring false positives)
+    to reduce substring false positives; `srcdoc` is allowlisted only in
+    `src/components/shared/HtmlPreview.tsx` with cap 2)
   - command execution hardening (`child_process` `exec` import + direct usage blocked
     in scripts/source/api, including alias-destructuring import/require forms
     and alias-object destructuring (`const { exec } = cp`) patterns)
