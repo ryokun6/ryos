@@ -19,7 +19,7 @@ import {
 import { useLyrics } from "@/hooks/useLyrics";
 import { useFurigana } from "@/hooks/useFurigana";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { LyricsAlignment, LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
+import { LyricsAlignment, LyricsFont, DisplayMode, getLyricsFontClassName } from "@/types/lyrics";
 import { useOffline } from "@/hooks/useOffline";
 import { useListenSync } from "@/hooks/useListenSync";
 import { TRANSLATION_LANGUAGES, getYouTubeVideoId, formatKugouImageUrl } from "@/apps/ipod/constants";
@@ -61,6 +61,7 @@ export function useKaraokeLogic({
     japaneseFurigana,
     romanization,
     lyricsTranslationLanguage,
+    displayMode,
   } = useIpodStore(
     useShallow((s) => ({
       tracks: s.tracks,
@@ -71,6 +72,7 @@ export function useKaraokeLogic({
       japaneseFurigana: s.japaneseFurigana,
       romanization: s.romanization,
       lyricsTranslationLanguage: s.lyricsTranslationLanguage,
+      displayMode: s.displayMode ?? DisplayMode.Video,
     }))
   );
 
@@ -1215,6 +1217,7 @@ export function useKaraokeLogic({
     japaneseFurigana,
     romanization,
     lyricsTranslationLanguage,
+    displayMode,
     setLyricsAlignment,
     setLyricsFont,
     setRomanization,

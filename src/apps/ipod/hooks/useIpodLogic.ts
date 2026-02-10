@@ -27,7 +27,7 @@ import {
 } from "@/stores/helpers";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { LyricsAlignment, LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
+import { LyricsAlignment, LyricsFont, DisplayMode, getLyricsFontClassName } from "@/types/lyrics";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
 import {
@@ -95,6 +95,7 @@ export function useIpodLogic({
   const {
     theme,
     lcdFilterOn,
+    displayMode,
     showLyrics,
     lyricsAlignment,
     lyricsFont,
@@ -126,6 +127,7 @@ export function useIpodLogic({
   } = useIpodStoreShallow((s) => ({
     theme: s.theme,
     lcdFilterOn: s.lcdFilterOn,
+    displayMode: s.displayMode ?? DisplayMode.Video,
     showLyrics: s.showLyrics,
     lyricsAlignment: s.lyricsAlignment,
     lyricsFont: s.lyricsFont,
@@ -1732,6 +1734,7 @@ export function useIpodLogic({
     backlightOn,
     theme,
     lcdFilterOn,
+    displayMode,
     showLyrics,
     lyricsAlignment,
     lyricsFont,

@@ -24,6 +24,8 @@ import { ActivityIndicatorWithLabel } from "@/components/ui/activity-indicator-w
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useKaraokeLogic } from "../hooks/useKaraokeLogic";
+import { DisplayMode } from "@/types/lyrics";
+import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
 
 export function KaraokeAppComponent({
   isWindowOpen,
@@ -55,6 +57,7 @@ export function KaraokeAppComponent({
     setRomanization,
     lyricsTranslationLanguage,
     setLyricsTranslationLanguage,
+    displayMode,
     toggleLyrics,
     togglePlay,
     toggleShuffle,
@@ -306,8 +309,12 @@ export function KaraokeAppComponent({
           {/* Reaction overlay for listen sessions */}
           {listenSession && <ReactionOverlay className="z-40" />}
           {/* Video Player - container clips YouTube UI by extending height and using negative margin */}
+          {/* When display mode is not Video, the player is hidden visually but still plays audio */}
           {currentTrack ? (
-            <div className="absolute inset-0 overflow-hidden">
+            <div className={cn(
+              "absolute inset-0 overflow-hidden",
+              displayMode !== DisplayMode.Video && "opacity-0 pointer-events-none"
+            )}>
               <div className="w-full h-[calc(100%+400px)] mt-[-200px]">
                 <ReactPlayer
                   ref={playerRef}
@@ -353,9 +360,17 @@ export function KaraokeAppComponent({
             </div>
           )}
 
-          {/* Paused cover overlay */}
+          {/* Landscape video background */}
+          {displayMode === DisplayMode.Landscapes && currentTrack && (
+            <LandscapeVideoBackground
+              isActive={!!currentTrack}
+              className="absolute inset-0 z-[1]"
+            />
+          )}
+
+          {/* Cover overlay: shows when paused (any mode) or always in Cover mode */}
           <AnimatePresence>
-            {currentTrack && !isPlaying && coverUrl && (
+            {currentTrack && coverUrl && (displayMode === DisplayMode.Cover || !isPlaying) && (
               <motion.div
                 className="absolute inset-0 z-15"
                 initial={{ opacity: 0 }}
@@ -746,7 +761,10 @@ export function KaraokeAppComponent({
           {({ controlsVisible }) => (
             <div className="flex flex-col w-full h-full">
               <div className="relative w-full h-full overflow-hidden">
-                <div className="absolute inset-0 w-full h-full">
+                <div className={cn(
+                  "absolute inset-0 w-full h-full",
+                  displayMode !== DisplayMode.Video && "opacity-0 pointer-events-none"
+                )}>
                   <div
                     className="w-full absolute"
                     style={{
@@ -795,9 +813,17 @@ export function KaraokeAppComponent({
                   </div>
                 </div>
 
-                {/* Paused cover overlay */}
+                {/* Landscape video background (fullscreen) */}
+                {displayMode === DisplayMode.Landscapes && currentTrack && (
+                  <LandscapeVideoBackground
+                    isActive={!!currentTrack}
+                    className="fixed inset-0 z-[1]"
+                  />
+                )}
+
+                {/* Cover overlay: shows when paused (any mode) or always in Cover mode */}
                 <AnimatePresence>
-                  {currentTrack && !isPlaying && coverUrl && (
+                  {currentTrack && coverUrl && (displayMode === DisplayMode.Cover || !isPlaying) && (
                     <motion.div
                       className="fixed inset-0 z-15"
                       initial={{ opacity: 0 }}

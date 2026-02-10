@@ -18,7 +18,7 @@ import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { LyricsAlignment } from "@/types/lyrics";
+import { LyricsAlignment, DisplayMode } from "@/types/lyrics";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
@@ -78,6 +78,7 @@ export function IpodMenuBar({
     isShuffled,
     isBacklightOn,
     isVideoOn,
+    displayMode,
     isLcdFilterOn,
     currentTheme,
     showLyrics,
@@ -95,6 +96,7 @@ export function IpodMenuBar({
     previousTrack,
     toggleBacklight,
     toggleVideo,
+    setDisplayMode,
     toggleLcdFilter,
     toggleFullScreen,
     setTheme,
@@ -116,6 +118,7 @@ export function IpodMenuBar({
     isShuffled: s.isShuffled,
     isBacklightOn: s.backlightOn,
     isVideoOn: s.showVideo,
+    displayMode: s.displayMode ?? DisplayMode.Video,
     isLcdFilterOn: s.lcdFilterOn,
     currentTheme: s.theme,
     showLyrics: s.showLyrics,
@@ -133,6 +136,7 @@ export function IpodMenuBar({
     previousTrack: s.previousTrack,
     toggleBacklight: s.toggleBacklight,
     toggleVideo: s.toggleVideo,
+    setDisplayMode: s.setDisplayMode,
     toggleLcdFilter: s.toggleLcdFilter,
     toggleFullScreen: s.toggleFullScreen,
     setTheme: s.setTheme,
@@ -562,6 +566,42 @@ export function IpodMenuBar({
           >
             {t("apps.ipod.menu.video")}
           </MenubarCheckboxItem>
+
+          {/* Display Submenu */}
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
+              {t("apps.ipod.menu.display")}
+            </MenubarSubTrigger>
+            <MenubarSubContent className="px-0">
+              <MenubarCheckboxItem
+                checked={displayMode === DisplayMode.Video}
+                onCheckedChange={(checked) => {
+                  if (checked) setDisplayMode(DisplayMode.Video);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.displayVideo")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={displayMode === DisplayMode.Cover}
+                onCheckedChange={(checked) => {
+                  if (checked) setDisplayMode(DisplayMode.Cover);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.displayCover")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={displayMode === DisplayMode.Landscapes}
+                onCheckedChange={(checked) => {
+                  if (checked) setDisplayMode(DisplayMode.Landscapes);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.displayLandscapes")}
+              </MenubarCheckboxItem>
+            </MenubarSubContent>
+          </MenubarSub>
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarCheckboxItem

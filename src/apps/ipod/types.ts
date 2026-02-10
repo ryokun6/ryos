@@ -1,7 +1,7 @@
 // Shared types for the iPod app
 
 import type { Track } from "@/stores/useIpodStore";
-import type { LyricsAlignment, LyricsFont, KoreanDisplay, JapaneseFurigana, RomanizationSettings } from "@/types/lyrics";
+import type { LyricsAlignment, LyricsFont, KoreanDisplay, JapaneseFurigana, RomanizationSettings, DisplayMode } from "@/types/lyrics";
 import type ReactPlayer from "react-player";
 import type { useLyrics } from "@/hooks/useLyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
@@ -91,6 +91,7 @@ export interface IpodScreenProps {
   menuDirection: "forward" | "backward";
   onMenuItemAction: (action: () => void) => void;
   showVideo: boolean;
+  displayMode: DisplayMode;
   playerRef: React.RefObject<ReactPlayer | null>;
   handleTrackEnd: () => void;
   handleProgress: (state: { playedSeconds: number }) => void;

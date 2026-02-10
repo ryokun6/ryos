@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { LyricsAlignment, KoreanDisplay, JapaneseFurigana, LyricsFont, RomanizationSettings } from "@/types/lyrics";
+import { LyricsAlignment, KoreanDisplay, JapaneseFurigana, LyricsFont, RomanizationSettings, DisplayMode } from "@/types/lyrics";
 import { LyricLine } from "@/types/lyrics";
 import type { FuriganaSegment } from "@/utils/romanization";
 import { getApiUrl } from "@/utils/platform";
@@ -47,6 +47,8 @@ interface IpodData {
   isShuffled: boolean;
   isPlaying: boolean;
   showVideo: boolean;
+  /** Display mode for visual background (video, cover art, or landscapes) */
+  displayMode: DisplayMode;
   backlightOn: boolean;
   theme: "classic" | "black" | "u2";
   lcdFilterOn: boolean;
@@ -161,6 +163,7 @@ const initialIpodData: IpodData = {
   isShuffled: true,
   isPlaying: false,
   showVideo: false,
+  displayMode: DisplayMode.Video,
   backlightOn: true,
   theme: "classic",
   lcdFilterOn: true,
@@ -211,6 +214,8 @@ export interface IpodState extends IpodData {
   togglePlay: () => void;
   setIsPlaying: (playing: boolean) => void;
   toggleVideo: () => void;
+  /** Set the display mode for visual background */
+  setDisplayMode: (mode: DisplayMode) => void;
   toggleBacklight: () => void;
   toggleLcdFilter: () => void;
   toggleFullScreen: () => void;
@@ -266,7 +271,7 @@ export interface IpodState extends IpodData {
   clearTrackLyricsSource: (trackId: string) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 28; // Refactor soramimi to use single toggle + target language
+const CURRENT_IPOD_STORE_VERSION = 29; // Add displayMode (video/cover/landscapes)
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -602,6 +607,7 @@ export const useIpodStore = create<IpodState>()(
         }
         set((state) => ({ showVideo: !state.showVideo }));
       },
+      setDisplayMode: (mode) => set({ displayMode: mode }),
       toggleBacklight: () =>
         set((state) => ({ backlightOn: !state.backlightOn })),
       toggleLcdFilter: () =>
@@ -1394,6 +1400,7 @@ export const useIpodStore = create<IpodState>()(
         showLyrics: state.showLyrics,
         lyricsAlignment: state.lyricsAlignment,
         lyricsFont: state.lyricsFont,
+        displayMode: state.displayMode,
         // NOTE: koreanDisplay and japaneseFurigana removed from persistence
         // They are deprecated and migrated to romanization settings
         romanization: state.romanization,
@@ -1460,6 +1467,7 @@ export const useIpodStore = create<IpodState>()(
             showLyrics: state.showLyrics ?? true,
             lyricsAlignment: state.lyricsAlignment ?? LyricsAlignment.Alternating,
             lyricsFont: state.lyricsFont ?? LyricsFont.Rounded,
+            displayMode: state.displayMode ?? DisplayMode.Video,
             koreanDisplay: state.koreanDisplay ?? KoreanDisplay.Original,
             japaneseFurigana: state.japaneseFurigana ?? JapaneseFurigana.On,
             romanization,
@@ -1480,6 +1488,7 @@ export const useIpodStore = create<IpodState>()(
           showLyrics: state.showLyrics,
           lyricsAlignment: state.lyricsAlignment,
           lyricsFont: state.lyricsFont,
+          displayMode: state.displayMode ?? DisplayMode.Video,
           koreanDisplay: state.koreanDisplay,
           japaneseFurigana: state.japaneseFurigana,
           romanization: state.romanization ?? initialIpodData.romanization,

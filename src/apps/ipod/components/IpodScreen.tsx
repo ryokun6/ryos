@@ -14,6 +14,8 @@ import {
   StatusDisplay,
 } from "./screen";
 import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
+import { DisplayMode } from "@/types/lyrics";
+import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
 import type { IpodScreenProps } from "../types";
 
 // Animation variants for menu transitions
@@ -44,6 +46,7 @@ export function IpodScreen({
   menuDirection,
   onMenuItemAction,
   showVideo,
+  displayMode,
   playerRef,
   handleTrackEnd,
   handleProgress,
@@ -252,49 +255,63 @@ export function IpodScreen({
               }
             }}
           >
-            <ReactPlayer
-              ref={playerRef}
-              url={currentTrack.url}
-              playing={isPlaying}
-              controls={showVideo}
-              width="100%"
-              height="100%"
-              onEnded={!isFullScreen ? handleTrackEnd : undefined}
-              onProgress={!isFullScreen ? handleProgress : undefined}
-              onDuration={!isFullScreen ? handleDuration : undefined}
-              onPlay={!isFullScreen ? handlePlay : undefined}
-              onPause={!isFullScreen ? handlePause : undefined}
-              onReady={!isFullScreen ? handleReady : undefined}
-              loop={loopCurrent}
-              volume={finalIpodVolume}
-              playsinline={true}
-              progressInterval={100}
-              config={{
-                youtube: {
-                  playerVars: {
-                    modestbranding: 1,
-                    rel: 0,
-                    showinfo: 0,
-                    iv_load_policy: 3,
-                    fs: 0,
-                    disablekb: 1,
-                    playsinline: 1,
-                    enablejsapi: 1,
-                    origin: window.location.origin,
+            {/* YouTube player - hidden when display mode is not Video (still provides audio) */}
+            <div className={cn(
+              displayMode !== DisplayMode.Video && "opacity-0 pointer-events-none"
+            )}>
+              <ReactPlayer
+                ref={playerRef}
+                url={currentTrack.url}
+                playing={isPlaying}
+                controls={showVideo && displayMode === DisplayMode.Video}
+                width="100%"
+                height="100%"
+                onEnded={!isFullScreen ? handleTrackEnd : undefined}
+                onProgress={!isFullScreen ? handleProgress : undefined}
+                onDuration={!isFullScreen ? handleDuration : undefined}
+                onPlay={!isFullScreen ? handlePlay : undefined}
+                onPause={!isFullScreen ? handlePause : undefined}
+                onReady={!isFullScreen ? handleReady : undefined}
+                loop={loopCurrent}
+                volume={finalIpodVolume}
+                playsinline={true}
+                progressInterval={100}
+                config={{
+                  youtube: {
+                    playerVars: {
+                      modestbranding: 1,
+                      rel: 0,
+                      showinfo: 0,
+                      iv_load_policy: 3,
+                      fs: 0,
+                      disablekb: 1,
+                      playsinline: 1,
+                      enablejsapi: 1,
+                      origin: window.location.origin,
+                    },
+                    embedOptions: {
+                      referrerPolicy: "strict-origin-when-cross-origin",
+                    },
                   },
-                  embedOptions: {
-                    referrerPolicy: "strict-origin-when-cross-origin",
-                  },
-                },
-              }}
-            />
+                }}
+              />
+            </div>
+
+            {/* Landscape video background */}
+            {displayMode === DisplayMode.Landscapes && (
+              <LandscapeVideoBackground
+                isActive={showVideo}
+                className="absolute inset-0"
+              />
+            )}
+
             {/* Dark overlay when lyrics are shown */}
             {showVideo && shouldShowLyrics && (
               <div className="absolute inset-0 bg-black/30 z-25" />
             )}
-            {/* Paused cover overlay */}
+            {/* Cover overlay: shows when paused (any mode) or always in Cover mode */}
             <AnimatePresence>
-              {showVideo && !isPlaying && coverUrl && (
+              {showVideo && coverUrl && (displayMode === DisplayMode.Cover || !isPlaying) && (
                 <motion.div
                   className="absolute inset-0 z-15"
                   initial={{ opacity: 0 }}

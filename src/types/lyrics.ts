@@ -54,6 +54,19 @@ export enum LyricsAlignment {
   Center = "center",
 }
 
+/**
+ * Display mode for the visual background behind lyrics
+ * Controls what visual content is shown while music plays
+ */
+export enum DisplayMode {
+  /** Show the YouTube music video (default) */
+  Video = "video",
+  /** Show the album/cover art (what normally shows on pause) */
+  Cover = "cover",
+  /** Cycle through landscape video wallpapers */
+  Landscapes = "landscapes",
+}
+
 export enum KoreanDisplay {
   Original = "original",
   Romanized = "romanized",

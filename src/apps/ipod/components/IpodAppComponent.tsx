@@ -21,6 +21,8 @@ import { SongSearchDialog } from "@/components/dialogs/SongSearchDialog";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodLogic } from "../hooks/useIpodLogic";
+import { DisplayMode } from "@/types/lyrics";
+import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
 
 export function IpodAppComponent({
   isWindowOpen,
@@ -43,6 +45,7 @@ export function IpodAppComponent({
     backlightOn,
     theme,
     lcdFilterOn,
+    displayMode,
     showLyrics,
     lyricsAlignment,
     lyricsFont,
@@ -295,6 +298,7 @@ export function IpodAppComponent({
                 menuDirection={menuDirection}
                 onMenuItemAction={handleMenuItemAction}
                 showVideo={showVideo}
+                displayMode={displayMode}
                 playerRef={playerRef}
                 handleTrackEnd={handleTrackEnd}
                 handleProgress={handleProgress}
@@ -444,7 +448,10 @@ export function IpodAppComponent({
             {({ controlsVisible }) => (
               <div className="flex flex-col w-full h-full">
                 <div className="relative w-full h-full overflow-hidden">
-                  <div className="absolute inset-0 w-full h-full">
+                  <div className={cn(
+                    "absolute inset-0 w-full h-full",
+                    displayMode !== DisplayMode.Video && "opacity-0 pointer-events-none"
+                  )}>
                     <div
                       className="w-full absolute"
                       style={{
@@ -494,9 +501,17 @@ export function IpodAppComponent({
                     </div>
                   </div>
 
-                  {/* Paused cover overlay */}
+                  {/* Landscape video background (fullscreen) */}
+                  {displayMode === DisplayMode.Landscapes && tracks[currentIndex] && (
+                    <LandscapeVideoBackground
+                      isActive={!!tracks[currentIndex]}
+                      className="fixed inset-0 z-[1]"
+                    />
+                  )}
+
+                  {/* Cover overlay: shows when paused (any mode) or always in Cover mode */}
                   <AnimatePresence>
-                    {tracks[currentIndex] && !isPlaying && fullscreenCoverUrl && (
+                    {tracks[currentIndex] && fullscreenCoverUrl && (displayMode === DisplayMode.Cover || !isPlaying) && (
                       <motion.div
                         className="fixed inset-0 z-15"
                         initial={{ opacity: 0 }}
