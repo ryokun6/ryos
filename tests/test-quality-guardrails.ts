@@ -114,11 +114,31 @@ export async function runQualityGuardrailTests(): Promise<{
     const checkNames = new Set((parsed.checks || []).map((check) => check.name));
     const requiredCheckNames = [
       "eslint-disable comments",
+      "@ts-ignore/@ts-expect-error",
+      "@ts-nocheck comments",
+      "innerHTML assignments",
+      "outerHTML assignments",
+      "insertAdjacentHTML usage",
+      "document.write usage",
+      "string-based setTimeout/setInterval usage",
+      "execSync usage",
+      "child_process exec import usage",
+      "unsafe Prisma raw SQL methods",
+      "shell:true command execution",
+      "TODO/FIXME/HACK markers",
+      "dynamic code execution (eval/new Function)",
       "debugger statements",
       "merge conflict markers",
       "very large TypeScript files",
       "large TypeScript files",
+      "dangerouslySetInnerHTML usage",
+      "biome exhaustive-deps bypass comments",
     ];
+    assertEq(
+      parsed.totalChecks,
+      requiredCheckNames.length,
+      "Expected totalChecks to match required guardrail name list"
+    );
     for (const checkName of requiredCheckNames) {
       assert(
         checkNames.has(checkName),
