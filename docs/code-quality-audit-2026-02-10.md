@@ -129,6 +129,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - included in `quality:all` via `bun run test:quality-summary`.
 - Summary renderer now includes failed-check offender previews (top 5 per failed check)
   to speed up CI triage from the GitHub Actions job summary.
+- Guardrail JSON/report offender schema is normalized to `{ path, count }` across
+  all checks (with file-size `count` representing LOC), improving summary reliability.
 - Workflow wiring tests now also verify that `quality:all:ci` referenced by CI is
   actually defined in `package.json`, preventing workflow/package command drift.
 

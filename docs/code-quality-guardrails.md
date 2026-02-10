@@ -68,6 +68,8 @@ as a workflow artifact (`quality-report`) when present. CI also publishes a
 markdown summary table to the GitHub Actions job summary, with total/failed
 check counts, failed-check offender previews (top 5 per check), and a fallback
 message if the JSON report was not produced.
+`quality-report.json` offender entries use a consistent `{ path, count }` shape
+across guardrails (for file-size checks, `count` is the offending LOC value).
 Workflow wiring tests additionally assert that the CI command (`quality:all:ci`)
 is present in `package.json`, which prevents workflow/script drift.
 

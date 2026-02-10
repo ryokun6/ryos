@@ -356,14 +356,14 @@ const run = async (): Promise<void> => {
           }
           return {
             path: relative(cwd, file),
-            lines,
+            count: lines,
           };
         })
       )
-    ).filter((file): file is { path: string; lines: number } => file !== null);
+    ).filter((file): file is { path: string; count: number } => file !== null);
 
-    largeFiles.sort((a, b) => b.lines - a.lines);
-    const largestFileLines = largeFiles[0]?.lines ?? 0;
+    largeFiles.sort((a, b) => b.count - a.count);
+    const largestFileLines = largeFiles[0]?.count ?? 0;
     const largeFileCount = largeFiles.length;
     const fileSizeOk =
       largeFileCount <= fileSizeGuardrail.maxFilesOverThreshold &&
@@ -388,7 +388,7 @@ const run = async (): Promise<void> => {
       hasViolation = true;
       if (!jsonOutput) {
         for (const file of largeFiles.slice(0, 20)) {
-          console.log(`      - ${file.path} (${file.lines} LOC)`);
+          console.log(`      - ${file.path} (${file.count} LOC)`);
         }
         if (largeFiles.length > 20) {
           console.log(`      ... and ${largeFiles.length - 20} more files`);

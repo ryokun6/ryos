@@ -103,6 +103,13 @@ export async function runQualitySummaryWiringTests(): Promise<{
             value: 0,
             allowed: "<= 0",
           },
+          {
+            name: "large TypeScript files",
+            status: "FAIL",
+            value: 1,
+            allowed: "files <= 14; largest <= 2600",
+            offenders: [{ path: "src/Huge.ts", count: 1701 }],
+          },
         ],
       },
       (reportPath) => {
@@ -110,10 +117,15 @@ export async function runQualitySummaryWiringTests(): Promise<{
         assertEq(result.status, 0, `Expected exit 0, got ${result.status}`);
         const out = result.stdout || "";
         assert(out.includes("- Overall: ❌ FAIL"), "Missing fail overall row");
-        assert(out.includes("- Failed checks: 1"), "Missing failed check count");
+        assert(out.includes("- Failed checks: 2"), "Missing failed check count");
         assert(
-          out.includes("- Failed check names: TODO/FIXME/HACK markers"),
+          out.includes("- Failed check names:"),
           "Missing failed check names list"
+        );
+        assert(
+          out.includes("TODO/FIXME/HACK markers") &&
+            out.includes("large TypeScript files"),
+          "Missing expected failed check names"
         );
         assert(
           out.includes("### Failed check offenders (top 5 each)"),
@@ -132,6 +144,10 @@ export async function runQualitySummaryWiringTests(): Promise<{
         assert(
           !out.includes("`src/f.ts` (1)"),
           "Expected failed offender preview to be capped at 5 rows"
+        );
+        assert(
+          out.includes("`src/Huge.ts` (1701)"),
+          "Missing failed file-size offender row"
         );
       }
     );
