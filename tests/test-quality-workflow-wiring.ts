@@ -78,6 +78,11 @@ export async function runQualityWorkflowWiringTests(): Promise<{
       /run:\s*bun run quality:all:ci/.test(source),
       "Expected CI to run bun run quality:all:ci"
     );
+    const occurrences = source.match(/run:\s*bun run quality:all:ci/g) || [];
+    assert(
+      occurrences.length === 1,
+      `Expected exactly one quality:all:ci invocation, found ${occurrences.length}`
+    );
   });
 
   await runTest("workflow quality command exists in package scripts", async () => {
