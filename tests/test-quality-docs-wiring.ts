@@ -59,6 +59,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "documentation (markdown + MDX)",
       "including `.github` workflow files",
       "JSON/TOML/INI config files",
+      "hidden root dotfiles (for example `.editorconfig`) are included in scanning",
       "No `innerHTML` assignments/mutations (`=`, `+=`) in `src`",
       "No `innerHTML` assignments/mutations (`=`, `+=`) in `src`\n  (including bracket-access forms)",
       "No non-allowlisted `srcdoc` assignments/mutations (`=`, `+=`) in `src`",

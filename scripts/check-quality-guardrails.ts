@@ -10,6 +10,7 @@ interface GuardrailCheck {
   pattern: RegExp;
   maxAllowed: number;
   excludeFiles?: ReadonlySet<string>;
+  includeHidden?: boolean;
 }
 
 interface FileSizeGuardrail {
@@ -55,6 +56,7 @@ const SCRIPT_CODE_EXTENSIONS = [".ts", ".js", ".mts", ".cts", ".mjs", ".cjs"];
 const MERGE_MARKER_EXTENSIONS = [
   ...CODE_EXTENSIONS,
   ".json",
+  ".editorconfig",
   ".ini",
   ".md",
   ".mdx",
@@ -211,6 +213,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     pattern:
       /^<<<<<<<(?: .+)?\s*$|^\|\|\|\|\|\|\|(?: .+)?\s*$|^=======\s*$|^>>>>>>>(?: .+)?\s*$/gm,
     maxAllowed: 0,
+    includeHidden: true,
   },
 ];
 
@@ -270,14 +273,15 @@ const BIOME_EXHAUSTIVE_DEPS_BYPASS_GUARDRAIL: AllowlistedPatternGuardrail = {
 
 const gatherFiles = async (
   root: string,
-  extensions: ReadonlyArray<string>
+  extensions: ReadonlyArray<string>,
+  includeHidden = false
 ): Promise<string[]> => {
   const files: string[] = [];
 
   const walk = async (dir: string): Promise<void> => {
     const entries = await readdir(dir, { withFileTypes: true });
     for (const entry of entries) {
-      if (entry.name.startsWith(".")) continue;
+      if (!includeHidden && entry.name.startsWith(".")) continue;
       if (SKIP_DIRS.has(entry.name)) continue;
 
       const fullPath = join(dir, entry.name);
@@ -330,11 +334,12 @@ const readSource = async (filePath: string): Promise<string> => {
 const getCandidateFiles = async (
   cwd: string,
   roots: ReadonlyArray<string>,
-  extensions: ReadonlyArray<string>
+  extensions: ReadonlyArray<string>,
+  includeHidden = false
 ): Promise<string[]> => {
   const rootsKey = [...roots].sort().join(",");
   const extensionsKey = [...extensions].sort().join(",");
-  const cacheKey = `${cwd}|${rootsKey}|${extensionsKey}`;
+  const cacheKey = `${cwd}|${rootsKey}|${extensionsKey}|${includeHidden ? "1" : "0"}`;
 
   const cached = CANDIDATE_FILE_CACHE.get(cacheKey);
   if (cached) {
@@ -342,7 +347,7 @@ const getCandidateFiles = async (
   }
 
   const gatherPromise = Promise.all(
-    roots.map((root) => gatherFiles(join(cwd, root), extensions))
+    roots.map((root) => gatherFiles(join(cwd, root), extensions, includeHidden))
   ).then((grouped) => {
     const flattened = grouped.flat();
     return [...new Set(flattened)];
@@ -412,7 +417,12 @@ const run = async (): Promise<void> => {
   }
 
   for (const check of GUARDRAILS) {
-    const candidateFiles = await getCandidateFiles(cwd, check.roots, check.extensions);
+    const candidateFiles = await getCandidateFiles(
+      cwd,
+      check.roots,
+      check.extensions,
+      check.includeHidden ?? false
+    );
 
     const offenders = (
       await Promise.all(

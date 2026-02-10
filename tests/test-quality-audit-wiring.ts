@@ -106,6 +106,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "bare marker (`<<<<<<<` / `>>>>>>>`) failure coverage",
       "trailing-whitespace merge-marker failure coverage",
       "documentation markdown merge-marker failure coverage",
+      "root dotfile merge-marker failure coverage (`.editorconfig`)",
       "`schemaVersion` type/positivity validation coverage",
       "only version 1 accepted",
       "`passed`/failed-status consistency",
