@@ -17,7 +17,7 @@ This audit documents quality findings and remediations completed for the request
 | Metric | Baseline | Current | Delta |
 |---|---:|---:|---:|
 | ESLint errors/warnings | 0 / 0 | 0 / 0 | maintained |
-| `eslint-disable` occurrences (`src` + `_api`) | 22 | 1 | -21 |
+| `eslint-disable` occurrences (`src` + `_api`) | 22 | 0 | -22 |
 | `@ts-ignore` / `@ts-expect-error` (`src` + `_api`) | 6 | 0 | -6 |
 | `innerHTML = ...` assignments (`src`) | 15 | 0 | -15 |
 | `execSync(` usages (`scripts`) | 2 | 0 | -2 |
@@ -59,8 +59,8 @@ This audit documents quality findings and remediations completed for the request
   - `src/apps/finder/hooks/useFileSystem.ts`
   - `src/apps/base/AppManager.tsx`
 - Removed the remaining `react-hooks/exhaustive-deps` suppressions in `src/hooks/useFurigana.tsx`.
-- Remaining suppression count is one explicit, justified regex rule suppression in `_api/songs/_utils.ts`
-  (`no-misleading-character-class` for a deliberate zero-width/invisible-Unicode sanitizer).
+- Refactored `_api/songs/_utils.ts` invisible-character sanitizer away from a suppression-requiring regex class
+  to explicit code point filtering.
 
 ## Residual Risk / Backlog (Prioritized)
 
@@ -94,5 +94,4 @@ Large files remain the biggest quality risk (all >1500 LOC):
 
 ### Low priority
 
-- Consider replacing or externally validating the long invisible-Unicode sanitizer character class in `_api/songs/_utils.ts`
-  if lint-rule waiver policies require zero suppressions.
+- Add lightweight tests around `sanitizeInput` to lock in expected invisible-character filtering behavior.
