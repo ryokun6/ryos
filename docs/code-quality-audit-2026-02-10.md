@@ -157,6 +157,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   output to detect accidental policy removal.
 - Guardrail wiring tests assert stable JSON check ordering to prevent report
   churn and accidental reorder drift.
+- Guardrail wiring tests assert explicit threshold metadata for baseline-capped
+  script task markers (`<= 19`) to prevent silent cap drift.
 - Guardrail wiring tests verify generated markdown summaries surface
   `schemaVersion` from live JSON reports.
 - Guardrail wiring tests cover both allowlisted-path violations and allowlisted
