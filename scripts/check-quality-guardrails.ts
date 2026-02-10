@@ -321,7 +321,10 @@ const checkAllowlistedPattern = async (
 ): Promise<{
   passed: boolean;
   total: number;
+  capExceeded: boolean;
+  allMatches: Array<{ path: string; count: number }>;
   disallowedMatches: Array<{ path: string; count: number }>;
+  offendersForReport: Array<{ path: string; count: number }>;
 }> => {
   const candidateFiles = await getCandidateFiles(
     cwd,
@@ -344,10 +347,19 @@ const checkAllowlistedPattern = async (
   const disallowedMatches = matches.filter(
     (match) => !guardrail.allowedFiles.has(match.path)
   );
+  const capExceeded = total > guardrail.maxAllowedTotal;
+  const offendersForReport =
+    disallowedMatches.length > 0 ? disallowedMatches : capExceeded ? matches : [];
 
-  const passed =
-    disallowedMatches.length === 0 && total <= guardrail.maxAllowedTotal;
-  return { passed, total, disallowedMatches };
+  const passed = disallowedMatches.length === 0 && !capExceeded;
+  return {
+    passed,
+    total,
+    capExceeded,
+    allMatches: matches,
+    disallowedMatches,
+    offendersForReport,
+  };
 };
 
 const run = async (): Promise<void> => {
@@ -481,7 +493,7 @@ const run = async (): Promise<void> => {
       status,
       value: result.total,
       allowed: `<= ${guardrail.maxAllowedTotal} (allowlisted files: ${guardrail.allowedFiles.size})`,
-      offenders: status === "FAIL" ? result.disallowedMatches : undefined,
+      offenders: status === "FAIL" ? result.offendersForReport : undefined,
     });
 
     if (!jsonOutput) {
@@ -493,10 +505,13 @@ const run = async (): Promise<void> => {
     if (!result.passed) {
       hasViolation = true;
       if (!jsonOutput) {
-        const disallowedMatches = [...result.disallowedMatches].sort((a, b) =>
+        const reportedOffenders = [...result.offendersForReport].sort((a, b) =>
           a.path.localeCompare(b.path)
         );
-        for (const offender of disallowedMatches) {
+        if (result.capExceeded && result.disallowedMatches.length === 0) {
+          console.log("      (allowlisted cap exceeded)");
+        }
+        for (const offender of reportedOffenders) {
           console.log(`      - ${offender.path} (${offender.count})`);
         }
       }

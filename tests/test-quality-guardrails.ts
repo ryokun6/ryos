@@ -452,6 +452,11 @@ export async function runQualityGuardrailTests(): Promise<{
           (result.stdout || "").includes("FAIL dangerouslySetInnerHTML usage"),
           "Expected dangerouslySetInnerHTML allowlist cap failure"
         );
+        assert(
+          (result.stdout || "").includes("(allowlisted cap exceeded)") &&
+            (result.stdout || "").includes("src/components/shared/HtmlPreview.tsx"),
+          "Expected allowlisted cap exceedance diagnostics with offending file path"
+        );
       } finally {
         rmSync(qualityRoot, { recursive: true, force: true });
       }
@@ -1658,6 +1663,11 @@ export async function runQualityGuardrailTests(): Promise<{
         assert(
           (result.stdout || "").includes("FAIL biome exhaustive-deps bypass comments"),
           "Expected biome exhaustive-deps allowlist cap failure"
+        );
+        assert(
+          (result.stdout || "").includes("(allowlisted cap exceeded)") &&
+            (result.stdout || "").includes("src/hooks/useStreamingFetch.ts"),
+          "Expected biome cap exceedance diagnostics with offending file path"
         );
       } finally {
         rmSync(qualityRoot, { recursive: true, force: true });

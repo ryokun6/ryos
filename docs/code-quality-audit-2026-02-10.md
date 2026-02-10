@@ -166,6 +166,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   total-cap violations for sensitive patterns (`dangerouslySetInnerHTML`,
   `biome-ignore lint/correctness/useExhaustiveDependencies`).
   - includes boundary pass checks at exact allowlist caps to prevent off-by-one regressions.
+  - includes cap-overflow diagnostics assertions that offending allowlisted paths are reported.
 - Guardrail wiring tests include JavaScript-path failure cases (`innerHTML`,
   `execSync`, and `dangerouslySetInnerHTML`) to verify cross-language scan parity.
 - Guardrail wiring tests include markdown merge-marker failure cases to verify

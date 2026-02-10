@@ -71,6 +71,7 @@ bun run quality:all:ci
 - Allowlisted `dangerouslySetInnerHTML` usage only
 - Allowlisted `biome-ignore lint/correctness/useExhaustiveDependencies` usage only
   - both allowlisted checks also enforce max total occurrence caps
+  - cap-overflow failures print offending allowlisted file paths for triage
 
 Most content checks scan TypeScript and JavaScript sources (`.ts/.tsx/.js/.jsx`)
 within the relevant roots.
