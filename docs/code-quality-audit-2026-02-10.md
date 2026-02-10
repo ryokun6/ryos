@@ -116,6 +116,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
 - Added package script wiring coverage:
   - `tests/test-quality-scripts-wiring.ts`
   - included in `quality:all` via `bun run test:quality-scripts`.
+  - asserts `quality:all:ci` generates `quality-report.json` before subsequent stages.
 - Added summary renderer wiring coverage:
   - `tests/test-quality-summary-wiring.ts`
   - included in `quality:all` via `bun run test:quality-summary`.
@@ -124,4 +125,5 @@ Large files remain the biggest quality risk (all >1500 LOC):
 
 ### Low priority
 
-- Add lightweight tests around `sanitizeInput` to lock in expected invisible-character filtering behavior.
+- ✅ Added lightweight runtime tests for `sanitizeInput` in
+  `tests/test-songs-utils-sanitize.ts`.
