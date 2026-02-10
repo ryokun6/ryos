@@ -220,6 +220,10 @@ export async function runQualityGuardrailTests(): Promise<{
       "Missing insertAdjacentHTML guardrail"
     );
     assert(out.includes("document.write usage"), "Missing document.write guardrail");
+    assert(
+      out.includes("string-based setTimeout/setInterval usage"),
+      "Missing string timer guardrail"
+    );
     assert(out.includes("execSync usage"), "Missing execSync guardrail");
     assert(
       out.includes("child_process exec import usage"),
@@ -873,6 +877,34 @@ export async function runQualityGuardrailTests(): Promise<{
       assert(
         (result.stdout || "").includes("FAIL document.write usage"),
         "Expected document.write guardrail failure for js sources"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when string-based setTimeout is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "BadTimer.js"),
+        `setTimeout("alert('x')", 1000);\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for string timer usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes(
+          "FAIL string-based setTimeout/setInterval usage"
+        ),
+        "Expected string timer guardrail failure"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });
