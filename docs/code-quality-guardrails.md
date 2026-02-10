@@ -56,7 +56,7 @@ bun run quality:check:json
 
 and uploads it as a workflow artifact (`quality-report`) when present.
 CI also publishes a markdown summary table to the GitHub Actions job summary,
-with a fallback message if the JSON report was not produced.
+with total/failed check counts and a fallback message if the JSON report was not produced.
 
 ## Notes for Contributors
 
