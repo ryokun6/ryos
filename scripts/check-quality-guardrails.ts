@@ -226,6 +226,7 @@ const run = async (): Promise<void> => {
       (offender): offender is { path: string; count: number } =>
         offender !== null
     );
+    offenders.sort((a, b) => a.path.localeCompare(b.path));
 
     const total = offenders.reduce((sum, offender) => sum + offender.count, 0);
 
@@ -304,7 +305,10 @@ const run = async (): Promise<void> => {
 
     if (!result.passed) {
       hasViolation = true;
-      for (const offender of result.disallowedMatches) {
+      const disallowedMatches = [...result.disallowedMatches].sort((a, b) =>
+        a.path.localeCompare(b.path)
+      );
+      for (const offender of disallowedMatches) {
         console.log(`      - ${offender.path} (${offender.count})`);
       }
     }
