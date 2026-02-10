@@ -124,6 +124,7 @@ export async function runQualityGuardrailTests(): Promise<{
       "string-based timer execution usage",
       "execSync usage",
       "child_process exec import usage",
+      "child_process.exec direct usage",
       "unsafe Prisma raw SQL methods",
       "Prisma.raw usage",
       "shell:true command execution",
@@ -265,6 +266,10 @@ export async function runQualityGuardrailTests(): Promise<{
     assert(
       out.includes("child_process exec import usage"),
       "Missing child_process exec import guardrail"
+    );
+    assert(
+      out.includes("child_process.exec direct usage"),
+      "Missing child_process.exec direct-usage guardrail"
     );
     assert(
       out.includes("unsafe Prisma raw SQL methods"),
@@ -670,6 +675,36 @@ export async function runQualityGuardrailTests(): Promise<{
           "FAIL child_process exec import usage"
         ),
         "Expected child_process exec import guardrail failure for require syntax"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when child_process.exec direct usage is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadExecNamespace.ts"),
+        [
+          "import * as child_process from \"node:child_process\";",
+          "child_process.exec(\"echo hi\");",
+          "",
+        ].join("\n"),
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for child_process.exec usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL child_process.exec direct usage"),
+        "Expected child_process.exec direct-usage guardrail failure"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });

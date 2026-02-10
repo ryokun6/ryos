@@ -64,6 +64,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below",
       "No `execSync(` usage in `scripts` / `src` / `_api`",
       "No `child_process` `exec` imports in `scripts` / `src` / `_api`",
+      "No `child_process.exec(...)` direct usage",
       "No Prisma unsafe raw SQL methods",
       "No `Prisma.raw(...)` usage",
       "Allowlisted `dangerouslySetInnerHTML` usage only",

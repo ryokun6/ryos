@@ -111,7 +111,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - DOM assignment hardening (`innerHTML =`, `outerHTML =`,
     `innerHTML +=`, `outerHTML +=`, `insertAdjacentHTML(...)`,
     `document.write(...)` / `document.writeln(...)`)
-  - command execution hardening (`child_process` `exec` import blocked in scripts/source/api)
+  - command execution hardening (`child_process` `exec` import + direct usage blocked
+    in scripts/source/api)
   - `execSync(` prevention scope expanded to scripts/source/api (not just scripts)
   - string-based timer execution prevention (`setTimeout("...")`,
     `setInterval("...")`, `setImmediate("...")`, including template-literal strings)

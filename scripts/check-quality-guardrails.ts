@@ -128,6 +128,13 @@ const GUARDRAILS: GuardrailCheck[] = [
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
   },
   {
+    name: "child_process.exec direct usage",
+    roots: ["scripts", "src", "_api"],
+    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    pattern: /\bchild_process\.exec\(/g,
+    maxAllowed: 0,
+  },
+  {
     name: "unsafe Prisma raw SQL methods",
     roots: ["src", "_api", "scripts"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],

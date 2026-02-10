@@ -60,7 +60,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "DOM assignment hardening",
       "SQL safety guardrails",
       "string-based timer execution prevention",
-      "child_process` `exec` import blocked",
+      "command execution hardening (`child_process` `exec` import + direct usage blocked",
     ];
 
     for (const snippet of requiredSnippets) {
