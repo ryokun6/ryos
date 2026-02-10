@@ -175,6 +175,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   including explicit `.mjs`/`.cjs`/`.mts`/`.cts` regression paths.
 - Guardrail wiring tests include markdown merge-marker failure cases to verify
   non-code file safety checks in configured roots.
+  - includes MDX merge-marker failure coverage as well.
   - includes YAML merge-marker failure coverage as well.
   - includes JSON merge-marker failure coverage as well.
   - includes TOML merge-marker failure coverage as well.

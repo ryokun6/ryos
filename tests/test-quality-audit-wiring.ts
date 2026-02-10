@@ -86,6 +86,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "script task-marker baseline cap",
       "quoted/computed keys",
       "variable-computed key aliases",
+      "MDX merge-marker failure coverage",
       "YAML merge-marker failure coverage",
       "JSON merge-marker failure coverage",
       "TOML merge-marker failure coverage",

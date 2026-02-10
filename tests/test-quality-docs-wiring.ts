@@ -56,6 +56,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No `debugger` statements in `scripts` / `src` / `_api`",
       "No unresolved merge conflict markers (`<<<<<<<`, `|||||||`, `=======`,",
       "with and without trailing branch labels",
+      "documentation (markdown + MDX)",
       "JSON/TOML config files",
       "No `innerHTML` assignments/mutations (`=`, `+=`) in `src`",
       "No `innerHTML` assignments/mutations (`=`, `+=`) in `src`\n  (including bracket-access forms)",

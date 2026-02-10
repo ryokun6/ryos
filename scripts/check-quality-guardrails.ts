@@ -56,6 +56,7 @@ const MERGE_MARKER_EXTENSIONS = [
   ...CODE_EXTENSIONS,
   ".json",
   ".md",
+  ".mdx",
   ".toml",
   ".yml",
   ".yaml",
