@@ -44,6 +44,7 @@ bun run quality:all:ci
 - No `@ts-nocheck` comments in source or scripts
 - No `innerHTML = ...` assignments in `src`
 - No `outerHTML = ...` assignments in `src`
+- No `insertAdjacentHTML(...)` usage in `src`
 - No `execSync(` usage in `scripts` / `src` / `_api`
 - No `child_process` `exec` imports in `scripts` / `src` / `_api`
   (use `execFileSync`/`spawnSync` instead)
