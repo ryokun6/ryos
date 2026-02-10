@@ -57,6 +57,10 @@ export async function runQualityAuditWiringTests(): Promise<{
       "`tests/test-quality-readme-wiring.ts`",
       "`tests/test-quality-docs-wiring.ts`",
       "`tests/test-quality-audit-wiring.ts`",
+      "DOM assignment hardening",
+      "SQL safety guardrails",
+      "string-based timer execution prevention",
+      "child_process` `exec` import blocked",
     ];
 
     for (const snippet of requiredSnippets) {
