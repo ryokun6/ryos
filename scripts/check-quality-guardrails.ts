@@ -190,7 +190,7 @@ const GUARDRAILS: GuardrailCheck[] = [
   },
   {
     name: "merge conflict markers",
-    roots: ["scripts", "src", "_api", "tests", "docs"],
+    roots: ["."],
     extensions: [".ts", ".tsx", ".js", ".md", ".yml", ".yaml"],
     pattern: /^<<<<<<< .+|^=======\s*$|^>>>>>>> .+/gm,
     maxAllowed: 0,
@@ -309,7 +309,10 @@ const getCandidateFiles = async (
 
   const gatherPromise = Promise.all(
     roots.map((root) => gatherFiles(join(cwd, root), extensions))
-  ).then((grouped) => grouped.flat());
+  ).then((grouped) => {
+    const flattened = grouped.flat();
+    return [...new Set(flattened)];
+  });
 
   CANDIDATE_FILE_CACHE.set(cacheKey, gatherPromise);
   return gatherPromise;
