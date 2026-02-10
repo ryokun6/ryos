@@ -29,15 +29,23 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Generate quality report JSON
-        run: bun run quality:check:json > quality-report.json
-
       - name: Run full quality suite
         run: bun run quality:all
 
+      - name: Generate quality report JSON
+        if: always()
+        run: bun run quality:check:json > quality-report.json
+
       - name: Publish quality summary
         if: always()
-        run: bun run quality:summary quality-report.json >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          if [ -f quality-report.json ]; then
+            bun run quality:summary quality-report.json >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## Quality Guardrails Report" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "quality-report.json was not generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload quality report artifact
         if: always()
@@ -45,3 +53,4 @@ jobs:
         with:
           name: quality-report
           path: quality-report.json
+          if-no-files-found: ignore

@@ -63,10 +63,18 @@ export async function runQualityWorkflowWiringTests(): Promise<{
       "Expected JSON quality report generation step"
     );
     assert(
-      /run:\s*bun run quality:summary quality-report\.json >> "\$GITHUB_STEP_SUMMARY"/.test(
+      /bun run quality:summary quality-report\.json >> "\$GITHUB_STEP_SUMMARY"/.test(
         source
-      ),
+      ) && /quality-report\.json was not generated\./.test(source),
       "Expected markdown summary publish step"
+    );
+    assert(
+      /Generate quality report JSON[\s\S]*if:\s*always\(\)/.test(source),
+      "Expected JSON report generation to run with if: always()"
+    );
+    assert(
+      /Publish quality summary[\s\S]*if:\s*always\(\)/.test(source),
+      "Expected summary generation to run with if: always()"
     );
   });
 
@@ -78,6 +86,10 @@ export async function runQualityWorkflowWiringTests(): Promise<{
     );
     assert(/name:\s*quality-report/.test(source), "Expected artifact name quality-report");
     assert(/path:\s*quality-report\.json/.test(source), "Expected artifact path quality-report.json");
+    assert(
+      /if-no-files-found:\s*ignore/.test(source),
+      "Expected artifact upload to ignore missing file edge cases"
+    );
   });
 
   return printSummary();

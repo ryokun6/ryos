@@ -46,14 +46,16 @@ bun run quality:all
 ```
 
 This keeps local and CI quality checks aligned.
-CI also generates a machine-readable `quality-report.json` via:
+After `quality:all`, CI always attempts to generate a machine-readable
+`quality-report.json` via:
 
 ```bash
 bun run quality:check:json
 ```
 
-and uploads it as a workflow artifact (`quality-report`).
-It also publishes a markdown summary table to the GitHub Actions job summary.
+and uploads it as a workflow artifact (`quality-report`) when present.
+CI also publishes a markdown summary table to the GitHub Actions job summary,
+with a fallback message if the JSON report was not produced.
 
 ## Notes for Contributors
 
