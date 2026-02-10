@@ -68,7 +68,8 @@ This audit documents quality findings and remediations completed for the request
 - Added wiring tests for quality guardrail command behavior:
   - `tests/test-quality-guardrails.ts`
   - runnable via `bun run test:quality-guardrails`
-  - includes failure-path coverage via temporary isolated roots to ensure violations fail as expected.
+  - includes failure-path coverage via temporary isolated roots to ensure violations fail as expected
+    for `eslint-disable`, `dangerouslySetInnerHTML` allowlist violations, `shell: true`, and TODO/FIXME marker regressions.
 
 ## Residual Risk / Backlog (Prioritized)
 
