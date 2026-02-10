@@ -56,6 +56,18 @@ export async function runQualityWorkflowWiringTests(): Promise<{
     );
   });
 
+  await runTest("workflow avoids duplicated inline quality commands", async () => {
+    const source = readWorkflow();
+    assert(
+      !/run:\s*bunx eslint \. --max-warnings 0/.test(source),
+      "Expected workflow to avoid duplicating lint command inline"
+    );
+    assert(
+      !/run:\s*bun run build/.test(source),
+      "Expected workflow to avoid duplicating build command inline"
+    );
+  });
+
   await runTest("workflow emits JSON report and markdown summary", async () => {
     const source = readWorkflow();
     assert(
