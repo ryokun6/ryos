@@ -47,6 +47,9 @@ const SKIP_DIRS = new Set([
   "src-tauri",
 ]);
 
+const SOURCE_CACHE = new Map<string, Promise<string>>();
+const CANDIDATE_FILE_CACHE = new Map<string, Promise<string[]>>();
+
 const GUARDRAILS: GuardrailCheck[] = [
   {
     name: "eslint-disable comments",
@@ -183,14 +186,47 @@ const countPatternInFile = async (
   filePath: string,
   pattern: RegExp
 ): Promise<number> => {
-  const source = await readFile(filePath, "utf-8");
+  const source = await readSource(filePath);
   const matches = source.match(pattern);
   return matches ? matches.length : 0;
 };
 
 const countLinesInFile = async (filePath: string): Promise<number> => {
-  const source = await readFile(filePath, "utf-8");
+  const source = await readSource(filePath);
   return source.split("\n").length;
+};
+
+const readSource = async (filePath: string): Promise<string> => {
+  const cached = SOURCE_CACHE.get(filePath);
+  if (cached) {
+    return cached;
+  }
+
+  const readPromise = readFile(filePath, "utf-8");
+  SOURCE_CACHE.set(filePath, readPromise);
+  return readPromise;
+};
+
+const getCandidateFiles = async (
+  cwd: string,
+  roots: ReadonlyArray<string>,
+  extensions: ReadonlyArray<string>
+): Promise<string[]> => {
+  const rootsKey = [...roots].sort().join(",");
+  const extensionsKey = [...extensions].sort().join(",");
+  const cacheKey = `${cwd}|${rootsKey}|${extensionsKey}`;
+
+  const cached = CANDIDATE_FILE_CACHE.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const gatherPromise = Promise.all(
+    roots.map((root) => gatherFiles(join(cwd, root), extensions))
+  ).then((grouped) => grouped.flat());
+
+  CANDIDATE_FILE_CACHE.set(cacheKey, gatherPromise);
+  return gatherPromise;
 };
 
 const checkAllowlistedPattern = async (
@@ -201,13 +237,11 @@ const checkAllowlistedPattern = async (
   total: number;
   disallowedMatches: Array<{ path: string; count: number }>;
 }> => {
-  const candidateFiles = (
-    await Promise.all(
-      guardrail.roots.map((root) =>
-        gatherFiles(join(cwd, root), guardrail.extensions)
-      )
-    )
-  ).flat();
+  const candidateFiles = await getCandidateFiles(
+    cwd,
+    guardrail.roots,
+    guardrail.extensions
+  );
 
   const matches = (
     await Promise.all(
@@ -241,11 +275,7 @@ const run = async (): Promise<void> => {
   }
 
   for (const check of GUARDRAILS) {
-    const candidateFiles = (
-      await Promise.all(
-        check.roots.map((root) => gatherFiles(join(cwd, root), check.extensions))
-      )
-    ).flat();
+    const candidateFiles = await getCandidateFiles(cwd, check.roots, check.extensions);
 
     const offenders = (
       await Promise.all(
@@ -296,13 +326,11 @@ const run = async (): Promise<void> => {
   }
 
   for (const fileSizeGuardrail of FILE_SIZE_GUARDRAILS) {
-    const sizeCandidateFiles = (
-      await Promise.all(
-        fileSizeGuardrail.roots.map((root) =>
-          gatherFiles(join(cwd, root), fileSizeGuardrail.extensions)
-        )
-      )
-    ).flat();
+    const sizeCandidateFiles = await getCandidateFiles(
+      cwd,
+      fileSizeGuardrail.roots,
+      fileSizeGuardrail.extensions
+    );
 
     const largeFiles = (
       await Promise.all(
