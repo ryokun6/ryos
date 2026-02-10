@@ -108,7 +108,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
 - ✅ Added `bun run quality:check` (script: `scripts/check-quality-guardrails.ts`) to enforce:
   - suppression regression checks (`eslint-disable`, `@ts-ignore`, `@ts-nocheck`, `innerHTML =`, `execSync(`, `shell: true`)
     across application source and scripts
-  - command execution hardening in scripts (`child_process` `exec` import blocked)
+  - command execution hardening (`child_process` `exec` import blocked in scripts/source/api)
   - SQL safety guardrail (blocks unsafe Prisma raw SQL method usage)
   - dynamic code execution/debugging prevention (`eval(`, `new Function(`, `debugger`)
   - merge conflict marker prevention (`<<<<<<<`, `=======`, `>>>>>>>`)

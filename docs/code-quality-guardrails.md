@@ -44,7 +44,8 @@ bun run quality:all:ci
 - No `@ts-nocheck` comments in source or scripts
 - No `innerHTML = ...` assignments in `src`
 - No `execSync(` usage in `scripts`
-- No `child_process` `exec` imports in `scripts` (use `execFileSync`/`spawnSync` instead)
+- No `child_process` `exec` imports in `scripts` / `src` / `_api`
+  (use `execFileSync`/`spawnSync` instead)
 - No Prisma unsafe raw SQL methods (`queryRawUnsafe`, `executeRawUnsafe`, `$queryRawUnsafe`, `$executeRawUnsafe`)
 - No `shell: true` usage in `scripts` / `src` / `_api`
 - No dynamic code execution (`eval(` / `new Function(`) in `scripts` / `src` / `_api`

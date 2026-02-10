@@ -216,7 +216,7 @@ export async function runQualityGuardrailTests(): Promise<{
     assert(out.includes("innerHTML assignments"), "Missing innerHTML guardrail");
     assert(out.includes("execSync usage in scripts"), "Missing execSync guardrail");
     assert(
-      out.includes("child_process exec import usage in scripts"),
+      out.includes("child_process exec import usage"),
       "Missing child_process exec import guardrail"
     );
     assert(
@@ -524,7 +524,7 @@ export async function runQualityGuardrailTests(): Promise<{
       );
       assert(
         (result.stdout || "").includes(
-          "FAIL child_process exec import usage in scripts"
+          "FAIL child_process exec import usage"
         ),
         "Expected child_process exec import guardrail failure"
       );
@@ -552,7 +552,7 @@ export async function runQualityGuardrailTests(): Promise<{
       );
       assert(
         (result.stdout || "").includes(
-          "FAIL child_process exec import usage in scripts"
+          "FAIL child_process exec import usage"
         ),
         "Expected child_process exec import guardrail failure for require syntax"
       );
@@ -581,6 +581,32 @@ export async function runQualityGuardrailTests(): Promise<{
       assert(
         (result.stdout || "").includes("FAIL unsafe Prisma raw SQL methods"),
         "Expected unsafe Prisma raw SQL guardrail failure"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when child_process exec import is introduced in _api", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "_api"), { recursive: true });
+      writeFileSync(
+        join(root, "_api", "BadExecApi.ts"),
+        `import { exec } from "child_process";\nexport const value = exec;\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for exec import in _api, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL child_process exec import usage"),
+        "Expected child_process exec import guardrail failure for _api"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });

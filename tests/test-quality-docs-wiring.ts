@@ -55,7 +55,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No dynamic code execution (`eval(` / `new Function(`)",
       "No `debugger` statements in `scripts` / `src` / `_api`",
       "No unresolved merge conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)",
-      "No `child_process` `exec` imports in `scripts`",
+      "No `child_process` `exec` imports in `scripts` / `src` / `_api`",
       "No Prisma unsafe raw SQL methods",
       "Allowlisted `dangerouslySetInnerHTML` usage only",
       "`schemaVersion` plus `totalChecks` and",
