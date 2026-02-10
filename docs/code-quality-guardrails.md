@@ -98,6 +98,8 @@ Offender paths are normalized to forward slashes and emitted in deterministic or
 `failedChecks` metadata.
 Summary rendering now validates report schema and fails fast on malformed input
 to prevent silent CI summary corruption.
+Validation includes `passed` vs failed-status consistency and offender entry
+shape checks (`path` + positive integer `count`).
 When count metadata is omitted, summary rendering derives counts from `checks`
 for backward compatibility.
 Workflow wiring tests additionally assert that the CI command (`quality:all:ci`)

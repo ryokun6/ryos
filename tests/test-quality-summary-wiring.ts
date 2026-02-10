@@ -295,6 +295,61 @@ export async function runQualitySummaryWiringTests(): Promise<{
     );
   });
 
+  await runTest("fails when passed metadata conflicts with failed statuses", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: true,
+        checks: [
+          {
+            name: "merge conflict markers",
+            status: "FAIL",
+            value: 1,
+            allowed: "<= 0",
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("passed metadata"),
+          "Expected passed/failed consistency validation error"
+        );
+      }
+    );
+  });
+
+  await runTest("fails when offender entries have invalid shape", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: false,
+        checks: [
+          {
+            name: "merge conflict markers",
+            status: "FAIL",
+            value: 1,
+            allowed: "<= 0",
+            offenders: [{ path: "", count: 0 }],
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("offender"),
+          "Expected offender schema validation error"
+        );
+      }
+    );
+  });
+
   return printSummary();
 }
 

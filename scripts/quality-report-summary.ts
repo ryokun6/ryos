@@ -44,6 +44,18 @@ const assertQualityReport = (value: unknown): QualityReport => {
   if (!Array.isArray(report.checks)) {
     throw new Error("Quality report must include a checks array");
   }
+  if (
+    report.totalChecks !== undefined &&
+    (!Number.isInteger(report.totalChecks) || report.totalChecks < 0)
+  ) {
+    throw new Error("Quality report totalChecks metadata must be a non-negative integer");
+  }
+  if (
+    report.failedChecks !== undefined &&
+    (!Number.isInteger(report.failedChecks) || report.failedChecks < 0)
+  ) {
+    throw new Error("Quality report failedChecks metadata must be a non-negative integer");
+  }
 
   for (const [index, check] of report.checks.entries()) {
     if (!check || typeof check !== "object") {
@@ -61,6 +73,38 @@ const assertQualityReport = (value: unknown): QualityReport => {
     }
     if (typeof candidate.allowed !== "string" || candidate.allowed.length === 0) {
       throw new Error(`Check "${candidate.name}" must include allowed text`);
+    }
+    if (candidate.offenders !== undefined) {
+      if (!Array.isArray(candidate.offenders)) {
+        throw new Error(`Check "${candidate.name}" offenders must be an array`);
+      }
+      for (const [offenderIndex, offender] of candidate.offenders.entries()) {
+        if (!offender || typeof offender !== "object") {
+          throw new Error(
+            `Check "${candidate.name}" offender at index ${offenderIndex} is invalid`
+          );
+        }
+        const offenderCandidate = offender as Partial<{
+          path: string;
+          count: number;
+        }>;
+        if (
+          typeof offenderCandidate.path !== "string" ||
+          offenderCandidate.path.length === 0
+        ) {
+          throw new Error(
+            `Check "${candidate.name}" offender at index ${offenderIndex} has invalid path`
+          );
+        }
+        if (
+          !Number.isInteger(offenderCandidate.count) ||
+          offenderCandidate.count < 1
+        ) {
+          throw new Error(
+            `Check "${candidate.name}" offender at index ${offenderIndex} has invalid count`
+          );
+        }
+      }
     }
   }
 
@@ -80,6 +124,11 @@ const assertQualityReport = (value: unknown): QualityReport => {
   ) {
     throw new Error(
       "Quality report failedChecks metadata does not match failed check count"
+    );
+  }
+  if (report.passed !== (computedFailedChecks === 0)) {
+    throw new Error(
+      "Quality report passed metadata does not match failed check status values"
     );
   }
 

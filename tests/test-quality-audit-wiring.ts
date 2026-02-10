@@ -79,6 +79,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "YAML merge-marker failure coverage",
       "documentation markdown merge-marker failure coverage",
       "`schemaVersion` type/positivity validation coverage",
+      "`passed`/failed-status consistency",
       "inline `require(\"child_process\").exec(...)` usage",
       "cap-overflow diagnostics assertions",
     ];
