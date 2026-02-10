@@ -123,6 +123,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
 - `quality:check:json` now emits `schemaVersion`, `totalChecks`, and
   `failedChecks` metadata; summary rendering validates schema/metadata consistency
   against check rows.
+- Summary rendering remains backward-compatible by deriving check counts from
+  `checks` when optional metadata fields are absent.
 - CI now publishes `quality-report.json` as an artifact and emits a markdown
   summary table in the workflow job summary.
 - Added package script wiring coverage:
