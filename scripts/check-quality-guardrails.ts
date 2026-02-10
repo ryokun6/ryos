@@ -439,6 +439,7 @@ const run = async (): Promise<void> => {
     console.log(
       JSON.stringify(
         {
+          schemaVersion: 1,
           root: cwd,
           passed: !hasViolation,
           totalChecks: results.length,

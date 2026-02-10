@@ -12,6 +12,7 @@ interface QualityCheckEntry {
 }
 
 interface QualityReport {
+  schemaVersion?: number;
   root: string;
   passed: boolean;
   totalChecks?: number;
@@ -33,6 +34,12 @@ const assertQualityReport = (value: unknown): QualityReport => {
   }
   if (typeof report.passed !== "boolean") {
     throw new Error("Quality report must include a boolean passed field");
+  }
+  if (
+    report.schemaVersion !== undefined &&
+    (!Number.isInteger(report.schemaVersion) || report.schemaVersion < 1)
+  ) {
+    throw new Error("Quality report schemaVersion must be a positive integer");
   }
   if (!Array.isArray(report.checks)) {
     throw new Error("Quality report must include a checks array");
@@ -91,6 +98,9 @@ const run = async (): Promise<void> => {
   const lines: string[] = [];
   lines.push("## Quality Guardrails Report");
   lines.push("");
+  if (report.schemaVersion !== undefined) {
+    lines.push(`- Schema version: ${report.schemaVersion}`);
+  }
   lines.push(`- Root: \`${report.root}\``);
   lines.push(`- Overall: ${report.passed ? "✅ PASS" : "❌ FAIL"}`);
   lines.push(`- Total checks: ${totalChecks}`);

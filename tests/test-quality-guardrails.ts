@@ -93,11 +93,13 @@ export async function runQualityGuardrailTests(): Promise<{
     const result = runQualityCheckJson();
     assertEq(result.status, 0, `Expected exit code 0, got ${result.status}`);
     const parsed = JSON.parse(result.stdout || "{}") as {
+      schemaVersion?: number;
       passed?: boolean;
       totalChecks?: number;
       failedChecks?: number;
       checks?: Array<{ name: string }>;
     };
+    assert(parsed.schemaVersion === 1, "Expected schemaVersion=1 in JSON output");
     assert(parsed.passed === true, "Expected JSON output to mark passed=true");
     assert(Array.isArray(parsed.checks), "Expected checks array in JSON output");
     assert(
@@ -538,10 +540,12 @@ export async function runQualityGuardrailTests(): Promise<{
       const result = runQualityCheckJson(qualityRoot);
       assertEq(result.status, 1, "Expected JSON mode to return exit code 1");
       const parsed = JSON.parse(result.stdout || "{}") as {
+        schemaVersion?: number;
         passed?: boolean;
         failedChecks?: number;
         checks?: Array<{ name: string; status: string }>;
       };
+      assert(parsed.schemaVersion === 1, "Expected schemaVersion=1 in JSON failure output");
       assert(parsed.passed === false, "Expected passed=false in JSON failure output");
       assert(
         typeof parsed.failedChecks === "number" && parsed.failedChecks > 0,

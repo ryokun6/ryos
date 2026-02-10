@@ -76,7 +76,8 @@ message if the JSON report was not produced.
 `quality-report.json` offender entries use a consistent `{ path, count }` shape
 across guardrails (for file-size checks, `count` is the offending LOC value).
 Offender paths are normalized to forward slashes and emitted in deterministic order.
-`quality-report.json` also includes `totalChecks` and `failedChecks` metadata.
+`quality-report.json` includes `schemaVersion` plus `totalChecks` and
+`failedChecks` metadata.
 Summary rendering now validates report schema and fails fast on malformed input
 to prevent silent CI summary corruption.
 Workflow wiring tests additionally assert that the CI command (`quality:all:ci`)

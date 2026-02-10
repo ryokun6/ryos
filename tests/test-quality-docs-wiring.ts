@@ -56,7 +56,8 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No `debugger` statements in `scripts` / `src` / `_api`",
       "No unresolved merge conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)",
       "Allowlisted `dangerouslySetInnerHTML` usage only",
-      "`quality-report.json` also includes `totalChecks` and `failedChecks` metadata.",
+      "`schemaVersion` plus `totalChecks` and",
+      "`failedChecks` metadata.",
       "failed-check offender previews (top 5 per check)",
     ];
 

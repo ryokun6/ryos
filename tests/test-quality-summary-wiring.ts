@@ -53,6 +53,7 @@ export async function runQualitySummaryWiringTests(): Promise<{
   await runTest("renders markdown table for passing report", async () => {
     withTempReport(
       {
+        schemaVersion: 1,
         root: "/tmp/example",
         passed: true,
         totalChecks: 1,
@@ -71,6 +72,7 @@ export async function runQualitySummaryWiringTests(): Promise<{
         assertEq(result.status, 0, `Expected exit 0, got ${result.status}`);
         const out = result.stdout || "";
         assert(out.includes("## Quality Guardrails Report"), "Missing heading");
+        assert(out.includes("- Schema version: 1"), "Missing schema version line");
         assert(out.includes("- Overall: ✅ PASS"), "Missing pass overall row");
         assert(out.includes("| Check | Status | Value | Allowed |"), "Missing table header");
         assert(out.includes("eslint-disable comments"), "Missing check row");
@@ -82,6 +84,7 @@ export async function runQualitySummaryWiringTests(): Promise<{
   await runTest("includes failed check metadata for failing report", async () => {
     withTempReport(
       {
+        schemaVersion: 1,
         root: "/tmp/example",
         passed: false,
         totalChecks: 3,
@@ -161,6 +164,7 @@ export async function runQualitySummaryWiringTests(): Promise<{
   await runTest("fails with helpful error on malformed report", async () => {
     withTempReport(
       {
+        schemaVersion: 0,
         root: "/tmp/example",
         passed: true,
         checks: "not-an-array",
@@ -174,6 +178,26 @@ export async function runQualitySummaryWiringTests(): Promise<{
           "Expected renderer failure prefix in stderr"
         );
         assert(
+          err.includes("schemaVersion"),
+          "Expected schemaVersion validation error"
+        );
+      }
+    );
+  });
+
+  await runTest("fails with helpful error when checks is not an array", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: true,
+        checks: "not-an-array",
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
           err.includes("checks array"),
           "Expected malformed checks-array validation error"
         );
@@ -184,6 +208,7 @@ export async function runQualitySummaryWiringTests(): Promise<{
   await runTest("fails when metadata and checks are inconsistent", async () => {
     withTempReport(
       {
+        schemaVersion: 1,
         root: "/tmp/example",
         passed: false,
         totalChecks: 2,
