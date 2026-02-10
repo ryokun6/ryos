@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "bunVersion": "1.x",
-  "devCommand": "bun run dev",
+  "devCommand": "bash scripts/ensure-api-symlink.sh && bun run dev",
   "cleanUrls": true,
   "trailingSlash": false,
   "headers": [

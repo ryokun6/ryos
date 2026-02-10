@@ -5,6 +5,8 @@ import { loadWallpaperManifest } from "@/utils/wallpapers";
 const VIDEO_DURATION_MS = 30_000;
 /** Crossfade transition duration (ms) */
 const CROSSFADE_MS = 2_000;
+/** Keep each video visible for at least one loop plus a small buffer (ms) */
+const LOOP_BUFFER_MS = 5_000;
 
 interface LandscapeVideoBackgroundProps {
   /** Whether the landscape videos should be playing */
@@ -25,6 +27,7 @@ export function LandscapeVideoBackground({
   const [videos, setVideos] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showB, setShowB] = useState(false);
+  const [activeVideoDurationMs, setActiveVideoDurationMs] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoARef = useRef<HTMLVideoElement | null>(null);
   const videoBRef = useRef<HTMLVideoElement | null>(null);
@@ -86,6 +89,7 @@ export function LandscapeVideoBackground({
     if (videos.length <= 1) return;
 
     const nextIdx = (currentIndex + 1) % videos.length;
+    setActiveVideoDurationMs(null);
 
     if (showB) {
       // B is visible → load next into A, then show A
@@ -104,7 +108,20 @@ export function LandscapeVideoBackground({
   useEffect(() => {
     if (!isActive || videos.length <= 1) return;
 
-    timerRef.current = setTimeout(advanceVideo, VIDEO_DURATION_MS);
+    // Keep each clip on screen long enough to visibly loop, then start crossfade
+    // right before a loop boundary for a seamless transition.
+    const timeUntilCrossfadeMs = (() => {
+      if (!activeVideoDurationMs || !Number.isFinite(activeVideoDurationMs)) {
+        return VIDEO_DURATION_MS;
+      }
+
+      const minimumVisibleMs = Math.max(VIDEO_DURATION_MS, activeVideoDurationMs + LOOP_BUFFER_MS);
+      const loopsToPlay = Math.max(1, Math.ceil((minimumVisibleMs + CROSSFADE_MS) / activeVideoDurationMs));
+      const alignedCrossfadeStartMs = loopsToPlay * activeVideoDurationMs - CROSSFADE_MS;
+      return Math.max(1_000, alignedCrossfadeStartMs);
+    })();
+
+    timerRef.current = setTimeout(advanceVideo, timeUntilCrossfadeMs);
 
     return () => {
       if (timerRef.current) {
@@ -112,7 +129,7 @@ export function LandscapeVideoBackground({
         timerRef.current = null;
       }
     };
-  }, [isActive, currentIndex, videos.length, advanceVideo]);
+  }, [isActive, videos.length, activeVideoDurationMs, advanceVideo]);
 
   // Also advance when the active video naturally ends
   const handleVideoEnded = useCallback(() => {
@@ -139,14 +156,14 @@ export function LandscapeVideoBackground({
   }
 
   return (
-    <div className={`relative overflow-hidden ${className}`}>
+    <div className={`absolute inset-0 overflow-hidden ${className}`}>
       {/* Video A */}
       <video
         ref={videoARef}
         src={srcA}
         autoPlay
         muted
-        loop={videos.length <= 1}
+        loop
         playsInline
         preload="auto"
         data-webkit-playsinline="true"
@@ -154,6 +171,13 @@ export function LandscapeVideoBackground({
         onCanPlayThrough={(e) => {
           const v = e.currentTarget;
           if (v.paused) v.play().catch(() => {});
+        }}
+        onLoadedMetadata={(e) => {
+          if (showB) return;
+          const durationMs = e.currentTarget.duration * 1000;
+          if (Number.isFinite(durationMs) && durationMs > 0) {
+            setActiveVideoDurationMs(durationMs);
+          }
         }}
         className="absolute inset-0 w-full h-full object-cover"
         style={{
@@ -169,6 +193,7 @@ export function LandscapeVideoBackground({
           src={srcB}
           autoPlay
           muted
+          loop
           playsInline
           preload="auto"
           data-webkit-playsinline="true"
@@ -176,6 +201,13 @@ export function LandscapeVideoBackground({
           onCanPlayThrough={(e) => {
             const v = e.currentTarget;
             if (v.paused) v.play().catch(() => {});
+          }}
+          onLoadedMetadata={(e) => {
+            if (!showB) return;
+            const durationMs = e.currentTarget.duration * 1000;
+            if (Number.isFinite(durationMs) && durationMs > 0) {
+              setActiveVideoDurationMs(durationMs);
+            }
           }}
           className="absolute inset-0 w-full h-full object-cover"
           style={{
