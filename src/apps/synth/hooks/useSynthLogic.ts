@@ -955,8 +955,10 @@ export const useSynthLogic = ({
       // In some environments Tone.context might not be ready yet, so we wrap in try/catch
       if (Tone && Tone.context) {
         // Tone's type defs don't expose lookAhead as writable
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (Tone.context as any).lookAhead = 0;
+        const contextWithLookAhead = Tone.context as Tone.Context & {
+          lookAhead?: number;
+        };
+        contextWithLookAhead.lookAhead = 0;
       }
     } catch {
       // Ignore if Tone isn't available – worst case we keep the default value.

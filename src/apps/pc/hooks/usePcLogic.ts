@@ -73,7 +73,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
           dosPropsRef.current = null;
         }
 
-        containerRef.current.innerHTML = "";
+        containerRef.current.replaceChildren();
         await new Promise((resolve) => setTimeout(resolve, 100));
 
         console.log("Creating new Dos instance...");
@@ -100,7 +100,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
           } else if (event === "exit") {
               console.log("Program terminated:", arg);
               if (containerRef.current) {
-                containerRef.current.innerHTML = "";
+                containerRef.current.replaceChildren();
               handleLoadGame(targetGame);
               }
             }
@@ -135,7 +135,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
           dosPropsRef.current = null;
           setIsGameRunning(false);
           if (containerRef.current) {
-            containerRef.current.innerHTML = "";
+            containerRef.current.replaceChildren();
           }
         })
         .catch((error) => {
@@ -143,7 +143,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
           dosPropsRef.current = null;
           setIsGameRunning(false);
           if (containerRef.current) {
-            containerRef.current.innerHTML = "";
+            containerRef.current.replaceChildren();
           }
         });
     }
@@ -157,7 +157,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
         dosPropsRef.current.stop().catch(console.error);
         dosPropsRef.current = null;
         if (containerEl) {
-          containerEl.innerHTML = "";
+          containerEl.replaceChildren();
         }
       }
     };
@@ -240,7 +240,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
         await dosPropsRef.current.stop();
         dosPropsRef.current = null;
       }
-      containerRef.current.innerHTML = "";
+      containerRef.current.replaceChildren();
       setIsGameRunning(false);
     }
     setIsResetDialogOpen(false);
@@ -252,7 +252,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
         await dosPropsRef.current.stop();
         dosPropsRef.current = null;
       }
-      containerRef.current.innerHTML = "";
+      containerRef.current.replaceChildren();
       setIsGameRunning(false);
     }
   }, []);

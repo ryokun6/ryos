@@ -36,8 +36,7 @@ export interface DocumentContent {
 interface ExtendedDisplayFileItem extends Omit<DisplayFileItem, "content"> {
   content?: string | Blob; // Keep content for passing to apps
   contentUrl?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data?: any; // Add optional data field for virtual files
+  data?: unknown; // Add optional data field for virtual files
   originalPath?: string; // For trash items
   deletedAt?: number; // For trash items
   status?: "active" | "trashed"; // Include status for potential UI differences
@@ -1152,30 +1151,39 @@ export function useFileSystem(
               e
             );
           }
-        } else if (file.appId === "ipod" && file.data?.songId) {
-          // iPod uses song ID directly
-          setIpodSongId(file.data.songId);
-          setIpodPlaying(true);
-          launchApp("ipod", { launchOrigin });
-        } else if (file.appId === "videos" && file.data?.videoId) {
-          // Videos uses video ID directly
-          setVideoIndex(file.data.videoId);
-          setVideoPlaying(true);
-          launchApp("videos", { launchOrigin });
-        } else if (file.type === "site-link" && file.data?.url) {
-          // Pass url and year via initialData instead of using IE store directly
-          launchApp("internet-explorer", {
-            initialData: {
-              url: file.data.url,
-              year: file.data.year || "current",
-            },
-            launchOrigin,
-          });
-          // internetExplorerStore.setPendingNavigation(file.data.url, file.data.year || "current");
         } else {
-          console.warn(
-            `[useFileSystem] No handler defined for opening file type: ${file.type} at path: ${file.path}`
-          );
+          const virtualData = (file.data ?? {}) as {
+            songId?: string;
+            videoId?: string;
+            url?: string;
+            year?: string;
+          };
+
+          if (file.appId === "ipod" && virtualData.songId) {
+          // iPod uses song ID directly
+            setIpodSongId(virtualData.songId);
+            setIpodPlaying(true);
+            launchApp("ipod", { launchOrigin });
+          } else if (file.appId === "videos" && virtualData.videoId) {
+          // Videos uses video ID directly
+            setVideoIndex(virtualData.videoId);
+            setVideoPlaying(true);
+            launchApp("videos", { launchOrigin });
+          } else if (file.type === "site-link" && virtualData.url) {
+          // Pass url and year via initialData instead of using IE store directly
+            launchApp("internet-explorer", {
+              initialData: {
+                url: virtualData.url,
+                year: virtualData.year || "current",
+              },
+              launchOrigin,
+            });
+            // internetExplorerStore.setPendingNavigation(file.data.url, file.data.year || "current");
+          } else {
+            console.warn(
+              `[useFileSystem] No handler defined for opening file type: ${file.type} at path: ${file.path}`
+            );
+          }
         }
       } catch (err) {
         console.error(`[useFileSystem] Error opening file ${file.path}:`, err);

@@ -8,7 +8,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -54,7 +54,7 @@ let commitSha = process.env.VERCEL_GIT_COMMIT_SHA || '';
 if (!commitSha) {
   // Try to get from git locally
   try {
-    commitSha = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim();
+    commitSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf-8' }).trim();
   } catch {
     commitSha = 'dev';
   }

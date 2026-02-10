@@ -45,6 +45,17 @@ export type SynthPreset = {
 // Define valid oscillator types
 type OscillatorType = "triangle" | "sine" | "square" | "sawtooth";
 
+type ToneModuleWithSetContext = typeof Tone & {
+  setContext?: (context: Tone.Context) => void;
+};
+
+const setToneContextIfSupported = (context: Tone.Context): void => {
+  const toneModule = Tone as ToneModuleWithSetContext;
+  if (typeof toneModule.setContext === "function") {
+    toneModule.setContext(context);
+  }
+};
+
 export const SYNTH_PRESETS: Record<string, SynthPreset> = {
   classic: {
     name: "Classic",
@@ -265,11 +276,7 @@ export function useChatSynth() {
     // attached to the old context will be invalid – so drop them first.
     if (Tone.context.state === "closed") {
       try {
-        // Reset Tone with a brand-new context; this call is available at runtime but
-        // may not be typed in older versions of @types/tone.
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        Tone.setContext(new Tone.Context());
+        setToneContextIfSupported(new Tone.Context());
         globalSynthRef = null;
         synthRef.current = null;
         setIsAudioReady(false);
@@ -332,14 +339,14 @@ export function useChatSynth() {
       } else {
         console.warn("Tone.js context did not start or is suspended.");
         // Attempt to resume the context and recreate synth if successful
-        if (Tone.context.state === "suspended") {
+        const canResumeContext = Tone.context.state === "suspended";
+        if (canResumeContext) {
           // Use shared AudioContext resumption first for consistency
           await resumeAudioContext();
           // Then resume Tone.js context
           await Tone.context.resume();
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore – Tone.context.state may still be 'running' after resume()
-          if (Tone.context.state === "running") {
+          const resumedState = String(Tone.context.state);
+          if (resumedState === "running") {
             if (!synthRef.current && currentPresetKey !== "off") {
               // Don't create if "off"
               synthRef.current = createSynthInstance(currentPresetKey);

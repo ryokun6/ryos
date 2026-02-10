@@ -56,9 +56,7 @@ export const getAudioContext = (): AudioContext => {
       console.error("[audioContext] Failed to create AudioContext:", err);
       // Return a dummy context to avoid callers exploding – this will do
       // nothing but at least has the expected shape.
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore – Constructing the dummy to satisfy type, never used.
-      audioContext = { state: "closed" } as AudioContext;
+      audioContext = { state: "closed" } as unknown as AudioContext;
     }
   }
   return audioContext;

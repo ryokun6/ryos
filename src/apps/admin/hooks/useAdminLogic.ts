@@ -67,6 +67,40 @@ interface DeleteTarget {
   name: string;
 }
 
+interface ImportedSongLike {
+  id: string;
+  title: string;
+  url?: string;
+  artist?: string;
+  album?: string;
+  lyricOffset?: number;
+  lyricsSource?: {
+    hash: string;
+    albumId: string | number;
+    title: string;
+    artist: string;
+    album?: string;
+  };
+  lyricsSearch?: {
+    selection?: {
+      hash: string;
+      albumId: string | number;
+      title: string;
+      artist: string;
+      album?: string;
+    };
+  };
+  lyrics?: unknown;
+  translations?: unknown;
+  furigana?: unknown;
+  soramimi?: unknown;
+  soramimiByLang?: unknown;
+  createdBy?: string;
+  createdAt?: number;
+  updatedAt?: number;
+  importOrder?: number;
+}
+
 type AdminSection = "users" | "rooms" | "songs";
 
 const USERS_PER_PAGE = 100;
@@ -442,8 +476,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
         }
 
         // Map to the expected song format, including content fields
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const songsToImport = videos.map((v: Record<string, any>) => ({
+        const songsToImport = (videos as ImportedSongLike[]).map((v) => ({
           id: v.id as string,
           url: v.url as string | undefined,
           title: v.title as string,
