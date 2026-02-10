@@ -101,7 +101,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     name: "document.write usage",
     roots: ["src"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],
-    pattern: /document\.write\(/g,
+    pattern: /document\.write(?:ln)?\(/g,
     maxAllowed: 0,
   },
   {

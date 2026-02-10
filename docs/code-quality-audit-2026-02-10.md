@@ -109,7 +109,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - suppression regression checks (`eslint-disable`, `@ts-ignore`, `@ts-nocheck`, `innerHTML =`, `execSync(`, `shell: true`)
     across application source and scripts
   - DOM assignment hardening (`innerHTML =`, `outerHTML =`,
-    `insertAdjacentHTML(...)`, `document.write(...)`)
+    `insertAdjacentHTML(...)`, `document.write(...)` / `document.writeln(...)`)
   - command execution hardening (`child_process` `exec` import blocked in scripts/source/api)
   - `execSync(` prevention scope expanded to scripts/source/api (not just scripts)
   - string-based timer execution prevention (`setTimeout("...")`,

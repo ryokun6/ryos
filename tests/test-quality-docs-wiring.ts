@@ -57,7 +57,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No unresolved merge conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)",
       "No `outerHTML = ...` assignments in `src`",
       "No `insertAdjacentHTML(...)` usage in `src`",
-      "No `document.write(...)` usage in `src`",
+      "No `document.write(...)` / `document.writeln(...)` usage in `src`",
       "No string-based timer execution (`setTimeout(\"...\")`, `setInterval(\"...\")`,",
       "`setImmediate(\"...\")`, including template literals)",
       "Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below",
