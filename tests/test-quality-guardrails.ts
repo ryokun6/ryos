@@ -935,6 +935,39 @@ export async function runQualityGuardrailTests(): Promise<{
   );
 
   await runTest(
+    "fails when namespace alias optional bracket exec usage is introduced",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "BadExecOptionalBracketAlias.ts"),
+          [
+            'import * as cp from "node:child_process";',
+            'cp?.["exec"]("echo hi");',
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for optional bracket alias exec usage, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL child_process.exec direct usage"),
+          "Expected child_process.exec direct-usage guardrail failure for optional bracket alias"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
     "fails when inline require bracket exec usage is introduced",
     async () => {
       const qualityRoot = withTempQualityRoot((root) => {
@@ -956,6 +989,35 @@ export async function runQualityGuardrailTests(): Promise<{
         assert(
           (result.stdout || "").includes("FAIL child_process.exec direct usage"),
           "Expected child_process.exec direct-usage guardrail failure for inline require bracket syntax"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
+    "fails when inline require optional bracket exec usage is introduced",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "BadExecInlineRequireOptionalBracket.js"),
+          'require("child_process")?.["exec"]("echo hi");\n',
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for inline require optional bracket exec usage, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL child_process.exec direct usage"),
+          "Expected child_process.exec direct-usage guardrail failure for inline require optional bracket syntax"
         );
       } finally {
         rmSync(qualityRoot, { recursive: true, force: true });

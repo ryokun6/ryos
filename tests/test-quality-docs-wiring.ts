@@ -73,6 +73,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "alias detection is variable-aware",
       "optional-chaining forms are also blocked",
       "bracket-notation variants are also blocked",
+      "cp?.[\"exec\"](...)",
       "invocation matching is spacing-tolerant",
       "No Prisma unsafe raw SQL methods",
       "No `Prisma.raw(...)` usage",
