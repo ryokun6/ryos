@@ -58,7 +58,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "with and without trailing branch labels, including trailing whitespace",
       "documentation (markdown + MDX)",
       "including `.github` workflow files",
-      "JSON/TOML config files",
+      "JSON/TOML/INI config files",
       "No `innerHTML` assignments/mutations (`=`, `+=`) in `src`",
       "No `innerHTML` assignments/mutations (`=`, `+=`) in `src`\n  (including bracket-access forms)",
       "No `outerHTML` assignments/mutations (`=`, `+=`) in `src`",

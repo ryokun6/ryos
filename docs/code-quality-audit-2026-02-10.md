@@ -182,6 +182,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes YAML merge-marker failure coverage as well.
   - includes JSON merge-marker failure coverage as well.
   - includes TOML merge-marker failure coverage as well.
+  - includes INI merge-marker failure coverage as well.
   - includes `.github` workflow merge-marker failure coverage as well.
   - includes diff3 merge-base marker (`|||||||`) failure coverage.
   - includes bare marker (`<<<<<<<` / `>>>>>>>`) failure coverage.

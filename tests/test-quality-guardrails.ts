@@ -3075,6 +3075,39 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when merge conflict markers are introduced in ini", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      writeFileSync(
+        join(root, "config.ini"),
+        [
+          "[main]",
+          "<<<<<<< HEAD",
+          "mode=left",
+          "=======",
+          "mode=right",
+          ">>>>>>> feature-branch",
+          "",
+        ].join("\n"),
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for ini merge markers, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL merge conflict markers"),
+        "Expected merge conflict marker guardrail failure for ini"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when diff3 merge-base marker is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
