@@ -61,6 +61,9 @@ This audit documents quality findings and remediations completed for the request
 - Removed the remaining `react-hooks/exhaustive-deps` suppressions in `src/hooks/useFurigana.tsx`.
 - Refactored `_api/songs/_utils.ts` invisible-character sanitizer away from a suppression-requiring regex class
   to explicit code point filtering.
+- Added runtime regression coverage for sanitizer behavior:
+  - `tests/test-songs-utils-sanitize.ts`
+  - runnable via `bun run test:songs-utils`
 
 ## Residual Risk / Backlog (Prioritized)
 
