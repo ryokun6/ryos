@@ -76,6 +76,13 @@ const GUARDRAILS: GuardrailCheck[] = [
     maxAllowed: 0,
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
   },
+  {
+    name: "TODO/FIXME/HACK markers",
+    roots: ["src", "_api"],
+    extensions: [".ts", ".tsx"],
+    pattern: /\bTODO\b|\bFIXME\b|\bHACK\b|\bXXX\b/g,
+    maxAllowed: 0,
+  },
 ];
 
 const FILE_SIZE_GUARDRAIL: FileSizeGuardrail = {
