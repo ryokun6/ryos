@@ -54,7 +54,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No `@ts-nocheck` comments in source or scripts",
       "No dynamic code execution (`eval(` / `new Function(` / `Function(\"...\")`)",
       "No `debugger` statements in `scripts` / `src` / `_api`",
-      "No unresolved merge conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`) in",
+      "No unresolved merge conflict markers (`<<<<<<<`, `|||||||`, `=======`,",
       "JSON config files",
       "No `innerHTML` assignments/mutations (`=`, `+=`) in `src`",
       "No `outerHTML` assignments/mutations (`=`, `+=`) in `src`",
