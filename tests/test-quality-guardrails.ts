@@ -465,6 +465,58 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("JSON mode exposes offender entries as {path,count}", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "Todo.ts"),
+        `// TODO: should fail schema check\nexport const value = 1;\n`,
+        "utf-8"
+      );
+      // Add enough large files to trigger a size guardrail and validate shared offender shape.
+      for (let i = 0; i < 30; i++) {
+        writeFileWithLineCount(
+          join(root, "src", `HugeSchema${i}.ts`),
+          1001,
+          "export const z = 1;"
+        );
+      }
+    });
+
+    try {
+      const result = runQualityCheckJson(qualityRoot);
+      assertEq(result.status, 1, "Expected JSON mode to fail for violations");
+      const parsed = JSON.parse(result.stdout || "{}") as {
+        checks?: Array<{
+          name: string;
+          status: "PASS" | "FAIL";
+          offenders?: Array<{ path: unknown; count: unknown }>;
+        }>;
+      };
+      const failedChecks = (parsed.checks || []).filter(
+        (check) => check.status === "FAIL"
+      );
+      assert(failedChecks.length >= 2, "Expected at least two failing checks");
+
+      for (const check of failedChecks) {
+        const offenders = check.offenders || [];
+        assert(offenders.length > 0, `Expected offenders for failed check: ${check.name}`);
+        for (const offender of offenders) {
+          assert(
+            typeof offender.path === "string" && offender.path.length > 0,
+            `Expected offender.path string for check ${check.name}`
+          );
+          assert(
+            typeof offender.count === "number" && offender.count > 0,
+            `Expected offender.count number for check ${check.name}`
+          );
+        }
+      }
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest(
     "fails when biome exhaustive-deps bypass appears outside allowlist",
     async () => {
