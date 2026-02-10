@@ -2677,6 +2677,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when very-large cts script file guardrail is exceeded", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileWithLineCount(
+        join(root, "scripts", "HugeScript.cts"),
+        701,
+        "export const value = 1;"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for very-large cts script file, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL very large script files"),
+        "Expected very large script files guardrail failure for cts script"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("passes when script file is exactly at size threshold", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "scripts"), { recursive: true });

@@ -64,7 +64,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "max script files over 700 LOC",
       "(`.js`, `.jsx`, `.mts`, `.cts`, `.mjs`, `.cjs`)",
       "including TS module variants `.mts/.cts`",
-      "including explicit `.mjs`/`.cjs`/`.mts` regression paths",
+      "including explicit `.mjs`/`.cjs`/`.mts`/`.cts` regression paths",
     ];
 
     for (const snippet of requiredSnippets) {
