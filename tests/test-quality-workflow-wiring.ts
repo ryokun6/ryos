@@ -42,6 +42,14 @@ export async function runQualityWorkflowWiringTests(): Promise<{
     const source = readWorkflow();
     assert(/on:\s*\n\s*pull_request:/m.test(source), "Expected pull_request trigger");
     assert(/on:\s*[\s\S]*\n\s*push:/m.test(source), "Expected push trigger");
+    assert(
+      /push:\s*[\s\S]*branches:\s*[\s\S]*-\s*main/m.test(source),
+      "Expected push trigger to include main branch"
+    );
+    assert(
+      /push:\s*[\s\S]*branches:\s*[\s\S]*-\s*cursor\/\*\*/m.test(source),
+      "Expected push trigger to include cursor/** branches"
+    );
   });
 
   await runTest("workflow pins Bun setup action", async () => {
@@ -51,6 +59,16 @@ export async function runQualityWorkflowWiringTests(): Promise<{
       "Expected setup-bun action"
     );
     assert(/bun-version:\s*"1\.3\.5"/.test(source), "Expected Bun version pin");
+  });
+
+  await runTest("workflow job runtime settings are explicit", async () => {
+    const source = readWorkflow();
+    assert(/runs-on:\s*ubuntu-latest/.test(source), "Expected ubuntu-latest runner");
+    assert(/timeout-minutes:\s*20/.test(source), "Expected explicit timeout-minutes");
+    assert(
+      /concurrency:\s*[\s\S]*cancel-in-progress:\s*true/m.test(source),
+      "Expected workflow concurrency cancel-in-progress guard"
+    );
   });
 
   console.log(section("Quality execution parity"));

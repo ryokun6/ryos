@@ -151,6 +151,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   all checks (with file-size `count` representing LOC), improving summary reliability.
 - Workflow wiring tests now also verify that `quality:all:ci` referenced by CI is
   actually defined in `package.json`, preventing workflow/package command drift.
+- Workflow wiring tests also verify trigger branch filters and runtime safeguards
+  (explicit timeout + concurrency cancellation) to reduce CI drift risk.
 
 ### Low priority
 
