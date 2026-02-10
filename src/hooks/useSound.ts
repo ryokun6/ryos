@@ -93,7 +93,7 @@ export function useSound(soundPath: string, volume: number = 0.3) {
     const instanceSources = instanceSourcesRef.current;
     // Create gain node for volume control
     gainNodeRef.current = getAudioContext().createGain();
-    gainNodeRef.current.gain.value = volume * uiVolume * masterVolume;
+    gainNodeRef.current.gain.value = 1;
 
     // Connect to destination
     gainNodeRef.current.connect(getAudioContext().destination);
@@ -113,7 +113,6 @@ export function useSound(soundPath: string, volume: number = 0.3) {
       });
       instanceSources.clear();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only create gain node once on mount
 
   // Separate effect to update gain value when volumes change (with ramping)

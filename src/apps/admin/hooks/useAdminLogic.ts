@@ -863,7 +863,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       const narrow = width < 550;
       setIsFrameNarrow(narrow);
       // Collapse sidebar by default on mobile
-      if (narrow && isSidebarVisible) {
+      if (narrow) {
         setIsSidebarVisible(false);
       }
     };
@@ -880,8 +880,6 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     observer.observe(containerRef.current);
 
     return () => observer.disconnect();
-    // Only run on mount to set initial state
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Auto-show sidebar when transitioning from narrow to wide

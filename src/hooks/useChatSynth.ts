@@ -536,8 +536,8 @@ export function useChatSynth() {
     }
 
     // Check active voices against the defined VOICE_COUNT
-    // @ts-expect-error - Accessing internal _voices property which is not in type definitions
-    const activeVoices = synth._voices?.length || 0; // Access internal _voices array if available
+    const activeVoices =
+      (synth as unknown as { _voices?: unknown[] })._voices?.length || 0;
     if (activeVoices >= VOICE_COUNT) {
       console.debug(`Skipping note: Voice limit (${VOICE_COUNT}) reached.`);
       return;
