@@ -8,6 +8,7 @@ This repository includes automated guardrails to keep code quality from regressi
 bun run quality:check
 bun run quality:check:json
 bun run quality:summary quality-report.json
+bun run quality:verify
 bun run quality:all
 bun run quality:all:ci
 ```
@@ -15,16 +16,19 @@ bun run quality:all:ci
 - `quality:check` runs static quality policy checks.
 - `quality:check:json` runs the same checks and prints a JSON report.
 - `quality:summary` renders the JSON report as markdown (useful for CI summaries).
-- `quality:all` runs the full local quality gate:
+- `quality:verify` runs strict lint/build and all quality regression tests.
+- `quality:all` runs the full local quality gate by composing:
   1. `quality:check`
-  2. strict ESLint
-  3. production build
-  4. sanitizer runtime tests
-  5. quality guardrail wiring tests
-  6. quality workflow wiring tests
-  7. package quality-scripts wiring tests
-  8. quality summary renderer wiring tests
-  9. chat wiring regression tests
+  2. `quality:verify`
+- `quality:verify` includes:
+  1. strict ESLint
+  2. production build
+  3. sanitizer runtime tests
+  4. quality guardrail wiring tests
+  5. quality workflow wiring tests
+  6. package quality-scripts wiring tests
+  7. quality summary renderer wiring tests
+  8. chat wiring regression tests
 - `quality:all:ci` runs the same suite, but starts with
   `quality:check:json > quality-report.json` so CI can publish a single-pass
   guardrail artifact and summary.

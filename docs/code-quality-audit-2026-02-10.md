@@ -109,6 +109,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - allowlisted `dangerouslySetInnerHTML` usage (only permitted in `HtmlPreview` stream renderer).
   - allowlisted `biome-ignore lint/correctness/useExhaustiveDependencies` usage (currently only permitted in `useStreamingFetch`).
 - Added machine-readable output mode: `bun run quality:check:json`.
+- Added `bun run quality:verify` to centralize strict lint/build + regression-test stages.
+- `quality:all` and `quality:all:ci` now compose `quality:verify`, reducing script drift risk.
 - Added `bun run quality:all:ci` to run the full CI quality suite while emitting
   `quality-report.json` in the same command.
 - CI now publishes `quality-report.json` as an artifact and emits a markdown

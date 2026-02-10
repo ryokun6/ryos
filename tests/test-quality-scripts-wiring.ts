@@ -41,39 +41,17 @@ export async function runQualityScriptsWiringTests(): Promise<{
     assert(!!scripts["quality:check"], "Missing quality:check script");
     assert(!!scripts["quality:check:json"], "Missing quality:check:json script");
     assert(!!scripts["quality:summary"], "Missing quality:summary script");
+    assert(!!scripts["quality:verify"], "Missing quality:verify script");
     assert(!!scripts["quality:all"], "Missing quality:all script");
     assert(!!scripts["quality:all:ci"], "Missing quality:all:ci script");
   });
 
   console.log(section("Quality all composition"));
-  await runTest("quality:all includes all required quality stages", async () => {
+  await runTest("quality:verify includes all required quality stages", async () => {
     const scripts = readPackageScripts();
-    const qualityAll = scripts["quality:all"] || "";
+    const qualityVerify = scripts["quality:verify"] || "";
 
     const expectedSegments = [
-      "bun run quality:check",
-      "bunx eslint . --max-warnings 0",
-      "bun run build",
-      "bun run test:songs-utils",
-      "bun run test:quality-guardrails",
-      "bun run test:quality-workflow",
-      "bun run test:chat-wiring",
-    ];
-
-    for (const segment of expectedSegments) {
-      assert(
-        qualityAll.includes(segment),
-        `quality:all is missing segment: ${segment}`
-      );
-    }
-  });
-
-  await runTest("quality:all:ci generates report and runs full suite", async () => {
-    const scripts = readPackageScripts();
-    const qualityAllCi = scripts["quality:all:ci"] || "";
-
-    const expectedSegments = [
-      "bun run quality:check:json > quality-report.json",
       "bunx eslint . --max-warnings 0",
       "bun run build",
       "bun run test:songs-utils",
@@ -82,6 +60,36 @@ export async function runQualityScriptsWiringTests(): Promise<{
       "bun run test:quality-scripts",
       "bun run test:quality-summary",
       "bun run test:chat-wiring",
+    ];
+
+    for (const segment of expectedSegments) {
+      assert(
+        qualityVerify.includes(segment),
+        `quality:verify is missing segment: ${segment}`
+      );
+    }
+  });
+
+  await runTest("quality:all composes quality:check + quality:verify", async () => {
+    const scripts = readPackageScripts();
+    const qualityAll = scripts["quality:all"] || "";
+    assert(
+      qualityAll.startsWith("bun run quality:check &&"),
+      "quality:all must begin with quality:check"
+    );
+    assert(
+      qualityAll.includes("bun run quality:verify"),
+      "quality:all must include quality:verify"
+    );
+  });
+
+  await runTest("quality:all:ci generates report and runs full suite", async () => {
+    const scripts = readPackageScripts();
+    const qualityAllCi = scripts["quality:all:ci"] || "";
+
+    const expectedSegments = [
+      "bun run quality:check:json > quality-report.json",
+      "bun run quality:verify",
     ];
 
     for (const segment of expectedSegments) {

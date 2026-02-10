@@ -90,6 +90,7 @@ bun run build        # Build for production
 bun run lint         # Run ESLint
 bun run quality:check # Run code-quality guardrails (suppressions + file-size)
 bun run quality:check:json # Run guardrails and output machine-readable JSON
+bun run quality:verify # Run lint, build, and quality regression tests
 bun run quality:all  # Run full quality gate suite (guardrails, lint, build, tests)
 bun run quality:all:ci # Run CI suite and emit quality-report.json in one pass
 bun run test:songs-utils # Run sanitizer runtime regression tests
