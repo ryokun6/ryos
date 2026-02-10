@@ -78,7 +78,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "`Prisma.raw(...)`",
       "`execSync(` prevention scope expanded",
       "string-based timer execution prevention",
-      "optional-chaining invocation forms",
+      "optional/bracket invocation forms",
       "spacing-tolerant invocation matching",
       "DOM assignment hardening",
       "innerHTML +=`, `outerHTML +=` including bracket access",

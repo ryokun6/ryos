@@ -52,7 +52,9 @@ bun run quality:all:ci
   (including bracket/optional-bracket access forms, with spacing-tolerant matching)
 - No string-based timer execution (`setTimeout("...")`, `setInterval("...")`,
   `setImmediate("...")`, including template literals and optional-chaining calls
-  like `setTimeout?.("...")`, with spacing-tolerant matching)
+  like `setTimeout?.("...")`, plus bracket/optional-bracket forms like
+  `globalThis["setInterval"]("...")` / `globalThis?.["setImmediate"]("...")`,
+  with spacing-tolerant matching)
 - No `execSync(` usage in `scripts` / `src` / `_api`
   (spacing-tolerant invocation matching)
 - No `child_process` `exec` imports in `scripts` / `src` / `_api`

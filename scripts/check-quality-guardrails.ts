@@ -122,7 +122,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["src", "_api", "scripts"],
     extensions: CODE_EXTENSIONS,
     pattern:
-      /setTimeout\s*\(\s*['"`]|setInterval\s*\(\s*['"`]|setImmediate\s*\(\s*['"`]|setTimeout\s*\?\.\s*\(\s*['"`]|setInterval\s*\?\.\s*\(\s*['"`]|setImmediate\s*\?\.\s*\(\s*['"`]/g,
+      /setTimeout\s*\(\s*['"`]|setInterval\s*\(\s*['"`]|setImmediate\s*\(\s*['"`]|setTimeout\s*\?\.\s*\(\s*['"`]|setInterval\s*\?\.\s*\(\s*['"`]|setImmediate\s*\?\.\s*\(\s*['"`]|\[\s*["'`]setTimeout["'`]\s*\]\s*\(\s*['"`]|\[\s*["'`]setInterval["'`]\s*\]\s*\(\s*['"`]|\[\s*["'`]setImmediate["'`]\s*\]\s*\(\s*['"`]|\?\.\s*\[\s*["'`]setTimeout["'`]\s*\]\s*\(\s*['"`]|\?\.\s*\[\s*["'`]setInterval["'`]\s*\]\s*\(\s*['"`]|\?\.\s*\[\s*["'`]setImmediate["'`]\s*\]\s*\(\s*['"`]/g,
     maxAllowed: 0,
   },
   {

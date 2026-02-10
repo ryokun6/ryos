@@ -67,6 +67,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "including bracket/optional-bracket access forms, with spacing-tolerant matching",
       "No string-based timer execution (`setTimeout(\"...\")`, `setInterval(\"...\")`,",
       "`setImmediate(\"...\")`, including template literals and optional-chaining calls",
+      "plus bracket/optional-bracket forms like",
       "spacing-tolerant invocation matching",
       "Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below",
       "applies to `.{ts,tsx,mts,cts}` files under `src` / `_api`",
