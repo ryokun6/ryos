@@ -186,6 +186,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
     unrelated object `.exec(...)` calls are present.
 - Guardrail offender paths/order are stabilized (forward-slash path normalization +
   deterministic tie-break ordering for equal-size offenders).
+  - includes deterministic ordering coverage for allowlisted-check offender output.
 - Added summary renderer wiring coverage:
   - `tests/test-quality-summary-wiring.ts`
   - included in `quality:all` via `bun run test:quality-summary`.

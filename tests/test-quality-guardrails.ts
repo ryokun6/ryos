@@ -1865,6 +1865,56 @@ export async function runQualityGuardrailTests(): Promise<{
   });
 
   await runTest(
+    "JSON mode emits deterministic offender ordering for allowlisted failures",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src", "components"), { recursive: true });
+        writeFileSync(
+          join(root, "src", "components", "z-last.tsx"),
+          `export const Z = () => <div dangerouslySetInnerHTML={{ __html: "z" }} />;\n`,
+          "utf-8"
+        );
+        writeFileSync(
+          join(root, "src", "components", "a-first.tsx"),
+          `export const A = () => <div dangerouslySetInnerHTML={{ __html: "a" }} />;\n`,
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheckJson(qualityRoot);
+        assertEq(result.status, 1, "Expected JSON mode failure for disallowed allowlist usage");
+        const parsed = JSON.parse(result.stdout || "{}") as {
+          checks?: Array<{
+            name: string;
+            status: "PASS" | "FAIL";
+            offenders?: Array<{ path: string; count: number }>;
+          }>;
+        };
+        const htmlCheck = (parsed.checks || []).find(
+          (check) => check.name === "dangerouslySetInnerHTML usage"
+        );
+        assert(!!htmlCheck, "Expected dangerouslySetInnerHTML guardrail in JSON output");
+        assertEq(htmlCheck?.status, "FAIL", "Expected dangerouslySetInnerHTML guardrail failure");
+        const offenders = htmlCheck?.offenders || [];
+        assertEq(offenders.length, 2, "Expected two disallowed allowlist offenders");
+        assertEq(
+          offenders[0]?.path,
+          "src/components/a-first.tsx",
+          "Expected deterministic alphabetical offender ordering"
+        );
+        assertEq(
+          offenders[1]?.path,
+          "src/components/z-last.tsx",
+          "Expected deterministic alphabetical offender ordering"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
     "fails when biome exhaustive-deps bypass appears outside allowlist",
     async () => {
       const qualityRoot = withTempQualityRoot((root) => {

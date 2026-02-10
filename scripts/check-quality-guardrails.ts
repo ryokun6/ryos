@@ -352,7 +352,9 @@ const checkAllowlistedPattern = async (
         return { path: relativePath, count };
       })
     )
-  ).filter((match): match is { path: string; count: number } => match !== null);
+  )
+    .filter((match): match is { path: string; count: number } => match !== null)
+    .sort((a, b) => a.path.localeCompare(b.path));
 
   const total = matches.reduce((sum, match) => sum + match.count, 0);
   const disallowedMatches = matches.filter(
