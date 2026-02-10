@@ -120,7 +120,7 @@ export async function runQualityGuardrailTests(): Promise<{
       "outerHTML assignments",
       "insertAdjacentHTML usage",
       "document.write usage",
-      "string-based setTimeout/setInterval usage",
+      "string-based timer execution usage",
       "execSync usage",
       "child_process exec import usage",
       "unsafe Prisma raw SQL methods",
@@ -242,7 +242,7 @@ export async function runQualityGuardrailTests(): Promise<{
     );
     assert(out.includes("document.write usage"), "Missing document.write guardrail");
     assert(
-      out.includes("string-based setTimeout/setInterval usage"),
+      out.includes("string-based timer execution usage"),
       "Missing string timer guardrail"
     );
     assert(out.includes("execSync usage"), "Missing execSync guardrail");
@@ -923,7 +923,7 @@ export async function runQualityGuardrailTests(): Promise<{
       );
       assert(
         (result.stdout || "").includes(
-          "FAIL string-based setTimeout/setInterval usage"
+          "FAIL string-based timer execution usage"
         ),
         "Expected string timer guardrail failure"
       );
@@ -951,9 +951,35 @@ export async function runQualityGuardrailTests(): Promise<{
       );
       assert(
         (result.stdout || "").includes(
-          "FAIL string-based setTimeout/setInterval usage"
+          "FAIL string-based timer execution usage"
         ),
         "Expected string timer guardrail failure for template-literal timer"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when string-based setImmediate is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadImmediate.js"),
+        "setImmediate('console.log(1)');\n",
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for string setImmediate usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL string-based timer execution usage"),
+        "Expected string timer guardrail failure for setImmediate"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });
