@@ -79,6 +79,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "string-based timer execution prevention",
       "DOM assignment hardening",
       "script task-marker baseline cap",
+      "quoted/computed keys",
       "YAML merge-marker failure coverage",
       "JSON merge-marker failure coverage",
       "diff3 merge-base marker",
