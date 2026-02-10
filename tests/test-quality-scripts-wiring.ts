@@ -71,6 +71,11 @@ export async function runQualityScriptsWiringTests(): Promise<{
         `quality:verify is missing segment: ${segment}`
       );
     }
+
+    assert(
+      !qualityVerify.includes("bun run quality:check"),
+      "quality:verify should not run guardrails directly (quality:all composes it)"
+    );
   });
 
   await runTest("quality:all composes quality:check + quality:verify", async () => {
