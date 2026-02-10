@@ -863,6 +863,36 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("passes when script task markers are exactly at baseline cap", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      const markerLines = Array.from(
+        { length: 19 },
+        (_, index) => `// TODO: marker ${index}`
+      ).join("\n");
+      writeFileSync(
+        join(root, "scripts", "TodoAtCap.ts"),
+        `${markerLines}\nexport const value = 1;\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        0,
+        `Expected pass exit code 0 when script markers equal cap, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("PASS TODO/FIXME/HACK markers in scripts"),
+        "Expected script task-marker guardrail pass at cap"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when innerHTML assignment is introduced in JavaScript", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });

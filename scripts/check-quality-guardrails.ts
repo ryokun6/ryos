@@ -49,6 +49,7 @@ const SKIP_DIRS = new Set([
 
 const SOURCE_CACHE = new Map<string, Promise<string>>();
 const CANDIDATE_FILE_CACHE = new Map<string, Promise<string[]>>();
+const SCRIPT_TASK_MARKER_BASELINE_CAP = 19;
 
 const GUARDRAILS: GuardrailCheck[] = [
   {
@@ -161,7 +162,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["scripts"],
     extensions: [".ts", ".js"],
     pattern: /\bTODO\b|\bFIXME\b|\bHACK\b|\bXXX\b/g,
-    maxAllowed: 19,
+    maxAllowed: SCRIPT_TASK_MARKER_BASELINE_CAP,
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
   },
   {

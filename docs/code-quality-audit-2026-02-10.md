@@ -118,7 +118,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - dynamic code execution/debugging prevention (`eval(`, `new Function(`, `debugger`)
   - merge conflict marker prevention (`<<<<<<<`, `=======`, `>>>>>>>`)
   - no unresolved task markers in source (`TODO`, `FIXME`, `HACK`, `XXX`)
-  - script task-marker baseline cap to prevent regression while legacy markers are burned down
+  - script task-marker baseline cap (19) to prevent regression while legacy markers are burned down
   - file-size regression checks (max files over 1000 LOC, max files over 1500 LOC,
     and max single-file LOC cap).
   - cached source/candidate file scanning for faster quality-check execution.
