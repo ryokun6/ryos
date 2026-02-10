@@ -4,6 +4,8 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 
 **[Read ryOS Docs](https://os.ryo.lu/docs)** — Architecture, API reference, and developer guides
 
+See also: [Code Quality Guardrails](docs/code-quality-guardrails.md)
+
 ## Features
 
 ### Desktop Environment
