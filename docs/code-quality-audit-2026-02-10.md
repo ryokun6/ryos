@@ -191,6 +191,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes explicit `schemaVersion` type/positivity validation coverage.
   - includes `passed`/failed-status consistency and offender-entry schema
     validation coverage.
+  - includes non-negative integer check-value validation and PASS/offender
+    incompatibility coverage.
 - Added README quality command wiring coverage:
   - `tests/test-quality-readme-wiring.ts`
   - included in `quality:all` via `bun run test:quality-readme`.

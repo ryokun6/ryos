@@ -73,6 +73,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "`schemaVersion` plus `totalChecks` and",
       "`failedChecks` metadata.",
       "Validation includes `passed` vs failed-status consistency",
+      "non-negative integer check values",
       "cap-overflow failures print offending allowlisted file paths for triage",
       "failed-check offender previews (top 5 per check)",
       "When count metadata is omitted, summary rendering derives counts from `checks`",

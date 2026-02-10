@@ -350,6 +350,61 @@ export async function runQualitySummaryWiringTests(): Promise<{
     );
   });
 
+  await runTest("fails when check value is negative or non-integer", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: false,
+        checks: [
+          {
+            name: "merge conflict markers",
+            status: "FAIL",
+            value: -1,
+            allowed: "<= 0",
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("non-negative integer value"),
+          "Expected check value validation error"
+        );
+      }
+    );
+  });
+
+  await runTest("fails when pass check includes offender rows", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: true,
+        checks: [
+          {
+            name: "eslint-disable comments",
+            status: "PASS",
+            value: 0,
+            allowed: "<= 0",
+            offenders: [{ path: "src/a.ts", count: 1 }],
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("must not include offenders when PASS"),
+          "Expected PASS-offender validation error"
+        );
+      }
+    );
+  });
+
   return printSummary();
 }
 

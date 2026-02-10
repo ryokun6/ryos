@@ -68,8 +68,10 @@ const assertQualityReport = (value: unknown): QualityReport => {
     if (candidate.status !== "PASS" && candidate.status !== "FAIL") {
       throw new Error(`Check "${candidate.name}" has invalid status`);
     }
-    if (typeof candidate.value !== "number") {
-      throw new Error(`Check "${candidate.name}" must include numeric value`);
+    if (!Number.isInteger(candidate.value) || candidate.value < 0) {
+      throw new Error(
+        `Check "${candidate.name}" must include a non-negative integer value`
+      );
     }
     if (typeof candidate.allowed !== "string" || candidate.allowed.length === 0) {
       throw new Error(`Check "${candidate.name}" must include allowed text`);
@@ -106,6 +108,13 @@ const assertQualityReport = (value: unknown): QualityReport => {
         }
       }
     }
+    if (
+      candidate.status === "PASS" &&
+      Array.isArray(candidate.offenders) &&
+      candidate.offenders.length > 0
+    ) {
+      throw new Error(`Check "${candidate.name}" must not include offenders when PASS`);
+    }
   }
 
   if (
@@ -125,6 +134,13 @@ const assertQualityReport = (value: unknown): QualityReport => {
     throw new Error(
       "Quality report failedChecks metadata does not match failed check count"
     );
+  }
+  if (
+    report.totalChecks !== undefined &&
+    report.failedChecks !== undefined &&
+    report.failedChecks > report.totalChecks
+  ) {
+    throw new Error("Quality report failedChecks metadata exceeds totalChecks");
   }
   if (report.passed !== (computedFailedChecks === 0)) {
     throw new Error(
