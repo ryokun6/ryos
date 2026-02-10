@@ -109,6 +109,14 @@ const GUARDRAILS: GuardrailCheck[] = [
     pattern: /\beval\(|new Function\(/g,
     maxAllowed: 0,
   },
+  {
+    name: "debugger statements",
+    roots: ["scripts", "src", "_api"],
+    extensions: [".ts", ".tsx"],
+    pattern: /\bdebugger\b/g,
+    maxAllowed: 0,
+    excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
+  },
 ];
 
 const FILE_SIZE_GUARDRAILS: FileSizeGuardrail[] = [

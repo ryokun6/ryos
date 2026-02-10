@@ -154,6 +154,7 @@ export async function runQualityGuardrailTests(): Promise<{
       out.includes("dynamic code execution (eval/new Function)"),
       "Missing dynamic code execution guardrail"
     );
+    assert(out.includes("debugger statements"), "Missing debugger guardrail");
   });
 
   await runTest("reports maintainability and HTML allowlist checks", async () => {
@@ -357,6 +358,32 @@ export async function runQualityGuardrailTests(): Promise<{
           "FAIL dynamic code execution (eval/new Function)"
         ),
         "Expected dynamic code execution guardrail failure"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when debugger statement is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "BadDebugger.ts"),
+        `export const run = () => { debugger; return true; };\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for debugger usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL debugger statements"),
+        "Expected debugger guardrail failure"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });

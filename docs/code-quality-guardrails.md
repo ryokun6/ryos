@@ -44,6 +44,7 @@ bun run quality:all:ci
 - No `execSync(` usage in `scripts`
 - No `shell: true` usage in `scripts` / `src` / `_api`
 - No dynamic code execution (`eval(` / `new Function(`) in `scripts` / `src` / `_api`
+- No `debugger` statements in `scripts` / `src` / `_api`
 - No unresolved task markers (`TODO`, `FIXME`, `HACK`, `XXX`) in `src` / `_api`
 - File-size regression bounds for TypeScript sources
   - max files over 1000 LOC
