@@ -68,6 +68,24 @@ export async function runQualityAuditWiringTests(): Promise<{
     }
   });
 
+  await runTest("audit report references key security guardrails", async () => {
+    const source = readAuditDoc();
+    const requiredSecuritySnippets = [
+      "`Prisma.raw(...)`",
+      "`execSync(` prevention scope expanded",
+      "string-based timer execution prevention",
+      "DOM assignment hardening",
+      "script task-marker baseline cap",
+    ];
+
+    for (const snippet of requiredSecuritySnippets) {
+      assert(
+        source.includes(snippet),
+        `Missing audit security guardrail snippet: ${snippet}`
+      );
+    }
+  });
+
   return printSummary();
 }
 
