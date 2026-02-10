@@ -67,8 +67,8 @@ export function PhotoBoothComponent({
     lastPhoto,
     showThumbnail,
     newPhotoIndex,
-    files,
     validPhotos,
+    getPhotoPreviewSrc,
     isInitialLoad,
     isXpTheme,
     isMacTheme,
@@ -295,14 +295,8 @@ export function PhotoBoothComponent({
                         // Check if this is the new photo that was just added
                         const isNewPhoto = originalIndex === newPhotoIndex;
 
-                        // Find the matching file in the file system
-                        const matchingFile = files.find(
-                          (file) => file.name === photo.filename
-                        );
-
-                        // Skip if file not found in the file system
-                        if (!matchingFile || !matchingFile.contentUrl)
-                          return null;
+                        const previewSrc = getPhotoPreviewSrc(photo);
+                        if (!previewSrc) return null;
 
                         return (
                           <motion.div
@@ -323,7 +317,7 @@ export function PhotoBoothComponent({
                             }}
                           >
                             <img
-                              src={matchingFile.contentUrl}
+                              src={previewSrc}
                               alt={t("apps.photo-booth.ariaLabels.photo", {
                                 index: originalIndex,
                               })}
@@ -331,8 +325,8 @@ export function PhotoBoothComponent({
                               onClick={() => {
                                 // Create an anchor element to download the image
                                 const link = document.createElement("a");
-                                link.href = matchingFile.contentUrl || "";
-                                link.download = matchingFile.name;
+                                link.href = previewSrc;
+                                link.download = photo.filename;
                                 document.body.appendChild(link);
                                 link.click();
                                 document.body.removeChild(link);

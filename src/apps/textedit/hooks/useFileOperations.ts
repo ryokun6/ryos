@@ -12,6 +12,10 @@ import {
   generateSuggestedFilename,
 } from "../utils/textEditUtils";
 import {
+  parseRichMarkdown,
+  serializeRichMarkdown,
+} from "../utils/richMarkdown";
+import {
   dbOperations,
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
@@ -44,11 +48,15 @@ export function useFileOperations({
     try {
       const htmlContent = editor.getHTML();
       const markdownContent = htmlToMarkdown(htmlContent);
+      const persistedContent = serializeRichMarkdown(
+        markdownContent,
+        editor.getJSON()
+      );
 
       await saveFile({
         name: currentFilePath.split("/").pop() || "Untitled.md",
         path: currentFilePath,
-        content: markdownContent,
+        content: persistedContent,
       });
 
       onSaveSuccess?.(currentFilePath);
@@ -70,11 +78,15 @@ export function useFileOperations({
       try {
         const htmlContent = editor.getHTML();
         const markdownContent = htmlToMarkdown(htmlContent);
+        const persistedContent = serializeRichMarkdown(
+          markdownContent,
+          editor.getJSON()
+        );
 
         await saveFile({
           name: fileName.endsWith(".md") ? fileName : `${fileName}.md`,
           path: filePath,
-          content: markdownContent,
+          content: persistedContent,
         });
 
         onSaveSuccess?.(filePath);
@@ -100,23 +112,33 @@ export function useFileOperations({
       if (file.name.endsWith(".html")) {
         editorContent = text;
       } else if (file.name.endsWith(".md")) {
-        editorContent = markdownToHtml(text);
+        const parsed = parseRichMarkdown(text);
+        if (parsed.editorJson) {
+          editor.commands.setContent(parsed.editorJson, false);
+          editorContent = "";
+        } else {
+          editorContent = markdownToHtml(parsed.markdown);
+        }
       } else {
         editorContent = `<p>${text}</p>`;
       }
 
-      editor.commands.setContent(editorContent);
+      if (editorContent) {
+        editor.commands.setContent(editorContent);
+      }
 
-      // Always save in markdown format, converting from HTML if needed
-      const markdownContent = file.name.endsWith(".md")
-        ? text
-        : htmlToMarkdown(editor.getHTML());
+      // Always save in markdown format with rich metadata
+      const markdownContent = htmlToMarkdown(editor.getHTML());
+      const persistedContent = serializeRichMarkdown(
+        markdownContent,
+        editor.getJSON()
+      );
 
       try {
         await saveFile({
           name: file.name,
           path: filePath,
-          content: markdownContent,
+          content: persistedContent,
         });
 
         onLoadSuccess?.(filePath);
@@ -183,7 +205,12 @@ export function useFileOperations({
       let editorContent: string | object;
 
       if (path.endsWith(".md")) {
-        editorContent = markdownToHtml(contentToUse);
+        const parsed = parseRichMarkdown(contentToUse);
+        if (parsed.editorJson) {
+          editorContent = parsed.editorJson as object;
+        } else {
+          editorContent = markdownToHtml(parsed.markdown);
+        }
       } else {
         try {
           editorContent = JSON.parse(contentToUse);
@@ -218,7 +245,12 @@ export function useFileOperations({
             let editorContent;
 
             if (filePath.endsWith(".md")) {
-              editorContent = markdownToHtml(contentStr);
+              const parsed = parseRichMarkdown(contentStr);
+              if (parsed.editorJson) {
+                editorContent = parsed.editorJson;
+              } else {
+                editorContent = markdownToHtml(parsed.markdown);
+              }
             } else {
               try {
                 editorContent = JSON.parse(contentStr);
