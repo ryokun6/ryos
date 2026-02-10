@@ -65,6 +65,9 @@ This audit documents quality findings and remediations completed for the request
 - Added runtime regression coverage for sanitizer behavior:
   - `tests/test-songs-utils-sanitize.ts`
   - runnable via `bun run test:songs-utils`
+- Added wiring tests for quality guardrail command behavior:
+  - `tests/test-quality-guardrails.ts`
+  - runnable via `bun run test:quality-guardrails`
 
 ## Residual Risk / Backlog (Prioritized)
 
