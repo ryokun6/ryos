@@ -91,6 +91,7 @@ export async function runQualitySummaryWiringTests(): Promise<{
             status: "FAIL",
             value: 1,
             allowed: "<= 0",
+            offenders: [{ path: "src/conflict.ts", count: 1 }],
           },
           {
             name: "eslint-disable comments",
@@ -280,6 +281,7 @@ export async function runQualitySummaryWiringTests(): Promise<{
             status: "FAIL",
             value: 1,
             allowed: "<= 0",
+            offenders: [{ path: "src/a.ts", count: 1 }],
           },
         ],
       },
@@ -307,6 +309,7 @@ export async function runQualitySummaryWiringTests(): Promise<{
             status: "FAIL",
             value: 1,
             allowed: "<= 0",
+            offenders: [{ path: "src/conflict.ts", count: 1 }],
           },
         ],
       },
@@ -542,6 +545,33 @@ export async function runQualitySummaryWiringTests(): Promise<{
         assert(
           err.includes("duplicate offender path"),
           "Expected duplicate offender-path validation error"
+        );
+      }
+    );
+  });
+
+  await runTest("fails when fail check omits offender rows", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: false,
+        checks: [
+          {
+            name: "merge conflict markers",
+            status: "FAIL",
+            value: 1,
+            allowed: "<= 0",
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("must include offenders when FAIL"),
+          "Expected FAIL-without-offenders validation error"
         );
       }
     );

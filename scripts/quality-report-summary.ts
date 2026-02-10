@@ -125,6 +125,12 @@ const assertQualityReport = (value: unknown): QualityReport => {
     ) {
       throw new Error(`Check "${candidate.name}" must not include offenders when PASS`);
     }
+    if (
+      candidate.status === "FAIL" &&
+      (!Array.isArray(candidate.offenders) || candidate.offenders.length === 0)
+    ) {
+      throw new Error(`Check "${candidate.name}" must include offenders when FAIL`);
+    }
   }
   const checkNameSet = new Set<string>();
   for (const check of report.checks) {

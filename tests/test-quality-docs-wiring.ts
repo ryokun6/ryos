@@ -79,6 +79,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "`failedChecks` metadata.",
       "Validation includes `passed` vs failed-status consistency",
       "non-negative integer check values",
+      "requires FAIL checks to include at least one offender entry",
       "unique check names",
       "unique offender paths within each failed check entry",
       "non-empty (non-whitespace) `root`, check names, and",

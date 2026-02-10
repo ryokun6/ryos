@@ -112,6 +112,7 @@ Validation includes `passed` vs failed-status consistency and offender entry
 shape checks (`path` + positive integer `count`).
 Validation also enforces non-negative integer check values and blocks PASS checks
 from carrying offender entries.
+Validation requires FAIL checks to include at least one offender entry.
 Validation enforces unique check names to avoid ambiguous summaries.
 Validation enforces unique offender paths within each failed check entry.
 Validation requires non-empty (non-whitespace) `root`, check names, and
