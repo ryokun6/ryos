@@ -1899,6 +1899,61 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when document bracket write usage is introduced in JavaScript", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "BadDocumentBracketWrite.js"),
+        `document["write"]("<p>oops</p>");\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for document['write'] in js, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL document.write usage"),
+        "Expected document.write guardrail failure for bracket write variant"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest(
+    "fails when document optional bracket writeln usage is introduced in JavaScript",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src"), { recursive: true });
+        writeFileSync(
+          join(root, "src", "BadDocumentOptionalBracketWriteln.js"),
+          `document?.["writeln"]("<p>oops</p>");\n`,
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for document?.['writeln'] in js, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL document.write usage"),
+          "Expected document.write guardrail failure for optional bracket writeln variant"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
   await runTest("fails when string-based setTimeout is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });

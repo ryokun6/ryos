@@ -111,7 +111,8 @@ const GUARDRAILS: GuardrailCheck[] = [
     name: "document.write usage",
     roots: ["src"],
     extensions: CODE_EXTENSIONS,
-    pattern: /document\.write(?:ln)?\(/g,
+    pattern:
+      /document(?:\?\.|\.)write(?:ln)?\s*\(|document(?:\?\.)?\[\s*["']write(?:ln)?["']\s*\]\s*\(/g,
     maxAllowed: 0,
   },
   {
