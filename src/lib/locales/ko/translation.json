@@ -1397,6 +1397,7 @@
         "displayVideo": "비디오",
         "displayCover": "커버",
         "displayLandscapes": "풍경",
+        "displayShader": "앰비언트",
         "view": "보기"
       },
       "menuItems": {

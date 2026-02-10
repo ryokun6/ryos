@@ -16,6 +16,7 @@ import {
 import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
+import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import type { IpodScreenProps } from "../types";
 
 // Animation variants for menu transitions
@@ -298,6 +299,15 @@ export function IpodScreen({
             {/* Landscape video background */}
             {displayMode === DisplayMode.Landscapes && (
               <LandscapeVideoBackground
+                isActive={showVideo}
+                className="absolute inset-0 z-[5]"
+              />
+            )}
+
+            {/* Ambient blurred cover background */}
+            {displayMode === DisplayMode.Shader && (
+              <AmbientBackground
+                coverUrl={coverUrl}
                 isActive={showVideo}
                 className="absolute inset-0 z-[5]"
               />

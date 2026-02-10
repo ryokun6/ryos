@@ -65,6 +65,8 @@ export enum DisplayMode {
   Cover = "cover",
   /** Cycle through landscape video wallpapers */
   Landscapes = "landscapes",
+  /** Show ambient blurred cover art background (Apple Music-style) */
+  Shader = "shader",
 }
 
 export enum KoreanDisplay {

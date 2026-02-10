@@ -8,17 +8,20 @@ export { ShaderType };
 
 interface GalaxyBackgroundProps {
   shaderType?: ShaderType;
+  /** When true, render regardless of the global shaderEffectEnabled setting */
+  forceRender?: boolean;
 }
 
 const GalaxyBackground: React.FC<GalaxyBackgroundProps> = ({
   shaderType = ShaderType.GALAXY,
+  forceRender = false,
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const clockRef = useRef(new THREE.Clock()); // Use Clock for time uniform
   const shaderEffectEnabled = useDisplaySettingsStore((state) => state.shaderEffectEnabled);
 
   // Combined state for rendering condition - removed screen size check
-  const shouldRender = shaderEffectEnabled;
+  const shouldRender = forceRender || shaderEffectEnabled;
 
   // Check initial screen width and add resize listener - REMOVED
   // useEffect(() => {

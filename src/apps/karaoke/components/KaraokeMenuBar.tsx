@@ -611,6 +611,15 @@ export function KaraokeMenuBar({
               >
                 {t("apps.ipod.menu.displayLandscapes")}
               </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={displayMode === DisplayMode.Shader}
+                onCheckedChange={(checked) => {
+                  if (checked) setDisplayMode(DisplayMode.Shader);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.displayShader")}
+              </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>
 

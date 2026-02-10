@@ -26,6 +26,7 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useKaraokeLogic } from "../hooks/useKaraokeLogic";
 import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
+import { AmbientBackground } from "@/components/shared/AmbientBackground";
 
 export function KaraokeAppComponent({
   isWindowOpen,
@@ -363,6 +364,15 @@ export function KaraokeAppComponent({
           {/* Landscape video background */}
           {displayMode === DisplayMode.Landscapes && currentTrack && (
             <LandscapeVideoBackground
+              isActive={!!currentTrack}
+              className="absolute inset-0 z-[5]"
+            />
+          )}
+
+          {/* Ambient blurred cover background */}
+          {displayMode === DisplayMode.Shader && currentTrack && (
+            <AmbientBackground
+              coverUrl={coverUrl}
               isActive={!!currentTrack}
               className="absolute inset-0 z-[5]"
             />
@@ -816,6 +826,15 @@ export function KaraokeAppComponent({
                 {/* Landscape video background (fullscreen) */}
                 {displayMode === DisplayMode.Landscapes && currentTrack && (
                   <LandscapeVideoBackground
+                    isActive={!!currentTrack}
+                    className="fixed inset-0 z-[5]"
+                  />
+                )}
+
+                {/* Ambient blurred cover background (fullscreen) */}
+                {displayMode === DisplayMode.Shader && currentTrack && (
+                  <AmbientBackground
+                    coverUrl={coverUrl}
                     isActive={!!currentTrack}
                     className="fixed inset-0 z-[5]"
                   />

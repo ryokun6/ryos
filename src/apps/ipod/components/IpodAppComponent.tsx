@@ -23,6 +23,7 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodLogic } from "../hooks/useIpodLogic";
 import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
+import { AmbientBackground } from "@/components/shared/AmbientBackground";
 
 export function IpodAppComponent({
   isWindowOpen,
@@ -504,6 +505,15 @@ export function IpodAppComponent({
                   {/* Landscape video background (fullscreen) */}
                   {displayMode === DisplayMode.Landscapes && tracks[currentIndex] && (
                     <LandscapeVideoBackground
+                      isActive={!!tracks[currentIndex]}
+                      className="fixed inset-0 z-[5]"
+                    />
+                  )}
+
+                  {/* Ambient blurred cover background (fullscreen) */}
+                  {displayMode === DisplayMode.Shader && tracks[currentIndex] && (
+                    <AmbientBackground
+                      coverUrl={fullscreenCoverUrl}
                       isActive={!!tracks[currentIndex]}
                       className="fixed inset-0 z-[5]"
                     />

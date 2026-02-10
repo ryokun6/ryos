@@ -1467,6 +1467,7 @@
         "displayVideo": "Video",
         "displayCover": "Cover",
         "displayLandscapes": "Landscapes",
+        "displayShader": "Ambient",
         "coverFlow": "Cover Flow",
         "classic": "Classic",
         "black": "Black",
