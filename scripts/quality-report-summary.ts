@@ -116,6 +116,14 @@ const assertQualityReport = (value: unknown): QualityReport => {
       throw new Error(`Check "${candidate.name}" must not include offenders when PASS`);
     }
   }
+  const checkNameSet = new Set<string>();
+  for (const check of report.checks) {
+    const checkName = (check as QualityCheckEntry).name;
+    if (checkNameSet.has(checkName)) {
+      throw new Error(`Quality report contains duplicate check name: "${checkName}"`);
+    }
+    checkNameSet.add(checkName);
+  }
 
   if (
     report.totalChecks !== undefined &&
