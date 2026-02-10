@@ -511,6 +511,51 @@ export function IpodMenuBar({
             </MenubarSubContent>
           </MenubarSub>
 
+          {/* Display Submenu */}
+          <MenubarSub>
+            <MenubarSubTrigger className="text-md h-6 px-3">
+              {t("apps.ipod.menu.display")}
+            </MenubarSubTrigger>
+            <MenubarSubContent className="px-0">
+              <MenubarCheckboxItem
+                checked={displayMode === DisplayMode.Video}
+                onCheckedChange={(checked) => {
+                  if (checked) setDisplayMode(DisplayMode.Video);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.displayVideo")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={displayMode === DisplayMode.Cover}
+                onCheckedChange={(checked) => {
+                  if (checked) setDisplayMode(DisplayMode.Cover);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.displayCover")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={displayMode === DisplayMode.Landscapes}
+                onCheckedChange={(checked) => {
+                  if (checked) setDisplayMode(DisplayMode.Landscapes);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.displayLandscapes")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={displayMode === DisplayMode.Shader}
+                onCheckedChange={(checked) => {
+                  if (checked) setDisplayMode(DisplayMode.Shader);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.displayShader")}
+              </MenubarCheckboxItem>
+            </MenubarSubContent>
+          </MenubarSub>
+
           <MenubarSeparator className="h-[2px] bg-black my-1" />
 
           <MenubarItem
@@ -566,51 +611,6 @@ export function IpodMenuBar({
           >
             {t("apps.ipod.menu.video")}
           </MenubarCheckboxItem>
-
-          {/* Display Submenu */}
-          <MenubarSub>
-            <MenubarSubTrigger className="text-md h-6 px-3">
-              {t("apps.ipod.menu.display")}
-            </MenubarSubTrigger>
-            <MenubarSubContent className="px-0">
-              <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Video}
-                onCheckedChange={(checked) => {
-                  if (checked) setDisplayMode(DisplayMode.Video);
-                }}
-                className="text-md h-6 pr-3"
-              >
-                {t("apps.ipod.menu.displayVideo")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Cover}
-                onCheckedChange={(checked) => {
-                  if (checked) setDisplayMode(DisplayMode.Cover);
-                }}
-                className="text-md h-6 pr-3"
-              >
-                {t("apps.ipod.menu.displayCover")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Landscapes}
-                onCheckedChange={(checked) => {
-                  if (checked) setDisplayMode(DisplayMode.Landscapes);
-                }}
-                className="text-md h-6 pr-3"
-              >
-                {t("apps.ipod.menu.displayLandscapes")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Shader}
-                onCheckedChange={(checked) => {
-                  if (checked) setDisplayMode(DisplayMode.Shader);
-                }}
-                className="text-md h-6 pr-3"
-              >
-                {t("apps.ipod.menu.displayShader")}
-              </MenubarCheckboxItem>
-            </MenubarSubContent>
-          </MenubarSub>
 
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarCheckboxItem
