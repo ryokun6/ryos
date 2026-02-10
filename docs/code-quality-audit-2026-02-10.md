@@ -106,7 +106,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - `bun run build`
   - suppression regression checks (`eslint-disable`, `@ts-ignore`, `innerHTML =`, `execSync(`)
 - ✅ Added `bun run quality:check` (script: `scripts/check-quality-guardrails.ts`) to enforce:
-  - suppression regression checks (`eslint-disable`, `@ts-ignore`, `@ts-nocheck`, `innerHTML =`, `execSync(`, `shell: true` including quoted/computed keys and spaced computed syntax)
+  - suppression regression checks (`eslint-disable`, `@ts-ignore`, `@ts-nocheck`, `innerHTML =`, `execSync(`, `shell: true` including quoted/computed keys, spaced computed syntax, and template-computed key syntax)
     across application source and scripts
   - DOM assignment hardening (`innerHTML =`, `outerHTML =`,
     `innerHTML +=`, `outerHTML +=`, `insertAdjacentHTML(...)`,

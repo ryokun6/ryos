@@ -658,6 +658,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when template computed shell:true key is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadComputedShellTemplate.js"),
+        "const key = `shell`;\nconst opts = { [key]: true };\nconst direct = { [`shell`]: true };\nconsole.log(opts, direct);\n",
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for template computed shell:true key, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL shell:true command execution"),
+        "Expected shell:true guardrail failure for template computed key syntax"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when execSync usage is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "scripts"), { recursive: true });
