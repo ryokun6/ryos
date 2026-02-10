@@ -840,6 +840,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when spaced execSync call syntax is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadExecSpacing.ts"),
+        `import { execSync } from "node:child_process";\nexecSync ("echo hi");\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for spaced execSync call, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL execSync usage"),
+        "Expected execSync guardrail failure for spaced call syntax"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when child_process exec import is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "scripts"), { recursive: true });
@@ -1553,6 +1579,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when spaced Prisma.raw usage is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadPrismaRawSpaced.ts"),
+        `import { Prisma } from "@prisma/client";\nconst q = Prisma.raw ("SELECT 1");\nconsole.log(q);\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for spaced Prisma.raw usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL Prisma.raw usage"),
+        "Expected Prisma.raw guardrail failure for spaced invocation syntax"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when child_process exec import is introduced in _api", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "_api"), { recursive: true });
@@ -2092,6 +2144,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when spaced string-based setTimeout is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "BadTimerSpacing.js"),
+        `setTimeout ("alert('x')", 1000);\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for spaced string timer usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL string-based timer execution usage"),
+        "Expected string timer guardrail failure for spaced call syntax"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when template-literal setInterval is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
@@ -2203,6 +2281,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when spaced eval is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "BadEvalSpacing.js"),
+        `eval ("alert('x')");\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for spaced eval usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL dynamic code execution (eval/new Function)"),
+        "Expected dynamic code execution guardrail failure for spaced eval syntax"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when bare Function constructor is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
@@ -2225,6 +2329,32 @@ export async function runQualityGuardrailTests(): Promise<{
           "FAIL dynamic code execution (eval/new Function)"
         ),
         "Expected dynamic code execution guardrail failure for Function constructor"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when spaced Function constructor is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "BadFunctionSpacing.js"),
+        `const fn = Function ("return 1");\nconsole.log(fn);\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for spaced Function constructor, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL dynamic code execution (eval/new Function)"),
+        "Expected dynamic code execution guardrail failure for spaced Function syntax"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });

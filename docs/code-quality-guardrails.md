@@ -52,8 +52,9 @@ bun run quality:all:ci
   (including bracket/optional-bracket access forms, with spacing-tolerant matching)
 - No string-based timer execution (`setTimeout("...")`, `setInterval("...")`,
   `setImmediate("...")`, including template literals and optional-chaining calls
-  like `setTimeout?.("...")`)
+  like `setTimeout?.("...")`, with spacing-tolerant matching)
 - No `execSync(` usage in `scripts` / `src` / `_api`
+  (spacing-tolerant invocation matching)
 - No `child_process` `exec` imports in `scripts` / `src` / `_api`
   (use `execFileSync`/`spawnSync` instead)
 - No `child_process.exec(...)` direct usage (including namespace/default import
@@ -65,12 +66,12 @@ bun run quality:all:ci
     `cp?.["exec"](...)`)
   - invocation matching is spacing-tolerant (e.g. `cp.exec ("...")`)
 - No Prisma unsafe raw SQL methods (`queryRawUnsafe`, `executeRawUnsafe`, `$queryRawUnsafe`, `$executeRawUnsafe`)
-- No `Prisma.raw(...)` usage
+- No `Prisma.raw(...)` usage (spacing-tolerant invocation matching)
 - No `shell: true` usage in `scripts` / `src` / `_api` (including quoted,
   computed, and simple variable-computed key syntax such as
   `const key = "shell"; { [key]: true }`)
 - No dynamic code execution (`eval(` / `new Function(` / `Function("...")`) in
-  `scripts` / `src` / `_api`
+  `scripts` / `src` / `_api` (spacing-tolerant invocation matching)
 - No `debugger` statements in `scripts` / `src` / `_api`
 - No unresolved merge conflict markers (`<<<<<<<`, `|||||||`, `=======`,
   `>>>>>>>`) in tracked source, test, documentation (markdown + MDX), and

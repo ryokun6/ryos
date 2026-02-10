@@ -122,14 +122,14 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["src", "_api", "scripts"],
     extensions: CODE_EXTENSIONS,
     pattern:
-      /setTimeout\(\s*['"`]|setInterval\(\s*['"`]|setImmediate\(\s*['"`]|setTimeout\s*\?\.\s*\(\s*['"`]|setInterval\s*\?\.\s*\(\s*['"`]|setImmediate\s*\?\.\s*\(\s*['"`]/g,
+      /setTimeout\s*\(\s*['"`]|setInterval\s*\(\s*['"`]|setImmediate\s*\(\s*['"`]|setTimeout\s*\?\.\s*\(\s*['"`]|setInterval\s*\?\.\s*\(\s*['"`]|setImmediate\s*\?\.\s*\(\s*['"`]/g,
     maxAllowed: 0,
   },
   {
     name: "execSync usage",
     roots: ["scripts", "src", "_api"],
     extensions: CODE_EXTENSIONS,
-    pattern: /execSync\(/g,
+    pattern: /\bexecSync\s*\(/g,
     maxAllowed: 0,
   },
   {
@@ -161,7 +161,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     name: "Prisma.raw usage",
     roots: ["src", "_api", "scripts"],
     extensions: CODE_EXTENSIONS,
-    pattern: /\bPrisma\.raw\(/g,
+    pattern: /\bPrisma\.raw\s*\(/g,
     maxAllowed: 0,
   },
   {
@@ -192,7 +192,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     name: "dynamic code execution (eval/new Function)",
     roots: ["scripts", "src", "_api"],
     extensions: CODE_EXTENSIONS,
-    pattern: /\beval\(|new Function\(|\bFunction\(\s*['"`]/g,
+    pattern: /\beval\s*\(|new Function\s*\(|\bFunction\s*\(\s*['"`]/g,
     maxAllowed: 0,
   },
   {
