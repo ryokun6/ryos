@@ -88,6 +88,7 @@ bun run quality:all:ci
   `>>>>>>>`) in tracked source, test, documentation (markdown + MDX), and
   JSON/TOML/INI config files (including `.github` workflow files)
   - hidden root dotfiles (for example `.editorconfig`) are included in scanning
+  - hidden config directories (for example `.vscode/settings.json`) are scanned too
   - markers are detected both with and without trailing branch labels, including trailing whitespace
 - No unresolved task markers (`TODO`, `FIXME`, `HACK`, `XXX`) in `src` / `_api`
 - Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below
