@@ -166,6 +166,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   actually defined in `package.json`, preventing workflow/package command drift.
 - Workflow wiring tests also verify trigger branch filters and runtime safeguards
   (explicit timeout + concurrency cancellation) to reduce CI drift risk.
+- Workflow wiring tests verify report-publishing step ordering (quality run →
+  summary publish → artifact upload) to prevent CI reporting regressions.
 
 ### Low priority
 

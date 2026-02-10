@@ -141,6 +141,25 @@ export async function runQualityWorkflowWiringTests(): Promise<{
     );
   });
 
+  await runTest("workflow keeps report publishing steps ordered", async () => {
+    const source = readWorkflow();
+    const runSuiteIdx = source.indexOf("Run full quality suite");
+    const publishSummaryIdx = source.indexOf("Publish quality summary");
+    const uploadArtifactIdx = source.indexOf("Upload quality report artifact");
+
+    assert(runSuiteIdx !== -1, "Missing Run full quality suite step");
+    assert(publishSummaryIdx !== -1, "Missing Publish quality summary step");
+    assert(uploadArtifactIdx !== -1, "Missing Upload quality report artifact step");
+    assert(
+      runSuiteIdx < publishSummaryIdx,
+      "Expected summary step to run after full quality suite"
+    );
+    assert(
+      publishSummaryIdx < uploadArtifactIdx,
+      "Expected artifact upload to run after summary generation"
+    );
+  });
+
   return printSummary();
 }
 
