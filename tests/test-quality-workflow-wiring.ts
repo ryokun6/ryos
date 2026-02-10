@@ -24,6 +24,12 @@ const readWorkflow = (): string =>
     "utf-8"
   );
 
+const readPackageScripts = (): Record<string, string> => {
+  const raw = readFileSync(resolve(process.cwd(), "package.json"), "utf-8");
+  const parsed = JSON.parse(raw) as { scripts?: Record<string, string> };
+  return parsed.scripts || {};
+};
+
 export async function runQualityWorkflowWiringTests(): Promise<{
   passed: number;
   failed: number;
@@ -53,6 +59,15 @@ export async function runQualityWorkflowWiringTests(): Promise<{
     assert(
       /run:\s*bun run quality:all:ci/.test(source),
       "Expected CI to run bun run quality:all:ci"
+    );
+  });
+
+  await runTest("workflow quality command exists in package scripts", async () => {
+    const scripts = readPackageScripts();
+    assert(
+      typeof scripts["quality:all:ci"] === "string" &&
+        scripts["quality:all:ci"].length > 0,
+      "Expected package.json to define quality:all:ci used by workflow"
     );
   });
 
