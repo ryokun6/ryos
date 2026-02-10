@@ -587,6 +587,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when executeRawUnsafe variant is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "BadSqlVariant.ts"),
+        `export async function run(prisma: any){\n  await prisma.$executeRawUnsafe("DELETE FROM users");\n}\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for executeRawUnsafe variant, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL unsafe Prisma raw SQL methods"),
+        "Expected unsafe Prisma raw SQL guardrail failure for executeRawUnsafe"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when child_process exec import is introduced in _api", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "_api"), { recursive: true });
