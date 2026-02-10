@@ -22,6 +22,8 @@ const vertexShader = `
 `;
 
 // --- Fragment shader: Kali warp distortion sampling from cover art ---
+// Optimised: 40 ray steps (was 100), 6 Kali folds (was 10),
+// single texture mix outside inner loop, larger step size.
 const fragmentShader = `
   uniform vec2 resolution;
   uniform float time;
@@ -39,25 +41,27 @@ const fragmentShader = `
 
     // Accumulate warped texture samples along a ray
     vec3 col = vec3(0.0);
-    for (int r = 0; r < 100; r++) {
+    for (int r = 0; r < 40; r++) {
       vec3 p = init + s * vec3(uv, 0.05);
       p.z = fract(p.z);
 
-      // Kali chaotic fold
-      for (int i = 0; i < 10; i++) {
+      // Kali chaotic fold (6 iterations)
+      for (int i = 0; i < 6; i++) {
         p = abs(p * 2.04) / dot(p, p) - 0.9;
       }
 
       v += pow(dot(p, p), 0.7) * 0.06;
 
-      // Use the warped p as texture coordinates
+      // Sample cover texture at warped coordinates
       vec2 texUV = fract(p.xy * 0.15 + 0.5);
-      vec3 sampleA = texture2D(coverTextureA, texUV).rgb;
-      vec3 sampleB = texture2D(coverTextureB, texUV).rgb;
-      vec3 texCol  = mix(sampleA, sampleB, blendFactor);
+      vec3 texCol = mix(
+        texture2D(coverTextureA, texUV).rgb,
+        texture2D(coverTextureB, texUV).rgb,
+        blendFactor
+      );
 
-      col += texCol * v * 0.0004;
-      s += 0.025;
+      col += texCol * v * 0.005;
+      s += 0.0625;
     }
 
     // Boost saturation
@@ -165,7 +169,7 @@ export function AmbientBackground({
       powerPreference: "high-performance",
     });
     renderer.setSize(el.clientWidth, el.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
     el.appendChild(renderer.domElement);
 
     // 1×1 black default texture
