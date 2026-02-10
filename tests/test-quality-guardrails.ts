@@ -1001,6 +1001,110 @@ export async function runQualityGuardrailTests(): Promise<{
   });
 
   await runTest(
+    "fails when child_process exec is destructured from namespace import alias",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "BadExecNamespaceDestructure.ts"),
+          [
+            'import * as cp from "node:child_process";',
+            "const { exec } = cp;",
+            'exec("echo hi");',
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for namespace alias destructured exec, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL child_process exec import usage"),
+          "Expected child_process exec import guardrail failure for namespace alias destructuring"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
+    "fails when child_process exec is destructured from require alias",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "BadExecRequireAliasDestructure.js"),
+          [
+            'const cp = require("child_process");',
+            "const { exec: runExec } = cp;",
+            'runExec("echo hi");',
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for require alias destructured exec, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL child_process exec import usage"),
+          "Expected child_process exec import guardrail failure for require alias destructuring"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
+    "passes when exec is destructured from unrelated object despite child_process import",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "SafeUnrelatedExecDestructure.ts"),
+          [
+            'import * as cp from "node:child_process";',
+            "const other = { exec: () => 1 };",
+            "const { exec } = other;",
+            "exec();",
+            "console.log(cp);",
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 for unrelated exec destructuring, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS child_process exec import usage"),
+          "Expected child_process exec import guardrail pass for unrelated exec destructuring"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
     "fails when child_process exec require destructuring alias is introduced",
     async () => {
       const qualityRoot = withTempQualityRoot((root) => {

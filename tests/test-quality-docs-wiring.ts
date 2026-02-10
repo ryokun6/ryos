@@ -79,6 +79,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "key matching is spacing-tolerant",
       "No `child_process` `exec` imports in `scripts` / `src` / `_api`",
       "alias destructuring forms",
+      "alias-object destructuring",
       "No `child_process.exec(...)` direct usage",
       "alias detection is variable-aware",
       "optional-chaining forms are also blocked",

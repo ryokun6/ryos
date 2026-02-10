@@ -137,7 +137,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["scripts", "src", "_api"],
     extensions: CODE_EXTENSIONS,
     pattern:
-      /\bimport\s*\{[^}]*\bexec\b[^}]*\}\s*from\s*["'](?:node:)?child_process["']|\b(?:const|let|var)\s*\{[^}]*\bexec\b[^}]*\}\s*=\s*require\(["'](?:node:)?child_process["']\)/g,
+      /\bimport\s*\{[^}]*\bexec\b[^}]*\}\s*from\s*["'](?:node:)?child_process["']|\b(?:const|let|var)\s*\{[^}]*\bexec\b[^}]*\}\s*=\s*require\(["'](?:node:)?child_process["']\)|\bimport\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s*["'](?:node:)?child_process["'][\s\S]*?\b(?:const|let|var)\s*\{[^}]*\bexec\b[^}]*\}\s*=\s*\1\b|\bimport\s+([A-Za-z_$][\w$]*)\s+from\s*["'](?:node:)?child_process["'][\s\S]*?\b(?:const|let|var)\s*\{[^}]*\bexec\b[^}]*\}\s*=\s*\2\b|\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\(["'](?:node:)?child_process["']\)[\s\S]*?\b(?:const|let|var)\s*\{[^}]*\bexec\b[^}]*\}\s*=\s*\3\b/g,
     maxAllowed: 0,
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
   },
