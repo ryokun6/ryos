@@ -658,6 +658,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when execSync usage is introduced in cjs scripts", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadExec.cjs"),
+        `const { execSync } = require("node:child_process");\nexecSync("echo hi");\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for execSync in cjs script, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL execSync usage"),
+        "Expected execSync guardrail failure for cjs scripts"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when execSync usage is introduced in _api", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "_api"), { recursive: true });
@@ -1752,6 +1778,40 @@ export async function runQualityGuardrailTests(): Promise<{
       assert(
         (result.stdout || "").includes("FAIL merge conflict markers"),
         "Expected merge conflict marker guardrail failure for markdown"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when merge conflict markers are introduced in cjs", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "MergeConflict.cjs"),
+        [
+          "module.exports = {};",
+          "<<<<<<< HEAD",
+          "const left = true;",
+          "=======",
+          "const right = true;",
+          ">>>>>>> feature-branch",
+          "",
+        ].join("\n"),
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for cjs merge markers, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL merge conflict markers"),
+        "Expected merge conflict marker guardrail failure for cjs"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });

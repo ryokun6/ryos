@@ -169,7 +169,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes boundary pass checks at exact allowlist caps to prevent off-by-one regressions.
   - includes cap-overflow diagnostics assertions that offending allowlisted paths are reported.
 - Guardrail wiring tests include JavaScript-path failure cases (`innerHTML`,
-  `execSync`, and `dangerouslySetInnerHTML`) to verify cross-language scan parity.
+  `execSync`, and `dangerouslySetInnerHTML`) to verify cross-language scan parity,
+  including explicit `.mjs`/`.cjs` regression paths.
 - Guardrail wiring tests include markdown merge-marker failure cases to verify
   non-code file safety checks in configured roots.
   - includes YAML merge-marker failure coverage as well.
