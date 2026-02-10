@@ -69,6 +69,9 @@ bun run quality:all:ci
   - max files over 1000 LOC
   - max files over 1500 LOC
   - max single-file LOC cap
+- Script file-size regression bound
+  - no `scripts/*.ts|js` files over 700 LOC
+  - max script single-file LOC cap: 900
 - Allowlisted `dangerouslySetInnerHTML` usage only
 - Allowlisted `biome-ignore lint/correctness/useExhaustiveDependencies` usage only
   - both allowlisted checks also enforce max total occurrence caps

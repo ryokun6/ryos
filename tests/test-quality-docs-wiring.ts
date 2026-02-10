@@ -62,6 +62,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No string-based timer execution (`setTimeout(\"...\")`, `setInterval(\"...\")`,",
       "`setImmediate(\"...\")`, including template literals)",
       "Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below",
+      "no `scripts/*.ts|js` files over 700 LOC",
       "No `execSync(` usage in `scripts` / `src` / `_api`",
       "No `child_process` `exec` imports in `scripts` / `src` / `_api`",
       "No `child_process.exec(...)` direct usage",

@@ -214,6 +214,14 @@ const FILE_SIZE_GUARDRAILS: FileSizeGuardrail[] = [
     maxFilesOverThreshold: 14,
     maxSingleFileLines: 2600,
   },
+  {
+    name: "very large script files",
+    roots: ["scripts"],
+    extensions: [".ts", ".js"],
+    lineThreshold: 700,
+    maxFilesOverThreshold: 0,
+    maxSingleFileLines: 900,
+  },
 ];
 
 const DANGEROUSLY_SET_INNER_HTML_GUARDRAIL: AllowlistedPatternGuardrail = {

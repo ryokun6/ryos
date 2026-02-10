@@ -61,6 +61,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "SQL safety guardrails",
       "string-based timer execution prevention",
       "command execution hardening (`child_process` `exec` import + direct usage blocked",
+      "max script files over 700 LOC",
     ];
 
     for (const snippet of requiredSnippets) {

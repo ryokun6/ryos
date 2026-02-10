@@ -66,8 +66,8 @@ const writeFileWithLineCount = (
 ) => {
   const contents = Array.from(
     { length: lineCount },
-    (_, index) => `${linePrefix} ${index}\n`
-  ).join("");
+    (_, index) => `${linePrefix} ${index}`
+  ).join("\n");
   writeFileSync(filePath, contents, "utf-8");
 };
 
@@ -135,6 +135,7 @@ export async function runQualityGuardrailTests(): Promise<{
       "merge conflict markers",
       "very large TypeScript files",
       "large TypeScript files",
+      "very large script files",
       "dangerouslySetInnerHTML usage",
       "biome exhaustive-deps bypass comments",
     ];
@@ -299,6 +300,7 @@ export async function runQualityGuardrailTests(): Promise<{
       "Missing 1000+ LOC file-size guardrail"
     );
     assert(out.includes("large TypeScript files"), "Missing file-size guardrail");
+    assert(out.includes("very large script files"), "Missing script file-size guardrail");
     assert(
       out.includes("dangerouslySetInnerHTML usage"),
       "Missing dangerouslySetInnerHTML allowlist guardrail"
@@ -1855,6 +1857,58 @@ export async function runQualityGuardrailTests(): Promise<{
       assert(
         (result.stdout || "").includes("FAIL very large TypeScript files"),
         "Expected very large TypeScript files guardrail failure"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when very-large script file guardrail is exceeded", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileWithLineCount(
+        join(root, "scripts", "HugeScript.ts"),
+        701,
+        "export const value = 1;"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for very-large script file, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL very large script files"),
+        "Expected very large script files guardrail failure"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("passes when script file is exactly at size threshold", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileWithLineCount(
+        join(root, "scripts", "ThresholdScript.ts"),
+        700,
+        "export const value = 1;"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        0,
+        `Expected pass exit code 0 for script file at threshold, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("PASS very large script files"),
+        "Expected very large script files guardrail pass at threshold"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });
