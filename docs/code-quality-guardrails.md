@@ -56,6 +56,7 @@ bun run quality:all:ci
   - max single-file LOC cap
 - Allowlisted `dangerouslySetInnerHTML` usage only
 - Allowlisted `biome-ignore lint/correctness/useExhaustiveDependencies` usage only
+  - both allowlisted checks also enforce max total occurrence caps
 
 Most content checks scan TypeScript and JavaScript sources (`.ts/.tsx/.js/.jsx`)
 within the relevant roots.

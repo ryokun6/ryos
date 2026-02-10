@@ -330,6 +330,44 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   );
 
+  await runTest(
+    "fails when dangerouslySetInnerHTML allowlisted total cap is exceeded",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src/components/shared"), { recursive: true });
+        writeFileSync(
+          join(root, "src/components/shared/HtmlPreview.tsx"),
+          [
+            "export function HtmlPreview(){",
+            "  return <div>",
+            "    <span dangerouslySetInnerHTML={{ __html: '<b>a</b>' }} />",
+            "    <span dangerouslySetInnerHTML={{ __html: '<b>b</b>' }} />",
+            "    <span dangerouslySetInnerHTML={{ __html: '<b>c</b>' }} />",
+            "  </div>;",
+            "}",
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for allowlist total cap exceedance, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL dangerouslySetInnerHTML usage"),
+          "Expected dangerouslySetInnerHTML allowlist cap failure"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
   await runTest("fails when shell:true is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "scripts"), { recursive: true });
