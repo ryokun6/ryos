@@ -86,11 +86,15 @@ export async function runQualitySummaryWiringTests(): Promise<{
           {
             name: "TODO/FIXME/HACK markers",
             status: "FAIL",
-            value: 2,
+            value: 6,
             allowed: "<= 0",
             offenders: [
               { path: "src/a.ts", count: 1 },
               { path: "src/b.ts", count: 1 },
+              { path: "src/c.ts", count: 1 },
+              { path: "src/d.ts", count: 1 },
+              { path: "src/e.ts", count: 1 },
+              { path: "src/f.ts", count: 1 },
             ],
           },
           {
@@ -120,8 +124,14 @@ export async function runQualitySummaryWiringTests(): Promise<{
           "Missing failed offender check heading"
         );
         assert(
-          out.includes("`src/a.ts` (1)") && out.includes("`src/b.ts` (1)"),
+          out.includes("`src/a.ts` (1)") &&
+            out.includes("`src/b.ts` (1)") &&
+            out.includes("`src/e.ts` (1)"),
           "Missing failed offender rows"
+        );
+        assert(
+          !out.includes("`src/f.ts` (1)"),
+          "Expected failed offender preview to be capped at 5 rows"
         );
       }
     );
