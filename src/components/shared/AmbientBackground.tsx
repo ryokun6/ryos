@@ -217,8 +217,14 @@ export function AmbientBackground({
       alpha: true,
       powerPreference: "high-performance",
     });
-    renderer.setSize(el.clientWidth, el.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 0.5));
+    const scale = 0.5; // render at half resolution
+    renderer.setSize(
+      Math.floor(el.clientWidth * scale),
+      Math.floor(el.clientHeight * scale),
+      false, // don't set CSS style – we handle it below
+    );
+    renderer.domElement.style.width = "100%";
+    renderer.domElement.style.height = "100%";
     el.appendChild(renderer.domElement);
 
     // 1×1 black default texture
@@ -233,7 +239,10 @@ export function AmbientBackground({
     const shaderMaterial = new THREE.ShaderMaterial({
       uniforms: {
         resolution: {
-          value: new THREE.Vector2(el.clientWidth, el.clientHeight),
+          value: new THREE.Vector2(
+            Math.floor(el.clientWidth * scale),
+            Math.floor(el.clientHeight * scale),
+          ),
         },
         time: { value: 0.0 },
         coverTextureA: { value: defaultTex },
@@ -274,10 +283,10 @@ export function AmbientBackground({
     // Resize handler – use ResizeObserver to catch both browser and
     // in-app window resizes (e.g. ryOS WindowFrame dragging)
     const handleResize = () => {
-      const w = el.clientWidth;
-      const h = el.clientHeight;
+      const w = Math.floor(el.clientWidth * scale);
+      const h = Math.floor(el.clientHeight * scale);
       if (w === 0 || h === 0) return;
-      renderer.setSize(w, h);
+      renderer.setSize(w, h, false);
       shaderMaterial.uniforms.resolution.value.set(w, h);
     };
     const resizeObserver = new ResizeObserver(handleResize);
