@@ -168,7 +168,6 @@ export function useFurigana({
   const lastFuriganaSongIdRef = useRef<string>("");
 
   // Fetch furigana for original lines when enabled using line-by-line streaming
-  // biome-ignore lint/correctness/useExhaustiveDependencies: cacheKey captures lines content, shouldFetchFurigana captures romanization settings
   useEffect(() => {
     // Capture songId at effect start for stale request detection
     const effectSongId = songId;
@@ -385,7 +384,6 @@ export function useFurigana({
 
   // Fetch soramimi for lyrics when enabled using line-by-line streaming
   // For Japanese songs, waits for furigana to complete first so we can pass readings to the AI
-  // biome-ignore lint/correctness/useExhaustiveDependencies: cacheKey captures lines content, shouldFetchSoramimi captures romanization settings
   useEffect(() => {
     // Capture songId at effect start for stale request detection
     const effectSongId = songId;
