@@ -17,7 +17,7 @@ This audit documents quality findings and remediations completed for the request
 | Metric | Baseline | Current | Delta |
 |---|---:|---:|---:|
 | ESLint errors/warnings | 0 / 0 | 0 / 0 | maintained |
-| `eslint-disable` occurrences (`src` + `_api`) | 22 | 3 | -19 |
+| `eslint-disable` occurrences (`src` + `_api`) | 22 | 1 | -21 |
 | `@ts-ignore` / `@ts-expect-error` (`src` + `_api`) | 6 | 0 | -6 |
 | `innerHTML = ...` assignments (`src`) | 15 | 0 | -15 |
 | `execSync(` usages (`scripts`) | 2 | 0 | -2 |
@@ -58,7 +58,9 @@ This audit documents quality findings and remediations completed for the request
   - `src/stores/useIpodStore.ts`
   - `src/apps/finder/hooks/useFileSystem.ts`
   - `src/apps/base/AppManager.tsx`
-- Reduced `react-hooks/exhaustive-deps` suppressions to only 2 justified cases in `src/hooks/useFurigana.tsx`.
+- Removed the remaining `react-hooks/exhaustive-deps` suppressions in `src/hooks/useFurigana.tsx`.
+- Remaining suppression count is one explicit, justified regex rule suppression in `_api/songs/_utils.ts`
+  (`no-misleading-character-class` for a deliberate zero-width/invisible-Unicode sanitizer).
 
 ## Residual Risk / Backlog (Prioritized)
 
@@ -92,4 +94,5 @@ Large files remain the biggest quality risk (all >1500 LOC):
 
 ### Low priority
 
-- Revisit remaining two `exhaustive-deps` suppressions in `useFurigana.tsx` if memoization contracts can be simplified without behavior changes.
+- Consider replacing or externally validating the long invisible-Unicode sanitizer character class in `_api/songs/_utils.ts`
+  if lint-rule waiver policies require zero suppressions.
