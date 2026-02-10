@@ -192,6 +192,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes inline `require("child_process")?.exec(...)` variant coverage.
   - includes require-alias optional-chaining variant coverage (`const cp = require(...); cp?.exec(...)`).
   - includes bracket-notation variant coverage (`cp["exec"](...)` and inline require bracket access).
+  - includes spaced-invocation variant coverage (`cp.exec ("...")` / `cp["exec"] ("...")`).
 - Guardrail offender paths/order are stabilized (forward-slash path normalization +
   deterministic tie-break ordering for equal-size offenders).
   - includes deterministic ordering coverage for allowlisted-check offender output.

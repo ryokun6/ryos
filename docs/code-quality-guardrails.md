@@ -59,6 +59,7 @@ bun run quality:all:ci
     `.exec(...)` calls in the same file
   - optional-chaining forms are also blocked (`child_process?.exec(...)`)
   - bracket-notation variants are also blocked (`cp["exec"](...)`)
+  - invocation matching is spacing-tolerant (e.g. `cp.exec ("...")`)
 - No Prisma unsafe raw SQL methods (`queryRawUnsafe`, `executeRawUnsafe`, `$queryRawUnsafe`, `$executeRawUnsafe`)
 - No `Prisma.raw(...)` usage
 - No `shell: true` usage in `scripts` / `src` / `_api` (including quoted and computed key syntax)
