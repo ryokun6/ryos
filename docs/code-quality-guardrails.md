@@ -20,7 +20,8 @@ bun run quality:all
   3. production build
   4. sanitizer runtime tests
   5. quality guardrail wiring tests
-  6. chat wiring regression tests
+  6. quality workflow wiring tests
+  7. chat wiring regression tests
 
 ## Guardrail Policies
 
