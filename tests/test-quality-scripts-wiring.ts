@@ -44,6 +44,7 @@ export async function runQualityScriptsWiringTests(): Promise<{
     assert(!!scripts["quality:verify"], "Missing quality:verify script");
     assert(!!scripts["quality:all"], "Missing quality:all script");
     assert(!!scripts["quality:all:ci"], "Missing quality:all:ci script");
+    assert(!!scripts["test:quality-docs"], "Missing test:quality-docs script");
   });
 
   console.log(section("Quality all composition"));
@@ -60,6 +61,7 @@ export async function runQualityScriptsWiringTests(): Promise<{
       "bun run test:quality-scripts",
       "bun run test:quality-summary",
       "bun run test:quality-readme",
+      "bun run test:quality-docs",
       "bun run test:chat-wiring",
     ];
 
