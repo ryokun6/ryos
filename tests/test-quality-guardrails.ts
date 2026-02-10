@@ -124,6 +124,8 @@ export async function runQualityGuardrailTests(): Promise<{
         out.includes("| Check | Status | Value | Allowed |"),
         "Expected markdown table header in summary output"
       );
+      assert(out.includes("- Total checks:"), "Expected total checks summary line");
+      assert(out.includes("- Failed checks:"), "Expected failed checks summary line");
       assert(
         out.includes("eslint-disable comments"),
         "Expected known guardrail row in summary output"

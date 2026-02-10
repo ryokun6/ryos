@@ -24,12 +24,20 @@ const run = async (): Promise<void> => {
   const reportPath = resolve(process.cwd(), reportArg);
   const raw = await readFile(reportPath, "utf-8");
   const report = JSON.parse(raw) as QualityReport;
+  const failedChecks = report.checks.filter((check) => check.status === "FAIL");
 
   const lines: string[] = [];
   lines.push("## Quality Guardrails Report");
   lines.push("");
   lines.push(`- Root: \`${report.root}\``);
   lines.push(`- Overall: ${report.passed ? "✅ PASS" : "❌ FAIL"}`);
+  lines.push(`- Total checks: ${report.checks.length}`);
+  lines.push(`- Failed checks: ${failedChecks.length}`);
+  if (failedChecks.length > 0) {
+    lines.push(
+      `- Failed check names: ${failedChecks.map((check) => check.name).join(", ")}`
+    );
+  }
   lines.push("");
   lines.push("| Check | Status | Value | Allowed |");
   lines.push("|---|---:|---:|---|");
