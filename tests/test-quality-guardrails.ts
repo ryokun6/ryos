@@ -225,6 +225,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when disallowed eslint-disable appears in scripts", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadScript.ts"),
+        `// eslint-disable-next-line no-console\nconsole.log("x");\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for bad script, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL eslint-disable comments"),
+        "Expected eslint-disable guardrail failure for scripts"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest(
     "fails when dangerouslySetInnerHTML is used outside allowlist",
     async () => {
@@ -326,6 +352,32 @@ export async function runQualityGuardrailTests(): Promise<{
       assert(
         (result.stdout || "").includes("FAIL @ts-nocheck comments"),
         "Expected @ts-nocheck guardrail failure"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when @ts-expect-error is introduced in scripts", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadTypeSuppression.ts"),
+        `// @ts-expect-error intentional test\nexport const value: number = "x";\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for @ts-expect-error in scripts, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL @ts-ignore/@ts-expect-error"),
+        "Expected ts-ignore/expect-error guardrail failure for scripts"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });

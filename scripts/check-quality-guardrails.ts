@@ -53,17 +53,19 @@ const CANDIDATE_FILE_CACHE = new Map<string, Promise<string[]>>();
 const GUARDRAILS: GuardrailCheck[] = [
   {
     name: "eslint-disable comments",
-    roots: ["src", "_api"],
-    extensions: [".ts", ".tsx"],
+    roots: ["src", "_api", "scripts"],
+    extensions: [".ts", ".tsx", ".js"],
     pattern: /eslint-disable/g,
     maxAllowed: 0,
+    excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
   },
   {
     name: "@ts-ignore/@ts-expect-error",
-    roots: ["src", "_api"],
-    extensions: [".ts", ".tsx"],
+    roots: ["src", "_api", "scripts"],
+    extensions: [".ts", ".tsx", ".js"],
     pattern: /@ts-ignore|@ts-expect-error/g,
     maxAllowed: 0,
+    excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
   },
   {
     name: "@ts-nocheck comments",

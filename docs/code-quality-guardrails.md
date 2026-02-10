@@ -39,8 +39,8 @@ bun run quality:all:ci
 
 `scripts/check-quality-guardrails.ts` enforces:
 
-- No `eslint-disable` comments in `src` / `_api`
-- No `@ts-ignore` / `@ts-expect-error` in `src` / `_api`
+- No `eslint-disable` comments in `src` / `_api` / `scripts`
+- No `@ts-ignore` / `@ts-expect-error` in `src` / `_api` / `scripts`
 - No `@ts-nocheck` comments in source or scripts
 - No `innerHTML = ...` assignments in `src`
 - No `execSync(` usage in `scripts`
