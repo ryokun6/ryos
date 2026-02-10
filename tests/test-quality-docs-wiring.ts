@@ -55,7 +55,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No dynamic code execution (`eval(` / `new Function(` / `Function(\"...\")`)",
       "No `debugger` statements in `scripts` / `src` / `_api`",
       "No unresolved merge conflict markers (`<<<<<<<`, `|||||||`, `=======`,",
-      "with and without trailing branch labels",
+      "with and without trailing branch labels, including trailing whitespace",
       "documentation (markdown + MDX)",
       "JSON/TOML config files",
       "No `innerHTML` assignments/mutations (`=`, `+=`) in `src`",

@@ -94,6 +94,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "TOML merge-marker failure coverage",
       "diff3 merge-base marker",
       "bare marker (`<<<<<<<` / `>>>>>>>`) failure coverage",
+      "trailing-whitespace merge-marker failure coverage",
       "documentation markdown merge-marker failure coverage",
       "`schemaVersion` type/positivity validation coverage",
       "only version 1 accepted",

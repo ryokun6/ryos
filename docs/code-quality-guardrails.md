@@ -76,7 +76,7 @@ bun run quality:all:ci
 - No unresolved merge conflict markers (`<<<<<<<`, `|||||||`, `=======`,
   `>>>>>>>`) in tracked source, test, documentation (markdown + MDX), and
   JSON/TOML config files
-  - markers are detected both with and without trailing branch labels
+  - markers are detected both with and without trailing branch labels, including trailing whitespace
 - No unresolved task markers (`TODO`, `FIXME`, `HACK`, `XXX`) in `src` / `_api`
 - Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below
   current baseline cap (19). Lower this cap as script debt is burned down.

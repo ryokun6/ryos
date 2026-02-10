@@ -181,6 +181,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes TOML merge-marker failure coverage as well.
   - includes diff3 merge-base marker (`|||||||`) failure coverage.
   - includes bare marker (`<<<<<<<` / `>>>>>>>`) failure coverage.
+  - includes trailing-whitespace merge-marker failure coverage.
   - includes documentation markdown merge-marker failure coverage.
   - includes root-level markdown merge-marker failure coverage.
 - Guardrail wiring tests cover unsafe Prisma raw SQL variants

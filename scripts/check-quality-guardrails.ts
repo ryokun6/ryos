@@ -208,7 +208,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["."],
     extensions: MERGE_MARKER_EXTENSIONS,
     pattern:
-      /^<<<<<<<(?: .+)?$|^\|\|\|\|\|\|\|(?: .+)?$|^=======\s*$|^>>>>>>>(?: .+)?$/gm,
+      /^<<<<<<<(?: .+)?\s*$|^\|\|\|\|\|\|\|(?: .+)?\s*$|^=======\s*$|^>>>>>>>(?: .+)?\s*$/gm,
     maxAllowed: 0,
   },
 ];
