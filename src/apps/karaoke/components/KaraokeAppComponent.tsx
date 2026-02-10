@@ -311,10 +311,10 @@ export function KaraokeAppComponent({
           {/* Video Player - container clips YouTube UI by extending height and using negative margin */}
           {/* When display mode is not Video, the player is hidden visually but still plays audio */}
           {currentTrack ? (
-            <div className={cn(
-              "absolute inset-0 overflow-hidden",
-              displayMode !== DisplayMode.Video && "opacity-0 pointer-events-none"
-            )}>
+            <div
+              className="absolute inset-0 overflow-hidden"
+              style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}
+            >
               <div className="w-full h-[calc(100%+400px)] mt-[-200px]">
                 <ReactPlayer
                   ref={playerRef}
@@ -364,7 +364,7 @@ export function KaraokeAppComponent({
           {displayMode === DisplayMode.Landscapes && currentTrack && (
             <LandscapeVideoBackground
               isActive={!!currentTrack}
-              className="absolute inset-0 z-[1]"
+              className="absolute inset-0 z-[5]"
             />
           )}
 
@@ -761,10 +761,10 @@ export function KaraokeAppComponent({
           {({ controlsVisible }) => (
             <div className="flex flex-col w-full h-full">
               <div className="relative w-full h-full overflow-hidden">
-                <div className={cn(
-                  "absolute inset-0 w-full h-full",
-                  displayMode !== DisplayMode.Video && "opacity-0 pointer-events-none"
-                )}>
+                <div
+                  className="absolute inset-0 w-full h-full"
+                  style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}
+                >
                   <div
                     className="w-full absolute"
                     style={{
@@ -817,7 +817,7 @@ export function KaraokeAppComponent({
                 {displayMode === DisplayMode.Landscapes && currentTrack && (
                   <LandscapeVideoBackground
                     isActive={!!currentTrack}
-                    className="fixed inset-0 z-[1]"
+                    className="fixed inset-0 z-[5]"
                   />
                 )}
 

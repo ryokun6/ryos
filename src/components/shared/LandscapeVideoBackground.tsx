@@ -15,7 +15,8 @@ interface LandscapeVideoBackgroundProps {
 /**
  * Cycles through landscape video wallpapers with crossfade transitions.
  * Loads video list from the wallpaper manifest.
- * Follows the same video playback patterns as Desktop.tsx for reliability.
+ * Uses declarative src props and explicit play() calls for reliable playback,
+ * matching the patterns used by Desktop.tsx.
  */
 export function LandscapeVideoBackground({
   isActive,
@@ -23,10 +24,14 @@ export function LandscapeVideoBackground({
 }: LandscapeVideoBackgroundProps) {
   const [videos, setVideos] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [showSecond, setShowSecond] = useState(false);
+  const [showB, setShowB] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const videoARef = useRef<HTMLVideoElement>(null);
-  const videoBRef = useRef<HTMLVideoElement>(null);
+  const videoARef = useRef<HTMLVideoElement | null>(null);
+  const videoBRef = useRef<HTMLVideoElement | null>(null);
+
+  // Track which src each slot holds
+  const [srcA, setSrcA] = useState<string>("");
+  const [srcB, setSrcB] = useState<string>("");
 
   // Load video wallpaper list from manifest
   useEffect(() => {
@@ -35,9 +40,15 @@ export function LandscapeVideoBackground({
       .then((manifest) => {
         if (cancelled) return;
         const videoPaths = manifest.videos.map((p) => `/wallpapers/${p}`);
-        // Shuffle the list so it's different each session
+        // Shuffle so it's different each session
         const shuffled = [...videoPaths].sort(() => Math.random() - 0.5);
         setVideos(shuffled);
+        if (shuffled.length > 0) {
+          setSrcA(shuffled[0]);
+          if (shuffled.length > 1) {
+            setSrcB(shuffled[1]);
+          }
+        }
       })
       .catch((err) => {
         console.warn("[LandscapeVideoBackground] Failed to load manifest:", err);
@@ -47,56 +58,47 @@ export function LandscapeVideoBackground({
     };
   }, []);
 
-  // Attempt to play a video element safely
-  const safePlay = useCallback((video: HTMLVideoElement) => {
+  // Explicitly play a video element (handles ready state)
+  const ensurePlay = useCallback((video: HTMLVideoElement | null) => {
+    if (!video || !video.src || !isActive) return;
     if (video.readyState >= 3) {
-      video.play().catch((err) => {
-        console.warn("[LandscapeVideoBackground] Could not play video:", err);
-      });
+      video.play().catch(() => {});
     } else {
-      const handleCanPlay = () => {
-        video.play().catch((err) => {
-          console.warn("[LandscapeVideoBackground] Could not play video:", err);
-        });
-        video.removeEventListener("canplaythrough", handleCanPlay);
+      const onReady = () => {
+        video.play().catch(() => {});
+        video.removeEventListener("canplaythrough", onReady);
       };
-      video.addEventListener("canplaythrough", handleCanPlay);
+      video.addEventListener("canplaythrough", onReady);
     }
-  }, []);
+  }, [isActive]);
 
-  // Set source and play on a video element
-  const loadAndPlay = useCallback(
-    (video: HTMLVideoElement, src: string) => {
-      video.src = src;
-      video.load();
-      safePlay(video);
-    },
-    [safePlay]
-  );
-
-  // Initialize the first video once video list is loaded
+  // When srcA/srcB change, trigger play on the relevant element
   useEffect(() => {
-    if (videos.length === 0 || !videoARef.current) return;
-    loadAndPlay(videoARef.current, videos[0]);
-    setCurrentIndex(0);
-    setShowSecond(false);
-  }, [videos, loadAndPlay]);
+    if (srcA && !showB) ensurePlay(videoARef.current);
+  }, [srcA, showB, ensurePlay]);
 
-  // Advance to the next video with crossfade
+  useEffect(() => {
+    if (srcB && showB) ensurePlay(videoBRef.current);
+  }, [srcB, showB, ensurePlay]);
+
+  // Advance to next video with crossfade
   const advanceVideo = useCallback(() => {
     if (videos.length <= 1) return;
 
     const nextIdx = (currentIndex + 1) % videos.length;
-    // Load the next video into the hidden element
-    const incomingRef = showSecond ? videoARef : videoBRef;
-    if (incomingRef.current) {
-      loadAndPlay(incomingRef.current, videos[nextIdx]);
+
+    if (showB) {
+      // B is visible → load next into A, then show A
+      setSrcA(videos[nextIdx]);
+      setShowB(false);
+    } else {
+      // A is visible → load next into B, then show B
+      setSrcB(videos[nextIdx]);
+      setShowB(true);
     }
 
-    // Start crossfade: show the incoming element
-    setShowSecond((prev) => !prev);
     setCurrentIndex(nextIdx);
-  }, [videos, currentIndex, showSecond, loadAndPlay]);
+  }, [videos, currentIndex, showB]);
 
   // Schedule periodic advancement
   useEffect(() => {
@@ -112,7 +114,7 @@ export function LandscapeVideoBackground({
     };
   }, [isActive, currentIndex, videos.length, advanceVideo]);
 
-  // Also advance when the current video naturally ends
+  // Also advance when the active video naturally ends
   const handleVideoEnded = useCallback(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -121,21 +123,18 @@ export function LandscapeVideoBackground({
     advanceVideo();
   }, [advanceVideo]);
 
-  // Resume playback on visibility change (tab switch back)
+  // Resume on visibility change (tab switch)
   useEffect(() => {
-    const handleVisibility = () => {
+    const onVisible = () => {
       if (document.visibilityState !== "visible") return;
-      const active = showSecond ? videoBRef.current : videoARef.current;
-      if (active && active.paused && active.src) {
-        safePlay(active);
-      }
+      const active = showB ? videoBRef.current : videoARef.current;
+      ensurePlay(active);
     };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibility);
-  }, [showSecond, safePlay]);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [showB, ensurePlay]);
 
-  if (videos.length === 0) {
+  if (!srcA) {
     return <div className={`bg-black ${className}`} />;
   }
 
@@ -144,34 +143,43 @@ export function LandscapeVideoBackground({
       {/* Video A */}
       <video
         ref={videoARef}
+        src={srcA}
         autoPlay
         muted
-        loop={videos.length === 1}
+        loop={videos.length <= 1}
         playsInline
         preload="auto"
         data-webkit-playsinline="true"
-        onEnded={!showSecond ? handleVideoEnded : undefined}
+        onEnded={!showB ? handleVideoEnded : undefined}
+        onCanPlayThrough={(e) => {
+          const v = e.currentTarget;
+          if (v.paused) v.play().catch(() => {});
+        }}
         className="absolute inset-0 w-full h-full object-cover"
         style={{
-          opacity: showSecond ? 0 : 1,
+          opacity: showB ? 0 : 1,
           transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
         }}
       />
 
       {/* Video B */}
-      {videos.length > 1 && (
+      {videos.length > 1 && srcB && (
         <video
           ref={videoBRef}
+          src={srcB}
           autoPlay
           muted
-          loop={false}
           playsInline
           preload="auto"
           data-webkit-playsinline="true"
-          onEnded={showSecond ? handleVideoEnded : undefined}
+          onEnded={showB ? handleVideoEnded : undefined}
+          onCanPlayThrough={(e) => {
+            const v = e.currentTarget;
+            if (v.paused) v.play().catch(() => {});
+          }}
           className="absolute inset-0 w-full h-full object-cover"
           style={{
-            opacity: showSecond ? 1 : 0,
+            opacity: showB ? 1 : 0,
             transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
           }}
         />

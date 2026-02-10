@@ -256,9 +256,7 @@ export function IpodScreen({
             }}
           >
             {/* YouTube player - hidden when display mode is not Video (still provides audio) */}
-            <div className={cn(
-              displayMode !== DisplayMode.Video && "opacity-0 pointer-events-none"
-            )}>
+            <div style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}>
               <ReactPlayer
                 ref={playerRef}
                 url={currentTrack.url}
@@ -301,7 +299,7 @@ export function IpodScreen({
             {displayMode === DisplayMode.Landscapes && (
               <LandscapeVideoBackground
                 isActive={showVideo}
-                className="absolute inset-0"
+                className="absolute inset-0 z-[5]"
               />
             )}
 

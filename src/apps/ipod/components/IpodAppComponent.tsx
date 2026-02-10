@@ -448,10 +448,10 @@ export function IpodAppComponent({
             {({ controlsVisible }) => (
               <div className="flex flex-col w-full h-full">
                 <div className="relative w-full h-full overflow-hidden">
-                  <div className={cn(
-                    "absolute inset-0 w-full h-full",
-                    displayMode !== DisplayMode.Video && "opacity-0 pointer-events-none"
-                  )}>
+                  <div
+                    className="absolute inset-0 w-full h-full"
+                    style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}
+                  >
                     <div
                       className="w-full absolute"
                       style={{
@@ -505,7 +505,7 @@ export function IpodAppComponent({
                   {displayMode === DisplayMode.Landscapes && tracks[currentIndex] && (
                     <LandscapeVideoBackground
                       isActive={!!tracks[currentIndex]}
-                      className="fixed inset-0 z-[1]"
+                      className="fixed inset-0 z-[5]"
                     />
                   )}
 
