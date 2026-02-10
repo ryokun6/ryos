@@ -9,6 +9,7 @@ This audit documents quality findings and remediations completed for the request
 - `bunx eslint . --max-warnings 0` ✅
 - `bun run build` ✅
 - `bun run test:chat-wiring` ✅
+- `bun run quality:all` ✅ (consolidated guardrails + lint + build + regression tests)
 
 > Note: the full API integration suite requires a running local API server and external env-backed services.
 
