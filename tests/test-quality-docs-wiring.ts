@@ -52,7 +52,7 @@ export async function runQualityDocsWiringTests(): Promise<{
     const source = readGuardrailDoc();
     const requiredPolicySnippets = [
       "No `@ts-nocheck` comments in source or scripts",
-      "No dynamic code execution (`eval(` / `new Function(`)",
+      "No dynamic code execution (`eval(` / `new Function(` / `Function(\"...\")`)",
       "No `debugger` statements in `scripts` / `src` / `_api`",
       "No unresolved merge conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)",
       "No `outerHTML = ...` assignments in `src`",

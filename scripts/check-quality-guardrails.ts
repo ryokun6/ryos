@@ -169,7 +169,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     name: "dynamic code execution (eval/new Function)",
     roots: ["scripts", "src", "_api"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],
-    pattern: /\beval\(|new Function\(/g,
+    pattern: /\beval\(|new Function\(|\bFunction\(\s*['"`]/g,
     maxAllowed: 0,
   },
   {
