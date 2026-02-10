@@ -76,6 +76,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "string-based timer execution prevention",
       "DOM assignment hardening",
       "script task-marker baseline cap",
+      "YAML merge-marker failure coverage",
     ];
 
     for (const snippet of requiredSecuritySnippets) {
