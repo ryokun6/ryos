@@ -788,6 +788,42 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   );
 
+  await runTest(
+    "fails when biome exhaustive-deps bypass allowlisted total cap is exceeded",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src/hooks"), { recursive: true });
+        writeFileSync(
+          join(root, "src/hooks/useStreamingFetch.ts"),
+          [
+            "// biome-ignore lint/correctness/useExhaustiveDependencies: test one",
+            "const one = 1;",
+            "// biome-ignore lint/correctness/useExhaustiveDependencies: test two",
+            "const two = 2;",
+            "export const value = one + two;",
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for biome allowlist cap exceedance, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL biome exhaustive-deps bypass comments"),
+          "Expected biome exhaustive-deps allowlist cap failure"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
   await runTest("fails when large file guardrail is exceeded", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });

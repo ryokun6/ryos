@@ -141,7 +141,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
 - Guardrail wiring tests validate deterministic JSON output ordering/values across
   repeated runs to prevent flaky CI report diffs.
 - Guardrail wiring tests cover both allowlisted-path violations and allowlisted
-  total-cap violations for sensitive patterns (`dangerouslySetInnerHTML`).
+  total-cap violations for sensitive patterns (`dangerouslySetInnerHTML`,
+  `biome-ignore lint/correctness/useExhaustiveDependencies`).
 - Guardrail offender paths/order are stabilized (forward-slash path normalization +
   deterministic tie-break ordering for equal-size offenders).
 - Added summary renderer wiring coverage:
