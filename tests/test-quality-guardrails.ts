@@ -293,6 +293,38 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("reports offending files in deterministic order", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "z-last.ts"),
+        `// TODO: z\nexport const z = 1;\n`,
+        "utf-8"
+      );
+      writeFileSync(
+        join(root, "src", "a-first.ts"),
+        `// TODO: a\nexport const a = 1;\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(result.status, 1, "Expected failure for TODO markers");
+      const out = result.stdout || "";
+      const firstIdx = out.indexOf("src/a-first.ts");
+      const secondIdx = out.indexOf("src/z-last.ts");
+      assert(firstIdx !== -1, "Expected first offending path in output");
+      assert(secondIdx !== -1, "Expected second offending path in output");
+      assert(
+        firstIdx < secondIdx,
+        "Expected offending files to be reported in stable sorted order"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   return printSummary();
 }
 
