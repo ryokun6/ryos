@@ -22,7 +22,8 @@ bun run quality:all
   5. quality guardrail wiring tests
   6. quality workflow wiring tests
   7. package quality-scripts wiring tests
-  8. chat wiring regression tests
+  8. quality summary renderer wiring tests
+  9. chat wiring regression tests
 
 ## Guardrail Policies
 

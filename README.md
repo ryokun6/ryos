@@ -95,6 +95,7 @@ bun run test:songs-utils # Run sanitizer runtime regression tests
 bun run test:quality-guardrails # Verify quality guardrail command wiring
 bun run test:quality-workflow # Verify CI workflow quality wiring
 bun run test:quality-scripts # Verify package quality script wiring
+bun run test:quality-summary # Verify quality summary renderer wiring
 bun run test:chat-wiring # Run chat wiring regression suite
 bun run preview      # Preview production build
 bun run dev:vercel   # Run with Vercel dev server (recommended); ensures api -> _api for local dev only

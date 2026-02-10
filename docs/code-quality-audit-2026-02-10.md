@@ -113,6 +113,9 @@ Large files remain the biggest quality risk (all >1500 LOC):
 - Added package script wiring coverage:
   - `tests/test-quality-scripts-wiring.ts`
   - included in `quality:all` via `bun run test:quality-scripts`.
+- Added summary renderer wiring coverage:
+  - `tests/test-quality-summary-wiring.ts`
+  - included in `quality:all` via `bun run test:quality-summary`.
 
 ### Low priority
 
