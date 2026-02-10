@@ -78,6 +78,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "script task-marker baseline cap",
       "YAML merge-marker failure coverage",
       "`schemaVersion` type/positivity validation coverage",
+      "inline `require(\"child_process\").exec(...)` usage",
     ];
 
     for (const snippet of requiredSecuritySnippets) {
