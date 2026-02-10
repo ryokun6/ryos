@@ -132,7 +132,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["scripts", "src", "_api"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],
     pattern:
-      /\bchild_process\.exec\(|\brequire\(["'](?:node:)?child_process["']\)\.exec\(/g,
+      /\bchild_process\.exec\(|\brequire\(["'](?:node:)?child_process["']\)\.exec\(|import\s+\*\s+as\s+\w+\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\.exec\(|(?:const|let|var)\s+\w+\s*=\s*require\(["'](?:node:)?child_process["']\)[\s\S]*?\.exec\(|import\s+\w+\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\.exec\(/g,
     maxAllowed: 0,
   },
   {

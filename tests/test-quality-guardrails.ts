@@ -737,6 +737,62 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when namespace alias child_process exec usage is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadExecNamespaceAlias.ts"),
+        [
+          'import * as cp from "node:child_process";',
+          'cp.exec("echo hi");',
+          "",
+        ].join("\n"),
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for namespace alias exec usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL child_process.exec direct usage"),
+        "Expected child_process.exec direct-usage guardrail failure for namespace alias"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when default import child_process exec usage is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadExecDefaultImport.ts"),
+        ['import cp from "child_process";', 'cp.exec("echo hi");', ""].join("\n"),
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for default import exec usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL child_process.exec direct usage"),
+        "Expected child_process.exec direct-usage guardrail failure for default import"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when unsafe Prisma raw SQL method is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "_api"), { recursive: true });
