@@ -185,6 +185,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   `bun install --frozen-lockfile` for reproducible CI runs.
 - Workflow wiring tests assert key action pins (`actions/checkout@v4`,
   `oven-sh/setup-bun@v2`) remain explicit.
+- Workflow wiring tests assert CI avoids standalone `quality:check`/`quality:verify`
+  invocations to preserve the consolidated `quality:all:ci` path.
 
 ### Low priority
 
