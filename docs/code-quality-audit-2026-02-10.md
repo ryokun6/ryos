@@ -167,6 +167,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   `execSync`, and `dangerouslySetInnerHTML`) to verify cross-language scan parity.
 - Guardrail wiring tests include markdown merge-marker failure cases to verify
   non-code file safety checks in configured roots.
+  - includes YAML merge-marker failure coverage as well.
 - Guardrail wiring tests cover unsafe Prisma raw SQL variants
   (`$queryRawUnsafe`, `$executeRawUnsafe`) to enforce SQL safety policy.
   - includes non-prefixed `queryRawUnsafe`/`executeRawUnsafe` variant checks.

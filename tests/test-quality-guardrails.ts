@@ -1350,6 +1350,40 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when merge conflict markers are introduced in yaml", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "tests"), { recursive: true });
+      writeFileSync(
+        join(root, "tests", "merge-conflict.yml"),
+        [
+          "name: sample",
+          "<<<<<<< HEAD",
+          "value: left",
+          "=======",
+          "value: right",
+          ">>>>>>> feature-branch",
+          "",
+        ].join("\n"),
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for yaml merge markers, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL merge conflict markers"),
+        "Expected merge conflict marker guardrail failure for yaml"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("JSON mode returns failure status for violations", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
