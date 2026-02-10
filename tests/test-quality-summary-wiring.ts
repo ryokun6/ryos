@@ -83,7 +83,6 @@ export async function runQualitySummaryWiringTests(): Promise<{
   await runTest("derives count metadata when optional fields are omitted", async () => {
     withTempReport(
       {
-        schemaVersion: 1,
         root: "/tmp/example",
         passed: false,
         checks: [
@@ -105,6 +104,10 @@ export async function runQualitySummaryWiringTests(): Promise<{
         const result = runSummary(reportPath);
         assertEq(result.status, 0, `Expected exit 0, got ${result.status}`);
         const out = result.stdout || "";
+        assert(
+          !out.includes("- Schema version:"),
+          "Expected schema version line to be omitted when absent"
+        );
         assert(out.includes("- Total checks: 2"), "Expected derived total checks count");
         assert(out.includes("- Failed checks: 1"), "Expected derived failed checks count");
       }
