@@ -2118,6 +2118,35 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   );
 
+  await runTest(
+    "passes when variable name merely contains innerHTML substring",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src"), { recursive: true });
+        writeFileSync(
+          join(root, "src", "SafeInnerHtmlSubstring.js"),
+          `const myinnerHTML = "<b>x</b>";\nconsole.log(myinnerHTML);\n`,
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 for innerHTML substring variable name, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS innerHTML assignments"),
+          "Expected innerHTML guardrail pass for substring-only variable names"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
   await runTest("fails when outerHTML assignment is introduced in JavaScript", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
@@ -2244,6 +2273,35 @@ export async function runQualityGuardrailTests(): Promise<{
         assert(
           (result.stdout || "").includes("FAIL insertAdjacentHTML usage"),
           "Expected insertAdjacentHTML guardrail failure for bracket syntax"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
+    "passes when function name merely contains insertAdjacentHTML substring",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src"), { recursive: true });
+        writeFileSync(
+          join(root, "src", "SafeInsertAdjacentHtmlSubstring.js"),
+          `function custominsertAdjacentHTML(value){ return value; }\nconsole.log(custominsertAdjacentHTML("x"));\n`,
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 for insertAdjacentHTML substring function name, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS insertAdjacentHTML usage"),
+          "Expected insertAdjacentHTML guardrail pass for substring-only function names"
         );
       } finally {
         rmSync(qualityRoot, { recursive: true, force: true });
@@ -2438,6 +2496,35 @@ export async function runQualityGuardrailTests(): Promise<{
         assert(
           (result.stdout || "").includes("FAIL document.write usage"),
           "Expected document.write guardrail failure for spaced-dot write variant"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
+    "passes when object name merely contains document substring",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src"), { recursive: true });
+        writeFileSync(
+          join(root, "src", "SafeDocumentSubstring.js"),
+          `const mydocument = { write: (v) => v };\nconsole.log(mydocument.write("x"));\n`,
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 for document substring object names, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS document.write usage"),
+          "Expected document.write guardrail pass for substring-only object names"
         );
       } finally {
         rmSync(qualityRoot, { recursive: true, force: true });

@@ -111,7 +111,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - DOM assignment hardening (`innerHTML =`, `outerHTML =`,
     `innerHTML +=`, `outerHTML +=` including bracket access, `insertAdjacentHTML(...)` including bracket access,
     `document.write(...)` / `document.writeln(...)`, including bracket/optional-bracket access,
-    spaced-dot member access, and spacing-tolerant matching)
+    spaced-dot member access, spacing-tolerant matching, and exact-member matching
+    to reduce substring false positives)
   - command execution hardening (`child_process` `exec` import + direct usage blocked
     in scripts/source/api, including alias-destructuring import/require forms
     and alias-object destructuring (`const { exec } = cp`) patterns)

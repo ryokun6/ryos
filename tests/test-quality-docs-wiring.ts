@@ -66,6 +66,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No `insertAdjacentHTML(...)` usage in `src` (including bracket-access forms)",
       "No `document.write(...)` / `document.writeln(...)` usage in `src`",
       "including bracket/optional-bracket access forms and spaced-dot member access",
+      "member matching is exact to reduce substring-name false positives",
       "No string-based timer execution (`setTimeout(\"...\")`, `setInterval(\"...\")`,",
       "`setImmediate(\"...\")`, including template literals and optional-chaining calls",
       "plus bracket/optional-bracket forms like",

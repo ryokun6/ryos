@@ -86,6 +86,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "insertAdjacentHTML(...)` including bracket access",
       "bracket/optional-bracket access",
       "spaced-dot member access",
+      "exact-member matching",
       "spacing-tolerant matching",
       "script task-marker baseline cap",
       "quoted/computed keys",

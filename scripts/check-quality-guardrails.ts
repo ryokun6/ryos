@@ -92,14 +92,14 @@ const GUARDRAILS: GuardrailCheck[] = [
     name: "innerHTML assignments",
     roots: ["src"],
     extensions: CODE_EXTENSIONS,
-    pattern: /innerHTML\s*(?:\+?=)|\[\s*["'`]innerHTML["'`]\s*\]\s*(?:\+?=)/g,
+    pattern: /\binnerHTML\b\s*(?:\+?=)|\[\s*["'`]innerHTML["'`]\s*\]\s*(?:\+?=)/g,
     maxAllowed: 0,
   },
   {
     name: "outerHTML assignments",
     roots: ["src"],
     extensions: CODE_EXTENSIONS,
-    pattern: /outerHTML\s*(?:\+?=)|\[\s*["'`]outerHTML["'`]\s*\]\s*(?:\+?=)/g,
+    pattern: /\bouterHTML\b\s*(?:\+?=)|\[\s*["'`]outerHTML["'`]\s*\]\s*(?:\+?=)/g,
     maxAllowed: 0,
   },
   {
@@ -107,7 +107,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["src"],
     extensions: CODE_EXTENSIONS,
     pattern:
-      /insertAdjacentHTML\s*\(|\[\s*["'`]insertAdjacentHTML["'`]\s*\]\s*\(/g,
+      /\binsertAdjacentHTML\b\s*\(|\[\s*["'`]insertAdjacentHTML["'`]\s*\]\s*\(/g,
     maxAllowed: 0,
   },
   {
@@ -115,7 +115,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["src"],
     extensions: CODE_EXTENSIONS,
     pattern:
-      /document\s*(?:\?\.|\.)\s*write(?:ln)?\s*\(|document(?:\?\.)?\s*\[\s*["'`]write(?:ln)?["'`]\s*\]\s*\(/g,
+      /\bdocument\s*(?:\?\.|\.)\s*write(?:ln)?\s*\(|\bdocument(?:\?\.)?\s*\[\s*["'`]write(?:ln)?["'`]\s*\]\s*\(/g,
     maxAllowed: 0,
   },
   {
