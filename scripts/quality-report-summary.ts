@@ -44,6 +44,9 @@ const assertQualityReport = (value: unknown): QualityReport => {
   if (!Array.isArray(report.checks)) {
     throw new Error("Quality report must include a checks array");
   }
+  if (report.checks.length === 0) {
+    throw new Error("Quality report checks array must not be empty");
+  }
   if (
     report.totalChecks !== undefined &&
     (!Number.isInteger(report.totalChecks) || report.totalChecks < 0)

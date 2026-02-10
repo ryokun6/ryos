@@ -84,6 +84,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "requires FAIL checks to include at least one offender entry",
       "unique check names",
       "unique offender paths within each failed check entry",
+      "non-empty checks array",
       "non-empty (non-whitespace) `root`, check names, and",
       "cap-overflow failures print offending allowlisted file paths for triage",
       "failed-check offender previews (top 5 per check)",

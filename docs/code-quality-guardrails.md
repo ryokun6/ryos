@@ -117,6 +117,7 @@ from carrying offender entries.
 Validation requires FAIL checks to include at least one offender entry.
 Validation enforces unique check names to avoid ambiguous summaries.
 Validation enforces unique offender paths within each failed check entry.
+Validation enforces a non-empty checks array.
 Validation requires non-empty (non-whitespace) `root`, check names, and
 `allowed` descriptor text.
 When count metadata is omitted, summary rendering derives counts from `checks`

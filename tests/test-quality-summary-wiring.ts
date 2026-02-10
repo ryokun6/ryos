@@ -240,6 +240,26 @@ export async function runQualitySummaryWiringTests(): Promise<{
     );
   });
 
+  await runTest("fails when checks array is empty", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: true,
+        checks: [],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("must not be empty"),
+          "Expected empty checks-array validation error"
+        );
+      }
+    );
+  });
+
   await runTest("fails when schemaVersion is not a positive integer", async () => {
     withTempReport(
       {
