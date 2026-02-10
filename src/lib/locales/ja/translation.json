@@ -1393,6 +1393,10 @@
         "u2": "U2",
         "unknownArtist": "不明なアーティスト",
         "video": "ビデオ",
+        "display": "Display",
+        "displayVideo": "Video",
+        "displayCover": "Cover",
+        "displayLandscapes": "Landscapes",
         "view": "表示"
       },
       "menuItems": {

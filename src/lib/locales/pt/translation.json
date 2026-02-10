@@ -1393,6 +1393,10 @@
         "u2": "U2",
         "unknownArtist": "Artista Desconhecido",
         "video": "Vídeo",
+        "display": "Display",
+        "displayVideo": "Video",
+        "displayCover": "Cover",
+        "displayLandscapes": "Landscapes",
         "view": "Exibir"
       },
       "menuItems": {
