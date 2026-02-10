@@ -43,6 +43,13 @@ bun run quality:all
 ```
 
 This keeps local and CI quality checks aligned.
+CI also generates a machine-readable `quality-report.json` via:
+
+```bash
+bun run quality:check:json
+```
+
+and uploads it as a workflow artifact (`quality-report`).
 
 ## Notes for Contributors
 

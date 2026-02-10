@@ -29,5 +29,15 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Generate quality report JSON
+        run: bun run quality:check:json > quality-report.json
+
       - name: Run full quality suite
         run: bun run quality:all
+
+      - name: Upload quality report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-report
+          path: quality-report.json
