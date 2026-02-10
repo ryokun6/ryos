@@ -65,6 +65,7 @@ bun run quality:all:ci
 - No `debugger` statements in `scripts` / `src` / `_api`
 - No unresolved merge conflict markers (`<<<<<<<`, `|||||||`, `=======`,
   `>>>>>>>`) in tracked source, test, documentation, and JSON config files
+  - markers are detected both with and without trailing branch labels
 - No unresolved task markers (`TODO`, `FIXME`, `HACK`, `XXX`) in `src` / `_api`
 - Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below
   current baseline cap (19). Lower this cap as script debt is burned down.
