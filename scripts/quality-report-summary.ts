@@ -100,7 +100,7 @@ const assertQualityReport = (value: unknown): QualityReport => {
         }>;
         if (
           typeof offenderCandidate.path !== "string" ||
-          offenderCandidate.path.length === 0
+          offenderCandidate.path.trim().length === 0
         ) {
           throw new Error(
             `Check "${candidate.name}" offender at index ${offenderIndex} has invalid path`

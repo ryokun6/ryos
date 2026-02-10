@@ -122,6 +122,7 @@ Validation requires FAIL checks to include at least one offender entry.
 Validation enforces unique check names to avoid ambiguous summaries.
 Validation enforces unique offender paths within each failed check entry.
 Validation enforces offender paths sorted ascending within each failed check.
+Validation rejects whitespace-only offender paths.
 Validation enforces a non-empty checks array.
 Validation requires non-empty (non-whitespace) `root`, check names, and
 `allowed` descriptor text.
