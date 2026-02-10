@@ -124,7 +124,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - no unresolved task markers in source (`TODO`, `FIXME`, `HACK`, `XXX`)
   - script task-marker baseline cap (19) to prevent regression while legacy markers are burned down
   - file-size regression checks (max files over 1000 LOC, max files over 1500 LOC,
-    max script files over 700 LOC, and max single-file LOC caps).
+    max script files over 700 LOC across JS/TS module variants, and max single-file LOC caps).
   - cached source/candidate file scanning for faster quality-check execution.
   - expanded scanning coverage to include JavaScript/TS module variants where relevant
     (`.js`, `.jsx`, `.mts`, `.cts`, `.mjs`, `.cjs`).
