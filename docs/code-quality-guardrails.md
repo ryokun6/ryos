@@ -60,7 +60,8 @@ bun run quality:all:ci
 - No dynamic code execution (`eval(` / `new Function(` / `Function("...")`) in
   `scripts` / `src` / `_api`
 - No `debugger` statements in `scripts` / `src` / `_api`
-- No unresolved merge conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`) in tracked source files
+- No unresolved merge conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`) in
+  tracked source, test, and documentation files
 - No unresolved task markers (`TODO`, `FIXME`, `HACK`, `XXX`) in `src` / `_api`
 - Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below
   current baseline cap (19). Lower this cap as script debt is burned down.

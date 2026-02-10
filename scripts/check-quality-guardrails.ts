@@ -190,7 +190,7 @@ const GUARDRAILS: GuardrailCheck[] = [
   },
   {
     name: "merge conflict markers",
-    roots: ["scripts", "src", "_api", "tests"],
+    roots: ["scripts", "src", "_api", "tests", "docs"],
     extensions: [".ts", ".tsx", ".js", ".md", ".yml", ".yaml"],
     pattern: /^<<<<<<< .+|^=======\s*$|^>>>>>>> .+/gm,
     maxAllowed: 0,
