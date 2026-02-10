@@ -35,6 +35,10 @@ jobs:
       - name: Run full quality suite
         run: bun run quality:all
 
+      - name: Publish quality summary
+        if: always()
+        run: bun run quality:summary quality-report.json >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload quality report artifact
         if: always()
         uses: actions/upload-artifact@v4

@@ -11,6 +11,7 @@
     "build": "tsc -b && vite build && cp dist/sw.js dist/version.json .vercel/output/static/ && (cp dist/workbox-*.js .vercel/output/static/ 2>/dev/null || true) && node -e \"const c=require('./.vercel/output/config.json');c.cleanUrls=true;c.trailingSlash=false;require('fs').writeFileSync('./.vercel/output/config.json',JSON.stringify(c,null,2))\"",
     "quality:check": "bun run scripts/check-quality-guardrails.ts",
     "quality:check:json": "bun run scripts/check-quality-guardrails.ts --json",
+    "quality:summary": "bun run scripts/quality-report-summary.ts",
     "quality:all": "bun run quality:check && bunx eslint . --max-warnings 0 && bun run build && bun run test:songs-utils && bun run test:quality-guardrails && bun run test:chat-wiring",
     "build:tauri": "bun run scripts/build-tauri.ts",
     "lint": "eslint .",

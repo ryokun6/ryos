@@ -7,11 +7,13 @@ This repository includes automated guardrails to keep code quality from regressi
 ```bash
 bun run quality:check
 bun run quality:check:json
+bun run quality:summary quality-report.json
 bun run quality:all
 ```
 
 - `quality:check` runs static quality policy checks.
 - `quality:check:json` runs the same checks and prints a JSON report.
+- `quality:summary` renders the JSON report as markdown (useful for CI summaries).
 - `quality:all` runs the full local quality gate:
   1. `quality:check`
   2. strict ESLint
@@ -50,6 +52,7 @@ bun run quality:check:json
 ```
 
 and uploads it as a workflow artifact (`quality-report`).
+It also publishes a markdown summary table to the GitHub Actions job summary.
 
 ## Notes for Contributors
 
