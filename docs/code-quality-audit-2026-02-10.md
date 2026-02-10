@@ -155,6 +155,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   repeated runs to prevent flaky CI report diffs.
 - Guardrail wiring tests assert the complete expected guardrail name set in JSON
   output to detect accidental policy removal.
+- Guardrail wiring tests assert stable JSON check ordering to prevent report
+  churn and accidental reorder drift.
 - Guardrail wiring tests verify generated markdown summaries surface
   `schemaVersion` from live JSON reports.
 - Guardrail wiring tests cover both allowlisted-path violations and allowlisted

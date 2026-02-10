@@ -111,7 +111,8 @@ export async function runQualityGuardrailTests(): Promise<{
       parsed.failedChecks === 0,
       "Expected failedChecks metadata to be zero for passing run"
     );
-    const checkNames = new Set((parsed.checks || []).map((check) => check.name));
+    const orderedCheckNames = (parsed.checks || []).map((check) => check.name);
+    const checkNames = new Set(orderedCheckNames);
     const requiredCheckNames = [
       "eslint-disable comments",
       "@ts-ignore/@ts-expect-error",
@@ -140,6 +141,11 @@ export async function runQualityGuardrailTests(): Promise<{
       parsed.totalChecks,
       requiredCheckNames.length,
       "Expected totalChecks to match required guardrail name list"
+    );
+    assertEq(
+      orderedCheckNames.join("||"),
+      requiredCheckNames.join("||"),
+      "Expected JSON checks to follow the stable guardrail order"
     );
     for (const checkName of requiredCheckNames) {
       assert(
