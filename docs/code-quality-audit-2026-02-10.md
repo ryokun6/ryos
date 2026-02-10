@@ -149,6 +149,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
 - Added README quality command wiring coverage:
   - `tests/test-quality-readme-wiring.ts`
   - included in `quality:all` via `bun run test:quality-readme`.
+  - verifies both top-level quality commands and quality wiring test commands are
+    documented and mapped to package scripts.
 - Added guardrail documentation wiring coverage:
   - `tests/test-quality-docs-wiring.ts`
   - included in `quality:all` via `bun run test:quality-docs`.

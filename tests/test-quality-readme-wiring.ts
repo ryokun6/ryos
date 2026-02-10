@@ -77,6 +77,30 @@ export async function runQualityReadmeWiringTests(): Promise<{
     }
   });
 
+  await runTest("README documents quality wiring test commands", async () => {
+    const readme = readReadme();
+    const scripts = readPackageScripts();
+    const requiredWiringTests = [
+      "test:quality-guardrails",
+      "test:quality-workflow",
+      "test:quality-scripts",
+      "test:quality-summary",
+      "test:quality-readme",
+      "test:quality-docs",
+    ];
+
+    for (const scriptName of requiredWiringTests) {
+      assert(
+        readme.includes(`bun run ${scriptName}`),
+        `README does not document ${scriptName}`
+      );
+      assert(
+        typeof scripts[scriptName] === "string" && scripts[scriptName].length > 0,
+        `package.json missing script ${scriptName}`
+      );
+    }
+  });
+
   return printSummary();
 }
 
