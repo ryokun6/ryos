@@ -57,6 +57,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No unresolved merge conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)",
       "No `outerHTML = ...` assignments in `src`",
       "No `insertAdjacentHTML(...)` usage in `src`",
+      "No `document.write(...)` usage in `src`",
       "No `execSync(` usage in `scripts` / `src` / `_api`",
       "No `child_process` `exec` imports in `scripts` / `src` / `_api`",
       "No Prisma unsafe raw SQL methods",

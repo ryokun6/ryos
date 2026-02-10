@@ -97,6 +97,13 @@ const GUARDRAILS: GuardrailCheck[] = [
     maxAllowed: 0,
   },
   {
+    name: "document.write usage",
+    roots: ["src"],
+    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    pattern: /document\.write\(/g,
+    maxAllowed: 0,
+  },
+  {
     name: "execSync usage",
     roots: ["scripts", "src", "_api"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],
