@@ -87,6 +87,7 @@ export async function runQualityReadmeWiringTests(): Promise<{
       "test:quality-summary",
       "test:quality-readme",
       "test:quality-docs",
+      "test:quality-audit",
     ];
 
     for (const scriptName of requiredWiringTests) {

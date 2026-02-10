@@ -101,6 +101,7 @@ bun run test:quality-scripts # Verify package quality script wiring
 bun run test:quality-summary # Verify quality summary renderer wiring
 bun run test:quality-readme # Verify README quality command documentation wiring
 bun run test:quality-docs # Verify guardrail policy docs stay aligned with enforcement
+bun run test:quality-audit # Verify audit report wiring and section integrity
 bun run test:chat-wiring # Run chat wiring regression suite
 bun run preview      # Preview production build
 bun run dev:vercel   # Run with Vercel dev server (recommended); ensures api -> _api for local dev only

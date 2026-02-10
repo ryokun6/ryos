@@ -140,6 +140,9 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - included in `quality:all` via `bun run test:quality-scripts`.
   - asserts `quality:all:ci` generates `quality-report.json` before subsequent stages.
   - asserts `quality:all`/`quality:all:ci` composition stays non-recursive.
+- Added workflow wiring coverage:
+  - `tests/test-quality-workflow-wiring.ts`
+  - included in `quality:all` via `bun run test:quality-workflow`.
 - Guardrail wiring tests assert JSON-mode output includes the full expected set of
   critical guardrails (security, merge safety, and maintainability thresholds).
 - Guardrail wiring tests validate JSON offender schema contract (`{ path, count }`)
@@ -175,6 +178,9 @@ Large files remain the biggest quality risk (all >1500 LOC):
 - Added guardrail documentation wiring coverage:
   - `tests/test-quality-docs-wiring.ts`
   - included in `quality:all` via `bun run test:quality-docs`.
+- Added audit report wiring coverage:
+  - `tests/test-quality-audit-wiring.ts`
+  - included in `quality:all` via `bun run test:quality-audit`.
 - Summary renderer now includes failed-check offender previews (top 5 per failed check)
   to speed up CI triage from the GitHub Actions job summary.
 - Guardrail JSON/report offender schema is normalized to `{ path, count }` across

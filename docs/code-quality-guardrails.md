@@ -30,7 +30,8 @@ bun run quality:all:ci
   7. quality summary renderer wiring tests
   8. README quality command wiring tests
   9. quality guardrail docs wiring tests
-  10. chat wiring regression tests
+  10. quality audit report wiring tests
+  11. chat wiring regression tests
 - `quality:all:ci` runs the same suite, but starts with
   `quality:check:json > quality-report.json` so CI can publish a single-pass
   guardrail artifact and summary.
