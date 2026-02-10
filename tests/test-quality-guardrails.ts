@@ -439,6 +439,43 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   );
 
+  await runTest(
+    "passes when dangerouslySetInnerHTML allowlisted usage is exactly at cap",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src/components/shared"), { recursive: true });
+        writeFileSync(
+          join(root, "src/components/shared/HtmlPreview.tsx"),
+          [
+            "export function HtmlPreview(){",
+            "  return <div>",
+            "    <span dangerouslySetInnerHTML={{ __html: '<b>a</b>' }} />",
+            "    <span dangerouslySetInnerHTML={{ __html: '<b>b</b>' }} />",
+            "  </div>;",
+            "}",
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 for allowlist usage at cap, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS dangerouslySetInnerHTML usage"),
+          "Expected dangerouslySetInnerHTML allowlist pass at cap"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
   await runTest("fails when shell:true is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "scripts"), { recursive: true });
@@ -1404,6 +1441,41 @@ export async function runQualityGuardrailTests(): Promise<{
         assert(
           (result.stdout || "").includes("FAIL biome exhaustive-deps bypass comments"),
           "Expected biome exhaustive-deps allowlist cap failure"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
+    "passes when biome exhaustive-deps bypass allowlisted usage is exactly at cap",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src/hooks"), { recursive: true });
+        writeFileSync(
+          join(root, "src/hooks/useStreamingFetch.ts"),
+          [
+            "// biome-ignore lint/correctness/useExhaustiveDependencies: test one",
+            "export const value = 1;",
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 for biome allowlist usage at cap, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes(
+            "PASS biome exhaustive-deps bypass comments"
+          ),
+          "Expected biome exhaustive-deps allowlist pass at cap"
         );
       } finally {
         rmSync(qualityRoot, { recursive: true, force: true });
