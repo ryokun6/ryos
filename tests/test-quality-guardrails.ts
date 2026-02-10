@@ -2559,6 +2559,36 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when mts file exceeds single-file LOC cap", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileWithLineCount(
+        join(root, "src", "HugeModule.mts"),
+        2601,
+        "export const moduleValue = 1;"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for oversized mts file, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL very large TypeScript files"),
+        "Expected very large TypeScript files guardrail failure for mts sources"
+      );
+      assert(
+        (result.stdout || "").includes("HugeModule.mts"),
+        "Expected oversized mts offender path in output"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when very-large script file guardrail is exceeded", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "scripts"), { recursive: true });

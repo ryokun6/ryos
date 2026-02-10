@@ -206,7 +206,7 @@ const FILE_SIZE_GUARDRAILS: FileSizeGuardrail[] = [
   {
     name: "very large TypeScript files",
     roots: ["src", "_api"],
-    extensions: [".ts", ".tsx"],
+    extensions: [".ts", ".tsx", ".mts", ".cts"],
     lineThreshold: 1000,
     maxFilesOverThreshold: 29,
     maxSingleFileLines: 2600,
@@ -214,7 +214,7 @@ const FILE_SIZE_GUARDRAILS: FileSizeGuardrail[] = [
   {
     name: "large TypeScript files",
     roots: ["src", "_api"],
-    extensions: [".ts", ".tsx"],
+    extensions: [".ts", ".tsx", ".mts", ".cts"],
     lineThreshold: 1500,
     maxFilesOverThreshold: 14,
     maxSingleFileLines: 2600,

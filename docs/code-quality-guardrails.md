@@ -73,6 +73,7 @@ bun run quality:all:ci
 - Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below
   current baseline cap (19). Lower this cap as script debt is burned down.
 - File-size regression bounds for TypeScript sources
+  - applies to `.{ts,tsx,mts,cts}` files under `src` / `_api`
   - max files over 1000 LOC
   - max files over 1500 LOC
   - max single-file LOC cap

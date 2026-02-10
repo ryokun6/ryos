@@ -63,6 +63,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "command execution hardening (`child_process` `exec` import + direct usage blocked",
       "max script files over 700 LOC",
       "(`.js`, `.jsx`, `.mts`, `.cts`, `.mjs`, `.cjs`)",
+      "including TS module variants `.mts/.cts`",
       "including explicit `.mjs`/`.cjs`/`.mts` regression paths",
     ];
 

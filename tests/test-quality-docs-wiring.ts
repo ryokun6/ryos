@@ -64,6 +64,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No string-based timer execution (`setTimeout(\"...\")`, `setInterval(\"...\")`,",
       "`setImmediate(\"...\")`, including template literals and optional-chaining calls",
       "Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below",
+      "applies to `.{ts,tsx,mts,cts}` files under `src` / `_api`",
       "no `scripts/*.{ts,js,mts,cts,mjs,cjs}` files over 700 LOC",
       "No `execSync(` usage in `scripts` / `src` / `_api`",
       "No `shell: true` usage in `scripts` / `src` / `_api` (including quoted and computed key syntax)",
