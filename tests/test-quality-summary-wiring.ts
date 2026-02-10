@@ -153,6 +153,30 @@ export async function runQualitySummaryWiringTests(): Promise<{
     );
   });
 
+  console.log(section("Input validation"));
+  await runTest("fails with helpful error on malformed report", async () => {
+    withTempReport(
+      {
+        root: "/tmp/example",
+        passed: true,
+        checks: "not-an-array",
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("Failed to render quality report summary:"),
+          "Expected renderer failure prefix in stderr"
+        );
+        assert(
+          err.includes("checks array"),
+          "Expected malformed checks-array validation error"
+        );
+      }
+    );
+  });
+
   return printSummary();
 }
 

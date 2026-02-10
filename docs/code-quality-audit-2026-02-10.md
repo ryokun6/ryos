@@ -131,6 +131,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
 - Added summary renderer wiring coverage:
   - `tests/test-quality-summary-wiring.ts`
   - included in `quality:all` via `bun run test:quality-summary`.
+  - includes malformed report validation to ensure summary rendering fails loudly
+    for invalid `quality-report.json` shapes.
 - Added README quality command wiring coverage:
   - `tests/test-quality-readme-wiring.ts`
   - included in `quality:all` via `bun run test:quality-readme`.
