@@ -145,6 +145,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   `biome-ignore lint/correctness/useExhaustiveDependencies`).
 - Guardrail wiring tests include JavaScript-path failure cases (`innerHTML`,
   `execSync`, and `dangerouslySetInnerHTML`) to verify cross-language scan parity.
+- Guardrail wiring tests include markdown merge-marker failure cases to verify
+  non-code file safety checks in configured roots.
 - Guardrail offender paths/order are stabilized (forward-slash path normalization +
   deterministic tie-break ordering for equal-size offenders).
 - Added summary renderer wiring coverage:
