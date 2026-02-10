@@ -63,6 +63,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No `execSync(` usage in `scripts` / `src` / `_api`",
       "No `child_process` `exec` imports in `scripts` / `src` / `_api`",
       "No Prisma unsafe raw SQL methods",
+      "No `Prisma.raw(...)` usage",
       "Allowlisted `dangerouslySetInnerHTML` usage only",
       "`schemaVersion` plus `totalChecks` and",
       "`failedChecks` metadata.",

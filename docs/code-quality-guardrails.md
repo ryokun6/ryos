@@ -53,6 +53,7 @@ bun run quality:all:ci
 - No `child_process` `exec` imports in `scripts` / `src` / `_api`
   (use `execFileSync`/`spawnSync` instead)
 - No Prisma unsafe raw SQL methods (`queryRawUnsafe`, `executeRawUnsafe`, `$queryRawUnsafe`, `$executeRawUnsafe`)
+- No `Prisma.raw(...)` usage
 - No `shell: true` usage in `scripts` / `src` / `_api`
 - No dynamic code execution (`eval(` / `new Function(`) in `scripts` / `src` / `_api`
 - No `debugger` statements in `scripts` / `src` / `_api`

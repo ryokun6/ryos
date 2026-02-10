@@ -135,6 +135,13 @@ const GUARDRAILS: GuardrailCheck[] = [
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
   },
   {
+    name: "Prisma.raw usage",
+    roots: ["src", "_api", "scripts"],
+    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    pattern: /\bPrisma\.raw\(/g,
+    maxAllowed: 0,
+  },
+  {
     name: "shell:true command execution",
     roots: ["scripts", "src", "_api"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],

@@ -114,7 +114,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - `execSync(` prevention scope expanded to scripts/source/api (not just scripts)
   - string-based timer execution prevention (`setTimeout("...")`,
     `setInterval("...")`, `setImmediate("...")`, including template-literal strings)
-  - SQL safety guardrail (blocks unsafe Prisma raw SQL method usage)
+  - SQL safety guardrails (block unsafe Prisma raw SQL methods and `Prisma.raw(...)`)
   - dynamic code execution/debugging prevention (`eval(`, `new Function(`, `debugger`)
   - merge conflict marker prevention (`<<<<<<<`, `=======`, `>>>>>>>`)
   - no unresolved task markers in source (`TODO`, `FIXME`, `HACK`, `XXX`)
@@ -164,6 +164,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
 - Guardrail wiring tests cover unsafe Prisma raw SQL variants
   (`$queryRawUnsafe`, `$executeRawUnsafe`) to enforce SQL safety policy.
   - includes non-prefixed `queryRawUnsafe`/`executeRawUnsafe` variant checks.
+  - includes direct `Prisma.raw(...)` usage regression coverage.
 - Guardrail offender paths/order are stabilized (forward-slash path normalization +
   deterministic tie-break ordering for equal-size offenders).
 - Added summary renderer wiring coverage:
