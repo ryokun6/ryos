@@ -87,6 +87,7 @@ const assertQualityReport = (value: unknown): QualityReport => {
         throw new Error(`Check "${candidate.name}" offenders must be an array`);
       }
       const offenderPathSet = new Set<string>();
+      let previousOffenderPath: string | null = null;
       for (const [offenderIndex, offender] of candidate.offenders.entries()) {
         if (!offender || typeof offender !== "object") {
           throw new Error(
@@ -118,7 +119,16 @@ const assertQualityReport = (value: unknown): QualityReport => {
             `Check "${candidate.name}" includes duplicate offender path: ${offenderCandidate.path}`
           );
         }
+        if (
+          previousOffenderPath !== null &&
+          offenderCandidate.path < previousOffenderPath
+        ) {
+          throw new Error(
+            `Check "${candidate.name}" offenders must be sorted by path ascending`
+          );
+        }
         offenderPathSet.add(offenderCandidate.path);
+        previousOffenderPath = offenderCandidate.path;
       }
     }
     if (

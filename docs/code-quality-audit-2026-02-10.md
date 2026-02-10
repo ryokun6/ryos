@@ -212,6 +212,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
     incompatibility coverage.
   - includes duplicate check-name validation coverage.
   - includes duplicate offender-path validation coverage.
+  - includes offender-path ascending-order validation coverage.
   - includes FAIL-check offender-presence validation coverage.
   - includes non-empty checks-array validation coverage.
   - includes non-whitespace root/check-name/allowed-text validation coverage.
