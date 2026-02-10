@@ -20,6 +20,15 @@ interface FileSizeGuardrail {
   maxSingleFileLines: number;
 }
 
+interface AllowlistedPatternGuardrail {
+  name: string;
+  roots: string[];
+  extensions: string[];
+  pattern: RegExp;
+  allowedFiles: ReadonlySet<string>;
+  maxAllowedTotal: number;
+}
+
 const SKIP_DIRS = new Set([
   "node_modules",
   ".git",
@@ -69,6 +78,15 @@ const FILE_SIZE_GUARDRAIL: FileSizeGuardrail = {
   maxSingleFileLines: 2600,
 };
 
+const DANGEROUSLY_SET_INNER_HTML_GUARDRAIL: AllowlistedPatternGuardrail = {
+  name: "dangerouslySetInnerHTML usage",
+  roots: ["src"],
+  extensions: [".ts", ".tsx"],
+  pattern: /dangerouslySetInnerHTML/g,
+  allowedFiles: new Set(["src/components/shared/HtmlPreview.tsx"]),
+  maxAllowedTotal: 2,
+};
+
 const gatherFiles = async (
   root: string,
   extensions: ReadonlyArray<string>
@@ -115,6 +133,40 @@ const countPatternInFile = async (
 const countLinesInFile = async (filePath: string): Promise<number> => {
   const source = await readFile(filePath, "utf-8");
   return source.split("\n").length;
+};
+
+const checkAllowlistedPattern = async (
+  cwd: string,
+  guardrail: AllowlistedPatternGuardrail
+): Promise<{
+  passed: boolean;
+  total: number;
+  disallowedMatches: Array<{ path: string; count: number }>;
+}> => {
+  const candidateFiles = (
+    await Promise.all(
+      guardrail.roots.map((root) =>
+        gatherFiles(join(cwd, root), guardrail.extensions)
+      )
+    )
+  ).flat();
+
+  let total = 0;
+  const disallowedMatches: Array<{ path: string; count: number }> = [];
+
+  for (const file of candidateFiles) {
+    const relativePath = relative(cwd, file).replaceAll("\\", "/");
+    const count = await countPatternInFile(file, guardrail.pattern);
+    if (count <= 0) continue;
+    total += count;
+    if (!guardrail.allowedFiles.has(relativePath)) {
+      disallowedMatches.push({ path: relativePath, count });
+    }
+  }
+
+  const passed =
+    disallowedMatches.length === 0 && total <= guardrail.maxAllowedTotal;
+  return { passed, total, disallowedMatches };
 };
 
 const run = async (): Promise<void> => {
@@ -194,6 +246,22 @@ const run = async (): Promise<void> => {
     }
     if (largeFiles.length > 20) {
       console.log(`      ... and ${largeFiles.length - 20} more files`);
+    }
+  }
+
+  const dangerouslySetInnerHtmlResult = await checkAllowlistedPattern(
+    cwd,
+    DANGEROUSLY_SET_INNER_HTML_GUARDRAIL
+  );
+  const dangerousStatus = dangerouslySetInnerHtmlResult.passed ? "PASS" : "FAIL";
+  console.log(
+    `${dangerousStatus.padEnd(4)} ${DANGEROUSLY_SET_INNER_HTML_GUARDRAIL.name}: ${dangerouslySetInnerHtmlResult.total} (allowed <= ${DANGEROUSLY_SET_INNER_HTML_GUARDRAIL.maxAllowedTotal}, files allowlisted: ${DANGEROUSLY_SET_INNER_HTML_GUARDRAIL.allowedFiles.size})`
+  );
+
+  if (!dangerouslySetInnerHtmlResult.passed) {
+    hasViolation = true;
+    for (const offender of dangerouslySetInnerHtmlResult.disallowedMatches) {
+      console.log(`      - ${offender.path} (${offender.count})`);
     }
   }
 
