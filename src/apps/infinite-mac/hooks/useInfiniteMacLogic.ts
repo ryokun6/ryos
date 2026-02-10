@@ -9,7 +9,7 @@ import {
   type ScreenData,
   type MacPreset,
 } from "@/stores/useInfiniteMacStore";
-import { helpItems } from "..";
+import { helpItems } from "../metadata";
 import { useShallow } from "zustand/react/shallow";
 
 // Re-export types and presets for consumers
@@ -37,6 +37,15 @@ const DEFAULT_TITLEBAR_HEIGHT = 24; // matches TITLEBAR_HEIGHT_BY_THEME fallback
 export const DEFAULT_WINDOW_SIZE_WITH_TITLEBAR = {
   width: DEFAULT_WINDOW_SIZE.width,
   height: DEFAULT_WINDOW_SIZE.height + DEFAULT_TITLEBAR_HEIGHT,
+};
+
+// Titlebar height per theme so auto-resize fits content + titlebar
+// (matches WindowFrame / themes.css)
+const TITLEBAR_HEIGHT_BY_THEME: Record<string, number> = {
+  macosx: 24, // notitlebar h-6 spacer
+  system7: 24, // 1.5rem
+  xp: 30, // 1.875rem, WindowFrame minHeight 30px
+  win98: 22, // 1.375rem
 };
 
 // MAC_PRESETS is now imported from the store
@@ -101,14 +110,6 @@ export function useInfiniteMacLogic({
   const translatedHelpItems = useTranslatedHelpItems("infinite-mac", helpItems);
   const embedUrl = selectedPreset ? buildWrapperUrl(selectedPreset, currentScale) : null;
 
-  // Titlebar height per theme so auto-resize fits content + titlebar (matches WindowFrame / themes.css)
-  const TITLEBAR_HEIGHT_BY_THEME: Record<string, number> = {
-    macosx: 24, // notitlebar h-6 spacer
-    system7: 24, // 1.5rem
-    xp: 30, // 1.875rem, WindowFrame minHeight 30px
-    win98: 22, // 1.375rem
-  };
-
   const resizeWindow = useCallback(
     (size: { width: number; height: number }, scale: ScaleOption = currentScale) => {
       if (!instanceId) return;
@@ -138,7 +139,7 @@ export function useInfiniteMacLogic({
       // Resize window to match emulator screen size
       resizeWindow(preset.screenSize);
     },
-    [resizeWindow]
+    [resizeWindow, setSelectedPreset, setIsEmulatorLoaded, setIsPaused]
   );
 
   const handleBackToPresets = useCallback(() => {
@@ -147,7 +148,7 @@ export function useInfiniteMacLogic({
     setIsPaused(false);
     // Resize window back to default for preset grid
     resizeWindow(DEFAULT_WINDOW_SIZE);
-  }, [resizeWindow]);
+  }, [resizeWindow, setSelectedPreset, setIsEmulatorLoaded, setIsPaused]);
 
   const sendEmulatorCommand = useCallback(
     (type: string, payload?: Record<string, unknown>) => {
@@ -162,12 +163,12 @@ export function useInfiniteMacLogic({
   const handlePause = useCallback(() => {
     sendEmulatorCommand("emulator_pause");
     setIsPaused(true);
-  }, [sendEmulatorCommand]);
+  }, [sendEmulatorCommand, setIsPaused]);
 
   const handleUnpause = useCallback(() => {
     sendEmulatorCommand("emulator_unpause");
     setIsPaused(false);
-  }, [sendEmulatorCommand]);
+  }, [sendEmulatorCommand, setIsPaused]);
 
   const handleSetScale = useCallback(
     (scale: ScaleOption) => {
@@ -180,7 +181,7 @@ export function useInfiniteMacLogic({
         resizeWindow(selectedPreset.screenSize, scale);
       }
     },
-    [selectedPreset, resizeWindow, currentScale]
+    [selectedPreset, resizeWindow, currentScale, setCurrentScale, setIsEmulatorLoaded]
   );
 
   const handleCaptureScreenshot = useCallback(() => {
@@ -329,7 +330,7 @@ export function useInfiniteMacLogic({
                   // Sync to store for AI tool access
                   setLastScreenData(screenData);
                 }
-              } catch (e) {
+              } catch {
                 // Conversion failed, log for debugging
                 console.log("Failed to convert screen data:", typeof pixelData, pixelData);
               }
@@ -341,7 +342,7 @@ export function useInfiniteMacLogic({
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
-  }, [resizeWindow, setLastScreenData]);
+  }, [resizeWindow, setLastScreenData, setIsEmulatorLoaded]);
 
   // Listen for AI tool preset selection events
   useEffect(() => {

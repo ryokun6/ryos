@@ -118,7 +118,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
 
       return { icon, label, isEmoji };
     },
-    [files]
+    [files, t]
   );
 
   // Handle window selection (called from AppManager)

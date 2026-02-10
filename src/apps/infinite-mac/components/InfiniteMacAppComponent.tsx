@@ -3,7 +3,7 @@ import { AppProps } from "@/apps/base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
-import { appMetadata } from "..";
+import { appMetadata } from "../metadata";
 import { motion } from "framer-motion";
 import { useInfiniteMacLogic } from "../hooks/useInfiniteMacLogic";
 import type { MacPreset } from "../hooks/useInfiniteMacLogic";

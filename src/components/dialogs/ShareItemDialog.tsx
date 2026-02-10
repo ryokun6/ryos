@@ -75,7 +75,7 @@ export function ShareItemDialog({
       }
     };
     // Include all dependencies that affect URL generation
-  }, [isOpen, itemIdentifier, secondaryIdentifier, itemType, generateShareUrl, t]);
+  }, [isOpen, itemIdentifier, secondaryIdentifier, itemType, generateShareUrl, t, translatedItemType]);
 
   // Focus the input when the share URL is available
   useEffect(() => {

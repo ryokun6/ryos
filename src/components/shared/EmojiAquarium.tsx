@@ -97,7 +97,7 @@ export function EmojiAquarium({ seed, className }: EmojiAquariumProps) {
       xs.push(x);
     }
     return xs;
-  }, [width, floorCount, seedRef.current]);
+  }, [width, floorCount, rand]);
 
   return (
     <MotionConfig reducedMotion="never">

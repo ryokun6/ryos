@@ -325,7 +325,6 @@ export function useAudioTranscription({
 
     animationFrameRef.current = requestAnimationFrame(analyzeFrequencies);
   }, [
-    isRecording,
     minRecordingDuration,
     silenceThreshold,
     stopRecording,

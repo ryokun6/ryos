@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import type { ChangeEvent } from "react";
 import { useSoundboard } from "@/hooks/useSoundboard";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -65,11 +65,11 @@ export function useSoundboardLogic({
   const storeSetSlotPlaybackState = useSoundboardStore(
     (state) => state.setSlotPlaybackState
   );
-  const storeResetPlaybackStates = () => {
+  const storeResetPlaybackStates = useCallback(() => {
     for (let i = 0; i < 9; i++) {
       storeSetSlotPlaybackState(i, false, false);
     }
-  };
+  }, [storeSetSlotPlaybackState]);
   const storeSetBoards = useSoundboardStore(
     (state) => state._setBoards_internal
   );
@@ -107,6 +107,11 @@ export function useSoundboardLogic({
   const [showWaveforms, setShowWaveforms] = useState(!isMobileSafari);
   const [showEmojis, setShowEmojis] = useState(true);
   const activeSlotRef = useRef<number | null>(null);
+  const playbackStatesRef = useRef(playbackStates);
+
+  useEffect(() => {
+    playbackStatesRef.current = playbackStates;
+  }, [playbackStates]);
 
   const handleRecordingComplete = (base64Data: string, format: string) => {
     const activeSlot = activeSlotRef.current;
@@ -161,13 +166,13 @@ export function useSoundboardLogic({
   }, [micPermissionGranted, selectedDeviceId, storeSetSelectedDeviceId]);
 
   useEffect(() => {
-    playbackStates.forEach((state, index) => {
+    playbackStatesRef.current.forEach((state, index) => {
       if (state.isPlaying) {
         stopSound(index);
       }
     });
     storeResetPlaybackStates();
-  }, [activeBoardId]);
+  }, [activeBoardId, stopSound, storeResetPlaybackStates]);
 
   const startRecording = (index: number) => {
     activeSlotRef.current = index;

@@ -55,73 +55,6 @@ export function Webcam({
   const isBackCameraRef = useLatestRef(isBackCamera);
   const onPhotoRef = useLatestRef(onPhoto);
 
-  // Start camera when component mounts or shared stream changes
-  useEffect(() => {
-    const videoEl = videoRef.current;
-
-    if (isPreview) {
-      if (videoEl) {
-        if (sharedStream) {
-          videoEl.srcObject = sharedStream;
-          videoEl.play().catch(console.error);
-        } else {
-          videoEl.srcObject = null;
-        }
-      }
-
-      return () => {
-        if (videoEl && videoEl.srcObject === sharedStream) {
-          videoEl.srcObject = null;
-        }
-      };
-    }
-
-    if (controlledStream) {
-      startedInternallyRef.current = false;
-      setError(null);
-      setInternalStream(null);
-
-      if (videoEl) {
-        videoEl.srcObject = controlledStream;
-        videoEl.play().catch(console.error);
-      }
-
-      return () => {
-        if (videoEl && videoEl.srcObject === controlledStream) {
-          videoEl.srcObject = null;
-        }
-      };
-    }
-
-    if (!autoStart) {
-      startedInternallyRef.current = false;
-      stopCamera();
-      return;
-    }
-
-    const shouldRestartForSelection =
-      Boolean(selectedCameraId) &&
-      activeDeviceIdRef.current !== selectedCameraId;
-
-    if (!internalStream || shouldRestartForSelection) {
-      startedInternallyRef.current = true;
-      startCamera();
-    }
-
-    return () => {
-      if (startedInternallyRef.current) {
-        stopCamera();
-      }
-    };
-  }, [
-    isPreview,
-    sharedStream,
-    controlledStream,
-    selectedCameraId,
-    internalStream,
-    autoStart,
-  ]);
-
   // Real-time WebGL preview loop for distortion filters
   useEffect(() => {
     if (!needsWebGLPreview) {
@@ -263,7 +196,7 @@ export function Webcam({
   // Listen for webcam-capture events
   useCustomEventListener("webcam-capture", handleCapture);
 
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     try {
       startedInternallyRef.current = true;
 
@@ -299,9 +232,9 @@ export function Webcam({
       activeDeviceIdRef.current = null;
       startedInternallyRef.current = false;
     }
-  };
+  }, [internalStream, selectedCameraId, t]);
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (internalStream && !isPreview) {
       internalStream.getTracks().forEach((track) => track.stop());
       setInternalStream(null);
@@ -315,7 +248,76 @@ export function Webcam({
       activeDeviceIdRef.current = null;
       startedInternallyRef.current = false;
     }
-  };
+  }, [internalStream, isPreview, controlledStream]);
+
+  // Start camera when component mounts or shared stream changes
+  useEffect(() => {
+    const videoEl = videoRef.current;
+
+    if (isPreview) {
+      if (videoEl) {
+        if (sharedStream) {
+          videoEl.srcObject = sharedStream;
+          videoEl.play().catch(console.error);
+        } else {
+          videoEl.srcObject = null;
+        }
+      }
+
+      return () => {
+        if (videoEl && videoEl.srcObject === sharedStream) {
+          videoEl.srcObject = null;
+        }
+      };
+    }
+
+    if (controlledStream) {
+      startedInternallyRef.current = false;
+      setError(null);
+      setInternalStream(null);
+
+      if (videoEl) {
+        videoEl.srcObject = controlledStream;
+        videoEl.play().catch(console.error);
+      }
+
+      return () => {
+        if (videoEl && videoEl.srcObject === controlledStream) {
+          videoEl.srcObject = null;
+        }
+      };
+    }
+
+    if (!autoStart) {
+      startedInternallyRef.current = false;
+      stopCamera();
+      return;
+    }
+
+    const shouldRestartForSelection =
+      Boolean(selectedCameraId) &&
+      activeDeviceIdRef.current !== selectedCameraId;
+
+    if (!internalStream || shouldRestartForSelection) {
+      startedInternallyRef.current = true;
+      startCamera();
+    }
+
+    return () => {
+      if (startedInternallyRef.current) {
+        stopCamera();
+      }
+    };
+  }, [
+    isPreview,
+    sharedStream,
+    controlledStream,
+    selectedCameraId,
+    internalStream,
+    autoStart,
+    startCamera,
+    stopCamera,
+  ]);
 
   return (
     <div className={`relative ${className}`}>

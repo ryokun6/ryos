@@ -136,6 +136,16 @@ export function useVideosLogic({
   const hasAutoplayCheckedRef = useRef(false);
   const lastProcessedVideoIdRef = useRef<string | null>(null);
   const prevFullScreenRef = useRef(isFullScreen);
+  const videosRef = useRef(videos);
+  const originalOrderRef = useRef(originalOrder);
+
+  useEffect(() => {
+    videosRef.current = videos;
+  }, [videos]);
+
+  useEffect(() => {
+    originalOrderRef.current = originalOrder;
+  }, [originalOrder]);
 
   // Track pointer/touch interactions on the video area
   const touchGestureRef = useRef<{
@@ -723,12 +733,12 @@ export function useVideosLogic({
   // Shuffle initialization
   useEffect(() => {
     if (isShuffled) {
-      const shuffled = [...videos].sort(() => Math.random() - 0.5);
+      const shuffled = [...videosRef.current].sort(() => Math.random() - 0.5);
       setVideos(shuffled);
     } else {
-      setVideos([...originalOrder]);
+      setVideos([...originalOrderRef.current]);
     }
-  }, [isShuffled]);
+  }, [isShuffled, setVideos]);
 
   // Keep original order in sync with new additions
   useEffect(() => {

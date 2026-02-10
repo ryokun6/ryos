@@ -228,7 +228,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
       setPreviewError(null);
       setIsIframeLoaded(false); // Reset iframe state on close
     }
-  }, [cachedYears, isOpen, currentSelectedYear]);
+  }, [cachedYears, isOpen, currentSelectedYear, playOpen]);
 
   // Update previewYear when activeYearIndex changes (due to user interaction)
   useEffect(() => {
@@ -241,7 +241,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
     }
     // We only want this effect to react to index changes triggered by user interaction,
     // not the initial setting from the isOpen effect.
-  }, [activeYearIndex, isOpen, cachedYears]);
+  }, [activeYearIndex, isOpen, cachedYears, previewStatus, previewYear]);
 
   // Scroll timeline to active item
   useEffect(() => {
@@ -336,7 +336,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
         }
       } else if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        handleClose();
       }
     },
     [

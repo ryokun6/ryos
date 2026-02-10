@@ -1,5 +1,5 @@
 import { EditorContent } from "@tiptap/react";
-import { useEditorContext } from "./EditorProvider";
+import { useEditorContext } from "./EditorContext";
 
 interface TextEditorProps {
   className?: string;

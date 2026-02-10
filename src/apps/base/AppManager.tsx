@@ -276,7 +276,7 @@ export function AppManager({ apps }: AppManagerProps) {
 
     // Process URL on initial load
     handleUrlNavigation();
-  }, []); // Run only once on mount
+  }, [t]); // Run only once on mount (except locale changes)
 
   // Listen for app launch events (e.g., from Finder, URL handling)
   useEffect(() => {

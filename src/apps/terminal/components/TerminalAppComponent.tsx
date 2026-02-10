@@ -7,17 +7,19 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { TerminalMenuBar } from "./TerminalMenuBar";
 import { appMetadata } from "../index";
-import HtmlPreview, {
+import HtmlPreview from "@/components/shared/HtmlPreview";
+import {
   isHtmlCodeBlock,
   extractHtmlContent,
-} from "@/components/shared/HtmlPreview";
+} from "@/components/shared/htmlPreviewUtils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { getTranslatedAppName } from "@/utils/i18n";
 import EmojiAquarium from "@/components/shared/EmojiAquarium";
 import i18n from "@/lib/i18n";
 import { TerminalToolInvocation } from "./TerminalToolInvocation";
 import { VimEditor } from "./VimEditor";
-import { TypewriterText, parseSimpleMarkdown } from "./TypewriterText";
+import { TypewriterText } from "./TypewriterText";
+import { parseSimpleMarkdown } from "./parseSimpleMarkdown";
 import { AnimatedEllipsis } from "./AnimatedEllipsis";
 import { UrgentMessageAnimation } from "./UrgentMessageAnimation";
 import {

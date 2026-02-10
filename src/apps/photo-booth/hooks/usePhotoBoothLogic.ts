@@ -188,6 +188,7 @@ export function usePhotoBoothLogic({
   const cameraRequestTokenRef = useRef<symbol | null>(null);
   const isMountedRef = useRef(true);
   const activeCameraIdRef = useRef<string | null>(null);
+  const recentPhotoPreviewsRef = useRef<Map<string, string>>(new Map());
 
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -216,6 +217,7 @@ export function usePhotoBoothLogic({
   const handleClearPhotos = useCallback(() => {
     clearPhotos();
     currentPhotoBatchRef.current = [];
+    recentPhotoPreviewsRef.current.clear();
   }, [clearPhotos]);
 
   const resolvePhotoDownloadUrl = useCallback(
@@ -244,6 +246,42 @@ export function usePhotoBoothLogic({
 
       if (/^(blob:|data:|https?:)/.test(photo.path)) {
         return { url: photo.path, shouldRevoke: false };
+      }
+
+      const recentPreviewUrl = recentPhotoPreviewsRef.current.get(photo.filename);
+      if (recentPreviewUrl) {
+        return { url: recentPreviewUrl, shouldRevoke: false };
+      }
+
+      return null;
+    },
+    [files]
+  );
+
+  const getPhotoPreviewSrc = useCallback(
+    (photo: PhotoReference): string | null => {
+      const matchingFile = files.find(
+        (file) => file.path === photo.path || file.name === photo.filename
+      );
+
+      if (matchingFile?.contentUrl) {
+        return matchingFile.contentUrl;
+      }
+
+      if (
+        typeof matchingFile?.content === "string" &&
+        /^(blob:|data:|https?:)/.test(matchingFile.content)
+      ) {
+        return matchingFile.content;
+      }
+
+      const recentPreviewUrl = recentPhotoPreviewsRef.current.get(photo.filename);
+      if (recentPreviewUrl) {
+        return recentPreviewUrl;
+      }
+
+      if (/^(blob:|data:|https?:)/.test(photo.path)) {
+        return photo.path;
       }
 
       return null;
@@ -489,7 +527,14 @@ export function usePhotoBoothLogic({
         }
       }
     }
-  }, [selectedCameraId, stopCamera, detectIsBackCamera]);
+  }, [
+    selectedCameraId,
+    stopCamera,
+    detectIsBackCamera,
+    isForegroundRef,
+    isWindowOpenRef,
+    t,
+  ]);
 
   useEffect(() => {
     if (isWindowOpen && isForeground) {
@@ -534,7 +579,7 @@ export function usePhotoBoothLogic({
       isChrome,
       isSecureContext: window.isSecureContext,
     });
-  }, []);
+  }, [isChrome, isIOS]);
 
   // Force visibility refresh for Chrome
   useEffect(() => {
@@ -617,7 +662,7 @@ export function usePhotoBoothLogic({
       videoElement.removeEventListener("canplay", handleCanPlay);
       clearTimeout(recoveryTimer);
     };
-  }, [stream]);
+  }, [stream, isIOS]);
 
   // Fix playback issues on Chrome in production
   useEffect(() => {
@@ -717,7 +762,7 @@ export function usePhotoBoothLogic({
     };
 
     getCameras();
-  }, []);
+  }, [selectedCameraId]);
 
   const handlePhoto = (photoDataUrl: string) => {
     // Trigger flash effect
@@ -777,6 +822,7 @@ export function usePhotoBoothLogic({
 
     // Add the new photo reference to the photos array
     addPhoto(photoRef);
+    recentPhotoPreviewsRef.current.set(filename, photoDataUrl);
 
     setLastPhoto(photoDataUrl); // Use data URL for lastPhoto preview
     setNewPhotoIndex(photos.length);
@@ -855,6 +901,7 @@ export function usePhotoBoothLogic({
             saveFile(fileItem);
 
             // Return reference to the saved photo
+            recentPhotoPreviewsRef.current.set(filename, dataUrl);
             return {
               filename,
               path: `/Images/${filename}`,
@@ -952,9 +999,7 @@ export function usePhotoBoothLogic({
   }, [isMultiPhotoMode]);
 
   // Filter photos that actually exist in the file system
-  const validPhotos = photos.filter((photo) =>
-    files.some((file) => file.name === photo.filename)
-  );
+  const validPhotos = photos.filter((photo) => Boolean(getPhotoPreviewSrc(photo)));
 
   const triggerCapture = useCallback(() => {
     const event = new CustomEvent("webcam-capture");
@@ -993,6 +1038,7 @@ export function usePhotoBoothLogic({
     newPhotoIndex,
     files,
     validPhotos,
+    getPhotoPreviewSrc,
     isInitialLoad,
     isXpTheme,
     isMacTheme,

@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { AppProps } from "@/apps/base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { TextEditMenuBar } from "./TextEditMenuBar";
-import { EditorProvider, useEditorContext } from "./EditorProvider";
+import { EditorProvider } from "./EditorProvider";
+import { useEditorContext } from "./EditorContext";
 import { EditorToolbar } from "./EditorToolbar";
 import { TextEditor } from "./TextEditor";
 import { SpeechManager } from "./SpeechManager";
@@ -264,7 +265,7 @@ function TextEditContent({
         handleDocumentUpdated as EventListener
       );
     };
-  }, [editor, currentFilePath, setHasUnsavedChanges]);
+  }, [editor, currentFilePath, setHasUnsavedChanges, t]);
 
   // Sync editor when contentJson is externally updated
   useEffect(() => {

@@ -67,6 +67,8 @@ export const useSynthLogic = ({
   const releasedBeforeInitRef = useRef<Set<string>>(new Set());
   // Ref for the keyboard container to scope pointermove
   const keyboardContainerRef = useRef<HTMLDivElement | null>(null);
+  const handleKeyDownRef = useRef<(e: KeyboardEvent) => void>(() => {});
+  const handleKeyUpRef = useRef<(e: KeyboardEvent) => void>(() => {});
 
   // UI state
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -336,9 +338,6 @@ export const useSynthLogic = ({
       phaserRef.current = phaser;
       bitcrusherRef.current = bitcrusher;
       analyzerRef.current = analyzer;
-
-      // Initialize synth with current preset
-      updateSynthParams(currentPreset);
       synthInitializedRef.current = true;
     })();
 
@@ -348,6 +347,11 @@ export const useSynthLogic = ({
       synthInitPromiseRef.current = null;
     }
   }, [currentPreset, currentVolume]);
+
+  const createSynthNodesRef = useRef(createSynthNodes);
+  useEffect(() => {
+    createSynthNodesRef.current = createSynthNodes;
+  }, [createSynthNodes, octaveOffsetRef]);
 
   // Initialize synth and effects on window open
   useEffect(() => {
@@ -360,15 +364,21 @@ export const useSynthLogic = ({
       // Otherwise, defer creation to first key press via ensureToneStarted
       if (Tone.context.state === "running") {
         toneStartedRef.current = true;
-        await createSynthNodes();
+        await createSynthNodesRef.current();
       }
     };
 
     initSynth();
 
     // Add keyboard event handlers
-    document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("keyup", handleKeyUp);
+    const onKeyDown = (event: KeyboardEvent) => {
+      handleKeyDownRef.current(event);
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      handleKeyUpRef.current(event);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keyup", onKeyUp);
 
     return () => {
       disposed = true;
@@ -411,8 +421,8 @@ export const useSynthLogic = ({
       const analyzer = analyzerRef.current;
       analyzerRef.current = null;
       analyzer?.dispose();
-      document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("keyup", handleKeyUp);
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keyup", onKeyUp);
     };
   }, [isWindowOpen]);
 
@@ -560,7 +570,7 @@ export const useSynthLogic = ({
     } finally {
       initPromiseRef.current = null;
     }
-  }, [createSynthNodes]);
+  }, [createSynthNodes, octaveOffsetRef]);
 
   // Kick off audio init on any first interaction in the synth window
   useEffect(() => {
@@ -621,7 +631,7 @@ export const useSynthLogic = ({
       // If the user released before init finished, play a short tap for feedback
       synthRef.current.triggerAttackRelease(shiftedNote, 0.08, now);
     },
-    [ensureToneStarted, setSustainedNotes]
+    [ensureToneStarted, setSustainedNotes, octaveOffsetRef]
   );
 
   const releaseNote = useCallback((note: string) => {
@@ -646,7 +656,7 @@ export const useSynthLogic = ({
       synthRef.current.triggerRelease(shiftedNote, now);
     }
     delete activeShiftedNotesRef.current[note];
-  }, [setSustainedNotes]);
+  }, [setSustainedNotes, octaveOffsetRef]);
 
   // Release all currently active notes regardless of current octave or sources
   const releaseAllNotes = useCallback(() => {
@@ -880,6 +890,9 @@ export const useSynthLogic = ({
       releaseNote(note);
     }
   };
+
+  handleKeyDownRef.current = handleKeyDown;
+  handleKeyUpRef.current = handleKeyUp;
 
   // Add visibility change effect to release notes when app goes to background
   useEffect(() => {

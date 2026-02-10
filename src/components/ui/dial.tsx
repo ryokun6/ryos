@@ -69,30 +69,33 @@ const Dial = React.forwardRef<HTMLDivElement, DialProps>(
       setStartValue(value);
     };
 
-    const handleMove = (clientX: number, isDraggingTarget: boolean) => {
-      if (!isDraggingTarget) return;
+    const handleMove = React.useCallback(
+      (clientX: number, isDraggingTarget: boolean) => {
+        if (!isDraggingTarget) return;
 
-      // Calculate horizontal movement (positive = right, negative = left)
-      const deltaX = clientX - startX;
+        // Calculate horizontal movement (positive = right, negative = left)
+        const deltaX = clientX - startX;
 
-      // Sensitivity factor - higher means more movement per pixel
-      const sensitivity = 2;
+        // Sensitivity factor - higher means more movement per pixel
+        const sensitivity = 2;
 
-      // Calculate new value based on movement
-      const range = max - min;
-      const valueChange = (deltaX * sensitivity * range) / 200;
-      let newValue = startValue + valueChange;
+        // Calculate new value based on movement
+        const range = max - min;
+        const valueChange = (deltaX * sensitivity * range) / 200;
+        let newValue = startValue + valueChange;
 
-      // Clamp value to min/max
-      newValue = Math.max(min, Math.min(max, newValue));
+        // Clamp value to min/max
+        newValue = Math.max(min, Math.min(max, newValue));
 
-      // Round to nearest step
-      if (step) {
-        newValue = Math.round(newValue / step) * step;
-      }
+        // Round to nearest step
+        if (step) {
+          newValue = Math.round(newValue / step) * step;
+        }
 
-      onChange(newValue);
-    };
+        onChange(newValue);
+      },
+      [max, min, onChange, startValue, startX, step]
+    );
 
     // Add and remove event listeners
     React.useEffect(() => {
@@ -129,7 +132,7 @@ const Dial = React.forwardRef<HTMLDivElement, DialProps>(
         document.removeEventListener("mouseup", handleGlobalMouseUp);
         document.removeEventListener("touchend", handleGlobalTouchEnd);
       };
-    }, [isDragging, isDraggingValue, startX, startValue, min, max, step]);
+    }, [isDragging, isDraggingValue, startX, startValue, min, max, step, handleMove]);
 
     // Size classes
     const sizeClasses = {
