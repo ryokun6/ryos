@@ -46,6 +46,7 @@ export async function runQualityAuditWiringTests(): Promise<{
   await runTest("audit report references core quality commands and tests", async () => {
     const source = readAuditDoc();
     const requiredSnippets = [
+      "`bun run quality:check:json`",
       "`bun run quality:all`",
       "`bun run quality:all:ci`",
       "`bun run quality:verify`",
@@ -55,6 +56,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "`tests/test-quality-summary-wiring.ts`",
       "`tests/test-quality-readme-wiring.ts`",
       "`tests/test-quality-docs-wiring.ts`",
+      "`tests/test-quality-audit-wiring.ts`",
     ];
 
     for (const snippet of requiredSnippets) {
