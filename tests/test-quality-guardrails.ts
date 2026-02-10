@@ -877,6 +877,66 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   );
 
+  await runTest(
+    "fails when namespace alias bracket exec usage is introduced",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "BadExecBracketAlias.ts"),
+          ['import * as cp from "node:child_process";', 'cp["exec"]("echo hi");', ""].join(
+            "\n"
+          ),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for bracket alias exec usage, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL child_process.exec direct usage"),
+          "Expected child_process.exec direct-usage guardrail failure for bracket alias"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
+    "fails when inline require bracket exec usage is introduced",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "BadExecInlineRequireBracket.js"),
+          'require("child_process")["exec"]("echo hi");\n',
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for inline require bracket exec usage, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL child_process.exec direct usage"),
+          "Expected child_process.exec direct-usage guardrail failure for inline require bracket syntax"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
   await runTest("fails when namespace alias child_process exec usage is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "scripts"), { recursive: true });
@@ -1127,6 +1187,41 @@ export async function runQualityGuardrailTests(): Promise<{
       rmSync(qualityRoot, { recursive: true, force: true });
     }
   });
+
+  await runTest(
+    "passes when child_process import exists with unrelated bracket exec usage",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "SafeExecUnrelatedBracket.ts"),
+          [
+            'import * as cp from "node:child_process";',
+            "const other: Record<string, () => number> = { exec: () => 1 };",
+            'other["exec"]();',
+            "console.log(cp);",
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 without cp bracket exec usage, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS child_process.exec direct usage"),
+          "Expected child_process.exec direct-usage guardrail pass for unrelated bracket exec call"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
 
   await runTest("fails when unsafe Prisma raw SQL method is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {

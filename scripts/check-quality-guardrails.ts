@@ -135,7 +135,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["scripts", "src", "_api"],
     extensions: CODE_EXTENSIONS,
     pattern:
-      /\bchild_process(?:\?\.|\.)exec\(|\brequire\(["'](?:node:)?child_process["']\)(?:\?\.|\.)exec\(|import\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\1(?:\?\.|\.)exec\(|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\(["'](?:node:)?child_process["']\)[\s\S]*?\b\2(?:\?\.|\.)exec\(|import\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\3(?:\?\.|\.)exec\(/g,
+      /\bchild_process(?:\?\.|\.)exec\(|\bchild_process(?:\?\.)?\[\s*["']exec["']\s*\]\(|\brequire\(["'](?:node:)?child_process["']\)(?:\?\.|\.)exec\(|\brequire\(["'](?:node:)?child_process["']\)(?:\?\.)?\[\s*["']exec["']\s*\]\(|import\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\1(?:\?\.|\.)exec\(|import\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\2(?:\?\.)?\[\s*["']exec["']\s*\]\(|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\(["'](?:node:)?child_process["']\)[\s\S]*?\b\3(?:\?\.|\.)exec\(|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\(["'](?:node:)?child_process["']\)[\s\S]*?\b\4(?:\?\.)?\[\s*["']exec["']\s*\]\(|import\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\5(?:\?\.|\.)exec\(|import\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\6(?:\?\.)?\[\s*["']exec["']\s*\]\(/g,
     maxAllowed: 0,
   },
   {

@@ -70,6 +70,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No `child_process.exec(...)` direct usage",
       "alias detection is variable-aware",
       "optional-chaining forms are also blocked",
+      "bracket-notation variants are also blocked",
       "No Prisma unsafe raw SQL methods",
       "No `Prisma.raw(...)` usage",
       "Allowlisted `dangerouslySetInnerHTML` usage only",
