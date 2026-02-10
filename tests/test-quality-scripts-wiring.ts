@@ -59,6 +59,7 @@ export async function runQualityScriptsWiringTests(): Promise<{
       "bun run test:quality-workflow",
       "bun run test:quality-scripts",
       "bun run test:quality-summary",
+      "bun run test:quality-readme",
       "bun run test:chat-wiring",
     ];
 

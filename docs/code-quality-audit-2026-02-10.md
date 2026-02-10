@@ -129,6 +129,9 @@ Large files remain the biggest quality risk (all >1500 LOC):
 - Added summary renderer wiring coverage:
   - `tests/test-quality-summary-wiring.ts`
   - included in `quality:all` via `bun run test:quality-summary`.
+- Added README quality command wiring coverage:
+  - `tests/test-quality-readme-wiring.ts`
+  - included in `quality:all` via `bun run test:quality-readme`.
 - Summary renderer now includes failed-check offender previews (top 5 per failed check)
   to speed up CI triage from the GitHub Actions job summary.
 - Guardrail JSON/report offender schema is normalized to `{ path, count }` across

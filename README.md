@@ -90,6 +90,7 @@ bun run build        # Build for production
 bun run lint         # Run ESLint
 bun run quality:check # Run code-quality guardrails (suppressions + file-size)
 bun run quality:check:json # Run guardrails and output machine-readable JSON
+bun run quality:summary quality-report.json # Render markdown summary from quality JSON report
 bun run quality:verify # Run lint, build, and quality regression tests
 bun run quality:all  # Run full quality gate suite (guardrails, lint, build, tests)
 bun run quality:all:ci # Run CI suite and emit quality-report.json in one pass
@@ -98,6 +99,7 @@ bun run test:quality-guardrails # Verify quality guardrail command wiring
 bun run test:quality-workflow # Verify CI workflow quality wiring
 bun run test:quality-scripts # Verify package quality script wiring
 bun run test:quality-summary # Verify quality summary renderer wiring
+bun run test:quality-readme # Verify README quality command documentation wiring
 bun run test:chat-wiring # Run chat wiring regression suite
 bun run preview      # Preview production build
 bun run dev:vercel   # Run with Vercel dev server (recommended); ensures api -> _api for local dev only
