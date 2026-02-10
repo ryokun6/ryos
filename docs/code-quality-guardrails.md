@@ -56,6 +56,7 @@ bun run quality:all:ci
   aliases and `require("child_process").exec(...)`)
   - alias detection is variable-aware to avoid false positives on unrelated
     `.exec(...)` calls in the same file
+  - optional-chaining forms are also blocked (`child_process?.exec(...)`)
 - No Prisma unsafe raw SQL methods (`queryRawUnsafe`, `executeRawUnsafe`, `$queryRawUnsafe`, `$executeRawUnsafe`)
 - No `Prisma.raw(...)` usage
 - No `shell: true` usage in `scripts` / `src` / `_api` (including quoted key syntax)

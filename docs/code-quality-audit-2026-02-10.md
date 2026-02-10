@@ -184,6 +184,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   including namespace/default aliases and inline `require("child_process").exec(...)` usage.
   - includes false-positive prevention coverage where alias imports exist but only
     unrelated object `.exec(...)` calls are present.
+  - includes optional-chaining `?.exec(...)` variant coverage.
 - Guardrail offender paths/order are stabilized (forward-slash path normalization +
   deterministic tie-break ordering for equal-size offenders).
   - includes deterministic ordering coverage for allowlisted-check offender output.
