@@ -59,6 +59,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "`schemaVersion` plus `totalChecks` and",
       "`failedChecks` metadata.",
       "failed-check offender previews (top 5 per check)",
+      "When count metadata is omitted, summary rendering derives counts from `checks`",
     ];
 
     for (const policySnippet of requiredPolicySnippets) {
