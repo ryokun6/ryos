@@ -90,6 +90,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "inline `require(\"child_process\").exec(...)` usage",
       "false-positive prevention coverage",
       "optional-chaining `?.exec(...)` variant coverage",
+      "inline `require(\"child_process\")?.exec(...)` variant coverage",
       "allowlisted-check offender output",
       "cap-overflow diagnostics assertions",
     ];
