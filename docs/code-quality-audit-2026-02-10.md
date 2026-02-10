@@ -178,6 +178,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   summary publish → artifact upload) to prevent CI reporting regressions.
 - Workflow wiring tests verify dependency installation uses
   `bun install --frozen-lockfile` for reproducible CI runs.
+- Workflow wiring tests assert key action pins (`actions/checkout@v4`,
+  `oven-sh/setup-bun@v2`) remain explicit.
 
 ### Low priority
 
