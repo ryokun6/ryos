@@ -625,6 +625,34 @@ export async function runQualitySummaryWiringTests(): Promise<{
     );
   });
 
+  await runTest("fails when offender path uses backslashes", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: false,
+        checks: [
+          {
+            name: "merge conflict markers",
+            status: "FAIL",
+            value: 1,
+            allowed: "<= 0",
+            offenders: [{ path: "src\\a.ts", count: 1 }],
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("forward slashes"),
+          "Expected forward-slash offender-path validation error"
+        );
+      }
+    );
+  });
+
   await runTest("fails when offender paths are not sorted", async () => {
     withTempReport(
       {

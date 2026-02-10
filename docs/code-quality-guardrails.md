@@ -128,6 +128,7 @@ Validation enforces unique check names to avoid ambiguous summaries.
 Validation enforces unique offender paths within each failed check entry.
 Validation enforces offender paths sorted ascending within each failed check.
 Validation rejects whitespace-only offender paths.
+Validation rejects offender paths containing backslashes (forward slashes only).
 Validation enforces a non-empty checks array.
 Validation requires non-empty (non-whitespace) `root`, check names, and
 `allowed` descriptor text.
