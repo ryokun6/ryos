@@ -63,7 +63,9 @@ bun run quality:all:ci
   - invocation matching is spacing-tolerant (e.g. `cp.exec ("...")`)
 - No Prisma unsafe raw SQL methods (`queryRawUnsafe`, `executeRawUnsafe`, `$queryRawUnsafe`, `$executeRawUnsafe`)
 - No `Prisma.raw(...)` usage
-- No `shell: true` usage in `scripts` / `src` / `_api` (including quoted and computed key syntax)
+- No `shell: true` usage in `scripts` / `src` / `_api` (including quoted,
+  computed, and simple variable-computed key syntax such as
+  `const key = "shell"; { [key]: true }`)
 - No dynamic code execution (`eval(` / `new Function(` / `Function("...")`) in
   `scripts` / `src` / `_api`
 - No `debugger` statements in `scripts` / `src` / `_api`

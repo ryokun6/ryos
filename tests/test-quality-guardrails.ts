@@ -658,12 +658,12 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
-  await runTest("fails when template computed shell:true key is introduced", async () => {
+  await runTest("fails when variable computed shell:true key is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "scripts"), { recursive: true });
       writeFileSync(
         join(root, "scripts", "BadComputedShellTemplate.js"),
-        "const key = `shell`;\nconst opts = { [key]: true };\nconst direct = { [`shell`]: true };\nconsole.log(opts, direct);\n",
+        "const key = `shell`;\nconst opts = { [key]: true };\nconsole.log(opts);\n",
         "utf-8"
       );
     });
@@ -673,11 +673,37 @@ export async function runQualityGuardrailTests(): Promise<{
       assertEq(
         result.status,
         1,
-        `Expected failure exit code 1 for template computed shell:true key, got ${result.status}`
+        `Expected failure exit code 1 for variable computed shell:true key, got ${result.status}`
       );
       assert(
         (result.stdout || "").includes("FAIL shell:true command execution"),
-        "Expected shell:true guardrail failure for template computed key syntax"
+        "Expected shell:true guardrail failure for variable computed key syntax"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("passes when computed key variable is not shell", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "SafeComputedNonShellKey.js"),
+        "const key = `spawn`;\nconst opts = { [key]: true };\nconsole.log(opts);\n",
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        0,
+        `Expected pass exit code 0 for non-shell computed key, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("PASS shell:true command execution"),
+        "Expected shell:true guardrail pass for non-shell computed key"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });

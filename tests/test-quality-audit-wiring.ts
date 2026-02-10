@@ -82,6 +82,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "DOM assignment hardening",
       "script task-marker baseline cap",
       "quoted/computed keys",
+      "variable-computed key aliases",
       "YAML merge-marker failure coverage",
       "JSON merge-marker failure coverage",
       "TOML merge-marker failure coverage",
