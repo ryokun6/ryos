@@ -61,6 +61,14 @@ export async function runQualityWorkflowWiringTests(): Promise<{
     assert(/bun-version:\s*"1\.3\.5"/.test(source), "Expected Bun version pin");
   });
 
+  await runTest("workflow installs dependencies with frozen lockfile", async () => {
+    const source = readWorkflow();
+    assert(
+      /Install dependencies[\s\S]*run:\s*bun install --frozen-lockfile/.test(source),
+      "Expected bun install --frozen-lockfile in workflow"
+    );
+  });
+
   await runTest("workflow job runtime settings are explicit", async () => {
     const source = readWorkflow();
     assert(/runs-on:\s*ubuntu-latest/.test(source), "Expected ubuntu-latest runner");
