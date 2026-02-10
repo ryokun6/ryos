@@ -52,7 +52,14 @@ const CANDIDATE_FILE_CACHE = new Map<string, Promise<string[]>>();
 const SCRIPT_TASK_MARKER_BASELINE_CAP = 19;
 const CODE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".cjs"];
 const SCRIPT_CODE_EXTENSIONS = [".ts", ".js", ".mts", ".cts", ".mjs", ".cjs"];
-const MERGE_MARKER_EXTENSIONS = [...CODE_EXTENSIONS, ".json", ".md", ".yml", ".yaml"];
+const MERGE_MARKER_EXTENSIONS = [
+  ...CODE_EXTENSIONS,
+  ".json",
+  ".md",
+  ".toml",
+  ".yml",
+  ".yaml",
+];
 
 const GUARDRAILS: GuardrailCheck[] = [
   {

@@ -84,6 +84,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "quoted/computed keys",
       "YAML merge-marker failure coverage",
       "JSON merge-marker failure coverage",
+      "TOML merge-marker failure coverage",
       "diff3 merge-base marker",
       "bare marker (`<<<<<<<` / `>>>>>>>`) failure coverage",
       "documentation markdown merge-marker failure coverage",

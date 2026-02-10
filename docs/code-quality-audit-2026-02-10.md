@@ -177,6 +177,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   non-code file safety checks in configured roots.
   - includes YAML merge-marker failure coverage as well.
   - includes JSON merge-marker failure coverage as well.
+  - includes TOML merge-marker failure coverage as well.
   - includes diff3 merge-base marker (`|||||||`) failure coverage.
   - includes bare marker (`<<<<<<<` / `>>>>>>>`) failure coverage.
   - includes documentation markdown merge-marker failure coverage.
