@@ -179,7 +179,7 @@ const checkAllowlistedPattern = async (
 };
 
 const run = async (): Promise<void> => {
-  const cwd = process.cwd();
+  const cwd = process.env.QUALITY_GUARDRAILS_ROOT || process.cwd();
   let hasViolation = false;
 
   console.log("Quality guardrails check\n");
