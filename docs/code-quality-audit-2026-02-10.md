@@ -108,6 +108,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
 - ✅ Added `bun run quality:check` (script: `scripts/check-quality-guardrails.ts`) to enforce:
   - suppression regression checks (`eslint-disable`, `@ts-ignore`, `@ts-nocheck`, `innerHTML =`, `execSync(`, `shell: true`)
     across application source and scripts
+  - command execution hardening in scripts (`child_process` `exec` import blocked)
   - dynamic code execution/debugging prevention (`eval(`, `new Function(`, `debugger`)
   - merge conflict marker prevention (`<<<<<<<`, `=======`, `>>>>>>>`)
   - no unresolved task markers in source (`TODO`, `FIXME`, `HACK`, `XXX`)

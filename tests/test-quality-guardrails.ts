@@ -215,6 +215,10 @@ export async function runQualityGuardrailTests(): Promise<{
     assert(out.includes("@ts-nocheck comments"), "Missing ts-nocheck guardrail");
     assert(out.includes("innerHTML assignments"), "Missing innerHTML guardrail");
     assert(out.includes("execSync usage in scripts"), "Missing execSync guardrail");
+    assert(
+      out.includes("child_process exec import usage in scripts"),
+      "Missing child_process exec import guardrail"
+    );
     assert(out.includes("shell:true command execution"), "Missing shell:true guardrail");
     assert(out.includes("TODO/FIXME/HACK markers"), "Missing task marker guardrail");
     assert(
@@ -398,6 +402,34 @@ export async function runQualityGuardrailTests(): Promise<{
       assert(
         (result.stdout || "").includes("FAIL execSync usage in scripts"),
         "Expected execSync guardrail failure for js scripts"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when child_process exec import is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadExecImport.ts"),
+        `import { exec } from "node:child_process";\nconsole.log(exec);\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for exec import usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes(
+          "FAIL child_process exec import usage in scripts"
+        ),
+        "Expected child_process exec import guardrail failure"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });

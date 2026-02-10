@@ -90,6 +90,14 @@ const GUARDRAILS: GuardrailCheck[] = [
     maxAllowed: 0,
   },
   {
+    name: "child_process exec import usage in scripts",
+    roots: ["scripts"],
+    extensions: [".ts", ".js"],
+    pattern:
+      /\bimport\s*\{[^}]*\bexec\b[^}]*\}\s*from\s*["'](?:node:)?child_process["']|\b(?:const|let|var)\s*\{[^}]*\bexec\b[^}]*\}\s*=\s*require\(["'](?:node:)?child_process["']\)/g,
+    maxAllowed: 0,
+  },
+  {
     name: "shell:true command execution",
     roots: ["scripts", "src", "_api"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],
