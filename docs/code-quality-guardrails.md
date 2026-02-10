@@ -56,7 +56,7 @@ bun run quality:all:ci
   aliases and `require("child_process").exec(...)`)
 - No Prisma unsafe raw SQL methods (`queryRawUnsafe`, `executeRawUnsafe`, `$queryRawUnsafe`, `$executeRawUnsafe`)
 - No `Prisma.raw(...)` usage
-- No `shell: true` usage in `scripts` / `src` / `_api`
+- No `shell: true` usage in `scripts` / `src` / `_api` (including quoted key syntax)
 - No dynamic code execution (`eval(` / `new Function(` / `Function("...")`) in
   `scripts` / `src` / `_api`
 - No `debugger` statements in `scripts` / `src` / `_api`

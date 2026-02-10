@@ -154,7 +154,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     name: "shell:true command execution",
     roots: ["scripts", "src", "_api"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],
-    pattern: /shell:\s*true/g,
+    pattern: /shell:\s*true|["']shell["']\s*:\s*true/g,
     maxAllowed: 0,
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
   },
