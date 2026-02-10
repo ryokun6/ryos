@@ -1,6 +1,5 @@
 import { useRef, useEffect, useCallback } from "react";
 import * as THREE from "three";
-import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
 
 /** Duration of crossfade between cover textures (seconds) */
 const CROSSFADE_SECONDS = 1.5;
@@ -22,32 +21,27 @@ const vertexShader = `
   }
 `;
 
-// --- Fragment shader: Kali warp + beat-reactive ---
+// --- Fragment shader: Kali warp sampling from cover art ---
 const fragmentShader = `
   uniform vec2 resolution;
   uniform float time;
   uniform sampler2D coverTextureA;
   uniform sampler2D coverTextureB;
   uniform float blendFactor;
-  uniform float beat;      // accumulated beat energy (ever-increasing, drives speed)
-  uniform float beatNow;   // instantaneous 0–1 beat (drives brightness/saturation)
   varying vec2 vUv;
 
   void main() {
     float s = 0.0, v = 0.0;
     vec2 uv = (gl_FragCoord.xy / resolution.xy) * 2.0 - 1.0;
 
-    // beatAccum is a continuously increasing value driven by mic energy
-    float t = (time - 2.0) * 30.0 + beat * 120.0;
+    float t = (time - 2.0) * 80.0;
 
-    // Orbit stays stable (no shake)
     vec3 init = vec3(
       sin(t * 0.0032) * 0.3,
       0.35 - cos(t * 0.005) * 0.3,
       t * 0.002
     );
 
-    // Folds stay constant (no shake)
     float foldK = 2.04;
     float foldOffset = 0.9;
 
@@ -73,63 +67,18 @@ const fragmentShader = `
       s += 0.0625;
     }
 
-    // Saturation boost (extra on beat)
+    // Saturation boost
     float gray = dot(col, vec3(0.299, 0.587, 0.114));
-    col = mix(vec3(gray), col, 1.4 + beatNow * 0.4);
-
-    // Brightness: base dim + beat flash
-    col *= 0.7 + beatNow * 0.35;
+    col = mix(vec3(gray), col, 1.4);
 
     gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
   }
 `;
 
-// ---------- Mic beat analyser helpers ----------
-
-interface MicAnalyser {
-  analyser: AnalyserNode;
-  data: Uint8Array;
-  stream: MediaStream;
-}
-
-async function createMicAnalyser(): Promise<MicAnalyser | null> {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    await resumeAudioContext();
-    const ctx = getAudioContext();
-    const source = ctx.createMediaStreamSource(stream);
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 256; // 128 frequency bins – lightweight
-    analyser.smoothingTimeConstant = 0.4;
-    source.connect(analyser);
-    // Don't connect analyser to destination (no feedback)
-    const data = new Uint8Array(analyser.frequencyBinCount);
-    return { analyser, data, stream };
-  } catch {
-    // User denied mic or not available – shader still runs, just no reactivity
-    return null;
-  }
-}
-
-/** Return 0–1 beat intensity from the low-frequency (bass) bins */
-function getBeatLevel(mic: MicAnalyser): number {
-  mic.analyser.getByteFrequencyData(mic.data);
-  // Average the lowest 8 bins (~0-700 Hz with 256 fftSize at 44.1 kHz)
-  let sum = 0;
-  const bins = Math.min(8, mic.data.length);
-  for (let i = 0; i < bins; i++) {
-    sum += mic.data[i];
-  }
-  return sum / (bins * 255);
-}
-
-// -----------------------------------------------
-
 /**
  * Ambient background that runs the cover art through a Kali-fold warp shader,
  * producing a deep, flowing nebula-like color field derived from the album
- * artwork. Reacts to microphone bass beats for pulsing visuals.
- * Dual-texture crossfade handles track transitions smoothly.
+ * artwork. Dual-texture crossfade handles track transitions smoothly.
  */
 export function AmbientBackground({
   coverUrl,
@@ -221,7 +170,7 @@ export function AmbientBackground({
     renderer.setSize(
       Math.floor(el.clientWidth * scale),
       Math.floor(el.clientHeight * scale),
-      false, // don't set CSS style – we handle it below
+      false,
     );
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
@@ -248,8 +197,6 @@ export function AmbientBackground({
         coverTextureA: { value: defaultTex },
         coverTextureB: { value: defaultTex },
         blendFactor: { value: 0.0 },
-        beat: { value: 0.0 },
-        beatNow: { value: 0.0 },
       },
       vertexShader,
       fragmentShader,
@@ -271,15 +218,6 @@ export function AmbientBackground({
         .catch(() => {});
     }
 
-    // Mic analyser (async – shader works fine without it)
-    let mic: MicAnalyser | null = null;
-    let smoothedBeat = 0;
-    let beatAccum = 0;      // ever-increasing accumulated beat energy
-    let instantBeat = 0;    // current frame beat for brightness
-    createMicAnalyser().then((m) => {
-      mic = m;
-    });
-
     // Resize handler – use ResizeObserver to catch both browser and
     // in-app window resizes (e.g. ryOS WindowFrame dragging)
     const handleResize = () => {
@@ -297,22 +235,7 @@ export function AmbientBackground({
     const animate = () => {
       frameId = requestAnimationFrame(animate);
 
-      // Time
       shaderMaterial.uniforms.time.value = clockRef.current.getElapsedTime();
-
-      // Beat from mic
-      if (mic) {
-        const raw = getBeatLevel(mic);
-        // Smooth: fast attack, slower decay
-        smoothedBeat = raw > smoothedBeat
-          ? raw * 0.6 + smoothedBeat * 0.4   // attack
-          : raw * 0.15 + smoothedBeat * 0.85; // decay
-        instantBeat = smoothedBeat;
-        // Accumulate beat energy so speed is continuous, not snapping
-        beatAccum += smoothedBeat * 0.016; // ~1/60s per frame
-        shaderMaterial.uniforms.beat.value = beatAccum;
-        shaderMaterial.uniforms.beatNow.value = instantBeat;
-      }
 
       // Smooth blend
       const blend = blendRef.current;
@@ -332,12 +255,6 @@ export function AmbientBackground({
     return () => {
       cancelAnimationFrame(frameId);
       resizeObserver.disconnect();
-
-      // Stop mic
-      if (mic) {
-        mic.stream.getTracks().forEach((t) => { t.stop(); });
-        mic = null;
-      }
 
       if (el && renderer.domElement.parentNode === el) {
         el.removeChild(renderer.domElement);
