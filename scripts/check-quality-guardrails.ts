@@ -111,7 +111,8 @@ const GUARDRAILS: GuardrailCheck[] = [
     name: "string-based timer execution usage",
     roots: ["src", "_api", "scripts"],
     extensions: CODE_EXTENSIONS,
-    pattern: /setTimeout\(\s*['"`]|setInterval\(\s*['"`]|setImmediate\(\s*['"`]/g,
+    pattern:
+      /setTimeout\(\s*['"`]|setInterval\(\s*['"`]|setImmediate\(\s*['"`]|setTimeout\s*\?\.\s*\(\s*['"`]|setInterval\s*\?\.\s*\(\s*['"`]|setImmediate\s*\?\.\s*\(\s*['"`]/g,
     maxAllowed: 0,
   },
   {

@@ -62,7 +62,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No `insertAdjacentHTML(...)` usage in `src`",
       "No `document.write(...)` / `document.writeln(...)` usage in `src`",
       "No string-based timer execution (`setTimeout(\"...\")`, `setInterval(\"...\")`,",
-      "`setImmediate(\"...\")`, including template literals)",
+      "`setImmediate(\"...\")`, including template literals and optional-chaining calls",
       "Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below",
       "no `scripts/*.ts|js` files over 700 LOC",
       "No `execSync(` usage in `scripts` / `src` / `_api`",

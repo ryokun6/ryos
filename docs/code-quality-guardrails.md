@@ -48,7 +48,8 @@ bun run quality:all:ci
 - No `insertAdjacentHTML(...)` usage in `src`
 - No `document.write(...)` / `document.writeln(...)` usage in `src`
 - No string-based timer execution (`setTimeout("...")`, `setInterval("...")`,
-  `setImmediate("...")`, including template literals)
+  `setImmediate("...")`, including template literals and optional-chaining calls
+  like `setTimeout?.("...")`)
 - No `execSync(` usage in `scripts` / `src` / `_api`
 - No `child_process` `exec` imports in `scripts` / `src` / `_api`
   (use `execFileSync`/`spawnSync` instead)
