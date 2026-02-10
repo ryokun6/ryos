@@ -80,7 +80,7 @@ bun run quality:all:ci
 - No `debugger` statements in `scripts` / `src` / `_api`
 - No unresolved merge conflict markers (`<<<<<<<`, `|||||||`, `=======`,
   `>>>>>>>`) in tracked source, test, documentation (markdown + MDX), and
-  JSON/TOML config files
+  JSON/TOML config files (including `.github` workflow files)
   - markers are detected both with and without trailing branch labels, including trailing whitespace
 - No unresolved task markers (`TODO`, `FIXME`, `HACK`, `XXX`) in `src` / `_api`
 - Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below

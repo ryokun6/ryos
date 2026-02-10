@@ -205,7 +205,7 @@ const GUARDRAILS: GuardrailCheck[] = [
   },
   {
     name: "merge conflict markers",
-    roots: ["."],
+    roots: [".", ".github"],
     extensions: MERGE_MARKER_EXTENSIONS,
     pattern:
       /^<<<<<<<(?: .+)?\s*$|^\|\|\|\|\|\|\|(?: .+)?\s*$|^=======\s*$|^>>>>>>>(?: .+)?\s*$/gm,

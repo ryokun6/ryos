@@ -57,6 +57,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No unresolved merge conflict markers (`<<<<<<<`, `|||||||`, `=======`,",
       "with and without trailing branch labels, including trailing whitespace",
       "documentation (markdown + MDX)",
+      "including `.github` workflow files",
       "JSON/TOML config files",
       "No `innerHTML` assignments/mutations (`=`, `+=`) in `src`",
       "No `innerHTML` assignments/mutations (`=`, `+=`) in `src`\n  (including bracket-access forms)",

@@ -94,6 +94,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "YAML merge-marker failure coverage",
       "JSON merge-marker failure coverage",
       "TOML merge-marker failure coverage",
+      "`.github` workflow merge-marker failure coverage",
       "diff3 merge-base marker",
       "bare marker (`<<<<<<<` / `>>>>>>>`) failure coverage",
       "trailing-whitespace merge-marker failure coverage",
