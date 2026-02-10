@@ -80,14 +80,14 @@ const GUARDRAILS: GuardrailCheck[] = [
     name: "innerHTML assignments",
     roots: ["src"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],
-    pattern: /innerHTML\s*=/g,
+    pattern: /innerHTML\s*(?:\+?=)/g,
     maxAllowed: 0,
   },
   {
     name: "outerHTML assignments",
     roots: ["src"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],
-    pattern: /outerHTML\s*=/g,
+    pattern: /outerHTML\s*(?:\+?=)/g,
     maxAllowed: 0,
   },
   {

@@ -43,8 +43,8 @@ bun run quality:all:ci
 - No `eslint-disable` comments in `src` / `_api` / `scripts`
 - No `@ts-ignore` / `@ts-expect-error` in `src` / `_api` / `scripts`
 - No `@ts-nocheck` comments in source or scripts
-- No `innerHTML = ...` assignments in `src`
-- No `outerHTML = ...` assignments in `src`
+- No `innerHTML` assignments/mutations (`=`, `+=`) in `src`
+- No `outerHTML` assignments/mutations (`=`, `+=`) in `src`
 - No `insertAdjacentHTML(...)` usage in `src`
 - No `document.write(...)` / `document.writeln(...)` usage in `src`
 - No string-based timer execution (`setTimeout("...")`, `setInterval("...")`,

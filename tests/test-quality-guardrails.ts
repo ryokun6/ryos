@@ -956,6 +956,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when innerHTML += mutation is introduced in JavaScript", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "BadInnerHtmlAppend.js"),
+        `const el = document.createElement("div");\nel.innerHTML += "<b>x</b>";\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for innerHTML += in js, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL innerHTML assignments"),
+        "Expected innerHTML guardrail failure for += mutation"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when outerHTML assignment is introduced in JavaScript", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
