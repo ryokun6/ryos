@@ -436,6 +436,34 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when child_process exec require usage is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadExecRequire.js"),
+        `const { exec } = require("child_process");\nconsole.log(exec);\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for exec require usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes(
+          "FAIL child_process exec import usage in scripts"
+        ),
+        "Expected child_process exec import guardrail failure for require syntax"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when @ts-nocheck is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
