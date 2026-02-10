@@ -80,6 +80,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "string-based timer execution prevention",
       "optional/bracket invocation forms",
       "template-bracket access",
+      "exact-API matching",
       "spacing-tolerant invocation matching",
       "DOM assignment hardening",
       "innerHTML +=`, `outerHTML +=` including bracket access",

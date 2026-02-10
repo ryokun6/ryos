@@ -57,6 +57,7 @@ bun run quality:all:ci
   like `setTimeout?.("...")`, plus bracket/optional-bracket forms like
   `globalThis["setInterval"]("...")` / `globalThis?.["setImmediate"]("...")`,
   with spacing-tolerant matching)
+  - timer API matching is exact to reduce substring-name false positives
 - No `execSync(` usage in `scripts` / `src` / `_api`
   (spacing-tolerant invocation matching)
 - No `child_process` `exec` imports in `scripts` / `src` / `_api`

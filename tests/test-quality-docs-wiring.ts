@@ -70,6 +70,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No string-based timer execution (`setTimeout(\"...\")`, `setInterval(\"...\")`,",
       "`setImmediate(\"...\")`, including template literals and optional-chaining calls",
       "plus bracket/optional-bracket forms like",
+      "timer API matching is exact to reduce substring-name false positives",
       "spacing-tolerant invocation matching",
       "Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below",
       "applies to `.{ts,tsx,mts,cts}` files under `src` / `_api`",

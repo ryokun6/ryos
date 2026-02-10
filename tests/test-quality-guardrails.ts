@@ -2756,6 +2756,35 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   );
 
+  await runTest(
+    "passes when function name merely contains setTimeout substring",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "SafeSetTimeoutSubstring.js"),
+          "function mysetTimeout(input){ return input; }\nconsole.log(mysetTimeout(\"console.log('x')\"));\n",
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 for setTimeout substring function name, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS string-based timer execution usage"),
+          "Expected string timer guardrail pass for substring-only function names"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
   await runTest("fails when eval is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
