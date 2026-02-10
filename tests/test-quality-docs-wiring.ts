@@ -61,6 +61,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "`failedChecks` metadata.",
       "failed-check offender previews (top 5 per check)",
       "When count metadata is omitted, summary rendering derives counts from `checks`",
+      "Most content checks scan TypeScript and JavaScript sources (`.ts/.tsx/.js/.jsx`)",
     ];
 
     for (const policySnippet of requiredPolicySnippets) {
