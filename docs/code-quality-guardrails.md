@@ -110,6 +110,7 @@ shape checks (`path` + positive integer `count`).
 Validation also enforces non-negative integer check values and blocks PASS checks
 from carrying offender entries.
 Validation enforces unique check names to avoid ambiguous summaries.
+Validation enforces unique offender paths within each failed check entry.
 When count metadata is omitted, summary rendering derives counts from `checks`
 for backward compatibility.
 Workflow wiring tests additionally assert that the CI command (`quality:all:ci`)

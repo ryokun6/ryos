@@ -200,6 +200,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes non-negative integer check-value validation and PASS/offender
     incompatibility coverage.
   - includes duplicate check-name validation coverage.
+  - includes duplicate offender-path validation coverage.
 - Added README quality command wiring coverage:
   - `tests/test-quality-readme-wiring.ts`
   - included in `quality:all` via `bun run test:quality-readme`.

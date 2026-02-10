@@ -438,6 +438,37 @@ export async function runQualitySummaryWiringTests(): Promise<{
     );
   });
 
+  await runTest("fails when offender paths are duplicated within a check", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: false,
+        checks: [
+          {
+            name: "merge conflict markers",
+            status: "FAIL",
+            value: 2,
+            allowed: "<= 0",
+            offenders: [
+              { path: "src/a.ts", count: 1 },
+              { path: "src/a.ts", count: 1 },
+            ],
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("duplicate offender path"),
+          "Expected duplicate offender-path validation error"
+        );
+      }
+    );
+  });
+
   return printSummary();
 }
 

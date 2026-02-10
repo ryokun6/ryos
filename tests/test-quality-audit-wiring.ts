@@ -86,6 +86,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "`passed`/failed-status consistency",
       "PASS/offender",
       "duplicate check-name validation coverage",
+      "duplicate offender-path validation coverage",
       "inline `require(\"child_process\").exec(...)` usage",
       "false-positive prevention coverage",
       "optional-chaining `?.exec(...)` variant coverage",

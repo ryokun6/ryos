@@ -80,6 +80,7 @@ const assertQualityReport = (value: unknown): QualityReport => {
       if (!Array.isArray(candidate.offenders)) {
         throw new Error(`Check "${candidate.name}" offenders must be an array`);
       }
+      const offenderPathSet = new Set<string>();
       for (const [offenderIndex, offender] of candidate.offenders.entries()) {
         if (!offender || typeof offender !== "object") {
           throw new Error(
@@ -106,6 +107,12 @@ const assertQualityReport = (value: unknown): QualityReport => {
             `Check "${candidate.name}" offender at index ${offenderIndex} has invalid count`
           );
         }
+        if (offenderPathSet.has(offenderCandidate.path)) {
+          throw new Error(
+            `Check "${candidate.name}" includes duplicate offender path: ${offenderCandidate.path}`
+          );
+        }
+        offenderPathSet.add(offenderCandidate.path);
       }
     }
     if (
