@@ -826,6 +826,106 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest(
+    "passes when namespace child_process import exists without alias.exec usage",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "SafeExecNamespaceAlias.ts"),
+          [
+            'import * as cp from "node:child_process";',
+            "const other = { exec: () => 1 };",
+            "other.exec();",
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 without cp.exec usage, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS child_process.exec direct usage"),
+          "Expected child_process.exec direct-usage guardrail pass without alias.exec call"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
+    "passes when default child_process import exists without alias.exec usage",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "SafeExecDefaultAlias.ts"),
+          [
+            'import cp from "child_process";',
+            "const other = { exec: () => 1 };",
+            "other.exec();",
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 without default alias.exec usage, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS child_process.exec direct usage"),
+          "Expected child_process.exec direct-usage guardrail pass without default alias.exec call"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest("passes when require child_process alias exists without alias.exec usage", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "SafeExecRequireAlias.ts"),
+        [
+          'const cp = require("child_process");',
+          "const other = { exec: () => 1 };",
+          "other.exec();",
+          "console.log(cp);",
+          "",
+        ].join("\n"),
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        0,
+        `Expected pass exit code 0 without require alias.exec usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("PASS child_process.exec direct usage"),
+        "Expected child_process.exec direct-usage guardrail pass without require alias.exec call"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when unsafe Prisma raw SQL method is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "_api"), { recursive: true });

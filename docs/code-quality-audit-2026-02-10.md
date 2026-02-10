@@ -181,6 +181,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes direct `Prisma.raw(...)` usage regression coverage.
 - Guardrail wiring tests include `child_process.exec` direct-call variants,
   including namespace/default aliases and inline `require("child_process").exec(...)` usage.
+  - includes false-positive prevention coverage where alias imports exist but only
+    unrelated object `.exec(...)` calls are present.
 - Guardrail offender paths/order are stabilized (forward-slash path normalization +
   deterministic tie-break ordering for equal-size offenders).
 - Added summary renderer wiring coverage:

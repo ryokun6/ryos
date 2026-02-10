@@ -84,6 +84,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "`passed`/failed-status consistency",
       "PASS/offender",
       "inline `require(\"child_process\").exec(...)` usage",
+      "false-positive prevention coverage",
       "cap-overflow diagnostics assertions",
     ];
 

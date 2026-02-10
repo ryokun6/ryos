@@ -132,7 +132,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["scripts", "src", "_api"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],
     pattern:
-      /\bchild_process\.exec\(|\brequire\(["'](?:node:)?child_process["']\)\.exec\(|import\s+\*\s+as\s+\w+\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\.exec\(|(?:const|let|var)\s+\w+\s*=\s*require\(["'](?:node:)?child_process["']\)[\s\S]*?\.exec\(|import\s+\w+\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\.exec\(/g,
+      /\bchild_process\.exec\(|\brequire\(["'](?:node:)?child_process["']\)\.exec\(|import\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\1\.exec\(|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\(["'](?:node:)?child_process["']\)[\s\S]*?\b\2\.exec\(|import\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\3\.exec\(/g,
     maxAllowed: 0,
   },
   {

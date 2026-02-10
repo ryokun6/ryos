@@ -54,6 +54,8 @@ bun run quality:all:ci
   (use `execFileSync`/`spawnSync` instead)
 - No `child_process.exec(...)` direct usage (including namespace/default import
   aliases and `require("child_process").exec(...)`)
+  - alias detection is variable-aware to avoid false positives on unrelated
+    `.exec(...)` calls in the same file
 - No Prisma unsafe raw SQL methods (`queryRawUnsafe`, `executeRawUnsafe`, `$queryRawUnsafe`, `$executeRawUnsafe`)
 - No `Prisma.raw(...)` usage
 - No `shell: true` usage in `scripts` / `src` / `_api` (including quoted key syntax)
