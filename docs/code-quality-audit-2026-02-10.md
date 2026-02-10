@@ -91,6 +91,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - `bunx eslint . --max-warnings 0`
   - `bun run build`
   - suppression regression checks (`eslint-disable`, `@ts-ignore`, `innerHTML =`, `execSync(`)
+- ✅ Added `bun run quality:check` (script: `scripts/check-quality-guardrails.ts`) to enforce these suppression regression checks.
 
 ### Low priority
 
