@@ -90,6 +90,7 @@ bun run quality:all:ci
   - hidden root dotfiles (for example `.editorconfig`) are included in scanning
   - hidden config directories (for example `.vscode/settings.json`) are scanned too
   - markers are detected both with and without trailing branch labels, including trailing whitespace
+  - separator-only `=======` lines are treated as violations only when anchor markers are also present
 - No unresolved task markers (`TODO`, `FIXME`, `HACK`, `XXX`) in `src` / `_api`
 - Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below
   current baseline cap (19). Lower this cap as script debt is burned down.

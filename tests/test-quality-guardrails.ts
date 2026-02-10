@@ -3405,6 +3405,37 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest(
+    "passes when separator-only line appears without merge anchors",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "docs"), { recursive: true });
+        writeFileSync(
+          join(root, "docs", "separator-only.md"),
+          ["# Note", "=======", "This is a markdown divider-style line.", ""].join(
+            "\n"
+          ),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 for separator-only line without anchors, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS merge conflict markers"),
+          "Expected merge conflict marker guardrail pass for separator-only lines"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
   await runTest("fails when merge conflict markers are introduced in docs markdown", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "docs"), { recursive: true });

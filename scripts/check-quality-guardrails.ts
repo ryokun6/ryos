@@ -308,9 +308,19 @@ const gatherFiles = async (
 
 const countPatternInFile = async (
   filePath: string,
-  pattern: RegExp
+  pattern: RegExp,
+  checkName?: string
 ): Promise<number> => {
   const source = await readSource(filePath);
+  if (checkName === "merge conflict markers") {
+    const startCount = (source.match(/^<<<<<<<(?: .+)?\s*$/gm) || []).length;
+    const mergeBaseCount = (source.match(/^\|\|\|\|\|\|\|(?: .+)?\s*$/gm) || [])
+      .length;
+    const endCount = (source.match(/^>>>>>>>(?: .+)?\s*$/gm) || []).length;
+    const separatorCount = (source.match(/^=======\s*$/gm) || []).length;
+    const anchorCount = startCount + mergeBaseCount + endCount;
+    return anchorCount === 0 ? 0 : anchorCount + separatorCount;
+  }
   const matches = source.match(pattern);
   return matches ? matches.length : 0;
 };
@@ -431,7 +441,7 @@ const run = async (): Promise<void> => {
           if (check.excludeFiles?.has(relativePath)) {
             return null;
           }
-          const count = await countPatternInFile(file, check.pattern);
+          const count = await countPatternInFile(file, check.pattern, check.name);
           if (count <= 0) return null;
           return { path: relativePath, count };
         })

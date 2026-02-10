@@ -193,6 +193,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes root-level markdown merge-marker failure coverage.
   - includes root dotfile merge-marker failure coverage (`.editorconfig`).
   - includes hidden config-directory merge-marker failure coverage (`.vscode/settings.json`).
+  - includes separator-only (`=======`) non-anchor pass coverage to reduce false positives.
 - Guardrail wiring tests cover unsafe Prisma raw SQL variants
   (`$queryRawUnsafe`, `$executeRawUnsafe`) to enforce SQL safety policy.
   - includes non-prefixed `queryRawUnsafe`/`executeRawUnsafe` variant checks.
