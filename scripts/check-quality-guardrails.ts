@@ -63,6 +63,14 @@ const GUARDRAILS: GuardrailCheck[] = [
     maxAllowed: 0,
   },
   {
+    name: "@ts-nocheck comments",
+    roots: ["src", "_api", "scripts"],
+    extensions: [".ts", ".tsx", ".js"],
+    pattern: /@ts-nocheck/g,
+    maxAllowed: 0,
+    excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
+  },
+  {
     name: "innerHTML assignments",
     roots: ["src"],
     extensions: [".ts", ".tsx"],
@@ -89,6 +97,13 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["src", "_api"],
     extensions: [".ts", ".tsx"],
     pattern: /\bTODO\b|\bFIXME\b|\bHACK\b|\bXXX\b/g,
+    maxAllowed: 0,
+  },
+  {
+    name: "dynamic code execution (eval/new Function)",
+    roots: ["scripts", "src", "_api"],
+    extensions: [".ts", ".tsx"],
+    pattern: /\beval\(|new Function\(/g,
     maxAllowed: 0,
   },
 ];

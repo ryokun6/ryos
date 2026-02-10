@@ -102,7 +102,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - `bun run build`
   - suppression regression checks (`eslint-disable`, `@ts-ignore`, `innerHTML =`, `execSync(`)
 - ✅ Added `bun run quality:check` (script: `scripts/check-quality-guardrails.ts`) to enforce:
-  - suppression regression checks (`eslint-disable`, `@ts-ignore`, `innerHTML =`, `execSync(`, `shell: true`)
+  - suppression regression checks (`eslint-disable`, `@ts-ignore`, `@ts-nocheck`, `innerHTML =`, `execSync(`, `shell: true`)
+  - dynamic code execution prevention (`eval(`, `new Function(`)
   - no unresolved task markers in source (`TODO`, `FIXME`, `HACK`, `XXX`)
   - file-size regression checks (max files over 1500 LOC and max single-file LOC cap).
   - allowlisted `dangerouslySetInnerHTML` usage (only permitted in `HtmlPreview` stream renderer).

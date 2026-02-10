@@ -35,9 +35,11 @@ bun run quality:all:ci
 
 - No `eslint-disable` comments in `src` / `_api`
 - No `@ts-ignore` / `@ts-expect-error` in `src` / `_api`
+- No `@ts-nocheck` comments in source or scripts
 - No `innerHTML = ...` assignments in `src`
 - No `execSync(` usage in `scripts`
 - No `shell: true` usage in `scripts` / `src` / `_api`
+- No dynamic code execution (`eval(` / `new Function(`) in `scripts` / `src` / `_api`
 - No unresolved task markers (`TODO`, `FIXME`, `HACK`, `XXX`) in `src` / `_api`
 - File-size regression bounds for TypeScript sources
 - Allowlisted `dangerouslySetInnerHTML` usage only

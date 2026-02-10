@@ -145,10 +145,15 @@ export async function runQualityGuardrailTests(): Promise<{
       out.includes("@ts-ignore/@ts-expect-error"),
       "Missing ts-ignore guardrail"
     );
+    assert(out.includes("@ts-nocheck comments"), "Missing ts-nocheck guardrail");
     assert(out.includes("innerHTML assignments"), "Missing innerHTML guardrail");
     assert(out.includes("execSync usage in scripts"), "Missing execSync guardrail");
     assert(out.includes("shell:true command execution"), "Missing shell:true guardrail");
     assert(out.includes("TODO/FIXME/HACK markers"), "Missing task marker guardrail");
+    assert(
+      out.includes("dynamic code execution (eval/new Function)"),
+      "Missing dynamic code execution guardrail"
+    );
   });
 
   await runTest("reports maintainability and HTML allowlist checks", async () => {
@@ -274,6 +279,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when @ts-nocheck is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "NoCheck.ts"),
+        `// @ts-nocheck\nexport const value = 1;\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for @ts-nocheck usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL @ts-nocheck comments"),
+        "Expected @ts-nocheck guardrail failure"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when TODO markers are introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
@@ -294,6 +325,34 @@ export async function runQualityGuardrailTests(): Promise<{
       assert(
         (result.stdout || "").includes("FAIL TODO/FIXME/HACK markers"),
         "Expected TODO/FIXME/HACK guardrail failure"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when eval is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "BadEval.ts"),
+        `export const run = (value: string) => eval(value);\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for eval usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes(
+          "FAIL dynamic code execution (eval/new Function)"
+        ),
+        "Expected dynamic code execution guardrail failure"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });
