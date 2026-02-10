@@ -116,6 +116,14 @@ export async function runQualityWorkflowWiringTests(): Promise<{
       !/run:\s*bun run build/.test(source),
       "Expected workflow to avoid duplicating build command inline"
     );
+    assert(
+      !/run:\s*bun run quality:check(?:\s|$)/.test(source),
+      "Expected workflow to avoid standalone quality:check invocation"
+    );
+    assert(
+      !/run:\s*bun run quality:verify(?:\s|$)/.test(source),
+      "Expected workflow to avoid standalone quality:verify invocation"
+    );
   });
 
   await runTest("workflow emits markdown summary from generated JSON report", async () => {
