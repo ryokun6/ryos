@@ -43,6 +43,16 @@ const runQualityCheckJson = (qualityRoot?: string) =>
     },
   });
 
+const runQualitySummary = (reportPath: string) =>
+  spawnSync("bun", ["run", "scripts/quality-report-summary.ts", reportPath], {
+    cwd: process.cwd(),
+    encoding: "utf-8",
+    stdio: "pipe",
+    env: {
+      ...process.env,
+    },
+  });
+
 const withTempQualityRoot = (setup: (root: string) => void): string => {
   const root = mkdtempSync(join(tmpdir(), "ryos-quality-guardrails-"));
   setup(root);
@@ -92,6 +102,35 @@ export async function runQualityGuardrailTests(): Promise<{
       (parsed.checks || []).some((check) => check.name === "eslint-disable comments"),
       "Expected eslint-disable guardrail in JSON checks"
     );
+  });
+
+  await runTest("quality:summary renders markdown from JSON report", async () => {
+    const jsonResult = runQualityCheckJson();
+    assertEq(jsonResult.status, 0, "Expected JSON report command to pass");
+
+    const tmpDir = mkdtempSync(join(tmpdir(), "ryos-quality-summary-"));
+    const reportPath = join(tmpDir, "quality-report.json");
+    writeFileSync(reportPath, jsonResult.stdout || "{}", "utf-8");
+
+    try {
+      const summaryResult = runQualitySummary(reportPath);
+      assertEq(summaryResult.status, 0, "Expected summary command to pass");
+      const out = summaryResult.stdout || "";
+      assert(
+        out.includes("## Quality Guardrails Report"),
+        "Expected markdown heading in summary output"
+      );
+      assert(
+        out.includes("| Check | Status | Value | Allowed |"),
+        "Expected markdown table header in summary output"
+      );
+      assert(
+        out.includes("eslint-disable comments"),
+        "Expected known guardrail row in summary output"
+      );
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 
   console.log(section("Guardrail categories"));
