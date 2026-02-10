@@ -160,6 +160,10 @@ export async function runQualityGuardrailTests(): Promise<{
     const result = runQualityCheck();
 
     const out = result.stdout || "";
+    assert(
+      out.includes("very large TypeScript files"),
+      "Missing 1000+ LOC file-size guardrail"
+    );
     assert(out.includes("large TypeScript files"), "Missing file-size guardrail");
     assert(
       out.includes("dangerouslySetInnerHTML usage"),
@@ -443,6 +447,35 @@ export async function runQualityGuardrailTests(): Promise<{
       assert(
         (result.stdout || "").includes("FAIL large TypeScript files"),
         "Expected large TypeScript files guardrail failure"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when very-large file guardrail is exceeded", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      // Exceed maxFilesOverThreshold (29) with 30 files at 1001 LOC each.
+      for (let i = 0; i < 30; i++) {
+        writeFileWithLineCount(
+          join(root, "src", `Huge${i}.ts`),
+          1001,
+          "export const y = 1;"
+        );
+      }
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for very-large file count, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL very large TypeScript files"),
+        "Expected very large TypeScript files guardrail failure"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });

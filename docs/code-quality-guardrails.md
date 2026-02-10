@@ -46,6 +46,9 @@ bun run quality:all:ci
 - No dynamic code execution (`eval(` / `new Function(`) in `scripts` / `src` / `_api`
 - No unresolved task markers (`TODO`, `FIXME`, `HACK`, `XXX`) in `src` / `_api`
 - File-size regression bounds for TypeScript sources
+  - max files over 1000 LOC
+  - max files over 1500 LOC
+  - max single-file LOC cap
 - Allowlisted `dangerouslySetInnerHTML` usage only
 - Allowlisted `biome-ignore lint/correctness/useExhaustiveDependencies` usage only
 

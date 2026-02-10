@@ -105,7 +105,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - suppression regression checks (`eslint-disable`, `@ts-ignore`, `@ts-nocheck`, `innerHTML =`, `execSync(`, `shell: true`)
   - dynamic code execution prevention (`eval(`, `new Function(`)
   - no unresolved task markers in source (`TODO`, `FIXME`, `HACK`, `XXX`)
-  - file-size regression checks (max files over 1500 LOC and max single-file LOC cap).
+  - file-size regression checks (max files over 1000 LOC, max files over 1500 LOC,
+    and max single-file LOC cap).
   - allowlisted `dangerouslySetInnerHTML` usage (only permitted in `HtmlPreview` stream renderer).
   - allowlisted `biome-ignore lint/correctness/useExhaustiveDependencies` usage (currently only permitted in `useStreamingFetch`).
 - Added machine-readable output mode: `bun run quality:check:json`.

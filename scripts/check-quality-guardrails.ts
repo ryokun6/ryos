@@ -108,14 +108,24 @@ const GUARDRAILS: GuardrailCheck[] = [
   },
 ];
 
-const FILE_SIZE_GUARDRAIL: FileSizeGuardrail = {
-  name: "large TypeScript files",
-  roots: ["src", "_api"],
-  extensions: [".ts", ".tsx"],
-  lineThreshold: 1500,
-  maxFilesOverThreshold: 14,
-  maxSingleFileLines: 2600,
-};
+const FILE_SIZE_GUARDRAILS: FileSizeGuardrail[] = [
+  {
+    name: "very large TypeScript files",
+    roots: ["src", "_api"],
+    extensions: [".ts", ".tsx"],
+    lineThreshold: 1000,
+    maxFilesOverThreshold: 29,
+    maxSingleFileLines: 2600,
+  },
+  {
+    name: "large TypeScript files",
+    roots: ["src", "_api"],
+    extensions: [".ts", ".tsx"],
+    lineThreshold: 1500,
+    maxFilesOverThreshold: 14,
+    maxSingleFileLines: 2600,
+  },
+];
 
 const DANGEROUSLY_SET_INNER_HTML_GUARDRAIL: AllowlistedPatternGuardrail = {
   name: "dangerouslySetInnerHTML usage",
@@ -285,59 +295,61 @@ const run = async (): Promise<void> => {
     }
   }
 
-  const sizeCandidateFiles = (
-    await Promise.all(
-      FILE_SIZE_GUARDRAIL.roots.map((root) =>
-        gatherFiles(join(cwd, root), FILE_SIZE_GUARDRAIL.extensions)
+  for (const fileSizeGuardrail of FILE_SIZE_GUARDRAILS) {
+    const sizeCandidateFiles = (
+      await Promise.all(
+        fileSizeGuardrail.roots.map((root) =>
+          gatherFiles(join(cwd, root), fileSizeGuardrail.extensions)
+        )
       )
-    )
-  ).flat();
+    ).flat();
 
-  const largeFiles = (
-    await Promise.all(
-      sizeCandidateFiles.map(async (file) => {
-        const lines = await countLinesInFile(file);
-        if (lines <= FILE_SIZE_GUARDRAIL.lineThreshold) {
-          return null;
-        }
-        return {
-          path: relative(cwd, file),
-          lines,
-        };
-      })
-    )
-  ).filter((file): file is { path: string; lines: number } => file !== null);
+    const largeFiles = (
+      await Promise.all(
+        sizeCandidateFiles.map(async (file) => {
+          const lines = await countLinesInFile(file);
+          if (lines <= fileSizeGuardrail.lineThreshold) {
+            return null;
+          }
+          return {
+            path: relative(cwd, file),
+            lines,
+          };
+        })
+      )
+    ).filter((file): file is { path: string; lines: number } => file !== null);
 
-  largeFiles.sort((a, b) => b.lines - a.lines);
-  const largestFileLines = largeFiles[0]?.lines ?? 0;
-  const largeFileCount = largeFiles.length;
-  const fileSizeOk =
-    largeFileCount <= FILE_SIZE_GUARDRAIL.maxFilesOverThreshold &&
-    largestFileLines <= FILE_SIZE_GUARDRAIL.maxSingleFileLines;
+    largeFiles.sort((a, b) => b.lines - a.lines);
+    const largestFileLines = largeFiles[0]?.lines ?? 0;
+    const largeFileCount = largeFiles.length;
+    const fileSizeOk =
+      largeFileCount <= fileSizeGuardrail.maxFilesOverThreshold &&
+      largestFileLines <= fileSizeGuardrail.maxSingleFileLines;
 
-  const fileSizeStatus = fileSizeOk ? "PASS" : "FAIL";
-  results.push({
-    name: FILE_SIZE_GUARDRAIL.name,
-    status: fileSizeStatus,
-    value: largeFileCount,
-    allowed: `files <= ${FILE_SIZE_GUARDRAIL.maxFilesOverThreshold}; largest <= ${FILE_SIZE_GUARDRAIL.maxSingleFileLines}`,
-    offenders: fileSizeStatus === "FAIL" ? largeFiles : undefined,
-  });
+    const fileSizeStatus = fileSizeOk ? "PASS" : "FAIL";
+    results.push({
+      name: fileSizeGuardrail.name,
+      status: fileSizeStatus,
+      value: largeFileCount,
+      allowed: `files <= ${fileSizeGuardrail.maxFilesOverThreshold}; largest <= ${fileSizeGuardrail.maxSingleFileLines}`,
+      offenders: fileSizeStatus === "FAIL" ? largeFiles : undefined,
+    });
 
-  if (!jsonOutput) {
-    console.log(
-      `${fileSizeStatus.padEnd(4)} ${FILE_SIZE_GUARDRAIL.name}: ${largeFileCount} files over ${FILE_SIZE_GUARDRAIL.lineThreshold} LOC (allowed <= ${FILE_SIZE_GUARDRAIL.maxFilesOverThreshold}); largest file ${largestFileLines} LOC (allowed <= ${FILE_SIZE_GUARDRAIL.maxSingleFileLines})`
-    );
-  }
-
-  if (!fileSizeOk) {
-    hasViolation = true;
     if (!jsonOutput) {
-      for (const file of largeFiles.slice(0, 20)) {
-        console.log(`      - ${file.path} (${file.lines} LOC)`);
-      }
-      if (largeFiles.length > 20) {
-        console.log(`      ... and ${largeFiles.length - 20} more files`);
+      console.log(
+        `${fileSizeStatus.padEnd(4)} ${fileSizeGuardrail.name}: ${largeFileCount} files over ${fileSizeGuardrail.lineThreshold} LOC (allowed <= ${fileSizeGuardrail.maxFilesOverThreshold}); largest file ${largestFileLines} LOC (allowed <= ${fileSizeGuardrail.maxSingleFileLines})`
+      );
+    }
+
+    if (!fileSizeOk) {
+      hasViolation = true;
+      if (!jsonOutput) {
+        for (const file of largeFiles.slice(0, 20)) {
+          console.log(`      - ${file.path} (${file.lines} LOC)`);
+        }
+        if (largeFiles.length > 20) {
+          console.log(`      ... and ${largeFiles.length - 20} more files`);
+        }
       }
     }
   }
