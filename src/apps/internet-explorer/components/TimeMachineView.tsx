@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Stack, Export } from "@phosphor-icons/react";
+import { X, Sparkle, Export } from "@phosphor-icons/react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import { Button } from "@/components/ui/button";
 import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
@@ -22,6 +22,7 @@ import { useEventListener } from "@/hooks/useEventListener";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import TimeNavigationControls from "./TimeNavigationControls";
 import { useTranslation } from "react-i18next";
+import { useThemeStore } from "@/stores/useThemeStore";
 import { abortableFetch } from "@/utils/abortableFetch";
 
 // Define type for preview content source
@@ -45,6 +46,8 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
   currentSelectedYear, // Destructure the new prop
 }) => {
   const { t } = useTranslation();
+  const currentTheme = useThemeStore((s) => s.current);
+  const isMacTheme = currentTheme === "macosx";
   // Index of the year currently in focus (0 is the newest/frontmost)
   const [activeYearIndex, setActiveYearIndex] = useState<number>(0);
   const [scrollState, setScrollState] = useState({
@@ -1091,10 +1094,19 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                     </span>
                   )}
                 </p>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="rounded-full px-2 py-0.5 h-6"
+                <button
+                  type="button"
+                  className={cn(
+                    "relative overflow-hidden rounded-full px-3 py-1 h-7 text-xs font-medium transition-colors",
+                    isMacTheme
+                      ? "shadow-lg text-white/70 hover:text-white"
+                      : "border border-white/10 backdrop-blur-sm shadow-lg bg-neutral-800/35 text-white/70 hover:text-white hover:bg-white/10",
+                    isGoButtonDisabled && "opacity-30 pointer-events-none"
+                  )}
+                  style={isMacTheme ? {
+                    background: "linear-gradient(to bottom, rgba(60, 60, 60, 0.6), rgba(30, 30, 30, 0.5))",
+                    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+                  } : undefined}
                   disabled={isGoButtonDisabled}
                   onClick={() => {
                     if (activeYear) {
@@ -1104,8 +1116,23 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                     }
                   }}
                 >
-                  {t("apps.internet-explorer.travel")}
-                </Button>
+                  {/* Aqua shine overlay */}
+                  {isMacTheme && (
+                    <div
+                      className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+                      style={{
+                        top: "2px",
+                        height: "35%",
+                        width: "calc(100% - 16px)",
+                        borderRadius: "100px",
+                        background: "linear-gradient(rgba(255,255,255,0.06), rgba(255,255,255,0.01))",
+                        filter: "blur(0.5px)",
+                        zIndex: 2,
+                      }}
+                    />
+                  )}
+                  <span className="relative z-10">{t("apps.internet-explorer.travel")}</span>
+                </button>
               </div>
 
               {/* Right shader menu - Always shown */}
@@ -1118,7 +1145,7 @@ const TimeMachineView: React.FC<TimeMachineViewProps> = ({
                       size="icon"
                       className="h-7 w-7 rounded-full hover:bg-white/10 opacity-60 hover:opacity-100 transition-opacity"
                     >
-                      <Stack size={16} className="text-neutral-300" weight="bold" />
+                      <Sparkle size={16} className="text-neutral-300" weight="bold" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent

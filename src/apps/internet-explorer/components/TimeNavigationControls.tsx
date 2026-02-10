@@ -104,7 +104,7 @@ const TimeNavigationControls: React.FC<TimeNavigationControlsProps> = ({
               disabled={isNowDisabled}
               aria-label={t("apps.internet-explorer.goToNow")}
             >
-              <Circle size={24} weight="fill" />
+              <Circle size={10} weight="fill" />
             </button>
           </TooltipTrigger>
           <TooltipContent side={layout === "vertical" ? "right" : "bottom"}>
