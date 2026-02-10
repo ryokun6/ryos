@@ -73,6 +73,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "When count metadata is omitted, summary rendering derives counts from `checks`",
       "Most content checks scan TypeScript and JavaScript sources (`.ts/.tsx/.js/.jsx`)",
       "quality audit report wiring tests",
+      "baseline cap (19)",
     ];
 
     for (const policySnippet of requiredPolicySnippets) {

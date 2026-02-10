@@ -97,7 +97,7 @@ export async function runQualityGuardrailTests(): Promise<{
       passed?: boolean;
       totalChecks?: number;
       failedChecks?: number;
-      checks?: Array<{ name: string }>;
+      checks?: Array<{ name: string; allowed?: string }>;
     };
     assert(parsed.schemaVersion === 1, "Expected schemaVersion=1 in JSON output");
     assert(parsed.passed === true, "Expected JSON output to mark passed=true");
@@ -153,6 +153,14 @@ export async function runQualityGuardrailTests(): Promise<{
         `Expected ${checkName} guardrail in JSON checks`
       );
     }
+    const scriptMarkerCheck = (parsed.checks || []).find(
+      (check) => check.name === "TODO/FIXME/HACK markers in scripts"
+    );
+    assert(!!scriptMarkerCheck, "Expected script task-marker guardrail entry");
+    assert(
+      (scriptMarkerCheck?.allowed || "").includes("<= 19"),
+      "Expected script task-marker guardrail allowed threshold to include <= 19"
+    );
   });
 
   await runTest("quality:check JSON check ordering is deterministic", async () => {
