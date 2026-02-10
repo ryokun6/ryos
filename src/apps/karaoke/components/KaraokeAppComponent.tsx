@@ -369,10 +369,21 @@ export function KaraokeAppComponent({
             />
           )}
 
-          {/* Ambient blurred cover background */}
+          {/* Warp shader background */}
           {displayMode === DisplayMode.Shader && currentTrack && (
             <AmbientBackground
               coverUrl={coverUrl}
+              variant="warp"
+              isActive={!!currentTrack}
+              className="absolute inset-0 z-[5]"
+            />
+          )}
+
+          {/* Liquid shader background */}
+          {displayMode === DisplayMode.Liquid && currentTrack && (
+            <AmbientBackground
+              coverUrl={coverUrl}
+              variant="liquid"
               isActive={!!currentTrack}
               className="absolute inset-0 z-[5]"
             />
@@ -831,10 +842,21 @@ export function KaraokeAppComponent({
                   />
                 )}
 
-                {/* Ambient blurred cover background (fullscreen) */}
+                {/* Warp shader background (fullscreen) */}
                 {displayMode === DisplayMode.Shader && currentTrack && (
                   <AmbientBackground
                     coverUrl={coverUrl}
+                    variant="warp"
+                    isActive={!!currentTrack}
+                    className="fixed inset-0 z-[5]"
+                  />
+                )}
+
+                {/* Liquid shader background (fullscreen) */}
+                {displayMode === DisplayMode.Liquid && currentTrack && (
+                  <AmbientBackground
+                    coverUrl={coverUrl}
+                    variant="liquid"
                     isActive={!!currentTrack}
                     className="fixed inset-0 z-[5]"
                   />

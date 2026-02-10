@@ -304,10 +304,21 @@ export function IpodScreen({
               />
             )}
 
-            {/* Ambient blurred cover background */}
+            {/* Warp shader background */}
             {displayMode === DisplayMode.Shader && (
               <AmbientBackground
                 coverUrl={coverUrl}
+                variant="warp"
+                isActive={showVideo}
+                className="absolute inset-0 z-[5]"
+              />
+            )}
+
+            {/* Liquid shader background */}
+            {displayMode === DisplayMode.Liquid && (
+              <AmbientBackground
+                coverUrl={coverUrl}
+                variant="liquid"
                 isActive={showVideo}
                 className="absolute inset-0 z-[5]"
               />

@@ -620,6 +620,15 @@ export function KaraokeMenuBar({
               >
                 {t("apps.ipod.menu.displayShader")}
               </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={displayMode === DisplayMode.Liquid}
+                onCheckedChange={(checked) => {
+                  if (checked) setDisplayMode(DisplayMode.Liquid);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.displayLiquid")}
+              </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>
 

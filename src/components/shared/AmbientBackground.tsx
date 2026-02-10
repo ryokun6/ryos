@@ -4,15 +4,19 @@ import * as THREE from "three";
 /** Duration of crossfade between cover textures (seconds) */
 const CROSSFADE_SECONDS = 1.5;
 
+export type AmbientVariant = "liquid" | "warp";
+
 interface AmbientBackgroundProps {
   /** URL of the cover art to use as color source */
   coverUrl: string | null;
+  /** Shader variant: "liquid" (Apple Music style) or "warp" (Kali fractal) */
+  variant?: AmbientVariant;
   /** Whether the background should be active/animating */
   isActive?: boolean;
   className?: string;
 }
 
-// --- Vertex shader (shared fullscreen quad) ---
+// --- Shared vertex shader ---
 const vertexShader = `
   varying vec2 vUv;
   void main() {
@@ -21,8 +25,101 @@ const vertexShader = `
   }
 `;
 
-// --- Fragment shader: Kali warp sampling from cover art ---
-const fragmentShader = `
+// =====================================================================
+// LIQUID – Apple Music-style noise-based UV warping with bloom & swirl
+// =====================================================================
+const liquidFragmentShader = `
+  uniform vec2 resolution;
+  uniform float time;
+  uniform sampler2D coverTextureA;
+  uniform sampler2D coverTextureB;
+  uniform float blendFactor;
+  varying vec2 vUv;
+
+  const float DISTORTION = 0.22;
+  const float SPEED      = 0.2;
+  const float BLOOM      = 0.4;
+  const float ZOOM       = 1.4;
+  const float SWIRL      = 1.0;
+  const float SATURATION = 1.4;
+  const float BLUR       = 0.16;   // blur radius in UV space
+
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(
+      mix(hash(i),                   hash(i + vec2(1.0, 0.0)), f.x),
+      mix(hash(i + vec2(0.0, 1.0)),  hash(i + vec2(1.0, 1.0)), f.x),
+      f.y
+    );
+  }
+  float fbm(vec2 p) {
+    return noise(p) * 0.5 + noise(p * 2.0) * 0.25 + noise(p * 4.0) * 0.125;
+  }
+
+  void main() {
+    vec2 uv = gl_FragCoord.xy / resolution.xy;
+    float aspect = resolution.x / resolution.y;
+    vec2 centered = (uv - 0.5) * vec2(aspect, 1.0);
+    float t = time * SPEED;
+
+    vec2 texUV = (uv - 0.5) / ZOOM + 0.5;
+    texUV += vec2(sin(t * 0.7) * 0.015, cos(t * 0.5) * 0.015);
+
+    vec2 nc = centered * 2.5 + t * 0.4;
+    vec2 distort = (vec2(fbm(nc), fbm(nc + 73.0)) - 0.5) * DISTORTION;
+
+    float dist = length(centered);
+    float angle = dist * SWIRL * sin(t * 0.35);
+    float ca = cos(angle), sa = sin(angle);
+    distort = vec2(ca * distort.x - sa * distort.y,
+                   sa * distort.x + ca * distort.y);
+
+    texUV = clamp(texUV + distort, 0.002, 0.998);
+
+    // Blur: 3 concentric rings (12 taps + center) – regular but no grid
+    vec3 col = vec3(0.0);
+    col += mix(texture2D(coverTextureA, texUV).rgb, texture2D(coverTextureB, texUV).rgb, blendFactor);
+    float total = 1.0;
+    for (int ring = 1; ring <= 3; ring++) {
+      float r = BLUR * float(ring) / 3.0;
+      float w = 1.0 / float(ring);          // inner rings weighted more
+      int taps = ring * 4;                   // 4, 8, 12 taps per ring
+      for (int i = 0; i < 12; i++) {
+        if (i >= taps) break;
+        float a = float(i) * 6.28318 / float(taps);
+        vec2 sampleUV = clamp(texUV + vec2(cos(a), sin(a)) * r, 0.002, 0.998);
+        col += mix(
+          texture2D(coverTextureA, sampleUV).rgb,
+          texture2D(coverTextureB, sampleUV).rgb,
+          blendFactor
+        ) * w;
+        total += w;
+      }
+    }
+    col /= total;
+
+    float luma = dot(col, vec3(0.299, 0.587, 0.114));
+    col += col * smoothstep(0.35, 1.0, luma) * BLOOM;
+
+    float gray = dot(col, vec3(0.299, 0.587, 0.114));
+    col = mix(vec3(gray), col, SATURATION);
+
+    float vig = 1.0 - dot(centered * 0.7, centered * 0.7);
+    col *= smoothstep(0.0, 1.0, vig);
+
+    gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+  }
+`;
+
+// =====================================================================
+// WARP – Kali-fold fractal sampling cover art for deep nebula colors
+// =====================================================================
+const warpFragmentShader = `
   uniform vec2 resolution;
   uniform float time;
   uniform sampler2D coverTextureA;
@@ -33,7 +130,6 @@ const fragmentShader = `
   void main() {
     float s = 0.0, v = 0.0;
     vec2 uv = (gl_FragCoord.xy / resolution.xy) * 2.0 - 1.0;
-
     float t = (time - 2.0) * 80.0;
 
     vec3 init = vec3(
@@ -42,16 +138,13 @@ const fragmentShader = `
       t * 0.002
     );
 
-    float foldK = 2.04;
-    float foldOffset = 0.9;
-
     vec3 col = vec3(0.0);
     for (int r = 0; r < 40; r++) {
       vec3 p = init + s * vec3(uv, 0.05);
       p.z = fract(p.z);
 
       for (int i = 0; i < 6; i++) {
-        p = abs(p * foldK) / dot(p, p) - foldOffset;
+        p = abs(p * 2.04) / dot(p, p) - 0.9;
       }
 
       v += pow(dot(p, p), 0.7) * 0.06;
@@ -67,7 +160,6 @@ const fragmentShader = `
       s += 0.0625;
     }
 
-    // Saturation boost
     float gray = dot(col, vec3(0.299, 0.587, 0.114));
     col = mix(vec3(gray), col, 1.4);
 
@@ -76,19 +168,21 @@ const fragmentShader = `
 `;
 
 /**
- * Ambient background that runs the cover art through a Kali-fold warp shader,
- * producing a deep, flowing nebula-like color field derived from the album
- * artwork. Dual-texture crossfade handles track transitions smoothly.
+ * Cover-art visualizer with two shader variants:
+ * - **liquid**: Apple Music-style smooth noise warping, bloom, swirl
+ * - **warp**: Kali-fold fractal producing deep nebula-like color fields
+ *
+ * Dual-texture crossfade handles track transitions smoothly.
  */
 export function AmbientBackground({
   coverUrl,
+  variant = "liquid",
   isActive = true,
   className = "",
 }: AmbientBackgroundProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const clockRef = useRef(new THREE.Clock());
 
-  // Refs for cross-effect communication
   const currentUrlRef = useRef<string | null>(null);
   const showingBRef = useRef(false);
   const blendRef = useRef({ target: 0, current: 0 });
@@ -145,9 +239,7 @@ export function AmbientBackground({
         }
         showingBRef.current = !showingBRef.current;
       })
-      .catch(() => {
-        /* texture failed to load – keep current */
-      });
+      .catch(() => {});
   }, [coverUrl, loadTexture]);
 
   // ---------- Three.js setup & animation ----------
@@ -156,8 +248,6 @@ export function AmbientBackground({
     if (!isActive || !mountRef.current) return;
 
     const el = mountRef.current;
-
-    // Scene
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
@@ -166,7 +256,7 @@ export function AmbientBackground({
       alpha: true,
       powerPreference: "high-performance",
     });
-    const scale = 0.5; // render at half resolution
+    const scale = 0.5;
     renderer.setSize(
       Math.floor(el.clientWidth * scale),
       Math.floor(el.clientHeight * scale),
@@ -176,7 +266,6 @@ export function AmbientBackground({
     renderer.domElement.style.height = "100%";
     el.appendChild(renderer.domElement);
 
-    // 1×1 black default texture
     const defaultTex = new THREE.DataTexture(
       new Uint8Array([0, 0, 0, 255]),
       1,
@@ -184,6 +273,8 @@ export function AmbientBackground({
       THREE.RGBAFormat,
     );
     defaultTex.needsUpdate = true;
+
+    const chosenFragment = variant === "warp" ? warpFragmentShader : liquidFragmentShader;
 
     const shaderMaterial = new THREE.ShaderMaterial({
       uniforms: {
@@ -199,7 +290,7 @@ export function AmbientBackground({
         blendFactor: { value: 0.0 },
       },
       vertexShader,
-      fragmentShader,
+      fragmentShader: chosenFragment,
     });
 
     materialsRef.current.material = shaderMaterial;
@@ -208,7 +299,6 @@ export function AmbientBackground({
     const quad = new THREE.Mesh(geometry, shaderMaterial);
     scene.add(quad);
 
-    // Load initial cover texture into slot A
     if (currentUrlRef.current) {
       loadTexture(currentUrlRef.current)
         .then((tex) => {
@@ -218,8 +308,6 @@ export function AmbientBackground({
         .catch(() => {});
     }
 
-    // Resize handler – use ResizeObserver to catch both browser and
-    // in-app window resizes (e.g. ryOS WindowFrame dragging)
     const handleResize = () => {
       const w = Math.floor(el.clientWidth * scale);
       const h = Math.floor(el.clientHeight * scale);
@@ -230,14 +318,11 @@ export function AmbientBackground({
     const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(el);
 
-    // Animation loop
     let frameId: number;
     const animate = () => {
       frameId = requestAnimationFrame(animate);
-
       shaderMaterial.uniforms.time.value = clockRef.current.getElapsedTime();
 
-      // Smooth blend
       const blend = blendRef.current;
       const step = 1 / (CROSSFADE_SECONDS * 60);
       if (blend.current < blend.target) {
@@ -251,11 +336,9 @@ export function AmbientBackground({
     };
     animate();
 
-    // Cleanup
     return () => {
       cancelAnimationFrame(frameId);
       resizeObserver.disconnect();
-
       if (el && renderer.domElement.parentNode === el) {
         el.removeChild(renderer.domElement);
       }
@@ -268,7 +351,7 @@ export function AmbientBackground({
       materialsRef.current = { material: null, textureA: null, textureB: null };
       renderer.dispose();
     };
-  }, [isActive, loadTexture]);
+  }, [isActive, variant, loadTexture]);
 
   if (!isActive) return null;
 

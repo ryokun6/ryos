@@ -510,10 +510,21 @@ export function IpodAppComponent({
                     />
                   )}
 
-                  {/* Ambient blurred cover background (fullscreen) */}
+                  {/* Warp shader background (fullscreen) */}
                   {displayMode === DisplayMode.Shader && tracks[currentIndex] && (
                     <AmbientBackground
                       coverUrl={fullscreenCoverUrl}
+                      variant="warp"
+                      isActive={!!tracks[currentIndex]}
+                      className="fixed inset-0 z-[5]"
+                    />
+                  )}
+
+                  {/* Liquid shader background (fullscreen) */}
+                  {displayMode === DisplayMode.Liquid && tracks[currentIndex] && (
+                    <AmbientBackground
+                      coverUrl={fullscreenCoverUrl}
+                      variant="liquid"
                       isActive={!!tracks[currentIndex]}
                       className="fixed inset-0 z-[5]"
                     />
