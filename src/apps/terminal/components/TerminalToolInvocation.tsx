@@ -245,6 +245,8 @@ export function TerminalToolInvocation({
       } else {
         displayResultMessage = t("apps.chats.toolCalls.settingsUpdated");
       }
+    } else if (toolName === "generateHtml") {
+      displayResultMessage = t("apps.chats.toolCalls.preparingHtmlPreview");
     } else if (typeof output === "string" && output.trim().length > 0) {
       // Don't show raw HTML in result message for generateHtml
       if (toolName !== "generateHtml") {
