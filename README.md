@@ -86,6 +86,9 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 bun dev              # Start development server
 bun run build        # Build for production
 bun run lint         # Run ESLint
+bun run quality:check # Run code-quality guardrails (suppressions + file-size)
+bun run test:songs-utils # Run sanitizer runtime regression tests
+bun run test:chat-wiring # Run chat wiring regression suite
 bun run preview      # Preview production build
 bun run dev:vercel   # Run with Vercel dev server (recommended); ensures api -> _api for local dev only
 ```
