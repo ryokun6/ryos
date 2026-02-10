@@ -152,6 +152,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   non-code file safety checks in configured roots.
 - Guardrail wiring tests cover unsafe Prisma raw SQL variants
   (`$queryRawUnsafe`, `$executeRawUnsafe`) to enforce SQL safety policy.
+  - includes non-prefixed `queryRawUnsafe`/`executeRawUnsafe` variant checks.
 - Guardrail offender paths/order are stabilized (forward-slash path normalization +
   deterministic tie-break ordering for equal-size offenders).
 - Added summary renderer wiring coverage:
