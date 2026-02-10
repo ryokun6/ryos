@@ -117,6 +117,13 @@ const GUARDRAILS: GuardrailCheck[] = [
     maxAllowed: 0,
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
   },
+  {
+    name: "merge conflict markers",
+    roots: ["scripts", "src", "_api", "tests"],
+    extensions: [".ts", ".tsx", ".js", ".md", ".yml", ".yaml"],
+    pattern: /^<<<<<<< .+|^=======\s*$|^>>>>>>> .+/gm,
+    maxAllowed: 0,
+  },
 ];
 
 const FILE_SIZE_GUARDRAILS: FileSizeGuardrail[] = [

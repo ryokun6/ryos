@@ -155,6 +155,7 @@ export async function runQualityGuardrailTests(): Promise<{
       "Missing dynamic code execution guardrail"
     );
     assert(out.includes("debugger statements"), "Missing debugger guardrail");
+    assert(out.includes("merge conflict markers"), "Missing merge marker guardrail");
   });
 
   await runTest("reports maintainability and HTML allowlist checks", async () => {
@@ -384,6 +385,40 @@ export async function runQualityGuardrailTests(): Promise<{
       assert(
         (result.stdout || "").includes("FAIL debugger statements"),
         "Expected debugger guardrail failure"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when merge conflict markers are introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "MergeConflict.ts"),
+        [
+          "export const value = 1;",
+          "<<<<<<< HEAD",
+          "export const a = 1;",
+          "=======",
+          "export const a = 2;",
+          ">>>>>>> feature-branch",
+          "",
+        ].join("\n"),
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for merge markers, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL merge conflict markers"),
+        "Expected merge conflict marker guardrail failure"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });
