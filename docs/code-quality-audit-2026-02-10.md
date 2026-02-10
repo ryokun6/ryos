@@ -130,6 +130,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   critical guardrails (security, merge safety, and maintainability thresholds).
 - Guardrail wiring tests validate JSON offender schema contract (`{ path, count }`)
   across different failing guardrail types.
+- Guardrail offender paths/order are stabilized (forward-slash path normalization +
+  deterministic tie-break ordering for equal-size offenders).
 - Added summary renderer wiring coverage:
   - `tests/test-quality-summary-wiring.ts`
   - included in `quality:all` via `bun run test:quality-summary`.

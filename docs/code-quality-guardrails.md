@@ -72,6 +72,7 @@ check counts, failed-check offender previews (top 5 per check), and a fallback
 message if the JSON report was not produced.
 `quality-report.json` offender entries use a consistent `{ path, count }` shape
 across guardrails (for file-size checks, `count` is the offending LOC value).
+Offender paths are normalized to forward slashes and emitted in deterministic order.
 `quality-report.json` also includes `totalChecks` and `failedChecks` metadata.
 Summary rendering now validates report schema and fails fast on malformed input
 to prevent silent CI summary corruption.

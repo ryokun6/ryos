@@ -355,14 +355,14 @@ const run = async (): Promise<void> => {
             return null;
           }
           return {
-            path: relative(cwd, file),
+            path: relative(cwd, file).replaceAll("\\", "/"),
             count: lines,
           };
         })
       )
     ).filter((file): file is { path: string; count: number } => file !== null);
 
-    largeFiles.sort((a, b) => b.count - a.count);
+    largeFiles.sort((a, b) => b.count - a.count || a.path.localeCompare(b.path));
     const largestFileLines = largeFiles[0]?.count ?? 0;
     const largeFileCount = largeFiles.length;
     const fileSizeOk =

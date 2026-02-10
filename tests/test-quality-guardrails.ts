@@ -654,6 +654,49 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest(
+    "reports very-large file offenders in deterministic tie-break order",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src"), { recursive: true });
+        // Trigger the 1500+ LOC threshold with equal line counts.
+        for (let i = 0; i < 13; i++) {
+          writeFileWithLineCount(
+            join(root, "src", `m-mid-${i}.ts`),
+            1501,
+            "export const q = 1;"
+          );
+        }
+        writeFileWithLineCount(
+          join(root, "src", "z-last.ts"),
+          1501,
+          "export const z = 1;"
+        );
+        writeFileWithLineCount(
+          join(root, "src", "a-first.ts"),
+          1501,
+          "export const a = 1;"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(result.status, 1, "Expected failure for large-file threshold");
+        const out = result.stdout || "";
+        const firstIdx = out.indexOf("src/a-first.ts");
+        const secondIdx = out.indexOf("src/z-last.ts");
+        assert(firstIdx !== -1, "Expected alphabetical first offender path in output");
+        assert(secondIdx !== -1, "Expected alphabetical last offender path in output");
+        assert(
+          firstIdx < secondIdx,
+          "Expected deterministic alphabetical tie-break ordering for equal LOC offenders"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
   return printSummary();
 }
 
