@@ -62,8 +62,8 @@ export async function runQualityAuditWiringTests(): Promise<{
       "string-based timer execution prevention",
       "command execution hardening (`child_process` `exec` import + direct usage blocked",
       "max script files over 700 LOC",
-      "(`.js`, `.jsx`, `.mjs`, `.cjs`)",
-      "including explicit `.mjs`/`.cjs` regression paths",
+      "(`.js`, `.jsx`, `.mts`, `.cts`, `.mjs`, `.cjs`)",
+      "including explicit `.mjs`/`.cjs`/`.mts` regression paths",
     ];
 
     for (const snippet of requiredSnippets) {

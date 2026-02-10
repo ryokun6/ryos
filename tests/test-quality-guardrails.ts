@@ -684,6 +684,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when execSync usage is introduced in mts scripts", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadExec.mts"),
+        `import { execSync } from "node:child_process";\nexecSync("echo hi");\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for execSync in mts script, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL execSync usage"),
+        "Expected execSync guardrail failure for mts scripts"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when execSync usage is introduced in _api", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "_api"), { recursive: true });

@@ -50,8 +50,8 @@ const SKIP_DIRS = new Set([
 const SOURCE_CACHE = new Map<string, Promise<string>>();
 const CANDIDATE_FILE_CACHE = new Map<string, Promise<string[]>>();
 const SCRIPT_TASK_MARKER_BASELINE_CAP = 19;
-const CODE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
-const SCRIPT_CODE_EXTENSIONS = [".ts", ".js", ".mjs", ".cjs"];
+const CODE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".cjs"];
+const SCRIPT_CODE_EXTENSIONS = [".ts", ".js", ".mts", ".cts", ".mjs", ".cjs"];
 const MERGE_MARKER_EXTENSIONS = [...CODE_EXTENSIONS, ".json", ".md", ".yml", ".yaml"];
 
 const GUARDRAILS: GuardrailCheck[] = [

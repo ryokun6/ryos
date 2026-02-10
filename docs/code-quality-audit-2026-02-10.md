@@ -125,8 +125,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - file-size regression checks (max files over 1000 LOC, max files over 1500 LOC,
     max script files over 700 LOC, and max single-file LOC caps).
   - cached source/candidate file scanning for faster quality-check execution.
-  - expanded scanning coverage to include JavaScript sources where relevant
-    (`.js`, `.jsx`, `.mjs`, `.cjs`).
+  - expanded scanning coverage to include JavaScript/TS module variants where relevant
+    (`.js`, `.jsx`, `.mts`, `.cts`, `.mjs`, `.cjs`).
   - allowlisted `dangerouslySetInnerHTML` usage (only permitted in `HtmlPreview` stream renderer).
   - allowlisted `biome-ignore lint/correctness/useExhaustiveDependencies` usage (currently only permitted in `useStreamingFetch`).
 - Added machine-readable output mode: `bun run quality:check:json`.
@@ -170,7 +170,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes cap-overflow diagnostics assertions that offending allowlisted paths are reported.
 - Guardrail wiring tests include JavaScript-path failure cases (`innerHTML`,
   `execSync`, and `dangerouslySetInnerHTML`) to verify cross-language scan parity,
-  including explicit `.mjs`/`.cjs` regression paths.
+  including explicit `.mjs`/`.cjs`/`.mts` regression paths.
 - Guardrail wiring tests include markdown merge-marker failure cases to verify
   non-code file safety checks in configured roots.
   - includes YAML merge-marker failure coverage as well.

@@ -82,7 +82,7 @@ bun run quality:all:ci
   - cap-overflow failures print offending allowlisted file paths for triage
 
 Most content checks scan TypeScript and JavaScript sources
-(`.ts/.tsx/.js/.jsx/.mjs/.cjs`)
+(`.ts/.tsx/.js/.jsx/.mts/.cts/.mjs/.cjs`)
 within the relevant roots.
 
 ## CI
