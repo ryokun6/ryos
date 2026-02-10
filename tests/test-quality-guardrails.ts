@@ -165,6 +165,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when TODO markers are introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "Todo.ts"),
+        `// TODO: remove this temporary branch\nexport const value = 1;\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for TODO marker, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL TODO/FIXME/HACK markers"),
+        "Expected TODO/FIXME/HACK guardrail failure"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   return printSummary();
 }
 
