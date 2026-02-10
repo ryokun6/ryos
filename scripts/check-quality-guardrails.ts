@@ -9,6 +9,7 @@ interface GuardrailCheck {
   extensions: string[];
   pattern: RegExp;
   maxAllowed: number;
+  excludeFiles?: ReadonlySet<string>;
 }
 
 interface FileSizeGuardrail {
@@ -66,6 +67,14 @@ const GUARDRAILS: GuardrailCheck[] = [
     extensions: [".ts"],
     pattern: /execSync\(/g,
     maxAllowed: 0,
+  },
+  {
+    name: "shell:true command execution",
+    roots: ["scripts", "src", "_api"],
+    extensions: [".ts", ".tsx"],
+    pattern: /shell:\s*true/g,
+    maxAllowed: 0,
+    excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
   },
 ];
 
@@ -185,10 +194,14 @@ const run = async (): Promise<void> => {
     let total = 0;
     const offenders: Array<{ path: string; count: number }> = [];
     for (const file of candidateFiles) {
+      const relativePath = relative(cwd, file).replaceAll("\\", "/");
+      if (check.excludeFiles?.has(relativePath)) {
+        continue;
+      }
       const count = await countPatternInFile(file, check.pattern);
       if (count > 0) {
         total += count;
-        offenders.push({ path: relative(cwd, file), count });
+        offenders.push({ path: relativePath, count });
       }
     }
 
