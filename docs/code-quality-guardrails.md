@@ -44,7 +44,9 @@ bun run quality:all:ci
 - No `@ts-ignore` / `@ts-expect-error` in `src` / `_api` / `scripts`
 - No `@ts-nocheck` comments in source or scripts
 - No `innerHTML` assignments/mutations (`=`, `+=`) in `src`
+  (including bracket-access forms)
 - No `outerHTML` assignments/mutations (`=`, `+=`) in `src`
+  (including bracket-access forms)
 - No `insertAdjacentHTML(...)` usage in `src` (including bracket-access forms)
 - No `document.write(...)` / `document.writeln(...)` usage in `src`
   (including bracket/optional-bracket access forms)

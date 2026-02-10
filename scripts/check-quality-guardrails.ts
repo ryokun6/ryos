@@ -90,14 +90,14 @@ const GUARDRAILS: GuardrailCheck[] = [
     name: "innerHTML assignments",
     roots: ["src"],
     extensions: CODE_EXTENSIONS,
-    pattern: /innerHTML\s*(?:\+?=)/g,
+    pattern: /innerHTML\s*(?:\+?=)|\[\s*["']innerHTML["']\s*\]\s*(?:\+?=)/g,
     maxAllowed: 0,
   },
   {
     name: "outerHTML assignments",
     roots: ["src"],
     extensions: CODE_EXTENSIONS,
-    pattern: /outerHTML\s*(?:\+?=)/g,
+    pattern: /outerHTML\s*(?:\+?=)|\[\s*["']outerHTML["']\s*\]\s*(?:\+?=)/g,
     maxAllowed: 0,
   },
   {

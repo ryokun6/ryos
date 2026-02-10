@@ -1769,6 +1769,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when bracket innerHTML assignment is introduced in JavaScript", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "BadInnerBracket.js"),
+        `const el = document.createElement("div");\nel["innerHTML"] = "<b>x</b>";\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for bracket innerHTML assignment in js, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL innerHTML assignments"),
+        "Expected innerHTML guardrail failure for bracket assignment syntax"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when outerHTML assignment is introduced in JavaScript", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
@@ -1815,6 +1841,32 @@ export async function runQualityGuardrailTests(): Promise<{
       assert(
         (result.stdout || "").includes("FAIL outerHTML assignments"),
         "Expected outerHTML guardrail failure for += mutation"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when bracket outerHTML assignment is introduced in JavaScript", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "BadOuterBracket.js"),
+        `const el = document.createElement("div");\nel["outerHTML"] = "<div>y</div>";\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for bracket outerHTML assignment in js, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL outerHTML assignments"),
+        "Expected outerHTML guardrail failure for bracket assignment syntax"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });
