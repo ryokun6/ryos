@@ -711,6 +711,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when require('child_process').exec usage is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadExecInlineRequire.js"),
+        'require("child_process").exec("echo hi");\n',
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for inline require exec usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL child_process.exec direct usage"),
+        "Expected child_process.exec direct-usage guardrail failure for inline require"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when unsafe Prisma raw SQL method is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "_api"), { recursive: true });
