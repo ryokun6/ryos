@@ -113,7 +113,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
     `document.write(...)` / `document.writeln(...)`, including bracket/optional-bracket access,
     spaced-dot member access, and spacing-tolerant matching)
   - command execution hardening (`child_process` `exec` import + direct usage blocked
-    in scripts/source/api)
+    in scripts/source/api, including alias-destructuring import/require forms)
   - `execSync(` prevention scope expanded to scripts/source/api (not just scripts)
   - string-based timer execution prevention (`setTimeout("...")`,
     `setInterval("...")`, `setImmediate("...")`, including template-literal strings

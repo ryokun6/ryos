@@ -113,6 +113,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "non-whitespace root/check-name/allowed-text validation coverage",
       "surrounding-whitespace rejection for root/check-name/allowed-text fields",
       "inline `require(\"child_process\").exec(...)` usage",
+      "alias-destructuring import/require forms",
       "false-positive prevention coverage",
       "optional-chaining `?.exec(...)` variant coverage",
       "inline `require(\"child_process\")?.exec(...)` variant coverage",

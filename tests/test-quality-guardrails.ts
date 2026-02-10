@@ -946,6 +946,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when child_process exec import alias is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadExecImportAlias.ts"),
+        `import { exec as runExec } from "node:child_process";\nrunExec("echo hi");\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for exec import alias usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL child_process exec import usage"),
+        "Expected child_process exec import guardrail failure for alias import syntax"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when child_process exec require usage is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "scripts"), { recursive: true });
@@ -973,6 +999,35 @@ export async function runQualityGuardrailTests(): Promise<{
       rmSync(qualityRoot, { recursive: true, force: true });
     }
   });
+
+  await runTest(
+    "fails when child_process exec require destructuring alias is introduced",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "BadExecRequireAlias.js"),
+          'const { exec: runExec } = require("child_process");\nrunExec("echo hi");\n',
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for exec require alias usage, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL child_process exec import usage"),
+          "Expected child_process exec import guardrail failure for require destructuring alias syntax"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
 
   await runTest("fails when child_process.exec direct usage is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {

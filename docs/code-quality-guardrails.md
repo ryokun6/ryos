@@ -59,7 +59,8 @@ bun run quality:all:ci
 - No `execSync(` usage in `scripts` / `src` / `_api`
   (spacing-tolerant invocation matching)
 - No `child_process` `exec` imports in `scripts` / `src` / `_api`
-  (use `execFileSync`/`spawnSync` instead)
+  (including alias destructuring forms like `import { exec as runExec } ...` /
+  `const { exec: runExec } = require(...)`; use `execFileSync`/`spawnSync` instead)
 - No `child_process.exec(...)` direct usage (including namespace/default import
   aliases and `require("child_process").exec(...)`)
   - alias detection is variable-aware to avoid false positives on unrelated
