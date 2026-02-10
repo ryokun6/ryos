@@ -98,10 +98,20 @@ export async function runQualityGuardrailTests(): Promise<{
     };
     assert(parsed.passed === true, "Expected JSON output to mark passed=true");
     assert(Array.isArray(parsed.checks), "Expected checks array in JSON output");
-    assert(
-      (parsed.checks || []).some((check) => check.name === "eslint-disable comments"),
-      "Expected eslint-disable guardrail in JSON checks"
-    );
+    const checkNames = new Set((parsed.checks || []).map((check) => check.name));
+    const requiredCheckNames = [
+      "eslint-disable comments",
+      "debugger statements",
+      "merge conflict markers",
+      "very large TypeScript files",
+      "large TypeScript files",
+    ];
+    for (const checkName of requiredCheckNames) {
+      assert(
+        checkNames.has(checkName),
+        `Expected ${checkName} guardrail in JSON checks`
+      );
+    }
   });
 
   await runTest("quality:summary renders markdown from JSON report", async () => {
