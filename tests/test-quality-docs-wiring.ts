@@ -99,6 +99,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "forward slashes only",
       "non-empty checks array",
       "non-empty (non-whitespace) `root`, check names, and",
+      "surrounding whitespace for `root`, check names, and",
       "cap-overflow failures print offending allowlisted file paths for triage",
       "failed-check offender previews (top 5 per check)",
       "When count metadata is omitted, summary rendering derives counts from `checks`",

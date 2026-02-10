@@ -221,6 +221,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes FAIL-check offender-presence validation coverage.
   - includes non-empty checks-array validation coverage.
   - includes non-whitespace root/check-name/allowed-text validation coverage.
+  - includes surrounding-whitespace rejection for root/check-name/allowed-text fields.
 - Added README quality command wiring coverage:
   - `tests/test-quality-readme-wiring.ts`
   - included in `quality:all` via `bun run test:quality-readme`.

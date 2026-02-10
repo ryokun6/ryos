@@ -515,6 +515,33 @@ export async function runQualitySummaryWiringTests(): Promise<{
     );
   });
 
+  await runTest("fails when root field has surrounding whitespace", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: " /tmp/example ",
+        passed: true,
+        checks: [
+          {
+            name: "eslint-disable comments",
+            status: "PASS",
+            value: 0,
+            allowed: "<= 0",
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("root must not include surrounding whitespace"),
+          "Expected root surrounding-whitespace validation error"
+        );
+      }
+    );
+  });
+
   await runTest("fails when check name is whitespace-only", async () => {
     withTempReport(
       {
@@ -535,6 +562,33 @@ export async function runQualitySummaryWiringTests(): Promise<{
         assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
         const err = result.stderr || "";
         assert(err.includes("must include a name"), "Expected check-name validation error");
+      }
+    );
+  });
+
+  await runTest("fails when check name has surrounding whitespace", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: true,
+        checks: [
+          {
+            name: " eslint-disable comments ",
+            status: "PASS",
+            value: 0,
+            allowed: "<= 0",
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("name must not include surrounding whitespace"),
+          "Expected check-name surrounding-whitespace validation error"
+        );
       }
     );
   });
@@ -561,6 +615,33 @@ export async function runQualitySummaryWiringTests(): Promise<{
         assert(
           err.includes("must include allowed text"),
           "Expected allowed-text validation error"
+        );
+      }
+    );
+  });
+
+  await runTest("fails when allowed text has surrounding whitespace", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: true,
+        checks: [
+          {
+            name: "eslint-disable comments",
+            status: "PASS",
+            value: 0,
+            allowed: " <= 0 ",
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("allowed text must not include surrounding whitespace"),
+          "Expected allowed-text surrounding-whitespace validation error"
         );
       }
     );

@@ -135,6 +135,8 @@ Validation rejects offender paths containing backslashes (forward slashes only).
 Validation enforces a non-empty checks array.
 Validation requires non-empty (non-whitespace) `root`, check names, and
 `allowed` descriptor text.
+Validation rejects surrounding whitespace for `root`, check names, and
+`allowed` descriptor text.
 When count metadata is omitted, summary rendering derives counts from `checks`
 for backward compatibility.
 Workflow wiring tests additionally assert that the CI command (`quality:all:ci`)

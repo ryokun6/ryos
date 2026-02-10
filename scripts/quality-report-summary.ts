@@ -32,6 +32,9 @@ const assertQualityReport = (value: unknown): QualityReport => {
   if (typeof report.root !== "string" || report.root.trim().length === 0) {
     throw new Error("Quality report must include a non-empty root");
   }
+  if (report.root !== report.root.trim()) {
+    throw new Error("Quality report root must not include surrounding whitespace");
+  }
   if (typeof report.passed !== "boolean") {
     throw new Error("Quality report must include a boolean passed field");
   }
@@ -68,6 +71,9 @@ const assertQualityReport = (value: unknown): QualityReport => {
     if (typeof candidate.name !== "string" || candidate.name.trim().length === 0) {
       throw new Error(`Check at index ${index} must include a name`);
     }
+    if (candidate.name !== candidate.name.trim()) {
+      throw new Error(`Check at index ${index} name must not include surrounding whitespace`);
+    }
     if (candidate.status !== "PASS" && candidate.status !== "FAIL") {
       throw new Error(`Check "${candidate.name}" has invalid status`);
     }
@@ -81,6 +87,11 @@ const assertQualityReport = (value: unknown): QualityReport => {
       candidate.allowed.trim().length === 0
     ) {
       throw new Error(`Check "${candidate.name}" must include allowed text`);
+    }
+    if (candidate.allowed !== candidate.allowed.trim()) {
+      throw new Error(
+        `Check "${candidate.name}" allowed text must not include surrounding whitespace`
+      );
     }
     if (candidate.offenders !== undefined) {
       if (!Array.isArray(candidate.offenders)) {
