@@ -160,18 +160,21 @@ const checkAllowlistedPattern = async (
     )
   ).flat();
 
-  let total = 0;
-  const disallowedMatches: Array<{ path: string; count: number }> = [];
+  const matches = (
+    await Promise.all(
+      candidateFiles.map(async (file) => {
+        const relativePath = relative(cwd, file).replaceAll("\\", "/");
+        const count = await countPatternInFile(file, guardrail.pattern);
+        if (count <= 0) return null;
+        return { path: relativePath, count };
+      })
+    )
+  ).filter((match): match is { path: string; count: number } => match !== null);
 
-  for (const file of candidateFiles) {
-    const relativePath = relative(cwd, file).replaceAll("\\", "/");
-    const count = await countPatternInFile(file, guardrail.pattern);
-    if (count <= 0) continue;
-    total += count;
-    if (!guardrail.allowedFiles.has(relativePath)) {
-      disallowedMatches.push({ path: relativePath, count });
-    }
-  }
+  const total = matches.reduce((sum, match) => sum + match.count, 0);
+  const disallowedMatches = matches.filter(
+    (match) => !guardrail.allowedFiles.has(match.path)
+  );
 
   const passed =
     disallowedMatches.length === 0 && total <= guardrail.maxAllowedTotal;
@@ -191,19 +194,24 @@ const run = async (): Promise<void> => {
       )
     ).flat();
 
-    let total = 0;
-    const offenders: Array<{ path: string; count: number }> = [];
-    for (const file of candidateFiles) {
-      const relativePath = relative(cwd, file).replaceAll("\\", "/");
-      if (check.excludeFiles?.has(relativePath)) {
-        continue;
-      }
-      const count = await countPatternInFile(file, check.pattern);
-      if (count > 0) {
-        total += count;
-        offenders.push({ path: relativePath, count });
-      }
-    }
+    const offenders = (
+      await Promise.all(
+        candidateFiles.map(async (file) => {
+          const relativePath = relative(cwd, file).replaceAll("\\", "/");
+          if (check.excludeFiles?.has(relativePath)) {
+            return null;
+          }
+          const count = await countPatternInFile(file, check.pattern);
+          if (count <= 0) return null;
+          return { path: relativePath, count };
+        })
+      )
+    ).filter(
+      (offender): offender is { path: string; count: number } =>
+        offender !== null
+    );
+
+    const total = offenders.reduce((sum, offender) => sum + offender.count, 0);
 
     const status = total <= check.maxAllowed ? "PASS" : "FAIL";
     console.log(
@@ -229,16 +237,20 @@ const run = async (): Promise<void> => {
     )
   ).flat();
 
-  const largeFiles: Array<{ path: string; lines: number }> = [];
-  for (const file of sizeCandidateFiles) {
-    const lines = await countLinesInFile(file);
-    if (lines > FILE_SIZE_GUARDRAIL.lineThreshold) {
-      largeFiles.push({
-        path: relative(cwd, file),
-        lines,
-      });
-    }
-  }
+  const largeFiles = (
+    await Promise.all(
+      sizeCandidateFiles.map(async (file) => {
+        const lines = await countLinesInFile(file);
+        if (lines <= FILE_SIZE_GUARDRAIL.lineThreshold) {
+          return null;
+        }
+        return {
+          path: relative(cwd, file),
+          lines,
+        };
+      })
+    )
+  ).filter((file): file is { path: string; lines: number } => file !== null);
 
   largeFiles.sort((a, b) => b.lines - a.lines);
   const largestFileLines = largeFiles[0]?.lines ?? 0;
