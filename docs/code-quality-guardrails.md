@@ -49,7 +49,7 @@ bun run quality:all:ci
   (including bracket-access forms)
 - No `insertAdjacentHTML(...)` usage in `src` (including bracket-access forms)
 - No `document.write(...)` / `document.writeln(...)` usage in `src`
-  (including bracket/optional-bracket access forms)
+  (including bracket/optional-bracket access forms, with spacing-tolerant matching)
 - No string-based timer execution (`setTimeout("...")`, `setInterval("...")`,
   `setImmediate("...")`, including template literals and optional-chaining calls
   like `setTimeout?.("...")`)

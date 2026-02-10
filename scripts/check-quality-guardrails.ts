@@ -114,7 +114,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["src"],
     extensions: CODE_EXTENSIONS,
     pattern:
-      /document(?:\?\.|\.)write(?:ln)?\s*\(|document(?:\?\.)?\[\s*["']write(?:ln)?["']\s*\]\s*\(/g,
+      /document(?:\?\.|\.)write(?:ln)?\s*\(|document(?:\?\.)?\s*\[\s*["']write(?:ln)?["']\s*\]\s*\(/g,
     maxAllowed: 0,
   },
   {
