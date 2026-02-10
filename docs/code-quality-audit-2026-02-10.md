@@ -9,6 +9,8 @@ This audit documents quality findings and remediations completed for the request
 - `bunx eslint . --max-warnings 0` ✅
 - `bun run build` ✅
 - `bun run test:chat-wiring` ✅
+- `bun run test:quality-readme` ✅
+- `bun run test:quality-docs` ✅
 - `bun run quality:verify` ✅ (strict lint/build + quality regression tests)
 - `bun run quality:all` ✅ (consolidated guardrails + lint + build + regression tests)
 - `bun run quality:all:ci` ✅ (single-pass CI suite with JSON report emission)
