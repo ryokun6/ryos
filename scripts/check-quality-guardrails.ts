@@ -83,9 +83,9 @@ const GUARDRAILS: GuardrailCheck[] = [
     maxAllowed: 0,
   },
   {
-    name: "execSync usage in scripts",
-    roots: ["scripts"],
-    extensions: [".ts", ".js"],
+    name: "execSync usage",
+    roots: ["scripts", "src", "_api"],
+    extensions: [".ts", ".tsx", ".js", ".jsx"],
     pattern: /execSync\(/g,
     maxAllowed: 0,
   },

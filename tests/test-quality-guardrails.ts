@@ -214,7 +214,7 @@ export async function runQualityGuardrailTests(): Promise<{
     );
     assert(out.includes("@ts-nocheck comments"), "Missing ts-nocheck guardrail");
     assert(out.includes("innerHTML assignments"), "Missing innerHTML guardrail");
-    assert(out.includes("execSync usage in scripts"), "Missing execSync guardrail");
+    assert(out.includes("execSync usage"), "Missing execSync guardrail");
     assert(
       out.includes("child_process exec import usage"),
       "Missing child_process exec import guardrail"
@@ -471,7 +471,7 @@ export async function runQualityGuardrailTests(): Promise<{
         `Expected failure exit code 1 for execSync usage, got ${result.status}`
       );
       assert(
-        (result.stdout || "").includes("FAIL execSync usage in scripts"),
+        (result.stdout || "").includes("FAIL execSync usage"),
         "Expected execSync guardrail failure"
       );
     } finally {
@@ -497,8 +497,34 @@ export async function runQualityGuardrailTests(): Promise<{
         `Expected failure exit code 1 for execSync in js script, got ${result.status}`
       );
       assert(
-        (result.stdout || "").includes("FAIL execSync usage in scripts"),
+        (result.stdout || "").includes("FAIL execSync usage"),
         "Expected execSync guardrail failure for js scripts"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when execSync usage is introduced in _api", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "_api"), { recursive: true });
+      writeFileSync(
+        join(root, "_api", "BadExecApi.ts"),
+        `import { execSync } from "node:child_process";\nexport const run = () => execSync("echo hi");\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for execSync in _api, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL execSync usage"),
+        "Expected execSync guardrail failure for _api"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });

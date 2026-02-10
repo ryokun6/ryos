@@ -109,6 +109,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - suppression regression checks (`eslint-disable`, `@ts-ignore`, `@ts-nocheck`, `innerHTML =`, `execSync(`, `shell: true`)
     across application source and scripts
   - command execution hardening (`child_process` `exec` import blocked in scripts/source/api)
+  - `execSync(` prevention scope expanded to scripts/source/api (not just scripts)
   - SQL safety guardrail (blocks unsafe Prisma raw SQL method usage)
   - dynamic code execution/debugging prevention (`eval(`, `new Function(`, `debugger`)
   - merge conflict marker prevention (`<<<<<<<`, `=======`, `>>>>>>>`)
