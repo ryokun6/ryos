@@ -168,13 +168,19 @@ export async function runQualityWorkflowWiringTests(): Promise<{
 
   await runTest("workflow keeps report publishing steps ordered", async () => {
     const source = readWorkflow();
+    const installDepsIdx = source.indexOf("Install dependencies");
     const runSuiteIdx = source.indexOf("Run full quality suite");
     const publishSummaryIdx = source.indexOf("Publish quality summary");
     const uploadArtifactIdx = source.indexOf("Upload quality report artifact");
 
+    assert(installDepsIdx !== -1, "Missing Install dependencies step");
     assert(runSuiteIdx !== -1, "Missing Run full quality suite step");
     assert(publishSummaryIdx !== -1, "Missing Publish quality summary step");
     assert(uploadArtifactIdx !== -1, "Missing Upload quality report artifact step");
+    assert(
+      installDepsIdx < runSuiteIdx,
+      "Expected dependency installation before quality suite run"
+    );
     assert(
       runSuiteIdx < publishSummaryIdx,
       "Expected summary step to run after full quality suite"
