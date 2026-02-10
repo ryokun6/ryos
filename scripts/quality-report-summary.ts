@@ -29,7 +29,7 @@ const assertQualityReport = (value: unknown): QualityReport => {
   }
 
   const report = value as Partial<QualityReport>;
-  if (typeof report.root !== "string" || report.root.length === 0) {
+  if (typeof report.root !== "string" || report.root.trim().length === 0) {
     throw new Error("Quality report must include a non-empty root");
   }
   if (typeof report.passed !== "boolean") {
@@ -62,7 +62,7 @@ const assertQualityReport = (value: unknown): QualityReport => {
       throw new Error(`Invalid check entry at index ${index}`);
     }
     const candidate = check as Partial<QualityCheckEntry>;
-    if (typeof candidate.name !== "string" || candidate.name.length === 0) {
+    if (typeof candidate.name !== "string" || candidate.name.trim().length === 0) {
       throw new Error(`Check at index ${index} must include a name`);
     }
     if (candidate.status !== "PASS" && candidate.status !== "FAIL") {
@@ -73,7 +73,10 @@ const assertQualityReport = (value: unknown): QualityReport => {
         `Check "${candidate.name}" must include a non-negative integer value`
       );
     }
-    if (typeof candidate.allowed !== "string" || candidate.allowed.length === 0) {
+    if (
+      typeof candidate.allowed !== "string" ||
+      candidate.allowed.trim().length === 0
+    ) {
       throw new Error(`Check "${candidate.name}" must include allowed text`);
     }
     if (candidate.offenders !== undefined) {

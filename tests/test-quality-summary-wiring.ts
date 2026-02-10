@@ -438,6 +438,84 @@ export async function runQualitySummaryWiringTests(): Promise<{
     );
   });
 
+  await runTest("fails when root field is whitespace-only", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "   ",
+        passed: true,
+        checks: [
+          {
+            name: "eslint-disable comments",
+            status: "PASS",
+            value: 0,
+            allowed: "<= 0",
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("non-empty root"),
+          "Expected root non-empty validation error"
+        );
+      }
+    );
+  });
+
+  await runTest("fails when check name is whitespace-only", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: true,
+        checks: [
+          {
+            name: "   ",
+            status: "PASS",
+            value: 0,
+            allowed: "<= 0",
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(err.includes("must include a name"), "Expected check-name validation error");
+      }
+    );
+  });
+
+  await runTest("fails when allowed text is whitespace-only", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: true,
+        checks: [
+          {
+            name: "eslint-disable comments",
+            status: "PASS",
+            value: 0,
+            allowed: "   ",
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("must include allowed text"),
+          "Expected allowed-text validation error"
+        );
+      }
+    );
+  });
+
   await runTest("fails when offender paths are duplicated within a check", async () => {
     withTempReport(
       {

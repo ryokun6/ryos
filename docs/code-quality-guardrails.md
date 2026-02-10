@@ -111,6 +111,8 @@ Validation also enforces non-negative integer check values and blocks PASS check
 from carrying offender entries.
 Validation enforces unique check names to avoid ambiguous summaries.
 Validation enforces unique offender paths within each failed check entry.
+Validation requires non-empty (non-whitespace) `root`, check names, and
+`allowed` descriptor text.
 When count metadata is omitted, summary rendering derives counts from `checks`
 for backward compatibility.
 Workflow wiring tests additionally assert that the CI command (`quality:all:ci`)
