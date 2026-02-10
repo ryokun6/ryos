@@ -14,6 +14,8 @@ interface QualityCheckEntry {
 interface QualityReport {
   root: string;
   passed: boolean;
+  totalChecks?: number;
+  failedChecks?: number;
   checks: QualityCheckEntry[];
 }
 
@@ -55,6 +57,25 @@ const assertQualityReport = (value: unknown): QualityReport => {
     }
   }
 
+  if (
+    report.totalChecks !== undefined &&
+    report.totalChecks !== report.checks.length
+  ) {
+    throw new Error("Quality report totalChecks metadata does not match checks length");
+  }
+
+  const computedFailedChecks = report.checks.filter(
+    (check) => (check as QualityCheckEntry).status === "FAIL"
+  ).length;
+  if (
+    report.failedChecks !== undefined &&
+    report.failedChecks !== computedFailedChecks
+  ) {
+    throw new Error(
+      "Quality report failedChecks metadata does not match failed check count"
+    );
+  }
+
   return report as QualityReport;
 };
 
@@ -64,14 +85,16 @@ const run = async (): Promise<void> => {
   const raw = await readFile(reportPath, "utf-8");
   const report = assertQualityReport(JSON.parse(raw));
   const failedChecks = report.checks.filter((check) => check.status === "FAIL");
+  const totalChecks = report.totalChecks ?? report.checks.length;
+  const failedCheckCount = report.failedChecks ?? failedChecks.length;
 
   const lines: string[] = [];
   lines.push("## Quality Guardrails Report");
   lines.push("");
   lines.push(`- Root: \`${report.root}\``);
   lines.push(`- Overall: ${report.passed ? "✅ PASS" : "❌ FAIL"}`);
-  lines.push(`- Total checks: ${report.checks.length}`);
-  lines.push(`- Failed checks: ${failedChecks.length}`);
+  lines.push(`- Total checks: ${totalChecks}`);
+  lines.push(`- Failed checks: ${failedCheckCount}`);
   if (failedChecks.length > 0) {
     lines.push(
       `- Failed check names: ${failedChecks.map((check) => check.name).join(", ")}`

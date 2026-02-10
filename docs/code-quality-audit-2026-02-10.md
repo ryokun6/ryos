@@ -118,6 +118,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
 - `quality:all` and `quality:all:ci` now compose `quality:verify`, reducing script drift risk.
 - Added `bun run quality:all:ci` to run the full CI quality suite while emitting
   `quality-report.json` in the same command.
+- `quality:check:json` now emits `totalChecks` and `failedChecks` metadata; summary
+  rendering validates metadata consistency against check rows.
 - CI now publishes `quality-report.json` as an artifact and emits a markdown
   summary table in the workflow job summary.
 - Added package script wiring coverage:

@@ -55,6 +55,8 @@ export async function runQualitySummaryWiringTests(): Promise<{
       {
         root: "/tmp/example",
         passed: true,
+        totalChecks: 1,
+        failedChecks: 0,
         checks: [
           {
             name: "eslint-disable comments",
@@ -82,6 +84,8 @@ export async function runQualitySummaryWiringTests(): Promise<{
       {
         root: "/tmp/example",
         passed: false,
+        totalChecks: 3,
+        failedChecks: 2,
         checks: [
           {
             name: "TODO/FIXME/HACK markers",
@@ -172,6 +176,34 @@ export async function runQualitySummaryWiringTests(): Promise<{
         assert(
           err.includes("checks array"),
           "Expected malformed checks-array validation error"
+        );
+      }
+    );
+  });
+
+  await runTest("fails when metadata and checks are inconsistent", async () => {
+    withTempReport(
+      {
+        root: "/tmp/example",
+        passed: false,
+        totalChecks: 2,
+        failedChecks: 0,
+        checks: [
+          {
+            name: "TODO/FIXME/HACK markers",
+            status: "FAIL",
+            value: 1,
+            allowed: "<= 0",
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("metadata"),
+          "Expected metadata mismatch validation error"
         );
       }
     );

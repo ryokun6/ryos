@@ -94,10 +94,21 @@ export async function runQualityGuardrailTests(): Promise<{
     assertEq(result.status, 0, `Expected exit code 0, got ${result.status}`);
     const parsed = JSON.parse(result.stdout || "{}") as {
       passed?: boolean;
+      totalChecks?: number;
+      failedChecks?: number;
       checks?: Array<{ name: string }>;
     };
     assert(parsed.passed === true, "Expected JSON output to mark passed=true");
     assert(Array.isArray(parsed.checks), "Expected checks array in JSON output");
+    assert(
+      typeof parsed.totalChecks === "number" &&
+        parsed.totalChecks === (parsed.checks || []).length,
+      "Expected totalChecks metadata to match checks length"
+    );
+    assert(
+      parsed.failedChecks === 0,
+      "Expected failedChecks metadata to be zero for passing run"
+    );
     const checkNames = new Set((parsed.checks || []).map((check) => check.name));
     const requiredCheckNames = [
       "eslint-disable comments",
@@ -450,9 +461,14 @@ export async function runQualityGuardrailTests(): Promise<{
       assertEq(result.status, 1, "Expected JSON mode to return exit code 1");
       const parsed = JSON.parse(result.stdout || "{}") as {
         passed?: boolean;
+        failedChecks?: number;
         checks?: Array<{ name: string; status: string }>;
       };
       assert(parsed.passed === false, "Expected passed=false in JSON failure output");
+      assert(
+        typeof parsed.failedChecks === "number" && parsed.failedChecks > 0,
+        "Expected failedChecks metadata for failing JSON output"
+      );
       assert(
         (parsed.checks || []).some(
           (check) =>

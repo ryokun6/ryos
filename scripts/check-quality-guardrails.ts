@@ -433,11 +433,14 @@ const run = async (): Promise<void> => {
   }
 
   if (jsonOutput) {
+    const failedChecks = results.filter((result) => result.status === "FAIL");
     console.log(
       JSON.stringify(
         {
           root: cwd,
           passed: !hasViolation,
+          totalChecks: results.length,
+          failedChecks: failedChecks.length,
           checks: results,
         },
         null,
