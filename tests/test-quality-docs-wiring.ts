@@ -59,7 +59,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "JSON/TOML config files",
       "No `innerHTML` assignments/mutations (`=`, `+=`) in `src`",
       "No `outerHTML` assignments/mutations (`=`, `+=`) in `src`",
-      "No `insertAdjacentHTML(...)` usage in `src`",
+      "No `insertAdjacentHTML(...)` usage in `src` (including bracket-access forms)",
       "No `document.write(...)` / `document.writeln(...)` usage in `src`",
       "including bracket/optional-bracket access forms",
       "No string-based timer execution (`setTimeout(\"...\")`, `setInterval(\"...\")`,",

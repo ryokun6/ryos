@@ -109,7 +109,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - suppression regression checks (`eslint-disable`, `@ts-ignore`, `@ts-nocheck`, `innerHTML =`, `execSync(`, `shell: true` including quoted/computed keys, spaced computed syntax, template-computed key syntax, and variable-computed key aliases)
     across application source and scripts
   - DOM assignment hardening (`innerHTML =`, `outerHTML =`,
-    `innerHTML +=`, `outerHTML +=`, `insertAdjacentHTML(...)`,
+    `innerHTML +=`, `outerHTML +=`, `insertAdjacentHTML(...)` including bracket access,
     `document.write(...)` / `document.writeln(...)`, including bracket/optional-bracket access)
   - command execution hardening (`child_process` `exec` import + direct usage blocked
     in scripts/source/api)

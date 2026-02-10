@@ -1847,6 +1847,35 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest(
+    "fails when bracket insertAdjacentHTML usage is introduced in JavaScript",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src"), { recursive: true });
+        writeFileSync(
+          join(root, "src", "BadInsertAdjacentHtmlBracket.js"),
+          `const el = document.createElement("div");\nel["insertAdjacentHTML"]("beforeend", "<p>x</p>");\n`,
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for bracket insertAdjacentHTML in js, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL insertAdjacentHTML usage"),
+          "Expected insertAdjacentHTML guardrail failure for bracket syntax"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
   await runTest("fails when document.write usage is introduced in JavaScript", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });

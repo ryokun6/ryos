@@ -104,7 +104,8 @@ const GUARDRAILS: GuardrailCheck[] = [
     name: "insertAdjacentHTML usage",
     roots: ["src"],
     extensions: CODE_EXTENSIONS,
-    pattern: /insertAdjacentHTML\(/g,
+    pattern:
+      /insertAdjacentHTML\s*\(|\[\s*["']insertAdjacentHTML["']\s*\]\s*\(/g,
     maxAllowed: 0,
   },
   {
