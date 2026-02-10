@@ -98,6 +98,14 @@ const GUARDRAILS: GuardrailCheck[] = [
     maxAllowed: 0,
   },
   {
+    name: "unsafe Prisma raw SQL methods",
+    roots: ["src", "_api", "scripts"],
+    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    pattern: /\b(?:queryRawUnsafe|executeRawUnsafe|\$queryRawUnsafe|\$executeRawUnsafe)\b/g,
+    maxAllowed: 0,
+    excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
+  },
+  {
     name: "shell:true command execution",
     roots: ["scripts", "src", "_api"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],

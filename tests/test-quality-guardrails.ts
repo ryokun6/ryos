@@ -219,6 +219,10 @@ export async function runQualityGuardrailTests(): Promise<{
       out.includes("child_process exec import usage in scripts"),
       "Missing child_process exec import guardrail"
     );
+    assert(
+      out.includes("unsafe Prisma raw SQL methods"),
+      "Missing unsafe Prisma raw SQL guardrail"
+    );
     assert(out.includes("shell:true command execution"), "Missing shell:true guardrail");
     assert(out.includes("TODO/FIXME/HACK markers"), "Missing task marker guardrail");
     assert(
@@ -551,6 +555,32 @@ export async function runQualityGuardrailTests(): Promise<{
           "FAIL child_process exec import usage in scripts"
         ),
         "Expected child_process exec import guardrail failure for require syntax"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when unsafe Prisma raw SQL method is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "_api"), { recursive: true });
+      writeFileSync(
+        join(root, "_api", "BadSql.ts"),
+        `export async function run(prisma: any){\n  await prisma.$queryRawUnsafe("SELECT * FROM users");\n}\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for unsafe raw SQL method, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL unsafe Prisma raw SQL methods"),
+        "Expected unsafe Prisma raw SQL guardrail failure"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });

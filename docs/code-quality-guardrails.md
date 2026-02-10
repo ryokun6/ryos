@@ -45,6 +45,7 @@ bun run quality:all:ci
 - No `innerHTML = ...` assignments in `src`
 - No `execSync(` usage in `scripts`
 - No `child_process` `exec` imports in `scripts` (use `execFileSync`/`spawnSync` instead)
+- No Prisma unsafe raw SQL methods (`queryRawUnsafe`, `executeRawUnsafe`, `$queryRawUnsafe`, `$executeRawUnsafe`)
 - No `shell: true` usage in `scripts` / `src` / `_api`
 - No dynamic code execution (`eval(` / `new Function(`) in `scripts` / `src` / `_api`
 - No `debugger` statements in `scripts` / `src` / `_api`
