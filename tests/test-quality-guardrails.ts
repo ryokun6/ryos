@@ -69,6 +69,7 @@ export async function runQualityGuardrailTests(): Promise<{
     assert(out.includes("innerHTML assignments"), "Missing innerHTML guardrail");
     assert(out.includes("execSync usage in scripts"), "Missing execSync guardrail");
     assert(out.includes("shell:true command execution"), "Missing shell:true guardrail");
+    assert(out.includes("TODO/FIXME/HACK markers"), "Missing task marker guardrail");
   });
 
   await runTest("reports maintainability and HTML allowlist checks", async () => {
