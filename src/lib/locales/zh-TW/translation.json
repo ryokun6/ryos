@@ -1393,10 +1393,10 @@
         "u2": "U2",
         "unknownArtist": "未知藝人",
         "video": "影片",
-        "display": "Display",
-        "displayVideo": "Video",
-        "displayCover": "Cover",
-        "displayLandscapes": "Landscapes",
+        "display": "顯示",
+        "displayVideo": "影片",
+        "displayCover": "封面",
+        "displayLandscapes": "風景",
         "view": "檢視"
       },
       "menuItems": {
