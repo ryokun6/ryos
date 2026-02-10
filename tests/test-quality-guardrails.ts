@@ -187,6 +187,7 @@ export async function runQualityGuardrailTests(): Promise<{
         out.includes("## Quality Guardrails Report"),
         "Expected markdown heading in summary output"
       );
+      assert(out.includes("- Schema version: 1"), "Expected schema version summary line");
       assert(
         out.includes("| Check | Status | Value | Allowed |"),
         "Expected markdown table header in summary output"
