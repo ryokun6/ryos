@@ -56,6 +56,9 @@ bun run quality:all:ci
 - Allowlisted `dangerouslySetInnerHTML` usage only
 - Allowlisted `biome-ignore lint/correctness/useExhaustiveDependencies` usage only
 
+Most content checks scan TypeScript and JavaScript sources (`.ts/.tsx/.js/.jsx`)
+within the relevant roots.
+
 ## CI
 
 GitHub Actions workflow `.github/workflows/code-quality.yml` runs:

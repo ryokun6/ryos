@@ -332,6 +332,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when execSync usage is introduced in JavaScript scripts", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadExec.js"),
+        `import { execSync } from "node:child_process";\nexecSync("echo hi");\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for execSync in js script, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL execSync usage in scripts"),
+        "Expected execSync guardrail failure for js scripts"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when @ts-nocheck is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
