@@ -32,6 +32,17 @@ const runQualityCheck = (qualityRoot?: string) =>
     },
   });
 
+const runQualityCheckJson = (qualityRoot?: string) =>
+  spawnSync("bun", ["run", "scripts/check-quality-guardrails.ts", "--json"], {
+    cwd: process.cwd(),
+    encoding: "utf-8",
+    stdio: "pipe",
+    env: {
+      ...process.env,
+      ...(qualityRoot ? { QUALITY_GUARDRAILS_ROOT: qualityRoot } : {}),
+    },
+  });
+
 const withTempQualityRoot = (setup: (root: string) => void): string => {
   const root = mkdtempSync(join(tmpdir(), "ryos-quality-guardrails-"));
   setup(root);
@@ -65,6 +76,21 @@ export async function runQualityGuardrailTests(): Promise<{
     assert(
       (result.stdout || "").includes("Quality guardrails check"),
       "Expected quality guardrails header in stdout"
+    );
+  });
+
+  await runTest("quality:check supports JSON output mode", async () => {
+    const result = runQualityCheckJson();
+    assertEq(result.status, 0, `Expected exit code 0, got ${result.status}`);
+    const parsed = JSON.parse(result.stdout || "{}") as {
+      passed?: boolean;
+      checks?: Array<{ name: string }>;
+    };
+    assert(parsed.passed === true, "Expected JSON output to mark passed=true");
+    assert(Array.isArray(parsed.checks), "Expected checks array in JSON output");
+    assert(
+      (parsed.checks || []).some((check) => check.name === "eslint-disable comments"),
+      "Expected eslint-disable guardrail in JSON checks"
     );
   });
 
@@ -227,6 +253,36 @@ export async function runQualityGuardrailTests(): Promise<{
       assert(
         (result.stdout || "").includes("FAIL TODO/FIXME/HACK markers"),
         "Expected TODO/FIXME/HACK guardrail failure"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("JSON mode returns failure status for violations", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(
+        join(root, "src", "Todo.ts"),
+        `// TODO: should fail in JSON mode\nexport const value = 1;\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheckJson(qualityRoot);
+      assertEq(result.status, 1, "Expected JSON mode to return exit code 1");
+      const parsed = JSON.parse(result.stdout || "{}") as {
+        passed?: boolean;
+        checks?: Array<{ name: string; status: string }>;
+      };
+      assert(parsed.passed === false, "Expected passed=false in JSON failure output");
+      assert(
+        (parsed.checks || []).some(
+          (check) =>
+            check.name === "TODO/FIXME/HACK markers" && check.status === "FAIL"
+        ),
+        "Expected TODO guardrail failure entry in JSON output"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });

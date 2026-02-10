@@ -6,10 +6,12 @@ This repository includes automated guardrails to keep code quality from regressi
 
 ```bash
 bun run quality:check
+bun run quality:check:json
 bun run quality:all
 ```
 
 - `quality:check` runs static quality policy checks.
+- `quality:check:json` runs the same checks and prints a JSON report.
 - `quality:all` runs the full local quality gate:
   1. `quality:check`
   2. strict ESLint

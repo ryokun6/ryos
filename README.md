@@ -89,6 +89,7 @@ bun dev              # Start development server
 bun run build        # Build for production
 bun run lint         # Run ESLint
 bun run quality:check # Run code-quality guardrails (suppressions + file-size)
+bun run quality:check:json # Run guardrails and output machine-readable JSON
 bun run quality:all  # Run full quality gate suite (guardrails, lint, build, tests)
 bun run test:songs-utils # Run sanitizer runtime regression tests
 bun run test:quality-guardrails # Verify quality guardrail command wiring

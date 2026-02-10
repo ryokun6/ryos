@@ -30,6 +30,14 @@ interface AllowlistedPatternGuardrail {
   maxAllowedTotal: number;
 }
 
+interface GuardrailResult {
+  name: string;
+  status: "PASS" | "FAIL";
+  value: number;
+  allowed: string;
+  offenders?: Array<{ path: string; count: number }>;
+}
+
 const SKIP_DIRS = new Set([
   "node_modules",
   ".git",
@@ -200,8 +208,12 @@ const checkAllowlistedPattern = async (
 const run = async (): Promise<void> => {
   const cwd = process.env.QUALITY_GUARDRAILS_ROOT || process.cwd();
   let hasViolation = false;
+  const jsonOutput = process.argv.includes("--json");
+  const results: GuardrailResult[] = [];
 
-  console.log("Quality guardrails check\n");
+  if (!jsonOutput) {
+    console.log("Quality guardrails check\n");
+  }
 
   for (const check of GUARDRAILS) {
     const candidateFiles = (
@@ -231,17 +243,29 @@ const run = async (): Promise<void> => {
     const total = offenders.reduce((sum, offender) => sum + offender.count, 0);
 
     const status = total <= check.maxAllowed ? "PASS" : "FAIL";
-    console.log(
-      `${status.padEnd(4)} ${check.name}: ${total} (allowed <= ${check.maxAllowed})`
-    );
+    results.push({
+      name: check.name,
+      status,
+      value: total,
+      allowed: `<= ${check.maxAllowed}`,
+      offenders: status === "FAIL" ? offenders : undefined,
+    });
+
+    if (!jsonOutput) {
+      console.log(
+        `${status.padEnd(4)} ${check.name}: ${total} (allowed <= ${check.maxAllowed})`
+      );
+    }
 
     if (total > check.maxAllowed) {
       hasViolation = true;
-      for (const offender of offenders.slice(0, 20)) {
-        console.log(`      - ${offender.path} (${offender.count})`);
-      }
-      if (offenders.length > 20) {
-        console.log(`      ... and ${offenders.length - 20} more files`);
+      if (!jsonOutput) {
+        for (const offender of offenders.slice(0, 20)) {
+          console.log(`      - ${offender.path} (${offender.count})`);
+        }
+        if (offenders.length > 20) {
+          console.log(`      ... and ${offenders.length - 20} more files`);
+        }
       }
     }
   }
@@ -277,17 +301,29 @@ const run = async (): Promise<void> => {
     largestFileLines <= FILE_SIZE_GUARDRAIL.maxSingleFileLines;
 
   const fileSizeStatus = fileSizeOk ? "PASS" : "FAIL";
-  console.log(
-    `${fileSizeStatus.padEnd(4)} ${FILE_SIZE_GUARDRAIL.name}: ${largeFileCount} files over ${FILE_SIZE_GUARDRAIL.lineThreshold} LOC (allowed <= ${FILE_SIZE_GUARDRAIL.maxFilesOverThreshold}); largest file ${largestFileLines} LOC (allowed <= ${FILE_SIZE_GUARDRAIL.maxSingleFileLines})`
-  );
+  results.push({
+    name: FILE_SIZE_GUARDRAIL.name,
+    status: fileSizeStatus,
+    value: largeFileCount,
+    allowed: `files <= ${FILE_SIZE_GUARDRAIL.maxFilesOverThreshold}; largest <= ${FILE_SIZE_GUARDRAIL.maxSingleFileLines}`,
+    offenders: fileSizeStatus === "FAIL" ? largeFiles : undefined,
+  });
+
+  if (!jsonOutput) {
+    console.log(
+      `${fileSizeStatus.padEnd(4)} ${FILE_SIZE_GUARDRAIL.name}: ${largeFileCount} files over ${FILE_SIZE_GUARDRAIL.lineThreshold} LOC (allowed <= ${FILE_SIZE_GUARDRAIL.maxFilesOverThreshold}); largest file ${largestFileLines} LOC (allowed <= ${FILE_SIZE_GUARDRAIL.maxSingleFileLines})`
+    );
+  }
 
   if (!fileSizeOk) {
     hasViolation = true;
-    for (const file of largeFiles.slice(0, 20)) {
-      console.log(`      - ${file.path} (${file.lines} LOC)`);
-    }
-    if (largeFiles.length > 20) {
-      console.log(`      ... and ${largeFiles.length - 20} more files`);
+    if (!jsonOutput) {
+      for (const file of largeFiles.slice(0, 20)) {
+        console.log(`      - ${file.path} (${file.lines} LOC)`);
+      }
+      if (largeFiles.length > 20) {
+        console.log(`      ... and ${largeFiles.length - 20} more files`);
+      }
     }
   }
 
@@ -299,22 +335,49 @@ const run = async (): Promise<void> => {
   for (const guardrail of allowlistedPatternGuardrails) {
     const result = await checkAllowlistedPattern(cwd, guardrail);
     const status = result.passed ? "PASS" : "FAIL";
-    console.log(
-      `${status.padEnd(4)} ${guardrail.name}: ${result.total} (allowed <= ${guardrail.maxAllowedTotal}, files allowlisted: ${guardrail.allowedFiles.size})`
-    );
+    results.push({
+      name: guardrail.name,
+      status,
+      value: result.total,
+      allowed: `<= ${guardrail.maxAllowedTotal} (allowlisted files: ${guardrail.allowedFiles.size})`,
+      offenders: status === "FAIL" ? result.disallowedMatches : undefined,
+    });
+
+    if (!jsonOutput) {
+      console.log(
+        `${status.padEnd(4)} ${guardrail.name}: ${result.total} (allowed <= ${guardrail.maxAllowedTotal}, files allowlisted: ${guardrail.allowedFiles.size})`
+      );
+    }
 
     if (!result.passed) {
       hasViolation = true;
-      const disallowedMatches = [...result.disallowedMatches].sort((a, b) =>
-        a.path.localeCompare(b.path)
-      );
-      for (const offender of disallowedMatches) {
-        console.log(`      - ${offender.path} (${offender.count})`);
+      if (!jsonOutput) {
+        const disallowedMatches = [...result.disallowedMatches].sort((a, b) =>
+          a.path.localeCompare(b.path)
+        );
+        for (const offender of disallowedMatches) {
+          console.log(`      - ${offender.path} (${offender.count})`);
+        }
       }
     }
   }
 
-  console.log("");
+  if (jsonOutput) {
+    console.log(
+      JSON.stringify(
+        {
+          root: cwd,
+          passed: !hasViolation,
+          checks: results,
+        },
+        null,
+        2
+      )
+    );
+  } else {
+    console.log("");
+  }
+
   if (hasViolation) {
     process.exit(1);
   }
