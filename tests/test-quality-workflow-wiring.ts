@@ -51,8 +51,8 @@ export async function runQualityWorkflowWiringTests(): Promise<{
   await runTest("workflow runs consolidated local quality command", async () => {
     const source = readWorkflow();
     assert(
-      /run:\s*bun run quality:all/.test(source),
-      "Expected CI to run bun run quality:all"
+      /run:\s*bun run quality:all:ci/.test(source),
+      "Expected CI to run bun run quality:all:ci"
     );
   });
 
@@ -68,21 +68,21 @@ export async function runQualityWorkflowWiringTests(): Promise<{
     );
   });
 
-  await runTest("workflow emits JSON report and markdown summary", async () => {
+  await runTest("workflow emits markdown summary from generated JSON report", async () => {
     const source = readWorkflow();
     assert(
-      /run:\s*bun run quality:check:json > quality-report\.json/.test(source),
-      "Expected JSON quality report generation step"
+      !/Generate quality report JSON/.test(source),
+      "Expected JSON generation to be consolidated into quality:all:ci"
+    );
+    assert(
+      !/run:\s*bun run quality:check:json > quality-report\.json/.test(source),
+      "Expected no standalone quality:check:json workflow step"
     );
     assert(
       /bun run quality:summary quality-report\.json >> "\$GITHUB_STEP_SUMMARY"/.test(
         source
       ) && /quality-report\.json was not generated\./.test(source),
       "Expected markdown summary publish step"
-    );
-    assert(
-      /Generate quality report JSON[\s\S]*if:\s*always\(\)/.test(source),
-      "Expected JSON report generation to run with if: always()"
     );
     assert(
       /Publish quality summary[\s\S]*if:\s*always\(\)/.test(source),

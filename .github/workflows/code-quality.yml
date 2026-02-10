@@ -30,11 +30,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run full quality suite
-        run: bun run quality:all
-
-      - name: Generate quality report JSON
-        if: always()
-        run: bun run quality:check:json > quality-report.json
+        run: bun run quality:all:ci
 
       - name: Publish quality summary
         if: always()

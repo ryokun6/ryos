@@ -9,6 +9,7 @@ bun run quality:check
 bun run quality:check:json
 bun run quality:summary quality-report.json
 bun run quality:all
+bun run quality:all:ci
 ```
 
 - `quality:check` runs static quality policy checks.
@@ -24,6 +25,9 @@ bun run quality:all
   7. package quality-scripts wiring tests
   8. quality summary renderer wiring tests
   9. chat wiring regression tests
+- `quality:all:ci` runs the same suite, but starts with
+  `quality:check:json > quality-report.json` so CI can publish a single-pass
+  guardrail artifact and summary.
 
 ## Guardrail Policies
 
@@ -44,20 +48,14 @@ bun run quality:all
 GitHub Actions workflow `.github/workflows/code-quality.yml` runs:
 
 ```bash
-bun run quality:all
+bun run quality:all:ci
 ```
 
 This keeps local and CI quality checks aligned.
-After `quality:all`, CI always attempts to generate a machine-readable
-`quality-report.json` via:
-
-```bash
-bun run quality:check:json
-```
-
-and uploads it as a workflow artifact (`quality-report`) when present.
-CI also publishes a markdown summary table to the GitHub Actions job summary,
-with total/failed check counts and a fallback message if the JSON report was not produced.
+`quality:all:ci` emits a machine-readable `quality-report.json`, which CI uploads
+as a workflow artifact (`quality-report`) when present. CI also publishes a
+markdown summary table to the GitHub Actions job summary, with total/failed
+check counts and a fallback message if the JSON report was not produced.
 
 ## Notes for Contributors
 

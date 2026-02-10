@@ -42,6 +42,7 @@ export async function runQualityScriptsWiringTests(): Promise<{
     assert(!!scripts["quality:check:json"], "Missing quality:check:json script");
     assert(!!scripts["quality:summary"], "Missing quality:summary script");
     assert(!!scripts["quality:all"], "Missing quality:all script");
+    assert(!!scripts["quality:all:ci"], "Missing quality:all:ci script");
   });
 
   console.log(section("Quality all composition"));
@@ -65,6 +66,35 @@ export async function runQualityScriptsWiringTests(): Promise<{
         `quality:all is missing segment: ${segment}`
       );
     }
+  });
+
+  await runTest("quality:all:ci generates report and runs full suite", async () => {
+    const scripts = readPackageScripts();
+    const qualityAllCi = scripts["quality:all:ci"] || "";
+
+    const expectedSegments = [
+      "bun run quality:check:json > quality-report.json",
+      "bunx eslint . --max-warnings 0",
+      "bun run build",
+      "bun run test:songs-utils",
+      "bun run test:quality-guardrails",
+      "bun run test:quality-workflow",
+      "bun run test:quality-scripts",
+      "bun run test:quality-summary",
+      "bun run test:chat-wiring",
+    ];
+
+    for (const segment of expectedSegments) {
+      assert(
+        qualityAllCi.includes(segment),
+        `quality:all:ci is missing segment: ${segment}`
+      );
+    }
+
+    assert(
+      !qualityAllCi.includes("bun run quality:check &&"),
+      "quality:all:ci should not rerun plain quality:check after JSON generation"
+    );
   });
 
   await runTest("quality:check:json uses guardrail json mode", async () => {

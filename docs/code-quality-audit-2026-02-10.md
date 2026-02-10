@@ -10,6 +10,7 @@ This audit documents quality findings and remediations completed for the request
 - `bun run build` ✅
 - `bun run test:chat-wiring` ✅
 - `bun run quality:all` ✅ (consolidated guardrails + lint + build + regression tests)
+- `bun run quality:all:ci` ✅ (single-pass CI suite with JSON report emission)
 
 > Note: the full API integration suite requires a running local API server and external env-backed services.
 
@@ -107,8 +108,9 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - allowlisted `dangerouslySetInnerHTML` usage (only permitted in `HtmlPreview` stream renderer).
   - allowlisted `biome-ignore lint/correctness/useExhaustiveDependencies` usage (currently only permitted in `useStreamingFetch`).
 - Added machine-readable output mode: `bun run quality:check:json`.
-- CI now publishes `quality-report.json` artifact generated from `quality:check:json`
-  (runs with `if: always()` after the main quality suite) and emits a markdown
+- Added `bun run quality:all:ci` to run the full CI quality suite while emitting
+  `quality-report.json` in the same command.
+- CI now publishes `quality-report.json` as an artifact and emits a markdown
   summary table in the workflow job summary.
 - Added package script wiring coverage:
   - `tests/test-quality-scripts-wiring.ts`
