@@ -174,6 +174,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   (explicit timeout + concurrency cancellation) to reduce CI drift risk.
 - Workflow wiring tests verify report-publishing step ordering (quality run →
   summary publish → artifact upload) to prevent CI reporting regressions.
+- Workflow wiring tests verify dependency installation uses
+  `bun install --frozen-lockfile` for reproducible CI runs.
 
 ### Low priority
 
