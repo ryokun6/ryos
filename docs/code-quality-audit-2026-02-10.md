@@ -135,6 +135,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - `tests/test-quality-scripts-wiring.ts`
   - included in `quality:all` via `bun run test:quality-scripts`.
   - asserts `quality:all:ci` generates `quality-report.json` before subsequent stages.
+  - asserts `quality:all`/`quality:all:ci` composition stays non-recursive.
 - Guardrail wiring tests assert JSON-mode output includes the full expected set of
   critical guardrails (security, merge safety, and maintainability thresholds).
 - Guardrail wiring tests validate JSON offender schema contract (`{ path, count }`)
