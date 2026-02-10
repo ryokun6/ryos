@@ -55,6 +55,10 @@ export async function runQualityWorkflowWiringTests(): Promise<{
   await runTest("workflow pins Bun setup action", async () => {
     const source = readWorkflow();
     assert(
+      /uses:\s*actions\/checkout@v4/.test(source),
+      "Expected checkout action pin"
+    );
+    assert(
       /uses:\s*oven-sh\/setup-bun@v2/.test(source),
       "Expected setup-bun action"
     );
