@@ -2536,6 +2536,35 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   );
 
+  await runTest(
+    "fails when template-bracket string-based setTimeout is introduced",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "BadTemplateBracketTimer.js"),
+          "globalThis[`setTimeout`](\"console.log('x')\", 100);\n",
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for template-bracket timer string, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL string-based timer execution usage"),
+          "Expected string-based timer guardrail failure for template-bracket invocation"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
   await runTest("fails when eval is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });

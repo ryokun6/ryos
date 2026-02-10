@@ -117,7 +117,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - `execSync(` prevention scope expanded to scripts/source/api (not just scripts)
   - string-based timer execution prevention (`setTimeout("...")`,
     `setInterval("...")`, `setImmediate("...")`, including template-literal strings
-    and optional/bracket invocation forms, with spacing-tolerant matching)
+    and optional/bracket invocation forms (including template-bracket access),
+    with spacing-tolerant matching)
   - SQL safety guardrails (block unsafe Prisma raw SQL methods and `Prisma.raw(...)`)
   - dynamic code execution/debugging prevention (`eval(`, `new Function(`,
     `Function("...")`, `debugger`) with spacing-tolerant invocation matching
