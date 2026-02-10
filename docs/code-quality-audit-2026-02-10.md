@@ -204,6 +204,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes malformed report validation to ensure summary rendering fails loudly
     for invalid `quality-report.json` shapes.
   - includes explicit `schemaVersion` type/positivity validation coverage.
+  - includes unsupported integer schemaVersion rejection coverage (only version 1 accepted).
   - includes `passed`/failed-status consistency and offender-entry schema
     validation coverage.
   - includes non-negative integer check-value validation and PASS/offender

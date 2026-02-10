@@ -88,6 +88,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "bare marker (`<<<<<<<` / `>>>>>>>`) failure coverage",
       "documentation markdown merge-marker failure coverage",
       "`schemaVersion` type/positivity validation coverage",
+      "only version 1 accepted",
       "`passed`/failed-status consistency",
       "PASS/offender",
       "duplicate check-name validation coverage",

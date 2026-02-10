@@ -80,6 +80,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "Allowlisted `dangerouslySetInnerHTML` usage only",
       "`schemaVersion` plus `totalChecks` and",
       "`failedChecks` metadata.",
+      "validated as exact integer `1`",
       "Validation includes `passed` vs failed-status consistency",
       "non-negative integer check values",
       "requires FAIL checks to include at least one offender entry",

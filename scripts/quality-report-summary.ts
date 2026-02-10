@@ -37,9 +37,9 @@ const assertQualityReport = (value: unknown): QualityReport => {
   }
   if (
     report.schemaVersion !== undefined &&
-    (!Number.isInteger(report.schemaVersion) || report.schemaVersion < 1)
+    (!Number.isInteger(report.schemaVersion) || report.schemaVersion !== 1)
   ) {
-    throw new Error("Quality report schemaVersion must be a positive integer");
+    throw new Error("Quality report schemaVersion must be integer value 1");
   }
   if (!Array.isArray(report.checks)) {
     throw new Error("Quality report must include a checks array");

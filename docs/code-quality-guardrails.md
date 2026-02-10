@@ -111,6 +111,7 @@ Offender paths are normalized to forward slashes and emitted in deterministic or
 `failedChecks` metadata.
 Summary rendering now validates report schema and fails fast on malformed input
 to prevent silent CI summary corruption.
+`schemaVersion` is currently validated as exact integer `1`.
 Validation includes `passed` vs failed-status consistency and offender entry
 shape checks (`path` + positive integer `count`).
 Validation also enforces non-negative integer check values and blocks PASS checks

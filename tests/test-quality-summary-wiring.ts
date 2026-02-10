@@ -260,7 +260,7 @@ export async function runQualitySummaryWiringTests(): Promise<{
     );
   });
 
-  await runTest("fails when schemaVersion is not a positive integer", async () => {
+  await runTest("fails when schemaVersion is invalid or unsupported", async () => {
     withTempReport(
       {
         schemaVersion: "v1",
@@ -282,6 +282,33 @@ export async function runQualitySummaryWiringTests(): Promise<{
         assert(
           err.includes("schemaVersion"),
           "Expected schemaVersion validation error for non-integer values"
+        );
+      }
+    );
+  });
+
+  await runTest("fails when schemaVersion is unsupported integer", async () => {
+    withTempReport(
+      {
+        schemaVersion: 2,
+        root: "/tmp/example",
+        passed: true,
+        checks: [
+          {
+            name: "eslint-disable comments",
+            status: "PASS",
+            value: 0,
+            allowed: "<= 0",
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("schemaVersion"),
+          "Expected schemaVersion validation error for unsupported version"
         );
       }
     );
