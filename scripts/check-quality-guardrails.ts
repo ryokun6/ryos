@@ -107,7 +107,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     name: "string-based setTimeout/setInterval usage",
     roots: ["src", "_api", "scripts"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],
-    pattern: /setTimeout\(\s*['"]|setInterval\(\s*['"]/g,
+    pattern: /setTimeout\(\s*['"`]|setInterval\(\s*['"`]/g,
     maxAllowed: 0,
   },
   {

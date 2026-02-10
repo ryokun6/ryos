@@ -112,7 +112,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
     `insertAdjacentHTML(...)`, `document.write(...)`)
   - command execution hardening (`child_process` `exec` import blocked in scripts/source/api)
   - `execSync(` prevention scope expanded to scripts/source/api (not just scripts)
-  - string-based timer execution prevention (`setTimeout("...")`, `setInterval("...")`)
+  - string-based timer execution prevention (`setTimeout("...")`,
+    `setInterval("...")`, including template-literal strings)
   - SQL safety guardrail (blocks unsafe Prisma raw SQL method usage)
   - dynamic code execution/debugging prevention (`eval(`, `new Function(`, `debugger`)
   - merge conflict marker prevention (`<<<<<<<`, `=======`, `>>>>>>>`)
