@@ -187,6 +187,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
     unrelated object `.exec(...)` calls are present.
   - includes optional-chaining `?.exec(...)` variant coverage.
   - includes inline `require("child_process")?.exec(...)` variant coverage.
+  - includes require-alias optional-chaining variant coverage (`const cp = require(...); cp?.exec(...)`).
 - Guardrail offender paths/order are stabilized (forward-slash path normalization +
   deterministic tie-break ordering for equal-size offenders).
   - includes deterministic ordering coverage for allowlisted-check offender output.

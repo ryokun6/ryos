@@ -922,6 +922,35 @@ export async function runQualityGuardrailTests(): Promise<{
   );
 
   await runTest(
+    "fails when require alias optional-chaining exec usage is introduced",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "BadExecRequireAliasOptionalChain.ts"),
+          ['const cp = require("child_process");', 'cp?.exec("echo hi");', ""].join("\n"),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for require alias optional-chain exec usage, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL child_process.exec direct usage"),
+          "Expected child_process.exec direct-usage guardrail failure for require alias optional chaining"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
     "passes when namespace child_process import exists without alias.exec usage",
     async () => {
       const qualityRoot = withTempQualityRoot((root) => {
