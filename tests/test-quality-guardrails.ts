@@ -127,6 +127,50 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("quality:check JSON check ordering is deterministic", async () => {
+    const first = runQualityCheckJson();
+    const second = runQualityCheckJson();
+    assertEq(first.status, 0, "Expected first JSON run to pass");
+    assertEq(second.status, 0, "Expected second JSON run to pass");
+
+    const firstParsed = JSON.parse(first.stdout || "{}") as {
+      checks?: Array<{ name: string; status: string; value: number }>;
+      totalChecks?: number;
+      failedChecks?: number;
+    };
+    const secondParsed = JSON.parse(second.stdout || "{}") as {
+      checks?: Array<{ name: string; status: string; value: number }>;
+      totalChecks?: number;
+      failedChecks?: number;
+    };
+
+    const firstChecks = firstParsed.checks || [];
+    const secondChecks = secondParsed.checks || [];
+    assertEq(
+      firstChecks.length,
+      secondChecks.length,
+      "Expected equal check counts between repeated JSON runs"
+    );
+    for (let index = 0; index < firstChecks.length; index++) {
+      const a = firstChecks[index];
+      const b = secondChecks[index];
+      assert(
+        a.name === b.name && a.status === b.status && a.value === b.value,
+        `Expected deterministic check ordering/value at index ${index}`
+      );
+    }
+    assertEq(
+      firstParsed.totalChecks,
+      secondParsed.totalChecks,
+      "Expected deterministic totalChecks metadata"
+    );
+    assertEq(
+      firstParsed.failedChecks,
+      secondParsed.failedChecks,
+      "Expected deterministic failedChecks metadata"
+    );
+  });
+
   await runTest("quality:summary renders markdown from JSON report", async () => {
     const jsonResult = runQualityCheckJson();
     assertEq(jsonResult.status, 0, "Expected JSON report command to pass");

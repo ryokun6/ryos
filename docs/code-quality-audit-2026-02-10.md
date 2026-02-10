@@ -135,6 +135,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   critical guardrails (security, merge safety, and maintainability thresholds).
 - Guardrail wiring tests validate JSON offender schema contract (`{ path, count }`)
   across different failing guardrail types.
+- Guardrail wiring tests validate deterministic JSON output ordering/values across
+  repeated runs to prevent flaky CI report diffs.
 - Guardrail offender paths/order are stabilized (forward-slash path normalization +
   deterministic tie-break ordering for equal-size offenders).
 - Added summary renderer wiring coverage:
