@@ -8,6 +8,7 @@ interface QualityCheckEntry {
   status: "PASS" | "FAIL";
   value: number;
   allowed: string;
+  offenders?: Array<{ path: string; count: number }>;
 }
 
 interface QualityReport {
@@ -37,6 +38,19 @@ const run = async (): Promise<void> => {
     lines.push(
       `- Failed check names: ${failedChecks.map((check) => check.name).join(", ")}`
     );
+  }
+  const failedChecksWithOffenders = failedChecks.filter(
+    (check) => Array.isArray(check.offenders) && check.offenders.length > 0
+  );
+  if (failedChecksWithOffenders.length > 0) {
+    lines.push("");
+    lines.push("### Failed check offenders (top 5 each)");
+    for (const check of failedChecksWithOffenders) {
+      lines.push(`- **${check.name}**`);
+      for (const offender of (check.offenders || []).slice(0, 5)) {
+        lines.push(`  - \`${offender.path}\` (${offender.count})`);
+      }
+    }
   }
   lines.push("");
   lines.push("| Check | Status | Value | Allowed |");

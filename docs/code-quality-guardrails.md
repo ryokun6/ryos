@@ -57,7 +57,8 @@ This keeps local and CI quality checks aligned.
 `quality:all:ci` emits a machine-readable `quality-report.json`, which CI uploads
 as a workflow artifact (`quality-report`) when present. CI also publishes a
 markdown summary table to the GitHub Actions job summary, with total/failed
-check counts and a fallback message if the JSON report was not produced.
+check counts, failed-check offender previews (top 5 per check), and a fallback
+message if the JSON report was not produced.
 
 ## Notes for Contributors
 

@@ -88,6 +88,10 @@ export async function runQualitySummaryWiringTests(): Promise<{
             status: "FAIL",
             value: 2,
             allowed: "<= 0",
+            offenders: [
+              { path: "src/a.ts", count: 1 },
+              { path: "src/b.ts", count: 1 },
+            ],
           },
           {
             name: "eslint-disable comments",
@@ -106,6 +110,18 @@ export async function runQualitySummaryWiringTests(): Promise<{
         assert(
           out.includes("- Failed check names: TODO/FIXME/HACK markers"),
           "Missing failed check names list"
+        );
+        assert(
+          out.includes("### Failed check offenders (top 5 each)"),
+          "Missing failed offender heading"
+        );
+        assert(
+          out.includes("- **TODO/FIXME/HACK markers**"),
+          "Missing failed offender check heading"
+        );
+        assert(
+          out.includes("`src/a.ts` (1)") && out.includes("`src/b.ts` (1)"),
+          "Missing failed offender rows"
         );
       }
     );
