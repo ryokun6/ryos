@@ -38,6 +38,18 @@ const withTempQualityRoot = (setup: (root: string) => void): string => {
   return root;
 };
 
+const writeFileWithLineCount = (
+  filePath: string,
+  lineCount: number,
+  linePrefix: string
+) => {
+  const contents = Array.from(
+    { length: lineCount },
+    (_, index) => `${linePrefix} ${index}\n`
+  ).join("");
+  writeFileSync(filePath, contents, "utf-8");
+};
+
 export async function runQualityGuardrailTests(): Promise<{
   passed: number;
   failed: number;
@@ -165,6 +177,32 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest("fails when execSync usage is introduced", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      writeFileSync(
+        join(root, "scripts", "BadExec.ts"),
+        `import { execSync } from "node:child_process";\nexecSync("echo hi");\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for execSync usage, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL execSync usage in scripts"),
+        "Expected execSync guardrail failure"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
   await runTest("fails when TODO markers are introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
@@ -185,6 +223,35 @@ export async function runQualityGuardrailTests(): Promise<{
       assert(
         (result.stdout || "").includes("FAIL TODO/FIXME/HACK markers"),
         "Expected TODO/FIXME/HACK guardrail failure"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when large file guardrail is exceeded", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      // Exceed maxFilesOverThreshold (14) with 15 files at 1501 LOC each.
+      for (let i = 0; i < 15; i++) {
+        writeFileWithLineCount(
+          join(root, "src", `Big${i}.ts`),
+          1501,
+          "export const x = 1;"
+        );
+      }
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for large file count, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL large TypeScript files"),
+        "Expected large TypeScript files guardrail failure"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });
