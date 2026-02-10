@@ -119,6 +119,11 @@ const assertQualityReport = (value: unknown): QualityReport => {
             `Check "${candidate.name}" includes duplicate offender path: ${offenderCandidate.path}`
           );
         }
+        if (offenderCandidate.path !== offenderCandidate.path.trim()) {
+          throw new Error(
+            `Check "${candidate.name}" offender paths must not include surrounding whitespace`
+          );
+        }
         if (offenderCandidate.path.includes("\\")) {
           throw new Error(
             `Check "${candidate.name}" offender paths must use forward slashes`

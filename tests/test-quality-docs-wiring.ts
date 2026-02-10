@@ -95,6 +95,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "unique offender paths within each failed check entry",
       "offender paths sorted ascending within each failed check",
       "rejects whitespace-only offender paths",
+      "rejects offender paths with surrounding whitespace",
       "forward slashes only",
       "non-empty checks array",
       "non-empty (non-whitespace) `root`, check names, and",

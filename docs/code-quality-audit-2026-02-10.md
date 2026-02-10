@@ -216,6 +216,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes duplicate offender-path validation coverage.
   - includes offender-path ascending-order validation coverage.
   - includes whitespace-only offender-path rejection coverage.
+  - includes surrounding-whitespace offender-path rejection coverage.
   - includes backslash offender-path rejection coverage (forward-slash only).
   - includes FAIL-check offender-presence validation coverage.
   - includes non-empty checks-array validation coverage.
