@@ -9,6 +9,7 @@ This audit documents quality findings and remediations completed for the request
 - `bunx eslint . --max-warnings 0` ✅
 - `bun run build` ✅
 - `bun run test:chat-wiring` ✅
+- `bun run quality:verify` ✅ (strict lint/build + quality regression tests)
 - `bun run quality:all` ✅ (consolidated guardrails + lint + build + regression tests)
 - `bun run quality:all:ci` ✅ (single-pass CI suite with JSON report emission)
 
@@ -23,6 +24,7 @@ This audit documents quality findings and remediations completed for the request
 | `@ts-ignore` / `@ts-expect-error` (`src` + `_api`) | 6 | 0 | -6 |
 | `innerHTML = ...` assignments (`src`) | 15 | 0 | -15 |
 | `execSync(` usages (`scripts`) | 2 | 0 | -2 |
+| Files >1000 LOC (`src` + `_api`) | 30 | 29 | -1 |
 | Files >1500 LOC (`src` + `_api`) | 14 | 14 | unchanged |
 
 ## Implemented Remediations
@@ -107,6 +109,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - no unresolved task markers in source (`TODO`, `FIXME`, `HACK`, `XXX`)
   - file-size regression checks (max files over 1000 LOC, max files over 1500 LOC,
     and max single-file LOC cap).
+  - cached source/candidate file scanning for faster quality-check execution.
   - allowlisted `dangerouslySetInnerHTML` usage (only permitted in `HtmlPreview` stream renderer).
   - allowlisted `biome-ignore lint/correctness/useExhaustiveDependencies` usage (currently only permitted in `useStreamingFetch`).
 - Added machine-readable output mode: `bun run quality:check:json`.
