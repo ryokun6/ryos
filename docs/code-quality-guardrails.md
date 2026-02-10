@@ -135,6 +135,8 @@ Validation enforces offender paths sorted ascending within each failed check.
 Validation rejects whitespace-only offender paths.
 Validation rejects offender paths with surrounding whitespace.
 Validation rejects offender paths containing backslashes (forward slashes only).
+Validation rejects line breaks in `root`, check names, allowed text, and
+offender paths.
 Validation enforces a non-empty checks array.
 Validation requires non-empty (non-whitespace) `root`, check names, and
 `allowed` descriptor text.

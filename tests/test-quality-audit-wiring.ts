@@ -109,6 +109,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "whitespace-only offender-path rejection coverage",
       "surrounding-whitespace offender-path rejection coverage",
       "backslash offender-path rejection coverage",
+      "line-break rejection for root/check-name/allowed/offender-path fields",
       "FAIL-check offender-presence validation coverage",
       "non-empty checks-array validation coverage",
       "non-whitespace root/check-name/allowed-text validation coverage",

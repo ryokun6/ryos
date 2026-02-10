@@ -100,6 +100,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "rejects whitespace-only offender paths",
       "rejects offender paths with surrounding whitespace",
       "forward slashes only",
+      "rejects line breaks in `root`, check names, allowed text, and",
       "non-empty checks array",
       "non-empty (non-whitespace) `root`, check names, and",
       "surrounding whitespace for `root`, check names, and",

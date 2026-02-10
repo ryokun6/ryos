@@ -542,6 +542,30 @@ export async function runQualitySummaryWiringTests(): Promise<{
     );
   });
 
+  await runTest("fails when root field contains line breaks", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example\nnested",
+        passed: true,
+        checks: [
+          {
+            name: "eslint-disable comments",
+            status: "PASS",
+            value: 0,
+            allowed: "<= 0",
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(err.includes("line breaks"), "Expected root line-break validation error");
+      }
+    );
+  });
+
   await runTest("fails when check name is whitespace-only", async () => {
     withTempReport(
       {
@@ -642,6 +666,33 @@ export async function runQualitySummaryWiringTests(): Promise<{
         assert(
           err.includes("allowed text must not include surrounding whitespace"),
           "Expected allowed-text surrounding-whitespace validation error"
+        );
+      }
+    );
+  });
+
+  await runTest("fails when allowed text contains line breaks", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: true,
+        checks: [
+          {
+            name: "eslint-disable comments",
+            status: "PASS",
+            value: 0,
+            allowed: "<= 0\n(extra)",
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("allowed text must not contain line breaks"),
+          "Expected allowed-text line-break validation error"
         );
       }
     );
@@ -757,6 +808,34 @@ export async function runQualitySummaryWiringTests(): Promise<{
         assert(
           err.includes("surrounding whitespace"),
           "Expected surrounding-whitespace offender-path validation error"
+        );
+      }
+    );
+  });
+
+  await runTest("fails when offender path contains line breaks", async () => {
+    withTempReport(
+      {
+        schemaVersion: 1,
+        root: "/tmp/example",
+        passed: false,
+        checks: [
+          {
+            name: "merge conflict markers",
+            status: "FAIL",
+            value: 1,
+            allowed: "<= 0",
+            offenders: [{ path: "src/a.ts\nx", count: 1 }],
+          },
+        ],
+      },
+      (reportPath) => {
+        const result = runSummary(reportPath);
+        assertEq(result.status, 1, `Expected exit 1, got ${result.status}`);
+        const err = result.stderr || "";
+        assert(
+          err.includes("offender paths must not contain line breaks"),
+          "Expected offender-path line-break validation error"
         );
       }
     );

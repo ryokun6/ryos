@@ -23,6 +23,8 @@ interface QualityReport {
 const iconForStatus = (status: "PASS" | "FAIL"): string =>
   status === "PASS" ? "✅" : "❌";
 
+const hasLineBreak = (value: string): boolean => /[\r\n]/.test(value);
+
 const assertQualityReport = (value: unknown): QualityReport => {
   if (!value || typeof value !== "object") {
     throw new Error("Quality report must be a JSON object");
@@ -34,6 +36,9 @@ const assertQualityReport = (value: unknown): QualityReport => {
   }
   if (report.root !== report.root.trim()) {
     throw new Error("Quality report root must not include surrounding whitespace");
+  }
+  if (hasLineBreak(report.root)) {
+    throw new Error("Quality report root must not contain line breaks");
   }
   if (typeof report.passed !== "boolean") {
     throw new Error("Quality report must include a boolean passed field");
@@ -74,6 +79,9 @@ const assertQualityReport = (value: unknown): QualityReport => {
     if (candidate.name !== candidate.name.trim()) {
       throw new Error(`Check at index ${index} name must not include surrounding whitespace`);
     }
+    if (hasLineBreak(candidate.name)) {
+      throw new Error(`Check at index ${index} name must not contain line breaks`);
+    }
     if (candidate.status !== "PASS" && candidate.status !== "FAIL") {
       throw new Error(`Check "${candidate.name}" has invalid status`);
     }
@@ -92,6 +100,9 @@ const assertQualityReport = (value: unknown): QualityReport => {
       throw new Error(
         `Check "${candidate.name}" allowed text must not include surrounding whitespace`
       );
+    }
+    if (hasLineBreak(candidate.allowed)) {
+      throw new Error(`Check "${candidate.name}" allowed text must not contain line breaks`);
     }
     if (candidate.offenders !== undefined) {
       if (!Array.isArray(candidate.offenders)) {
@@ -133,6 +144,11 @@ const assertQualityReport = (value: unknown): QualityReport => {
         if (offenderCandidate.path !== offenderCandidate.path.trim()) {
           throw new Error(
             `Check "${candidate.name}" offender paths must not include surrounding whitespace`
+          );
+        }
+        if (hasLineBreak(offenderCandidate.path)) {
+          throw new Error(
+            `Check "${candidate.name}" offender paths must not contain line breaks`
           );
         }
         if (offenderCandidate.path.includes("\\")) {

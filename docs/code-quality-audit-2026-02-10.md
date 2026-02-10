@@ -220,6 +220,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes whitespace-only offender-path rejection coverage.
   - includes surrounding-whitespace offender-path rejection coverage.
   - includes backslash offender-path rejection coverage (forward-slash only).
+  - includes line-break rejection for root/check-name/allowed/offender-path fields.
   - includes FAIL-check offender-presence validation coverage.
   - includes non-empty checks-array validation coverage.
   - includes non-whitespace root/check-name/allowed-text validation coverage.
