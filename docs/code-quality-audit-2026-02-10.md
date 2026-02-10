@@ -110,6 +110,9 @@ Large files remain the biggest quality risk (all >1500 LOC):
 - CI now publishes `quality-report.json` artifact generated from `quality:check:json`
   (runs with `if: always()` after the main quality suite) and emits a markdown
   summary table in the workflow job summary.
+- Added package script wiring coverage:
+  - `tests/test-quality-scripts-wiring.ts`
+  - included in `quality:all` via `bun run test:quality-scripts`.
 
 ### Low priority
 
