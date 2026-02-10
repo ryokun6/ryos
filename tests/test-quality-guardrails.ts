@@ -1039,6 +1039,37 @@ export async function runQualityGuardrailTests(): Promise<{
   );
 
   await runTest(
+    "fails when namespace alias template-bracket exec usage is introduced",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "BadExecTemplateBracketAlias.ts"),
+          ['import * as cp from "node:child_process";', 'cp[`exec`]("echo hi");', ""].join(
+            "\n"
+          ),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for template-bracket alias exec usage, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL child_process.exec direct usage"),
+          "Expected child_process.exec direct-usage guardrail failure for template-bracket alias"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
     "fails when namespace alias optional bracket exec usage is introduced",
     async () => {
       const qualityRoot = withTempQualityRoot((root) => {
@@ -1847,6 +1878,35 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest(
+    "fails when template-bracket innerHTML assignment is introduced in JavaScript",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src"), { recursive: true });
+        writeFileSync(
+          join(root, "src", "BadInnerTemplateBracket.js"),
+          "const el = document.createElement(\"div\");\nel[`innerHTML`] = \"<b>x</b>\";\n",
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for template-bracket innerHTML assignment in js, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL innerHTML assignments"),
+          "Expected innerHTML guardrail failure for template-bracket assignment syntax"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
   await runTest("fails when outerHTML assignment is introduced in JavaScript", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
@@ -2080,6 +2140,35 @@ export async function runQualityGuardrailTests(): Promise<{
         assert(
           (result.stdout || "").includes("FAIL document.write usage"),
           "Expected document.write guardrail failure for optional bracket writeln variant"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
+    "fails when document template-bracket write usage is introduced in JavaScript",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src"), { recursive: true });
+        writeFileSync(
+          join(root, "src", "BadDocumentTemplateBracketWrite.js"),
+          "document[`write`](\"<p>oops</p>\");\n",
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for document template-bracket write in js, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL document.write usage"),
+          "Expected document.write guardrail failure for template-bracket write variant"
         );
       } finally {
         rmSync(qualityRoot, { recursive: true, force: true });

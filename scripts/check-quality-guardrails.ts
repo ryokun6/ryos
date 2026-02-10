@@ -91,14 +91,14 @@ const GUARDRAILS: GuardrailCheck[] = [
     name: "innerHTML assignments",
     roots: ["src"],
     extensions: CODE_EXTENSIONS,
-    pattern: /innerHTML\s*(?:\+?=)|\[\s*["']innerHTML["']\s*\]\s*(?:\+?=)/g,
+    pattern: /innerHTML\s*(?:\+?=)|\[\s*["'`]innerHTML["'`]\s*\]\s*(?:\+?=)/g,
     maxAllowed: 0,
   },
   {
     name: "outerHTML assignments",
     roots: ["src"],
     extensions: CODE_EXTENSIONS,
-    pattern: /outerHTML\s*(?:\+?=)|\[\s*["']outerHTML["']\s*\]\s*(?:\+?=)/g,
+    pattern: /outerHTML\s*(?:\+?=)|\[\s*["'`]outerHTML["'`]\s*\]\s*(?:\+?=)/g,
     maxAllowed: 0,
   },
   {
@@ -106,7 +106,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["src"],
     extensions: CODE_EXTENSIONS,
     pattern:
-      /insertAdjacentHTML\s*\(|\[\s*["']insertAdjacentHTML["']\s*\]\s*\(/g,
+      /insertAdjacentHTML\s*\(|\[\s*["'`]insertAdjacentHTML["'`]\s*\]\s*\(/g,
     maxAllowed: 0,
   },
   {
@@ -114,7 +114,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["src"],
     extensions: CODE_EXTENSIONS,
     pattern:
-      /document(?:\?\.|\.)write(?:ln)?\s*\(|document(?:\?\.)?\s*\[\s*["']write(?:ln)?["']\s*\]\s*\(/g,
+      /document(?:\?\.|\.)write(?:ln)?\s*\(|document(?:\?\.)?\s*\[\s*["'`]write(?:ln)?["'`]\s*\]\s*\(/g,
     maxAllowed: 0,
   },
   {
@@ -146,7 +146,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["scripts", "src", "_api"],
     extensions: CODE_EXTENSIONS,
     pattern:
-      /\bchild_process(?:\?\.|\.)exec\s*\(|\bchild_process(?:\?\.)?\[\s*["']exec["']\s*\]\s*\(|\brequire\(["'](?:node:)?child_process["']\)(?:\?\.|\.)exec\s*\(|\brequire\(["'](?:node:)?child_process["']\)(?:\?\.)?\[\s*["']exec["']\s*\]\s*\(|import\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\1(?:\?\.|\.)exec\s*\(|import\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\2(?:\?\.)?\[\s*["']exec["']\s*\]\s*\(|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\(["'](?:node:)?child_process["']\)[\s\S]*?\b\3(?:\?\.|\.)exec\s*\(|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\(["'](?:node:)?child_process["']\)[\s\S]*?\b\4(?:\?\.)?\[\s*["']exec["']\s*\]\s*\(|import\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\5(?:\?\.|\.)exec\s*\(|import\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\6(?:\?\.)?\[\s*["']exec["']\s*\]\s*\(/g,
+      /\bchild_process(?:\?\.|\.)exec\s*\(|\bchild_process(?:\?\.)?\[\s*["'`]exec["'`]\s*\]\s*\(|\brequire\(["'](?:node:)?child_process["']\)(?:\?\.|\.)exec\s*\(|\brequire\(["'](?:node:)?child_process["']\)(?:\?\.)?\[\s*["'`]exec["'`]\s*\]\s*\(|import\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\1(?:\?\.|\.)exec\s*\(|import\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\2(?:\?\.)?\[\s*["'`]exec["'`]\s*\]\s*\(|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\(["'](?:node:)?child_process["']\)[\s\S]*?\b\3(?:\?\.|\.)exec\s*\(|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\(["'](?:node:)?child_process["']\)[\s\S]*?\b\4(?:\?\.)?\[\s*["'`]exec["'`]\s*\]\s*\(|import\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\5(?:\?\.|\.)exec\s*\(|import\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\6(?:\?\.)?\[\s*["'`]exec["'`]\s*\]\s*\(/g,
     maxAllowed: 0,
   },
   {
