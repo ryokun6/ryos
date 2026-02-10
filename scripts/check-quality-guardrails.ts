@@ -50,12 +50,15 @@ const SKIP_DIRS = new Set([
 const SOURCE_CACHE = new Map<string, Promise<string>>();
 const CANDIDATE_FILE_CACHE = new Map<string, Promise<string[]>>();
 const SCRIPT_TASK_MARKER_BASELINE_CAP = 19;
+const CODE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
+const SCRIPT_CODE_EXTENSIONS = [".ts", ".js", ".mjs", ".cjs"];
+const MERGE_MARKER_EXTENSIONS = [...CODE_EXTENSIONS, ".json", ".md", ".yml", ".yaml"];
 
 const GUARDRAILS: GuardrailCheck[] = [
   {
     name: "eslint-disable comments",
     roots: ["src", "_api", "scripts"],
-    extensions: [".ts", ".tsx", ".js"],
+    extensions: CODE_EXTENSIONS,
     pattern: /eslint-disable/g,
     maxAllowed: 0,
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
@@ -63,7 +66,7 @@ const GUARDRAILS: GuardrailCheck[] = [
   {
     name: "@ts-ignore/@ts-expect-error",
     roots: ["src", "_api", "scripts"],
-    extensions: [".ts", ".tsx", ".js"],
+    extensions: CODE_EXTENSIONS,
     pattern: /@ts-ignore|@ts-expect-error/g,
     maxAllowed: 0,
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
@@ -71,7 +74,7 @@ const GUARDRAILS: GuardrailCheck[] = [
   {
     name: "@ts-nocheck comments",
     roots: ["src", "_api", "scripts"],
-    extensions: [".ts", ".tsx", ".js"],
+    extensions: CODE_EXTENSIONS,
     pattern: /@ts-nocheck/g,
     maxAllowed: 0,
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
@@ -79,49 +82,49 @@ const GUARDRAILS: GuardrailCheck[] = [
   {
     name: "innerHTML assignments",
     roots: ["src"],
-    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    extensions: CODE_EXTENSIONS,
     pattern: /innerHTML\s*(?:\+?=)/g,
     maxAllowed: 0,
   },
   {
     name: "outerHTML assignments",
     roots: ["src"],
-    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    extensions: CODE_EXTENSIONS,
     pattern: /outerHTML\s*(?:\+?=)/g,
     maxAllowed: 0,
   },
   {
     name: "insertAdjacentHTML usage",
     roots: ["src"],
-    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    extensions: CODE_EXTENSIONS,
     pattern: /insertAdjacentHTML\(/g,
     maxAllowed: 0,
   },
   {
     name: "document.write usage",
     roots: ["src"],
-    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    extensions: CODE_EXTENSIONS,
     pattern: /document\.write(?:ln)?\(/g,
     maxAllowed: 0,
   },
   {
     name: "string-based timer execution usage",
     roots: ["src", "_api", "scripts"],
-    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    extensions: CODE_EXTENSIONS,
     pattern: /setTimeout\(\s*['"`]|setInterval\(\s*['"`]|setImmediate\(\s*['"`]/g,
     maxAllowed: 0,
   },
   {
     name: "execSync usage",
     roots: ["scripts", "src", "_api"],
-    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    extensions: CODE_EXTENSIONS,
     pattern: /execSync\(/g,
     maxAllowed: 0,
   },
   {
     name: "child_process exec import usage",
     roots: ["scripts", "src", "_api"],
-    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    extensions: CODE_EXTENSIONS,
     pattern:
       /\bimport\s*\{[^}]*\bexec\b[^}]*\}\s*from\s*["'](?:node:)?child_process["']|\b(?:const|let|var)\s*\{[^}]*\bexec\b[^}]*\}\s*=\s*require\(["'](?:node:)?child_process["']\)/g,
     maxAllowed: 0,
@@ -130,7 +133,7 @@ const GUARDRAILS: GuardrailCheck[] = [
   {
     name: "child_process.exec direct usage",
     roots: ["scripts", "src", "_api"],
-    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    extensions: CODE_EXTENSIONS,
     pattern:
       /\bchild_process(?:\?\.|\.)exec\(|\brequire\(["'](?:node:)?child_process["']\)(?:\?\.|\.)exec\(|import\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\1(?:\?\.|\.)exec\(|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*require\(["'](?:node:)?child_process["']\)[\s\S]*?\b\2(?:\?\.|\.)exec\(|import\s+([A-Za-z_$][\w$]*)\s+from\s+["'](?:node:)?child_process["'][\s\S]*?\b\3(?:\?\.|\.)exec\(/g,
     maxAllowed: 0,
@@ -138,7 +141,7 @@ const GUARDRAILS: GuardrailCheck[] = [
   {
     name: "unsafe Prisma raw SQL methods",
     roots: ["src", "_api", "scripts"],
-    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    extensions: CODE_EXTENSIONS,
     pattern: /\b(?:queryRawUnsafe|executeRawUnsafe|\$queryRawUnsafe|\$executeRawUnsafe)\b/g,
     maxAllowed: 0,
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
@@ -146,14 +149,14 @@ const GUARDRAILS: GuardrailCheck[] = [
   {
     name: "Prisma.raw usage",
     roots: ["src", "_api", "scripts"],
-    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    extensions: CODE_EXTENSIONS,
     pattern: /\bPrisma\.raw\(/g,
     maxAllowed: 0,
   },
   {
     name: "shell:true command execution",
     roots: ["scripts", "src", "_api"],
-    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    extensions: CODE_EXTENSIONS,
     pattern: /shell:\s*true|["']shell["']\s*:\s*true/g,
     maxAllowed: 0,
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
@@ -161,14 +164,14 @@ const GUARDRAILS: GuardrailCheck[] = [
   {
     name: "TODO/FIXME/HACK markers",
     roots: ["src", "_api"],
-    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    extensions: CODE_EXTENSIONS,
     pattern: /\bTODO\b|\bFIXME\b|\bHACK\b|\bXXX\b/g,
     maxAllowed: 0,
   },
   {
     name: "TODO/FIXME/HACK markers in scripts",
     roots: ["scripts"],
-    extensions: [".ts", ".js"],
+    extensions: SCRIPT_CODE_EXTENSIONS,
     pattern: /\bTODO\b|\bFIXME\b|\bHACK\b|\bXXX\b/g,
     maxAllowed: SCRIPT_TASK_MARKER_BASELINE_CAP,
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
@@ -176,14 +179,14 @@ const GUARDRAILS: GuardrailCheck[] = [
   {
     name: "dynamic code execution (eval/new Function)",
     roots: ["scripts", "src", "_api"],
-    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    extensions: CODE_EXTENSIONS,
     pattern: /\beval\(|new Function\(|\bFunction\(\s*['"`]/g,
     maxAllowed: 0,
   },
   {
     name: "debugger statements",
     roots: ["scripts", "src", "_api"],
-    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    extensions: CODE_EXTENSIONS,
     pattern: /\bdebugger\b/g,
     maxAllowed: 0,
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
@@ -191,7 +194,7 @@ const GUARDRAILS: GuardrailCheck[] = [
   {
     name: "merge conflict markers",
     roots: ["."],
-    extensions: [".ts", ".tsx", ".js", ".jsx", ".json", ".md", ".yml", ".yaml"],
+    extensions: MERGE_MARKER_EXTENSIONS,
     pattern:
       /^<<<<<<<(?: .+)?$|^\|\|\|\|\|\|\|(?: .+)?$|^=======\s*$|^>>>>>>>(?: .+)?$/gm,
     maxAllowed: 0,
@@ -218,7 +221,7 @@ const FILE_SIZE_GUARDRAILS: FileSizeGuardrail[] = [
   {
     name: "very large script files",
     roots: ["scripts"],
-    extensions: [".ts", ".js"],
+    extensions: SCRIPT_CODE_EXTENSIONS,
     lineThreshold: 700,
     maxFilesOverThreshold: 0,
     maxSingleFileLines: 900,
@@ -228,7 +231,7 @@ const FILE_SIZE_GUARDRAILS: FileSizeGuardrail[] = [
 const DANGEROUSLY_SET_INNER_HTML_GUARDRAIL: AllowlistedPatternGuardrail = {
   name: "dangerouslySetInnerHTML usage",
   roots: ["src"],
-  extensions: [".ts", ".tsx", ".js", ".jsx"],
+  extensions: CODE_EXTENSIONS,
   pattern: /dangerouslySetInnerHTML/g,
   allowedFiles: new Set(["src/components/shared/HtmlPreview.tsx"]),
   maxAllowedTotal: 2,
@@ -237,7 +240,7 @@ const DANGEROUSLY_SET_INNER_HTML_GUARDRAIL: AllowlistedPatternGuardrail = {
 const BIOME_EXHAUSTIVE_DEPS_BYPASS_GUARDRAIL: AllowlistedPatternGuardrail = {
   name: "biome exhaustive-deps bypass comments",
   roots: ["src", "_api"],
-  extensions: [".ts", ".tsx", ".js", ".jsx"],
+  extensions: CODE_EXTENSIONS,
   pattern: /biome-ignore\s+lint\/correctness\/useExhaustiveDependencies/g,
   allowedFiles: new Set(["src/hooks/useStreamingFetch.ts"]),
   maxAllowedTotal: 1,

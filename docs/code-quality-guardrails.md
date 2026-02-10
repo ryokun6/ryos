@@ -81,7 +81,8 @@ bun run quality:all:ci
   - both allowlisted checks also enforce max total occurrence caps
   - cap-overflow failures print offending allowlisted file paths for triage
 
-Most content checks scan TypeScript and JavaScript sources (`.ts/.tsx/.js/.jsx`)
+Most content checks scan TypeScript and JavaScript sources
+(`.ts/.tsx/.js/.jsx/.mjs/.cjs`)
 within the relevant roots.
 
 ## CI

@@ -125,7 +125,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - file-size regression checks (max files over 1000 LOC, max files over 1500 LOC,
     max script files over 700 LOC, and max single-file LOC caps).
   - cached source/candidate file scanning for faster quality-check execution.
-  - expanded scanning coverage to include JavaScript sources where relevant (`.js`, `.jsx`).
+  - expanded scanning coverage to include JavaScript sources where relevant
+    (`.js`, `.jsx`, `.mjs`, `.cjs`).
   - allowlisted `dangerouslySetInnerHTML` usage (only permitted in `HtmlPreview` stream renderer).
   - allowlisted `biome-ignore lint/correctness/useExhaustiveDependencies` usage (currently only permitted in `useStreamingFetch`).
 - Added machine-readable output mode: `bun run quality:check:json`.
