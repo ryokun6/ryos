@@ -59,6 +59,7 @@ bun run quality:all:ci
 - No `debugger` statements in `scripts` / `src` / `_api`
 - No unresolved merge conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`) in tracked source files
 - No unresolved task markers (`TODO`, `FIXME`, `HACK`, `XXX`) in `src` / `_api`
+- Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below current baseline cap
 - File-size regression bounds for TypeScript sources
   - max files over 1000 LOC
   - max files over 1500 LOC

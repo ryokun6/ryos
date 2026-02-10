@@ -157,6 +157,14 @@ const GUARDRAILS: GuardrailCheck[] = [
     maxAllowed: 0,
   },
   {
+    name: "TODO/FIXME/HACK markers in scripts",
+    roots: ["scripts"],
+    extensions: [".ts", ".js"],
+    pattern: /\bTODO\b|\bFIXME\b|\bHACK\b|\bXXX\b/g,
+    maxAllowed: 19,
+    excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
+  },
+  {
     name: "dynamic code execution (eval/new Function)",
     roots: ["scripts", "src", "_api"],
     extensions: [".ts", ".tsx", ".js", ".jsx"],

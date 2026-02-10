@@ -60,6 +60,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No `document.write(...)` usage in `src`",
       "No string-based timer execution (`setTimeout(\"...\")`, `setInterval(\"...\")`,",
       "`setImmediate(\"...\")`, including template literals)",
+      "Script task markers (`TODO`, `FIXME`, `HACK`, `XXX`) must stay at or below current baseline cap",
       "No `execSync(` usage in `scripts` / `src` / `_api`",
       "No `child_process` `exec` imports in `scripts` / `src` / `_api`",
       "No Prisma unsafe raw SQL methods",

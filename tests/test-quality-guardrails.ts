@@ -127,6 +127,7 @@ export async function runQualityGuardrailTests(): Promise<{
       "Prisma.raw usage",
       "shell:true command execution",
       "TODO/FIXME/HACK markers",
+      "TODO/FIXME/HACK markers in scripts",
       "dynamic code execution (eval/new Function)",
       "debugger statements",
       "merge conflict markers",
@@ -258,6 +259,10 @@ export async function runQualityGuardrailTests(): Promise<{
     assert(out.includes("Prisma.raw usage"), "Missing Prisma.raw guardrail");
     assert(out.includes("shell:true command execution"), "Missing shell:true guardrail");
     assert(out.includes("TODO/FIXME/HACK markers"), "Missing task marker guardrail");
+    assert(
+      out.includes("TODO/FIXME/HACK markers in scripts"),
+      "Missing script task marker guardrail"
+    );
     assert(
       out.includes("dynamic code execution (eval/new Function)"),
       "Missing dynamic code execution guardrail"
@@ -822,6 +827,36 @@ export async function runQualityGuardrailTests(): Promise<{
       assert(
         (result.stdout || "").includes("FAIL TODO/FIXME/HACK markers"),
         "Expected TODO/FIXME/HACK guardrail failure"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest("fails when script task markers exceed baseline cap", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "scripts"), { recursive: true });
+      const markerLines = Array.from(
+        { length: 20 },
+        (_, index) => `// TODO: marker ${index}`
+      ).join("\n");
+      writeFileSync(
+        join(root, "scripts", "TodoOverflow.ts"),
+        `${markerLines}\nexport const value = 1;\n`,
+        "utf-8"
+      );
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for script task-marker overflow, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL TODO/FIXME/HACK markers in scripts"),
+        "Expected script task-marker guardrail failure"
       );
     } finally {
       rmSync(qualityRoot, { recursive: true, force: true });
