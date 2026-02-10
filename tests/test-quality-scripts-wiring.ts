@@ -92,6 +92,11 @@ export async function runQualityScriptsWiringTests(): Promise<{
     }
 
     assert(
+      qualityAllCi.startsWith("bun run quality:check:json > quality-report.json &&"),
+      "quality:all:ci must generate quality-report.json before other quality stages"
+    );
+
+    assert(
       !qualityAllCi.includes("bun run quality:check &&"),
       "quality:all:ci should not rerun plain quality:check after JSON generation"
     );
