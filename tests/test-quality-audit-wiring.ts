@@ -88,6 +88,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "spacing-tolerant matching",
       "script task-marker baseline cap",
       "quoted/computed keys",
+      "spaced unquoted key syntax",
       "variable-computed key aliases",
       "MDX merge-marker failure coverage",
       "YAML merge-marker failure coverage",

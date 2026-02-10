@@ -75,6 +75,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "No `execSync(` usage in `scripts` / `src` / `_api`",
       "No `shell: true` usage in `scripts` / `src` / `_api` (including quoted,",
       "computed, and simple variable-computed key syntax",
+      "key matching is spacing-tolerant",
       "No `child_process` `exec` imports in `scripts` / `src` / `_api`",
       "No `child_process.exec(...)` direct usage",
       "alias detection is variable-aware",

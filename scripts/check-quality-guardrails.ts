@@ -169,7 +169,7 @@ const GUARDRAILS: GuardrailCheck[] = [
     roots: ["scripts", "src", "_api"],
     extensions: CODE_EXTENSIONS,
     pattern:
-      /shell:\s*true|["']shell["']\s*:\s*true|\[\s*["'`]shell["'`]\s*\]\s*:\s*true|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*["'`]shell["'`][\s\S]*?\[\s*\1\s*\]\s*:\s*true/g,
+      /\bshell\s*:\s*true|["']shell["']\s*:\s*true|\[\s*["'`]shell["'`]\s*\]\s*:\s*true|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*["'`]shell["'`][\s\S]*?\[\s*\1\s*\]\s*:\s*true/g,
     maxAllowed: 0,
     excludeFiles: new Set(["scripts/check-quality-guardrails.ts"]),
   },

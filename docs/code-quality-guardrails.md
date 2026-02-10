@@ -73,6 +73,7 @@ bun run quality:all:ci
 - No `shell: true` usage in `scripts` / `src` / `_api` (including quoted,
   computed, and simple variable-computed key syntax such as
   `const key = "shell"; { [key]: true }`)
+  - key matching is spacing-tolerant (e.g. `{ shell : true }`)
 - No dynamic code execution (`eval(` / `new Function(` / `Function("...")`) in
   `scripts` / `src` / `_api` (spacing-tolerant invocation matching)
 - No `debugger` statements in `scripts` / `src` / `_api`
