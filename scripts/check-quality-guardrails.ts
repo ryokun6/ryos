@@ -158,7 +158,7 @@ const FILE_SIZE_GUARDRAILS: FileSizeGuardrail[] = [
 const DANGEROUSLY_SET_INNER_HTML_GUARDRAIL: AllowlistedPatternGuardrail = {
   name: "dangerouslySetInnerHTML usage",
   roots: ["src"],
-  extensions: [".ts", ".tsx"],
+  extensions: [".ts", ".tsx", ".js", ".jsx"],
   pattern: /dangerouslySetInnerHTML/g,
   allowedFiles: new Set(["src/components/shared/HtmlPreview.tsx"]),
   maxAllowedTotal: 2,
@@ -167,7 +167,7 @@ const DANGEROUSLY_SET_INNER_HTML_GUARDRAIL: AllowlistedPatternGuardrail = {
 const BIOME_EXHAUSTIVE_DEPS_BYPASS_GUARDRAIL: AllowlistedPatternGuardrail = {
   name: "biome exhaustive-deps bypass comments",
   roots: ["src", "_api"],
-  extensions: [".ts", ".tsx"],
+  extensions: [".ts", ".tsx", ".js", ".jsx"],
   pattern: /biome-ignore\s+lint\/correctness\/useExhaustiveDependencies/g,
   allowedFiles: new Set(["src/hooks/useStreamingFetch.ts"]),
   maxAllowedTotal: 1,
