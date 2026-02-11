@@ -725,26 +725,41 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             result = ""; // Handler manages its own result
             break;
           }
+          // === Server-side tools (executed on the server via `execute` function) ===
+          // These tools have their results streamed from the server.
+          // We must NOT call addToolResult here, as it would race with and
+          // potentially overwrite the real server result.
           case "generateHtml": {
             const { html } = toolCall.input as { html: string };
-
-            // Validate required parameter
-            if (!html) {
-              console.error(
-                "[ToolCall] generateHtml: Missing required 'html' parameter",
-              );
-              break;
-            }
-
-            console.log("[ToolCall] generateHtml:", {
-              htmlLength: html.length,
+            console.log("[ToolCall] generateHtml (server-side):", {
+              htmlLength: html?.length ?? 0,
             });
-
-            // HTML will be handled by ChatMessages via HtmlPreview
-            console.log(
-              "[ToolCall] Generated HTML:",
-              html.substring(0, 100) + "...",
-            );
+            // Result comes from server — do not call addToolResult
+            result = "";
+            break;
+          }
+          case "searchSongs": {
+            console.log("[ToolCall] searchSongs (server-side):", toolCall.input);
+            // Result comes from server — do not call addToolResult
+            result = "";
+            break;
+          }
+          case "memoryWrite": {
+            console.log("[ToolCall] memoryWrite (server-side):", toolCall.input);
+            // Result comes from server — do not call addToolResult
+            result = "";
+            break;
+          }
+          case "memoryRead": {
+            console.log("[ToolCall] memoryRead (server-side):", toolCall.input);
+            // Result comes from server — do not call addToolResult
+            result = "";
+            break;
+          }
+          case "memoryDelete": {
+            console.log("[ToolCall] memoryDelete (server-side):", toolCall.input);
+            // Result comes from server — do not call addToolResult
+            result = "";
             break;
           }
           // === Unified VFS Tools ===
@@ -1655,7 +1670,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           }
           default:
             console.warn("Unhandled tool call:", toolCall.toolName);
-            result = "Tool executed";
+            // Report as error rather than false success to avoid masking
+            // missing handler wiring or new server-side tools
+            addToolResult({
+              tool: toolCall.toolName,
+              toolCallId: toolCall.toolCallId,
+              state: "output-error",
+              errorText: `Unhandled tool: ${toolCall.toolName}`,
+            });
+            result = "";
             break;
         }
 
@@ -1683,7 +1706,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
     },
 
-    onFinish: ({ messages }) => {
+    onFinish: ({ messages, isError }) => {
       // Ensure all messages have metadata with createdAt
       const finalMessages: AIChatMessage[] = (messages as UIMessage[]).map(
         (msg) =>
@@ -1702,6 +1725,62 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       const lastMsg = finalMessages.at(-1);
       if (!lastMsg || lastMsg.role !== "assistant") return;
+
+      // Recovery for AI SDK v6 bug (GitHub issue #10291):
+      // When stopWhen + tool calls trigger a TypeValidationError, the SDK
+      // sets isError=true and skips the built-in sendAutomaticallyWhen check.
+      // For server-side tools whose results arrived via the stream, we need
+      // to re-affirm them via addToolResult so sendAutomaticallyWhen fires.
+      // Only target server-side tools (client-side tools already called
+      // addToolResult from their handlers, so they don't need recovery).
+      if (isError) {
+        const SERVER_SIDE_TOOLS = [
+          "generateHtml",
+          "searchSongs",
+          "memoryWrite",
+          "memoryRead",
+          "memoryDelete",
+        ];
+        const toolParts = lastMsg.parts.filter(
+          (part: { type?: string; state?: string }) =>
+            typeof part.type === "string" &&
+            part.type.startsWith("tool-") &&
+            (part.state === "output-available" ||
+              part.state === "output-error") &&
+            SERVER_SIDE_TOOLS.includes(
+              (part.type as string).replace(/^tool-/, ""),
+            ),
+        );
+        if (toolParts.length > 0) {
+          console.log(
+            `[onFinish] isError recovery: re-affirming ${toolParts.length} server-side tool result(s) to trigger sendAutomaticallyWhen`,
+          );
+          for (const part of toolParts) {
+            const tp = part as {
+              type: string;
+              toolCallId: string;
+              state: string;
+              output?: unknown;
+              errorText?: string;
+            };
+            const toolName = tp.type.replace(/^tool-/, "");
+            if (tp.state === "output-error") {
+              addToolResult({
+                tool: toolName,
+                toolCallId: tp.toolCallId,
+                state: "output-error",
+                errorText: tp.errorText || "Tool execution failed",
+              });
+            } else {
+              addToolResult({
+                tool: toolName,
+                toolCallId: tp.toolCallId,
+                output: tp.output,
+              });
+            }
+          }
+        }
+      }
 
       // Show notification if chat app is backgrounded
       if (!isChatsInForeground()) {

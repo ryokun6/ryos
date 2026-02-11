@@ -112,7 +112,15 @@ export async function executeSearchSongs(
       searchUrl.searchParams.set("maxResults", String(maxResults));
       searchUrl.searchParams.set("key", apiKey);
 
-      const response = await fetch(searchUrl.toString());
+      // Add timeout to prevent hanging on network stalls
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      let response: Response;
+      try {
+        response = await fetch(searchUrl.toString(), { signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -215,60 +223,68 @@ export async function executeMemoryWrite(
     };
   }
 
-  // Route to the appropriate handler
-  if (type === "daily") {
-    context.log(`[memoryWrite:daily] Logging daily note (${content.length} chars)`);
-    const result = await appendDailyNote(context.redis, context.username, content);
+  try {
+    // Route to the appropriate handler
+    if (type === "daily") {
+      context.log(`[memoryWrite:daily] Logging daily note (${content.length} chars)`);
+      const result = await appendDailyNote(context.redis, context.username, content);
+
+      context.log(
+        `[memoryWrite:daily] Result: ${result.success ? "success" : "failed"} - ${result.message}`
+      );
+
+      return {
+        success: result.success,
+        message: result.message,
+        date: result.date,
+        entryCount: result.entryCount,
+      };
+    }
+
+    // Long-term memory write
+    const { key, summary, mode = "add" } = input;
+
+    if (!key || !summary) {
+      return {
+        success: false,
+        message: "Key and summary are required for long-term memories.",
+      };
+    }
+
+    context.log(`[memoryWrite:long_term] Writing "${key}" with mode "${mode}"`);
+
+    const result = await upsertMemory(
+      context.redis,
+      context.username,
+      key,
+      summary,
+      content,
+      mode
+    );
+
+    // Get updated memory list
+    const index = await getMemoryIndex(context.redis, context.username);
+    const currentMemories = index?.memories.map((m) => ({
+      key: m.key,
+      summary: m.summary,
+    })) || [];
 
     context.log(
-      `[memoryWrite:daily] Result: ${result.success ? "success" : "failed"} - ${result.message}`
+      `[memoryWrite:long_term] Result: ${result.success ? "success" : "failed"} - ${result.message}`
     );
 
     return {
       success: result.success,
       message: result.message,
-      date: result.date,
-      entryCount: result.entryCount,
+      currentMemories,
     };
-  }
-
-  // Long-term memory write
-  const { key, summary, mode = "add" } = input;
-
-  if (!key || !summary) {
+  } catch (error) {
+    context.logError("[memoryWrite] Unexpected error:", error);
     return {
       success: false,
-      message: "Key and summary are required for long-term memories.",
+      message: `Memory write failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     };
   }
-
-  context.log(`[memoryWrite:long_term] Writing "${key}" with mode "${mode}"`);
-
-  const result = await upsertMemory(
-    context.redis,
-    context.username,
-    key,
-    summary,
-    content,
-    mode
-  );
-
-  // Get updated memory list
-  const index = await getMemoryIndex(context.redis, context.username);
-  const currentMemories = index?.memories.map((m) => ({
-    key: m.key,
-    summary: m.summary,
-  })) || [];
-
-  context.log(
-    `[memoryWrite:long_term] Result: ${result.success ? "success" : "failed"} - ${result.message}`
-  );
-
-  return {
-    success: result.success,
-    message: result.message,
-    currentMemories,
-  };
 }
 
 /**
@@ -299,69 +315,77 @@ export async function executeMemoryRead(
     };
   }
 
-  // Route to the appropriate handler
-  if (type === "daily") {
-    const date = input.date || getTodayDateString();
-    context.log(`[memoryRead:daily] Reading daily note for ${date}`);
+  try {
+    // Route to the appropriate handler
+    if (type === "daily") {
+      const date = input.date || getTodayDateString();
+      context.log(`[memoryRead:daily] Reading daily note for ${date}`);
 
-    const note = await getDailyNote(context.redis, context.username, date);
+      const note = await getDailyNote(context.redis, context.username, date);
 
-    if (!note || note.entries.length === 0) {
+      if (!note || note.entries.length === 0) {
+        return {
+          success: false,
+          message: `No daily notes found for ${date}.`,
+          date,
+          entries: [],
+        };
+      }
+
+      context.log(`[memoryRead:daily] Found ${note.entries.length} entries for ${date}`);
+
       return {
-        success: false,
-        message: `No daily notes found for ${date}.`,
+        success: true,
+        message: `Retrieved ${note.entries.length} entries for ${date}.`,
         date,
-        entries: [],
+        entries: note.entries.map((e) => ({ timestamp: e.timestamp, content: e.content })),
       };
     }
 
-    context.log(`[memoryRead:daily] Found ${note.entries.length} entries for ${date}`);
+    // Long-term memory read
+    const { key } = input;
+
+    if (!key) {
+      return {
+        success: false,
+        message: "Key is required for reading long-term memories.",
+      };
+    }
+
+    context.log(`[memoryRead:long_term] Reading memory "${key}"`);
+
+    const detail = await getMemoryDetail(context.redis, context.username, key);
+
+    if (!detail) {
+      context.log(`[memoryRead:long_term] Memory "${key}" not found`);
+      return {
+        success: false,
+        message: `Memory "${key}" not found.`,
+        key,
+        content: null,
+        summary: null,
+      };
+    }
+
+    const index = await getMemoryIndex(context.redis, context.username);
+    const entry = index?.memories.find((m) => m.key === key.toLowerCase());
+
+    context.log(`[memoryRead:long_term] Found memory "${key}" (${detail.content.length} chars)`);
 
     return {
       success: true,
-      message: `Retrieved ${note.entries.length} entries for ${date}.`,
-      date,
-      entries: note.entries.map((e) => ({ timestamp: e.timestamp, content: e.content })),
-    };
-  }
-
-  // Long-term memory read
-  const { key } = input;
-
-  if (!key) {
-    return {
-      success: false,
-      message: "Key is required for reading long-term memories.",
-    };
-  }
-
-  context.log(`[memoryRead:long_term] Reading memory "${key}"`);
-
-  const detail = await getMemoryDetail(context.redis, context.username, key);
-
-  if (!detail) {
-    context.log(`[memoryRead:long_term] Memory "${key}" not found`);
-    return {
-      success: false,
-      message: `Memory "${key}" not found.`,
+      message: `Retrieved memory "${key}".`,
       key,
-      content: null,
-      summary: null,
+      content: detail.content,
+      summary: entry?.summary || null,
+    };
+  } catch (error) {
+    context.logError("[memoryRead] Unexpected error:", error);
+    return {
+      success: false,
+      message: `Memory read failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     };
   }
-
-  const index = await getMemoryIndex(context.redis, context.username);
-  const entry = index?.memories.find((m) => m.key === key.toLowerCase());
-
-  context.log(`[memoryRead:long_term] Found memory "${key}" (${detail.content.length} chars)`);
-
-  return {
-    success: true,
-    message: `Retrieved memory "${key}".`,
-    key,
-    content: detail.content,
-    summary: entry?.summary || null,
-  };
 }
 
 /**
@@ -394,14 +418,22 @@ export async function executeMemoryDelete(
     };
   }
 
-  const result = await deleteMemory(context.redis, context.username, key);
+  try {
+    const result = await deleteMemory(context.redis, context.username, key);
 
-  context.log(
-    `[memoryDelete] Result: ${result.success ? "success" : "failed"} - ${result.message}`
-  );
+    context.log(
+      `[memoryDelete] Result: ${result.success ? "success" : "failed"} - ${result.message}`
+    );
 
-  return {
-    success: result.success,
-    message: result.message,
-  };
+    return {
+      success: result.success,
+      message: result.message,
+    };
+  } catch (error) {
+    context.logError("[memoryDelete] Unexpected error:", error);
+    return {
+      success: false,
+      message: `Memory delete failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+    };
+  }
 }

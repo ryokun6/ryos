@@ -486,7 +486,15 @@ export const handleIpodControl = async (
       toolCallId,
       output: buildResultMessage(stateChanges),
     });
+    return;
   }
 
+  // Always resolve the tool call to prevent hangs
   console.warn(`[ToolCall] ipodControl: Unhandled action "${normalizedAction}".`);
+  context.addToolResult({
+    tool: "ipodControl",
+    toolCallId,
+    state: "output-error",
+    errorText: `Unknown iPod action: "${normalizedAction}"`,
+  });
 };
