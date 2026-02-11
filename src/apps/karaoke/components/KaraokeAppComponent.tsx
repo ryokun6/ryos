@@ -389,6 +389,16 @@ export function KaraokeAppComponent({
             />
           )}
 
+          {/* Vortex shader background */}
+          {displayMode === DisplayMode.Vortex && currentTrack && (
+            <AmbientBackground
+              coverUrl={coverUrl}
+              variant="vortex"
+              isActive={!!currentTrack}
+              className="absolute inset-0 z-[5]"
+            />
+          )}
+
           {/* Cover overlay: shows when paused (any mode) or always in Cover mode */}
           <AnimatePresence>
             {currentTrack && coverUrl && (displayMode === DisplayMode.Cover || !isPlaying) && (
@@ -857,6 +867,16 @@ export function KaraokeAppComponent({
                   <AmbientBackground
                     coverUrl={coverUrl}
                     variant="liquid"
+                    isActive={!!currentTrack}
+                    className="fixed inset-0 z-[5]"
+                  />
+                )}
+
+                {/* Vortex shader background (fullscreen) */}
+                {displayMode === DisplayMode.Vortex && currentTrack && (
+                  <AmbientBackground
+                    coverUrl={coverUrl}
+                    variant="vortex"
                     isActive={!!currentTrack}
                     className="fixed inset-0 z-[5]"
                   />

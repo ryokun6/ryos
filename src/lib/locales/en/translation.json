@@ -1469,6 +1469,7 @@
         "displayLandscapes": "Landscapes",
         "displayShader": "Warp",
         "displayLiquid": "Liquid",
+        "displayVortex": "Vortex",
         "coverFlow": "Cover Flow",
         "classic": "Classic",
         "black": "Black",

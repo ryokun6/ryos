@@ -324,6 +324,16 @@ export function IpodScreen({
               />
             )}
 
+            {/* Vortex shader background */}
+            {displayMode === DisplayMode.Vortex && (
+              <AmbientBackground
+                coverUrl={coverUrl}
+                variant="vortex"
+                isActive={showVideo}
+                className="absolute inset-0 z-[5]"
+              />
+            )}
+
             {/* Dark overlay when lyrics are shown */}
             {showVideo && shouldShowLyrics && (
               <div className="absolute inset-0 bg-black/30 z-25" />
