@@ -37,6 +37,7 @@ import type {
   MemoryWriteInput,
   MemoryReadInput,
   MemoryDeleteInput,
+  DailyLogInput,
 } from "./types.js";
 import * as schemas from "./schemas.js";
 import {
@@ -45,6 +46,7 @@ import {
   executeMemoryWrite,
   executeMemoryRead,
   executeMemoryDelete,
+  executeDailyLog,
   type MemoryToolContext,
 } from "./executors.js";
 
@@ -57,6 +59,7 @@ export {
   executeMemoryWrite,
   executeMemoryRead,
   executeMemoryDelete,
+  executeDailyLog,
   type MemoryToolContext,
 } from "./executors.js";
 
@@ -147,23 +150,37 @@ export const TOOL_DESCRIPTIONS = {
     "IMPORTANT: Mouse coordinates are 1:1 with the screenshot pixels - use exact pixel positions from the image. " +
     "Mouse control works best on classic Mac OS (System 1-9). Mac OS X systems have limited mouse support due to emulator constraints.",
 
-  // Memory Tools
+  // Memory Tools (Long-Term)
   memoryWrite:
-    "Remember information about the user. Use when: " +
+    "Save important, stable facts about the user to LONG-TERM memory. Use for: " +
     "1) User explicitly asks to remember something ('remember my name is...'), " +
-    "2) You notice important info (name, preferences, habits, work context), " +
-    "3) You want to update existing memory with new info. " +
-    "The 'currentMemories' in the response shows what you know after the operation. " +
+    "2) Core identity info (name, birthday, location, job), " +
+    "3) Strong stated preferences that won't change often, " +
+    "4) Explicit instructions on how to interact with them. " +
+    "These are permanent memories that persist across all conversations. " +
+    "For passing observations and daily context, use dailyLog instead. " +
     "Modes: 'add' (new key), 'update' (replace existing), 'merge' (append to existing or create new).",
   
   memoryRead:
-    "Retrieve full details of a specific memory by key. " +
+    "Retrieve full details of a specific long-term memory by key. " +
     "Use when the summary in your context isn't enough and you need the complete content. " +
-    "Memory summaries are always visible in your system state under USER MEMORY.",
+    "Memory summaries are always visible in your system state under LONG-TERM MEMORIES.",
   
   memoryDelete:
-    "Delete a specific memory by key. " +
+    "Delete a specific long-term memory by key. " +
     "Use only when the user explicitly asks to forget something or when information is no longer relevant.",
+
+  // Daily Notes Tool
+  dailyLog:
+    "Log an observation, detail, or context note to today's daily journal. Use liberally for: " +
+    "1) Things the user mentions in passing (what they're doing today, how they're feeling), " +
+    "2) Topics discussed and context from the conversation, " +
+    "3) Interesting details that may not warrant a permanent memory yet, " +
+    "4) Events, plans, or temporary context (meeting later, working on X today), " +
+    "5) Anything that helps you remember what happened today. " +
+    "Daily notes are like a journal – they capture the flow of the day. " +
+    "They expire after 30 days but are used to extract long-term memories. " +
+    "Recent daily notes (last 3 days) are visible in your context under DAILY NOTES.",
 } as const;
 
 /**
@@ -345,6 +362,17 @@ export function createChatTools(context: MemoryToolContext) {
       inputSchema: schemas.memoryDeleteSchema,
       execute: async (input: MemoryDeleteInput) => {
         return executeMemoryDelete(input, context);
+      },
+    },
+
+    // ============================================================================
+    // Daily Notes Tools (Server-side execution)
+    // ============================================================================
+    dailyLog: {
+      description: TOOL_DESCRIPTIONS.dailyLog,
+      inputSchema: schemas.dailyLogSchema,
+      execute: async (input: DailyLogInput) => {
+        return executeDailyLog(input, context);
       },
     },
   };

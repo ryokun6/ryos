@@ -21,7 +21,7 @@ import {
   TOOL_USAGE_INSTRUCTIONS,
   MEMORY_INSTRUCTIONS,
 } from "./_utils/_aiPrompts.js";
-import { getMemoryIndex, type MemoryIndex } from "./_utils/_memory.js";
+import { getMemoryIndex, getDailyNotesForPrompt, type MemoryIndex } from "./_utils/_memory.js";
 import { SUPPORTED_AI_MODELS } from "./_utils/_aiModels.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { validateAuth } from "./_utils/auth/index.js";
@@ -181,7 +181,7 @@ const CACHE_CONTROL_OPTIONS = {
   },
 } as const;
 
-const generateDynamicSystemPrompt = (systemState?: SystemState, userMemories?: MemoryIndex | null) => {
+const generateDynamicSystemPrompt = (systemState?: SystemState, userMemories?: MemoryIndex | null, dailyNotesText?: string | null) => {
   const now = new Date();
   const timeString = now.toLocaleTimeString("en-US", {
     timeZone: "America/Los_Angeles",
@@ -234,10 +234,16 @@ User Locale: ${systemState.locale}`;
 User Location: ${location} (inferred from IP, may be inaccurate)`;
   }
 
-  // User Memory Section (Layer 1 - summaries always visible)
+  // Daily Notes Section (Tier 1 - recent journal entries)
+  if (dailyNotesText) {
+    prompt += `\n\n## DAILY NOTES (recent journal)`;
+    prompt += `\n${dailyNotesText}`;
+  }
+
+  // Long-Term Memory Section (Tier 2 - stable facts, summaries always visible)
   if (userMemories && userMemories.memories.length > 0) {
-    prompt += `\n\n## USER MEMORY`;
-    prompt += `\nYou have ${userMemories.memories.length} memories about this user:`;
+    prompt += `\n\n## LONG-TERM MEMORIES`;
+    prompt += `\nYou have ${userMemories.memories.length} long-term memories about this user:`;
     for (const mem of userMemories.memories) {
       prompt += `\n- ${mem.key}: ${mem.summary}`;
     }
@@ -646,16 +652,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const approxTokens = staticSystemPrompt.length / 4; // rough estimate
     log(`Approximate prompt tokens: ${Math.round(approxTokens)}`);
 
-    // Fetch user memories for authenticated users
+    // Fetch user memories and daily notes for authenticated users
     let userMemories: MemoryIndex | null = null;
+    let dailyNotesText: string | null = null;
     if (username && validationResult.valid) {
       try {
-        userMemories = await getMemoryIndex(redis, username);
+        const [memories, notes] = await Promise.all([
+          getMemoryIndex(redis, username),
+          getDailyNotesForPrompt(redis, username),
+        ]);
+        userMemories = memories;
+        dailyNotesText = notes;
         if (userMemories) {
-          log(`Loaded ${userMemories.memories.length} memories for user ${username}`);
+          log(`Loaded ${userMemories.memories.length} long-term memories for user ${username}`);
+        }
+        if (dailyNotesText) {
+          log(`Loaded daily notes for user ${username}`);
         }
       } catch (memErr) {
-        logError("Error fetching user memories:", memErr);
+        logError("Error fetching user memories/notes:", memErr);
         // Continue without memories - not a fatal error
       }
     }
@@ -676,7 +691,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 2) Dynamic, user-specific system state (don't cache)
     const dynamicSystemMessage = {
       role: "system" as const,
-      content: generateDynamicSystemPrompt(systemState, userMemories),
+      content: generateDynamicSystemPrompt(systemState, userMemories, dailyNotesText),
     };
 
     // Create tools with server-side context for logging and API access

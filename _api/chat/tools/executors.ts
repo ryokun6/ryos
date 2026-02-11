@@ -22,12 +22,15 @@ import type {
   MemoryReadOutput,
   MemoryDeleteInput,
   MemoryDeleteOutput,
+  DailyLogInput,
+  DailyLogOutput,
 } from "./types.js";
 import {
   getMemoryIndex,
   getMemoryDetail,
   upsertMemory,
   deleteMemory,
+  appendDailyNote,
 } from "../../_utils/_memory.js";
 
 /**
@@ -350,5 +353,54 @@ export async function executeMemoryDelete(
   return {
     success: result.success,
     message: result.message,
+  };
+}
+
+// ============================================================================
+// Daily Notes Tool Executors
+// ============================================================================
+
+/**
+ * Execute dailyLog tool
+ * 
+ * Appends an observation or note to today's daily journal.
+ */
+export async function executeDailyLog(
+  input: DailyLogInput,
+  context: MemoryToolContext
+): Promise<DailyLogOutput> {
+  const { content } = input;
+
+  context.log(`[dailyLog] Logging note (${content.length} chars)`);
+
+  // Validate authentication
+  if (!context.username) {
+    context.log("[dailyLog] No username - authentication required");
+    return {
+      success: false,
+      message: "Authentication required to log daily notes. Please log in.",
+    };
+  }
+
+  if (!context.redis) {
+    context.logError("[dailyLog] Redis not available");
+    return {
+      success: false,
+      message: "Daily note storage not available.",
+    };
+  }
+
+  // Append to today's daily note
+  const result = await appendDailyNote(context.redis, context.username, content);
+
+  context.log(
+    `[dailyLog] Result: ${result.success ? "success" : "failed"} - ${result.message}`
+  );
+
+  return {
+    success: result.success,
+    message: result.message,
+    date: result.date,
+    entryCount: result.entryCount,
   };
 }

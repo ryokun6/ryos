@@ -2,9 +2,18 @@
  * Memory System - Redis Helpers
  * 
  * Provides per-user persistent memory storage for the Ryo AI agent.
- * Two-layer system:
- * - Layer 1 (Index): Short keys + summaries always visible to AI
- * - Layer 2 (Details): Full content retrieved on-demand
+ * Two-tier system:
+ * 
+ * **Daily Notes** (Tier 1 - Journal):
+ * - Append-only entries collected throughout the day
+ * - Captures observations, context, passing details from conversations
+ * - Recent notes (last 3 days) are shown in AI context
+ * - Stored per-day in Redis, expire after 30 days
+ * 
+ * **Long-Term Memories** (Tier 2 - Permanent):
+ * - Stable facts extracted from daily notes or explicitly saved
+ * - Two-layer: Index (keys + summaries always visible) + Details (on-demand)
+ * - Updated via extraction from daily notes or direct user request
  */
 
 import type { Redis } from "@upstash/redis";
@@ -13,7 +22,7 @@ import type { Redis } from "@upstash/redis";
 // Constants
 // ============================================================================
 
-/** Maximum number of memories per user */
+/** Maximum number of long-term memories per user */
 export const MAX_MEMORIES_PER_USER = 50;
 
 /** Maximum length for memory key */
@@ -25,11 +34,23 @@ export const MAX_SUMMARY_LENGTH = 180;
 /** Maximum length for memory content */
 export const MAX_CONTENT_LENGTH = 2000;
 
+/** Maximum length for a single daily note entry */
+export const MAX_DAILY_NOTE_ENTRY_LENGTH = 500;
+
+/** Maximum number of entries per daily note */
+export const MAX_DAILY_NOTE_ENTRIES = 50;
+
+/** Number of recent days of daily notes to show in AI context */
+export const DAILY_NOTES_CONTEXT_DAYS = 3;
+
+/** TTL for daily notes in seconds (30 days) */
+export const DAILY_NOTES_TTL_SECONDS = 30 * 24 * 60 * 60;
+
 /** Current schema version for migrations */
 export const MEMORY_SCHEMA_VERSION = 1;
 
 /**
- * Canonical memory keys that the AI should prefer.
+ * Canonical long-term memory keys that the AI should prefer.
  * These are stable identifiers for common memory categories.
  * AI handles matching related topics to these keys.
  */
@@ -71,23 +92,53 @@ export const CANONICAL_MEMORY_KEYS = [
 // ============================================================================
 
 /**
- * Get Redis key for user's memory index
+ * Get Redis key for user's long-term memory index
  */
 export const getMemoryIndexKey = (username: string): string =>
   `memory:user:${username.toLowerCase()}:index`;
 
 /**
- * Get Redis key for a specific memory detail
+ * Get Redis key for a specific long-term memory detail
  */
 export const getMemoryDetailKey = (username: string, key: string): string =>
   `memory:user:${username.toLowerCase()}:detail:${key.toLowerCase()}`;
+
+/**
+ * Get Redis key for a user's daily note for a specific date
+ * @param date - Date string in YYYY-MM-DD format
+ */
+export const getDailyNoteKey = (username: string, date: string): string =>
+  `memory:user:${username.toLowerCase()}:daily:${date}`;
+
+/**
+ * Get today's date in YYYY-MM-DD format (in user's approximate timezone, defaults to UTC)
+ */
+export function getTodayDateString(): string {
+  const now = new Date();
+  return now.toISOString().split("T")[0];
+}
+
+/**
+ * Get date strings for the last N days (including today)
+ */
+export function getRecentDateStrings(days: number): string[] {
+  const dates: string[] = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().split("T")[0]);
+  }
+  return dates;
+}
 
 // ============================================================================
 // Types
 // ============================================================================
 
+// --- Long-Term Memory Types ---
+
 /**
- * A single memory entry in the index (Layer 1)
+ * A single long-term memory entry in the index (Layer 1)
  */
 export interface MemoryEntry {
   /** Short key identifying this memory (e.g., "name", "music_pref") */
@@ -99,7 +150,7 @@ export interface MemoryEntry {
 }
 
 /**
- * The user's memory index containing all memory summaries
+ * The user's long-term memory index containing all memory summaries
  */
 export interface MemoryIndex {
   /** Array of memory entries */
@@ -109,7 +160,7 @@ export interface MemoryIndex {
 }
 
 /**
- * Full memory detail (Layer 2)
+ * Full long-term memory detail (Layer 2)
  */
 export interface MemoryDetail {
   /** Memory key */
@@ -129,6 +180,42 @@ export interface MemoryOperationResult {
   success: boolean;
   message: string;
   entry?: MemoryEntry;
+}
+
+// --- Daily Notes Types ---
+
+/**
+ * A single entry in a daily note
+ */
+export interface DailyNoteEntry {
+  /** Unix timestamp when this entry was added */
+  timestamp: number;
+  /** The note content (observation, context, detail) */
+  content: string;
+}
+
+/**
+ * A daily note document for a single day
+ */
+export interface DailyNote {
+  /** Date in YYYY-MM-DD format */
+  date: string;
+  /** Array of entries collected throughout the day */
+  entries: DailyNoteEntry[];
+  /** Whether long-term memory extraction has been run on this note */
+  processedForMemories: boolean;
+  /** Unix timestamp of last update */
+  updatedAt: number;
+}
+
+/**
+ * Result of a daily note operation
+ */
+export interface DailyNoteOperationResult {
+  success: boolean;
+  message: string;
+  date?: string;
+  entryCount?: number;
 }
 
 // ============================================================================
@@ -610,4 +697,208 @@ export async function getMemorySummariesForPrompt(
 
   const lines = index.memories.map((m) => `- ${m.key}: ${m.summary}`);
   return lines.join("\n");
+}
+
+// ============================================================================
+// Daily Notes Operations
+// ============================================================================
+
+/**
+ * Get a daily note for a specific date
+ */
+export async function getDailyNote(
+  redis: Redis,
+  username: string,
+  date: string
+): Promise<DailyNote | null> {
+  const key = getDailyNoteKey(username, date);
+  const data = await redis.get<DailyNote | string>(key);
+
+  if (!data) {
+    return null;
+  }
+
+  if (typeof data === "string") {
+    try {
+      return JSON.parse(data) as DailyNote;
+    } catch {
+      return null;
+    }
+  }
+
+  return data;
+}
+
+/**
+ * Save a daily note (with TTL for auto-expiry)
+ */
+export async function saveDailyNote(
+  redis: Redis,
+  username: string,
+  note: DailyNote
+): Promise<void> {
+  const key = getDailyNoteKey(username, note.date);
+  await redis.set(key, JSON.stringify(note), { ex: DAILY_NOTES_TTL_SECONDS });
+}
+
+/**
+ * Append an entry to today's daily note
+ */
+export async function appendDailyNote(
+  redis: Redis,
+  username: string,
+  content: string
+): Promise<DailyNoteOperationResult> {
+  // Validate content length
+  if (!content || content.trim().length === 0) {
+    return {
+      success: false,
+      message: "Daily note content cannot be empty.",
+    };
+  }
+
+  if (content.length > MAX_DAILY_NOTE_ENTRY_LENGTH) {
+    return {
+      success: false,
+      message: `Daily note entry too long (${content.length} chars). Maximum is ${MAX_DAILY_NOTE_ENTRY_LENGTH} chars.`,
+    };
+  }
+
+  const today = getTodayDateString();
+  const existing = await getDailyNote(redis, username, today);
+
+  const now = Date.now();
+  const entry: DailyNoteEntry = {
+    timestamp: now,
+    content: content.trim(),
+  };
+
+  if (existing) {
+    // Check entry count limit
+    if (existing.entries.length >= MAX_DAILY_NOTE_ENTRIES) {
+      return {
+        success: false,
+        message: `Daily note limit reached (${MAX_DAILY_NOTE_ENTRIES} entries). Notes will reset tomorrow.`,
+      };
+    }
+
+    existing.entries.push(entry);
+    existing.updatedAt = now;
+    await saveDailyNote(redis, username, existing);
+
+    return {
+      success: true,
+      message: `Added to daily note for ${today}.`,
+      date: today,
+      entryCount: existing.entries.length,
+    };
+  }
+
+  // Create new daily note
+  const note: DailyNote = {
+    date: today,
+    entries: [entry],
+    processedForMemories: false,
+    updatedAt: now,
+  };
+
+  await saveDailyNote(redis, username, note);
+
+  return {
+    success: true,
+    message: `Started daily note for ${today}.`,
+    date: today,
+    entryCount: 1,
+  };
+}
+
+/**
+ * Get recent daily notes for inclusion in AI context
+ * Returns notes from the last N days
+ */
+export async function getRecentDailyNotes(
+  redis: Redis,
+  username: string,
+  days: number = DAILY_NOTES_CONTEXT_DAYS
+): Promise<DailyNote[]> {
+  const dates = getRecentDateStrings(days);
+  const notes: DailyNote[] = [];
+
+  for (const date of dates) {
+    const note = await getDailyNote(redis, username, date);
+    if (note && note.entries.length > 0) {
+      notes.push(note);
+    }
+  }
+
+  return notes;
+}
+
+/**
+ * Get recent daily notes formatted for system prompt injection
+ * Returns a formatted string for inclusion in AI context
+ */
+export async function getDailyNotesForPrompt(
+  redis: Redis,
+  username: string
+): Promise<string | null> {
+  const notes = await getRecentDailyNotes(redis, username);
+  if (notes.length === 0) {
+    return null;
+  }
+
+  const sections: string[] = [];
+  for (const note of notes) {
+    const dateLabel = note.date === getTodayDateString() ? `${note.date} (today)` : note.date;
+    const entries = note.entries
+      .map((e) => {
+        const time = new Date(e.timestamp).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+        return `  ${time}: ${e.content}`;
+      })
+      .join("\n");
+    sections.push(`${dateLabel}:\n${entries}`);
+  }
+
+  return sections.join("\n");
+}
+
+/**
+ * Mark a daily note as processed for long-term memory extraction
+ */
+export async function markDailyNoteProcessed(
+  redis: Redis,
+  username: string,
+  date: string
+): Promise<void> {
+  const note = await getDailyNote(redis, username, date);
+  if (note) {
+    note.processedForMemories = true;
+    note.updatedAt = Date.now();
+    await saveDailyNote(redis, username, note);
+  }
+}
+
+/**
+ * Get unprocessed daily notes (for long-term memory extraction)
+ */
+export async function getUnprocessedDailyNotes(
+  redis: Redis,
+  username: string,
+  days: number = 7
+): Promise<DailyNote[]> {
+  const dates = getRecentDateStrings(days);
+  const notes: DailyNote[] = [];
+
+  for (const date of dates) {
+    const note = await getDailyNote(redis, username, date);
+    if (note && !note.processedForMemories && note.entries.length > 0) {
+      notes.push(note);
+    }
+  }
+
+  return notes;
 }

@@ -12,6 +12,7 @@ import {
   MAX_KEY_LENGTH,
   MAX_SUMMARY_LENGTH,
   MAX_CONTENT_LENGTH,
+  MAX_DAILY_NOTE_ENTRY_LENGTH,
 } from "../../_utils/_memory.js";
 
 /**
@@ -604,4 +605,22 @@ export const memoryDeleteSchema = z.object({
     .min(1)
     .max(MAX_KEY_LENGTH)
     .describe("The memory key to delete."),
+});
+
+// ============================================================================
+// Daily Notes Tool Schemas
+// ============================================================================
+
+/**
+ * Daily log schema
+ * Used to append an observation or note to today's daily journal
+ */
+export const dailyLogSchema = z.object({
+  content: z
+    .string()
+    .min(1)
+    .max(MAX_DAILY_NOTE_ENTRY_LENGTH)
+    .describe(
+      `A brief observation, context note, or detail to log (max ${MAX_DAILY_NOTE_ENTRY_LENGTH} chars). Examples: "user mentioned they're preparing for a job interview", "discussed their cat buba's feeding schedule", "user seems stressed about a deadline"`
+    ),
 });

@@ -14,7 +14,7 @@ import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
 import { initLogger } from "./_utils/_logging.js";
-import { getMemoryIndex, getMemoryDetail, type MemoryEntry } from "./_utils/_memory.js";
+import { getMemoryIndex, getMemoryDetail, getRecentDailyNotes, type MemoryEntry, type DailyNote } from "./_utils/_memory.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -428,10 +428,13 @@ export default async function handler(
           res.status(400).json({ error: "Username is required" });
           return;
         }
-        const memories = await getUserMemories(redis, targetUsername);
-        logger.info("Memories retrieved", { targetUsername, count: memories.length });
+        const [memories, dailyNotes] = await Promise.all([
+          getUserMemories(redis, targetUsername),
+          getRecentDailyNotes(redis, targetUsername.toLowerCase(), 7) as Promise<DailyNote[]>,
+        ]);
+        logger.info("Memories retrieved", { targetUsername, memoryCount: memories.length, dailyNoteCount: dailyNotes.length });
         logger.response(200, Date.now() - startTime);
-        res.status(200).json({ memories });
+        res.status(200).json({ memories, dailyNotes });
         return;
       }
       default:

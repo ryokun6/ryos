@@ -278,7 +278,7 @@ export interface InfiniteMacControlOutput {
 export const MEMORY_MODES = ["add", "update", "merge"] as const;
 export type MemoryMode = typeof MEMORY_MODES[number];
 
-// Memory write input
+// Memory write input (long-term memories)
 export interface MemoryWriteInput {
   /** Short key for this memory (e.g., "name", "music_pref") */
   key: string;
@@ -294,7 +294,7 @@ export interface MemoryWriteInput {
 export interface MemoryWriteOutput {
   success: boolean;
   message: string;
-  /** Current memories after the operation (for AI awareness) */
+  /** Current long-term memories after the operation (for AI awareness) */
   currentMemories: Array<{ key: string; summary: string }>;
 }
 
@@ -325,4 +325,24 @@ export interface MemoryDeleteInput {
 export interface MemoryDeleteOutput {
   success: boolean;
   message: string;
+}
+
+// ============================================================================
+// Daily Notes Tool Types
+// ============================================================================
+
+// Daily log input (append to today's daily note)
+export interface DailyLogInput {
+  /** The observation, context, or detail to log */
+  content: string;
+}
+
+// Daily log output
+export interface DailyLogOutput {
+  success: boolean;
+  message: string;
+  /** Today's date (YYYY-MM-DD) */
+  date?: string;
+  /** Number of entries in today's note */
+  entryCount?: number;
 }
