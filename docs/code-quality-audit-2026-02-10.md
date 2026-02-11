@@ -172,7 +172,7 @@ Large files remain the biggest quality risk (all >1500 LOC):
   `schemaVersion` from live JSON reports.
 - Guardrail wiring tests cover both allowlisted-path violations and allowlisted
   total-cap violations for sensitive patterns (`dangerouslySetInnerHTML`,
-  `biome-ignore lint/correctness/useExhaustiveDependencies`).
+  `srcdoc`, `biome-ignore lint/correctness/useExhaustiveDependencies`).
   - includes boundary pass checks at exact allowlist caps to prevent off-by-one regressions.
   - includes cap-overflow diagnostics assertions that offending allowlisted paths are reported.
 - Guardrail wiring tests include JavaScript-path failure cases (`innerHTML`,

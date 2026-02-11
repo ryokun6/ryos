@@ -139,6 +139,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "spaced-invocation variant coverage",
       "allowlisted-check offender output",
       "cap-overflow diagnostics assertions",
+      "`srcdoc`, `biome-ignore lint/correctness/useExhaustiveDependencies`",
     ];
 
     for (const snippet of requiredSecuritySnippets) {

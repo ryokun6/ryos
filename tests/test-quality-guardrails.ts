@@ -2201,6 +2201,86 @@ export async function runQualityGuardrailTests(): Promise<{
   });
 
   await runTest(
+    "fails when srcdoc allowlisted total cap is exceeded",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src/components/shared"), { recursive: true });
+        writeFileSync(
+          join(root, "src/components/shared/HtmlPreview.tsx"),
+          [
+            "export function HtmlPreview(){",
+            "  const iframe = document.createElement('iframe');",
+            "  iframe.srcdoc = '<p>a</p>';",
+            "  iframe.srcdoc = '<p>b</p>';",
+            "  iframe.srcdoc = '<p>c</p>';",
+            "  return <div />;",
+            "}",
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for srcdoc allowlist total cap exceedance, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL srcdoc assignments"),
+          "Expected srcdoc allowlist cap failure"
+        );
+        assert(
+          (result.stdout || "").includes("(allowlisted cap exceeded)") &&
+            (result.stdout || "").includes("src/components/shared/HtmlPreview.tsx"),
+          "Expected srcdoc allowlisted cap exceedance diagnostics with offending file path"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
+    "passes when srcdoc allowlisted usage is exactly at cap",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src/components/shared"), { recursive: true });
+        writeFileSync(
+          join(root, "src/components/shared/HtmlPreview.tsx"),
+          [
+            "export function HtmlPreview(){",
+            "  const iframe = document.createElement('iframe');",
+            "  iframe.srcdoc = '<p>a</p>';",
+            "  iframe.srcdoc = '<p>b</p>';",
+            "  return <div />;",
+            "}",
+            "",
+          ].join("\n"),
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 for srcdoc allowlist usage at cap, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS srcdoc assignments"),
+          "Expected srcdoc allowlist pass at cap"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
     "passes when variable name merely contains srcdoc substring",
     async () => {
       const qualityRoot = withTempQualityRoot((root) => {
