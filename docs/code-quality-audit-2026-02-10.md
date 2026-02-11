@@ -191,7 +191,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes trailing-whitespace merge-marker failure coverage.
   - includes documentation markdown merge-marker failure coverage.
   - includes root-level markdown merge-marker failure coverage.
-  - includes root dotfile merge-marker failure coverage (`.editorconfig`, `.gitignore`).
+  - includes root dotfile merge-marker failure coverage
+    (`.editorconfig`, `.gitignore`, `.gitattributes`).
   - includes hidden config-directory merge-marker failure coverage (`.vscode/settings.json`).
   - includes separator-only (`=======`) non-anchor pass coverage to reduce false positives.
 - Guardrail wiring tests cover unsafe Prisma raw SQL variants
