@@ -116,6 +116,8 @@ export async function runQualityAuditWiringTests(): Promise<{
       "duplicate check-name validation coverage",
       "duplicate offender-path validation coverage",
       "offender-path ascending-order validation coverage",
+      "offender-count-total vs check-value consistency validation coverage",
+      "for count-based checks",
       "whitespace-only offender-path rejection coverage",
       "surrounding-whitespace offender-path rejection coverage",
       "backslash offender-path rejection coverage",

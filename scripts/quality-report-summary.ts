@@ -24,6 +24,8 @@ const iconForStatus = (status: "PASS" | "FAIL"): string =>
   status === "PASS" ? "✅" : "❌";
 
 const hasLineBreak = (value: string): boolean => /[\r\n]/.test(value);
+const isCountBasedAllowedText = (value: string): boolean =>
+  /^<=\s*\d+(?:\s*\(.+\))?$/.test(value);
 
 const assertQualityReport = (value: unknown): QualityReport => {
   if (!value || typeof value !== "object") {
@@ -110,6 +112,7 @@ const assertQualityReport = (value: unknown): QualityReport => {
       }
       const offenderPathSet = new Set<string>();
       let previousOffenderPath: string | null = null;
+      let offenderCountSum = 0;
       for (const [offenderIndex, offender] of candidate.offenders.entries()) {
         if (!offender || typeof offender !== "object") {
           throw new Error(
@@ -141,6 +144,7 @@ const assertQualityReport = (value: unknown): QualityReport => {
             `Check "${candidate.name}" includes duplicate offender path: ${offenderCandidate.path}`
           );
         }
+        offenderCountSum += offenderCandidate.count;
         if (offenderCandidate.path !== offenderCandidate.path.trim()) {
           throw new Error(
             `Check "${candidate.name}" offender paths must not include surrounding whitespace`
@@ -166,6 +170,16 @@ const assertQualityReport = (value: unknown): QualityReport => {
         }
         offenderPathSet.add(offenderCandidate.path);
         previousOffenderPath = offenderCandidate.path;
+      }
+      if (
+        candidate.status === "FAIL" &&
+        candidate.offenders.length > 0 &&
+        isCountBasedAllowedText(candidate.allowed) &&
+        offenderCountSum !== candidate.value
+      ) {
+        throw new Error(
+          `Check "${candidate.name}" offender count total must match check value for count-based checks`
+        );
       }
     }
     if (

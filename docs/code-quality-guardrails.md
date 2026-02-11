@@ -141,6 +141,8 @@ Validation requires FAIL checks to include at least one offender entry.
 Validation enforces unique check names to avoid ambiguous summaries.
 Validation enforces unique offender paths within each failed check entry.
 Validation enforces offender paths sorted ascending within each failed check.
+Validation requires count-based failed checks to have offender count totals that
+match each check value.
 Validation rejects whitespace-only offender paths.
 Validation rejects offender paths with surrounding whitespace.
 Validation rejects offender paths containing backslashes (forward slashes only).

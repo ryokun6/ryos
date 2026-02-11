@@ -225,6 +225,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
   - includes duplicate check-name validation coverage.
   - includes duplicate offender-path validation coverage.
   - includes offender-path ascending-order validation coverage.
+  - includes offender-count-total vs check-value consistency validation coverage
+    for count-based checks.
   - includes whitespace-only offender-path rejection coverage.
   - includes surrounding-whitespace offender-path rejection coverage.
   - includes backslash offender-path rejection coverage (forward-slash only).
