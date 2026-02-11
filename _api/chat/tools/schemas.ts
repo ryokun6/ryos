@@ -526,7 +526,7 @@ export const infiniteMacControlSchema = z.object({
       path: ["system"],
     });
   }
-  if ((data.action === "mouseMove" || data.action === "mouseClick") && (data.x === undefined || data.y === undefined)) {
+  if ((data.action === "mouseMove" || data.action === "mouseClick" || data.action === "doubleClick") && (data.x === undefined || data.y === undefined)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: `The '${data.action}' action requires both 'x' and 'y' parameters.`,
@@ -559,18 +559,13 @@ export const memoryWriteSchema = z.object({
     ),
   key: z
     .string()
-    .min(1)
     .max(MAX_KEY_LENGTH)
-    .regex(/^[a-z][a-z0-9_]*$/, {
-      message: "Key must start with a letter and contain only lowercase letters, numbers, and underscores",
-    })
     .optional()
     .describe(
       "Required for long_term. Short key (e.g., 'name', 'music_pref'). Ignored for daily."
     ),
   summary: z
     .string()
-    .min(1)
     .max(MAX_SUMMARY_LENGTH)
     .optional()
     .describe(
@@ -595,6 +590,12 @@ export const memoryWriteSchema = z.object({
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Key is required for long_term memories.",
+        path: ["key"],
+      });
+    } else if (!/^[a-z][a-z0-9_]*$/.test(data.key)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Key must start with a letter and contain only lowercase letters, numbers, and underscores.",
         path: ["key"],
       });
     }

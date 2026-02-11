@@ -1670,7 +1670,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           }
           default:
             console.warn("Unhandled tool call:", toolCall.toolName);
-            result = "Tool executed";
+            // Report as error rather than false success to avoid masking
+            // missing handler wiring or new server-side tools
+            addToolResult({
+              tool: toolCall.toolName,
+              toolCallId: toolCall.toolCallId,
+              state: "output-error",
+              errorText: `Unhandled tool: ${toolCall.toolName}`,
+            });
+            result = "";
             break;
         }
 
@@ -1723,30 +1731,53 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // sets isError=true and skips the built-in sendAutomaticallyWhen check.
       // For server-side tools whose results arrived via the stream, we need
       // to re-affirm them via addToolResult so sendAutomaticallyWhen fires.
+      // Only target server-side tools (client-side tools already called
+      // addToolResult from their handlers, so they don't need recovery).
       if (isError) {
+        const SERVER_SIDE_TOOLS = [
+          "generateHtml",
+          "searchSongs",
+          "memoryWrite",
+          "memoryRead",
+          "memoryDelete",
+        ];
         const toolParts = lastMsg.parts.filter(
           (part: { type?: string; state?: string }) =>
             typeof part.type === "string" &&
             part.type.startsWith("tool-") &&
-            part.state === "output-available",
+            (part.state === "output-available" ||
+              part.state === "output-error") &&
+            SERVER_SIDE_TOOLS.includes(
+              (part.type as string).replace(/^tool-/, ""),
+            ),
         );
         if (toolParts.length > 0) {
           console.log(
-            `[onFinish] isError recovery: re-affirming ${toolParts.length} tool result(s) to trigger sendAutomaticallyWhen`,
+            `[onFinish] isError recovery: re-affirming ${toolParts.length} server-side tool result(s) to trigger sendAutomaticallyWhen`,
           );
           for (const part of toolParts) {
             const tp = part as {
               type: string;
               toolCallId: string;
-              output: unknown;
+              state: string;
+              output?: unknown;
+              errorText?: string;
             };
-            // Extract tool name from the type (e.g., "tool-memoryWrite" → "memoryWrite")
             const toolName = tp.type.replace(/^tool-/, "");
-            addToolResult({
-              tool: toolName,
-              toolCallId: tp.toolCallId,
-              output: tp.output,
-            });
+            if (tp.state === "output-error") {
+              addToolResult({
+                tool: toolName,
+                toolCallId: tp.toolCallId,
+                state: "output-error",
+                errorText: tp.errorText || "Tool execution failed",
+              });
+            } else {
+              addToolResult({
+                tool: toolName,
+                toolCallId: tp.toolCallId,
+                output: tp.output,
+              });
+            }
           }
         }
       }

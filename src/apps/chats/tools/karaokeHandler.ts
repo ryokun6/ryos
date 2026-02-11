@@ -610,7 +610,15 @@ export const handleKaraokeControl = async (
       toolCallId,
       output: buildResultMessage(stateChanges),
     });
+    return;
   }
 
+  // Always resolve the tool call to prevent hangs
   console.warn(`[ToolCall] karaokeControl: Unhandled action "${normalizedAction}".`);
+  context.addToolResult({
+    tool: "karaokeControl",
+    toolCallId,
+    state: "output-error",
+    errorText: `Unknown Karaoke action: "${normalizedAction}"`,
+  });
 };

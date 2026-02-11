@@ -112,7 +112,15 @@ export async function executeSearchSongs(
       searchUrl.searchParams.set("maxResults", String(maxResults));
       searchUrl.searchParams.set("key", apiKey);
 
-      const response = await fetch(searchUrl.toString());
+      // Add timeout to prevent hanging on network stalls
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      let response: Response;
+      try {
+        response = await fetch(searchUrl.toString(), { signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
