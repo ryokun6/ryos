@@ -22,8 +22,6 @@ import type {
   MemoryReadOutput,
   MemoryDeleteInput,
   MemoryDeleteOutput,
-  DailyLogInput,
-  DailyLogOutput,
 } from "./types.js";
 import {
   getMemoryIndex,
@@ -31,6 +29,8 @@ import {
   upsertMemory,
   deleteMemory,
   appendDailyNote,
+  getDailyNote,
+  getTodayDateString,
 } from "../../_utils/_memory.js";
 
 /**
@@ -176,7 +176,7 @@ export async function executeSearchSongs(
 }
 
 // ============================================================================
-// Memory Tool Executors
+// Unified Memory Tool Executors
 // ============================================================================
 
 /**
@@ -188,18 +188,15 @@ export interface MemoryToolContext extends ServerToolContext {
 }
 
 /**
- * Execute memoryWrite tool
+ * Execute memoryWrite tool (unified)
  * 
- * Saves or updates a memory for the authenticated user.
- * Returns the current memories list so the AI knows what's stored.
+ * Handles both long-term memory writes and daily note appends.
  */
 export async function executeMemoryWrite(
   input: MemoryWriteInput,
   context: MemoryToolContext
 ): Promise<MemoryWriteOutput> {
-  const { key, summary, content, mode = "add" } = input;
-
-  context.log(`[memoryWrite] Writing memory "${key}" with mode "${mode}"`);
+  const { type = "long_term", content } = input;
 
   // Validate authentication
   if (!context.username) {
@@ -207,7 +204,6 @@ export async function executeMemoryWrite(
     return {
       success: false,
       message: "Authentication required to write memories. Please log in.",
-      currentMemories: [],
     };
   }
 
@@ -216,11 +212,38 @@ export async function executeMemoryWrite(
     return {
       success: false,
       message: "Memory storage not available.",
-      currentMemories: [],
     };
   }
 
-  // Execute the memory operation
+  // Route to the appropriate handler
+  if (type === "daily") {
+    context.log(`[memoryWrite:daily] Logging daily note (${content.length} chars)`);
+    const result = await appendDailyNote(context.redis, context.username, content);
+
+    context.log(
+      `[memoryWrite:daily] Result: ${result.success ? "success" : "failed"} - ${result.message}`
+    );
+
+    return {
+      success: result.success,
+      message: result.message,
+      date: result.date,
+      entryCount: result.entryCount,
+    };
+  }
+
+  // Long-term memory write
+  const { key, summary, mode = "add" } = input;
+
+  if (!key || !summary) {
+    return {
+      success: false,
+      message: "Key and summary are required for long-term memories.",
+    };
+  }
+
+  context.log(`[memoryWrite:long_term] Writing "${key}" with mode "${mode}"`);
+
   const result = await upsertMemory(
     context.redis,
     context.username,
@@ -238,7 +261,7 @@ export async function executeMemoryWrite(
   })) || [];
 
   context.log(
-    `[memoryWrite] Result: ${result.success ? "success" : "failed"} - ${result.message}`
+    `[memoryWrite:long_term] Result: ${result.success ? "success" : "failed"} - ${result.message}`
   );
 
   return {
@@ -249,17 +272,15 @@ export async function executeMemoryWrite(
 }
 
 /**
- * Execute memoryRead tool
+ * Execute memoryRead tool (unified)
  * 
- * Retrieves the full content of a memory by key.
+ * Reads either a long-term memory by key or daily notes by date.
  */
 export async function executeMemoryRead(
   input: MemoryReadInput,
   context: MemoryToolContext
 ): Promise<MemoryReadOutput> {
-  const { key } = input;
-
-  context.log(`[memoryRead] Reading memory "${key}"`);
+  const { type = "long_term" } = input;
 
   // Validate authentication
   if (!context.username) {
@@ -267,9 +288,6 @@ export async function executeMemoryRead(
     return {
       success: false,
       message: "Authentication required to read memories. Please log in.",
-      key,
-      content: null,
-      summary: null,
     };
   }
 
@@ -278,17 +296,51 @@ export async function executeMemoryRead(
     return {
       success: false,
       message: "Memory storage not available.",
-      key,
-      content: null,
-      summary: null,
     };
   }
 
-  // Get the memory detail
+  // Route to the appropriate handler
+  if (type === "daily") {
+    const date = input.date || getTodayDateString();
+    context.log(`[memoryRead:daily] Reading daily note for ${date}`);
+
+    const note = await getDailyNote(context.redis, context.username, date);
+
+    if (!note || note.entries.length === 0) {
+      return {
+        success: false,
+        message: `No daily notes found for ${date}.`,
+        date,
+        entries: [],
+      };
+    }
+
+    context.log(`[memoryRead:daily] Found ${note.entries.length} entries for ${date}`);
+
+    return {
+      success: true,
+      message: `Retrieved ${note.entries.length} entries for ${date}.`,
+      date,
+      entries: note.entries.map((e) => ({ timestamp: e.timestamp, content: e.content })),
+    };
+  }
+
+  // Long-term memory read
+  const { key } = input;
+
+  if (!key) {
+    return {
+      success: false,
+      message: "Key is required for reading long-term memories.",
+    };
+  }
+
+  context.log(`[memoryRead:long_term] Reading memory "${key}"`);
+
   const detail = await getMemoryDetail(context.redis, context.username, key);
 
   if (!detail) {
-    context.log(`[memoryRead] Memory "${key}" not found`);
+    context.log(`[memoryRead:long_term] Memory "${key}" not found`);
     return {
       success: false,
       message: `Memory "${key}" not found.`,
@@ -298,11 +350,10 @@ export async function executeMemoryRead(
     };
   }
 
-  // Also get the summary from the index
   const index = await getMemoryIndex(context.redis, context.username);
   const entry = index?.memories.find((m) => m.key === key.toLowerCase());
 
-  context.log(`[memoryRead] Found memory "${key}" (${detail.content.length} chars)`);
+  context.log(`[memoryRead:long_term] Found memory "${key}" (${detail.content.length} chars)`);
 
   return {
     success: true,
@@ -316,7 +367,7 @@ export async function executeMemoryRead(
 /**
  * Execute memoryDelete tool
  * 
- * Deletes a memory by key.
+ * Deletes a long-term memory by key.
  */
 export async function executeMemoryDelete(
   input: MemoryDeleteInput,
@@ -343,7 +394,6 @@ export async function executeMemoryDelete(
     };
   }
 
-  // Execute the delete operation
   const result = await deleteMemory(context.redis, context.username, key);
 
   context.log(
@@ -353,54 +403,5 @@ export async function executeMemoryDelete(
   return {
     success: result.success,
     message: result.message,
-  };
-}
-
-// ============================================================================
-// Daily Notes Tool Executors
-// ============================================================================
-
-/**
- * Execute dailyLog tool
- * 
- * Appends an observation or note to today's daily journal.
- */
-export async function executeDailyLog(
-  input: DailyLogInput,
-  context: MemoryToolContext
-): Promise<DailyLogOutput> {
-  const { content } = input;
-
-  context.log(`[dailyLog] Logging note (${content.length} chars)`);
-
-  // Validate authentication
-  if (!context.username) {
-    context.log("[dailyLog] No username - authentication required");
-    return {
-      success: false,
-      message: "Authentication required to log daily notes. Please log in.",
-    };
-  }
-
-  if (!context.redis) {
-    context.logError("[dailyLog] Redis not available");
-    return {
-      success: false,
-      message: "Daily note storage not available.",
-    };
-  }
-
-  // Append to today's daily note
-  const result = await appendDailyNote(context.redis, context.username, content);
-
-  context.log(
-    `[dailyLog] Result: ${result.success ? "success" : "failed"} - ${result.message}`
-  );
-
-  return {
-    success: result.success,
-    message: result.message,
-    date: result.date,
-    entryCount: result.entryCount,
   };
 }
