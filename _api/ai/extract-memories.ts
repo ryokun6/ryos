@@ -250,10 +250,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ========================================================================
     logger.info("Phase 1: Extracting daily notes", { username });
 
-    // Fetch today's existing daily notes
+    // Fetch today's existing daily notes — only include unprocessed entries for dedup
+    // Processed entries are from previous conversations, low dup risk, skip to save tokens
     const today = getTodayDateString();
     const existingDailyNote = await getDailyNote(redis, username, today);
-    const existingEntriesText = existingDailyNote && existingDailyNote.entries.length > 0
+    const hasUnprocessedEntries = existingDailyNote && !existingDailyNote.processedForMemories && existingDailyNote.entries.length > 0;
+    const existingEntriesText = hasUnprocessedEntries
       ? existingDailyNote.entries.map(e => `- ${e.content}`).join("\n")
       : "None";
 
@@ -261,7 +263,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       model: google("gemini-2.0-flash"),
       schema: dailyNotesSchema,
       prompt: `${DAILY_NOTES_PROMPT}\n\nEXISTING NOTES FOR TODAY (do NOT repeat these):\n${existingEntriesText}\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\nExtract up to 8 NEW notes not already covered above. Return empty array if nothing new.`,
-      temperature: 0.2,
+      temperature: 0.3,
     });
 
     // Append only the new entries
@@ -314,11 +316,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     logger.info("Phase 2: Extracting long-term memories", { username });
 
+    // Build Phase 2 prompt — skip daily notes section entirely if none to save tokens
+    let phase2Prompt = `${EXTRACTION_PROMPT}\n\nEXISTING LONG-TERM MEMORIES (do NOT duplicate):\n${existingSummariesText}`;
+    if (dailyNotesContext !== "None") {
+      phase2Prompt += `\n\nRECENT DAILY NOTES (context only – do NOT re-extract daily events):\n${dailyNotesContext}`;
+    }
+    phase2Prompt += `\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\nExtract up to ${Math.min(5, remainingSlots)} NEW long-term memories not already covered above.`;
+
     const { object: extractionResult } = await generateObject({
       model: google("gemini-2.0-flash"),
       schema: extractionSchema,
-      prompt: `${EXTRACTION_PROMPT}\n\nEXISTING LONG-TERM MEMORIES (do NOT duplicate):\n${existingSummariesText}\n\nRECENT DAILY NOTES (context only – do NOT re-extract daily events):\n${dailyNotesContext}\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\nExtract up to ${Math.min(5, remainingSlots)} NEW long-term memories not already covered above.`,
-      temperature: 0.2,
+      prompt: phase2Prompt,
+      temperature: 0.3,
     });
 
     logger.info("Phase 2 complete", { 
@@ -369,7 +378,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           model: google("gemini-2.0-flash"),
           schema: consolidationSchema,
           prompt: `${CONSOLIDATION_PROMPT}\n\nNEW:\nSummary: ${mem.summary}\nContent: ${mem.content}\n\nEXISTING:\n${existingContentText}\n\nMerge into one clean, deduplicated entry.`,
-          temperature: 0.2,
+          temperature: 0.3,
         });
 
         finalSummary = consolidated.summary;

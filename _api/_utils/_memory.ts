@@ -783,6 +783,7 @@ export async function appendDailyNote(
     }
 
     existing.entries.push(entry);
+    existing.processedForMemories = false; // Reset so Phase 2 picks up new entries
     existing.updatedAt = now;
     await saveDailyNote(redis, username, existing);
 
