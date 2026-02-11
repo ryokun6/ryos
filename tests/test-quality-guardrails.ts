@@ -2387,6 +2387,35 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   });
 
+  await runTest(
+    "passes when variable name merely contains outerHTML substring",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src"), { recursive: true });
+        writeFileSync(
+          join(root, "src", "SafeOuterHtmlSubstring.js"),
+          `const myouterHTML = "<div>y</div>";\nconsole.log(myouterHTML);\n`,
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 for outerHTML substring variable name, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS outerHTML assignments"),
+          "Expected outerHTML guardrail pass for substring-only variable names"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
   await runTest("fails when insertAdjacentHTML usage is introduced in JavaScript", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
