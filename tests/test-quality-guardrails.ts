@@ -3057,6 +3057,35 @@ export async function runQualityGuardrailTests(): Promise<{
     }
   );
 
+  await runTest(
+    "passes when function name merely contains setImmediate substring",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "scripts"), { recursive: true });
+        writeFileSync(
+          join(root, "scripts", "SafeSetImmediateSubstring.js"),
+          "function mysetImmediate(input){ return input; }\nconsole.log(mysetImmediate(\"console.log('x')\"));\n",
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 for setImmediate substring function name, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS string-based timer execution usage"),
+          "Expected string timer guardrail pass for setImmediate substring function names"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
   await runTest("fails when eval is introduced", async () => {
     const qualityRoot = withTempQualityRoot((root) => {
       mkdirSync(join(root, "src"), { recursive: true });
