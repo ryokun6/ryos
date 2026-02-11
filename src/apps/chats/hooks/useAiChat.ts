@@ -1698,7 +1698,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       }
     },
 
-    onFinish: ({ messages }) => {
+    onFinish: ({ messages, isError }) => {
       // Ensure all messages have metadata with createdAt
       const finalMessages: AIChatMessage[] = (messages as UIMessage[]).map(
         (msg) =>
@@ -1717,6 +1717,39 @@ export function useAiChat(onPromptSetUsername?: () => void) {
 
       const lastMsg = finalMessages.at(-1);
       if (!lastMsg || lastMsg.role !== "assistant") return;
+
+      // Recovery for AI SDK v6 bug (GitHub issue #10291):
+      // When stopWhen + tool calls trigger a TypeValidationError, the SDK
+      // sets isError=true and skips the built-in sendAutomaticallyWhen check.
+      // For server-side tools whose results arrived via the stream, we need
+      // to re-affirm them via addToolResult so sendAutomaticallyWhen fires.
+      if (isError) {
+        const toolParts = lastMsg.parts.filter(
+          (part: { type?: string; state?: string }) =>
+            typeof part.type === "string" &&
+            part.type.startsWith("tool-") &&
+            part.state === "output-available",
+        );
+        if (toolParts.length > 0) {
+          console.log(
+            `[onFinish] isError recovery: re-affirming ${toolParts.length} tool result(s) to trigger sendAutomaticallyWhen`,
+          );
+          for (const part of toolParts) {
+            const tp = part as {
+              type: string;
+              toolCallId: string;
+              output: unknown;
+            };
+            // Extract tool name from the type (e.g., "tool-memoryWrite" → "memoryWrite")
+            const toolName = tp.type.replace(/^tool-/, "");
+            addToolResult({
+              tool: toolName,
+              toolCallId: tp.toolCallId,
+              output: tp.output,
+            });
+          }
+        }
+      }
 
       // Show notification if chat app is backgrounded
       if (!isChatsInForeground()) {
