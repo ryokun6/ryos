@@ -59,7 +59,7 @@ export async function runQualityDocsWiringTests(): Promise<{
       "documentation (markdown + MDX)",
       "including `.github` workflow files",
       "JSON/TOML/INI config files",
-      "hidden root dotfiles (for example `.editorconfig`) are included in scanning",
+      "hidden root dotfiles (for example `.editorconfig`, `.gitignore`, `.gitattributes`) are included in scanning",
       "hidden config directories (for example `.vscode/settings.json`) are scanned too",
       "separator-only `=======` lines are treated as violations only when anchor markers are also present",
       "No `innerHTML` assignments/mutations (`=`, `+=`) in `src`",

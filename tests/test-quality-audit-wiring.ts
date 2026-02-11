@@ -106,7 +106,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "bare marker (`<<<<<<<` / `>>>>>>>`) failure coverage",
       "trailing-whitespace merge-marker failure coverage",
       "documentation markdown merge-marker failure coverage",
-      "root dotfile merge-marker failure coverage (`.editorconfig`)",
+      "root dotfile merge-marker failure coverage (`.editorconfig`, `.gitignore`)",
       "hidden config-directory merge-marker failure coverage (`.vscode/settings.json`)",
       "separator-only (`=======`) non-anchor pass coverage",
       "`schemaVersion` type/positivity validation coverage",

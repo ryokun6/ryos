@@ -87,7 +87,7 @@ bun run quality:all:ci
 - No unresolved merge conflict markers (`<<<<<<<`, `|||||||`, `=======`,
   `>>>>>>>`) in tracked source, test, documentation (markdown + MDX), and
   JSON/TOML/INI config files (including `.github` workflow files)
-  - hidden root dotfiles (for example `.editorconfig`) are included in scanning
+  - hidden root dotfiles (for example `.editorconfig`, `.gitignore`, `.gitattributes`) are included in scanning
   - hidden config directories (for example `.vscode/settings.json`) are scanned too
   - markers are detected both with and without trailing branch labels, including trailing whitespace
   - separator-only `=======` lines are treated as violations only when anchor markers are also present

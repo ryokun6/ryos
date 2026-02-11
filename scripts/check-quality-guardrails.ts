@@ -55,6 +55,8 @@ const CODE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", "
 const SCRIPT_CODE_EXTENSIONS = [".ts", ".js", ".mts", ".cts", ".mjs", ".cjs"];
 const MERGE_MARKER_EXTENSIONS = [
   ...CODE_EXTENSIONS,
+  ".gitattributes",
+  ".gitignore",
   ".json",
   ".editorconfig",
   ".ini",
