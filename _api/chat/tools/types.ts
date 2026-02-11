@@ -271,51 +271,67 @@ export interface InfiniteMacControlOutput {
 }
 
 // ============================================================================
-// Memory Tool Types
+// Memory Tool Types (Unified for both daily notes and long-term memories)
 // ============================================================================
 
-// Memory write modes
+// Memory types
+export const MEMORY_TYPES = ["long_term", "daily"] as const;
+export type MemoryType = typeof MEMORY_TYPES[number];
+
+// Memory write modes (for long-term only)
 export const MEMORY_MODES = ["add", "update", "merge"] as const;
 export type MemoryMode = typeof MEMORY_MODES[number];
 
-// Memory write input
+// Unified memory write input
 export interface MemoryWriteInput {
-  /** Short key for this memory (e.g., "name", "music_pref") */
-  key: string;
-  /** Brief 1-2 sentence summary */
-  summary: string;
-  /** Full detailed content */
+  /** Type of memory: "long_term" for permanent facts, "daily" for journal entries */
+  type?: MemoryType;
+  /** Short key (required for long_term, ignored for daily) */
+  key?: string;
+  /** Brief summary (required for long_term, ignored for daily) */
+  summary?: string;
+  /** Content to store (required for both types) */
   content: string;
-  /** Write mode: "add" (new), "update" (replace), "merge" (append) */
+  /** Write mode for long_term: "add", "update", "merge" (ignored for daily) */
   mode?: MemoryMode;
 }
 
-// Memory write output
+// Unified memory write output
 export interface MemoryWriteOutput {
   success: boolean;
   message: string;
-  /** Current memories after the operation (for AI awareness) */
-  currentMemories: Array<{ key: string; summary: string }>;
+  /** Current long-term memories after the operation (for AI awareness) */
+  currentMemories?: Array<{ key: string; summary: string }>;
+  /** Today's date for daily notes */
+  date?: string;
+  /** Number of entries in today's daily note */
+  entryCount?: number;
 }
 
-// Memory read input
+// Unified memory read input
 export interface MemoryReadInput {
-  /** The memory key to retrieve full details for */
-  key: string;
+  /** Type of memory to read */
+  type?: MemoryType;
+  /** Key to read (for long_term) */
+  key?: string;
+  /** Date to read (for daily, YYYY-MM-DD format, defaults to today) */
+  date?: string;
 }
 
-// Memory read output
+// Unified memory read output
 export interface MemoryReadOutput {
   success: boolean;
   message: string;
-  key: string;
-  /** Full content (null if not found) */
-  content: string | null;
-  /** Summary (null if not found) */
-  summary: string | null;
+  /** For long_term reads */
+  key?: string;
+  content?: string | null;
+  summary?: string | null;
+  /** For daily reads */
+  date?: string;
+  entries?: Array<{ timestamp: number; content: string }>;
 }
 
-// Memory delete input
+// Memory delete input (long-term only)
 export interface MemoryDeleteInput {
   /** The memory key to delete */
   key: string;

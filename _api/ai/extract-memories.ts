@@ -1,13 +1,12 @@
 /**
  * POST /api/ai/extract-memories
  * 
- * Analyzes a conversation and extracts memories to store.
+ * Analyzes a conversation and extracts both daily notes and long-term memories.
  * Called asynchronously when user clears their chat history.
  * 
- * This endpoint:
- * 1. Takes the conversation history
- * 2. Uses AI to identify noteworthy information about the user
- * 3. Stores extracted memories using the memory system
+ * Single-pass extraction: one AI call reads the conversation + existing state
+ * and outputs both daily notes and long-term memories together.
+ * Then a consolidation step merges with existing long-term memories where keys overlap.
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
@@ -23,54 +22,61 @@ import {
   getMemoryDetail,
   upsertMemory,
   deleteMemory,
+  appendDailyNote,
+  getDailyNote,
+  getTodayDateString,
+  getUnprocessedDailyNotes,
+  markDailyNoteProcessed,
   MAX_MEMORIES_PER_USER,
 } from "../_utils/_memory.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// Phase 1 Schema: Extract new memories and identify related existing keys
+// ============================================================================
+// Schemas
+// ============================================================================
+
+// Single-pass: extract both daily notes and long-term memories at once
 const extractionSchema = z.object({
-  memories: z.array(z.object({
-    key: z.string()
-      .min(1)
-      .max(30)
-      .describe("Canonical key for this memory (use preferred keys when topic matches)"),
-    summary: z.string()
-      .min(1)
-      .max(180)
-      .describe("Brief summary of the NEW information from this conversation"),
-    content: z.string()
-      .min(1)
-      .max(2000)
-      .describe("Detailed NEW information extracted from this conversation"),
-    confidence: z.enum(["high", "medium", "low"])
-      .describe("How confident this is worth remembering"),
+  dailyNotes: z.array(z.string()
+    .min(1)
+    .max(300)
+    .describe("A concise note about what the USER said, did, or mentioned")
+  ).describe("Short-term journal entries. Capture what the user discussed, their mood, plans, topics. Do NOT repeat anything in EXISTING DAILY NOTES."),
+
+  longTermMemories: z.array(z.object({
+    key: z.string().min(1).max(30)
+      .describe("Canonical key (lowercase, underscores)"),
+    summary: z.string().min(1).max(180)
+      .describe("Brief summary of the stable fact about the USER"),
+    content: z.string().min(1).max(2000)
+      .describe("Detailed info about the USER to remember permanently"),
+    confidence: z.enum(["high", "medium"])
+      .describe("high = user directly stated it, medium = strong inference"),
     relatedKeys: z.array(z.string()).optional()
-      .describe("Existing memory keys that cover the same/related topic and should be merged with this"),
-  })).describe("List of memories to extract from the conversation"),
+      .describe("Existing memory keys covering the same topic (for merging)"),
+  })).describe("Stable, permanent facts about the USER. Do NOT duplicate existing memories."),
 });
 
-// Phase 2 Schema: Consolidate new info with existing memory content
+// Consolidation: dedup merge for overlapping keys
 const consolidationSchema = z.object({
-  summary: z.string()
-    .min(1)
-    .max(180)
-    .describe("Synthesized summary combining all information"),
-  content: z.string()
-    .min(1)
-    .max(2000)
-    .describe("Consolidated content - organized, deduped, newer info takes precedence"),
+  summary: z.string().min(1).max(180)
+    .describe("Deduplicated summary combining all info"),
+  content: z.string().min(1).max(2000)
+    .describe("Deduplicated content – no repeated info, newer wins conflicts"),
 });
 
-// Message format from the chat
+// ============================================================================
+// Types & Helpers
+// ============================================================================
+
 interface ChatMessage {
   role: "user" | "assistant" | "system";
   content?: string;
   parts?: Array<{ type: string; text?: string }>;
 }
 
-// Helper to extract text from message
 function getMessageText(msg: ChatMessage): string {
   if (msg.parts && Array.isArray(msg.parts)) {
     return msg.parts
@@ -81,7 +87,6 @@ function getMessageText(msg: ChatMessage): string {
   return msg.content || "";
 }
 
-// Helper to create Redis client
 function createRedis(): Redis {
   return new Redis({
     url: process.env.REDIS_KV_REST_API_URL!,
@@ -89,52 +94,52 @@ function createRedis(): Redis {
   });
 }
 
-// Phase 1: Extract new information and identify related existing memories
-const EXTRACTION_PROMPT = `You are analyzing a conversation to extract user memories.
+// ============================================================================
+// Prompt
+// ============================================================================
 
-CANONICAL KEYS (prefer these when the topic matches):
-- name: User's name, nickname, how to address them
-- birthday: Birthday, age
-- location: Where they live, timezone
-- work: Job, company, role, career
-- skills: Skills, expertise
-- education: School, degree
-- projects: Current projects
-- music_pref: Music taste, favorite artists
-- food_pref: Food preferences, diet
-- interests: Hobbies, general interests
-- entertainment: Movies, shows, games, books
-- family: Family members
-- friends: Friends
-- pets: Pets
-- goals: Goals, aspirations
-- current_focus: Current priorities
-- context: Important life context
-- preferences: General preferences
-- instructions: How to respond to them
+const EXTRACTION_PROMPT = `You are analyzing a conversation between a USER and an AI assistant named "Ryo" to extract memories.
 
-EXTRACTION RULES:
-1. Use canonical keys when the topic matches
-2. Extract only NEW information from the conversation
-3. If an existing memory (shown below) covers the same/related topic:
-   - Use the canonical key as the output key
-   - List the related existing key(s) in relatedKeys - these will be merged
-4. Use confidence "high" for directly stated facts, "medium" for reasonable inferences, "low" for weak signals
-5. Don't store sensitive data (passwords, financial info)
-6. Use lowercase keys with underscores
-7. If nothing noteworthy, return empty array`;
+CRITICAL – WHO IS WHO:
+- Lines starting with "User:" are the HUMAN user. Extract facts about THEM.
+- Lines starting with "Ryo:" are the AI ASSISTANT. Do NOT attribute Ryo's statements, opinions, or knowledge to the user.
+- Only extract what the USER directly said, asked, mentioned, or revealed about themselves.
 
-// Phase 2: Consolidate new info with existing memory content
-const CONSOLIDATION_PROMPT = `You are consolidating user memory information.
+You will output TWO types of memories:
 
-Given:
-- NEW information extracted from a conversation
-- EXISTING memory content that covers the same topic
+## dailyNotes (short-term journal)
+Capture what the USER discussed, their mood, plans, topics, questions, problems.
+- One short sentence each, max ~15 words
+- Be specific and factual
+- Skip small talk, greetings, trivial exchanges
+- Do NOT repeat anything already in EXISTING DAILY NOTES
 
-Create a consolidated memory that:
-1. Synthesizes a combined summary (max 180 chars) capturing all relevant info
-2. Consolidates content - organize logically, remove duplicates, newer info takes precedence if contradicting
-3. Preserves all important details from both sources`;
+## longTermMemories (permanent facts)
+Stable facts about the USER worth remembering permanently.
+CANONICAL KEYS: name, birthday, location, work, skills, education, projects, music_pref, food_pref, interests, entertainment, family, friends, pets, goals, current_focus, context, preferences, instructions
+
+What qualifies: identity, stable facts (job, pets, family), preferences, instructions
+What does NOT: temporary events, moods, plans, things already in existing memories
+
+RULES:
+- Use canonical keys when topic matches
+- Only extract NEW info not already in existing state
+- If an existing memory key covers the same topic, list it in relatedKeys
+- confidence "high" = user directly stated, "medium" = strong inference
+- Return empty arrays if nothing qualifies`;
+
+const CONSOLIDATION_PROMPT = `Merge NEW and EXISTING memory info into one clean entry.
+
+Rules:
+- Remove all duplicate or redundant information
+- If new info contradicts old info, keep the newer version
+- Keep it concise – no repetition, no filler
+- Organize logically
+- Summary must be under 180 chars`;
+
+// ============================================================================
+// Handler
+// ============================================================================
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { logger } = initLogger();
@@ -192,7 +197,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Messages array required" });
   }
 
-  // Filter to user/assistant messages and format for analysis
+  // Format conversation with clear role labels
   const conversationText = messages
     .filter(m => m.role === "user" || m.role === "assistant")
     .map(m => {
@@ -205,57 +210,83 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (conversationText.trim().length < 50) {
     logger.info("Conversation too short for extraction");
     logger.response(200, Date.now() - startTime);
-    return res.status(200).json({ extracted: 0, message: "Conversation too short" });
+    return res.status(200).json({ extracted: 0, dailyNotes: 0, message: "Conversation too short" });
   }
 
-  // Check current memory count
-  const currentIndex = await getMemoryIndex(redis, username);
-  const currentCount = currentIndex?.memories.length || 0;
-  const remainingSlots = MAX_MEMORIES_PER_USER - currentCount;
-
-  if (remainingSlots <= 0) {
-    logger.info("Memory limit reached", { username, currentCount });
-    logger.response(200, Date.now() - startTime);
-    return res.status(200).json({ extracted: 0, message: "Memory limit reached" });
-  }
-
-  logger.info("Extracting memories", { 
+  logger.info("Starting extraction", { 
     username, 
     messageCount: messages.length,
     conversationLength: conversationText.length,
-    remainingSlots,
   });
 
   try {
-    // Get existing memory summaries (not full content yet - that's fetched on demand)
-    const existingKeys = currentIndex?.memories.map(m => m.key) || [];
-    const existingSummariesText = currentIndex && currentIndex.memories.length > 0
-      ? currentIndex.memories.map(m => `- ${m.key}: ${m.summary}`).join("\n")
-      : "None";
+    // ========================================================================
+    // Gather existing state (for dedup in prompt)
+    // ========================================================================
 
-    // Phase 1: Extract new memories and identify related existing keys
-    logger.info("Phase 1: Extracting new memories", { username });
-    const { object: extractionResult } = await generateObject({
+    // Existing daily notes — only unprocessed entries to save tokens
+    const today = getTodayDateString();
+    const existingDailyNote = await getDailyNote(redis, username, today);
+    const hasUnprocessedEntries = existingDailyNote && !existingDailyNote.processedForMemories && existingDailyNote.entries.length > 0;
+    const existingDailyNotesText = hasUnprocessedEntries
+      ? existingDailyNote.entries.map(e => `- ${e.content}`).join("\n")
+      : "";
+
+    // Existing long-term memories
+    const currentIndex = await getMemoryIndex(redis, username);
+    const currentCount = currentIndex?.memories.length || 0;
+    const remainingSlots = MAX_MEMORIES_PER_USER - currentCount;
+    const existingKeys = currentIndex?.memories.map(m => m.key) || [];
+    const existingMemoriesText = currentIndex && currentIndex.memories.length > 0
+      ? currentIndex.memories.map(m => `- ${m.key}: ${m.summary}`).join("\n")
+      : "";
+
+    // ========================================================================
+    // Single-pass extraction: daily notes + long-term memories in one call
+    // ========================================================================
+
+    // Build existing state section — only include non-empty sections
+    let existingStateSection = "";
+    if (existingDailyNotesText) {
+      existingStateSection += `\nEXISTING DAILY NOTES (do NOT repeat):\n${existingDailyNotesText}`;
+    }
+    if (existingMemoriesText) {
+      existingStateSection += `\nEXISTING LONG-TERM MEMORIES (do NOT duplicate):\n${existingMemoriesText}`;
+    }
+
+    const maxLongTerm = remainingSlots > 0 ? Math.min(5, remainingSlots) : 0;
+
+    logger.info("Extracting", { username, existingDailyNotes: existingDailyNote?.entries.length || 0, existingMemories: currentCount, remainingSlots });
+
+    const { object: result } = await generateObject({
       model: google("gemini-2.0-flash"),
       schema: extractionSchema,
-      prompt: `${EXTRACTION_PROMPT}\n\nEXISTING MEMORIES (summaries only):\n${existingSummariesText}\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\nExtract up to ${Math.min(5, remainingSlots)} memories. For each, identify any related existing keys that should be merged.`,
+      prompt: `${EXTRACTION_PROMPT}${existingStateSection}\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\nExtract up to 8 daily notes and up to ${maxLongTerm} long-term memories. Return empty arrays if nothing qualifies.`,
       temperature: 0.3,
     });
 
-    logger.info("Phase 1 complete", { 
-      username, 
-      memoriesFound: extractionResult.memories.length,
+    logger.info("Extraction complete", {
+      username,
+      dailyNotes: result.dailyNotes.length,
+      longTermMemories: result.longTermMemories.length,
     });
 
-    // Filter to high/medium confidence and limit count
-    const toProcess = extractionResult.memories
-      .filter(m => m.confidence !== "low")
-      .slice(0, remainingSlots);
+    // ========================================================================
+    // Store daily notes
+    // ========================================================================
+    let dailyNotesStored = 0;
+    for (const note of result.dailyNotes) {
+      const storeResult = await appendDailyNote(redis, username, note);
+      if (storeResult.success) dailyNotesStored++;
+    }
 
-    // Phase 2: For memories with relatedKeys, fetch content and consolidate
-    let stored = 0;
+    // ========================================================================
+    // Store long-term memories (with consolidation for overlapping keys)
+    // ========================================================================
+    let longTermStored = 0;
+    const toProcess = result.longTermMemories.slice(0, remainingSlots);
+
     for (const mem of toProcess) {
-      // Normalize key
       const key = mem.key.toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 30);
       if (!key || !/^[a-z]/.test(key)) continue;
 
@@ -263,34 +294,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let finalContent = mem.content;
       const keysToDelete: string[] = [];
 
-      // Check if there are related keys that need consolidation
       const relatedKeys = (mem.relatedKeys || [])
         .map(k => k.toLowerCase().replace(/[^a-z0-9_]/g, "_"))
         .filter(k => k !== key && existingKeys.includes(k));
 
-      // Also check if the target key itself exists (needs merging)
       const targetKeyExists = existingKeys.includes(key);
 
+      // Consolidate with existing if keys overlap
       if (relatedKeys.length > 0 || targetKeyExists) {
-        // Fetch content only for keys that need consolidation
         const keysToFetch = targetKeyExists ? [key, ...relatedKeys] : relatedKeys;
         const uniqueKeysToFetch = [...new Set(keysToFetch)];
         
-        logger.info("Phase 2: Fetching content for consolidation", { 
-          username, 
-          targetKey: key, 
-          keysToFetch: uniqueKeysToFetch 
-        });
+        logger.info("Consolidating", { username, key, merging: uniqueKeysToFetch });
 
         const existingContents = await Promise.all(
           uniqueKeysToFetch.map(async (k) => {
             const detail = await getMemoryDetail(redis, username, k);
             const entry = currentIndex?.memories.find(m => m.key === k);
-            return {
-              key: k,
-              summary: entry?.summary || "",
-              content: detail?.content || "",
-            };
+            return { key: k, summary: entry?.summary || "", content: detail?.content || "" };
           })
         );
 
@@ -298,44 +319,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .map(m => `Key: ${m.key}\nSummary: ${m.summary}\nContent: ${m.content}`)
           .join("\n\n");
 
-        // Phase 2: Consolidate with AI
         const { object: consolidated } = await generateObject({
           model: google("gemini-2.0-flash"),
           schema: consolidationSchema,
-          prompt: `${CONSOLIDATION_PROMPT}\n\nNEW INFORMATION:\nSummary: ${mem.summary}\nContent: ${mem.content}\n\nEXISTING MEMORY CONTENT:\n${existingContentText}\n\nConsolidate into a single memory.`,
+          prompt: `${CONSOLIDATION_PROMPT}\n\nNEW:\nSummary: ${mem.summary}\nContent: ${mem.content}\n\nEXISTING:\n${existingContentText}\n\nMerge into one clean, deduplicated entry.`,
           temperature: 0.3,
         });
 
         finalSummary = consolidated.summary;
         finalContent = consolidated.content;
         keysToDelete.push(...relatedKeys);
-
-        logger.info("Phase 2: Consolidation complete", { username, key, mergedFrom: relatedKeys });
       }
 
-      // Store the memory
-      const mode = existingKeys.includes(key) ? "update" : "add";
-      
-      const storeResult = await upsertMemory(
-        redis,
-        username,
-        key,
-        finalSummary,
-        finalContent,
-        mode
-      );
+      const mode = targetKeyExists ? "update" : "add";
+      const storeResult = await upsertMemory(redis, username, key, finalSummary, finalContent, mode);
 
       if (storeResult.success) {
-        stored++;
+        longTermStored++;
         logger.info("Stored memory", { username, key, confidence: mem.confidence, mode });
         
-        // Delete merged keys
         for (const oldKey of keysToDelete) {
           const deleteResult = await deleteMemory(redis, username, oldKey);
           if (deleteResult.success) {
             logger.info("Deleted merged key", { username, oldKey, mergedInto: key });
-          } else {
-            logger.warn("Failed to delete merged key", { username, oldKey, error: deleteResult.message });
           }
         }
       } else {
@@ -343,15 +349,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    logger.info("Memory extraction complete", { username, extracted: stored });
+    // Mark unprocessed daily notes as processed
+    const unprocessedNotes = await getUnprocessedDailyNotes(redis, username);
+    for (const note of unprocessedNotes) {
+      await markDailyNoteProcessed(redis, username, note.date);
+    }
+
+    logger.info("Done", { username, dailyNotes: dailyNotesStored, longTerm: longTermStored });
     logger.response(200, Date.now() - startTime);
 
     return res.status(200).json({
-      extracted: stored,
-      analyzed: extractionResult.memories.length,
-      message: stored > 0 
-        ? `Extracted ${stored} memories from conversation`
-        : "No noteworthy memories found",
+      extracted: longTermStored,
+      dailyNotes: dailyNotesStored,
+      analyzed: result.longTermMemories.length,
+      message: longTermStored > 0 || dailyNotesStored > 0
+        ? `Logged ${dailyNotesStored} daily notes, extracted ${longTermStored} long-term memories`
+        : "No noteworthy information found",
     });
 
   } catch (error) {

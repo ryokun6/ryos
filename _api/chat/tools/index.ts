@@ -147,23 +147,28 @@ export const TOOL_DESCRIPTIONS = {
     "IMPORTANT: Mouse coordinates are 1:1 with the screenshot pixels - use exact pixel positions from the image. " +
     "Mouse control works best on classic Mac OS (System 1-9). Mac OS X systems have limited mouse support due to emulator constraints.",
 
-  // Memory Tools
+  // Unified Memory Tools
   memoryWrite:
-    "Remember information about the user. Use when: " +
-    "1) User explicitly asks to remember something ('remember my name is...'), " +
-    "2) You notice important info (name, preferences, habits, work context), " +
-    "3) You want to update existing memory with new info. " +
-    "The 'currentMemories' in the response shows what you know after the operation. " +
-    "Modes: 'add' (new key), 'update' (replace existing), 'merge' (append to existing or create new).",
+    "Write to user memory. Supports two types via the 'type' parameter:\n" +
+    "- type='long_term' (default): Save permanent facts. Requires key, summary, content. " +
+    "Use for: name, preferences, identity, instructions, stable facts. " +
+    "Modes: 'add' (new), 'update' (replace), 'merge' (append/create).\n" +
+    "- type='daily': Append a journal entry to today's daily note. Only requires content. " +
+    "Use for: passing observations, mood, plans, conversation context, things discussed. " +
+    "Daily notes expire after 30 days but get processed into long-term memories automatically.\n" +
+    "Most memory extraction happens automatically in the background – use this tool for explicit user requests " +
+    "('remember my name', 'note that...') and important things you want to capture right now.",
   
   memoryRead:
-    "Retrieve full details of a specific memory by key. " +
-    "Use when the summary in your context isn't enough and you need the complete content. " +
-    "Memory summaries are always visible in your system state under USER MEMORY.",
+    "Read from user memory. Supports two types via the 'type' parameter:\n" +
+    "- type='long_term' (default): Read a specific long-term memory by key. " +
+    "Memory summaries are always visible in LONG-TERM MEMORIES section.\n" +
+    "- type='daily': Read daily notes for a specific date (defaults to today).",
   
   memoryDelete:
-    "Delete a specific memory by key. " +
-    "Use only when the user explicitly asks to forget something or when information is no longer relevant.",
+    "Delete a long-term memory by key. " +
+    "Use only when the user explicitly asks to forget something. " +
+    "Daily notes expire automatically and cannot be deleted.",
 } as const;
 
 /**
@@ -324,7 +329,8 @@ export function createChatTools(context: MemoryToolContext) {
     },
 
     // ============================================================================
-    // Memory Tools (Server-side execution)
+    // Unified Memory Tools (Server-side execution)
+    // Handles both long-term memories and daily notes
     // ============================================================================
     memoryWrite: {
       description: TOOL_DESCRIPTIONS.memoryWrite,

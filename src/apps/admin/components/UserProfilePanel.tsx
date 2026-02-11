@@ -44,6 +44,18 @@ interface UserMemory {
   updatedAt: number;
 }
 
+interface DailyNoteEntry {
+  timestamp: number;
+  content: string;
+}
+
+interface DailyNote {
+  date: string;
+  entries: DailyNoteEntry[];
+  processedForMemories: boolean;
+  updatedAt: number;
+}
+
 interface UserProfilePanelProps {
   username: string;
   onBack: () => void;
@@ -60,7 +72,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [messages, setMessages] = useState<UserMessage[]>([]);
   const [memories, setMemories] = useState<UserMemory[]>([]);
+  const [dailyNotes, setDailyNotes] = useState<DailyNote[]>([]);
   const [expandedMemories, setExpandedMemories] = useState<Set<string>>(new Set());
+  const [expandedDailyNotes, setExpandedDailyNotes] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [banReason, setBanReason] = useState("");
   const [showBanInput, setShowBanInput] = useState(false);
@@ -136,6 +150,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
       if (response.ok) {
         const data = await response.json();
         setMemories(data.memories || []);
+        setDailyNotes(data.dailyNotes || []);
       }
     } catch (error) {
       console.error("Failed to fetch memories:", error);
@@ -149,6 +164,18 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         next.delete(key);
       } else {
         next.add(key);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleDailyNote = useCallback((date: string) => {
+    setExpandedDailyNotes((prev) => {
+      const next = new Set(prev);
+      if (next.has(date)) {
+        next.delete(date);
+      } else {
+        next.add(date);
       }
       return next;
     });
@@ -515,10 +542,10 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             </div>
           )}
 
-          {/* Memories */}
+          {/* Long-Term Memories */}
           {isLoading ? (
             <div className="space-y-2">
-              <SectionHeader>{t("apps.admin.profile.memories")}</SectionHeader>
+              <SectionHeader>Long-Term Memories</SectionHeader>
               <div className="space-y-1">
                 <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-6 w-full" />
@@ -527,7 +554,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           ) : (
             <div className="space-y-2">
               <SectionHeader>
-                {t("apps.admin.profile.memories")} ({memories.length})
+                Long-Term Memories ({memories.length})
               </SectionHeader>
               {memories.length === 0 ? (
                 <div className="text-[11px] text-neutral-400 text-center py-4">
@@ -599,6 +626,60 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                   </TableBody>
                 </Table>
               )}
+            </div>
+          )}
+
+          {/* Daily Notes */}
+          {!isLoading && dailyNotes.length > 0 && (
+            <div className="space-y-2">
+              <SectionHeader>
+                Daily Notes ({dailyNotes.reduce((acc, n) => acc + n.entries.length, 0)} entries)
+              </SectionHeader>
+              <div className="space-y-1">
+                {dailyNotes.map((note) => {
+                  const isExpanded = expandedDailyNotes.has(note.date);
+                  const today = new Date().toISOString().split("T")[0];
+                  const dateLabel = note.date === today ? `${note.date} (today)` : note.date;
+                  return (
+                    <div key={note.date}>
+                      <button
+                        onClick={() => toggleDailyNote(note.date)}
+                        className="flex items-center gap-1.5 w-full text-left text-[11px] hover:bg-gray-100/50 px-1 py-0.5 rounded transition-colors"
+                      >
+                        <CaretRight
+                          className={cn(
+                            "h-3 w-3 text-neutral-400 transition-transform flex-shrink-0",
+                            isExpanded && "rotate-90"
+                          )}
+                          weight="bold"
+                        />
+                        <span className="text-amber-700 font-medium">{dateLabel}</span>
+                        <span className="text-neutral-400 ml-1">
+                          ({note.entries.length} entries)
+                          {note.processedForMemories && " ✓"}
+                        </span>
+                      </button>
+                      {isExpanded && (
+                        <div className="pl-5 mt-1 space-y-1">
+                          {note.entries.map((entry, i) => {
+                            const time = new Date(entry.timestamp).toLocaleTimeString("en-US", {
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            });
+                            return (
+                              <div key={i} className="text-[11px] flex gap-2">
+                                <span className="text-neutral-400 whitespace-nowrap flex-shrink-0">{time}</span>
+                                <span className="text-neutral-600">{entry.content}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 

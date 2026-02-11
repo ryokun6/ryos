@@ -7,11 +7,12 @@
 
 import { z } from "zod";
 import { appIds } from "../../../src/config/appIds.js";
-import { THEME_IDS, LANGUAGE_CODES, VFS_PATHS, MEMORY_MODES } from "./types.js";
+import { THEME_IDS, LANGUAGE_CODES, VFS_PATHS, MEMORY_TYPES, MEMORY_MODES } from "./types.js";
 import {
   MAX_KEY_LENGTH,
   MAX_SUMMARY_LENGTH,
   MAX_CONTENT_LENGTH,
+  MAX_DAILY_NOTE_ENTRY_LENGTH,
 } from "../../_utils/_memory.js";
 
 /**
@@ -542,14 +543,20 @@ export const infiniteMacControlSchema = z.object({
 });
 
 // ============================================================================
-// Memory Tool Schemas
+// Unified Memory Tool Schemas
 // ============================================================================
 
 /**
- * Memory write schema
- * Used to save/update user memories
+ * Unified memory write schema
+ * Handles both long-term memories and daily notes
  */
 export const memoryWriteSchema = z.object({
+  type: z
+    .enum(MEMORY_TYPES)
+    .default("long_term")
+    .describe(
+      "'long_term' for permanent facts (name, preferences, identity). 'daily' for journal entries (observations, context, passing details). Defaults to 'long_term'."
+    ),
   key: z
     .string()
     .min(1)
@@ -557,51 +564,96 @@ export const memoryWriteSchema = z.object({
     .regex(/^[a-z][a-z0-9_]*$/, {
       message: "Key must start with a letter and contain only lowercase letters, numbers, and underscores",
     })
+    .optional()
     .describe(
-      "Short key for this memory (e.g., 'name', 'music_pref', 'work_context'). Must start with a letter, contain only lowercase letters, numbers, underscores."
+      "Required for long_term. Short key (e.g., 'name', 'music_pref'). Ignored for daily."
     ),
   summary: z
     .string()
     .min(1)
     .max(MAX_SUMMARY_LENGTH)
+    .optional()
     .describe(
-      `Brief 1-2 sentence summary of the memory (max ${MAX_SUMMARY_LENGTH} chars). This is always visible to you.`
+      `Required for long_term. Brief 1-2 sentence summary (max ${MAX_SUMMARY_LENGTH} chars). Ignored for daily.`
     ),
   content: z
     .string()
     .min(1)
     .max(MAX_CONTENT_LENGTH)
     .describe(
-      `Full detailed content of the memory (max ${MAX_CONTENT_LENGTH} chars). Retrieved via memoryRead.`
+      `The content to store. For long_term: detailed info (max ${MAX_CONTENT_LENGTH} chars). For daily: a brief note (max ${MAX_DAILY_NOTE_ENTRY_LENGTH} chars).`
     ),
   mode: z
     .enum(MEMORY_MODES)
     .default("add")
     .describe(
-      "'add' creates new memory (fails if key exists), 'update' replaces existing (fails if doesn't exist), 'merge' appends to existing or creates new."
+      "For long_term only: 'add' (new), 'update' (replace existing), 'merge' (append or create). Ignored for daily."
     ),
+}).superRefine((data, ctx) => {
+  if (data.type === "long_term") {
+    if (!data.key) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Key is required for long_term memories.",
+        path: ["key"],
+      });
+    }
+    if (!data.summary) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Summary is required for long_term memories.",
+        path: ["summary"],
+      });
+    }
+  }
+  if (data.type === "daily" && data.content.length > MAX_DAILY_NOTE_ENTRY_LENGTH) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Daily note content must be ${MAX_DAILY_NOTE_ENTRY_LENGTH} chars or less.`,
+      path: ["content"],
+    });
+  }
 });
 
 /**
- * Memory read schema
- * Used to retrieve full memory details
+ * Unified memory read schema
+ * Handles both long-term memories and daily notes
  */
 export const memoryReadSchema = z.object({
+  type: z
+    .enum(MEMORY_TYPES)
+    .default("long_term")
+    .describe(
+      "'long_term' to read a specific memory by key. 'daily' to read daily notes for a date."
+    ),
   key: z
     .string()
     .min(1)
     .max(MAX_KEY_LENGTH)
-    .describe("The memory key to retrieve full details for."),
+    .optional()
+    .describe("Required for long_term. The memory key to retrieve."),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date must be YYYY-MM-DD format" })
+    .optional()
+    .describe("For daily only. Date in YYYY-MM-DD format. Defaults to today."),
+}).superRefine((data, ctx) => {
+  if (data.type === "long_term" && !data.key) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Key is required when reading long_term memories.",
+      path: ["key"],
+    });
+  }
 });
 
 /**
- * Memory delete schema
- * Used to delete a specific memory
+ * Memory delete schema (long-term only)
  */
 export const memoryDeleteSchema = z.object({
   key: z
     .string()
     .min(1)
     .max(MAX_KEY_LENGTH)
-    .describe("The memory key to delete."),
+    .describe("The long-term memory key to delete."),
 });
