@@ -69,6 +69,8 @@ export enum DisplayMode {
   Shader = "shader",
   /** Show Apple Music-style liquid distortion of cover art */
   Liquid = "liquid",
+  /** Show volumetric vortex shader sampling cover art colors */
+  Vortex = "vortex",
 }
 
 export enum KoreanDisplay {

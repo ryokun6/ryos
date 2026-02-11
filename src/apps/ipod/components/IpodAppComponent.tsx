@@ -530,6 +530,16 @@ export function IpodAppComponent({
                     />
                   )}
 
+                  {/* Vortex shader background (fullscreen) */}
+                  {displayMode === DisplayMode.Vortex && tracks[currentIndex] && (
+                    <AmbientBackground
+                      coverUrl={fullscreenCoverUrl}
+                      variant="vortex"
+                      isActive={!!tracks[currentIndex]}
+                      className="fixed inset-0 z-[5]"
+                    />
+                  )}
+
                   {/* Cover overlay: shows when paused (any mode) or always in Cover mode */}
                   <AnimatePresence>
                     {tracks[currentIndex] && fullscreenCoverUrl && (displayMode === DisplayMode.Cover || !isPlaying) && (

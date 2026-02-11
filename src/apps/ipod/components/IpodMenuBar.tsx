@@ -562,6 +562,15 @@ export function IpodMenuBar({
               >
                 {t("apps.ipod.menu.displayLiquid")}
               </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={displayMode === DisplayMode.Vortex}
+                onCheckedChange={(checked) => {
+                  if (checked) setDisplayMode(DisplayMode.Vortex);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.displayVortex")}
+              </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>
 
