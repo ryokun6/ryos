@@ -195,6 +195,41 @@ export async function runQualitySummaryWiringTests(): Promise<{
     );
   });
 
+  await runTest(
+    "accepts file-size failed checks where offender counts represent LOC",
+    async () => {
+      withTempReport(
+        {
+          schemaVersion: 1,
+          root: "/tmp/example",
+          passed: false,
+          checks: [
+            {
+              name: "large TypeScript files",
+              status: "FAIL",
+              value: 1,
+              allowed: "files <= 14; largest <= 2600",
+              offenders: [{ path: "src/Huge.ts", count: 1701 }],
+            },
+          ],
+        },
+        (reportPath) => {
+          const result = runSummary(reportPath);
+          assertEq(result.status, 0, `Expected exit 0, got ${result.status}`);
+          const out = result.stdout || "";
+          assert(
+            out.includes("large TypeScript files"),
+            "Expected file-size failed check row in summary output"
+          );
+          assert(
+            out.includes("`src/Huge.ts` (1701)"),
+            "Expected file-size offender LOC value in summary output"
+          );
+        }
+      );
+    }
+  );
+
   console.log(section("Input validation"));
   await runTest("fails with helpful error on malformed report", async () => {
     withTempReport(
