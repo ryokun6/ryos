@@ -725,26 +725,41 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             result = ""; // Handler manages its own result
             break;
           }
+          // === Server-side tools (executed on the server via `execute` function) ===
+          // These tools have their results streamed from the server.
+          // We must NOT call addToolResult here, as it would race with and
+          // potentially overwrite the real server result.
           case "generateHtml": {
             const { html } = toolCall.input as { html: string };
-
-            // Validate required parameter
-            if (!html) {
-              console.error(
-                "[ToolCall] generateHtml: Missing required 'html' parameter",
-              );
-              break;
-            }
-
-            console.log("[ToolCall] generateHtml:", {
-              htmlLength: html.length,
+            console.log("[ToolCall] generateHtml (server-side):", {
+              htmlLength: html?.length ?? 0,
             });
-
-            // HTML will be handled by ChatMessages via HtmlPreview
-            console.log(
-              "[ToolCall] Generated HTML:",
-              html.substring(0, 100) + "...",
-            );
+            // Result comes from server — do not call addToolResult
+            result = "";
+            break;
+          }
+          case "searchSongs": {
+            console.log("[ToolCall] searchSongs (server-side):", toolCall.input);
+            // Result comes from server — do not call addToolResult
+            result = "";
+            break;
+          }
+          case "memoryWrite": {
+            console.log("[ToolCall] memoryWrite (server-side):", toolCall.input);
+            // Result comes from server — do not call addToolResult
+            result = "";
+            break;
+          }
+          case "memoryRead": {
+            console.log("[ToolCall] memoryRead (server-side):", toolCall.input);
+            // Result comes from server — do not call addToolResult
+            result = "";
+            break;
+          }
+          case "memoryDelete": {
+            console.log("[ToolCall] memoryDelete (server-side):", toolCall.input);
+            // Result comes from server — do not call addToolResult
+            result = "";
             break;
           }
           // === Unified VFS Tools ===
