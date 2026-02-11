@@ -88,6 +88,7 @@ export async function runQualityAuditWiringTests(): Promise<{
       "srcdoc` is allowlisted only in",
       "HtmlPreview.tsx` with cap 2",
       "insertAdjacentHTML(...)` including bracket access",
+      "`document.open(...)` / `document.close(...)`",
       "bracket/optional-bracket access",
       "spaced-dot member access",
       "exact-member matching",

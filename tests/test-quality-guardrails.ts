@@ -121,6 +121,7 @@ export async function runQualityGuardrailTests(): Promise<{
       "outerHTML assignments",
       "insertAdjacentHTML usage",
       "document.write usage",
+      "document.open/close usage",
       "string-based timer execution usage",
       "execSync usage",
       "child_process exec import usage",
@@ -2716,6 +2717,86 @@ export async function runQualityGuardrailTests(): Promise<{
         assert(
           (result.stdout || "").includes("PASS document.write usage"),
           "Expected document.write guardrail pass for substring-only object names"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest("fails when document.open usage is introduced in JavaScript", async () => {
+    const qualityRoot = withTempQualityRoot((root) => {
+      mkdirSync(join(root, "src"), { recursive: true });
+      writeFileSync(join(root, "src", "BadDocumentOpen.js"), `document.open();\n`, "utf-8");
+    });
+
+    try {
+      const result = runQualityCheck(qualityRoot);
+      assertEq(
+        result.status,
+        1,
+        `Expected failure exit code 1 for document.open in js, got ${result.status}`
+      );
+      assert(
+        (result.stdout || "").includes("FAIL document.open/close usage"),
+        "Expected document.open/close guardrail failure for open variant"
+      );
+    } finally {
+      rmSync(qualityRoot, { recursive: true, force: true });
+    }
+  });
+
+  await runTest(
+    "fails when document bracket close usage is introduced in JavaScript",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src"), { recursive: true });
+        writeFileSync(
+          join(root, "src", "BadDocumentBracketClose.js"),
+          `document["close"]();\n`,
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          1,
+          `Expected failure exit code 1 for document['close'] in js, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("FAIL document.open/close usage"),
+          "Expected document.open/close guardrail failure for bracket close variant"
+        );
+      } finally {
+        rmSync(qualityRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  await runTest(
+    "passes when object name merely contains document substring for open",
+    async () => {
+      const qualityRoot = withTempQualityRoot((root) => {
+        mkdirSync(join(root, "src"), { recursive: true });
+        writeFileSync(
+          join(root, "src", "SafeDocumentOpenSubstring.js"),
+          `const mydocument = { open: () => 1 };\nconsole.log(mydocument.open());\n`,
+          "utf-8"
+        );
+      });
+
+      try {
+        const result = runQualityCheck(qualityRoot);
+        assertEq(
+          result.status,
+          0,
+          `Expected pass exit code 0 for document substring open object names, got ${result.status}`
+        );
+        assert(
+          (result.stdout || "").includes("PASS document.open/close usage"),
+          "Expected document.open/close guardrail pass for substring-only object names"
         );
       } finally {
         rmSync(qualityRoot, { recursive: true, force: true });

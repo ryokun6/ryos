@@ -110,7 +110,8 @@ Large files remain the biggest quality risk (all >1500 LOC):
     across application source and scripts
   - DOM assignment hardening (`innerHTML =`, `outerHTML =`, `srcdoc =`,
     `innerHTML +=`, `outerHTML +=`, `srcdoc +=` including bracket access, `insertAdjacentHTML(...)` including bracket access,
-    `document.write(...)` / `document.writeln(...)`, including bracket/optional-bracket access,
+    `document.write(...)` / `document.writeln(...)`, `document.open(...)` / `document.close(...)`,
+    including bracket/optional-bracket access,
     spaced-dot member access, spacing-tolerant matching, and exact-member matching
     to reduce substring false positives; `srcdoc` is allowlisted only in
     `src/components/shared/HtmlPreview.tsx` with cap 2)

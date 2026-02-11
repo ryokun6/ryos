@@ -123,6 +123,14 @@ const GUARDRAILS: GuardrailCheck[] = [
     maxAllowed: 0,
   },
   {
+    name: "document.open/close usage",
+    roots: ["src"],
+    extensions: CODE_EXTENSIONS,
+    pattern:
+      /\bdocument\s*(?:\?\.|\.)\s*(?:open|close)\s*\(|\bdocument(?:\?\.)?\s*\[\s*["'`](?:open|close)["'`]\s*\]\s*\(/g,
+    maxAllowed: 0,
+  },
+  {
     name: "string-based timer execution usage",
     roots: ["src", "_api", "scripts"],
     extensions: CODE_EXTENSIONS,
