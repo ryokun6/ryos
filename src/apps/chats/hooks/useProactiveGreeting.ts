@@ -17,9 +17,31 @@ const ALLOWED_USERS = new Set(["ryo"]);
 const REOPEN_DELAY_MS = 5_000;
 
 /**
- * Minimum time between proactive-greeting fetches to avoid rapid API calls.
+ * Minimum time between re-open triggered fetches to avoid rapid API calls.
  */
 const FETCH_COOLDOWN_MS = 30_000;
+
+/** Helper: check if the store has an untouched greeting (static or proactive). */
+function isStoreUntouched(state: { aiMessages: AIChatMessage[] }) {
+  return (
+    state.aiMessages.length === 1 &&
+    (state.aiMessages[0].id === "1" ||
+      state.aiMessages[0].id === "proactive-1") &&
+    state.aiMessages[0].role === "assistant"
+  );
+}
+
+/** Helper: check if a user is in the allowed list. */
+function isUserEligible(state: {
+  username: string | null;
+  authToken: string | null;
+}) {
+  return (
+    !!state.username &&
+    ALLOWED_USERS.has(state.username.toLowerCase()) &&
+    !!state.authToken
+  );
+}
 
 /**
  * Hook that manages proactive AI greetings for eligible users.
@@ -44,15 +66,14 @@ export function useProactiveGreeting(isWindowOpen: boolean = true) {
       state.aiMessages.length === 1 &&
       state.aiMessages[0].id === "1" &&
       state.aiMessages[0].role === "assistant";
-    const eligible =
-      !!state.username &&
-      ALLOWED_USERS.has(state.username.toLowerCase()) &&
-      !!state.authToken;
-    return fresh && eligible;
+    return fresh && isUserEligible(state);
   });
   const hasTriggeredRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
-  const lastFetchTimeRef = useRef(0);
+  /** True while fetchGreeting is in-flight. */
+  const fetchingRef = useRef(false);
+  /** Timestamp of the last re-open triggered fetch (for cooldown). */
+  const lastReopenFetchRef = useRef(0);
   const reopenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevWindowOpenRef = useRef(isWindowOpen);
 
@@ -63,7 +84,7 @@ export function useProactiveGreeting(isWindowOpen: boolean = true) {
 
   /**
    * Fresh chat: only the static default greeting is present (id === "1").
-   * Used for the immediate trigger on first open.
+   * Used for the immediate trigger on first open / after clear.
    */
   const isFreshChat =
     aiMessages.length === 1 &&
@@ -91,11 +112,11 @@ export function useProactiveGreeting(isWindowOpen: boolean = true) {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
+      fetchingRef.current = true;
 
       if (!options?.silent) {
         setIsLoadingGreeting(true);
       }
-      lastFetchTimeRef.current = Date.now();
 
       try {
         const response = await abortableFetch(getApiUrl("/api/chat"), {
@@ -146,8 +167,11 @@ export function useProactiveGreeting(isWindowOpen: boolean = true) {
           console.warn("[ProactiveGreeting] Failed to fetch greeting:", err);
         }
       } finally {
-        if (!controller.signal.aborted && !options?.silent) {
-          setIsLoadingGreeting(false);
+        if (!controller.signal.aborted) {
+          fetchingRef.current = false;
+          if (!options?.silent) {
+            setIsLoadingGreeting(false);
+          }
         }
       }
     },
@@ -180,29 +204,23 @@ export function useProactiveGreeting(isWindowOpen: boolean = true) {
 
     // Window just (re)opened — schedule a deferred greeting refresh
     if (isWindowOpen && !wasOpen && isUntouchedChat && isEligible) {
-      // Respect cooldown to avoid rapid-fire API calls
-      const elapsed = Date.now() - lastFetchTimeRef.current;
-      if (elapsed < FETCH_COOLDOWN_MS) return;
-
       reopenTimerRef.current = setTimeout(() => {
+        // Cooldown: skip if a re-open fetch happened recently
+        const elapsed = Date.now() - lastReopenFetchRef.current;
+        if (elapsed < FETCH_COOLDOWN_MS) return;
+
+        // Skip if a fetch is already in-flight (e.g. from the immediate trigger)
+        if (fetchingRef.current) return;
+
         // Re-check conditions at trigger time
         const state = useChatsStore.getState();
-        const stillUntouched =
-          state.aiMessages.length === 1 &&
-          (state.aiMessages[0].id === "1" ||
-            state.aiMessages[0].id === "proactive-1") &&
-          state.aiMessages[0].role === "assistant";
-        const stillEligible =
-          !!state.username &&
-          ALLOWED_USERS.has(state.username.toLowerCase()) &&
-          !!state.authToken;
+        if (!isStoreUntouched(state) || !isUserEligible(state)) return;
 
-        if (stillUntouched && stillEligible) {
-          // Use silent mode when refreshing an existing proactive greeting
-          // so the user doesn't see a flash of typing dots.
-          const currentId = state.aiMessages[0].id;
-          fetchGreeting({ silent: currentId === "proactive-1" });
-        }
+        lastReopenFetchRef.current = Date.now();
+        // Use silent mode when refreshing an existing proactive greeting
+        // so the user doesn't see a flash of typing dots.
+        const currentId = state.aiMessages[0].id;
+        fetchGreeting({ silent: currentId === "proactive-1" });
       }, REOPEN_DELAY_MS);
     }
 
@@ -229,25 +247,21 @@ export function useProactiveGreeting(isWindowOpen: boolean = true) {
    * Used after clearChats to re-trigger the greeting.
    */
   const triggerGreeting = useCallback(() => {
-    hasTriggeredRef.current = false;
-    // The useEffect will pick it up on the next render
-    // But we can also force it directly
-    setTimeout(() => {
-      const state = useChatsStore.getState();
-      const stillFresh =
-        state.aiMessages.length === 1 &&
-        (state.aiMessages[0].id === "1" ||
-          state.aiMessages[0].id === "proactive-1") &&
-        state.aiMessages[0].role === "assistant";
-      const stillEligible =
-        !!state.username &&
-        ALLOWED_USERS.has(state.username.toLowerCase()) &&
-        !!state.authToken;
+    // Skip if a fetch is already in-flight (e.g. the immediate trigger already
+    // picked up the clear and started fetching).
+    if (fetchingRef.current) return;
 
-      if (stillFresh && stillEligible) {
-        hasTriggeredRef.current = true;
-        fetchGreeting();
-      }
+    hasTriggeredRef.current = false;
+    // Small delay to allow the store to settle after clearChats.
+    setTimeout(() => {
+      // Re-check: another trigger may have started a fetch in the meantime.
+      if (fetchingRef.current) return;
+
+      const state = useChatsStore.getState();
+      if (!isStoreUntouched(state) || !isUserEligible(state)) return;
+
+      hasTriggeredRef.current = true;
+      fetchGreeting();
     }, 100);
   }, [fetchGreeting]);
 
