@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
  */
 export function TypingDots() {
   return (
-    <div className="flex items-center gap-[3px] py-0.5">
+    <div className="flex items-center justify-center gap-[5px]" style={{ height: 16 }}>
       {[0, 1, 2].map((i) => (
         <motion.span
           key={i}
@@ -16,16 +16,14 @@ export function TypingDots() {
             width: 7,
             height: 7,
             backgroundColor: "currentColor",
-            opacity: 0.4,
           }}
-          animate={{
-            opacity: [0.3, 1, 0.3],
-          }}
+          initial={{ opacity: 0.35 }}
+          animate={{ opacity: [0.35, 0.9, 0.35] }}
           transition={{
-            duration: 1.4,
+            duration: 1.2,
             repeat: Infinity,
             ease: "easeInOut",
-            delay: i * 0.2,
+            delay: i * 0.15,
           }}
         />
       ))}

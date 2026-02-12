@@ -625,13 +625,14 @@ function ChatMessagesContent({
           : message.id || `${message.role}-${messageText.substring(0, 10)}`;
         const isInitialMessage = initialMessageIdsRef.current.has(messageKey);
 
-        // Proactive greeting messages should never animate (no flicker on transition)
-        const isGreetingMessage =
-          message.role === "assistant" &&
-          (message.id === "1" || message.id === "proactive-1");
+        // The static greeting (id "1") should never animate.
+        // The proactive greeting (id "proactive-1") SHOULD animate word-by-word
+        // so it looks like streaming text.
+        const isStaticGreeting =
+          message.role === "assistant" && message.id === "1";
         // Show typing dots instead of text when proactive greeting is loading
         const showTypingDots =
-          isLoadingGreeting && !isRoomView && isGreetingMessage;
+          isLoadingGreeting && !isRoomView && isStaticGreeting;
 
         const variants = { initial: { opacity: 0 }, animate: { opacity: 1 } };
         const isUrgent = isUrgentMessage(messageText);
@@ -698,9 +699,9 @@ function ChatMessagesContent({
           <motion.div
             key={messageKey}
             variants={variants}
-            initial={isInitialMessage || isGreetingMessage ? "animate" : "initial"}
+            initial={isInitialMessage || isStaticGreeting ? "animate" : "initial"}
             animate="animate"
-            transition={isGreetingMessage ? { duration: 0 } : { duration: 0.15, ease: "easeOut" }}
+            transition={isStaticGreeting ? { duration: 0 } : { duration: 0.15, ease: "easeOut" }}
             className={`flex flex-col z-10 w-full ${
               message.role === "user" ? "items-end" : "items-start"
             }`}
