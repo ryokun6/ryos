@@ -88,6 +88,7 @@ export function useKaraokeLogic({
     clearTrackLyricsSource,
     setLyricOffset,
     addTrackFromVideoId,
+    setDisplayMode,
   } = useIpodStoreShallow((s) => ({
     setLyricsAlignment: s.setLyricsAlignment,
     setLyricsFont: s.setLyricsFont,
@@ -100,6 +101,7 @@ export function useKaraokeLogic({
     clearTrackLyricsSource: s.clearTrackLyricsSource,
     setLyricOffset: s.setLyricOffset,
     addTrackFromVideoId: s.addTrackFromVideoId,
+    setDisplayMode: s.setDisplayMode,
   }));
 
   // Library update checker
@@ -1218,6 +1220,7 @@ export function useKaraokeLogic({
     romanization,
     lyricsTranslationLanguage,
     displayMode,
+    setDisplayMode,
     setLyricsAlignment,
     setLyricsFont,
     setRomanization,

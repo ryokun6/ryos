@@ -67,10 +67,10 @@ export enum DisplayMode {
   Landscapes = "landscapes",
   /** Show Kali-fold warp shader sampling cover art colors */
   Shader = "shader",
-  /** Show Apple Music-style liquid distortion of cover art */
-  Liquid = "liquid",
   /** Show mesh gradient shader backdrop */
   Mesh = "mesh",
+  /** Show water/caustic shader over cover art */
+  Water = "water",
 }
 
 export enum KoreanDisplay {

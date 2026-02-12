@@ -69,6 +69,10 @@ export interface FullScreenPortalProps {
   onSyncMode?: () => void;
   isSyncModeOpen?: boolean;
   syncModeContent?: React.ReactNode;
+  // Display mode (Karaoke only - video, cover, mesh, water, etc.)
+  displayMode?: DisplayMode;
+  onDisplayModeSelect?: (mode: DisplayMode) => void;
+  displayModeOptions?: { value: string; label: string }[];
   // Player ref for mobile Safari handling
   fullScreenPlayerRef: React.RefObject<ReactPlayer | null>;
   /** Activity state for loading indicators */

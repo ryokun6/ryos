@@ -621,15 +621,6 @@ export function KaraokeMenuBar({
                 {t("apps.ipod.menu.displayShader")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Liquid}
-                onCheckedChange={(checked) => {
-                  if (checked) setDisplayMode(DisplayMode.Liquid);
-                }}
-                className="text-md h-6 pr-3"
-              >
-                {t("apps.ipod.menu.displayLiquid")}
-              </MenubarCheckboxItem>
-              <MenubarCheckboxItem
                 checked={displayMode === DisplayMode.Mesh}
                 onCheckedChange={(checked) => {
                   if (checked) setDisplayMode(DisplayMode.Mesh);
@@ -637,6 +628,15 @@ export function KaraokeMenuBar({
                 className="text-md h-6 pr-3"
               >
                 {t("apps.ipod.menu.displayMesh")}
+              </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={displayMode === DisplayMode.Water}
+                onCheckedChange={(checked) => {
+                  if (checked) setDisplayMode(DisplayMode.Water);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.displayWater")}
               </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>

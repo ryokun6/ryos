@@ -4,7 +4,7 @@ import { useSound, Sounds } from "@/hooks/useSound";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
 import { LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
-import { Translate, X, ClockClockwise, SkipBack, SkipForward, Play, Pause, Shuffle } from "@phosphor-icons/react";
+import { Translate, X, ClockClockwise, SkipBack, SkipForward, Play, Pause, Shuffle, TelevisionSimple } from "@phosphor-icons/react";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -56,6 +56,11 @@ export interface FullscreenPlayerControlsProps {
   isShuffled?: boolean;
   onToggleShuffle?: () => void;
 
+  // Display mode (background: video, cover, mesh, water, etc.)
+  displayMode?: string;
+  onDisplayModeSelect?: (mode: string) => void;
+  displayModeOptions?: { value: string; label: string }[];
+
   // Sync mode (lyrics timing)
   onSyncMode?: () => void;
 
@@ -104,6 +109,9 @@ export function FullscreenPlayerControls({
   onNext,
   isShuffled,
   onToggleShuffle,
+  displayMode,
+  onDisplayModeSelect,
+  displayModeOptions,
   onSyncMode,
   currentAlignment,
   onAlignmentCycle,
@@ -284,6 +292,59 @@ export function FullscreenPlayerControls({
               />
             )}
           </button>
+        )}
+
+        {/* Display mode (Karaoke) */}
+        {displayMode !== undefined && onDisplayModeSelect && displayModeOptions && displayModeOptions.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onInteraction?.();
+                }}
+                aria-label={t("apps.ipod.menu.display", "Display")}
+                className={cn(buttonClasses, "hidden md:flex")}
+                title={t("apps.ipod.menu.display", "Display")}
+              >
+                <TelevisionSimple
+                  weight="bold"
+                  size={svgSize}
+                  className={svgClasses(variant === "responsive" ? `md:w-[${svgSizeMd}px] md:h-[${svgSizeMd}px]` : undefined)}
+                />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              container={portalContainer}
+              side="top"
+              align="center"
+              sideOffset={8}
+              className={cn(
+                "px-0 max-h-[50vh] overflow-y-auto",
+                variant === "compact" ? "w-40" : "w-44"
+              )}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <DropdownMenuRadioGroup
+                value={displayMode}
+                onValueChange={(value) => {
+                  onDisplayModeSelect(value);
+                  onInteraction?.();
+                }}
+              >
+                {displayModeOptions.map((opt) => (
+                  <DropdownMenuRadioItem
+                    key={opt.value}
+                    value={opt.value}
+                    className="text-md h-6 pr-3"
+                  >
+                    {opt.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 

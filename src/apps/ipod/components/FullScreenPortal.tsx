@@ -44,6 +44,9 @@ export function FullScreenPortal({
   onSyncMode,
   isSyncModeOpen,
   syncModeContent,
+  displayMode,
+  onDisplayModeSelect,
+  displayModeOptions,
   fullScreenPlayerRef,
   activityState,
 }: FullScreenPortalProps) {
@@ -512,6 +515,9 @@ export function FullScreenPortal({
           onNext={handleNext}
           isShuffled={isShuffled}
           onToggleShuffle={toggleShuffle}
+          displayMode={displayMode}
+          onDisplayModeSelect={onDisplayModeSelect}
+          displayModeOptions={displayModeOptions}
           onSyncMode={onSyncMode}
           currentAlignment={currentAlignment}
           onAlignmentCycle={onCycleAlignment}

@@ -25,6 +25,7 @@ import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
 import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
+import { WaterBackground } from "@/components/shared/WaterBackground";
 
 export function IpodAppComponent({
   isWindowOpen,
@@ -521,19 +522,18 @@ export function IpodAppComponent({
                     />
                   )}
 
-                  {/* Liquid shader background (fullscreen) */}
-                  {displayMode === DisplayMode.Liquid && tracks[currentIndex] && (
-                    <AmbientBackground
+                  {/* Mesh gradient background (fullscreen) */}
+                  {displayMode === DisplayMode.Mesh && tracks[currentIndex] && (
+                    <MeshGradientBackground
                       coverUrl={fullscreenCoverUrl}
-                      variant="liquid"
                       isActive={!!tracks[currentIndex]}
                       className="fixed inset-0 z-[5]"
                     />
                   )}
 
-                  {/* Mesh gradient background (fullscreen) */}
-                  {displayMode === DisplayMode.Mesh && tracks[currentIndex] && (
-                    <MeshGradientBackground
+                  {/* Water shader background (fullscreen) */}
+                  {displayMode === DisplayMode.Water && tracks[currentIndex] && (
+                    <WaterBackground
                       coverUrl={fullscreenCoverUrl}
                       isActive={!!tracks[currentIndex]}
                       className="fixed inset-0 z-[5]"

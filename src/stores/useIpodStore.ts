@@ -271,7 +271,7 @@ export interface IpodState extends IpodData {
   clearTrackLyricsSource: (trackId: string) => void;
 }
 
-const CURRENT_IPOD_STORE_VERSION = 29; // Add displayMode (video/cover/landscapes)
+const CURRENT_IPOD_STORE_VERSION = 30; // Replace Liquid display mode with Water
 
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
@@ -1412,6 +1412,11 @@ export const useIpodStore = create<IpodState>()(
       migrate: (persistedState, version) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let state = persistedState as any;
+
+        // Migrate liquid -> water (Liquid display mode removed, replaced by Water)
+        if (state.displayMode === "liquid") {
+          state.displayMode = "water";
+        }
 
         // If the persisted version is older than the current version, update defaults
         if (version < CURRENT_IPOD_STORE_VERSION) {

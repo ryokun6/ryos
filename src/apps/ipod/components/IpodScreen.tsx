@@ -18,6 +18,7 @@ import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
 import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
+import { WaterBackground } from "@/components/shared/WaterBackground";
 import type { IpodScreenProps } from "../types";
 
 // Animation variants for menu transitions
@@ -315,19 +316,18 @@ export function IpodScreen({
               />
             )}
 
-            {/* Liquid shader background */}
-            {displayMode === DisplayMode.Liquid && (
-              <AmbientBackground
+            {/* Mesh gradient background */}
+            {displayMode === DisplayMode.Mesh && (
+              <MeshGradientBackground
                 coverUrl={coverUrl}
-                variant="liquid"
                 isActive={showVideo}
                 className="absolute inset-0 z-[5]"
               />
             )}
 
-            {/* Mesh gradient background */}
-            {displayMode === DisplayMode.Mesh && (
-              <MeshGradientBackground
+            {/* Water shader background */}
+            {displayMode === DisplayMode.Water && (
+              <WaterBackground
                 coverUrl={coverUrl}
                 isActive={showVideo}
                 className="absolute inset-0 z-[5]"

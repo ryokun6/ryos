@@ -28,6 +28,7 @@ import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
 import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
+import { WaterBackground } from "@/components/shared/WaterBackground";
 
 export function KaraokeAppComponent({
   isWindowOpen,
@@ -149,6 +150,7 @@ export function KaraokeAppComponent({
     handleAddSong,
     handleSongSearchSelect,
     handleAddUrl,
+    setDisplayMode,
     handleStartListenSession,
     handleJoinListenSession,
     handleLeaveListenSession,
@@ -380,19 +382,18 @@ export function KaraokeAppComponent({
             />
           )}
 
-          {/* Liquid shader background */}
-          {displayMode === DisplayMode.Liquid && currentTrack && (
-            <AmbientBackground
+          {/* Mesh gradient background */}
+          {displayMode === DisplayMode.Mesh && currentTrack && (
+            <MeshGradientBackground
               coverUrl={coverUrl}
-              variant="liquid"
               isActive={!!currentTrack}
               className="absolute inset-0 z-[5]"
             />
           )}
 
-          {/* Mesh gradient background */}
-          {displayMode === DisplayMode.Mesh && currentTrack && (
-            <MeshGradientBackground
+          {/* Water shader background */}
+          {displayMode === DisplayMode.Water && currentTrack && (
+            <WaterBackground
               coverUrl={coverUrl}
               isActive={!!currentTrack}
               className="absolute inset-0 z-[5]"
@@ -596,6 +597,16 @@ export function KaraokeAppComponent({
               onNext={handleNext}
               isShuffled={isShuffled}
               onToggleShuffle={toggleShuffle}
+              displayMode={displayMode}
+              onDisplayModeSelect={setDisplayMode}
+              displayModeOptions={[
+                { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
+                { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
+                { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
+                { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
+                { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayMesh") },
+                { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
+              ]}
               onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
               currentAlignment={lyricsAlignment}
               onAlignmentCycle={cycleAlignment}
@@ -755,6 +766,16 @@ export function KaraokeAppComponent({
           onRomanizationChange={setRomanization}
           onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
           isSyncModeOpen={isSyncModeOpen}
+          displayMode={displayMode}
+          onDisplayModeSelect={setDisplayMode}
+          displayModeOptions={[
+            { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
+            { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
+            { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
+            { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
+            { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayMesh") },
+            { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
+          ]}
           syncModeContent={
             lyricsControls.originalLines.length > 0 ? (
               <LyricsSyncMode
@@ -862,19 +883,18 @@ export function KaraokeAppComponent({
                   />
                 )}
 
-                {/* Liquid shader background (fullscreen) */}
-                {displayMode === DisplayMode.Liquid && currentTrack && (
-                  <AmbientBackground
+                {/* Mesh gradient background (fullscreen) */}
+                {displayMode === DisplayMode.Mesh && currentTrack && (
+                  <MeshGradientBackground
                     coverUrl={coverUrl}
-                    variant="liquid"
                     isActive={!!currentTrack}
                     className="fixed inset-0 z-[5]"
                   />
                 )}
 
-                {/* Mesh gradient background (fullscreen) */}
-                {displayMode === DisplayMode.Mesh && currentTrack && (
-                  <MeshGradientBackground
+                {/* Water shader background (fullscreen) */}
+                {displayMode === DisplayMode.Water && currentTrack && (
+                  <WaterBackground
                     coverUrl={coverUrl}
                     isActive={!!currentTrack}
                     className="fixed inset-0 z-[5]"
