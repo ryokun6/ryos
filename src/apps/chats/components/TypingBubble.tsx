@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
  */
 export function TypingDots() {
   return (
-    <div className="flex items-center justify-center gap-[5px]" style={{ height: 16 }}>
+    <div className="flex items-center gap-[3px]" style={{ minHeight: "1lh" }}>
       {[0, 1, 2].map((i) => (
         <motion.span
           key={i}
