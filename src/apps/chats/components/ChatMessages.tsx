@@ -8,6 +8,7 @@ import { useChatSynth } from "@/hooks/useChatSynth";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
+import { TypingDots } from "./TypingBubble";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { appRegistry } from "@/config/appRegistry";
@@ -268,6 +269,7 @@ interface ChatMessagesProps {
   highlightSegment?: { messageId: string; start: number; end: number } | null;
   isSpeaking?: boolean;
   onSendMessage?: (username: string) => void; // Callback when send message button is clicked
+  isLoadingGreeting?: boolean; // Show typing bubble for proactive greeting
 }
 
 // Component to render the scroll-to-bottom button using the library's context
@@ -367,6 +369,7 @@ interface ChatMessagesContentProps {
   highlightSegment?: { messageId: string; start: number; end: number } | null;
   isSpeaking?: boolean;
   onSendMessage?: (username: string) => void;
+  isLoadingGreeting?: boolean;
 }
 
 function ChatMessagesContent({
@@ -385,6 +388,7 @@ function ChatMessagesContent({
   highlightSegment,
   isSpeaking,
   onSendMessage,
+  isLoadingGreeting,
 }: ChatMessagesContentProps) {
   const { t } = useTranslation();
   const { playNote } = useChatSynth();
@@ -614,9 +618,21 @@ function ChatMessagesContent({
       )}
       {messages.map((message) => {
         const messageText = getMessageText(message);
-        const messageKey =
-          message.id || `${message.role}-${messageText.substring(0, 10)}`;
+        // Use a stable key for greeting messages so React doesn't remount the
+        // element when the ID changes from "1" to "proactive-1"
+        const messageKey = (message.id === "1" || message.id === "proactive-1")
+          ? "greeting"
+          : message.id || `${message.role}-${messageText.substring(0, 10)}`;
         const isInitialMessage = initialMessageIdsRef.current.has(messageKey);
+
+        // The static greeting (id "1") should never animate.
+        // The proactive greeting (id "proactive-1") SHOULD animate word-by-word
+        // so it looks like streaming text.
+        const isStaticGreeting =
+          message.role === "assistant" && message.id === "1";
+        // Show typing dots instead of text when proactive greeting is loading
+        const showTypingDots =
+          isLoadingGreeting && !isRoomView && isStaticGreeting;
 
         const variants = { initial: { opacity: 0 }, animate: { opacity: 1 } };
         const isUrgent = isUrgentMessage(messageText);
@@ -683,9 +699,9 @@ function ChatMessagesContent({
           <motion.div
             key={messageKey}
             variants={variants}
-            initial={isInitialMessage ? "animate" : "initial"}
+            initial={isInitialMessage || isStaticGreeting ? "animate" : "initial"}
             animate="animate"
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            transition={isStaticGreeting ? { duration: 0 } : { duration: 0.15, ease: "easeOut" }}
             className={`flex flex-col z-10 w-full ${
               message.role === "user" ? "items-end" : "items-start"
             }`}
@@ -1047,14 +1063,18 @@ function ChatMessagesContent({
                     : undefined
                 }
                 className={`p-1.5 px-2 chat-bubble ${
-                  bgColorClass ||
-                  (message.role === "user"
-                    ? "bg-yellow-100 text-black"
-                    : "bg-blue-100 text-black")
+                  showTypingDots
+                    ? "bg-gray-200 text-gray-400"
+                    : bgColorClass ||
+                      (message.role === "user"
+                        ? "bg-yellow-100 text-black"
+                        : "bg-blue-100 text-black")
                 } w-fit max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words select-text`}
                 style={{ fontSize: `${fontSize}px` }}
               >
-                {message.role === "assistant" ? (
+                {showTypingDots ? (
+                  <TypingDots />
+                ) : message.role === "assistant" ? (
                   <motion.div className="select-text flex flex-col gap-1">
                     {message.parts?.map(
                       (
@@ -1447,6 +1467,7 @@ export function ChatMessages({
   highlightSegment,
   isSpeaking,
   onSendMessage,
+  isLoadingGreeting,
 }: ChatMessagesProps) {
   return (
     // Use StickToBottom component as the main container
@@ -1475,6 +1496,7 @@ export function ChatMessages({
           highlightSegment={highlightSegment}
           isSpeaking={isSpeaking}
           onSendMessage={onSendMessage}
+          isLoadingGreeting={isLoadingGreeting}
         />
       </StickToBottom.Content>
 

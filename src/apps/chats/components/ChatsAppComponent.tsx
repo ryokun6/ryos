@@ -33,6 +33,7 @@ import {
   extractPreviousUserMessages,
 } from "../utils/messages";
 import { useChatsFrameLayout } from "../hooks/useChatsFrameLayout";
+import { useProactiveGreeting } from "../hooks/useProactiveGreeting";
 
 export function ChatsAppComponent({
   isWindowOpen,
@@ -136,6 +137,18 @@ export function ChatsAppComponent({
     roomToDelete,
     confirmDeleteRoom,
   } = chatRoomResult;
+
+  // Proactive greeting for eligible users
+  const { isLoadingGreeting, triggerGreeting } = useProactiveGreeting();
+
+  // Wrap confirmClearChats to trigger proactive greeting after clearing
+  const handleConfirmClearChats = useCallback(() => {
+    confirmClearChats();
+    // Trigger proactive greeting after the chat is cleared (slight delay for state update)
+    setTimeout(() => {
+      triggerGreeting();
+    }, 200);
+  }, [confirmClearChats, triggerGreeting]);
 
   // Get font size state from store - select separately for optimization
   const fontSize = useChatsStore((state) => state.fontSize);
@@ -694,6 +707,7 @@ export function ChatsAppComponent({
                     highlightSegment={highlightSegment}
                     isSpeaking={isSpeaking}
                     onSendMessage={handleSendMessage}
+                    isLoadingGreeting={isLoadingGreeting}
                   />
                 </div>
                 {/* Input Area or Create Account Prompt */}
@@ -761,7 +775,7 @@ export function ChatsAppComponent({
           setIsAboutDialogOpen={setIsAboutDialogOpen}
           isClearDialogOpen={isClearDialogOpen}
           setIsClearDialogOpen={setIsClearDialogOpen}
-          confirmClearChats={confirmClearChats}
+          confirmClearChats={handleConfirmClearChats}
           isSaveDialogOpen={isSaveDialogOpen}
           setIsSaveDialogOpen={setIsSaveDialogOpen}
           handleSaveSubmit={handleSaveSubmit}
