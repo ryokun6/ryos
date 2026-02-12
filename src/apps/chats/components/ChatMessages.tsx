@@ -8,7 +8,7 @@ import { useChatSynth } from "@/hooks/useChatSynth";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
-import { TypingBubble } from "./TypingBubble";
+import { TypingDots } from "./TypingBubble";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { appRegistry } from "@/config/appRegistry";
@@ -593,16 +593,10 @@ function ChatMessagesContent({
     return Array.from(urls);
   };
 
-  // When loading a proactive greeting, hide the default greeting message
-  // so only the typing bubble shows (cleaner UX)
-  const displayMessages = isLoadingGreeting
-    ? messages.filter((m) => !(m.id === "1" && m.role === "assistant"))
-    : messages;
-
   // Return the message list rendering logic
   return (
     <AnimatePresence initial={false} mode="sync">
-      {displayMessages.length === 0 && !isRoomView && !isLoadingGreeting && (
+      {messages.length === 0 && !isRoomView && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -622,11 +616,22 @@ function ChatMessagesContent({
           )}
         </motion.div>
       )}
-      {displayMessages.map((message) => {
+      {messages.map((message) => {
         const messageText = getMessageText(message);
-        const messageKey =
-          message.id || `${message.role}-${messageText.substring(0, 10)}`;
+        // Use a stable key for greeting messages so React doesn't remount the
+        // element when the ID changes from "1" to "proactive-1"
+        const messageKey = (message.id === "1" || message.id === "proactive-1")
+          ? "greeting"
+          : message.id || `${message.role}-${messageText.substring(0, 10)}`;
         const isInitialMessage = initialMessageIdsRef.current.has(messageKey);
+
+        // Proactive greeting messages should never animate (no flicker on transition)
+        const isGreetingMessage =
+          message.role === "assistant" &&
+          (message.id === "1" || message.id === "proactive-1");
+        // Show typing dots instead of text when proactive greeting is loading
+        const showTypingDots =
+          isLoadingGreeting && !isRoomView && isGreetingMessage;
 
         const variants = { initial: { opacity: 0 }, animate: { opacity: 1 } };
         const isUrgent = isUrgentMessage(messageText);
@@ -693,9 +698,9 @@ function ChatMessagesContent({
           <motion.div
             key={messageKey}
             variants={variants}
-            initial={isInitialMessage ? "animate" : "initial"}
+            initial={isInitialMessage || isGreetingMessage ? "animate" : "initial"}
             animate="animate"
-            transition={{ duration: 0.15, ease: "easeOut" }}
+            transition={isGreetingMessage ? { duration: 0 } : { duration: 0.15, ease: "easeOut" }}
             className={`flex flex-col z-10 w-full ${
               message.role === "user" ? "items-end" : "items-start"
             }`}
@@ -1057,14 +1062,18 @@ function ChatMessagesContent({
                     : undefined
                 }
                 className={`p-1.5 px-2 chat-bubble ${
-                  bgColorClass ||
-                  (message.role === "user"
-                    ? "bg-yellow-100 text-black"
-                    : "bg-blue-100 text-black")
+                  showTypingDots
+                    ? "bg-gray-200 text-gray-400"
+                    : bgColorClass ||
+                      (message.role === "user"
+                        ? "bg-yellow-100 text-black"
+                        : "bg-blue-100 text-black")
                 } w-fit max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words select-text`}
                 style={{ fontSize: `${fontSize}px` }}
               >
-                {message.role === "assistant" ? (
+                {showTypingDots ? (
+                  <TypingDots />
+                ) : message.role === "assistant" ? (
                   <motion.div className="select-text flex flex-col gap-1">
                     {message.parts?.map(
                       (
@@ -1381,7 +1390,6 @@ function ChatMessagesContent({
           </motion.div>
         );
       })}
-      {isLoadingGreeting && !isRoomView && <TypingBubble />}
       {error &&
         (() => {
           const errorMessage = getErrorMessage(error);
