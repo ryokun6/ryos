@@ -585,6 +585,42 @@ export function useAiChat(onPromptSetUsername?: () => void) {
   // The ensureAuthToken function is only called explicitly before sending
   // messages as a fallback for legacy users without tokens.
 
+  // --- Sleep cycle: process previous days' daily notes into long-term memories ---
+  // Fires once per mount when user is authenticated. The server enforces a
+  // 12-hour cooldown, so repeated calls are cheap no-ops.
+  const sleepTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (sleepTriggeredRef.current || !username || !authToken) return;
+    sleepTriggeredRef.current = true;
+
+    // Fire and forget — non-blocking background consolidation
+    abortableFetch(getApiUrl("/api/ai/sleep"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${authToken}`,
+        "X-Username": username,
+      },
+      timeout: 30000,
+      retry: { maxAttempts: 1, initialDelayMs: 500 },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ran && data.memoriesProcessed > 0) {
+          console.log(
+            `[sleep] Consolidated ${data.memoriesProcessed} memories from ${data.notesAnalyzed} days of notes`
+          );
+        } else if (data.skippedCooldown) {
+          console.log("[sleep] Skipped (cooldown active)");
+        } else {
+          console.log("[sleep]", data.message);
+        }
+      })
+      .catch((err) => {
+        console.warn("[sleep] Memory sleep cycle failed (non-blocking):", err);
+      });
+  }, [username, authToken]);
+
   // Queue-based TTS – speaks chunks as they arrive
   const { speak, stop: stopTts, isSpeaking } = useTtsQueue();
 

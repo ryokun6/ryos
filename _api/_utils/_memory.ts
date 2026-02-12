@@ -2,7 +2,7 @@
  * Memory System - Redis Helpers
  * 
  * Provides per-user persistent memory storage for the Ryo AI agent.
- * Two-tier system:
+ * Two-tier system with a "sleep" consolidation mechanism:
  * 
  * **Daily Notes** (Tier 1 - Journal):
  * - Append-only entries collected throughout the day
@@ -14,6 +14,12 @@
  * - Stable facts extracted from daily notes or explicitly saved
  * - Two-layer: Index (keys + summaries always visible) + Details (on-demand)
  * - Updated via extraction from daily notes or direct user request
+ * 
+ * **Sleep Cycle** (Consolidation):
+ * - Processes previous days' daily notes into long-term memories
+ * - Triggered automatically when user returns after time away (12h cooldown)
+ * - Tracks individual entry hashes to avoid reprocessing the same entries
+ * - Only processes notes from past days (today's notes are still being collected)
  */
 
 import type { Redis } from "@upstash/redis";
@@ -45,6 +51,12 @@ export const DAILY_NOTES_CONTEXT_DAYS = 3;
 
 /** TTL for daily notes in seconds (30 days) */
 export const DAILY_NOTES_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+/** Minimum hours between sleep cycles for a user */
+export const SLEEP_COOLDOWN_HOURS = 12;
+
+/** TTL for sleep metadata in seconds (90 days) */
+export const SLEEP_METADATA_TTL_SECONDS = 90 * 24 * 60 * 60;
 
 /** Current schema version for migrations */
 export const MEMORY_SCHEMA_VERSION = 1;
@@ -109,6 +121,12 @@ export const getMemoryDetailKey = (username: string, key: string): string =>
  */
 export const getDailyNoteKey = (username: string, date: string): string =>
   `memory:user:${username.toLowerCase()}:daily:${date}`;
+
+/**
+ * Get Redis key for a user's sleep metadata
+ */
+export const getSleepMetadataKey = (username: string): string =>
+  `memory:user:${username.toLowerCase()}:sleep_meta`;
 
 /**
  * Get today's date in YYYY-MM-DD format (in user's approximate timezone, defaults to UTC)
@@ -216,6 +234,40 @@ export interface DailyNoteOperationResult {
   message: string;
   date?: string;
   entryCount?: number;
+}
+
+// --- Sleep Metadata Types ---
+
+/**
+ * Tracks the sleep cycle state for a user
+ */
+export interface SleepMetadata {
+  /** Unix timestamp of last sleep cycle completion */
+  lastSleepAt: number;
+  /** Date string (YYYY-MM-DD) of last sleep cycle */
+  lastSleepDate: string;
+  /** Hashes of daily note entries that have been processed during sleep */
+  processedEntryHashes: string[];
+  /** Number of long-term memories created/updated in last sleep */
+  lastSleepMemoriesProcessed: number;
+  /** Number of daily notes processed in last sleep */
+  lastSleepNotesProcessed: number;
+}
+
+/**
+ * Result of a sleep cycle operation
+ */
+export interface SleepCycleResult {
+  /** Whether the sleep cycle ran */
+  ran: boolean;
+  /** Human-readable message */
+  message: string;
+  /** Number of daily notes analyzed */
+  notesAnalyzed: number;
+  /** Number of long-term memories created or updated */
+  memoriesProcessed: number;
+  /** Whether the sleep was skipped due to cooldown */
+  skippedCooldown: boolean;
 }
 
 // ============================================================================
@@ -898,6 +950,117 @@ export async function getUnprocessedDailyNotes(
     const note = await getDailyNote(redis, username, date);
     if (note && !note.processedForMemories && note.entries.length > 0) {
       notes.push(note);
+    }
+  }
+
+  return notes;
+}
+
+// ============================================================================
+// Sleep Cycle Operations
+// ============================================================================
+
+/**
+ * Create a simple hash of a daily note entry for dedup tracking.
+ * Uses date + timestamp + first 50 chars of content.
+ */
+export function hashDailyNoteEntry(date: string, entry: DailyNoteEntry): string {
+  const raw = `${date}:${entry.timestamp}:${entry.content.slice(0, 50)}`;
+  // Simple hash: djb2 algorithm (fast, no crypto needed for dedup)
+  let hash = 5381;
+  for (let i = 0; i < raw.length; i++) {
+    hash = ((hash << 5) + hash + raw.charCodeAt(i)) & 0xffffffff;
+  }
+  return hash.toString(36);
+}
+
+/**
+ * Get sleep metadata for a user
+ */
+export async function getSleepMetadata(
+  redis: Redis,
+  username: string
+): Promise<SleepMetadata | null> {
+  const key = getSleepMetadataKey(username);
+  const data = await redis.get<SleepMetadata | string>(key);
+
+  if (!data) return null;
+
+  if (typeof data === "string") {
+    try {
+      return JSON.parse(data) as SleepMetadata;
+    } catch {
+      return null;
+    }
+  }
+
+  return data;
+}
+
+/**
+ * Save sleep metadata for a user
+ */
+export async function saveSleepMetadata(
+  redis: Redis,
+  username: string,
+  metadata: SleepMetadata
+): Promise<void> {
+  const key = getSleepMetadataKey(username);
+  await redis.set(key, JSON.stringify(metadata), { ex: SLEEP_METADATA_TTL_SECONDS });
+}
+
+/**
+ * Check if a sleep cycle should run for this user.
+ * Returns true if enough time has passed since the last sleep.
+ */
+export async function shouldRunSleep(
+  redis: Redis,
+  username: string
+): Promise<boolean> {
+  const metadata = await getSleepMetadata(redis, username);
+  if (!metadata) return true; // Never run before
+
+  const hoursSinceLastSleep =
+    (Date.now() - metadata.lastSleepAt) / (1000 * 60 * 60);
+  return hoursSinceLastSleep >= SLEEP_COOLDOWN_HOURS;
+}
+
+/**
+ * Get unprocessed daily notes for sleep cycle.
+ * Excludes today's notes (they're still being collected) and
+ * filters out individual entries that have already been processed
+ * based on the hash dedup list.
+ */
+export async function getUnprocessedDailyNotesForSleep(
+  redis: Redis,
+  username: string,
+  days: number = 7
+): Promise<DailyNote[]> {
+  const today = getTodayDateString();
+  const dates = getRecentDateStrings(days);
+  const notes: DailyNote[] = [];
+
+  // Get existing sleep metadata for entry-level dedup
+  const sleepMeta = await getSleepMetadata(redis, username);
+  const processedHashes = new Set(sleepMeta?.processedEntryHashes || []);
+
+  for (const date of dates) {
+    // Skip today — notes are still being collected
+    if (date === today) continue;
+
+    const note = await getDailyNote(redis, username, date);
+    if (!note || note.entries.length === 0) continue;
+
+    // Filter to only entries we haven't processed yet
+    const unprocessedEntries = note.entries.filter(
+      (entry) => !processedHashes.has(hashDailyNoteEntry(date, entry))
+    );
+
+    if (unprocessedEntries.length > 0) {
+      notes.push({
+        ...note,
+        entries: unprocessedEntries,
+      });
     }
   }
 
