@@ -171,11 +171,11 @@ export function KaraokeAppComponent({
 
   const displayModeOptions = [
     { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
-    { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
-    { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
-    { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
-    { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayMesh") },
+    { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayGradient") },
     { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
+    { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
+    { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
+    { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
   ];
 
   const handleDisplayModeSelect = useCallback(
@@ -186,7 +186,7 @@ export function KaraokeAppComponent({
         [DisplayMode.Cover]: t("apps.ipod.menu.displayCover"),
         [DisplayMode.Landscapes]: t("apps.ipod.menu.displayLandscapes"),
         [DisplayMode.Shader]: t("apps.ipod.menu.displayShader"),
-        [DisplayMode.Mesh]: t("apps.ipod.menu.displayMesh"),
+        [DisplayMode.Mesh]: t("apps.ipod.menu.displayGradient"),
         [DisplayMode.Water]: t("apps.ipod.menu.displayWater"),
       };
       const label = labels[value] ?? value;

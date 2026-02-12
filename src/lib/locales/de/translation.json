@@ -1354,6 +1354,7 @@
         "displayLandscapes": "Landschaften",
         "displayLiquid": "Flüssigkeit",
         "displayMesh": "Mesh",
+        "displayGradient": "Farbverlauf",
         "displayWater": "Wasser",
         "displayShader": "Warp",
         "displayVideo": "Video",

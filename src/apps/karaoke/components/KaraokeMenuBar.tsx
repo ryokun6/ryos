@@ -129,7 +129,7 @@ export function KaraokeMenuBar({
     exportLibrary,
   } = useIpodStoreShallow((s) => ({
     lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
-    lyricsFont: s.lyricsFont ?? LyricsFont.Rounded,
+    lyricsFont: s.lyricsFont ?? LyricsFont.Serif,
     romanization: s.romanization,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     displayMode: s.displayMode ?? DisplayMode.Video,
@@ -594,22 +594,22 @@ export function KaraokeMenuBar({
                 {t("apps.ipod.menu.displayVideo")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Cover}
+                checked={displayMode === DisplayMode.Mesh}
                 onCheckedChange={(checked) => {
-                  if (checked) setDisplayMode(DisplayMode.Cover);
+                  if (checked) setDisplayMode(DisplayMode.Mesh);
                 }}
                 className="text-md h-6 pr-3"
               >
-                {t("apps.ipod.menu.displayCover")}
+                {t("apps.ipod.menu.displayGradient")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Landscapes}
+                checked={displayMode === DisplayMode.Water}
                 onCheckedChange={(checked) => {
-                  if (checked) setDisplayMode(DisplayMode.Landscapes);
+                  if (checked) setDisplayMode(DisplayMode.Water);
                 }}
                 className="text-md h-6 pr-3"
               >
-                {t("apps.ipod.menu.displayLandscapes")}
+                {t("apps.ipod.menu.displayWater")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
                 checked={displayMode === DisplayMode.Shader}
@@ -621,22 +621,22 @@ export function KaraokeMenuBar({
                 {t("apps.ipod.menu.displayShader")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Mesh}
+                checked={displayMode === DisplayMode.Landscapes}
                 onCheckedChange={(checked) => {
-                  if (checked) setDisplayMode(DisplayMode.Mesh);
+                  if (checked) setDisplayMode(DisplayMode.Landscapes);
                 }}
                 className="text-md h-6 pr-3"
               >
-                {t("apps.ipod.menu.displayMesh")}
+                {t("apps.ipod.menu.displayLandscapes")}
               </MenubarCheckboxItem>
               <MenubarCheckboxItem
-                checked={displayMode === DisplayMode.Water}
+                checked={displayMode === DisplayMode.Cover}
                 onCheckedChange={(checked) => {
-                  if (checked) setDisplayMode(DisplayMode.Water);
+                  if (checked) setDisplayMode(DisplayMode.Cover);
                 }}
                 className="text-md h-6 pr-3"
               >
-                {t("apps.ipod.menu.displayWater")}
+                {t("apps.ipod.menu.displayCover")}
               </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>

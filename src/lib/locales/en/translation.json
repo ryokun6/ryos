@@ -1470,6 +1470,7 @@
         "displayShader": "Warp",
         "displayLiquid": "Liquid",
         "displayMesh": "Mesh",
+        "displayGradient": "Gradient",
         "displayWater": "Water",
         "coverFlow": "Cover Flow",
         "classic": "Classic",
