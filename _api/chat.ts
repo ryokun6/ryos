@@ -1,12 +1,14 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   streamText,
+  generateText,
   smoothStream,
   convertToModelMessages,
   stepCountIs,
   type UIMessage,
 } from "ai";
 import { geolocation } from "@vercel/functions";
+import { google } from "@ai-sdk/google";
 import {
   SupportedModel,
   DEFAULT_MODEL,
@@ -476,10 +478,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       messages,
       systemState: incomingSystemState, // still passed for dynamic prompt generation but NOT for auth
       model: bodyModel = DEFAULT_MODEL,
+      proactiveGreeting: isProactiveGreeting,
     } = req.body as {
       messages: unknown[];
       systemState?: SystemState;
       model?: string;
+      proactiveGreeting?: boolean;
     };
 
     // Use query parameter if available, otherwise use body parameter, otherwise use default
@@ -672,6 +676,92 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } catch (memErr) {
         logError("Error fetching user memories/notes:", memErr);
         // Continue without memories - not a fatal error
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Proactive greeting mode – quick non-streaming JSON response
+    // Only for authenticated users with memories available
+    // -------------------------------------------------------------
+    if (isProactiveGreeting && username && validationResult.valid) {
+      log("Proactive greeting requested");
+
+      // Build memory context
+      let memoryContext = "";
+      if (userMemories && userMemories.memories.length > 0) {
+        memoryContext += "## User's long-term memories:\n";
+        for (const mem of userMemories.memories) {
+          memoryContext += `- ${mem.key}: ${mem.summary}\n`;
+        }
+      }
+      if (dailyNotesText) {
+        memoryContext += `\n## Recent daily notes:\n${dailyNotesText}\n`;
+      }
+
+      // If no memories, return null (client will keep the generic greeting)
+      if (!memoryContext) {
+        log("No memories available for proactive greeting");
+        res.setHeader("Access-Control-Allow-Origin", validOrigin);
+        res.status(200).json({ greeting: null, reason: "no memories available" });
+        return;
+      }
+
+      // Time context
+      const now = new Date();
+      const sfTime = now.toLocaleTimeString("en-US", {
+        timeZone: "America/Los_Angeles",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+      const dayOfWeek = now.toLocaleDateString("en-US", {
+        timeZone: "America/Los_Angeles",
+        weekday: "long",
+      });
+
+      try {
+        const { text } = await generateText({
+          model: google("gemini-2.5-flash"),
+          temperature: 1,
+          maxTokens: 150,
+          system: `You are Ryo, a friendly AI assistant. You're greeting a returning user at the start of a new chat.
+
+Your style:
+- Lowercase, casual, warm
+- Short (1-2 sentences max, under 30 words)
+- No emojis unless natural
+- Sound like a close friend checking in, not a corporate assistant
+- Don't be cheesy or over-enthusiastic
+- Be specific — reference something from their memories or recent activity
+- Mix it up: sometimes ask a question, sometimes share an observation, sometimes reference a shared interest
+
+It's ${dayOfWeek} ${sfTime}. The user's name is "${username}".
+
+${memoryContext}
+
+Generate ONE short proactive greeting. Pick one interesting angle from the context — a recent topic, a memory, something timely — and use it naturally. Don't try to cover everything.
+
+Examples of good greetings:
+- "hey, how's the cursor roadmap coming along?"
+- "morning — did you ever try that restaurant you mentioned?"
+- "back again. still working on that project?"
+- "hey ryo. happy friday — any plans?"
+
+Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump straight into something specific and interesting. Output ONLY the greeting text, nothing else.`,
+          prompt: "Generate a proactive greeting.",
+        });
+
+        const greeting = text.trim();
+        log(`Generated proactive greeting: "${greeting.substring(0, 50)}..."`);
+
+        res.setHeader("Access-Control-Allow-Origin", validOrigin);
+        res.status(200).json({ greeting });
+        return;
+      } catch (greetingErr) {
+        logError("Failed to generate proactive greeting", greetingErr);
+        res.setHeader("Access-Control-Allow-Origin", validOrigin);
+        res.status(200).json({ greeting: null, reason: "generation failed" });
+        return;
       }
     }
 

@@ -593,10 +593,16 @@ function ChatMessagesContent({
     return Array.from(urls);
   };
 
+  // When loading a proactive greeting, hide the default greeting message
+  // so only the typing bubble shows (cleaner UX)
+  const displayMessages = isLoadingGreeting
+    ? messages.filter((m) => !(m.id === "1" && m.role === "assistant"))
+    : messages;
+
   // Return the message list rendering logic
   return (
     <AnimatePresence initial={false} mode="sync">
-      {messages.length === 0 && !isRoomView && (
+      {displayMessages.length === 0 && !isRoomView && !isLoadingGreeting && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -616,7 +622,7 @@ function ChatMessagesContent({
           )}
         </motion.div>
       )}
-      {messages.map((message) => {
+      {displayMessages.map((message) => {
         const messageText = getMessageText(message);
         const messageKey =
           message.id || `${message.role}-${messageText.substring(0, 10)}`;

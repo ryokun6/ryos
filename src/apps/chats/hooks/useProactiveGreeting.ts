@@ -54,7 +54,7 @@ export function useProactiveGreeting() {
 
     try {
       const response = await abortableFetch(
-        getApiUrl("/api/ai/proactive-greeting"),
+        getApiUrl("/api/chat"),
         {
           method: "POST",
           headers: {
@@ -62,7 +62,10 @@ export function useProactiveGreeting() {
             Authorization: `Bearer ${authToken}`,
             "X-Username": username,
           },
-          body: JSON.stringify({}),
+          body: JSON.stringify({
+            messages: [],
+            proactiveGreeting: true,
+          }),
           timeout: 12000,
           signal: controller.signal,
         }
