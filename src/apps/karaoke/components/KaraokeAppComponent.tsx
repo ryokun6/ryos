@@ -189,7 +189,8 @@ export function KaraokeAppComponent({
         [DisplayMode.Mesh]: t("apps.ipod.menu.displayMesh"),
         [DisplayMode.Water]: t("apps.ipod.menu.displayWater"),
       };
-      showStatus(labels[value] ?? value);
+      const label = labels[value] ?? value;
+      showStatus(`${t("apps.ipod.menu.display", "Display")}: ${label}`);
     },
     [setDisplayMode, showStatus, t]
   );

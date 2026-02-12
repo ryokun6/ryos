@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useSound, Sounds } from "@/hooks/useSound";
 import type { LyricsAlignment, RomanizationSettings } from "@/types/lyrics";
-import { LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
+import { DisplayMode, LyricsFont, getLyricsFontClassName } from "@/types/lyrics";
 import { getTranslationBadge } from "@/apps/ipod/constants";
 import { Translate, X, ClockClockwise, SkipBack, SkipForward, Play, Pause, Shuffle, Video } from "@phosphor-icons/react";
 import {
@@ -57,9 +57,9 @@ export interface FullscreenPlayerControlsProps {
   onToggleShuffle?: () => void;
 
   // Display mode (background: video, cover, mesh, water, etc.)
-  displayMode?: string;
-  onDisplayModeSelect?: (mode: string) => void;
-  displayModeOptions?: { value: string; label: string }[];
+  displayMode?: DisplayMode;
+  onDisplayModeSelect?: (mode: DisplayMode) => void;
+  displayModeOptions?: { value: DisplayMode; label: string }[];
 
   // Sync mode (lyrics timing)
   onSyncMode?: () => void;
