@@ -139,7 +139,9 @@ export function ChatsAppComponent({
   } = chatRoomResult;
 
   // Proactive greeting for eligible users
-  const { isLoadingGreeting, triggerGreeting } = useProactiveGreeting();
+  const { isLoadingGreeting, triggerGreeting } = useProactiveGreeting(
+    isWindowOpen ?? false
+  );
 
   // Wrap confirmClearChats to trigger proactive greeting after clearing
   const handleConfirmClearChats = useCallback(() => {
