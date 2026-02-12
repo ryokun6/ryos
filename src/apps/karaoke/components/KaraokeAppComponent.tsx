@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import ReactPlayer from "react-player";
 import { cn } from "@/lib/utils";
@@ -167,6 +168,31 @@ export function KaraokeAppComponent({
     getCurrentKaraokeTrack,
     adjustLyricOffset,
   } = useKaraokeLogic({ isWindowOpen, isForeground, initialData, instanceId });
+
+  const displayModeOptions = [
+    { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
+    { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
+    { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
+    { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
+    { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayMesh") },
+    { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
+  ];
+
+  const handleDisplayModeSelect = useCallback(
+    (value: DisplayMode) => {
+      setDisplayMode(value);
+      const labels: Record<DisplayMode, string> = {
+        [DisplayMode.Video]: t("apps.ipod.menu.displayVideo"),
+        [DisplayMode.Cover]: t("apps.ipod.menu.displayCover"),
+        [DisplayMode.Landscapes]: t("apps.ipod.menu.displayLandscapes"),
+        [DisplayMode.Shader]: t("apps.ipod.menu.displayShader"),
+        [DisplayMode.Mesh]: t("apps.ipod.menu.displayMesh"),
+        [DisplayMode.Water]: t("apps.ipod.menu.displayWater"),
+      };
+      showStatus(labels[value] ?? value);
+    },
+    [setDisplayMode, showStatus, t]
+  );
 
   const menuBar = (
     <KaraokeMenuBar
@@ -598,15 +624,8 @@ export function KaraokeAppComponent({
               isShuffled={isShuffled}
               onToggleShuffle={toggleShuffle}
               displayMode={displayMode}
-              onDisplayModeSelect={setDisplayMode}
-              displayModeOptions={[
-                { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
-                { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
-                { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
-                { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
-                { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayMesh") },
-                { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
-              ]}
+              onDisplayModeSelect={handleDisplayModeSelect}
+              displayModeOptions={displayModeOptions}
               onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
               currentAlignment={lyricsAlignment}
               onAlignmentCycle={cycleAlignment}
@@ -767,15 +786,8 @@ export function KaraokeAppComponent({
           onSyncMode={() => setIsSyncModeOpen((prev) => !prev)}
           isSyncModeOpen={isSyncModeOpen}
           displayMode={displayMode}
-          onDisplayModeSelect={setDisplayMode}
-          displayModeOptions={[
-            { value: DisplayMode.Video, label: t("apps.ipod.menu.displayVideo") },
-            { value: DisplayMode.Cover, label: t("apps.ipod.menu.displayCover") },
-            { value: DisplayMode.Landscapes, label: t("apps.ipod.menu.displayLandscapes") },
-            { value: DisplayMode.Shader, label: t("apps.ipod.menu.displayShader") },
-            { value: DisplayMode.Mesh, label: t("apps.ipod.menu.displayMesh") },
-            { value: DisplayMode.Water, label: t("apps.ipod.menu.displayWater") },
-          ]}
+          onDisplayModeSelect={handleDisplayModeSelect}
+          displayModeOptions={displayModeOptions}
           syncModeContent={
             lyricsControls.originalLines.length > 0 ? (
               <LyricsSyncMode
