@@ -27,6 +27,7 @@ import { useKaraokeLogic } from "../hooks/useKaraokeLogic";
 import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
 import { AmbientBackground } from "@/components/shared/AmbientBackground";
+import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 
 export function KaraokeAppComponent({
   isWindowOpen,
@@ -384,6 +385,15 @@ export function KaraokeAppComponent({
             <AmbientBackground
               coverUrl={coverUrl}
               variant="liquid"
+              isActive={!!currentTrack}
+              className="absolute inset-0 z-[5]"
+            />
+          )}
+
+          {/* Mesh gradient background */}
+          {displayMode === DisplayMode.Mesh && currentTrack && (
+            <MeshGradientBackground
+              coverUrl={coverUrl}
               isActive={!!currentTrack}
               className="absolute inset-0 z-[5]"
             />
@@ -857,6 +867,15 @@ export function KaraokeAppComponent({
                   <AmbientBackground
                     coverUrl={coverUrl}
                     variant="liquid"
+                    isActive={!!currentTrack}
+                    className="fixed inset-0 z-[5]"
+                  />
+                )}
+
+                {/* Mesh gradient background (fullscreen) */}
+                {displayMode === DisplayMode.Mesh && currentTrack && (
+                  <MeshGradientBackground
+                    coverUrl={coverUrl}
                     isActive={!!currentTrack}
                     className="fixed inset-0 z-[5]"
                   />

@@ -17,6 +17,7 @@ import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
 import { AmbientBackground } from "@/components/shared/AmbientBackground";
+import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 import type { IpodScreenProps } from "../types";
 
 // Animation variants for menu transitions
@@ -319,6 +320,15 @@ export function IpodScreen({
               <AmbientBackground
                 coverUrl={coverUrl}
                 variant="liquid"
+                isActive={showVideo}
+                className="absolute inset-0 z-[5]"
+              />
+            )}
+
+            {/* Mesh gradient background */}
+            {displayMode === DisplayMode.Mesh && (
+              <MeshGradientBackground
+                coverUrl={coverUrl}
                 isActive={showVideo}
                 className="absolute inset-0 z-[5]"
               />

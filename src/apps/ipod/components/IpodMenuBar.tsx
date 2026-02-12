@@ -562,6 +562,15 @@ export function IpodMenuBar({
               >
                 {t("apps.ipod.menu.displayLiquid")}
               </MenubarCheckboxItem>
+              <MenubarCheckboxItem
+                checked={displayMode === DisplayMode.Mesh}
+                onCheckedChange={(checked) => {
+                  if (checked) setDisplayMode(DisplayMode.Mesh);
+                }}
+                className="text-md h-6 pr-3"
+              >
+                {t("apps.ipod.menu.displayMesh")}
+              </MenubarCheckboxItem>
             </MenubarSubContent>
           </MenubarSub>
 

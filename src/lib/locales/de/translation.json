@@ -1353,6 +1353,7 @@
         "displayCover": "Cover",
         "displayLandscapes": "Landschaften",
         "displayLiquid": "Flüssigkeit",
+        "displayMesh": "Mesh",
         "displayShader": "Warp",
         "displayVideo": "Video",
         "enableRomanization": "Romanisierung aktivieren",

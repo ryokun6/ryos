@@ -24,6 +24,7 @@ import { useIpodLogic } from "../hooks/useIpodLogic";
 import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
 import { AmbientBackground } from "@/components/shared/AmbientBackground";
+import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 
 export function IpodAppComponent({
   isWindowOpen,
@@ -525,6 +526,15 @@ export function IpodAppComponent({
                     <AmbientBackground
                       coverUrl={fullscreenCoverUrl}
                       variant="liquid"
+                      isActive={!!tracks[currentIndex]}
+                      className="fixed inset-0 z-[5]"
+                    />
+                  )}
+
+                  {/* Mesh gradient background (fullscreen) */}
+                  {displayMode === DisplayMode.Mesh && tracks[currentIndex] && (
+                    <MeshGradientBackground
+                      coverUrl={fullscreenCoverUrl}
                       isActive={!!tracks[currentIndex]}
                       className="fixed inset-0 z-[5]"
                     />

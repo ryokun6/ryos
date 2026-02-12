@@ -69,6 +69,8 @@ export enum DisplayMode {
   Shader = "shader",
   /** Show Apple Music-style liquid distortion of cover art */
   Liquid = "liquid",
+  /** Show mesh gradient shader backdrop */
+  Mesh = "mesh",
 }
 
 export enum KoreanDisplay {
