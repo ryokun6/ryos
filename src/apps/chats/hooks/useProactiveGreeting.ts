@@ -20,7 +20,19 @@ const ALLOWED_USERS = new Set(["ryo"]);
  * 3. Replaces the generic greeting with the AI-generated one
  */
 export function useProactiveGreeting() {
-  const [isLoadingGreeting, setIsLoadingGreeting] = useState(false);
+  // Initialize loading state eagerly so eligible users never see the static greeting
+  const [isLoadingGreeting, setIsLoadingGreeting] = useState(() => {
+    const state = useChatsStore.getState();
+    const fresh =
+      state.aiMessages.length === 1 &&
+      state.aiMessages[0].id === "1" &&
+      state.aiMessages[0].role === "assistant";
+    const eligible =
+      !!state.username &&
+      ALLOWED_USERS.has(state.username.toLowerCase()) &&
+      !!state.authToken;
+    return fresh && eligible;
+  });
   const hasTriggeredRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
