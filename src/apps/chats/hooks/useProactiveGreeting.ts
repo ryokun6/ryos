@@ -11,6 +11,17 @@ import { abortableFetch } from "@/utils/abortableFetch";
 const ALLOWED_USERS = new Set(["ryo"]);
 
 /**
+ * Delay before triggering a proactive greeting when the Chats window
+ * is (re)opened while the chat is still untouched.
+ */
+const REOPEN_DELAY_MS = 5_000;
+
+/**
+ * Minimum time between proactive-greeting fetches to avoid rapid API calls.
+ */
+const FETCH_COOLDOWN_MS = 30_000;
+
+/**
  * Hook that manages proactive AI greetings for eligible users.
  *
  * When a new/cleared chat has only the default greeting message and the
@@ -18,8 +29,14 @@ const ALLOWED_USERS = new Set(["ryo"]);
  * 1. Shows a typing indicator
  * 2. Calls the proactive-greeting API
  * 3. Replaces the generic greeting with the AI-generated one
+ *
+ * Additionally, when the Chats window is (re)opened and the chat is still
+ * untouched (user hasn't sent a message), a fresh greeting is fetched after
+ * a short delay so the AI feels responsive when the user returns.
+ *
+ * @param isWindowOpen Whether the Chats app window is currently open/visible.
  */
-export function useProactiveGreeting() {
+export function useProactiveGreeting(isWindowOpen: boolean = true) {
   // Initialize loading state eagerly so eligible users never see the static greeting
   const [isLoadingGreeting, setIsLoadingGreeting] = useState(() => {
     const state = useChatsStore.getState();
@@ -35,6 +52,9 @@ export function useProactiveGreeting() {
   });
   const hasTriggeredRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+  const lastFetchTimeRef = useRef(0);
+  const reopenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevWindowOpenRef = useRef(isWindowOpen);
 
   const username = useChatsStore((s) => s.username);
   const authToken = useChatsStore((s) => s.authToken);
@@ -42,32 +62,43 @@ export function useProactiveGreeting() {
   const setAiMessages = useChatsStore((s) => s.setAiMessages);
 
   /**
-   * Check if the current chat state is a fresh chat with only the default
-   * greeting message (id === "1", role === "assistant").
-   * We don't re-trigger if the proactive greeting has already been set (id === "proactive-1").
+   * Fresh chat: only the static default greeting is present (id === "1").
+   * Used for the immediate trigger on first open.
    */
   const isFreshChat =
     aiMessages.length === 1 &&
     aiMessages[0].id === "1" &&
     aiMessages[0].role === "assistant";
 
+  /**
+   * Untouched chat: the user hasn't sent any messages yet.
+   * The greeting may be the static default or an already-fetched proactive one.
+   * Used for the delayed re-open trigger.
+   */
+  const isUntouchedChat =
+    aiMessages.length === 1 &&
+    (aiMessages[0].id === "1" || aiMessages[0].id === "proactive-1") &&
+    aiMessages[0].role === "assistant";
+
   const isEligible =
     !!username && ALLOWED_USERS.has(username.toLowerCase()) && !!authToken;
 
-  const fetchGreeting = useCallback(async () => {
-    if (!username || !authToken) return;
+  const fetchGreeting = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!username || !authToken) return;
 
-    // Abort any in-flight request
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+      // Abort any in-flight request
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
 
-    setIsLoadingGreeting(true);
+      if (!options?.silent) {
+        setIsLoadingGreeting(true);
+      }
+      lastFetchTimeRef.current = Date.now();
 
-    try {
-      const response = await abortableFetch(
-        getApiUrl("/api/chat"),
-        {
+      try {
+        const response = await abortableFetch(getApiUrl("/api/chat"), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -80,48 +111,50 @@ export function useProactiveGreeting() {
           }),
           timeout: 12000,
           signal: controller.signal,
+        });
+
+        if (controller.signal.aborted) return;
+
+        const data = await response.json();
+
+        if (data.greeting && typeof data.greeting === "string") {
+          // Replace the greeting message with the proactive one.
+          // Use a different ID so the SDK sync effect in useAiChat detects the change.
+          const proactiveMessage: AIChatMessage = {
+            id: "proactive-1",
+            role: "assistant",
+            parts: [{ type: "text", text: data.greeting }],
+            metadata: {
+              createdAt: new Date(),
+            },
+          };
+
+          // Only update if chat is still untouched (user hasn't sent a message)
+          const currentMessages = useChatsStore.getState().aiMessages;
+          if (
+            currentMessages.length === 1 &&
+            (currentMessages[0].id === "1" ||
+              currentMessages[0].id === "proactive-1") &&
+            currentMessages[0].role === "assistant"
+          ) {
+            setAiMessages([proactiveMessage]);
+          }
         }
-      );
-
-      if (controller.signal.aborted) return;
-
-      const data = await response.json();
-
-      if (data.greeting && typeof data.greeting === "string") {
-        // Replace the default greeting message with the proactive one.
-        // Use a different ID so the SDK sync effect in useAiChat detects the change.
-        const proactiveMessage: AIChatMessage = {
-          id: "proactive-1",
-          role: "assistant",
-          parts: [{ type: "text", text: data.greeting }],
-          metadata: {
-            createdAt: new Date(),
-          },
-        };
-
-        // Only update if chat is still fresh (user hasn't sent a message yet)
-        const currentMessages = useChatsStore.getState().aiMessages;
-        if (
-          currentMessages.length === 1 &&
-          currentMessages[0].id === "1" &&
-          currentMessages[0].role === "assistant"
-        ) {
-          setAiMessages([proactiveMessage]);
+      } catch (err) {
+        // Silently fail — the generic greeting remains
+        if (!(err instanceof DOMException && err.name === "AbortError")) {
+          console.warn("[ProactiveGreeting] Failed to fetch greeting:", err);
+        }
+      } finally {
+        if (!controller.signal.aborted && !options?.silent) {
+          setIsLoadingGreeting(false);
         }
       }
-    } catch (err) {
-      // Silently fail — the generic greeting remains
-      if (!(err instanceof DOMException && err.name === "AbortError")) {
-        console.warn("[ProactiveGreeting] Failed to fetch greeting:", err);
-      }
-    } finally {
-      if (!controller.signal.aborted) {
-        setIsLoadingGreeting(false);
-      }
-    }
-  }, [username, authToken, setAiMessages]);
+    },
+    [username, authToken, setAiMessages]
+  );
 
-  // Trigger proactive greeting when conditions are met
+  // ── Immediate trigger (first open with static greeting) ──────────────
   useEffect(() => {
     if (isFreshChat && isEligible && !hasTriggeredRef.current) {
       hasTriggeredRef.current = true;
@@ -134,10 +167,60 @@ export function useProactiveGreeting() {
     }
   }, [isFreshChat, isEligible, fetchGreeting]);
 
+  // ── Delayed trigger on window (re)open ───────────────────────────────
+  useEffect(() => {
+    const wasOpen = prevWindowOpenRef.current;
+    prevWindowOpenRef.current = isWindowOpen;
+
+    // Clear any pending timer
+    if (reopenTimerRef.current) {
+      clearTimeout(reopenTimerRef.current);
+      reopenTimerRef.current = null;
+    }
+
+    // Window just (re)opened — schedule a deferred greeting refresh
+    if (isWindowOpen && !wasOpen && isUntouchedChat && isEligible) {
+      // Respect cooldown to avoid rapid-fire API calls
+      const elapsed = Date.now() - lastFetchTimeRef.current;
+      if (elapsed < FETCH_COOLDOWN_MS) return;
+
+      reopenTimerRef.current = setTimeout(() => {
+        // Re-check conditions at trigger time
+        const state = useChatsStore.getState();
+        const stillUntouched =
+          state.aiMessages.length === 1 &&
+          (state.aiMessages[0].id === "1" ||
+            state.aiMessages[0].id === "proactive-1") &&
+          state.aiMessages[0].role === "assistant";
+        const stillEligible =
+          !!state.username &&
+          ALLOWED_USERS.has(state.username.toLowerCase()) &&
+          !!state.authToken;
+
+        if (stillUntouched && stillEligible) {
+          // Use silent mode when refreshing an existing proactive greeting
+          // so the user doesn't see a flash of typing dots.
+          const currentId = state.aiMessages[0].id;
+          fetchGreeting({ silent: currentId === "proactive-1" });
+        }
+      }, REOPEN_DELAY_MS);
+    }
+
+    return () => {
+      if (reopenTimerRef.current) {
+        clearTimeout(reopenTimerRef.current);
+        reopenTimerRef.current = null;
+      }
+    };
+  }, [isWindowOpen, isUntouchedChat, isEligible, fetchGreeting]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
+      if (reopenTimerRef.current) {
+        clearTimeout(reopenTimerRef.current);
+      }
     };
   }, []);
 
@@ -153,7 +236,8 @@ export function useProactiveGreeting() {
       const state = useChatsStore.getState();
       const stillFresh =
         state.aiMessages.length === 1 &&
-        (state.aiMessages[0].id === "1" || state.aiMessages[0].id === "proactive-1") &&
+        (state.aiMessages[0].id === "1" ||
+          state.aiMessages[0].id === "proactive-1") &&
         state.aiMessages[0].role === "assistant";
       const stillEligible =
         !!state.username &&
