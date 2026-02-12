@@ -25,7 +25,6 @@ import {
   appendDailyNote,
   getDailyNote,
   getTodayDateString,
-  getUnprocessedDailyNotes,
   markDailyNoteProcessed,
   MAX_MEMORIES_PER_USER,
 } from "../_utils/_memory.js";
@@ -349,10 +348,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Mark unprocessed daily notes as processed
-    const unprocessedNotes = await getUnprocessedDailyNotes(redis, username);
-    for (const note of unprocessedNotes) {
-      await markDailyNoteProcessed(redis, username, note.date);
+    // Only mark today's note as processed — this extraction only analyzed
+    // the conversation + today's entries. Past daily notes should be processed
+    // separately by /api/ai/process-daily-notes which actually reads their content.
+    if (dailyNotesStored > 0 || (existingDailyNote && existingDailyNote.entries.length > 0)) {
+      await markDailyNoteProcessed(redis, username, today);
     }
 
     logger.info("Done", { username, dailyNotes: dailyNotesStored, longTerm: longTermStored });

@@ -656,7 +656,11 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                         <span className="text-amber-700 font-medium">{dateLabel}</span>
                         <span className="text-neutral-400 ml-1">
                           ({note.entries.length} entries)
-                          {note.processedForMemories && " ✓"}
+                          {note.processedForMemories ? (
+                            <span className="text-green-600 ml-1" title="Processed into long-term memory">✓ processed</span>
+                          ) : (
+                            <span className="text-amber-500 ml-1" title="Not yet processed into long-term memory">○ pending</span>
+                          )}
                         </span>
                       </button>
                       {isExpanded && (

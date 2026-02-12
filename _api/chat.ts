@@ -23,7 +23,7 @@ import {
   TOOL_USAGE_INSTRUCTIONS,
   MEMORY_INSTRUCTIONS,
 } from "./_utils/_aiPrompts.js";
-import { getMemoryIndex, getDailyNotesForPrompt, type MemoryIndex } from "./_utils/_memory.js";
+import { getMemoryIndex, getDailyNotesForPrompt, getUnprocessedDailyNotesExcludingToday, type MemoryIndex } from "./_utils/_memory.js";
 import { SUPPORTED_AI_MODELS } from "./_utils/_aiModels.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { validateAuth } from "./_utils/auth/index.js";
@@ -676,6 +676,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } catch (memErr) {
         logError("Error fetching user memories/notes:", memErr);
         // Continue without memories - not a fatal error
+      }
+
+      // Background: process past daily notes into long-term memory (fire-and-forget)
+      // This runs on every authenticated chat request but short-circuits quickly
+      // if there are no unprocessed notes.
+      try {
+        getUnprocessedDailyNotesExcludingToday(redis, username).then(async (unprocessedNotes) => {
+          if (unprocessedNotes.length > 0) {
+            log(`[DailyNotes] Found ${unprocessedNotes.length} unprocessed past daily notes for ${username}, triggering background processing`);
+            // Dynamic import to avoid loading the module on every chat request
+            const { processDailyNotesForUser } = await import("./ai/process-daily-notes.js");
+            processDailyNotesForUser(redis, username, log, logError).catch((err: unknown) => {
+              logError("[DailyNotes] Background processing failed (non-blocking):", err);
+            });
+          }
+        }).catch((err: unknown) => {
+          logError("[DailyNotes] Failed to check unprocessed notes (non-blocking):", err);
+        });
+      } catch (triggerErr) {
+        logError("[DailyNotes] Failed to trigger background processing:", triggerErr);
       }
     }
 
