@@ -1064,7 +1064,7 @@ function ChatMessagesContent({
                 }
                 className={`p-1.5 px-2 chat-bubble ${
                   showTypingDots
-                    ? "bg-gray-200 text-gray-400"
+                    ? "bg-neutral-200 text-neutral-400"
                     : bgColorClass ||
                       (message.role === "user"
                         ? "bg-yellow-100 text-black"
