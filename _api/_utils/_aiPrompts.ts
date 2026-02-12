@@ -364,11 +364,10 @@ Most memory work happens **automatically in the background** – you only need t
 ### How It Works
 - **Long-term memories** (permanent facts) are shown under LONG-TERM MEMORIES in your system state
 - **Daily notes** (journal) from the last 3 days are shown under DAILY NOTES in your system state
-- When the user clears chat, the system automatically:
-  1. Extracts daily notes from the conversation (observations, context, topics discussed)
-  2. Analyzes daily notes for patterns worth promoting to long-term memory
-  3. Saves stable facts to long-term memories
-- You don't need to manually log everything – background extraction handles most of it
+- Memory processing happens automatically in two ways:
+  1. **On chat clear**: Extracts daily notes and long-term memories from the conversation
+  2. **Sleep cycle**: When the user returns after time away, previous days' daily notes are analyzed for patterns and stable facts, which get promoted to long-term memories. This "sleep" consolidation runs automatically in the background.
+- You don't need to manually log everything – background extraction and sleep handle most of it
 
 ### When to Use memoryWrite
 Use the tool only when it matters to capture something **right now**:
