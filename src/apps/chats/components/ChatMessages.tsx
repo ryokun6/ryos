@@ -8,6 +8,7 @@ import { useChatSynth } from "@/hooks/useChatSynth";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
 
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
+import { TypingBubble } from "./TypingBubble";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { appRegistry } from "@/config/appRegistry";
@@ -268,6 +269,7 @@ interface ChatMessagesProps {
   highlightSegment?: { messageId: string; start: number; end: number } | null;
   isSpeaking?: boolean;
   onSendMessage?: (username: string) => void; // Callback when send message button is clicked
+  isLoadingGreeting?: boolean; // Show typing bubble for proactive greeting
 }
 
 // Component to render the scroll-to-bottom button using the library's context
@@ -367,6 +369,7 @@ interface ChatMessagesContentProps {
   highlightSegment?: { messageId: string; start: number; end: number } | null;
   isSpeaking?: boolean;
   onSendMessage?: (username: string) => void;
+  isLoadingGreeting?: boolean;
 }
 
 function ChatMessagesContent({
@@ -385,6 +388,7 @@ function ChatMessagesContent({
   highlightSegment,
   isSpeaking,
   onSendMessage,
+  isLoadingGreeting,
 }: ChatMessagesContentProps) {
   const { t } = useTranslation();
   const { playNote } = useChatSynth();
@@ -1371,6 +1375,7 @@ function ChatMessagesContent({
           </motion.div>
         );
       })}
+      {isLoadingGreeting && !isRoomView && <TypingBubble />}
       {error &&
         (() => {
           const errorMessage = getErrorMessage(error);
@@ -1447,6 +1452,7 @@ export function ChatMessages({
   highlightSegment,
   isSpeaking,
   onSendMessage,
+  isLoadingGreeting,
 }: ChatMessagesProps) {
   return (
     // Use StickToBottom component as the main container
@@ -1475,6 +1481,7 @@ export function ChatMessages({
           highlightSegment={highlightSegment}
           isSpeaking={isSpeaking}
           onSendMessage={onSendMessage}
+          isLoadingGreeting={isLoadingGreeting}
         />
       </StickToBottom.Content>
 
