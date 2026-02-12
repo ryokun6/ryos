@@ -5,19 +5,41 @@ import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 
 /**
- * Only these usernames get proactive greetings.
- * Must match the server-side ALLOWED_USERS set.
+ * Minimum idle time (ms) since the last chat message before a proactive
+ * greeting is triggered when re-opening / loading the chats app from state.
  */
-const ALLOWED_USERS = new Set(["ryo"]);
+const STALE_CHAT_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Hook that manages proactive AI greetings for eligible users.
+ * Get the timestamp (epoch ms) of the most recent message in the AI chat.
+ * Falls back to 0 if no valid timestamp is found.
+ */
+function getLastMessageTimestamp(messages: AIChatMessage[]): number {
+  if (messages.length === 0) return 0;
+
+  const last = messages[messages.length - 1];
+  const createdAt = last.metadata?.createdAt;
+  if (!createdAt) return 0;
+
+  // createdAt can be a Date, a number, or an ISO string (after JSON round-trip)
+  if (createdAt instanceof Date) return createdAt.getTime();
+  if (typeof createdAt === "number") return createdAt;
+  if (typeof createdAt === "string") {
+    const ts = new Date(createdAt).getTime();
+    return Number.isFinite(ts) ? ts : 0;
+  }
+  return 0;
+}
+
+/**
+ * Hook that manages proactive AI greetings for logged-in users with memories.
  *
- * When a new/cleared chat has only the default greeting message and the
- * current user is in the allowlist, this hook:
- * 1. Shows a typing indicator
- * 2. Calls the proactive-greeting API
- * 3. Replaces the generic greeting with the AI-generated one
+ * Triggers in two scenarios:
+ * 1. **Fresh chat** – only the default greeting message is present.
+ *    The proactive greeting *replaces* the generic greeting.
+ * 2. **Stale chat** – the app is opened / loaded from persisted state and
+ *    the last message is older than 5 minutes. The proactive greeting is
+ *    *appended* to the conversation.
  */
 export function useProactiveGreeting() {
   // Initialize loading state eagerly so eligible users never see the static greeting
@@ -27,13 +49,11 @@ export function useProactiveGreeting() {
       state.aiMessages.length === 1 &&
       state.aiMessages[0].id === "1" &&
       state.aiMessages[0].role === "assistant";
-    const eligible =
-      !!state.username &&
-      ALLOWED_USERS.has(state.username.toLowerCase()) &&
-      !!state.authToken;
+    const eligible = !!state.username && !!state.authToken;
     return fresh && eligible;
   });
-  const hasTriggeredRef = useRef(false);
+  const hasTriggeredFreshRef = useRef(false);
+  const hasTriggeredStaleRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const username = useChatsStore((s) => s.username);
@@ -51,23 +71,43 @@ export function useProactiveGreeting() {
     aiMessages[0].id === "1" &&
     aiMessages[0].role === "assistant";
 
-  const isEligible =
-    !!username && ALLOWED_USERS.has(username.toLowerCase()) && !!authToken;
+  const isEligible = !!username && !!authToken;
 
-  const fetchGreeting = useCallback(async () => {
-    if (!username || !authToken) return;
+  /**
+   * Detect a "stale" conversation: the chat has real messages but the last
+   * message was sent more than STALE_CHAT_THRESHOLD_MS ago.
+   */
+  const isStaleChat = (() => {
+    if (isFreshChat) return false; // handled by the fresh-chat path
+    if (aiMessages.length < 2) return false; // need at least one real exchange
+    // Don't trigger if the last message is already a proactive greeting
+    const lastMsg = aiMessages[aiMessages.length - 1];
+    if (lastMsg.id?.startsWith("proactive-")) return false;
 
-    // Abort any in-flight request
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+    const lastTs = getLastMessageTimestamp(aiMessages);
+    if (lastTs === 0) return false;
 
-    setIsLoadingGreeting(true);
+    return Date.now() - lastTs > STALE_CHAT_THRESHOLD_MS;
+  })();
 
-    try {
-      const response = await abortableFetch(
-        getApiUrl("/api/chat"),
-        {
+  /**
+   * Fetch a proactive greeting from the server.
+   * @param mode  "fresh" → replaces the default greeting;
+   *              "stale" → appends the greeting to the existing conversation.
+   */
+  const fetchGreeting = useCallback(
+    async (mode: "fresh" | "stale" = "fresh") => {
+      if (!username || !authToken) return;
+
+      // Abort any in-flight request
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      setIsLoadingGreeting(true);
+
+      try {
+        const response = await abortableFetch(getApiUrl("/api/chat"), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -80,59 +120,89 @@ export function useProactiveGreeting() {
           }),
           timeout: 12000,
           signal: controller.signal,
+        });
+
+        if (controller.signal.aborted) return;
+
+        const data = await response.json();
+
+        if (data.greeting && typeof data.greeting === "string") {
+          const proactiveMessage: AIChatMessage = {
+            id: mode === "fresh" ? "proactive-1" : `proactive-${Date.now()}`,
+            role: "assistant",
+            parts: [{ type: "text", text: data.greeting }],
+            metadata: {
+              createdAt: new Date(),
+            },
+          };
+
+          const currentMessages = useChatsStore.getState().aiMessages;
+
+          if (mode === "fresh") {
+            // Replace the default greeting message
+            if (
+              currentMessages.length === 1 &&
+              currentMessages[0].id === "1" &&
+              currentMessages[0].role === "assistant"
+            ) {
+              setAiMessages([proactiveMessage]);
+            }
+          } else {
+            // Stale mode: append the greeting to the existing conversation
+            // Guard: don't append if user sent a new message while we were loading
+            const lastMsg = currentMessages[currentMessages.length - 1];
+            const lastTs = getLastMessageTimestamp(currentMessages);
+            const stillStale =
+              lastTs > 0 && Date.now() - lastTs > STALE_CHAT_THRESHOLD_MS;
+
+            if (
+              stillStale &&
+              !lastMsg.id?.startsWith("proactive-")
+            ) {
+              setAiMessages([...currentMessages, proactiveMessage]);
+            }
+          }
         }
-      );
-
-      if (controller.signal.aborted) return;
-
-      const data = await response.json();
-
-      if (data.greeting && typeof data.greeting === "string") {
-        // Replace the default greeting message with the proactive one.
-        // Use a different ID so the SDK sync effect in useAiChat detects the change.
-        const proactiveMessage: AIChatMessage = {
-          id: "proactive-1",
-          role: "assistant",
-          parts: [{ type: "text", text: data.greeting }],
-          metadata: {
-            createdAt: new Date(),
-          },
-        };
-
-        // Only update if chat is still fresh (user hasn't sent a message yet)
-        const currentMessages = useChatsStore.getState().aiMessages;
-        if (
-          currentMessages.length === 1 &&
-          currentMessages[0].id === "1" &&
-          currentMessages[0].role === "assistant"
-        ) {
-          setAiMessages([proactiveMessage]);
+      } catch (err) {
+        // Silently fail — the generic greeting remains
+        if (!(err instanceof DOMException && err.name === "AbortError")) {
+          console.warn("[ProactiveGreeting] Failed to fetch greeting:", err);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingGreeting(false);
         }
       }
-    } catch (err) {
-      // Silently fail — the generic greeting remains
-      if (!(err instanceof DOMException && err.name === "AbortError")) {
-        console.warn("[ProactiveGreeting] Failed to fetch greeting:", err);
-      }
-    } finally {
-      if (!controller.signal.aborted) {
-        setIsLoadingGreeting(false);
-      }
-    }
-  }, [username, authToken, setAiMessages]);
+    },
+    [username, authToken, setAiMessages]
+  );
 
-  // Trigger proactive greeting when conditions are met
+  // Trigger proactive greeting for fresh chats
   useEffect(() => {
-    if (isFreshChat && isEligible && !hasTriggeredRef.current) {
-      hasTriggeredRef.current = true;
-      fetchGreeting();
+    if (isFreshChat && isEligible && !hasTriggeredFreshRef.current) {
+      hasTriggeredFreshRef.current = true;
+      fetchGreeting("fresh");
     }
 
     // Reset trigger flag when chat is no longer fresh (user sent a message)
     if (!isFreshChat) {
-      hasTriggeredRef.current = false;
+      hasTriggeredFreshRef.current = false;
     }
   }, [isFreshChat, isEligible, fetchGreeting]);
+
+  // Trigger proactive greeting for stale chats on mount / app open
+  useEffect(() => {
+    if (isStaleChat && isEligible && !hasTriggeredStaleRef.current) {
+      hasTriggeredStaleRef.current = true;
+      fetchGreeting("stale");
+    }
+
+    // Reset the stale trigger once the conversation is no longer stale
+    // (e.g. user sent a message or a greeting was injected)
+    if (!isStaleChat) {
+      hasTriggeredStaleRef.current = false;
+    }
+  }, [isStaleChat, isEligible, fetchGreeting]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -146,23 +216,22 @@ export function useProactiveGreeting() {
    * Used after clearChats to re-trigger the greeting.
    */
   const triggerGreeting = useCallback(() => {
-    hasTriggeredRef.current = false;
+    hasTriggeredFreshRef.current = false;
+    hasTriggeredStaleRef.current = false;
     // The useEffect will pick it up on the next render
     // But we can also force it directly
     setTimeout(() => {
       const state = useChatsStore.getState();
       const stillFresh =
         state.aiMessages.length === 1 &&
-        (state.aiMessages[0].id === "1" || state.aiMessages[0].id === "proactive-1") &&
+        (state.aiMessages[0].id === "1" ||
+          state.aiMessages[0].id === "proactive-1") &&
         state.aiMessages[0].role === "assistant";
-      const stillEligible =
-        !!state.username &&
-        ALLOWED_USERS.has(state.username.toLowerCase()) &&
-        !!state.authToken;
+      const stillEligible = !!state.username && !!state.authToken;
 
       if (stillFresh && stillEligible) {
-        hasTriggeredRef.current = true;
-        fetchGreeting();
+        hasTriggeredFreshRef.current = true;
+        fetchGreeting("fresh");
       }
     }, 100);
   }, [fetchGreeting]);
