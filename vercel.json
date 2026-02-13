@@ -222,12 +222,6 @@
     { "source": "/control-panels", "destination": "/" },
     { "source": "/infinite-mac", "destination": "/" }
   ],
-  "crons": [
-    {
-      "path": "/api/ai/process-daily-notes",
-      "schedule": "0 8 * * *"
-    }
-  ],
   "redirects": [
     { "source": "/docs", "destination": "/docs/overview", "permanent": false },
     { "source": "/docs/", "destination": "/docs/overview", "permanent": false },

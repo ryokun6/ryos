@@ -14,9 +14,8 @@
  * 4. Marks each processed daily note as processed
  * 
  * Trigger points:
- * - Called from /api/chat on proactive greeting (background, fire-and-forget)
- * - Can be called via Vercel cron for scheduled processing
- * - Can be called manually from admin panel
+ * - Called from /api/chat as background fire-and-forget on authenticated requests
+ * - Called from frontend on chat clear (fire-and-forget)
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
@@ -331,51 +330,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // ========================================================================
-  // Authentication — supports both header-based auth and cron secret
+  // Authentication
   // ========================================================================
   const authHeader = req.headers.authorization as string | undefined;
   const usernameHeader = req.headers["x-username"] as string | undefined;
-  const cronSecret = req.headers["x-cron-secret"] as string | undefined;
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
-  const redis = createRedis();
-  let username: string;
-
-  // Cron mode: process a specific user or all users with unprocessed notes
-  const isCronRequest = cronSecret && cronSecret === process.env.CRON_SECRET;
-
-  if (isCronRequest) {
-    // Cron can specify a username in the body, or we skip (cron for specific users)
-    const body = req.body as { username?: string } | undefined;
-    if (!body?.username) {
-      logger.warn("Cron request missing username");
-      logger.response(400, Date.now() - startTime);
-      return res.status(400).json({ error: "Username required for cron processing" });
-    }
-    username = body.username.toLowerCase();
-    logger.info("Cron-triggered processing", { username });
-  } else {
-    // Normal auth flow
-    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
-    if (!token || !usernameHeader) {
-      logger.warn("Missing credentials");
-      logger.response(401, Date.now() - startTime);
-      return res.status(401).json({ error: "Unauthorized - missing credentials" });
-    }
-
-    const authResult = await validateAuth(redis, usernameHeader, token, {});
-
-    if (!authResult.valid) {
-      logger.warn("Invalid token", { username: usernameHeader });
-      logger.response(401, Date.now() - startTime);
-      return res.status(401).json({ error: "Unauthorized - invalid token" });
-    }
-
-    username = usernameHeader.toLowerCase();
+  if (!token || !usernameHeader) {
+    logger.warn("Missing credentials");
+    logger.response(401, Date.now() - startTime);
+    return res.status(401).json({ error: "Unauthorized - missing credentials" });
   }
 
+  const redis = createRedis();
+  const authResult = await validateAuth(redis, usernameHeader, token, {});
+
+  if (!authResult.valid) {
+    logger.warn("Invalid token", { username: usernameHeader });
+    logger.response(401, Date.now() - startTime);
+    return res.status(401).json({ error: "Unauthorized - invalid token" });
+  }
+
+  const username = usernameHeader.toLowerCase();
+
   try {
-    // Delegate to the shared processing function
     const result = await processDailyNotesForUser(
       redis,
       username,
