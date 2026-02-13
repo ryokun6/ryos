@@ -148,6 +148,37 @@ export async function processDailyNotesForUser(
   updated: number;
   dates: string[];
 }> {
+  const EMPTY = { processed: 0, created: 0, updated: 0, dates: [] as string[] };
+
+  // Acquire a short-lived lock to prevent concurrent processing for the same user.
+  // If another request is already processing, we skip (the other run will handle it).
+  const lockKey = `memory:user:${username}:processing_lock`;
+  const acquired = await redis.set(lockKey, "1", { nx: true, ex: 120 }); // 2-min TTL
+  if (!acquired) {
+    log("[processDailyNotes] Skipping — another run already in progress", { username });
+    return EMPTY;
+  }
+
+  try {
+    return await _processDailyNotesForUserInner(redis, username, log, logError);
+  } finally {
+    // Release lock when done (or on error)
+    await redis.del(lockKey).catch(() => {});
+  }
+}
+
+/** Inner processing logic, called under lock */
+async function _processDailyNotesForUserInner(
+  redis: Redis,
+  username: string,
+  log: LogFn,
+  logError: LogFn,
+): Promise<{
+  processed: number;
+  created: number;
+  updated: number;
+  dates: string[];
+}> {
   // 1. Find unprocessed daily notes (excluding today)
   const unprocessedNotes = await getUnprocessedDailyNotesExcludingToday(redis, username);
 

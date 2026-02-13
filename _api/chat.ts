@@ -678,25 +678,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Continue without memories - not a fatal error
       }
 
-      // Background: process past daily notes into long-term memory (fire-and-forget)
-      // This runs on every authenticated chat request but short-circuits quickly
-      // if there are no unprocessed notes.
-      try {
-        getUnprocessedDailyNotesExcludingToday(redis, username).then(async (unprocessedNotes) => {
-          if (unprocessedNotes.length > 0) {
-            log(`[DailyNotes] Found ${unprocessedNotes.length} unprocessed past daily notes for ${username}, triggering background processing`);
-            // Dynamic import to avoid loading the module on every chat request
-            const { processDailyNotesForUser } = await import("./ai/process-daily-notes.js");
-            processDailyNotesForUser(redis, username, log, logError).catch((err: unknown) => {
-              logError("[DailyNotes] Background processing failed (non-blocking):", err);
-            });
-          }
-        }).catch((err: unknown) => {
-          logError("[DailyNotes] Failed to check unprocessed notes (non-blocking):", err);
-        });
-      } catch (triggerErr) {
-        logError("[DailyNotes] Failed to trigger background processing:", triggerErr);
-      }
     }
 
     // -------------------------------------------------------------
@@ -705,6 +686,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // -------------------------------------------------------------
     if (isProactiveGreeting && username && validationResult.valid) {
       log("Proactive greeting requested");
+
+      // Background: process past daily notes into long-term memory (fire-and-forget)
+      // Only triggered on proactive greetings (once per session) to avoid
+      // redundant checks on every chat message.
+      try {
+        getUnprocessedDailyNotesExcludingToday(redis, username).then(async (unprocessedNotes) => {
+          if (unprocessedNotes.length > 0) {
+            log(`[DailyNotes] Found ${unprocessedNotes.length} unprocessed past daily notes for ${username}, triggering background processing`);
+            const { processDailyNotesForUser } = await import("./ai/process-daily-notes.js");
+            processDailyNotesForUser(redis, username, log, logError).catch((err: unknown) => {
+              logError("[DailyNotes] Background processing failed (non-blocking):", err);
+            });
+          }
+        }).catch(() => {});
+      } catch { /* non-blocking */ }
 
       // Build memory context
       let memoryContext = "";
