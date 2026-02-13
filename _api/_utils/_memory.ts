@@ -908,6 +908,8 @@ export async function getUnprocessedDailyNotes(
  * Get unprocessed daily notes EXCLUDING today.
  * Today's note is still accumulating entries, so we only process past days.
  * This is the primary function for background daily-notes-to-long-term-memory processing.
+ * 
+ * Fetches all dates in parallel for efficiency.
  */
 export async function getUnprocessedDailyNotesExcludingToday(
   redis: Redis,
@@ -916,17 +918,17 @@ export async function getUnprocessedDailyNotesExcludingToday(
 ): Promise<DailyNote[]> {
   const dates = getRecentDateStrings(days);
   const today = getTodayDateString();
-  const notes: DailyNote[] = [];
+  const pastDates = dates.filter(d => d !== today);
 
-  for (const date of dates) {
-    if (date === today) continue; // Skip today — still accumulating
-    const note = await getDailyNote(redis, username, date);
-    if (note && !note.processedForMemories && note.entries.length > 0) {
-      notes.push(note);
-    }
-  }
+  // Fetch all dates in parallel instead of sequentially
+  const allNotes = await Promise.all(
+    pastDates.map(date => getDailyNote(redis, username, date))
+  );
 
-  return notes;
+  return allNotes.filter(
+    (note): note is DailyNote =>
+      note !== null && !note.processedForMemories && note.entries.length > 0
+  );
 }
 
 // ============================================================================
@@ -966,6 +968,7 @@ export async function clearAllMemories(
 /**
  * Reset all daily notes' processedForMemories flag to false.
  * This allows them to be re-processed by the daily notes processor.
+ * Fetches all notes in parallel, then saves modified ones in parallel.
  * @param days - Number of past days to reset (default 30)
  */
 export async function resetDailyNotesProcessedFlag(
@@ -974,17 +977,31 @@ export async function resetDailyNotesProcessedFlag(
   days: number = 30
 ): Promise<{ resetCount: number }> {
   const dates = getRecentDateStrings(days);
-  let resetCount = 0;
 
-  for (const date of dates) {
-    const note = await getDailyNote(redis, username, date);
-    if (note && note.processedForMemories && note.entries.length > 0) {
-      note.processedForMemories = false;
-      note.updatedAt = Date.now();
-      await saveDailyNote(redis, username, note);
-      resetCount++;
-    }
+  // Fetch all notes in parallel
+  const allNotes = await Promise.all(
+    dates.map(date => getDailyNote(redis, username, date))
+  );
+
+  // Find notes that need resetting
+  const notesToReset = allNotes.filter(
+    (note): note is DailyNote =>
+      note !== null && note.processedForMemories && note.entries.length > 0
+  );
+
+  if (notesToReset.length === 0) {
+    return { resetCount: 0 };
   }
 
-  return { resetCount };
+  // Reset and save all in parallel
+  const now = Date.now();
+  await Promise.all(
+    notesToReset.map(note => {
+      note.processedForMemories = false;
+      note.updatedAt = now;
+      return saveDailyNote(redis, username, note);
+    })
+  );
+
+  return { resetCount: notesToReset.length };
 }
