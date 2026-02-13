@@ -2274,28 +2274,6 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           console.warn("[clearChats] Memory extraction failed (non-blocking):", err);
         });
 
-      // Also trigger processing of past daily notes into long-term memory
-      // This handles notes from previous days that haven't been processed yet
-      abortableFetch(getApiUrl("/api/ai/process-daily-notes"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${currentToken}`,
-          "X-Username": currentUsername,
-        },
-        body: JSON.stringify({}),
-        timeout: 30000,
-        retry: { maxAttempts: 1, initialDelayMs: 500 },
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.processed > 0) {
-            console.log(`[clearChats] Processed ${data.processed} daily notes → ${data.created || 0} new, ${data.updated || 0} updated memories`);
-          }
-        })
-        .catch(err => {
-          console.warn("[clearChats] Daily notes processing failed (non-blocking):", err);
-        });
     }
 
     // --- Reset speech & highlight state so the next reply starts clean ---
