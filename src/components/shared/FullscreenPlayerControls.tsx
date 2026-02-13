@@ -305,7 +305,7 @@ export function FullscreenPlayerControls({
               type="button"
               onClick={handleClick(() => onDisplayModeSelect(nextMode.value))}
               aria-label={t("apps.ipod.menu.display", "Display")}
-              className={cn(buttonClasses, "hidden md:flex")}
+              className={cn(buttonClasses)}
               title={`${t("apps.ipod.menu.display", "Display")}: ${currentOpt?.label}`}
             >
               <Video
@@ -614,9 +614,9 @@ export function FullscreenPlayerControls({
         </div>
       )}
 
-      {/* Close island (only shown in fullscreen mode) */}
+      {/* Close island (only shown in fullscreen mode, hidden on mobile where it's shown at the top right) */}
       {onClose && (
-        <div className={segmentClasses} style={aquaSegmentStyle}>
+        <div className={cn(segmentClasses, "hidden md:flex")} style={aquaSegmentStyle}>
           {isMacTheme && <AquaShineOverlays variant={variant} />}
           {/* Close button (for fullscreen mode) */}
           <button
