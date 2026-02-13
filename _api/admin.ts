@@ -558,12 +558,14 @@ export default async function handler(
             (...args: unknown[]) => logger.error(String(args[0]), args[1]),
           );
 
+          const skippedCount = processResult.skippedDates?.length || 0;
           logger.info("Force process daily notes complete", {
             targetUsername,
             notesReset: resetResult.resetCount,
             notesProcessed: processResult.processed,
             memoriesCreated: processResult.created,
             memoriesUpdated: processResult.updated,
+            skippedDates: processResult.skippedDates,
           });
           logger.response(200, Date.now() - startTime);
           res.status(200).json({
@@ -573,9 +575,11 @@ export default async function handler(
             memoriesCreated: processResult.created,
             memoriesUpdated: processResult.updated,
             dates: processResult.dates,
+            skippedDates: processResult.skippedDates,
             message: processResult.processed === 0
               ? "No daily notes to process (only past days are processed, not today)"
-              : `Reprocessed ${processResult.processed} daily notes → ${processResult.created} new + ${processResult.updated} updated memories`,
+              : `Reprocessed ${processResult.processed} daily notes → ${processResult.created} new + ${processResult.updated} updated memories`
+                + (skippedCount > 0 ? ` (${skippedCount} days deferred to next run)` : ""),
           });
           return;
         } catch (error) {

@@ -147,8 +147,9 @@ export async function processDailyNotesForUser(
   created: number;
   updated: number;
   dates: string[];
+  skippedDates: string[];
 }> {
-  const EMPTY = { processed: 0, created: 0, updated: 0, dates: [] as string[] };
+  const EMPTY = { processed: 0, created: 0, updated: 0, dates: [] as string[], skippedDates: [] as string[] };
 
   // Acquire a short-lived lock to prevent concurrent processing for the same user.
   // If another request is already processing, we skip (the other run will handle it).
@@ -167,7 +168,33 @@ export async function processDailyNotesForUser(
   }
 }
 
-/** Inner processing logic, called under lock */
+// ============================================================================
+// Batch Processing Constants
+// ============================================================================
+
+/**
+ * Maximum time (ms) to spend processing before stopping gracefully.
+ * Leaves headroom below the 60s Vercel function limit.
+ */
+const PROCESSING_TIME_BUDGET_MS = 50_000;
+
+/**
+ * Maximum number of consolidation AI calls per day-batch.
+ * Prevents runaway processing when many memories overlap.
+ */
+const MAX_CONSOLIDATIONS_PER_BATCH = 3;
+
+/**
+ * Maximum number of memories to extract per day-batch.
+ * Keeps each day's AI call manageable.
+ */
+const MAX_EXTRACTIONS_PER_BATCH = 5;
+
+// ============================================================================
+// Batch Inner Logic
+// ============================================================================
+
+/** Inner processing logic, called under lock — processes notes day-by-day */
 async function _processDailyNotesForUserInner(
   redis: Redis,
   username: string,
@@ -178,13 +205,20 @@ async function _processDailyNotesForUserInner(
   created: number;
   updated: number;
   dates: string[];
+  skippedDates: string[];
 }> {
+  const startTime = Date.now();
+  const EMPTY = { processed: 0, created: 0, updated: 0, dates: [] as string[], skippedDates: [] as string[] };
+
   // 1. Find unprocessed daily notes (excluding today)
   const unprocessedNotes = await getUnprocessedDailyNotesExcludingToday(redis, username);
 
   if (unprocessedNotes.length === 0) {
-    return { processed: 0, created: 0, updated: 0, dates: [] };
+    return EMPTY;
   }
+
+  // Sort oldest-first so we process in chronological order
+  unprocessedNotes.sort((a, b) => a.date.localeCompare(b.date));
 
   log("[processDailyNotes] Found unprocessed notes", {
     username,
@@ -192,25 +226,115 @@ async function _processDailyNotesForUserInner(
     dates: unprocessedNotes.map(n => n.date),
   });
 
-  // 2. Build daily notes text for AI analysis
-  const dailyNotesText = unprocessedNotes
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .map(note => {
-      const entries = note.entries
-        .map(e => {
-          const time = new Date(e.timestamp).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-          });
-          return `  ${time}: ${e.content}`;
-        })
-        .join("\n");
-      return `${note.date}:\n${entries}`;
-    })
-    .join("\n\n");
+  // Accumulate results across all batches
+  let totalProcessed = 0;
+  let totalCreated = 0;
+  let totalUpdated = 0;
+  const processedDates: string[] = [];
+  const skippedDates: string[] = [];
 
-  // 3. Gather existing memory state for dedup
+  // 2. Process each day as a separate batch
+  for (const note of unprocessedNotes) {
+    // Time budget check — stop gracefully if running low
+    const elapsed = Date.now() - startTime;
+    if (elapsed > PROCESSING_TIME_BUDGET_MS) {
+      log("[processDailyNotes] Time budget exceeded, stopping gracefully", {
+        username,
+        elapsedMs: elapsed,
+        processedSoFar: totalProcessed,
+        remainingDates: unprocessedNotes
+          .filter(n => !processedDates.includes(n.date))
+          .map(n => n.date),
+      });
+      // Track remaining dates as skipped (they'll be picked up next run)
+      skippedDates.push(
+        ...unprocessedNotes
+          .filter(n => !processedDates.includes(n.date))
+          .map(n => n.date)
+      );
+      break;
+    }
+
+    try {
+      const batchResult = await _processSingleDayBatch(
+        redis, username, note, log, logError,
+      );
+
+      totalCreated += batchResult.created;
+      totalUpdated += batchResult.updated;
+
+      // Mark this day as processed immediately — progress is preserved even if
+      // a later day fails or we run out of time
+      await markDailyNoteProcessed(redis, username, note.date);
+      totalProcessed++;
+      processedDates.push(note.date);
+
+      log("[processDailyNotes] Day batch complete", {
+        username,
+        date: note.date,
+        entries: note.entries.length,
+        created: batchResult.created,
+        updated: batchResult.updated,
+      });
+    } catch (error) {
+      // Log and continue to next day — don't let one bad day break everything
+      logError("[processDailyNotes] Failed to process day batch", {
+        username,
+        date: note.date,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      skippedDates.push(note.date);
+    }
+  }
+
+  log("[processDailyNotes] Complete", {
+    username,
+    notesProcessed: totalProcessed,
+    memoriesCreated: totalCreated,
+    memoriesUpdated: totalUpdated,
+    skippedDates,
+  });
+
+  return {
+    processed: totalProcessed,
+    created: totalCreated,
+    updated: totalUpdated,
+    dates: processedDates,
+    skippedDates,
+  };
+}
+
+// ============================================================================
+// Single Day Batch Processing
+// ============================================================================
+
+/**
+ * Process a single day's daily note into long-term memories.
+ * This keeps each AI call scoped to one day's entries, avoiding prompt overflow.
+ */
+async function _processSingleDayBatch(
+  redis: Redis,
+  username: string,
+  note: { date: string; entries: { timestamp: number; content: string }[] },
+  log: LogFn,
+  logError: LogFn,
+): Promise<{ created: number; updated: number }> {
+  // 1. Build text for this day only
+  const dailyNotesText = (() => {
+    const entries = note.entries
+      .map(e => {
+        const time = new Date(e.timestamp).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+        return `  ${time}: ${e.content}`;
+      })
+      .join("\n");
+    return `${note.date}:\n${entries}`;
+  })();
+
+  // 2. Gather current memory state for dedup (fresh each batch to reflect earlier batches)
   const currentIndex = await getMemoryIndex(redis, username);
   const currentCount = currentIndex?.memories.length || 0;
   const remainingSlots = MAX_MEMORIES_PER_USER - currentCount;
@@ -219,9 +343,11 @@ async function _processDailyNotesForUserInner(
     ? currentIndex.memories.map(m => `- ${m.key}: ${m.summary}`).join("\n")
     : "";
 
-  const maxExtract = remainingSlots > 0 ? Math.min(5, remainingSlots) : 0;
+  const maxExtract = remainingSlots > 0
+    ? Math.min(MAX_EXTRACTIONS_PER_BATCH, remainingSlots)
+    : 0;
 
-  // 4. AI extraction
+  // 3. AI extraction — scoped to this single day
   let existingStateSection = "";
   if (existingMemoriesText) {
     existingStateSection = `\nEXISTING LONG-TERM MEMORIES (do NOT duplicate – update/merge if new info available):\n${existingMemoriesText}`;
@@ -234,14 +360,16 @@ async function _processDailyNotesForUserInner(
     temperature: 0.3,
   });
 
-  log("[processDailyNotes] Extraction complete", {
+  log("[processDailyNotes] Extraction complete for day", {
     username,
+    date: note.date,
     memoriesExtracted: result.longTermMemories.length,
   });
 
-  // 5. Store long-term memories (with consolidation)
+  // 4. Store long-term memories (with consolidation, capped per batch)
   let longTermStored = 0;
   let longTermUpdated = 0;
+  let consolidationCount = 0;
 
   for (const mem of result.longTermMemories) {
     const key = mem.key.toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 30);
@@ -261,7 +389,8 @@ async function _processDailyNotesForUserInner(
       continue;
     }
 
-    if (relatedKeys.length > 0 || targetKeyExists) {
+    // Consolidation — only if we haven't exceeded the per-batch cap
+    if ((relatedKeys.length > 0 || targetKeyExists) && consolidationCount < MAX_CONSOLIDATIONS_PER_BATCH) {
       const keysToFetch = targetKeyExists ? [key, ...relatedKeys] : relatedKeys;
       const uniqueKeysToFetch = [...new Set(keysToFetch)];
 
@@ -287,6 +416,7 @@ async function _processDailyNotesForUserInner(
       finalSummary = consolidated.summary;
       finalContent = consolidated.content;
       keysToDelete.push(...relatedKeys);
+      consolidationCount++;
     }
 
     const mode = targetKeyExists ? "update" : "add";
@@ -298,7 +428,7 @@ async function _processDailyNotesForUserInner(
       } else {
         longTermStored++;
       }
-      log("[processDailyNotes] Stored memory", { username, key, confidence: mem.confidence, mode });
+      log("[processDailyNotes] Stored memory", { username, key, confidence: mem.confidence, mode, date: note.date });
 
       for (const oldKey of keysToDelete) {
         const deleteResult = await deleteMemory(redis, username, oldKey);
@@ -311,24 +441,7 @@ async function _processDailyNotesForUserInner(
     }
   }
 
-  // 6. Mark daily notes as processed
-  for (const note of unprocessedNotes) {
-    await markDailyNoteProcessed(redis, username, note.date);
-  }
-
-  log("[processDailyNotes] Complete", {
-    username,
-    notesProcessed: unprocessedNotes.length,
-    memoriesCreated: longTermStored,
-    memoriesUpdated: longTermUpdated,
-  });
-
-  return {
-    processed: unprocessedNotes.length,
-    created: longTermStored,
-    updated: longTermUpdated,
-    dates: unprocessedNotes.map(n => n.date),
-  };
+  return { created: longTermStored, updated: longTermUpdated };
 }
 
 // ============================================================================
@@ -402,17 +515,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
     logger.response(200, Date.now() - startTime);
 
+    const skippedCount = result.skippedDates.length;
+
     return res.status(200).json({
       processed: result.processed,
       extracted: totalExtracted,
       created: result.created,
       updated: result.updated,
       dates: result.dates,
+      skippedDates: result.skippedDates,
       message: result.processed === 0
         ? "No unprocessed daily notes to process"
         : totalExtracted > 0
           ? `Processed ${result.processed} daily notes → ${result.created} new memories, ${result.updated} updated`
-          : `Processed ${result.processed} daily notes — no new long-term memories extracted`,
+            + (skippedCount > 0 ? ` (${skippedCount} days deferred to next run)` : "")
+          : `Processed ${result.processed} daily notes — no new long-term memories extracted`
+            + (skippedCount > 0 ? ` (${skippedCount} days deferred to next run)` : ""),
     });
 
   } catch (error) {
