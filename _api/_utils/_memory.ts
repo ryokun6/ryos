@@ -928,3 +928,63 @@ export async function getUnprocessedDailyNotesExcludingToday(
 
   return notes;
 }
+
+// ============================================================================
+// Admin Operations
+// ============================================================================
+
+/**
+ * Clear ALL long-term memories for a user (index + all detail keys).
+ * Does NOT touch daily notes.
+ */
+export async function clearAllMemories(
+  redis: Redis,
+  username: string
+): Promise<{ deletedCount: number }> {
+  const index = await getMemoryIndex(redis, username);
+  if (!index || index.memories.length === 0) {
+    return { deletedCount: 0 };
+  }
+
+  const count = index.memories.length;
+
+  // Delete all detail keys
+  for (const entry of index.memories) {
+    await deleteMemoryDetail(redis, username, entry.key);
+  }
+
+  // Clear the index
+  const emptyIndex: MemoryIndex = {
+    memories: [],
+    version: MEMORY_SCHEMA_VERSION,
+  };
+  await saveMemoryIndex(redis, username, emptyIndex);
+
+  return { deletedCount: count };
+}
+
+/**
+ * Reset all daily notes' processedForMemories flag to false.
+ * This allows them to be re-processed by the daily notes processor.
+ * @param days - Number of past days to reset (default 30)
+ */
+export async function resetDailyNotesProcessedFlag(
+  redis: Redis,
+  username: string,
+  days: number = 30
+): Promise<{ resetCount: number }> {
+  const dates = getRecentDateStrings(days);
+  let resetCount = 0;
+
+  for (const date of dates) {
+    const note = await getDailyNote(redis, username, date);
+    if (note && note.processedForMemories && note.entries.length > 0) {
+      note.processedForMemories = false;
+      note.updatedAt = Date.now();
+      await saveDailyNote(redis, username, note);
+      resetCount++;
+    }
+  }
+
+  return { resetCount };
+}
