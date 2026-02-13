@@ -71,7 +71,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     }
   }, []);
 
-  const handleUpdateAll = async (updates: Applet[]) => {
+  const handleUpdateAll = useCallback(async (updates: Applet[]) => {
     if (isBulkUpdating || updates.length === 0) {
       return;
     }
@@ -87,7 +87,9 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
     const loadingMessage =
       updateCount === 1
         ? t("apps.applet-viewer.dialogs.updatingAppletSingle")
-        : t("apps.applet-viewer.dialogs.updatingAppletsPlural", { count: updateCount });
+        : t("apps.applet-viewer.dialogs.updatingAppletsPlural", {
+            count: updateCount,
+          });
     const loadingToastId = toast.loading(loadingMessage, {
       duration: Infinity,
     });
@@ -102,7 +104,9 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       toast.success(
         updateCount === 1
           ? t("apps.applet-viewer.dialogs.appletUpdated")
-          : t("apps.applet-viewer.dialogs.appletsUpdated", { count: updateCount }),
+          : t("apps.applet-viewer.dialogs.appletsUpdated", {
+              count: updateCount,
+            }),
         {
           id: loadingToastId,
           duration: 3000,
@@ -113,13 +117,15 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       console.error("Error updating applets:", error);
       toast.error(t("apps.applet-viewer.dialogs.failedToUpdateApplets"), {
         description:
-          error instanceof Error ? error.message : t("apps.applet-viewer.dialogs.pleaseTryAgainLater"),
+          error instanceof Error
+            ? error.message
+            : t("apps.applet-viewer.dialogs.pleaseTryAgainLater"),
         id: loadingToastId,
       });
     } finally {
       setIsBulkUpdating(false);
     }
-  };
+  }, [actions, fetchApplets, isBulkUpdating, t]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -185,8 +191,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       );
 
     updateToastIdRef.current = toastId;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [applets, isBulkUpdating, t]);
+  }, [actions, applets, handleUpdateAll, isBulkUpdating, t]);
 
   // If sharedAppletId is provided, fetch and show that applet in detail view
   useEffect(() => {

@@ -1,3 +1,5 @@
+import type { AppId } from "@/config/appRegistry";
+
 export interface ToolInvocationData {
   toolName: string;
   state?: "input-streaming" | "input-available" | "output-available" | "output-error";
@@ -35,8 +37,8 @@ export interface TerminalFileItem {
   status?: "active" | "trashed";
   uuid?: string;
   size?: number;
-  createdAt?: number | Date;
-  modifiedAt?: number | Date;
+  createdAt?: Date;
+  modifiedAt?: Date;
   content?: string | Blob;
   icon?: string;
   shareId?: string;
@@ -56,17 +58,14 @@ export interface SaveFileData {
 
 export interface CommandContext {
   currentPath: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  files: any[]; // File items from useFileSystem - has varying shapes
+  files: TerminalFileItem[]; // File items from useFileSystem
   navigateToPath: (path: string) => void;
   saveFile: (file: SaveFileData) => Promise<void>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  moveToTrash: (file: any) => void;
+  moveToTrash: (file: TerminalFileItem) => void;
   playCommandSound: () => void;
   playErrorSound: () => void;
   playMooSound: () => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  launchApp: (appId: any, options?: { initialData?: unknown }) => string;
+  launchApp: (appId: AppId, options?: { initialData?: unknown }) => string;
   setIsAboutDialogOpen: (isOpen: boolean) => void;
   username?: string | null;
 }

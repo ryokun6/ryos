@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
-import type { AnyApp } from "./types";
+import type { AnyApp, AppProps } from "./types";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { Desktop } from "@/components/layout/Desktop";
 import { Dock } from "@/components/layout/Dock";
@@ -384,7 +384,9 @@ export function AppManager({ apps }: AppManagerProps) {
 
         const appId = instance.appId as AppId;
         const zIndex = getZIndexForInstance(instance.instanceId);
-        const AppComponent = getAppComponent(appId);
+        const AppComponent = getAppComponent(appId) as ComponentType<
+          AppProps<unknown>
+        >;
 
         return (
           <div
@@ -410,7 +412,6 @@ export function AppManager({ apps }: AppManagerProps) {
               className="pointer-events-auto"
               helpItems={apps.find((app) => app.id === appId)?.helpItems}
               skipInitialSound={isInitialMount}
-              // @ts-expect-error - Dynamic component system with different initialData types per app
               initialData={instance.initialData}
               instanceId={instance.instanceId}
               title={instance.title}

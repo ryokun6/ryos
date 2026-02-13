@@ -12,37 +12,12 @@ import { useChatsStoreShallow } from "@/stores/helpers";
 import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
 import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
 import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
+import { decodeHtmlEntities } from "@/utils/htmlEntities";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
     ? `chats-${username.toLowerCase().replace(/[^a-zA-Z0-9_\-.]/g, "_")}`
     : "chats-public";
-
-const HTML_ENTITY_MAP: Record<string, string> = {
-  "&amp;": "&",
-  "&lt;": "<",
-  "&gt;": ">",
-  "&quot;": '"',
-  "&#39;": "'",
-  "&apos;": "'",
-};
-
-const HTML_ENTITY_PATTERN = /&(amp|lt|gt|quot|#39|apos);/g;
-
-// Decode common HTML entities so toast previews show readable text
-const decodeHtmlEntities = (str: string): string => {
-  if (!str) return str;
-  if (typeof window !== "undefined" && typeof document !== "undefined") {
-    const txt = document.createElement("textarea");
-    txt.innerHTML = str;
-    return txt.value;
-  }
-  // Single-pass decode to avoid double-unescaping sequences like "&amp;lt;"
-  return str.replace(
-    HTML_ENTITY_PATTERN,
-    (entity) => HTML_ENTITY_MAP[entity] || entity
-  );
-};
 
 interface GlobalHandlers {
   onRoomCreated: (data: { room: ChatRoom }) => void;

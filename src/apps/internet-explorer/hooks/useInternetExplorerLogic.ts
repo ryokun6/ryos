@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useInternetExplorerStoreShallow } from "@/stores/helpers";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { decodeHtmlEntities } from "@/utils/htmlEntities";
 
 // Helper function to get language display name
 const getLanguageDisplayName = (lang: LanguageOption): string => {
@@ -665,9 +666,7 @@ export function useInternetExplorerLogic({
           try {
             loadedTitle = iframeRef.current?.contentDocument?.title || null;
             if (loadedTitle) {
-              const txt = document.createElement("textarea");
-              txt.innerHTML = loadedTitle;
-              loadedTitle = txt.value.trim();
+              loadedTitle = decodeHtmlEntities(loadedTitle).trim();
             }
           } catch (error) {
             console.warn(
@@ -1210,8 +1209,7 @@ export function useInternetExplorerLogic({
       // Create final suggestions without the normalizedUrl property
       const finalSuggestions: SuggestionItem[] = dedupedSuggestions.map(
         (item) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { normalizedUrl, ...rest } = item;
+          const { normalizedUrl: _normalizedUrl, ...rest } = item;
           return rest;
         }
       );

@@ -10,6 +10,7 @@ import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { decodeHtmlEntities } from "@/utils/htmlEntities";
 
 // Recovery mechanism - uses different prefix to avoid reset
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -86,16 +87,6 @@ const getAuthTokenFromRecovery = (): string | null => {
   }
   return null;
 };
-
-// Basic HTML entity decoder to normalize server-escaped message content
-const decodeHtmlEntities = (str: string): string =>
-  str
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'");
 
 const readJsonBody = async <T>(
   response: Response,

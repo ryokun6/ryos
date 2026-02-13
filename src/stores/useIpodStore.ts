@@ -1410,8 +1410,17 @@ export const useIpodStore = create<IpodState>()(
         lastKnownVersion: state.lastKnownVersion,
       }),
       migrate: (persistedState, version) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let state = persistedState as any;
+        type LegacyRomanizationSettings = Partial<RomanizationSettings> & {
+          chineseSoramimi?: boolean;
+        };
+        type PersistedIpodState = Partial<IpodState> & {
+          koreanDisplay?: string;
+          japaneseFurigana?: string;
+          romanization?: LegacyRomanizationSettings;
+          lastKnownVersion?: number;
+        };
+
+        let state = (persistedState ?? {}) as PersistedIpodState;
 
         // Migrate liquid -> water (Liquid display mode removed, replaced by Water)
         if (state.displayMode === "liquid") {

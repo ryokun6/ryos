@@ -5,6 +5,16 @@ import { useEventListener } from "@/hooks/useEventListener";
 
 type SoundType = "command" | "error" | "aiResponse";
 type TimeMode = "past" | "future" | "now";
+type ToneModuleWithSetContext = typeof Tone & {
+  setContext?: (context: Tone.Context) => void;
+};
+
+const setToneContextIfSupported = (context: Tone.Context): void => {
+  const toneModule = Tone as ToneModuleWithSetContext;
+  if (typeof toneModule.setContext === "function") {
+    toneModule.setContext(context);
+  }
+};
 
 const TERMINAL_SOUND_PRESETS = {
   command: {
@@ -761,9 +771,7 @@ export function useTerminalSounds() {
     // context.
     if (Tone.context.state === "closed") {
       try {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore – setContext might be missing from the typings
-        Tone.setContext(new Tone.Context());
+        setToneContextIfSupported(new Tone.Context());
 
         // Dispose of old synths and clear refs so they are recreated lazily
         Object.values(synthsRef.current).forEach((synth) => {

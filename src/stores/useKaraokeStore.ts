@@ -200,20 +200,22 @@ export const useKaraokeStore = create<KaraokeState>()(
         // Don't persist isPlaying or playbackHistory
       }),
       migrate: (persistedState, version) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const state = persistedState as any;
+        const state = (persistedState ?? {}) as Partial<KaraokeData>;
         if (version < CURRENT_KARAOKE_STORE_VERSION) {
           console.log(
             `Migrating Karaoke store from version ${version} to ${CURRENT_KARAOKE_STORE_VERSION}`
           );
-          return {
-            ...state,
-            currentSongId: null, // Reset - will pick first track
-            isPlaying: false,
-            playbackHistory: [],
-          };
+          state.currentSongId = null; // Reset - will pick first track
+          state.isPlaying = false;
+          state.playbackHistory = [];
         }
-        return state;
+        return {
+          currentSongId: state.currentSongId ?? initialKaraokeData.currentSongId,
+          loopCurrent: state.loopCurrent ?? initialKaraokeData.loopCurrent,
+          loopAll: state.loopAll ?? initialKaraokeData.loopAll,
+          isShuffled: state.isShuffled ?? initialKaraokeData.isShuffled,
+          isFullScreen: state.isFullScreen ?? initialKaraokeData.isFullScreen,
+        };
       },
     }
   )

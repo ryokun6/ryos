@@ -14,13 +14,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
-
-// Decode HTML entities like &#39; &amp; etc.
-function decodeHtmlEntities(text: string): string {
-  const textarea = document.createElement("textarea");
-  textarea.innerHTML = text;
-  return textarea.value;
-}
+import { decodeHtmlEntities } from "@/utils/htmlEntities";
 
 // Check if input looks like a YouTube URL
 function isYouTubeUrl(input: string): boolean {

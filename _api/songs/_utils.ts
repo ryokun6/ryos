@@ -114,11 +114,51 @@ export function stripParentheses(str: string): string {
  * Sanitize input string by removing invisible/zero-width characters
  * These can break AI parsing and JSON output
  */
+const INVISIBLE_CODE_POINTS = new Set<number>([
+  0x00ad, // soft hyphen
+  0x034f, // combining grapheme joiner
+  0x061c, // arabic letter mark
+  0x115f, // hangul choseong filler
+  0x1160, // hangul jungseong filler
+  0x17b4, // khmer vowel inherent aq
+  0x17b5, // khmer vowel inherent aa
+  0x180b, // mongolian free variation selector one
+  0x180c, // mongolian free variation selector two
+  0x180d, // mongolian free variation selector three
+  0x180e, // mongolian vowel separator
+  0x200b, // zero width space
+  0x200c, // zero width non-joiner
+  0x200d, // zero width joiner
+  0x2060, // word joiner
+  0xfeff, // zero width no-break space (BOM)
+]);
+
+const INVISIBLE_CODE_POINT_RANGES: ReadonlyArray<readonly [number, number]> = [
+  [0x2000, 0x200f], // punctuation / directional marks
+  [0x202a, 0x202e], // bidirectional embedding / override
+  [0x2061, 0x2064], // invisible operators
+  [0x206a, 0x206f], // deprecated directional controls
+];
+
+const isInvisibleCodePoint = (codePoint: number): boolean => {
+  if (INVISIBLE_CODE_POINTS.has(codePoint)) return true;
+  return INVISIBLE_CODE_POINT_RANGES.some(
+    ([start, end]) => codePoint >= start && codePoint <= end
+  );
+};
+
 export function sanitizeInput(str: string): string {
   if (!str) return str;
-  // Remove zero-width and invisible characters
-  // eslint-disable-next-line no-misleading-character-class -- intentionally matching zero-width and invisible Unicode characters
-  return str.replace(/[\u200B\u200C\u200D\uFEFF\u2060\u00AD\u034F\u061C\u115F\u1160\u17B4\u17B5\u180B\u180C\u180D\u180E\u2000-\u200F\u202A-\u202E\u2061-\u2064\u206A-\u206F]/g, "").trim();
+  // Remove zero-width and invisible characters while preserving regular Unicode text
+  let sanitized = "";
+  for (const char of str) {
+    const codePoint = char.codePointAt(0);
+    if (codePoint !== undefined && isInvisibleCodePoint(codePoint)) {
+      continue;
+    }
+    sanitized += char;
+  }
+  return sanitized.trim();
 }
 
 // =============================================================================

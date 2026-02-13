@@ -57,6 +57,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
   const actions = useAppletActions();
+  const currentAppletId = applets[currentIndex]?.id;
 
   // Add CSS to ensure emoji size doesn't get overridden by theme styles
   const appletIconStyles = `
@@ -314,15 +315,14 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
     };
 
     // Only load the current applet
-    if (applets.length > 0 && applets[currentIndex]) {
-      void fetchAppletContent(applets[currentIndex].id);
+    if (currentAppletId) {
+      void fetchAppletContent(currentAppletId);
     }
     return () => {
       isActive = false;
       abortController.abort();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, applets.length]);
+  }, [currentAppletId]);
 
   const scrollToIndex = useCallback((index: number) => {
     if (index >= 0 && index < appletsLengthRef.current) {
