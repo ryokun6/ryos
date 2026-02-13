@@ -479,11 +479,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       systemState: incomingSystemState, // still passed for dynamic prompt generation but NOT for auth
       model: bodyModel = DEFAULT_MODEL,
       proactiveGreeting: isProactiveGreeting,
+      conversationHistory: rawConversationHistory,
     } = req.body as {
       messages: unknown[];
       systemState?: SystemState;
       model?: string;
       proactiveGreeting?: boolean;
+      conversationHistory?: Array<{ role: string; content: string }>;
     };
 
     // Use query parameter if available, otherwise use body parameter, otherwise use default
@@ -714,9 +716,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         memoryContext += `\n## Recent daily notes:\n${dailyNotesText}\n`;
       }
 
-      // If no memories, return null (client will keep the generic greeting)
-      if (!memoryContext) {
-        log("No memories available for proactive greeting");
+      // Build conversation history context (for stale chat greetings)
+      let conversationContext = "";
+      if (Array.isArray(rawConversationHistory) && rawConversationHistory.length > 0) {
+        // Cap to the last 50 messages and ~4000 chars to stay within token budget
+        const MAX_MESSAGES = 50;
+        const MAX_CHARS = 4000;
+        const recentMessages = rawConversationHistory.slice(-MAX_MESSAGES);
+        let chars = 0;
+        const trimmedMessages: typeof recentMessages = [];
+        // Walk backwards so the most recent messages are always included
+        for (let i = recentMessages.length - 1; i >= 0; i--) {
+          const msg = recentMessages[i];
+          const line = `${msg.role}: ${msg.content}`;
+          if (chars + line.length > MAX_CHARS) break;
+          chars += line.length;
+          trimmedMessages.unshift(msg);
+        }
+        if (trimmedMessages.length > 0) {
+          conversationContext += "\n## Recent conversation:\n";
+          for (const msg of trimmedMessages) {
+            const label = msg.role === "assistant" ? "Ryo" : "User";
+            conversationContext += `${label}: ${msg.content}\n`;
+          }
+          log(`Included ${trimmedMessages.length} conversation messages for proactive greeting context`);
+        }
+      }
+
+      // If no memories and no conversation history, return null (client will keep the generic greeting)
+      if (!memoryContext && !conversationContext) {
+        log("No memories or conversation history available for proactive greeting");
         res.setHeader("Access-Control-Allow-Origin", validOrigin);
         res.status(200).json({ greeting: null, reason: "no memories available" });
         return;
@@ -740,7 +769,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           model: google("gemini-2.5-flash"),
           temperature: 1,
           maxTokens: 150,
-          system: `You are Ryo, a friendly AI assistant. You're greeting a returning user at the start of a new chat.
+          system: `You are Ryo, a friendly AI assistant. You're greeting a returning user${conversationContext ? " who has an existing conversation" : " at the start of a new chat"}.
 
 Your style:
 - Lowercase, casual, warm
@@ -748,14 +777,14 @@ Your style:
 - No emojis unless natural
 - Sound like a close friend checking in, not a corporate assistant
 - Don't be cheesy or over-enthusiastic
-- Be specific — reference something from their memories or recent activity
+- Be specific — reference something from their memories, recent notes, or conversation
 - Mix it up: sometimes ask a question, sometimes share an observation, sometimes reference a shared interest
 
 It's ${dayOfWeek} ${sfTime}. The user's name is "${username}".
 
-${memoryContext}
+${memoryContext}${conversationContext}
 
-Generate ONE short proactive greeting. Pick one interesting angle from the context — a recent topic, a memory, something timely — and use it naturally. Don't try to cover everything.
+Generate ONE short proactive greeting. Pick one interesting angle from the context — a recent topic, a memory, something from the conversation, something timely — and use it naturally. Don't try to cover everything.${conversationContext ? " Since there's an existing conversation, you can reference or follow up on something discussed." : ""}
 
 Examples of good greetings:
 - "hey, how's the cursor roadmap coming along?"
