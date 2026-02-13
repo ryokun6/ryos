@@ -410,7 +410,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const Skeleton = ({ className }: { className?: string }) => (
     <div className={cn("bg-neutral-200 animate-pulse rounded", className)} />
   );
-  const sectionHeaderClass = "text-[11px] uppercase tracking-wide text-black/50";
+  const sectionHeaderClass = "!text-[11px] uppercase tracking-wide text-black/50";
   const SectionHeader = ({
     children,
     icon,
