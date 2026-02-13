@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, Prohibit, Check, Trash, Warning, CaretRight } from "@phosphor-icons/react";
+import { ArrowLeft, Prohibit, Check, Trash, Warning, CaretRight, Eraser, ArrowsClockwise } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
@@ -82,6 +82,10 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const [isBanDialogOpen, setIsBanDialogOpen] = useState(false);
   const [isRoomsOpen, setIsRoomsOpen] = useState(false);
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
+  const [isClearMemoryDialogOpen, setIsClearMemoryDialogOpen] = useState(false);
+  const [isForceProcessDialogOpen, setIsForceProcessDialogOpen] = useState(false);
+  const [isClearingMemory, setIsClearingMemory] = useState(false);
+  const [isProcessingNotes, setIsProcessingNotes] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     if (!currentUser || !authToken) return;
@@ -293,6 +297,80 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
       toast.error(t("apps.admin.errors.failedToDeleteUser"));
     }
     setIsDeleteDialogOpen(false);
+  };
+
+  const handleClearMemory = async () => {
+    if (!currentUser || !authToken) return;
+    setIsClearingMemory(true);
+    try {
+      const response = await abortableFetch(`/api/admin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+          "x-username": currentUser,
+        },
+        body: JSON.stringify({
+          action: "clearUserMemories",
+          targetUsername: username,
+        }),
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message || "Memories cleared");
+        fetchMemories();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || "Failed to clear memories");
+      }
+    } catch (error) {
+      console.error("Failed to clear memories:", error);
+      toast.error("Failed to clear memories");
+    } finally {
+      setIsClearingMemory(false);
+      setIsClearMemoryDialogOpen(false);
+    }
+  };
+
+  const handleForceProcessDailyNotes = async () => {
+    if (!currentUser || !authToken) return;
+    setIsProcessingNotes(true);
+    try {
+      const response = await abortableFetch(`/api/admin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+          "x-username": currentUser,
+        },
+        body: JSON.stringify({
+          action: "forceProcessDailyNotes",
+          targetUsername: username,
+        }),
+        timeout: 60000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message || "Daily notes processed");
+        fetchMemories();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || "Failed to process daily notes");
+      }
+    } catch (error) {
+      console.error("Failed to process daily notes:", error);
+      toast.error("Failed to process daily notes");
+    } finally {
+      setIsProcessingNotes(false);
+      setIsForceProcessDialogOpen(false);
+    }
   };
 
   const formatRelativeTime = (timestamp: number) => {
@@ -553,9 +631,21 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             </div>
           ) : (
             <div className="space-y-2">
-              <SectionHeader>
-                Long-Term Memories ({memories.length})
-              </SectionHeader>
+              <div className="flex items-center justify-between">
+                <SectionHeader>
+                  Long-Term Memories ({memories.length})
+                </SectionHeader>
+                {memories.length > 0 && (
+                  <button
+                    onClick={() => setIsClearMemoryDialogOpen(true)}
+                    disabled={isClearingMemory}
+                    className="aqua-button secondary h-6 px-2 text-[10px] flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <Eraser className="h-3 w-3" weight="bold" />
+                    <span>{isClearingMemory ? "Clearing…" : "Clear All"}</span>
+                  </button>
+                )}
+              </div>
               {memories.length === 0 ? (
                 <div className="text-[11px] text-neutral-400 text-center py-4">
                   {t("apps.admin.profile.noMemories")}
@@ -632,9 +722,19 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           {/* Daily Notes */}
           {!isLoading && dailyNotes.length > 0 && (
             <div className="space-y-2">
-              <SectionHeader>
-                Daily Notes ({dailyNotes.reduce((acc, n) => acc + n.entries.length, 0)} entries)
-              </SectionHeader>
+              <div className="flex items-center justify-between">
+                <SectionHeader>
+                  Daily Notes ({dailyNotes.reduce((acc, n) => acc + n.entries.length, 0)} entries)
+                </SectionHeader>
+                <button
+                  onClick={() => setIsForceProcessDialogOpen(true)}
+                  disabled={isProcessingNotes}
+                  className="aqua-button secondary h-6 px-2 text-[10px] flex items-center gap-1 disabled:opacity-50"
+                >
+                  <ArrowsClockwise className={cn("h-3 w-3", isProcessingNotes && "animate-spin")} weight="bold" />
+                  <span>{isProcessingNotes ? "Processing…" : "Reprocess"}</span>
+                </button>
+              </div>
               <div className="space-y-1">
                 {dailyNotes.map((note) => {
                   const isExpanded = expandedDailyNotes.has(note.date);
@@ -808,6 +908,20 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         onConfirm={handleBan}
         title={t("apps.admin.dialogs.banTitle")}
         description={t("apps.admin.dialogs.banDescription", { username })}
+      />
+      <ConfirmDialog
+        isOpen={isClearMemoryDialogOpen}
+        onOpenChange={setIsClearMemoryDialogOpen}
+        onConfirm={handleClearMemory}
+        title="Clear All Memories"
+        description={`This will permanently delete all ${memories.length} long-term memories for ${username}. Daily notes will be preserved. This action cannot be undone.`}
+      />
+      <ConfirmDialog
+        isOpen={isForceProcessDialogOpen}
+        onOpenChange={setIsForceProcessDialogOpen}
+        onConfirm={handleForceProcessDailyNotes}
+        title="Reprocess Daily Notes"
+        description={`This will reset all daily notes for ${username} and re-extract long-term memories from them. Existing memories will be updated/merged. Only past days will be processed (not today).`}
       />
     </div>
   );

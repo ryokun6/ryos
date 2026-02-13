@@ -14,7 +14,8 @@ import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
 import { initLogger } from "./_utils/_logging.js";
-import { getMemoryIndex, getMemoryDetail, getRecentDailyNotes, type MemoryEntry, type DailyNote } from "./_utils/_memory.js";
+import { getMemoryIndex, getMemoryDetail, getRecentDailyNotes, clearAllMemories, resetDailyNotesProcessedFlag, type MemoryEntry, type DailyNote } from "./_utils/_memory.js";
+import { processDailyNotesForUser } from "./ai/process-daily-notes.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -511,6 +512,78 @@ export default async function handler(
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: result.error });
         return;
+      }
+      case "clearUserMemories": {
+        if (!targetUsername) {
+          logger.response(400, Date.now() - startTime);
+          res.status(400).json({ error: "Target username is required" });
+          return;
+        }
+        try {
+          const memResult = await clearAllMemories(redis, targetUsername.toLowerCase());
+          logger.info("User memories cleared", { targetUsername, deletedCount: memResult.deletedCount });
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json({
+            success: true,
+            deletedCount: memResult.deletedCount,
+            message: memResult.deletedCount > 0
+              ? `Cleared ${memResult.deletedCount} memories for ${targetUsername}`
+              : `No memories to clear for ${targetUsername}`,
+          });
+          return;
+        } catch (error) {
+          logger.error("Clear memories failed", { targetUsername, error });
+          logger.response(500, Date.now() - startTime);
+          res.status(500).json({ error: "Failed to clear memories" });
+          return;
+        }
+      }
+      case "forceProcessDailyNotes": {
+        if (!targetUsername) {
+          logger.response(400, Date.now() - startTime);
+          res.status(400).json({ error: "Target username is required" });
+          return;
+        }
+        try {
+          const normalizedTarget = targetUsername.toLowerCase();
+          // Reset all daily notes so they can be reprocessed
+          const resetResult = await resetDailyNotesProcessedFlag(redis, normalizedTarget, 30);
+          logger.info("Daily notes reset for reprocessing", { targetUsername, resetCount: resetResult.resetCount });
+
+          // Now trigger the processing pipeline
+          const processResult = await processDailyNotesForUser(
+            redis,
+            normalizedTarget,
+            (...args: unknown[]) => logger.info(String(args[0]), args[1]),
+            (...args: unknown[]) => logger.error(String(args[0]), args[1]),
+          );
+
+          logger.info("Force process daily notes complete", {
+            targetUsername,
+            notesReset: resetResult.resetCount,
+            notesProcessed: processResult.processed,
+            memoriesCreated: processResult.created,
+            memoriesUpdated: processResult.updated,
+          });
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json({
+            success: true,
+            notesReset: resetResult.resetCount,
+            notesProcessed: processResult.processed,
+            memoriesCreated: processResult.created,
+            memoriesUpdated: processResult.updated,
+            dates: processResult.dates,
+            message: processResult.processed === 0
+              ? "No daily notes to process (only past days are processed, not today)"
+              : `Reprocessed ${processResult.processed} daily notes → ${processResult.created} new + ${processResult.updated} updated memories`,
+          });
+          return;
+        } catch (error) {
+          logger.error("Force process daily notes failed", { targetUsername, error });
+          logger.response(500, Date.now() - startTime);
+          res.status(500).json({ error: "Failed to process daily notes" });
+          return;
+        }
       }
       default:
         logger.response(400, Date.now() - startTime);
