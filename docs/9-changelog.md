@@ -4,328 +4,325 @@ A summary of changes and updates to ryOS, organized by month.
 
 ---
 
+## February 2026
+
+- Add Spotlight Search, a unified command palette for ryOS, with enhanced functionality, styling, and Tauri compatibility.
+- Implement a two-tier memory system with daily notes and long-term memories, including admin panel updates for management.
+- Introduce proactive AI greetings for logged-in users, including user-specific greetings and typing animations.
+- Enhance Karaoke and iPod components with a Display menu featuring new display modes like water shader, mesh gradient, liquid, and warp.
+- Improve chat functionality with background notifications, pusher channel refactoring, and robust error handling.
+- Refactor AmbientBackground component with audio-reactive features and performance optimizations.
+
+<details>
+<summary>Minor changes (9)</summary>
+
+- Fix various styling issues in Spotlight, System 7 themes, and mobile layouts.
+- Update Gemini image model and AI prompts for improved image generation.
+- Improve Photo Booth functionality with fixes for stale captures and image exporting.
+- Enhance security by hardening tool call handling, iframe message trust boundaries, and SSRF protections.
+- Refactor various components and hooks to improve performance and reduce dependencies.
+- Add new lyrics styles to Karaoke, including Serif Red, Gold Glow, and Neon Pink.
+- Improve admin panel UI with unified styling and user memories view.
+- Use abortable fetch for numerous network requests to improve stability and prevent memory leaks.
+- Address various linting warnings and dependency issues.
+
+</details>
+
 ## January 2026
 
-- Add Infinite Mac app with 12 classic Mac OS emulators (System 1.0 to Mac OS X 10.4), display scaling, pause/resume, and screenshot capture.
-- Add Listen Together feature with session management, invite dialogs, reaction support, and Pusher integration for Karaoke and iPod apps.
-- Implement modular REST API structure with unified authentication and migrate API endpoints to Edge runtime for improved performance.
-- Introduce image upload support in chat input with aqua styling and thumbnail display.
-- Enhance documentation with comprehensive guides, Mermaid diagrams, and improved navigation.
-- Refactor application architecture by extracting logic into hooks and migrating to Zustand stores for improved state management.
-- Replace Lucide icons with Phosphor icons across the application for a consistent design.
-- Improve macOS theme with aqua styling, enhanced Finder app menu, and CJK typography.
+- Add Listen Together feature for collaborative music listening in iPod and Karaoke, including session management, UI, and Pusher integration.
+- Implement Stickies app with drag/resize support, color localization, and AI integration.
+- Integrate Infinite Mac application with scaling, screenshot functionality, dynamic title, and presets.
+- Enhance chat functionality with image upload support, improved styling, and AI-powered memory extraction.
+- Refactor API endpoints to Node.js runtime for improved performance and security, and modularize REST API structure with unified authentication.
+- Overhaul documentation with comprehensive guides, improved navigation, and System 7-inspired styling.
 
 <details>
 <summary>Minor changes (10)</summary>
 
-- Fix audio playback issues in Safari and improve audio context handling.
-- Update API endpoints to enhance CORS handling, type safety, and logging.
-- Refactor various components for improved UI, styling, and responsive design.
-- Improve terminal functionality with grep, uptime commands, and Vim enhancements.
-- Update translations for multiple languages, including Japanese and Chinese.
-- Fix various bugs related to lyrics display, auto-skipping, and IE proxy click interception.
-- Enhance Stickies app with mobile touch support, color enhancements, and localization.
-- Update Vercel configuration and development setup for improved performance and stability.
-- Standardize button attributes, icon sizes, and localStorage keys for UI consistency.
-- Refactor coverflow animation and styling for improved media display.
+- Improve Infinite Mac tool call messages and add double-click action for opening files/folders.
+- Enhance application launch animations and window management.
+- Update iPod and Karaoke apps with auto-skip functionality and improved lyrics handling.
+- Refactor various components to use shared event listeners and improve code organization.
+- Enhance UI styling across multiple components, including macOS aqua theme updates and icon replacements.
+- Fix audio handling in Safari and improve reliability after backgrounding.
+- Update translations for multiple languages and improve CJK typography.
+- Add new commands and enhance functionality in the terminal application.
+- Improve performance and stability of various applets, including Synth, Virtual PC, and Internet Explorer.
+- Update dependencies and configuration files for improved development and deployment.
 
 </details>
 
 ## December 2025
 
-- Added CoverFlow feature to Karaoke and iPod apps with long-press gesture and menu toggle, including iPod mode styling and responsive cover sizes.
-- Implemented comprehensive lyrics support including furigana, soramimi, and translation features with AI-powered generation and streaming, enhanced display, and KRC parsing.
-- Enhanced song management with Redis caching, improved metadata handling, admin controls, and song sharing capabilities.
-- Introduced a Karaoke app with fullscreen iPod player, lyrics synchronization, and customizable styling.
-- Implemented an Admin application with user and message management features, requiring admin authentication.
-- Added Expose/Mission Control mode for improved window management and desktop update notifications.
-- Enhanced localization support across the application with new languages and improved translations.
+- Implement the Karaoke app, a windowed full-screen iPod player with lyrics synchronization and enhanced controls.
+- Introduce Cover Flow album browser in iPod app with long-press gesture and menu toggle.
+- Enhance lyrics processing with Japanese furigana, Chinese soramimi, and improved translation support.
+- Add a unified song API endpoint with Redis caching for song metadata, improving performance and data management.
+- Implement Expose/Mission Control mode for enhanced window management and add auto-hide dock for phone.
+- Introduce an Admin application with restricted access for managing users, messages, and songs.
+- Add screen saver functionality with framer-motion animations and i18n support.
 
 <details>
-<summary>Minor changes (8)</summary>
+<summary>Minor changes (10)</summary>
 
-- Improved iPod app with PIP player, enhanced menu navigation, and video search functionality.
-- Refined lyrics display with improved text shadows, word timing, and font customization options.
-- Updated the user interface with new components, improved layouts, and enhanced touch handling.
-- Enhanced chat functionality with keep talking mode, audio transcription, and message deduplication.
-- Improved window management with minimize sounds, shake animation, and centralized closing logic.
-- Added screen saver functionality with responsive previews and dynamic sizing.
-- Enhanced system settings tool and updated localization for settings changes.
-- Updated dependencies and optimized Vite configuration for improved performance.
+- Improve CoverFlow component with enhanced interactivity, styling, and iPod mode.
+- Enhance iPod app with PIP player, YouTube search integration, and improved menu navigation.
+- Refactor lyrics display in iPod and Karaoke components with improved text shadows and monotonic time handling.
+- Update the Apple menu with new items and improved functionality.
+- Enhance localization support across various components with new languages and improved translations.
+- Fix various UI issues, including padding, font rendering, and layout inconsistencies in different components.
+- Improve error handling and caching logic for lyrics and translations.
+- Update dependencies and optimize Vite configuration for improved performance.
+- Enhance audio transcription hook with adaptive silence detection and improved volume analysis.
+- Implement desktop update notifications and download links for macOS users.
 
 </details>
 
 ## November 2025
 
-- Implement App Store with AI-powered applet generation, sharing, and management features.
-- Enhance iPod functionality with video playback, translation, karaoke, and improved controls.
-- Introduce a Progressive Web App (PWA) with service worker for faster loading and offline support.
-- Improve applet AI request rate limiting and authentication handling.
-- Refactor prefetching and caching strategies for improved performance and version handling.
-- Enhance WindowFrame and Dock components with improved animation and functionality.
-- Implement song similarity scoring and enhance search results.
+- Implement App Store with AI-powered applet generation, sharing, and management.
+- Enhance iPod functionality with video playback, lyrics translation, and fullscreen controls.
+- Improve applet viewer with update checks, authentication, and enhanced launch experience.
+- Introduce build versioning and prefetching enhancements for faster loading and updates.
+- Implement PWA with service worker for faster repeat loads and offline support.
+- Refactor AI chat functionality with improved tool output and applet integration.
+- Enhance desktop and Finder with improved app shortcut management and Trash functionality.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>Minor changes (9)</summary>
 
-- Update version information to 10.3 and enhance build versioning to include commit SHA.
+- Add new AI models (Gemini, GPT-5) and improve AI prompt instructions.
+- Update UI components with improved styling, animations, and toast notifications.
+- Fix various bugs related to applet loading, sharing, and display.
+- Refactor code for improved performance, maintainability, and security.
+- Update dependencies and build configurations for Vercel deployment.
+- Enhance audio control in useSound and useWindowManager hooks.
 - Add analytics tracking for applet viewer and key events.
-- Fix various issues related to CORS, file handling, and component mounting.
-- Enhance toast styling and positioning for improved user experience.
-- Refactor AI chat logic for improved tool output and performance.
-- Update applet metadata structure and improve applet import/export functionality.
-- Improve applet search display and fuzziness.
-- Enhance IconButton with loading state and improve app instance management.
-- Update various UI components and styles for improved consistency and clarity.
-- Refactor iPod controls into a single `ipodControl` tool.
+- Improve CORS handling for local network and Vercel preview deployments.
+- Update version information and app metadata across components.
 
 </details>
 
 ## October 2025
 
-- Implement new sharing and saving functionality for Applets, including icon support and toast notifications.
-- Enhance the Applet Viewer with improved content handling, user interaction, window management, and import/export capabilities.
-- Refactor ryOS chat and file management functionality for improved performance and maintainability.
+- Implement enhanced applet viewer with sharing, import/export, and improved content handling.
+- Enhance ryOS applet functionality with new HTML generation, saving, and icon support.
+- Refactor applet design guidelines for enhanced clarity and responsiveness.
 - Upgrade Zod library from v3 to v4.
-- Improve AI prompt instructions for app generation and Chinese responses, including core priority instructions.
 
 <details>
-<summary>Minor changes (8)</summary>
+<summary>Minor changes (9)</summary>
 
-- Fix an issue where the login message was visible when a user was already logged in.
+- Add toast notifications for applet saves.
+- Improve AI prompt instructions for app generation and Chinese responses.
+- Enhance MacDock component with emoji scaling and layout adjustments.
+- Refine font handling for macOSX theme in applet viewer and HTML preview.
 - Update app icons and file handling for applets.
-- Enhance the MacDock component with emoji scaling and layout adjustments.
-- Refine font handling for the macOSX theme in the Applet Viewer and HTML preview.
-- Improve rendering and styling of FileIcon and FileList components.
-- Add interaction listeners for iframes within the Applet Viewer.
-- Add several new songs to ipod-videos.
-- Add a watch option to the Vite server configuration to ignore terminal files.
+- Fix login message visibility when user is logged in.
+- Add watch option to Vite server configuration to ignore terminal files.
+- Update app filtering and enhance file synchronization.
+- Add new songs to ipod-videos.
 
 </details>
 
 ## September 2025
 
-- Added lyrics translation persistence and force refresh functionality.
-- Enhanced AI chat integration with automatic message handling and improved logging.
-- Refactored title parsing to use Google Gemini and improved AI prompt handling.
-- Updated default AI model to Claude 4.5, then GPT-5, then GPT-5-mini.
+- Add lyrics translation request persistence and language preference.
+- Switch title parsing from OpenAI to Google Gemini and refactor AI prompt handling.
+- Set default AI model to Claude 4.5, then updated to GPT-5.
+- Enhance AI chat integration with automatic message handling and improved logging.
+- Improve TextEdit functionality with instance management fallback.
 
 <details>
 <summary>Minor changes (9)</summary>
 
-- Added new videos to ipod-videos.
-- Improved TextEdit functionality with instance management fallback.
-- Fixed issues with lyrics display, offset, and album information.
-- Added more prefixes to skip in LRC parsing.
-- Removed rate limiting from lyrics translation API.
-- Refactored lyrics display delay and translation language preference.
-- Increased lyrics translation timeout to 120 seconds.
-- Upgraded zod dependency to satisfy AI SDK requirements.
-- Prioritized English names in metadata parsing.
+- Add new videos to ipod-videos.
+- Add more prefixes to skip in LRC parsing.
+- Remove rate limiting from lyrics translation API.
+- Fix display of active language in translation dropdown.
+- Update lyric offset and add empty album for CORTIS FaSHioN.
+- Adjust alternating lyrics display delay and increase lyrics translation timeout.
+- Upgrade zod dependency to satisfy AI SDK requirements.
+- Prioritize English names in metadata parsing.
+- Add recording engineer and digital editing to skip prefixes.
 
 </details>
 
 ## August 2025
 
 - Updated the default AI model to GPT-4.1.
-- Implemented a macOS-style Dock with app icons, animations, and improved app launching behavior.
-- Enhanced chat room functionality with improved user presence tracking, profanity filtering, and collapsible sections.
+- Implemented a macOS-style Dock with app icons, animations, and interactions, including dynamic sizing and improved performance.
+- Enhanced chat room functionality with Redis-based presence tracking, improved profanity filtering, collapsible sections, and message rendering limits.
 - Refactored TextEditAppComponent with new editor context, hooks, toolbar features, and improved dialog handling.
-- Implemented multi-token support for authentication and enhanced security measures.
+- Implemented multi-token support for authentication, enhancing security and flexibility.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>Minor changes (9)</summary>
 
-- Added new music videos to the iPod videos collection.
-- Improved Finder UI responsiveness, layout, and icon styling for different view types.
-- Enhanced Dock component with dynamic dividers, improved animations, and macOS-specific rendering logic.
-- Updated Dock component to use app names from appRegistry for icon labels, improving clarity and user experience when displaying applications.
-- Added 404 page redirect to homepage and enabled horizontal scrolling for mobile dock.
-- Refactored terminal component and AI command to support functional updates.
-- Enforced password requirement for user creation and updated validation logic.
-- Improved iframe security with sandbox attributes and updated CSP directives.
+- Added several new music videos to the iPod videos collection.
+- Improved Finder UI with fixes to icon alignment, file list layout, and responsiveness.
+- Enhanced Dock component with mobile/touch support, dynamic app focus/launch logic, and updated app name display.
+- Updated iframe sandbox to allow forms and popups and added security enhancements.
+- Refactored terminal component for improved structure and functionality.
+- Enhanced app components to conditionally render the menu bar based on foreground state and improved window management.
 - Implemented CORS support and rate limiting across multiple API endpoints.
-- Updated themes and styling for improved consistency across components.
+- Fixed aquarium token detection and handling in chat messages.
+- Updated themes and styles for improved consistency and visual appeal across various components.
 
 </details>
 
 ## July 2025
 
-- Add emoji aquarium feature to chat messages for enhanced user engagement.
-- Implement server-side Ryo reply generation and enhance chat handling.
-- Enhance iPod app with fullscreen lyrics controls, improved UI, and responsive design adjustments.
-- Implement link previews in chats with custom handling for YouTube and web links.
-- Refactor application themes with improved macOS, Windows 98, and Windows XP styling across various components.
-- Improve instance management in AppManager and useAppStore for better consistency and performance.
-- Add rate limiting for user creation and chat burst rate limiting for public rooms.
+- Add emoji aquarium feature to chat messages.
+- Implement server-side Ryo reply generation and update chat handling.
+- Enhance iPod video playback with fullscreen controls, lyrics display, and improved mobile support.
+- Introduce link previews in chat messages with custom handling for YouTube and web links.
+- Implement new themes (macOS, Windows 98, Windows XP) with extensive styling updates across various components.
+- Refactor application architecture for improved instance management, theme support, and performance.
 
 <details>
 <summary>Minor changes (10)</summary>
 
-- Fix mobile Safari playback issues and improve fullscreen video player interactions.
-- Update video store with new default videos and music metadata.
-- Enhance username validation and handling in chat rooms and Redis operations.
-- Improve mobile touch interactions across various components and prevent unwanted gestures.
-- Refactor chat messages and components for improved message handling and theme support.
-- Update application icons and assets for improved visual consistency and theme support.
-- Enhance token management and verification process.
-- Switch from OpenAI to Google Gemini for lyrics translation.
-- Improve shuffled playback history navigation and track selection logic in the iPod app.
-- Update dependencies and configurations for improved performance and stability.
+- Add rate limiting for user creation and chat bursts to prevent abuse.
+- Update default AI model to Claude 4 and add Gemini 2.5 flash model for lyrics translation.
+- Improve mobile touch interactions across various components.
+- Fix mobile Safari playback issues in fullscreen video player.
+- Update video store with new default videos and improve shuffle playback logic.
+- Enhance username validation and handling in Redis operations.
+- Refactor chat message component with scrollbar width handling.
+- Update application icons and wallpaper defaults.
+- Improve fullscreen controls auto-hide behavior and interaction.
+- Update TerminalAppComponent to use Monaco font and adjust sound playback logic.
 
 </details>
 
 ## June 2025
 
-- Implement multi-token authentication and user-specific token management in the chat API.
-- Enhance chat room functionality with private room support, improved room management, and user presence tracking.
+- Implement multi-token authentication with user-specific token management and improved validation in the chat API.
+- Enhance chat room functionality with private room support, user presence tracking, and improved room management.
 - Refactor chat API for improved system message handling, caching, and Pusher event broadcasting.
-- Implement password management features and enhance authentication flow across the chat application.
-- Add right-click context menus to Desktop and Finder with data-driven menu items.
-- Improve chat room layout and scrolling behavior for better user experience and responsiveness.
+- Implement password management features in the chat application with login, logout, and password reset capabilities.
+- Add right-click context menus to Desktop and Finder with data-driven menu items for sorting and file management.
+- Implement token refresh functionality and enhance authentication flow in chat API with improved security.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>Minor changes (9)</summary>
 
-- Update Redis cache prefix for lyric translations and improve Redis key retrieval performance.
-- Enhance CreateRoomDialog with user selection badges, improved UI styles, and username length validation.
-- Update iPod app with new videos, clickwheel sound, and volume settings adjustments.
-- Fix Safari emoji rendering and disable overscroll behavior.
-- Refactor chat error messages and authentication handling for improved clarity and user experience.
-- Extend token grace period to one year and user token expiration time to 90 days.
+- Improve chat room creation with enhanced UI, user selection, and input validation.
+- Update iPod application with new videos, clickwheel sound, and dependency updates.
+- Refactor chat components for improved layout, scrolling behavior, and user experience.
+- Enhance error handling and authentication messages across chat components.
 - Update dependencies and refactor TypeScript type assertions.
-- Add authentication headers to AI chat requests and improve rate limiting logic.
-- Decode HTML entities in chat messages to improve rendering accuracy.
-- Update button text and simplify logout options in chat components for improved clarity.
+- Extend token grace period and user token expiration time.
+- Fix Safari emoji rendering by conditionally overriding SerenityOS-Emoji font in CSS.
+- Update Redis cache prefix for lyric translations.
+- Improve file metadata restoration with existing UUID preservation.
 
 </details>
 
 ## May 2025
 
-- Enhance chat functionality with AI-powered tools, improved message handling, markdown support, and context-aware prompts.
-- Implement multi-instance app management for Finder, TextEdit, and Terminal, allowing multiple windows of the same application.
-- Improve iPod app with full-screen lyrics display, enhanced playback controls, new video tracks, and library import/export functionality.
-- Refactor core components to utilize Zustand for global state management, improving performance and removing local storage dependencies.
-- Enhance Internet Explorer with direct passthrough URL handling, improved navigation, and updated favorites.
-- Improve file management with drag-and-drop support in Finder, enhanced file type handling, and virtual file support.
-- Implement a new system for managing audio contexts and volume controls, including master volume, mute toggles, and iOS compatibility.
+- Enhanced chat functionality with AI-powered tools, improved message handling, markdown support, and new commands for controlling apps like iPod and TextEdit.
+- Improved iPod app with new features including fullscreen lyrics display, swipe gesture navigation, library import/export, and enhanced track management.
+- Implemented multi-instance window management for Finder and other apps, allowing users to run multiple instances simultaneously.
+- Enhanced text editing capabilities with markdown conversion, search and replace functionality, and improved file handling.
+- Refactored application state management to use Zustand store, improving performance and removing local storage dependencies.
+- Improved Internet Explorer with direct passthrough URL handling, updated favorites, and enhanced navigation controls.
+- Enhanced chat system with username management, profanity filter, and improved room handling.
 
 <details>
 <summary>Minor changes (10)</summary>
 
-- Fix various issues in chat components, including message rendering, username handling, and profanity filtering.
-- Update AI prompts and instructions for improved clarity and user experience.
-- Enhance mobile responsiveness and layout consistency across various components.
-- Improve error handling and logging in multiple components for better debugging.
-- Refactor code for improved readability, maintainability, and performance.
-- Update dependencies to the latest versions for improved functionality and security.
-- Add sound effects and visual feedback to enhance user interactions.
-- Improve boot screen functionality with user feedback and default messages.
-- Update default settings and configurations for various apps and features.
-- Enhance photo booth and webcam with new effects and swipe detection.
+- Updated AI prompts and instructions for improved chat interactions and tool usage.
+- Improved audio handling with volume controls, mute functionality, and enhanced audio context management.
+- Enhanced UI components with improved layout consistency, responsiveness, and accessibility.
+- Updated default videos and metadata in the iPod app.
+- Improved file management in Finder with drag-and-drop support and enhanced file type handling.
+- Fixed various bugs related to speech synthesis, audio playback, and UI rendering.
+- Updated dependencies for improved performance and security.
+- Enhanced error handling and logging across various components.
+- Improved boot screen functionality with user feedback and default messages.
+- Added sound and vibration feedback for swipe navigation.
 
 </details>
 
 ## April 2025
 
-- Implement a Time Machine feature within the Internet Explorer app, allowing users to navigate through historical and future web content with enhanced animations and improved layout.
-- Overhaul Internet Explorer app with AI-powered content generation, caching, and improved navigation, including shared URL handling and a new debug mode.
-- Refactor multiple app components (TextEdit, Chats, InternetExplorer, TimeMachineView, Ipod, Videos) to use Zustand for improved state management.
-- Enhance the chat experience with sidebar visibility preferences, toast notifications, and AI-generated HTML support.
-- Implement terminal sounds feature with UI toggle and improved audio effects.
-- Significantly update the Internet Explorer AI generation prompt and deliverable instructions for better content creation.
+- Revamped Internet Explorer app with AI-powered content generation, caching, and improved navigation.
+- Enhanced Time Machine View with improved animations, layout, mobile responsiveness, and shader effects.
+- Refactored multiple app components (TextEdit, Chats, InternetExplorer, TimeMachineView, Ipod, Videos, AppManager) to use Zustand for state management.
+- Improved chat functionality with sidebar preferences, toast notifications, and AI-generated HTML support.
+- Integrated terminal sounds feature into multiple app components with UI toggle.
+- Enhanced AI model integration and updated default AI model to gpt-4.1.
+- Implemented shared URL handling and share dialog in Internet Explorer app.
 
 <details>
 <summary>Minor changes (9)</summary>
 
-- Update the default AI model to claude-3.7 and then to gpt-4.1, optimizing for performance and compatibility.
-- Improve the iframe-check API with Wayback Machine integration and enhanced error handling.
-- Update default favorites in Internet Explorer with new and reordered entries.
-- Enhance font handling and styling across multiple components for improved readability and consistency.
-- Add CORS support to API endpoints.
-- Implement mobile layout optimizations for TimeMachineView.
-- Update video titles and add new entries to the default video list.
-- Add shader effect toggle and integrate with app store state management.
-- Improve error handling and logging in various components.
+- Updated default favorites in Internet Explorer with new and reordered entries.
+- Improved error handling and debugging capabilities in Internet Explorer app.
+- Enhanced font mapping and added Jacquard font support.
+- Updated video titles and added new entries to default videos.
+- Added CORS support to API endpoints.
+- Refined AI generation prompts and deliverable instructions.
+- Updated dependencies and enhanced iframe-check functionality.
+- Added auto-proxy domain handling and reset favorites functionality in Internet Explorer components.
+- Updated help items in Chats and Photo Booth apps for clarity and new features.
 
 </details>
 
 ## March 2025
 
-- Implement a new Synth app with preset management, 3D waveform visualization, and mobile responsiveness.
-- Add a Photo Booth app with camera selection, filter support, and file system integration.
-- Enhance the Terminal app with a Vim editor, AI chat mode, command history, and HTML preview functionality.
-- Implement custom wallpaper support with IndexedDB storage, including video wallpapers.
-- Integrate Pusher for real-time chat updates and add profanity filtering to chat rooms.
-- Refactor chat components for improved message handling, animation, and user experience.
+- Implement a new AI-powered chat assistant with HTML preview capabilities in the terminal, including streaming support, code generation instructions, and enhanced user interface elements.
+- Introduce a Synth app with piano presets, configurable key labels, 3D waveform visualization, and mobile responsiveness.
+- Add a Photo Booth app with camera selection, filter support, file system integration, and enhanced iOS compatibility.
+- Enhance the iPod app with dynamic video playlist loading, animated scrolling text, touch event handling, and improved layout.
+- Implement real-time chat updates using Pusher and add profanity filtering to chat rooms and user creation.
+- Refactor the chat system with improved message handling, caching, room management, and dynamic window titles.
+- Add IndexedDB backup and restore functionality for improved data management across various app components.
 
 <details>
 <summary>Minor changes (10)</summary>
 
-- Improve Ipod app with scrolling text, touch event handling, and dynamic video playlist loading.
-- Enhance HtmlPreview component with draggable controls, toolbar collapse, and improved scaling and positioning logic.
-- Update chat API to use Node.js runtime, improve response formatting, and add logging and error handling.
-- Refactor vibration handling in IpodAppComponent and useChatSynth for improved performance.
+- Improve TerminalAppComponent with Vim editor functionality, new commands (echo, whoami, date), and enhanced command history management.
+- Enhance HtmlPreview component with draggable controls, toolbar collapse functionality, and improved scaling and positioning logic.
+- Update chat API to use Node.js runtime, improve request handling, and enhance error handling with logging improvements.
+- Refactor vibration handling in IpodAppComponent and useChatSynth for improved performance and user feedback.
+- Update video wallpaper links and implement loading state management for video wallpapers in WallpaperPicker and Desktop components.
+- Enhance TerminalAppComponent with urgent message handling, markdown parsing, and animated terminal output.
+- Improve IpodAppComponent styles for visual consistency and add backlight functionality with user activity tracking.
 - Update dependencies and clean up unused variables across various components.
-- Improve video playback handling in Desktop component and refine LCD filter implementation in IpodAppComponent.
-- Enhance TerminalAppComponent with urgent message handling, markdown parsing, and sound effects integration.
-- Update IpodAppComponent styles for improved visual consistency and add backlight functionality.
-- Improve error handling in Webcam component and add resume functionality for audio context in useSound hook.
-- Update chat generation instructions in api/chat.ts for clarity and consistency, enhancing code generation process.
+- Add mobile responsiveness to HtmlPreview component and sound effects for window state changes in WindowFrame and HtmlPreview components.
+- Fix various styling and layout issues in multiple components for improved visual consistency and user experience.
 
 </details>
 
 ## February 2025
 
-- Added PC Emulator app with multiple classic games and enhanced UI.
-- Introduced the Videos app featuring a retro CD player UI, time tracking, and enhanced playback controls.
-- Implemented the Paint app with MacPaint-inspired design, pattern-based drawing, and advanced drawing tools.
-- Added the Minesweeper app with mobile touch support and responsive window management.
-- Enhanced the Finder app with dynamic view, sorting options, trash management, and file saving features.
-- Integrated audio transcription support into Chats and TextEdit apps.
-- Added Control Panels app for system management, including display mode toggling, sound settings, and backup/restore functionality.
+- Add message history navigation and copy functionality to the Chat app.
+- Enhance TextEdit with advanced markup parsing, rendering, and document editing capabilities, including markdown support and context integration with the Chat app.
+- Implement advanced window maximization, touch interactions, and mobile swipe navigation for improved user experience.
+- Migrate the file system to IndexedDB and enhance storage management.
+- Add fullscreen functionality to the Videos app and advanced image filters to the Paint app.
 
 <details>
-<summary>Minor changes (10)</summary>
+<summary>Minor changes (11)</summary>
 
-- Improved chat functionality with message history navigation, copy functionality, urgent message display, and nudge feature.
-- Enhanced TextEdit with markdown support, improved markup parsing, file handling, and task list support.
-- Updated Internet Explorer with Wayback Machine integration and improved navigation.
-- Refactored window management with improved resizing, positioning, and sound effects.
-- Improved file system with IndexedDB migration, enhanced storage management, and image file management.
-- Enhanced UI with sound effects, Apple Garamond font, and improved dialog styling.
-- Refined video player with animated title, number transitions, and react-player integration.
-- Improved mobile responsiveness and touch interactions across multiple apps.
-- Updated default wallpapers and UI text for better user experience.
-- Fixed various bugs and improved performance across multiple apps.
-
-</details>
-
-## January 2025
-
-- Added a new Chats app featuring rich text editing with Tiptap, slash commands, persistent message storage, and Framer Motion animations.
-- Implemented a multi-app architecture with improved window management, persistent app state, and a unified menu bar.
-- Enhanced the Internet Explorer app with favorites functionality, history navigation, and improved error handling.
-- Significantly improved the Soundboard app with JSON-based loading/reloading, multi-board support, and enhanced UI.
-- Added audio feedback to UI components using Tone.js and enhanced chat synth with richer audio effects.
-- Improved mobile web app support with responsive layouts, enhanced input handling, and disabled user scaling.
-
-<details>
-<summary>Minor changes (10)</summary>
-
-- Improved chat message styling, text segmentation, and emoji handling.
-- Refined the UI and styling of various components including dialogs, soundboard slots, and window frames.
-- Added default favorites to Internet Explorer, including Andrew's and Lucas's websites and the Particle Simulator.
-- Updated the AI assistant system prompt with expanded persona details.
-- Added help and about dialogs to apps with metadata and help items.
-- Improved audio recording compatibility and device selection.
-- Added window minimize functionality and desktop icon.
-- Updated README with comprehensive project features and setup instructions.
-- Added SEO and social media meta tags for improved sharing and discoverability.
-- Fixed layout responsiveness in BoardList and WindowFrame components.
+- Improve mobile touch interactions in the WindowFrame and dialog pointer events.
+- Update the default games list and PC emulator title.
+- Refine TextEdit markup line description generation and formatting.
+- Optimize TextEdit context processing for mobile and desktop performance.
+- Update chat nudge response to include system context and improve chat clearing mechanism.
+- Refactor PaintCanvas event handling and history saving.
+- Update GitHub repository references across multiple apps.
+- Add a new video to the default videos list.
+- Add shimmer loading effect and optimize DOSBox rendering.
+- Enhance file system formatting and add mouse sensitivity control.
+- Update UI text and global font size.
 
 </details>
 
 ---
 
-*This changelog is automatically generated and summarized from git history. Last updated: 2026-01-25*
+*This changelog is automatically generated and summarized from git history. Last updated: 2026-02-13*
