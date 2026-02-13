@@ -23,7 +23,7 @@ import {
   TOOL_USAGE_INSTRUCTIONS,
   MEMORY_INSTRUCTIONS,
 } from "./_utils/_aiPrompts.js";
-import { getMemoryIndex, getDailyNotesForPrompt, type MemoryIndex } from "./_utils/_memory.js";
+import { getMemoryIndex, getDailyNotesForPrompt, getUnprocessedDailyNotesExcludingToday, type MemoryIndex } from "./_utils/_memory.js";
 import { SUPPORTED_AI_MODELS } from "./_utils/_aiModels.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { validateAuth } from "./_utils/auth/index.js";
@@ -677,6 +677,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         logError("Error fetching user memories/notes:", memErr);
         // Continue without memories - not a fatal error
       }
+
     }
 
     // -------------------------------------------------------------
@@ -685,6 +686,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // -------------------------------------------------------------
     if (isProactiveGreeting && username && validationResult.valid) {
       log("Proactive greeting requested");
+
+      // Background: process past daily notes into long-term memory (fire-and-forget)
+      // Only triggered on proactive greetings (once per session) to avoid
+      // redundant checks on every chat message.
+      try {
+        getUnprocessedDailyNotesExcludingToday(redis, username).then(async (unprocessedNotes) => {
+          if (unprocessedNotes.length > 0) {
+            log(`[DailyNotes] Found ${unprocessedNotes.length} unprocessed past daily notes for ${username}, triggering background processing`);
+            const { processDailyNotesForUser } = await import("./ai/process-daily-notes.js");
+            processDailyNotesForUser(redis, username, log, logError).catch((err: unknown) => {
+              logError("[DailyNotes] Background processing failed (non-blocking):", err);
+            });
+          }
+        }).catch(() => {});
+      } catch { /* non-blocking */ }
 
       // Build memory context
       let memoryContext = "";

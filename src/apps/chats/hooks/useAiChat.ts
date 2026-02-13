@@ -2273,6 +2273,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         .catch(err => {
           console.warn("[clearChats] Memory extraction failed (non-blocking):", err);
         });
+
     }
 
     // --- Reset speech & highlight state so the next reply starts clean ---

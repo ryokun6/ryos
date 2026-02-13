@@ -903,3 +903,28 @@ export async function getUnprocessedDailyNotes(
 
   return notes;
 }
+
+/**
+ * Get unprocessed daily notes EXCLUDING today.
+ * Today's note is still accumulating entries, so we only process past days.
+ * This is the primary function for background daily-notes-to-long-term-memory processing.
+ */
+export async function getUnprocessedDailyNotesExcludingToday(
+  redis: Redis,
+  username: string,
+  days: number = 7
+): Promise<DailyNote[]> {
+  const dates = getRecentDateStrings(days);
+  const today = getTodayDateString();
+  const notes: DailyNote[] = [];
+
+  for (const date of dates) {
+    if (date === today) continue; // Skip today — still accumulating
+    const note = await getDailyNote(redis, username, date);
+    if (note && !note.processedForMemories && note.entries.length > 0) {
+      notes.push(note);
+    }
+  }
+
+  return notes;
+}
