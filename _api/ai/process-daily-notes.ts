@@ -182,7 +182,7 @@ const PROCESSING_TIME_BUDGET_MS = 50_000;
  * Maximum number of consolidation AI calls per day-batch.
  * Prevents runaway processing when many memories overlap.
  */
-const MAX_CONSOLIDATIONS_PER_BATCH = 3;
+const MAX_CONSOLIDATIONS_PER_BATCH = 5;
 
 /**
  * Maximum number of memories to extract per day-batch.
