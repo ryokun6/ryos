@@ -339,9 +339,12 @@ const DialogHeader = ({
   return (
     <div
       className={cn(
-        "flex items-center shrink-0 h-os-titlebar min-h-[1.5rem] mx-0 my-[0.1rem] mb-0 px-[0.1rem] py-[0.2rem] select-none cursor-move border-b-[1.5px] user-select-none z-50 draggable-area bg-white bg-os-titlebar-pattern bg-[length:6.6666666667%_13.3333333333%] border-b-os-window",
+        "flex items-center shrink-0 h-os-titlebar min-h-[1.5rem] mx-0 my-[0.1rem] mb-0 px-[0.1rem] py-[0.2rem] select-none cursor-move border-b-[1.5px] user-select-none z-50 draggable-area border-b-os-window",
         className
       )}
+      style={{
+        background: `var(--os-color-titlebar-pattern, none) 0 0 / 6.6666666667% 13.3333333333% repeat padding-box content-box, white`,
+      }}
       {...props}
     >
       <DialogPrimitive.Close asChild>
