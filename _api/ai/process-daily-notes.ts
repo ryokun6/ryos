@@ -390,6 +390,7 @@ async function _processSingleDayBatch(
     }
 
     // Consolidation — only if we haven't exceeded the per-batch cap
+    let didConsolidate = false;
     if ((relatedKeys.length > 0 || targetKeyExists) && consolidationCount < MAX_CONSOLIDATIONS_PER_BATCH) {
       const keysToFetch = targetKeyExists ? [key, ...relatedKeys] : relatedKeys;
       const uniqueKeysToFetch = [...new Set(keysToFetch)];
@@ -417,13 +418,19 @@ async function _processSingleDayBatch(
       finalContent = consolidated.content;
       keysToDelete.push(...relatedKeys);
       consolidationCount++;
+      didConsolidate = true;
     }
 
-    const mode = targetKeyExists ? "update" : "add";
+    // If consolidation ran, AI already merged new+existing → "update" replaces with merged content.
+    // If consolidation was skipped but key exists → "merge" appends new content to existing (prevents data loss).
+    // If key doesn't exist → "add" creates a new entry.
+    const mode = targetKeyExists
+      ? (didConsolidate ? "update" : "merge")
+      : "add";
     const storeResult = await upsertMemory(redis, username, key, finalSummary, finalContent, mode);
 
     if (storeResult.success) {
-      if (mode === "update") {
+      if (mode === "update" || mode === "merge") {
         longTermUpdated++;
       } else {
         longTermStored++;
