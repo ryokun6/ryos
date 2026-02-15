@@ -143,7 +143,7 @@ Object.entries(PHOTO_WALLPAPERS).forEach(([category, photos]) => {
 const AI_MODELS = AI_MODEL_METADATA;
 
 /** Maximum cloud backup size in bytes (must match server-side MAX_BACKUP_SIZE) */
-const CLOUD_BACKUP_MAX_SIZE = 10 * 1024 * 1024;
+const CLOUD_BACKUP_MAX_SIZE = 50 * 1024 * 1024;
 
 // Utility to convert Blob to base64 string for JSON serialization
 const blobToBase64 = (blob: Blob): Promise<string> =>
@@ -634,7 +634,7 @@ export function useControlPanelsLogic({
         xhr.setRequestHeader("Content-Type", "application/json");
         xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
         xhr.setRequestHeader("X-Username", username);
-        xhr.timeout = 60000;
+        xhr.timeout = 120000;
 
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) {
@@ -711,7 +711,7 @@ export function useControlPanelsLogic({
         xhr.open("GET", url, true);
         xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
         xhr.setRequestHeader("X-Username", username);
-        xhr.timeout = 60000;
+        xhr.timeout = 120000;
 
         xhr.onprogress = (event) => {
           if (event.lengthComputable) {

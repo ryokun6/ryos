@@ -21,10 +21,19 @@ import {
 } from "../_utils/_cors.js";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
-/** Maximum backup size: 10MB compressed */
-const MAX_BACKUP_SIZE = 10 * 1024 * 1024;
+// Increase body size limit for large backups (default is 4.5MB)
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "55mb",
+    },
+  },
+};
+
+/** Maximum backup size: 50MB compressed */
+const MAX_BACKUP_SIZE = 50 * 1024 * 1024;
 
 /** Backup metadata TTL: 90 days (same as user TTL) */
 const META_TTL = USER_TTL_SECONDS;
