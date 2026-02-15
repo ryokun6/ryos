@@ -409,8 +409,6 @@ export function useControlPanelsLogic({
   const [isCloudStatusLoading, setIsCloudStatusLoading] = useState(false);
   const [isConfirmCloudRestoreOpen, setIsConfirmCloudRestoreOpen] =
     useState(false);
-  const [isConfirmCloudDeleteOpen, setIsConfirmCloudDeleteOpen] =
-    useState(false);
 
   /** Fetch cloud backup status */
   const fetchCloudSyncStatus = useCallback(async () => {
@@ -862,34 +860,6 @@ export function useControlPanelsLogic({
       setIsCloudRestoring(false);
     }
   }, [username, authToken, t, setCurrentWallpaper]);
-
-  /** Delete cloud backup */
-  const handleCloudDelete = useCallback(async () => {
-    if (!username || !authToken) return;
-
-    try {
-      const response = await abortableFetch(getApiUrl("/api/sync/backup"), {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          "X-Username": username,
-        },
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 2, initialDelayMs: 500 },
-      });
-
-      if (response.ok) {
-        toast.success(t("apps.control-panels.cloudSync.deleteSuccess"));
-        setCloudSyncStatus({ hasBackup: false, metadata: null });
-      } else {
-        toast.error(t("apps.control-panels.cloudSync.deleteFailed"));
-      }
-    } catch (error) {
-      console.error("[CloudSync] Delete error:", error);
-      toast.error(t("apps.control-panels.cloudSync.deleteFailed"));
-    }
-  }, [username, authToken, t]);
 
   // States for previous volume levels for mute/unmute functionality
   const [prevMasterVolume, setPrevMasterVolume] = useState(
@@ -1606,10 +1576,7 @@ export function useControlPanelsLogic({
     isCloudStatusLoading,
     isConfirmCloudRestoreOpen,
     setIsConfirmCloudRestoreOpen,
-    isConfirmCloudDeleteOpen,
-    setIsConfirmCloudDeleteOpen,
     handleCloudBackup,
     handleCloudRestore,
-    handleCloudDelete,
   };
 }
