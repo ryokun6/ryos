@@ -1611,6 +1611,5 @@ export function useControlPanelsLogic({
     handleCloudBackup,
     handleCloudRestore,
     handleCloudDelete,
-    fetchCloudSyncStatus,
   };
 }
