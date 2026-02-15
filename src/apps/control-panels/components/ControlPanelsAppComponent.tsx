@@ -243,6 +243,8 @@ export function ControlPanelsAppComponent({
     setIsConfirmCloudRestoreOpen,
     handleCloudBackup,
     handleCloudRestore,
+    cloudProgress,
+    CLOUD_BACKUP_MAX_SIZE,
   } = useControlPanelsLogic({ initialData });
 
   const menuBar = (
@@ -634,18 +636,46 @@ export function ControlPanelsAppComponent({
                             )}
                       </Button>
                     </div>
-                    <p className="text-[11px] text-neutral-600 font-geneva-12">
-                      {isCloudStatusLoading
-                        ? t("apps.control-panels.cloudSync.checking")
-                        : cloudSyncStatus?.hasBackup &&
-                            cloudSyncStatus.metadata
-                          ? t("apps.control-panels.cloudSync.lastBackup", {
-                              date: new Date(
-                                cloudSyncStatus.metadata.timestamp
-                              ).toLocaleString(),
-                            })
-                          : t("apps.control-panels.cloudSync.description")}
-                    </p>
+                    {/* Progress bar during backup/restore */}
+                    {cloudProgress && (
+                      <div className="space-y-1">
+                        <div className="w-full h-3 bg-neutral-200 rounded-sm overflow-hidden border border-neutral-300">
+                          <div
+                            className="h-full bg-neutral-600 transition-all duration-300 ease-out"
+                            style={{ width: `${cloudProgress.percent}%` }}
+                          />
+                        </div>
+                        <p className="text-[11px] text-neutral-600 font-geneva-12">
+                          {cloudProgress.phase}
+                          {cloudProgress.percent > 0 &&
+                            cloudProgress.percent < 100 &&
+                            ` (${cloudProgress.percent}%)`}
+                        </p>
+                      </div>
+                    )}
+                    {!cloudProgress && (
+                      <p className="text-[11px] text-neutral-600 font-geneva-12">
+                        {isCloudStatusLoading
+                          ? t("apps.control-panels.cloudSync.checking")
+                          : cloudSyncStatus?.hasBackup &&
+                              cloudSyncStatus.metadata
+                            ? t("apps.control-panels.cloudSync.lastBackup", {
+                                date: new Date(
+                                  cloudSyncStatus.metadata.timestamp
+                                ).toLocaleString(),
+                                size: (
+                                  cloudSyncStatus.metadata.totalSize /
+                                  (1024 * 1024)
+                                ).toFixed(1),
+                              })
+                            : t("apps.control-panels.cloudSync.description", {
+                                limit: (
+                                  CLOUD_BACKUP_MAX_SIZE /
+                                  (1024 * 1024)
+                                ).toFixed(0),
+                              })}
+                      </p>
+                    )}
                   </div>
                 )}
 
