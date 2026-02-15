@@ -639,12 +639,21 @@ export function ControlPanelsAppComponent({
                     {/* Progress bar during backup/restore */}
                     {cloudProgress && (
                       <div className="space-y-1">
-                        <div className="w-full h-3 bg-neutral-200 rounded-sm overflow-hidden border border-neutral-300">
-                          <div
-                            className="h-full bg-neutral-600 transition-all duration-300 ease-out"
-                            style={{ width: `${cloudProgress.percent}%` }}
-                          />
-                        </div>
+                        {isMacOSXTheme ? (
+                          <div className="aqua-progress w-full h-[14px]">
+                            <div
+                              className="aqua-progress-fill transition-all duration-300 ease-out"
+                              style={{ width: `${cloudProgress.percent}%` }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-full h-3 bg-neutral-200 rounded-sm overflow-hidden border border-neutral-300">
+                            <div
+                              className="h-full bg-neutral-600 transition-all duration-300 ease-out"
+                              style={{ width: `${cloudProgress.percent}%` }}
+                            />
+                          </div>
+                        )}
                         <p className="text-[11px] text-neutral-600 font-geneva-12">
                           {cloudProgress.phase}
                           {cloudProgress.percent > 0 &&
