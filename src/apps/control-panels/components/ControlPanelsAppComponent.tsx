@@ -234,6 +234,15 @@ export function ControlPanelsAppComponent({
     handleVerifyTokenSubmit,
     handleSetPassword,
     handleLogoutAllDevices,
+    // Cloud Sync
+    cloudSyncStatus,
+    isCloudBackingUp,
+    isCloudRestoring,
+    isCloudStatusLoading,
+    isConfirmCloudRestoreOpen,
+    setIsConfirmCloudRestoreOpen,
+    handleCloudBackup,
+    handleCloudRestore,
   } = useControlPanelsLogic({ initialData });
 
   const menuBar = (
@@ -594,6 +603,53 @@ export function ControlPanelsAppComponent({
                   <VersionDisplay />
                 </div>
 
+                {/* Cloud Sync */}
+                {username && (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="retro"
+                        onClick={handleCloudBackup}
+                        disabled={isCloudBackingUp || isCloudRestoring}
+                        className="flex-1"
+                      >
+                        {isCloudBackingUp
+                          ? t("apps.control-panels.cloudSync.backingUp")
+                          : t("apps.control-panels.cloudSync.backupToCloud")}
+                      </Button>
+                      <Button
+                        variant="retro"
+                        onClick={() => setIsConfirmCloudRestoreOpen(true)}
+                        disabled={
+                          isCloudBackingUp ||
+                          isCloudRestoring ||
+                          !cloudSyncStatus?.hasBackup
+                        }
+                        className="flex-1"
+                      >
+                        {isCloudRestoring
+                          ? t("apps.control-panels.cloudSync.restoring")
+                          : t(
+                              "apps.control-panels.cloudSync.restoreFromCloud"
+                            )}
+                      </Button>
+                    </div>
+                    <p className="text-[11px] text-neutral-600 font-geneva-12">
+                      {isCloudStatusLoading
+                        ? t("apps.control-panels.cloudSync.checking")
+                        : cloudSyncStatus?.hasBackup &&
+                            cloudSyncStatus.metadata
+                          ? t("apps.control-panels.cloudSync.lastBackup", {
+                              date: new Date(
+                                cloudSyncStatus.metadata.timestamp
+                              ).toLocaleString(),
+                            })
+                          : t("apps.control-panels.cloudSync.description")}
+                    </p>
+                  </div>
+                )}
+
+                {/* Local Backup */}
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <Button
@@ -954,6 +1010,17 @@ export function ControlPanelsAppComponent({
             setPasswordError(null);
             setIsPasswordDialogOpen(true);
           }}
+        />
+        {/* Cloud Restore Confirmation */}
+        <ConfirmDialog
+          isOpen={isConfirmCloudRestoreOpen}
+          onOpenChange={setIsConfirmCloudRestoreOpen}
+          onConfirm={() => {
+            setIsConfirmCloudRestoreOpen(false);
+            handleCloudRestore();
+          }}
+          title={t("apps.control-panels.cloudSync.confirmRestore")}
+          description={t("apps.control-panels.cloudSync.confirmRestoreDesc")}
         />
       </WindowFrame>
     </>
