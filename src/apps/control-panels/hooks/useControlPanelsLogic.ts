@@ -142,6 +142,9 @@ Object.entries(PHOTO_WALLPAPERS).forEach(([category, photos]) => {
 // Use shared AI model metadata
 const AI_MODELS = AI_MODEL_METADATA;
 
+/** Maximum cloud backup size in bytes (must match server-side MAX_BACKUP_SIZE) */
+const CLOUD_BACKUP_MAX_SIZE = 50 * 1024 * 1024;
+
 // Utility to convert Blob to base64 string for JSON serialization
 const blobToBase64 = (blob: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -410,6 +413,12 @@ export function useControlPanelsLogic({
   const [isConfirmCloudRestoreOpen, setIsConfirmCloudRestoreOpen] =
     useState(false);
 
+  /** Cloud backup/restore progress: phase label + 0-100 percentage */
+  const [cloudProgress, setCloudProgress] = useState<{
+    phase: string;
+    percent: number;
+  } | null>(null);
+
   /** Fetch cloud backup status */
   const fetchCloudSyncStatus = useCallback(async () => {
     if (!username || !authToken) return;
@@ -455,6 +464,7 @@ export function useControlPanelsLogic({
     }
 
     setIsCloudBackingUp(true);
+    setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.collecting"), percent: 0 });
 
     try {
       // Build the same backup structure used for local backup
@@ -489,6 +499,8 @@ export function useControlPanelsLogic({
           backup.localStorage[key] = localStorage.getItem(key);
         }
       }
+
+      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.collecting"), percent: 10 });
 
       // Backup IndexedDB data
       try {
@@ -529,6 +541,8 @@ export function useControlPanelsLogic({
           getStoreData("applets"),
         ]);
 
+        setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.serializing"), percent: 20 });
+
         const serializeStore = async (items: StoreItemWithKey[]) =>
           Promise.all(
             items.map(async (item) => {
@@ -555,6 +569,8 @@ export function useControlPanelsLogic({
       } catch (error) {
         console.error("[CloudSync] Error backing up IndexedDB:", error);
       }
+
+      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.compressing"), percent: 35 });
 
       // Convert to JSON and compress
       const jsonString = JSON.stringify(backup);
@@ -595,32 +611,75 @@ export function useControlPanelsLogic({
       }
       const base64Data = btoa(binary);
 
-      // Upload to cloud
-      const response = await abortableFetch(getApiUrl("/api/sync/backup"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-          "X-Username": username,
-        },
-        body: JSON.stringify({
+      // Check size before uploading
+      if (base64Data.length > CLOUD_BACKUP_MAX_SIZE) {
+        const sizeMB = (base64Data.length / (1024 * 1024)).toFixed(1);
+        const limitMB = (CLOUD_BACKUP_MAX_SIZE / (1024 * 1024)).toFixed(0);
+        toast.error(
+          t("apps.control-panels.cloudSync.tooLarge", {
+            size: sizeMB,
+            limit: limitMB,
+          })
+        );
+        return;
+      }
+
+      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.uploading"), percent: 50 });
+
+      // Upload to cloud using XMLHttpRequest for progress tracking
+      const uploadResult = await new Promise<{ ok: boolean; status: number; data: unknown }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const url = getApiUrl("/api/sync/backup");
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
+        xhr.setRequestHeader("X-Username", username);
+        xhr.timeout = 120000;
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            // Upload progress maps from 50% to 95%
+            const uploadPercent = (event.loaded / event.total) * 100;
+            const overallPercent = 50 + (uploadPercent * 45) / 100;
+            setCloudProgress({
+              phase: t("apps.control-panels.cloudSync.progress.uploading"),
+              percent: Math.round(overallPercent),
+            });
+          }
+        };
+
+        xhr.onload = () => {
+          let data: unknown;
+          try {
+            data = JSON.parse(xhr.responseText);
+          } catch {
+            data = {};
+          }
+          resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, data });
+        };
+
+        xhr.onerror = () => reject(new Error("Network error during upload"));
+        xhr.ontimeout = () => reject(new Error("Upload timed out"));
+
+        const body = JSON.stringify({
           data: base64Data,
           timestamp: backup.timestamp,
           version: backup.version,
-        }),
-        timeout: 60000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 2, initialDelayMs: 1000 },
+        });
+
+        xhr.send(body);
       });
 
-      if (response.ok) {
+      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.finishing"), percent: 98 });
+
+      if (uploadResult.ok) {
+        setCloudProgress({ phase: t("apps.control-panels.cloudSync.backupSuccess"), percent: 100 });
         toast.success(t("apps.control-panels.cloudSync.backupSuccess"));
         // Refresh status
         await fetchCloudSyncStatus();
       } else {
-        const errorData = await response.json().catch(() => ({}));
         const errorMsg =
-          (errorData as { error?: string }).error ||
+          (uploadResult.data as { error?: string })?.error ||
           t("apps.control-panels.cloudSync.backupFailed");
         toast.error(errorMsg);
       }
@@ -629,6 +688,8 @@ export function useControlPanelsLogic({
       toast.error(t("apps.control-panels.cloudSync.backupFailed"));
     } finally {
       setIsCloudBackingUp(false);
+      // Clear progress after a short delay so user can see completion
+      setTimeout(() => setCloudProgress(null), 1500);
     }
   }, [username, authToken, t, fetchCloudSyncStatus]);
 
@@ -640,31 +701,57 @@ export function useControlPanelsLogic({
     }
 
     setIsCloudRestoring(true);
+    setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.downloading"), percent: 0 });
 
     try {
-      // Download backup from cloud
-      const response = await abortableFetch(getApiUrl("/api/sync/backup"), {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          "X-Username": username,
-        },
-        timeout: 60000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 2, initialDelayMs: 1000 },
+      // Download backup from cloud using XHR for progress
+      const downloadResult = await new Promise<{ ok: boolean; data: unknown }>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const url = getApiUrl("/api/sync/backup");
+        xhr.open("GET", url, true);
+        xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
+        xhr.setRequestHeader("X-Username", username);
+        xhr.timeout = 120000;
+
+        xhr.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const downloadPercent = (event.loaded / event.total) * 100;
+            const overallPercent = (downloadPercent * 40) / 100;
+            setCloudProgress({
+              phase: t("apps.control-panels.cloudSync.progress.downloading"),
+              percent: Math.round(overallPercent),
+            });
+          }
+        };
+
+        xhr.onload = () => {
+          let data: unknown;
+          try {
+            data = JSON.parse(xhr.responseText);
+          } catch {
+            data = {};
+          }
+          resolve({ ok: xhr.status >= 200 && xhr.status < 300, data });
+        };
+
+        xhr.onerror = () => reject(new Error("Network error during download"));
+        xhr.ontimeout = () => reject(new Error("Download timed out"));
+
+        xhr.send();
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      if (!downloadResult.ok) {
         const errorMsg =
-          (errorData as { error?: string }).error ||
+          (downloadResult.data as { error?: string })?.error ||
           t("apps.control-panels.cloudSync.restoreFailed");
         toast.error(errorMsg);
         return;
       }
 
-      const result = await response.json();
-      const base64Data = result.data as string;
+      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.decompressing"), percent: 45 });
+
+      const result = downloadResult.data as { data: string };
+      const base64Data = result.data;
 
       // Decode base64 to Uint8Array
       const binaryStr = atob(base64Data);
@@ -685,6 +772,8 @@ export function useControlPanelsLogic({
       const decompressedResponse = new Response(decompressedStream);
       const jsonString = await decompressedResponse.text();
 
+      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.restoring"), percent: 55 });
+
       // Parse backup
       const backup = JSON.parse(jsonString);
 
@@ -699,6 +788,8 @@ export function useControlPanelsLogic({
       // Clear current state
       clearAllAppStates();
       clearPrefetchFlag();
+
+      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.restoring"), percent: 65 });
 
       // Restore localStorage
       Object.entries(backup.localStorage).forEach(([key, value]) => {
@@ -722,6 +813,8 @@ export function useControlPanelsLogic({
           // Ignore parse errors
         }
       }
+
+      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.restoring"), percent: 75 });
 
       // Restore IndexedDB data if available
       if (backup.indexedDB) {
@@ -815,6 +908,8 @@ export function useControlPanelsLogic({
         }
       }
 
+      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.finishing"), percent: 90 });
+
       // Handle wallpaper restore
       if (backup.localStorage["ryos:app:settings:wallpaper"]) {
         const wallpaper = backup.localStorage["ryos:app:settings:wallpaper"];
@@ -848,6 +943,8 @@ export function useControlPanelsLogic({
         console.error("[CloudSync] Files store fallback failed:", fallbackErr);
       }
 
+      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.finishing"), percent: 100 });
+
       setNextBootMessage(t("common.system.restoringSystem"));
 
       // Reload the page to apply changes
@@ -858,6 +955,7 @@ export function useControlPanelsLogic({
       clearNextBootMessage();
     } finally {
       setIsCloudRestoring(false);
+      setCloudProgress(null);
     }
   }, [username, authToken, t, setCurrentWallpaper]);
 
@@ -1578,5 +1676,7 @@ export function useControlPanelsLogic({
     setIsConfirmCloudRestoreOpen,
     handleCloudBackup,
     handleCloudRestore,
+    cloudProgress,
+    CLOUD_BACKUP_MAX_SIZE,
   };
 }
