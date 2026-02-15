@@ -89,6 +89,7 @@
     "@types/uuid": "^10.0.0",
     "@upstash/redis": "^1.36.0",
     "@vercel/analytics": "^1.6.1",
+    "@vercel/blob": "^2.2.0",
     "@vercel/edge": "^1.2.2",
     "@vercel/functions": "^2.2",
     "@vercel/node": "^5.5.16",

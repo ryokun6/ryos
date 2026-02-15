@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
@@ -391,6 +391,505 @@ export function useControlPanelsLogic({
       setIsLoggingOutAllDevices(false);
     }
   };
+
+  // ====================================================================
+  // Cloud Sync state
+  // ====================================================================
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<{
+    hasBackup: boolean;
+    metadata: {
+      timestamp: string;
+      version: number;
+      totalSize: number;
+      createdAt: string;
+    } | null;
+  } | null>(null);
+  const [isCloudBackingUp, setIsCloudBackingUp] = useState(false);
+  const [isCloudRestoring, setIsCloudRestoring] = useState(false);
+  const [isCloudStatusLoading, setIsCloudStatusLoading] = useState(false);
+  const [isConfirmCloudRestoreOpen, setIsConfirmCloudRestoreOpen] =
+    useState(false);
+  const [isConfirmCloudDeleteOpen, setIsConfirmCloudDeleteOpen] =
+    useState(false);
+
+  /** Fetch cloud backup status */
+  const fetchCloudSyncStatus = useCallback(async () => {
+    if (!username || !authToken) return;
+
+    setIsCloudStatusLoading(true);
+    try {
+      const response = await abortableFetch(getApiUrl("/api/sync/status"), {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "X-Username": username,
+        },
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 2, initialDelayMs: 500 },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCloudSyncStatus(data);
+      }
+    } catch (error) {
+      console.error("[CloudSync] Error fetching status:", error);
+    } finally {
+      setIsCloudStatusLoading(false);
+    }
+  }, [username, authToken]);
+
+  // Fetch cloud sync status when user is logged in
+  useEffect(() => {
+    if (username && authToken) {
+      fetchCloudSyncStatus();
+    } else {
+      setCloudSyncStatus(null);
+    }
+  }, [username, authToken, fetchCloudSyncStatus]);
+
+  /** Upload current state to cloud */
+  const handleCloudBackup = useCallback(async () => {
+    if (!username || !authToken) {
+      toast.error(t("apps.control-panels.cloudSync.loginRequired"));
+      return;
+    }
+
+    setIsCloudBackingUp(true);
+
+    try {
+      // Build the same backup structure used for local backup
+      const backup: {
+        localStorage: Record<string, string | null>;
+        indexedDB: {
+          documents: StoreItemWithKey[];
+          images: StoreItemWithKey[];
+          trash: StoreItemWithKey[];
+          custom_wallpapers: StoreItemWithKey[];
+          applets: StoreItemWithKey[];
+        };
+        timestamp: string;
+        version: number;
+      } = {
+        localStorage: {},
+        indexedDB: {
+          documents: [],
+          images: [],
+          trash: [],
+          custom_wallpapers: [],
+          applets: [],
+        },
+        timestamp: new Date().toISOString(),
+        version: 3,
+      };
+
+      // Backup all localStorage data
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) {
+          backup.localStorage[key] = localStorage.getItem(key);
+        }
+      }
+
+      // Backup IndexedDB data
+      try {
+        const db = await ensureIndexedDBInitialized();
+        const getStoreData = async (
+          storeName: string
+        ): Promise<StoreItemWithKey[]> => {
+          return new Promise((resolve, reject) => {
+            try {
+              const transaction = db.transaction(storeName, "readonly");
+              const store = transaction.objectStore(storeName);
+              const items: StoreItemWithKey[] = [];
+              const request = store.openCursor();
+              request.onsuccess = (event) => {
+                const cursor = (
+                  event.target as IDBRequest<IDBCursorWithValue>
+                ).result;
+                if (cursor) {
+                  items.push({ key: cursor.key as string, value: cursor.value });
+                  cursor.continue();
+                } else {
+                  resolve(items);
+                }
+              };
+              request.onerror = () => reject(request.error);
+            } catch (error) {
+              console.error(`Error accessing store ${storeName}:`, error);
+              resolve([]);
+            }
+          });
+        };
+
+        const [docs, imgs, trash, walls, apps] = await Promise.all([
+          getStoreData("documents"),
+          getStoreData("images"),
+          getStoreData("trash"),
+          getStoreData("custom_wallpapers"),
+          getStoreData("applets"),
+        ]);
+
+        const serializeStore = async (items: StoreItemWithKey[]) =>
+          Promise.all(
+            items.map(async (item) => {
+              const serializedValue: Record<string, unknown> = {
+                ...item.value,
+              };
+              for (const key of Object.keys(item.value)) {
+                if (item.value[key] instanceof Blob) {
+                  const base64 = await blobToBase64(item.value[key] as Blob);
+                  serializedValue[key] = base64;
+                  serializedValue[`_isBlob_${key}`] = true;
+                }
+              }
+              return { key: item.key, value: serializedValue as StoreItem };
+            })
+          );
+
+        backup.indexedDB.documents = await serializeStore(docs);
+        backup.indexedDB.images = await serializeStore(imgs);
+        backup.indexedDB.trash = await serializeStore(trash);
+        backup.indexedDB.custom_wallpapers = await serializeStore(walls);
+        backup.indexedDB.applets = await serializeStore(apps);
+        db.close();
+      } catch (error) {
+        console.error("[CloudSync] Error backing up IndexedDB:", error);
+      }
+
+      // Convert to JSON and compress
+      const jsonString = JSON.stringify(backup);
+      const encoder = new TextEncoder();
+      const inputData = encoder.encode(jsonString);
+
+      // Gzip compress
+      const readableStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(inputData);
+          controller.close();
+        },
+      });
+      const compressionStream = new CompressionStream("gzip");
+      const compressedStream = readableStream.pipeThrough(compressionStream);
+      const chunks: Uint8Array[] = [];
+      const reader = compressedStream.getReader();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+      }
+
+      // Combine chunks and convert to base64
+      const totalLength = chunks.reduce((sum, c) => sum + c.length, 0);
+      const combined = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const chunk of chunks) {
+        combined.set(chunk, offset);
+        offset += chunk.length;
+      }
+
+      // Convert Uint8Array to base64 string
+      let binary = "";
+      for (let i = 0; i < combined.length; i++) {
+        binary += String.fromCharCode(combined[i]);
+      }
+      const base64Data = btoa(binary);
+
+      // Upload to cloud
+      const response = await abortableFetch(getApiUrl("/api/sync/backup"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+          "X-Username": username,
+        },
+        body: JSON.stringify({
+          data: base64Data,
+          timestamp: backup.timestamp,
+          version: backup.version,
+        }),
+        timeout: 60000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 2, initialDelayMs: 1000 },
+      });
+
+      if (response.ok) {
+        toast.success(t("apps.control-panels.cloudSync.backupSuccess"));
+        // Refresh status
+        await fetchCloudSyncStatus();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg =
+          (errorData as { error?: string }).error ||
+          t("apps.control-panels.cloudSync.backupFailed");
+        toast.error(errorMsg);
+      }
+    } catch (error) {
+      console.error("[CloudSync] Backup error:", error);
+      toast.error(t("apps.control-panels.cloudSync.backupFailed"));
+    } finally {
+      setIsCloudBackingUp(false);
+    }
+  }, [username, authToken, t, fetchCloudSyncStatus]);
+
+  /** Download and restore backup from cloud */
+  const handleCloudRestore = useCallback(async () => {
+    if (!username || !authToken) {
+      toast.error(t("apps.control-panels.cloudSync.loginRequired"));
+      return;
+    }
+
+    setIsCloudRestoring(true);
+
+    try {
+      // Download backup from cloud
+      const response = await abortableFetch(getApiUrl("/api/sync/backup"), {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "X-Username": username,
+        },
+        timeout: 60000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 2, initialDelayMs: 1000 },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg =
+          (errorData as { error?: string }).error ||
+          t("apps.control-panels.cloudSync.restoreFailed");
+        toast.error(errorMsg);
+        return;
+      }
+
+      const result = await response.json();
+      const base64Data = result.data as string;
+
+      // Decode base64 to Uint8Array
+      const binaryStr = atob(base64Data);
+      const compressedData = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        compressedData[i] = binaryStr.charCodeAt(i);
+      }
+
+      // Decompress gzip
+      const compressedResponse = new Response(compressedData);
+      const compressedStreamBody = compressedResponse.body;
+      if (!compressedStreamBody) {
+        throw new Error("Failed to create stream from compressed data");
+      }
+      const decompressionStream = new DecompressionStream("gzip");
+      const decompressedStream =
+        compressedStreamBody.pipeThrough(decompressionStream);
+      const decompressedResponse = new Response(decompressedStream);
+      const jsonString = await decompressedResponse.text();
+
+      // Parse backup
+      const backup = JSON.parse(jsonString);
+
+      if (!backup || !backup.localStorage || !backup.timestamp) {
+        throw new Error("Invalid backup format");
+      }
+
+      // Store auth credentials before clearing (to preserve login)
+      const savedAuthToken = authToken;
+      const savedUsername = username;
+
+      // Clear current state
+      clearAllAppStates();
+      clearPrefetchFlag();
+
+      // Restore localStorage
+      Object.entries(backup.localStorage).forEach(([key, value]) => {
+        if (value !== null) {
+          localStorage.setItem(key, value as string);
+        }
+      });
+
+      // Re-set auth credentials so user stays logged in
+      const chatsStoreKey = "ryos:chats";
+      const chatsStore = localStorage.getItem(chatsStoreKey);
+      if (chatsStore) {
+        try {
+          const parsed = JSON.parse(chatsStore);
+          if (parsed?.state) {
+            parsed.state.username = savedUsername;
+            parsed.state.authToken = savedAuthToken;
+            localStorage.setItem(chatsStoreKey, JSON.stringify(parsed));
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+
+      // Restore IndexedDB data if available
+      if (backup.indexedDB) {
+        try {
+          const db = await ensureIndexedDBInitialized();
+
+          const restoreStore = async (
+            storeName: string,
+            items: StoreItemWithKey[]
+          ) => {
+            return new Promise<void>((resolve, reject) => {
+              const transaction = db.transaction(storeName, "readwrite");
+              const store = transaction.objectStore(storeName);
+              const clearRequest = store.clear();
+
+              clearRequest.onsuccess = async () => {
+                try {
+                  for (const item of items) {
+                    const itemValue: Record<string, unknown> = {
+                      ...item.value,
+                    };
+                    for (const key of Object.keys(item.value)) {
+                      const isBlobKey = `_isBlob_${key}`;
+                      if (item.value[isBlobKey] === true) {
+                        itemValue[key] = base64ToBlob(
+                          item.value[key] as string
+                        );
+                        delete itemValue[isBlobKey];
+                      }
+                    }
+                    if (backup.version < 2) {
+                      if (
+                        storeName === "documents" ||
+                        storeName === "images"
+                      ) {
+                        if (!itemValue.uuid) {
+                          itemValue.uuid = uuidv4();
+                        }
+                        if (!itemValue.contentUrl && itemValue.content) {
+                          itemValue.contentUrl = URL.createObjectURL(
+                            itemValue.content as Blob
+                          );
+                        }
+                      }
+                    }
+                    store.put(itemValue, item.key);
+                  }
+                  resolve();
+                } catch (error) {
+                  reject(error);
+                }
+              };
+              clearRequest.onerror = () => reject(clearRequest.error);
+            });
+          };
+
+          const restorePromises: Promise<void>[] = [];
+          if (backup.indexedDB.documents) {
+            restorePromises.push(
+              restoreStore("documents", backup.indexedDB.documents)
+            );
+          }
+          if (backup.indexedDB.images) {
+            restorePromises.push(
+              restoreStore("images", backup.indexedDB.images)
+            );
+          }
+          if (backup.indexedDB.trash) {
+            restorePromises.push(
+              restoreStore("trash", backup.indexedDB.trash)
+            );
+          }
+          if (backup.indexedDB.custom_wallpapers) {
+            restorePromises.push(
+              restoreStore(
+                "custom_wallpapers",
+                backup.indexedDB.custom_wallpapers
+              )
+            );
+          }
+          if (backup.indexedDB.applets) {
+            restorePromises.push(
+              restoreStore("applets", backup.indexedDB.applets)
+            );
+          }
+
+          await Promise.all(restorePromises);
+          db.close();
+        } catch (error) {
+          console.error("[CloudSync] Error restoring IndexedDB:", error);
+        }
+      }
+
+      // Handle wallpaper restore
+      if (backup.localStorage["ryos:app:settings:wallpaper"]) {
+        const wallpaper = backup.localStorage["ryos:app:settings:wallpaper"];
+        if (wallpaper) {
+          setCurrentWallpaper(wallpaper);
+        }
+      }
+
+      // Ensure files store is in a safe state
+      try {
+        const persistedKey = "ryos:files";
+        const persistedState = localStorage.getItem(persistedKey);
+        if (persistedState) {
+          const parsed = JSON.parse(persistedState);
+          if (parsed?.state) {
+            const hasItems =
+              parsed.state.items &&
+              Object.keys(parsed.state.items).length > 0;
+            parsed.state.libraryState = hasItems ? "loaded" : "uninitialized";
+            parsed.version = 5;
+            localStorage.setItem(persistedKey, JSON.stringify(parsed));
+          }
+        } else {
+          const defaultStore = {
+            state: { items: {}, libraryState: "loaded" },
+            version: 5,
+          };
+          localStorage.setItem(persistedKey, JSON.stringify(defaultStore));
+        }
+      } catch (fallbackErr) {
+        console.error("[CloudSync] Files store fallback failed:", fallbackErr);
+      }
+
+      setNextBootMessage(t("common.system.restoringSystem"));
+
+      // Reload the page to apply changes
+      window.location.reload();
+    } catch (error) {
+      console.error("[CloudSync] Restore error:", error);
+      toast.error(t("apps.control-panels.cloudSync.restoreFailed"));
+      clearNextBootMessage();
+    } finally {
+      setIsCloudRestoring(false);
+    }
+  }, [username, authToken, t, setCurrentWallpaper]);
+
+  /** Delete cloud backup */
+  const handleCloudDelete = useCallback(async () => {
+    if (!username || !authToken) return;
+
+    try {
+      const response = await abortableFetch(getApiUrl("/api/sync/backup"), {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "X-Username": username,
+        },
+        timeout: 15000,
+        throwOnHttpError: false,
+        retry: { maxAttempts: 2, initialDelayMs: 500 },
+      });
+
+      if (response.ok) {
+        toast.success(t("apps.control-panels.cloudSync.deleteSuccess"));
+        setCloudSyncStatus({ hasBackup: false, metadata: null });
+      } else {
+        toast.error(t("apps.control-panels.cloudSync.deleteFailed"));
+      }
+    } catch (error) {
+      console.error("[CloudSync] Delete error:", error);
+      toast.error(t("apps.control-panels.cloudSync.deleteFailed"));
+    }
+  }, [username, authToken, t]);
 
   // States for previous volume levels for mute/unmute functionality
   const [prevMasterVolume, setPrevMasterVolume] = useState(
@@ -1100,5 +1599,18 @@ export function useControlPanelsLogic({
     handleVerifyTokenSubmit,
     handleSetPassword,
     handleLogoutAllDevices,
+    // Cloud Sync
+    cloudSyncStatus,
+    isCloudBackingUp,
+    isCloudRestoring,
+    isCloudStatusLoading,
+    isConfirmCloudRestoreOpen,
+    setIsConfirmCloudRestoreOpen,
+    isConfirmCloudDeleteOpen,
+    setIsConfirmCloudDeleteOpen,
+    handleCloudBackup,
+    handleCloudRestore,
+    handleCloudDelete,
+    fetchCloudSyncStatus,
   };
 }

@@ -234,6 +234,18 @@ export function ControlPanelsAppComponent({
     handleVerifyTokenSubmit,
     handleSetPassword,
     handleLogoutAllDevices,
+    // Cloud Sync
+    cloudSyncStatus,
+    isCloudBackingUp,
+    isCloudRestoring,
+    isCloudStatusLoading,
+    isConfirmCloudRestoreOpen,
+    setIsConfirmCloudRestoreOpen,
+    isConfirmCloudDeleteOpen,
+    setIsConfirmCloudDeleteOpen,
+    handleCloudBackup,
+    handleCloudRestore,
+    handleCloudDelete,
   } = useControlPanelsLogic({ initialData });
 
   const menuBar = (
@@ -594,6 +606,96 @@ export function ControlPanelsAppComponent({
                   <VersionDisplay />
                 </div>
 
+                {/* Cloud Sync Section */}
+                {username && (
+                  <div className="space-y-2">
+                    <div className="flex flex-col gap-1">
+                      <Label className="font-bold">
+                        {t("apps.control-panels.cloudSync.title")}
+                      </Label>
+                      <p className="text-[11px] text-neutral-600 font-geneva-12">
+                        {t("apps.control-panels.cloudSync.description")}
+                      </p>
+                    </div>
+
+                    {/* Cloud backup status */}
+                    {isCloudStatusLoading ? (
+                      <p className="text-[11px] text-neutral-500 font-geneva-12">
+                        {t("apps.control-panels.cloudSync.checking")}
+                      </p>
+                    ) : cloudSyncStatus?.hasBackup &&
+                      cloudSyncStatus.metadata ? (
+                      <div className="text-[11px] text-neutral-600 font-geneva-12 bg-neutral-100 dark:bg-neutral-800 rounded px-2 py-1.5">
+                        <span>
+                          {t("apps.control-panels.cloudSync.lastBackup")}{" "}
+                          {new Date(
+                            cloudSyncStatus.metadata.timestamp
+                          ).toLocaleString()}
+                        </span>
+                        <span className="ml-2 text-neutral-400">
+                          (
+                          {(
+                            cloudSyncStatus.metadata.totalSize /
+                            1024 /
+                            1024
+                          ).toFixed(2)}{" "}
+                          MB)
+                        </span>
+                      </div>
+                    ) : null}
+
+                    {/* Cloud sync buttons */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="retro"
+                        onClick={handleCloudBackup}
+                        disabled={isCloudBackingUp || isCloudRestoring}
+                        className="flex-1"
+                      >
+                        {isCloudBackingUp
+                          ? t("apps.control-panels.cloudSync.backingUp")
+                          : t("apps.control-panels.cloudSync.backupToCloud")}
+                      </Button>
+                      <Button
+                        variant="retro"
+                        onClick={() => setIsConfirmCloudRestoreOpen(true)}
+                        disabled={
+                          isCloudBackingUp ||
+                          isCloudRestoring ||
+                          !cloudSyncStatus?.hasBackup
+                        }
+                        className="flex-1"
+                      >
+                        {isCloudRestoring
+                          ? t("apps.control-panels.cloudSync.restoring")
+                          : t(
+                              "apps.control-panels.cloudSync.restoreFromCloud"
+                            )}
+                      </Button>
+                    </div>
+
+                    {/* Delete cloud backup */}
+                    {cloudSyncStatus?.hasBackup && (
+                      <Button
+                        variant="retro"
+                        onClick={() => setIsConfirmCloudDeleteOpen(true)}
+                        disabled={isCloudBackingUp || isCloudRestoring}
+                        className="w-full"
+                      >
+                        {t("apps.control-panels.cloudSync.deleteBackup")}
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {username && (
+                  <hr
+                    className="my-4 border-t"
+                    style={tabStyles.separatorStyle}
+                  />
+                )}
+
+                {/* Local Backup */}
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <Button
@@ -954,6 +1056,28 @@ export function ControlPanelsAppComponent({
             setPasswordError(null);
             setIsPasswordDialogOpen(true);
           }}
+        />
+        {/* Cloud Restore Confirmation */}
+        <ConfirmDialog
+          isOpen={isConfirmCloudRestoreOpen}
+          onOpenChange={setIsConfirmCloudRestoreOpen}
+          onConfirm={() => {
+            setIsConfirmCloudRestoreOpen(false);
+            handleCloudRestore();
+          }}
+          title={t("apps.control-panels.cloudSync.confirmRestore")}
+          description={t("apps.control-panels.cloudSync.confirmRestoreDesc")}
+        />
+        {/* Cloud Delete Confirmation */}
+        <ConfirmDialog
+          isOpen={isConfirmCloudDeleteOpen}
+          onOpenChange={setIsConfirmCloudDeleteOpen}
+          onConfirm={() => {
+            setIsConfirmCloudDeleteOpen(false);
+            handleCloudDelete();
+          }}
+          title={t("apps.control-panels.cloudSync.confirmDelete")}
+          description={t("apps.control-panels.cloudSync.confirmDeleteDesc")}
         />
       </WindowFrame>
     </>
