@@ -142,6 +142,9 @@ Object.entries(PHOTO_WALLPAPERS).forEach(([category, photos]) => {
 // Use shared AI model metadata
 const AI_MODELS = AI_MODEL_METADATA;
 
+/** Maximum cloud backup size in bytes (must match server-side MAX_BACKUP_SIZE) */
+const CLOUD_BACKUP_MAX_SIZE = 10 * 1024 * 1024;
+
 // Utility to convert Blob to base64 string for JSON serialization
 const blobToBase64 = (blob: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -416,9 +419,6 @@ export function useControlPanelsLogic({
     percent: number;
   } | null>(null);
 
-  /** Maximum backup size constant (must match server-side MAX_BACKUP_SIZE) */
-  const CLOUD_BACKUP_MAX_SIZE = 10 * 1024 * 1024;
-
   /** Fetch cloud backup status */
   const fetchCloudSyncStatus = useCallback(async () => {
     if (!username || !authToken) return;
@@ -691,7 +691,7 @@ export function useControlPanelsLogic({
       // Clear progress after a short delay so user can see completion
       setTimeout(() => setCloudProgress(null), 1500);
     }
-  }, [username, authToken, t, fetchCloudSyncStatus, CLOUD_BACKUP_MAX_SIZE]);
+  }, [username, authToken, t, fetchCloudSyncStatus]);
 
   /** Download and restore backup from cloud */
   const handleCloudRestore = useCallback(async () => {
