@@ -55,6 +55,13 @@ export function WinampAppComponent({
     }
   }, [instanceId, closeAppInstance]);
 
+  // Bring Winamp to foreground on any interaction with the container
+  const handleContainerMouseDown = useCallback(() => {
+    if (instanceId) {
+      bringInstanceToForeground(instanceId);
+    }
+  }, [instanceId, bringInstanceToForeground]);
+
   // Listen for close requests from external sources (dock, menu bar, etc.)
   useEffect(() => {
     if (!instanceId) return;
@@ -84,24 +91,25 @@ export function WinampAppComponent({
     const instance = useAppStore.getState().instances[instanceId];
     const storePosition = instance?.position;
 
-    // Build a positioning container so Webamp centers on the desired location.
+    // Create a positioned container that Webamp renders INTO.
+    // Per the docs the container must have non-static CSS position.
+    // Webamp renders as a child of this element and centres within it.
     const container = document.createElement("div");
     container.id = `webamp-container-${instanceId}`;
-
-    // Size the container to match the full layout bounding box
-    // (main on top, playlist below) so Webamp centres on the right spot
-    const totalHeight = MAIN_WINDOW_HEIGHT + PLAYLIST_HEIGHT;
-    if (storePosition) {
-      container.style.position = "fixed";
-      container.style.left = `${storePosition.x}px`;
-      container.style.top = `${storePosition.y}px`;
-      container.style.width = `${MAIN_WINDOW_WIDTH}px`;
-      container.style.height = `${totalHeight}px`;
-      container.style.pointerEvents = "none";
-    }
+    container.style.position = "fixed";
+    container.style.left = `${storePosition?.x ?? 48}px`;
+    container.style.top = `${storePosition?.y ?? 60}px`;
+    container.style.width = `${MAIN_WINDOW_WIDTH}px`;
+    container.style.height = `${MAIN_WINDOW_HEIGHT + PLAYLIST_HEIGHT}px`;
+    // Allow overflow so dragged windows are still visible
+    container.style.overflow = "visible";
 
     document.body.appendChild(container);
     containerRef.current = container;
+
+    // Bring to foreground on any mousedown inside the container
+    // (clicks on Webamp windows bubble up to the container)
+    container.addEventListener("mousedown", handleContainerMouseDown);
 
     // Load tracks from the iPod music library
     const ipodTracks = useIpodStore.getState().tracks;
@@ -114,7 +122,10 @@ export function WinampAppComponent({
           : [
               {
                 url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-                metaData: { artist: "Rick Astley", title: "Never Gonna Give You Up" },
+                metaData: {
+                  artist: "Rick Astley",
+                  title: "Never Gonna Give You Up",
+                },
               },
             ],
       windowLayout: {
@@ -135,17 +146,22 @@ export function WinampAppComponent({
     webampRef.current = webamp;
     isInitializedRef.current = true;
 
-    // Handle Webamp's close button
     webamp.onClose(() => {
       handleClose();
     });
 
-    // Handle minimize – Webamp shade mode handles this internally
     webamp.onMinimize(() => {});
 
+    // Render Webamp as a child of our container
     webamp.renderWhenReady(container);
 
     return () => {
+      if (containerRef.current) {
+        containerRef.current.removeEventListener(
+          "mousedown",
+          handleContainerMouseDown
+        );
+      }
       if (webampRef.current) {
         webampRef.current.dispose();
         webampRef.current = null;
@@ -156,37 +172,14 @@ export function WinampAppComponent({
       }
       isInitializedRef.current = false;
     };
-  }, [isWindowOpen, instanceId, handleClose]);
+  }, [isWindowOpen, instanceId, handleClose, handleContainerMouseDown]);
 
-  // Update z-index based on foreground state
+  // Update z-index on the container based on foreground state
   useEffect(() => {
-    const webampEl = document.querySelector("#webamp") as HTMLElement;
-    if (webampEl) {
-      webampEl.style.zIndex = isForeground ? "40" : "1";
+    if (containerRef.current) {
+      containerRef.current.style.zIndex = isForeground ? "40" : "1";
     }
   }, [isForeground]);
-
-  // Bring Winamp to foreground when the user interacts with it
-  useEffect(() => {
-    if (!instanceId) return;
-
-    const handleMouseDown = () => {
-      if (!isForeground) {
-        bringInstanceToForeground(instanceId);
-      }
-    };
-
-    const webampEl = document.querySelector("#webamp") as HTMLElement;
-    if (webampEl) {
-      webampEl.addEventListener("mousedown", handleMouseDown);
-    }
-
-    return () => {
-      if (webampEl) {
-        webampEl.removeEventListener("mousedown", handleMouseDown);
-      }
-    };
-  }, [instanceId, isForeground, bringInstanceToForeground]);
 
   const menuBar = (
     <WinampMenuBar
