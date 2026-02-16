@@ -133,6 +133,7 @@
     "vercel": "^50.1.3",
     "wanakana": "^5.3.1",
     "wavesurfer.js": "^7.12.1",
+    "webamp": "^2.2.0",
     "xp.css": "^0.2.6",
     "zod": "^4.2.1",
     "zustand": "^5.0.9"
@@ -150,6 +151,7 @@
     "@types/pako": "^2.0.4",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/youtube": "^0.1.2",
     "@vitejs/plugin-react-swc": "^4.2.2",
     "esbuild": "0.27.0",
     "eslint": "^9.39.2",

@@ -24,6 +24,7 @@ export const appIds = [
   "admin",
   "stickies",
   "infinite-mac",
+  "winamp",
 ] as const;
 
 export type AppId = (typeof appIds)[number];
@@ -55,6 +56,7 @@ export const appNames: Record<AppId, string> = {
   "admin": "Admin",
   "stickies": "Stickies",
   "infinite-mac": "Infinite Mac",
+  "winamp": "Winamp",
 };
 
 /** Get list of apps with basic info for stores */

@@ -20,7 +20,8 @@ export type AppId =
   | "control-panels"
   | "admin"
   | "stickies"
-  | "infinite-mac";
+  | "infinite-mac"
+  | "winamp";
 
 /**
  * Get translated app name with theme-awareness
@@ -144,6 +145,7 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
     admin: ["adminAccess", "userManagement", "roomManagement", "statistics"],
     stickies: ["createNote", "colors", "deleteNote", "autoSave"],
     "infinite-mac": ["classicMacEmulator", "selectSystem", "pauseResume", "backToSystems"],
+    winamp: ["playMusic", "equalizer", "playlist", "skins", "shuffleRepeat", "controls"],
   };
 
   const keys = helpKeys[appId] || [];

@@ -128,7 +128,8 @@
       "trash-full.png",
       "video-tape.png",
       "videos.png",
-      "warn.png"
+      "warn.png",
+      "winamp.png"
     ],
     "macosx": [
       "app.png",
@@ -181,7 +182,8 @@
       "trash-full.png",
       "video-tape.png",
       "videos.png",
-      "warn.png"
+      "warn.png",
+      "winamp.png"
     ],
     "win98": [
       "app.png",
@@ -222,7 +224,8 @@
       "trash-full.png",
       "video-tape.png",
       "videos.png",
-      "warn.png"
+      "warn.png",
+      "winamp.png"
     ],
     "xp": [
       "app.png",
@@ -265,7 +268,8 @@
       "trash-full.png",
       "video-tape.png",
       "videos.png",
-      "warn.png"
+      "warn.png",
+      "winamp.png"
     ]
   }
 }

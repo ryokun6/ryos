@@ -39,7 +39,8 @@ export interface BaseApp<TInitialData = unknown> {
     | "applet-viewer"
     | "admin"
     | "stickies"
-    | "infinite-mac";
+    | "infinite-mac"
+    | "winamp";
   name: string;
   icon: string | { type: "image"; src: string };
   description: string;
