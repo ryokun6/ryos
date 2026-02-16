@@ -9,6 +9,9 @@ import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { appMetadata } from "..";
 import { useAppStore } from "@/stores/useAppStore";
 
+const MAIN_WINDOW_WIDTH = 275;
+const MAIN_WINDOW_HEIGHT = 116;
+
 export function WinampAppComponent({
   isWindowOpen,
   onClose: _onClose,
@@ -60,8 +63,26 @@ export function WinampAppComponent({
   useEffect(() => {
     if (!isWindowOpen || isInitializedRef.current) return;
 
+    // Read the cascade position that ryOS assigned to this instance
+    const instance = useAppStore.getState().instances[instanceId];
+    const storePosition = instance?.position;
+
+    // Build a positioning container so Webamp centers on the desired location.
+    // Webamp centres its bounding-box inside the element passed to
+    // renderWhenReady(), so a container whose rect matches the desired
+    // window rect makes the main window land exactly there.
     const container = document.createElement("div");
     container.id = `webamp-container-${instanceId}`;
+
+    if (storePosition) {
+      container.style.position = "fixed";
+      container.style.left = `${storePosition.x}px`;
+      container.style.top = `${storePosition.y}px`;
+      container.style.width = `${MAIN_WINDOW_WIDTH}px`;
+      container.style.height = `${MAIN_WINDOW_HEIGHT}px`;
+      container.style.pointerEvents = "none";
+    }
+
     document.body.appendChild(container);
     containerRef.current = container;
 
@@ -78,8 +99,8 @@ export function WinampAppComponent({
       ],
       windowLayout: {
         main: { position: { top: 0, left: 0 } },
-        equalizer: { position: { top: 116, left: 0 }, closed: true },
-        playlist: { position: { top: 116, left: 0 }, closed: true },
+        equalizer: { position: { top: MAIN_WINDOW_HEIGHT, left: 0 }, closed: true },
+        playlist: { position: { top: MAIN_WINDOW_HEIGHT, left: 0 }, closed: true },
       },
     });
 
@@ -113,7 +134,6 @@ export function WinampAppComponent({
 
   // Update z-index based on foreground state
   useEffect(() => {
-    if (!containerRef.current) return;
     const webampEl = document.querySelector("#webamp") as HTMLElement;
     if (webampEl) {
       webampEl.style.zIndex = isForeground ? "40" : "1";
