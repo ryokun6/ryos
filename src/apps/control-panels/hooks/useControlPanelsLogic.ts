@@ -595,7 +595,7 @@ export function useControlPanelsLogic({
         chunks.push(value);
       }
 
-      // Combine chunks and convert to base64
+      // Combine chunks into a single buffer
       const totalLength = chunks.reduce((sum, c) => sum + c.length, 0);
       const combined = new Uint8Array(totalLength);
       let offset = 0;
@@ -604,16 +604,9 @@ export function useControlPanelsLogic({
         offset += chunk.length;
       }
 
-      // Convert Uint8Array to base64 string
-      let binary = "";
-      for (let i = 0; i < combined.length; i++) {
-        binary += String.fromCharCode(combined[i]);
-      }
-      const base64Data = btoa(binary);
-
       // Check size before uploading
-      if (base64Data.length > CLOUD_BACKUP_MAX_SIZE) {
-        const sizeMB = (base64Data.length / (1024 * 1024)).toFixed(1);
+      if (combined.length > CLOUD_BACKUP_MAX_SIZE) {
+        const sizeMB = (combined.length / (1024 * 1024)).toFixed(1);
         const limitMB = (CLOUD_BACKUP_MAX_SIZE / (1024 * 1024)).toFixed(0);
         toast.error(
           t("apps.control-panels.cloudSync.tooLarge", {
@@ -626,60 +619,74 @@ export function useControlPanelsLogic({
 
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.uploading"), percent: 50 });
 
-      // Upload to cloud using XMLHttpRequest for progress tracking
-      const uploadResult = await new Promise<{ ok: boolean; status: number; data: unknown }>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        const url = getApiUrl("/api/sync/backup");
-        xhr.open("POST", url, true);
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.setRequestHeader("Authorization", `Bearer ${authToken}`);
-        xhr.setRequestHeader("X-Username", username);
-        xhr.timeout = 120000;
+      // Step 1: Get a client token for direct Vercel Blob upload
+      const tokenUrl = getApiUrl("/api/sync/backup-token");
+      const tokenRes = await fetch(tokenUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${authToken}`,
+          "X-Username": username,
+        },
+      });
 
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            // Upload progress maps from 50% to 95%
-            const uploadPercent = (event.loaded / event.total) * 100;
-            const overallPercent = 50 + (uploadPercent * 45) / 100;
-            setCloudProgress({
-              phase: t("apps.control-panels.cloudSync.progress.uploading"),
-              percent: Math.round(overallPercent),
-            });
-          }
-        };
+      if (!tokenRes.ok) {
+        const tokenError = await tokenRes.json().catch(() => ({}));
+        throw new Error(
+          (tokenError as { error?: string })?.error || "Failed to get upload token"
+        );
+      }
 
-        xhr.onload = () => {
-          let data: unknown;
-          try {
-            data = JSON.parse(xhr.responseText);
-          } catch {
-            data = {};
-          }
-          resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, data });
-        };
+      const { clientToken } = await tokenRes.json() as { clientToken: string };
 
-        xhr.onerror = () => reject(new Error("Network error during upload"));
-        xhr.ontimeout = () => reject(new Error("Upload timed out"));
+      // Step 2: Upload directly to Vercel Blob from the browser
+      const { put: blobPut } = await import("@vercel/blob/client");
+      const compressedBlob = new Blob([combined], { type: "application/gzip" });
+      const blobPath = `backups/${username}/backup.gz`;
 
-        const body = JSON.stringify({
-          data: base64Data,
+      const blobResult = await blobPut(blobPath, compressedBlob, {
+        access: "public",
+        token: clientToken,
+        contentType: "application/gzip",
+        multipart: combined.length > 4 * 1024 * 1024,
+        onUploadProgress: (progress) => {
+          // Upload progress maps from 50% to 90%
+          const overallPercent = 50 + (progress.percentage * 40) / 100;
+          setCloudProgress({
+            phase: t("apps.control-panels.cloudSync.progress.uploading"),
+            percent: Math.round(overallPercent),
+          });
+        },
+      });
+
+      setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.finishing"), percent: 92 });
+
+      // Step 3: Save metadata to server
+      const metaUrl = getApiUrl("/api/sync/backup");
+      const metaRes = await fetch(metaUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`,
+          "X-Username": username,
+        },
+        body: JSON.stringify({
+          blobUrl: blobResult.url,
           timestamp: backup.timestamp,
           version: backup.version,
-        });
-
-        xhr.send(body);
+          totalSize: combined.length,
+        }),
       });
 
       setCloudProgress({ phase: t("apps.control-panels.cloudSync.progress.finishing"), percent: 98 });
 
-      if (uploadResult.ok) {
+      if (metaRes.ok) {
         setCloudProgress({ phase: t("apps.control-panels.cloudSync.backupSuccess"), percent: 100 });
         toast.success(t("apps.control-panels.cloudSync.backupSuccess"));
-        // Refresh status
         await fetchCloudSyncStatus();
       } else {
+        const errorData = await metaRes.json().catch(() => ({}));
         const errorMsg =
-          (uploadResult.data as { error?: string })?.error ||
+          (errorData as { error?: string })?.error ||
           t("apps.control-panels.cloudSync.backupFailed");
         toast.error(errorMsg);
       }

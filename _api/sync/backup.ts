@@ -1,14 +1,15 @@
 /**
- * POST /api/sync/backup - Upload backup to cloud (Vercel Blob)
+ * POST /api/sync/backup - Save backup metadata after client-side Vercel Blob upload
  * GET  /api/sync/backup - Download backup from cloud
  * DELETE /api/sync/backup - Delete cloud backup
  *
- * Stores compressed backup data in Vercel Blob with metadata in Redis.
+ * The actual blob upload is done client-side using @vercel/blob/client.
+ * This endpoint stores metadata in Redis and handles download/delete.
  * Requires authentication (Bearer token + X-Username).
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { put, del, head } from "@vercel/blob";
+import { del, head } from "@vercel/blob";
 import { createRedis } from "../_utils/redis.js";
 import {
   extractAuthNormalized,
@@ -23,33 +24,12 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-// Increase body size limit for large backups (default is 4.5MB)
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: "55mb",
-    },
-  },
-};
-
-/** Maximum backup size: 50MB compressed */
-const MAX_BACKUP_SIZE = 50 * 1024 * 1024;
-
 /** Backup metadata TTL: 90 days (same as user TTL) */
 const META_TTL = USER_TTL_SECONDS;
-
-/** Rate limit: 10 backups per hour */
-const RATE_LIMIT_WINDOW = 3600;
-const RATE_LIMIT_MAX = 10;
 
 // Redis key for backup metadata
 function metaKey(username: string) {
   return `sync:meta:${username}`;
-}
-
-// Blob path for a user's backup
-function blobPath(username: string) {
-  return `backups/${username}/backup.gz`;
 }
 
 interface BackupMeta {
@@ -90,7 +70,7 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
-    await handleUpload(req, res, redis, username);
+    await handleSaveMetadata(req, res, redis, username);
   } else if (req.method === "GET") {
     await handleDownload(res, redis, username);
   } else if (req.method === "DELETE") {
@@ -100,56 +80,43 @@ export default async function handler(
   }
 }
 
-async function handleUpload(
+async function handleSaveMetadata(
   req: VercelRequest,
   res: VercelResponse,
   redis: ReturnType<typeof createRedis>,
   username: string
 ): Promise<void> {
-  // Rate limiting
-  const rlKey = `rl:sync:backup:${username}`;
-  const current = await redis.incr(rlKey);
-  if (current === 1) {
-    await redis.expire(rlKey, RATE_LIMIT_WINDOW);
-  }
-  if (current > RATE_LIMIT_MAX) {
-    res.status(429).json({
-      error: "Too many backup requests. Please try again later.",
-    });
-    return;
-  }
-
-  // Parse body
+  // Parse body - expects metadata from client after direct blob upload
   const body = req.body as {
-    data: string; // base64-encoded gzip data
+    blobUrl: string;
     timestamp: string;
     version: number;
+    totalSize: number;
   } | null;
 
-  if (!body?.data || !body?.timestamp) {
-    res.status(400).json({ error: "Missing required fields: data, timestamp" });
+  if (!body?.blobUrl || !body?.timestamp) {
+    res.status(400).json({ error: "Missing required fields: blobUrl, timestamp" });
     return;
   }
 
-  const { data, timestamp, version } = body;
+  const { blobUrl, timestamp, version, totalSize } = body;
 
-  // Validate size (base64 string length)
-  if (data.length > MAX_BACKUP_SIZE) {
-    res.status(413).json({
-      error: `Backup too large. Maximum size is ${MAX_BACKUP_SIZE / 1024 / 1024}MB compressed.`,
-    });
+  // Validate the blob URL points to a real blob
+  const blobInfo = await head(blobUrl).catch(() => null);
+  if (!blobInfo) {
+    res.status(400).json({ error: "Invalid blob URL: blob not found" });
     return;
   }
 
   try {
-    // Delete old blob if it exists
+    // Delete old blob if it exists and differs from the new one
     const existingMeta = await redis.get<string | BackupMeta>(metaKey(username));
     if (existingMeta) {
       const parsed: BackupMeta =
         typeof existingMeta === "string"
           ? JSON.parse(existingMeta)
           : existingMeta;
-      if (parsed.blobUrl) {
+      if (parsed.blobUrl && parsed.blobUrl !== blobUrl) {
         try {
           await del(parsed.blobUrl);
         } catch {
@@ -158,23 +125,12 @@ async function handleUpload(
       }
     }
 
-    // Decode base64 to binary buffer
-    const binaryStr = Buffer.from(data, "base64");
-
-    // Upload to Vercel Blob
-    const blob = await put(blobPath(username), binaryStr, {
-      access: "public",
-      contentType: "application/gzip",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-    });
-
     // Store metadata in Redis
     const meta: BackupMeta = {
       timestamp,
       version: version || 3,
-      totalSize: binaryStr.length,
-      blobUrl: blob.url,
+      totalSize: totalSize || blobInfo.size,
+      blobUrl,
       createdAt: new Date().toISOString(),
     };
 
@@ -194,8 +150,8 @@ async function handleUpload(
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown error";
-    console.error("Error uploading backup:", message, error);
-    res.status(500).json({ error: `Failed to upload backup: ${message}` });
+    console.error("Error saving backup metadata:", message, error);
+    res.status(500).json({ error: `Failed to save backup metadata: ${message}` });
   }
 }
 
