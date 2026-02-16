@@ -124,6 +124,14 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "pauseResume",
     "backToSystems",
   ],
+  winamp: [
+    "playMusic",
+    "equalizer",
+    "playlist",
+    "skins",
+    "shuffleRepeat",
+    "controls",
+  ],
 };
 
 /**

@@ -132,6 +132,11 @@ const LazyInfiniteMacApp = createLazyComponent<unknown>(
   "infinite-mac"
 );
 
+const LazyWinampApp = createLazyComponent<unknown>(
+  () => import("@/apps/winamp/components/WinampAppComponent").then(m => ({ default: m.WinampAppComponent })),
+  "winamp"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small, isolated from components)
 // Import from metadata.ts files to avoid eager loading of components
@@ -159,6 +164,7 @@ import {
   appMetadata as infiniteMacMetadata,
   helpItems as infiniteMacHelpItems,
 } from "@/apps/infinite-mac/metadata";
+import { appMetadata as winampMetadata, helpItems as winampHelpItems } from "@/apps/winamp";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/hooks/useInfiniteMacLogic";
 
 // ============================================================================
@@ -420,6 +426,19 @@ export const appRegistry = {
       defaultSize: infiniteMacDefaultSize,
       minSize: { width: 512, height: 342 },
       maxSize: { width: 1024, height: 792 }, // 768 + 24 for macOS X titlebar spacer
+    } as WindowConstraints,
+  },
+  ["winamp"]: {
+    id: "winamp",
+    name: "Winamp",
+    icon: { type: "image", src: winampMetadata.icon },
+    description: "Classic Winamp media player",
+    component: LazyWinampApp,
+    helpItems: winampHelpItems,
+    metadata: winampMetadata,
+    windowConfig: {
+      defaultSize: { width: 275, height: 116 },
+      minSize: { width: 275, height: 116 },
     } as WindowConstraints,
   },
 } as const;

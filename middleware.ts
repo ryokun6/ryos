@@ -20,6 +20,7 @@ const APP_NAMES: Record<string, string> = {
   "control-panels": "Control Panels",
   stickies: "Stickies",
   "infinite-mac": "Infinite Mac",
+  winamp: "Winamp",
 };
 
 // App descriptions
@@ -42,6 +43,7 @@ const APP_DESCRIPTIONS: Record<string, string> = {
   "control-panels": "Set themes, sounds, and system preferences",
   stickies: "Colorful sticky notes for reminders and quick notes",
   "infinite-mac": "Run classic Mac OS and NeXT in your browser",
+  winamp: "Classic Winamp media player in your browser",
 };
 
 // App ID to macOS icon mapping
@@ -64,6 +66,7 @@ const APP_ICONS: Record<string, string> = {
   "control-panels": "control-panels/appearance-manager/app.png",
   stickies: "stickies.png",
   "infinite-mac": "infinite-mac.png",
+  winamp: "winamp.png",
 };
 
 function generateOgHtml(options: {
@@ -132,6 +135,7 @@ export const config = {
     "/applet-viewer",
     "/applet-viewer/:path*",
     "/control-panels",
+    "/winamp",
   ],
 };
 

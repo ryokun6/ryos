@@ -2395,6 +2395,41 @@
         }
       }
     },
+    "winamp": {
+      "name": "Winamp",
+      "title": "Winamp",
+      "description": "Classic Winamp media player",
+      "menu": {
+        "help": "Winamp Help",
+        "about": "About Winamp"
+      },
+      "help": {
+        "playMusic": {
+          "title": "Play Music",
+          "description": "Drag and drop audio files onto Winamp or use the playlist to add tracks"
+        },
+        "equalizer": {
+          "title": "Equalizer",
+          "description": "Toggle the equalizer window to adjust audio frequencies and presets"
+        },
+        "playlist": {
+          "title": "Playlist",
+          "description": "Open the playlist editor to manage your queue of songs"
+        },
+        "skins": {
+          "title": "Skins",
+          "description": "Right-click for options including skin selection to change the look"
+        },
+        "shuffleRepeat": {
+          "title": "Shuffle & Repeat",
+          "description": "Toggle shuffle and repeat modes using the buttons on the main window"
+        },
+        "controls": {
+          "title": "Controls",
+          "description": "Use the classic Winamp transport controls: play, pause, stop, next, previous"
+        }
+      }
+    },
     "admin": {
       "name": "Admin",
       "description": "System administration panel",
