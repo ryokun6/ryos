@@ -13,7 +13,7 @@ import { YouTubeMedia } from "../utils/youtubeMedia";
 
 const MAIN_WINDOW_WIDTH = 275;
 const MAIN_WINDOW_HEIGHT = 116;
-const EQ_HEIGHT = 116;
+const PLAYLIST_HEIGHT = 116;
 
 /** Convert iPod tracks to Webamp-compatible track objects */
 function ipodTracksToWebamp(tracks: Track[]) {
@@ -33,6 +33,9 @@ export function WinampAppComponent({
   instanceId,
 }: AppProps) {
   const closeAppInstance = useAppStore((state) => state.closeAppInstance);
+  const bringInstanceToForeground = useAppStore(
+    (state) => state.bringInstanceToForeground
+  );
   const webampRef = useRef<Webamp | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isInitializedRef = useRef(false);
@@ -86,14 +89,13 @@ export function WinampAppComponent({
     container.id = `webamp-container-${instanceId}`;
 
     // Size the container to match the full layout bounding box
-    // so Webamp centres on the right spot
-    const totalWidth = MAIN_WINDOW_WIDTH * 2; // main+EQ left, playlist right
-    const totalHeight = MAIN_WINDOW_HEIGHT + EQ_HEIGHT;
+    // (main on top, playlist below) so Webamp centres on the right spot
+    const totalHeight = MAIN_WINDOW_HEIGHT + PLAYLIST_HEIGHT;
     if (storePosition) {
       container.style.position = "fixed";
       container.style.left = `${storePosition.x}px`;
       container.style.top = `${storePosition.y}px`;
-      container.style.width = `${totalWidth}px`;
+      container.style.width = `${MAIN_WINDOW_WIDTH}px`;
       container.style.height = `${totalHeight}px`;
       container.style.pointerEvents = "none";
     }
@@ -119,9 +121,10 @@ export function WinampAppComponent({
         main: { position: { top: 0, left: 0 } },
         equalizer: {
           position: { top: MAIN_WINDOW_HEIGHT, left: 0 },
+          closed: true,
         },
         playlist: {
-          position: { top: 0, left: MAIN_WINDOW_WIDTH },
+          position: { top: MAIN_WINDOW_HEIGHT, left: 0 },
           size: { extraHeight: 0, extraWidth: 0 },
         },
       },
@@ -162,6 +165,28 @@ export function WinampAppComponent({
       webampEl.style.zIndex = isForeground ? "40" : "1";
     }
   }, [isForeground]);
+
+  // Bring Winamp to foreground when the user interacts with it
+  useEffect(() => {
+    if (!instanceId) return;
+
+    const handleMouseDown = () => {
+      if (!isForeground) {
+        bringInstanceToForeground(instanceId);
+      }
+    };
+
+    const webampEl = document.querySelector("#webamp") as HTMLElement;
+    if (webampEl) {
+      webampEl.addEventListener("mousedown", handleMouseDown);
+    }
+
+    return () => {
+      if (webampEl) {
+        webampEl.removeEventListener("mousedown", handleMouseDown);
+      }
+    };
+  }, [instanceId, isForeground, bringInstanceToForeground]);
 
   const menuBar = (
     <WinampMenuBar
