@@ -166,6 +166,7 @@ async function handleUpload(
       access: "public",
       contentType: "application/gzip",
       addRandomSuffix: false,
+      allowOverwrite: true,
     });
 
     // Store metadata in Redis
@@ -191,8 +192,10 @@ async function handleUpload(
       },
     });
   } catch (error) {
-    console.error("Error uploading backup:", error);
-    res.status(500).json({ error: "Failed to upload backup" });
+    const message =
+      error instanceof Error ? error.message : "Unknown error";
+    console.error("Error uploading backup:", message, error);
+    res.status(500).json({ error: `Failed to upload backup: ${message}` });
   }
 }
 
