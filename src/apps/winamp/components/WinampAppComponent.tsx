@@ -39,6 +39,7 @@ export function WinampAppComponent({
   const webampRef = useRef<Webamp | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isInitializedRef = useRef(false);
+  const webampElRef = useRef<HTMLElement | null>(null);
 
   const {
     translatedHelpItems,
@@ -54,13 +55,6 @@ export function WinampAppComponent({
       closeAppInstance(instanceId);
     }
   }, [instanceId, closeAppInstance]);
-
-  // Bring Winamp to foreground on any interaction with the container
-  const handleContainerMouseDown = useCallback(() => {
-    if (instanceId) {
-      bringInstanceToForeground(instanceId);
-    }
-  }, [instanceId, bringInstanceToForeground]);
 
   // Listen for close requests from external sources (dock, menu bar, etc.)
   useEffect(() => {
@@ -91,9 +85,9 @@ export function WinampAppComponent({
     const instance = useAppStore.getState().instances[instanceId];
     const storePosition = instance?.position;
 
-    // Create a positioned container that Webamp renders INTO.
-    // Per the docs the container must have non-static CSS position.
-    // Webamp renders as a child of this element and centres within it.
+    // Invisible positioning container (pointer-events: none).
+    // Webamp reads its bounding-rect for centering, then creates #webamp
+    // at the body level. We keep the container only for the centering hint.
     const container = document.createElement("div");
     container.id = `webamp-container-${instanceId}`;
     container.style.position = "fixed";
@@ -101,15 +95,10 @@ export function WinampAppComponent({
     container.style.top = `${storePosition?.y ?? 60}px`;
     container.style.width = `${MAIN_WINDOW_WIDTH}px`;
     container.style.height = `${MAIN_WINDOW_HEIGHT + PLAYLIST_HEIGHT}px`;
-    // Allow overflow so dragged windows are still visible
-    container.style.overflow = "visible";
+    container.style.pointerEvents = "none";
 
     document.body.appendChild(container);
     containerRef.current = container;
-
-    // Bring to foreground on any mousedown inside the container
-    // (clicks on Webamp windows bubble up to the container)
-    container.addEventListener("mousedown", handleContainerMouseDown);
 
     // Load tracks from the iPod music library
     const ipodTracks = useIpodStore.getState().tracks;
@@ -152,16 +141,17 @@ export function WinampAppComponent({
 
     webamp.onMinimize(() => {});
 
-    // Render Webamp as a child of our container
-    webamp.renderWhenReady(container);
+    webamp.renderWhenReady(container).then(() => {
+      // After render, grab the #webamp element that Webamp created
+      const el = document.querySelector("#webamp") as HTMLElement;
+      if (el) {
+        webampElRef.current = el;
+        el.style.zIndex = isForeground ? "40" : "1";
+      }
+    });
 
     return () => {
-      if (containerRef.current) {
-        containerRef.current.removeEventListener(
-          "mousedown",
-          handleContainerMouseDown
-        );
-      }
+      webampElRef.current = null;
       if (webampRef.current) {
         webampRef.current.dispose();
         webampRef.current = null;
@@ -172,14 +162,36 @@ export function WinampAppComponent({
       }
       isInitializedRef.current = false;
     };
-  }, [isWindowOpen, instanceId, handleClose, handleContainerMouseDown]);
+    // handleClose is intentionally the only callback dep so the effect
+    // doesn't re-run when isForeground changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isWindowOpen, instanceId, handleClose]);
 
-  // Update z-index on the container based on foreground state
+  // Update z-index based on foreground state
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.style.zIndex = isForeground ? "40" : "1";
+    if (webampElRef.current) {
+      webampElRef.current.style.zIndex = isForeground ? "40" : "1";
     }
   }, [isForeground]);
+
+  // Bring Winamp to foreground when clicking anywhere on a Webamp element.
+  // Uses capture phase so it fires before Webamp's own handlers and does
+  // NOT call preventDefault/stopPropagation, so Webamp keeps working.
+  useEffect(() => {
+    if (!instanceId) return;
+
+    const handler = (e: MouseEvent) => {
+      const webampEl = webampElRef.current ?? document.querySelector("#webamp");
+      if (webampEl && webampEl.contains(e.target as Node)) {
+        bringInstanceToForeground(instanceId);
+      }
+    };
+
+    document.addEventListener("mousedown", handler, { capture: true });
+    return () => {
+      document.removeEventListener("mousedown", handler, { capture: true });
+    };
+  }, [instanceId, bringInstanceToForeground]);
 
   const menuBar = (
     <WinampMenuBar
