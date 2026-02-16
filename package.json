@@ -151,6 +151,7 @@
     "@types/pako": "^2.0.4",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/youtube": "^0.1.2",
     "@vitejs/plugin-react-swc": "^4.2.2",
     "esbuild": "0.27.0",
     "eslint": "^9.39.2",

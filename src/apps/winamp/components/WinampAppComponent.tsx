@@ -8,9 +8,22 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { appMetadata } from "..";
 import { useAppStore } from "@/stores/useAppStore";
+import { useIpodStore, type Track } from "@/stores/useIpodStore";
+import { YouTubeMedia } from "../utils/youtubeMedia";
 
 const MAIN_WINDOW_WIDTH = 275;
 const MAIN_WINDOW_HEIGHT = 116;
+
+/** Convert iPod tracks to Webamp-compatible track objects */
+function ipodTracksToWebamp(tracks: Track[]) {
+  return tracks.map((t) => ({
+    url: t.url,
+    metaData: {
+      artist: t.artist ?? "Unknown Artist",
+      title: t.title,
+    },
+  }));
+}
 
 export function WinampAppComponent({
   isWindowOpen,
@@ -68,9 +81,6 @@ export function WinampAppComponent({
     const storePosition = instance?.position;
 
     // Build a positioning container so Webamp centers on the desired location.
-    // Webamp centres its bounding-box inside the element passed to
-    // renderWhenReady(), so a container whose rect matches the desired
-    // window rect makes the main window land exactly there.
     const container = document.createElement("div");
     container.id = `webamp-container-${instanceId}`;
 
@@ -86,23 +96,34 @@ export function WinampAppComponent({
     document.body.appendChild(container);
     containerRef.current = container;
 
+    // Load tracks from the iPod music library
+    const ipodTracks = useIpodStore.getState().tracks;
+    const webampTracks = ipodTracksToWebamp(ipodTracks);
+
     const webamp = new Webamp({
-      initialTracks: [
-        {
-          metaData: {
-            artist: "DJ Mike Llama",
-            title: "Llama Whippin' Intro",
-          },
-          url: "https://cdn.jsdelivr.net/gh/nicedoc/winamp-skins@master/demo.mp3",
-          duration: 5.322286,
-        },
-      ],
+      initialTracks:
+        webampTracks.length > 0
+          ? webampTracks
+          : [
+              {
+                url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                metaData: { artist: "Rick Astley", title: "Never Gonna Give You Up" },
+              },
+            ],
       windowLayout: {
         main: { position: { top: 0, left: 0 } },
-        equalizer: { position: { top: MAIN_WINDOW_HEIGHT, left: 0 }, closed: true },
-        playlist: { position: { top: MAIN_WINDOW_HEIGHT, left: 0 }, closed: true },
+        equalizer: {
+          position: { top: MAIN_WINDOW_HEIGHT, left: 0 },
+          closed: true,
+        },
+        playlist: {
+          position: { top: MAIN_WINDOW_HEIGHT, left: 0 },
+          closed: true,
+        },
       },
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      __customMediaClass: YouTubeMedia as any,
+    } as any);
 
     webampRef.current = webamp;
     isInitializedRef.current = true;
@@ -112,10 +133,8 @@ export function WinampAppComponent({
       handleClose();
     });
 
-    // Handle minimize
-    webamp.onMinimize(() => {
-      // No-op: Webamp shade mode handles this internally
-    });
+    // Handle minimize – Webamp shade mode handles this internally
+    webamp.onMinimize(() => {});
 
     webamp.renderWhenReady(container);
 
