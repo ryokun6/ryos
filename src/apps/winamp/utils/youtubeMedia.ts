@@ -37,7 +37,6 @@ let ytApiReady: Promise<void> | null = null;
 function ensureYTApi(): Promise<void> {
   if (ytApiReady) return ytApiReady;
 
-  // Already loaded (e.g. by react-player)
   if (
     typeof window !== "undefined" &&
     (window as unknown as Record<string, unknown>).YT &&
@@ -78,6 +77,8 @@ export class YouTubeMedia {
   private _analyserCtx: AudioContext | null = null;
   private _analyser: AnalyserNode | null = null;
   private _disposed = false;
+  private _playerReady = false;
+  private _pendingLoadResolve: (() => void) | null = null;
 
   constructor() {
     this._container = document.createElement("div");
@@ -100,11 +101,11 @@ export class YouTubeMedia {
   }
 
   setBalance(_balance: number) {
-    // YouTube API doesn't support stereo balance – no-op
+    // YouTube API doesn't support stereo balance
   }
 
   setPreamp(_value: number) {
-    // No Web-Audio graph to apply preamp to – no-op
+    // No Web-Audio graph to apply preamp to
   }
 
   on(event: string, cb: (...args: unknown[]) => void) {
@@ -144,30 +145,38 @@ export class YouTubeMedia {
     const videoId = extractVideoId(url);
 
     if (!videoId) {
-      // Not a YouTube URL – emit loaded with zero duration
       this._duration = 0;
       this._timeElapsed = 0;
       this._emitter.trigger("loaded");
       return;
     }
 
+    this._timeElapsed = 0;
+    this._duration = 0;
+    this._stopPolling();
+
     await ensureYTApi();
     if (this._disposed) return;
 
-    return new Promise<void>((resolve) => {
-      // Destroy previous player if exists
-      if (this._player) {
-        this._stopPolling();
-        this._player.destroy();
-        this._player = null;
-        // Re-create container div since destroy removes it
-        const newContainer = document.createElement("div");
-        newContainer.id = this._container.id;
-        newContainer.style.cssText = this._container.style.cssText;
-        this._container.parentNode?.replaceChild(newContainer, this._container);
-        this._container = newContainer;
-      }
+    // If we already have a player, reuse it with loadVideoById / cueVideoById.
+    // This avoids the destroy/recreate cycle that breaks prev/next skip.
+    if (this._player && this._playerReady) {
+      // The global onStateChange handler (set during initial creation)
+      // will fire "loaded" when the new video reaches PLAYING or CUED.
+      // We mark that we're waiting for a load so that handler can resolve.
+      return new Promise<void>((resolve) => {
+        this._pendingLoadResolve = resolve;
 
+        if (autoPlay) {
+          this._player!.loadVideoById(videoId);
+        } else {
+          this._player!.cueVideoById(videoId);
+        }
+      });
+    }
+
+    // First time: create the player from scratch
+    return new Promise<void>((resolve) => {
       this._player = new YT.Player(this._container.id, {
         width: "1",
         height: "1",
@@ -187,6 +196,7 @@ export class YouTubeMedia {
         events: {
           onReady: () => {
             if (this._disposed) return;
+            this._playerReady = true;
             this._player?.setVolume?.(this._volume);
             this._duration = this._player?.getDuration?.() ?? 0;
             this._emitter.trigger("loaded");
@@ -200,9 +210,12 @@ export class YouTubeMedia {
             const state = event.data;
 
             if (state === YT.PlayerState.PLAYING) {
-              this._duration = this._player?.getDuration?.() ?? this._duration;
+              this._duration =
+                this._player?.getDuration?.() ?? this._duration;
               this._startPolling();
               this._emitter.trigger("playing");
+              // Resolve any pending loadFromUrl promise
+              this._resolvePendingLoad();
             } else if (state === YT.PlayerState.PAUSED) {
               this._stopPolling();
               this._emitter.trigger("timeupdate");
@@ -212,11 +225,16 @@ export class YouTubeMedia {
             } else if (state === YT.PlayerState.BUFFERING) {
               this._emitter.trigger("waiting");
             } else if (state === YT.PlayerState.CUED) {
+              this._duration =
+                this._player?.getDuration?.() ?? this._duration;
               this._emitter.trigger("stopWaiting");
+              // Resolve pending load (cue without autoplay)
+              this._resolvePendingLoad();
             }
           },
           onError: () => {
             if (this._disposed) return;
+            this._emitter.trigger("ended");
             resolve();
           },
         },
@@ -225,24 +243,18 @@ export class YouTubeMedia {
   }
 
   setEqBand(_band: Band, _value: number) {
-    // No Web-Audio graph – no-op
+    // No Web-Audio graph
   }
 
-  disableEq() {
-    // no-op
-  }
+  disableEq() {}
 
-  enableEq() {
-    // no-op
-  }
+  enableEq() {}
 
   getAnalyser(): AnalyserNode {
-    // Return a silent analyser so Webamp's visualizer doesn't crash
     if (!this._analyserCtx) {
       this._analyserCtx = new AudioContext();
       this._analyser = this._analyserCtx.createAnalyser();
       this._analyser.fftSize = 2048;
-      // Connect a silent source so getByteFrequencyData returns zeroes
       const osc = this._analyserCtx.createOscillator();
       const gain = this._analyserCtx.createGain();
       gain.gain.value = 0;
@@ -260,7 +272,7 @@ export class YouTubeMedia {
       try {
         this._player.destroy();
       } catch {
-        // ignore destroy errors
+        // ignore
       }
       this._player = null;
     }
@@ -274,6 +286,16 @@ export class YouTubeMedia {
   }
 
   // ── Internal helpers ──────────────────────────────────────────────
+
+  private _resolvePendingLoad() {
+    if (this._pendingLoadResolve) {
+      this._duration = this._player?.getDuration?.() ?? this._duration;
+      this._emitter.trigger("loaded");
+      const resolve = this._pendingLoadResolve;
+      this._pendingLoadResolve = null;
+      resolve();
+    }
+  }
 
   private _startPolling() {
     this._stopPolling();

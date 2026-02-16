@@ -13,6 +13,7 @@ import { YouTubeMedia } from "../utils/youtubeMedia";
 
 const MAIN_WINDOW_WIDTH = 275;
 const MAIN_WINDOW_HEIGHT = 116;
+const EQ_HEIGHT = 116;
 
 /** Convert iPod tracks to Webamp-compatible track objects */
 function ipodTracksToWebamp(tracks: Track[]) {
@@ -84,12 +85,16 @@ export function WinampAppComponent({
     const container = document.createElement("div");
     container.id = `webamp-container-${instanceId}`;
 
+    // Size the container to match the full layout bounding box
+    // so Webamp centres on the right spot
+    const totalWidth = MAIN_WINDOW_WIDTH * 2; // main+EQ left, playlist right
+    const totalHeight = MAIN_WINDOW_HEIGHT + EQ_HEIGHT;
     if (storePosition) {
       container.style.position = "fixed";
       container.style.left = `${storePosition.x}px`;
       container.style.top = `${storePosition.y}px`;
-      container.style.width = `${MAIN_WINDOW_WIDTH}px`;
-      container.style.height = `${MAIN_WINDOW_HEIGHT}px`;
+      container.style.width = `${totalWidth}px`;
+      container.style.height = `${totalHeight}px`;
       container.style.pointerEvents = "none";
     }
 
@@ -114,11 +119,10 @@ export function WinampAppComponent({
         main: { position: { top: 0, left: 0 } },
         equalizer: {
           position: { top: MAIN_WINDOW_HEIGHT, left: 0 },
-          closed: true,
         },
         playlist: {
-          position: { top: MAIN_WINDOW_HEIGHT, left: 0 },
-          closed: true,
+          position: { top: 0, left: MAIN_WINDOW_WIDTH },
+          size: { extraHeight: 0, extraWidth: 0 },
         },
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
