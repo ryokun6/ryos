@@ -715,6 +715,32 @@
       "chatSynth": "聊天合成",
       "chatSynthVolume": "聊天合成音量",
       "checkForUpdates": "檢查更新",
+      "cloudSync": {
+        "backingUp": "備份中…",
+        "backupFailed": "無法備份至雲端。",
+        "backupSuccess": "備份已儲存至雲端。",
+        "backupToCloud": "雲端備份",
+        "checking": "檢查雲端備份中…",
+        "confirmRestore": "從雲端回復？",
+        "confirmRestoreDesc": "這將會以雲端備份取代您目前的所有設定和檔案。ryOS 將會重新啟動。",
+        "description": "備份或回復所有設定和檔案至雲端。上限 {{limit}}MB。",
+        "lastBackup": "上次雲端備份：{{date}} ({{size}}MB)",
+        "loginRequired": "請登入以使用雲端同步。",
+        "progress": {
+          "collecting": "收集資料中…",
+          "compressing": "壓縮中…",
+          "decompressing": "解壓縮中…",
+          "downloading": "從雲端下載中…",
+          "finishing": "完成中…",
+          "restoring": "回復資料中…",
+          "serializing": "序列化檔案中…",
+          "uploading": "上傳至雲端中…"
+        },
+        "restoreFailed": "無法從雲端回復。",
+        "restoreFromCloud": "雲端回復",
+        "restoring": "正在還原…",
+        "tooLarge": "備份檔過大 ({{size}}MB)。最大壓縮大小為 {{limit}}MB。"
+      },
       "color": "全彩",
       "crt": "CRT",
       "custom": "自訂",
@@ -1351,13 +1377,13 @@
         "coverFlow": "封面瀏覽",
         "display": "顯示",
         "displayCover": "封面",
+        "displayGradient": "漸層",
         "displayLandscapes": "風景",
         "displayLiquid": "液體",
         "displayMesh": "網格",
-        "displayGradient": "漸層",
-        "displayWater": "水面",
         "displayShader": "扭曲",
         "displayVideo": "影片",
+        "displayWater": "水面",
         "enableRomanization": "啟用羅馬拼音",
         "exportLibrary": "輸出資料庫...",
         "file": "檔案",
@@ -2301,6 +2327,45 @@
         "unknownError": "未知錯誤",
         "videoAdded": "影片已新增"
       }
+    },
+    "winamp": {
+      "description": "經典 Winamp 媒體播放器",
+      "help": {
+        "controls": {
+          "description": "使用經典 Winamp 播放控制項：播放、暫停、停止、下一首、上一首",
+          "title": "控制項"
+        },
+        "equalizer": {
+          "description": "切換等化器視窗以調整音訊頻率和預設",
+          "title": "等化器"
+        },
+        "playMusic": {
+          "description": "將音訊檔拖放到 Winamp 或使用播放清單新增曲目",
+          "title": "播放音樂"
+        },
+        "playlist": {
+          "description": "開啟播放清單編輯器以管理您的歌曲佇列",
+          "title": "播放清單"
+        },
+        "shuffleRepeat": {
+          "description": "使用主視窗上的按鈕切換隨機播放和重複模式",
+          "title": "隨機播放與重複"
+        },
+        "skins": {
+          "description": "透過「佈景主題」選單或按右鍵以取得更多選項來切換佈景主題",
+          "title": "佈景主題"
+        }
+      },
+      "menu": {
+        "about": "關於 Winamp",
+        "help": "Winamp 說明",
+        "skins": "佈景主題"
+      },
+      "name": "Winamp",
+      "skins": {
+        "default": "預設"
+      },
+      "title": "Winamp"
     }
   },
   "common": {

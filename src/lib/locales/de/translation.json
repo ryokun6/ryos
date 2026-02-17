@@ -715,6 +715,32 @@
       "chatSynth": "Chat-Synth",
       "chatSynthVolume": "Chat-Synth-Lautstärke",
       "checkForUpdates": "Nach Updates suchen",
+      "cloudSync": {
+        "backingUp": "Sicherung wird erstellt…",
+        "backupFailed": "Cloud-Sicherung fehlgeschlagen.",
+        "backupSuccess": "Cloud-Sicherung gespeichert.",
+        "backupToCloud": "Cloud-Sicherung",
+        "checking": "Cloud-Sicherung wird geprüft…",
+        "confirmRestore": "Aus Cloud wiederherstellen?",
+        "confirmRestoreDesc": "Dadurch werden alle Ihre aktuellen Einstellungen und Dateien durch die Cloud-Sicherung ersetzt. ryOS wird neu gestartet.",
+        "description": "Alle Einstellungen und Dateien in der Cloud sichern oder wiederherstellen. Max. {{limit}} MB.",
+        "lastBackup": "Letzte Cloud-Sicherung: {{date}} ({{size}} MB)",
+        "loginRequired": "Bitte melden Sie sich an, um die Cloud-Synchronisierung zu nutzen.",
+        "progress": {
+          "collecting": "Daten werden erfasst…",
+          "compressing": "Wird komprimiert…",
+          "decompressing": "Wird dekomprimiert…",
+          "downloading": "Wird aus der Cloud heruntergeladen…",
+          "finishing": "Wird abgeschlossen…",
+          "restoring": "Daten werden wiederhergestellt…",
+          "serializing": "Dateien werden serialisiert…",
+          "uploading": "Wird in die Cloud hochgeladen…"
+        },
+        "restoreFailed": "Wiederherstellung aus der Cloud fehlgeschlagen.",
+        "restoreFromCloud": "Cloud-Wiederherstellung",
+        "restoring": "Wird wiederhergestellt…",
+        "tooLarge": "Backup zu groß ({{size}}MB). Die maximale Größe beträgt {{limit}}MB komprimiert."
+      },
       "color": "Farbe",
       "crt": "CRT",
       "custom": "Benutzerdefiniert",
@@ -1351,13 +1377,13 @@
         "coverFlow": "Cover Flow",
         "display": "Anzeige",
         "displayCover": "Cover",
+        "displayGradient": "Farbverlauf",
         "displayLandscapes": "Landschaften",
         "displayLiquid": "Flüssigkeit",
         "displayMesh": "Mesh",
-        "displayGradient": "Farbverlauf",
-        "displayWater": "Wasser",
         "displayShader": "Warp",
         "displayVideo": "Video",
+        "displayWater": "Wasser",
         "enableRomanization": "Romanisierung aktivieren",
         "exportLibrary": "Mediathek exportieren...",
         "file": "Datei",
@@ -2301,6 +2327,45 @@
         "unknownError": "Unbekannter Fehler",
         "videoAdded": "VIDEO HINZUGEFÜGT"
       }
+    },
+    "winamp": {
+      "description": "Klassischer Winamp Mediaplayer",
+      "help": {
+        "controls": {
+          "description": "Verwenden Sie die klassischen Winamp-Transportsteuerungen: Wiedergabe, Pause, Stopp, Nächster, Vorheriger",
+          "title": "Steuerung"
+        },
+        "equalizer": {
+          "description": "Schalten Sie das Equalizer-Fenster um, um Audiofrequenzen und Voreinstellungen anzupassen",
+          "title": "Equalizer"
+        },
+        "playMusic": {
+          "description": "Ziehen Sie Audiodateien auf Winamp oder verwenden Sie die Wiedergabeliste, um Titel hinzuzufügen",
+          "title": "Musik abspielen"
+        },
+        "playlist": {
+          "description": "Öffnen Sie den Wiedergabelisten-Editor, um Ihre Song-Warteschlange zu verwalten",
+          "title": "Wiedergabeliste"
+        },
+        "shuffleRepeat": {
+          "description": "Schalten Sie Zufallswiedergabe und Wiederholungsmodi über die Schaltflächen im Hauptfenster um",
+          "title": "Zufallswiedergabe & Wiederholen"
+        },
+        "skins": {
+          "description": "Wechseln Sie Skins über das Skins-Menü oder klicken Sie mit der rechten Maustaste für weitere Optionen",
+          "title": "Skins"
+        }
+      },
+      "menu": {
+        "about": "Über Winamp",
+        "help": "Winamp-Hilfe",
+        "skins": "Skins"
+      },
+      "name": "Winamp",
+      "skins": {
+        "default": "Standard"
+      },
+      "title": "Winamp"
     }
   },
   "common": {

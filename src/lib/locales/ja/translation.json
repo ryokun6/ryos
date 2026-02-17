@@ -715,6 +715,32 @@
       "chatSynth": "チャットシンセ",
       "chatSynthVolume": "チャットシンセ音量",
       "checkForUpdates": "アップデートを確認",
+      "cloudSync": {
+        "backingUp": "バックアップ中…",
+        "backupFailed": "クラウドへのバックアップに失敗しました。",
+        "backupSuccess": "バックアップをクラウドに保存しました。",
+        "backupToCloud": "クラウドバックアップ",
+        "checking": "クラウドバックアップを確認中…",
+        "confirmRestore": "クラウドから復元しますか？",
+        "confirmRestoreDesc": "これにより、現在のすべての設定とファイルがクラウドバックアップに置き換えられます。ryOSが再起動します。",
+        "description": "すべての設定とファイルをクラウドにバックアップまたは復元します。最大{{limit}}MB。",
+        "lastBackup": "最終クラウドバックアップ: {{date}} ({{size}}MB)",
+        "loginRequired": "クラウド同期を使用するにはログインしてください。",
+        "progress": {
+          "collecting": "データ収集中…",
+          "compressing": "圧縮中…",
+          "decompressing": "解凍中…",
+          "downloading": "クラウドからダウンロード中…",
+          "finishing": "完了中…",
+          "restoring": "データ復元中…",
+          "serializing": "ファイルをシリアル化中…",
+          "uploading": "クラウドにアップロード中…"
+        },
+        "restoreFailed": "クラウドからの復元に失敗しました。",
+        "restoreFromCloud": "クラウド復元",
+        "restoring": "復元中…",
+        "tooLarge": "バックアップが大きすぎます ({{size}}MB)。最大サイズは圧縮時で{{limit}}MBです。"
+      },
       "color": "カラー",
       "crt": "CRT",
       "custom": "カスタム",
@@ -1351,13 +1377,13 @@
         "coverFlow": "カバーフロー",
         "display": "表示",
         "displayCover": "カバー",
+        "displayGradient": "グラデーション",
         "displayLandscapes": "風景",
         "displayLiquid": "液体",
         "displayMesh": "メッシュ",
-        "displayGradient": "グラデーション",
-        "displayWater": "ウォーター",
         "displayShader": "ワープ",
         "displayVideo": "ビデオ",
+        "displayWater": "ウォーター",
         "enableRomanization": "読み仮名を有効化",
         "exportLibrary": "ライブラリを書き出す...",
         "file": "ファイル",
@@ -2301,6 +2327,45 @@
         "unknownError": "不明なエラー",
         "videoAdded": "動画を追加しました"
       }
+    },
+    "winamp": {
+      "description": "クラシックWinampメディアプレイヤー",
+      "help": {
+        "controls": {
+          "description": "クラシックWinampのトランスポートコントロール（再生、一時停止、停止、次へ、前へ）を使用します。",
+          "title": "コントロール"
+        },
+        "equalizer": {
+          "description": "イコライザーウィンドウを切り替えて、オーディオ周波数とプリセットを調整します。",
+          "title": "イコライザー"
+        },
+        "playMusic": {
+          "description": "オーディオファイルをWinampにドラッグ＆ドロップするか、プレイリストを使用してトラックを追加します。",
+          "title": "音楽を再生"
+        },
+        "playlist": {
+          "description": "プレイリストエディターを開いて、曲のキューを管理します。",
+          "title": "プレイリスト"
+        },
+        "shuffleRepeat": {
+          "description": "メインウィンドウのボタンを使用して、シャッフルモードとリピートモードを切り替えます。",
+          "title": "シャッフルとリピート"
+        },
+        "skins": {
+          "description": "スキンメニューからスキンを切り替えるか、右クリックでその他のオプションを表示します。",
+          "title": "スキン"
+        }
+      },
+      "menu": {
+        "about": "Winampについて",
+        "help": "Winampヘルプ",
+        "skins": "スキン"
+      },
+      "name": "Winamp",
+      "skins": {
+        "default": "デフォルト"
+      },
+      "title": "Winamp"
     }
   },
   "common": {
