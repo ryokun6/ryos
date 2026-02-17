@@ -2329,6 +2329,10 @@
       }
     },
     "winamp": {
+      "defaultTrack": {
+        "artist": "Rick Astley",
+        "title": "Never Gonna Give You Up"
+      },
       "description": "Classic Winamp media player",
       "help": {
         "controls": {

@@ -117,8 +117,8 @@ export function WinampAppComponent({
               {
                 url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                 metaData: {
-                  artist: "Rick Astley",
-                  title: "Never Gonna Give You Up",
+                  artist: t("apps.winamp.defaultTrack.artist"),
+                  title: t("apps.winamp.defaultTrack.title"),
                 },
               },
             ],
