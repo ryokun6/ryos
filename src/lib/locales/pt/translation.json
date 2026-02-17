@@ -2329,40 +2329,40 @@
       }
     },
     "winamp": {
-      "description": "Classic Winamp media player",
+      "description": "Reprodutor de mídia clássico do Winamp",
       "help": {
         "controls": {
-          "description": "Use the classic Winamp transport controls: play, pause, stop, next, previous",
-          "title": "Controls"
+          "description": "Use os controles clássicos do Winamp: reproduzir, pausar, parar, próxima e anterior",
+          "title": "Controles"
         },
         "equalizer": {
-          "description": "Toggle the equalizer window to adjust audio frequencies and presets",
-          "title": "Equalizer"
+          "description": "Ative ou desative a janela do equalizador para ajustar frequências e predefinições de áudio",
+          "title": "Equalizador"
         },
         "playMusic": {
-          "description": "Drag and drop audio files onto Winamp or use the playlist to add tracks",
-          "title": "Play Music"
+          "description": "Arraste e solte arquivos de áudio no Winamp ou use a playlist para adicionar faixas",
+          "title": "Reproduzir música"
         },
         "playlist": {
-          "description": "Open the playlist editor to manage your queue of songs",
+          "description": "Abra o editor da playlist para gerenciar sua fila de músicas",
           "title": "Playlist"
         },
         "shuffleRepeat": {
-          "description": "Toggle shuffle and repeat modes using the buttons on the main window",
-          "title": "Shuffle & Repeat"
+          "description": "Alterne os modos aleatório e repetição usando os botões da janela principal",
+          "title": "Aleatório e repetição"
         },
         "skins": {
-          "description": "Right-click for options including skin selection to change the look",
+          "description": "Clique com o botão direito para opções, incluindo seleção de skins, para mudar a aparência",
           "title": "Skins"
         }
       },
       "menu": {
-        "about": "About Winamp",
-        "help": "Winamp Help"
+        "about": "Sobre o Winamp",
+        "help": "Ajuda do Winamp"
       },
       "name": "Winamp",
       "status": {
-        "unknownArtist": "Unknown Artist"
+        "unknownArtist": "Artista desconhecido"
       },
       "title": "Winamp"
     }

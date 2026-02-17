@@ -2329,40 +2329,40 @@
       }
     },
     "winamp": {
-      "description": "Classic Winamp media player",
+      "description": "Lecteur multimédia Winamp classique",
       "help": {
         "controls": {
-          "description": "Use the classic Winamp transport controls: play, pause, stop, next, previous",
-          "title": "Controls"
+          "description": "Utilisez les commandes de transport Winamp classiques : lecture, pause, arrêt, suivant, précédent",
+          "title": "Commandes"
         },
         "equalizer": {
-          "description": "Toggle the equalizer window to adjust audio frequencies and presets",
-          "title": "Equalizer"
+          "description": "Affichez ou masquez la fenêtre d’égaliseur pour ajuster les fréquences audio et les préréglages",
+          "title": "Égaliseur"
         },
         "playMusic": {
-          "description": "Drag and drop audio files onto Winamp or use the playlist to add tracks",
-          "title": "Play Music"
+          "description": "Glissez-déposez des fichiers audio dans Winamp ou utilisez la playlist pour ajouter des pistes",
+          "title": "Lire de la musique"
         },
         "playlist": {
-          "description": "Open the playlist editor to manage your queue of songs",
-          "title": "Playlist"
+          "description": "Ouvrez l’éditeur de playlist pour gérer votre file d’attente de morceaux",
+          "title": "Liste de lecture"
         },
         "shuffleRepeat": {
-          "description": "Toggle shuffle and repeat modes using the buttons on the main window",
-          "title": "Shuffle & Repeat"
+          "description": "Activez les modes aléatoire et répétition avec les boutons de la fenêtre principale",
+          "title": "Aléatoire et répétition"
         },
         "skins": {
-          "description": "Right-click for options including skin selection to change the look",
-          "title": "Skins"
+          "description": "Faites un clic droit pour accéder aux options, dont la sélection de skin, afin de changer l’apparence",
+          "title": "Habillages"
         }
       },
       "menu": {
-        "about": "About Winamp",
-        "help": "Winamp Help"
+        "about": "À propos de Winamp",
+        "help": "Aide Winamp"
       },
       "name": "Winamp",
       "status": {
-        "unknownArtist": "Unknown Artist"
+        "unknownArtist": "Artiste inconnu"
       },
       "title": "Winamp"
     }

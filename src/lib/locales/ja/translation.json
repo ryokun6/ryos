@@ -2329,40 +2329,40 @@
       }
     },
     "winamp": {
-      "description": "Classic Winamp media player",
+      "description": "クラシックな Winamp メディアプレーヤー",
       "help": {
         "controls": {
-          "description": "Use the classic Winamp transport controls: play, pause, stop, next, previous",
-          "title": "Controls"
+          "description": "Winamp のクラシックな再生コントロール（再生、一時停止、停止、次へ、前へ）を使います",
+          "title": "操作"
         },
         "equalizer": {
-          "description": "Toggle the equalizer window to adjust audio frequencies and presets",
-          "title": "Equalizer"
+          "description": "イコライザーウィンドウを切り替えて、音声の周波数やプリセットを調整します",
+          "title": "イコライザー"
         },
         "playMusic": {
-          "description": "Drag and drop audio files onto Winamp or use the playlist to add tracks",
-          "title": "Play Music"
+          "description": "Winamp に音声ファイルをドラッグ＆ドロップするか、プレイリストを使ってトラックを追加します",
+          "title": "音楽を再生"
         },
         "playlist": {
-          "description": "Open the playlist editor to manage your queue of songs",
-          "title": "Playlist"
+          "description": "プレイリストエディターを開いて、再生キューを管理します",
+          "title": "プレイリスト"
         },
         "shuffleRepeat": {
-          "description": "Toggle shuffle and repeat modes using the buttons on the main window",
-          "title": "Shuffle & Repeat"
+          "description": "メインウィンドウのボタンでシャッフルとリピートを切り替えます",
+          "title": "シャッフルとリピート"
         },
         "skins": {
-          "description": "Right-click for options including skin selection to change the look",
-          "title": "Skins"
+          "description": "右クリックでオプションを開き、スキン選択などで見た目を変更できます",
+          "title": "スキン"
         }
       },
       "menu": {
-        "about": "About Winamp",
-        "help": "Winamp Help"
+        "about": "Winamp について",
+        "help": "Winamp ヘルプ"
       },
       "name": "Winamp",
       "status": {
-        "unknownArtist": "Unknown Artist"
+        "unknownArtist": "不明なアーティスト"
       },
       "title": "Winamp"
     }
