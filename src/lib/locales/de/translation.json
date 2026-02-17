@@ -715,6 +715,32 @@
       "chatSynth": "Chat-Synth",
       "chatSynthVolume": "Chat-Synth-Lautstärke",
       "checkForUpdates": "Nach Updates suchen",
+      "cloudSync": {
+        "backingUp": "Backing up…",
+        "backupFailed": "Failed to backup to cloud.",
+        "backupSuccess": "Backup saved to cloud.",
+        "backupToCloud": "Cloud Backup",
+        "checking": "Checking cloud backup…",
+        "confirmRestore": "Restore from Cloud?",
+        "confirmRestoreDesc": "This will replace all your current settings and files with the cloud backup. ryOS will restart.",
+        "description": "Backup or restore all settings and files to the cloud. Max {{limit}}MB.",
+        "lastBackup": "Last cloud backup: {{date}} ({{size}}MB)",
+        "loginRequired": "Please log in to use cloud sync.",
+        "progress": {
+          "collecting": "Collecting data…",
+          "compressing": "Compressing…",
+          "decompressing": "Decompressing…",
+          "downloading": "Downloading from cloud…",
+          "finishing": "Finishing up…",
+          "restoring": "Restoring data…",
+          "serializing": "Serializing files…",
+          "uploading": "Uploading to cloud…"
+        },
+        "restoreFailed": "Failed to restore from cloud.",
+        "restoreFromCloud": "Cloud Restore",
+        "restoring": "Restoring…",
+        "tooLarge": "Backup too large ({{size}}MB). Maximum size is {{limit}}MB compressed."
+      },
       "color": "Farbe",
       "crt": "CRT",
       "custom": "Benutzerdefiniert",
@@ -1351,13 +1377,13 @@
         "coverFlow": "Cover Flow",
         "display": "Anzeige",
         "displayCover": "Cover",
+        "displayGradient": "Farbverlauf",
         "displayLandscapes": "Landschaften",
         "displayLiquid": "Flüssigkeit",
         "displayMesh": "Mesh",
-        "displayGradient": "Farbverlauf",
-        "displayWater": "Wasser",
         "displayShader": "Warp",
         "displayVideo": "Video",
+        "displayWater": "Wasser",
         "enableRomanization": "Romanisierung aktivieren",
         "exportLibrary": "Mediathek exportieren...",
         "file": "Datei",
@@ -2301,6 +2327,44 @@
         "unknownError": "Unbekannter Fehler",
         "videoAdded": "VIDEO HINZUGEFÜGT"
       }
+    },
+    "winamp": {
+      "description": "Classic Winamp media player",
+      "help": {
+        "controls": {
+          "description": "Use the classic Winamp transport controls: play, pause, stop, next, previous",
+          "title": "Controls"
+        },
+        "equalizer": {
+          "description": "Toggle the equalizer window to adjust audio frequencies and presets",
+          "title": "Equalizer"
+        },
+        "playMusic": {
+          "description": "Drag and drop audio files onto Winamp or use the playlist to add tracks",
+          "title": "Play Music"
+        },
+        "playlist": {
+          "description": "Open the playlist editor to manage your queue of songs",
+          "title": "Playlist"
+        },
+        "shuffleRepeat": {
+          "description": "Toggle shuffle and repeat modes using the buttons on the main window",
+          "title": "Shuffle & Repeat"
+        },
+        "skins": {
+          "description": "Right-click for options including skin selection to change the look",
+          "title": "Skins"
+        }
+      },
+      "menu": {
+        "about": "About Winamp",
+        "help": "Winamp Help"
+      },
+      "name": "Winamp",
+      "status": {
+        "unknownArtist": "Unknown Artist"
+      },
+      "title": "Winamp"
     }
   },
   "common": {
