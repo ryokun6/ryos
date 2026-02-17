@@ -715,6 +715,32 @@
       "chatSynth": "Synthétiseur de discussion",
       "chatSynthVolume": "Volume du synthé de chat",
       "checkForUpdates": "Rechercher les mises à jour",
+      "cloudSync": {
+        "backingUp": "Sauvegarde en cours…",
+        "backupFailed": "Échec de la sauvegarde dans le cloud.",
+        "backupSuccess": "Sauvegarde enregistrée dans le cloud.",
+        "backupToCloud": "Sauvegarde cloud",
+        "checking": "Vérification de la sauvegarde cloud…",
+        "confirmRestore": "Restaurer depuis le cloud ?",
+        "confirmRestoreDesc": "Cela remplacera tous vos réglages et fichiers actuels par la sauvegarde cloud. ryOS redémarrera.",
+        "description": "Sauvegardez ou restaurez tous les réglages et fichiers dans le cloud. Max {{limit}} Mo.",
+        "lastBackup": "Dernière sauvegarde cloud : {{date}} ({{size}} Mo)",
+        "loginRequired": "Veuillez vous connecter pour utiliser la synchronisation cloud.",
+        "progress": {
+          "collecting": "Collecte des données…",
+          "compressing": "Compression…",
+          "decompressing": "Décompression…",
+          "downloading": "Téléchargement depuis le cloud…",
+          "finishing": "Finalisation…",
+          "restoring": "Restauration des données…",
+          "serializing": "Sérialisation des fichiers…",
+          "uploading": "Envoi vers le cloud…"
+        },
+        "restoreFailed": "Échec de la restauration depuis le cloud.",
+        "restoreFromCloud": "Restaurer depuis le cloud",
+        "restoring": "Restauration en cours…",
+        "tooLarge": "Sauvegarde trop volumineuse ({{size}} Mo). La taille maximale compressée est de {{limit}} Mo."
+      },
       "color": "Couleur",
       "crt": "CRT",
       "custom": "Personnalisé",
@@ -1351,13 +1377,13 @@
         "coverFlow": "Cover Flow",
         "display": "Affichage",
         "displayCover": "Pochette",
+        "displayGradient": "Dégradé",
         "displayLandscapes": "Paysages",
         "displayLiquid": "Liquide",
         "displayMesh": "Maillage",
-        "displayGradient": "Dégradé",
-        "displayWater": "Eau",
         "displayShader": "Warp",
         "displayVideo": "Vidéo",
+        "displayWater": "Eau",
         "enableRomanization": "Activer la romanisation",
         "exportLibrary": "Exporter la bibliothèque...",
         "file": "Fichier",
@@ -2301,6 +2327,44 @@
         "unknownError": "Erreur inconnue",
         "videoAdded": "VIDÉO AJOUTÉE"
       }
+    },
+    "winamp": {
+      "description": "Lecteur multimédia Winamp classique",
+      "help": {
+        "controls": {
+          "description": "Utilisez les commandes de transport Winamp classiques : lecture, pause, arrêt, suivant, précédent",
+          "title": "Commandes"
+        },
+        "equalizer": {
+          "description": "Affichez ou masquez la fenêtre d’égaliseur pour ajuster les fréquences audio et les préréglages",
+          "title": "Égaliseur"
+        },
+        "playMusic": {
+          "description": "Glissez-déposez des fichiers audio dans Winamp ou utilisez la playlist pour ajouter des pistes",
+          "title": "Lire de la musique"
+        },
+        "playlist": {
+          "description": "Ouvrez l’éditeur de playlist pour gérer votre file d’attente de morceaux",
+          "title": "Liste de lecture"
+        },
+        "shuffleRepeat": {
+          "description": "Activez les modes aléatoire et répétition avec les boutons de la fenêtre principale",
+          "title": "Aléatoire et répétition"
+        },
+        "skins": {
+          "description": "Faites un clic droit pour accéder aux options, dont la sélection de skin, afin de changer l’apparence",
+          "title": "Habillages"
+        }
+      },
+      "menu": {
+        "about": "À propos de Winamp",
+        "help": "Aide Winamp"
+      },
+      "name": "Winamp",
+      "status": {
+        "unknownArtist": "Artiste inconnu"
+      },
+      "title": "Winamp"
     }
   },
   "common": {

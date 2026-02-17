@@ -715,6 +715,32 @@
       "chatSynth": "Synth de Chat",
       "chatSynthVolume": "Volume do Sintetizador de Chat",
       "checkForUpdates": "Verificar Atualizações",
+      "cloudSync": {
+        "backingUp": "Fazendo backup…",
+        "backupFailed": "Falha ao salvar backup na nuvem.",
+        "backupSuccess": "Backup salvo na nuvem.",
+        "backupToCloud": "Backup na nuvem",
+        "checking": "Verificando backup na nuvem…",
+        "confirmRestore": "Restaurar da nuvem?",
+        "confirmRestoreDesc": "Isso substituirá todas as suas configurações e arquivos atuais pelo backup na nuvem. O ryOS será reiniciado.",
+        "description": "Faça backup ou restaure todas as configurações e arquivos na nuvem. Máx. {{limit}} MB.",
+        "lastBackup": "Último backup na nuvem: {{date}} ({{size}} MB)",
+        "loginRequired": "Faça login para usar a sincronização em nuvem.",
+        "progress": {
+          "collecting": "Coletando dados…",
+          "compressing": "Compactando…",
+          "decompressing": "Descompactando…",
+          "downloading": "Baixando da nuvem…",
+          "finishing": "Finalizando…",
+          "restoring": "Restaurando dados…",
+          "serializing": "Serializando arquivos…",
+          "uploading": "Enviando para a nuvem…"
+        },
+        "restoreFailed": "Falha ao restaurar da nuvem.",
+        "restoreFromCloud": "Restaurar da nuvem",
+        "restoring": "Restaurando…",
+        "tooLarge": "Backup muito grande ({{size}} MB). O tamanho máximo compactado é {{limit}} MB."
+      },
       "color": "Cor",
       "crt": "CRT",
       "custom": "Personalizado",
@@ -1351,13 +1377,13 @@
         "coverFlow": "Cover Flow",
         "display": "Exibição",
         "displayCover": "Capa",
+        "displayGradient": "Gradiente",
         "displayLandscapes": "Paisagens",
         "displayLiquid": "Líquido",
         "displayMesh": "Malha",
-        "displayGradient": "Gradiente",
-        "displayWater": "Água",
         "displayShader": "Warp",
         "displayVideo": "Vídeo",
+        "displayWater": "Água",
         "enableRomanization": "Ativar Romanização",
         "exportLibrary": "Exportar Biblioteca...",
         "file": "Arquivo",
@@ -2301,6 +2327,44 @@
         "unknownError": "Erro desconhecido",
         "videoAdded": "VÍDEO ADICIONADO"
       }
+    },
+    "winamp": {
+      "description": "Reprodutor de mídia clássico do Winamp",
+      "help": {
+        "controls": {
+          "description": "Use os controles clássicos do Winamp: reproduzir, pausar, parar, próxima e anterior",
+          "title": "Controles"
+        },
+        "equalizer": {
+          "description": "Ative ou desative a janela do equalizador para ajustar frequências e predefinições de áudio",
+          "title": "Equalizador"
+        },
+        "playMusic": {
+          "description": "Arraste e solte arquivos de áudio no Winamp ou use a playlist para adicionar faixas",
+          "title": "Reproduzir música"
+        },
+        "playlist": {
+          "description": "Abra o editor da playlist para gerenciar sua fila de músicas",
+          "title": "Playlist"
+        },
+        "shuffleRepeat": {
+          "description": "Alterne os modos aleatório e repetição usando os botões da janela principal",
+          "title": "Aleatório e repetição"
+        },
+        "skins": {
+          "description": "Clique com o botão direito para opções, incluindo seleção de skins, para mudar a aparência",
+          "title": "Skins"
+        }
+      },
+      "menu": {
+        "about": "Sobre o Winamp",
+        "help": "Ajuda do Winamp"
+      },
+      "name": "Winamp",
+      "status": {
+        "unknownArtist": "Artista desconhecido"
+      },
+      "title": "Winamp"
     }
   },
   "common": {

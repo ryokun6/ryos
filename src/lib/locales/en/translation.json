@@ -2403,6 +2403,9 @@
         "help": "Winamp Help",
         "about": "About Winamp"
       },
+      "status": {
+        "unknownArtist": "Unknown Artist"
+      },
       "help": {
         "playMusic": {
           "title": "Play Music",

@@ -10,18 +10,19 @@ import { appMetadata } from "..";
 import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { YouTubeMedia } from "../utils/youtubeMedia";
+import { useTranslation } from "react-i18next";
 
 const MAIN_WINDOW_WIDTH = 275;
 const MAIN_WINDOW_HEIGHT = 116;
 const PLAYLIST_HEIGHT = 116;
 
 /** Convert iPod tracks to Webamp-compatible track objects */
-function ipodTracksToWebamp(tracks: Track[]) {
-  return tracks.map((t) => ({
-    url: t.url,
+function ipodTracksToWebamp(tracks: Track[], unknownArtist: string) {
+  return tracks.map((track) => ({
+    url: track.url,
     metaData: {
-      artist: t.artist ?? "Unknown Artist",
-      title: t.title,
+      artist: track.artist ?? unknownArtist,
+      title: track.title,
     },
   }));
 }
@@ -32,6 +33,7 @@ export function WinampAppComponent({
   isForeground,
   instanceId,
 }: AppProps) {
+  const { t } = useTranslation();
   const closeAppInstance = useAppStore((state) => state.closeAppInstance);
   const bringInstanceToForeground = useAppStore(
     (state) => state.bringInstanceToForeground
@@ -102,7 +104,10 @@ export function WinampAppComponent({
 
     // Load tracks from the iPod music library
     const ipodTracks = useIpodStore.getState().tracks;
-    const webampTracks = ipodTracksToWebamp(ipodTracks);
+    const webampTracks = ipodTracksToWebamp(
+      ipodTracks,
+      t("apps.winamp.status.unknownArtist")
+    );
 
     const webamp = new Webamp({
       initialTracks:
