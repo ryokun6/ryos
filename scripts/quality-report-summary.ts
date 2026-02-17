@@ -1,0 +1,295 @@
+#!/usr/bin/env bun
+
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+
+interface QualityCheckEntry {
+  name: string;
+  status: "PASS" | "FAIL";
+  value: number;
+  allowed: string;
+  offenders?: Array<{ path: string; count: number }>;
+}
+
+interface QualityReport {
+  schemaVersion?: number;
+  root: string;
+  passed: boolean;
+  totalChecks?: number;
+  failedChecks?: number;
+  checks: QualityCheckEntry[];
+}
+
+const iconForStatus = (status: "PASS" | "FAIL"): string =>
+  status === "PASS" ? "✅" : "❌";
+
+const hasLineBreak = (value: string): boolean => /[\r\n]/.test(value);
+const isCountBasedAllowedText = (value: string): boolean =>
+  /^<=\s*\d+(?:\s*\(.+\))?$/.test(value);
+
+const assertQualityReport = (value: unknown): QualityReport => {
+  if (!value || typeof value !== "object") {
+    throw new Error("Quality report must be a JSON object");
+  }
+
+  const report = value as Partial<QualityReport>;
+  if (typeof report.root !== "string" || report.root.trim().length === 0) {
+    throw new Error("Quality report must include a non-empty root");
+  }
+  if (report.root !== report.root.trim()) {
+    throw new Error("Quality report root must not include surrounding whitespace");
+  }
+  if (hasLineBreak(report.root)) {
+    throw new Error("Quality report root must not contain line breaks");
+  }
+  if (typeof report.passed !== "boolean") {
+    throw new Error("Quality report must include a boolean passed field");
+  }
+  if (
+    report.schemaVersion !== undefined &&
+    (!Number.isInteger(report.schemaVersion) || report.schemaVersion !== 1)
+  ) {
+    throw new Error("Quality report schemaVersion must be integer value 1");
+  }
+  if (!Array.isArray(report.checks)) {
+    throw new Error("Quality report must include a checks array");
+  }
+  if (report.checks.length === 0) {
+    throw new Error("Quality report checks array must not be empty");
+  }
+  if (
+    report.totalChecks !== undefined &&
+    (!Number.isInteger(report.totalChecks) || report.totalChecks < 0)
+  ) {
+    throw new Error("Quality report totalChecks metadata must be a non-negative integer");
+  }
+  if (
+    report.failedChecks !== undefined &&
+    (!Number.isInteger(report.failedChecks) || report.failedChecks < 0)
+  ) {
+    throw new Error("Quality report failedChecks metadata must be a non-negative integer");
+  }
+
+  for (const [index, check] of report.checks.entries()) {
+    if (!check || typeof check !== "object") {
+      throw new Error(`Invalid check entry at index ${index}`);
+    }
+    const candidate = check as Partial<QualityCheckEntry>;
+    if (typeof candidate.name !== "string" || candidate.name.trim().length === 0) {
+      throw new Error(`Check at index ${index} must include a name`);
+    }
+    if (candidate.name !== candidate.name.trim()) {
+      throw new Error(`Check at index ${index} name must not include surrounding whitespace`);
+    }
+    if (hasLineBreak(candidate.name)) {
+      throw new Error(`Check at index ${index} name must not contain line breaks`);
+    }
+    if (candidate.status !== "PASS" && candidate.status !== "FAIL") {
+      throw new Error(`Check "${candidate.name}" has invalid status`);
+    }
+    if (!Number.isInteger(candidate.value) || candidate.value < 0) {
+      throw new Error(
+        `Check "${candidate.name}" must include a non-negative integer value`
+      );
+    }
+    if (
+      typeof candidate.allowed !== "string" ||
+      candidate.allowed.trim().length === 0
+    ) {
+      throw new Error(`Check "${candidate.name}" must include allowed text`);
+    }
+    if (candidate.allowed !== candidate.allowed.trim()) {
+      throw new Error(
+        `Check "${candidate.name}" allowed text must not include surrounding whitespace`
+      );
+    }
+    if (hasLineBreak(candidate.allowed)) {
+      throw new Error(`Check "${candidate.name}" allowed text must not contain line breaks`);
+    }
+    if (candidate.offenders !== undefined) {
+      if (!Array.isArray(candidate.offenders)) {
+        throw new Error(`Check "${candidate.name}" offenders must be an array`);
+      }
+      const offenderPathSet = new Set<string>();
+      let previousOffenderPath: string | null = null;
+      let offenderCountSum = 0;
+      for (const [offenderIndex, offender] of candidate.offenders.entries()) {
+        if (!offender || typeof offender !== "object") {
+          throw new Error(
+            `Check "${candidate.name}" offender at index ${offenderIndex} is invalid`
+          );
+        }
+        const offenderCandidate = offender as Partial<{
+          path: string;
+          count: number;
+        }>;
+        if (
+          typeof offenderCandidate.path !== "string" ||
+          offenderCandidate.path.trim().length === 0
+        ) {
+          throw new Error(
+            `Check "${candidate.name}" offender at index ${offenderIndex} has invalid path`
+          );
+        }
+        if (
+          !Number.isInteger(offenderCandidate.count) ||
+          offenderCandidate.count < 1
+        ) {
+          throw new Error(
+            `Check "${candidate.name}" offender at index ${offenderIndex} has invalid count`
+          );
+        }
+        if (offenderPathSet.has(offenderCandidate.path)) {
+          throw new Error(
+            `Check "${candidate.name}" includes duplicate offender path: ${offenderCandidate.path}`
+          );
+        }
+        offenderCountSum += offenderCandidate.count;
+        if (offenderCandidate.path !== offenderCandidate.path.trim()) {
+          throw new Error(
+            `Check "${candidate.name}" offender paths must not include surrounding whitespace`
+          );
+        }
+        if (hasLineBreak(offenderCandidate.path)) {
+          throw new Error(
+            `Check "${candidate.name}" offender paths must not contain line breaks`
+          );
+        }
+        if (offenderCandidate.path.includes("\\")) {
+          throw new Error(
+            `Check "${candidate.name}" offender paths must use forward slashes`
+          );
+        }
+        if (
+          previousOffenderPath !== null &&
+          offenderCandidate.path < previousOffenderPath
+        ) {
+          throw new Error(
+            `Check "${candidate.name}" offenders must be sorted by path ascending`
+          );
+        }
+        offenderPathSet.add(offenderCandidate.path);
+        previousOffenderPath = offenderCandidate.path;
+      }
+      if (
+        candidate.status === "FAIL" &&
+        candidate.offenders.length > 0 &&
+        isCountBasedAllowedText(candidate.allowed) &&
+        offenderCountSum !== candidate.value
+      ) {
+        throw new Error(
+          `Check "${candidate.name}" offender count total must match check value for count-based checks`
+        );
+      }
+    }
+    if (
+      candidate.status === "PASS" &&
+      Array.isArray(candidate.offenders) &&
+      candidate.offenders.length > 0
+    ) {
+      throw new Error(`Check "${candidate.name}" must not include offenders when PASS`);
+    }
+    if (
+      candidate.status === "FAIL" &&
+      (!Array.isArray(candidate.offenders) || candidate.offenders.length === 0)
+    ) {
+      throw new Error(`Check "${candidate.name}" must include offenders when FAIL`);
+    }
+  }
+  const checkNameSet = new Set<string>();
+  for (const check of report.checks) {
+    const checkName = (check as QualityCheckEntry).name;
+    if (checkNameSet.has(checkName)) {
+      throw new Error(`Quality report contains duplicate check name: "${checkName}"`);
+    }
+    checkNameSet.add(checkName);
+  }
+
+  if (
+    report.totalChecks !== undefined &&
+    report.totalChecks !== report.checks.length
+  ) {
+    throw new Error("Quality report totalChecks metadata does not match checks length");
+  }
+
+  const computedFailedChecks = report.checks.filter(
+    (check) => (check as QualityCheckEntry).status === "FAIL"
+  ).length;
+  if (
+    report.failedChecks !== undefined &&
+    report.failedChecks !== computedFailedChecks
+  ) {
+    throw new Error(
+      "Quality report failedChecks metadata does not match failed check count"
+    );
+  }
+  if (
+    report.totalChecks !== undefined &&
+    report.failedChecks !== undefined &&
+    report.failedChecks > report.totalChecks
+  ) {
+    throw new Error("Quality report failedChecks metadata exceeds totalChecks");
+  }
+  if (report.passed !== (computedFailedChecks === 0)) {
+    throw new Error(
+      "Quality report passed metadata does not match failed check status values"
+    );
+  }
+
+  return report as QualityReport;
+};
+
+const run = async (): Promise<void> => {
+  const reportArg = process.argv[2] || "quality-report.json";
+  const reportPath = resolve(process.cwd(), reportArg);
+  const raw = await readFile(reportPath, "utf-8");
+  const report = assertQualityReport(JSON.parse(raw));
+  const failedChecks = report.checks.filter((check) => check.status === "FAIL");
+  const totalChecks = report.totalChecks ?? report.checks.length;
+  const failedCheckCount = report.failedChecks ?? failedChecks.length;
+
+  const lines: string[] = [];
+  lines.push("## Quality Guardrails Report");
+  lines.push("");
+  if (report.schemaVersion !== undefined) {
+    lines.push(`- Schema version: ${report.schemaVersion}`);
+  }
+  lines.push(`- Root: \`${report.root}\``);
+  lines.push(`- Overall: ${report.passed ? "✅ PASS" : "❌ FAIL"}`);
+  lines.push(`- Total checks: ${totalChecks}`);
+  lines.push(`- Failed checks: ${failedCheckCount}`);
+  if (failedChecks.length > 0) {
+    lines.push(
+      `- Failed check names: ${failedChecks.map((check) => check.name).join(", ")}`
+    );
+  }
+  const failedChecksWithOffenders = failedChecks.filter(
+    (check) => Array.isArray(check.offenders) && check.offenders.length > 0
+  );
+  if (failedChecksWithOffenders.length > 0) {
+    lines.push("");
+    lines.push("### Failed check offenders (top 5 each)");
+    for (const check of failedChecksWithOffenders) {
+      lines.push(`- **${check.name}**`);
+      for (const offender of (check.offenders || []).slice(0, 5)) {
+        lines.push(`  - \`${offender.path}\` (${offender.count})`);
+      }
+    }
+  }
+  lines.push("");
+  lines.push("| Check | Status | Value | Allowed |");
+  lines.push("|---|---:|---:|---|");
+  for (const check of report.checks) {
+    lines.push(
+      `| ${check.name} | ${iconForStatus(check.status)} ${check.status} | ${check.value} | ${check.allowed} |`
+    );
+  }
+  lines.push("");
+
+  process.stdout.write(`${lines.join("\n")}\n`);
+};
+
+run().catch((error) => {
+  console.error("Failed to render quality report summary:", error);
+  process.exit(1);
+});

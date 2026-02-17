@@ -1,0 +1,52 @@
+name: Code Quality
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - cursor/**
+
+concurrency:
+  group: code-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality all
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.5"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run full quality suite
+        run: bun run quality:all:ci
+
+      - name: Publish quality summary
+        if: always()
+        run: |
+          if [ -f quality-report.json ]; then
+            bun run quality:summary quality-report.json >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## Quality Guardrails Report" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "quality-report.json was not generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload quality report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-report
+          path: quality-report.json
+          if-no-files-found: ignore

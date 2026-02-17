@@ -494,8 +494,7 @@ IMPORTANT NAVIGATION CONTEXT:
         throttledSetHtml(cleanHtmlContent);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiMessages]); // Only depends on messages for streaming updates
+  }, [aiMessages, throttledSetHtml]); // Only depends on messages for streaming updates
 
   // Effect to notify parent of loading state changes
   useEffect(() => {

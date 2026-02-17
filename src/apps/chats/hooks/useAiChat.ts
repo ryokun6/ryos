@@ -1992,8 +1992,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       console.log("Syncing Zustand store messages to SDK.");
       setSdkMessages(aiMessages);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiMessages, setSdkMessages]); // Only run when aiMessages changes
+  }, [aiMessages, currentSdkMessages, setSdkMessages]); // Only run when aiMessages changes
 
   // --- Incremental TTS while assistant reply is streaming ---
   const isLoading = status === "streaming" || status === "submitted";

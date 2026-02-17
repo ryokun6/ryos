@@ -1546,7 +1546,7 @@ export const useTerminalLogic = ({
     if (!document.getElementById("breathing-animation")) {
       const style = document.createElement("style");
       style.id = "breathing-animation";
-      style.innerHTML = `
+      style.textContent = `
         @keyframes breathing {
           0%, 100% { opacity: 0.3; }
           50% { opacity: 0.6; }

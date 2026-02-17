@@ -168,7 +168,6 @@ export function useFurigana({
   const lastFuriganaSongIdRef = useRef<string>("");
 
   // Fetch furigana for original lines when enabled using line-by-line streaming
-  // biome-ignore lint/correctness/useExhaustiveDependencies: cacheKey captures lines content, shouldFetchFurigana captures romanization settings
   useEffect(() => {
     // Capture songId at effect start for stale request detection
     const effectSongId = songId;
@@ -344,8 +343,21 @@ export function useFurigana({
       setIsFetchingFurigana(false);
       setFuriganaProgress(undefined);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- cacheKey captures lines content, shouldFetchFurigana captures romanization settings
-  }, [songId, cacheKey, shouldFetchFurigana, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedInfo]);
+  }, [
+    auth,
+    cacheKey,
+    currentSongIdRef,
+    hasLines,
+    isFuriganaForceRequest,
+    isShowingOriginal,
+    lines,
+    linesRef,
+    lyricsCacheBustTrigger,
+    markFuriganaHandled,
+    prefetchedInfo,
+    shouldFetchFurigana,
+    songId,
+  ]);
 
   // Check conditions for soramimi fetching
   const shouldFetchSoramimi = romanization.enabled && romanization.soramimi;
@@ -372,7 +384,6 @@ export function useFurigana({
 
   // Fetch soramimi for lyrics when enabled using line-by-line streaming
   // For Japanese songs, waits for furigana to complete first so we can pass readings to the AI
-  // biome-ignore lint/correctness/useExhaustiveDependencies: cacheKey captures lines content, shouldFetchSoramimi captures romanization settings
   useEffect(() => {
     // Capture songId at effect start for stale request detection
     const effectSongId = songId;
@@ -560,8 +571,25 @@ export function useFurigana({
       setIsFetchingSoramimi(false);
       setSoramimiProgress(undefined);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- soramimiCacheKey captures lines content + target language, shouldFetchSoramimi captures romanization settings, furiganaReadyForSoramimi handles furigana sequencing, furiganaMapRef accessed via ref to avoid re-runs during streaming
-  }, [songId, soramimiCacheKey, shouldFetchSoramimi, hasLines, isShowingOriginal, lyricsCacheBustTrigger, prefetchedSoramimiInfo, isJapanese, furiganaReadyForSoramimi, soramimiTargetLanguage]);
+  }, [
+    auth,
+    currentSongIdRef,
+    furiganaMapRef,
+    furiganaReadyForSoramimi,
+    hasLines,
+    isJapanese,
+    isShowingOriginal,
+    isSoramimiForceRequest,
+    lines,
+    linesRef,
+    lyricsCacheBustTrigger,
+    markSoramimiHandled,
+    prefetchedSoramimiInfo,
+    shouldFetchSoramimi,
+    songId,
+    soramimiCacheKey,
+    soramimiTargetLanguage,
+  ]);
 
   // Unified render function that handles all romanization types
   // Delegates to extracted utility for better separation of concerns

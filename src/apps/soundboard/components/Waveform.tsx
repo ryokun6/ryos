@@ -40,7 +40,7 @@ export const Waveform = forwardRef<HTMLDivElement, WaveformProps>(
 
         if (!currentContainer || !isMounted) return; // Check again before async operation
 
-        currentContainer.innerHTML = ""; // Clear container
+        currentContainer.replaceChildren(); // Clear container
 
         try {
           const wavesurfer = await createWaveform(currentContainer, audioData, audioFormat);
@@ -65,7 +65,7 @@ export const Waveform = forwardRef<HTMLDivElement, WaveformProps>(
         } catch (error) {
           console.error("Failed to initialize waveform:", error);
           if (isMounted && currentContainer) {
-            currentContainer.innerHTML = t("apps.soundboard.waveform.errorLoading");
+            currentContainer.textContent = t("apps.soundboard.waveform.errorLoading");
           }
           cleanup(); // Ensure cleanup on error
         }

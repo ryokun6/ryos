@@ -31,6 +31,7 @@ import EmojiAquarium from "@/components/shared/EmojiAquarium";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { decodeHtmlEntities } from "@/utils/htmlEntities";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -72,25 +73,6 @@ const getUserColorClass = (username?: string): string => {
   return userColors[hash % userColors.length];
 };
 // --- End Color Hashing ---
-
-// Helper to decode common HTML entities so they render correctly
-const decodeHtmlEntities = (str: string): string => {
-  if (!str) return str;
-  // Prefer DOM-based decoding when available (browser environment)
-  if (typeof window !== "undefined" && typeof document !== "undefined") {
-    const txt = document.createElement("textarea");
-    txt.innerHTML = str;
-    return txt.value;
-  }
-  // Fallback: basic replacements (covers most common entities)
-  return str
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'");
-};
 
 // Helper function to parse markdown and segment text
 const parseMarkdown = (
