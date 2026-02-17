@@ -79,6 +79,7 @@ export class YouTubeMedia {
   private _disposed = false;
   private _playerReady = false;
   private _pendingLoadResolve: (() => void) | null = null;
+  private _lastReportedDuration = 0;
 
   constructor() {
     this._container = document.createElement("div");
@@ -138,6 +139,16 @@ export class YouTubeMedia {
       const time = (percent / 100) * this._duration;
       this._player?.seekTo?.(time, true);
       this._timeElapsed = time;
+      this._emitter.trigger("timeupdate");
+    }
+  }
+
+  seekToTime(time: number) {
+    if (this._duration > 0) {
+      const clamped = Math.max(0, Math.min(time, this._duration));
+      this._player?.seekTo?.(clamped, true);
+      this._timeElapsed = clamped;
+      this._emitter.trigger("timeupdate");
     }
   }
 
@@ -153,6 +164,7 @@ export class YouTubeMedia {
 
     this._timeElapsed = 0;
     this._duration = 0;
+    this._lastReportedDuration = 0;
     this._stopPolling();
 
     await ensureYTApi();
@@ -161,9 +173,8 @@ export class YouTubeMedia {
     // If we already have a player, reuse it with loadVideoById / cueVideoById.
     // This avoids the destroy/recreate cycle that breaks prev/next skip.
     if (this._player && this._playerReady) {
-      // The global onStateChange handler (set during initial creation)
-      // will fire "loaded" when the new video reaches PLAYING or CUED.
-      // We mark that we're waiting for a load so that handler can resolve.
+      // The onStateChange handler will call _resolvePendingLoad() when the
+      // new video reaches PLAYING or CUED, syncing duration to Webamp's store.
       return new Promise<void>((resolve) => {
         this._pendingLoadResolve = resolve;
 
@@ -199,7 +210,7 @@ export class YouTubeMedia {
             this._playerReady = true;
             this._player?.setVolume?.(this._volume);
             this._duration = this._player?.getDuration?.() ?? 0;
-            this._emitter.trigger("loaded");
+            this._reportDuration();
             resolve();
             if (autoPlay) {
               this._player?.playVideo?.();
@@ -212,9 +223,9 @@ export class YouTubeMedia {
             if (state === YT.PlayerState.PLAYING) {
               this._duration =
                 this._player?.getDuration?.() ?? this._duration;
+              this._reportDuration();
               this._startPolling();
               this._emitter.trigger("playing");
-              // Resolve any pending loadFromUrl promise
               this._resolvePendingLoad();
             } else if (state === YT.PlayerState.PAUSED) {
               this._stopPolling();
@@ -227,8 +238,8 @@ export class YouTubeMedia {
             } else if (state === YT.PlayerState.CUED) {
               this._duration =
                 this._player?.getDuration?.() ?? this._duration;
+              this._reportDuration();
               this._emitter.trigger("stopWaiting");
-              // Resolve pending load (cue without autoplay)
               this._resolvePendingLoad();
             }
           },
@@ -290,10 +301,23 @@ export class YouTubeMedia {
   private _resolvePendingLoad() {
     if (this._pendingLoadResolve) {
       this._duration = this._player?.getDuration?.() ?? this._duration;
-      this._emitter.trigger("loaded");
+      this._reportDuration();
       const resolve = this._pendingLoadResolve;
       this._pendingLoadResolve = null;
       resolve();
+    }
+  }
+
+  /**
+   * Emit "fileLoaded" when the YouTube duration first becomes available
+   * (or changes). Webamp's middleware listens for "fileLoaded" to sync
+   * the track duration into the Redux store, enabling seek-by-time,
+   * keyboard arrow seeking, and the position slider.
+   */
+  private _reportDuration() {
+    if (this._duration > 0 && this._duration !== this._lastReportedDuration) {
+      this._lastReportedDuration = this._duration;
+      this._emitter.trigger("fileLoaded");
     }
   }
 
