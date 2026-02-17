@@ -2406,10 +2406,6 @@
       "status": {
         "unknownArtist": "Unknown Artist"
       },
-      "defaultTrack": {
-        "artist": "Rick Astley",
-        "title": "Never Gonna Give You Up"
-      },
       "help": {
         "playMusic": {
           "title": "Play Music",
