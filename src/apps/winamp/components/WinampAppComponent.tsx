@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Webamp from "webamp";
 import { WinampMenuBar } from "./WinampMenuBar";
@@ -10,6 +10,7 @@ import { appMetadata } from "..";
 import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { YouTubeMedia } from "../utils/youtubeMedia";
+import { WEBAMP_SKINS } from "../skins";
 
 const MAIN_WINDOW_WIDTH = 275;
 const MAIN_WINDOW_HEIGHT = 116;
@@ -40,6 +41,7 @@ export function WinampAppComponent({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isInitializedRef = useRef(false);
   const webampElRef = useRef<HTMLElement | null>(null);
+  const [currentSkinUrl, setCurrentSkinUrl] = useState<string | null>(null);
 
   const {
     translatedHelpItems,
@@ -49,6 +51,13 @@ export function WinampAppComponent({
     setIsAboutDialogOpen,
     isXpTheme,
   } = useWinampLogic();
+
+  const handleSkinChange = useCallback((url: string | null) => {
+    const webamp = webampRef.current;
+    if (!webamp) return;
+    webamp.setSkinFromUrl(url ?? "/skins/base-2.91.wsz");
+    setCurrentSkinUrl(url);
+  }, []);
 
   const handleClose = useCallback(() => {
     if (instanceId) {
@@ -117,6 +126,7 @@ export function WinampAppComponent({
                 },
               },
             ],
+      availableSkins: WEBAMP_SKINS,
       windowLayout: {
         main: { position: { top: 0, left: 0 } },
         equalizer: {
@@ -198,6 +208,8 @@ export function WinampAppComponent({
       onClose={handleClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
+      currentSkinUrl={currentSkinUrl}
+      onSkinChange={handleSkinChange}
     />
   );
 
