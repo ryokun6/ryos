@@ -716,20 +716,20 @@
       "chatSynthVolume": "Chat-Synth-Lautstärke",
       "checkForUpdates": "Nach Updates suchen",
       "cloudSync": {
-        "backingUp": "Sicherung wird erstellt…",
-        "backupFailed": "Cloud-Sicherung fehlgeschlagen.",
-        "backupSuccess": "Cloud-Sicherung gespeichert.",
-        "backupToCloud": "Cloud-Sicherung",
-        "checking": "Cloud-Sicherung wird geprüft…",
+        "backingUp": "Sicherung läuft…",
+        "backupFailed": "Cloud-Backup fehlgeschlagen.",
+        "backupSuccess": "Backup in der Cloud gespeichert.",
+        "backupToCloud": "In Cloud sichern",
+        "checking": "Cloud-Backup wird geprüft…",
         "confirmRestore": "Aus Cloud wiederherstellen?",
-        "confirmRestoreDesc": "Dadurch werden alle Ihre aktuellen Einstellungen und Dateien durch die Cloud-Sicherung ersetzt. ryOS wird neu gestartet.",
-        "description": "Alle Einstellungen und Dateien in der Cloud sichern oder wiederherstellen. Max. {{limit}} MB.",
-        "lastBackup": "Letzte Cloud-Sicherung: {{date}} ({{size}} MB)",
-        "loginRequired": "Bitte melden Sie sich an, um die Cloud-Synchronisierung zu nutzen.",
+        "confirmRestoreDesc": "Dadurch werden alle aktuellen Einstellungen und Dateien durch das Cloud-Backup ersetzt. ryOS wird neu gestartet.",
+        "description": "Sichere oder stelle alle Einstellungen und Dateien in der Cloud wieder her. Max. {{limit}} MB.",
+        "lastBackup": "Letztes Cloud-Backup: {{date}} ({{size}} MB)",
+        "loginRequired": "Bitte melde dich an, um die Cloud-Synchronisierung zu nutzen.",
         "progress": {
-          "collecting": "Daten werden erfasst…",
+          "collecting": "Daten werden gesammelt…",
           "compressing": "Wird komprimiert…",
-          "decompressing": "Wird dekomprimiert…",
+          "decompressing": "Wird entpackt…",
           "downloading": "Wird aus der Cloud heruntergeladen…",
           "finishing": "Wird abgeschlossen…",
           "restoring": "Daten werden wiederhergestellt…",
@@ -737,9 +737,9 @@
           "uploading": "Wird in die Cloud hochgeladen…"
         },
         "restoreFailed": "Wiederherstellung aus der Cloud fehlgeschlagen.",
-        "restoreFromCloud": "Cloud-Wiederherstellung",
-        "restoring": "Wird wiederhergestellt…",
-        "tooLarge": "Backup zu groß ({{size}}MB). Die maximale Größe beträgt {{limit}}MB komprimiert."
+        "restoreFromCloud": "Aus Cloud wiederherstellen",
+        "restoring": "Wiederherstellung läuft…",
+        "tooLarge": "Backup zu groß ({{size}} MB). Die maximale komprimierte Größe beträgt {{limit}} MB."
       },
       "color": "Farbe",
       "crt": "CRT",
@@ -2329,30 +2329,30 @@
       }
     },
     "winamp": {
-      "description": "Klassischer Winamp Mediaplayer",
+      "description": "Klassischer Winamp-Mediaplayer",
       "help": {
         "controls": {
-          "description": "Verwenden Sie die klassischen Winamp-Transportsteuerungen: Wiedergabe, Pause, Stopp, Nächster, Vorheriger",
+          "description": "Nutze die klassischen Winamp-Transporttasten: Wiedergabe, Pause, Stopp, Nächster, Vorheriger",
           "title": "Steuerung"
         },
         "equalizer": {
-          "description": "Schalten Sie das Equalizer-Fenster um, um Audiofrequenzen und Voreinstellungen anzupassen",
+          "description": "Blende das Equalizer-Fenster ein oder aus, um Audiofrequenzen und Presets anzupassen",
           "title": "Equalizer"
         },
         "playMusic": {
-          "description": "Ziehen Sie Audiodateien auf Winamp oder verwenden Sie die Wiedergabeliste, um Titel hinzuzufügen",
+          "description": "Ziehe Audiodateien per Drag-and-Drop in Winamp oder nutze die Playlist, um Titel hinzuzufügen",
           "title": "Musik abspielen"
         },
         "playlist": {
-          "description": "Öffnen Sie den Wiedergabelisten-Editor, um Ihre Song-Warteschlange zu verwalten",
-          "title": "Wiedergabeliste"
+          "description": "Öffne den Playlist-Editor, um deine Warteschlange zu verwalten",
+          "title": "Playlist"
         },
         "shuffleRepeat": {
-          "description": "Schalten Sie Zufallswiedergabe und Wiederholungsmodi über die Schaltflächen im Hauptfenster um",
-          "title": "Zufallswiedergabe & Wiederholen"
+          "description": "Schalte Zufalls- und Wiederholmodus über die Schaltflächen im Hauptfenster um",
+          "title": "Zufall & Wiederholen"
         },
         "skins": {
-          "description": "Wechseln Sie Skins über das Skins-Menü oder klicken Sie mit der rechten Maustaste für weitere Optionen",
+          "description": "Klicke mit der rechten Maustaste auf Optionen inklusive Skin-Auswahl, um das Aussehen zu ändern",
           "title": "Skins"
         }
       },
@@ -2364,6 +2364,9 @@
       "name": "Winamp",
       "skins": {
         "default": "Standard"
+      },
+      "status": {
+        "unknownArtist": "Unbekannter Künstler"
       },
       "title": "Winamp"
     }

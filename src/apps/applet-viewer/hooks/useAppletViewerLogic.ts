@@ -34,6 +34,11 @@ interface UseAppletViewerLogicProps {
   initialData?: AppletViewerInitialData;
 }
 
+interface AppletUpdatedEventDetail {
+  path?: string;
+  content?: string;
+}
+
 export function useAppletViewerLogic({
   instanceId,
   initialData,
@@ -393,6 +398,55 @@ export function useAppletViewerLogic({
   useEffect(() => {
     sendAuthPayload(iframeRef.current?.contentWindow);
   }, [sendAuthPayload, htmlContent]);
+
+  useEffect(() => {
+    if (!appletPath || appletPath.startsWith("/Applets/") === false) {
+      return;
+    }
+
+    const handleAppletUpdated = async (event: Event) => {
+      const detail = (event as CustomEvent<AppletUpdatedEventDetail>).detail;
+      if (!detail?.path || detail.path !== appletPath) {
+        return;
+      }
+
+      if (typeof detail.content === "string") {
+        setLoadedContent(detail.content);
+        return;
+      }
+
+      const fileMetadata = getFileItem(appletPath);
+      if (!fileMetadata?.uuid) {
+        return;
+      }
+
+      try {
+        const contentData = await dbOperations.get<DocumentContent>(
+          STORES.APPLETS,
+          fileMetadata.uuid
+        );
+        if (!contentData?.content) {
+          return;
+        }
+
+        const refreshedContent =
+          contentData.content instanceof Blob
+            ? await contentData.content.text()
+            : contentData.content;
+        setLoadedContent(refreshedContent);
+      } catch (error) {
+        console.error("[AppletViewer] Failed to refresh updated applet:", error);
+      }
+    };
+
+    window.addEventListener("appletUpdated", handleAppletUpdated as EventListener);
+    return () => {
+      window.removeEventListener(
+        "appletUpdated",
+        handleAppletUpdated as EventListener
+      );
+    };
+  }, [appletPath, getFileItem]);
 
   useEffect(() => {
     const loadContentFromIndexedDB = async () => {

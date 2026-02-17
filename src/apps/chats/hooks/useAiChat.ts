@@ -1614,6 +1614,16 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   size: new Blob([updatedContent]).size,
                 });
 
+                // Let any open applet viewers hot-reload this edited applet.
+                window.dispatchEvent(
+                  new CustomEvent("appletUpdated", {
+                    detail: {
+                      path,
+                      content: updatedContent,
+                    },
+                  })
+                );
+
                 addToolResult({
                   tool: toolCall.toolName,
                   toolCallId: toolCall.toolCallId,

@@ -721,11 +721,11 @@
         "backupSuccess": "백업이 클라우드에 저장되었습니다.",
         "backupToCloud": "클라우드 백업",
         "checking": "클라우드 백업 확인 중…",
-        "confirmRestore": "클라우드에서 복원하시겠습니까?",
-        "confirmRestoreDesc": "현재 모든 설정과 파일이 클라우드 백업으로 교체됩니다. ryOS가 다시 시작됩니다.",
+        "confirmRestore": "클라우드에서 복원할까요?",
+        "confirmRestoreDesc": "현재 설정과 파일이 모두 클라우드 백업으로 대체됩니다. ryOS가 다시 시작됩니다.",
         "description": "모든 설정과 파일을 클라우드에 백업하거나 복원합니다. 최대 {{limit}}MB.",
         "lastBackup": "마지막 클라우드 백업: {{date}} ({{size}}MB)",
-        "loginRequired": "클라우드 동기화를 사용하려면 로그인하십시오.",
+        "loginRequired": "클라우드 동기화를 사용하려면 로그인하세요.",
         "progress": {
           "collecting": "데이터 수집 중…",
           "compressing": "압축 중…",
@@ -734,12 +734,12 @@
           "finishing": "마무리 중…",
           "restoring": "데이터 복원 중…",
           "serializing": "파일 직렬화 중…",
-          "uploading": "클라우드로 업로드 중…"
+          "uploading": "클라우드에 업로드 중…"
         },
         "restoreFailed": "클라우드에서 복원하지 못했습니다.",
-        "restoreFromCloud": "클라우드 복원",
+        "restoreFromCloud": "클라우드에서 복원",
         "restoring": "복원 중…",
-        "tooLarge": "백업 크기가 너무 큽니다 ({{size}}MB). 최대 크기는 압축 시 {{limit}}MB입니다."
+        "tooLarge": "백업이 너무 큽니다 ({{size}}MB). 압축 후 최대 크기는 {{limit}}MB입니다."
       },
       "color": "색상",
       "crt": "CRT",
@@ -2332,27 +2332,27 @@
       "description": "클래식 Winamp 미디어 플레이어",
       "help": {
         "controls": {
-          "description": "클래식 Winamp 전송 컨트롤(재생, 일시 정지, 중지, 다음, 이전)을 사용하세요.",
+          "description": "Winamp의 클래식 재생 컨트롤(재생, 일시정지, 정지, 다음, 이전)을 사용하세요",
           "title": "컨트롤"
         },
         "equalizer": {
-          "description": "이퀄라이저 창을 전환하여 오디오 주파수 및 사전 설정을 조정하세요.",
+          "description": "이퀄라이저 창을 켜거나 꺼서 오디오 주파수와 프리셋을 조정하세요",
           "title": "이퀄라이저"
         },
         "playMusic": {
-          "description": "오디오 파일을 Winamp로 드래그 앤 드롭하거나 재생 목록을 사용하여 트랙을 추가하세요.",
+          "description": "오디오 파일을 Winamp로 드래그 앤 드롭하거나 재생목록을 사용해 트랙을 추가하세요",
           "title": "음악 재생"
         },
         "playlist": {
-          "description": "재생 목록 편집기를 열어 대기 중인 곡을 관리하세요.",
-          "title": "재생 목록"
+          "description": "재생목록 편집기를 열어 재생 대기열을 관리하세요",
+          "title": "재생목록"
         },
         "shuffleRepeat": {
-          "description": "메인 창의 버튼을 사용하여 셔플 및 반복 모드를 전환하세요.",
+          "description": "메인 창의 버튼으로 셔플 및 반복 모드를 전환하세요",
           "title": "셔플 및 반복"
         },
         "skins": {
-          "description": "스킨 메뉴를 통해 스킨을 전환하거나 마우스 오른쪽 버튼을 클릭하여 더 많은 옵션을 확인하세요.",
+          "description": "우클릭하여 스킨 선택을 포함한 옵션을 열고 모양을 변경하세요",
           "title": "스킨"
         }
       },
@@ -2363,9 +2363,12 @@
       },
       "name": "Winamp",
       "skins": {
-        "default": "기본값"
+        "default": "기본"
       },
-      "title": "윈앰프"
+      "status": {
+        "unknownArtist": "알 수 없는 아티스트"
+      },
+      "title": "Winamp"
     }
   },
   "common": {

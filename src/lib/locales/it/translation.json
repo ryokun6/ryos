@@ -717,29 +717,29 @@
       "checkForUpdates": "Verifica aggiornamenti",
       "cloudSync": {
         "backingUp": "Backup in corso…",
-        "backupFailed": "Backup su cloud fallito.",
-        "backupSuccess": "Backup salvato sul cloud.",
-        "backupToCloud": "Backup su cloud",
-        "checking": "Verifica backup su cloud in corso…",
+        "backupFailed": "Backup nel cloud non riuscito.",
+        "backupSuccess": "Backup salvato nel cloud.",
+        "backupToCloud": "Backup nel cloud",
+        "checking": "Controllo backup cloud…",
         "confirmRestore": "Ripristinare dal cloud?",
-        "confirmRestoreDesc": "Questo sostituirà tutte le impostazioni e i file attuali con il backup su cloud. ryOS si riavvierà.",
-        "description": "Esegui il backup o ripristina tutte le impostazioni e i file sul cloud. Max {{limit}}MB.",
-        "lastBackup": "Ultimo backup su cloud: {{date}} ({{size}}MB)",
-        "loginRequired": "Effettua l'accesso per usare la sincronizzazione cloud.",
+        "confirmRestoreDesc": "Questo sostituirà tutte le impostazioni e i file correnti con il backup nel cloud. ryOS verrà riavviato.",
+        "description": "Esegui il backup o ripristina tutte le impostazioni e i file nel cloud. Max {{limit}} MB.",
+        "lastBackup": "Ultimo backup cloud: {{date}} ({{size}} MB)",
+        "loginRequired": "Accedi per usare la sincronizzazione cloud.",
         "progress": {
-          "collecting": "Raccolta dati in corso…",
-          "compressing": "Compressione in corso…",
-          "decompressing": "Decompressione in corso…",
-          "downloading": "Download dal cloud in corso…",
+          "collecting": "Raccolta dati…",
+          "compressing": "Compressione…",
+          "decompressing": "Decompressione…",
+          "downloading": "Download dal cloud…",
           "finishing": "Completamento…",
-          "restoring": "Ripristino dati in corso…",
-          "serializing": "Serializzazione file in corso…",
-          "uploading": "Caricamento sul cloud in corso…"
+          "restoring": "Ripristino dati…",
+          "serializing": "Serializzazione file…",
+          "uploading": "Caricamento nel cloud…"
         },
-        "restoreFailed": "Ripristino dal cloud fallito.",
-        "restoreFromCloud": "Ripristino dal cloud",
-        "restoring": "Ripristino…",
-        "tooLarge": "Backup troppo grande ({{size}}MB). La dimensione massima è {{limit}}MB compressi."
+        "restoreFailed": "Ripristino dal cloud non riuscito.",
+        "restoreFromCloud": "Ripristina dal cloud",
+        "restoring": "Ripristino in corso…",
+        "tooLarge": "Backup troppo grande ({{size}} MB). La dimensione massima compressa è {{limit}} MB."
       },
       "color": "Colore",
       "crt": "CRT",
@@ -2332,38 +2332,41 @@
       "description": "Lettore multimediale classico Winamp",
       "help": {
         "controls": {
-          "description": "Usa i controlli di trasporto classici di Winamp: riproduci, pausa, stop, successivo, precedente",
+          "description": "Usa i classici controlli di trasporto di Winamp: riproduci, pausa, stop, successivo, precedente",
           "title": "Controlli"
         },
         "equalizer": {
-          "description": "Attiva/disattiva la finestra dell'equalizzatore per regolare le frequenze audio e i preset",
+          "description": "Attiva o disattiva la finestra dell'equalizzatore per regolare frequenze audio e preset",
           "title": "Equalizzatore"
         },
         "playMusic": {
-          "description": "Trascina i file audio su Winamp o usa la playlist per aggiungere brani",
+          "description": "Trascina e rilascia file audio in Winamp oppure usa la playlist per aggiungere brani",
           "title": "Riproduci musica"
         },
         "playlist": {
-          "description": "Apri l'editor della playlist per gestire la tua coda di brani",
+          "description": "Apri l'editor della playlist per gestire la coda dei brani",
           "title": "Playlist"
         },
         "shuffleRepeat": {
-          "description": "Attiva/disattiva le modalità casuale e ripeti usando i pulsanti nella finestra principale",
-          "title": "Casuale e Ripeti"
+          "description": "Attiva le modalità casuale e ripeti usando i pulsanti nella finestra principale",
+          "title": "Casuale e ripeti"
         },
         "skins": {
-          "description": "Cambia skin tramite il menu Skin o fai clic destro per più opzioni",
+          "description": "Fai clic con il tasto destro per le opzioni, inclusa la selezione delle skin, per cambiare aspetto",
           "title": "Skin"
         }
       },
       "menu": {
         "about": "Informazioni su Winamp",
-        "help": "Aiuto di Winamp",
+        "help": "Aiuto Winamp",
         "skins": "Skin"
       },
       "name": "Winamp",
       "skins": {
         "default": "Predefinito"
+      },
+      "status": {
+        "unknownArtist": "Artista sconosciuto"
       },
       "title": "Winamp"
     }

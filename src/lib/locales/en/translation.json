@@ -2407,6 +2407,9 @@
       "skins": {
         "default": "Default"
       },
+      "status": {
+        "unknownArtist": "Unknown Artist"
+      },
       "help": {
         "playMusic": {
           "title": "Play Music",

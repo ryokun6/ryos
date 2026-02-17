@@ -1,3 +1,5 @@
+## Cloud-specific instructions
+
 # ryOS Cloud Environment Guide
 
 ## Development Environment
@@ -14,14 +16,14 @@ This project uses **Bun** as the package manager and runtime. The environment is
 
 ```bash
 # Development
-bun run dev              # Start Vite dev server (port 5173)
-vercel dev               # Start Vercel dev server (recommended for API testing)
+bun run dev        # Start Vite dev server (port 5173)
+vercel dev         # Start Vercel dev server (recommended for API testing)
 
 # Build & Production
-bun run build            # TypeScript compile + Vite build
+bun run build      # TypeScript compile + Vite build
 
 # Testing
-bun run test             # Run all API tests (requires server running)
+bun run test       # Run all API tests (requires server running)
 ```
 
 ### Running the Application
@@ -105,5 +107,9 @@ vercel dev
 ## Important Notes
 
 - **Linter warnings**: The codebase has pre-existing linter warnings for unused variables. These are not blockers.
+- **Pre-existing lint error**: There is one pre-existing `@typescript-eslint/no-explicit-any` error in `src/apps/winamp/components/WinampAppComponent.tsx`. Do not attempt to fix it unless asked.
 - **API endpoints**: Most API endpoints are Edge Functions and require Redis for caching/storage.
 - **Build process**: The build generates service worker files (`sw.js`, `workbox-*.js`) which are copied to `.vercel/output/static/`.
+- **API symlink**: `vercel dev` requires an `api -> _api` symlink for local dev. The `dev:vercel` script creates it automatically via `scripts/ensure-api-symlink.sh`. If running `vercel dev` directly, run the symlink script first.
+- **Vercel CLI**: Installed globally via `npm install -g vercel`. Must be logged in and linked to the project for `vercel dev` to pull environment variables.
+- **Port conflicts**: If port 3000 is occupied, `vercel dev` auto-increments (3001, etc.). Kill stale processes on 3000 before starting if you need the canonical port.

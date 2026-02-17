@@ -716,14 +716,14 @@
       "chatSynthVolume": "Volume du synthé de chat",
       "checkForUpdates": "Rechercher les mises à jour",
       "cloudSync": {
-        "backingUp": "Sauvegarde…",
-        "backupFailed": "Échec de la sauvegarde vers le cloud.",
+        "backingUp": "Sauvegarde en cours…",
+        "backupFailed": "Échec de la sauvegarde dans le cloud.",
         "backupSuccess": "Sauvegarde enregistrée dans le cloud.",
-        "backupToCloud": "Sauvegarde Cloud",
+        "backupToCloud": "Sauvegarde cloud",
         "checking": "Vérification de la sauvegarde cloud…",
         "confirmRestore": "Restaurer depuis le cloud ?",
-        "confirmRestoreDesc": "Ceci remplacera tous vos réglages et fichiers actuels par la sauvegarde cloud. ryOS redémarrera.",
-        "description": "Sauvegarder ou restaurer tous les réglages et fichiers vers le cloud. Max {{limit}} Mo.",
+        "confirmRestoreDesc": "Cela remplacera tous vos réglages et fichiers actuels par la sauvegarde cloud. ryOS redémarrera.",
+        "description": "Sauvegardez ou restaurez tous les réglages et fichiers dans le cloud. Max {{limit}} Mo.",
         "lastBackup": "Dernière sauvegarde cloud : {{date}} ({{size}} Mo)",
         "loginRequired": "Veuillez vous connecter pour utiliser la synchronisation cloud.",
         "progress": {
@@ -734,12 +734,12 @@
           "finishing": "Finalisation…",
           "restoring": "Restauration des données…",
           "serializing": "Sérialisation des fichiers…",
-          "uploading": "Chargement vers le cloud…"
+          "uploading": "Envoi vers le cloud…"
         },
         "restoreFailed": "Échec de la restauration depuis le cloud.",
-        "restoreFromCloud": "Restauration Cloud",
+        "restoreFromCloud": "Restaurer depuis le cloud",
         "restoring": "Restauration en cours…",
-        "tooLarge": "Sauvegarde trop volumineuse ({{size}} Mo). La taille maximale est de {{limit}} Mo compressés."
+        "tooLarge": "Sauvegarde trop volumineuse ({{size}} Mo). La taille maximale compressée est de {{limit}} Mo."
       },
       "color": "Couleur",
       "crt": "CRT",
@@ -2332,38 +2332,41 @@
       "description": "Lecteur multimédia Winamp classique",
       "help": {
         "controls": {
-          "description": "Utilisez les commandes de transport classiques de Winamp : lecture, pause, arrêt, suivant, précédent",
+          "description": "Utilisez les commandes de transport Winamp classiques : lecture, pause, arrêt, suivant, précédent",
           "title": "Commandes"
         },
         "equalizer": {
-          "description": "Affichez/masquez la fenêtre de l'égaliseur pour ajuster les fréquences audio et les préréglages",
+          "description": "Affichez ou masquez la fenêtre d’égaliseur pour ajuster les fréquences audio et les préréglages",
           "title": "Égaliseur"
         },
         "playMusic": {
-          "description": "Faites glisser et déposez des fichiers audio sur Winamp ou utilisez la liste de lecture pour ajouter des pistes",
-          "title": "Écouter de la musique"
+          "description": "Glissez-déposez des fichiers audio dans Winamp ou utilisez la playlist pour ajouter des pistes",
+          "title": "Lire de la musique"
         },
         "playlist": {
-          "description": "Ouvrez l'éditeur de liste de lecture pour gérer votre file d'attente de chansons",
+          "description": "Ouvrez l’éditeur de playlist pour gérer votre file d’attente de morceaux",
           "title": "Liste de lecture"
         },
         "shuffleRepeat": {
-          "description": "Activez/désactivez les modes aléatoire et répétition à l'aide des boutons de la fenêtre principale",
-          "title": "Aléatoire et Répétition"
+          "description": "Activez les modes aléatoire et répétition avec les boutons de la fenêtre principale",
+          "title": "Aléatoire et répétition"
         },
         "skins": {
-          "description": "Changez de skins via le menu Skins ou faites un clic droit pour plus d'options",
-          "title": "Skins"
+          "description": "Faites un clic droit pour accéder aux options, dont la sélection de skin, afin de changer l’apparence",
+          "title": "Habillages"
         }
       },
       "menu": {
         "about": "À propos de Winamp",
         "help": "Aide Winamp",
-        "skins": "Skins"
+        "skins": "Habillages"
       },
       "name": "Winamp",
       "skins": {
         "default": "Par défaut"
+      },
+      "status": {
+        "unknownArtist": "Artiste inconnu"
       },
       "title": "Winamp"
     }

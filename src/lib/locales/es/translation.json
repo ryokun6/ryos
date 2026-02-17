@@ -716,30 +716,30 @@
       "chatSynthVolume": "Volumen del sintetizador de chat",
       "checkForUpdates": "Buscar actualizaciones",
       "cloudSync": {
-        "backingUp": "Copiando seguridad…",
-        "backupFailed": "Error al guardar copia de seguridad en la nube.",
-        "backupSuccess": "Copia de seguridad guardada en la nube.",
-        "backupToCloud": "Copia de seguridad en la nube",
+        "backingUp": "Creando copia…",
+        "backupFailed": "No se pudo crear la copia en la nube.",
+        "backupSuccess": "Copia guardada en la nube.",
+        "backupToCloud": "Copia en la nube",
         "checking": "Comprobando copia de seguridad en la nube…",
         "confirmRestore": "¿Restaurar desde la nube?",
         "confirmRestoreDesc": "Esto reemplazará todos tus ajustes y archivos actuales con la copia de seguridad en la nube. ryOS se reiniciará.",
-        "description": "Guarda o restaura todos los ajustes y archivos en la nube. Máx. {{limit}}MB.",
-        "lastBackup": "Última copia de seguridad en la nube: {{date}} ({{size}}MB)",
+        "description": "Haz una copia de seguridad o restaura todos los ajustes y archivos en la nube. Máx. {{limit}} MB.",
+        "lastBackup": "Última copia en la nube: {{date}} ({{size}} MB)",
         "loginRequired": "Inicia sesión para usar la sincronización en la nube.",
         "progress": {
           "collecting": "Recopilando datos…",
           "compressing": "Comprimiendo…",
           "decompressing": "Descomprimiendo…",
-          "downloading": "Descargando de la nube…",
+          "downloading": "Descargando desde la nube…",
           "finishing": "Finalizando…",
           "restoring": "Restaurando datos…",
           "serializing": "Serializando archivos…",
           "uploading": "Subiendo a la nube…"
         },
-        "restoreFailed": "Error al restaurar desde la nube.",
-        "restoreFromCloud": "Restauración en la nube",
+        "restoreFailed": "No se pudo restaurar desde la nube.",
+        "restoreFromCloud": "Restaurar desde la nube",
         "restoring": "Restaurando…",
-        "tooLarge": "Copia de seguridad demasiado grande ({{size}}MB). El tamaño máximo es {{limit}}MB comprimidos."
+        "tooLarge": "La copia es demasiado grande ({{size}} MB). El tamaño máximo comprimido es {{limit}} MB."
       },
       "color": "Color",
       "crt": "CRT",
@@ -2329,14 +2329,14 @@
       }
     },
     "winamp": {
-      "description": "Reproductor multimedia Winamp clásico",
+      "description": "Reproductor multimedia clásico de Winamp",
       "help": {
         "controls": {
-          "description": "Usa los controles de transporte clásicos de Winamp: reproducir, pausar, detener, siguiente, anterior",
+          "description": "Usa los controles clásicos de Winamp: reproducir, pausar, detener, siguiente y anterior",
           "title": "Controles"
         },
         "equalizer": {
-          "description": "Alterna la ventana del ecualizador para ajustar las frecuencias de audio y los preajustes",
+          "description": "Activa o desactiva la ventana del ecualizador para ajustar frecuencias y preajustes de audio",
           "title": "Ecualizador"
         },
         "playMusic": {
@@ -2344,26 +2344,29 @@
           "title": "Reproducir música"
         },
         "playlist": {
-          "description": "Abre el editor de la lista de reproducción para gestionar tu cola de canciones",
+          "description": "Abre el editor de listas para gestionar tu cola de canciones",
           "title": "Lista de reproducción"
         },
         "shuffleRepeat": {
-          "description": "Alterna los modos de reproducción aleatoria y repetición usando los botones de la ventana principal",
-          "title": "Aleatorio y Repetir"
+          "description": "Activa los modos aleatorio y repetición con los botones de la ventana principal",
+          "title": "Aleatorio y repetición"
         },
         "skins": {
-          "description": "Cambia de skins a través del menú Skins o haz clic derecho para más opciones",
+          "description": "Haz clic derecho para ver opciones, incluida la selección de skins, y cambiar la apariencia",
           "title": "Skins"
         }
       },
       "menu": {
         "about": "Acerca de Winamp",
         "help": "Ayuda de Winamp",
-        "skins": "Skins"
+        "skins": "Temas"
       },
       "name": "Winamp",
       "skins": {
         "default": "Predeterminado"
+      },
+      "status": {
+        "unknownArtist": "Artista desconocido"
       },
       "title": "Winamp"
     }
