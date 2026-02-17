@@ -2358,9 +2358,13 @@
       },
       "menu": {
         "about": "Acerca de Winamp",
-        "help": "Ayuda de Winamp"
+        "help": "Ayuda de Winamp",
+        "skins": "Temas"
       },
       "name": "Winamp",
+      "skins": {
+        "default": "Predeterminado"
+      },
       "status": {
         "unknownArtist": "Artista desconocido"
       },

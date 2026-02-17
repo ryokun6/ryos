@@ -2358,9 +2358,13 @@
       },
       "menu": {
         "about": "О Winamp",
-        "help": "Справка Winamp"
+        "help": "Справка Winamp",
+        "skins": "Скины"
       },
       "name": "Winamp",
+      "skins": {
+        "default": "По умолчанию"
+      },
       "status": {
         "unknownArtist": "Неизвестный исполнитель"
       },

@@ -2358,9 +2358,13 @@
       },
       "menu": {
         "about": "Winamp 정보",
-        "help": "Winamp 도움말"
+        "help": "Winamp 도움말",
+        "skins": "스킨"
       },
       "name": "Winamp",
+      "skins": {
+        "default": "기본"
+      },
       "status": {
         "unknownArtist": "알 수 없는 아티스트"
       },

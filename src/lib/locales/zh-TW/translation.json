@@ -2358,9 +2358,13 @@
       },
       "menu": {
         "about": "關於 Winamp",
-        "help": "Winamp 說明"
+        "help": "Winamp 說明",
+        "skins": "外觀"
       },
       "name": "Winamp",
+      "skins": {
+        "default": "預設"
+      },
       "status": {
         "unknownArtist": "未知藝人"
       },

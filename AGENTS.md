@@ -64,7 +64,19 @@ The following environment variables are required for full functionality:
 - `YOUTUBE_API_KEY_2` - YouTube Data API fallback key
 - `OPENAI_API_KEY` - OpenAI API (for audio transcription)
 
+### Localization / Scripts
+- `GOOGLE_GENERATIVE_AI_API_KEY` - Google Generative AI (for machine translation of locale files)
+
 **Note:** The application will run with limited functionality without these environment variables. API endpoints requiring these services will fail gracefully.
+
+### Using `.env.local`
+
+The project includes a `.env.local` file with all required keys pre-configured. Scripts that need API keys (e.g. `scripts/machine-translate.ts`) do **not** auto-load `.env.local`. Export the key before running:
+
+```bash
+export GOOGLE_GENERATIVE_AI_API_KEY="$(grep GOOGLE_GENERATIVE_AI_API_KEY .env.local | cut -d'"' -f2)"
+bun run scripts/machine-translate.ts
+```
 
 ## Project Structure
 

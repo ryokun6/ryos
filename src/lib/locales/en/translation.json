@@ -2401,7 +2401,11 @@
       "description": "Classic Winamp media player",
       "menu": {
         "help": "Winamp Help",
-        "about": "About Winamp"
+        "about": "About Winamp",
+        "skins": "Skins"
+      },
+      "skins": {
+        "default": "Default"
       },
       "status": {
         "unknownArtist": "Unknown Artist"
@@ -2421,7 +2425,7 @@
         },
         "skins": {
           "title": "Skins",
-          "description": "Right-click for options including skin selection to change the look"
+          "description": "Switch skins via the Skins menu or right-click for more options"
         },
         "shuffleRepeat": {
           "title": "Shuffle & Repeat",

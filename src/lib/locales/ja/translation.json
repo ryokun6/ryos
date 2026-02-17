@@ -2358,9 +2358,13 @@
       },
       "menu": {
         "about": "Winamp について",
-        "help": "Winamp ヘルプ"
+        "help": "Winamp ヘルプ",
+        "skins": "スキン"
       },
       "name": "Winamp",
+      "skins": {
+        "default": "デフォルト"
+      },
       "status": {
         "unknownArtist": "不明なアーティスト"
       },
