@@ -9,12 +9,25 @@ function getIndexFromSongId(tracks: Track[], songId: string | null): number {
   return index >= 0 ? index : -1;
 }
 
+function getTrackIdsExcludingCurrent(
+  tracks: Track[],
+  currentSongId: string | null
+): string[] {
+  const ids: string[] = [];
+  for (const track of tracks) {
+    if (track.id !== currentSongId) {
+      ids.push(track.id);
+    }
+  }
+  return ids;
+}
+
 /** Get a random song ID avoiding the current song */
 function getRandomSongId(tracks: Track[], currentSongId: string | null): string | null {
   if (tracks.length === 0) return null;
   if (tracks.length === 1) return tracks[0].id;
   
-  const availableIds = tracks.map((t) => t.id).filter((id) => id !== currentSongId);
+  const availableIds = getTrackIdsExcludingCurrent(tracks, currentSongId);
   if (availableIds.length === 0) return currentSongId;
   return availableIds[Math.floor(Math.random() * availableIds.length)];
 }

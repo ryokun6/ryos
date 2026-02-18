@@ -3,21 +3,185 @@ import {
   DocumentContent,
 } from "@/apps/finder/hooks/useFileSystem";
 import { STORES, ensureIndexedDBInitialized } from "@/utils/indexedDB";
-import { useFilesStore } from "@/stores/useFilesStore";
+import { type FileSystemItem, useFilesStore } from "@/stores/useFilesStore";
 
 // Check if migration has been completed
 const MIGRATION_KEY = "ryos:indexeddb-uuid-migration-v1";
 const BACKUP_KEY = "ryos:indexeddb-backup";
+
+type BackupEntry<T> = { key: string; value: T };
+
+type SerializedBlobContent = {
+  _isBlob: true;
+  data: string;
+  type?: string;
+};
+
+type SerializedDocumentContent = Omit<DocumentContent, "content"> & {
+  content: DocumentContent["content"] | SerializedBlobContent;
+};
+
+type SerializedBackupData = {
+  documents?: BackupEntry<SerializedDocumentContent>[];
+  images?: BackupEntry<SerializedDocumentContent>[];
+  trash?: BackupEntry<SerializedDocumentContent>[];
+  custom_wallpapers?: BackupEntry<{ url: string }>[];
+};
+
+function isSerializedBlobContent(content: unknown): content is SerializedBlobContent {
+  return (
+    typeof content === "object" &&
+    content !== null &&
+    "_isBlob" in content &&
+    (content as { _isBlob?: unknown })._isBlob === true &&
+    "data" in content &&
+    typeof (content as { data?: unknown }).data === "string"
+  );
+}
+
+function deserializeDocumentContent(
+  value: SerializedDocumentContent
+): DocumentContent {
+  const restoredValue: SerializedDocumentContent = { ...value };
+
+  if (isSerializedBlobContent(restoredValue.content)) {
+    restoredValue.content = base64ToBlob(
+      restoredValue.content.data,
+      restoredValue.content.type
+    );
+  }
+
+  return restoredValue as DocumentContent;
+}
+
+async function restoreBackupStore<T>({
+  storeName,
+  entries,
+  itemLabel,
+  summaryLabel,
+  transformValue,
+}: {
+  storeName: string;
+  entries?: BackupEntry<T>[];
+  itemLabel: string;
+  summaryLabel: string;
+  transformValue?: (value: T) => unknown;
+}): Promise<void> {
+  const items = entries ?? [];
+  let restoredCount = 0;
+
+  for (const item of items) {
+    try {
+      const value = transformValue ? transformValue(item.value) : item.value;
+      await dbOperations.put(storeName, value, item.key);
+      restoredCount++;
+    } catch (err) {
+      console.error(
+        `[Migration] Failed to restore ${itemLabel} ${item.key}:`,
+        err
+      );
+    }
+  }
+
+  console.log(
+    `[Migration] Restored ${restoredCount}/${items.length} ${summaryLabel}`
+  );
+}
+
+async function migrateStoreItemsToUUIDs({
+  allItems,
+  storeName,
+  itemLabel,
+  collectionLabel,
+  predicate,
+}: {
+  allItems: FileSystemItem[];
+  storeName: string;
+  itemLabel: string;
+  collectionLabel: string;
+  predicate: (item: FileSystemItem) => boolean;
+}): Promise<number> {
+  const itemsToMigrate = allItems.filter(predicate);
+  let migratedCount = 0;
+
+  console.log(`[Migration] ${collectionLabel} to migrate: ${itemsToMigrate.length}`);
+
+  for (const item of itemsToMigrate) {
+    if (!item.uuid) {
+      continue;
+    }
+
+    try {
+      // Try to get content by filename (old way)
+      const content = await dbOperations.get<DocumentContent>(storeName, item.name);
+
+      if (content) {
+        console.log(
+          `[Migration] Found content for ${item.name}, migrating to UUID ${item.uuid}`
+        );
+        // Save with UUID as key
+        await dbOperations.put<DocumentContent>(storeName, content, item.uuid);
+        // Delete old filename-based entry
+        await dbOperations.delete(storeName, item.name);
+        console.log(
+          `[Migration] Successfully migrated ${itemLabel}: ${item.name} -> ${item.uuid}`
+        );
+        migratedCount++;
+        continue;
+      }
+
+      // Check if content already exists with UUID
+      const uuidContent = await dbOperations.get<DocumentContent>(
+        storeName,
+        item.uuid
+      );
+      if (uuidContent) {
+        console.log(
+          `[Migration] ${itemLabel} ${item.name} already migrated to UUID ${item.uuid}`
+        );
+      } else {
+        console.log(
+          `[Migration] No content found for ${itemLabel} ${item.name} - file might be empty`
+        );
+      }
+    } catch (err) {
+      console.error(`[Migration] Error migrating ${itemLabel} ${item.name}:`, err);
+    }
+  }
+
+  return migratedCount;
+}
+
+async function serializeDocumentBackupEntries(
+  entries: BackupEntry<DocumentContent>[]
+): Promise<BackupEntry<SerializedDocumentContent>[]> {
+  return Promise.all(
+    entries.map(async (item) => ({
+      key: item.key,
+      value: {
+        ...item.value,
+        content:
+          item.value.content instanceof Blob
+            ? {
+                _isBlob: true,
+                data: await blobToBase64(item.value.content),
+                type: item.value.content.type,
+              }
+            : item.value.content,
+      },
+    }))
+  );
+}
 
 // Backup all data before schema migration
 async function backupDataBeforeMigration() {
   console.log("[Migration] Backing up data before schema migration...");
 
   const backup: {
-    documents: Array<{ key: string; value: DocumentContent }>;
-    images: Array<{ key: string; value: DocumentContent }>;
-    trash: Array<{ key: string; value: DocumentContent }>;
-    custom_wallpapers: Array<{ key: string; value: { url: string } }>;
+    documents: BackupEntry<DocumentContent>[];
+    images: BackupEntry<DocumentContent>[];
+    trash: BackupEntry<DocumentContent>[];
+    custom_wallpapers: BackupEntry<{ url: string }>[];
   } = {
     documents: [],
     images: [],
@@ -41,8 +205,8 @@ async function backupDataBeforeMigration() {
     // Helper to backup a store
     const backupStore = async <T = DocumentContent | { url: string }>(
       storeName: string
-    ): Promise<Array<{ key: string; value: T }>> => {
-      const items: Array<{ key: string; value: T }> = [];
+    ): Promise<BackupEntry<T>[]> => {
+      const items: BackupEntry<T>[] = [];
 
       if (!db.objectStoreNames.contains(storeName)) {
         console.log(`[Migration] Store ${storeName} does not exist, skipping`);
@@ -95,55 +259,10 @@ async function backupDataBeforeMigration() {
 
     // Store backup in localStorage temporarily
     // Convert Blobs to base64 for storage
-    const serializableBackup = {
-      documents: await Promise.all(
-        backup.documents.map(async (item) => ({
-          key: item.key,
-          value: {
-            ...item.value,
-            content:
-              item.value.content instanceof Blob
-                ? {
-                    _isBlob: true,
-                    data: await blobToBase64(item.value.content),
-                    type: item.value.content.type,
-                  }
-                : item.value.content,
-          },
-        }))
-      ),
-      images: await Promise.all(
-        backup.images.map(async (item) => ({
-          key: item.key,
-          value: {
-            ...item.value,
-            content:
-              item.value.content instanceof Blob
-                ? {
-                    _isBlob: true,
-                    data: await blobToBase64(item.value.content),
-                    type: item.value.content.type,
-                  }
-                : item.value.content,
-          },
-        }))
-      ),
-      trash: await Promise.all(
-        backup.trash.map(async (item) => ({
-          key: item.key,
-          value: {
-            ...item.value,
-            content:
-              item.value.content instanceof Blob
-                ? {
-                    _isBlob: true,
-                    data: await blobToBase64(item.value.content),
-                    type: item.value.content.type,
-                  }
-                : item.value.content,
-          },
-        }))
-      ),
+    const serializableBackup: SerializedBackupData = {
+      documents: await serializeDocumentBackupEntries(backup.documents),
+      images: await serializeDocumentBackupEntries(backup.images),
+      trash: await serializeDocumentBackupEntries(backup.trash),
       custom_wallpapers: backup.custom_wallpapers,
     };
 
@@ -197,7 +316,7 @@ async function restoreBackupAfterMigration() {
   }
 
   try {
-    const backup = JSON.parse(backupStr);
+    const backup = JSON.parse(backupStr) as SerializedBackupData;
     console.log("[Migration] Restoring backup after schema migration...");
     console.log(
       "[Migration] Backup contains - Documents:",
@@ -213,93 +332,36 @@ async function restoreBackupAfterMigration() {
     // Wait a bit to ensure database is ready
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    // Restore documents with their original keys
-    let restoredCount = 0;
-    for (const item of backup.documents || []) {
-      try {
-        const value = { ...item.value };
-        // Convert base64 back to Blob if needed
-        if (value.content?._isBlob) {
-          value.content = base64ToBlob(value.content.data, value.content.type);
-        }
-        await dbOperations.put(STORES.DOCUMENTS, value, item.key);
-        restoredCount++;
-      } catch (err) {
-        console.error(
-          `[Migration] Failed to restore document ${item.key}:`,
-          err
-        );
-      }
-    }
-    console.log(
-      `[Migration] Restored ${restoredCount}/${
-        backup.documents?.length || 0
-      } documents`
-    );
+    await restoreBackupStore({
+      storeName: STORES.DOCUMENTS,
+      entries: backup.documents,
+      itemLabel: "document",
+      summaryLabel: "documents",
+      transformValue: deserializeDocumentContent,
+    });
 
-    // Restore images with their original keys
-    restoredCount = 0;
-    for (const item of backup.images || []) {
-      try {
-        const value = { ...item.value };
-        // Convert base64 back to Blob if needed
-        if (value.content?._isBlob) {
-          value.content = base64ToBlob(value.content.data, value.content.type);
-        }
-        await dbOperations.put(STORES.IMAGES, value, item.key);
-        restoredCount++;
-      } catch (err) {
-        console.error(`[Migration] Failed to restore image ${item.key}:`, err);
-      }
-    }
-    console.log(
-      `[Migration] Restored ${restoredCount}/${
-        backup.images?.length || 0
-      } images`
-    );
+    await restoreBackupStore({
+      storeName: STORES.IMAGES,
+      entries: backup.images,
+      itemLabel: "image",
+      summaryLabel: "images",
+      transformValue: deserializeDocumentContent,
+    });
 
-    // Restore trash with their original keys
-    restoredCount = 0;
-    for (const item of backup.trash || []) {
-      try {
-        const value = { ...item.value };
-        // Convert base64 back to Blob if needed
-        if (value.content?._isBlob) {
-          value.content = base64ToBlob(value.content.data, value.content.type);
-        }
-        await dbOperations.put(STORES.TRASH, value, item.key);
-        restoredCount++;
-      } catch (err) {
-        console.error(
-          `[Migration] Failed to restore trash item ${item.key}:`,
-          err
-        );
-      }
-    }
-    console.log(
-      `[Migration] Restored ${restoredCount}/${
-        backup.trash?.length || 0
-      } trash items`
-    );
+    await restoreBackupStore({
+      storeName: STORES.TRASH,
+      entries: backup.trash,
+      itemLabel: "trash item",
+      summaryLabel: "trash items",
+      transformValue: deserializeDocumentContent,
+    });
 
-    // Restore custom wallpapers
-    restoredCount = 0;
-    for (const item of backup.custom_wallpapers || []) {
-      try {
-        await dbOperations.put(STORES.CUSTOM_WALLPAPERS, item.value, item.key);
-        restoredCount++;
-      } catch (err) {
-        console.error(
-          `[Migration] Failed to restore wallpaper ${item.key}:`,
-          err
-        );
-      }
-    }
-    console.log(
-      `[Migration] Restored ${restoredCount}/${
-        backup.custom_wallpapers?.length || 0
-      } wallpapers`
-    );
+    await restoreBackupStore({
+      storeName: STORES.CUSTOM_WALLPAPERS,
+      entries: backup.custom_wallpapers,
+      itemLabel: "wallpaper",
+      summaryLabel: "wallpapers",
+    });
 
     // Clean up backup
     localStorage.removeItem(BACKUP_KEY);
@@ -383,176 +445,32 @@ export async function migrateIndexedDBToUUIDs() {
 
     let migratedCount = 0;
 
-    // Process documents
-    const documentsToMigrate = allItems.filter(
-      (item) =>
-        !item.isDirectory && item.path.startsWith("/Documents/") && item.uuid
-    );
+    migratedCount += await migrateStoreItemsToUUIDs({
+      allItems,
+      storeName: STORES.DOCUMENTS,
+      itemLabel: "document",
+      collectionLabel: "Documents",
+      predicate: (item) =>
+        !item.isDirectory && item.path.startsWith("/Documents/") && !!item.uuid,
+    });
 
-    console.log(
-      `[Migration] Documents to migrate: ${documentsToMigrate.length}`
-    );
+    migratedCount += await migrateStoreItemsToUUIDs({
+      allItems,
+      storeName: STORES.IMAGES,
+      itemLabel: "image",
+      collectionLabel: "Images",
+      predicate: (item) =>
+        !item.isDirectory && item.path.startsWith("/Images/") && !!item.uuid,
+    });
 
-    for (const item of documentsToMigrate) {
-      try {
-        // Try to get content by filename (old way)
-        const content = await dbOperations.get<DocumentContent>(
-          STORES.DOCUMENTS,
-          item.name
-        );
-        if (content && item.uuid) {
-          console.log(
-            `[Migration] Found content for ${item.name}, migrating to UUID ${item.uuid}`
-          );
-          // Save with UUID as key
-          await dbOperations.put<DocumentContent>(
-            STORES.DOCUMENTS,
-            content,
-            item.uuid
-          );
-          // Delete old filename-based entry
-          await dbOperations.delete(STORES.DOCUMENTS, item.name);
-          console.log(
-            `[Migration] Successfully migrated document: ${item.name} -> ${item.uuid}`
-          );
-          migratedCount++;
-        } else if (!content) {
-          // Check if content already exists with UUID
-          if (item.uuid) {
-            const uuidContent = await dbOperations.get<DocumentContent>(
-              STORES.DOCUMENTS,
-              item.uuid
-            );
-            if (uuidContent) {
-              console.log(
-                `[Migration] Document ${item.name} already migrated to UUID ${item.uuid}`
-              );
-            } else {
-              console.log(
-                `[Migration] No content found for document ${item.name} - file might be empty`
-              );
-            }
-          }
-        }
-      } catch (err) {
-        console.error(
-          `[Migration] Error migrating document ${item.name}:`,
-          err
-        );
-      }
-    }
-
-    // Process images
-    const imagesToMigrate = allItems.filter(
-      (item) =>
-        !item.isDirectory && item.path.startsWith("/Images/") && item.uuid
-    );
-
-    console.log(`[Migration] Images to migrate: ${imagesToMigrate.length}`);
-
-    for (const item of imagesToMigrate) {
-      try {
-        // Try to get content by filename (old way)
-        const content = await dbOperations.get<DocumentContent>(
-          STORES.IMAGES,
-          item.name
-        );
-        if (content && item.uuid) {
-          console.log(
-            `[Migration] Found content for ${item.name}, migrating to UUID ${item.uuid}`
-          );
-          // Save with UUID as key
-          await dbOperations.put<DocumentContent>(
-            STORES.IMAGES,
-            content,
-            item.uuid
-          );
-          // Delete old filename-based entry
-          await dbOperations.delete(STORES.IMAGES, item.name);
-          console.log(
-            `[Migration] Successfully migrated image: ${item.name} -> ${item.uuid}`
-          );
-          migratedCount++;
-        } else if (!content) {
-          // Check if content already exists with UUID
-          if (item.uuid) {
-            const uuidContent = await dbOperations.get<DocumentContent>(
-              STORES.IMAGES,
-              item.uuid
-            );
-            if (uuidContent) {
-              console.log(
-                `[Migration] Image ${item.name} already migrated to UUID ${item.uuid}`
-              );
-            } else {
-              console.log(
-                `[Migration] No content found for image ${item.name} - file might be empty`
-              );
-            }
-          }
-        }
-      } catch (err) {
-        console.error(`[Migration] Error migrating image ${item.name}:`, err);
-      }
-    }
-
-    // Process trash items
-    const trashItemsToMigrate = allItems.filter(
-      (item) => !item.isDirectory && item.status === "trashed" && item.uuid
-    );
-
-    console.log(
-      `[Migration] Trash items to migrate: ${trashItemsToMigrate.length}`
-    );
-
-    for (const item of trashItemsToMigrate) {
-      try {
-        // Try to get content by filename (old way)
-        const content = await dbOperations.get<DocumentContent>(
-          STORES.TRASH,
-          item.name
-        );
-        if (content && item.uuid) {
-          console.log(
-            `[Migration] Found content for ${item.name}, migrating to UUID ${item.uuid}`
-          );
-          // Save with UUID as key
-          await dbOperations.put<DocumentContent>(
-            STORES.TRASH,
-            content,
-            item.uuid
-          );
-          // Delete old filename-based entry
-          await dbOperations.delete(STORES.TRASH, item.name);
-          console.log(
-            `[Migration] Successfully migrated trash item: ${item.name} -> ${item.uuid}`
-          );
-          migratedCount++;
-        } else if (!content) {
-          // Check if content already exists with UUID
-          if (item.uuid) {
-            const uuidContent = await dbOperations.get<DocumentContent>(
-              STORES.TRASH,
-              item.uuid
-            );
-            if (uuidContent) {
-              console.log(
-                `[Migration] Trash item ${item.name} already migrated to UUID ${item.uuid}`
-              );
-            } else {
-              console.log(
-                `[Migration] No content found for trash item ${item.name} - file might be empty`
-              );
-            }
-          }
-        }
-      } catch (err) {
-        console.error(
-          `[Migration] Error migrating trash item ${item.name}:`,
-          err
-        );
-      }
-    }
+    migratedCount += await migrateStoreItemsToUUIDs({
+      allItems,
+      storeName: STORES.TRASH,
+      itemLabel: "trash item",
+      collectionLabel: "Trash items",
+      predicate: (item) =>
+        !item.isDirectory && item.status === "trashed" && !!item.uuid,
+    });
 
     console.log(`[Migration] Total items migrated: ${migratedCount}`);
 

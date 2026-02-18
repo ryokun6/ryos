@@ -273,13 +273,26 @@ export interface IpodState extends IpodData {
 
 const CURRENT_IPOD_STORE_VERSION = 30; // Replace Liquid display mode with Water
 
+function getTrackIdsByPredicate(
+  tracks: Track[],
+  shouldInclude: (trackId: string) => boolean
+): string[] {
+  const trackIds: string[] = [];
+  for (const track of tracks) {
+    if (shouldInclude(track.id)) {
+      trackIds.push(track.id);
+    }
+  }
+  return trackIds;
+}
+
 // Helper function to get unplayed track IDs from history
 function getUnplayedTrackIds(
   tracks: Track[],
   playbackHistory: string[]
 ): string[] {
   const playedIds = new Set(playbackHistory);
-  return tracks.map((track) => track.id).filter((id) => !playedIds.has(id));
+  return getTrackIdsByPredicate(tracks, (trackId) => !playedIds.has(trackId));
 }
 
 // Helper function to get a random track ID avoiding recently played songs
@@ -310,18 +323,20 @@ function getRandomTrackIdAvoidingRecent(
   const recentIds = new Set(recentTrackIds);
 
   // Find tracks that haven't been played recently
-  const availableIds = tracks
-    .map((track) => track.id)
-    .filter((id) => !recentIds.has(id) && id !== currentSongId);
+  const availableIds = getTrackIdsByPredicate(
+    tracks,
+    (trackId) => !recentIds.has(trackId) && trackId !== currentSongId
+  );
 
   if (availableIds.length > 0) {
     return availableIds[Math.floor(Math.random() * availableIds.length)];
   }
 
   // If all tracks have been played recently, just pick any track except current
-  const allIdsExceptCurrent = tracks
-    .map((track) => track.id)
-    .filter((id) => id !== currentSongId);
+  const allIdsExceptCurrent = getTrackIdsByPredicate(
+    tracks,
+    (trackId) => trackId !== currentSongId
+  );
 
   if (allIdsExceptCurrent.length > 0) {
     return allIdsExceptCurrent[Math.floor(Math.random() * allIdsExceptCurrent.length)];

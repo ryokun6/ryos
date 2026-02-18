@@ -14,6 +14,17 @@ import type { Message } from "../rooms/_helpers/_types.js";
 export const runtime = "nodejs";
 export const maxDuration = 15;
 
+function parseRoomIds(roomIdsParam: string): string[] {
+  const roomIds: string[] = [];
+  for (const rawId of roomIdsParam.split(",")) {
+    const roomId = rawId.trim();
+    if (roomId.length > 0) {
+      roomIds.push(roomId);
+    }
+  }
+  return roomIds;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const { logger } = initLogger();
   const startTime = Date.now();
@@ -52,7 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  const roomIds = roomIdsParam.split(",").map((id) => id.trim()).filter((id) => id.length > 0);
+  const roomIds = parseRoomIds(roomIdsParam);
 
   if (roomIds.length === 0) {
     logger.response(400, Date.now() - startTime);
@@ -70,8 +81,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   try {
     const roomExistenceChecks = await Promise.all(roomIds.map((roomId) => roomExists(roomId)));
-    const validRoomIds = roomIds.filter((_, index) => roomExistenceChecks[index]);
-    const invalidRoomIds = roomIds.filter((_, index) => !roomExistenceChecks[index]);
+    const { validRoomIds, invalidRoomIds } = roomIds.reduce(
+      (acc, roomId, index) => {
+        if (roomExistenceChecks[index]) {
+          acc.validRoomIds.push(roomId);
+        } else {
+          acc.invalidRoomIds.push(roomId);
+        }
+        return acc;
+      },
+      { validRoomIds: [] as string[], invalidRoomIds: [] as string[] }
+    );
 
     const messagePromises = validRoomIds.map(async (roomId) => {
       const messages = await getMessages(roomId, 20);
