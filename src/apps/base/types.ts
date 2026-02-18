@@ -86,10 +86,6 @@ export interface VideosInitialData {
   videoId?: string;
 }
 
-export interface FinderInitialData {
-  path?: string;
-}
-
 export interface TerminalInitialData {
   prefillCommand?: string;
 }
@@ -112,32 +108,3 @@ export type AnyApp =
   | BaseApp<ChatsInitialData>
   | BaseApp<unknown>; // For apps without specific initialData
 
-// Type for the initialData that could be any of the specific types
-export type AnyInitialData =
-  | ControlPanelsInitialData
-  | InternetExplorerInitialData
-  | IpodInitialData
-  | KaraokeInitialData
-  | PaintInitialData
-  | VideosInitialData
-  | FinderInitialData
-  | AppletViewerInitialData
-  | TerminalInitialData
-  | ChatsInitialData
-  | unknown;
-
-// Theme-aware menu bar pattern:
-// For XP/98 themes, pass the menu bar as a prop to WindowFrame
-// For other themes, render the menu bar normally outside WindowFrame
-// Example:
-// const currentTheme = useThemeStore((state) => state.current);
-// const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-// const menuBar = <AppMenuBar ... />;
-// return (
-//   <>
-//     {!isXpTheme && menuBar}
-//     <WindowFrame menuBar={isXpTheme ? menuBar : undefined}>
-//       ...
-//     </WindowFrame>
-//   </>
-// );
