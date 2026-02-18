@@ -28,6 +28,59 @@
   --os-window-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5);
 }
 
+/* Webamp playlist and UI - override skin fonts with system theme fonts */
+#webamp,
+#webamp * {
+  font-family: var(--os-font-ui) !important;
+}
+
+/* Mac Classic (System 7) - use Geneva 12 for Webamp, smooth (non-pixelated) rendering */
+:root[data-os-theme="system7"] #webamp,
+:root[data-os-theme="system7"] #webamp * {
+  font-family: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui !important;
+  -webkit-font-smoothing: antialiased !important;
+  font-smooth: auto !important;
+}
+
+/* macOS - reset font-size overrides so Webamp skin controls sizing */
+:root[data-os-theme="macosx"] #webamp,
+:root[data-os-theme="macosx"] #webamp * {
+  font-size: revert !important;
+}
+
+/* Win98/XP - reset input/button overrides from 98-custom.css/xp-custom.css so Webamp skin displays correctly (seek bar color, seek button offset) */
+:root[data-os-theme="win98"] #webamp input[type="range"],
+:root[data-os-theme="xp"] #webamp input[type="range"] {
+  -webkit-appearance: auto !important;
+  appearance: auto !important;
+  transform: none !important;
+}
+:root[data-os-theme="win98"] #webamp input[type="range"]::-webkit-slider-thumb,
+:root[data-os-theme="win98"] #webamp input[type="range"]::-moz-range-thumb,
+:root[data-os-theme="xp"] #webamp input[type="range"]::-webkit-slider-thumb,
+:root[data-os-theme="xp"] #webamp input[type="range"]::-moz-range-thumb {
+  -webkit-appearance: auto !important;
+  appearance: auto !important;
+  background: revert !important;
+  transform: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+:root[data-os-theme="win98"] #webamp input[type="range"]::-webkit-slider-runnable-track,
+:root[data-os-theme="win98"] #webamp input[type="range"]::-moz-range-track,
+:root[data-os-theme="xp"] #webamp input[type="range"]::-webkit-slider-runnable-track,
+:root[data-os-theme="xp"] #webamp input[type="range"]::-moz-range-track {
+  background: revert !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+:root[data-os-theme="win98"] #webamp button,
+:root[data-os-theme="xp"] #webamp button {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
 /* System 7 Theme */
 :root[data-os-theme="system7"] {
   --os-font-ui: "ChicagoKare", "ArkPixel", "SerenityOS-Emoji", system-ui,
