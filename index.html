@@ -192,6 +192,12 @@
           url.searchParams.set('_cb', Date.now());
           window.location.replace(url.toString());
         }
+        
+        // Allow main.tsx (vite:preloadError) to trigger same reload logic
+        window.addEventListener('ryos-stale-bundle', function() {
+          if (!navigator.onLine) return;
+          triggerStaleReload('vite:preloadError');
+        });
       })();
     </script>
   </head>
