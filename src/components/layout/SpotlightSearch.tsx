@@ -10,7 +10,7 @@ import {
 import { useThemeStore } from "@/stores/useThemeStore";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useTranslation } from "react-i18next";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { useIsMobile } from "@/hooks/useDevice";
 import { isTauri, isTauriWindows } from "@/utils/platform";
 
 // Section header labels by result type

@@ -1,4 +1,5 @@
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
+import type { AppId } from "@/config/appIds";
 
 export interface AppProps<TInitialData = unknown> {
   isWindowOpen: boolean;
@@ -20,27 +21,7 @@ export interface AppProps<TInitialData = unknown> {
 }
 
 export interface BaseApp<TInitialData = unknown> {
-  id:
-    | "soundboard"
-    | "internet-explorer"
-    | "chats"
-    | "textedit"
-    | "control-panels"
-    | "minesweeper"
-    | "finder"
-    | "paint"
-    | "videos"
-    | "pc"
-    | "photo-booth"
-    | "synth"
-    | "ipod"
-    | "karaoke"
-    | "terminal"
-    | "applet-viewer"
-    | "admin"
-    | "stickies"
-    | "infinite-mac"
-    | "winamp";
+  id: AppId;
   name: string;
   icon: string | { type: "image"; src: string };
   description: string;

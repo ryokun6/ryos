@@ -35,8 +35,7 @@ export interface AppBasicInfo {
   name: string;
 }
 
-/** App ID to name mapping - matches appRegistry names exactly */
-export const appNames: Record<AppId, string> = {
+const appNames: Record<AppId, string> = {
   "finder": "Finder",
   "soundboard": "Soundboard",
   "internet-explorer": "Internet Explorer",

@@ -8,14 +8,10 @@ import type {
   VideosInitialData,
 } from "@/apps/base/types";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
+import type { WindowSize } from "@/types/types";
 import { createLazyComponent } from "./lazyAppComponent";
 
-export type { AppId };
-
-export interface WindowSize {
-  width: number;
-  height: number;
-}
+export type { AppId, WindowSize };
 
 export interface WindowConstraints {
   minSize?: WindowSize;

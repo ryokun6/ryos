@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
-import { useIsPhone } from "@/hooks/useIsPhone";
+import { useIsPhone } from "@/hooks/useDevice";
 import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import type { PipPlayerProps } from "../types";
 import { SkipBack, SkipForward, Play, Pause, MusicNote } from "@phosphor-icons/react";

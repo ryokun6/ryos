@@ -42,7 +42,7 @@ import { WifiSlash } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName } from "@/utils/i18n";
-import { useIsPhone } from "@/hooks/useIsPhone";
+import { useIsPhone } from "@/hooks/useDevice";
 import { isTauri, isTauriWindows } from "@/utils/platform";
 import { useSpotlightStore } from "@/stores/useSpotlightStore";
 

@@ -17,7 +17,7 @@ import { useFinderStore } from "@/stores/useFinderStore";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useDockStore, PROTECTED_DOCK_ITEMS, type DockItem } from "@/stores/useDockStore";
 import { useChatsStore } from "@/stores/useChatsStore";
-import { useIsPhone } from "@/hooks/useIsPhone";
+import { useIsPhone } from "@/hooks/useDevice";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useSound, Sounds } from "@/hooks/useSound";
 import type { AppInstance, LaunchOriginRect } from "@/stores/useAppStore";

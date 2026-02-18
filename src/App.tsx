@@ -9,7 +9,7 @@ import { BootScreen } from "./components/dialogs/BootScreen";
 import { getNextBootMessage, clearNextBootMessage, isBootDebugMode } from "./utils/bootMessage";
 import { AnyApp } from "./apps/base/types";
 import { useThemeStore } from "./stores/useThemeStore";
-import { useIsMobile } from "./hooks/useIsMobile";
+import { useIsMobile } from "./hooks/useDevice";
 import { useOffline } from "./hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { isTauri } from "./utils/platform";
