@@ -74,7 +74,7 @@ const METADATA_FIELD_CONFIG: Record<
 };
 
 function isMetadataKey(key: string): key is MetadataKey {
-  return key in METADATA_FIELD_CONFIG;
+  return Object.prototype.hasOwnProperty.call(METADATA_FIELD_CONFIG, key);
 }
 
 /**
