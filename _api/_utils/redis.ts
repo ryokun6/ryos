@@ -9,7 +9,7 @@ import { Redis } from "@upstash/redis";
 
 /**
  * Create a new Redis client using environment variables
- * 
+ *
  * @returns A configured Upstash Redis client
  * @throws If REDIS_KV_REST_API_URL or REDIS_KV_REST_API_TOKEN are not set
  */
@@ -24,6 +24,34 @@ export function createRedis(): Redis {
   }
 
   return new Redis({ url, token });
+}
+
+/** Generate a unique ID (random hex string). Uses Web Crypto for Edge compatibility. */
+export function generateId(bytes = 16): string {
+  const arr = new Uint8Array(bytes);
+  crypto.getRandomValues(arr);
+  return Array.from(arr)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/** Current timestamp in milliseconds */
+export function getCurrentTimestamp(): number {
+  return Date.now();
+}
+
+/** Parse JSON safely from Redis/unknown data */
+export function parseJSON<T>(data: unknown): T | null {
+  if (!data) return null;
+  if (typeof data === "object") return data as T;
+  if (typeof data === "string") {
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+  return null;
 }
 
 /**
