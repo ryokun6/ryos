@@ -29,7 +29,7 @@ export function AppSwitcher({ isVisible, apps, selectedIndex }: AppSwitcherProps
         >
           <div className="relative">
             <div
-              className="flex items-center gap-1 p-3 rounded-[22px] bg-black/70 backdrop-blur-2xl border border-white/15 shadow-2xl"
+              className="flex items-center gap-1 p-3 rounded-[22px] bg-black/70 border border-white/15 shadow-2xl"
             >
               {apps.map(({ appId }, index) => {
                 const iconSrc = getAppIconPath(appId);
@@ -66,7 +66,7 @@ export function AppSwitcher({ isVisible, apps, selectedIndex }: AppSwitcherProps
             </div>
             <div className="flex justify-center mt-2">
               <span
-                className="text-white text-xs font-bold px-3 py-1 rounded-full truncate max-w-[140px] bg-black/70 backdrop-blur-2xl border border-white/15"
+                className="text-white text-xs font-bold px-3 py-1 rounded-full truncate max-w-[140px] bg-black/70 border border-white/15"
               >
                 {appRegistry[apps[selectedIndex]?.appId]?.name ?? ""}
               </span>
