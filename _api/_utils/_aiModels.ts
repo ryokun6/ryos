@@ -34,39 +34,24 @@ export const SUPPORTED_AI_MODELS = Object.keys(AI_MODELS) as SupportedModel[];
 // Default model
 export const DEFAULT_MODEL: SupportedModel = "gpt-5.1";
 
+const MODEL_FACTORIES: Record<SupportedModel, () => LanguageModel> = {
+  "gemini-2.5-pro": () => google("gemini-2.5-pro"),
+  "gemini-2.5-flash": () => google("gemini-2.5-flash"),
+  "gemini-3-pro-preview": () => google("gemini-3-pro-preview"),
+  "claude-4.5": () => anthropic("claude-sonnet-4-5"),
+  "claude-4": () => anthropic("claude-4-sonnet-20250514"),
+  "claude-3.7": () => anthropic("claude-3-7-sonnet-20250219"),
+  "claude-3.5": () => anthropic("claude-3-5-sonnet-20241022"),
+  "gpt-5": () => openai("gpt-5"),
+  "gpt-5.1": () => openai("gpt-5.1"),
+  "gpt-5-mini": () => openai("gpt-5-mini"),
+  "gpt-4o": () => openai("gpt-4o"),
+  "gpt-4.1": () => openai("gpt-4.1"),
+  "gpt-4.1-mini": () => openai("gpt-4.1-mini"),
+};
+
 // Factory that returns a LanguageModel instance for the requested model
 export const getModelInstance = (model: SupportedModel): LanguageModel => {
   const modelToUse: SupportedModel = model ?? DEFAULT_MODEL;
-
-  switch (modelToUse) {
-    case "gemini-2.5-pro":
-      return google("gemini-2.5-pro");
-    case "gemini-2.5-flash":
-      return google("gemini-2.5-flash");
-    case "gemini-3-pro-preview":
-      return google("gemini-3-pro-preview");
-    case "claude-4.5":
-      return anthropic("claude-sonnet-4-5");
-    case "claude-4":
-      return anthropic("claude-4-sonnet-20250514");
-    case "claude-3.7":
-      return anthropic("claude-3-7-sonnet-20250219");
-    case "claude-3.5":
-      return anthropic("claude-3-5-sonnet-20241022");
-    case "gpt-5":
-      return openai("gpt-5");
-    case "gpt-5.1":
-      return openai("gpt-5.1");
-    case "gpt-5-mini":
-      return openai("gpt-5-mini");
-    case "gpt-4o":
-      return openai("gpt-4o");
-    case "gpt-4.1":
-      return openai("gpt-4.1");
-    case "gpt-4.1-mini":
-      return openai("gpt-4.1-mini");
-    default:
-      // Fallback – should never happen due to exhaustive switch
-      return openai("gpt-5.1");
-  }
+  return (MODEL_FACTORIES[modelToUse] ?? MODEL_FACTORIES[DEFAULT_MODEL])();
 };
