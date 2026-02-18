@@ -1,4 +1,5 @@
 import { preconnect, preload, preinit } from "react-dom";
+import { hasWindow } from "@/utils/platform";
 
 type FontResource = {
   href: string;
@@ -33,7 +34,7 @@ const PRECONNECT_RESOURCES = [
 let primed = false;
 
 export function primeReactResources(): void {
-  if (primed || typeof window === "undefined") {
+  if (primed || !hasWindow()) {
     return;
   }
 

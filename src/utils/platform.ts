@@ -3,10 +3,17 @@
  */
 
 /**
+ * Check if the current runtime has access to the browser window object.
+ */
+export function hasWindow(): boolean {
+  return typeof window !== "undefined";
+}
+
+/**
  * Check if the app is running in Tauri (desktop app)
  */
 export function isTauri(): boolean {
-  return typeof window !== "undefined" && "__TAURI__" in window;
+  return hasWindow() && "__TAURI__" in window;
 }
 
 /**
@@ -46,14 +53,10 @@ export function getApiUrl(path: string): string {
  * @returns true if Windows (Chromium), false if Mac (WebKit) or not Tauri
  */
 export function isTauriWindows(): boolean {
-  if (!isTauri()) {
+  if (!isTauri() || !hasWindow()) {
     return false;
   }
-  
-  if (typeof window === "undefined") {
-    return false;
-  }
-  
+
   // Chromium detection: check for window.chrome object
   // On Windows, Tauri uses Chromium which has window.chrome
   // On Mac, Tauri uses WebKit which doesn't have window.chrome

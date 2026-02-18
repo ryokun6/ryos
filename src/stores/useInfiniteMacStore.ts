@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { hasWindow } from "@/utils/platform";
 
 export type ScaleOption = 1 | 1.5 | 2;
 
@@ -208,10 +209,10 @@ export const useInfiniteMacStore = create<InfiniteMacStoreState>()(
           console.warn("[InfiniteMacStore] Cannot send command: no active emulator");
           return false;
         }
+        if (!hasWindow()) {
+          return false;
+        }
         try {
-          if (typeof window === "undefined") {
-            return false;
-          }
           activeIframeWindow.postMessage(command, window.location.origin);
           return true;
         } catch (error) {

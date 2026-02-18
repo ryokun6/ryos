@@ -31,14 +31,7 @@ export const handleLaunchApp = (
   const { id, url, year } = input;
 
   // Validate required parameter
-  if (!id) {
-    console.error("[ToolCall] launchApp: Missing required 'id' parameter");
-    context.addToolResult({
-      tool: "launchApp",
-      toolCallId,
-      state: "output-error",
-      errorText: i18n.t("apps.chats.toolCalls.noAppIdProvided"),
-    });
+  if (!validateAppId(id, "launchApp", toolCallId, context)) {
     return "";
   }
 
@@ -73,14 +66,7 @@ export const handleCloseApp = (
   const { id } = input;
 
   // Validate required parameter
-  if (!id) {
-    console.error("[ToolCall] closeApp: Missing required 'id' parameter");
-    context.addToolResult({
-      tool: "closeApp",
-      toolCallId,
-      state: "output-error",
-      errorText: i18n.t("apps.chats.toolCalls.noAppIdProvided"),
-    });
+  if (!validateAppId(id, "closeApp", toolCallId, context)) {
     return "";
   }
 
@@ -110,3 +96,25 @@ export const handleCloseApp = (
 
   return `Closed ${appName}`;
 };
+
+type AppToolName = "launchApp" | "closeApp";
+
+function validateAppId(
+  id: string | undefined,
+  tool: AppToolName,
+  toolCallId: string,
+  context: ToolContext
+): id is string {
+  if (id) {
+    return true;
+  }
+
+  console.error(`[ToolCall] ${tool}: Missing required 'id' parameter`);
+  context.addToolResult({
+    tool,
+    toolCallId,
+    state: "output-error",
+    errorText: i18n.t("apps.chats.toolCalls.noAppIdProvided"),
+  });
+  return false;
+}

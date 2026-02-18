@@ -1,4 +1,4 @@
-import { getApiUrl } from "./platform";
+import { getApiUrl, hasWindow } from "./platform";
 import { abortableFetch } from "./abortableFetch";
 
 /**
@@ -50,12 +50,7 @@ export function extractCodeFromPath(path: string): string | null {
  * @returns The full shareable URL (e.g., 'https://hostname.com/internet-explorer').
  */
 export function generateAppShareUrl(appId: string): string {
-  if (typeof window === 'undefined') {
-    // Handle server-side rendering or environments without window
-    console.warn('Cannot generate app share URL: window object is not available.');
-    return ''; // Or throw an error, depending on desired behavior
-  }
-  return `${window.location.origin}/${appId}`;
+  return buildShareUrl(`/${appId}`, "app share URL");
 }
 
 /**
@@ -64,9 +59,18 @@ export function generateAppShareUrl(appId: string): string {
  * @returns The full shareable URL (e.g., 'https://hostname.com/applet-viewer/{id}').
  */
 export function generateAppletShareUrl(id: string): string {
-  if (typeof window === 'undefined') {
-    console.warn('Cannot generate applet share URL: window object is not available.');
-    return '';
+  return buildShareUrl(`/applet-viewer/${id}`, "applet share URL");
+}
+
+function buildShareUrl(path: string, label: string): string {
+  const origin = getWindowOrigin(label);
+  return origin ? `${origin}${path}` : "";
+}
+
+function getWindowOrigin(label: string): string | null {
+  if (!hasWindow()) {
+    console.warn(`Cannot generate ${label}: window object is not available.`);
+    return null;
   }
-  return `${window.location.origin}/applet-viewer/${id}`;
-} 
+  return window.location.origin;
+}
