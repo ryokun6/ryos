@@ -9,10 +9,9 @@ import { useChatsStoreShallow } from "@/stores/helpers";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ChatMessage, ChatRoom } from "@/types/chat";
-import { toast } from "sonner";
-import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
 import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
 import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
+import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
@@ -197,17 +196,11 @@ export function useBackgroundChatNotifications() {
       incrementUnread(messageWithTimestamp.roomId);
 
       const decoded = decodeHtmlEntities(String(messageWithTimestamp.content || ""));
-      const preview = decoded.replace(/\s+/g, " ").trim().slice(0, 80);
-
-      toast(`@${messageWithTimestamp.username}`, {
-        id: `chat-room-message-${messageWithTimestamp.id}`,
-        description: preview,
-        action: {
-          label: "Open",
-          onClick: () => {
-            openChatRoomFromNotification(messageWithTimestamp.roomId);
-          },
-        },
+      showRoomMessageNotification({
+        username: messageWithTimestamp.username,
+        content: decoded,
+        roomId: messageWithTimestamp.roomId,
+        messageId: messageWithTimestamp.id,
       });
     },
     [addMessageToRoom, incrementUnread]

@@ -331,8 +331,7 @@ export function useInfiniteMacLogic({
                   setLastScreenData(screenData);
                 }
               } catch {
-                // Conversion failed, log for debugging
-                console.log("Failed to convert screen data:", typeof pixelData, pixelData);
+                // Conversion failed
               }
             }
           }

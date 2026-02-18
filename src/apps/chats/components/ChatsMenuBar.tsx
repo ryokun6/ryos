@@ -18,6 +18,10 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
+import {
+  useNotificationPermission,
+  isNotificationApiAvailable,
+} from "@/utils/browserNotifications";
 
 interface ChatsMenuBarProps {
   onClose: () => void;
@@ -90,6 +94,9 @@ export function ChatsMenuBar({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacOsxTheme = currentTheme === "macosx";
+
+  const { permission: notificationPermission, requestPermission: requestNotificationPermission } =
+    useNotificationPermission();
 
   const {
     speechEnabled,
@@ -280,10 +287,10 @@ export function ChatsMenuBar({
           </MenubarContent>
         </MenubarMenu>
 
-        {/* View Menu */}
+        {/* Settings Menu */}
         <MenubarMenu>
           <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-            {t("common.menu.view")}
+            {t("common.menu.settings")}
           </MenubarTrigger>
           <MenubarContent align="start" sideOffset={1} className="px-0">
             {/* Font Size Controls */}
@@ -311,13 +318,29 @@ export function ChatsMenuBar({
             <MenubarCheckboxItem
               checked={isSidebarVisible}
               onCheckedChange={(checked) => {
-                console.log("[MenuBar] Toggle Sidebar menu item clicked");
                 if (checked !== isSidebarVisible) onToggleSidebar();
               }}
               className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.showRooms")}
             </MenubarCheckboxItem>
+            {isNotificationApiAvailable() && (
+              <>
+                <MenubarSeparator className="h-[2px] bg-black my-1" />
+                <MenubarCheckboxItem
+                  checked={notificationPermission === "granted"}
+                  disabled={notificationPermission === "denied"}
+                  onCheckedChange={(checked) => {
+                    if (checked && notificationPermission === "default") {
+                      void requestNotificationPermission();
+                    }
+                  }}
+                  className="text-md h-6 px-3"
+                >
+                  {t("apps.chats.menu.systemNotifications")}
+                </MenubarCheckboxItem>
+              </>
+            )}
           </MenubarContent>
         </MenubarMenu>
 

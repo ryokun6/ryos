@@ -24,6 +24,7 @@
       "file": "File",
       "edit": "Edit",
       "view": "View",
+      "settings": "Settings",
       "go": "Go",
       "help": "Help",
       "close": "Close",
@@ -690,6 +691,7 @@
         "decreaseFontSize": "Decrease Font Size",
         "resetFontSize": "Reset Font Size",
         "showRooms": "Show Rooms",
+        "systemNotifications": "System Notifications",
         "chatsHelp": "Chats Help",
         "aboutChats": "About Chats"
       },
@@ -761,6 +763,10 @@
         "dailyLimitReached": "Daily AI message limit reached.",
         "loginToContinue": "Login to continue chatting with Ryo.",
         "sessionExpired": "Session expired. Please login again.",
+        "loginRequired": "Login Required",
+        "pleaseLoginToSendMessages": "Please login to send messages.",
+        "pleaseLoginToDeleteRooms": "Please login to delete rooms.",
+        "loginButton": "Login",
         "retry": "Retry",
         "startNewConversation": "Start a new conversation?",
         "newChat": "New chat",
@@ -774,6 +780,9 @@
         "typeOrPushSpace": "Type or push 'space' to talk...",
         "scrollToBottom": "Scroll to bottom",
         "nudgeSent": "👋 *nudge sent*"
+      },
+      "notification": {
+        "openAction": "Open"
       },
       "ariaLabels": {
         "sendNudge": "Send a Nudge",

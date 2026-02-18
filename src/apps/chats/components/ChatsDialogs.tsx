@@ -170,10 +170,7 @@ export const ChatsDialogs = ({
       <LoginDialog
         initialTab="signup"
         isOpen={isUsernameDialogOpen}
-        onOpenChange={(open) => {
-          console.log(`[ChatApp Debug] Username LoginDialog onOpenChange called with: ${open}`);
-          setIsUsernameDialogOpen(open);
-        }}
+        onOpenChange={setIsUsernameDialogOpen}
         usernameInput={verifyUsernameInput}
         onUsernameInputChange={setVerifyUsernameInput}
         passwordInput={verifyPasswordInput}

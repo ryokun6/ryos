@@ -40,7 +40,7 @@ import { AnyExtension } from "@tiptap/core";
 import i18n from "@/lib/i18n";
 import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
+import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
 import {
   handleLaunchApp,
   handleCloseApp,
@@ -494,25 +494,12 @@ const isChatsInForeground = (): boolean => {
 
 // Helper to show notification with assistant's message when chat is backgrounded
 const showBackgroundedMessageNotification = (message: UIMessage) => {
-  // Extract text content (without tool calls)
   const textContent = getAssistantVisibleText(message);
   if (!textContent.trim()) return;
 
-  // Truncate and clean up message preview
-  const preview = textContent.replace(/\s+/g, " ").trim().slice(0, 100);
-
-  // Show notification similar to room chat toasts
-  toast(`@Ryo`, {
-    id: `chat-ai-message-${message.id}`,
-    description: preview + (textContent.length > 100 ? "…" : ""),
-    duration: 6000,
-    action: {
-      label: "Open",
-      onClick: () => {
-        // Open/focus Chats and switch to @Ryo context.
-        openChatRoomFromNotification(null);
-      },
-    },
+  showAiMessageNotification({
+    content: textContent,
+    messageId: message.id,
   });
 };
 

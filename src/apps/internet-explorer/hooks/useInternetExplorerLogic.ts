@@ -1216,13 +1216,6 @@ export function useInternetExplorerLogic({
         }
       );
 
-      console.log(
-        "[IE Debug] Input:",
-        inputValue,
-        "Is Valid:",
-        isValidUrl(inputValue)
-      );
-
       if (inputValue.trim() && !isValidUrl(inputValue)) {
         finalSuggestions.push({
           title: `Search "${inputValue}"`,

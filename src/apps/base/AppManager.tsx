@@ -84,7 +84,6 @@ export function AppManager({ apps }: AppManagerProps) {
   useEffect(() => {
     const handleUrlNavigation = async () => {
       const path = window.location.pathname;
-      console.log("[AppManager] Checking path:", path); // Keep this log for debugging
 
       const launchAppletViewer = () => {
         toast.info(t("common.loading.openingAppletStore"));
@@ -103,8 +102,6 @@ export function AppManager({ apps }: AppManagerProps) {
       } else if (path.startsWith("/internet-explorer/")) {
         const shareCode = extractCodeFromPath(path);
         if (shareCode) {
-          // Handle shared Internet Explorer URL - Pass code directly
-          console.log("[AppManager] Detected IE share code:", shareCode);
           toast.info(t("common.loading.openingSharedIELink"));
 
           // Use setTimeout to ensure the event listener is ready
@@ -118,9 +115,6 @@ export function AppManager({ apps }: AppManagerProps) {
               },
             });
             window.dispatchEvent(event);
-            console.log(
-              "[AppManager] Dispatched launchApp event for IE share code.",
-            );
           }, 0);
 
           window.history.replaceState({}, "", "/"); // Clean URL
@@ -128,8 +122,6 @@ export function AppManager({ apps }: AppManagerProps) {
       } else if (path.startsWith("/applet-viewer/")) {
         const shareCode = extractCodeFromPath(path);
         if (shareCode) {
-          // Handle shared Applet Viewer URL - Pass code directly
-          console.log("[AppManager] Detected applet share code:", shareCode);
           toast.info(t("common.loading.openingSharedApplet"));
 
           // Use setTimeout to ensure the event listener is ready
@@ -147,22 +139,15 @@ export function AppManager({ apps }: AppManagerProps) {
               },
             });
             window.dispatchEvent(event);
-            console.log(
-              "[AppManager] Dispatched launchApp event for applet share code.",
-            );
           }, 0);
 
           window.history.replaceState({}, "", "/"); // Clean URL
         } else {
-          console.log(
-            "[AppManager] No share code detected for applet viewer path, opening base app.",
-          );
           launchAppletViewer();
         }
       } else if (path.startsWith("/ipod/")) {
         const videoId = path.substring("/ipod/".length);
         if (videoId) {
-          console.log("[AppManager] Detected iPod videoId:", videoId);
           toast.info(t("common.loading.openingSharedIpodTrack"));
           setTimeout(() => {
             const event = new CustomEvent("launchApp", {
@@ -172,9 +157,6 @@ export function AppManager({ apps }: AppManagerProps) {
               },
             });
             window.dispatchEvent(event);
-            console.log(
-              "[AppManager] Dispatched launchApp event for iPod videoId.",
-            );
           }, 0);
           window.history.replaceState({}, "", "/"); // Clean URL
         }
@@ -182,7 +164,6 @@ export function AppManager({ apps }: AppManagerProps) {
         const sessionId = path.substring("/listen/".length).split("?")[0]; // Remove query params from sessionId
         
         if (sessionId) {
-          console.log("[AppManager] Detected listen session:", sessionId, "app: karaoke");
           toast.info("Opening live session...");
           // Use 100ms delay to ensure event listener is ready after store hydration
           setTimeout(() => {
@@ -193,16 +174,12 @@ export function AppManager({ apps }: AppManagerProps) {
               },
             });
             window.dispatchEvent(event);
-            console.log(
-              `[AppManager] Dispatched launchApp event for listen session in karaoke.`,
-            );
           }, 100);
           window.history.replaceState({}, "", "/"); // Clean URL
         }
       } else if (path.startsWith("/karaoke/")) {
         const videoId = path.substring("/karaoke/".length);
         if (videoId) {
-          console.log("[AppManager] Detected Karaoke videoId:", videoId);
           toast.info(t("common.loading.openingSharedKaraokeTrack"));
           setTimeout(() => {
             const event = new CustomEvent("launchApp", {
@@ -212,16 +189,12 @@ export function AppManager({ apps }: AppManagerProps) {
               },
             });
             window.dispatchEvent(event);
-            console.log(
-              "[AppManager] Dispatched launchApp event for Karaoke videoId.",
-            );
           }, 0);
           window.history.replaceState({}, "", "/"); // Clean URL
         }
       } else if (path.startsWith("/videos/")) {
         const videoId = path.substring("/videos/".length);
         if (videoId) {
-          console.log("[AppManager] Detected Videos videoId:", videoId);
           toast.info(t("common.loading.openingSharedVideo"));
           setTimeout(() => {
             const event = new CustomEvent("launchApp", {
@@ -231,9 +204,6 @@ export function AppManager({ apps }: AppManagerProps) {
               },
             });
             window.dispatchEvent(event);
-            console.log(
-              "[AppManager] Dispatched launchApp event for Videos videoId.",
-            );
           }, 0);
           window.history.replaceState({}, "", "/"); // Clean URL
         }
@@ -289,11 +259,6 @@ export function AppManager({ apps }: AppManagerProps) {
     ) => {
       const { appId, initialPath, initialData } = event.detail;
 
-      console.log(
-        `[AppManager] Launch event received for ${appId}`,
-        event.detail,
-      );
-
       // Check if there's an existing instance before launching
       const existingInstance = Object.values(instancesRef.current).find(
         (instance) => instance.appId === appId && instance.isOpen,
@@ -301,9 +266,6 @@ export function AppManager({ apps }: AppManagerProps) {
 
       // Use instance system
       const instanceId = launchAppRef.current(appId, initialData);
-      console.log(
-        `[AppManager] Launched instance ${instanceId} for app ${appId}`,
-      );
 
       // Store initialPath if provided
       if (initialPath) {
@@ -316,10 +278,6 @@ export function AppManager({ apps }: AppManagerProps) {
         initialData &&
         instanceId === existingInstance.instanceId
       ) {
-        console.log(
-          `[AppManager] Dispatching updateApp event for existing ${appId} instance with initialData:`,
-          initialData,
-        );
         const updateEvent = new CustomEvent("updateApp", {
           detail: { appId, instanceId, initialData },
         });

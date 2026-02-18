@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import type { PusherChannel } from "@/lib/pusherClient";
 import {
   getPusherClient,
@@ -9,9 +10,9 @@ import { useChatsStore } from "../../../stores/useChatsStore";
 import { toast } from "@/hooks/useToast";
 import { type ChatRoom, type ChatMessage } from "../../../../src/types/chat";
 import { useChatsStoreShallow } from "@/stores/helpers";
-import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
 import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
 import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
+import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
@@ -60,6 +61,7 @@ export function useChatRoom(
   isWindowOpen: boolean,
   onPromptSetUsername?: () => void
 ) {
+  const { t } = useTranslation();
   const {
     username,
     authToken,
@@ -298,16 +300,11 @@ export function useChatRoom(
 
           incrementUnread(data.message.roomId);
           const decoded = decodeHtmlEntities(String(data.message.content || ""));
-          const preview = decoded.replace(/\s+/g, " ").trim().slice(0, 80);
-          toast(`@${data.message.username}`, {
-            id: `chat-room-message-${data.message.id}`,
-            description: preview,
-            action: {
-              label: "Open",
-              onClick: () => {
-                openChatRoomFromNotification(data.message.roomId);
-              },
-            },
+          showRoomMessageNotification({
+            username: data.message.username,
+            content: decoded,
+            roomId: data.message.roomId,
+            messageId: data.message.id,
           });
         },
         onMessageDeleted: (data) => {
@@ -393,12 +390,12 @@ export function useChatRoom(
           result.error?.toLowerCase().includes("username mismatch");
 
         if (isAuthError) {
-          toast.error("Login Required", {
-            description: "Please login to send messages.",
+          toast.error(t("apps.chats.status.loginRequired"), {
+            description: t("apps.chats.status.pleaseLoginToSendMessages"),
             duration: 5000,
             action: onPromptSetUsername
               ? {
-                  label: "Login",
+                  label: t("apps.chats.status.loginButton"),
                   onClick: onPromptSetUsername,
                 }
               : undefined,
@@ -410,7 +407,7 @@ export function useChatRoom(
         }
       }
     },
-    [currentRoomId, username, sendMessage, onPromptSetUsername]
+    [currentRoomId, username, sendMessage, onPromptSetUsername, t]
   );
 
   const handleAddRoom = useCallback(
@@ -494,12 +491,12 @@ export function useChatRoom(
         result.error?.toLowerCase().includes("username mismatch");
 
       if (isAuthError) {
-        toast.error("Login Required", {
-          description: "Please login to delete rooms.",
+        toast.error(t("apps.chats.status.loginRequired"), {
+          description: t("apps.chats.status.pleaseLoginToDeleteRooms"),
           duration: 5000,
           action: onPromptSetUsername
             ? {
-                label: "Login",
+                label: t("apps.chats.status.loginButton"),
                 onClick: onPromptSetUsername,
               }
             : undefined,
@@ -510,7 +507,7 @@ export function useChatRoom(
         });
       }
     }
-  }, [roomToDelete, handleDeleteRoom, onPromptSetUsername]);
+  }, [roomToDelete, handleDeleteRoom, onPromptSetUsername, t]);
 
   // --- Effects ---
 
