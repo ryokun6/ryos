@@ -40,7 +40,7 @@ export function FileIcon({
   const { t } = useTranslation();
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win7";
   const isWin98Theme = currentTheme === "win98";
   const isMacOSXTheme = currentTheme === "macosx";
   const isFinderContext = context === "finder";

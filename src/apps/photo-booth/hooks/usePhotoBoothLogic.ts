@@ -191,7 +191,7 @@ export function usePhotoBoothLogic({
   const recentPhotoPreviewsRef = useRef<Map<string, string>>(new Map());
 
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isMacTheme = currentTheme === "macosx";
 
   const windowTitle = getTranslatedAppName("photo-booth");

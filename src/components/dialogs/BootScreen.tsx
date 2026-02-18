@@ -27,7 +27,7 @@ export function BootScreen({
   const currentTheme = useThemeStore((state) => state.current);
   const localizedTitle = title ?? t("common.system.systemRestoring");
   
-  const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isMacOSX = currentTheme === "macosx";
 
   const handleDone = () => {

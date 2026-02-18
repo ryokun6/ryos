@@ -150,7 +150,7 @@ export type AnyInitialData =
 // For other themes, render the menu bar normally outside WindowFrame
 // Example:
 // const currentTheme = useThemeStore((state) => state.current);
-// const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+// const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
 // const menuBar = <AppMenuBar ... />;
 // return (
 //   <>

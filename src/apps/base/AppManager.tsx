@@ -52,7 +52,7 @@ export function AppManager({ apps }: AppManagerProps) {
 
   // Get current theme to determine if we should show the desktop menubar
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   
   // For Mac/System7 themes, hide the desktop menubar when there's a foreground app
   // For XP/98, the menubar is actually a taskbar and should always show

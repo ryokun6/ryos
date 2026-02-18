@@ -54,7 +54,7 @@ export const AppStoreFeed = forwardRef<AppStoreFeedRef, AppStoreFeedProps>(
   const PREVIEW_Y_SPACING = -28;
   const isMacTheme = theme === "macosx" || currentTheme === "macosx";
   const isSystem7Theme = theme === "system7" || currentTheme === "system7";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
 
   const actions = useAppletActions();
 

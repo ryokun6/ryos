@@ -63,7 +63,7 @@ export function JoinSessionDialog({
   const currentTheme = useThemeStore((state) => state.current);
   const fetchSessions = useListenSessionStore((state) => state.fetchSessions);
 
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isMacTheme = currentTheme === "macosx";
 
   const loadSessions = useCallback(async () => {

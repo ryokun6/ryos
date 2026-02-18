@@ -42,7 +42,7 @@ export function TerminalMenuBar({
   const appId = "terminal";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isMacOsxTheme = currentTheme === "macosx";
 
   return (

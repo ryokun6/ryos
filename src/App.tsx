@@ -39,7 +39,7 @@ export function App() {
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
-    const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
+    const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
     const dockHeight = currentTheme === "macosx" ? 56 : 0;
     const taskbarHeight = isWindowsTheme ? 30 : 0;
     

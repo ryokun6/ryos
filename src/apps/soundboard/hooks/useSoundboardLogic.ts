@@ -54,7 +54,7 @@ export function useSoundboardLogic({
 
   // Get current theme
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
 
   useEffect(() => {
     if (!hasInitialized) {

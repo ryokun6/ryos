@@ -68,7 +68,7 @@ export function FileList({
   const draggedFileRef = useRef<FileItem | null>(null);
   const currentTheme = useThemeStore((state) => state.current);
   const isMacOSXTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
 
   // Add refs for rename timing
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);

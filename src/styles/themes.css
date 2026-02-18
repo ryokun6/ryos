@@ -48,9 +48,10 @@
   font-size: revert !important;
 }
 
-/* Win98/XP - reset input/button overrides from 98-custom.css/xp-custom.css so Webamp skin displays correctly (seek bar color, seek button offset) */
+/* Win98/XP/Win7 - reset input/button overrides from legacy CSS so Webamp skin displays correctly */
 :root[data-os-theme="win98"] #webamp input[type="range"],
-:root[data-os-theme="xp"] #webamp input[type="range"] {
+:root[data-os-theme="xp"] #webamp input[type="range"],
+:root[data-os-theme="win7"] #webamp input[type="range"] {
   -webkit-appearance: auto !important;
   appearance: auto !important;
   transform: none !important;
@@ -58,7 +59,9 @@
 :root[data-os-theme="win98"] #webamp input[type="range"]::-webkit-slider-thumb,
 :root[data-os-theme="win98"] #webamp input[type="range"]::-moz-range-thumb,
 :root[data-os-theme="xp"] #webamp input[type="range"]::-webkit-slider-thumb,
-:root[data-os-theme="xp"] #webamp input[type="range"]::-moz-range-thumb {
+:root[data-os-theme="xp"] #webamp input[type="range"]::-moz-range-thumb,
+:root[data-os-theme="win7"] #webamp input[type="range"]::-webkit-slider-thumb,
+:root[data-os-theme="win7"] #webamp input[type="range"]::-moz-range-thumb {
   -webkit-appearance: auto !important;
   appearance: auto !important;
   background: revert !important;
@@ -69,13 +72,16 @@
 :root[data-os-theme="win98"] #webamp input[type="range"]::-webkit-slider-runnable-track,
 :root[data-os-theme="win98"] #webamp input[type="range"]::-moz-range-track,
 :root[data-os-theme="xp"] #webamp input[type="range"]::-webkit-slider-runnable-track,
-:root[data-os-theme="xp"] #webamp input[type="range"]::-moz-range-track {
+:root[data-os-theme="xp"] #webamp input[type="range"]::-moz-range-track,
+:root[data-os-theme="win7"] #webamp input[type="range"]::-webkit-slider-runnable-track,
+:root[data-os-theme="win7"] #webamp input[type="range"]::-moz-range-track {
   background: revert !important;
   box-shadow: none !important;
   border: none !important;
 }
 :root[data-os-theme="win98"] #webamp button,
-:root[data-os-theme="xp"] #webamp button {
+:root[data-os-theme="xp"] #webamp button,
+:root[data-os-theme="win7"] #webamp button {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
@@ -255,6 +261,63 @@
   -webkit-font-smoothing: antialiased !important;
 }
 
+/* Windows 7 Theme */
+:root[data-os-theme="win7"] {
+  --os-font-ui: "Segoe UI", Tahoma, "Pixelated MS Sans Serif",
+    "MS Sans Serif", "ArkPixel", "SerenityOS-Emoji", sans-serif;
+  --os-font-mono: Consolas, Courier New, monospace;
+  --font-ms-sans: "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
+    "SerenityOS-Emoji", system-ui, sans-serif;
+  --os-color-window-bg: #f0f0f0;
+  --os-color-menubar-bg: linear-gradient(to bottom, #4580c4, #3568a8);
+  --os-color-menubar-border: #000000b3;
+  --os-color-menubar-text: #ffffff;
+  --os-color-window-border: #000000b3;
+  --os-color-titlebar-active-bg: linear-gradient(to right, #4580c4, #3568a8);
+  --os-color-titlebar-inactive-bg: linear-gradient(
+    to right,
+    #b0b0b0,
+    #a0a0a0
+  );
+  --os-color-titlebar-text: #000000;
+  --os-color-titlebar-text-inactive: #787878;
+  --os-color-button-face: #f0f0f0;
+  --os-color-button-highlight: #ffffff;
+  --os-color-button-shadow: #8e8f8f;
+  --os-color-button-active-face: #e5f4fc;
+  --os-color-selection-bg: #3399ff;
+  --os-color-selection-text: #ffffff;
+  --os-color-text-primary: #000000;
+  --os-color-text-secondary: #5a5a5a;
+  --os-color-text-disabled: #838383;
+  --os-metrics-border-width: 1px;
+  --os-metrics-radius: 6px;
+  --os-metrics-titlebar-height: 1.875rem;
+  --os-metrics-menubar-height: 30px;
+  --os-window-shadow: 2px 2px 10px 1px rgba(0, 0, 0, 0.4);
+}
+
+/* Inactive selection palette for background windows (Windows 7) */
+:root[data-os-theme="win7"] .window:not(.is-foreground) {
+  --os-color-selection-bg: #e0e0e0;
+  --os-color-selection-text: #000000;
+}
+
+/* Ensure all UI elements in Windows 7 theme use the theme font */
+:root[data-os-theme="win7"] button,
+:root[data-os-theme="win7"] input,
+:root[data-os-theme="win7"] label,
+:root[data-os-theme="win7"] select,
+:root[data-os-theme="win7"] textarea,
+:root[data-os-theme="win7"] [role="menuitem"],
+:root[data-os-theme="win7"] [role="menuitemcheckbox"],
+:root[data-os-theme="win7"] [role="menuitemradio"],
+:root[data-os-theme="win7"] [role="option"] {
+  font-family: var(--os-font-ui) !important;
+  font-smooth: antialiased !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+
 /* Windows XP Theme */
 :root[data-os-theme="xp"] {
   --os-font-ui: Tahoma, "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
@@ -308,9 +371,10 @@
   -webkit-font-smoothing: antialiased !important;
 }
 
-/* Reset XP/Win98 button styles for menubar triggers - they should look like plain text */
+/* Reset XP/Win98/Win7 button styles for menubar triggers - they should look like plain text */
 :root[data-os-theme="xp"] .menubar-trigger,
-:root[data-os-theme="win98"] .menubar-trigger {
+:root[data-os-theme="win98"] .menubar-trigger,
+:root[data-os-theme="win7"] .menubar-trigger {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -318,7 +382,8 @@
 }
 
 :root[data-os-theme="xp"] .menubar-trigger:active,
-:root[data-os-theme="win98"] .menubar-trigger:active {
+:root[data-os-theme="win98"] .menubar-trigger:active,
+:root[data-os-theme="win7"] .menubar-trigger:active {
   background: transparent !important;
   box-shadow: none !important;
 }
@@ -327,11 +392,13 @@
    Those stylesheets handle the button icons via background-image.
    No override needed here - CSS specificity handles it. */
 
-/* Reset XP/Win98 button styles for iPod/Karaoke fullscreen toolbar buttons */
+/* Reset XP/Win98/Win7 button styles for iPod/Karaoke fullscreen toolbar buttons */
 :root[data-os-theme="xp"] .ipod-force-font button,
 :root[data-os-theme="xp"] .karaoke-force-font button,
 :root[data-os-theme="win98"] .ipod-force-font button,
-:root[data-os-theme="win98"] .karaoke-force-font button {
+:root[data-os-theme="win98"] .karaoke-force-font button,
+:root[data-os-theme="win7"] .ipod-force-font button,
+:root[data-os-theme="win7"] .karaoke-force-font button {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -341,15 +408,18 @@
 :root[data-os-theme="xp"] .ipod-force-font button:active,
 :root[data-os-theme="xp"] .karaoke-force-font button:active,
 :root[data-os-theme="win98"] .ipod-force-font button:active,
-:root[data-os-theme="win98"] .karaoke-force-font button:active {
+:root[data-os-theme="win98"] .karaoke-force-font button:active,
+:root[data-os-theme="win7"] .ipod-force-font button:active,
+:root[data-os-theme="win7"] .karaoke-force-font button:active {
   background: rgba(255, 255, 255, 0.1) !important;
   box-shadow: none !important;
 }
 
-/* Reset XP/Win98 button styles for ghost variant buttons (toolbar buttons, etc.)
+/* Reset XP/Win98/Win7 button styles for ghost variant buttons (toolbar buttons, etc.)
    These buttons want to be fully transparent - no background at all */
 :root[data-os-theme="xp"] button.\!bg-transparent,
-:root[data-os-theme="win98"] button.\!bg-transparent {
+:root[data-os-theme="win98"] button.\!bg-transparent,
+:root[data-os-theme="win7"] button.\!bg-transparent {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -358,7 +428,9 @@
 :root[data-os-theme="xp"] button.\!bg-transparent:hover,
 :root[data-os-theme="xp"] button.\!bg-transparent:active,
 :root[data-os-theme="win98"] button.\!bg-transparent:hover,
-:root[data-os-theme="win98"] button.\!bg-transparent:active {
+:root[data-os-theme="win98"] button.\!bg-transparent:active,
+:root[data-os-theme="win7"] button.\!bg-transparent:hover,
+:root[data-os-theme="win7"] button.\!bg-transparent:active {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -1089,35 +1161,40 @@
   font-smooth: auto !important;
 }
 
-/* XP / Win98 Spotlight: reset button styles from xp-custom.css / 98-custom.css
+/* XP / Win98 / Win7 Spotlight: reset button styles from legacy CSS.
    Those stylesheets apply background + 3D box-shadow to ALL <button> elements.
    Spotlight rows are <button> so they inherit the raised 3D look. Reset them.
    Use :not([data-selected]) to preserve the selection highlight background. */
 :root[data-os-theme="xp"] .spotlight-panel button:not([data-selected]),
-:root[data-os-theme="win98"] .spotlight-panel button:not([data-selected]) {
+:root[data-os-theme="win98"] .spotlight-panel button:not([data-selected]),
+:root[data-os-theme="win7"] .spotlight-panel button:not([data-selected]) {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;
   border-radius: 0 !important;
 }
 :root[data-os-theme="xp"] .spotlight-panel button[data-selected],
-:root[data-os-theme="win98"] .spotlight-panel button[data-selected] {
+:root[data-os-theme="win98"] .spotlight-panel button[data-selected],
+:root[data-os-theme="win7"] .spotlight-panel button[data-selected] {
   box-shadow: none !important;
   border: none !important;
   border-radius: 0 !important;
 }
 :root[data-os-theme="xp"] .spotlight-panel button:active,
 :root[data-os-theme="win98"] .spotlight-panel button:active,
+:root[data-os-theme="win7"] .spotlight-panel button:active,
 :root[data-os-theme="xp"] .spotlight-panel button:focus,
-:root[data-os-theme="win98"] .spotlight-panel button:focus {
+:root[data-os-theme="win98"] .spotlight-panel button:focus,
+:root[data-os-theme="win7"] .spotlight-panel button:focus {
   box-shadow: none !important;
   border: none !important;
   outline: none !important;
 }
 
-/* XP / Win98 Spotlight: reset input styles */
+/* XP / Win98 / Win7 Spotlight: reset input styles */
 :root[data-os-theme="xp"] .spotlight-panel input,
-:root[data-os-theme="win98"] .spotlight-panel input {
+:root[data-os-theme="win98"] .spotlight-panel input,
+:root[data-os-theme="win7"] .spotlight-panel input {
   background: transparent !important;
   box-shadow: none !important;
   border: none !important;

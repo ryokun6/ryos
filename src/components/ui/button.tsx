@@ -53,7 +53,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
     const Comp = asChild ? Slot : "button";
     const currentTheme = useThemeStore((state) => state.current);
-    const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+    const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
     const isMacTheme = currentTheme === "macosx";
 
     const [isFocused, setIsFocused] = React.useState(false);

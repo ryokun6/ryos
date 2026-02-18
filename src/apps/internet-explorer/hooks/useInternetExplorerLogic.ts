@@ -1900,7 +1900,7 @@ export function useInternetExplorerLogic({
     setIsShareDialogOpen(true);
   }, []);
 
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isOffline = useOffline();
 
   return {

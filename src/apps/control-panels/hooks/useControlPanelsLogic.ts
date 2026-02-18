@@ -1549,7 +1549,7 @@ export function useControlPanelsLogic({
     performFormat();
   };
 
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isMacOSXTheme = currentTheme === "macosx";
   const isSystem7Theme = currentTheme === "system7";
   const isClassicMacTheme = isMacOSXTheme || isSystem7Theme;

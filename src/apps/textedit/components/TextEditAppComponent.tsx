@@ -45,7 +45,7 @@ function TextEditContent({
   const launchAppInstance = useAppStore((state) => state.launchApp);
   const currentTheme = useThemeStore((state) => state.current);
   const speechEnabled = useAudioSettingsStore((state) => state.speechEnabled);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   // Local UI-only state for Save dialog filename
   const [saveFileName, setSaveFileName] = useState("");
   const [closeSaveFileName, setCloseSaveFileName] = useState("");

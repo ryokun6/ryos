@@ -2,6 +2,7 @@ import { system7 } from "./system7";
 import { macosx } from "./macosx";
 import { xp } from "./xp";
 import { win98 } from "./win98";
+import { win7 } from "./win7";
 import { OsTheme, OsThemeId, ThemeMetadata } from "./types";
 
 export const themes: Record<OsThemeId, OsTheme> = {
@@ -9,6 +10,7 @@ export const themes: Record<OsThemeId, OsTheme> = {
   macosx,
   xp,
   win98,
+  win7,
 };
 
 export function getTheme(id: OsThemeId): OsTheme {

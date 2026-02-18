@@ -45,7 +45,7 @@ export function EditorToolbar({
 }: EditorToolbarProps) {
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isLegacyToolbarTheme = isXpTheme || currentTheme === "system7";
   const isMacOSTheme = currentTheme === "macosx";
 

@@ -25,7 +25,7 @@ export function PipPlayer({
 
   // Calculate bottom offset based on theme (similar to Sonner positioning)
   const bottomOffset = useMemo(() => {
-    const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98";
+    const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
     if (isWindowsTheme) {
       // Windows themes: taskbar height (30px) + padding
       return "calc(env(safe-area-inset-bottom, 0px) + 42px)";

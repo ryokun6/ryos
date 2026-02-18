@@ -35,7 +35,7 @@ export function AboutDialog({
 }: AboutDialogProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   
   // Use translated app name if appId is provided, otherwise fall back to metadata.name
   const displayName = appId ? getTranslatedAppName(appId) : metadata.name;
