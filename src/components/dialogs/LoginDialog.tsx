@@ -225,7 +225,7 @@ export function LoginDialog({
           onValueChange={(v) => setActiveTab(v as "login" | "signup")}
           className="w-full"
         >
-          <ThemedTabsList className="grid grid-cols-2 w-full">
+          <ThemedTabsList className="w-full">
             <ThemedTabsTrigger value="signup">
               {t("common.auth.createAccount")}
             </ThemedTabsTrigger>
