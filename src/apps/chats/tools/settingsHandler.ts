@@ -10,6 +10,7 @@ import type { OsThemeId } from "@/themes/types";
 import i18n from "@/lib/i18n";
 import { forceRefreshCache } from "@/utils/prefetch";
 import type { ToolContext } from "./types";
+import { buildResultMessage } from "./helpers";
 
 export interface SettingsInput {
   language?: string;
@@ -118,12 +119,10 @@ export const handleSettings = (
 
   // Build result message
   if (changes.length > 0) {
-    const resultMessage =
-      changes.length === 1 ? changes[0] : changes.join(". ") + ".";
     context.addToolResult({
       tool: "settings",
       toolCallId,
-      output: resultMessage,
+      output: buildResultMessage(changes),
     });
   } else {
     context.addToolResult({

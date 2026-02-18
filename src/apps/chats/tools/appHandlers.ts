@@ -20,6 +20,40 @@ export interface CloseAppInput {
   id: string;
 }
 
+const getAppName = (id: string): string => appRegistry[id as AppId]?.name || id;
+
+const requireAppId = (
+  id: string | undefined,
+  tool: "launchApp" | "closeApp",
+  toolCallId: string,
+  context: ToolContext
+): id is string => {
+  if (id) {
+    return true;
+  }
+  console.error(`[ToolCall] ${tool}: Missing required 'id' parameter`);
+  context.addToolResult({
+    tool,
+    toolCallId,
+    state: "output-error",
+    errorText: i18n.t("apps.chats.toolCalls.noAppIdProvided"),
+  });
+  return false;
+};
+
+const getLaunchOptions = (
+  id: string,
+  url: string | undefined,
+  year: string | undefined
+): LaunchAppOptions => {
+  if (id !== "internet-explorer" || (!url && !year)) {
+    return {};
+  }
+  return {
+    initialData: { url, year: year || "current" },
+  };
+};
+
 /**
  * Handle launchApp tool call
  */
@@ -30,27 +64,14 @@ export const handleLaunchApp = (
 ): string => {
   const { id, url, year } = input;
 
-  // Validate required parameter
-  if (!id) {
-    console.error("[ToolCall] launchApp: Missing required 'id' parameter");
-    context.addToolResult({
-      tool: "launchApp",
-      toolCallId,
-      state: "output-error",
-      errorText: i18n.t("apps.chats.toolCalls.noAppIdProvided"),
-    });
+  if (!requireAppId(id, "launchApp", toolCallId, context)) {
     return "";
   }
 
-  const appName = appRegistry[id as AppId]?.name || id;
+  const appName = getAppName(id);
   console.log("[ToolCall] launchApp:", { id, url, year });
 
-  const launchOptions: LaunchAppOptions = {};
-  if (id === "internet-explorer" && (url || year)) {
-    launchOptions.initialData = { url, year: year || "current" };
-  }
-
-  context.launchApp(id as AppId, launchOptions);
+  context.launchApp(id as AppId, getLaunchOptions(id, url, year));
 
   let result = `Launched ${appName}`;
   if (id === "internet-explorer") {
@@ -72,19 +93,11 @@ export const handleCloseApp = (
 ): string => {
   const { id } = input;
 
-  // Validate required parameter
-  if (!id) {
-    console.error("[ToolCall] closeApp: Missing required 'id' parameter");
-    context.addToolResult({
-      tool: "closeApp",
-      toolCallId,
-      state: "output-error",
-      errorText: i18n.t("apps.chats.toolCalls.noAppIdProvided"),
-    });
+  if (!requireAppId(id, "closeApp", toolCallId, context)) {
     return "";
   }
 
-  const appName = appRegistry[id as AppId]?.name || id;
+  const appName = getAppName(id);
   console.log("[ToolCall] closeApp:", id);
 
   // Close all instances of the specified app

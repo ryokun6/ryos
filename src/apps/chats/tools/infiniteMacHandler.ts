@@ -23,11 +23,13 @@ import {
 import { useAppStore } from "@/stores/useAppStore";
 import i18n from "@/lib/i18n";
 
+const TOOL_NAME = "infiniteMacControl";
+
 /**
  * Systems that support absolute mouse coordinates
  * (Mini vMac, Basilisk II, SheepShaver emulators)
  */
-const ABSOLUTE_COORDINATE_SYSTEMS = [
+const ABSOLUTE_COORDINATE_SYSTEMS = new Set([
   "system-1",
   "system-6", 
   "system-7-5",
@@ -36,7 +38,7 @@ const ABSOLUTE_COORDINATE_SYSTEMS = [
   "macos-8-5",
   "macos-9",
   "macos-9-2",
-];
+]);
 
 // Note: Mac OS X systems (macosx-10-1 through 10-4) use DingusPPC/PearPC emulators
 // which only support relative mouse coordinates (deltaX, deltaY), not absolute positioning.
@@ -45,7 +47,7 @@ const ABSOLUTE_COORDINATE_SYSTEMS = [
  * Check if a system supports absolute coordinates
  */
 const supportsAbsoluteCoordinates = (systemId: string): boolean => {
-  return ABSOLUTE_COORDINATE_SYSTEMS.includes(systemId);
+  return ABSOLUTE_COORDINATE_SYSTEMS.has(systemId);
 };
 
 export interface InfiniteMacControlInput {
@@ -65,6 +67,107 @@ export interface InfiniteMacControlInput {
   button?: "left" | "right";
   key?: string;
 }
+
+type InfiniteMacState = ReturnType<typeof useInfiniteMacStore.getState>;
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+const addOutput = (
+  context: ToolContext,
+  toolCallId: string,
+  output: unknown
+): void => {
+  context.addToolResult({
+    tool: TOOL_NAME,
+    toolCallId,
+    output,
+  });
+};
+
+const addError = (
+  context: ToolContext,
+  toolCallId: string,
+  errorText: string
+): void => {
+  context.addToolResult({
+    tool: TOOL_NAME,
+    toolCallId,
+    state: "output-error",
+    errorText,
+  });
+};
+
+const requireCoordinates = (
+  action: "mouseMove" | "mouseClick" | "doubleClick",
+  x: number | undefined,
+  y: number | undefined,
+  context: ToolContext,
+  toolCallId: string
+): { x: number; y: number } | undefined => {
+  if (x !== undefined && y !== undefined) {
+    return { x, y };
+  }
+  addError(
+    context,
+    toolCallId,
+    `The '${action}' action requires 'x' and 'y' coordinates.`
+  );
+  return undefined;
+};
+
+const requireEmulatorLoaded = (
+  store: InfiniteMacState,
+  context: ToolContext,
+  toolCallId: string
+): boolean => {
+  if (store.isEmulatorLoaded) {
+    return true;
+  }
+  addError(context, toolCallId, "The emulator is not loaded. Use 'launchSystem' first.");
+  return false;
+};
+
+const requireLoadedSystem = (
+  store: InfiniteMacState,
+  context: ToolContext,
+  toolCallId: string
+): store is InfiniteMacState & { selectedPreset: NonNullable<InfiniteMacState["selectedPreset"]> } => {
+  if (store.isEmulatorLoaded && store.selectedPreset) {
+    return true;
+  }
+  addError(context, toolCallId, "The emulator is not loaded. Use 'launchSystem' first.");
+  return false;
+};
+
+const requireSelectedSystem = (
+  store: InfiniteMacState,
+  context: ToolContext,
+  toolCallId: string
+): store is InfiniteMacState & { selectedPreset: NonNullable<InfiniteMacState["selectedPreset"]> } => {
+  if (store.selectedPreset) {
+    return true;
+  }
+  addError(context, toolCallId, "No system is currently running. Use 'launchSystem' first.");
+  return false;
+};
+
+const requireAbsoluteCoordinateSupport = (
+  store: InfiniteMacState & { selectedPreset: NonNullable<InfiniteMacState["selectedPreset"]> },
+  context: ToolContext,
+  toolCallId: string,
+  actionLabel: string
+): boolean => {
+  if (supportsAbsoluteCoordinates(store.selectedPreset.id)) {
+    return true;
+  }
+  addError(
+    context,
+    toolCallId,
+    `${actionLabel} is limited on ${store.selectedPreset.name} (Mac OS X uses relative coordinates only). Consider using an older Mac OS system for precise mouse control.`
+  );
+  return false;
+};
 
 /**
  * Ensure the Infinite Mac app is open
@@ -103,7 +206,7 @@ const waitForEmulatorLoaded = async (
     if (isEmulatorLoaded) {
       return true;
     }
-    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+    await sleep(pollIntervalMs);
   }
   return false;
 };
@@ -123,12 +226,7 @@ export const handleInfiniteMacControl = async (
     switch (action) {
       case "launchSystem": {
         if (!system) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "The 'launchSystem' action requires a 'system' parameter.",
-          });
+          addError(context, toolCallId, "The 'launchSystem' action requires a 'system' parameter.");
           return;
         }
 
@@ -140,12 +238,11 @@ export const handleInfiniteMacControl = async (
             year: p.year,
             description: p.description,
           }));
-          context.addToolResult({
-            tool: "infiniteMacControl",
+          addError(
+            context,
             toolCallId,
-            state: "output-error",
-            errorText: `Unknown system '${system}'. Available systems: ${availableSystems.map((s) => s.id).join(", ")}`,
-          });
+            `Unknown system '${system}'. Available systems: ${availableSystems.map((s) => s.id).join(", ")}`
+          );
           return;
         }
 
@@ -153,7 +250,7 @@ export const handleInfiniteMacControl = async (
         ensureInfiniteMacAppOpen(context);
 
         // Wait a moment for the app to initialize
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await sleep(500);
 
         // Set the selected preset via a custom event (the component will pick this up)
         // We need to dispatch this to the app instance
@@ -165,17 +262,17 @@ export const handleInfiniteMacControl = async (
         const loaded = await waitForEmulatorLoaded(45000);
 
         if (loaded) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
+          addOutput(
+            context,
             toolCallId,
-            output: `Successfully launched ${preset.name} (${preset.year}). ${preset.description}. Screen size: ${preset.screenSize.width}x${preset.screenSize.height}. Use 'readScreen' to see the current display.`,
-          });
+            `Successfully launched ${preset.name} (${preset.year}). ${preset.description}. Screen size: ${preset.screenSize.width}x${preset.screenSize.height}. Use 'readScreen' to see the current display.`
+          );
         } else {
-          context.addToolResult({
-            tool: "infiniteMacControl",
+          addOutput(
+            context,
             toolCallId,
-            output: `Launched ${preset.name} - the emulator is loading. It may take a few moments to fully boot. Use 'getStatus' to check when it's ready, or 'readScreen' to see the current display.`,
-          });
+            `Launched ${preset.name} - the emulator is loading. It may take a few moments to fully boot. Use 'getStatus' to check when it's ready, or 'readScreen' to see the current display.`
+          );
         }
         break;
       }
@@ -202,59 +299,43 @@ export const handleInfiniteMacControl = async (
         };
 
         if (!selectedPreset) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
+          addOutput(
+            context,
             toolCallId,
-            output: `No system is currently running. Use 'launchSystem' to start a Mac OS. Available systems: ${MAC_PRESETS.map((p) => `${p.id} (${p.name}, ${p.year})`).join(", ")}`,
-          });
+            `No system is currently running. Use 'launchSystem' to start a Mac OS. Available systems: ${MAC_PRESETS.map((p) => `${p.id} (${p.name}, ${p.year})`).join(", ")}`
+          );
         } else {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            output: `Emulator status: ${JSON.stringify(status, null, 2)}`,
-          });
+          addOutput(context, toolCallId, `Emulator status: ${JSON.stringify(status, null, 2)}`);
         }
         break;
       }
 
       case "readScreen": {
-        const { isEmulatorLoaded, selectedPreset, getScreenAsBase64 } = store;
+        const { getScreenAsBase64 } = store;
 
-        if (!selectedPreset) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "No system is currently running. Use 'launchSystem' first.",
-          });
+        if (!requireSelectedSystem(store, context, toolCallId)) {
           return;
         }
 
-        if (!isEmulatorLoaded) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "The emulator is still loading. Please wait and try again.",
-          });
+        if (!store.isEmulatorLoaded) {
+          addError(context, toolCallId, "The emulator is still loading. Please wait and try again.");
           return;
         }
 
         const screenBase64 = await getScreenAsBase64();
 
         if (!screenBase64) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
+          addError(
+            context,
             toolCallId,
-            state: "output-error",
-            errorText: "Unable to capture screen. The screen data is not yet available. Try again in a moment.",
-          });
+            "Unable to capture screen. The screen data is not yet available. Try again in a moment."
+          );
           return;
         }
 
         // Get the current scale and calculate dimensions
         const scale = store.scale;
-        const nativeScreenSize = selectedPreset.screenSize;
+        const nativeScreenSize = store.selectedPreset.screenSize;
         const scaledScreenSize = store.lastScreenData
           ? { width: store.lastScreenData.width, height: store.lastScreenData.height }
           : { 
@@ -263,58 +344,36 @@ export const handleInfiniteMacControl = async (
             };
 
         // Check if this system supports absolute coordinates
-        const absoluteCoords = supportsAbsoluteCoordinates(selectedPreset.id);
+        const absoluteCoords = supportsAbsoluteCoordinates(store.selectedPreset.id);
         const coordInfo = absoluteCoords
           ? `Coordinates are 1:1 with the screenshot - use pixel positions directly from the image.`
           : `This Mac OS X system uses relative coordinates only - mouse control may be limited.`;
 
-        context.addToolResult({
-          tool: "infiniteMacControl",
-          toolCallId,
-          output: {
-            success: true,
-            message: `Screen captured from ${selectedPreset.name}. Screenshot is ${scaledScreenSize.width}x${scaledScreenSize.height} pixels (scale: ${scale}x, native: ${nativeScreenSize.width}x${nativeScreenSize.height}). ${coordInfo}`,
-            screenSize: scaledScreenSize,
-            nativeScreenSize,
-            scale,
-            currentSystem: selectedPreset.name,
-            supportsAbsoluteCoordinates: absoluteCoords,
-            // Include the base64 image data so it can be displayed in the UI or used programmatically
-            screenImageDataUrl: screenBase64,
-          },
+        addOutput(context, toolCallId, {
+          success: true,
+          message: `Screen captured from ${store.selectedPreset.name}. Screenshot is ${scaledScreenSize.width}x${scaledScreenSize.height} pixels (scale: ${scale}x, native: ${nativeScreenSize.width}x${nativeScreenSize.height}). ${coordInfo}`,
+          screenSize: scaledScreenSize,
+          nativeScreenSize,
+          scale,
+          currentSystem: store.selectedPreset.name,
+          supportsAbsoluteCoordinates: absoluteCoords,
+          // Include the base64 image data so it can be displayed in the UI or used programmatically
+          screenImageDataUrl: screenBase64,
         });
         break;
       }
 
       case "mouseMove": {
-        if (x === undefined || y === undefined) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "The 'mouseMove' action requires 'x' and 'y' coordinates.",
-          });
+        const coords = requireCoordinates("mouseMove", x, y, context, toolCallId);
+        if (!coords) {
           return;
         }
 
-        if (!store.isEmulatorLoaded || !store.selectedPreset) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "The emulator is not loaded. Use 'launchSystem' first.",
-          });
+        if (!requireLoadedSystem(store, context, toolCallId)) {
           return;
         }
 
-        // Check if this system supports absolute coordinates
-        if (!supportsAbsoluteCoordinates(store.selectedPreset.id)) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: `Mouse movement is limited on ${store.selectedPreset.name} (Mac OS X uses relative coordinates only). Consider using an older Mac OS system for precise mouse control.`,
-          });
+        if (!requireAbsoluteCoordinateSupport(store, context, toolCallId, "Mouse movement")) {
           return;
         }
 
@@ -322,56 +381,29 @@ export const handleInfiniteMacControl = async (
         // which match the emulator's screen output directly
         const moveSent = store.sendEmulatorCommand({
           type: "emulator_mouse_move",
-          x,
-          y,
+          x: coords.x,
+          y: coords.y,
         });
 
         if (moveSent) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            output: `Mouse moved to (${x}, ${y})`,
-          });
+          addOutput(context, toolCallId, `Mouse moved to (${coords.x}, ${coords.y})`);
         } else {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "Failed to send mouse move command.",
-          });
+          addError(context, toolCallId, "Failed to send mouse move command.");
         }
         break;
       }
 
       case "mouseClick": {
-        if (x === undefined || y === undefined) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "The 'mouseClick' action requires 'x' and 'y' coordinates.",
-          });
+        const coords = requireCoordinates("mouseClick", x, y, context, toolCallId);
+        if (!coords) {
           return;
         }
 
-        if (!store.isEmulatorLoaded || !store.selectedPreset) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "The emulator is not loaded. Use 'launchSystem' first.",
-          });
+        if (!requireLoadedSystem(store, context, toolCallId)) {
           return;
         }
 
-        // Check if this system supports absolute coordinates
-        if (!supportsAbsoluteCoordinates(store.selectedPreset.id)) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: `Mouse clicking is limited on ${store.selectedPreset.name} (Mac OS X uses relative coordinates only). Consider using an older Mac OS system for precise mouse control.`,
-          });
+        if (!requireAbsoluteCoordinateSupport(store, context, toolCallId, "Mouse clicking")) {
           return;
         }
 
@@ -380,12 +412,12 @@ export const handleInfiniteMacControl = async (
         // Move mouse to position first - coordinates match screenshot dimensions
         store.sendEmulatorCommand({
           type: "emulator_mouse_move",
-          x,
-          y,
+          x: coords.x,
+          y: coords.y,
         });
 
         // Small delay between move and click
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await sleep(50);
 
         // Mouse down
         store.sendEmulatorCommand({
@@ -394,7 +426,7 @@ export const handleInfiniteMacControl = async (
         });
 
         // Small delay for click duration
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await sleep(100);
 
         // Mouse up
         const upSent = store.sendEmulatorCommand({
@@ -403,51 +435,28 @@ export const handleInfiniteMacControl = async (
         });
 
         if (upSent) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
+          addOutput(
+            context,
             toolCallId,
-            output: `${button === "right" ? "Right-" : ""}Clicked at (${x}, ${y})`,
-          });
+            `${button === "right" ? "Right-" : ""}Clicked at (${coords.x}, ${coords.y})`
+          );
         } else {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "Failed to send mouse click command.",
-          });
+          addError(context, toolCallId, "Failed to send mouse click command.");
         }
         break;
       }
 
       case "doubleClick": {
-        if (x === undefined || y === undefined) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "The 'doubleClick' action requires 'x' and 'y' coordinates.",
-          });
+        const coords = requireCoordinates("doubleClick", x, y, context, toolCallId);
+        if (!coords) {
           return;
         }
 
-        if (!store.isEmulatorLoaded || !store.selectedPreset) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "The emulator is not loaded. Use 'launchSystem' first.",
-          });
+        if (!requireLoadedSystem(store, context, toolCallId)) {
           return;
         }
 
-        // Check if this system supports absolute coordinates
-        if (!supportsAbsoluteCoordinates(store.selectedPreset.id)) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: `Double-clicking is limited on ${store.selectedPreset.name} (Mac OS X uses relative coordinates only). Consider using an older Mac OS system for precise mouse control.`,
-          });
+        if (!requireAbsoluteCoordinateSupport(store, context, toolCallId, "Double-clicking")) {
           return;
         }
 
@@ -456,73 +465,53 @@ export const handleInfiniteMacControl = async (
         // Move mouse to position first
         store.sendEmulatorCommand({
           type: "emulator_mouse_move",
-          x,
-          y,
+          x: coords.x,
+          y: coords.y,
         });
 
         // Small delay after move
-        await new Promise((resolve) => setTimeout(resolve, 30));
+        await sleep(30);
 
         // First click - fast down/up
         store.sendEmulatorCommand({
           type: "emulator_mouse_down",
           button: dblButtonNum,
         });
-        await new Promise((resolve) => setTimeout(resolve, 30));
+        await sleep(30);
         store.sendEmulatorCommand({
           type: "emulator_mouse_up",
           button: dblButtonNum,
         });
 
         // Very short delay between clicks (must be fast for double-click detection)
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await sleep(50);
 
         // Second click - fast down/up
         store.sendEmulatorCommand({
           type: "emulator_mouse_down",
           button: dblButtonNum,
         });
-        await new Promise((resolve) => setTimeout(resolve, 30));
+        await sleep(30);
         const dblUpSent = store.sendEmulatorCommand({
           type: "emulator_mouse_up",
           button: dblButtonNum,
         });
 
         if (dblUpSent) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            output: `Double-clicked at (${x}, ${y})`,
-          });
+          addOutput(context, toolCallId, `Double-clicked at (${coords.x}, ${coords.y})`);
         } else {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "Failed to send double-click command.",
-          });
+          addError(context, toolCallId, "Failed to send double-click command.");
         }
         break;
       }
 
       case "keyPress": {
         if (!key) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "The 'keyPress' action requires a 'key' parameter.",
-          });
+          addError(context, toolCallId, "The 'keyPress' action requires a 'key' parameter.");
           return;
         }
 
-        if (!store.isEmulatorLoaded) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "The emulator is not loaded. Use 'launchSystem' first.",
-          });
+        if (!requireEmulatorLoaded(store, context, toolCallId)) {
           return;
         }
 
@@ -533,7 +522,7 @@ export const handleInfiniteMacControl = async (
         });
 
         // Small delay for key press duration
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await sleep(100);
 
         // Key up
         const keyUpSent = store.sendEmulatorCommand({
@@ -542,30 +531,15 @@ export const handleInfiniteMacControl = async (
         });
 
         if (keyUpSent) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            output: `Key pressed: ${key}`,
-          });
+          addOutput(context, toolCallId, `Key pressed: ${key}`);
         } else {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "Failed to send key press command.",
-          });
+          addError(context, toolCallId, "Failed to send key press command.");
         }
         break;
       }
 
       case "pause": {
-        if (!store.isEmulatorLoaded) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "The emulator is not loaded. Use 'launchSystem' first.",
-          });
+        if (!requireEmulatorLoaded(store, context, toolCallId)) {
           return;
         }
 
@@ -573,30 +547,15 @@ export const handleInfiniteMacControl = async (
         store.setIsPaused(true);
 
         if (pauseSent) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            output: "Emulator paused.",
-          });
+          addOutput(context, toolCallId, "Emulator paused.");
         } else {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "Failed to pause emulator.",
-          });
+          addError(context, toolCallId, "Failed to pause emulator.");
         }
         break;
       }
 
       case "unpause": {
-        if (!store.isEmulatorLoaded) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "The emulator is not loaded. Use 'launchSystem' first.",
-          });
+        if (!requireEmulatorLoaded(store, context, toolCallId)) {
           return;
         }
 
@@ -604,37 +563,22 @@ export const handleInfiniteMacControl = async (
         store.setIsPaused(false);
 
         if (unpauseSent) {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            output: "Emulator unpaused.",
-          });
+          addOutput(context, toolCallId, "Emulator unpaused.");
         } else {
-          context.addToolResult({
-            tool: "infiniteMacControl",
-            toolCallId,
-            state: "output-error",
-            errorText: "Failed to unpause emulator.",
-          });
+          addError(context, toolCallId, "Failed to unpause emulator.");
         }
         break;
       }
 
       default:
-        context.addToolResult({
-          tool: "infiniteMacControl",
-          toolCallId,
-          state: "output-error",
-          errorText: `Unknown action: ${action}`,
-        });
+        addError(context, toolCallId, `Unknown action: ${action}`);
     }
   } catch (error) {
     console.error("[infiniteMacControl] Error:", error);
-    context.addToolResult({
-      tool: "infiniteMacControl",
+    addError(
+      context,
       toolCallId,
-      state: "output-error",
-      errorText: error instanceof Error ? error.message : i18n.t("apps.chats.toolCalls.unknownError"),
-    });
+      error instanceof Error ? error.message : i18n.t("apps.chats.toolCalls.unknownError")
+    );
   }
 };
