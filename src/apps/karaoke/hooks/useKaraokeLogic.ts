@@ -22,7 +22,12 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { LyricsAlignment, LyricsFont, DisplayMode, getLyricsFontClassName } from "@/types/lyrics";
 import { useOffline } from "@/hooks/useOffline";
 import { useListenSync } from "@/hooks/useListenSync";
-import { TRANSLATION_LANGUAGES, getYouTubeVideoId, formatKugouImageUrl } from "@/apps/ipod/constants";
+import {
+  TRANSLATION_LANGUAGES,
+  getYouTubeVideoId,
+  formatKugouImageUrl,
+  getValidTrackIndex,
+} from "@/apps/ipod/constants";
 import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateChecker";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
 import { useChatsStore } from "@/stores/useChatsStore";
@@ -196,9 +201,8 @@ export function useKaraokeLogic({
 
   // Compute currentIndex from currentSongId
   const currentIndex = useMemo(() => {
-    if (!currentSongId) return tracks.length > 0 ? 0 : -1;
     const index = tracks.findIndex((t) => t.id === currentSongId);
-    return index >= 0 ? index : (tracks.length > 0 ? 0 : -1);
+    return getValidTrackIndex(index, tracks.length);
   }, [tracks, currentSongId]);
 
   // Dialog state

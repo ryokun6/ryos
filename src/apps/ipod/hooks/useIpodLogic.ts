@@ -35,6 +35,7 @@ import {
   SEEK_AMOUNT_SECONDS,
   getYouTubeVideoId,
   formatKugouImageUrl,
+  getValidTrackIndex,
 } from "../constants";
 import type { WheelArea, RotationDirection } from "../types";
 import type { IpodInitialData } from "../../base/types";
@@ -87,9 +88,8 @@ export function useIpodLogic({
 
   // Compute currentIndex from currentSongId
   const currentIndex = useMemo(() => {
-    if (!currentSongId) return tracks.length > 0 ? 0 : -1;
     const index = tracks.findIndex((t) => t.id === currentSongId);
-    return index >= 0 ? index : (tracks.length > 0 ? 0 : -1);
+    return getValidTrackIndex(index, tracks.length);
   }, [tracks, currentSongId]);
 
   const {

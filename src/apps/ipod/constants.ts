@@ -97,3 +97,11 @@ export function getTranslationBadge(code: string | null): string | null {
   }
   return TRANSLATION_BADGES[code] || code[0]?.toUpperCase() || "?";
 }
+
+/**
+ * Normalizes a track index to a valid value.
+ * Returns first track when available, otherwise -1.
+ */
+export function getValidTrackIndex(index: number, trackCount: number): number {
+  return index >= 0 ? index : trackCount > 0 ? 0 : -1;
+}
