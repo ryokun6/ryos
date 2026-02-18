@@ -4,39 +4,8 @@
  * Used by stores that need basic app info during initialization
  */
 
-export const appIds = [
-  "finder",
-  "soundboard",
-  "internet-explorer",
-  "chats",
-  "textedit",
-  "paint",
-  "photo-booth",
-  "minesweeper",
-  "videos",
-  "ipod",
-  "karaoke",
-  "synth",
-  "pc",
-  "terminal",
-  "applet-viewer",
-  "control-panels",
-  "admin",
-  "stickies",
-  "infinite-mac",
-  "winamp",
-] as const;
-
-export type AppId = (typeof appIds)[number];
-
-/** Minimal app data for stores that don't need full registry */
-export interface AppBasicInfo {
-  id: AppId;
-  name: string;
-}
-
-/** App ID to name mapping - matches appRegistry names exactly */
-export const appNames: Record<AppId, string> = {
+/** App ID to name mapping - single source of truth for app names */
+export const appNames = {
   "finder": "Finder",
   "soundboard": "Soundboard",
   "internet-explorer": "Internet Explorer",
@@ -57,7 +26,18 @@ export const appNames: Record<AppId, string> = {
   "stickies": "Stickies",
   "infinite-mac": "Infinite Mac",
   "winamp": "Winamp",
-};
+} as const;
+
+export type AppId = keyof typeof appNames;
+
+/** Ordered list of app IDs */
+export const appIds: readonly AppId[] = Object.keys(appNames) as AppId[];
+
+/** Minimal app data for stores that don't need full registry */
+export interface AppBasicInfo {
+  id: AppId;
+  name: string;
+}
 
 /** Get list of apps with basic info for stores */
 export function getAppBasicInfoList(): AppBasicInfo[] {

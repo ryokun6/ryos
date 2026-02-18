@@ -1,4 +1,4 @@
-import { type AppId } from "./appRegistryData";
+import { appNames, type AppId } from "./appRegistryData";
 import type {
   BaseApp,
   ControlPanelsInitialData,
@@ -175,7 +175,7 @@ import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/a
 export const appRegistry = {
   ["finder"]: {
     id: "finder",
-    name: "Finder",
+    name: appNames["finder"],
     icon: { type: "image", src: "/icons/mac.png" },
     description: "Browse and manage files",
     component: FinderAppComponent, // Critical - loaded eagerly
@@ -188,7 +188,7 @@ export const appRegistry = {
   },
   ["soundboard"]: {
     id: "soundboard",
-    name: "Soundboard",
+    name: appNames["soundboard"],
     icon: { type: "image", src: soundboardMetadata.icon },
     description: "Play sound effects",
     component: LazySoundboardApp,
@@ -201,7 +201,7 @@ export const appRegistry = {
   },
   ["internet-explorer"]: {
     id: "internet-explorer",
-    name: "Internet Explorer",
+    name: appNames["internet-explorer"],
     icon: { type: "image", src: internetExplorerMetadata.icon },
     description: "Browse the web",
     component: LazyInternetExplorerApp,
@@ -214,7 +214,7 @@ export const appRegistry = {
   } as BaseApp<InternetExplorerInitialData> & { windowConfig: WindowConstraints },
   ["chats"]: {
     id: "chats",
-    name: "Chats",
+    name: appNames["chats"],
     icon: { type: "image", src: chatsMetadata.icon },
     description: "Chat with AI",
     component: LazyChatsApp,
@@ -227,7 +227,7 @@ export const appRegistry = {
   },
   ["textedit"]: {
     id: "textedit",
-    name: "TextEdit",
+    name: appNames["textedit"],
     icon: { type: "image", src: texteditMetadata.icon },
     description: "A simple rich text editor",
     component: LazyTextEditApp,
@@ -240,7 +240,7 @@ export const appRegistry = {
   },
   ["paint"]: {
     id: "paint",
-    name: "Paint",
+    name: appNames["paint"],
     icon: { type: "image", src: paintMetadata.icon },
     description: "Draw and edit images",
     component: LazyPaintApp,
@@ -254,7 +254,7 @@ export const appRegistry = {
   } as BaseApp<PaintInitialData> & { windowConfig: WindowConstraints },
   ["photo-booth"]: {
     id: "photo-booth",
-    name: "Photo Booth",
+    name: appNames["photo-booth"],
     icon: { type: "image", src: photoboothMetadata.icon },
     description: "Take photos with effects",
     component: LazyPhotoBoothApp,
@@ -268,7 +268,7 @@ export const appRegistry = {
   },
   ["minesweeper"]: {
     id: "minesweeper",
-    name: "Minesweeper",
+    name: appNames["minesweeper"],
     icon: { type: "image", src: minesweeperMetadata!.icon },
     description: "Classic puzzle game",
     component: LazyMinesweeperApp,
@@ -282,7 +282,7 @@ export const appRegistry = {
   },
   ["videos"]: {
     id: "videos",
-    name: "Videos",
+    name: appNames["videos"],
     icon: { type: "image", src: videosMetadata.icon },
     description: "Watch videos",
     component: LazyVideosApp,
@@ -295,7 +295,7 @@ export const appRegistry = {
   } as BaseApp<VideosInitialData> & { windowConfig: WindowConstraints },
   ["ipod"]: {
     id: "ipod",
-    name: "iPod",
+    name: appNames["ipod"],
     icon: { type: "image", src: ipodMetadata.icon },
     description: "Music player",
     component: LazyIpodApp,
@@ -308,7 +308,7 @@ export const appRegistry = {
   } as BaseApp<IpodInitialData> & { windowConfig: WindowConstraints },
   ["karaoke"]: {
     id: "karaoke",
-    name: "Karaoke",
+    name: appNames["karaoke"],
     icon: { type: "image", src: karaokeMetadata.icon },
     description: "Karaoke player with synced lyrics",
     component: LazyKaraokeApp,
@@ -322,7 +322,7 @@ export const appRegistry = {
   } as BaseApp<IpodInitialData> & { windowConfig: WindowConstraints },
   ["synth"]: {
     id: "synth",
-    name: "Synth",
+    name: appNames["synth"],
     icon: { type: "image", src: synthMetadata.icon },
     description: "Virtual synthesizer",
     component: LazySynthApp,
@@ -335,7 +335,7 @@ export const appRegistry = {
   },
   ["pc"]: {
     id: "pc",
-    name: "Virtual PC",
+    name: appNames["pc"],
     icon: { type: "image", src: pcMetadata.icon },
     description: "3D PC simulation",
     component: LazyPcApp,
@@ -349,7 +349,7 @@ export const appRegistry = {
   },
   ["terminal"]: {
     id: "terminal",
-    name: "Terminal",
+    name: appNames["terminal"],
     icon: { type: "image", src: terminalMetadata!.icon },
     description: "Command line interface",
     component: LazyTerminalApp,
@@ -362,7 +362,7 @@ export const appRegistry = {
   },
   ["applet-viewer"]: {
     id: "applet-viewer",
-    name: "Applet Store",
+    name: appNames["applet-viewer"],
     icon: { type: "image", src: appletViewerMetadata.icon },
     description: "View and run applets",
     component: LazyAppletViewerApp,
@@ -375,7 +375,7 @@ export const appRegistry = {
   } as BaseApp<AppletViewerInitialData> & { windowConfig: WindowConstraints },
   ["control-panels"]: {
     id: "control-panels",
-    name: "Control Panels",
+    name: appNames["control-panels"],
     icon: { type: "image", src: controlPanelsMetadata.icon },
     description: "System settings",
     component: LazyControlPanelsApp,
@@ -389,7 +389,7 @@ export const appRegistry = {
   } as BaseApp<ControlPanelsInitialData> & { windowConfig: WindowConstraints },
   ["admin"]: {
     id: "admin",
-    name: "Admin",
+    name: appNames["admin"],
     icon: { type: "image", src: adminMetadata.icon },
     description: "System administration panel",
     component: LazyAdminApp,
@@ -403,7 +403,7 @@ export const appRegistry = {
   },
   ["stickies"]: {
     id: "stickies",
-    name: "Stickies",
+    name: appNames["stickies"],
     icon: { type: "image", src: stickiesMetadata.icon },
     description: "Sticky notes for quick reminders",
     component: LazyStickiesApp,
@@ -416,7 +416,7 @@ export const appRegistry = {
   },
   ["infinite-mac"]: {
     id: "infinite-mac",
-    name: "Infinite Mac",
+    name: appNames["infinite-mac"],
     icon: { type: "image", src: infiniteMacMetadata.icon },
     description: "Classic Mac OS emulators",
     component: LazyInfiniteMacApp,
@@ -430,7 +430,7 @@ export const appRegistry = {
   },
   ["winamp"]: {
     id: "winamp",
-    name: "Winamp",
+    name: appNames["winamp"],
     icon: { type: "image", src: winampMetadata.icon },
     description: "Classic Winamp media player",
     component: LazyWinampApp,
