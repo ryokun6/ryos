@@ -54,14 +54,6 @@ export interface SoramimiStreamInfo {
   skipReason?: string;
 }
 
-// Legacy type aliases for backwards compatibility
-/** @deprecated Use TranslationStreamInfo instead */
-export type TranslationChunkInfo = TranslationStreamInfo;
-/** @deprecated Use FuriganaStreamInfo instead */
-export type FuriganaChunkInfo = FuriganaStreamInfo;
-/** @deprecated Use SoramimiStreamInfo instead */
-export type SoramimiChunkInfo = SoramimiStreamInfo;
-
 // =============================================================================
 // Translation SSE Processing (Line-by-line streaming)
 // =============================================================================
@@ -825,34 +817,4 @@ export function parseLrcToTranslations(lrc: string): string[] {
   }
 
   return lines;
-}
-
-/**
- * Check if a line is likely incomplete (has no readings when it should).
- * Used to detect lines that need resume.
- */
-export function isIncompletesoramimiLine(
-  segments: Array<{ text: string; reading?: string }>,
-  originalText: string
-): boolean {
-  // Empty segments array means the line definitely needs regeneration
-  if (!segments || segments.length === 0) {
-    return true;
-  }
-  
-  // If it's just a single segment with the original text and no reading,
-  // and the original text contains non-English characters that should have readings
-  if (segments.length === 1 && !segments[0].reading) {
-    const text = segments[0].text;
-    // Check if text matches original (fallback case)
-    if (text === originalText) {
-      // Check if the text contains Japanese/Korean characters that should have soramimi
-      // Japanese: Hiragana, Katakana, Kanji
-      // Korean: Hangul
-      const hasNonEnglish = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\uAC00-\uD7AF]/.test(text);
-      return hasNonEnglish;
-    }
-  }
-  
-  return false;
 }

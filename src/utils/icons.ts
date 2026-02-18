@@ -37,15 +37,6 @@ async function loadManifest(): Promise<IconManifest> {
   return manifestPromise;
 }
 
-/**
- * Clear the cached manifest to force a reload on next access.
- * Useful when themes or icons may have changed.
- */
-export function invalidateIconCache() {
-  manifestCache = null;
-  manifestPromise = null;
-}
-
 export interface GetIconPathOptions {
   theme?: string | null;
   fallbackTheme?: string; // usually 'default'

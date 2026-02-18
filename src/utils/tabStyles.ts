@@ -59,7 +59,3 @@ export function getTabStyles(currentTheme: OsThemeId): TabStyleConfig {
     separatorStyle: { borderColor: separatorColor },
   };
 }
-
-export function getWindowsLegacyTabMenuClasses() {
-  return "h-7! flex justify-start! p-0 -mt-1 -mb-[2px] bg-transparent shadow-none /* Windows XP/98 tab strip */";
-}

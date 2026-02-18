@@ -784,17 +784,6 @@ function startPeriodicUpdateCheck(): void {
 }
 
 /**
- * Stop periodic update checking
- */
-export function stopPeriodicUpdateCheck(): void {
-  if (updateCheckIntervalId) {
-    clearInterval(updateCheckIntervalId);
-    updateCheckIntervalId = null;
-    console.log('[Prefetch] Stopped periodic update checks');
-  }
-}
-
-/**
  * Initialize prefetching after the app has loaded
  * 
  * Unified flow:

@@ -111,15 +111,3 @@ export function useSongCover(
 
   return coverUrl;
 }
-
-/**
- * Clear the cover cache for a specific song or all songs.
- * Useful when song metadata is updated.
- */
-export function clearSongCoverCache(youtubeId?: string): void {
-  if (youtubeId) {
-    coverCache.delete(youtubeId);
-  } else {
-    coverCache.clear();
-  }
-}

@@ -40,7 +40,7 @@ export function hasKanaText(text: string): boolean {
 /**
  * Check if text contains CJK ideographs (Kanji/Hanzi)
  */
-export function hasKanjiText(text: string): boolean {
+function hasKanjiText(text: string): boolean {
   return UNICODE_RANGES.cjkUnified.test(text);
 }
 
@@ -60,35 +60,10 @@ export function isChineseText(text: string): boolean {
 }
 
 /**
- * Check if text contains any CJK characters
- */
-export function hasCJKText(text: string): boolean {
-  return UNICODE_RANGES.anyCJK.test(text);
-}
-
-/**
- * Check if any line in an array of lyrics contains Korean text
- */
-export function lyricsHaveKorean(
-  lines: { words: string }[] | undefined | null
-): boolean {
-  return lines?.some((line) => hasKoreanText(line.words)) ?? false;
-}
-
-/**
  * Check if any line in an array of lyrics contains Japanese text
  */
 export function lyricsHaveJapanese(
   lines: { words: string }[] | undefined | null
 ): boolean {
   return lines?.some((line) => isJapaneseText(line.words)) ?? false;
-}
-
-/**
- * Check if any line in an array of lyrics contains Chinese text
- */
-export function lyricsHaveChinese(
-  lines: { words: string }[] | undefined | null
-): boolean {
-  return lines?.some((line) => isChineseText(line.words)) ?? false;
 }
