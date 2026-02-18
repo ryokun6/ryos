@@ -7,7 +7,7 @@ import { IpodMenuBar } from "./IpodMenuBar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { appMetadata } from "..";
+import { appMetadata } from "../metadata";
 import { IpodScreen } from "./IpodScreen";
 import { IpodWheel } from "./IpodWheel";
 import { PipPlayer } from "./PipPlayer";

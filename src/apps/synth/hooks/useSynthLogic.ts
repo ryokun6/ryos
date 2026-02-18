@@ -10,7 +10,7 @@ import { useLatestRef } from "@/hooks/useLatestRef";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
-import { helpItems } from "..";
+import { helpItems } from "../metadata";
 import { useShallow } from "zustand/react/shallow";
 
 // Define oscillator type

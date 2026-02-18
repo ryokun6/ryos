@@ -10,7 +10,7 @@ import { getApiUrl } from "@/utils/platform";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useCustomEventListener } from "@/hooks/useEventListener";
-import { helpItems } from "..";
+import { helpItems } from "../metadata";
 import type { VideosInitialData } from "../../base/types";
 import { abortableFetch } from "@/utils/abortableFetch";
 

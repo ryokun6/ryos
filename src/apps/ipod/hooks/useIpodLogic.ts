@@ -40,7 +40,7 @@ import type { WheelArea, RotationDirection } from "../types";
 import type { IpodInitialData } from "../../base/types";
 import type { CoverFlowRef } from "../components/CoverFlow";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
-import { helpItems } from "..";
+import { helpItems } from "../metadata";
 
 export interface UseIpodLogicOptions {
   isWindowOpen: boolean;

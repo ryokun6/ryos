@@ -10,7 +10,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useLatestRef } from "@/hooks/useLatestRef";
 import { useTimeout } from "@/hooks/useTimeout";
-import { helpItems } from "..";
+import { helpItems } from "../metadata";
 import { useShallow } from "zustand/react/shallow";
 
 interface Effect {

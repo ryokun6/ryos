@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { importAppletFile } from "@/utils/appletImportExport";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { getTranslatedFolderNameFromName } from "@/utils/i18n";
-import { helpItems } from "../index";
+import { helpItems } from "../metadata";
 import { useFilesStoreShallow } from "@/stores/helpers";
 
 // Type for Finder initial data

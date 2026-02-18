@@ -7,7 +7,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useSoundboardStore } from "@/stores/useSoundboardStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
-import { helpItems as sharedHelpItems } from "..";
+import { helpItems as sharedHelpItems } from "../metadata";
 import { abortableFetch } from "@/utils/abortableFetch";
 
 interface ImportedSlot {

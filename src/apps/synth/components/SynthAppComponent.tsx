@@ -8,7 +8,7 @@ import { SynthMenuBar } from "./SynthMenuBar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
-import { appMetadata } from "..";
+import { appMetadata } from "../metadata";
 import { NoteLabelType } from "@/stores/useSynthStore";
 import { Button } from "@/components/ui/button";
 import {

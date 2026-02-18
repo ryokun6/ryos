@@ -8,7 +8,7 @@ import { FileList } from "./FileList";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/input";
-import { appMetadata } from "../index";
+import { appMetadata } from "../metadata";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { RightClickMenu } from "@/components/ui/right-click-menu";
 import {

@@ -7,7 +7,7 @@ import { SongDetailPanel } from "./SongDetailPanel";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { appMetadata } from "..";
+import { appMetadata } from "../metadata";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";

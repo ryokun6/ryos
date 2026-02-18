@@ -5,7 +5,7 @@ import { PcMenuBar } from "./PcMenuBar";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { appMetadata } from "..";
+import { appMetadata } from "../metadata";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { motion } from "framer-motion";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";

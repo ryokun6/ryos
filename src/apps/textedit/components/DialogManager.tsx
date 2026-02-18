@@ -3,7 +3,7 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { appMetadata, helpItems } from "..";
+import { appMetadata, helpItems } from "../metadata";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useTranslation } from "react-i18next";
 

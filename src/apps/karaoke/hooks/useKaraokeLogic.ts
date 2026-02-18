@@ -32,7 +32,7 @@ import { useLyricsErrorToast } from "@/hooks/useLyricsErrorToast";
 import type { KaraokeInitialData } from "../../base/types";
 import type { CoverFlowRef } from "@/apps/ipod/components/CoverFlow";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
-import { helpItems } from "..";
+import { helpItems } from "../metadata";
 
 export interface UseKaraokeLogicOptions {
   isWindowOpen: boolean;

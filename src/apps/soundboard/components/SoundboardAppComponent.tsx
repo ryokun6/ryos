@@ -7,7 +7,7 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { AppProps } from "../../base/types";
 import { SoundboardMenuBar } from "./SoundboardMenuBar";
-import { appMetadata } from "..";
+import { appMetadata } from "../metadata";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { useSoundboardLogic } from "../hooks/useSoundboardLogic";
 

@@ -9,7 +9,7 @@ import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { appMetadata } from "..";
+import { appMetadata } from "../metadata";
 import { Button } from "@/components/ui/button";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { SeekBar } from "./SeekBar";

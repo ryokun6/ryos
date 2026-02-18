@@ -15,7 +15,7 @@ import {
 } from "@/utils/songMetadataCache";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
-import { helpItems } from "..";
+import { helpItems } from "../metadata";
 
 /**
  * Format Kugou image URL with size and HTTPS

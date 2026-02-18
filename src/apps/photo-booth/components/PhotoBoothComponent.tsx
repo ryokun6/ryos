@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
-import { appMetadata } from "..";
+import { appMetadata } from "../metadata";
 import { PhotoBoothMenuBar } from "./PhotoBoothMenuBar";
 import { AppProps } from "../../base/types";
 import { Camera, Images, Timer } from "@phosphor-icons/react";

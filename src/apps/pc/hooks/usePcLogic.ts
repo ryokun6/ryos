@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { helpItems } from "..";
+import { helpItems } from "../metadata";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { Game, loadGames } from "@/stores/usePcStore";
 import { useJsDos, DosProps, DosEvent } from "./useJsDos";

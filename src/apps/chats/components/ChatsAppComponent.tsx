@@ -4,7 +4,7 @@ import type { ChatsInitialData } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
 import { ChatsMenuBar } from "./ChatsMenuBar";
 import { ChatsDialogs } from "./ChatsDialogs";
-import { helpItems, appMetadata } from "..";
+import { helpItems, appMetadata } from "../metadata";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useChatRoom } from "../hooks/useChatRoom";
 import { useAiChat } from "../hooks/useAiChat";

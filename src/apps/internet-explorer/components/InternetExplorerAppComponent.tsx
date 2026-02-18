@@ -28,7 +28,7 @@ import { InputDialog } from "@/components/dialogs/InputDialog";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { appMetadata } from "..";
+import { appMetadata } from "../metadata";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import { motion, AnimatePresence } from "framer-motion";
 import FutureSettingsDialog from "@/components/dialogs/FutureSettingsDialog";

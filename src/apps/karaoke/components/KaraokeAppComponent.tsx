@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { LyricsSearchDialog } from "@/components/dialogs/LyricsSearchDialog";
 import { SongSearchDialog } from "@/components/dialogs/SongSearchDialog";
-import { appMetadata } from "..";
+import { appMetadata } from "../metadata";
 import { LyricsDisplay } from "@/apps/ipod/components/LyricsDisplay";
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
 import { CoverFlow } from "@/apps/ipod/components/CoverFlow";
