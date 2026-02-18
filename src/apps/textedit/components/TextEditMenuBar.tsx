@@ -11,12 +11,10 @@ import {
   MenubarSubContent,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import React, { useState } from "react";
+import React from "react";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { appRegistry } from "@/config/appRegistry";
-import { useTranslation } from "react-i18next";
+import { useAppMenuBar } from "@/hooks/useAppMenuBar";
 
 interface TextEditMenuBarProps {
   editor: Editor | null;
@@ -45,13 +43,15 @@ export function TextEditMenuBar({
   currentFilePath,
   handleFileSelect,
 }: TextEditMenuBarProps) {
-  const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "textedit";
-  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const {
+    t,
+    appName,
+    isXpTheme,
+    isMacOsxTheme,
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+  } = useAppMenuBar(appId);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 

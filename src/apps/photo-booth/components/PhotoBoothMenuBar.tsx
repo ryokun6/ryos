@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
@@ -9,10 +8,8 @@ import {
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { appRegistry } from "@/config/appRegistry";
-import { useTranslation } from "react-i18next";
+import { useAppMenuBar } from "@/hooks/useAppMenuBar";
 
 interface Effect {
   name: string;
@@ -47,13 +44,15 @@ export function PhotoBoothMenuBar({
   selectedCameraId,
   onCameraSelect,
 }: PhotoBoothMenuBarProps) {
-  const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "photo-booth";
-  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const currentTheme = useThemeStore((s) => s.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const {
+    t,
+    appName,
+    isXpTheme,
+    isMacOsxTheme,
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+  } = useAppMenuBar(appId);
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>

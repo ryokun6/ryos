@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
@@ -14,10 +13,8 @@ import { useAudioSettingsStoreShallow } from "@/stores/helpers";
 import { SYNTH_PRESETS } from "@/hooks/useChatSynth";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { appRegistry } from "@/config/appRegistry";
-import { useTranslation } from "react-i18next";
+import { useAppMenuBar } from "@/hooks/useAppMenuBar";
 
 interface ChatsMenuBarProps {
   onClose: () => void;
@@ -83,13 +80,15 @@ export function ChatsMenuBar({
   handleVerifyTokenSubmit,
   onLogout,
 }: ChatsMenuBarProps) {
-  const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "chats";
-  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const {
+    t,
+    appName,
+    isXpTheme,
+    isMacOsxTheme,
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+  } = useAppMenuBar(appId);
 
   const {
     speechEnabled,

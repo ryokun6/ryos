@@ -9,8 +9,7 @@ import {
   MenubarSubTrigger,
   MenubarSubContent,
 } from "@/components/ui/menubar";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { useTranslation } from "react-i18next";
+import { useAppMenuBar } from "@/hooks/useAppMenuBar";
 import { StickyColor } from "@/stores/useStickiesStore";
 
 interface StickiesMenuBarProps {
@@ -43,10 +42,7 @@ export function StickiesMenuBar({
   onChangeColor,
   onDeleteNote,
 }: StickiesMenuBarProps) {
-  const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { t, isXpTheme, isMacOsxTheme } = useAppMenuBar("stickies");
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>

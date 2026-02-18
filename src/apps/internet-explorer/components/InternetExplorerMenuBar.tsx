@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -19,11 +18,9 @@ import {
   LocationOption,
 } from "@/stores/useInternetExplorerStore";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { appRegistry } from "@/config/appRegistry";
-import { useTranslation } from "react-i18next";
+import { useAppMenuBar } from "@/hooks/useAppMenuBar";
 
 interface InternetExplorerMenuBarProps extends Omit<AppProps, "onClose" | "instanceId"> {
   instanceId?: string;
@@ -150,9 +147,15 @@ export function InternetExplorerMenuBar({
   onYearChange,
   onSharePage,
 }: InternetExplorerMenuBarProps) {
-  const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "internet-explorer";
+  const {
+    t,
+    appName,
+    isXpTheme,
+    isMacOsxTheme,
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+  } = useAppMenuBar(appId);
   // Get current year for generating year lists
   const currentYear = new Date().getFullYear();
 
@@ -197,10 +200,6 @@ export function InternetExplorerMenuBar({
       (1991 + i).toString()
     ).filter((yr) => parseInt(yr) !== currentYear),
   ].reverse();
-
-  const currentTheme = useThemeStore((s) => s.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
@@ -785,7 +784,7 @@ export function InternetExplorerMenuBar({
         onClose={() => setIsShareDialogOpen(false)}
         itemType="App"
         itemIdentifier={appId}
-        title={appRegistry[appId as keyof typeof appRegistry]?.name || appId}
+        title={appName}
         generateShareUrl={generateAppShareUrl}
       />
     </MenuBar>

@@ -10,10 +10,8 @@ import { AppProps } from "../../base/types";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { useState, useEffect } from "react";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { appRegistry } from "@/config/appRegistry";
-import { useTranslation } from "react-i18next";
+import { useAppMenuBar } from "@/hooks/useAppMenuBar";
 
 interface SoundboardMenuBarProps extends Omit<AppProps, "onClose" | "instanceId"> {
   onClose: () => void;
@@ -50,14 +48,16 @@ export function SoundboardMenuBar({
   onToggleEmojis,
   onClose,
 }: SoundboardMenuBarProps) {
-  const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "soundboard";
-  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
+  const {
+    t,
+    appName,
+    isXpTheme,
+    isMacOsxTheme,
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+  } = useAppMenuBar(appId);
   const [isOptionPressed, setIsOptionPressed] = useState(false);
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

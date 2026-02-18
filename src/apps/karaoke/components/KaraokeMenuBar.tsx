@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
@@ -13,8 +12,6 @@ import {
   MenubarRadioGroup,
   MenubarRadioItem,
 } from "@/components/ui/menubar";
-import { useTranslation } from "react-i18next";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { useIpodStoreShallow } from "@/stores/helpers";
@@ -23,6 +20,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";
 import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
 import { Track } from "@/stores/useIpodStore";
+import { useAppMenuBar } from "@/hooks/useAppMenuBar";
 
 interface KaraokeMenuBarProps {
   onClose: () => void;
@@ -99,14 +97,16 @@ export function KaraokeMenuBar({
   tracks,
   currentIndex,
 }: KaraokeMenuBarProps) {
-  const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "karaoke";
-  const appName = t("apps.karaoke.name");
-
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const {
+    t,
+    appName: fallbackAppName,
+    isXpTheme,
+    isMacOsxTheme,
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+  } = useAppMenuBar(appId);
+  const appName = t("apps.karaoke.name", { defaultValue: fallbackAppName });
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
   const username = useChatsStore((state) => state.username);
   const isAdmin = username?.toLowerCase() === "ryo";

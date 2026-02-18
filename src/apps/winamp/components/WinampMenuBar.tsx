@@ -9,8 +9,7 @@ import {
   MenubarRadioGroup,
   MenubarRadioItem,
 } from "@/components/ui/menubar";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { useTranslation } from "react-i18next";
+import { useAppMenuBar } from "@/hooks/useAppMenuBar";
 import { WEBAMP_SKINS } from "../skins";
 
 interface WinampMenuBarProps {
@@ -46,10 +45,7 @@ export function WinampMenuBar({
   onToggleShuffle,
   onToggleRepeat,
 }: WinampMenuBarProps) {
-  const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { t, isXpTheme, isMacOsxTheme } = useAppMenuBar("winamp");
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>

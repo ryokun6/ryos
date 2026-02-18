@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import {
   MenubarMenu,
@@ -19,10 +19,8 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "sonner";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import { LyricsAlignment, DisplayMode } from "@/types/lyrics";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { appRegistry } from "@/config/appRegistry";
-import { useTranslation } from "react-i18next";
+import { useAppMenuBar } from "@/hooks/useAppMenuBar";
 
 interface IpodMenuBarProps {
   onClose: () => void;
@@ -49,10 +47,15 @@ export function IpodMenuBar({
   onAdjustTiming,
   onToggleCoverFlow,
 }: IpodMenuBarProps) {
-  const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "ipod";
-  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
+  const {
+    t,
+    appName,
+    isXpTheme,
+    isMacOsxTheme,
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+  } = useAppMenuBar(appId);
 
   const translationLanguages = [
     { label: t("apps.ipod.translationLanguages.original"), code: null },
@@ -150,9 +153,6 @@ export function IpodMenuBar({
     exportLibrary: s.exportLibrary,
   }));
 
-  const appTheme = useThemeStore((state) => state.current);
-  const isXpTheme = appTheme === "xp" || appTheme === "win98";
-  const isMacOsxTheme = appTheme === "macosx";
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
   const username = useChatsStore((state) => state.username);
   const isAdmin = username?.toLowerCase() === "ryo";

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -11,15 +10,13 @@ import {
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import { MenuBar } from "@/components/layout/MenuBar";
-import { useThemeStore } from "@/stores/useThemeStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { generateAppShareUrl } from "@/utils/sharedUrl";
 import React from "react";
 import { useAppStore } from "@/stores/useAppStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
-import { appRegistry } from "@/config/appRegistry";
-import { useTranslation } from "react-i18next";
+import { useAppMenuBar } from "@/hooks/useAppMenuBar";
 
 interface AppletViewerMenuBarProps {
   onClose: () => void;
@@ -56,13 +53,15 @@ export function AppletViewerMenuBar({
   onCheckForUpdates,
   onUpdateAll,
 }: AppletViewerMenuBarProps) {
-  const { t } = useTranslation();
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const appId = "applet-viewer";
-  const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const currentTheme = useThemeStore((s) => s.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const {
+    t,
+    appName,
+    isXpTheme,
+    isMacOsxTheme,
+    isShareDialogOpen,
+    setIsShareDialogOpen,
+  } = useAppMenuBar(appId);
   const launchApp = useLaunchApp();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const bringInstanceToForeground = useAppStore(

@@ -10,8 +10,7 @@ import {
   MenubarSubContent,
   MenubarCheckboxItem,
 } from "@/components/ui/menubar";
-import { useThemeStore } from "@/stores/useThemeStore";
-import { useTranslation } from "react-i18next";
+import { useAppMenuBar } from "@/hooks/useAppMenuBar";
 import type { ScaleOption } from "../hooks/useInfiniteMacLogic";
 
 interface InfiniteMacMenuBarProps {
@@ -41,10 +40,7 @@ export function InfiniteMacMenuBar({
   isPaused,
   currentScale,
 }: InfiniteMacMenuBarProps) {
-  const { t } = useTranslation();
-  const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const isMacOsxTheme = currentTheme === "macosx";
+  const { t, isXpTheme, isMacOsxTheme } = useAppMenuBar("infinite-mac");
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
