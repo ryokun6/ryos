@@ -5,6 +5,7 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarSeparator,
+  MenubarCheckboxItem,
   MenubarRadioGroup,
   MenubarRadioItem,
 } from "@/components/ui/menubar";
@@ -18,6 +19,15 @@ interface WinampMenuBarProps {
   onShowAbout: () => void;
   currentSkinUrl: string | null;
   onSkinChange: (url: string | null) => void;
+  isPlaying: boolean;
+  isShuffleEnabled: boolean;
+  isRepeatEnabled: boolean;
+  onTogglePlay: () => void;
+  onStopPlayback: () => void;
+  onPreviousTrack: () => void;
+  onNextTrack: () => void;
+  onToggleShuffle: () => void;
+  onToggleRepeat: () => void;
 }
 
 export function WinampMenuBar({
@@ -26,6 +36,15 @@ export function WinampMenuBar({
   onShowAbout,
   currentSkinUrl,
   onSkinChange,
+  isPlaying,
+  isShuffleEnabled,
+  isRepeatEnabled,
+  onTogglePlay,
+  onStopPlayback,
+  onPreviousTrack,
+  onNextTrack,
+  onToggleShuffle,
+  onToggleRepeat,
 }: WinampMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
@@ -72,6 +91,54 @@ export function WinampMenuBar({
               </MenubarRadioItem>
             ))}
           </MenubarRadioGroup>
+        </MenubarContent>
+      </MenubarMenu>
+      <MenubarMenu>
+        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("apps.winamp.menu.controls", { defaultValue: "Controls" })}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
+            onClick={onTogglePlay}
+            className="text-md h-6 px-3"
+          >
+            {isPlaying
+              ? t("apps.winamp.menu.pause", { defaultValue: "Pause" })
+              : t("apps.winamp.menu.play", { defaultValue: "Play" })}
+          </MenubarItem>
+          <MenubarItem
+            onClick={onStopPlayback}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.winamp.menu.stop", { defaultValue: "Stop" })}
+          </MenubarItem>
+          <MenubarItem
+            onClick={onPreviousTrack}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.winamp.menu.previous", { defaultValue: "Previous" })}
+          </MenubarItem>
+          <MenubarItem
+            onClick={onNextTrack}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.winamp.menu.next", { defaultValue: "Next" })}
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarCheckboxItem
+            checked={isShuffleEnabled}
+            onCheckedChange={() => onToggleShuffle()}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.winamp.menu.shuffle", { defaultValue: "Shuffle" })}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={isRepeatEnabled}
+            onCheckedChange={() => onToggleRepeat()}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.winamp.menu.repeat", { defaultValue: "Repeat" })}
+          </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
       <MenubarMenu>

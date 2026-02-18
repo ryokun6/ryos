@@ -26,7 +26,18 @@ class Emitter {
 
 // ── Helpers ─────────────────────────────────────────────────────────
 function extractVideoId(url: string): string | null {
-  const m = url.match(
+  const trimmedUrl = url.trim();
+
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmedUrl)) {
+    return trimmedUrl;
+  }
+
+  const prefixed = trimmedUrl.replace(/^youtube:\/\/?/i, "").replace(/^yt:/i, "");
+  if (/^[a-zA-Z0-9_-]{11}$/.test(prefixed)) {
+    return prefixed;
+  }
+
+  const m = trimmedUrl.match(
     /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/
   );
   return m ? m[1] : null;

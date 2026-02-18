@@ -12,6 +12,7 @@ import { useIpodStore, type Track } from "@/stores/useIpodStore";
 import { YouTubeMedia } from "../utils/youtubeMedia";
 import { WEBAMP_SKINS } from "../skins";
 import { useTranslation } from "react-i18next";
+import { getYouTubeVideoId } from "@/apps/ipod/constants";
 
 const MAIN_WINDOW_WIDTH = 275;
 const MAIN_WINDOW_HEIGHT = 116;
@@ -20,7 +21,7 @@ const PLAYLIST_HEIGHT = 116;
 /** Convert iPod tracks to Webamp-compatible track objects */
 function ipodTracksToWebamp(tracks: Track[], unknownArtist: string) {
   return tracks.map((track) => ({
-    url: track.url,
+    url: getYouTubeVideoId(track.url) ?? track.url,
     metaData: {
       artist: track.artist ?? unknownArtist,
       title: track.title,
@@ -44,6 +45,9 @@ export function WinampAppComponent({
   const isInitializedRef = useRef(false);
   const webampElRef = useRef<HTMLElement | null>(null);
   const [currentSkinUrl, setCurrentSkinUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
+  const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
 
   const {
     translatedHelpItems,
@@ -60,6 +64,60 @@ export function WinampAppComponent({
     webamp.setSkinFromUrl(url ?? "/skins/base-2.91.wsz");
     setCurrentSkinUrl(url);
   }, []);
+
+  const syncMediaState = useCallback(() => {
+    const webamp = webampRef.current;
+    if (!webamp) return;
+    setIsPlaying(webamp.getMediaStatus() === "PLAYING");
+    setIsShuffleEnabled(webamp.isShuffleEnabled());
+    setIsRepeatEnabled(webamp.isRepeatEnabled());
+  }, []);
+
+  const handleTogglePlay = useCallback(() => {
+    const webamp = webampRef.current;
+    if (!webamp) return;
+    if (webamp.getMediaStatus() === "PLAYING") {
+      webamp.pause();
+    } else {
+      webamp.play();
+    }
+    syncMediaState();
+  }, [syncMediaState]);
+
+  const handleStopPlayback = useCallback(() => {
+    const webamp = webampRef.current;
+    if (!webamp) return;
+    webamp.stop();
+    syncMediaState();
+  }, [syncMediaState]);
+
+  const handlePreviousTrack = useCallback(() => {
+    const webamp = webampRef.current;
+    if (!webamp) return;
+    webamp.previousTrack();
+    syncMediaState();
+  }, [syncMediaState]);
+
+  const handleNextTrack = useCallback(() => {
+    const webamp = webampRef.current;
+    if (!webamp) return;
+    webamp.nextTrack();
+    syncMediaState();
+  }, [syncMediaState]);
+
+  const handleToggleShuffle = useCallback(() => {
+    const webamp = webampRef.current;
+    if (!webamp) return;
+    webamp.toggleShuffle();
+    syncMediaState();
+  }, [syncMediaState]);
+
+  const handleToggleRepeat = useCallback(() => {
+    const webamp = webampRef.current;
+    if (!webamp) return;
+    webamp.toggleRepeat();
+    syncMediaState();
+  }, [syncMediaState]);
 
   const handleClose = useCallback(() => {
     if (instanceId) {
@@ -124,7 +182,7 @@ export function WinampAppComponent({
           ? webampTracks
           : [
               {
-                url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+              url: "youtube:dQw4w9WgXcQ",
                 metaData: {
                   artist: "Rick Astley",
                   title: "Never Gonna Give You Up",
@@ -163,9 +221,14 @@ export function WinampAppComponent({
         webampElRef.current = el;
         el.style.zIndex = isForeground ? "40" : "1";
       }
+      syncMediaState();
     });
+    const unsubscribeTrackChange = webamp.onTrackDidChange(syncMediaState);
+    const mediaStateInterval = window.setInterval(syncMediaState, 750);
 
     return () => {
+      unsubscribeTrackChange();
+      clearInterval(mediaStateInterval);
       webampElRef.current = null;
       if (webampRef.current) {
         webampRef.current.dispose();
@@ -177,10 +240,10 @@ export function WinampAppComponent({
       }
       isInitializedRef.current = false;
     };
-    // handleClose is intentionally the only callback dep so the effect
-    // doesn't re-run when isForeground changes
+    // handleClose and syncMediaState are intentionally included so media state
+    // remains synced without re-running on unrelated UI changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isWindowOpen, instanceId, handleClose]);
+  }, [isWindowOpen, instanceId, handleClose, syncMediaState]);
 
   // Update z-index based on foreground state
   useEffect(() => {
@@ -215,6 +278,15 @@ export function WinampAppComponent({
       onShowAbout={() => setIsAboutDialogOpen(true)}
       currentSkinUrl={currentSkinUrl}
       onSkinChange={handleSkinChange}
+      isPlaying={isPlaying}
+      isShuffleEnabled={isShuffleEnabled}
+      isRepeatEnabled={isRepeatEnabled}
+      onTogglePlay={handleTogglePlay}
+      onStopPlayback={handleStopPlayback}
+      onPreviousTrack={handlePreviousTrack}
+      onNextTrack={handleNextTrack}
+      onToggleShuffle={handleToggleShuffle}
+      onToggleRepeat={handleToggleRepeat}
     />
   );
 
