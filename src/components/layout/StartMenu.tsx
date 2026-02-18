@@ -39,41 +39,68 @@ export function StartMenu({ apps }: StartMenuProps) {
             style={{
               width: currentTheme === "xp" ? "auto" : "auto",
               minWidth: currentTheme === "xp" ? "100px" : "auto",
-              height: currentTheme === "xp" ? "100%" : "85%",
+              height: currentTheme === "xp" || currentTheme === "win7" ? "100%" : "85%",
               marginTop: currentTheme === "win98" ? "2px" : "0px",
               marginLeft: currentTheme === "win98" ? "4px" : "0px",
-              borderRadius: currentTheme === "xp" ? "0 12px 12px 0" : "0",
+              borderRadius:
+                currentTheme === "xp"
+                  ? "0 12px 12px 0"
+                  : currentTheme === "win7"
+                  ? "0 4px 4px 0"
+                  : "0",
               background:
                 currentTheme === "xp"
                   ? isStartMenuOpen
                     ? "linear-gradient(0deg, #2f892f 0%, #4eb64e 6%, #4eb64e 51%, #4eb64e 63%, #4eb64e 77%, #c4ffc4 85%, #c4ffc4 93%, #2f892f 97%)"
                     : "linear-gradient(0deg, #0c450c 0%, #308f2f 6%, #308f2f 51%, #308f2f 63%, #308f2f 77%, #97c597 85%, #97c597 93%, #308f2f 97%)"
-                  : "#c0c0c0", // Flat gray for Windows 98
-              border: currentTheme === "xp" ? "none" : "none", // Windows 98 uses box-shadow instead of border
-              color: currentTheme === "xp" ? "#ffffff" : "#000000",
-              fontWeight: currentTheme === "xp" ? "500" : "bold",
-              fontSize: currentTheme === "xp" ? "1.1rem" : "11px",
+                  : currentTheme === "win7"
+                  ? isStartMenuOpen
+                    ? "linear-gradient(180deg, #4a9ede 0%, #2878be 50%, #1b5fa0 100%)"
+                    : "linear-gradient(180deg, #3c8ad0 0%, #2068ad 50%, #15508e 100%)"
+                  : "#c0c0c0",
+              border:
+                currentTheme === "win7"
+                  ? "1px solid rgba(0,0,0,0.4)"
+                  : "none",
+              color:
+                currentTheme === "xp" || currentTheme === "win7"
+                  ? "#ffffff"
+                  : "#000000",
+              fontWeight: currentTheme === "xp" ? "500" : currentTheme === "win7" ? "600" : "bold",
+              fontSize: currentTheme === "xp" ? "1.1rem" : currentTheme === "win7" ? "11px" : "11px",
               fontStyle: currentTheme === "xp" ? "italic" : "normal",
               boxShadow:
                 currentTheme === "xp"
                   ? "-2px -2px 10px #0000008e inset"
+                  : currentTheme === "win7"
+                  ? isStartMenuOpen
+                    ? "inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 2px rgba(0,0,0,0.3), 0 0 8px rgba(50,150,255,0.4)"
+                    : "inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 2px rgba(0,0,0,0.2)"
                   : isStartMenuOpen
-                  ? "inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey" // Windows 98 pressed
-                  : "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf", // Windows 98 raised
+                  ? "inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey"
+                  : "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              textShadow:
+                currentTheme === "win7"
+                  ? "0 1px 2px rgba(0,0,0,0.5)"
+                  : undefined,
             }}
             onMouseEnter={(e) => {
-              if (currentTheme === "win98" && !isStartMenuOpen) {
-                // Windows 98 hover - keep raised style, don't depress
+              if (currentTheme === "win7") {
+                e.currentTarget.style.background = "linear-gradient(180deg, #5aaee8 0%, #3488cc 50%, #2068ad 100%)";
+              } else if (currentTheme === "win98" && !isStartMenuOpen) {
                 e.currentTarget.style.boxShadow =
                   "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
               }
             }}
             onMouseLeave={(e) => {
-              if (currentTheme === "win98" && !isStartMenuOpen) {
-                // Windows 98 return to normal raised state
+              if (currentTheme === "win7") {
+                e.currentTarget.style.background = isStartMenuOpen
+                  ? "linear-gradient(180deg, #4a9ede 0%, #2878be 50%, #1b5fa0 100%)"
+                  : "linear-gradient(180deg, #3c8ad0 0%, #2068ad 50%, #15508e 100%)";
+              } else if (currentTheme === "win98" && !isStartMenuOpen) {
                 e.currentTarget.style.boxShadow =
                   "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
               }
@@ -87,7 +114,7 @@ export function StartMenu({ apps }: StartMenuProps) {
               }`}
               style={{
                 filter:
-                  currentTheme === "xp"
+                  currentTheme === "xp" || currentTheme === "win7"
                     ? "drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.705))"
                     : "none",
               }}
@@ -113,20 +140,34 @@ export function StartMenu({ apps }: StartMenuProps) {
           sideOffset={0}
           className="p-0 overflow-hidden"
           style={{
-            // Narrower overall width; differentiate slightly for themes if desired
             width: "280px",
             maxHeight: "80vh",
             background:
-              currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
+              currentTheme === "xp"
+                ? "#ece9d8"
+                : currentTheme === "win7"
+                ? "#f0f0f0"
+                : currentTheme === "win98"
                 ? "#ece9d8"
                 : "#c0c0c0",
             border:
               currentTheme === "xp"
                 ? "3px solid #0855dd"
+                : currentTheme === "win7"
+                ? "1px solid rgba(0,0,0,0.5)"
                 : currentTheme === "win98"
                 ? "2px outset #c0c0c0"
                 : "2px outset #c0c0c0",
-            borderRadius: currentTheme === "xp" ? "5px 5px 0 0" : "0",
+            borderRadius:
+              currentTheme === "xp"
+                ? "5px 5px 0 0"
+                : currentTheme === "win7"
+                ? "6px 6px 0 0"
+                : "0",
+            boxShadow:
+              currentTheme === "win7"
+                ? "0 -4px 20px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.2)"
+                : undefined,
           }}
         >
           <div className="flex h-full">
@@ -138,8 +179,10 @@ export function StartMenu({ apps }: StartMenuProps) {
                   background:
                     currentTheme === "xp"
                       ? "linear-gradient(to bottom, #3a6fd8, #2559ce)"
+                      : currentTheme === "win7"
+                      ? "linear-gradient(to bottom, #4580c4, #2a5fa0)"
                       : "linear-gradient(to bottom, #1e4096, #143366)",
-                  borderRight: "1px solid #1f4788",
+                  borderRight: currentTheme === "win7" ? "1px solid rgba(0,0,0,0.3)" : "1px solid #1f4788",
                 }}
               >
                 <div
@@ -157,7 +200,7 @@ export function StartMenu({ apps }: StartMenuProps) {
                 >
                   ryOS{" "}
                   <span style={{ fontWeight: "100" }}>
-                    {currentTheme === "xp" ? t("common.startMenu.ryosProfessional") : t("common.startMenu.ryos98")}
+                    {currentTheme === "xp" ? t("common.startMenu.ryosProfessional") : currentTheme === "win7" ? "7" : t("common.startMenu.ryos98")}
                   </span>
                 </div>
               </div>
@@ -169,9 +212,9 @@ export function StartMenu({ apps }: StartMenuProps) {
               style={{
                 background:
                   currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
-                    ? "#ffffff"
+                    ? currentTheme === "win7" ? "#f9f9f9" : "#ffffff"
                     : "#c0c0c0",
-                maxHeight: "80vh", // Responsive height to enable scrolling
+                maxHeight: "80vh",
               }}
             >
               {/* All Menu Items Section */}

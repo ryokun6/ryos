@@ -1095,6 +1095,8 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
     const taskbarBackground =
       currentTheme === "xp"
         ? "linear-gradient(0deg, #042b8e 0%, #0551f6 6%, #0453ff 51%, #0551f6 63%, #0551f6 81%, #3a8be8 90%, #0453ff 100%)"
+        : currentTheme === "win7"
+        ? "linear-gradient(0deg, #1a3f6f 0%, #1e4d80 20%, #234f7e 50%, #295d94 75%, #2a5f96 100%)"
         : "#c0c0c0";
     return (
       <div
@@ -1103,7 +1105,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           background: taskbarBackground,
           fontFamily: "var(--font-ms-sans)",
           fontSize: "11px",
-          color: currentTheme === "xp" ? "#ffffff" : "#000000",
+          color: currentTheme === "xp" || currentTheme === "win7" ? "#ffffff" : "#000000",
           userSelect: "none",
           width: "100vw",
           height: "calc(30px + env(safe-area-inset-bottom, 0px))",
@@ -1181,25 +1183,37 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                       background: isForeground && !isMinimized
                         ? currentTheme === "xp"
                           ? "#3980f4"
+                          : currentTheme === "win7"
+                          ? "linear-gradient(180deg, rgba(60,120,200,0.7) 0%, rgba(40,90,170,0.6) 100%)"
                           : "#c0c0c0"
                         : currentTheme === "xp"
                         ? "#1658dd"
+                        : currentTheme === "win7"
+                        ? "linear-gradient(180deg, rgba(40,80,140,0.5) 0%, rgba(25,55,100,0.4) 100%)"
                         : "#c0c0c0",
                       border:
                         currentTheme === "xp"
                           ? isForeground && !isMinimized
                             ? "1px solid #255be1"
                             : "1px solid #255be1"
+                          : currentTheme === "win7"
+                          ? "1px solid rgba(255,255,255,0.2)"
                           : "none",
-                      color: currentTheme === "xp" ? "#ffffff" : "#000000",
+                      borderRadius: currentTheme === "win7" ? "3px" : undefined,
+                      color: currentTheme === "xp" || currentTheme === "win7" ? "#ffffff" : "#000000",
                       fontSize: "11px",
+                      textShadow: currentTheme === "win7" ? "0 1px 2px rgba(0,0,0,0.5)" : undefined,
                       boxShadow:
                         currentTheme === "xp"
                           ? "2px 2px 5px rgba(255, 255, 255, 0.267) inset"
+                          : currentTheme === "win7"
+                          ? isForeground && !isMinimized
+                            ? "inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.2), 0 0 4px rgba(100,180,255,0.3)"
+                            : "inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.15)"
                           : isForeground && !isMinimized
                           ? "inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey"
                           : "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf",
-                      transition: "background 0.1s ease, box-shadow 0.1s ease, border-color 0.1s ease",
+                      transition: "background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease",
                     }}
                     onMouseEnter={(e) => {
                       if (currentTheme === "xp") {
@@ -1210,6 +1224,9 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                           e.currentTarget.style.background = "#2a6ef1";
                           e.currentTarget.style.borderColor = "#1e56c9";
                         }
+                      } else if (currentTheme === "win7") {
+                        e.currentTarget.style.background = "linear-gradient(180deg, rgba(70,140,220,0.75) 0%, rgba(50,105,185,0.65) 100%)";
+                        e.currentTarget.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.2), 0 0 6px rgba(100,180,255,0.4)";
                       } else if (currentTheme === "win98" && (!isForeground || isMinimized)) {
                         e.currentTarget.style.boxShadow =
                           "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
@@ -1224,6 +1241,13 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                           e.currentTarget.style.background = "#1658dd";
                           e.currentTarget.style.borderColor = "#255be1";
                         }
+                      } else if (currentTheme === "win7") {
+                        e.currentTarget.style.background = isForeground && !isMinimized
+                          ? "linear-gradient(180deg, rgba(60,120,200,0.7) 0%, rgba(40,90,170,0.6) 100%)"
+                          : "linear-gradient(180deg, rgba(40,80,140,0.5) 0%, rgba(25,55,100,0.4) 100%)";
+                        e.currentTarget.style.boxShadow = isForeground && !isMinimized
+                          ? "inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.2), 0 0 4px rgba(100,180,255,0.3)"
+                          : "inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.15)";
                       } else if (currentTheme === "win98" && (!isForeground || isMinimized)) {
                         e.currentTarget.style.boxShadow =
                           "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
@@ -1272,7 +1296,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
                       background: currentTheme === "xp" ? "#1658dd" : "#c0c0c0",
                       border:
                         currentTheme === "xp" ? "1px solid #255be1" : "none",
-                      color: currentTheme === "xp" ? "#ffffff" : "#000000",
+                      color: currentTheme === "xp" || currentTheme === "win7" ? "#ffffff" : "#000000",
                       fontSize: "11px",
                       boxShadow:
                         currentTheme === "xp"
@@ -1391,19 +1415,31 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
               background:
                 currentTheme === "xp"
                   ? "linear-gradient(0deg, #0a5bc6 0%, #1198e9 6%, #1198e9 51%, #1198e9 63%, #1198e9 77%, #19b9f3 85%, #19b9f3 93%, #075dca 97%)"
-                  : "#c0c0c0", // Flat gray for Windows 98
+                  : currentTheme === "win7"
+                  ? "linear-gradient(0deg, rgba(20,50,90,0.9) 0%, rgba(30,65,110,0.85) 50%, rgba(40,80,130,0.9) 100%)"
+                  : "#c0c0c0",
               boxShadow:
                 currentTheme === "xp"
                   ? "2px -0px 3px #20e2fc inset"
-                  : "inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey", // Windows 98 inset
+                  : currentTheme === "win7"
+                  ? "inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.2)"
+                  : "inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey",
               borderTop:
-                currentTheme === "xp" ? "1px solid #075dca" : "transparent",
+                currentTheme === "xp"
+                  ? "1px solid #075dca"
+                  : currentTheme === "win7"
+                  ? "1px solid rgba(255,255,255,0.1)"
+                  : "transparent",
               borderBottom:
                 currentTheme === "xp" ? "1px solid #0a5bc6" : "transparent",
               borderRight:
                 currentTheme === "xp" ? "transparent" : "transparent",
               borderLeft:
-                currentTheme === "xp" ? "1px solid #000000" : "transparent",
+                currentTheme === "xp"
+                  ? "1px solid #000000"
+                  : currentTheme === "win7"
+                  ? "1px solid rgba(255,255,255,0.1)"
+                  : "transparent",
               paddingTop: currentTheme === "xp" ? "1px" : "0px",
             }}
           >
