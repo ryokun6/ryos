@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { requestCloseWindow } from "@/utils/windowUtils";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { SpotlightSearch } from "@/components/layout/SpotlightSearch";
+import { AppSwitcher } from "@/components/layout/AppSwitcher";
+import type { SwitcherApp } from "@/components/layout/AppSwitcher";
 
 interface AppManagerProps {
   apps: AnyApp[];
@@ -31,6 +33,8 @@ export function AppManager({ apps }: AppManagerProps) {
     bringInstanceToForeground,
     navigateToNextInstance,
     navigateToPreviousInstance,
+    minimizeInstance,
+    restoreInstance,
     foregroundInstanceId,
     exposeMode,
   } = useAppStoreShallow((state) => ({
@@ -40,6 +44,8 @@ export function AppManager({ apps }: AppManagerProps) {
     bringInstanceToForeground: state.bringInstanceToForeground,
     navigateToNextInstance: state.navigateToNextInstance,
     navigateToPreviousInstance: state.navigateToPreviousInstance,
+    minimizeInstance: state.minimizeInstance,
+    restoreInstance: state.restoreInstance,
     foregroundInstanceId: state.foregroundInstanceId,
     exposeMode: state.exposeMode,
   }));
@@ -56,16 +62,62 @@ export function AppManager({ apps }: AppManagerProps) {
 
   const [isInitialMount, setIsInitialMount] = useState(true);
   const [isExposeViewOpen, setIsExposeViewOpen] = useState(false);
+
+  // App switcher state
+  const [switcherVisible, setSwitcherVisible] = useState(false);
+  const [switcherApps, setSwitcherApps] = useState<SwitcherApp[]>([]);
+  const [switcherIndex, setSwitcherIndex] = useState(0);
+
+  // Refs for stable event listener closures
   const instancesRef = useRef(instances);
+  const instanceOrderRef = useRef(instanceOrder);
   const launchAppRef = useRef(launchApp);
+  const foregroundInstanceIdRef = useRef(foregroundInstanceId);
+  const minimizeInstanceRef = useRef(minimizeInstance);
+  const restoreInstanceRef = useRef(restoreInstance);
+  const bringInstanceToForegroundRef = useRef(bringInstanceToForeground);
+  const navigateToNextInstanceRef = useRef(navigateToNextInstance);
+  const navigateToPreviousInstanceRef = useRef(navigateToPreviousInstance);
+  // Refs that mirror switcher state for use inside event handlers
+  const switcherVisibleRef = useRef(false);
+  const switcherAppsRef = useRef<SwitcherApp[]>([]);
+  const switcherIndexRef = useRef(0);
 
   useEffect(() => {
     instancesRef.current = instances;
   }, [instances]);
 
   useEffect(() => {
+    instanceOrderRef.current = instanceOrder;
+  }, [instanceOrder]);
+
+  useEffect(() => {
     launchAppRef.current = launchApp;
   }, [launchApp]);
+
+  useEffect(() => {
+    foregroundInstanceIdRef.current = foregroundInstanceId;
+  }, [foregroundInstanceId]);
+
+  useEffect(() => {
+    minimizeInstanceRef.current = minimizeInstance;
+  }, [minimizeInstance]);
+
+  useEffect(() => {
+    restoreInstanceRef.current = restoreInstance;
+  }, [restoreInstance]);
+
+  useEffect(() => {
+    bringInstanceToForegroundRef.current = bringInstanceToForeground;
+  }, [bringInstanceToForeground]);
+
+  useEffect(() => {
+    navigateToNextInstanceRef.current = navigateToNextInstance;
+  }, [navigateToNextInstance]);
+
+  useEffect(() => {
+    navigateToPreviousInstanceRef.current = navigateToPreviousInstance;
+  }, [navigateToPreviousInstance]);
 
 
   const getZIndexForInstance = (instanceId: string) => {
@@ -327,6 +379,199 @@ export function AppManager({ apps }: AppManagerProps) {
     };
   }, []);
 
+  // Global macOS-style window management and app switcher keyboard shortcuts
+  useEffect(() => {
+    const buildMruApps = (): SwitcherApp[] => {
+      const insts = instancesRef.current;
+      const order = instanceOrderRef.current;
+      const seen = new Set<string>();
+      const result: SwitcherApp[] = [];
+      // instanceOrder end = most recently used
+      for (let i = order.length - 1; i >= 0; i--) {
+        const inst = insts[order[i]];
+        if (inst?.isOpen && !seen.has(inst.appId)) {
+          seen.add(inst.appId);
+          result.push({ appId: inst.appId as AppId, instanceId: inst.instanceId });
+        }
+      }
+      return result;
+    };
+
+    const commitSwitcher = () => {
+      if (!switcherVisibleRef.current) return;
+      const apps = switcherAppsRef.current;
+      if (apps.length === 0) {
+        switcherVisibleRef.current = false;
+        switcherIndexRef.current = 0;
+        switcherAppsRef.current = [];
+        setSwitcherVisible(false);
+        setSwitcherIndex(0);
+        setSwitcherApps([]);
+        return;
+      }
+
+      const index =
+        ((switcherIndexRef.current % apps.length) + apps.length) % apps.length;
+      const selected = apps[index];
+      if (selected) {
+        const insts = instancesRef.current;
+        const order = instanceOrderRef.current;
+        // Find most recent non-minimized instance of selected app
+        let targetId: string | null = null;
+        for (let i = order.length - 1; i >= 0; i--) {
+          const inst = insts[order[i]];
+          if (inst?.isOpen && !inst.isMinimized && inst.appId === selected.appId) {
+            targetId = inst.instanceId;
+            break;
+          }
+        }
+        // Fall back to restoring most recent minimized instance
+        if (!targetId) {
+          for (let i = order.length - 1; i >= 0; i--) {
+            const inst = insts[order[i]];
+            if (inst?.isOpen && inst.appId === selected.appId) {
+              restoreInstanceRef.current(inst.instanceId);
+              targetId = inst.instanceId;
+              break;
+            }
+          }
+        }
+        if (targetId) {
+          bringInstanceToForegroundRef.current(targetId);
+        }
+      }
+      switcherVisibleRef.current = false;
+      switcherIndexRef.current = 0;
+      switcherAppsRef.current = [];
+      setSwitcherVisible(false);
+      setSwitcherIndex(0);
+      setSwitcherApps([]);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Use Alt/Option as the modifier for window management shortcuts.
+      // ⌘/Ctrl shortcuts (⌘W, ⌘M, ⌘H, ⌘Tab) are captured by the browser or
+      // OS before JavaScript sees them and cannot be overridden in a web app.
+      // Alt/Option key combos are not intercepted on macOS or Windows for these keys.
+      //
+      // IMPORTANT: We use e.code (physical key position) instead of e.key for
+      // letter checks because on macOS, Option+letter produces a Unicode character
+      // (e.g. Option+W → "∑", Option+M → "µ") so e.key never equals "w" or "m".
+      // e.code is always the physical key name regardless of modifiers.
+      if (!e.altKey) return;
+
+      const fgId = foregroundInstanceIdRef.current;
+
+      // Alt+Space — toggle Spotlight Search
+      if (e.code === "Space") {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent("toggleSpotlight"));
+        return;
+      }
+
+      // Alt+W — close the foreground window
+      if (e.code === "KeyW" && !e.shiftKey) {
+        if (fgId) {
+          e.preventDefault();
+          requestCloseWindow(fgId);
+        }
+        return;
+      }
+
+      // Alt+M — minimize the foreground window
+      if (e.code === "KeyM" && !e.shiftKey) {
+        if (fgId) {
+          e.preventDefault();
+          minimizeInstanceRef.current(fgId);
+        }
+        return;
+      }
+
+      // Alt+Shift+H — hide others (minimize all non-foreground windows)
+      if (e.code === "KeyH" && e.shiftKey) {
+        e.preventDefault();
+        const insts = instancesRef.current;
+        Object.values(insts).forEach((inst) => {
+          if (inst.isOpen && !inst.isMinimized && inst.instanceId !== fgId) {
+            minimizeInstanceRef.current(inst.instanceId);
+          }
+        });
+        return;
+      }
+
+      // Alt+H — hide current app (minimize all windows of foreground appId)
+      if (e.code === "KeyH" && !e.shiftKey) {
+        e.preventDefault();
+        const insts = instancesRef.current;
+        const fgInst = fgId ? insts[fgId] : null;
+        if (fgInst) {
+          const appId = fgInst.appId;
+          Object.values(insts).forEach((inst) => {
+            if (inst.isOpen && !inst.isMinimized && inst.appId === appId) {
+              minimizeInstanceRef.current(inst.instanceId);
+            }
+          });
+        }
+        return;
+      }
+
+      // Alt+` — cycle to next window
+      if (e.code === "Backquote" && !e.shiftKey) {
+        e.preventDefault();
+        if (fgId) navigateToNextInstanceRef.current(fgId);
+        return;
+      }
+
+      // Alt+Shift+` — cycle to previous window
+      if (e.code === "Backquote" && e.shiftKey) {
+        e.preventDefault();
+        if (fgId) navigateToPreviousInstanceRef.current(fgId);
+        return;
+      }
+
+      // Alt+Tab / Alt+Shift+Tab — app switcher
+      // Note: works on macOS (Option+Tab is not captured by the OS or browser).
+      // On Windows, Alt+Tab is captured by the OS and will not reach here.
+      if (e.code === "Tab") {
+        e.preventDefault();
+        if (!switcherVisibleRef.current) {
+          // First press — build list and show switcher
+          const mruApps = buildMruApps();
+          if (mruApps.length === 0) return;
+          switcherAppsRef.current = mruApps;
+          setSwitcherApps(mruApps);
+          switcherVisibleRef.current = true;
+          setSwitcherVisible(true);
+          const startIndex =
+            ((e.shiftKey ? -1 : 1) + mruApps.length) % mruApps.length;
+          switcherIndexRef.current = startIndex;
+          setSwitcherIndex(startIndex);
+        } else {
+          // Subsequent press — cycle selection
+          const len = switcherAppsRef.current.length;
+          const cur = switcherIndexRef.current;
+          const next = e.shiftKey ? (cur - 1 + len) % len : (cur + 1) % len;
+          switcherIndexRef.current = next;
+          setSwitcherIndex(next);
+        }
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      // Commit app switcher selection when the Alt/Option key is released
+      if (e.key === "Alt") {
+        commitSwitcher();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+
   return (
     <>
       {/* MenuBar: For XP/Win98, this is the taskbar (always shown).
@@ -395,6 +640,13 @@ export function AppManager({ apps }: AppManagerProps) {
       <ExposeView
         isOpen={isExposeViewOpen}
         onClose={() => setIsExposeViewOpen(false)}
+      />
+
+      {/* ⌘Tab App Switcher */}
+      <AppSwitcher
+        isVisible={switcherVisible}
+        apps={switcherApps}
+        selectedIndex={switcherIndex}
       />
     </>
   );
