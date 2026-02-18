@@ -6,7 +6,7 @@
  */
 
 import { z } from "zod";
-import { appIds } from "../../../src/config/appIds.js";
+import { appIds } from "../../../src/config/appRegistryData.js";
 import { THEME_IDS, LANGUAGE_CODES, VFS_PATHS, MEMORY_TYPES, MEMORY_MODES } from "./types.js";
 import {
   MAX_KEY_LENGTH,

@@ -8,7 +8,7 @@ import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { getWindowConfig, getAppIconPath } from "@/config/appRegistry";
 import { useSwipeNavigation } from "@/hooks/useSwipeNavigation";
-import { AppId } from "@/config/appIds";
+import { AppId } from "@/config/appRegistryData";
 import { useIsMobile, useIsPhone } from "@/hooks/useDevice";
 import { useAppStoreShallow } from "@/stores/helpers";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";

@@ -5,7 +5,7 @@
 import { useAppStore } from "@/stores/useAppStore";
 import { appRegistry } from "@/config/appRegistry";
 import { requestCloseWindow } from "@/utils/windowUtils";
-import type { AppId } from "@/config/appIds";
+import type { AppId } from "@/config/appRegistryData";
 import type { LaunchAppOptions } from "@/hooks/useLaunchApp";
 import i18n from "@/lib/i18n";
 import type { ToolContext } from "./types";

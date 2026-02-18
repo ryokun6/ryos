@@ -1,5 +1,5 @@
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
-import type { AppId } from "@/config/appIds";
+import type { AppId } from "@/config/appRegistryData";
 
 export interface AppProps<TInitialData = unknown> {
   isWindowOpen: boolean;

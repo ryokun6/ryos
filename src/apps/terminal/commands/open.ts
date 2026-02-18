@@ -1,5 +1,5 @@
 import { Command, CommandContext, CommandResult } from "../types";
-import { appIds, AppId } from "@/config/appIds";
+import { appIds, AppId } from "@/config/appRegistryData";
 import { useFilesStore } from "@/stores/useFilesStore";
 import {
   dbOperations,

@@ -5,7 +5,7 @@ import {
   ResizeType,
   ResizeStart,
 } from "../types/types";
-import { appIds, AppId } from "@/config/appIds";
+import { appIds, AppId } from "@/config/appRegistryData";
 import { useAppStore } from "@/stores/useAppStore";
 import { useSound, Sounds } from "./useSound";
 import { getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";

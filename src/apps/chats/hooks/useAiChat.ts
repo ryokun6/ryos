@@ -15,7 +15,7 @@ import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { toast } from "@/hooks/useToast";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
-import { AppId } from "@/config/appIds";
+import { AppId } from "@/config/appRegistryData";
 import { appRegistry } from "@/config/appRegistry";
 import { getTranslatedAppName } from "@/utils/i18n";
 import {
