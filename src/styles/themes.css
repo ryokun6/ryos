@@ -318,6 +318,44 @@
   -webkit-font-smoothing: antialiased !important;
 }
 
+/* Win7: Reset 7.css button styling for ghost/toolbar buttons.
+   7.css applies background, border, box-shadow to ALL <button> elements.
+   Ghost buttons (variant="ghost") should be transparent with no 3D chrome. */
+:root[data-os-theme="win7"] button[data-variant="ghost"],
+:root[data-os-theme="win7"] button.\!bg-transparent {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  min-width: unset !important;
+  min-height: unset !important;
+}
+
+:root[data-os-theme="win7"] button[data-variant="ghost"]:hover {
+  background: rgba(0, 0, 0, 0.06) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-os-theme="win7"] button[data-variant="ghost"]:active {
+  background: rgba(0, 0, 0, 0.1) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-os-theme="win7"] button[data-variant="ghost"]::before,
+:root[data-os-theme="win7"] button[data-variant="ghost"]::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Win7: Reset 7.css pseudo-element overlays on all buttons inside windows.
+   7.css adds ::before and ::after with gradient overlays that cause visual artifacts. */
+:root[data-os-theme="win7"] .window button::before,
+:root[data-os-theme="win7"] .window button::after {
+  content: none !important;
+  display: none !important;
+}
+
 /* Windows XP Theme */
 :root[data-os-theme="xp"] {
   --os-font-ui: Tahoma, "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",

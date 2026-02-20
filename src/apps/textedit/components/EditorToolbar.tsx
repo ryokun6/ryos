@@ -46,7 +46,7 @@ export function EditorToolbar({
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
-  const isLegacyToolbarTheme = isXpTheme || currentTheme === "system7";
+  const isLegacyToolbarTheme = (currentTheme === "xp" || currentTheme === "win98" || currentTheme === "system7");
   const isMacOSTheme = currentTheme === "macosx";
 
   const getCurrentHeading = () => {
@@ -303,7 +303,9 @@ export function EditorToolbar({
   return (
     <div
       className={`flex items-center gap-1 p-1 ${
-        isXpTheme
+        currentTheme === "win7"
+          ? "border-b border-[#c0c0c0] bg-[#f0f0f0]"
+          : isXpTheme
           ? "border-b border-[#919b9c]"
           : isMacOSTheme
           ? "bg-transparent"
