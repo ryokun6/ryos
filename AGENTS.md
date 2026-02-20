@@ -101,7 +101,7 @@ vercel dev
 
 - **Skip computer use / GUI-driven testing** unless the user explicitly requests it
 - For most changes, `bun run build` is sufficient to verify the code compiles correctly
-- Only start `vercel dev` when you need to test API endpoints or run the live application
+- **Always use `vercel dev` (not `bun run dev`) when testing the API** — it is the preferred way to run the full application with API routes
 - Only use the `computerUse` subagent for manual browser testing when the user specifically asks for visual verification or UI testing
 
 ## Important Notes
@@ -112,4 +112,5 @@ vercel dev
 - **Build process**: The build generates service worker files (`sw.js`, `workbox-*.js`) which are copied to `.vercel/output/static/`.
 - **API symlink**: `vercel dev` requires an `api -> _api` symlink for local dev. The `dev:vercel` script creates it automatically via `scripts/ensure-api-symlink.sh`. If running `vercel dev` directly, run the symlink script first.
 - **Vercel CLI**: Installed globally via `npm install -g vercel`. Must be logged in and linked to the project for `vercel dev` to pull environment variables.
+- **Vercel auth in cloud**: `vercel dev` needs a `VERCEL_TOKEN` secret plus `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` secrets to authenticate and link the project. Without these, use `bun run dev` for frontend-only development. When the token is available, link with: `vercel link --yes --token "$VERCEL_TOKEN"` then start with `vercel dev --token "$VERCEL_TOKEN"`.
 - **Port conflicts**: If port 3000 is occupied, `vercel dev` auto-increments (3001, etc.). Kill stale processes on 3000 before starting if you need the canonical port.
