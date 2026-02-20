@@ -319,10 +319,10 @@
 }
 
 /* Win7: Reset 7.css button styling for ghost/toolbar buttons.
-   7.css applies background, border, box-shadow to ALL <button> elements.
-   Ghost buttons (variant="ghost") should be transparent with no 3D chrome. */
-:root[data-os-theme="win7"] button[data-variant="ghost"],
-:root[data-os-theme="win7"] button.\!bg-transparent {
+   7.css applies background, border, box-shadow, ::before, ::after to ALL buttons.
+   Ghost and toolbar buttons should be transparent with no 3D chrome. */
+:root[data-os-theme="win7"] button.\!bg-transparent,
+:root[data-os-theme="win7"] button.\!border-none {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -330,30 +330,28 @@
   min-height: unset !important;
 }
 
-:root[data-os-theme="win7"] button[data-variant="ghost"]:hover {
-  background: rgba(0, 0, 0, 0.06) !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-:root[data-os-theme="win7"] button[data-variant="ghost"]:active {
-  background: rgba(0, 0, 0, 0.1) !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-:root[data-os-theme="win7"] button[data-variant="ghost"]::before,
-:root[data-os-theme="win7"] button[data-variant="ghost"]::after {
-  content: none !important;
-  display: none !important;
-}
-
-/* Win7: Reset 7.css pseudo-element overlays on all buttons inside windows.
-   7.css adds ::before and ::after with gradient overlays that cause visual artifacts. */
+/* Win7: Reset 7.css pseudo-element overlays on ALL buttons inside windows.
+   7.css adds ::before (hover gradient) and ::after (active gradient) with
+   opacity transitions on every button. These cause unwanted overlays. */
 :root[data-os-theme="win7"] .window button::before,
 :root[data-os-theme="win7"] .window button::after {
   content: none !important;
   display: none !important;
+  opacity: 0 !important;
+}
+
+/* Win7: Buttons inside windows should have clean Win7 styling, not XP-era 3D. */
+:root[data-os-theme="win7"] .window button {
+  min-width: unset !important;
+  font: inherit !important;
+}
+
+/* Win7: Ghost variant buttons (toolbar icons, etc.) - fully transparent */
+:root[data-os-theme="win7"] .window button[class*="\!bg-transparent"],
+:root[data-os-theme="win7"] .window button[style*="transparent"] {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* Windows XP Theme */
