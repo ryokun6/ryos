@@ -30,7 +30,7 @@ export function usePcLogic({ isWindowOpen, instanceId }: UsePcLogicProps) {
 
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const translatedHelpItems = useTranslatedHelpItems("pc", helpItems);
 
   const handleLoadGame = useCallback(

@@ -11,8 +11,7 @@ interface ThemeState {
 let legacyCssLink: HTMLLinkElement | null = null;
 
 async function ensureLegacyCss(theme: OsThemeId) {
-  // Only xp and win98 use xp.css
-  if (theme !== "xp" && theme !== "win98") {
+  if (theme !== "xp" && theme !== "win98" && theme !== "win7") {
     if (legacyCssLink) {
       legacyCssLink.remove();
       legacyCssLink = null;
@@ -20,13 +19,17 @@ async function ensureLegacyCss(theme: OsThemeId) {
     return;
   }
 
-  const desiredVariant = theme === "xp" ? "XP" : "98";
+  const desiredVariant = theme === "xp" ? "XP" : theme === "win7" ? "7" : "98";
   const currentVariant = legacyCssLink?.dataset.variant;
   if (currentVariant === desiredVariant) return; // already loaded
 
   try {
-    // Use our forked CSS files from public directory
-    const href = theme === "xp" ? "/css/xp-custom.css" : "/css/98-custom.css";
+    const href =
+      theme === "xp"
+        ? "/css/xp-custom.css"
+        : theme === "win7"
+          ? "/css/7-custom.css"
+          : "/css/98-custom.css";
 
     const link = document.createElement("link");
     link.rel = "stylesheet";

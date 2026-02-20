@@ -52,7 +52,7 @@ export function PhotoBoothMenuBar({
   const appId = "photo-booth";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
   const currentTheme = useThemeStore((s) => s.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isMacOsxTheme = currentTheme === "macosx";
 
   return (

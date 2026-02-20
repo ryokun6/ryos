@@ -42,7 +42,7 @@ const SelectTrigger = React.forwardRef<
   const [isPressed, setIsPressed] = React.useState(false);
 
   const isMacOSTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
 
   return (
     <SelectPrimitive.Trigger
@@ -214,7 +214,7 @@ const SelectLabel = React.forwardRef<
   const currentTheme = useThemeStore((state) => state.current);
 
   const isMacOSTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
 
   return (
     <SelectPrimitive.Label
@@ -247,7 +247,7 @@ const SelectItem = React.forwardRef<
   const currentTheme = useThemeStore((state) => state.current);
 
   const isMacOSTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
 
   return (
     <SelectPrimitive.Item
@@ -305,7 +305,7 @@ const SelectItemWithDescription = React.forwardRef<
   const currentTheme = useThemeStore((state) => state.current);
 
   const isMacOSTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
 
   return (
     <SelectPrimitive.Item

@@ -82,7 +82,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   const { username, authToken } = useAuth();
   const isOffline = useOffline();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
 
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);

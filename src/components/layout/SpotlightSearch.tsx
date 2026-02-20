@@ -50,7 +50,7 @@ export function SpotlightSearch() {
   const listRef = useRef<HTMLDivElement>(null);
   const proxyInputRef = useRef<HTMLInputElement>(null);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isSystem7 = currentTheme === "system7";
   const isMac = currentTheme === "macosx" || isSystem7;
   const isMobile = useIsMobile();
