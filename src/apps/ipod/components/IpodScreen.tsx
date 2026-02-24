@@ -440,6 +440,7 @@ export function IpodScreen({
               furiganaMap={furiganaMap}
               soramimiMap={soramimiMap}
               currentTimeMs={(elapsedTime + lyricOffset / 1000) * 1000}
+              coverUrl={coverUrl}
             />
             </div>
           </div>
