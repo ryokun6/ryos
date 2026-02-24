@@ -10,7 +10,7 @@ import type { LanguageModel } from "ai";
 
 // Single source of truth for AI models
 export const AI_MODELS = {
-  "claude-4.5": { name: "claude-4.5", provider: "Anthropic" },
+  "sonnet-4.6": { name: "sonnet-4.6", provider: "Anthropic" },
   "gpt-5.2": { name: "gpt-5.2", provider: "OpenAI" },
   "gemini-3-flash": { name: "gemini-3-flash", provider: "Google" },
   "gemini-3": { name: "gemini-3", provider: "Google" },
@@ -30,8 +30,8 @@ export const getModelInstance = (model: SupportedModel): LanguageModel => {
   const modelToUse: SupportedModel = model ?? DEFAULT_MODEL;
 
   switch (modelToUse) {
-    case "claude-4.5":
-      return anthropic("claude-sonnet-4-5");
+    case "sonnet-4.6":
+      return anthropic("claude-sonnet-4-6");
     case "gpt-5.2":
       return openai("gpt-5.2");
     case "gemini-3-flash":

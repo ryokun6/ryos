@@ -2,8 +2,8 @@
 
 // Single source of truth for AI models
 export const AI_MODELS = {
-  "claude-4.5": {
-    name: "claude-4.5",
+  "sonnet-4.6": {
+    name: "sonnet-4.6",
     provider: "Anthropic",
   },
   "gpt-5.2": {
