@@ -258,8 +258,9 @@ export function IpodScreen({
               }
             }}
           >
-            {/* YouTube player - hidden when display mode is not Video (still provides audio) */}
-            <div style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}>
+            {/* YouTube player - stays rendered when display mode is not Video (provides audio);
+                other display mode backgrounds layer on top via z-index */}
+            <div style={displayMode !== DisplayMode.Video ? { pointerEvents: "none" } : undefined}>
               <ReactPlayer
                 ref={playerRef}
                 url={currentTrack.url}

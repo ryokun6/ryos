@@ -344,7 +344,7 @@ export function KaraokeAppComponent({
           {currentTrack ? (
             <div
               className="absolute inset-0 overflow-hidden"
-              style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}
+              style={displayMode !== DisplayMode.Video ? { zIndex: 0, pointerEvents: "none" } : undefined}
             >
               <div className="w-full h-[calc(100%+400px)] mt-[-200px]">
                 <ReactPlayer
@@ -828,7 +828,7 @@ export function KaraokeAppComponent({
               <div className="relative w-full h-full overflow-hidden">
                 <div
                   className="absolute inset-0 w-full h-full"
-                  style={displayMode !== DisplayMode.Video ? { visibility: "hidden", pointerEvents: "none" } : undefined}
+                  style={displayMode !== DisplayMode.Video ? { zIndex: 0, pointerEvents: "none" } : undefined}
                 >
                   <div
                     className="w-full absolute"

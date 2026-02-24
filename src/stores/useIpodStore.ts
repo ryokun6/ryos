@@ -607,7 +607,7 @@ export const useIpodStore = create<IpodState>()(
         }
         set((state) => ({ showVideo: !state.showVideo }));
       },
-      setDisplayMode: (mode) => set({ displayMode: mode }),
+      setDisplayMode: (mode) => set({ displayMode: mode, showVideo: true }),
       toggleBacklight: () =>
         set((state) => ({ backlightOn: !state.backlightOn })),
       toggleLcdFilter: () =>
