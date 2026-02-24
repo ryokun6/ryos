@@ -247,6 +247,8 @@ export function ControlPanelsAppComponent({
     CLOUD_BACKUP_MAX_SIZE,
   } = useControlPanelsLogic({ initialData });
 
+  const isAdmin = username?.toLowerCase() === "ryo";
+
   const menuBar = (
     <ControlPanelsMenuBar
       onClose={onClose}
@@ -746,26 +748,30 @@ export function ControlPanelsAppComponent({
                   </p>
                 </div>
 
-                <hr
-                  className="my-4 border-t"
-                  style={tabStyles.separatorStyle}
-                />
+                {isAdmin && (
+                  <>
+                    <hr
+                      className="my-4 border-t"
+                      style={tabStyles.separatorStyle}
+                    />
 
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-1">
-                    <Label>{t("apps.control-panels.debugMode")}</Label>
-                    <Label className="text-[11px] text-neutral-600 font-geneva-12">
-                      {t("apps.control-panels.debugModeDescription")}
-                    </Label>
-                  </div>
-                  <Switch
-                    checked={debugMode}
-                    onCheckedChange={setDebugMode}
-                    className="data-[state=checked]:bg-[#000000]"
-                  />
-                </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <Label>{t("apps.control-panels.debugMode")}</Label>
+                        <Label className="text-[11px] text-neutral-600 font-geneva-12">
+                          {t("apps.control-panels.debugModeDescription")}
+                        </Label>
+                      </div>
+                      <Switch
+                        checked={debugMode}
+                        onCheckedChange={setDebugMode}
+                        className="data-[state=checked]:bg-[#000000]"
+                      />
+                    </div>
+                  </>
+                )}
 
-                {debugMode && (
+                {isAdmin && debugMode && (
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <Label>{t("apps.control-panels.shaderEffect")}</Label>
@@ -781,7 +787,7 @@ export function ControlPanelsAppComponent({
                   </div>
                 )}
 
-                {debugMode && (
+                {isAdmin && debugMode && (
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <Label>{t("apps.control-panels.aiModel")}</Label>
@@ -816,7 +822,7 @@ export function ControlPanelsAppComponent({
                   </div>
                 )}
 
-                {debugMode && (
+                {isAdmin && debugMode && (
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <Label>{t("apps.control-panels.ttsModel")}</Label>
@@ -854,7 +860,7 @@ export function ControlPanelsAppComponent({
                   </div>
                 )}
 
-                {debugMode && ttsModel && (
+                {isAdmin && debugMode && ttsModel && (
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <Label>{t("apps.control-panels.ttsVoice")}</Label>
@@ -925,7 +931,7 @@ export function ControlPanelsAppComponent({
                   </div>
                 )}
 
-                {debugMode && (
+                {isAdmin && debugMode && (
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <Label>{t("apps.control-panels.bootScreen")}</Label>
