@@ -113,3 +113,5 @@ vercel dev
 - **API symlink**: `vercel dev` requires an `api -> _api` symlink for local dev. The `dev:vercel` script creates it automatically via `scripts/ensure-api-symlink.sh`. If running `vercel dev` directly, run the symlink script first.
 - **Vercel CLI**: Installed globally via `npm install -g vercel`. Must be logged in and linked to the project for `vercel dev` to pull environment variables.
 - **Port conflicts**: If port 3000 is occupied, `vercel dev` auto-increments (3001, etc.). Kill stale processes on 3000 before starting if you need the canonical port.
+- **Unit tests vs API tests**: The `test:chat-notifications`, `test:pusher-client`, `test:pusher-constructor-wiring`, and `test:chat-wiring` test suites are pure unit tests that run without any server. All other `test:*` scripts are API tests requiring `vercel dev` to be running.
+- **Vercel dev auto-confirms**: Use `vercel dev --yes` in cloud environments to skip interactive project setup prompts.
