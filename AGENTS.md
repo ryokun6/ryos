@@ -1,4 +1,4 @@
-## Cloud-specific instructions
+## Cursor Cloud specific instructions
 
 # ryOS Cloud Environment Guide
 
@@ -11,6 +11,7 @@ This project uses **Bun** as the package manager and runtime. The environment is
 - **Bun** is required (version 1.3.5+)
 - Use `bun install` to install dependencies
 - Use `bun run <script>` to run package.json scripts
+- **Cloud note**: The bun.sh installer (`curl -fsSL https://bun.sh/install`) is blocked by network restrictions. Install via `npm install -g bun@1.3.5` instead.
 
 ### Key Commands
 
