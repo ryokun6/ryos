@@ -2370,8 +2370,16 @@
       },
       "menu": {
         "about": "О Winamp",
+        "controls": "Управление",
         "help": "Справка Winamp",
-        "skins": "Скины"
+        "next": "Далее",
+        "pause": "Пауза",
+        "play": "Воспроизвести",
+        "previous": "Предыдущий",
+        "repeat": "Повтор",
+        "shuffle": "Перемешать",
+        "skins": "Скины",
+        "stop": "Стоп"
       },
       "name": "Winamp",
       "skins": {

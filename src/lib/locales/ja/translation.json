@@ -2370,8 +2370,16 @@
       },
       "menu": {
         "about": "Winamp について",
+        "controls": "コントロール",
         "help": "Winamp ヘルプ",
-        "skins": "スキン"
+        "next": "次へ",
+        "pause": "一時停止",
+        "play": "再生",
+        "previous": "前へ",
+        "repeat": "リピート",
+        "shuffle": "シャッフル",
+        "skins": "スキン",
+        "stop": "停止"
       },
       "name": "Winamp",
       "skins": {

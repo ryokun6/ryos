@@ -95,7 +95,7 @@ export function WinampMenuBar({
       </MenubarMenu>
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
-          {t("apps.winamp.menu.controls", { defaultValue: "Controls" })}
+          {t("apps.winamp.menu.controls")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
@@ -103,26 +103,26 @@ export function WinampMenuBar({
             className="text-md h-6 px-3"
           >
             {isPlaying
-              ? t("apps.winamp.menu.pause", { defaultValue: "Pause" })
-              : t("apps.winamp.menu.play", { defaultValue: "Play" })}
+              ? t("apps.winamp.menu.pause")
+              : t("apps.winamp.menu.play")}
           </MenubarItem>
           <MenubarItem
             onClick={onStopPlayback}
             className="text-md h-6 px-3"
           >
-            {t("apps.winamp.menu.stop", { defaultValue: "Stop" })}
+            {t("apps.winamp.menu.stop")}
           </MenubarItem>
           <MenubarItem
             onClick={onPreviousTrack}
             className="text-md h-6 px-3"
           >
-            {t("apps.winamp.menu.previous", { defaultValue: "Previous" })}
+            {t("apps.winamp.menu.previous")}
           </MenubarItem>
           <MenubarItem
             onClick={onNextTrack}
             className="text-md h-6 px-3"
           >
-            {t("apps.winamp.menu.next", { defaultValue: "Next" })}
+            {t("apps.winamp.menu.next")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarCheckboxItem
@@ -130,14 +130,14 @@ export function WinampMenuBar({
             onCheckedChange={() => onToggleShuffle()}
             className="text-md h-6 px-3"
           >
-            {t("apps.winamp.menu.shuffle", { defaultValue: "Shuffle" })}
+            {t("apps.winamp.menu.shuffle")}
           </MenubarCheckboxItem>
           <MenubarCheckboxItem
             checked={isRepeatEnabled}
             onCheckedChange={() => onToggleRepeat()}
             className="text-md h-6 px-3"
           >
-            {t("apps.winamp.menu.repeat", { defaultValue: "Repeat" })}
+            {t("apps.winamp.menu.repeat")}
           </MenubarCheckboxItem>
         </MenubarContent>
       </MenubarMenu>
