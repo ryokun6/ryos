@@ -1399,7 +1399,7 @@
         "enableRomanization": "啟用羅馬拼音",
         "exportLibrary": "輸出資料庫...",
         "file": "檔案",
-        "fontGoldGlow": "金色光暈",
+        "fontGoldGlow": "光暈",
         "fontGradient": "漸層",
         "fontRounded": "圓體",
         "fontSansSerif": "無襯線體",
@@ -1462,7 +1462,7 @@
       "name": "iPod",
       "status": {
         "added": "♬ 已新增",
-        "fontGoldGlow": "字體：金色光暈",
+        "fontGoldGlow": "字體：光暈",
         "fontGradient": "字體：漸層",
         "fontRounded": "字體：圓體",
         "fontSansSerif": "字體：無襯線體",

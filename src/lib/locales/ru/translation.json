@@ -1399,7 +1399,7 @@
         "enableRomanization": "Включить романизацию",
         "exportLibrary": "Экспорт медиатеки...",
         "file": "Файл",
-        "fontGoldGlow": "Золотое сияние",
+        "fontGoldGlow": "Сияние",
         "fontGradient": "Градиент",
         "fontRounded": "Скругленный",
         "fontSansSerif": "Без засечек",
@@ -1462,7 +1462,7 @@
       "name": "iPod",
       "status": {
         "added": "♬ Добавлено",
-        "fontGoldGlow": "Шрифт: Золотое сияние",
+        "fontGoldGlow": "Шрифт: Сияние",
         "fontGradient": "Шрифт: Градиент",
         "fontRounded": "Шрифт: Скругленный",
         "fontSansSerif": "Шрифт: Без засечек",

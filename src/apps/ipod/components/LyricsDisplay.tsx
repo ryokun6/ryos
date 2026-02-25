@@ -178,7 +178,7 @@ const OLD_SCHOOL_PADDING_BOTTOM = "0.2em";
 // Serif Red (Japanese classic) - same outline style but with red highlight
 const SERIF_RED_HIGHLIGHT_COLOR = "#CC0000";
 
-// Gold Glow fallback color (used when no album art is available)
+// Glow fallback color (used when no album art is available)
 const GOLD_GLOW_COLOR_FALLBACK = "#FFD700";
 
 /** Parse "#rrggbb" to [r, g, b] */

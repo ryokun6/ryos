@@ -22,7 +22,7 @@ export enum LyricsFont {
   Serif = "serif",
   Rounded = "rounded",
   SerifRed = "serif-red",      // Japanese classic: serif + red outline
-  GoldGlow = "gold-glow",      // Warm karaoke bar: rounded + gold glow
+  GoldGlow = "gold-glow",      // Glow: rounded + album art primary color glow
   Gradient = "gradient",       // Modern: gradient fill (blue → cyan)
 }
 

@@ -1399,7 +1399,7 @@
         "enableRomanization": "読み仮名を有効化",
         "exportLibrary": "ライブラリを書き出す...",
         "file": "ファイル",
-        "fontGoldGlow": "ゴールド",
+        "fontGoldGlow": "グロウ",
         "fontGradient": "グラデーション",
         "fontRounded": "丸ゴシック",
         "fontSansSerif": "ゴシック",
@@ -1462,7 +1462,7 @@
       "name": "iPod",
       "status": {
         "added": "♬ 追加しました",
-        "fontGoldGlow": "フォント: ゴールド",
+        "fontGoldGlow": "フォント: グロウ",
         "fontGradient": "フォント: グラデーション",
         "fontRounded": "フォント: 丸ゴシック",
         "fontSansSerif": "フォント: ゴシック",

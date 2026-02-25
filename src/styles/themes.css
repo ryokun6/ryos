@@ -1305,7 +1305,7 @@
   font-smooth: auto !important;
 }
 
-/* Preserve gold-glow lyrics font on macOS theme (warm karaoke bar style) */
+/* Preserve glow lyrics font on macOS theme */
 :root[data-os-theme="macosx"] .ipod-force-font .font-lyrics-gold-glow,
 :root[data-os-theme="macosx"] .karaoke-force-font .font-lyrics-gold-glow {
   font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",

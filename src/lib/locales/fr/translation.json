@@ -1399,7 +1399,7 @@
         "enableRomanization": "Activer la romanisation",
         "exportLibrary": "Exporter la bibliothèque...",
         "file": "Fichier",
-        "fontGoldGlow": "Lueur dorée",
+        "fontGoldGlow": "Lueur",
         "fontGradient": "Dégradé",
         "fontRounded": "Arrondi",
         "fontSansSerif": "Sans empattement",
@@ -1462,7 +1462,7 @@
       "name": "iPod",
       "status": {
         "added": "♬ Ajouté",
-        "fontGoldGlow": "Police : Lueur dorée",
+        "fontGoldGlow": "Police : Lueur",
         "fontGradient": "Police : Dégradé",
         "fontRounded": "Police : Arrondi",
         "fontSansSerif": "Police : Sans empattement",
