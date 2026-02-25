@@ -1399,7 +1399,7 @@
         "enableRomanization": "Activar Romanización",
         "exportLibrary": "Exportar biblioteca...",
         "file": "Archivo",
-        "fontGoldGlow": "Brillo dorado",
+        "fontGoldGlow": "Brillo",
         "fontGradient": "Degradado",
         "fontRounded": "Redondeada",
         "fontSansSerif": "Sans Serif",
@@ -1462,7 +1462,7 @@
       "name": "iPod",
       "status": {
         "added": "♬ Añadido",
-        "fontGoldGlow": "Fuente: Brillo dorado",
+        "fontGoldGlow": "Fuente: Brillo",
         "fontGradient": "Fuente: Degradado",
         "fontRounded": "Fuente: Redondeada",
         "fontSansSerif": "Fuente: Sans Serif",

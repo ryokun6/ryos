@@ -1399,7 +1399,7 @@
         "enableRomanization": "Romanisierung aktivieren",
         "exportLibrary": "Mediathek exportieren...",
         "file": "Datei",
-        "fontGoldGlow": "Gold-Glühen",
+        "fontGoldGlow": "Glühen",
         "fontGradient": "Farbverlauf",
         "fontRounded": "Abgerundet",
         "fontSansSerif": "Sans Serif",
@@ -1462,7 +1462,7 @@
       "name": "iPod",
       "status": {
         "added": "♬ Hinzugefügt",
-        "fontGoldGlow": "Schriftart: Gold-Glühen",
+        "fontGoldGlow": "Schriftart: Glühen",
         "fontGradient": "Schriftart: Farbverlauf",
         "fontRounded": "Schriftart: Abgerundet",
         "fontSansSerif": "Schriftart: Sans Serif",

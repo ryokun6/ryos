@@ -436,7 +436,7 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
-  /* Gold Glow - Warm karaoke bar style (uses rounded font) */
+  /* Glow - Album art primary color glow style (uses rounded font) */
   .font-lyrics-gold-glow {
     font-family: "VAGRounded", "Kosugi Maru", "Hiragino Maru Gothic ProN",
       "Nanum Gothic", "Yuanti SC", ui-rounded, sans-serif;

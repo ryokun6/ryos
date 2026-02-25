@@ -1668,7 +1668,7 @@ export function useIpodLogic({
     const store = useIpodStore.getState();
     const curr = store.lyricsFont;
     let next: LyricsFont;
-    // Cycle: Rounded → Serif → SansSerif → SerifRed → GoldGlow → Gradient → Rounded
+    // Cycle: Rounded → Serif → SansSerif → SerifRed → Glow → Gradient → Rounded
     switch (curr) {
       case LyricsFont.Rounded: next = LyricsFont.Serif; break;
       case LyricsFont.Serif: next = LyricsFont.SansSerif; break;

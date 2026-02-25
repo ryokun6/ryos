@@ -1399,7 +1399,7 @@
         "enableRomanization": "발음 표기 활성화",
         "exportLibrary": "보관함 내보내기...",
         "file": "파일",
-        "fontGoldGlow": "골드 글로우",
+        "fontGoldGlow": "글로우",
         "fontGradient": "그라데이션",
         "fontRounded": "둥근",
         "fontSansSerif": "산세리프",
@@ -1462,7 +1462,7 @@
       "name": "iPod",
       "status": {
         "added": "♬ 추가됨",
-        "fontGoldGlow": "글꼴: 골드 글로우",
+        "fontGoldGlow": "글꼴: 글로우",
         "fontGradient": "글꼴: 그라데이션",
         "fontRounded": "글꼴: 둥근",
         "fontSansSerif": "글꼴: 산세리프",

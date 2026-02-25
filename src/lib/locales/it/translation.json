@@ -1399,7 +1399,7 @@
         "enableRomanization": "Attiva romanizzazione",
         "exportLibrary": "Esporta libreria...",
         "file": "File",
-        "fontGoldGlow": "Bagliore dorato",
+        "fontGoldGlow": "Bagliore",
         "fontGradient": "Sfumatura",
         "fontRounded": "Arrotondato",
         "fontSansSerif": "Sans Serif",
@@ -1462,7 +1462,7 @@
       "name": "iPod",
       "status": {
         "added": "♬ Aggiunta",
-        "fontGoldGlow": "Carattere: Bagliore dorato",
+        "fontGoldGlow": "Carattere: Bagliore",
         "fontGradient": "Carattere: Sfumatura",
         "fontRounded": "Carattere: Arrotondato",
         "fontSansSerif": "Carattere: Sans Serif",

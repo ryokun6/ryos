@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { useCoverPalette } from "@/hooks/useCoverPalette";
 import { useShallow } from "zustand/react/shallow";
 import { toRomaji } from "wanakana";
 import {
@@ -76,6 +77,8 @@ interface LyricsDisplayProps {
   currentTimeMs?: number;
   /** Callback to seek to a specific time in ms */
   onSeekToTime?: (timeMs: number) => void;
+  /** Cover art URL for extracting primary color (used by glow-gold style) */
+  coverUrl?: string | null;
 }
 
 const ANIMATION_CONFIG = {
@@ -175,11 +178,88 @@ const OLD_SCHOOL_PADDING_BOTTOM = "0.2em";
 // Serif Red (Japanese classic) - same outline style but with red highlight
 const SERIF_RED_HIGHLIGHT_COLOR = "#CC0000";
 
-// Gold Glow (Warm karaoke bar) - soft golden glow effect
-const GOLD_GLOW_COLOR = "#FFD700";
-const GOLD_GLOW_SHADOW = "0 0 8px rgba(255,215,0,0.8), 0 0 16px rgba(255,215,0,0.4), 0 0 6px rgba(0,0,0,0.5)";
-const GOLD_GLOW_FILTER = "drop-shadow(0 0 8px rgba(255,215,0,0.5))";
-const GOLD_BASE_COLOR = "rgba(255, 215, 0, 0.6)"; // Dimmed gold for inactive
+// Glow fallback color (used when no album art is available)
+const GOLD_GLOW_COLOR_FALLBACK = "#FFD700";
+
+/** Parse "#rrggbb" to [r, g, b] */
+function hexToRgb(hex: string): [number, number, number] {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!m) return [255, 215, 0];
+  return [parseInt(m[1]!, 16), parseInt(m[2]!, 16), parseInt(m[3]!, 16)];
+}
+
+/** RGB → HSL saturation (0-1) */
+function rgbSaturation(r: number, g: number, b: number): number {
+  const rn = r / 255, gn = g / 255, bn = b / 255;
+  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
+  if (max === min) return 0;
+  const l = (max + min) / 2;
+  return l > 0.5 ? (max - min) / (2 - max - min) : (max - min) / (max + min);
+}
+
+/** Pick the most vibrant (highest saturation, moderate lightness) color from a palette */
+function pickPrimaryColor(palette: string[]): string {
+  let best = palette[0] ?? GOLD_GLOW_COLOR_FALLBACK;
+  let bestScore = -1;
+  for (const hex of palette) {
+    const [r, g, b] = hexToRgb(hex);
+    const sat = rgbSaturation(r, g, b);
+    const lightness = (r + g + b) / (3 * 255);
+    // Prefer saturated colors with moderate lightness (not too dark/light)
+    const lightnessBoost = 1 - Math.abs(lightness - 0.5) * 2;
+    const score = sat * 0.7 + lightnessBoost * 0.3;
+    if (score > bestScore) {
+      bestScore = score;
+      best = hex;
+    }
+  }
+  return best;
+}
+
+/** Boost saturation and brightness of a hex color so it pops as a glow */
+function boostGlowColor(hex: string): string {
+  const [r, g, b] = hexToRgb(hex);
+  let rn = r / 255, gn = g / 255, bn = b / 255;
+  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
+  let h = 0;
+  const l = (max + min) / 2;
+  const d = max - min;
+  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  if (d !== 0) {
+    if (max === rn) h = ((gn - bn) / d + 6) % 6;
+    else if (max === gn) h = (bn - rn) / d + 2;
+    else h = (rn - gn) / d + 4;
+    h /= 6;
+  }
+  // Boost saturation to at least 0.85, lightness to at least 0.55
+  const boostedS = Math.max(s, 0.85);
+  const boostedL = Math.max(Math.min(l, 0.65), 0.55);
+  const hsl2rgb = (p: number, q: number, t: number) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  const q = boostedL < 0.5 ? boostedL * (1 + boostedS) : boostedL + boostedS - boostedL * boostedS;
+  const p = 2 * boostedL - q;
+  const ro = Math.round(hsl2rgb(p, q, h + 1 / 3) * 255);
+  const go = Math.round(hsl2rgb(p, q, h) * 255);
+  const bo = Math.round(hsl2rgb(p, q, h - 1 / 3) * 255);
+  return `#${ro.toString(16).padStart(2, "0")}${go.toString(16).padStart(2, "0")}${bo.toString(16).padStart(2, "0")}`;
+}
+
+/** Generate glow CSS values from a hex color */
+function makeGlowFromColor(hex: string) {
+  const [r, g, b] = hexToRgb(hex);
+  return {
+    color: hex,
+    shadow: `0 0 8px rgba(${r},${g},${b},0.8), 0 0 16px rgba(${r},${g},${b},0.4), 0 0 6px rgba(0,0,0,0.5)`,
+    filter: `drop-shadow(0 0 8px rgba(${r},${g},${b},0.5))`,
+    baseColor: `rgba(${r},${g},${b},0.6)`,
+  };
+}
 
 // Gradient (Rainbow) - cyan starting color, hue-rotate animates both text and glow together
 const GRADIENT_COLORS = "#00FFFF"; // Cyan starting color (hue-rotate will cycle it)
@@ -1067,6 +1147,7 @@ export function LyricsDisplay({
   soramimiMap = new Map(),
   currentTimeMs,
   onSeekToTime,
+  coverUrl,
 }: LyricsDisplayProps) {
   const { t } = useTranslation();
 
@@ -1318,14 +1399,22 @@ export function LyricsDisplay({
   // Detect style category and whether to use outline styling
   const styleCategory = getStyleCategory(fontClassName);
   const isOldSchoolKaraoke = styleCategory === 'outline-blue' || styleCategory === 'outline-red';
+
+  // Extract primary color from album art for the glow-gold style
+  const palette = useCoverPalette(styleCategory === 'glow-gold' ? (coverUrl ?? null) : null);
+  const primaryGlow = useMemo(() => {
+    const raw = pickPrimaryColor(palette);
+    const boosted = boostGlowColor(raw);
+    return makeGlowFromColor(boosted);
+  }, [palette]);
   
   // Get the highlight color based on style category (returns gradient string for gradient style)
   const getHighlightColor = (): string => {
     switch (styleCategory) {
       case 'outline-blue': return OLD_SCHOOL_HIGHLIGHT_COLOR;
       case 'outline-red': return SERIF_RED_HIGHLIGHT_COLOR;
-      case 'glow-gold': return GOLD_GLOW_COLOR;
-      case 'glow-gradient': return GRADIENT_COLORS; // Returns gradient string
+      case 'glow-gold': return primaryGlow.color;
+      case 'glow-gradient': return GRADIENT_COLORS;
       default: return "rgba(255, 255, 255, 1)";
     }
   };
@@ -1334,7 +1423,7 @@ export function LyricsDisplay({
   const getGlowShadow = (isHighlight: boolean): string => {
     if (isOldSchoolKaraoke) return "none";
     switch (styleCategory) {
-      case 'glow-gold': return isHighlight ? GOLD_GLOW_SHADOW : BASE_SHADOW;
+      case 'glow-gold': return isHighlight ? primaryGlow.shadow : BASE_SHADOW;
       case 'glow-gradient': return isHighlight ? GRADIENT_GLOW_SHADOW : BASE_SHADOW;
       default: return isHighlight ? GLOW_SHADOW : BASE_SHADOW;
     }
@@ -1344,7 +1433,7 @@ export function LyricsDisplay({
   const getGlowFilter = (): string => {
     if (isOldSchoolKaraoke) return "none";
     switch (styleCategory) {
-      case 'glow-gold': return GOLD_GLOW_FILTER;
+      case 'glow-gold': return primaryGlow.filter;
       case 'glow-gradient': return GRADIENT_GLOW_FILTER;
       default: return GLOW_FILTER;
     }
@@ -1353,7 +1442,7 @@ export function LyricsDisplay({
   // Get base color for colored glow styles (inactive state)
   const getBaseColor = (): string | undefined => {
     switch (styleCategory) {
-      case 'glow-gold': return GOLD_BASE_COLOR;
+      case 'glow-gold': return primaryGlow.baseColor;
       case 'glow-gradient': return GRADIENT_BASE_COLOR;
       default: return undefined;
     }

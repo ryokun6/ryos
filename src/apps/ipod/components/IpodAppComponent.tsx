@@ -635,6 +635,7 @@ export function IpodAppComponent({
                         soramimiMap={soramimiMap}
                         currentTimeMs={(elapsedTime + (currentTrack?.lyricOffset ?? 0) / 1000) * 1000}
                         onSeekToTime={seekToTime}
+                        coverUrl={fullscreenCoverUrl}
                       />
                     </div>
                   )}
