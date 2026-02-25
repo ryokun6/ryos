@@ -15,6 +15,7 @@ import { useShallow } from "zustand/react/shallow";
 // Re-export types and presets for consumers
 export type { ScaleOption, MacPreset, ScreenData } from "@/stores/useInfiniteMacStore";
 export { MAC_PRESETS } from "@/stores/useInfiniteMacStore";
+export { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR } from "../metadata";
 
 /** Same-origin wrapper URL with COEP/COOP for SharedArrayBuffer; params are forwarded to infinitemac.org */
 function buildWrapperUrl(preset: MacPreset, scale: number = 1): string {
@@ -31,13 +32,6 @@ function buildWrapperUrl(preset: MacPreset, scale: number = 1): string {
 
 // Default window size for the preset grid (content only)
 export const DEFAULT_WINDOW_SIZE = { width: 640, height: 480 };
-
-// Default window size including titlebar (for app registry initial size)
-const DEFAULT_TITLEBAR_HEIGHT = 24; // matches TITLEBAR_HEIGHT_BY_THEME fallback
-export const DEFAULT_WINDOW_SIZE_WITH_TITLEBAR = {
-  width: DEFAULT_WINDOW_SIZE.width,
-  height: DEFAULT_WINDOW_SIZE.height + DEFAULT_TITLEBAR_HEIGHT,
-};
 
 // Titlebar height per theme so auto-resize fits content + titlebar
 // (matches WindowFrame / themes.css)
