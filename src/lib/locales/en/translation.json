@@ -2411,7 +2411,15 @@
       "menu": {
         "help": "Winamp Help",
         "about": "About Winamp",
-        "skins": "Skins"
+        "skins": "Skins",
+        "controls": "Controls",
+        "play": "Play",
+        "pause": "Pause",
+        "stop": "Stop",
+        "previous": "Previous",
+        "next": "Next",
+        "shuffle": "Shuffle",
+        "repeat": "Repeat"
       },
       "skins": {
         "default": "Default"

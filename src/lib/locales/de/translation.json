@@ -2370,8 +2370,16 @@
       },
       "menu": {
         "about": "Über Winamp",
+        "controls": "Steuerelemente",
         "help": "Winamp-Hilfe",
-        "skins": "Skins"
+        "next": "Nächster",
+        "pause": "Pause",
+        "play": "Wiedergabe",
+        "previous": "Vorheriger",
+        "repeat": "Wiederholen",
+        "shuffle": "Zufallswiedergabe",
+        "skins": "Skins",
+        "stop": "Stopp"
       },
       "name": "Winamp",
       "skins": {

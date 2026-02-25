@@ -2370,8 +2370,16 @@
       },
       "menu": {
         "about": "Winamp 정보",
+        "controls": "제어",
         "help": "Winamp 도움말",
-        "skins": "스킨"
+        "next": "다음",
+        "pause": "일시 정지",
+        "play": "재생",
+        "previous": "이전",
+        "repeat": "반복",
+        "shuffle": "뒤섞기",
+        "skins": "스킨",
+        "stop": "정지"
       },
       "name": "Winamp",
       "skins": {
