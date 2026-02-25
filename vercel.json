@@ -220,7 +220,10 @@
     { "source": "/pc", "destination": "/" },
     { "source": "/terminal", "destination": "/" },
     { "source": "/control-panels", "destination": "/" },
-    { "source": "/infinite-mac", "destination": "/" }
+    { "source": "/infinite-mac", "destination": "/" },
+    { "source": "/winamp", "destination": "/" },
+    { "source": "/stickies", "destination": "/" },
+    { "source": "/listen/:sessionId", "destination": "/" }
   ],
   "redirects": [
     { "source": "/docs", "destination": "/docs/overview", "permanent": false },
