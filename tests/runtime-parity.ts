@@ -693,6 +693,29 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsExtractMemoriesUnauthorized.status === 401,
     `vps ai/extract-memories unauthorized expected 401, got ${vpsExtractMemoriesUnauthorized.status}`
   );
+
+  const processDailyNotesInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+    },
+  };
+  const vercelProcessDailyNotesUnauthorized = await fetch(
+    `${vercelBaseUrl}/api/ai/process-daily-notes`,
+    processDailyNotesInit
+  );
+  const vpsProcessDailyNotesUnauthorized = await fetch(
+    `${vpsBaseUrl}/api/ai/process-daily-notes`,
+    processDailyNotesInit
+  );
+  assert(
+    vercelProcessDailyNotesUnauthorized.status === 401,
+    `vercel ai/process-daily-notes unauthorized expected 401, got ${vercelProcessDailyNotesUnauthorized.status}`
+  );
+  assert(
+    vpsProcessDailyNotesUnauthorized.status === 401,
+    `vps ai/process-daily-notes unauthorized expected 401, got ${vpsProcessDailyNotesUnauthorized.status}`
+  );
 }
 
 interface AuthFlowResult {
