@@ -171,6 +171,25 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsSpeechMissing.status === 400,
     `vps speech missing text expected 400, got ${vpsSpeechMissing.status}`
   );
+
+  const pusherInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ channel: "test", event: "noop", data: {} }),
+  };
+  const vercelPusherForbidden = await fetch(`${vercelBaseUrl}/api/pusher/broadcast`, pusherInit);
+  const vpsPusherForbidden = await fetch(`${vpsBaseUrl}/api/pusher/broadcast`, pusherInit);
+  assert(
+    vercelPusherForbidden.status === vpsPusherForbidden.status,
+    `pusher/broadcast status mismatch: vercel=${vercelPusherForbidden.status} vps=${vpsPusherForbidden.status}`
+  );
+  assert(
+    [200, 403].includes(vercelPusherForbidden.status),
+    `unexpected pusher/broadcast status ${vercelPusherForbidden.status}`
+  );
 }
 
 interface AuthFlowResult {
