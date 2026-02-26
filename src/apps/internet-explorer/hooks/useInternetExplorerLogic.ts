@@ -19,7 +19,7 @@ import {
 } from "@/stores/useInternetExplorerStore";
 import { useAiGeneration } from "./useAiGeneration";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
-import { track } from "@vercel/analytics";
+import { track } from "@/lib/analytics";
 import { useAppStore } from "@/stores/useAppStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";

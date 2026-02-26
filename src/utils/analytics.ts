@@ -5,7 +5,7 @@
  * Events follow the pattern: `category:action` or `app:action`
  * 
  * Usage:
- *   import { track } from "@vercel/analytics";
+ *   import { track } from "@/lib/analytics";
  *   import { APP_ANALYTICS } from "@/utils/analytics";
  *   track(APP_ANALYTICS.LAUNCH, { appId: "finder" });
  */

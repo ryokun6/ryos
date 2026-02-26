@@ -1,7 +1,7 @@
 import { Command, CommandResult } from "../types";
 import { useTerminalStore } from "@/stores/useTerminalStore";
 import { useChatsStore } from "@/stores/useChatsStore";
-import { track } from "@vercel/analytics";
+import { track } from "@/lib/analytics";
 import { TERMINAL_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 

@@ -7,7 +7,6 @@ import {
   stepCountIs,
   type UIMessage,
 } from "ai";
-import { geolocation } from "@vercel/functions";
 import { google } from "@ai-sdk/google";
 import {
   SupportedModel,
@@ -30,6 +29,7 @@ import { validateAuth } from "./_utils/auth/index.js";
 import { Redis } from "@upstash/redis";
 import { initLogger } from "./_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
+import { getRequestGeolocation } from "./_utils/_geolocation.js";
 import { createChatTools } from "./chat/tools/index.js";
 
 // Helper to ensure messages are in UIMessage format for AI SDK v6
@@ -624,50 +624,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
-    // --- Geolocation (available only on deployed environment) ---
-    // geolocation() requires Web Request headers, which aren't available in vercel dev.
-    // On VPS, fall back to proxy-provided geo headers when available.
-    let geo: ReturnType<typeof geolocation> = {};
-    try {
-      // Only works with Web Request in production, fails in vercel dev with VercelRequest
-      geo = geolocation(req as unknown as Request);
-    } catch {
-      // In local dev, geolocation isn't available - use empty object
-      geo = {};
-    }
-
-    if (!geo || Object.keys(geo).length === 0) {
-      const city =
-        getHeader(req, "x-vercel-ip-city") ||
-        getHeader(req, "cf-ipcity") ||
-        getHeader(req, "x-geo-city") ||
-        undefined;
-      const region =
-        getHeader(req, "x-vercel-ip-country-region") ||
-        getHeader(req, "x-geo-region") ||
-        undefined;
-      const country =
-        getHeader(req, "x-vercel-ip-country") ||
-        getHeader(req, "cf-ipcountry") ||
-        getHeader(req, "x-geo-country") ||
-        undefined;
-      const latitude =
-        getHeader(req, "x-vercel-ip-latitude") ||
-        getHeader(req, "x-geo-latitude") ||
-        undefined;
-      const longitude =
-        getHeader(req, "x-vercel-ip-longitude") ||
-        getHeader(req, "x-geo-longitude") ||
-        undefined;
-
-      geo = {
-        ...(city ? { city } : {}),
-        ...(region ? { region } : {}),
-        ...(country ? { country } : {}),
-        ...(latitude ? { latitude } : {}),
-        ...(longitude ? { longitude } : {}),
-      };
-    }
+    const geo = getRequestGeolocation(req);
 
     // Attach geolocation info to system state that will be sent to the prompt
     const systemState: SystemState | undefined = incomingSystemState

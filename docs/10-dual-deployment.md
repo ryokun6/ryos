@@ -33,6 +33,8 @@ Dual-runtime / CORS variables:
 Frontend override:
 
 - `VITE_API_BASE_URL=https://api.example.com` when frontend and API are split-host.
+- `VITE_APP_ENV=production|preview|development` (optional client runtime hint)
+- `VITE_ANALYTICS_PROVIDER=vercel|none` (`none` disables analytics event emission)
 
 ---
 

@@ -4,7 +4,7 @@ import { AppId, getWindowConfig, getMobileWindowSize } from "@/config/appRegistr
 import { useAppletStore } from "@/stores/useAppletStore";
 import { AppState } from "@/apps/base/types";
 import { AIModel } from "@/types/aiModels";
-import { track } from "@vercel/analytics";
+import { track } from "@/lib/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 export type { AIModel } from "@/types/aiModels";
 

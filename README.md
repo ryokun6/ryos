@@ -122,6 +122,8 @@ The API now supports explicit origin allowlists via environment variables:
 When frontend and API are on different hosts, set:
 
 - `VITE_API_BASE_URL=https://api.example.com`
+- `VITE_APP_ENV=production|preview|development` (optional runtime env hint for client logic)
+- `VITE_ANALYTICS_PROVIDER=vercel|none` (set `none` to disable analytics on VPS/self-hosted targets)
 
 If unset, web builds use relative URLs (same-origin), and Tauri still defaults to `https://os.ryo.lu`.
 
