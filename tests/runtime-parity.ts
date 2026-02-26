@@ -716,6 +716,17 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsProcessDailyNotesUnauthorized.status === 401,
     `vps ai/process-daily-notes unauthorized expected 401, got ${vpsProcessDailyNotesUnauthorized.status}`
   );
+
+  const vercelAppletAiMethod = await fetch(`${vercelBaseUrl}/api/applet-ai`, usersInit);
+  const vpsAppletAiMethod = await fetch(`${vpsBaseUrl}/api/applet-ai`, usersInit);
+  assert(
+    vercelAppletAiMethod.status === 405,
+    `vercel applet-ai method expected 405, got ${vercelAppletAiMethod.status}`
+  );
+  assert(
+    vpsAppletAiMethod.status === 405,
+    `vps applet-ai method expected 405, got ${vpsAppletAiMethod.status}`
+  );
 }
 
 interface AuthFlowResult {
