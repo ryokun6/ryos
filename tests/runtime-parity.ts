@@ -190,6 +190,34 @@ async function testUsersAndBulkParity(): Promise<void> {
     [200, 403].includes(vercelPusherForbidden.status),
     `unexpected pusher/broadcast status ${vercelPusherForbidden.status}`
   );
+
+  const vercelListenList = await fetch(`${vercelBaseUrl}/api/listen/sessions`, usersInit);
+  const vpsListenList = await fetch(`${vpsBaseUrl}/api/listen/sessions`, usersInit);
+  assert(
+    vercelListenList.status === 200,
+    `vercel listen/sessions list expected 200, got ${vercelListenList.status}`
+  );
+  assert(
+    vpsListenList.status === 200,
+    `vps listen/sessions list expected 200, got ${vpsListenList.status}`
+  );
+
+  const vercelListenGetMissing = await fetch(
+    `${vercelBaseUrl}/api/listen/sessions/nonexistent123`,
+    usersInit
+  );
+  const vpsListenGetMissing = await fetch(
+    `${vpsBaseUrl}/api/listen/sessions/nonexistent123`,
+    usersInit
+  );
+  assert(
+    vercelListenGetMissing.status === 404,
+    `vercel listen/sessions/[id] missing expected 404, got ${vercelListenGetMissing.status}`
+  );
+  assert(
+    vpsListenGetMissing.status === 404,
+    `vps listen/sessions/[id] missing expected 404, got ${vpsListenGetMissing.status}`
+  );
 }
 
 interface AuthFlowResult {

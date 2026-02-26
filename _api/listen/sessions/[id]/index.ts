@@ -4,18 +4,14 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { assertValidRoomId } from "../../../_utils/_validation.js";
 import { initLogger } from "../../../_utils/_logging.js";
 import {
   isAllowedOrigin,
   getEffectiveOrigin,
   setCorsHeaders,
 } from "../../../_utils/_cors.js";
-import {
-  getSession,
-  touchSession,
-} from "../../_helpers/_redis.js";
 import { runtime, maxDuration } from "../../_helpers/_constants.js";
+import { executeListenSessionGetCore } from "../../../cores/listen-session-get-core.js";
 
 export { runtime, maxDuration };
 
@@ -41,48 +37,17 @@ export default async function handler(
   setCorsHeaders(res, origin, { methods: ["GET", "OPTIONS"] });
   res.setHeader("Content-Type", "application/json");
 
-  if (!isAllowedOrigin(origin)) {
-    logger.response(403, Date.now() - startTime);
-    res.status(403).json({ error: "Unauthorized" });
-    return;
-  }
+  const result = await executeListenSessionGetCore({
+    originAllowed: isAllowedOrigin(origin),
+    method: req.method,
+    sessionId,
+  });
 
-  if (!sessionId) {
-    logger.response(400, Date.now() - startTime);
-    res.status(400).json({ error: "Session ID is required" });
-    return;
-  }
-
-  try {
-    assertValidRoomId(sessionId, "listen-session-get");
-  } catch (error) {
-    logger.response(400, Date.now() - startTime);
-    res.status(400).json({ error: error instanceof Error ? error.message : "Invalid session ID" });
-    return;
-  }
-
-  if (req.method !== "GET") {
-    logger.response(405, Date.now() - startTime);
-    res.status(405).json({ error: "Method not allowed" });
-    return;
-  }
-
-  try {
-    const session = await getSession(sessionId);
-    if (!session) {
-      logger.response(404, Date.now() - startTime);
-      res.status(404).json({ error: "Session not found" });
-      return;
-    }
-
-    await touchSession(sessionId);
-
+  if (result.status === 200) {
     logger.info("Listen session fetched", { sessionId });
-    logger.response(200, Date.now() - startTime);
-    res.status(200).json({ session });
-  } catch (error) {
-    logger.error("Failed to fetch listen session", error);
-    logger.response(500, Date.now() - startTime);
-    res.status(500).json({ error: "Failed to fetch session" });
+  } else if (result.status >= 500) {
+    logger.error("Failed to fetch listen session");
   }
+  logger.response(result.status, Date.now() - startTime);
+  res.status(result.status).json(result.body);
 }
