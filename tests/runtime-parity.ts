@@ -142,6 +142,31 @@ async function testSongsNotFoundParity(): Promise<void> {
     vpsTranslateMissingLanguage.status === 400,
     `vps songs/[id] translate missing language expected 400, got ${vpsTranslateMissingLanguage.status}`
   );
+
+  const clearCachedDataInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action: "clear-cached-data" }),
+  };
+  const vercelClearCachedDataMissingSong = await fetch(
+    `${vercelBaseUrl}/api/songs/aaaaaaaaaaa`,
+    clearCachedDataInit
+  );
+  const vpsClearCachedDataMissingSong = await fetch(
+    `${vpsBaseUrl}/api/songs/aaaaaaaaaaa`,
+    clearCachedDataInit
+  );
+  assert(
+    vercelClearCachedDataMissingSong.status === 404,
+    `vercel songs/[id] clear-cached-data missing song expected 404, got ${vercelClearCachedDataMissingSong.status}`
+  );
+  assert(
+    vpsClearCachedDataMissingSong.status === 404,
+    `vps songs/[id] clear-cached-data missing song expected 404, got ${vpsClearCachedDataMissingSong.status}`
+  );
 }
 
 async function testIframeCheckParity(): Promise<void> {

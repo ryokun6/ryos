@@ -39,6 +39,7 @@ import { executeSongsGetCore } from "../cores/songs-get-core.js";
 import { executeSongsDeleteCore } from "../cores/songs-delete-core.js";
 import { executeSongsSearchLyricsCore } from "../cores/songs-search-lyrics-core.js";
 import { executeSongsTranslateCore } from "../cores/songs-translate-core.js";
+import { executeSongsClearCachedDataCore } from "../cores/songs-clear-cached-data-core.js";
 
 // Import from split modules
 import {
@@ -47,7 +48,6 @@ import {
   TranslateStreamSchema,
   FuriganaStreamSchema,
   SoramimiStreamSchema,
-  ClearCachedDataSchema,
   UnshareSongSchema,
 } from "./_constants.js";
 
@@ -1461,56 +1461,33 @@ Output:
       // Handle clear-cached-data action - clears translations and/or furigana
       // =======================================================================
       if (action === "clear-cached-data") {
-        const parsed = ClearCachedDataSchema.safeParse(bodyObj);
-        if (!parsed.success) {
-          return errorResponse("Invalid request body");
-        }
-
-        const { clearTranslations: shouldClearTranslations, clearFurigana: shouldClearFurigana, clearSoramimi: shouldClearSoramimi } = parsed.data;
-
-        // Get song to check what needs clearing
-        const song = await getSong(redis, songId, {
-          includeMetadata: true,
-          includeLyrics: true,
-          includeTranslations: true,
-          includeFurigana: true,
-          includeSoramimi: true,
+        const result = await executeSongsClearCachedDataCore({
+          songId,
+          body: bodyObj,
         });
 
-        if (!song) {
-          return errorResponse("Song not found", 404);
+        if (result.status === 400) {
+          logger.warn("Invalid clear-cached-data request body");
+        } else if (result.status === 404) {
+          logger.warn("Song not found for clear-cached-data", { songId });
+        } else if (result.status === 200) {
+          const body = result.body as { cleared?: string[] };
+          logger.info(
+            `Cleared cached data: ${
+              body.cleared && body.cleared.length > 0 ? body.cleared.join(", ") : "nothing to clear"
+            }`
+          );
         }
 
-        const cleared: string[] = [];
+        const body =
+          typeof result.body === "object" && result.body && "_meta" in (result.body as Record<string, unknown>)
+            ? (() => {
+                const { _meta: _ignored, ...rest } = result.body as Record<string, unknown>;
+                return rest;
+              })()
+            : result.body;
 
-        // Clear translations if requested
-        if (shouldClearTranslations) {
-          if (song.translations && Object.keys(song.translations).length > 0) {
-            await saveSong(redis, { id: songId, translations: {} }, { preserveTranslations: false });
-          }
-          cleared.push("translations");
-        }
-
-        // Clear furigana if requested
-        if (shouldClearFurigana) {
-          if (song.furigana && song.furigana.length > 0) {
-            await saveSong(redis, { id: songId, furigana: [] }, { preserveFurigana: false });
-          }
-          cleared.push("furigana");
-        }
-
-        // Clear soramimi if requested (both legacy soramimi and soramimiByLang)
-        if (shouldClearSoramimi) {
-          const hasSoramimi = (song.soramimi && song.soramimi.length > 0) || 
-                              (song.soramimiByLang && Object.keys(song.soramimiByLang).length > 0);
-          if (hasSoramimi) {
-            await saveSong(redis, { id: songId, soramimi: [], soramimiByLang: {} }, { preserveSoramimi: false });
-          }
-          cleared.push("soramimi");
-        }
-
-        logger.info(`Cleared cached data: ${cleared.length > 0 ? cleared.join(", ") : "nothing to clear"}`);
-        return jsonResponse({ success: true, cleared });
+        return jsonResponse(body, result.status);
       }
 
       // =======================================================================
