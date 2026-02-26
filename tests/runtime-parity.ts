@@ -412,6 +412,29 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsAdminUnauthorized.status === 403,
     `vps admin unauthorized expected 403, got ${vpsAdminUnauthorized.status}`
   );
+
+  const vercelTranscribeNoFile = await fetch(`${vercelBaseUrl}/api/audio-transcribe`, {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+    },
+    body: new FormData(),
+  });
+  const vpsTranscribeNoFile = await fetch(`${vpsBaseUrl}/api/audio-transcribe`, {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+    },
+    body: new FormData(),
+  });
+  assert(
+    vercelTranscribeNoFile.status === 400,
+    `vercel audio-transcribe without file expected 400, got ${vercelTranscribeNoFile.status}`
+  );
+  assert(
+    vpsTranscribeNoFile.status === 400,
+    `vps audio-transcribe without file expected 400, got ${vpsTranscribeNoFile.status}`
+  );
 }
 
 interface AuthFlowResult {
