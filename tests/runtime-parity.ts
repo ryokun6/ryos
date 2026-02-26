@@ -435,6 +435,42 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsTranscribeNoFile.status === 400,
     `vps audio-transcribe without file expected 400, got ${vpsTranscribeNoFile.status}`
   );
+
+  const vercelRoomsList = await fetch(`${vercelBaseUrl}/api/rooms`, usersInit);
+  const vpsRoomsList = await fetch(`${vpsBaseUrl}/api/rooms`, usersInit);
+  assert(
+    vercelRoomsList.status === 200,
+    `vercel rooms list expected 200, got ${vercelRoomsList.status}`
+  );
+  assert(
+    vpsRoomsList.status === 200,
+    `vps rooms list expected 200, got ${vpsRoomsList.status}`
+  );
+
+  const roomsCreateInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ name: "parity-room", type: "public" }),
+  };
+  const vercelRoomsCreateUnauthorized = await fetch(
+    `${vercelBaseUrl}/api/rooms`,
+    roomsCreateInit
+  );
+  const vpsRoomsCreateUnauthorized = await fetch(
+    `${vpsBaseUrl}/api/rooms`,
+    roomsCreateInit
+  );
+  assert(
+    vercelRoomsCreateUnauthorized.status === 401,
+    `vercel rooms create unauthorized expected 401, got ${vercelRoomsCreateUnauthorized.status}`
+  );
+  assert(
+    vpsRoomsCreateUnauthorized.status === 401,
+    `vps rooms create unauthorized expected 401, got ${vpsRoomsCreateUnauthorized.status}`
+  );
 }
 
 interface AuthFlowResult {
