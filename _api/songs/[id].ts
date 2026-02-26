@@ -36,6 +36,7 @@ import {
   type LyricsSource,
   type LyricsContent,
 } from "../_utils/_song-service.js";
+import { executeSongsGetCore } from "../cores/songs-get-core.js";
 
 // Import from split modules
 import {
@@ -191,64 +192,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // GET: Retrieve song data
     // =========================================================================
     if (req.method === "GET") {
-      const ip = getClientIp(req);
-      const rlKey = RateLimit.makeKey(["rl", "song", "get", "ip", ip]);
-      const rlResult = await RateLimit.checkCounterLimit({
-        key: rlKey,
-        windowSeconds: RATE_LIMITS.get.windowSeconds,
-        limit: RATE_LIMITS.get.limit,
-      });
-
-      if (!rlResult.allowed) {
-        logger.warn("Rate limit exceeded (get)", { ip });
-        return jsonResponse(
-          {
-            error: "rate_limit_exceeded",
-            limit: rlResult.limit,
-            retryAfter: rlResult.resetSeconds,
-          },
-          429,
-          { "Retry-After": String(rlResult.resetSeconds) }
-        );
-      }
-
       const includeParam = (req.query.include as string) || "metadata";
-      const includes = includeParam.split(",").map((s) => s.trim());
-
-      logger.info("GET song", { songId, includes });
-
-      // Fetch song with requested includes
-      const song = await getSong(redis, songId, {
-        includeMetadata: includes.includes("metadata"),
-        includeLyrics: includes.includes("lyrics"),
-        includeTranslations: includes.includes("translations"),
-        includeFurigana: includes.includes("furigana"),
-        includeSoramimi: includes.includes("soramimi"),
+      const getResult = await executeSongsGetCore({
+        songId,
+        includeParam,
+        clientIp: getClientIp(req),
       });
 
-      if (!song) {
-        logger.warn("Song not found", { songId });
-        return errorResponse("Song not found", 404);
+      if (getResult.headers) {
+        Object.entries(getResult.headers).forEach(([key, value]) => {
+          res.setHeader(key, value);
+        });
       }
 
-      // Generate parsedLines on-demand (not stored in Redis)
-      // Use lyricsSource title/artist for filtering (consistent with how annotations were generated)
-      if (song.lyrics) {
-        (song.lyrics as LyricsContent & { parsedLines?: unknown }).parsedLines = parseLyricsContent(
-          { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-          song.lyricsSource?.title || song.title,
-          song.lyricsSource?.artist || song.artist
-        );
+      if (getResult.status === 429) {
+        logger.warn("Rate limit exceeded (get)", { ip: getClientIp(req) });
+      } else if (getResult.status === 404) {
+        logger.warn("Song not found", { songId });
+        return jsonResponse(getResult.body, getResult.status);
+      } else if (getResult.status !== 200) {
+        return jsonResponse(getResult.body, getResult.status);
       }
 
       logger.info(`Response: 200 OK`, { 
-        hasLyrics: !!song.lyrics,
-        hasTranslations: !!song.translations,
-        hasFurigana: !!song.furigana,
-        hasSoramimi: !!song.soramimi || !!song.soramimiByLang,
+        hasLyrics: !!(getResult.body as { lyrics?: unknown })?.lyrics,
+        hasTranslations: !!(getResult.body as { translations?: unknown })?.translations,
+        hasFurigana: !!(getResult.body as { furigana?: unknown })?.furigana,
+        hasSoramimi: !!(getResult.body as { soramimi?: unknown; soramimiByLang?: unknown })?.soramimi
+          || !!(getResult.body as { soramimiByLang?: unknown })?.soramimiByLang,
         duration: `${Date.now() - startTime}ms` 
       });
-      return jsonResponse(song);
+      return jsonResponse(getResult.body, 200);
     }
 
     // =========================================================================
