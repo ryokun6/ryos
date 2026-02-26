@@ -107,6 +107,8 @@ interface AuthFlowResult {
 
 interface AuthExtendedFlowResult {
   registerStatus: number;
+  refreshStatus: number;
+  verifyRefreshedTokenStatus: number;
   passwordCheckStatus: number;
   tokensStatus: number;
   passwordSetStatus: number;
@@ -251,11 +253,33 @@ async function runAuthExtendedFlow(
   const token = registerJson.token;
   assert(!!token, `${marker} extended register missing token`);
 
+  const refreshRes = await fetch(`${baseUrl}/api/auth/token/refresh`, {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+      "X-Forwarded-For": forwardedIp,
+    },
+    body: JSON.stringify({ username, oldToken: token }),
+  });
+  const refreshJson = (await refreshRes.json()) as { token?: string };
+  const refreshedToken = refreshJson.token;
+  assert(!!refreshedToken, `${marker} refresh missing token`);
+
+  const verifyRefreshedTokenRes = await fetch(`${baseUrl}/api/auth/token/verify`, {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      Authorization: `Bearer ${refreshedToken}`,
+      "X-Username": username,
+    },
+  });
+
   const passwordCheckRes = await fetch(`${baseUrl}/api/auth/password/check`, {
     method: "GET",
     headers: {
       Origin: "http://localhost:5173",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${refreshedToken}`,
       "X-Username": username,
     },
   });
@@ -264,7 +288,7 @@ async function runAuthExtendedFlow(
     method: "GET",
     headers: {
       Origin: "http://localhost:5173",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${refreshedToken}`,
       "X-Username": username,
     },
   });
@@ -273,7 +297,7 @@ async function runAuthExtendedFlow(
     method: "POST",
     headers: {
       Origin: "http://localhost:5173",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${refreshedToken}`,
       "X-Username": username,
       "Content-Type": "application/json",
     },
@@ -290,14 +314,14 @@ async function runAuthExtendedFlow(
     body: JSON.stringify({ username, password: updatedPassword }),
   });
   const loginJson = (await loginWithUpdatedPasswordRes.json()) as { token?: string };
-  const refreshedToken = loginJson.token;
-  assert(!!refreshedToken, `${marker} extended login with updated password missing token`);
+  const latestToken = loginJson.token;
+  assert(!!latestToken, `${marker} extended login with updated password missing token`);
 
   const logoutAllRes = await fetch(`${baseUrl}/api/auth/logout-all`, {
     method: "POST",
     headers: {
       Origin: "http://localhost:5173",
-      Authorization: `Bearer ${refreshedToken}`,
+      Authorization: `Bearer ${latestToken}`,
       "X-Username": username,
     },
   });
@@ -306,13 +330,15 @@ async function runAuthExtendedFlow(
     method: "POST",
     headers: {
       Origin: "http://localhost:5173",
-      Authorization: `Bearer ${refreshedToken}`,
+      Authorization: `Bearer ${latestToken}`,
       "X-Username": username,
     },
   });
 
   return {
     registerStatus: registerRes.status,
+    refreshStatus: refreshRes.status,
+    verifyRefreshedTokenStatus: verifyRefreshedTokenRes.status,
     passwordCheckStatus: passwordCheckRes.status,
     tokensStatus: tokensRes.status,
     passwordSetStatus: passwordSetRes.status,
@@ -328,6 +354,16 @@ async function testAuthExtendedParity(): Promise<void> {
 
   assert(vercel.registerStatus === 201, `vercel extended register expected 201, got ${vercel.registerStatus}`);
   assert(vps.registerStatus === 201, `vps extended register expected 201, got ${vps.registerStatus}`);
+  assert(vercel.refreshStatus === 201, `vercel token refresh expected 201, got ${vercel.refreshStatus}`);
+  assert(vps.refreshStatus === 201, `vps token refresh expected 201, got ${vps.refreshStatus}`);
+  assert(
+    vercel.verifyRefreshedTokenStatus === 200,
+    `vercel verify(refreshed token) expected 200, got ${vercel.verifyRefreshedTokenStatus}`
+  );
+  assert(
+    vps.verifyRefreshedTokenStatus === 200,
+    `vps verify(refreshed token) expected 200, got ${vps.verifyRefreshedTokenStatus}`
+  );
   assert(vercel.passwordCheckStatus === 200, `vercel password/check expected 200, got ${vercel.passwordCheckStatus}`);
   assert(vps.passwordCheckStatus === 200, `vps password/check expected 200, got ${vps.passwordCheckStatus}`);
   assert(vercel.tokensStatus === 200, `vercel tokens expected 200, got ${vercel.tokensStatus}`);
