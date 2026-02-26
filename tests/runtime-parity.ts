@@ -511,6 +511,73 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsRoomDeleteUnauthorized.status === 401,
     `vps rooms/[id] delete unauthorized expected 401, got ${vpsRoomDeleteUnauthorized.status}`
   );
+
+  const roomJoinInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ username: "parityuser" }),
+  };
+  const vercelRoomJoinMissing = await fetch(
+    `${vercelBaseUrl}/api/rooms/nonexistent123/join`,
+    roomJoinInit
+  );
+  const vpsRoomJoinMissing = await fetch(
+    `${vpsBaseUrl}/api/rooms/nonexistent123/join`,
+    roomJoinInit
+  );
+  assert(
+    vercelRoomJoinMissing.status === 404,
+    `vercel rooms/[id]/join missing expected 404, got ${vercelRoomJoinMissing.status}`
+  );
+  assert(
+    vpsRoomJoinMissing.status === 404,
+    `vps rooms/[id]/join missing expected 404, got ${vpsRoomJoinMissing.status}`
+  );
+
+  const roomLeaveInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ username: "parityuser" }),
+  };
+  const vercelRoomLeaveMissing = await fetch(
+    `${vercelBaseUrl}/api/rooms/nonexistent123/leave`,
+    roomLeaveInit
+  );
+  const vpsRoomLeaveMissing = await fetch(
+    `${vpsBaseUrl}/api/rooms/nonexistent123/leave`,
+    roomLeaveInit
+  );
+  assert(
+    vercelRoomLeaveMissing.status === 404,
+    `vercel rooms/[id]/leave missing expected 404, got ${vercelRoomLeaveMissing.status}`
+  );
+  assert(
+    vpsRoomLeaveMissing.status === 404,
+    `vps rooms/[id]/leave missing expected 404, got ${vpsRoomLeaveMissing.status}`
+  );
+
+  const vercelRoomUsers = await fetch(
+    `${vercelBaseUrl}/api/rooms/nonexistent123/users`,
+    usersInit
+  );
+  const vpsRoomUsers = await fetch(
+    `${vpsBaseUrl}/api/rooms/nonexistent123/users`,
+    usersInit
+  );
+  assert(
+    vercelRoomUsers.status === 200,
+    `vercel rooms/[id]/users expected 200, got ${vercelRoomUsers.status}`
+  );
+  assert(
+    vpsRoomUsers.status === 200,
+    `vps rooms/[id]/users expected 200, got ${vpsRoomUsers.status}`
+  );
 }
 
 interface AuthFlowResult {
