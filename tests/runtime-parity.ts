@@ -168,6 +168,31 @@ async function testSongsNotFoundParity(): Promise<void> {
     `vps songs/[id] clear-cached-data missing song expected 404, got ${vpsClearCachedDataMissingSong.status}`
   );
 
+  const fetchLyricsNoSourceInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action: "fetch-lyrics" }),
+  };
+  const vercelFetchLyricsNoSource = await fetch(
+    `${vercelBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    fetchLyricsNoSourceInit
+  );
+  const vpsFetchLyricsNoSource = await fetch(
+    `${vpsBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    fetchLyricsNoSourceInit
+  );
+  assert(
+    vercelFetchLyricsNoSource.status === vpsFetchLyricsNoSource.status,
+    `songs/[id] fetch-lyrics status mismatch: vercel=${vercelFetchLyricsNoSource.status} vps=${vpsFetchLyricsNoSource.status}`
+  );
+  assert(
+    [200, 400].includes(vercelFetchLyricsNoSource.status),
+    `songs/[id] fetch-lyrics expected 200/400, got ${vercelFetchLyricsNoSource.status}`
+  );
+
   const unshareInit: RequestInit = {
     method: "POST",
     headers: {
