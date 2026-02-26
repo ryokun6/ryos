@@ -193,6 +193,31 @@ async function testSongsNotFoundParity(): Promise<void> {
     `songs/[id] furigana-stream expected 200/400, got ${vercelFuriganaStreamInvalid.status}`
   );
 
+  const soramimiStreamInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action: "soramimi-stream" }),
+  };
+  const vercelSoramimiStreamInvalid = await fetch(
+    `${vercelBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    soramimiStreamInit
+  );
+  const vpsSoramimiStreamInvalid = await fetch(
+    `${vpsBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    soramimiStreamInit
+  );
+  assert(
+    vercelSoramimiStreamInvalid.status === vpsSoramimiStreamInvalid.status,
+    `songs/[id] soramimi-stream status mismatch: vercel=${vercelSoramimiStreamInvalid.status} vps=${vpsSoramimiStreamInvalid.status}`
+  );
+  assert(
+    [200, 400].includes(vercelSoramimiStreamInvalid.status),
+    `songs/[id] soramimi-stream expected 200/400, got ${vercelSoramimiStreamInvalid.status}`
+  );
+
   const clearCachedDataInit: RequestInit = {
     method: "POST",
     headers: {
