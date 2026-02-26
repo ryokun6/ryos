@@ -143,6 +143,31 @@ async function testSongsNotFoundParity(): Promise<void> {
     `vps songs/[id] translate missing language expected 400, got ${vpsTranslateMissingLanguage.status}`
   );
 
+  const translateStreamInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action: "translate-stream" }),
+  };
+  const vercelTranslateStreamInvalid = await fetch(
+    `${vercelBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    translateStreamInit
+  );
+  const vpsTranslateStreamInvalid = await fetch(
+    `${vpsBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    translateStreamInit
+  );
+  assert(
+    vercelTranslateStreamInvalid.status === 400,
+    `vercel songs/[id] translate-stream invalid expected 400, got ${vercelTranslateStreamInvalid.status}`
+  );
+  assert(
+    vpsTranslateStreamInvalid.status === 400,
+    `vps songs/[id] translate-stream invalid expected 400, got ${vpsTranslateStreamInvalid.status}`
+  );
+
   const clearCachedDataInit: RequestInit = {
     method: "POST",
     headers: {
