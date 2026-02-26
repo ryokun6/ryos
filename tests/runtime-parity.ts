@@ -99,6 +99,7 @@ async function testIframeCheckParity(): Promise<void> {
 
 interface AuthFlowResult {
   registerStatus: number;
+  loginStatus: number;
   verifyStatus: number;
   logoutStatus: number;
   verifyAfterLogoutStatus: number;
@@ -112,11 +113,13 @@ async function runAuthFlow(baseUrl: string, marker: string): Promise<AuthFlowRes
   let token: string | undefined;
   let registerStatus = 0;
   let registerPayload: unknown = null;
+  let registerIp = "10.0.0.1";
 
   for (let attempt = 0; attempt < 4; attempt += 1) {
     const syntheticIp = `10.${attempt}.${Math.floor(Math.random() * 200)}.${Math.floor(
       Math.random() * 200
     )}`;
+    registerIp = syntheticIp;
     const registerRes = await fetch(`${baseUrl}/api/auth/register`, {
       method: "POST",
       headers: {
@@ -171,8 +174,19 @@ async function runAuthFlow(baseUrl: string, marker: string): Promise<AuthFlowRes
     },
   });
 
+  const loginRes = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+      "X-Forwarded-For": registerIp,
+    },
+    body: JSON.stringify({ username, password }),
+  });
+
   return {
     registerStatus,
+    loginStatus: loginRes.status,
     verifyStatus: verifyRes.status,
     logoutStatus: logoutRes.status,
     verifyAfterLogoutStatus: verifyAfterLogoutRes.status,
@@ -185,6 +199,8 @@ async function testAuthFlowParity(): Promise<void> {
 
   assert(vercel.registerStatus === 201, `vercel register expected 201, got ${vercel.registerStatus}`);
   assert(vps.registerStatus === 201, `vps register expected 201, got ${vps.registerStatus}`);
+  assert(vercel.loginStatus === 200, `vercel login expected 200, got ${vercel.loginStatus}`);
+  assert(vps.loginStatus === 200, `vps login expected 200, got ${vps.loginStatus}`);
   assert(vercel.verifyStatus === 200, `vercel verify expected 200, got ${vercel.verifyStatus}`);
   assert(vps.verifyStatus === 200, `vps verify expected 200, got ${vps.verifyStatus}`);
   assert(vercel.logoutStatus === 200, `vercel logout expected 200, got ${vercel.logoutStatus}`);
