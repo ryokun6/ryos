@@ -8,7 +8,7 @@ Multi-provider AI with tool calling support and streaming responses.
 |----------|-----|--------|
 | OpenAI | `@ai-sdk/openai` | gpt-5, gpt-5.1, gpt-5-mini, gpt-4o, gpt-4.1, gpt-4.1-mini |
 | Anthropic | `@ai-sdk/anthropic` | claude-4.5, claude-4, claude-3.7, claude-3.5 |
-| Google | `@ai-sdk/google` | gemini-2.5-pro, gemini-2.5-flash, gemini-3-pro-preview |
+| Google | `@ai-sdk/google` | gemini-2.5-pro, gemini-2.5-flash, gemini-3.1-pro-preview |
 
 Default model: `gpt-5.1`
 

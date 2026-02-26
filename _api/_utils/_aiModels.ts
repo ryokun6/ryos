@@ -13,7 +13,7 @@ export const AI_MODELS = {
   "sonnet-4.6": { name: "sonnet-4.6", provider: "Anthropic" },
   "gpt-5.2": { name: "gpt-5.2", provider: "OpenAI" },
   "gemini-3-flash": { name: "gemini-3-flash", provider: "Google" },
-  "gemini-3": { name: "gemini-3", provider: "Google" },
+  "gemini-3.1-pro-preview": { name: "gemini-3.1-pro-preview", provider: "Google" },
 } as const;
 
 // Derived types
@@ -36,8 +36,8 @@ export const getModelInstance = (model: SupportedModel): LanguageModel => {
       return openai("gpt-5.2");
     case "gemini-3-flash":
       return google("gemini-3-flash-preview");
-    case "gemini-3":
-      return google("gemini-3-pro-preview");
+    case "gemini-3.1-pro-preview":
+      return google("gemini-3.1-pro-preview");
     default:
       return openai("gpt-5.2");
   }

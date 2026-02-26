@@ -14,8 +14,8 @@ export const AI_MODELS = {
     name: "gemini-3-flash",
     provider: "Google",
   },
-  "gemini-3": {
-    name: "gemini-3",
+  "gemini-3.1-pro-preview": {
+    name: "gemini-3.1-pro-preview",
     provider: "Google",
   },
 } as const;
