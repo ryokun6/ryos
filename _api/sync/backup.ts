@@ -9,7 +9,6 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { del, head } from "@vercel/blob";
 import { createRedis } from "../_utils/redis.js";
 import {
   extractAuthNormalized,
@@ -20,6 +19,10 @@ import {
   setCorsHeaders,
   handlePreflight,
 } from "../_utils/_cors.js";
+import {
+  getBackupStorageProvider,
+  type BackupStorageProviderName,
+} from "../_utils/_backup-storage.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -38,6 +41,7 @@ interface BackupMeta {
   totalSize: number;
   blobUrl: string;
   createdAt: string;
+  storageProvider?: BackupStorageProviderName;
 }
 
 export default async function handler(
@@ -100,9 +104,10 @@ async function handleSaveMetadata(
   }
 
   const { blobUrl, timestamp, version, totalSize } = body;
+  const storage = getBackupStorageProvider();
 
   // Validate the blob URL points to a real blob
-  const blobInfo = await head(blobUrl).catch(() => null);
+  const blobInfo = await storage.headObject(blobUrl);
   if (!blobInfo) {
     res.status(400).json({ error: "Invalid blob URL: blob not found" });
     return;
@@ -118,7 +123,8 @@ async function handleSaveMetadata(
           : existingMeta;
       if (parsed.blobUrl && parsed.blobUrl !== blobUrl) {
         try {
-          await del(parsed.blobUrl);
+          const oldStorage = getBackupStorageProvider(parsed.storageProvider);
+          await oldStorage.deleteObject(parsed.blobUrl);
         } catch {
           // Ignore delete errors for old blob
         }
@@ -132,6 +138,7 @@ async function handleSaveMetadata(
       totalSize: totalSize || blobInfo.size,
       blobUrl,
       createdAt: new Date().toISOString(),
+      storageProvider: storage.name,
     };
 
     await redis.set(metaKey(username), JSON.stringify(meta), {
@@ -177,7 +184,8 @@ async function handleDownload(
     }
 
     // Verify blob still exists
-    const blobInfo = await head(meta.blobUrl).catch(() => null);
+    const storage = getBackupStorageProvider(meta.storageProvider);
+    const blobInfo = await storage.headObject(meta.blobUrl);
     if (!blobInfo) {
       // Blob was deleted, clean up metadata
       await redis.del(metaKey(username));
@@ -229,7 +237,8 @@ async function handleDelete(
     // Delete blob
     if (meta.blobUrl) {
       try {
-        await del(meta.blobUrl);
+        const storage = getBackupStorageProvider(meta.storageProvider);
+        await storage.deleteObject(meta.blobUrl);
       } catch {
         // Ignore delete errors
       }

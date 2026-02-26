@@ -8,7 +8,6 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 import { createRedis } from "../_utils/redis.js";
 import {
   extractAuthNormalized,
@@ -18,6 +17,7 @@ import {
   setCorsHeaders,
   handlePreflight,
 } from "../_utils/_cors.js";
+import { getBackupStorageProvider } from "../_utils/_backup-storage.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -79,15 +79,14 @@ export default async function handler(
   }
 
   try {
-    const clientToken = await generateClientTokenFromReadWriteToken({
+    const storage = getBackupStorageProvider();
+    const uploadToken = await storage.createUploadToken({
       pathname: blobPath(username),
       allowedContentTypes: ["application/gzip", "application/octet-stream"],
       maximumSizeInBytes: MAX_BACKUP_SIZE,
-      addRandomSuffix: false,
-      allowOverwrite: true,
     });
 
-    res.status(200).json({ clientToken });
+    res.status(200).json(uploadToken);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown error";

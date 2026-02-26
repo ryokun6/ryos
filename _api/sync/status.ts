@@ -29,6 +29,7 @@ interface BackupMeta {
   totalSize: number;
   blobUrl: string;
   createdAt: string;
+  storageProvider?: string;
 }
 
 export default async function handler(
@@ -80,6 +81,7 @@ export default async function handler(
         version: meta.version,
         totalSize: meta.totalSize,
         createdAt: meta.createdAt,
+        storageProvider: meta.storageProvider || "vercel_blob",
       },
     });
   } catch (error) {

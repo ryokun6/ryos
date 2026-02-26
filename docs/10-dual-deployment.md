@@ -29,6 +29,7 @@ Dual-runtime / CORS variables:
 - `ALLOWED_ORIGINS` (comma-separated, allowed in all envs)
 - `ALLOWED_PREVIEW_ORIGINS` (preview-only allowlist)
 - `ALLOWED_DEV_ORIGINS` (development-only allowlist)
+- `BACKUP_STORAGE_PROVIDER=vercel_blob|disabled`
 
 Frontend override:
 

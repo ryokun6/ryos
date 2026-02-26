@@ -117,6 +117,13 @@ The API now supports explicit origin allowlists via environment variables:
 - `ALLOWED_DEV_ORIGINS` (comma-separated, development only)
 - `APP_ENV` (`production`, `preview`, `development`) to override env detection
 
+### Backup storage provider selection
+
+Cloud backup endpoints support provider selection via:
+
+- `BACKUP_STORAGE_PROVIDER=vercel_blob` (default)
+- `BACKUP_STORAGE_PROVIDER=disabled` (turns off cloud backup token generation)
+
 ### Frontend API base URL override
 
 When frontend and API are on different hosts, set:
