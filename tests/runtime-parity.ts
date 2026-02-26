@@ -122,6 +122,25 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsBulkInvalid.status === 400,
     `vps bulk invalid roomId expected 400, got ${vpsBulkInvalid.status}`
   );
+
+  const presenceInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  };
+  const vercelPresence = await fetch(`${vercelBaseUrl}/api/presence/switch`, presenceInit);
+  const vpsPresence = await fetch(`${vpsBaseUrl}/api/presence/switch`, presenceInit);
+  assert(
+    vercelPresence.status === 400,
+    `vercel presence/switch missing username expected 400, got ${vercelPresence.status}`
+  );
+  assert(
+    vpsPresence.status === 400,
+    `vps presence/switch missing username expected 400, got ${vpsPresence.status}`
+  );
 }
 
 interface AuthFlowResult {
