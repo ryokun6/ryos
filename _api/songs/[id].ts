@@ -26,7 +26,6 @@ import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_
 import { getClientIp } from "../_utils/_rate-limit.js";
 import {
   getSong,
-  saveSong,
   saveLyrics,
   saveTranslation,
   saveFurigana,
@@ -41,10 +40,10 @@ import { executeSongsSearchLyricsCore } from "../cores/songs-search-lyrics-core.
 import { executeSongsTranslateCore } from "../cores/songs-translate-core.js";
 import { executeSongsClearCachedDataCore } from "../cores/songs-clear-cached-data-core.js";
 import { executeSongsUnshareCore } from "../cores/songs-unshare-core.js";
+import { executeSongsUpdateMetadataCore } from "../cores/songs-update-metadata-core.js";
 
 // Import from split modules
 import {
-  UpdateSongSchema,
   FetchLyricsSchema,
   TranslateStreamSchema,
   FuriganaStreamSchema,
@@ -1519,76 +1518,27 @@ Output:
       }
 
       // Default POST: Update song metadata (requires auth)
-      const authResult = await validateAuth(redis, username, authToken);
-      if (!authResult.valid) {
-        return errorResponse("Unauthorized - authentication required", 401);
-      }
-
-      const parsed = UpdateSongSchema.safeParse(bodyObj);
-      if (!parsed.success) {
-        return errorResponse("Invalid request body");
-      }
-
-      // Check permission
-      const existingSong = await getSong(redis, songId, { includeMetadata: true });
-      const permission = canModifySong(existingSong, username);
-      if (!permission.canModify) {
-        return errorResponse(permission.reason || "Permission denied", 403);
-      }
-
-      // Update song
-      const isUpdate = !!existingSong;
-      const { lyricsSource, clearTranslations, clearFurigana, clearSoramimi, clearLyrics, isShare, ...restData } = parsed.data;
-      
-      // Determine what to preserve vs clear
-      const preserveOptions = {
-        preserveLyrics: !clearLyrics,
-        preserveTranslations: !clearTranslations,
-        preserveFurigana: !clearFurigana,
-        preserveSoramimi: !clearSoramimi,
-      };
-
-      // Determine createdBy
-      let createdBy = existingSong?.createdBy;
-      if (isShare) {
-        const canSetCreatedBy = username?.toLowerCase() === "ryo" || !existingSong?.createdBy;
-        if (canSetCreatedBy) {
-          createdBy = username || undefined;
-        }
-      }
-
-      // Build update data
-      const updateData: Parameters<typeof saveSong>[1] = {
-        id: songId,
-        ...restData,
-        lyricsSource: lyricsSource as LyricsSource | undefined,
-        createdBy,
-      };
-
-      // If clearing translations, furigana, soramimi, or lyrics, explicitly set them to undefined
-      if (clearTranslations) {
-        updateData.translations = undefined;
-      }
-      if (clearFurigana) {
-        updateData.furigana = undefined;
-      }
-      if (clearSoramimi) {
-        updateData.soramimi = undefined;
-        updateData.soramimiByLang = undefined;
-      }
-      if (clearLyrics) {
-        updateData.lyrics = undefined;
-      }
-
-      const updatedSong = await saveSong(redis, updateData, preserveOptions);
-
-      logger.info(isUpdate ? "Song updated" : "Song created", { duration: `${Date.now() - startTime}ms` });
-      return jsonResponse({
-        success: true,
-        id: updatedSong.id,
-        isUpdate,
-        createdBy: updatedSong.createdBy,
+      const result = await executeSongsUpdateMetadataCore({
+        songId,
+        body: bodyObj,
+        username,
+        authToken,
       });
+
+      if (result.status === 401) {
+        logger.warn("Unauthorized - authentication required for song update");
+      } else if (result.status === 400) {
+        logger.warn("Invalid song update request body");
+      } else if (result.status === 403) {
+        logger.warn("Permission denied for song update");
+      } else if (result.status === 200) {
+        const isUpdate = (result.body as { isUpdate?: boolean })?.isUpdate;
+        logger.info(isUpdate ? "Song updated" : "Song created", {
+          duration: `${Date.now() - startTime}ms`,
+        });
+      }
+
+      return jsonResponse(result.body, result.status);
     }
 
     // =========================================================================

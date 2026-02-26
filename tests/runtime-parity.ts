@@ -192,6 +192,31 @@ async function testSongsNotFoundParity(): Promise<void> {
     vpsUnshareUnauthorized.status === 401,
     `vps songs/[id] unshare unauthorized expected 401, got ${vpsUnshareUnauthorized.status}`
   );
+
+  const updateSongInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ title: "Updated Title" }),
+  };
+  const vercelUpdateSongUnauthorized = await fetch(
+    `${vercelBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    updateSongInit
+  );
+  const vpsUpdateSongUnauthorized = await fetch(
+    `${vpsBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    updateSongInit
+  );
+  assert(
+    vercelUpdateSongUnauthorized.status === 401,
+    `vercel songs/[id] update unauthorized expected 401, got ${vercelUpdateSongUnauthorized.status}`
+  );
+  assert(
+    vpsUpdateSongUnauthorized.status === 401,
+    `vps songs/[id] update unauthorized expected 401, got ${vpsUpdateSongUnauthorized.status}`
+  );
 }
 
 async function testIframeCheckParity(): Promise<void> {
