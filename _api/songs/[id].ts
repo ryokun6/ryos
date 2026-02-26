@@ -40,6 +40,7 @@ import { executeSongsDeleteCore } from "../cores/songs-delete-core.js";
 import { executeSongsSearchLyricsCore } from "../cores/songs-search-lyrics-core.js";
 import { executeSongsTranslateCore } from "../cores/songs-translate-core.js";
 import { executeSongsClearCachedDataCore } from "../cores/songs-clear-cached-data-core.js";
+import { executeSongsUnshareCore } from "../cores/songs-unshare-core.js";
 
 // Import from split modules
 import {
@@ -48,7 +49,6 @@ import {
   TranslateStreamSchema,
   FuriganaStreamSchema,
   SoramimiStreamSchema,
-  UnshareSongSchema,
 } from "./_constants.js";
 
 import {
@@ -1494,45 +1494,28 @@ Output:
       // Handle unshare action - clears the createdBy field (admin only)
       // =======================================================================
       if (action === "unshare") {
-        const parsed = UnshareSongSchema.safeParse(bodyObj);
-        if (!parsed.success) {
-          return errorResponse("Invalid request body");
-        }
-
-        // Validate auth
-        const authResult = await validateAuth(redis, username, authToken);
-        if (!authResult.valid) {
-          return errorResponse("Unauthorized - authentication required", 401);
-        }
-
-        // Only admin can unshare
-        if (username?.toLowerCase() !== "ryo") {
-          return errorResponse("Forbidden - admin access required", 403);
-        }
-
-        // Get existing song
-        const existingSong = await getSong(redis, songId, { includeMetadata: true });
-        if (!existingSong) {
-          return errorResponse("Song not found", 404);
-        }
-
-        // Clear createdBy by explicitly setting to undefined
-        const updatedSong = await saveSong(
-          redis,
-          {
-            ...existingSong,
-            createdBy: undefined,
-          },
-          { preserveLyrics: true, preserveTranslations: true, preserveFurigana: true },
-          existingSong
-        );
-
-        logger.info("Song unshared (createdBy cleared)", { duration: `${Date.now() - startTime}ms` });
-        return jsonResponse({
-          success: true,
-          id: updatedSong.id,
-          createdBy: updatedSong.createdBy,
+        const result = await executeSongsUnshareCore({
+          songId,
+          body: bodyObj,
+          username,
+          authToken,
         });
+
+        if (result.status === 400) {
+          logger.warn("Invalid unshare request body");
+        } else if (result.status === 401) {
+          logger.warn("Unauthorized - authentication required for unshare");
+        } else if (result.status === 403) {
+          logger.warn("Forbidden - admin access required for unshare");
+        } else if (result.status === 404) {
+          logger.warn("Song not found for unshare", { songId });
+        } else if (result.status === 200) {
+          logger.info("Song unshared (createdBy cleared)", {
+            duration: `${Date.now() - startTime}ms`,
+          });
+        }
+
+        return jsonResponse(result.body, result.status);
       }
 
       // Default POST: Update song metadata (requires auth)

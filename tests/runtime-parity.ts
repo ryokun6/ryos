@@ -167,6 +167,31 @@ async function testSongsNotFoundParity(): Promise<void> {
     vpsClearCachedDataMissingSong.status === 404,
     `vps songs/[id] clear-cached-data missing song expected 404, got ${vpsClearCachedDataMissingSong.status}`
   );
+
+  const unshareInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action: "unshare" }),
+  };
+  const vercelUnshareUnauthorized = await fetch(
+    `${vercelBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    unshareInit
+  );
+  const vpsUnshareUnauthorized = await fetch(
+    `${vpsBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    unshareInit
+  );
+  assert(
+    vercelUnshareUnauthorized.status === 401,
+    `vercel songs/[id] unshare unauthorized expected 401, got ${vercelUnshareUnauthorized.status}`
+  );
+  assert(
+    vpsUnshareUnauthorized.status === 401,
+    `vps songs/[id] unshare unauthorized expected 401, got ${vpsUnshareUnauthorized.status}`
+  );
 }
 
 async function testIframeCheckParity(): Promise<void> {
