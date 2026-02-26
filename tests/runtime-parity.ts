@@ -395,6 +395,23 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsShareAppletUnauthorized.status === 401,
     `vps share-applet POST unauthorized expected 401, got ${vpsShareAppletUnauthorized.status}`
   );
+
+  const vercelAdminUnauthorized = await fetch(
+    `${vercelBaseUrl}/api/admin?action=getStats`,
+    usersInit
+  );
+  const vpsAdminUnauthorized = await fetch(
+    `${vpsBaseUrl}/api/admin?action=getStats`,
+    usersInit
+  );
+  assert(
+    vercelAdminUnauthorized.status === 403,
+    `vercel admin unauthorized expected 403, got ${vercelAdminUnauthorized.status}`
+  );
+  assert(
+    vpsAdminUnauthorized.status === 403,
+    `vps admin unauthorized expected 403, got ${vpsAdminUnauthorized.status}`
+  );
 }
 
 interface AuthFlowResult {
