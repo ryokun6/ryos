@@ -293,6 +293,39 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsListenReactionMissing.status === 404,
     `vps listen/sessions/[id]/reaction missing expected 404, got ${vpsListenReactionMissing.status}`
   );
+
+  const vercelListenLeaveMissing = await fetch(
+    `${vercelBaseUrl}/api/listen/sessions/nonexistent123/leave`,
+    {
+      ...usersInit,
+      method: "POST",
+      headers: {
+        Origin: "http://localhost:5173",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username: "parityuser" }),
+    }
+  );
+  const vpsListenLeaveMissing = await fetch(
+    `${vpsBaseUrl}/api/listen/sessions/nonexistent123/leave`,
+    {
+      ...usersInit,
+      method: "POST",
+      headers: {
+        Origin: "http://localhost:5173",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username: "parityuser" }),
+    }
+  );
+  assert(
+    vercelListenLeaveMissing.status === 404,
+    `vercel listen/sessions/[id]/leave missing expected 404, got ${vercelListenLeaveMissing.status}`
+  );
+  assert(
+    vpsListenLeaveMissing.status === 404,
+    `vps listen/sessions/[id]/leave missing expected 404, got ${vpsListenLeaveMissing.status}`
+  );
 }
 
 interface AuthFlowResult {
