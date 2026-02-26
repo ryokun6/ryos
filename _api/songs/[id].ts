@@ -27,7 +27,6 @@ import { getClientIp } from "../_utils/_rate-limit.js";
 import {
   getSong,
   saveSong,
-  deleteSong,
   saveLyrics,
   saveTranslation,
   saveFurigana,
@@ -37,6 +36,7 @@ import {
   type LyricsContent,
 } from "../_utils/_song-service.js";
 import { executeSongsGetCore } from "../cores/songs-get-core.js";
+import { executeSongsDeleteCore } from "../cores/songs-delete-core.js";
 
 // Import from split modules
 import {
@@ -1712,28 +1712,14 @@ Output:
     // DELETE: Delete song (admin only)
     // =========================================================================
     if (req.method === "DELETE") {
-      const authHeader = req.headers.authorization as string | undefined;
-      const usernameHeader = req.headers["x-username"] as string | undefined;
-      const authToken = authHeader?.replace("Bearer ", "") || null;
-      const username = usernameHeader || null;
-
-      const authResult = await validateAuth(redis, username, authToken);
-      if (!authResult.valid) {
-        return errorResponse("Unauthorized - authentication required", 401);
-      }
-
-      // Only admin can delete
-      if (username?.toLowerCase() !== "ryo") {
-        return errorResponse("Forbidden - admin access required", 403);
-      }
-
-      const deleted = await deleteSong(redis, songId);
-      if (!deleted) {
-        return errorResponse("Song not found", 404);
-      }
+      const result = await executeSongsDeleteCore({
+        songId,
+        authHeader: req.headers.authorization as string | undefined,
+        usernameHeader: req.headers["x-username"] as string | undefined,
+      });
 
       logger.info("Song deleted", { duration: `${Date.now() - startTime}ms` });
-      return jsonResponse({ success: true, deleted: true });
+      return jsonResponse(result.body, result.status);
     }
 
     logger.warn("Method not allowed", { method: req.method });

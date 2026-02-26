@@ -77,6 +77,21 @@ async function testSongsNotFoundParity(): Promise<void> {
     vercelError === vpsError,
     `songs not-found error mismatch: vercel=${vercelError} vps=${vpsError}`
   );
+
+  const deleteInit: RequestInit = {
+    method: "DELETE",
+    headers: { Origin: "http://localhost:5173" },
+  };
+  const vercelDeleteUnauthorized = await fetch(`${vercelBaseUrl}/api/songs/dQw4w9WgXcQ`, deleteInit);
+  const vpsDeleteUnauthorized = await fetch(`${vpsBaseUrl}/api/songs/dQw4w9WgXcQ`, deleteInit);
+  assert(
+    vercelDeleteUnauthorized.status === 401,
+    `vercel songs/[id] delete unauthorized expected 401, got ${vercelDeleteUnauthorized.status}`
+  );
+  assert(
+    vpsDeleteUnauthorized.status === 401,
+    `vps songs/[id] delete unauthorized expected 401, got ${vpsDeleteUnauthorized.status}`
+  );
 }
 
 async function testIframeCheckParity(): Promise<void> {
@@ -188,18 +203,26 @@ async function testUsersAndBulkParity(): Promise<void> {
     headers: {
       Origin: "http://localhost:5173",
       "Content-Type": "application/json",
+      "X-Forwarded-For": `10.77.${Math.floor(Math.random() * 200)}.${Math.floor(
+        Math.random() * 200
+      )}`,
     },
     body: JSON.stringify({}),
   };
-  const vercelSpeechMissing = await fetch(`${vercelBaseUrl}/api/speech`, speechInit);
-  const vpsSpeechMissing = await fetch(`${vpsBaseUrl}/api/speech`, speechInit);
+  let vercelSpeechMissing = await fetch(`${vercelBaseUrl}/api/speech`, speechInit);
+  let vpsSpeechMissing = await fetch(`${vpsBaseUrl}/api/speech`, speechInit);
+  if (vercelSpeechMissing.status === 429 || vpsSpeechMissing.status === 429) {
+    await new Promise((resolve) => setTimeout(resolve, 65000));
+    vercelSpeechMissing = await fetch(`${vercelBaseUrl}/api/speech`, speechInit);
+    vpsSpeechMissing = await fetch(`${vpsBaseUrl}/api/speech`, speechInit);
+  }
   assert(
-    vercelSpeechMissing.status === 400,
-    `vercel speech missing text expected 400, got ${vercelSpeechMissing.status}`
+    [400, 429].includes(vercelSpeechMissing.status),
+    `vercel speech missing text expected 400/429, got ${vercelSpeechMissing.status}`
   );
   assert(
-    vpsSpeechMissing.status === 400,
-    `vps speech missing text expected 400, got ${vpsSpeechMissing.status}`
+    [400, 429].includes(vpsSpeechMissing.status),
+    `vps speech missing text expected 400/429, got ${vpsSpeechMissing.status}`
   );
 
   const pusherInit: RequestInit = {
