@@ -5,9 +5,9 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { handleGetUsers } from "../rooms/_helpers/_users.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
+import { executeUsersSearchCore } from "../cores/users-search-core.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -30,11 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   res.setHeader("Content-Type", "application/json");
   setCorsHeaders(res, origin, { methods: ["GET", "OPTIONS"], headers: ["Content-Type"] });
 
-  if (!isAllowedOrigin(origin)) {
-    logger.response(403, Date.now() - startTime);
-    res.status(403).json({ error: "Unauthorized" });
-    return;
-  }
+  const originAllowed = isAllowedOrigin(origin);
 
   if (req.method !== "GET") {
     logger.response(405, Date.now() - startTime);
@@ -43,17 +39,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   const searchQuery = (req.query.search as string) || "";
+  const result = await executeUsersSearchCore({
+    originAllowed,
+    searchQuery,
+  });
 
-  try {
-    const response = await handleGetUsers("users-search", searchQuery);
-    const data = await response.json();
-    
-    logger.info("Users searched", { query: searchQuery, count: data.users?.length || 0 });
-    logger.response(response.status, Date.now() - startTime);
-    res.status(response.status).json(data);
-  } catch (error) {
-    logger.error("Error searching users", error);
-    logger.response(500, Date.now() - startTime);
-    res.status(500).json({ error: "Failed to search users" });
+  if (result.status === 200) {
+    const users = (result.body as { users?: unknown[] })?.users || [];
+    logger.info("Users searched", { query: searchQuery, count: users.length });
+  } else {
+    logger.warn("Users search failed", { query: searchQuery, status: result.status });
   }
+  logger.response(result.status, Date.now() - startTime);
+  res.status(result.status).json(result.body);
 }

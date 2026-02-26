@@ -97,6 +97,33 @@ async function testIframeCheckParity(): Promise<void> {
   assert(!!vpsCsp, "vps iframe-check missing content-security-policy");
 }
 
+async function testUsersAndBulkParity(): Promise<void> {
+  const usersInit: RequestInit = {
+    headers: { Origin: "http://localhost:5173" },
+  };
+  const vercelUsers = await fetch(`${vercelBaseUrl}/api/users?search=parity`, usersInit);
+  const vpsUsers = await fetch(`${vpsBaseUrl}/api/users?search=parity`, usersInit);
+  assert(vercelUsers.status === 200, `vercel users search expected 200, got ${vercelUsers.status}`);
+  assert(vpsUsers.status === 200, `vps users search expected 200, got ${vpsUsers.status}`);
+
+  const vercelBulkInvalid = await fetch(
+    `${vercelBaseUrl}/api/messages/bulk?roomIds=bad room id`,
+    usersInit
+  );
+  const vpsBulkInvalid = await fetch(
+    `${vpsBaseUrl}/api/messages/bulk?roomIds=bad room id`,
+    usersInit
+  );
+  assert(
+    vercelBulkInvalid.status === 400,
+    `vercel bulk invalid roomId expected 400, got ${vercelBulkInvalid.status}`
+  );
+  assert(
+    vpsBulkInvalid.status === 400,
+    `vps bulk invalid roomId expected 400, got ${vpsBulkInvalid.status}`
+  );
+}
+
 interface AuthFlowResult {
   registerStatus: number;
   loginStatus: number;
@@ -472,6 +499,7 @@ async function main(): Promise<void> {
   await testParseTitleParity();
   await testSongsNotFoundParity();
   await testIframeCheckParity();
+  await testUsersAndBulkParity();
   await testAuthFlowParity();
   await testAuthExtendedParity();
   console.log(`[runtime-parity] parity checks passed (${vercelBaseUrl} vs ${vpsBaseUrl})`);
