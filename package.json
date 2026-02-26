@@ -54,6 +54,7 @@
     "test:pusher-client": "bun run tests/test-pusher-client-refcount.ts",
     "test:pusher-constructor-wiring": "bun run tests/test-pusher-client-constructor-wiring.ts",
     "test:vps-smoke": "bun run tests/smoke-vps-api.ts",
+    "test:runtime-parity": "bun run tests/runtime-parity.ts",
     "test:pusher-regression": "bun run tests/run-all-tests.ts pusher",
     "test:chat-regression": "bun run tests/run-all-tests.ts chat- && bun run tests/run-all-tests.ts pusher"
   },

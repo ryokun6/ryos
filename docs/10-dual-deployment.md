@@ -56,6 +56,19 @@ Health check:
 curl -i http://127.0.0.1:3001/api/health
 ```
 
+Runtime parity check (requires both Vercel dev and VPS API running):
+
+```bash
+# terminal 1
+bun run dev:vercel
+
+# terminal 2
+PORT=3100 bun run dev:vps
+
+# terminal 3
+VERCEL_API_BASE_URL=http://127.0.0.1:3000 VPS_API_BASE_URL=http://127.0.0.1:3100 bun run test:runtime-parity
+```
+
 ---
 
 ## systemd service example
