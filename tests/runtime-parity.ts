@@ -141,6 +141,17 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsPresence.status === 400,
     `vps presence/switch missing username expected 400, got ${vpsPresence.status}`
   );
+
+  const vercelLinkPreviewMissing = await fetch(`${vercelBaseUrl}/api/link-preview`, usersInit);
+  const vpsLinkPreviewMissing = await fetch(`${vpsBaseUrl}/api/link-preview`, usersInit);
+  assert(
+    vercelLinkPreviewMissing.status === 400,
+    `vercel link-preview missing url expected 400, got ${vercelLinkPreviewMissing.status}`
+  );
+  assert(
+    vpsLinkPreviewMissing.status === 400,
+    `vps link-preview missing url expected 400, got ${vpsLinkPreviewMissing.status}`
+  );
 }
 
 interface AuthFlowResult {
