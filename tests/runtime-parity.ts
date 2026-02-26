@@ -326,6 +326,39 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsListenLeaveMissing.status === 404,
     `vps listen/sessions/[id]/leave missing expected 404, got ${vpsListenLeaveMissing.status}`
   );
+
+  const vercelListenJoinMissing = await fetch(
+    `${vercelBaseUrl}/api/listen/sessions/nonexistent123/join`,
+    {
+      ...usersInit,
+      method: "POST",
+      headers: {
+        Origin: "http://localhost:5173",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username: "parityuser" }),
+    }
+  );
+  const vpsListenJoinMissing = await fetch(
+    `${vpsBaseUrl}/api/listen/sessions/nonexistent123/join`,
+    {
+      ...usersInit,
+      method: "POST",
+      headers: {
+        Origin: "http://localhost:5173",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username: "parityuser" }),
+    }
+  );
+  assert(
+    vercelListenJoinMissing.status === 404,
+    `vercel listen/sessions/[id]/join missing expected 404, got ${vercelListenJoinMissing.status}`
+  );
+  assert(
+    vpsListenJoinMissing.status === 404,
+    `vps listen/sessions/[id]/join missing expected 404, got ${vpsListenJoinMissing.status}`
+  );
 }
 
 interface AuthFlowResult {
