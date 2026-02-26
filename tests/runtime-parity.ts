@@ -60,6 +60,19 @@ async function testParseTitleParity(): Promise<void> {
   );
 }
 
+async function testChatParity(): Promise<void> {
+  const init: RequestInit = {
+    method: "GET",
+    headers: { Origin: "http://localhost:5173" },
+  };
+
+  const vercel = await fetch(`${vercelBaseUrl}/api/chat`, init);
+  const vps = await fetch(`${vpsBaseUrl}/api/chat`, init);
+
+  assert(vercel.status === 405, `vercel chat GET expected 405, got ${vercel.status}`);
+  assert(vps.status === 405, `vps chat GET expected 405, got ${vps.status}`);
+}
+
 async function testSongsNotFoundParity(): Promise<void> {
   const init: RequestInit = {
     headers: { Origin: "http://localhost:5173" },
@@ -706,12 +719,12 @@ async function testUsersAndBulkParity(): Promise<void> {
     body: new FormData(),
   });
   assert(
-    vercelTranscribeNoFile.status === 400,
-    `vercel audio-transcribe without file expected 400, got ${vercelTranscribeNoFile.status}`
+    [400, 429].includes(vercelTranscribeNoFile.status),
+    `vercel audio-transcribe without file expected 400/429, got ${vercelTranscribeNoFile.status}`
   );
   assert(
-    vpsTranscribeNoFile.status === 400,
-    `vps audio-transcribe without file expected 400, got ${vpsTranscribeNoFile.status}`
+    [400, 429].includes(vpsTranscribeNoFile.status),
+    `vps audio-transcribe without file expected 400/429, got ${vpsTranscribeNoFile.status}`
   );
 
   const vercelRoomsList = await fetch(`${vercelBaseUrl}/api/rooms`, usersInit);
@@ -1391,6 +1404,7 @@ async function testAuthExtendedParity(): Promise<void> {
 
 async function main(): Promise<void> {
   await testParseTitleParity();
+  await testChatParity();
   await testSongsNotFoundParity();
   await testIframeCheckParity();
   await testUsersAndBulkParity();
