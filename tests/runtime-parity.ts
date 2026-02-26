@@ -168,6 +168,31 @@ async function testSongsNotFoundParity(): Promise<void> {
     `vps songs/[id] translate-stream invalid expected 400, got ${vpsTranslateStreamInvalid.status}`
   );
 
+  const furiganaStreamInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action: "furigana-stream" }),
+  };
+  const vercelFuriganaStreamInvalid = await fetch(
+    `${vercelBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    furiganaStreamInit
+  );
+  const vpsFuriganaStreamInvalid = await fetch(
+    `${vpsBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    furiganaStreamInit
+  );
+  assert(
+    vercelFuriganaStreamInvalid.status === vpsFuriganaStreamInvalid.status,
+    `songs/[id] furigana-stream status mismatch: vercel=${vercelFuriganaStreamInvalid.status} vps=${vpsFuriganaStreamInvalid.status}`
+  );
+  assert(
+    [200, 400].includes(vercelFuriganaStreamInvalid.status),
+    `songs/[id] furigana-stream expected 200/400, got ${vercelFuriganaStreamInvalid.status}`
+  );
+
   const clearCachedDataInit: RequestInit = {
     method: "POST",
     headers: {
