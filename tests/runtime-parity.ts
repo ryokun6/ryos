@@ -123,6 +123,25 @@ async function testUsersAndBulkParity(): Promise<void> {
     `vps bulk invalid roomId expected 400, got ${vpsBulkInvalid.status}`
   );
 
+  const songsCreateInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ id: "dQw4w9WgXcQ", title: "Parity Song" }),
+  };
+  const vercelSongsCreateUnauthorized = await fetch(`${vercelBaseUrl}/api/songs`, songsCreateInit);
+  const vpsSongsCreateUnauthorized = await fetch(`${vpsBaseUrl}/api/songs`, songsCreateInit);
+  assert(
+    vercelSongsCreateUnauthorized.status === 401,
+    `vercel songs create unauthorized expected 401, got ${vercelSongsCreateUnauthorized.status}`
+  );
+  assert(
+    vpsSongsCreateUnauthorized.status === 401,
+    `vps songs create unauthorized expected 401, got ${vpsSongsCreateUnauthorized.status}`
+  );
+
   const presenceInit: RequestInit = {
     method: "POST",
     headers: {
