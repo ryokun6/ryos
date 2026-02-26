@@ -359,6 +359,42 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsListenJoinMissing.status === 404,
     `vps listen/sessions/[id]/join missing expected 404, got ${vpsListenJoinMissing.status}`
   );
+
+  const vercelShareAppletMissingId = await fetch(`${vercelBaseUrl}/api/share-applet`, usersInit);
+  const vpsShareAppletMissingId = await fetch(`${vpsBaseUrl}/api/share-applet`, usersInit);
+  assert(
+    vercelShareAppletMissingId.status === 400,
+    `vercel share-applet missing id expected 400, got ${vercelShareAppletMissingId.status}`
+  );
+  assert(
+    vpsShareAppletMissingId.status === 400,
+    `vps share-applet missing id expected 400, got ${vpsShareAppletMissingId.status}`
+  );
+
+  const shareAppletPostInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ content: "console.log('hello')" }),
+  };
+  const vercelShareAppletUnauthorized = await fetch(
+    `${vercelBaseUrl}/api/share-applet`,
+    shareAppletPostInit
+  );
+  const vpsShareAppletUnauthorized = await fetch(
+    `${vpsBaseUrl}/api/share-applet`,
+    shareAppletPostInit
+  );
+  assert(
+    vercelShareAppletUnauthorized.status === 401,
+    `vercel share-applet POST unauthorized expected 401, got ${vercelShareAppletUnauthorized.status}`
+  );
+  assert(
+    vpsShareAppletUnauthorized.status === 401,
+    `vps share-applet POST unauthorized expected 401, got ${vpsShareAppletUnauthorized.status}`
+  );
 }
 
 interface AuthFlowResult {
