@@ -11,27 +11,17 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createRedis } from "../_utils/redis.js";
 import {
   extractAuthNormalized,
-  validateAuth,
 } from "../_utils/auth/index.js";
 import {
   setCorsHeaders,
   handlePreflight,
+  isAllowedOrigin,
+  getEffectiveOrigin,
 } from "../_utils/_cors.js";
-import { getBackupStorageProvider } from "../_utils/_backup-storage.js";
+import { executeSyncBackupTokenCore } from "../cores/sync-backup-token-core.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
-
-/** Maximum backup size: 50MB */
-const MAX_BACKUP_SIZE = 50 * 1024 * 1024;
-
-/** Rate limit: 10 backups per hour */
-const RATE_LIMIT_WINDOW = 3600;
-const RATE_LIMIT_MAX = 10;
-
-function blobPath(username: string) {
-  return `backups/${username}/backup.gz`;
-}
 
 export default async function handler(
   req: VercelRequest,
@@ -45,7 +35,7 @@ export default async function handler(
     return;
   }
 
-  const origin = req.headers.origin as string | undefined;
+  const origin = getEffectiveOrigin(req);
   setCorsHeaders(res, origin, {
     methods: ["POST", "OPTIONS"],
   });
@@ -58,39 +48,17 @@ export default async function handler(
   const redis = createRedis();
 
   const { username, token } = extractAuthNormalized(req);
-  const authResult = await validateAuth(redis, username, token);
+  const result = await executeSyncBackupTokenCore({
+    originAllowed: isAllowedOrigin(origin),
+    redis,
+    username,
+    token,
+  });
 
-  if (!authResult.valid || !username) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
+  if (result.headers) {
+    for (const [name, value] of Object.entries(result.headers)) {
+      res.setHeader(name, value);
+    }
   }
-
-  // Rate limiting
-  const rlKey = `rl:sync:backup:${username}`;
-  const current = await redis.incr(rlKey);
-  if (current === 1) {
-    await redis.expire(rlKey, RATE_LIMIT_WINDOW);
-  }
-  if (current > RATE_LIMIT_MAX) {
-    res.status(429).json({
-      error: "Too many backup requests. Please try again later.",
-    });
-    return;
-  }
-
-  try {
-    const storage = getBackupStorageProvider();
-    const uploadToken = await storage.createUploadToken({
-      pathname: blobPath(username),
-      allowedContentTypes: ["application/gzip", "application/octet-stream"],
-      maximumSizeInBytes: MAX_BACKUP_SIZE,
-    });
-
-    res.status(200).json(uploadToken);
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown error";
-    console.error("Error generating client token:", message, error);
-    res.status(500).json({ error: `Failed to generate upload token: ${message}` });
-  }
+  res.status(result.status).json(result.body);
 }

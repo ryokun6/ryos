@@ -9,28 +9,17 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createRedis } from "../_utils/redis.js";
 import {
   extractAuthNormalized,
-  validateAuth,
 } from "../_utils/auth/index.js";
 import {
   setCorsHeaders,
   handlePreflight,
+  isAllowedOrigin,
+  getEffectiveOrigin,
 } from "../_utils/_cors.js";
+import { executeSyncStatusCore } from "../cores/sync-status-core.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
-
-function metaKey(username: string) {
-  return `sync:meta:${username}`;
-}
-
-interface BackupMeta {
-  timestamp: string;
-  version: number;
-  totalSize: number;
-  blobUrl: string;
-  createdAt: string;
-  storageProvider?: string;
-}
 
 export default async function handler(
   req: VercelRequest,
@@ -41,7 +30,7 @@ export default async function handler(
     return;
   }
 
-  const origin = req.headers.origin as string | undefined;
+  const origin = getEffectiveOrigin(req);
   setCorsHeaders(res, origin, { methods: ["GET", "OPTIONS"] });
 
   if (req.method !== "GET") {
@@ -51,41 +40,18 @@ export default async function handler(
 
   const redis = createRedis();
 
-  // Extract and validate auth
   const { username, token } = extractAuthNormalized(req);
-  const authResult = await validateAuth(redis, username, token);
+  const result = await executeSyncStatusCore({
+    originAllowed: isAllowedOrigin(origin),
+    redis,
+    username,
+    token,
+  });
 
-  if (!authResult.valid || !username) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-
-  try {
-    const rawMeta = await redis.get<string | BackupMeta>(metaKey(username));
-
-    if (!rawMeta) {
-      res.status(200).json({
-        hasBackup: false,
-        metadata: null,
-      });
-      return;
+  if (result.headers) {
+    for (const [name, value] of Object.entries(result.headers)) {
+      res.setHeader(name, value);
     }
-
-    const meta: BackupMeta =
-      typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta;
-
-    res.status(200).json({
-      hasBackup: true,
-      metadata: {
-        timestamp: meta.timestamp,
-        version: meta.version,
-        totalSize: meta.totalSize,
-        createdAt: meta.createdAt,
-        storageProvider: meta.storageProvider || "vercel_blob",
-      },
-    });
-  } catch (error) {
-    console.error("Error checking backup status:", error);
-    res.status(500).json({ error: "Failed to check backup status" });
   }
+  res.status(result.status).json(result.body);
 }
