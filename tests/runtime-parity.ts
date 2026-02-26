@@ -117,6 +117,31 @@ async function testSongsNotFoundParity(): Promise<void> {
     [200, 400].includes(vercelSearchLyricsMissingQuery.status),
     `songs/[id] search-lyrics expected 200/400, got ${vercelSearchLyricsMissingQuery.status}`
   );
+
+  const translateInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action: "translate" }),
+  };
+  const vercelTranslateMissingLanguage = await fetch(
+    `${vercelBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    translateInit
+  );
+  const vpsTranslateMissingLanguage = await fetch(
+    `${vpsBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    translateInit
+  );
+  assert(
+    vercelTranslateMissingLanguage.status === 400,
+    `vercel songs/[id] translate missing language expected 400, got ${vercelTranslateMissingLanguage.status}`
+  );
+  assert(
+    vpsTranslateMissingLanguage.status === 400,
+    `vps songs/[id] translate missing language expected 400, got ${vpsTranslateMissingLanguage.status}`
+  );
 }
 
 async function testIframeCheckParity(): Promise<void> {

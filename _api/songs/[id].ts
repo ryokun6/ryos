@@ -38,6 +38,7 @@ import {
 import { executeSongsGetCore } from "../cores/songs-get-core.js";
 import { executeSongsDeleteCore } from "../cores/songs-delete-core.js";
 import { executeSongsSearchLyricsCore } from "../cores/songs-search-lyrics-core.js";
+import { executeSongsTranslateCore } from "../cores/songs-translate-core.js";
 
 // Import from split modules
 import {
@@ -667,103 +668,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Returns full LRC translation in JSON
       // =======================================================================
       if (action === "translate") {
-        const language =
-          typeof bodyObj?.language === "string" ? (bodyObj.language as string).trim() : "";
-        const force = bodyObj?.force === true;
-
-        if (!language) {
-          return errorResponse("Invalid request body", 400);
-        }
-
-        const song = await getSong(redis, songId, {
-          includeMetadata: true,
-          includeLyrics: true,
-          includeTranslations: [language],
-        });
-
-        if (!song) {
-          return errorResponse("Song not found", 404);
-        }
-
-        if (!song.lyrics?.lrc) {
-          return errorResponse("Song has no lyrics", 404);
-        }
-
-        // Permission check: force refresh requires auth when translation already exists
-        if (force && song.translations?.[language]) {
-          if (!username || !authToken) {
-            return errorResponse("Unauthorized - authentication required to force refresh translation", 401);
-          }
-          const authResult = await validateAuth(redis, username, authToken);
-          if (!authResult.valid) {
-            return errorResponse("Unauthorized - invalid credentials", 401);
-          }
-          const permission = canModifySong(song, username);
-          if (!permission.canModify) {
-            return errorResponse(permission.reason || "Only the song owner can force refresh", 403);
-          }
-        }
-
-        // Generate parsedLines on-demand (not stored in Redis)
-        const parsedLines = parseLyricsContent(
-          { lrc: song.lyrics.lrc, krc: song.lyrics.krc },
-          song.lyricsSource?.title || song.title,
-          song.lyricsSource?.artist || song.artist
-        );
-
-        if (parsedLines.length === 0) {
-          return errorResponse("Song has no lyrics", 404);
-        }
-
-        // Return cached translation when available (and not forcing)
-        if (!force && song.translations?.[language]) {
-          return jsonResponse({
-            translation: song.translations[language],
-            cached: true,
-          });
-        }
-
-        // For Chinese Traditional: use KRC source directly if available (skip AI)
-        if (isChineseTraditional(language) && song.lyrics.krc) {
-          const krcDerivedLrc = buildChineseTranslationFromKrc(
-            song.lyrics,
-            song.lyricsSource?.title || song.title,
-            song.lyricsSource?.artist || song.artist
-          );
-          if (krcDerivedLrc) {
-            await saveTranslation(redis, songId, language, krcDerivedLrc);
-            logger.info("Using KRC-derived Traditional Chinese translation (non-stream)");
-            return jsonResponse({
-              translation: krcDerivedLrc,
-              cached: false,
-            });
-          }
-        }
-
-        const { translations, success } = await streamTranslation(
-          parsedLines,
-          language,
+        const result = await executeSongsTranslateCore({
+          songId,
+          body: bodyObj,
+          username,
+          authToken,
           requestId,
-          () => {}
-        );
+        });
 
-        if (!success) {
-          return errorResponse("Failed to translate lyrics", 404);
+        if (result.status === 400) {
+          logger.warn("Invalid translate request body");
+        } else if (result.status === 401) {
+          const error = (result.body as { error?: string })?.error;
+          if (error?.includes("force refresh translation")) {
+            logger.warn("Unauthorized force refresh translation - missing credentials");
+          } else {
+            logger.warn("Unauthorized force refresh translation - invalid credentials");
+          }
+        } else if (result.status === 403) {
+          logger.warn("Forbidden force refresh translation");
+        } else if (result.status === 404) {
+          logger.warn("Translate action failed", {
+            error: (result.body as { error?: string })?.error,
+          });
+        } else if (result.status === 200) {
+          const meta = (result.body as { _meta?: { translationMode?: string } })?._meta;
+          if (meta?.translationMode === "krc-derived") {
+            logger.info("Using KRC-derived Traditional Chinese translation (non-stream)");
+          }
         }
 
-        const translatedLrc = parsedLines
-          .map(
-            (line, index) =>
-              `${msToLrcTime(line.startTimeMs)}${translations[index] || line.words}`
-          )
-          .join("\n");
+        const body =
+          typeof result.body === "object" && result.body && "_meta" in (result.body as Record<string, unknown>)
+            ? (() => {
+                const { _meta: _ignored, ...rest } = result.body as Record<string, unknown>;
+                return rest;
+              })()
+            : result.body;
 
-        await saveTranslation(redis, songId, language, translatedLrc);
-
-        return jsonResponse({
-          translation: translatedLrc,
-          cached: false,
-        });
+        return jsonResponse(body, result.status);
       }
 
       // =======================================================================
