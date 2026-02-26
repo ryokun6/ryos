@@ -218,6 +218,81 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsListenGetMissing.status === 404,
     `vps listen/sessions/[id] missing expected 404, got ${vpsListenGetMissing.status}`
   );
+
+  const syncPayload = {
+    username: "parityuser",
+    state: {
+      currentTrackId: "track-1",
+      currentTrackMeta: { title: "Parity Track" },
+      isPlaying: true,
+      positionMs: 1234,
+    },
+  };
+  const vercelListenSyncMissing = await fetch(
+    `${vercelBaseUrl}/api/listen/sessions/nonexistent123/sync`,
+    {
+      ...usersInit,
+      method: "POST",
+      headers: {
+        Origin: "http://localhost:5173",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(syncPayload),
+    }
+  );
+  const vpsListenSyncMissing = await fetch(
+    `${vpsBaseUrl}/api/listen/sessions/nonexistent123/sync`,
+    {
+      ...usersInit,
+      method: "POST",
+      headers: {
+        Origin: "http://localhost:5173",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(syncPayload),
+    }
+  );
+  assert(
+    vercelListenSyncMissing.status === 404,
+    `vercel listen/sessions/[id]/sync missing expected 404, got ${vercelListenSyncMissing.status}`
+  );
+  assert(
+    vpsListenSyncMissing.status === 404,
+    `vps listen/sessions/[id]/sync missing expected 404, got ${vpsListenSyncMissing.status}`
+  );
+
+  const vercelListenReactionMissing = await fetch(
+    `${vercelBaseUrl}/api/listen/sessions/nonexistent123/reaction`,
+    {
+      ...usersInit,
+      method: "POST",
+      headers: {
+        Origin: "http://localhost:5173",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username: "parityuser", emoji: "🔥" }),
+    }
+  );
+  const vpsListenReactionMissing = await fetch(
+    `${vpsBaseUrl}/api/listen/sessions/nonexistent123/reaction`,
+    {
+      ...usersInit,
+      method: "POST",
+      headers: {
+        Origin: "http://localhost:5173",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username: "parityuser", emoji: "🔥" }),
+    }
+  );
+  assert(
+    vercelListenReactionMissing.status === 404,
+    `vercel listen/sessions/[id]/reaction missing expected 404, got ${vercelListenReactionMissing.status}`
+  );
+  assert(
+    vpsListenReactionMissing.status === 404,
+    `vps listen/sessions/[id]/reaction missing expected 404, got ${vpsListenReactionMissing.status}`
+  );
 }
 
 interface AuthFlowResult {
