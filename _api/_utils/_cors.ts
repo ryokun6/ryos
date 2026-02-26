@@ -28,11 +28,39 @@ const ALLOWED_VERCEL_PREVIEW_PREFIXES = [
   "os-ryo-",    // Alternative naming
 ];
 
+function parseAllowedOrigins(raw: string | undefined): Set<string> {
+  if (!raw) return new Set();
+  return new Set(
+    raw
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  );
+}
+
+const ADDITIONAL_ALLOWED_ORIGINS = parseAllowedOrigins(process.env.ALLOWED_ORIGINS);
+const ADDITIONAL_PREVIEW_ORIGINS = parseAllowedOrigins(process.env.ALLOWED_PREVIEW_ORIGINS);
+const ADDITIONAL_DEV_ORIGINS = parseAllowedOrigins(process.env.ALLOWED_DEV_ORIGINS);
+
 function getRuntimeEnv(): VercelEnv {
+  const explicitAppEnv = process.env.APP_ENV;
+  if (
+    explicitAppEnv === "production" ||
+    explicitAppEnv === "preview" ||
+    explicitAppEnv === "development"
+  ) {
+    return explicitAppEnv;
+  }
+
   const env = process.env.VERCEL_ENV;
   if (env === "production" || env === "preview" || env === "development") {
     return env;
   }
+
+  if (process.env.NODE_ENV === "production") {
+    return "production";
+  }
+
   return "development";
 }
 
@@ -91,6 +119,11 @@ export function isAllowedOrigin(origin: string | null): boolean {
   
   // Always allow tailscale origins (for local network access)
   if (isTailscaleOrigin(origin)) return true;
+
+  // Allow explicit global overrides for all environments
+  if (ADDITIONAL_ALLOWED_ORIGINS.has(origin)) {
+    return true;
+  }
   
   const env = getRuntimeEnv();
 
@@ -98,10 +131,13 @@ export function isAllowedOrigin(origin: string | null): boolean {
     return origin === PROD_ALLOWED_ORIGIN;
   }
   if (env === "preview") {
+    if (ADDITIONAL_PREVIEW_ORIGINS.has(origin)) {
+      return true;
+    }
     return isVercelPreviewOrigin(origin);
   }
   // Development is default fallback
-  return isLocalhostOrigin(origin);
+  return isLocalhostOrigin(origin) || ADDITIONAL_DEV_ORIGINS.has(origin);
 }
 
 /**

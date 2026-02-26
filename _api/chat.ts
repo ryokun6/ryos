@@ -625,7 +625,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // --- Geolocation (available only on deployed environment) ---
-    // geolocation() requires Web Request headers, which aren't available in vercel dev
+    // geolocation() requires Web Request headers, which aren't available in vercel dev.
+    // On VPS, fall back to proxy-provided geo headers when available.
     let geo: ReturnType<typeof geolocation> = {};
     try {
       // Only works with Web Request in production, fails in vercel dev with VercelRequest
@@ -633,6 +634,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch {
       // In local dev, geolocation isn't available - use empty object
       geo = {};
+    }
+
+    if (!geo || Object.keys(geo).length === 0) {
+      const city =
+        getHeader(req, "x-vercel-ip-city") ||
+        getHeader(req, "cf-ipcity") ||
+        getHeader(req, "x-geo-city") ||
+        undefined;
+      const region =
+        getHeader(req, "x-vercel-ip-country-region") ||
+        getHeader(req, "x-geo-region") ||
+        undefined;
+      const country =
+        getHeader(req, "x-vercel-ip-country") ||
+        getHeader(req, "cf-ipcountry") ||
+        getHeader(req, "x-geo-country") ||
+        undefined;
+      const latitude =
+        getHeader(req, "x-vercel-ip-latitude") ||
+        getHeader(req, "x-geo-latitude") ||
+        undefined;
+      const longitude =
+        getHeader(req, "x-vercel-ip-longitude") ||
+        getHeader(req, "x-geo-longitude") ||
+        undefined;
+
+      geo = {
+        ...(city ? { city } : {}),
+        ...(region ? { region } : {}),
+        ...(country ? { country } : {}),
+        ...(latitude ? { latitude } : {}),
+        ...(longitude ? { longitude } : {}),
+      };
     }
 
     // Attach geolocation info to system state that will be sent to the prompt

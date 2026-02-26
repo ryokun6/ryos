@@ -78,7 +78,7 @@ export default async function handler(
     method: req.method, 
     effectiveOrigin,
     youtubeKeyCount: [process.env.YOUTUBE_API_KEY, process.env.YOUTUBE_API_KEY_2].filter(Boolean).length,
-    vercelEnv: process.env.VERCEL_ENV || "not set"
+    runtimeEnv: process.env.APP_ENV || process.env.VERCEL_ENV || process.env.NODE_ENV || "development"
   });
 
   if (req.method === "OPTIONS") {
@@ -99,12 +99,9 @@ export default async function handler(
   res.setHeader("Content-Type", "application/json");
   setCorsHeaders(res, effectiveOrigin, { methods: ["POST", "OPTIONS"], headers: ["Content-Type"] });
 
-  // Check origin - be more permissive in development
-  const vercelEnv = process.env.VERCEL_ENV;
-  const isDev = !vercelEnv || vercelEnv === "development";
-  
-  if (!isDev && !isAllowedOrigin(effectiveOrigin)) {
-    logger.error("Origin not allowed", { effectiveOrigin, vercelEnv });
+  // Check origin using shared environment-aware CORS policy
+  if (!isAllowedOrigin(effectiveOrigin)) {
+    logger.error("Origin not allowed", { effectiveOrigin });
     logger.response(403, Date.now() - startTime);
     res.status(403).json({ error: "Origin not allowed" });
     return;
