@@ -95,6 +95,17 @@ async function testIframeCheckParity(): Promise<void> {
   const vpsCsp = vpsRes.headers.get("content-security-policy");
   assert(!!vercelCsp, "vercel iframe-check missing content-security-policy");
   assert(!!vpsCsp, "vps iframe-check missing content-security-policy");
+
+  const vercelMissingUrl = await fetch(`${vercelBaseUrl}/api/iframe-check`, init);
+  const vpsMissingUrl = await fetch(`${vpsBaseUrl}/api/iframe-check`, init);
+  assert(
+    vercelMissingUrl.status === 400,
+    `vercel iframe-check missing url expected 400, got ${vercelMissingUrl.status}`
+  );
+  assert(
+    vpsMissingUrl.status === 400,
+    `vps iframe-check missing url expected 400, got ${vpsMissingUrl.status}`
+  );
 }
 
 async function testUsersAndBulkParity(): Promise<void> {
