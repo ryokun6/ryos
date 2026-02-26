@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "NODE_OPTIONS='--max-old-space-size=4096' vite --port ${PORT:-5173}",
     "dev:vercel": "bash scripts/ensure-api-symlink.sh && vercel dev",
-    "dev:vps": "bun run server/vps-api-server.ts",
-    "start:vps": "NODE_ENV=production APP_ENV=production bun run server/vps-api-server.ts",
+    "dev:vps": "bun run server/index.ts",
+    "start:vps": "NODE_ENV=production APP_ENV=production bun run server/index.ts",
     "version:bump": "bun run scripts/generate-build-version.ts --bump",
     "prebuild": "bun run scripts/generate-build-version.ts",
     "build": "tsc -b && vite build && cp dist/sw.js dist/version.json .vercel/output/static/ && (cp dist/workbox-*.js .vercel/output/static/ 2>/dev/null || true) && node -e \"const c=require('./.vercel/output/config.json');c.cleanUrls=true;c.trailingSlash=false;require('fs').writeFileSync('./.vercel/output/config.json',JSON.stringify(c,null,2))\"",
@@ -53,6 +53,7 @@
     "test:chat-wiring": "bun run test:chat-notification-wiring && bun run test:chat-hook-lifecycle && bun run test:chat-broadcast-wiring && bun run test:chat-store-guards",
     "test:pusher-client": "bun run tests/test-pusher-client-refcount.ts",
     "test:pusher-constructor-wiring": "bun run tests/test-pusher-client-constructor-wiring.ts",
+    "test:vps-smoke": "bun run tests/smoke-vps-api.ts",
     "test:pusher-regression": "bun run tests/run-all-tests.ts pusher",
     "test:chat-regression": "bun run tests/run-all-tests.ts chat- && bun run tests/run-all-tests.ts pusher"
   },
