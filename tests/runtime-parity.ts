@@ -601,6 +601,48 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsRoomMessageDeleteUnauthorized.status === 401,
     `vps rooms/[id]/messages/[msgId] unauthorized expected 401, got ${vpsRoomMessageDeleteUnauthorized.status}`
   );
+
+  const vercelRoomMessagesMissing = await fetch(
+    `${vercelBaseUrl}/api/rooms/nonexistent123/messages`,
+    usersInit
+  );
+  const vpsRoomMessagesMissing = await fetch(
+    `${vpsBaseUrl}/api/rooms/nonexistent123/messages`,
+    usersInit
+  );
+  assert(
+    vercelRoomMessagesMissing.status === 404,
+    `vercel rooms/[id]/messages missing expected 404, got ${vercelRoomMessagesMissing.status}`
+  );
+  assert(
+    vpsRoomMessagesMissing.status === 404,
+    `vps rooms/[id]/messages missing expected 404, got ${vpsRoomMessagesMissing.status}`
+  );
+
+  const roomMessagesPostInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ content: "hello" }),
+  };
+  const vercelRoomMessagesPostUnauthorized = await fetch(
+    `${vercelBaseUrl}/api/rooms/nonexistent123/messages`,
+    roomMessagesPostInit
+  );
+  const vpsRoomMessagesPostUnauthorized = await fetch(
+    `${vpsBaseUrl}/api/rooms/nonexistent123/messages`,
+    roomMessagesPostInit
+  );
+  assert(
+    vercelRoomMessagesPostUnauthorized.status === 401,
+    `vercel rooms/[id]/messages POST unauthorized expected 401, got ${vercelRoomMessagesPostUnauthorized.status}`
+  );
+  assert(
+    vpsRoomMessagesPostUnauthorized.status === 401,
+    `vps rooms/[id]/messages POST unauthorized expected 401, got ${vpsRoomMessagesPostUnauthorized.status}`
+  );
 }
 
 interface AuthFlowResult {
