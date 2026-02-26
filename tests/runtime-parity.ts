@@ -727,6 +727,17 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsAppletAiMethod.status === 405,
     `vps applet-ai method expected 405, got ${vpsAppletAiMethod.status}`
   );
+
+  const vercelIeGenerateMethod = await fetch(`${vercelBaseUrl}/api/ie-generate`, usersInit);
+  const vpsIeGenerateMethod = await fetch(`${vpsBaseUrl}/api/ie-generate`, usersInit);
+  assert(
+    vercelIeGenerateMethod.status === 405,
+    `vercel ie-generate method expected 405, got ${vercelIeGenerateMethod.status}`
+  );
+  assert(
+    vpsIeGenerateMethod.status === 405,
+    `vps ie-generate method expected 405, got ${vpsIeGenerateMethod.status}`
+  );
 }
 
 interface AuthFlowResult {
