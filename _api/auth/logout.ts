@@ -7,9 +7,9 @@
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
-import { deleteToken, validateAuth } from "../_utils/auth/index.js";
 import { initLogger } from "../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
+import { executeAuthLogoutCore } from "../cores/auth-logout-core.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -43,11 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  if (!isAllowedOrigin(origin)) {
-    logger.response(403, Date.now() - startTime);
-    res.status(403).json({ error: "Unauthorized" });
-    return;
-  }
+  const originAllowed = isAllowedOrigin(origin);
 
   const redis = createRedis();
 
@@ -56,22 +52,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
   const username = usernameHeader || null;
 
-  if (!username || !token) {
-    logger.response(401, Date.now() - startTime);
-    res.status(401).json({ error: "Unauthorized - missing credentials" });
-    return;
+  const result = await executeAuthLogoutCore({
+    originAllowed,
+    username,
+    token,
+    redis,
+  });
+
+  if (result.status === 200) {
+    logger.info("User logged out", { username });
   }
-
-  const authResult = await validateAuth(redis, username, token, { allowExpired: true });
-  if (!authResult.valid) {
-    logger.response(401, Date.now() - startTime);
-    res.status(401).json({ error: "Unauthorized - invalid token" });
-    return;
-  }
-
-  await deleteToken(redis, token);
-
-  logger.info("User logged out", { username });
-  logger.response(200, Date.now() - startTime);
-  res.status(200).json({ success: true, message: "Logged out successfully" });
+  logger.response(result.status, Date.now() - startTime);
+  res.status(result.status).json(result.body);
 }

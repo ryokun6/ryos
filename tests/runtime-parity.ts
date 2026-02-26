@@ -97,10 +97,113 @@ async function testIframeCheckParity(): Promise<void> {
   assert(!!vpsCsp, "vps iframe-check missing content-security-policy");
 }
 
+interface AuthFlowResult {
+  registerStatus: number;
+  verifyStatus: number;
+  logoutStatus: number;
+  verifyAfterLogoutStatus: number;
+}
+
+async function runAuthFlow(baseUrl: string, marker: string): Promise<AuthFlowResult> {
+  const username = `p${marker[0] || "x"}${Date.now().toString(36)}${Math.floor(
+    Math.random() * 100000
+  ).toString(36)}`;
+  const password = "parity-password-123";
+  let token: string | undefined;
+  let registerStatus = 0;
+  let registerPayload: unknown = null;
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const syntheticIp = `10.${attempt}.${Math.floor(Math.random() * 200)}.${Math.floor(
+      Math.random() * 200
+    )}`;
+    const registerRes = await fetch(`${baseUrl}/api/auth/register`, {
+      method: "POST",
+      headers: {
+        Origin: "http://localhost:5173",
+        "Content-Type": "application/json",
+        "X-Forwarded-For": syntheticIp,
+      },
+      body: JSON.stringify({ username, password }),
+    });
+    registerStatus = registerRes.status;
+    registerPayload = (await registerRes.json()) as unknown;
+    token = (registerPayload as { token?: string })?.token;
+    if (token) {
+      break;
+    }
+    if (registerRes.status !== 429) {
+      break;
+    }
+  }
+
+  assert(
+    !!token,
+    `${marker} register response missing token (status=${registerStatus}, body=${JSON.stringify(
+      registerPayload
+    )})`
+  );
+
+  const verifyRes = await fetch(`${baseUrl}/api/auth/token/verify`, {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      Authorization: `Bearer ${token}`,
+      "X-Username": username,
+    },
+  });
+
+  const logoutRes = await fetch(`${baseUrl}/api/auth/logout`, {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      Authorization: `Bearer ${token}`,
+      "X-Username": username,
+    },
+  });
+
+  const verifyAfterLogoutRes = await fetch(`${baseUrl}/api/auth/token/verify`, {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      Authorization: `Bearer ${token}`,
+      "X-Username": username,
+    },
+  });
+
+  return {
+    registerStatus,
+    verifyStatus: verifyRes.status,
+    logoutStatus: logoutRes.status,
+    verifyAfterLogoutStatus: verifyAfterLogoutRes.status,
+  };
+}
+
+async function testAuthFlowParity(): Promise<void> {
+  const vercel = await runAuthFlow(vercelBaseUrl, "vercel");
+  const vps = await runAuthFlow(vpsBaseUrl, "vps");
+
+  assert(vercel.registerStatus === 201, `vercel register expected 201, got ${vercel.registerStatus}`);
+  assert(vps.registerStatus === 201, `vps register expected 201, got ${vps.registerStatus}`);
+  assert(vercel.verifyStatus === 200, `vercel verify expected 200, got ${vercel.verifyStatus}`);
+  assert(vps.verifyStatus === 200, `vps verify expected 200, got ${vps.verifyStatus}`);
+  assert(vercel.logoutStatus === 200, `vercel logout expected 200, got ${vercel.logoutStatus}`);
+  assert(vps.logoutStatus === 200, `vps logout expected 200, got ${vps.logoutStatus}`);
+  assert(
+    vercel.verifyAfterLogoutStatus === 401,
+    `vercel verify-after-logout expected 401, got ${vercel.verifyAfterLogoutStatus}`
+  );
+  assert(
+    vps.verifyAfterLogoutStatus === 401,
+    `vps verify-after-logout expected 401, got ${vps.verifyAfterLogoutStatus}`
+  );
+}
+
 async function main(): Promise<void> {
   await testParseTitleParity();
   await testSongsNotFoundParity();
   await testIframeCheckParity();
+  await testAuthFlowParity();
   console.log(`[runtime-parity] parity checks passed (${vercelBaseUrl} vs ${vpsBaseUrl})`);
 }
 

@@ -6,10 +6,9 @@
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
-import { validateAuth } from "../../_utils/auth/index.js";
-import { isProfaneUsername } from "../../_utils/_validation.js";
 import { initLogger } from "../../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../../_utils/_cors.js";
+import { executeAuthTokenVerifyCore } from "../../cores/auth-token-verify-core.js";
 
 export const runtime = "nodejs";
 
@@ -56,62 +55,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  if (!isAllowedOrigin(origin)) {
-    logger.warn("Unauthorized origin", { origin });
-    logger.response(403, Date.now() - startTime);
-    return res.status(403).json({ error: "Unauthorized" });
-  }
-
   const redis = createRedis();
 
   // Extract auth from headers
   const { username, token } = extractAuth(req);
 
-  if (!token) {
-    logger.warn("Missing authorization token");
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Authorization token required" });
-  }
-
-  if (!username) {
-    logger.warn("Missing X-Username header");
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "X-Username header required" });
-  }
-
-  // Check profanity
-  if (isProfaneUsername(username)) {
-    logger.warn("Profane username detected", { username });
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Invalid authentication token" });
-  }
-
-  // Validate token (allow expired for grace period info)
-  const result = await validateAuth(redis, username, token, { allowExpired: true });
-
-  if (!result.valid) {
-    logger.warn("Invalid authentication token", { username });
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Invalid authentication token" });
-  }
-
-  if (result.expired) {
-    logger.info("Token within grace period", { username: username.toLowerCase() });
-    logger.response(200, Date.now() - startTime);
-    return res.status(200).json({ 
-      valid: true,
-      username: username.toLowerCase(),
-      expired: true,
-      message: "Token is within grace period",
-    });
-  }
-
-  logger.info("Token verified successfully", { username: username.toLowerCase() });
-  logger.response(200, Date.now() - startTime);
-  
-  return res.status(200).json({ 
-    valid: true,
-    username: username.toLowerCase(),
-    message: "Token is valid",
+  const result = await executeAuthTokenVerifyCore({
+    originAllowed: isAllowedOrigin(origin),
+    username,
+    token,
+    redis,
   });
+
+  if (result.status === 200) {
+    logger.info("Token verification completed", { username: username?.toLowerCase() });
+  } else {
+    logger.warn("Token verification failed", { username, status: result.status });
+  }
+  logger.response(result.status, Date.now() - startTime);
+  return res.status(result.status).json(result.body);
 }
