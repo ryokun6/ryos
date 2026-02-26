@@ -471,6 +471,46 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsRoomsCreateUnauthorized.status === 401,
     `vps rooms create unauthorized expected 401, got ${vpsRoomsCreateUnauthorized.status}`
   );
+
+  const vercelRoomGetMissing = await fetch(
+    `${vercelBaseUrl}/api/rooms/nonexistent123`,
+    usersInit
+  );
+  const vpsRoomGetMissing = await fetch(
+    `${vpsBaseUrl}/api/rooms/nonexistent123`,
+    usersInit
+  );
+  assert(
+    vercelRoomGetMissing.status === 404,
+    `vercel rooms/[id] missing expected 404, got ${vercelRoomGetMissing.status}`
+  );
+  assert(
+    vpsRoomGetMissing.status === 404,
+    `vps rooms/[id] missing expected 404, got ${vpsRoomGetMissing.status}`
+  );
+
+  const roomsDeleteInit: RequestInit = {
+    method: "DELETE",
+    headers: {
+      Origin: "http://localhost:5173",
+    },
+  };
+  const vercelRoomDeleteUnauthorized = await fetch(
+    `${vercelBaseUrl}/api/rooms/nonexistent123`,
+    roomsDeleteInit
+  );
+  const vpsRoomDeleteUnauthorized = await fetch(
+    `${vpsBaseUrl}/api/rooms/nonexistent123`,
+    roomsDeleteInit
+  );
+  assert(
+    vercelRoomDeleteUnauthorized.status === 401,
+    `vercel rooms/[id] delete unauthorized expected 401, got ${vercelRoomDeleteUnauthorized.status}`
+  );
+  assert(
+    vpsRoomDeleteUnauthorized.status === 401,
+    `vps rooms/[id] delete unauthorized expected 401, got ${vpsRoomDeleteUnauthorized.status}`
+  );
 }
 
 interface AuthFlowResult {
