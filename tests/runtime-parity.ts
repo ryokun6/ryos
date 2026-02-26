@@ -578,6 +578,29 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsRoomUsers.status === 200,
     `vps rooms/[id]/users expected 200, got ${vpsRoomUsers.status}`
   );
+
+  const roomMessageDeleteInit: RequestInit = {
+    method: "DELETE",
+    headers: {
+      Origin: "http://localhost:5173",
+    },
+  };
+  const vercelRoomMessageDeleteUnauthorized = await fetch(
+    `${vercelBaseUrl}/api/rooms/nonexistent123/messages/nonexistentMsg`,
+    roomMessageDeleteInit
+  );
+  const vpsRoomMessageDeleteUnauthorized = await fetch(
+    `${vpsBaseUrl}/api/rooms/nonexistent123/messages/nonexistentMsg`,
+    roomMessageDeleteInit
+  );
+  assert(
+    vercelRoomMessageDeleteUnauthorized.status === 401,
+    `vercel rooms/[id]/messages/[msgId] unauthorized expected 401, got ${vercelRoomMessageDeleteUnauthorized.status}`
+  );
+  assert(
+    vpsRoomMessageDeleteUnauthorized.status === 401,
+    `vps rooms/[id]/messages/[msgId] unauthorized expected 401, got ${vpsRoomMessageDeleteUnauthorized.status}`
+  );
 }
 
 interface AuthFlowResult {

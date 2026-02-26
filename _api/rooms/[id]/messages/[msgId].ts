@@ -5,26 +5,12 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { Redis } from "@upstash/redis";
-import { validateAuth } from "../../../_utils/auth/index.js";
-import { assertValidRoomId } from "../../../_utils/_validation.js";
-import {
-  getRoom,
-  roomExists,
-  deleteMessage as deleteMessageFromRedis,
-} from "../../_helpers/_redis.js";
 import { initLogger } from "../../../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../../../_utils/_cors.js";
 import { broadcastMessageDeleted } from "../../_helpers/_pusher.js";
+import { executeRoomsMessageDeleteCore } from "../../../cores/rooms-message-delete-core.js";
 
 export const runtime = "nodejs";
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { requestId: _requestId, logger } = initLogger();
@@ -46,85 +32,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ error: "Unauthorized" });
   }
 
-  if (req.method !== "DELETE") {
-    logger.warn("Method not allowed", { method: req.method });
-    logger.response(405, Date.now() - startTime);
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  // Require admin auth
-  const authHeader = req.headers.authorization as string | undefined;
-  const usernameHeader = req.headers["x-username"] as string | undefined;
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
-  if (!token || !usernameHeader) {
-    logger.warn("Missing credentials");
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - missing credentials" });
-  }
-
-  const authResult = await validateAuth(createRedis(), usernameHeader, token, {});
-  if (!authResult.valid) {
-    logger.warn("Invalid token", { username: usernameHeader });
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - invalid token" });
-  }
-
-  if (usernameHeader.toLowerCase() !== "ryo") {
-    logger.warn("Admin required", { username: usernameHeader });
-    logger.response(403, Date.now() - startTime);
-    return res.status(403).json({ error: "Forbidden - admin required" });
-  }
-
-  // Extract room ID and message ID from query params
   const roomId = req.query.id as string | undefined;
   const messageId = req.query.msgId as string | undefined;
+  const result = await executeRoomsMessageDeleteCore({
+    originAllowed: true,
+    method: req.method,
+    authHeader: req.headers.authorization as string | undefined,
+    usernameHeader: req.headers["x-username"] as string | undefined,
+    roomId,
+    messageId,
+    onMessageDeleted: (id, msgId, roomData) =>
+      broadcastMessageDeleted(id, msgId, roomData),
+  });
 
-  if (!roomId || !messageId) {
+  if (result.status === 405) {
+    logger.warn("Method not allowed", { method: req.method });
+  } else if (result.status === 401) {
+    logger.warn("Missing or invalid credentials");
+  } else if (result.status === 403) {
+    logger.warn("Admin required");
+  } else if (result.status === 400 && (!roomId || !messageId)) {
     logger.warn("Missing IDs", { roomId, messageId });
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Room ID and message ID are required" });
-  }
-
-  try {
-    assertValidRoomId(roomId, "delete-message");
-  } catch (e) {
-    logger.warn("Invalid room ID", { roomId, error: e instanceof Error ? e.message : "Invalid" });
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: e instanceof Error ? e.message : "Invalid room ID" });
-  }
-
-  try {
-    const exists = await roomExists(roomId);
-    if (!exists) {
-      logger.warn("Room not found", { roomId });
-      logger.response(404, Date.now() - startTime);
-      return res.status(404).json({ error: "Room not found" });
-    }
-
-    const roomData = await getRoom(roomId);
-    if (!roomData) {
-      logger.warn("Room not found during message deletion", { roomId });
-      logger.response(404, Date.now() - startTime);
-      return res.status(404).json({ error: "Room not found" });
-    }
-
-    const deleted = await deleteMessageFromRedis(roomId, messageId);
-    if (!deleted) {
-      logger.warn("Message not found", { roomId, messageId });
-      logger.response(404, Date.now() - startTime);
-      return res.status(404).json({ error: "Message not found" });
-    }
-
-    await broadcastMessageDeleted(roomId, messageId, roomData);
+  } else if (result.status === 400) {
+    logger.warn("Invalid room ID", { roomId });
+  } else if (result.status === 404) {
+    logger.warn("Room or message not found", { roomId, messageId });
+  } else if (result.status === 200) {
     logger.info("Pusher message-deleted broadcast sent", { roomId, messageId });
-
     logger.info("Message deleted", { roomId, messageId });
-    logger.response(200, Date.now() - startTime);
-    return res.status(200).json({ success: true });
-  } catch (error) {
-    logger.error(`Error deleting message ${messageId} from room ${roomId}`, error);
-    logger.response(500, Date.now() - startTime);
-    return res.status(500).json({ error: "Failed to delete message" });
+  } else if (result.status >= 500) {
+    logger.error(`Error deleting message ${messageId} from room ${roomId}`);
   }
+
+  const body =
+    result.status === 200 && typeof result.body === "object" && result.body && "_meta" in (result.body as Record<string, unknown>)
+      ? (() => {
+          const { _meta: _ignored, ...rest } = result.body as Record<string, unknown>;
+          return rest;
+        })()
+      : result.body;
+
+  logger.response(result.status, Date.now() - startTime);
+  return res.status(result.status).json(body);
 }
