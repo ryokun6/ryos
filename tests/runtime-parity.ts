@@ -668,6 +668,31 @@ async function testUsersAndBulkParity(): Promise<void> {
     vpsRyoReplyUnauthorized.status === 401,
     `vps ai/ryo-reply unauthorized expected 401, got ${vpsRyoReplyUnauthorized.status}`
   );
+
+  const extractMemoriesInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ messages: [{ role: "user", content: "hello world" }] }),
+  };
+  const vercelExtractMemoriesUnauthorized = await fetch(
+    `${vercelBaseUrl}/api/ai/extract-memories`,
+    extractMemoriesInit
+  );
+  const vpsExtractMemoriesUnauthorized = await fetch(
+    `${vpsBaseUrl}/api/ai/extract-memories`,
+    extractMemoriesInit
+  );
+  assert(
+    vercelExtractMemoriesUnauthorized.status === 401,
+    `vercel ai/extract-memories unauthorized expected 401, got ${vercelExtractMemoriesUnauthorized.status}`
+  );
+  assert(
+    vpsExtractMemoriesUnauthorized.status === 401,
+    `vps ai/extract-memories unauthorized expected 401, got ${vpsExtractMemoriesUnauthorized.status}`
+  );
 }
 
 interface AuthFlowResult {
