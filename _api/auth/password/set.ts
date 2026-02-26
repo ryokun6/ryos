@@ -6,20 +6,12 @@
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
-import {
-  validateAuth,
-  PASSWORD_MIN_LENGTH,
-  PASSWORD_MAX_LENGTH,
-} from "../../_utils/auth/index.js";
-import { hashPassword, setUserPasswordHash } from "../../_utils/auth/_password.js";
 import { setCorsHeaders } from "../../_utils/_cors.js";
+import { isAllowedOrigin, getEffectiveOrigin } from "../../_utils/_cors.js";
+import { executeAuthPasswordSetCore } from "../../cores/auth-password-set-core.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
-
-interface SetPasswordRequest {
-  password: string;
-}
 
 function extractAuth(req: VercelRequest): { username: string | null; token: string | null } {
   const authHeader = req.headers.authorization;
@@ -39,7 +31,7 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
-  const origin = req.headers.origin as string | undefined;
+  const origin = getEffectiveOrigin(req);
   
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -60,47 +52,19 @@ export default async function handler(
     token: process.env.REDIS_KV_REST_API_TOKEN!,
   });
 
-  // Extract and validate auth
   const { username, token } = extractAuth(req);
-  if (!username || !token) {
-    res.status(401).json({ error: "Unauthorized - missing credentials" });
-    return;
+  const result = await executeAuthPasswordSetCore({
+    originAllowed: isAllowedOrigin(origin),
+    username,
+    token,
+    body: req.body,
+    redis,
+  });
+
+  if (result.headers) {
+    for (const [name, value] of Object.entries(result.headers)) {
+      res.setHeader(name, value);
+    }
   }
-
-  const authResult = await validateAuth(redis, username, token, { allowExpired: true });
-  if (!authResult.valid) {
-    res.status(401).json({ error: "Unauthorized - invalid token" });
-    return;
-  }
-
-  // Parse body
-  const body = req.body as SetPasswordRequest;
-  const { password } = body || {};
-
-  // Validate password
-  if (!password || typeof password !== "string") {
-    res.status(400).json({ error: "Password is required" });
-    return;
-  }
-
-  if (password.length < PASSWORD_MIN_LENGTH) {
-    res.status(400).json({ error: `Password must be at least ${PASSWORD_MIN_LENGTH} characters` });
-    return;
-  }
-
-  if (password.length > PASSWORD_MAX_LENGTH) {
-    res.status(400).json({ error: `Password must be ${PASSWORD_MAX_LENGTH} characters or less` });
-    return;
-  }
-
-  try {
-    // Hash and store password
-    const passwordHash = await hashPassword(password);
-    await setUserPasswordHash(redis, username.toLowerCase(), passwordHash);
-
-    res.status(200).json({ success: true });
-  } catch (error) {
-    console.error("Error setting password:", error);
-    res.status(500).json({ error: "Failed to set password" });
-  }
+  res.status(result.status).json(result.body);
 }

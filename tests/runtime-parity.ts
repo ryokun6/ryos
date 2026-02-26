@@ -105,6 +105,16 @@ interface AuthFlowResult {
   verifyAfterLogoutStatus: number;
 }
 
+interface AuthExtendedFlowResult {
+  registerStatus: number;
+  passwordCheckStatus: number;
+  tokensStatus: number;
+  passwordSetStatus: number;
+  loginWithUpdatedPasswordStatus: number;
+  logoutAllStatus: number;
+  verifyAfterLogoutAllStatus: number;
+}
+
 async function runAuthFlow(baseUrl: string, marker: string): Promise<AuthFlowResult> {
   const username = `p${marker[0] || "x"}${Date.now().toString(36)}${Math.floor(
     Math.random() * 100000
@@ -215,11 +225,141 @@ async function testAuthFlowParity(): Promise<void> {
   );
 }
 
+async function runAuthExtendedFlow(
+  baseUrl: string,
+  marker: string
+): Promise<AuthExtendedFlowResult> {
+  const username = `e${marker[0] || "x"}${Date.now().toString(36)}${Math.floor(
+    Math.random() * 100000
+  ).toString(36)}`;
+  const initialPassword = "parity-password-123";
+  const updatedPassword = "parity-password-456";
+  const forwardedIp = `10.42.${Math.floor(Math.random() * 200)}.${Math.floor(
+    Math.random() * 200
+  )}`;
+
+  const registerRes = await fetch(`${baseUrl}/api/auth/register`, {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+      "X-Forwarded-For": forwardedIp,
+    },
+    body: JSON.stringify({ username, password: initialPassword }),
+  });
+  const registerJson = (await registerRes.json()) as { token?: string };
+  const token = registerJson.token;
+  assert(!!token, `${marker} extended register missing token`);
+
+  const passwordCheckRes = await fetch(`${baseUrl}/api/auth/password/check`, {
+    method: "GET",
+    headers: {
+      Origin: "http://localhost:5173",
+      Authorization: `Bearer ${token}`,
+      "X-Username": username,
+    },
+  });
+
+  const tokensRes = await fetch(`${baseUrl}/api/auth/tokens`, {
+    method: "GET",
+    headers: {
+      Origin: "http://localhost:5173",
+      Authorization: `Bearer ${token}`,
+      "X-Username": username,
+    },
+  });
+
+  const passwordSetRes = await fetch(`${baseUrl}/api/auth/password/set`, {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      Authorization: `Bearer ${token}`,
+      "X-Username": username,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ password: updatedPassword }),
+  });
+
+  const loginWithUpdatedPasswordRes = await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+      "X-Forwarded-For": forwardedIp,
+    },
+    body: JSON.stringify({ username, password: updatedPassword }),
+  });
+  const loginJson = (await loginWithUpdatedPasswordRes.json()) as { token?: string };
+  const refreshedToken = loginJson.token;
+  assert(!!refreshedToken, `${marker} extended login with updated password missing token`);
+
+  const logoutAllRes = await fetch(`${baseUrl}/api/auth/logout-all`, {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      Authorization: `Bearer ${refreshedToken}`,
+      "X-Username": username,
+    },
+  });
+
+  const verifyAfterLogoutAllRes = await fetch(`${baseUrl}/api/auth/token/verify`, {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      Authorization: `Bearer ${refreshedToken}`,
+      "X-Username": username,
+    },
+  });
+
+  return {
+    registerStatus: registerRes.status,
+    passwordCheckStatus: passwordCheckRes.status,
+    tokensStatus: tokensRes.status,
+    passwordSetStatus: passwordSetRes.status,
+    loginWithUpdatedPasswordStatus: loginWithUpdatedPasswordRes.status,
+    logoutAllStatus: logoutAllRes.status,
+    verifyAfterLogoutAllStatus: verifyAfterLogoutAllRes.status,
+  };
+}
+
+async function testAuthExtendedParity(): Promise<void> {
+  const vercel = await runAuthExtendedFlow(vercelBaseUrl, "vercel");
+  const vps = await runAuthExtendedFlow(vpsBaseUrl, "vps");
+
+  assert(vercel.registerStatus === 201, `vercel extended register expected 201, got ${vercel.registerStatus}`);
+  assert(vps.registerStatus === 201, `vps extended register expected 201, got ${vps.registerStatus}`);
+  assert(vercel.passwordCheckStatus === 200, `vercel password/check expected 200, got ${vercel.passwordCheckStatus}`);
+  assert(vps.passwordCheckStatus === 200, `vps password/check expected 200, got ${vps.passwordCheckStatus}`);
+  assert(vercel.tokensStatus === 200, `vercel tokens expected 200, got ${vercel.tokensStatus}`);
+  assert(vps.tokensStatus === 200, `vps tokens expected 200, got ${vps.tokensStatus}`);
+  assert(vercel.passwordSetStatus === 200, `vercel password/set expected 200, got ${vercel.passwordSetStatus}`);
+  assert(vps.passwordSetStatus === 200, `vps password/set expected 200, got ${vps.passwordSetStatus}`);
+  assert(
+    vercel.loginWithUpdatedPasswordStatus === 200,
+    `vercel login(updated password) expected 200, got ${vercel.loginWithUpdatedPasswordStatus}`
+  );
+  assert(
+    vps.loginWithUpdatedPasswordStatus === 200,
+    `vps login(updated password) expected 200, got ${vps.loginWithUpdatedPasswordStatus}`
+  );
+  assert(vercel.logoutAllStatus === 200, `vercel logout-all expected 200, got ${vercel.logoutAllStatus}`);
+  assert(vps.logoutAllStatus === 200, `vps logout-all expected 200, got ${vps.logoutAllStatus}`);
+  assert(
+    vercel.verifyAfterLogoutAllStatus === 401,
+    `vercel verify-after-logout-all expected 401, got ${vercel.verifyAfterLogoutAllStatus}`
+  );
+  assert(
+    vps.verifyAfterLogoutAllStatus === 401,
+    `vps verify-after-logout-all expected 401, got ${vps.verifyAfterLogoutAllStatus}`
+  );
+}
+
 async function main(): Promise<void> {
   await testParseTitleParity();
   await testSongsNotFoundParity();
   await testIframeCheckParity();
   await testAuthFlowParity();
+  await testAuthExtendedParity();
   console.log(`[runtime-parity] parity checks passed (${vercelBaseUrl} vs ${vpsBaseUrl})`);
 }
 

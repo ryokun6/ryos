@@ -6,9 +6,9 @@
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
-import { userHasPassword, validateAuth } from "../../_utils/auth/index.js";
 import { initLogger } from "../../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../../_utils/_cors.js";
+import { executeAuthPasswordCheckCore } from "../../cores/auth-password-check-core.js";
 
 export const runtime = "nodejs";
 
@@ -55,37 +55,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  if (!isAllowedOrigin(origin)) {
-    logger.warn("Unauthorized origin", { origin });
-    logger.response(403, Date.now() - startTime);
-    return res.status(403).json({ error: "Unauthorized" });
-  }
+  const originAllowed = isAllowedOrigin(origin);
 
   const redis = createRedis();
 
-  // Extract and validate auth
   const { username, token } = extractAuth(req);
-  if (!username || !token) {
-    logger.warn("Missing credentials");
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - missing credentials" });
-  }
-
-  const authResult = await validateAuth(redis, username, token, { allowExpired: true });
-  if (!authResult.valid) {
-    logger.warn("Invalid token", { username });
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - invalid token" });
-  }
-
-  // Check if password is set
-  const hasPassword = await userHasPassword(redis, username.toLowerCase());
-
-  logger.info("Password check completed", { username: username.toLowerCase(), hasPassword });
-  logger.response(200, Date.now() - startTime);
-  
-  return res.status(200).json({ 
-    hasPassword,
-    username: username.toLowerCase(),
+  const result = await executeAuthPasswordCheckCore({
+    originAllowed,
+    username,
+    token,
+    redis,
   });
+
+  if (result.status === 200) {
+    logger.info("Password check completed", {
+      username: username?.toLowerCase(),
+      hasPassword: (result.body as { hasPassword?: boolean })?.hasPassword,
+    });
+  } else {
+    logger.warn("Password check failed", { username, status: result.status });
+  }
+  logger.response(result.status, Date.now() - startTime);
+  return res.status(result.status).json(result.body);
 }
