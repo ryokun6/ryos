@@ -112,6 +112,8 @@ interface AuthExtendedFlowResult {
   syncStatusStatus: number;
   syncStatusHasBackup: boolean | null;
   backupTokenUnauthorizedStatus: number;
+  syncBackupGetStatus: number;
+  syncBackupUnauthorizedStatus: number;
   passwordCheckStatus: number;
   tokensStatus: number;
   passwordSetStatus: number;
@@ -295,6 +297,22 @@ async function runAuthExtendedFlow(
     },
   });
 
+  const syncBackupGetRes = await fetch(`${baseUrl}/api/sync/backup`, {
+    method: "GET",
+    headers: {
+      Origin: "http://localhost:5173",
+      Authorization: `Bearer ${refreshedToken}`,
+      "X-Username": username,
+    },
+  });
+
+  const syncBackupUnauthorizedRes = await fetch(`${baseUrl}/api/sync/backup`, {
+    method: "GET",
+    headers: {
+      Origin: "http://localhost:5173",
+    },
+  });
+
   const passwordCheckRes = await fetch(`${baseUrl}/api/auth/password/check`, {
     method: "GET",
     headers: {
@@ -363,6 +381,8 @@ async function runAuthExtendedFlow(
     syncStatusHasBackup:
       typeof syncStatusJson.hasBackup === "boolean" ? syncStatusJson.hasBackup : null,
     backupTokenUnauthorizedStatus: backupTokenUnauthorizedRes.status,
+    syncBackupGetStatus: syncBackupGetRes.status,
+    syncBackupUnauthorizedStatus: syncBackupUnauthorizedRes.status,
     passwordCheckStatus: passwordCheckRes.status,
     tokensStatus: tokensRes.status,
     passwordSetStatus: passwordSetRes.status,
@@ -405,6 +425,22 @@ async function testAuthExtendedParity(): Promise<void> {
   assert(
     vps.backupTokenUnauthorizedStatus === 401,
     `vps sync/backup-token unauthorized expected 401, got ${vps.backupTokenUnauthorizedStatus}`
+  );
+  assert(
+    vercel.syncBackupGetStatus === 404,
+    `vercel sync/backup GET expected 404, got ${vercel.syncBackupGetStatus}`
+  );
+  assert(
+    vps.syncBackupGetStatus === 404,
+    `vps sync/backup GET expected 404, got ${vps.syncBackupGetStatus}`
+  );
+  assert(
+    vercel.syncBackupUnauthorizedStatus === 401,
+    `vercel sync/backup unauthorized expected 401, got ${vercel.syncBackupUnauthorizedStatus}`
+  );
+  assert(
+    vps.syncBackupUnauthorizedStatus === 401,
+    `vps sync/backup unauthorized expected 401, got ${vps.syncBackupUnauthorizedStatus}`
   );
   assert(vercel.passwordCheckStatus === 200, `vercel password/check expected 200, got ${vercel.passwordCheckStatus}`);
   assert(vps.passwordCheckStatus === 200, `vps password/check expected 200, got ${vps.passwordCheckStatus}`);
