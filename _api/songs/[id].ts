@@ -37,12 +37,12 @@ import {
 } from "../_utils/_song-service.js";
 import { executeSongsGetCore } from "../cores/songs-get-core.js";
 import { executeSongsDeleteCore } from "../cores/songs-delete-core.js";
+import { executeSongsSearchLyricsCore } from "../cores/songs-search-lyrics-core.js";
 
 // Import from split modules
 import {
   UpdateSongSchema,
   FetchLyricsSchema,
-  SearchLyricsSchema,
   TranslateStreamSchema,
   FuriganaStreamSchema,
   SoramimiStreamSchema,
@@ -260,63 +260,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Handle search-lyrics action (no auth required)
       if (action === "search-lyrics") {
-        const rlKey = RateLimit.makeKey(["rl", "song", "search-lyrics", "ip", requestIp]);
-        const rlResult = await RateLimit.checkCounterLimit({
-          key: rlKey,
-          windowSeconds: RATE_LIMITS.searchLyrics.windowSeconds,
-          limit: RATE_LIMITS.searchLyrics.limit,
+        const result = await executeSongsSearchLyricsCore({
+          songId,
+          body: bodyObj,
+          requestIp,
+          requestId,
         });
 
-        if (!rlResult.allowed) {
+        if (result.headers) {
+          Object.entries(result.headers).forEach(([key, value]) => {
+            res.setHeader(key, value);
+          });
+        }
+
+        if (result.status === 429) {
           logger.warn("Rate limit exceeded (search-lyrics)", { ip: requestIp });
-          return jsonResponse(
-            {
-              error: "rate_limit_exceeded",
-              limit: rlResult.limit,
-              retryAfter: rlResult.resetSeconds,
-            },
-            429,
-            { "Retry-After": String(rlResult.resetSeconds) }
-          );
-        }
-
-        const parsed = SearchLyricsSchema.safeParse(bodyObj);
-        if (!parsed.success) {
-          return errorResponse("Invalid request body");
-        }
-
-        // Get song for title/artist context
-        const song = await getSong(redis, songId, { includeMetadata: true });
-        const rawTitle = song?.title || "";
-        const rawArtist = song?.artist || "";
-        
-        let query = parsed.data.query;
-        let searchTitle = rawTitle;
-        let searchArtist = rawArtist;
-        
-        // If no custom query provided, build search query
-        if (!query && rawTitle) {
-          // Only use AI parsing if we don't have a proper artist (new video without metadata)
-          // If artist exists, title/artist are already clean metadata - use them directly
-          if (!rawArtist) {
-            const aiParsed = await parseYouTubeTitleWithAI(rawTitle, rawArtist, requestId);
-            searchTitle = aiParsed.title || rawTitle;
-            searchArtist = aiParsed.artist || rawArtist;
-            logger.info("AI-parsed search query (no artist)", { original: rawTitle, parsed: { title: searchTitle, artist: searchArtist } });
+        } else if (result.status === 400) {
+          const error = (result.body as { error?: string })?.error;
+          if (error === "Search query is required") {
+            logger.warn("Search query is required");
+          } else {
+            logger.warn("Invalid request body");
           }
-          query = `${stripParentheses(searchTitle)} ${stripParentheses(searchArtist)}`.trim();
-        } else if (!query) {
-          query = `${stripParentheses(rawTitle)} ${stripParentheses(rawArtist)}`.trim();
+        } else if (result.status === 200) {
+          const meta = (result.body as { _meta?: { query?: string; count?: number } })?._meta;
+          logger.info("Searching lyrics", { query: meta?.query });
+          logger.info(`Response: 200 OK - Found ${meta?.count ?? 0} results`);
         }
 
-        if (!query) {
-          return errorResponse("Search query is required");
-        }
+        const body =
+          typeof result.body === "object" && result.body && "_meta" in (result.body as Record<string, unknown>)
+            ? (() => {
+                const { _meta: _ignored, ...rest } = result.body as Record<string, unknown>;
+                return rest;
+              })()
+            : result.body;
 
-        logger.info("Searching lyrics", { query });
-        const results = await searchKugou(query, searchTitle, searchArtist);
-        logger.info(`Response: 200 OK - Found ${results.length} results`);
-        return jsonResponse({ results });
+        return jsonResponse(body, result.status);
       }
 
       // Handle fetch-lyrics action

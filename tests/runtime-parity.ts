@@ -92,6 +92,31 @@ async function testSongsNotFoundParity(): Promise<void> {
     vpsDeleteUnauthorized.status === 401,
     `vps songs/[id] delete unauthorized expected 401, got ${vpsDeleteUnauthorized.status}`
   );
+
+  const searchLyricsInit: RequestInit = {
+    method: "POST",
+    headers: {
+      Origin: "http://localhost:5173",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ action: "search-lyrics" }),
+  };
+  const vercelSearchLyricsMissingQuery = await fetch(
+    `${vercelBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    searchLyricsInit
+  );
+  const vpsSearchLyricsMissingQuery = await fetch(
+    `${vpsBaseUrl}/api/songs/dQw4w9WgXcQ`,
+    searchLyricsInit
+  );
+  assert(
+    vercelSearchLyricsMissingQuery.status === vpsSearchLyricsMissingQuery.status,
+    `songs/[id] search-lyrics status mismatch: vercel=${vercelSearchLyricsMissingQuery.status} vps=${vpsSearchLyricsMissingQuery.status}`
+  );
+  assert(
+    [200, 400].includes(vercelSearchLyricsMissingQuery.status),
+    `songs/[id] search-lyrics expected 200/400, got ${vercelSearchLyricsMissingQuery.status}`
+  );
 }
 
 async function testIframeCheckParity(): Promise<void> {
