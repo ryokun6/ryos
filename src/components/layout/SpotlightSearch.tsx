@@ -45,7 +45,7 @@ export function SpotlightSearch() {
   const { t } = useTranslation();
   const { isOpen, query, selectedIndex, setQuery, setSelectedIndex, reset } =
     useSpotlightStore();
-  const results = useSpotlightSearch(query);
+  const { results, isSearching } = useSpotlightSearch(query);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const proxyInputRef = useRef<HTMLInputElement>(null);
@@ -790,7 +790,7 @@ export function SpotlightSearch() {
                   ))}
 
                 {/* No results */}
-                {results.length === 0 && query.trim() && (
+                {results.length === 0 && query.trim() && !isSearching && (
                   <div
                     className="spotlight-no-results text-center"
                     style={{

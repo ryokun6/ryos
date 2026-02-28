@@ -1,13 +1,18 @@
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { appRegistry, getAppIconPath, getNonFinderApps } from "@/config/appRegistry";
 import type { AppId } from "@/config/appRegistry";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { useIpodStore } from "@/stores/useIpodStore";
-import { useInternetExplorerStore, type Favorite } from "@/stores/useInternetExplorerStore";
+import { useInternetExplorerStore } from "@/stores/useInternetExplorerStore";
 import { useVideoStore } from "@/stores/useVideoStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { getTranslatedAppName } from "@/utils/i18n";
+import type {
+  SpotlightSearchSnapshot,
+  SpotlightWorkerResponse,
+  SpotlightWorkerResultPayload,
+} from "@/workers/spotlightSearch.shared";
 
 export interface SpotlightResult {
   id: string;
@@ -31,6 +36,11 @@ export interface SpotlightResult {
   sectionLabel?: string;
   action: () => void;
   keywords?: string[];
+}
+
+export interface SpotlightSearchState {
+  results: SpotlightResult[];
+  isSearching: boolean;
 }
 
 // Hardcoded settings that can be searched
@@ -117,19 +127,6 @@ const SEARCHABLE_COMMANDS = [
 const MAX_RESULTS_PER_TYPE = 4;
 const MAX_TOTAL_RESULTS = 12;
 
-/** Flatten nested favorites tree into a flat list of non-folder bookmarks */
-function flattenFavorites(favorites: Favorite[]): Favorite[] {
-  const result: Favorite[] = [];
-  for (const fav of favorites) {
-    if (fav.isDirectory && fav.children) {
-      result.push(...flattenFavorites(fav.children));
-    } else if (fav.url) {
-      result.push(fav);
-    }
-  }
-  return result;
-}
-
 function matchesQuery(query: string, ...fields: (string | undefined)[]): boolean {
   const q = query.toLowerCase();
   return fields.some(
@@ -137,15 +134,264 @@ function matchesQuery(query: string, ...fields: (string | undefined)[]): boolean
   );
 }
 
-export function useSpotlightSearch(query: string): SpotlightResult[] {
+const buildSpotlightSearchSnapshot = (): SpotlightSearchSnapshot => {
+  const { items } = useFilesStore.getState();
+  const { tracks } = useIpodStore.getState();
+  const { favorites } = useInternetExplorerStore.getState();
+  const { videos } = useVideoStore.getState();
+
+  return {
+    items,
+    tracks,
+    favorites,
+    videos,
+  };
+};
+
+const mapWorkerResultToSpotlightResult = (
+  result: SpotlightWorkerResultPayload,
+  launchApp: ReturnType<typeof useLaunchApp>
+): SpotlightResult => {
+  switch (result.type) {
+    case "document":
+      return {
+        id: result.id,
+        type: "document",
+        title: result.title,
+        subtitle: "Documents",
+        icon: "file-text.png",
+        action: () =>
+          launchApp("textedit", { initialData: { path: result.path } }),
+      };
+    case "applet":
+      return {
+        id: result.id,
+        type: "applet",
+        title: result.title,
+        subtitle: "Applets",
+        icon: result.icon && !result.icon.startsWith("/") && !result.icon.startsWith("http")
+          ? result.icon
+          : "applets.png",
+        isEmoji: result.isEmoji,
+        action: () =>
+          launchApp("applet-viewer", {
+            initialData: { path: result.path, content: "" },
+          }),
+      };
+    case "music":
+      return {
+        id: result.id,
+        type: "music",
+        title: result.title,
+        subtitle: result.subtitle,
+        icon: getAppIconPath("ipod"),
+        thumbnail: result.thumbnail,
+        action: () =>
+          launchApp("ipod", { initialData: { videoId: result.videoId } }),
+      };
+    case "site":
+      return {
+        id: result.id,
+        type: "site",
+        title: result.title,
+        subtitle: result.subtitle,
+        icon: getAppIconPath("internet-explorer"),
+        thumbnail: result.thumbnail,
+        action: () =>
+          launchApp("internet-explorer", {
+            initialData: { url: result.url, year: result.year || "current" },
+          }),
+      };
+    case "video":
+      return {
+        id: result.id,
+        type: "video",
+        title: result.title,
+        subtitle: result.subtitle,
+        icon: getAppIconPath("videos"),
+        thumbnail: result.thumbnail,
+        action: () =>
+          launchApp("videos", { initialData: { videoId: result.videoId } }),
+      };
+  }
+};
+
+export function useSpotlightSearch(query: string): SpotlightSearchState {
   const { t } = useTranslation();
   const launchApp = useLaunchApp();
-  const fileItems = useFilesStore((state) => state.items);
-  const tracks = useIpodStore((state) => state.tracks);
-  const favorites = useInternetExplorerStore((state) => state.favorites);
-  const videos = useVideoStore((state) => state.videos);
+  const workerRef = useRef<Worker | null>(null);
+  const currentQueryRef = useRef(query);
+  const latestQueryRequestIdRef = useRef(0);
+  const hasPostedIndexRef = useRef(false);
+  const [dynamicResults, setDynamicResults] = useState<SpotlightWorkerResultPayload[]>([]);
+  const [isSearchingDynamicResults, setIsSearchingDynamicResults] = useState(false);
 
-  return useMemo(() => {
+  useEffect(() => {
+    currentQueryRef.current = query;
+  }, [query]);
+
+  const postIndexUpdate = useCallback(() => {
+    const worker = workerRef.current;
+    if (!worker) {
+      return;
+    }
+
+    worker.postMessage({
+      type: "index",
+      snapshot: buildSpotlightSearchSnapshot(),
+    });
+    hasPostedIndexRef.current = true;
+  }, []);
+
+  const sendDynamicQuery = useCallback(
+    (rawQuery: string) => {
+      const trimmedQuery = rawQuery.trim();
+
+      latestQueryRequestIdRef.current += 1;
+
+      if (!trimmedQuery) {
+        setDynamicResults([]);
+        setIsSearchingDynamicResults(false);
+        return;
+      }
+
+      const worker = workerRef.current;
+      if (!worker) {
+        setDynamicResults([]);
+        setIsSearchingDynamicResults(false);
+        return;
+      }
+
+      if (!hasPostedIndexRef.current) {
+        postIndexUpdate();
+      }
+
+      const requestId = latestQueryRequestIdRef.current;
+      setDynamicResults([]);
+      setIsSearchingDynamicResults(true);
+      worker.postMessage({
+        type: "query",
+        query: trimmedQuery,
+        requestId,
+      });
+    },
+    [postIndexUpdate]
+  );
+
+  useEffect(() => {
+    if (typeof Worker === "undefined") {
+      return;
+    }
+
+    const worker = new Worker(
+      new URL("../workers/spotlightSearch.worker.ts", import.meta.url),
+      { type: "module" }
+    );
+    workerRef.current = worker;
+
+    worker.onmessage = (event: MessageEvent<SpotlightWorkerResponse>) => {
+      const message = event.data;
+      if (
+        message.type !== "query-result" ||
+        message.requestId !== latestQueryRequestIdRef.current
+      ) {
+        return;
+      }
+
+      setDynamicResults(message.results);
+      setIsSearchingDynamicResults(false);
+    };
+
+    const refreshWorkerIndex = () => {
+      postIndexUpdate();
+
+      if (currentQueryRef.current.trim()) {
+        sendDynamicQuery(currentQueryRef.current);
+      }
+    };
+
+    let idleHandle: number | null = null;
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleHandle = window.requestIdleCallback(
+        () => {
+          idleHandle = null;
+          postIndexUpdate();
+        },
+        { timeout: 1000 }
+      );
+    } else {
+      timeoutHandle = setTimeout(() => {
+        timeoutHandle = null;
+        postIndexUpdate();
+      }, 50);
+    }
+
+    let itemsRef = useFilesStore.getState().items;
+    const unsubscribeFiles = useFilesStore.subscribe((state) => {
+      if (state.items === itemsRef) {
+        return;
+      }
+
+      itemsRef = state.items;
+      refreshWorkerIndex();
+    });
+
+    let tracksRef = useIpodStore.getState().tracks;
+    const unsubscribeTracks = useIpodStore.subscribe((state) => {
+      if (state.tracks === tracksRef) {
+        return;
+      }
+
+      tracksRef = state.tracks;
+      refreshWorkerIndex();
+    });
+
+    let favoritesRef = useInternetExplorerStore.getState().favorites;
+    const unsubscribeFavorites = useInternetExplorerStore.subscribe((state) => {
+      if (state.favorites === favoritesRef) {
+        return;
+      }
+
+      favoritesRef = state.favorites;
+      refreshWorkerIndex();
+    });
+
+    let videosRef = useVideoStore.getState().videos;
+    const unsubscribeVideos = useVideoStore.subscribe((state) => {
+      if (state.videos === videosRef) {
+        return;
+      }
+
+      videosRef = state.videos;
+      refreshWorkerIndex();
+    });
+
+    return () => {
+      unsubscribeFiles();
+      unsubscribeTracks();
+      unsubscribeFavorites();
+      unsubscribeVideos();
+
+      if (idleHandle !== null) {
+        window.cancelIdleCallback(idleHandle);
+      }
+
+      if (timeoutHandle !== null) {
+        clearTimeout(timeoutHandle);
+      }
+
+      worker.terminate();
+      workerRef.current = null;
+    };
+  }, [postIndexUpdate, sendDynamicQuery]);
+
+  useEffect(() => {
+    sendDynamicQuery(query);
+  }, [query, sendDynamicQuery]);
+
+  const results = useMemo(() => {
     const trimmed = query.trim();
 
     // Empty query — show top apps
@@ -196,116 +442,12 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
       }));
     results.push(...appResults);
 
-    // 2. Documents
-    const docResults = Object.values(fileItems)
-      .filter(
-        (item) =>
-          item.status === "active" &&
-          !item.isDirectory &&
-          item.path.startsWith("/Documents/") &&
-          matchesQuery(trimmed, item.name, item.path)
+    // 2-6. Heavy dynamic categories are resolved in a worker.
+    results.push(
+      ...dynamicResults.map((result) =>
+        mapWorkerResultToSpotlightResult(result, launchApp)
       )
-      .slice(0, MAX_RESULTS_PER_TYPE)
-      .map((item) => ({
-        id: `doc-${item.path}`,
-        type: "document" as const,
-        title: item.name,
-        subtitle: "Documents",
-        icon: "file-text.png",
-        action: () => launchApp("textedit", { initialData: { path: item.path } }),
-      }));
-    results.push(...docResults);
-
-    // 3. Applets
-    const appletResults = Object.values(fileItems)
-      .filter(
-        (item) =>
-          item.status === "active" &&
-          !item.isDirectory &&
-          item.path.startsWith("/Applets/") &&
-          matchesQuery(trimmed, item.name, item.path)
-      )
-      .slice(0, MAX_RESULTS_PER_TYPE)
-      .map((item) => ({
-        id: `applet-${item.path}`,
-        type: "applet" as const,
-        title: item.name.replace(/\.(html|app)$/i, ""),
-        subtitle: "Applets",
-        icon: item.icon && !item.icon.startsWith("/") && !item.icon.startsWith("http") ? item.icon : "applets.png",
-        isEmoji: !!(item.icon && !item.icon.startsWith("/") && !item.icon.startsWith("http") && item.icon.length <= 10),
-        action: () =>
-          launchApp("applet-viewer", { initialData: { path: item.path, content: "" } }),
-      }));
-    results.push(...appletResults);
-
-    // 4. Music
-    const musicResults = tracks
-      .filter((track) =>
-        matchesQuery(trimmed, track.title, track.artist, track.album)
-      )
-      .slice(0, MAX_RESULTS_PER_TYPE)
-      .map((track) => {
-        // Use Kugou cover art, fall back to YouTube thumbnail
-        const coverUrl = track.cover
-          ? track.cover.replace("{size}", "100").replace(/^http:\/\//, "https://")
-          : `https://i.ytimg.com/vi/${track.id}/default.jpg`;
-        return {
-          id: `music-${track.id}`,
-          type: "music" as const,
-          title: track.title,
-          subtitle: track.artist || undefined,
-          icon: getAppIconPath("ipod"),
-          thumbnail: coverUrl,
-          action: () => launchApp("ipod", { initialData: { videoId: track.id } }),
-        };
-      });
-    results.push(...musicResults);
-
-    // 5. Sites (bookmarks)
-    const flatFavs = flattenFavorites(favorites);
-    const siteResults = flatFavs
-      .filter((fav) =>
-        matchesQuery(trimmed, fav.title, fav.url)
-      )
-      .slice(0, MAX_RESULTS_PER_TYPE)
-      .map((fav) => {
-        let hostname: string | undefined;
-        try {
-          hostname = fav.url ? new URL(fav.url).hostname.replace(/^www\./, "") : undefined;
-        } catch {
-          hostname = fav.url;
-        }
-        return {
-          id: `site-${fav.url}`,
-          type: "site" as const,
-          title: fav.title,
-          subtitle: hostname,
-          icon: getAppIconPath("internet-explorer"),
-          thumbnail: fav.favicon || undefined,
-          action: () =>
-            launchApp("internet-explorer", {
-              initialData: { url: fav.url, year: fav.year || "current" },
-            }),
-        };
-      });
-    results.push(...siteResults);
-
-    // 6. Videos
-    const videoResults = videos
-      .filter((video) =>
-        matchesQuery(trimmed, video.title, video.artist)
-      )
-      .slice(0, MAX_RESULTS_PER_TYPE)
-      .map((video) => ({
-        id: `video-${video.id}`,
-        type: "video" as const,
-        title: video.title,
-        subtitle: video.artist || undefined,
-        icon: getAppIconPath("videos"),
-        thumbnail: `https://i.ytimg.com/vi/${video.id}/default.jpg`,
-        action: () => launchApp("videos", { initialData: { videoId: video.id } }),
-      }));
-    results.push(...videoResults);
+    );
 
     // 7. Settings
     const settingResults = SEARCHABLE_SETTINGS.filter((setting) =>
@@ -349,5 +491,10 @@ export function useSpotlightSearch(query: string): SpotlightResult[] {
 
     // Cap total
     return results.slice(0, MAX_TOTAL_RESULTS);
-  }, [query, t, launchApp, fileItems, tracks, favorites, videos]);
+  }, [query, t, launchApp, dynamicResults]);
+
+  return {
+    results,
+    isSearching: query.trim().length > 0 && isSearchingDynamicResults,
+  };
 }

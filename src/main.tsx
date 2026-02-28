@@ -8,7 +8,7 @@ import { useLanguageStore } from "./stores/useLanguageStore";
 import { preloadFileSystemData } from "./stores/useFilesStore";
 import { preloadIpodData } from "./stores/useIpodStore";
 import { initPrefetch } from "./utils/prefetch";
-import "./lib/i18n";
+import { initializeI18n } from "./lib/i18n";
 import { primeReactResources } from "./lib/reactResources";
 
 // Prime React 19 resource hints before anything else runs
@@ -59,19 +59,38 @@ if (import.meta.hot) {
 preloadFileSystemData();
 preloadIpodData();
 
-// ============================================================================
-// PREFETCHING - Cache icons, sounds, and app components after boot
-// This runs during idle time to populate the service worker cache
-// ============================================================================
-initPrefetch();
+const renderApp = () => {
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+      <App />
+      <Analytics />
+    </React.StrictMode>
+  );
+};
 
-// Hydrate theme and language from localStorage before rendering
-useThemeStore.getState().hydrate();
-useLanguageStore.getState().hydrate();
+const bootstrap = async () => {
+  try {
+    await initializeI18n();
+  } catch (error) {
+    console.error("[ryOS] Failed to initialize i18n during bootstrap:", error);
+  }
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-    <Analytics />
-  </React.StrictMode>
-);
+  // Hydrate theme and language from localStorage before rendering
+  useThemeStore.getState().hydrate();
+
+  try {
+    await useLanguageStore.getState().hydrate();
+  } catch (error) {
+    console.error("[ryOS] Failed to hydrate language store:", error);
+  }
+
+  // ============================================================================
+  // PREFETCHING - Cache icons, sounds, and app components after boot
+  // This runs during idle time to populate the service worker cache
+  // ============================================================================
+  initPrefetch();
+
+  renderApp();
+};
+
+void bootstrap();
