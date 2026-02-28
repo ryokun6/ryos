@@ -194,11 +194,12 @@ export function getClientIp(
     ip = ip.replace(/^::ffff:/i, "");
     const lower = ip.toLowerCase();
     const isLocalOrigin = /^http:\/\/localhost(?::\d+)?$/.test(origin);
+    const hasForwardedIp = Boolean(xVercel || xForwarded || xRealIp || cfIp);
     if (
-      isLocalOrigin ||
       lower === "::1" ||
       lower === "0:0:0:0:0:0:0:1" ||
-      lower === "127.0.0.1"
+      lower === "127.0.0.1" ||
+      (isLocalOrigin && !hasForwardedIp)
     ) {
       return "localhost-dev";
     }
