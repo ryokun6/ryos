@@ -5,16 +5,7 @@
  * Requires authentication (Bearer token + X-Username).
  */
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createRedis } from "../_utils/redis.js";
-import {
-  extractAuthNormalized,
-  validateAuth,
-} from "../_utils/auth/index.js";
-import {
-  setCorsHeaders,
-  handlePreflight,
-} from "../_utils/_cors.js";
+import { createApiHandler } from "../_utils/middleware.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -31,59 +22,47 @@ interface BackupMeta {
   createdAt: string;
 }
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-): Promise<void> {
-  // Handle CORS preflight
-  if (handlePreflight(req, res, { methods: ["GET", "OPTIONS"] })) {
-    return;
-  }
-
-  const origin = req.headers.origin as string | undefined;
-  setCorsHeaders(res, origin, { methods: ["GET", "OPTIONS"] });
-
-  if (req.method !== "GET") {
-    res.status(405).json({ error: "Method not allowed" });
-    return;
-  }
-
-  const redis = createRedis();
-
-  // Extract and validate auth
-  const { username, token } = extractAuthNormalized(req);
-  const authResult = await validateAuth(redis, username, token);
-
-  if (!authResult.valid || !username) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-
-  try {
-    const rawMeta = await redis.get<string | BackupMeta>(metaKey(username));
-
-    if (!rawMeta) {
-      res.status(200).json({
-        hasBackup: false,
-        metadata: null,
-      });
-      return;
-    }
-
-    const meta: BackupMeta =
-      typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta;
-
-    res.status(200).json({
-      hasBackup: true,
-      metadata: {
-        timestamp: meta.timestamp,
-        version: meta.version,
-        totalSize: meta.totalSize,
-        createdAt: meta.createdAt,
-      },
+export default createApiHandler(
+  {
+    methods: ["GET"],
+    action: "sync/status",
+    cors: { methods: ["GET", "OPTIONS"] },
+  },
+  async (ctx): Promise<void> => {
+    const user = await ctx.auth.require({
+      missingMessage: "Authentication required",
+      invalidMessage: "Authentication required",
     });
-  } catch (error) {
-    console.error("Error checking backup status:", error);
-    res.status(500).json({ error: "Failed to check backup status" });
+    if (!user) return;
+
+    try {
+      const rawMeta = await ctx.redis.get<string | BackupMeta>(
+        metaKey(user.username)
+      );
+
+      if (!rawMeta) {
+        ctx.response.ok({
+          hasBackup: false,
+          metadata: null,
+        });
+        return;
+      }
+
+      const meta: BackupMeta =
+        typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta;
+
+      ctx.response.ok({
+        hasBackup: true,
+        metadata: {
+          timestamp: meta.timestamp,
+          version: meta.version,
+          totalSize: meta.totalSize,
+          createdAt: meta.createdAt,
+        },
+      });
+    } catch (error) {
+      ctx.logger.error("Error checking backup status", error);
+      ctx.response.error("Failed to check backup status", 500);
+    }
   }
-}
+);

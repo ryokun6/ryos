@@ -8,18 +8,12 @@
  * Requires authentication (Bearer token + X-Username).
  */
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { del, head } from "@vercel/blob";
-import { createRedis } from "../_utils/redis.js";
+import { USER_TTL_SECONDS } from "../_utils/auth/index.js";
 import {
-  extractAuthNormalized,
-  validateAuth,
-  USER_TTL_SECONDS,
-} from "../_utils/auth/index.js";
-import {
-  setCorsHeaders,
-  handlePreflight,
-} from "../_utils/_cors.js";
+  createApiHandler,
+  type ApiHandlerContext,
+} from "../_utils/middleware.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -40,54 +34,44 @@ interface BackupMeta {
   createdAt: string;
 }
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-): Promise<void> {
-  // Handle CORS preflight
-  if (
-    handlePreflight(req, res, {
+export default createApiHandler(
+  {
+    methods: ["GET", "POST", "DELETE"],
+    action: "sync/backup",
+    cors: {
       methods: ["GET", "POST", "DELETE", "OPTIONS"],
-    })
-  ) {
-    return;
+    },
+  },
+  async (ctx): Promise<void> => {
+    const user = await ctx.auth.require({
+      missingMessage: "Authentication required",
+      invalidMessage: "Authentication required",
+    });
+    if (!user) return;
+
+    if (ctx.method === "POST") {
+      await handleSaveMetadata(ctx, user.username);
+      return;
+    }
+    if (ctx.method === "GET") {
+      await handleDownload(ctx, user.username);
+      return;
+    }
+    if (ctx.method === "DELETE") {
+      await handleDelete(ctx, user.username);
+      return;
+    }
+
+    ctx.response.methodNotAllowed();
   }
-
-  const origin = req.headers.origin as string | undefined;
-  setCorsHeaders(res, origin, {
-    methods: ["GET", "POST", "DELETE", "OPTIONS"],
-  });
-
-  const redis = createRedis();
-
-  // Extract and validate auth
-  const { username, token } = extractAuthNormalized(req);
-  const authResult = await validateAuth(redis, username, token);
-
-  if (!authResult.valid || !username) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-
-  if (req.method === "POST") {
-    await handleSaveMetadata(req, res, redis, username);
-  } else if (req.method === "GET") {
-    await handleDownload(res, redis, username);
-  } else if (req.method === "DELETE") {
-    await handleDelete(res, redis, username);
-  } else {
-    res.status(405).json({ error: "Method not allowed" });
-  }
-}
+);
 
 async function handleSaveMetadata(
-  req: VercelRequest,
-  res: VercelResponse,
-  redis: ReturnType<typeof createRedis>,
+  ctx: ApiHandlerContext,
   username: string
 ): Promise<void> {
   // Parse body - expects metadata from client after direct blob upload
-  const body = req.body as {
+  const body = ctx.req.body as {
     blobUrl: string;
     timestamp: string;
     version: number;
@@ -95,7 +79,7 @@ async function handleSaveMetadata(
   } | null;
 
   if (!body?.blobUrl || !body?.timestamp) {
-    res.status(400).json({ error: "Missing required fields: blobUrl, timestamp" });
+    ctx.response.badRequest("Missing required fields: blobUrl, timestamp");
     return;
   }
 
@@ -104,13 +88,13 @@ async function handleSaveMetadata(
   // Validate the blob URL points to a real blob
   const blobInfo = await head(blobUrl).catch(() => null);
   if (!blobInfo) {
-    res.status(400).json({ error: "Invalid blob URL: blob not found" });
+    ctx.response.badRequest("Invalid blob URL: blob not found");
     return;
   }
 
   try {
     // Delete old blob if it exists and differs from the new one
-    const existingMeta = await redis.get<string | BackupMeta>(metaKey(username));
+    const existingMeta = await ctx.redis.get<string | BackupMeta>(metaKey(username));
     if (existingMeta) {
       const parsed: BackupMeta =
         typeof existingMeta === "string"
@@ -134,11 +118,11 @@ async function handleSaveMetadata(
       createdAt: new Date().toISOString(),
     };
 
-    await redis.set(metaKey(username), JSON.stringify(meta), {
+    await ctx.redis.set(metaKey(username), JSON.stringify(meta), {
       ex: META_TTL,
     });
 
-    res.status(200).json({
+    ctx.response.ok({
       ok: true,
       metadata: {
         timestamp: meta.timestamp,
@@ -150,21 +134,20 @@ async function handleSaveMetadata(
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown error";
-    console.error("Error saving backup metadata:", message, error);
-    res.status(500).json({ error: `Failed to save backup metadata: ${message}` });
+    ctx.logger.error("Error saving backup metadata", { message, error });
+    ctx.response.error(`Failed to save backup metadata: ${message}`, 500);
   }
 }
 
 async function handleDownload(
-  res: VercelResponse,
-  redis: ReturnType<typeof createRedis>,
+  ctx: ApiHandlerContext,
   username: string
 ): Promise<void> {
   try {
     // Get metadata from Redis
-    const rawMeta = await redis.get<string | BackupMeta>(metaKey(username));
+    const rawMeta = await ctx.redis.get<string | BackupMeta>(metaKey(username));
     if (!rawMeta) {
-      res.status(404).json({ error: "No backup found" });
+      ctx.response.json({ error: "No backup found" }, 404);
       return;
     }
 
@@ -172,7 +155,7 @@ async function handleDownload(
       typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta;
 
     if (!meta.blobUrl) {
-      res.status(404).json({ error: "No backup found" });
+      ctx.response.json({ error: "No backup found" }, 404);
       return;
     }
 
@@ -180,22 +163,25 @@ async function handleDownload(
     const blobInfo = await head(meta.blobUrl).catch(() => null);
     if (!blobInfo) {
       // Blob was deleted, clean up metadata
-      await redis.del(metaKey(username));
-      res.status(404).json({ error: "Backup data not found. It may have expired." });
+      await ctx.redis.del(metaKey(username));
+      ctx.response.json(
+        { error: "Backup data not found. It may have expired." },
+        404
+      );
       return;
     }
 
     // Fetch the blob data
     const blobResponse = await fetch(meta.blobUrl);
     if (!blobResponse.ok) {
-      res.status(500).json({ error: "Failed to retrieve backup data" });
+      ctx.response.error("Failed to retrieve backup data", 500);
       return;
     }
 
     const arrayBuffer = await blobResponse.arrayBuffer();
     const base64Data = Buffer.from(arrayBuffer).toString("base64");
 
-    res.status(200).json({
+    ctx.response.ok({
       ok: true,
       data: base64Data,
       metadata: {
@@ -206,20 +192,19 @@ async function handleDownload(
       },
     });
   } catch (error) {
-    console.error("Error downloading backup:", error);
-    res.status(500).json({ error: "Failed to download backup" });
+    ctx.logger.error("Error downloading backup", error);
+    ctx.response.error("Failed to download backup", 500);
   }
 }
 
 async function handleDelete(
-  res: VercelResponse,
-  redis: ReturnType<typeof createRedis>,
+  ctx: ApiHandlerContext,
   username: string
 ): Promise<void> {
   try {
-    const rawMeta = await redis.get<string | BackupMeta>(metaKey(username));
+    const rawMeta = await ctx.redis.get<string | BackupMeta>(metaKey(username));
     if (!rawMeta) {
-      res.status(404).json({ error: "No backup found" });
+      ctx.response.json({ error: "No backup found" }, 404);
       return;
     }
 
@@ -236,11 +221,11 @@ async function handleDelete(
     }
 
     // Delete metadata
-    await redis.del(metaKey(username));
+    await ctx.redis.del(metaKey(username));
 
-    res.status(200).json({ ok: true });
+    ctx.response.ok({ ok: true });
   } catch (error) {
-    console.error("Error deleting backup:", error);
-    res.status(500).json({ error: "Failed to delete backup" });
+    ctx.logger.error("Error deleting backup", error);
+    ctx.response.error("Failed to delete backup", 500);
   }
 }
