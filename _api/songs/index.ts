@@ -63,7 +63,7 @@ function createRedis(): Redis {
 const RATE_LIMITS = {
   list: { windowSeconds: 60, limit: 120 },     // 120/min for listing
   create: { windowSeconds: 60, limit: 30 },    // 30/min for creating songs
-  import: { windowSeconds: 60, limit: 5 },     // 5/min for bulk import (admin)
+  import: { windowSeconds: 60, limit: 15 },    // 15/min for bulk import (admin)
   delete: { windowSeconds: 60, limit: 5 },     // 5/min for delete all (admin)
 };
 

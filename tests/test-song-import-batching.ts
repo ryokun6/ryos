@@ -235,6 +235,65 @@ async function testProgressCallbacksReportPhases(): Promise<void> {
   });
 }
 
+async function testRateLimitedProgressEventIsReported(): Promise<void> {
+  const progressEvents: BulkImportProgress[] = [];
+  let callCount = 0;
+
+  await withMockedFetch(async (_input, init) => {
+    callCount += 1;
+    const body = String(init?.body ?? "");
+    const parsed = JSON.parse(body) as BulkImportRequest;
+
+    if (callCount === 1) {
+      return new Response(JSON.stringify({ error: "rate_limit_exceeded" }), {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": "1",
+        },
+      });
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        imported: parsed.songs.length,
+        updated: 0,
+        total: parsed.songs.length,
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  }, async () => {
+    const result = await bulkImportSongMetadata(
+      [makeSong("rl1", 10_000)],
+      {
+        username: "ryo",
+        authToken: "test-token",
+      },
+      {
+        onProgress: (progress) => {
+          progressEvents.push(progress);
+        },
+      }
+    );
+
+    assert(result.success, `Expected import success after retry, got: ${result.error}`);
+    assert(
+      progressEvents.some((event) => event.stage === "rate-limited"),
+      "Expected a rate-limited progress event"
+    );
+
+    const rateLimitedEvent = progressEvents.find(
+      (event) => event.stage === "rate-limited"
+    );
+    assertEq(rateLimitedEvent?.statusCode, 429, "Expected 429 status on rate-limited event");
+    assert(
+      (rateLimitedEvent?.retryAfterMs || 0) >= 1000,
+      "Expected retryAfterMs to be populated for rate-limited event"
+    );
+  });
+}
+
 async function runImportBatchingTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("song import batching"));
   clearResults();
@@ -243,6 +302,7 @@ async function runImportBatchingTests(): Promise<{ passed: number; failed: numbe
   await runTest("Handles 413 by splitting and retrying", testServer413TriggersSplitRetry);
   await runTest("Returns clear error for oversized single entry", testSingleOversizedSongFailsGracefully);
   await runTest("Reports progress phases during import", testProgressCallbacksReportPhases);
+  await runTest("Reports rate-limited retry progress", testRateLimitedProgressEventIsReported);
 
   return printSummary();
 }

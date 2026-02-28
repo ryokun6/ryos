@@ -158,6 +158,15 @@ export function AdminAppComponent({
           total: importStatus.totalSongs,
           defaultValue: `Uploading songs ${importStatus.processedSongs}/${importStatus.totalSongs}`,
         })
+      : importStatus.phase === "waiting-rate-limit"
+      ? t("apps.admin.songs.importStatus.rateLimited", {
+          message:
+            importStatus.message ||
+            "Rate limited. Waiting briefly before retrying...",
+          defaultValue:
+            importStatus.message ||
+            "Rate limited. Waiting briefly before retrying...",
+        })
       : importStatus.phase === "refreshing-library"
       ? t(
           "apps.admin.songs.importStatus.refreshing",
@@ -185,6 +194,11 @@ export function AdminAppComponent({
         })
       : importStatus.phase === "failed"
       ? t("apps.admin.songs.importStatus.statusBarFailed", "Import failed")
+      : importStatus.phase === "waiting-rate-limit"
+      ? t("apps.admin.songs.importStatus.statusBarRateLimited", {
+          message: importStatus.message || "Rate limited, retrying...",
+          defaultValue: importStatus.message || "Rate limited, retrying...",
+        })
       : importStatus.totalSongs > 0
       ? t("apps.admin.songs.importStatus.statusBarProgress", {
           processed: importStatus.processedSongs,
@@ -500,7 +514,8 @@ export function AdminAppComponent({
                     />
                   </div>
                 )}
-                {importStatus.phase === "uploading-batches" &&
+                {(importStatus.phase === "uploading-batches" ||
+                  importStatus.phase === "waiting-rate-limit") &&
                   importStatus.totalBatches > 0 && (
                     <div className="mt-1 text-[10px] opacity-80">
                       {t("apps.admin.songs.importStatus.batchInfo", {

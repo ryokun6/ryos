@@ -111,6 +111,7 @@ type ImportStatusPhase =
   | "validating-data"
   | "preparing-songs"
   | "uploading-batches"
+  | "waiting-rate-limit"
   | "refreshing-library"
   | "completed"
   | "failed";
@@ -649,6 +650,8 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
                 ? "failed"
                 : progress.stage === "complete"
                 ? "refreshing-library"
+                : progress.stage === "rate-limited"
+                ? "waiting-rate-limit"
                 : "uploading-batches";
             const message =
               progress.message ||
@@ -656,6 +659,8 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
                 ? "Splitting batch to fit upload limits"
                 : progress.stage === "batch-start"
                 ? "Uploading songs"
+                : progress.stage === "rate-limited"
+                ? "Rate limited, waiting to retry"
                 : progress.stage === "complete"
                 ? "Import uploaded, refreshing library"
                 : progress.stage === "error"

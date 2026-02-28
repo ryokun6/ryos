@@ -119,6 +119,7 @@ export type BulkImportProgressStage =
   | "starting"
   | "batch-start"
   | "batch-success"
+  | "rate-limited"
   | "batch-split"
   | "complete"
   | "error";
@@ -133,6 +134,8 @@ export interface BulkImportProgress {
   batchIndex: number;
   batchCount: number;
   batchSize: number;
+  retryAttempt?: number;
+  retryAfterMs?: number;
   statusCode?: number;
   message?: string;
 }
@@ -635,6 +638,16 @@ export async function bulkImportSongMetadata(
           console.warn(
             `[SongMetadataCache] Import rate limited on batch ${i + 1}/${batches.length}, retrying in ${waitMs}ms`
           );
+          reportProgress({
+            stage: "rate-limited",
+            batchIndex: i + 1,
+            batchCount: batches.length,
+            batchSize: batch.length,
+            retryAttempt: rateLimitRetries,
+            retryAfterMs: waitMs,
+            statusCode: 429,
+            message: `Rate limited. Retrying in ${Math.ceil(waitMs / 1000)}s`,
+          });
           await sleep(waitMs);
           continue;
         }
