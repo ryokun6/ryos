@@ -1,21 +1,17 @@
 /**
  * POST /api/ai/ryo-reply
- * 
+ *
  * Generate an AI reply as Ryo in chat rooms
  */
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
-import { Redis } from "@upstash/redis";
-import { validateAuth } from "../_utils/auth/index.js";
+import { createApiHandler } from "../_utils/handler.js";
 import { assertValidRoomId, escapeHTML, filterProfanityPreservingUrls } from "../_utils/_validation.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
-import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
 import { roomExists, addMessage, generateId, getCurrentTimestamp } from "../rooms/_helpers/_redis.js";
 import { broadcastNewMessage } from "../rooms/_helpers/_pusher.js";
 import type { Message } from "../rooms/_helpers/_types.js";
-import { initLogger } from "../_utils/_logging.js";
 
 export const runtime = "nodejs";
 
@@ -54,161 +50,110 @@ respond in the user's language. comment on the recent conversation and mentioned
 when user asks for an aquarium, fish tank, fishes, or sam's aquarium, include the special token [[AQUARIUM]] in your response.
 </chat_instructions>`;
 
-// ============================================================================
-// Local Helper Functions
-// ============================================================================
+export default createApiHandler(
+  {
+    operation: "ai-ryo-reply",
+    methods: ["POST"],
+  },
+  async (_req, _res, ctx): Promise<void> => {
+    const user = await ctx.requireAuth();
+    if (!user) {
+      return;
+    }
 
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
-}
-
-// ============================================================================
-// Route Handler
-// ============================================================================
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { requestId: _requestId, logger } = initLogger();
-  const startTime = Date.now();
-  
-  const origin = getEffectiveOrigin(req);
-  setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
-  
-  logger.request(req.method || "POST", req.url || "/api/ai/ryo-reply");
-  
-  if (req.method === "OPTIONS") {
-    logger.response(204, Date.now() - startTime);
-    return res.status(204).end();
-  }
-
-  if (!isAllowedOrigin(origin)) {
-    logger.warn("Unauthorized origin", { origin });
-    logger.response(403, Date.now() - startTime);
-    return res.status(403).json({ error: "Unauthorized" });
-  }
-
-  if (req.method !== "POST") {
-    logger.warn("Method not allowed", { method: req.method });
-    logger.response(405, Date.now() - startTime);
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  // Require auth
-  const authHeader = req.headers.authorization as string | undefined;
-  const usernameHeader = req.headers["x-username"] as string | undefined;
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
-  if (!token || !usernameHeader) {
-    logger.warn("Missing credentials");
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - missing credentials" });
-  }
-
-  const authResult = await validateAuth(createRedis(), usernameHeader, token, {});
-  if (!authResult.valid) {
-    logger.warn("Invalid token", { username: usernameHeader });
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - invalid token" });
-  }
-
-  // Rate limiting: 5/min per user
-  const rlKey = RateLimit.makeKey(["rl", "ai:ryo-reply", "user", usernameHeader.toLowerCase()]);
-  const rlResult = await RateLimit.checkCounterLimit({
-    key: rlKey,
-    windowSeconds: 60,
-    limit: 5,
-  });
-
-  if (!rlResult.allowed) {
-    logger.warn("Rate limit exceeded", { username: usernameHeader });
-    logger.response(429, Date.now() - startTime);
-    return res.status(429).json({ error: "Rate limit exceeded" });
-  }
-
-  const body = req.body as RyoReplyRequest | undefined;
-
-  if (!body) {
-    logger.warn("Invalid JSON body");
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Invalid JSON body" });
-  }
-
-  const { roomId, prompt, systemState } = body;
-
-  try {
-    assertValidRoomId(roomId, "ryo-reply");
-  } catch (e) {
-    logger.warn("Invalid room ID", { roomId, error: e instanceof Error ? e.message : "Invalid" });
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: e instanceof Error ? e.message : "Invalid room ID" });
-  }
-
-  if (!prompt || typeof prompt !== "string") {
-    logger.warn("Missing prompt");
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Prompt is required" });
-  }
-
-  const exists = await roomExists(roomId);
-  if (!exists) {
-    logger.warn("Room not found", { roomId });
-    logger.response(404, Date.now() - startTime);
-    return res.status(404).json({ error: "Room not found" });
-  }
-
-  const messages = [
-    { role: "system" as const, content: STATIC_SYSTEM_PROMPT },
-    systemState?.chatRoomContext
-      ? {
-          role: "system" as const,
-          content: `\n<chat_room_context>\nroomId: ${roomId}\nrecentMessages:\n${
-            systemState.chatRoomContext.recentMessages || ""
-          }\nmentionedMessage: ${
-            systemState.chatRoomContext.mentionedMessage || prompt
-          }\n</chat_room_context>`,
-        }
-      : null,
-    { role: "user" as const, content: prompt },
-  ].filter((m): m is NonNullable<typeof m> => m !== null);
-
-  let replyText = "";
-  try {
-    logger.info("Generating AI reply", { roomId, promptLength: prompt.length });
-    const { text } = await generateText({
-      model: google("gemini-2.5-flash"),
-      messages,
-      temperature: 0.6,
+    const rlKey = RateLimit.makeKey(["rl", "ai:ryo-reply", "user", user.username]);
+    const rlResult = await RateLimit.checkCounterLimit({
+      key: rlKey,
+      windowSeconds: 60,
+      limit: 5,
     });
-    replyText = text;
-    logger.info("AI reply generated", { replyLength: replyText.length });
-  } catch (e) {
-    logger.error("AI generation failed for Ryo reply", e);
-    logger.response(500, Date.now() - startTime);
-    return res.status(500).json({ error: "Failed to generate reply" });
+
+    if (!rlResult.allowed) {
+      ctx.response.tooManyRequests("Rate limit exceeded");
+      return;
+    }
+
+    const { data: body, error } = ctx.parseJsonBody<RyoReplyRequest>();
+    if (error || !body) {
+      ctx.response.badRequest(error ?? "Invalid JSON body");
+      return;
+    }
+
+    const { roomId, prompt, systemState } = body;
+    try {
+      assertValidRoomId(roomId, "ryo-reply");
+    } catch (validationError) {
+      ctx.response.badRequest(
+        validationError instanceof Error
+          ? validationError.message
+          : "Invalid room ID"
+      );
+      return;
+    }
+
+    if (!prompt || typeof prompt !== "string") {
+      ctx.response.badRequest("Prompt is required");
+      return;
+    }
+
+    const exists = await roomExists(roomId);
+    if (!exists) {
+      ctx.response.notFound("Room not found");
+      return;
+    }
+
+    const messages = [
+      { role: "system" as const, content: STATIC_SYSTEM_PROMPT },
+      systemState?.chatRoomContext
+        ? {
+            role: "system" as const,
+            content: `\n<chat_room_context>\nroomId: ${roomId}\nrecentMessages:\n${
+              systemState.chatRoomContext.recentMessages || ""
+            }\nmentionedMessage: ${
+              systemState.chatRoomContext.mentionedMessage || prompt
+            }\n</chat_room_context>`,
+          }
+        : null,
+      { role: "user" as const, content: prompt },
+    ].filter((message): message is NonNullable<typeof message> => message !== null);
+
+    let replyText = "";
+    try {
+      ctx.logger.info("Generating AI reply", { roomId, promptLength: prompt.length });
+      const { text } = await generateText({
+        model: google("gemini-2.5-flash"),
+        messages,
+        temperature: 0.6,
+      });
+      replyText = text;
+      ctx.logger.info("AI reply generated", { replyLength: replyText.length });
+    } catch (aiError) {
+      ctx.logger.error("AI generation failed for Ryo reply", aiError);
+      ctx.response.serverError("Failed to generate reply");
+      return;
+    }
+
+    const message: Message = {
+      id: generateId(),
+      roomId,
+      username: "ryo",
+      content: escapeHTML(filterProfanityPreservingUrls(replyText)),
+      timestamp: getCurrentTimestamp(),
+    };
+
+    await addMessage(roomId, message);
+
+    try {
+      await broadcastNewMessage(roomId, message);
+      ctx.logger.info("Ryo reply broadcasted via Pusher", {
+        roomId,
+        messageId: message.id,
+      });
+    } catch (pusherError) {
+      ctx.logger.error("Error broadcasting Ryo reply via Pusher", pusherError);
+    }
+
+    ctx.logger.info("Ryo reply posted", { roomId, messageId: message.id });
+    ctx.response.created({ message });
   }
-
-  const message: Message = {
-    id: generateId(),
-    roomId,
-    username: "ryo",
-    content: escapeHTML(filterProfanityPreservingUrls(replyText)),
-    timestamp: getCurrentTimestamp(),
-  };
-
-  await addMessage(roomId, message);
-
-  // Broadcast the message to all clients in the room via Pusher
-  try {
-    await broadcastNewMessage(roomId, message);
-    logger.info("Ryo reply broadcasted via Pusher", { roomId, messageId: message.id });
-  } catch (pusherError) {
-    logger.error("Error broadcasting Ryo reply via Pusher", pusherError);
-  }
-
-  logger.info("Ryo reply posted", { roomId, messageId: message.id });
-  logger.response(201, Date.now() - startTime);
-  
-  return res.status(201).json({ message });
-}
+);

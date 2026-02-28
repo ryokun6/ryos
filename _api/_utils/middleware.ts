@@ -6,9 +6,10 @@
 
 import type { Redis } from "@upstash/redis";
 import type { VercelRequest } from "@vercel/node";
-import { extractAuth, validateAuth } from "./auth/index.js";
+import { extractAuthNormalized, validateAuth } from "./auth/index.js";
 import type { AuthenticatedUser } from "./auth/index.js";
 import { getEffectiveOrigin, isAllowedOrigin } from "./_cors.js";
+import { createLogger } from "./_logging.js";
 import * as RateLimit from "./_rate-limit.js";
 import { createRedis } from "./redis.js";
 
@@ -151,8 +152,13 @@ export interface RequestContext {
   origin: string | null;
   originAllowed: boolean;
   ip: string;
+  auth: {
+    username: string | null;
+    token: string | null;
+  };
   user: AuthenticatedUser | null;
   redis: ReturnType<typeof createRedis>;
+  logger: ReturnType<typeof createLogger>;
   log: (message: string, data?: unknown) => void;
   logError: (message: string, error?: unknown) => void;
 }
@@ -163,28 +169,31 @@ export interface RequestContext {
 export async function createRequestContext(
   req: VercelRequest,
   options: {
+    requestId?: string;
+    logger?: ReturnType<typeof createLogger>;
     requireAuth?: boolean;
     allowExpired?: boolean;
   } = {}
 ): Promise<RequestContext> {
-  const { requireAuth = false, allowExpired = true } = options;
-  
-  const requestId = generateRequestId();
+  const {
+    requestId = generateRequestId(),
+    logger = createLogger(requestId),
+    requireAuth = false,
+    allowExpired = true,
+  } = options;
+
   const origin = getEffectiveOrigin(req);
   const originAllowed = isAllowedOrigin(origin);
   const ip = RateLimit.getClientIp(req);
   const redis = createRedis();
-  
-  const log = (message: string, data?: unknown) => {
-    console.log(`[${requestId}] ${message}`, data ?? "");
-  };
-  const logError = (message: string, error?: unknown) => {
-    console.error(`[${requestId}] ERROR: ${message}`, error ?? "");
-  };
-  
+  const auth = extractAuthNormalized(req);
+
+  const log = (message: string, data?: unknown) => logger.info(message, data);
+  const logError = (message: string, error?: unknown) => logger.error(message, error);
+
   let user: AuthenticatedUser | null = null;
-  if (requireAuth || getHeader(req, "authorization")) {
-    const { username, token } = extractAuth(req);
+  if (requireAuth || auth.token) {
+    const { username, token } = auth;
     if (username && token) {
       const result = await validateAuth(redis, username, token, { allowExpired });
       if (result.valid) {
@@ -198,8 +207,10 @@ export async function createRequestContext(
     origin,
     originAllowed,
     ip,
+    auth,
     user,
     redis,
+    logger,
     log,
     logError,
   };

@@ -100,13 +100,13 @@ export async function checkAndIncrementAIMessageCount(
 // Generic rate-limit utilities
 // ------------------------------
 
-interface CounterLimitArgs {
+export interface CounterLimitArgs {
   key: string;
   windowSeconds: number;
   limit: number;
 }
 
-interface CounterLimitResult {
+export interface CounterLimitResult {
   allowed: boolean;
   count: number;
   limit: number;
@@ -185,7 +185,9 @@ export function getClientIp(
     const xForwarded = getHeaderValue(h, "x-forwarded-for");
     const xRealIp = getHeaderValue(h, "x-real-ip");
     const cfIp = getHeaderValue(h, "cf-connecting-ip");
-    const raw = xVercel || xForwarded || xRealIp || cfIp || "";
+    // Prefer an explicit forwarded IP over Vercel's loopback proxy header so
+    // local tests can safely vary client identity without disabling rate limits.
+    const raw = xForwarded || xVercel || xRealIp || cfIp || "";
     let ip = raw.split(",")[0].trim();
 
     if (!ip) ip = "unknown-ip";
@@ -194,11 +196,12 @@ export function getClientIp(
     ip = ip.replace(/^::ffff:/i, "");
     const lower = ip.toLowerCase();
     const isLocalOrigin = /^http:\/\/localhost(?::\d+)?$/.test(origin);
+    const hasForwardedIp = Boolean(xVercel || xForwarded || xRealIp || cfIp);
     if (
-      isLocalOrigin ||
       lower === "::1" ||
       lower === "0:0:0:0:0:0:0:1" ||
-      lower === "127.0.0.1"
+      lower === "127.0.0.1" ||
+      (isLocalOrigin && !hasForwardedIp)
     ) {
       return "localhost-dev";
     }
