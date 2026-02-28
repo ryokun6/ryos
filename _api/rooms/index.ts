@@ -8,11 +8,11 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { Redis } from "@upstash/redis";
 import { validateAuth } from "../_utils/auth/index.js";
 import { isProfaneUsername } from "../_utils/_validation.js";
 import { initLogger } from "../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
+import { createRedis } from "../_utils/redis.js";
 import { getRoomsWithCountsFast } from "./_helpers/_presence.js";
 import { generateId, getCurrentTimestamp, setRoom, registerRoom } from "./_helpers/_redis.js";
 import { setRoomPresence } from "./_helpers/_presence.js";
@@ -21,13 +21,6 @@ import type { Room } from "./_helpers/_types.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const { requestId: _requestId, logger } = initLogger();
