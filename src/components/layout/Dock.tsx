@@ -36,6 +36,7 @@ import {
   type MotionValue,
 } from "framer-motion";
 import { useShallow } from "zustand/react/shallow";
+import { toggleExposeView } from "@/utils/appEventBus";
 
 const MAX_SCALE = 2.3; // peak multiplier at cursor center
 const DISTANCE = 140; // px range where magnification is applied
@@ -1544,7 +1545,7 @@ function MacDock() {
             label: t("common.dock.showAllWindows"),
             onSelect: () => {
               // Trigger Expose View
-              window.dispatchEvent(new CustomEvent("toggleExposeView"));
+              toggleExposeView();
             },
           });
           
@@ -1668,7 +1669,7 @@ function MacDock() {
         label: t("common.dock.showAllWindows"),
         onSelect: () => {
           // Trigger Expose View
-          window.dispatchEvent(new CustomEvent("toggleExposeView"));
+          toggleExposeView();
         },
         disabled: appInstances.length === 0,
       });

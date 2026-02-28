@@ -21,6 +21,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { markdownToHtml } from "@/utils/markdown";
 import { useTranslation } from "react-i18next";
+import { onDocumentUpdated } from "@/utils/appEventBus";
 
 // Inner component that has access to editor context
 function TextEditContent({
@@ -250,20 +251,14 @@ function TextEditContent({
       "updateEditorContent",
       handleUpdateEditorContent as EventListener
     );
-    window.addEventListener(
-      "documentUpdated",
-      handleDocumentUpdated as EventListener
-    );
+    const unsubscribeDocumentUpdated = onDocumentUpdated(handleDocumentUpdated);
 
     return () => {
       window.removeEventListener(
         "updateEditorContent",
         handleUpdateEditorContent as EventListener
       );
-      window.removeEventListener(
-        "documentUpdated",
-        handleDocumentUpdated as EventListener
-      );
+      unsubscribeDocumentUpdated();
     };
   }, [editor, currentFilePath, setHasUnsavedChanges, t]);
 

@@ -13,6 +13,7 @@ import { useCustomEventListener } from "@/hooks/useEventListener";
 import { helpItems } from "..";
 import type { VideosInitialData } from "../../base/types";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { onAppUpdate } from "@/utils/appEventBus";
 
 interface Video {
   id: string;
@@ -800,24 +801,23 @@ export function useVideosLogic({
   ]);
 
   // Effect for updateApp event (when app is already open)
-  useCustomEventListener<{
-    appId: string;
-    instanceId?: string;
-    initialData?: { videoId?: string };
-  }>(
-    "updateApp",
-    (event) => {
+  useEffect(() => {
+    return onAppUpdate((event) => {
+      const updateInitialData = event.detail.initialData as
+        | { videoId?: string }
+        | undefined;
+
       if (
         event.detail.appId === "videos" &&
-        event.detail.initialData?.videoId &&
+        updateInitialData?.videoId &&
         (!event.detail.instanceId || event.detail.instanceId === instanceId)
       ) {
         // Skip if this videoId has already been processed
         if (
-          lastProcessedVideoIdRef.current === event.detail.initialData.videoId
+          lastProcessedVideoIdRef.current === updateInitialData.videoId
         )
           return;
-        const videoId = event.detail.initialData.videoId;
+        const videoId = updateInitialData.videoId;
         console.log(
           `[Videos] Received updateApp event with videoId: ${videoId}`
         );
@@ -835,10 +835,10 @@ export function useVideosLogic({
           });
         });
         // Mark this videoId as processed
-        lastProcessedVideoIdRef.current = event.detail.initialData.videoId;
+        lastProcessedVideoIdRef.current = updateInitialData.videoId;
       }
-    }
-  );
+    });
+  }, [bringInstanceToForeground, instanceId, processVideoId, sharedVideoToastContent, t]);
 
   // Track paused -> playing transitions so we can auto-show the SeekBar
   useEffect(() => {

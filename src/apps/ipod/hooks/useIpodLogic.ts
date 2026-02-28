@@ -30,6 +30,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { LyricsAlignment, LyricsFont, DisplayMode, getLyricsFontClassName } from "@/types/lyrics";
 import { IPOD_ANALYTICS } from "@/utils/analytics";
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
+import { onAppUpdate } from "@/utils/appEventBus";
 import {
   BACKLIGHT_TIMEOUT_MS,
   SEEK_AMOUNT_SECONDS,
@@ -906,21 +907,20 @@ export function useIpodLogic({
 
 
   // Update app event handling
-  useCustomEventListener<{
-    appId: string;
-    instanceId?: string;
-    initialData?: { videoId?: string };
-  }>(
-    "updateApp",
-    (event) => {
+  useEffect(() => {
+    return onAppUpdate((event) => {
+      const updateInitialData = event.detail.initialData as
+        | { videoId?: string }
+        | undefined;
+
       if (
         event.detail.appId === "ipod" &&
-        event.detail.initialData?.videoId &&
+        updateInitialData?.videoId &&
         (!event.detail.instanceId || event.detail.instanceId === instanceId)
       ) {
-        if (lastProcessedInitialDataRef.current === event.detail.initialData) return;
+        if (lastProcessedInitialDataRef.current === updateInitialData) return;
 
-        const videoId = event.detail.initialData.videoId;
+        const videoId = updateInitialData.videoId;
         if (instanceId) {
           bringInstanceToForeground(instanceId);
         }
@@ -930,10 +930,10 @@ export function useIpodLogic({
             description: `Video ID: ${videoId}`,
           });
         });
-        lastProcessedInitialDataRef.current = event.detail.initialData;
+        lastProcessedInitialDataRef.current = updateInitialData;
       }
-    }
-  );
+    });
+  }, [bringInstanceToForeground, instanceId, processVideoId]);
 
   // Handle closing sync mode - flush pending offset saves
   const closeSyncMode = useCallback(async () => {

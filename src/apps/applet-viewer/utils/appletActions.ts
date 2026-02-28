@@ -7,6 +7,7 @@ import { track } from "@vercel/analytics";
 import { APPLET_ANALYTICS } from "@/utils/analytics";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { emitFileSaved } from "@/utils/appEventBus";
 
 export interface Applet {
   id: string;
@@ -202,15 +203,12 @@ export const useAppletActions = () => {
         });
       }
       
-      const event = new CustomEvent("saveFile", {
-        detail: {
-          name: finalName,
-          path: finalPath,
-          content: data.content,
-          icon: data.icon || undefined,
-        },
+      emitFileSaved({
+        name: finalName,
+        path: finalPath,
+        content: data.content,
+        icon: data.icon || undefined,
       });
-      window.dispatchEvent(event);
       
       // Track analytics for install or update
       if (isUpdate) {

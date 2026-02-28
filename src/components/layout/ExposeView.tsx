@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useMemo } from "react";
-import { useEventListener, useCustomEventListener } from "@/hooks/useEventListener";
+import { useEventListener } from "@/hooks/useEventListener";
 import { usePrevious } from "@/hooks/useLatestRef";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStoreShallow } from "@/stores/helpers";
@@ -18,6 +18,7 @@ import {
   getExposeScale,
 } from "./exposeUtils";
 import { useTranslation } from "react-i18next";
+import { onExposeWindowSelect } from "@/utils/appEventBus";
 
 interface ExposeViewProps {
   isOpen: boolean;
@@ -140,10 +141,11 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   );
 
   // Expose the handleWindowSelect for AppManager
-  useCustomEventListener<{ instanceId: string }>(
-    "exposeWindowSelect",
-    (e) => handleWindowSelect(e.detail.instanceId)
-  );
+  useEffect(() => {
+    return onExposeWindowSelect((event) => {
+      handleWindowSelect(event.detail.instanceId);
+    });
+  }, [handleWindowSelect]);
 
   // Handle keyboard navigation - escape to close
   useEventListener("keydown", (e) => {

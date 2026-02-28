@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { calculateExposeGrid, getExposeTransform } from "./exposeUtils";
 import { useTranslation } from "react-i18next";
 import { ArrowsOutSimple } from "@phosphor-icons/react";
+import { selectExposeWindow } from "@/utils/appEventBus";
 
 interface WindowFrameProps {
   children: React.ReactNode;
@@ -942,11 +943,7 @@ export function WindowFrame({
           onClick={(e) => {
             if (exposeMode && instanceId) {
               e.stopPropagation();
-              window.dispatchEvent(
-                new CustomEvent("exposeWindowSelect", {
-                  detail: { instanceId },
-                })
-              );
+              selectExposeWindow({ instanceId });
               return;
             }
           }}

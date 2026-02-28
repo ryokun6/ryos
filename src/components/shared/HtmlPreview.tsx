@@ -24,6 +24,7 @@ import { useTranslation } from "react-i18next";
 import { useEventListener } from "@/hooks/useEventListener";
 import DOMPurify from "dompurify";
 import { extractHtmlContent } from "./htmlPreviewUtils";
+import { emitFileUpdated } from "@/utils/appEventBus";
 
 // Component to render ryOS Code Previews
 interface HtmlPreviewProps {
@@ -692,13 +693,10 @@ export default function HtmlPreview({
       }
 
       // Notify that file was saved
-      const event = new CustomEvent("fileUpdated", {
-        detail: {
-          name: nameWithExtension,
-          path: appletPath,
-        },
+      emitFileUpdated({
+        name: nameWithExtension,
+        path: appletPath,
       });
-      window.dispatchEvent(event);
 
       setIsSaveAppletDialogOpen(false);
 

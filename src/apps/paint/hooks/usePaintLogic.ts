@@ -12,6 +12,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 import { helpItems } from "..";
 import type { PaintInitialData } from "../../base/types";
+import { emitFileSaved } from "@/utils/appEventBus";
 
 interface PaintCanvasHandle {
   undo: () => void;
@@ -166,14 +167,11 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
             content: blob,
           });
 
-          const saveEvent = new CustomEvent("saveFile", {
-            detail: {
-              name: fileName,
-              path: currentFilePath,
-              content: blob,
-            },
+          emitFileSaved({
+            name: fileName,
+            path: currentFilePath,
+            content: blob,
           });
-          window.dispatchEvent(saveEvent);
 
           setHasUnsavedChanges(false);
         } catch (err) {
@@ -263,14 +261,11 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
         type: "png",
       });
 
-      const saveEvent = new CustomEvent("saveFile", {
-        detail: {
-          name: fileName,
-          path: filePath,
-          content: blob,
-        },
+      emitFileSaved({
+        name: fileName,
+        path: filePath,
+        content: blob,
       });
-      window.dispatchEvent(saveEvent);
 
       setLastFilePath(filePath);
       setHasUnsavedChanges(false);
