@@ -3,6 +3,16 @@ import { APP_ANALYTICS } from "@/utils/analytics";
 
 export type RuntimeCrashScope = "app" | "desktop";
 
+export interface RuntimeCrashTestDetail {
+  scope: RuntimeCrashScope;
+  appId?: string;
+  appName?: string;
+  instanceId?: string;
+  message?: string;
+}
+
+export const RYOS_ERROR_BOUNDARY_TEST_EVENT = "ryos:error-boundary-test";
+
 export interface RuntimeCrashContext {
   scope: RuntimeCrashScope;
   boundary: "AppErrorBoundary" | "DesktopErrorBoundary";
@@ -107,4 +117,16 @@ export function reportRuntimeCrash(
       console.error("[ryOS] window.reportError failed", browserError);
     }
   }
+}
+
+export function triggerRuntimeCrashTest(detail: RuntimeCrashTestDetail): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent<RuntimeCrashTestDetail>(RYOS_ERROR_BOUNDARY_TEST_EVENT, {
+      detail,
+    }),
+  );
 }

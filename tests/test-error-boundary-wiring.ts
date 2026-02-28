@@ -84,8 +84,8 @@ export async function runErrorBoundaryWiringTests(): Promise<{
       "Expected boundary crashes to be forwarded to runtime reporting",
     );
     assert(
-      source.includes("ryos:error-boundary-test"),
-      "Expected development-only crash test hook to remain available",
+      source.includes("RYOS_ERROR_BOUNDARY_TEST_EVENT"),
+      "Expected crash test hook to remain available through shared utilities",
     );
   });
 
@@ -102,6 +102,51 @@ export async function runErrorBoundaryWiringTests(): Promise<{
     assert(
       source.includes("window.reportError"),
       "Expected browser-level reportError fallback",
+    );
+    assert(
+      source.includes("triggerRuntimeCrashTest"),
+      "Expected shared crash test dispatcher helper",
+    );
+    assert(
+      source.includes("RYOS_ERROR_BOUNDARY_TEST_EVENT"),
+      "Expected shared crash test event constant",
+    );
+  });
+
+  console.log(section("Control Panels debug wiring"));
+  await runTest("renders debug-only error boundary controls in Control Panels", async () => {
+    const source = readSource(
+      "src/apps/control-panels/components/ControlPanelsAppComponent.tsx",
+    );
+    assert(
+      source.includes('t("apps.control-panels.errorBoundaries")'),
+      "Expected localized Control Panels label for error boundary testing",
+    );
+    assert(
+      source.includes("handleTriggerAppCrashTest"),
+      "Expected app crash test action to be wired into the UI",
+    );
+    assert(
+      source.includes("handleTriggerDesktopCrashTest"),
+      "Expected desktop crash test action to be wired into the UI",
+    );
+  });
+
+  await runTest("dispatches shared crash events from Control Panels logic", async () => {
+    const source = readSource(
+      "src/apps/control-panels/hooks/useControlPanelsLogic.ts",
+    );
+    assert(
+      source.includes("triggerRuntimeCrashTest"),
+      "Expected Control Panels logic to use shared crash test dispatcher",
+    );
+    assert(
+      /scope:\s*"app"[\s\S]*appId:\s*"control-panels"/.test(source),
+      "Expected app crash test to target the Control Panels instance",
+    );
+    assert(
+      /scope:\s*"desktop"/.test(source),
+      "Expected desktop crash test to target the desktop boundary",
     );
   });
 

@@ -157,6 +157,8 @@ export function ControlPanelsAppComponent({
     handleConfirmFormat,
     handleCheckForUpdates,
     handleShowBootScreen,
+    handleTriggerAppCrashTest,
+    handleTriggerDesktopCrashTest,
     AI_MODELS,
     aiModel,
     setAiModel,
@@ -946,6 +948,33 @@ export function ControlPanelsAppComponent({
                     >
                       {t("apps.control-panels.show")}
                     </Button>
+                  </div>
+                )}
+
+                {isAdmin && debugMode && (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-1">
+                      <Label>{t("apps.control-panels.errorBoundaries")}</Label>
+                      <Label className="text-[11px] text-neutral-600 font-geneva-12">
+                        {t("apps.control-panels.errorBoundariesDescription")}
+                      </Label>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="retro"
+                        onClick={handleTriggerAppCrashTest}
+                        className="w-fit"
+                      >
+                        {t("apps.control-panels.crashApp")}
+                      </Button>
+                      <Button
+                        variant="retro"
+                        onClick={handleTriggerDesktopCrashTest}
+                        className="w-fit"
+                      >
+                        {t("apps.control-panels.crashDesktop")}
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

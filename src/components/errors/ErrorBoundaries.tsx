@@ -12,7 +12,11 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { cn } from "@/lib/utils";
 import type { AppId } from "@/config/appRegistry";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { reportRuntimeCrash } from "@/utils/errorReporting";
+import {
+  reportRuntimeCrash,
+  RYOS_ERROR_BOUNDARY_TEST_EVENT,
+  type RuntimeCrashTestDetail,
+} from "@/utils/errorReporting";
 
 type CrashDialogScope = "app" | "desktop";
 
@@ -24,13 +28,6 @@ interface ErrorBoundaryBaseProps {
 
 interface ErrorBoundaryBaseState {
   error: Error | null;
-}
-
-interface BoundaryTestEventDetail {
-  scope: CrashDialogScope;
-  appId?: AppId;
-  instanceId?: string;
-  message?: string;
 }
 
 interface CrashDialogProps {
@@ -55,8 +52,6 @@ export interface AppErrorBoundaryProps {
 export interface DesktopErrorBoundaryProps {
   children: React.ReactNode;
 }
-
-export const RYOS_ERROR_BOUNDARY_TEST_EVENT = "ryos:error-boundary-test";
 
 class ErrorBoundaryBase extends React.Component<
   ErrorBoundaryBaseProps,
@@ -95,12 +90,8 @@ function BoundaryTestCrash({
   const [message, setMessage] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    if (!import.meta.env.DEV) {
-      return undefined;
-    }
-
     const handleBoundaryTestCrash = (event: Event) => {
-      const detail = (event as CustomEvent<BoundaryTestEventDetail>).detail;
+      const detail = (event as CustomEvent<RuntimeCrashTestDetail>).detail;
       if (detail.scope !== scope) {
         return;
       }
