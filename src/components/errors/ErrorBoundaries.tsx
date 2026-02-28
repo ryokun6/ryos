@@ -29,7 +29,6 @@ interface BoundaryTestEventDetail {
 interface CrashDialogProps {
   scope: CrashDialogScope;
   titleBarLabel: string;
-  appLabel: string;
   heading: string;
   description: string;
   actionLabel: string;
@@ -139,7 +138,6 @@ function BoundaryTestCrash({
 function CrashDialog({
   scope,
   titleBarLabel,
-  appLabel,
   heading,
   description,
   actionLabel,
@@ -192,36 +190,22 @@ function CrashDialog({
         width={32}
         height={32}
       />
-      <div className="min-w-0 flex-1 space-y-3">
-        <div className="space-y-1">
-          <p
-            className={cn(
-              "text-black/70",
-              isXpTheme
-                ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
-                : isMacTheme
-                  ? "text-[12px] font-medium"
-                  : "font-geneva-12 text-[11px]",
-            )}
-          >
-            {appLabel}
-          </p>
-          <h2
-            id={headingId}
-            className={cn(
-              "text-black",
-              isXpTheme
-                ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[12px]"
-                : isMacTheme
-                  ? "text-[18px] font-semibold"
-                  : "font-geneva-12 text-[16px]",
-            )}
-          >
-            {heading}
-          </h2>
-        </div>
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <p
+          id={headingId}
+          className={cn(
+            "text-black",
+            isXpTheme
+              ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px] font-bold"
+              : isMacTheme
+                ? "text-[13px] font-semibold"
+                : "font-geneva-12 text-[12px] font-bold",
+          )}
+        >
+          {heading}
+        </p>
 
-        <p id={descriptionId} className={bodyTextClasses}>
+        <p id={descriptionId} className={cn(bodyTextClasses, "mt-0")}>
           {description}
         </p>
 
@@ -345,12 +329,11 @@ export function AppErrorBoundary({
         <CrashDialog
           scope="app"
           titleBarLabel={appName}
-          appLabel={appName}
           heading={t("common.errorBoundaries.appHeading", {
-            defaultValue: "This application quit unexpectedly.",
+            appName,
+            defaultValue: "{{appName}} quit unexpectedly.",
           })}
           description={t("common.errorBoundaries.appDescription", {
-            appName,
             defaultValue:
               "Relaunch it to open a fresh window. Other open apps will keep running.",
           })}
@@ -392,9 +375,8 @@ export function DesktopErrorBoundary({
         <CrashDialog
           scope="desktop"
           titleBarLabel="ryOS"
-          appLabel="ryOS"
           heading={t("common.errorBoundaries.desktopHeading", {
-            defaultValue: "The desktop quit unexpectedly.",
+            defaultValue: "Desktop quit unexpectedly.",
           })}
           description={t("common.errorBoundaries.desktopDescription", {
             defaultValue:
