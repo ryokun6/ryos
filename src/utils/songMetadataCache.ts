@@ -11,16 +11,9 @@ import { getApiUrl } from "./platform";
 import { abortableFetch } from "./abortableFetch";
 
 const BULK_IMPORT_BATCH_SIZE = 100;
+const BULK_IMPORT_MAX_PAYLOAD_BYTES = 3_500_000;
 const BULK_IMPORT_MAX_RATE_LIMIT_RETRIES = 4;
-
-function splitIntoChunks<T>(items: T[], size: number): T[][] {
-  if (size <= 0) return [items];
-  const chunks: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {
-    chunks.push(items.slice(i, i + size));
-  }
-  return chunks;
-}
+const bulkImportTextEncoder = new TextEncoder();
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -98,6 +91,72 @@ interface SaveSongResponse {
 export interface SongMetadataAuthCredentials {
   username: string;
   authToken: string;
+}
+
+type BulkImportSong = {
+  id: string;
+  url?: string;
+  title: string;
+  artist?: string;
+  album?: string;
+  lyricOffset?: number;
+  lyricsSource?: CachedLyricsSource;
+  // Content fields (may be compressed gzip:base64 strings or raw objects)
+  // Using unknown to allow flexible import from JSON files
+  lyrics?: unknown;
+  translations?: unknown;
+  furigana?: unknown;
+  soramimi?: unknown;
+  soramimiByLang?: unknown;
+  // Timestamps
+  createdBy?: string;
+  createdAt?: number;
+  updatedAt?: number;
+  importOrder?: number;
+};
+
+function buildBulkImportRequestBody(songs: BulkImportSong[]): {
+  body: string;
+  byteLength: number;
+} {
+  const body = JSON.stringify({ action: "import", songs });
+  return {
+    body,
+    byteLength: bulkImportTextEncoder.encode(body).length,
+  };
+}
+
+function splitBulkImportBatch(
+  songs: BulkImportSong[]
+): [BulkImportSong[], BulkImportSong[]] {
+  const midpoint = Math.ceil(songs.length / 2);
+  return [songs.slice(0, midpoint), songs.slice(midpoint)];
+}
+
+function createBulkImportBatches(songs: BulkImportSong[]): BulkImportSong[][] {
+  const batches: BulkImportSong[][] = [];
+  let currentBatch: BulkImportSong[] = [];
+
+  for (const song of songs) {
+    const nextBatch = [...currentBatch, song];
+    const { byteLength } = buildBulkImportRequestBody(nextBatch);
+    const exceedsCountLimit = nextBatch.length > BULK_IMPORT_BATCH_SIZE;
+    const exceedsPayloadLimit = byteLength > BULK_IMPORT_MAX_PAYLOAD_BYTES;
+
+    if (currentBatch.length > 0 && (exceedsCountLimit || exceedsPayloadLimit)) {
+      batches.push(currentBatch);
+      currentBatch = [song];
+      continue;
+    }
+
+    currentBatch = nextBatch;
+  }
+
+  if (currentBatch.length > 0) {
+    batches.push(currentBatch);
+  }
+
+  return batches;
 }
 
 /**
@@ -384,27 +443,7 @@ export async function saveSongMetadata(
  * @returns Import result with counts
  */
 export async function bulkImportSongMetadata(
-  songs: Array<{
-    id: string;
-    url?: string;
-    title: string;
-    artist?: string;
-    album?: string;
-    lyricOffset?: number;
-    lyricsSource?: CachedLyricsSource;
-    // Content fields (may be compressed gzip:base64 strings or raw objects)
-    // Using unknown to allow flexible import from JSON files
-    lyrics?: unknown;
-    translations?: unknown;
-    furigana?: unknown;
-    soramimi?: unknown;
-    soramimiByLang?: unknown;
-    // Timestamps
-    createdBy?: string;
-    createdAt?: number;
-    updatedAt?: number;
-    importOrder?: number;
-  }>,
+  songs: BulkImportSong[],
   auth: SongMetadataAuthCredentials
 ): Promise<{ success: boolean; imported: number; updated: number; total: number; error?: string }> {
   try {
@@ -412,7 +451,7 @@ export async function bulkImportSongMetadata(
       return { success: true, imported: 0, updated: 0, total: 0 };
     }
 
-    const batches = splitIntoChunks(songs, BULK_IMPORT_BATCH_SIZE);
+    const batches = createBulkImportBatches(songs);
     let imported = 0;
     let updated = 0;
     let total = 0;
@@ -420,9 +459,26 @@ export async function bulkImportSongMetadata(
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
       let completedBatch = false;
+      let shouldSplitBatch = false;
       let rateLimitRetries = 0;
 
       while (!completedBatch) {
+        const { body, byteLength } = buildBulkImportRequestBody(batch);
+        if (byteLength > BULK_IMPORT_MAX_PAYLOAD_BYTES) {
+          if (batch.length <= 1) {
+            return {
+              success: false,
+              imported,
+              updated,
+              total,
+              error:
+                "Payload too large: one song entry exceeds import request size limits",
+            };
+          }
+          shouldSplitBatch = true;
+          break;
+        }
+
         const response = await abortableFetch(getApiUrl("/api/songs"), {
           method: "POST",
           headers: {
@@ -430,11 +486,29 @@ export async function bulkImportSongMetadata(
             "Authorization": `Bearer ${auth.authToken}`,
             "X-Username": auth.username,
           },
-          body: JSON.stringify({ action: "import", songs: batch }),
+          body,
           timeout: 30000,
           throwOnHttpError: false,
           retry: { maxAttempts: 1, initialDelayMs: 250 },
         });
+
+        if (response.status === 413) {
+          if (batch.length <= 1) {
+            return {
+              success: false,
+              imported,
+              updated,
+              total,
+              error:
+                "Payload too large: one song entry exceeds import request size limits",
+            };
+          }
+          console.warn(
+            `[SongMetadataCache] Batch ${i + 1}/${batches.length} hit 413, splitting and retrying`
+          );
+          shouldSplitBatch = true;
+          break;
+        }
 
         if (response.status === 429) {
           if (rateLimitRetries >= BULK_IMPORT_MAX_RATE_LIMIT_RETRIES) {
@@ -509,6 +583,12 @@ export async function bulkImportSongMetadata(
         updated += Number(data.updated) || 0;
         total += Number(data.total) || batch.length;
         completedBatch = true;
+      }
+
+      if (shouldSplitBatch) {
+        const [firstHalf, secondHalf] = splitBulkImportBatch(batch);
+        batches.splice(i, 1, firstHalf, secondHalf);
+        i -= 1;
       }
     }
 
