@@ -89,6 +89,7 @@ export function AdminAppComponent({
     isSidebarVisible,
     toggleSidebarVisibility,
     isImporting,
+    importStatus,
     isExporting,
     isDeletingAll,
     fileInputRef,
@@ -119,6 +120,88 @@ export function AdminAppComponent({
       onSectionChange={setActiveSection}
     />
   );
+
+  const shouldShowImportStatus =
+    activeSection === "songs" &&
+    !selectedRoomId &&
+    !selectedUserProfile &&
+    !selectedSongId &&
+    importStatus.phase !== "idle";
+  const isMacOSXTheme = currentTheme === "macosx";
+
+  const importProgressPercent =
+    importStatus.phase === "completed"
+      ? 100
+      : importStatus.phase === "refreshing-library"
+      ? 95
+      : importStatus.totalSongs > 0
+      ? Math.min(
+          94,
+          Math.round((importStatus.processedSongs / importStatus.totalSongs) * 100)
+        )
+      : importStatus.phase === "reading-file"
+      ? 5
+      : importStatus.phase === "parsing-file"
+      ? 10
+      : importStatus.phase === "validating-data"
+      ? 15
+      : importStatus.phase === "preparing-songs"
+      ? 20
+      : importStatus.phase === "uploading-batches" ||
+        importStatus.phase === "waiting-rate-limit"
+      ? 30
+      : importStatus.phase === "failed"
+      ? 100
+      : 0;
+
+  const importStatusText =
+    importStatus.phase === "reading-file"
+      ? t("apps.admin.songs.importStatus.reading", {
+          fileName: importStatus.fileName || "",
+          defaultValue: `Reading ${importStatus.fileName || "file"}...`,
+        })
+      : importStatus.phase === "parsing-file"
+      ? t("apps.admin.songs.importStatus.parsing", "Parsing import file...")
+      : importStatus.phase === "validating-data"
+      ? t("apps.admin.songs.importStatus.validating", "Validating import data...")
+      : importStatus.phase === "preparing-songs"
+      ? t("apps.admin.songs.importStatus.preparing", {
+          processed: importStatus.processedSongs,
+          total: importStatus.totalSongs,
+          defaultValue: `Preparing songs ${importStatus.processedSongs}/${importStatus.totalSongs}`,
+        })
+      : importStatus.phase === "uploading-batches"
+      ? t("apps.admin.songs.importStatus.uploading", {
+          processed: importStatus.processedSongs,
+          total: importStatus.totalSongs,
+          defaultValue: `Uploading songs ${importStatus.processedSongs}/${importStatus.totalSongs}`,
+        })
+      : importStatus.phase === "waiting-rate-limit"
+      ? t("apps.admin.songs.importStatus.rateLimited", {
+          message:
+            importStatus.message ||
+            "Rate limited. Waiting briefly before retrying...",
+          defaultValue:
+            importStatus.message ||
+            "Rate limited. Waiting briefly before retrying...",
+        })
+      : importStatus.phase === "refreshing-library"
+      ? t(
+          "apps.admin.songs.importStatus.refreshing",
+          "Import uploaded. Refreshing library..."
+        )
+      : importStatus.phase === "completed"
+      ? t("apps.admin.songs.importStatus.completed", {
+          imported: importStatus.imported,
+          updated: importStatus.updated,
+          defaultValue: `Import complete: ${importStatus.imported} new, ${importStatus.updated} updated`,
+        })
+      : importStatus.phase === "failed"
+      ? t("apps.admin.songs.importStatus.failed", {
+          error: importStatus.error || t("apps.admin.errors.importFailed", "Import failed"),
+          defaultValue: `Import failed: ${importStatus.error || t("apps.admin.errors.importFailed", "Import failed")}`,
+        })
+      : "";
 
   if (!isWindowOpen) return null;
 
@@ -283,7 +366,18 @@ export function AdminAppComponent({
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isImporting || isExporting || isDeletingAll}
                       className="h-7 w-7 p-0"
-                      title={t("apps.admin.songs.import", "Import Library")}
+                      title={
+                        isImporting
+                          ? t("apps.admin.songs.importing", {
+                              processed: importStatus.processedSongs,
+                              total: importStatus.totalSongs,
+                              defaultValue:
+                                importStatus.totalSongs > 0
+                                  ? `Importing ${importStatus.processedSongs}/${importStatus.totalSongs}`
+                                  : "Importing library...",
+                            })
+                          : t("apps.admin.songs.import", "Import Library")
+                      }
                     >
                       {isImporting ? (
                         <ActivityIndicator size={14} />
@@ -367,6 +461,48 @@ export function AdminAppComponent({
                     <ArrowsClockwise size={14} weight="bold" />
                   )}
                 </Button>
+              </div>
+            )}
+
+            {shouldShowImportStatus && (
+              <div className="px-2 py-1.5 border-b border-black/10">
+                <div className="space-y-1">
+                  {isMacOSXTheme ? (
+                    <div className="aqua-progress w-full h-[14px]">
+                      <div
+                        className={cn(
+                          "aqua-progress-fill transition-all duration-300 ease-out",
+                          importStatus.phase === "failed" && "opacity-60"
+                        )}
+                        style={{ width: `${importProgressPercent}%` }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full h-3 bg-neutral-200 rounded-sm overflow-hidden border border-neutral-300">
+                      <div
+                        className={cn(
+                          "h-full bg-neutral-600 transition-all duration-300 ease-out",
+                          importStatus.phase === "failed" && "bg-red-500",
+                          importStatus.phase === "completed" && "bg-green-600"
+                        )}
+                        style={{ width: `${importProgressPercent}%` }}
+                      />
+                    </div>
+                  )}
+                  <p
+                    className={cn(
+                      "text-[11px] font-geneva-12",
+                      importStatus.phase === "failed"
+                        ? "text-red-600"
+                        : "text-neutral-600"
+                    )}
+                  >
+                    {importStatusText}
+                    {importProgressPercent > 0 &&
+                      importProgressPercent < 100 &&
+                      ` (${importProgressPercent}%)`}
+                  </p>
+                </div>
               </div>
             )}
 
