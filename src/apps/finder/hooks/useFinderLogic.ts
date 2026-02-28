@@ -22,6 +22,11 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { getTranslatedFolderNameFromName } from "@/utils/i18n";
 import { helpItems } from "../index";
 import { useFilesStoreShallow } from "@/stores/helpers";
+import {
+  emitFileRenamed,
+  emitFileSaved,
+  emitFileUpdated,
+} from "@/utils/appEventBus";
 
 // Type for Finder initial data
 export interface FinderInitialData {
@@ -402,13 +407,10 @@ export function useFinderLogic({
         });
 
         // Notify file was added
-        const event = new CustomEvent("fileUpdated", {
-          detail: {
-            name: file.name,
-            path: filePath,
-          },
+        emitFileUpdated({
+          name: file.name,
+          path: filePath,
         });
-        window.dispatchEvent(event);
       } catch (err) {
         console.error("Error saving dropped file:", err);
       }
@@ -522,15 +524,12 @@ export function useFinderLogic({
           }
 
           // Notify file was added
-          const event = new CustomEvent("saveFile", {
-            detail: {
-              name: importedData.name,
-              path: filePath,
-              content: importedData.content,
-              icon: importedData.icon,
-            },
+          emitFileSaved({
+            name: importedData.name,
+            path: filePath,
+            content: importedData.content,
+            icon: importedData.icon,
           });
-          window.dispatchEvent(event);
 
           toast.success(t("apps.finder.messages.appletImported"), {
             description: t("apps.finder.messages.appletImportedDesc", {
@@ -618,15 +617,12 @@ export function useFinderLogic({
           }
 
           // Notify file was added
-          const event = new CustomEvent("saveFile", {
-            detail: {
-              name: importedData.name,
-              path: filePath,
-              content: importedData.content,
-              icon: importedData.icon,
-            },
+          emitFileSaved({
+            name: importedData.name,
+            path: filePath,
+            content: importedData.content,
+            icon: importedData.icon,
           });
-          window.dispatchEvent(event);
 
           toast.success(t("apps.finder.messages.appletImported"), {
             description: t("apps.finder.messages.appletImportedDesc", {
@@ -652,13 +648,10 @@ export function useFinderLogic({
           });
 
           // Notify file was added
-          const event = new CustomEvent("fileUpdated", {
-            detail: {
-              name: fileName,
-              path: filePath,
-            },
+          emitFileUpdated({
+            name: fileName,
+            path: filePath,
           });
-          window.dispatchEvent(event);
         }
 
         // Clear the input
@@ -692,15 +685,12 @@ export function useFinderLogic({
     await originalRenameFile(oldPathForRename, trimmedNewName);
 
     // Dispatch rename event
-    const event = new CustomEvent("fileRenamed", {
-      detail: {
-        oldPath: oldPathForRename,
-        newPath: `${basePath}/${trimmedNewName}`,
-        oldName: selectedFile.name,
-        newName: trimmedNewName,
-      },
+    emitFileRenamed({
+      oldPath: oldPathForRename,
+      newPath: `${basePath}/${trimmedNewName}`,
+      oldName: selectedFile.name,
+      newName: trimmedNewName,
     });
-    window.dispatchEvent(event);
 
     setIsRenameDialogOpen(false);
   };

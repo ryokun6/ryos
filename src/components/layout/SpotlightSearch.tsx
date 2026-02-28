@@ -12,6 +12,7 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useTranslation } from "react-i18next";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { isTauri, isTauriWindows } from "@/utils/platform";
+import { onExposeToggle, onSpotlightToggle } from "@/utils/appEventBus";
 
 // Section header labels by result type
 const SECTION_TYPE_ORDER: SpotlightResult["type"][] = [
@@ -91,8 +92,7 @@ export function SpotlightSearch() {
       }
       state.toggle();
     };
-    window.addEventListener("toggleSpotlight", handler);
-    return () => window.removeEventListener("toggleSpotlight", handler);
+    return onSpotlightToggle(handler);
   }, [isMobile]);
 
   // Close Spotlight when Expose view opens (mutual exclusion)
@@ -102,8 +102,7 @@ export function SpotlightSearch() {
         useSpotlightStore.getState().reset();
       }
     };
-    window.addEventListener("toggleExposeView", handler);
-    return () => window.removeEventListener("toggleExposeView", handler);
+    return onExposeToggle(handler);
   }, []);
 
   // Group results by type for section headers

@@ -5,16 +5,24 @@ import { MenuBar } from "@/components/layout/MenuBar";
 import { Desktop } from "@/components/layout/Desktop";
 import { Dock } from "@/components/layout/Dock";
 import { ExposeView } from "@/components/layout/ExposeView";
-import { getAppComponent, appRegistry } from "@/config/appRegistry";
+import { getAppComponent } from "@/config/appRegistry";
 import type { AppId } from "@/config/appRegistry";
 import { useAppStoreShallow } from "@/stores/helpers";
-import { extractCodeFromPath } from "@/utils/sharedUrl";
 import { toast } from "sonner";
 import { requestCloseWindow } from "@/utils/windowUtils";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { SpotlightSearch } from "@/components/layout/SpotlightSearch";
 import { AppSwitcher } from "@/components/layout/AppSwitcher";
 import type { SwitcherApp } from "@/components/layout/AppSwitcher";
+import { resolveInitialRoute } from "./appRouteRegistry";
+import {
+  emitAppUpdate,
+  onAppLaunchRequest,
+  onExposeToggle,
+  onSpotlightToggle,
+  requestAppLaunch,
+  toggleSpotlightSearch,
+} from "@/utils/appEventBus";
 
 interface AppManagerProps {
   apps: AnyApp[];
@@ -134,171 +142,45 @@ export function AppManager({ apps }: AppManagerProps) {
 
   // Process shared URLs and direct app launch paths
   useEffect(() => {
-    const handleUrlNavigation = async () => {
-      const path = window.location.pathname;
+    const routeAction = resolveInitialRoute(window.location.pathname);
 
-      const launchAppletViewer = () => {
-        toast.info(t("common.loading.openingAppletStore"));
+    if (!routeAction) {
+      return;
+    }
 
-        setTimeout(() => {
-          const event = new CustomEvent("launchApp", {
-            detail: { appId: "applet-viewer" as AppId },
-          });
-          window.dispatchEvent(event);
-          window.history.replaceState({}, "", "/");
-        }, 100);
-      };
-
-      if (path === "/applet-viewer" || path === "/applet-viewer/") {
-        launchAppletViewer();
-      } else if (path.startsWith("/internet-explorer/")) {
-        const shareCode = extractCodeFromPath(path);
-        if (shareCode) {
-          toast.info(t("common.loading.openingSharedIELink"));
-
-          // Use setTimeout to ensure the event listener is ready
-          setTimeout(() => {
-            const event = new CustomEvent("launchApp", {
-              detail: {
-                appId: "internet-explorer",
-                initialData: {
-                  shareCode: shareCode,
-                },
-              },
-            });
-            window.dispatchEvent(event);
-          }, 0);
-
-          window.history.replaceState({}, "", "/"); // Clean URL
-        }
-      } else if (path.startsWith("/applet-viewer/")) {
-        const shareCode = extractCodeFromPath(path);
-        if (shareCode) {
-          toast.info(t("common.loading.openingSharedApplet"));
-
-          // Use setTimeout to ensure the event listener is ready
-          setTimeout(() => {
-            const event = new CustomEvent("launchApp", {
-              detail: {
-                appId: "applet-viewer",
-                initialData: {
-                  shareCode: shareCode,
-                  path: "", // Empty path for shared applets
-                  content: "", // Will be fetched from API
-                  icon: undefined, // Will be set from API response
-                  name: undefined, // Will be set from API response
-                },
-              },
-            });
-            window.dispatchEvent(event);
-          }, 0);
-
-          window.history.replaceState({}, "", "/"); // Clean URL
-        } else {
-          launchAppletViewer();
-        }
-      } else if (path.startsWith("/ipod/")) {
-        const videoId = path.substring("/ipod/".length);
-        if (videoId) {
-          toast.info(t("common.loading.openingSharedIpodTrack"));
-          setTimeout(() => {
-            const event = new CustomEvent("launchApp", {
-              detail: {
-                appId: "ipod",
-                initialData: { videoId },
-              },
-            });
-            window.dispatchEvent(event);
-          }, 0);
-          window.history.replaceState({}, "", "/"); // Clean URL
-        }
-      } else if (path.startsWith("/listen/")) {
-        const sessionId = path.substring("/listen/".length).split("?")[0]; // Remove query params from sessionId
-        
-        if (sessionId) {
-          toast.info("Opening live session...");
-          // Use 100ms delay to ensure event listener is ready after store hydration
-          setTimeout(() => {
-            const event = new CustomEvent("launchApp", {
-              detail: {
-                appId: "karaoke",
-                initialData: { listenSessionId: sessionId },
-              },
-            });
-            window.dispatchEvent(event);
-          }, 100);
-          window.history.replaceState({}, "", "/"); // Clean URL
-        }
-      } else if (path.startsWith("/karaoke/")) {
-        const videoId = path.substring("/karaoke/".length);
-        if (videoId) {
-          toast.info(t("common.loading.openingSharedKaraokeTrack"));
-          setTimeout(() => {
-            const event = new CustomEvent("launchApp", {
-              detail: {
-                appId: "karaoke",
-                initialData: { videoId },
-              },
-            });
-            window.dispatchEvent(event);
-          }, 0);
-          window.history.replaceState({}, "", "/"); // Clean URL
-        }
-      } else if (path.startsWith("/videos/")) {
-        const videoId = path.substring("/videos/".length);
-        if (videoId) {
-          toast.info(t("common.loading.openingSharedVideo"));
-          setTimeout(() => {
-            const event = new CustomEvent("launchApp", {
-              detail: {
-                appId: "videos",
-                initialData: { videoId },
-              },
-            });
-            window.dispatchEvent(event);
-          }, 0);
-          window.history.replaceState({}, "", "/"); // Clean URL
-        }
-      } else if (path.startsWith("/") && path.length > 1) {
-        // Handle direct app launch path (e.g., /soundboard)
-        const potentialAppId = path.substring(1) as AppId;
-
-        // Check if it's a valid app ID from the registry
-        if (potentialAppId in appRegistry) {
-          const appName = appRegistry[potentialAppId]?.name || potentialAppId;
-          toast.info(`Launching ${appName}...`);
-
-          // Use a slight delay to ensure the app launch event is caught
-          setTimeout(() => {
-            const event = new CustomEvent("launchApp", {
-              detail: { appId: potentialAppId },
-            });
-            window.dispatchEvent(event);
-            window.history.replaceState({}, "", "/"); // Clean URL
-          }, 100); // Small delay might help robustness
-        } else {
-          // Optional: Handle invalid app paths if necessary, or just ignore
-          // console.log(`Path ${path} does not correspond to a known app.`);
-          // Maybe redirect to root or show a 404 within the app context
-          // For now, just clean the URL if it wasn't a valid app path or IE code
-          // Update condition: Only clean if it's not a handled share path (we handle cleaning above)
-          // Update condition: Also check for ipod, videos, and applet-viewer paths
-          if (
-            !path.startsWith("/internet-explorer/") &&
-            !path.startsWith("/applet-viewer/") &&
-            !path.startsWith("/ipod/") &&
-            !path.startsWith("/karaoke/") &&
-            !path.startsWith("/videos/")
-          ) {
-            window.history.replaceState({}, "", "/");
-          }
-        }
-      }
+    const resetUrl = () => {
+      window.history.replaceState({}, "", "/");
     };
 
-    // Process URL on initial load
-    handleUrlNavigation();
-  }, [t]); // Run only once on mount (except locale changes)
+    if (routeAction.kind === "cleanup") {
+      resetUrl();
+      return;
+    }
+
+    if (routeAction.toast) {
+      const message =
+        routeAction.toast.type === "translation"
+          ? t(routeAction.toast.message)
+          : routeAction.toast.message;
+      toast.info(message);
+    }
+
+    const timer = window.setTimeout(() => {
+      requestAppLaunch(routeAction.request);
+
+      if (routeAction.urlCleanupTiming === "after-dispatch") {
+        resetUrl();
+      }
+    }, routeAction.delayMs);
+
+    if (routeAction.urlCleanupTiming === "immediate") {
+      resetUrl();
+    }
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [t]);
 
   // Listen for app launch events (e.g., from Finder, URL handling)
   useEffect(() => {
@@ -330,17 +212,11 @@ export function AppManager({ apps }: AppManagerProps) {
         initialData &&
         instanceId === existingInstance.instanceId
       ) {
-        const updateEvent = new CustomEvent("updateApp", {
-          detail: { appId, instanceId, initialData },
-        });
-        window.dispatchEvent(updateEvent);
+        emitAppUpdate({ appId, instanceId, initialData });
       }
     };
 
-    window.addEventListener("launchApp", handleAppLaunch as EventListener);
-    return () => {
-      window.removeEventListener("launchApp", handleAppLaunch as EventListener);
-    };
+    return onAppLaunchRequest(handleAppLaunch);
   }, []);
 
   // Listen for expose view toggle events (e.g., from keyboard shortcut, dock menu)
@@ -360,7 +236,7 @@ export function AppManager({ apps }: AppManagerProps) {
         e.preventDefault();
         // Close Expose if open before toggling Spotlight
         setIsExposeViewOpen(false);
-        window.dispatchEvent(new CustomEvent("toggleSpotlight"));
+        toggleSpotlightSearch();
       }
     };
 
@@ -369,12 +245,12 @@ export function AppManager({ apps }: AppManagerProps) {
       setIsExposeViewOpen(false);
     };
 
-    window.addEventListener("toggleExposeView", handleExposeToggle);
-    window.addEventListener("toggleSpotlight", handleSpotlightToggle);
+    const unsubscribeExposeToggle = onExposeToggle(handleExposeToggle);
+    const unsubscribeSpotlightToggle = onSpotlightToggle(handleSpotlightToggle);
     window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener("toggleExposeView", handleExposeToggle);
-      window.removeEventListener("toggleSpotlight", handleSpotlightToggle);
+      unsubscribeExposeToggle();
+      unsubscribeSpotlightToggle();
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
@@ -465,7 +341,7 @@ export function AppManager({ apps }: AppManagerProps) {
       // Alt+Space — toggle Spotlight Search
       if (e.code === "Space") {
         e.preventDefault();
-        window.dispatchEvent(new CustomEvent("toggleSpotlight"));
+        toggleSpotlightSearch();
         return;
       }
 

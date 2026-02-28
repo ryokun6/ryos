@@ -45,6 +45,7 @@ import { getTranslatedAppName } from "@/utils/i18n";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { isTauri, isTauriWindows } from "@/utils/platform";
 import { useSpotlightStore } from "@/stores/useSpotlightStore";
+import { toggleExposeView, toggleSpotlightSearch } from "@/utils/appEventBus";
 
 // Helper function to get app name (using translations)
 const getAppName = (appId: string): string => {
@@ -297,7 +298,7 @@ function Clock({ enableExposeToggle = false }: ClockProps) {
   // Handle click to toggle expose view
   const handleClick = () => {
     if (enableExposeToggle) {
-      window.dispatchEvent(new CustomEvent("toggleExposeView"));
+      toggleExposeView();
     }
   };
 
@@ -1543,7 +1544,7 @@ function SpotlightMenuBarButton() {
   if (isXpTheme) return null;
 
   const handleClick = () => {
-    window.dispatchEvent(new CustomEvent("toggleSpotlight"));
+    toggleSpotlightSearch();
   };
 
   return (
@@ -1617,7 +1618,7 @@ function ExposeButton() {
   if (isXpTheme) return null;
 
   const handleClick = () => {
-    window.dispatchEvent(new CustomEvent("toggleExposeView"));
+    toggleExposeView();
   };
 
   return (

@@ -28,15 +28,15 @@ import { track } from "@vercel/analytics";
 import { APPLET_ANALYTICS } from "@/utils/analytics";
 import { extractMetadataFromHtml } from "@/utils/appletMetadata";
 import { exportAppletAsHtml } from "@/utils/appletImportExport";
+import {
+  emitFileSaved,
+  onAppletUpdated,
+  type AppletUpdatedEventDetail,
+} from "@/utils/appEventBus";
 
 interface UseAppletViewerLogicProps {
   instanceId?: string;
   initialData?: AppletViewerInitialData;
-}
-
-interface AppletUpdatedEventDetail {
-  path?: string;
-  content?: string;
 }
 
 export function useAppletViewerLogic({
@@ -439,13 +439,7 @@ export function useAppletViewerLogic({
       }
     };
 
-    window.addEventListener("appletUpdated", handleAppletUpdated as EventListener);
-    return () => {
-      window.removeEventListener(
-        "appletUpdated",
-        handleAppletUpdated as EventListener
-      );
-    };
+    return onAppletUpdated(handleAppletUpdated);
   }, [appletPath, getFileItem]);
 
   useEffect(() => {
@@ -985,15 +979,12 @@ export function useAppletViewerLogic({
           });
         }
 
-        const saveEvent = new CustomEvent("saveFile", {
-          detail: {
-            name: importFileName,
-            path: filePath,
-            content: content,
-            icon: icon,
-          },
+        emitFileSaved({
+          name: importFileName,
+          path: filePath,
+          content,
+          icon,
         });
-        window.dispatchEvent(saveEvent);
 
         launchApp("applet-viewer", {
           initialData: {
@@ -1318,15 +1309,12 @@ export function useAppletViewerLogic({
                     });
                   }
 
-                  const event = new CustomEvent("saveFile", {
-                    detail: {
-                      name: finalName,
-                      path: finalPath,
-                      content: data.content,
-                      icon: data.icon || undefined,
-                    },
+                  emitFileSaved({
+                    name: finalName,
+                    path: finalPath,
+                    content: data.content,
+                    icon: data.icon || undefined,
                   });
-                  window.dispatchEvent(event);
 
                   toast.success("Applet saved", {
                     description: `Saved to /Applets/${finalName}`,

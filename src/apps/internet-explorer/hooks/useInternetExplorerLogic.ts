@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useInternetExplorerStoreShallow } from "@/stores/helpers";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { onAppUpdate } from "@/utils/appEventBus";
 
 // Helper function to get language display name
 const getLanguageDisplayName = (lang: LanguageOption): string => {
@@ -1600,14 +1601,16 @@ export function useInternetExplorerLogic({
       event: CustomEvent<{
         appId: string;
         instanceId?: string;
-        initialData?: AppUpdateInitialData;
+        initialData?: unknown;
       }>
     ) => {
       if (
         event.detail.appId === "internet-explorer" &&
         (!event.detail.instanceId || event.detail.instanceId === instanceId)
       ) {
-        const initialData = event.detail.initialData;
+        const initialData = event.detail.initialData as
+          | AppUpdateInitialData
+          | undefined;
 
         // Skip if this initialData has already been processed
         if (lastProcessedInitialDataRef.current === initialData) return;
@@ -1670,10 +1673,7 @@ export function useInternetExplorerLogic({
       }
     };
 
-    window.addEventListener("updateApp", handleUpdateApp as EventListener);
-    return () => {
-      window.removeEventListener("updateApp", handleUpdateApp as EventListener);
-    };
+    return onAppUpdate(handleUpdateApp);
     // Add isForeground to dependencies to refresh navigation when focus changes
   }, [handleNavigate, isForeground, instanceId]);
   // --- End updateApp listener ---

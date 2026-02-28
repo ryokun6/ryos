@@ -16,6 +16,10 @@ export interface ExposeWindowSelectEventDetail {
   instanceId: string;
 }
 
+export interface WindowFocusRequest {
+  instanceId: string;
+}
+
 export interface FileSavedEventDetail {
   name: string;
   path: string;
@@ -49,6 +53,7 @@ export interface AppletUpdatedEventDetail {
 const APP_EVENT_NAMES = {
   launchApp: "launchApp",
   updateApp: "updateApp",
+  focusWindow: "focusWindow",
   spotlightToggle: "toggleSpotlight",
   exposeToggle: "toggleExposeView",
   exposeWindowSelect: "exposeWindowSelect",
@@ -64,6 +69,7 @@ type AppEventName = keyof typeof APP_EVENT_NAMES;
 type AppEventDetailMap = {
   launchApp: AppLaunchRequest;
   updateApp: AppUpdateRequest;
+  focusWindow: WindowFocusRequest;
   spotlightToggle: undefined;
   exposeToggle: undefined;
   exposeWindowSelect: ExposeWindowSelectEventDetail;
@@ -151,6 +157,20 @@ export function onAppUpdate(
   target?: AppEventTarget | null,
 ): () => void {
   return subscribeToEvent("updateApp", handler, target);
+}
+
+export function requestWindowFocus(
+  detail: WindowFocusRequest,
+  target?: AppEventTarget | null,
+): void {
+  emitEvent("focusWindow", detail, target);
+}
+
+export function onWindowFocusRequest(
+  handler: (event: CustomEvent<WindowFocusRequest>) => void,
+  target?: AppEventTarget | null,
+): () => void {
+  return subscribeToEvent("focusWindow", handler, target);
 }
 
 export function toggleSpotlightSearch(target?: AppEventTarget | null): void {

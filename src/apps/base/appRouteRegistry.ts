@@ -183,6 +183,17 @@ export function resolveInitialRoute(pathname: string): RouteAction | null {
     );
   }
 
+  if (
+    pathname.startsWith("/internet-explorer/") ||
+    pathname.startsWith("/applet-viewer/") ||
+    pathname.startsWith("/ipod/") ||
+    pathname.startsWith("/listen/") ||
+    pathname.startsWith("/karaoke/") ||
+    pathname.startsWith("/videos/")
+  ) {
+    return null;
+  }
+
   const directAppPathMatch = pathname.match(/^\/([^/]+)$/);
   if (directAppPathMatch) {
     const potentialAppId = directAppPathMatch[1];

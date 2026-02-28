@@ -33,6 +33,7 @@ import type { KaraokeInitialData } from "../../base/types";
 import type { CoverFlowRef } from "@/apps/ipod/components/CoverFlow";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
 import { helpItems } from "..";
+import { onAppUpdate } from "@/utils/appEventBus";
 
 export interface UseKaraokeLogicOptions {
   isWindowOpen: boolean;
@@ -1139,21 +1140,19 @@ export function useKaraokeLogic({
 
   // Handle updateApp event for when app is already open and receives new video
   useEffect(() => {
-    const handleUpdateApp = (
-      event: CustomEvent<{
-        appId: string;
-        instanceId?: string;
-        initialData?: { videoId?: string; listenSessionId?: string };
-      }>
-    ) => {
+    const handleUpdateApp = (event: CustomEvent<{ appId: string; instanceId?: string; initialData?: unknown }>) => {
+      const updateInitialData = event.detail.initialData as
+        | { videoId?: string; listenSessionId?: string }
+        | undefined;
+
       if (
         event.detail.appId === "karaoke" &&
-        event.detail.initialData?.videoId &&
+        updateInitialData?.videoId &&
         (!event.detail.instanceId || event.detail.instanceId === instanceId)
       ) {
-        if (lastProcessedInitialDataRef.current === event.detail.initialData) return;
+        if (lastProcessedInitialDataRef.current === updateInitialData) return;
 
-        const videoId = event.detail.initialData.videoId;
+        const videoId = updateInitialData.videoId;
         if (instanceId) {
           bringInstanceToForeground(instanceId);
         }
@@ -1161,15 +1160,15 @@ export function useKaraokeLogic({
           console.error(`[Karaoke] Error processing videoId ${videoId}:`, error);
           toast.error("Failed to load shared track", { description: `Video ID: ${videoId}` });
         });
-        lastProcessedInitialDataRef.current = event.detail.initialData;
+        lastProcessedInitialDataRef.current = updateInitialData;
       }
 
       if (
         event.detail.appId === "karaoke" &&
-        event.detail.initialData?.listenSessionId &&
+        updateInitialData?.listenSessionId &&
         (!event.detail.instanceId || event.detail.instanceId === instanceId)
       ) {
-        const sessionId = event.detail.initialData.listenSessionId;
+        const sessionId = updateInitialData.listenSessionId;
         if (lastProcessedListenSessionRef.current === sessionId) return;
         if (instanceId) {
           bringInstanceToForeground(instanceId);
@@ -1189,8 +1188,7 @@ export function useKaraokeLogic({
       }
     };
 
-    window.addEventListener("updateApp", handleUpdateApp as EventListener);
-    return () => window.removeEventListener("updateApp", handleUpdateApp as EventListener);
+    return onAppUpdate(handleUpdateApp);
   }, [processVideoId, bringInstanceToForeground, joinListenSession, username, instanceId]);
 
   const currentTheme = useThemeStore((state) => state.current);

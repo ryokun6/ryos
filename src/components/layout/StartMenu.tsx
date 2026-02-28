@@ -13,6 +13,7 @@ import { AnyApp } from "@/apps/base/types";
 import { AppId } from "@/config/appIds";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { toggleSpotlightSearch } from "@/utils/appEventBus";
 
 interface StartMenuProps {
   apps: AnyApp[];
@@ -199,7 +200,7 @@ export function StartMenu({ apps }: StartMenuProps) {
                 <DropdownMenuItem
                   onClick={() => {
                     setIsStartMenuOpen(false);
-                    window.dispatchEvent(new CustomEvent("toggleSpotlight"));
+                    toggleSpotlightSearch();
                   }}
                   className="h-8 px-3 flex items-center gap-2 hover:bg-blue-500 hover:text-white"
                   style={{

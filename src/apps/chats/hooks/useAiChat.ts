@@ -42,6 +42,10 @@ import { useTranslation } from "react-i18next";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { showAiMessageNotification } from "@/utils/chatNotificationDisplay";
 import {
+  emitAppletUpdated,
+  emitDocumentUpdated,
+} from "@/utils/appEventBus";
+import {
   handleLaunchApp,
   handleCloseApp,
   handleSettings,
@@ -1386,11 +1390,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 });
 
                 // Dispatch event to update the editor content
-                window.dispatchEvent(
-                  new CustomEvent("documentUpdated", {
-                    detail: { path, content: JSON.stringify(contentJson) },
-                  })
-                );
+                emitDocumentUpdated({
+                  path,
+                  content: JSON.stringify(contentJson),
+                });
 
                 appStore.bringInstanceToForeground(targetInstanceId);
               } else {
@@ -1602,14 +1605,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 });
 
                 // Let any open applet viewers hot-reload this edited applet.
-                window.dispatchEvent(
-                  new CustomEvent("appletUpdated", {
-                    detail: {
-                      path,
-                      content: updatedContent,
-                    },
-                  })
-                );
+                emitAppletUpdated({
+                  path,
+                  content: updatedContent,
+                });
 
                 addToolResult({
                   tool: toolCall.toolName,
