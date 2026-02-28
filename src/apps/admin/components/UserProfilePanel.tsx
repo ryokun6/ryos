@@ -46,16 +46,11 @@ interface UserMemory {
 
 interface DailyNoteEntry {
   timestamp: number;
-  isoTimestamp?: string;
-  localDate?: string;
-  localTime?: string;
-  timeZone?: string;
   content: string;
 }
 
 interface DailyNote {
   date: string;
-  timeZone?: string;
   entries: DailyNoteEntry[];
   processedForMemories: boolean;
   updatedAt: number;
@@ -394,35 +389,6 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     return new Date(timestamp).toLocaleString();
   };
 
-  const formatDateTimeWithZone = (timestamp: number, timeZone?: string) => {
-    const options: Intl.DateTimeFormatOptions = {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    };
-    if (timeZone) {
-      options.timeZone = timeZone;
-      options.timeZoneName = "short";
-    }
-    return new Date(timestamp).toLocaleString("en-US", options);
-  };
-
-  const formatDailyEntryTimestamp = (entry: DailyNoteEntry, noteTimeZone?: string) => {
-    const effectiveTimeZone = entry.timeZone || noteTimeZone;
-    const preferredLocal =
-      entry.localDate && entry.localTime
-        ? `${entry.localDate} ${entry.localTime}${effectiveTimeZone ? ` ${effectiveTimeZone}` : ""}`
-        : formatDateTimeWithZone(entry.timestamp, effectiveTimeZone);
-    const utc = entry.isoTimestamp
-      ? entry.isoTimestamp.replace("T", " ").replace("Z", " UTC")
-      : formatDateTimeWithZone(entry.timestamp, "UTC");
-    return { preferredLocal, utc };
-  };
-
   if (!isLoading && !profile) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2">
@@ -526,12 +492,9 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             {isLoading ? (
               <Skeleton className="h-3 w-32 mt-1" />
             ) : (
-              <div className="text-[10px] text-neutral-500 leading-snug">
-                <div>
-                  {t("apps.admin.profile.lastActive")}: {formatRelativeTime(profile?.lastActive || 0)}
-                </div>
-                <div className="text-neutral-400">{formatDate(profile?.lastActive || 0)}</div>
-              </div>
+              <span className="text-[10px] text-neutral-500">
+                {t("apps.admin.profile.lastActive")}: {formatRelativeTime(profile?.lastActive || 0)}
+              </span>
             )}
           </div>
         </div>
@@ -727,9 +690,8 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                             <TableCell className="max-w-[200px]">
                               <span className="truncate block text-neutral-500">{memory.summary}</span>
                             </TableCell>
-                            <TableCell className="whitespace-nowrap text-neutral-500 leading-snug">
-                              <div>{formatRelativeTime(memory.updatedAt)}</div>
-                              <div className="text-neutral-400">{formatDate(memory.updatedAt)}</div>
+                            <TableCell className="whitespace-nowrap text-neutral-500">
+                              {formatRelativeTime(memory.updatedAt)}
                             </TableCell>
                           </TableRow>
                           {isExpanded && (
@@ -776,14 +738,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
               <div className="space-y-1">
                 {dailyNotes.map((note) => {
                   const isExpanded = expandedDailyNotes.has(note.date);
-                  const today = note.timeZone
-                    ? new Intl.DateTimeFormat("en-CA", {
-                        timeZone: note.timeZone,
-                        year: "numeric",
-                        month: "2-digit",
-                        day: "2-digit",
-                      }).format(new Date())
-                    : new Date().toISOString().split("T")[0];
+                  const today = new Date().toISOString().split("T")[0];
                   const dateLabel = note.date === today ? `${note.date} (today)` : note.date;
                   return (
                     <div key={note.date}>
@@ -798,10 +753,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                           )}
                           weight="bold"
                         />
-                        <span className="text-amber-700 font-medium">
-                          {dateLabel}
-                          {note.timeZone ? ` (${note.timeZone})` : ""}
-                        </span>
+                        <span className="text-amber-700 font-medium">{dateLabel}</span>
                         <span className="text-neutral-400 ml-1">
                           ({note.entries.length} entries)
                           {note.processedForMemories ? (
@@ -814,13 +766,14 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                       {isExpanded && (
                         <div className="pl-5 mt-1 space-y-1">
                           {note.entries.map((entry, i) => {
-                            const { preferredLocal, utc } = formatDailyEntryTimestamp(entry, note.timeZone);
+                            const time = new Date(entry.timestamp).toLocaleTimeString("en-US", {
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            });
                             return (
-                              <div key={i} className="text-[11px] flex gap-2 items-start">
-                                <div className="text-neutral-400 whitespace-nowrap flex-shrink-0 leading-snug min-w-[180px]">
-                                  <div>{preferredLocal}</div>
-                                  <div className="text-neutral-300">{utc}</div>
-                                </div>
+                              <div key={i} className="text-[11px] flex gap-2">
+                                <span className="text-neutral-400 whitespace-nowrap flex-shrink-0">{time}</span>
                                 <span className="text-neutral-600">{entry.content}</span>
                               </div>
                             );
@@ -923,9 +876,8 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                             <TableCell className="max-w-[200px]">
                               <span className="truncate block">{message.content}</span>
                             </TableCell>
-                            <TableCell className="whitespace-nowrap text-neutral-500 leading-snug">
-                              <div>{formatRelativeTime(message.timestamp)}</div>
-                              <div className="text-neutral-400">{formatDate(message.timestamp)}</div>
+                            <TableCell className="whitespace-nowrap text-neutral-500">
+                              {formatRelativeTime(message.timestamp)}
                             </TableCell>
                           </TableRow>
                         ))}
