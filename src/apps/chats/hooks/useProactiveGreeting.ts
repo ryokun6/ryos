@@ -107,6 +107,33 @@ export function useProactiveGreeting() {
       setIsLoadingGreeting(true);
 
       try {
+        // Build a lightweight version of the conversation history for context.
+        // For stale chats we send the existing messages so the greeting can
+        // reference what was previously discussed. For fresh chats there is
+        // no meaningful history (just the default greeting), so we send [].
+        const currentMessages = useChatsStore.getState().aiMessages;
+        const conversationContext =
+          mode === "stale"
+            ? currentMessages
+                .filter(
+                  (m) =>
+                    // Skip the default greeting and any previous proactive greetings
+                    m.id !== "1" && !m.id?.startsWith("proactive-")
+                )
+                .map((m) => ({
+                  role: m.role,
+                  content:
+                    m.parts
+                      ?.filter(
+                        (p): p is { type: "text"; text: string } =>
+                          p.type === "text"
+                      )
+                      .map((p) => p.text)
+                      .join("") ?? "",
+                }))
+                .filter((m) => m.content.length > 0)
+            : [];
+
         const response = await abortableFetch(getApiUrl("/api/chat"), {
           method: "POST",
           headers: {
@@ -117,6 +144,7 @@ export function useProactiveGreeting() {
           body: JSON.stringify({
             messages: [],
             proactiveGreeting: true,
+            conversationHistory: conversationContext,
           }),
           timeout: 12000,
           signal: controller.signal,
