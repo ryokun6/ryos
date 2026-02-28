@@ -3,7 +3,8 @@
  * Edge-compatible - uses Web Crypto API
  */
 
-import { Redis } from "@upstash/redis";
+import type { Redis } from "@upstash/redis";
+import { createRedis } from "../../_utils/redis.js";
 import type { Room, User, Message } from "./_types.js";
 import {
   CHAT_ROOM_PREFIX,
@@ -21,10 +22,7 @@ import {
  * Each call creates a new instance to avoid Edge bundling issues
  */
 function createRedisClient(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
+  return createRedis();
 }
 
 // Export for direct usage in endpoints
