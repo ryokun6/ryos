@@ -2237,6 +2237,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     const messagesToAnalyze = [...aiMessages];
     const currentUsername = username;
     const currentToken = authToken;
+    const currentTimeZone =
+      Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
     // Only extract if user is logged in and there are messages worth analyzing
     if (currentUsername && currentToken && messagesToAnalyze.length > 2) {
@@ -2249,8 +2251,10 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${currentToken}`,
           "X-Username": currentUsername,
+          "X-User-Timezone": currentTimeZone,
         },
         body: JSON.stringify({
+          timeZone: currentTimeZone,
           messages: messagesToAnalyze.map(msg => ({
             role: msg.role,
             parts: msg.parts,

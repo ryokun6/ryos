@@ -25,6 +25,7 @@ import {
   appendDailyNote,
   getDailyNote,
   getTodayDateString,
+  normalizeTimeZone,
   markDailyNoteProcessed,
   MAX_MEMORIES_PER_USER,
 } from "../_utils/_memory.js";
@@ -188,7 +189,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const username = usernameHeader.toLowerCase();
 
   // Parse request body
-  const { messages } = req.body as { messages?: ChatMessage[] };
+  const { messages, timeZone: bodyTimeZone } = req.body as {
+    messages?: ChatMessage[];
+    timeZone?: string;
+  };
+  const headerTimeZoneRaw = req.headers["x-user-timezone"];
+  const headerTimeZone = Array.isArray(headerTimeZoneRaw)
+    ? headerTimeZoneRaw[0]
+    : headerTimeZoneRaw;
+  const userTimeZone = normalizeTimeZone(bodyTimeZone || headerTimeZone);
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
     logger.warn("No messages provided");
@@ -224,7 +233,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ========================================================================
 
     // Existing daily notes — only unprocessed entries to save tokens
-    const today = getTodayDateString();
+    const today = getTodayDateString(userTimeZone);
     const existingDailyNote = await getDailyNote(redis, username, today);
     const hasUnprocessedEntries = existingDailyNote && !existingDailyNote.processedForMemories && existingDailyNote.entries.length > 0;
     const existingDailyNotesText = hasUnprocessedEntries
@@ -275,7 +284,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ========================================================================
     let dailyNotesStored = 0;
     for (const note of result.dailyNotes) {
-      const storeResult = await appendDailyNote(redis, username, note);
+      const storeResult = await appendDailyNote(redis, username, note, {
+        timeZone: userTimeZone,
+      });
       if (storeResult.success) dailyNotesStored++;
     }
 

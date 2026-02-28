@@ -639,6 +639,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const systemState: SystemState | undefined = incomingSystemState
       ? { ...incomingSystemState, requestGeo: geo }
       : ({ requestGeo: geo } as SystemState);
+    const userTimeZone = systemState?.userLocalTime?.timeZone;
 
     const selectedModel = getModelInstance(model as SupportedModel);
 
@@ -663,7 +664,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       try {
         const [memories, notes] = await Promise.all([
           getMemoryIndex(redis, username),
-          getDailyNotesForPrompt(redis, username),
+          getDailyNotesForPrompt(redis, username, userTimeZone),
         ]);
         userMemories = memories;
         dailyNotesText = notes;
@@ -691,11 +692,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Only triggered on proactive greetings (once per session) to avoid
       // redundant checks on every chat message.
       try {
-        getUnprocessedDailyNotesExcludingToday(redis, username).then(async (unprocessedNotes) => {
+        getUnprocessedDailyNotesExcludingToday(redis, username, 7, userTimeZone).then(async (unprocessedNotes) => {
           if (unprocessedNotes.length > 0) {
             log(`[DailyNotes] Found ${unprocessedNotes.length} unprocessed past daily notes for ${username}, triggering background processing`);
             const { processDailyNotesForUser } = await import("./ai/process-daily-notes.js");
-            processDailyNotesForUser(redis, username, log, logError).catch((err: unknown) => {
+            processDailyNotesForUser(redis, username, log, logError, userTimeZone).catch((err: unknown) => {
               logError("[DailyNotes] Background processing failed (non-blocking):", err);
             });
           }
@@ -815,6 +816,7 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
       // Memory tool context - only available for authenticated users
       username: validationResult.valid ? username : null,
       redis: validationResult.valid ? redis : undefined,
+      timeZone: userTimeZone,
     });
 
     // Convert UIMessages to ModelMessages for the AI model
