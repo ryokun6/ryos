@@ -14,6 +14,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { SpotlightSearch } from "@/components/layout/SpotlightSearch";
 import { AppSwitcher } from "@/components/layout/AppSwitcher";
 import type { SwitcherApp } from "@/components/layout/AppSwitcher";
+import { AppErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { resolveInitialRoute } from "./appRouteRegistry";
 import {
   emitAppUpdate,
@@ -39,6 +40,7 @@ export function AppManager({ apps }: AppManagerProps) {
     instanceOrder,
     launchApp,
     bringInstanceToForeground,
+    closeAppInstance,
     navigateToNextInstance,
     navigateToPreviousInstance,
     minimizeInstance,
@@ -50,6 +52,7 @@ export function AppManager({ apps }: AppManagerProps) {
     instanceOrder: state.instanceOrder,
     launchApp: state.launchApp,
     bringInstanceToForeground: state.bringInstanceToForeground,
+    closeAppInstance: state.closeAppInstance,
     navigateToNextInstance: state.navigateToNextInstance,
     navigateToPreviousInstance: state.navigateToPreviousInstance,
     minimizeInstance: state.minimizeInstance,
@@ -133,6 +136,9 @@ export function AppManager({ apps }: AppManagerProps) {
     if (index === -1) return BASE_Z_INDEX;
     return BASE_Z_INDEX + index + 1;
   };
+
+  const supportsMultiWindowApp = (appId: AppId) =>
+    appId === "textedit" || appId === "finder" || appId === "applet-viewer";
 
   // Set isInitialMount to false after a short delay
   useEffect(() => {
@@ -464,6 +470,7 @@ export function AppManager({ apps }: AppManagerProps) {
         const appId = instance.appId as AppId;
         const zIndex = getZIndexForInstance(instance.instanceId);
         const AppComponent = getAppComponent(appId);
+        const app = apps.find((registeredApp) => registeredApp.id === appId);
 
         return (
           <div
@@ -482,22 +489,38 @@ export function AppManager({ apps }: AppManagerProps) {
               }
             }}
           >
-            <AppComponent
-              isWindowOpen={instance.isOpen}
-              isForeground={exposeMode ? false : instance.isForeground}
-              onClose={() => requestCloseWindow(instance.instanceId)}
-              className="pointer-events-auto"
-              helpItems={apps.find((app) => app.id === appId)?.helpItems}
-              skipInitialSound={isInitialMount}
-              // @ts-expect-error - Dynamic component system with different initialData types per app
-              initialData={instance.initialData}
+            <AppErrorBoundary
+              appId={appId}
+              appName={app?.name ?? appId}
               instanceId={instance.instanceId}
-              title={instance.title}
-              onNavigateNext={() => navigateToNextInstance(instance.instanceId)}
-              onNavigatePrevious={() =>
-                navigateToPreviousInstance(instance.instanceId)
-              }
-            />
+              onCrash={() => bringInstanceToForeground(instance.instanceId)}
+              onRelaunch={() => {
+                closeAppInstance(instance.instanceId);
+                launchApp(
+                  appId,
+                  instance.initialData,
+                  instance.title,
+                  supportsMultiWindowApp(appId),
+                );
+              }}
+            >
+              <AppComponent
+                isWindowOpen={instance.isOpen}
+                isForeground={exposeMode ? false : instance.isForeground}
+                onClose={() => requestCloseWindow(instance.instanceId)}
+                className="pointer-events-auto"
+                helpItems={app?.helpItems}
+                skipInitialSound={isInitialMount}
+                // @ts-expect-error - Dynamic component system with different initialData types per app
+                initialData={instance.initialData}
+                instanceId={instance.instanceId}
+                title={instance.title}
+                onNavigateNext={() => navigateToNextInstance(instance.instanceId)}
+                onNavigatePrevious={() =>
+                  navigateToPreviousInstance(instance.instanceId)
+                }
+              />
+            </AppErrorBoundary>
           </div>
         );
       })}
