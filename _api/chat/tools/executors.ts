@@ -344,7 +344,14 @@ export async function executeMemoryRead(
         success: true,
         message: `Retrieved ${note.entries.length} entries for ${date}.`,
         date,
-        entries: note.entries.map((e) => ({ timestamp: e.timestamp, content: e.content })),
+        entries: note.entries.map((e) => ({
+          timestamp: e.timestamp,
+          isoTimestamp: e.isoTimestamp,
+          localDate: e.localDate,
+          localTime: e.localTime,
+          timeZone: e.timeZone,
+          content: e.content,
+        })),
       };
     }
 
