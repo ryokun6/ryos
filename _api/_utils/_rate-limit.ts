@@ -185,7 +185,9 @@ export function getClientIp(
     const xForwarded = getHeaderValue(h, "x-forwarded-for");
     const xRealIp = getHeaderValue(h, "x-real-ip");
     const cfIp = getHeaderValue(h, "cf-connecting-ip");
-    const raw = xVercel || xForwarded || xRealIp || cfIp || "";
+    // Prefer an explicit forwarded IP over Vercel's loopback proxy header so
+    // local tests can safely vary client identity without disabling rate limits.
+    const raw = xForwarded || xVercel || xRealIp || cfIp || "";
     let ip = raw.split(",")[0].trim();
 
     if (!ip) ip = "unknown-ip";
