@@ -49,6 +49,19 @@ export const DAILY_NOTES_TTL_SECONDS = 30 * 24 * 60 * 60;
 /** Current schema version for migrations */
 export const MEMORY_SCHEMA_VERSION = 1;
 
+/** Default timezone when user timezone is unavailable or invalid */
+export const DEFAULT_MEMORY_TIME_ZONE = "UTC";
+
+/** Retention window for temporary long-term memories */
+export const TEMPORARY_MEMORY_RETENTION_DAYS = 7;
+
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+const TEMPORARY_MEMORY_KEY_HINTS = new Set(["context", "current_focus"]);
+
+const TEMPORARY_TOPIC_PATTERN = /\b(travel|trip|vacation|holiday|flight|hotel|itinerary|meeting|meetings|appointment|conference|event)\b/i;
+const TEMPORAL_MARKER_PATTERN = /\b(today|tonight|tomorrow|yesterday|this week|next week|last week|recent|recently|upcoming|currently)\b/i;
+
 /**
  * Canonical long-term memory keys that the AI should prefer.
  * These are stable identifiers for common memory categories.
@@ -113,20 +126,109 @@ export const getDailyNoteKey = (username: string, date: string): string =>
 /**
  * Get today's date in YYYY-MM-DD format (in user's approximate timezone, defaults to UTC)
  */
-export function getTodayDateString(): string {
-  const now = new Date();
-  return now.toISOString().split("T")[0];
+export function normalizeTimeZone(timeZone?: string | null): string {
+  if (!timeZone || typeof timeZone !== "string") {
+    return DEFAULT_MEMORY_TIME_ZONE;
+  }
+
+  const trimmed = timeZone.trim();
+  if (!trimmed) {
+    return DEFAULT_MEMORY_TIME_ZONE;
+  }
+
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: trimmed });
+    return trimmed;
+  } catch {
+    return DEFAULT_MEMORY_TIME_ZONE;
+  }
+}
+
+function getDateStringInTimeZone(date: Date, timeZone: string): string {
+  const resolvedTimeZone = normalizeTimeZone(timeZone);
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: resolvedTimeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = formatter.formatToParts(date);
+  const year = parts.find((p) => p.type === "year")?.value;
+  const month = parts.find((p) => p.type === "month")?.value;
+  const day = parts.find((p) => p.type === "day")?.value;
+
+  if (year && month && day) {
+    return `${year}-${month}-${day}`;
+  }
+
+  // Safe fallback for unexpected runtime format behavior
+  return date.toISOString().split("T")[0];
+}
+
+function shiftDateString(dateString: string, daysOffset: number): string {
+  const [yearString, monthString, dayString] = dateString.split("-");
+  const year = Number(yearString);
+  const month = Number(monthString);
+  const day = Number(dayString);
+
+  if (!year || !month || !day) {
+    return dateString;
+  }
+
+  const shifted = new Date(Date.UTC(year, month - 1, day + daysOffset));
+  const shiftedYear = shifted.getUTCFullYear();
+  const shiftedMonth = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const shiftedDay = String(shifted.getUTCDate()).padStart(2, "0");
+  return `${shiftedYear}-${shiftedMonth}-${shiftedDay}`;
+}
+
+function getTimeStringInTimeZone(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: normalizeTimeZone(timeZone),
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(date);
+}
+
+export interface TimestampMetadata {
+  isoTimestamp: string;
+  localDate: string;
+  localTime: string;
+  timeZone: string;
+}
+
+export function buildTimestampMetadata(timestamp: number, timeZone?: string): TimestampMetadata {
+  const resolvedTimeZone = normalizeTimeZone(timeZone);
+  const date = new Date(timestamp);
+  return {
+    isoTimestamp: date.toISOString(),
+    localDate: getDateStringInTimeZone(date, resolvedTimeZone),
+    localTime: getTimeStringInTimeZone(date, resolvedTimeZone),
+    timeZone: resolvedTimeZone,
+  };
+}
+
+/**
+ * Get today's date in YYYY-MM-DD format in the given timezone (defaults to UTC).
+ */
+export function getTodayDateString(timeZone?: string): string {
+  return getDateStringInTimeZone(new Date(), normalizeTimeZone(timeZone));
 }
 
 /**
  * Get date strings for the last N days (including today)
  */
-export function getRecentDateStrings(days: number): string[] {
+export function getRecentDateStrings(days: number, timeZone?: string): string[] {
+  if (days <= 0) {
+    return [];
+  }
+
+  const today = getTodayDateString(timeZone);
   const dates: string[] = [];
   for (let i = 0; i < days; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    dates.push(d.toISOString().split("T")[0]);
+    dates.push(shiftDateString(today, -i));
   }
   return dates;
 }
@@ -190,6 +292,14 @@ export interface MemoryOperationResult {
 export interface DailyNoteEntry {
   /** Unix timestamp when this entry was added */
   timestamp: number;
+  /** ISO 8601 UTC timestamp (e.g. 2026-02-28T08:21:32.000Z) */
+  isoTimestamp?: string;
+  /** Local date in the user's timezone (YYYY-MM-DD) */
+  localDate?: string;
+  /** Local time in the user's timezone (HH:mm:ss, 24-hour) */
+  localTime?: string;
+  /** IANA timezone used for localDate/localTime */
+  timeZone?: string;
   /** The note content (observation, context, detail) */
   content: string;
 }
@@ -200,6 +310,8 @@ export interface DailyNoteEntry {
 export interface DailyNote {
   /** Date in YYYY-MM-DD format */
   date: string;
+  /** IANA timezone used to bucket this note's date */
+  timeZone?: string;
   /** Array of entries collected throughout the day */
   entries: DailyNoteEntry[];
   /** Whether long-term memory extraction has been run on this note */
@@ -216,6 +328,11 @@ export interface DailyNoteOperationResult {
   message: string;
   date?: string;
   entryCount?: number;
+}
+
+export interface DailyNoteAppendOptions {
+  /** User's IANA timezone (e.g. "Asia/Tokyo") */
+  timeZone?: string;
 }
 
 // ============================================================================
@@ -747,7 +864,8 @@ export async function saveDailyNote(
 export async function appendDailyNote(
   redis: Redis,
   username: string,
-  content: string
+  content: string,
+  options: DailyNoteAppendOptions = {}
 ): Promise<DailyNoteOperationResult> {
   // Validate content length
   if (!content || content.trim().length === 0) {
@@ -764,12 +882,18 @@ export async function appendDailyNote(
     };
   }
 
-  const today = getTodayDateString();
+  const resolvedTimeZone = normalizeTimeZone(options.timeZone);
+  const today = getTodayDateString(resolvedTimeZone);
   const existing = await getDailyNote(redis, username, today);
 
   const now = Date.now();
+  const timestampMetadata = buildTimestampMetadata(now, resolvedTimeZone);
   const entry: DailyNoteEntry = {
     timestamp: now,
+    isoTimestamp: timestampMetadata.isoTimestamp,
+    localDate: timestampMetadata.localDate,
+    localTime: timestampMetadata.localTime,
+    timeZone: timestampMetadata.timeZone,
     content: content.trim(),
   };
 
@@ -783,6 +907,9 @@ export async function appendDailyNote(
     }
 
     existing.entries.push(entry);
+    if (!existing.timeZone) {
+      existing.timeZone = resolvedTimeZone;
+    }
     existing.processedForMemories = false; // Reset so Phase 2 picks up new entries
     existing.updatedAt = now;
     await saveDailyNote(redis, username, existing);
@@ -798,6 +925,7 @@ export async function appendDailyNote(
   // Create new daily note
   const note: DailyNote = {
     date: today,
+    timeZone: resolvedTimeZone,
     entries: [entry],
     processedForMemories: false,
     updatedAt: now,
@@ -820,9 +948,10 @@ export async function appendDailyNote(
 export async function getRecentDailyNotes(
   redis: Redis,
   username: string,
-  days: number = DAILY_NOTES_CONTEXT_DAYS
+  days: number = DAILY_NOTES_CONTEXT_DAYS,
+  timeZone?: string
 ): Promise<DailyNote[]> {
-  const dates = getRecentDateStrings(days);
+  const dates = getRecentDateStrings(days, timeZone);
   const notes: DailyNote[] = [];
 
   for (const date of dates) {
@@ -841,24 +970,24 @@ export async function getRecentDailyNotes(
  */
 export async function getDailyNotesForPrompt(
   redis: Redis,
-  username: string
+  username: string,
+  timeZone?: string
 ): Promise<string | null> {
-  const notes = await getRecentDailyNotes(redis, username);
+  const resolvedTimeZone = normalizeTimeZone(timeZone);
+  const notes = await getRecentDailyNotes(redis, username, DAILY_NOTES_CONTEXT_DAYS, resolvedTimeZone);
   if (notes.length === 0) {
     return null;
   }
 
   const sections: string[] = [];
   for (const note of notes) {
-    const dateLabel = note.date === getTodayDateString() ? `${note.date} (today)` : note.date;
+    const dateLabel = note.date === getTodayDateString(resolvedTimeZone) ? `${note.date} (today)` : note.date;
     const entries = note.entries
       .map((e) => {
-        const time = new Date(e.timestamp).toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true,
-        });
-        return `  ${time}: ${e.content}`;
+        const entryTimeZone = normalizeTimeZone(e.timeZone || note.timeZone || resolvedTimeZone);
+        const localDate = e.localDate || getDateStringInTimeZone(new Date(e.timestamp), entryTimeZone);
+        const localTime = e.localTime || getTimeStringInTimeZone(new Date(e.timestamp), entryTimeZone);
+        return `  [${localDate} ${localTime} ${entryTimeZone}]: ${e.content}`;
       })
       .join("\n");
     sections.push(`${dateLabel}:\n${entries}`);
@@ -889,9 +1018,10 @@ export async function markDailyNoteProcessed(
 export async function getUnprocessedDailyNotes(
   redis: Redis,
   username: string,
-  days: number = 7
+  days: number = 7,
+  timeZone?: string
 ): Promise<DailyNote[]> {
-  const dates = getRecentDateStrings(days);
+  const dates = getRecentDateStrings(days, timeZone);
   const notes: DailyNote[] = [];
 
   for (const date of dates) {
@@ -914,10 +1044,12 @@ export async function getUnprocessedDailyNotes(
 export async function getUnprocessedDailyNotesExcludingToday(
   redis: Redis,
   username: string,
-  days: number = 7
+  days: number = 7,
+  timeZone?: string
 ): Promise<DailyNote[]> {
-  const dates = getRecentDateStrings(days);
-  const today = getTodayDateString();
+  const resolvedTimeZone = normalizeTimeZone(timeZone);
+  const dates = getRecentDateStrings(days, resolvedTimeZone);
+  const today = getTodayDateString(resolvedTimeZone);
   const pastDates = dates.filter(d => d !== today);
 
   // Fetch all dates in parallel instead of sequentially
@@ -974,9 +1106,10 @@ export async function clearAllMemories(
 export async function resetDailyNotesProcessedFlag(
   redis: Redis,
   username: string,
-  days: number = 30
+  days: number = 30,
+  timeZone?: string
 ): Promise<{ resetCount: number }> {
-  const dates = getRecentDateStrings(days);
+  const dates = getRecentDateStrings(days, timeZone);
 
   // Fetch all notes in parallel
   const allNotes = await Promise.all(
@@ -1004,4 +1137,115 @@ export async function resetDailyNotesProcessedFlag(
   );
 
   return { resetCount: notesToReset.length };
+}
+
+// ============================================================================
+// Long-Term Memory Hygiene
+// ============================================================================
+
+export interface TemporaryMemoryCleanupOptions {
+  now?: number;
+  retentionDays?: number;
+}
+
+export interface TemporaryMemoryCleanupResult {
+  scanned: number;
+  removed: number;
+  removedKeys: string[];
+  cutoffTimestamp: number;
+}
+
+function isLikelyTemporaryMemory(
+  memoryKey: string,
+  summary: string,
+  content: string
+): boolean {
+  const normalizedKey = normalizeMemoryKey(memoryKey);
+  const text = `${summary} ${content}`;
+  const hasTemporaryTopic = TEMPORARY_TOPIC_PATTERN.test(text);
+  const hasTemporalMarker = TEMPORAL_MARKER_PATTERN.test(text);
+
+  if (TEMPORARY_MEMORY_KEY_HINTS.has(normalizedKey)) {
+    return hasTemporaryTopic || hasTemporalMarker;
+  }
+
+  return hasTemporaryTopic && hasTemporalMarker;
+}
+
+/**
+ * Remove stale temporary memories that no longer belong in long-term memory.
+ *
+ * This is intended to run in long-term processing cycles so transient context
+ * (e.g. "travel this week", "meeting tomorrow") does not stick around forever.
+ */
+export async function cleanupStaleTemporaryMemories(
+  redis: Redis,
+  username: string,
+  options: TemporaryMemoryCleanupOptions = {}
+): Promise<TemporaryMemoryCleanupResult> {
+  const now = options.now ?? Date.now();
+  const retentionDays = Math.max(1, options.retentionDays ?? TEMPORARY_MEMORY_RETENTION_DAYS);
+  const cutoffTimestamp = now - retentionDays * DAY_IN_MS;
+
+  const index = await getMemoryIndex(redis, username);
+  if (!index || index.memories.length === 0) {
+    return {
+      scanned: 0,
+      removed: 0,
+      removedKeys: [],
+      cutoffTimestamp,
+    };
+  }
+
+  const staleCandidates = index.memories.filter((entry) => entry.updatedAt <= cutoffTimestamp);
+  if (staleCandidates.length === 0) {
+    return {
+      scanned: 0,
+      removed: 0,
+      removedKeys: [],
+      cutoffTimestamp,
+    };
+  }
+
+  const candidateDetails = await Promise.all(
+    staleCandidates.map(async (entry) => {
+      const detail = await getMemoryDetail(redis, username, entry.key);
+      return {
+        key: entry.key,
+        summary: entry.summary,
+        content: detail?.content || "",
+      };
+    })
+  );
+
+  const removedKeys = candidateDetails
+    .filter((candidate) => isLikelyTemporaryMemory(candidate.key, candidate.summary, candidate.content))
+    .map((candidate) => candidate.key);
+
+  if (removedKeys.length === 0) {
+    return {
+      scanned: staleCandidates.length,
+      removed: 0,
+      removedKeys: [],
+      cutoffTimestamp,
+    };
+  }
+
+  const keysToRemove = new Set(removedKeys);
+  const filteredIndex: MemoryIndex = {
+    ...index,
+    memories: index.memories.filter((entry) => !keysToRemove.has(entry.key)),
+  };
+
+  await saveMemoryIndex(redis, username, filteredIndex);
+  await Promise.all(
+    removedKeys.map((key) => deleteMemoryDetail(redis, username, key))
+  );
+
+  return {
+    scanned: staleCandidates.length,
+    removed: removedKeys.length,
+    removedKeys,
+    cutoffTimestamp,
+  };
 }

@@ -328,7 +328,14 @@ export interface MemoryReadOutput {
   summary?: string | null;
   /** For daily reads */
   date?: string;
-  entries?: Array<{ timestamp: number; content: string }>;
+  entries?: Array<{
+    timestamp: number;
+    isoTimestamp?: string;
+    localDate?: string;
+    localTime?: string;
+    timeZone?: string;
+    content: string;
+  }>;
 }
 
 // Memory delete input (long-term only)

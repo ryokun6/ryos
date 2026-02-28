@@ -33,6 +33,7 @@ import {
   deleteMemory,
   getUnprocessedDailyNotesExcludingToday,
   markDailyNoteProcessed,
+  cleanupStaleTemporaryMemories,
   MAX_MEMORIES_PER_USER,
   CANONICAL_MEMORY_KEYS,
 } from "../_utils/_memory.js";
@@ -142,6 +143,7 @@ export async function processDailyNotesForUser(
   username: string,
   log: LogFn = console.log,
   logError: LogFn = console.error,
+  timeZone?: string,
 ): Promise<{
   processed: number;
   created: number;
@@ -161,7 +163,7 @@ export async function processDailyNotesForUser(
   }
 
   try {
-    return await _processDailyNotesForUserInner(redis, username, log, logError);
+    return await _processDailyNotesForUserInner(redis, username, log, logError, timeZone);
   } finally {
     // Release lock when done (or on error)
     await redis.del(lockKey).catch(() => {});
@@ -200,6 +202,7 @@ async function _processDailyNotesForUserInner(
   username: string,
   log: LogFn,
   logError: LogFn,
+  timeZone?: string,
 ): Promise<{
   processed: number;
   created: number;
@@ -210,8 +213,23 @@ async function _processDailyNotesForUserInner(
   const startTime = Date.now();
   const EMPTY = { processed: 0, created: 0, updated: 0, dates: [] as string[], skippedDates: [] as string[] };
 
+  // 0. Cleanup stale temporary memories before extracting new long-term facts.
+  const cleanupResult = await cleanupStaleTemporaryMemories(redis, username);
+  if (cleanupResult.removed > 0) {
+    log("[processDailyNotes] Removed stale temporary memories", {
+      username,
+      removed: cleanupResult.removed,
+      removedKeys: cleanupResult.removedKeys,
+    });
+  }
+
   // 1. Find unprocessed daily notes (excluding today)
-  const unprocessedNotes = await getUnprocessedDailyNotesExcludingToday(redis, username);
+  const unprocessedNotes = await getUnprocessedDailyNotesExcludingToday(
+    redis,
+    username,
+    7,
+    timeZone,
+  );
 
   if (unprocessedNotes.length === 0) {
     return EMPTY;
@@ -503,6 +521,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const username = usernameHeader.toLowerCase();
+  const requestBody = (req.body || {}) as { timeZone?: string };
+  const requestTimeZone = requestBody.timeZone;
 
   try {
     const result = await processDailyNotesForUser(
@@ -510,6 +530,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       username,
       (...args: unknown[]) => logger.info(String(args[0]), args[1]),
       (...args: unknown[]) => logger.error(String(args[0]), args[1]),
+      requestTimeZone,
     );
 
     const totalExtracted = result.created + result.updated;

@@ -193,6 +193,7 @@ export async function executeSearchSongs(
 export interface MemoryToolContext extends ServerToolContext {
   username?: string | null;
   redis?: Redis;
+  timeZone?: string;
 }
 
 /**
@@ -227,7 +228,12 @@ export async function executeMemoryWrite(
     // Route to the appropriate handler
     if (type === "daily") {
       context.log(`[memoryWrite:daily] Logging daily note (${content.length} chars)`);
-      const result = await appendDailyNote(context.redis, context.username, content);
+      const result = await appendDailyNote(
+        context.redis,
+        context.username,
+        content,
+        { timeZone: context.timeZone },
+      );
 
       context.log(
         `[memoryWrite:daily] Result: ${result.success ? "success" : "failed"} - ${result.message}`
@@ -318,7 +324,7 @@ export async function executeMemoryRead(
   try {
     // Route to the appropriate handler
     if (type === "daily") {
-      const date = input.date || getTodayDateString();
+      const date = input.date || getTodayDateString(context.timeZone);
       context.log(`[memoryRead:daily] Reading daily note for ${date}`);
 
       const note = await getDailyNote(context.redis, context.username, date);
@@ -338,7 +344,14 @@ export async function executeMemoryRead(
         success: true,
         message: `Retrieved ${note.entries.length} entries for ${date}.`,
         date,
-        entries: note.entries.map((e) => ({ timestamp: e.timestamp, content: e.content })),
+        entries: note.entries.map((e) => ({
+          timestamp: e.timestamp,
+          isoTimestamp: e.isoTimestamp,
+          localDate: e.localDate,
+          localTime: e.localTime,
+          timeZone: e.timeZone,
+          content: e.content,
+        })),
       };
     }
 
