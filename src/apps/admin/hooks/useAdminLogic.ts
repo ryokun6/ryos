@@ -11,6 +11,7 @@ import {
   deleteAllSongMetadata,
   deleteSongMetadata,
   listAllCachedSongMetadata,
+  type BulkImportProgress,
   type CachedSongMetadata,
 } from "@/utils/songMetadataCache";
 import { getApiUrl } from "@/utils/platform";
@@ -73,6 +74,7 @@ const USERS_PER_PAGE = 100;
 const SONGS_PER_PAGE = 100;
 const EXPORT_FETCH_BATCH_SIZE = 50;
 const EXPORT_TRANSFORM_BATCH_SIZE = 25;
+const IMPORT_PREPARE_PROGRESS_STEP = 50;
 
 function chunkArray<T>(items: T[], chunkSize: number): T[][] {
   if (chunkSize <= 0) return [items];
@@ -101,6 +103,51 @@ interface ExportSongDocument {
   soramimi?: Array<Array<{ text: string; reading?: string }>>;
   soramimiByLang?: Record<string, Array<Array<{ text: string; reading?: string }>>>;
 }
+
+type ImportStatusPhase =
+  | "idle"
+  | "reading-file"
+  | "parsing-file"
+  | "validating-data"
+  | "preparing-songs"
+  | "uploading-batches"
+  | "refreshing-library"
+  | "completed"
+  | "failed";
+
+interface ImportStatus {
+  phase: ImportStatusPhase;
+  fileName: string | null;
+  fileSizeBytes: number;
+  totalSongs: number;
+  processedSongs: number;
+  imported: number;
+  updated: number;
+  currentBatch: number;
+  totalBatches: number;
+  currentBatchSize: number;
+  message: string | null;
+  error: string | null;
+  startedAt: number | null;
+  finishedAt: number | null;
+}
+
+const INITIAL_IMPORT_STATUS: ImportStatus = {
+  phase: "idle",
+  fileName: null,
+  fileSizeBytes: 0,
+  totalSongs: 0,
+  processedSongs: 0,
+  imported: 0,
+  updated: 0,
+  currentBatch: 0,
+  totalBatches: 0,
+  currentBatchSize: 0,
+  message: null,
+  error: null,
+  startedAt: null,
+  finishedAt: null,
+};
 
 export interface UseAdminLogicProps {
   isWindowOpen: boolean;
@@ -148,12 +195,36 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   const [isFrameNarrow, setIsFrameNarrow] = useState(false);
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
+  const [importStatus, setImportStatus] =
+    useState<ImportStatus>(INITIAL_IMPORT_STATUS);
   const [isExporting, setIsExporting] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const importStatusResetTimeoutRef = useRef<number | null>(null);
 
   const isAdmin = username?.toLowerCase() === "ryo";
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId) || null;
+
+  const clearImportStatusResetTimer = useCallback(() => {
+    if (importStatusResetTimeoutRef.current !== null) {
+      window.clearTimeout(importStatusResetTimeoutRef.current);
+      importStatusResetTimeoutRef.current = null;
+    }
+  }, []);
+
+  const resetImportStatus = useCallback(() => {
+    setImportStatus(INITIAL_IMPORT_STATUS);
+  }, []);
+
+  const scheduleImportStatusReset = useCallback(
+    (delayMs: number = 10000) => {
+      clearImportStatusResetTimer();
+      importStatusResetTimeoutRef.current = window.setTimeout(() => {
+        resetImportStatus();
+      }, delayMs);
+    },
+    [clearImportStatusResetTimer, resetImportStatus]
+  );
 
   // Fetch stats
   const fetchStats = useCallback(async () => {
@@ -456,57 +527,179 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       const file = event.target.files?.[0];
       if (!file || !username || !authToken) return;
 
+      clearImportStatusResetTimer();
       setIsImporting(true);
+      const startedAt = Date.now();
+      setImportStatus({
+        phase: "reading-file",
+        fileName: file.name,
+        fileSizeBytes: file.size,
+        totalSongs: 0,
+        processedSongs: 0,
+        imported: 0,
+        updated: 0,
+        currentBatch: 0,
+        totalBatches: 0,
+        currentBatchSize: 0,
+        message: "Reading file",
+        error: null,
+        startedAt,
+        finishedAt: null,
+      });
 
       try {
         const text = await file.text();
+        setImportStatus((prev) => ({
+          ...prev,
+          phase: "parsing-file",
+          message: "Parsing file",
+        }));
         const data = JSON.parse(text);
+
+        setImportStatus((prev) => ({
+          ...prev,
+          phase: "validating-data",
+          message: "Validating file format",
+        }));
 
         // Support both formats: { videos: [...] } or direct array
         const videos = data.videos || data;
         if (!Array.isArray(videos)) {
-          toast.error(
-            t("apps.admin.errors.invalidImportFormat", "Invalid file format")
+          const formatError = t(
+            "apps.admin.errors.invalidImportFormat",
+            "Invalid file format"
           );
+          setImportStatus((prev) => ({
+            ...prev,
+            phase: "failed",
+            message: formatError,
+            error: formatError,
+            finishedAt: Date.now(),
+          }));
+          toast.error(
+            formatError
+          );
+          scheduleImportStatusReset();
           return;
         }
 
-        // Map to the expected song format, including content fields
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const songsToImport = videos.map((v: Record<string, any>) => ({
-          id: v.id as string,
-          url: v.url as string | undefined,
-          title: v.title as string,
-          artist: v.artist as string | undefined,
-          album: v.album as string | undefined,
-          lyricOffset: v.lyricOffset as number | undefined,
-          lyricsSource: (v.lyricsSource || v.lyricsSearch?.selection) as {
-            hash: string;
-            albumId: string | number;
-            title: string;
-            artist: string;
-            album?: string;
-          } | undefined,
-          // Include content fields (may be compressed gzip:base64 strings or raw objects)
-          // These are passed through as-is to the API which handles decompression
-          lyrics: v.lyrics,
-          translations: v.translations,
-          furigana: v.furigana,
-          soramimi: v.soramimi,
-          soramimiByLang: v.soramimiByLang,
-          // Timestamps
-          createdBy: v.createdBy as string | undefined,
-          createdAt: v.createdAt as number | undefined,
-          updatedAt: v.updatedAt as number | undefined,
-          importOrder: v.importOrder as number | undefined,
+        setImportStatus((prev) => ({
+          ...prev,
+          phase: "preparing-songs",
+          totalSongs: videos.length,
+          processedSongs: 0,
+          message: "Preparing songs for import",
         }));
+
+        // Map to the expected song format, including content fields
+        const songsToImport: Parameters<typeof bulkImportSongMetadata>[0] = [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (let i = 0; i < videos.length; i++) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const v = videos[i] as Record<string, any>;
+          songsToImport.push({
+            id: v.id as string,
+            url: v.url as string | undefined,
+            title: v.title as string,
+            artist: v.artist as string | undefined,
+            album: v.album as string | undefined,
+            lyricOffset: v.lyricOffset as number | undefined,
+            lyricsSource: (v.lyricsSource || v.lyricsSearch?.selection) as {
+              hash: string;
+              albumId: string | number;
+              title: string;
+              artist: string;
+              album?: string;
+            } | undefined,
+            // Include content fields (may be compressed gzip:base64 strings or raw objects)
+            // These are passed through as-is to the API which handles decompression
+            lyrics: v.lyrics,
+            translations: v.translations,
+            furigana: v.furigana,
+            soramimi: v.soramimi,
+            soramimiByLang: v.soramimiByLang,
+            // Timestamps
+            createdBy: v.createdBy as string | undefined,
+            createdAt: v.createdAt as number | undefined,
+            updatedAt: v.updatedAt as number | undefined,
+            importOrder: v.importOrder as number | undefined,
+          });
+
+          const processedSongs = i + 1;
+          if (
+            processedSongs === videos.length ||
+            processedSongs % IMPORT_PREPARE_PROGRESS_STEP === 0
+          ) {
+            setImportStatus((prev) => ({
+              ...prev,
+              phase: "preparing-songs",
+              totalSongs: videos.length,
+              processedSongs,
+            }));
+          }
+        }
 
         const result = await bulkImportSongMetadata(songsToImport, {
           username,
           authToken,
+        }, {
+          onProgress: (progress: BulkImportProgress) => {
+            const nextPhase =
+              progress.stage === "error"
+                ? "failed"
+                : progress.stage === "complete"
+                ? "refreshing-library"
+                : "uploading-batches";
+            const message =
+              progress.message ||
+              (progress.stage === "batch-split"
+                ? "Splitting batch to fit upload limits"
+                : progress.stage === "batch-start"
+                ? "Uploading songs"
+                : progress.stage === "complete"
+                ? "Import uploaded, refreshing library"
+                : progress.stage === "error"
+                ? "Import failed"
+                : "Import progress updated");
+
+            setImportStatus((prev) => ({
+              ...prev,
+              phase: nextPhase,
+              totalSongs: progress.totalSongs || prev.totalSongs,
+              processedSongs: progress.processedSongs,
+              imported: progress.importedSongs,
+              updated: progress.updatedSongs,
+              currentBatch: progress.batchIndex,
+              totalBatches: progress.batchCount,
+              currentBatchSize: progress.batchSize,
+              message,
+              error: progress.stage === "error" ? message : null,
+            }));
+          },
         });
 
         if (result.success) {
+          setImportStatus((prev) => ({
+            ...prev,
+            phase: "refreshing-library",
+            processedSongs: result.total,
+            imported: result.imported,
+            updated: result.updated,
+            message: "Refreshing song list",
+            error: null,
+          }));
+          await fetchSongs();
+          setImportStatus((prev) => ({
+            ...prev,
+            phase: "completed",
+            totalSongs: result.total || prev.totalSongs,
+            processedSongs: result.total,
+            imported: result.imported,
+            updated: result.updated,
+            message: `Import complete: ${result.imported} new, ${result.updated} updated`,
+            error: null,
+            finishedAt: Date.now(),
+          }));
           toast.success(
             t("apps.admin.messages.importSuccess", {
               imported: result.imported,
@@ -515,15 +708,36 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
               defaultValue: `Imported ${result.imported} new, updated ${result.updated} (${result.total} total)`,
             })
           );
-          fetchSongs();
+          scheduleImportStatusReset();
         } else {
+          const errorMessage =
+            result.error || t("apps.admin.errors.importFailed", "Import failed");
+          setImportStatus((prev) => ({
+            ...prev,
+            phase: "failed",
+            message: errorMessage,
+            error: errorMessage,
+            finishedAt: Date.now(),
+          }));
           toast.error(
-            result.error || t("apps.admin.errors.importFailed", "Import failed")
+            errorMessage
           );
+          scheduleImportStatusReset();
         }
       } catch (error) {
         console.error("Failed to import songs:", error);
-        toast.error(t("apps.admin.errors.importFailed", "Import failed"));
+        const fallbackError = t("apps.admin.errors.importFailed", "Import failed");
+        const errorMessage =
+          error instanceof Error && error.message ? error.message : fallbackError;
+        setImportStatus((prev) => ({
+          ...prev,
+          phase: "failed",
+          message: errorMessage,
+          error: errorMessage,
+          finishedAt: Date.now(),
+        }));
+        toast.error(fallbackError);
+        scheduleImportStatusReset();
       } finally {
         setIsImporting(false);
         // Reset file input
@@ -532,7 +746,14 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
         }
       }
     },
-    [username, authToken, fetchSongs, t]
+    [
+      username,
+      authToken,
+      fetchSongs,
+      t,
+      clearImportStatusResetTimer,
+      scheduleImportStatusReset,
+    ]
   );
 
   // Compress and base64 encode a string (for large content fields)
@@ -812,6 +1033,12 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     }
   }, [isAdmin, isWindowOpen, fetchRooms, fetchStats, fetchSongs]);
 
+  useEffect(() => {
+    return () => {
+      clearImportStatusResetTimer();
+    };
+  }, [clearImportStatusResetTimer]);
+
   // Handle user search
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -972,6 +1199,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     isSidebarVisible,
     toggleSidebarVisibility,
     isImporting,
+    importStatus,
     isExporting,
     isDeletingAll,
     fileInputRef,

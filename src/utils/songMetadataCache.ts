@@ -115,6 +115,32 @@ type BulkImportSong = {
   importOrder?: number;
 };
 
+export type BulkImportProgressStage =
+  | "starting"
+  | "batch-start"
+  | "batch-success"
+  | "batch-split"
+  | "complete"
+  | "error";
+
+export interface BulkImportProgress {
+  stage: BulkImportProgressStage;
+  totalSongs: number;
+  processedSongs: number;
+  pendingSongs: number;
+  importedSongs: number;
+  updatedSongs: number;
+  batchIndex: number;
+  batchCount: number;
+  batchSize: number;
+  statusCode?: number;
+  message?: string;
+}
+
+interface BulkImportOptions {
+  onProgress?: (progress: BulkImportProgress) => void;
+}
+
 function buildBulkImportRequestBody(songs: BulkImportSong[]): {
   body: string;
   byteLength: number;
@@ -444,7 +470,8 @@ export async function saveSongMetadata(
  */
 export async function bulkImportSongMetadata(
   songs: BulkImportSong[],
-  auth: SongMetadataAuthCredentials
+  auth: SongMetadataAuthCredentials,
+  options?: BulkImportOptions
 ): Promise<{ success: boolean; imported: number; updated: number; total: number; error?: string }> {
   try {
     if (songs.length === 0) {
@@ -456,6 +483,30 @@ export async function bulkImportSongMetadata(
     let updated = 0;
     let total = 0;
 
+    const reportProgress = (
+      progress: Omit<
+        BulkImportProgress,
+        "totalSongs" | "processedSongs" | "pendingSongs" | "importedSongs" | "updatedSongs"
+      >
+    ) => {
+      options?.onProgress?.({
+        ...progress,
+        totalSongs: songs.length,
+        processedSongs: total,
+        pendingSongs: Math.max(songs.length - total, 0),
+        importedSongs: imported,
+        updatedSongs: updated,
+      });
+    };
+
+    reportProgress({
+      stage: "starting",
+      batchIndex: 0,
+      batchCount: batches.length,
+      batchSize: 0,
+      message: "Starting import",
+    });
+
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i];
       let completedBatch = false;
@@ -463,9 +514,25 @@ export async function bulkImportSongMetadata(
       let rateLimitRetries = 0;
 
       while (!completedBatch) {
+        reportProgress({
+          stage: "batch-start",
+          batchIndex: i + 1,
+          batchCount: batches.length,
+          batchSize: batch.length,
+          message: "Uploading batch",
+        });
+
         const { body, byteLength } = buildBulkImportRequestBody(batch);
         if (byteLength > BULK_IMPORT_MAX_PAYLOAD_BYTES) {
           if (batch.length <= 1) {
+            reportProgress({
+              stage: "error",
+              batchIndex: i + 1,
+              batchCount: batches.length,
+              batchSize: batch.length,
+              message:
+                "Payload too large: one song entry exceeds import request size limits",
+            });
             return {
               success: false,
               imported,
@@ -475,6 +542,13 @@ export async function bulkImportSongMetadata(
                 "Payload too large: one song entry exceeds import request size limits",
             };
           }
+          reportProgress({
+            stage: "batch-split",
+            batchIndex: i + 1,
+            batchCount: batches.length,
+            batchSize: batch.length,
+            message: "Splitting oversized batch before upload",
+          });
           shouldSplitBatch = true;
           break;
         }
@@ -494,6 +568,15 @@ export async function bulkImportSongMetadata(
 
         if (response.status === 413) {
           if (batch.length <= 1) {
+            reportProgress({
+              stage: "error",
+              batchIndex: i + 1,
+              batchCount: batches.length,
+              batchSize: batch.length,
+              statusCode: 413,
+              message:
+                "Payload too large: one song entry exceeds import request size limits",
+            });
             return {
               success: false,
               imported,
@@ -506,6 +589,14 @@ export async function bulkImportSongMetadata(
           console.warn(
             `[SongMetadataCache] Batch ${i + 1}/${batches.length} hit 413, splitting and retrying`
           );
+          reportProgress({
+            stage: "batch-split",
+            batchIndex: i + 1,
+            batchCount: batches.length,
+            batchSize: batch.length,
+            statusCode: 413,
+            message: "Server returned 413, splitting batch and retrying",
+          });
           shouldSplitBatch = true;
           break;
         }
@@ -515,6 +606,14 @@ export async function bulkImportSongMetadata(
             console.warn(
               `[SongMetadataCache] Rate limited too many times while importing batch ${i + 1}/${batches.length}`
             );
+            reportProgress({
+              stage: "error",
+              batchIndex: i + 1,
+              batchCount: batches.length,
+              batchSize: batch.length,
+              statusCode: 429,
+              message: "Rate limited while importing songs",
+            });
             return {
               success: false,
               imported,
@@ -542,11 +641,27 @@ export async function bulkImportSongMetadata(
 
         if (response.status === 401) {
           console.warn(`[SongMetadataCache] Unauthorized - user must be logged in to import`);
+          reportProgress({
+            stage: "error",
+            batchIndex: i + 1,
+            batchCount: batches.length,
+            batchSize: batch.length,
+            statusCode: 401,
+            message: "Unauthorized",
+          });
           return { success: false, imported, updated, total, error: "Unauthorized" };
         }
 
         if (response.status === 403) {
           console.warn(`[SongMetadataCache] Forbidden - admin access required to import`);
+          reportProgress({
+            stage: "error",
+            batchIndex: i + 1,
+            batchCount: batches.length,
+            batchSize: batch.length,
+            statusCode: 403,
+            message: "Forbidden - admin only",
+          });
           return {
             success: false,
             imported,
@@ -558,6 +673,14 @@ export async function bulkImportSongMetadata(
 
         if (!response.ok) {
           console.warn(`[SongMetadataCache] Failed to import songs: ${response.status}`);
+          reportProgress({
+            stage: "error",
+            batchIndex: i + 1,
+            batchCount: batches.length,
+            batchSize: batch.length,
+            statusCode: response.status,
+            message: `HTTP ${response.status}`,
+          });
           return {
             success: false,
             imported,
@@ -570,6 +693,13 @@ export async function bulkImportSongMetadata(
         const data = await response.json();
         if (!data.success) {
           console.warn(`[SongMetadataCache] Failed to import: ${data.error}`);
+          reportProgress({
+            stage: "error",
+            batchIndex: i + 1,
+            batchCount: batches.length,
+            batchSize: batch.length,
+            message: data.error,
+          });
           return {
             success: false,
             imported,
@@ -582,6 +712,13 @@ export async function bulkImportSongMetadata(
         imported += Number(data.imported) || 0;
         updated += Number(data.updated) || 0;
         total += Number(data.total) || batch.length;
+        reportProgress({
+          stage: "batch-success",
+          batchIndex: i + 1,
+          batchCount: batches.length,
+          batchSize: batch.length,
+          message: "Batch uploaded",
+        });
         completedBatch = true;
       }
 
@@ -595,9 +732,28 @@ export async function bulkImportSongMetadata(
     console.log(
       `[SongMetadataCache] Imported ${imported} new, updated ${updated}, total ${total}`
     );
+    reportProgress({
+      stage: "complete",
+      batchIndex: batches.length,
+      batchCount: batches.length,
+      batchSize: 0,
+      message: "Import complete",
+    });
     return { success: true, imported, updated, total };
   } catch (error) {
     console.error(`[SongMetadataCache] Error importing songs:`, error);
+    options?.onProgress?.({
+      stage: "error",
+      totalSongs: songs.length,
+      processedSongs: 0,
+      pendingSongs: songs.length,
+      importedSongs: 0,
+      updatedSongs: 0,
+      batchIndex: 0,
+      batchCount: 0,
+      batchSize: 0,
+      message: String(error),
+    });
     return { success: false, imported: 0, updated: 0, total: 0, error: String(error) };
   }
 }

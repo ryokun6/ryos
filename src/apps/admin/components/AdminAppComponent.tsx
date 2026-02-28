@@ -89,6 +89,7 @@ export function AdminAppComponent({
     isSidebarVisible,
     toggleSidebarVisibility,
     isImporting,
+    importStatus,
     isExporting,
     isDeletingAll,
     fileInputRef,
@@ -119,6 +120,78 @@ export function AdminAppComponent({
       onSectionChange={setActiveSection}
     />
   );
+
+  const shouldShowImportStatus =
+    activeSection === "songs" &&
+    !selectedRoomId &&
+    !selectedUserProfile &&
+    !selectedSongId &&
+    importStatus.phase !== "idle";
+
+  const importProgressPercent =
+    importStatus.totalSongs > 0
+      ? Math.min(
+          100,
+          Math.round((importStatus.processedSongs / importStatus.totalSongs) * 100)
+        )
+      : 0;
+
+  const importStatusText =
+    importStatus.phase === "reading-file"
+      ? t("apps.admin.songs.importStatus.reading", {
+          fileName: importStatus.fileName || "",
+          defaultValue: `Reading ${importStatus.fileName || "file"}...`,
+        })
+      : importStatus.phase === "parsing-file"
+      ? t("apps.admin.songs.importStatus.parsing", "Parsing import file...")
+      : importStatus.phase === "validating-data"
+      ? t("apps.admin.songs.importStatus.validating", "Validating import data...")
+      : importStatus.phase === "preparing-songs"
+      ? t("apps.admin.songs.importStatus.preparing", {
+          processed: importStatus.processedSongs,
+          total: importStatus.totalSongs,
+          defaultValue: `Preparing songs ${importStatus.processedSongs}/${importStatus.totalSongs}`,
+        })
+      : importStatus.phase === "uploading-batches"
+      ? t("apps.admin.songs.importStatus.uploading", {
+          processed: importStatus.processedSongs,
+          total: importStatus.totalSongs,
+          defaultValue: `Uploading songs ${importStatus.processedSongs}/${importStatus.totalSongs}`,
+        })
+      : importStatus.phase === "refreshing-library"
+      ? t(
+          "apps.admin.songs.importStatus.refreshing",
+          "Import uploaded. Refreshing library..."
+        )
+      : importStatus.phase === "completed"
+      ? t("apps.admin.songs.importStatus.completed", {
+          imported: importStatus.imported,
+          updated: importStatus.updated,
+          defaultValue: `Import complete: ${importStatus.imported} new, ${importStatus.updated} updated`,
+        })
+      : importStatus.phase === "failed"
+      ? t("apps.admin.songs.importStatus.failed", {
+          error: importStatus.error || t("apps.admin.errors.importFailed", "Import failed"),
+          defaultValue: `Import failed: ${importStatus.error || t("apps.admin.errors.importFailed", "Import failed")}`,
+        })
+      : "";
+
+  const importStatusBarText =
+    importStatus.phase === "completed"
+      ? t("apps.admin.songs.importStatus.statusBarCompleted", {
+          imported: importStatus.imported,
+          updated: importStatus.updated,
+          defaultValue: `Import complete (${importStatus.imported} new / ${importStatus.updated} updated)`,
+        })
+      : importStatus.phase === "failed"
+      ? t("apps.admin.songs.importStatus.statusBarFailed", "Import failed")
+      : importStatus.totalSongs > 0
+      ? t("apps.admin.songs.importStatus.statusBarProgress", {
+          processed: importStatus.processedSongs,
+          total: importStatus.totalSongs,
+          defaultValue: `Importing ${importStatus.processedSongs}/${importStatus.totalSongs}`,
+        })
+      : t("apps.admin.songs.importStatus.statusBarWorking", "Importing...");
 
   if (!isWindowOpen) return null;
 
@@ -283,7 +356,18 @@ export function AdminAppComponent({
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isImporting || isExporting || isDeletingAll}
                       className="h-7 w-7 p-0"
-                      title={t("apps.admin.songs.import", "Import Library")}
+                      title={
+                        isImporting
+                          ? t("apps.admin.songs.importing", {
+                              processed: importStatus.processedSongs,
+                              total: importStatus.totalSongs,
+                              defaultValue:
+                                importStatus.totalSongs > 0
+                                  ? `Importing ${importStatus.processedSongs}/${importStatus.totalSongs}`
+                                  : "Importing library...",
+                            })
+                          : t("apps.admin.songs.import", "Import Library")
+                      }
                     >
                       {isImporting ? (
                         <ActivityIndicator size={14} />
@@ -367,6 +451,66 @@ export function AdminAppComponent({
                     <ArrowsClockwise size={14} weight="bold" />
                   )}
                 </Button>
+              </div>
+            )}
+
+            {shouldShowImportStatus && (
+              <div
+                className={cn(
+                  "px-2 py-1.5 border-b",
+                  importStatus.phase === "failed"
+                    ? "bg-red-50 border-red-200 text-red-700"
+                    : importStatus.phase === "completed"
+                    ? "bg-green-50 border-green-200 text-green-700"
+                    : "bg-blue-50 border-blue-200 text-blue-700"
+                )}
+              >
+                <div className="flex items-center justify-between gap-2 text-[11px]">
+                  <div className="min-w-0 flex items-center gap-1.5">
+                    {importStatus.phase === "failed" ? (
+                      <Warning className="h-3.5 w-3.5 shrink-0" weight="bold" />
+                    ) : importStatus.phase === "completed" ? (
+                      <MusicNote className="h-3.5 w-3.5 shrink-0" weight="bold" />
+                    ) : (
+                      <ActivityIndicator size={12} />
+                    )}
+                    <span className="truncate">{importStatusText}</span>
+                  </div>
+                  {importStatus.totalSongs > 0 && (
+                    <span className="text-[10px] whitespace-nowrap tabular-nums">
+                      {Math.min(importStatus.processedSongs, importStatus.totalSongs)}/
+                      {importStatus.totalSongs}
+                    </span>
+                  )}
+                </div>
+                {importStatus.totalSongs > 0 && (
+                  <div className="mt-1 h-1 rounded-full bg-black/10 overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full transition-all duration-200",
+                        importStatus.phase === "failed"
+                          ? "bg-red-500"
+                          : importStatus.phase === "completed"
+                          ? "bg-green-500"
+                          : "bg-blue-500"
+                      )}
+                      style={{
+                        width: `${importStatus.phase === "completed" ? 100 : importProgressPercent}%`,
+                      }}
+                    />
+                  </div>
+                )}
+                {importStatus.phase === "uploading-batches" &&
+                  importStatus.totalBatches > 0 && (
+                    <div className="mt-1 text-[10px] opacity-80">
+                      {t("apps.admin.songs.importStatus.batchInfo", {
+                        current: importStatus.currentBatch,
+                        total: importStatus.totalBatches,
+                        size: importStatus.currentBatchSize,
+                        defaultValue: `Batch ${importStatus.currentBatch}/${importStatus.totalBatches} • ${importStatus.currentBatchSize} songs`,
+                      })}
+                    </div>
+                  )}
               </div>
             )}
 
@@ -732,6 +876,10 @@ export function AdminAppComponent({
                   ? t("apps.admin.statusBar.usersCount", {
                       count: users.length,
                     })
+                  : activeSection === "songs" &&
+                    !selectedRoomId &&
+                    importStatus.phase !== "idle"
+                  ? importStatusBarText
                   : activeSection === "songs" && !selectedRoomId
                   ? t("apps.admin.statusBar.songsCount", {
                       count: songs.length,

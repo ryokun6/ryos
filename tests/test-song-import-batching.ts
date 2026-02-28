@@ -7,6 +7,7 @@
  */
 
 import { bulkImportSongMetadata } from "../src/utils/songMetadataCache";
+import type { BulkImportProgress } from "../src/utils/songMetadataCache";
 import {
   assert,
   assertEq,
@@ -179,6 +180,61 @@ async function testSingleOversizedSongFailsGracefully(): Promise<void> {
   });
 }
 
+async function testProgressCallbacksReportPhases(): Promise<void> {
+  const progressEvents: BulkImportProgress[] = [];
+
+  await withMockedFetch(async (_input, init) => {
+    const body = String(init?.body ?? "");
+    const parsed = JSON.parse(body) as BulkImportRequest;
+    return new Response(
+      JSON.stringify({
+        success: true,
+        imported: parsed.songs.length,
+        updated: 0,
+        total: parsed.songs.length,
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  }, async () => {
+    const songs = [
+      makeSong("p1", 900_000),
+      makeSong("p2", 900_000),
+      makeSong("p3", 900_000),
+      makeSong("p4", 900_000),
+    ];
+
+    const result = await bulkImportSongMetadata(
+      songs,
+      {
+        username: "ryo",
+        authToken: "test-token",
+      },
+      {
+        onProgress: (progress) => {
+          progressEvents.push(progress);
+        },
+      }
+    );
+
+    assert(result.success, `Expected import success, got: ${result.error}`);
+    assert(progressEvents.length > 0, "Expected progress callbacks to run");
+    assertEq(progressEvents[0].stage, "starting", "Expected starting event first");
+    assertEq(
+      progressEvents[progressEvents.length - 1]?.stage,
+      "complete",
+      "Expected complete event last"
+    );
+    assert(
+      progressEvents.some((event) => event.stage === "batch-start"),
+      "Expected at least one batch-start event"
+    );
+    assert(
+      progressEvents.some((event) => event.stage === "batch-success"),
+      "Expected at least one batch-success event"
+    );
+  });
+}
+
 async function runImportBatchingTests(): Promise<{ passed: number; failed: number }> {
   console.log(section("song import batching"));
   clearResults();
@@ -186,6 +242,7 @@ async function runImportBatchingTests(): Promise<{ passed: number; failed: numbe
   await runTest("Pre-splits large payloads before sending", testLargePayloadIsPreSplit);
   await runTest("Handles 413 by splitting and retrying", testServer413TriggersSplitRetry);
   await runTest("Returns clear error for oversized single entry", testSingleOversizedSongFailsGracefully);
+  await runTest("Reports progress phases during import", testProgressCallbacksReportPhases);
 
   return printSummary();
 }
