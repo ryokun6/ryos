@@ -754,6 +754,8 @@
         "tooLarge": "Backup muito grande ({{size}} MB). O tamanho máximo compactado é {{limit}} MB."
       },
       "color": "Cor",
+      "crashApp": "Travar App",
+      "crashDesktop": "Travar Desktop",
       "crt": "CRT",
       "custom": "Personalizado",
       "debugMode": "Modo Depuração",
@@ -765,6 +767,8 @@
       "dream": "Sonho",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ID de Voz ElevenLabs",
+      "errorBoundaries": "Limites de Erro",
+      "errorBoundariesDescription": "Acionar mecanismos de recuperação de falha do app ou do desktop para testes.",
       "formatFileSystem": "Formatar Sistema de Arquivos",
       "formatFileSystemDescription": "Isso apagará todos os arquivos (exceto documentos de exemplo), imagens e papéis de parede personalizados. O ryOS será reiniciado após a formatação.",
       "help": {

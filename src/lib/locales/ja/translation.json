@@ -754,6 +754,8 @@
         "tooLarge": "バックアップサイズが大きすぎます ({{size}}MB)。圧縮後の最大サイズは {{limit}}MB です。"
       },
       "color": "カラー",
+      "crashApp": "アプリをクラッシュ",
+      "crashDesktop": "デスクトップをクラッシュ",
       "crt": "CRT",
       "custom": "カスタム",
       "debugMode": "デバッグモード",
@@ -765,6 +767,8 @@
       "dream": "ドリーム",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs 音声ID",
+      "errorBoundaries": "エラー境界",
+      "errorBoundariesDescription": "テスト用に、アプリまたはデスクトップのクラッシュ時のフォールバックをトリガーします。",
       "formatFileSystem": "ファイルシステムをフォーマット",
       "formatFileSystemDescription": "これにより、すべてのファイル（サンプルドキュメントを除く）、画像、カスタム壁紙が消去されます。フォーマット後、ryOSは再起動します。",
       "help": {
