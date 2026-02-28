@@ -127,13 +127,31 @@ export function AdminAppComponent({
     !selectedUserProfile &&
     !selectedSongId &&
     importStatus.phase !== "idle";
+  const isMacOSXTheme = currentTheme === "macosx";
 
   const importProgressPercent =
-    importStatus.totalSongs > 0
+    importStatus.phase === "completed"
+      ? 100
+      : importStatus.phase === "refreshing-library"
+      ? 95
+      : importStatus.totalSongs > 0
       ? Math.min(
-          100,
+          94,
           Math.round((importStatus.processedSongs / importStatus.totalSongs) * 100)
         )
+      : importStatus.phase === "reading-file"
+      ? 5
+      : importStatus.phase === "parsing-file"
+      ? 10
+      : importStatus.phase === "validating-data"
+      ? 15
+      : importStatus.phase === "preparing-songs"
+      ? 20
+      : importStatus.phase === "uploading-batches" ||
+        importStatus.phase === "waiting-rate-limit"
+      ? 30
+      : importStatus.phase === "failed"
+      ? 100
       : 0;
 
   const importStatusText =
@@ -184,28 +202,6 @@ export function AdminAppComponent({
           defaultValue: `Import failed: ${importStatus.error || t("apps.admin.errors.importFailed", "Import failed")}`,
         })
       : "";
-
-  const importStatusBarText =
-    importStatus.phase === "completed"
-      ? t("apps.admin.songs.importStatus.statusBarCompleted", {
-          imported: importStatus.imported,
-          updated: importStatus.updated,
-          defaultValue: `Import complete (${importStatus.imported} new / ${importStatus.updated} updated)`,
-        })
-      : importStatus.phase === "failed"
-      ? t("apps.admin.songs.importStatus.statusBarFailed", "Import failed")
-      : importStatus.phase === "waiting-rate-limit"
-      ? t("apps.admin.songs.importStatus.statusBarRateLimited", {
-          message: importStatus.message || "Rate limited, retrying...",
-          defaultValue: importStatus.message || "Rate limited, retrying...",
-        })
-      : importStatus.totalSongs > 0
-      ? t("apps.admin.songs.importStatus.statusBarProgress", {
-          processed: importStatus.processedSongs,
-          total: importStatus.totalSongs,
-          defaultValue: `Importing ${importStatus.processedSongs}/${importStatus.totalSongs}`,
-        })
-      : t("apps.admin.songs.importStatus.statusBarWorking", "Importing...");
 
   if (!isWindowOpen) return null;
 
@@ -469,63 +465,44 @@ export function AdminAppComponent({
             )}
 
             {shouldShowImportStatus && (
-              <div
-                className={cn(
-                  "px-2 py-1.5 border-b",
-                  importStatus.phase === "failed"
-                    ? "bg-red-50 border-red-200 text-red-700"
-                    : importStatus.phase === "completed"
-                    ? "bg-green-50 border-green-200 text-green-700"
-                    : "bg-blue-50 border-blue-200 text-blue-700"
-                )}
-              >
-                <div className="flex items-center justify-between gap-2 text-[11px]">
-                  <div className="min-w-0 flex items-center gap-1.5">
-                    {importStatus.phase === "failed" ? (
-                      <Warning className="h-3.5 w-3.5 shrink-0" weight="bold" />
-                    ) : importStatus.phase === "completed" ? (
-                      <MusicNote className="h-3.5 w-3.5 shrink-0" weight="bold" />
-                    ) : (
-                      <ActivityIndicator size={12} />
-                    )}
-                    <span className="truncate">{importStatusText}</span>
-                  </div>
-                  {importStatus.totalSongs > 0 && (
-                    <span className="text-[10px] whitespace-nowrap tabular-nums">
-                      {Math.min(importStatus.processedSongs, importStatus.totalSongs)}/
-                      {importStatus.totalSongs}
-                    </span>
-                  )}
-                </div>
-                {importStatus.totalSongs > 0 && (
-                  <div className="mt-1 h-1 rounded-full bg-black/10 overflow-hidden">
-                    <div
-                      className={cn(
-                        "h-full transition-all duration-200",
-                        importStatus.phase === "failed"
-                          ? "bg-red-500"
-                          : importStatus.phase === "completed"
-                          ? "bg-green-500"
-                          : "bg-blue-500"
-                      )}
-                      style={{
-                        width: `${importStatus.phase === "completed" ? 100 : importProgressPercent}%`,
-                      }}
-                    />
-                  </div>
-                )}
-                {(importStatus.phase === "uploading-batches" ||
-                  importStatus.phase === "waiting-rate-limit") &&
-                  importStatus.totalBatches > 0 && (
-                    <div className="mt-1 text-[10px] opacity-80">
-                      {t("apps.admin.songs.importStatus.batchInfo", {
-                        current: importStatus.currentBatch,
-                        total: importStatus.totalBatches,
-                        size: importStatus.currentBatchSize,
-                        defaultValue: `Batch ${importStatus.currentBatch}/${importStatus.totalBatches} • ${importStatus.currentBatchSize} songs`,
-                      })}
+              <div className="px-2 py-1.5 border-b border-black/10">
+                <div className="space-y-1">
+                  {isMacOSXTheme ? (
+                    <div className="aqua-progress w-full h-[14px]">
+                      <div
+                        className={cn(
+                          "aqua-progress-fill transition-all duration-300 ease-out",
+                          importStatus.phase === "failed" && "opacity-60"
+                        )}
+                        style={{ width: `${importProgressPercent}%` }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full h-3 bg-neutral-200 rounded-sm overflow-hidden border border-neutral-300">
+                      <div
+                        className={cn(
+                          "h-full bg-neutral-600 transition-all duration-300 ease-out",
+                          importStatus.phase === "failed" && "bg-red-500",
+                          importStatus.phase === "completed" && "bg-green-600"
+                        )}
+                        style={{ width: `${importProgressPercent}%` }}
+                      />
                     </div>
                   )}
+                  <p
+                    className={cn(
+                      "text-[11px] font-geneva-12",
+                      importStatus.phase === "failed"
+                        ? "text-red-600"
+                        : "text-neutral-600"
+                    )}
+                  >
+                    {importStatusText}
+                    {importProgressPercent > 0 &&
+                      importProgressPercent < 100 &&
+                      ` (${importProgressPercent}%)`}
+                  </p>
+                </div>
               </div>
             )}
 
@@ -891,10 +868,6 @@ export function AdminAppComponent({
                   ? t("apps.admin.statusBar.usersCount", {
                       count: users.length,
                     })
-                  : activeSection === "songs" &&
-                    !selectedRoomId &&
-                    importStatus.phase !== "idle"
-                  ? importStatusBarText
                   : activeSection === "songs" && !selectedRoomId
                   ? t("apps.admin.statusBar.songsCount", {
                       count: songs.length,
