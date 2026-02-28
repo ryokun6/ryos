@@ -8,29 +8,16 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { Redis } from "@upstash/redis";
-import { validateAuth } from "../_utils/auth/index.js";
-import { assertValidRoomId } from "../_utils/_validation.js";
 import { initLogger } from "../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
-import { getRoom, setRoom } from "./_helpers/_redis.js";
-import { CHAT_ROOM_PREFIX, CHAT_ROOM_USERS_PREFIX, CHAT_ROOMS_SET } from "./_helpers/_constants.js";
-import { refreshRoomUserCount, deleteRoomPresence } from "./_helpers/_presence.js";
 import { broadcastRoomDeleted, broadcastRoomUpdated } from "./_helpers/_pusher.js";
-import type { Room } from "./_helpers/_types.js";
+import { executeRoomsRoomCore } from "../cores/rooms-room-core.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
-  const { requestId: _requestId, logger } = initLogger();
+  const { logger } = initLogger();
   const startTime = Date.now();
   const origin = getEffectiveOrigin(req);
   const roomId = req.query.id as string | undefined;
@@ -54,142 +41,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  if (!roomId) {
-    logger.response(400, Date.now() - startTime);
-    res.status(400).json({ error: "Room ID is required" });
-    return;
-  }
+  const result = await executeRoomsRoomCore({
+    originAllowed: true,
+    method: req.method,
+    roomId,
+    authHeader: req.headers.authorization,
+    usernameHeader: req.headers["x-username"] as string | undefined,
+    onRoomDeleted: (id, type, members) => broadcastRoomDeleted(id, type, members),
+    onRoomUpdated: (id) => broadcastRoomUpdated(id),
+  });
 
-  try {
-    assertValidRoomId(roomId, "room-operation");
-  } catch (e) {
-    logger.response(400, Date.now() - startTime);
-    res.status(400).json({ error: e instanceof Error ? e.message : "Invalid room ID" });
-    return;
-  }
-
-  if (req.method === "GET") {
-    try {
-      const roomObj = await getRoom(roomId);
-      if (!roomObj) {
-        logger.response(404, Date.now() - startTime);
-        res.status(404).json({ error: "Room not found" });
-        return;
-      }
-      const userCount = await refreshRoomUserCount(roomId);
-      const room: Room = { ...roomObj, userCount };
-      logger.info("Room fetched", { roomId, userCount });
-      logger.response(200, Date.now() - startTime);
-      res.status(200).json({ room });
-      return;
-    } catch (error) {
-      logger.error(`Error fetching room ${roomId}`, error);
-      logger.response(500, Date.now() - startTime);
-      res.status(500).json({ error: "Failed to fetch room" });
-      return;
+  if (result.status === 200 && req.method === "GET") {
+    const meta = (result.body as { _meta?: { userCount?: number } })?._meta;
+    logger.info("Room fetched", { roomId, userCount: meta?.userCount });
+  } else if (result.status === 200 && req.method === "DELETE") {
+    const meta = (result.body as {
+      _meta?: { scope?: string; remainingMembers?: number; username?: string };
+    })?._meta;
+    if (meta?.scope === "private-last-member" || meta?.scope === "public") {
+      logger.info("Pusher room-deleted broadcast sent", {
+        roomId,
+        scope: meta?.scope,
+      });
+    } else if (meta?.scope === "private-member-left") {
+      logger.info("Pusher private leave broadcasts sent", {
+        roomId,
+        remainingMembers: meta?.remainingMembers,
+        leftUser: meta?.username,
+      });
+    }
+    logger.info("Room deleted", { roomId, username: meta?.username });
+  } else if (result.status >= 500) {
+    if (req.method === "GET") {
+      logger.error(`Error fetching room ${roomId}`);
+    } else if (req.method === "DELETE") {
+      logger.error(`Error deleting room ${roomId}`);
     }
   }
 
-  if (req.method === "DELETE") {
-    const authHeader = req.headers.authorization;
-    const usernameHeader = req.headers["x-username"] as string | undefined;
-    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
-    if (!token || !usernameHeader) {
-      logger.response(401, Date.now() - startTime);
-      res.status(401).json({ error: "Unauthorized - missing credentials" });
-      return;
-    }
-
-    const authResult = await validateAuth(createRedis(), usernameHeader, token, {});
-    if (!authResult.valid) {
-      logger.response(401, Date.now() - startTime);
-      res.status(401).json({ error: "Unauthorized - invalid token" });
-      return;
-    }
-
-    const username = usernameHeader.toLowerCase();
-
-    try {
-      const roomData = await getRoom(roomId);
-      if (!roomData) {
-        logger.response(404, Date.now() - startTime);
-        res.status(404).json({ error: "Room not found" });
-        return;
-      }
-
-      if (roomData.type === "private") {
-        if (!roomData.members || !roomData.members.includes(username)) {
-          logger.response(403, Date.now() - startTime);
-          res.status(403).json({ error: "Unauthorized - not a member" });
-          return;
-        }
-      } else {
-        if (username !== "ryo") {
-          logger.response(403, Date.now() - startTime);
-          res.status(403).json({ error: "Unauthorized - admin required" });
-          return;
-        }
-      }
-
-      if (roomData.type === "private") {
-        const updatedMembers = roomData.members!.filter((m) => m !== username);
-        if (updatedMembers.length <= 1) {
-          const pipeline = createRedis().pipeline();
-          pipeline.del(`${CHAT_ROOM_PREFIX}${roomId}`);
-          pipeline.del(`chat:messages:${roomId}`);
-          pipeline.del(`${CHAT_ROOM_USERS_PREFIX}${roomId}`);
-          pipeline.srem(CHAT_ROOMS_SET, roomId);
-          await pipeline.exec();
-          await deleteRoomPresence(roomId);
-
-          await broadcastRoomDeleted(roomId, roomData.type, roomData.members || []);
-          logger.info("Pusher room-deleted broadcast sent", {
-            roomId,
-            scope: "private-last-member",
-          });
-        } else {
-          const updatedRoom: Room = { ...roomData, members: updatedMembers, userCount: updatedMembers.length };
-          await setRoom(roomId, updatedRoom);
-
-          // Notify remaining private members about updated membership/userCount.
-          await broadcastRoomUpdated(roomId);
-          // Notify the leaving user to remove the room from their list.
-          await broadcastRoomDeleted(roomId, roomData.type, [username]);
-          logger.info("Pusher private leave broadcasts sent", {
-            roomId,
-            remainingMembers: updatedMembers.length,
-            leftUser: username,
-          });
-        }
-      } else {
-        const pipeline = createRedis().pipeline();
-        pipeline.del(`${CHAT_ROOM_PREFIX}${roomId}`);
-        pipeline.del(`chat:messages:${roomId}`);
-        pipeline.del(`${CHAT_ROOM_USERS_PREFIX}${roomId}`);
-        pipeline.srem(CHAT_ROOMS_SET, roomId);
-        await pipeline.exec();
-        await deleteRoomPresence(roomId);
-
-        await broadcastRoomDeleted(roomId, roomData.type, roomData.members || []);
-        logger.info("Pusher room-deleted broadcast sent", {
-          roomId,
-          scope: "public",
-        });
-      }
-
-      logger.info("Room deleted", { roomId, username });
-      logger.response(200, Date.now() - startTime);
-      res.status(200).json({ success: true });
-      return;
-    } catch (error) {
-      logger.error(`Error deleting room ${roomId}`, error);
-      logger.response(500, Date.now() - startTime);
-      res.status(500).json({ error: "Failed to delete room" });
-      return;
-    }
-  }
-
-  logger.response(405, Date.now() - startTime);
-  res.status(405).json({ error: "Method not allowed" });
+  const body =
+    result.status === 200 && typeof result.body === "object" && result.body && "_meta" in (result.body as Record<string, unknown>)
+      ? (() => {
+          const { _meta: _ignored, ...rest } = result.body as Record<string, unknown>;
+          return rest;
+        })()
+      : result.body;
+  logger.response(result.status, Date.now() - startTime);
+  res.status(result.status).json(body);
 }

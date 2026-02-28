@@ -2,7 +2,8 @@
 
 A modern web-based desktop environment inspired by classic macOS and Windows, built with React, TypeScript, and AI. Features multiple built-in applications, a familiar desktop interface, and a system-aware AI assistant. Works on all devices—desktop, tablet, and mobile.
 
-**[Read ryOS Docs](https://os.ryo.lu/docs)** — Architecture, API reference, and developer guides
+**[Read ryOS Docs](https://os.ryo.lu/docs)** — Architecture, API reference, and developer guides  
+VPS + Vercel dual deployment guide: `docs/10-dual-deployment.md`
 
 ## Features
 
@@ -78,7 +79,7 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 - **AI:** OpenAI, Anthropic, Google via Vercel AI SDK
 - **Real-time:** Pusher
 - **Build:** Vite, Bun
-- **Deployment:** Vercel
+- **Deployment:** Vercel (default), VPS (Node API server)
 
 ## Scripts
 
@@ -88,9 +89,50 @@ bun run build        # Build for production
 bun run lint         # Run ESLint
 bun run preview      # Preview production build
 bun run dev:vercel   # Run with Vercel dev server (recommended); ensures api -> _api for local dev only
+bun run dev:vps      # Run API on a standalone Node server (VPS-compatible)
+bun run start:vps    # Run API in production mode for VPS deployments
 ```
 
 For local development only: `bun run dev:vercel` creates an `api` → `_api` symlink so Vercel dev serves your API routes (Vercel looks for `api/`). The symlink is gitignored and not used in production.
+
+## Dual Deployment (Vercel + VPS API)
+
+This repository supports keeping Vercel deployment while also running all `/api/*` routes on a VPS.
+
+- Vercel path: keep using existing `vercel.json` + serverless functions under `_api/`.
+- VPS path: run `bun run start:vps` to expose all API routes via a standalone Node server.
+
+### VPS API runtime notes
+
+- Health check endpoint: `GET /api/health`
+- Default bind: `0.0.0.0:3001` (configurable via `HOST`, `PORT`, or `API_PORT`)
+- Reverse proxy recommendation: Nginx/Caddy route `/api/*` to this server
+
+### CORS for non-Vercel production hosts
+
+The API now supports explicit origin allowlists via environment variables:
+
+- `ALLOWED_ORIGINS` (comma-separated, all environments)
+- `ALLOWED_PREVIEW_ORIGINS` (comma-separated, preview only)
+- `ALLOWED_DEV_ORIGINS` (comma-separated, development only)
+- `APP_ENV` (`production`, `preview`, `development`) to override env detection
+
+### Backup storage provider selection
+
+Cloud backup endpoints support provider selection via:
+
+- `BACKUP_STORAGE_PROVIDER=vercel_blob` (default)
+- `BACKUP_STORAGE_PROVIDER=disabled` (turns off cloud backup token generation)
+
+### Frontend API base URL override
+
+When frontend and API are on different hosts, set:
+
+- `VITE_API_BASE_URL=https://api.example.com`
+- `VITE_APP_ENV=production|preview|development` (optional runtime env hint for client logic)
+- `VITE_ANALYTICS_PROVIDER=vercel|none` (set `none` to disable analytics on VPS/self-hosted targets)
+
+If unset, web builds use relative URLs (same-origin), and Tauri still defaults to `https://os.ryo.lu`.
 
 ## License
 

@@ -6,9 +6,9 @@
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
-import { deleteAllUserTokens, validateAuth } from "../_utils/auth/index.js";
 import { initLogger } from "../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
+import { executeAuthLogoutAllCore } from "../cores/auth-logout-all-core.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -42,11 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  if (!isAllowedOrigin(origin)) {
-    logger.response(403, Date.now() - startTime);
-    res.status(403).json({ error: "Unauthorized" });
-    return;
-  }
+  const originAllowed = isAllowedOrigin(origin);
 
   const redis = createRedis();
   const authHeader = req.headers.authorization;
@@ -60,16 +56,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  const authResult = await validateAuth(redis, username, token, { allowExpired: true });
-  if (!authResult.valid) {
-    logger.response(401, Date.now() - startTime);
-    res.status(401).json({ error: "Unauthorized - invalid token" });
-    return;
+  const result = await executeAuthLogoutAllCore({
+    originAllowed,
+    username,
+    token,
+    redis,
+  });
+
+  if (result.status === 200) {
+    logger.info("Logged out from all devices", {
+      username,
+      deletedCount: (result.body as { deletedCount?: number })?.deletedCount,
+    });
   }
-
-  const deletedCount = await deleteAllUserTokens(redis, username.toLowerCase());
-
-  logger.info("Logged out from all devices", { username, deletedCount });
-  logger.response(200, Date.now() - startTime);
-  res.status(200).json({ success: true, message: `Logged out from ${deletedCount} devices`, deletedCount });
+  logger.response(result.status, Date.now() - startTime);
+  res.status(result.status).json(result.body);
 }

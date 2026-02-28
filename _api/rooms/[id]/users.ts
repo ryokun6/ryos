@@ -5,10 +5,9 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { assertValidRoomId } from "../../_utils/_validation.js";
-import { getActiveUsersAndPrune } from "../_helpers/_presence.js";
 import { initLogger } from "../../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../../_utils/_cors.js";
+import { executeRoomsUsersCore } from "../../cores/rooms-users-core.js";
 
 export const runtime = "nodejs";
 
@@ -32,37 +31,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ error: "Unauthorized" });
   }
 
-  if (req.method !== "GET") {
-    logger.warn("Method not allowed", { method: req.method });
-    logger.response(405, Date.now() - startTime);
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  // Extract room ID from query params
   const roomId = req.query.id as string | undefined;
-  if (!roomId) {
+  const result = await executeRoomsUsersCore({
+    originAllowed: true,
+    method: req.method,
+    roomId,
+  });
+
+  if (result.status === 200) {
+    const meta = (result.body as { _meta?: { count?: number } })?._meta;
+    logger.info("Users retrieved", { roomId, count: meta?.count });
+  } else if (result.status === 400 && !roomId) {
     logger.warn("Missing room ID");
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Room ID is required" });
+  } else if (result.status === 400) {
+    logger.warn("Invalid room ID", { roomId });
+  } else if (result.status === 405) {
+    logger.warn("Method not allowed", { method: req.method });
+  } else if (result.status >= 500) {
+    logger.error(`Error getting users for room ${roomId}`);
   }
 
-  try {
-    assertValidRoomId(roomId, "get-room-users");
-  } catch (e) {
-    logger.warn("Invalid room ID", { roomId, error: e instanceof Error ? e.message : "Invalid" });
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: e instanceof Error ? e.message : "Invalid room ID" });
-  }
+  const body =
+    result.status === 200 && typeof result.body === "object" && result.body && "_meta" in (result.body as Record<string, unknown>)
+      ? (() => {
+          const { _meta: _ignored, ...rest } = result.body as Record<string, unknown>;
+          return rest;
+        })()
+      : result.body;
 
-  try {
-    const users = await getActiveUsersAndPrune(roomId);
-    
-    logger.info("Users retrieved", { roomId, count: users.length });
-    logger.response(200, Date.now() - startTime);
-    return res.status(200).json({ users });
-  } catch (error) {
-    logger.error(`Error getting users for room ${roomId}`, error);
-    logger.response(500, Date.now() - startTime);
-    return res.status(500).json({ error: "Failed to get room users" });
-  }
+  logger.response(result.status, Date.now() - startTime);
+  return res.status(result.status).json(body);
 }

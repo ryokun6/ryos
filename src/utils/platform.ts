@@ -22,6 +22,11 @@ export function isWeb(): boolean {
  * In web browser, returns empty string for relative paths.
  */
 export function getApiBaseUrl(): string {
+  const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+  if (configuredBaseUrl) {
+    return configuredBaseUrl.replace(/\/+$/, "");
+  }
+
   if (isTauri()) {
     return "https://os.ryo.lu";
   }

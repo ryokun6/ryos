@@ -6,9 +6,9 @@
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { Redis } from "@upstash/redis";
-import { getUserTokens, validateAuth } from "../_utils/auth/index.js";
 import { initLogger } from "../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
+import { executeAuthTokensCore } from "../cores/auth-tokens-core.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -42,11 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  if (!isAllowedOrigin(origin)) {
-    logger.response(403, Date.now() - startTime);
-    res.status(403).json({ error: "Unauthorized" });
-    return;
-  }
+  const originAllowed = isAllowedOrigin(origin);
 
   const redis = createRedis();
   const authHeader = req.headers.authorization;
@@ -60,21 +56,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  const authResult = await validateAuth(redis, username, currentToken, { allowExpired: true });
-  if (!authResult.valid) {
-    logger.response(401, Date.now() - startTime);
-    res.status(401).json({ error: "Unauthorized - invalid token" });
-    return;
+  const result = await executeAuthTokensCore({
+    originAllowed,
+    username,
+    currentToken,
+    redis,
+  });
+
+  if (result.status === 200) {
+    logger.info("Listed tokens", {
+      username,
+      count: (result.body as { count?: number })?.count,
+    });
   }
-
-  const tokens = await getUserTokens(redis, username.toLowerCase());
-  const tokenList = tokens.map((t) => ({
-    maskedToken: `...${t.token.slice(-8)}`,
-    createdAt: t.createdAt,
-    isCurrent: t.token === currentToken,
-  }));
-
-  logger.info("Listed tokens", { username, count: tokenList.length });
-  logger.response(200, Date.now() - startTime);
-  res.status(200).json({ tokens: tokenList, count: tokenList.length });
+  logger.response(result.status, Date.now() - startTime);
+  res.status(result.status).json(result.body);
 }

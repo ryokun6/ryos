@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { track } from "@vercel/analytics";
+import { track } from "@/lib/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { abortableFetch } from "@/utils/abortableFetch";

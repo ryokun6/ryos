@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useFileSystem } from "@/apps/finder/hooks/useFileSystem";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useFilesStore } from "@/stores/useFilesStore";
-import { track } from "@vercel/analytics";
+import { track } from "@/lib/analytics";
 import { APPLET_ANALYTICS } from "@/utils/analytics";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";

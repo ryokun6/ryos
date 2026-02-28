@@ -12,7 +12,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAiChat } from "@/apps/chats/hooks/useAiChat";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTerminalSounds } from "@/hooks/useTerminalSounds";
-import { track } from "@vercel/analytics";
+import { track } from "@/lib/analytics";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useIpodStore } from "@/stores/useIpodStore";

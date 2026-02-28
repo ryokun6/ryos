@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
-import { Analytics } from "@vercel/analytics/react";
+import { AnalyticsProvider } from "./lib/analytics";
 import "./index.css";
 import { useThemeStore } from "./stores/useThemeStore";
 import { useLanguageStore } from "./stores/useLanguageStore";
@@ -72,6 +72,6 @@ useLanguageStore.getState().hydrate();
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />
-    <Analytics />
+    <AnalyticsProvider />
   </React.StrictMode>
 );

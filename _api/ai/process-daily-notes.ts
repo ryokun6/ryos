@@ -23,9 +23,9 @@ import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { Redis } from "@upstash/redis";
-import { validateAuth } from "../_utils/auth/index.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
+import { executeAiProcessDailyNotesCore } from "../cores/ai-process-daily-notes-core.js";
 import {
   getMemoryIndex,
   getMemoryDetail,
@@ -480,69 +480,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // ========================================================================
-  // Authentication
-  // ========================================================================
-  const authHeader = req.headers.authorization as string | undefined;
-  const usernameHeader = req.headers["x-username"] as string | undefined;
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
-  if (!token || !usernameHeader) {
-    logger.warn("Missing credentials");
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - missing credentials" });
-  }
-
   const redis = createRedis();
-  const authResult = await validateAuth(redis, usernameHeader, token, {});
+  const result = await executeAiProcessDailyNotesCore({
+    originAllowed: true,
+    method: req.method,
+    authHeader: req.headers.authorization as string | undefined,
+    usernameHeader: req.headers["x-username"] as string | undefined,
+    redis,
+    processDailyNotesForUser,
+    log: (...args: unknown[]) => logger.info(String(args[0]), args[1]),
+    logError: (...args: unknown[]) => logger.error(String(args[0]), args[1]),
+  });
 
-  if (!authResult.valid) {
-    logger.warn("Invalid token", { username: usernameHeader });
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - invalid token" });
-  }
-
-  const username = usernameHeader.toLowerCase();
-
-  try {
-    const result = await processDailyNotesForUser(
-      redis,
-      username,
-      (...args: unknown[]) => logger.info(String(args[0]), args[1]),
-      (...args: unknown[]) => logger.error(String(args[0]), args[1]),
-    );
-
-    const totalExtracted = result.created + result.updated;
-
+  if (result.status === 401) {
+    const error = (result.body as { error?: string })?.error;
+    if (error?.includes("missing credentials")) {
+      logger.warn("Missing credentials");
+    } else {
+      logger.warn("Invalid token", { username: req.headers["x-username"] });
+    }
+  } else if (result.status === 200) {
+    const meta = (result.body as {
+      _meta?: { username?: string; notesProcessed?: number; memoriesCreated?: number; memoriesUpdated?: number };
+    })?._meta;
     logger.info("Daily notes processing complete", {
-      username,
-      notesProcessed: result.processed,
-      memoriesCreated: result.created,
-      memoriesUpdated: result.updated,
+      username: meta?.username,
+      notesProcessed: meta?.notesProcessed,
+      memoriesCreated: meta?.memoriesCreated,
+      memoriesUpdated: meta?.memoriesUpdated,
     });
-    logger.response(200, Date.now() - startTime);
-
-    const skippedCount = result.skippedDates.length;
-
-    return res.status(200).json({
-      processed: result.processed,
-      extracted: totalExtracted,
-      created: result.created,
-      updated: result.updated,
-      dates: result.dates,
-      skippedDates: result.skippedDates,
-      message: result.processed === 0
-        ? "No unprocessed daily notes to process"
-        : totalExtracted > 0
-          ? `Processed ${result.processed} daily notes → ${result.created} new memories, ${result.updated} updated`
-            + (skippedCount > 0 ? ` (${skippedCount} days deferred to next run)` : "")
-          : `Processed ${result.processed} daily notes — no new long-term memories extracted`
-            + (skippedCount > 0 ? ` (${skippedCount} days deferred to next run)` : ""),
-    });
-
-  } catch (error) {
-    logger.error("Daily notes processing failed", error);
-    logger.response(500, Date.now() - startTime);
-    return res.status(500).json({ error: "Failed to process daily notes" });
+  } else if (result.status >= 500) {
+    logger.error("Daily notes processing failed");
   }
+
+  const body =
+    typeof result.body === "object" && result.body && "_meta" in (result.body as Record<string, unknown>)
+      ? (() => {
+          const { _meta: _ignored, ...rest } = result.body as Record<string, unknown>;
+          return rest;
+        })()
+      : result.body;
+
+  logger.response(result.status, Date.now() - startTime);
+  return res.status(result.status).json(body);
 }

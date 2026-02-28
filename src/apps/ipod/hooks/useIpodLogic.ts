@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import ReactPlayer from "react-player";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { track } from "@vercel/analytics";
+import { track } from "@/lib/analytics";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
 import { useOffline } from "@/hooks/useOffline";
