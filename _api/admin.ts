@@ -5,35 +5,15 @@
  * Node.js runtime with terminal logging
  */
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { Redis } from "@upstash/redis";
+import type { Redis } from "@upstash/redis";
 import { CHAT_USERS_PREFIX } from "./rooms/_helpers/_constants.js";
 import { deleteAllUserTokens, PASSWORD_HASH_PREFIX } from "./_utils/auth/index.js";
-import { validateAuth } from "./_utils/auth/index.js";
-import * as RateLimit from "./_utils/_rate-limit.js";
-import { getClientIp } from "./_utils/_rate-limit.js";
-import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
-import { initLogger } from "./_utils/_logging.js";
+import { createApiHandler } from "./_utils/handler.js";
 import { getMemoryIndex, getMemoryDetail, getRecentDailyNotes, clearAllMemories, resetDailyNotesProcessedFlag, type MemoryEntry, type DailyNote } from "./_utils/_memory.js";
 import { processDailyNotesForUser } from "./ai/process-daily-notes.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
-
-// Helper functions for Node.js runtime
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
-
-async function isAdmin(redis: Redis, username: string | null, token: string | null): Promise<boolean> {
-  if (!username || !token) return false;
-  if (username.toLowerCase() !== "ryo") return false;
-  const authResult = await validateAuth(redis, username, token, { allowExpired: false });
-  return authResult.valid;
-}
 
 const ADMIN_RATE_LIMIT_WINDOW = 60;
 const ADMIN_RATE_LIMIT_MAX = 30;
@@ -314,252 +294,241 @@ async function getUserMemories(redis: Redis, targetUsername: string): Promise<Us
   }
 }
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-): Promise<void> {
-  const { requestId: _requestId, logger } = initLogger();
-  const startTime = Date.now();
-  const origin = getEffectiveOrigin(req);
-  
-  logger.request(req.method || "GET", req.url || "/api/admin", "admin");
-  
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    setCorsHeaders(res, origin);
-    logger.response(204, Date.now() - startTime);
-    res.status(204).end();
-    return;
-  }
-
-  setCorsHeaders(res, origin);
-  res.setHeader("Content-Type", "application/json");
-
-  if (!isAllowedOrigin(origin)) {
-    logger.warn("Unauthorized origin", { origin });
-    logger.response(403, Date.now() - startTime);
-    res.status(403).json({ error: "Unauthorized" });
-    return;
-  }
-
-  const redis = createRedis();
-
-  const authHeader = req.headers.authorization;
-  const usernameHeader = req.headers["x-username"] as string | undefined;
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  const username = usernameHeader || null;
-
-  logger.info("Processing admin request", { username, hasToken: !!token });
-
-  const adminAccess = await isAdmin(redis, username, token);
-  if (!adminAccess) {
-    logger.warn("Admin access denied", { username });
-    logger.response(403, Date.now() - startTime);
-    res.status(403).json({ error: "Forbidden - Admin access required" });
-    return;
-  }
-
-  const ip = getClientIp(req);
-  const rateLimitKey = RateLimit.makeKey(["rl", "admin", "user", username || ip]);
-  const rateLimitResult = await RateLimit.checkCounterLimit({ key: rateLimitKey, windowSeconds: ADMIN_RATE_LIMIT_WINDOW, limit: ADMIN_RATE_LIMIT_MAX });
-
-  if (!rateLimitResult.allowed) {
-    logger.warn("Rate limit exceeded", { username, ip });
-    logger.response(429, Date.now() - startTime);
-    res.status(429).json({ error: "rate_limit_exceeded", limit: rateLimitResult.limit, retryAfter: rateLimitResult.resetSeconds });
-    return;
-  }
-
-  const action = req.query.action as string | undefined;
-
-  if (req.method === "GET") {
-    logger.info("GET request", { action });
-
-    switch (action) {
-      case "getStats": {
-        const stats = await getStats(redis);
-        logger.info("Stats retrieved", stats);
-        logger.response(200, Date.now() - startTime);
-        res.status(200).json(stats);
-        return;
-      }
-      case "getAllUsers": {
-        const users = await getAllUsers(redis);
-        logger.info("Users retrieved", { count: users.length });
-        logger.response(200, Date.now() - startTime);
-        res.status(200).json({ users });
-        return;
-      }
-      case "getUserProfile": {
-        const targetUsername = req.query.username as string | undefined;
-        if (!targetUsername) {
-          logger.response(400, Date.now() - startTime);
-          res.status(400).json({ error: "Username is required" });
-          return;
-        }
-        const profile = await getUserProfile(redis, targetUsername);
-        if (!profile) {
-          logger.response(404, Date.now() - startTime);
-          res.status(404).json({ error: "User not found" });
-          return;
-        }
-        logger.info("Profile retrieved", { targetUsername });
-        logger.response(200, Date.now() - startTime);
-        res.status(200).json(profile);
-        return;
-      }
-      case "getUserMessages": {
-        const targetUsername = req.query.username as string | undefined;
-        const limit = parseInt((req.query.limit as string) || "50");
-        if (!targetUsername) {
-          logger.response(400, Date.now() - startTime);
-          res.status(400).json({ error: "Username is required" });
-          return;
-        }
-        const messages = await getUserMessages(redis, targetUsername, limit);
-        logger.info("Messages retrieved", { targetUsername, count: messages.length });
-        logger.response(200, Date.now() - startTime);
-        res.status(200).json({ messages });
-        return;
-      }
-      case "getUserMemories": {
-        const targetUsername = req.query.username as string | undefined;
-        if (!targetUsername) {
-          logger.response(400, Date.now() - startTime);
-          res.status(400).json({ error: "Username is required" });
-          return;
-        }
-        const [memories, dailyNotes] = await Promise.all([
-          getUserMemories(redis, targetUsername),
-          getRecentDailyNotes(redis, targetUsername.toLowerCase(), 7) as Promise<DailyNote[]>,
-        ]);
-        logger.info("Memories retrieved", { targetUsername, memoryCount: memories.length, dailyNoteCount: dailyNotes.length });
-        logger.response(200, Date.now() - startTime);
-        res.status(200).json({ memories, dailyNotes });
-        return;
-      }
-      default:
-        logger.response(400, Date.now() - startTime);
-        res.status(400).json({ error: "Invalid action" });
-        return;
+export default createApiHandler(
+  {
+    operation: "admin",
+    methods: ["GET", "POST"],
+  },
+  async (_req, _res, ctx): Promise<void> => {
+    const user = await ctx.requireAuth({
+      requireAdmin: true,
+      missingMessage: "Forbidden - Admin access required",
+      invalidMessage: "Forbidden - Admin access required",
+      forbiddenMessage: "Forbidden - Admin access required",
+      missingStatus: 403,
+      invalidStatus: 403,
+      forbiddenStatus: 403,
+    });
+    if (!user) {
+      return;
     }
-  }
 
-  if (req.method === "POST") {
-    let body: AdminRequest;
-    try {
-      body = req.body as AdminRequest;
-    } catch {
-      logger.response(400, Date.now() - startTime);
-      res.status(400).json({ error: "Invalid JSON body" });
+    ctx.logger.info("Processing admin request", {
+      username: user.username,
+      hasToken: true,
+    });
+
+    if (
+      !(await ctx.applyRateLimit({
+        prefix: "admin",
+        windowSeconds: ADMIN_RATE_LIMIT_WINDOW,
+        limit: ADMIN_RATE_LIMIT_MAX,
+        by: "user",
+        identifier: user.username,
+        message: "rate_limit_exceeded",
+      }))
+    ) {
+      return;
+    }
+
+    const action = ctx.getQueryParam("action");
+
+    if (ctx.method === "GET") {
+      ctx.logger.info("GET request", { action });
+
+      switch (action) {
+        case "getStats": {
+          const stats = await getStats(ctx.redis);
+          ctx.logger.info("Stats retrieved", stats);
+          ctx.response.ok(stats);
+          return;
+        }
+        case "getAllUsers": {
+          const users = await getAllUsers(ctx.redis);
+          ctx.logger.info("Users retrieved", { count: users.length });
+          ctx.response.ok({ users });
+          return;
+        }
+        case "getUserProfile": {
+          const targetUsername = ctx.getQueryParam("username");
+          if (!targetUsername) {
+            ctx.response.badRequest("Username is required");
+            return;
+          }
+          const profile = await getUserProfile(ctx.redis, targetUsername);
+          if (!profile) {
+            ctx.response.notFound("User not found");
+            return;
+          }
+          ctx.logger.info("Profile retrieved", { targetUsername });
+          ctx.response.ok(profile);
+          return;
+        }
+        case "getUserMessages": {
+          const targetUsername = ctx.getQueryParam("username");
+          const limit = parseInt(ctx.getQueryParam("limit") || "50", 10);
+          if (!targetUsername) {
+            ctx.response.badRequest("Username is required");
+            return;
+          }
+          const messages = await getUserMessages(ctx.redis, targetUsername, limit);
+          ctx.logger.info("Messages retrieved", {
+            targetUsername,
+            count: messages.length,
+          });
+          ctx.response.ok({ messages });
+          return;
+        }
+        case "getUserMemories": {
+          const targetUsername = ctx.getQueryParam("username");
+          if (!targetUsername) {
+            ctx.response.badRequest("Username is required");
+            return;
+          }
+          const [memories, dailyNotes] = await Promise.all([
+            getUserMemories(ctx.redis, targetUsername),
+            getRecentDailyNotes(
+              ctx.redis,
+              targetUsername.toLowerCase(),
+              7
+            ) as Promise<DailyNote[]>,
+          ]);
+          ctx.logger.info("Memories retrieved", {
+            targetUsername,
+            memoryCount: memories.length,
+            dailyNoteCount: dailyNotes.length,
+          });
+          ctx.response.ok({ memories, dailyNotes });
+          return;
+        }
+        default:
+          ctx.response.badRequest("Invalid action");
+          return;
+      }
+    }
+
+    const { data: body, error } = ctx.parseJsonBody<AdminRequest>();
+    if (error || !body) {
+      ctx.response.badRequest(error ?? "Invalid JSON body");
       return;
     }
 
     const { action: postAction, targetUsername, reason } = body;
-    logger.info("POST request", { action: postAction, targetUsername });
+    ctx.logger.info("POST request", { action: postAction, targetUsername });
 
     switch (postAction) {
       case "deleteUser": {
         if (!targetUsername) {
-          logger.response(400, Date.now() - startTime);
-          res.status(400).json({ error: "Target username is required" });
+          ctx.response.badRequest("Target username is required");
           return;
         }
-        const result = await deleteUser(redis, targetUsername);
+        const result = await deleteUser(ctx.redis, targetUsername);
         if (result.success) {
-          logger.info("User deleted", { targetUsername });
-          logger.response(200, Date.now() - startTime);
-          res.status(200).json({ success: true });
+          ctx.logger.info("User deleted", { targetUsername });
+          ctx.response.ok({ success: true });
           return;
         }
-        logger.error("Delete user failed", { targetUsername, error: result.error });
-        logger.response(400, Date.now() - startTime);
-        res.status(400).json({ error: result.error });
+        ctx.logger.error("Delete user failed", {
+          targetUsername,
+          error: result.error,
+        });
+        ctx.response.badRequest(result.error || "Failed to delete user");
         return;
       }
       case "banUser": {
         if (!targetUsername) {
-          logger.response(400, Date.now() - startTime);
-          res.status(400).json({ error: "Target username is required" });
+          ctx.response.badRequest("Target username is required");
           return;
         }
-        const result = await banUser(redis, targetUsername, reason);
+        const result = await banUser(ctx.redis, targetUsername, reason);
         if (result.success) {
-          logger.info("User banned", { targetUsername, reason });
-          logger.response(200, Date.now() - startTime);
-          res.status(200).json({ success: true });
+          ctx.logger.info("User banned", { targetUsername, reason });
+          ctx.response.ok({ success: true });
           return;
         }
-        logger.error("Ban user failed", { targetUsername, error: result.error });
-        logger.response(400, Date.now() - startTime);
-        res.status(400).json({ error: result.error });
+        ctx.logger.error("Ban user failed", {
+          targetUsername,
+          error: result.error,
+        });
+        ctx.response.badRequest(result.error || "Failed to ban user");
         return;
       }
       case "unbanUser": {
         if (!targetUsername) {
-          logger.response(400, Date.now() - startTime);
-          res.status(400).json({ error: "Target username is required" });
+          ctx.response.badRequest("Target username is required");
           return;
         }
-        const result = await unbanUser(redis, targetUsername);
+        const result = await unbanUser(ctx.redis, targetUsername);
         if (result.success) {
-          logger.info("User unbanned", { targetUsername });
-          logger.response(200, Date.now() - startTime);
-          res.status(200).json({ success: true });
+          ctx.logger.info("User unbanned", { targetUsername });
+          ctx.response.ok({ success: true });
           return;
         }
-        logger.error("Unban user failed", { targetUsername, error: result.error });
-        logger.response(400, Date.now() - startTime);
-        res.status(400).json({ error: result.error });
+        ctx.logger.error("Unban user failed", {
+          targetUsername,
+          error: result.error,
+        });
+        ctx.response.badRequest(result.error || "Failed to unban user");
         return;
       }
       case "clearUserMemories": {
         if (!targetUsername) {
-          logger.response(400, Date.now() - startTime);
-          res.status(400).json({ error: "Target username is required" });
+          ctx.response.badRequest("Target username is required");
           return;
         }
         try {
-          const memResult = await clearAllMemories(redis, targetUsername.toLowerCase());
-          logger.info("User memories cleared", { targetUsername, deletedCount: memResult.deletedCount });
-          logger.response(200, Date.now() - startTime);
-          res.status(200).json({
+          const memResult = await clearAllMemories(
+            ctx.redis,
+            targetUsername.toLowerCase()
+          );
+          ctx.logger.info("User memories cleared", {
+            targetUsername,
+            deletedCount: memResult.deletedCount,
+          });
+          ctx.response.ok({
             success: true,
             deletedCount: memResult.deletedCount,
-            message: memResult.deletedCount > 0
-              ? `Cleared ${memResult.deletedCount} memories for ${targetUsername}`
-              : `No memories to clear for ${targetUsername}`,
+            message:
+              memResult.deletedCount > 0
+                ? `Cleared ${memResult.deletedCount} memories for ${targetUsername}`
+                : `No memories to clear for ${targetUsername}`,
           });
           return;
-        } catch (error) {
-          logger.error("Clear memories failed", { targetUsername, error });
-          logger.response(500, Date.now() - startTime);
-          res.status(500).json({ error: "Failed to clear memories" });
+        } catch (routeError) {
+          ctx.logger.error("Clear memories failed", {
+            targetUsername,
+            error: routeError,
+          });
+          ctx.response.serverError("Failed to clear memories");
           return;
         }
       }
       case "forceProcessDailyNotes": {
         if (!targetUsername) {
-          logger.response(400, Date.now() - startTime);
-          res.status(400).json({ error: "Target username is required" });
+          ctx.response.badRequest("Target username is required");
           return;
         }
         try {
           const normalizedTarget = targetUsername.toLowerCase();
-          // Reset all daily notes so they can be reprocessed
-          const resetResult = await resetDailyNotesProcessedFlag(redis, normalizedTarget, 30);
-          logger.info("Daily notes reset for reprocessing", { targetUsername, resetCount: resetResult.resetCount });
-
-          // Now trigger the processing pipeline
-          const processResult = await processDailyNotesForUser(
-            redis,
+          const resetResult = await resetDailyNotesProcessedFlag(
+            ctx.redis,
             normalizedTarget,
-            (...args: unknown[]) => logger.info(String(args[0]), args[1]),
-            (...args: unknown[]) => logger.error(String(args[0]), args[1]),
+            30
+          );
+          ctx.logger.info("Daily notes reset for reprocessing", {
+            targetUsername,
+            resetCount: resetResult.resetCount,
+          });
+
+          const processResult = await processDailyNotesForUser(
+            ctx.redis,
+            normalizedTarget,
+            (...args: unknown[]) => ctx.logger.info(String(args[0]), args[1]),
+            (...args: unknown[]) => ctx.logger.error(String(args[0]), args[1])
           );
 
           const skippedCount = processResult.skippedDates?.length || 0;
-          logger.info("Force process daily notes complete", {
+          ctx.logger.info("Force process daily notes complete", {
             targetUsername,
             notesReset: resetResult.resetCount,
             notesProcessed: processResult.processed,
@@ -567,8 +536,7 @@ export default async function handler(
             memoriesUpdated: processResult.updated,
             skippedDates: processResult.skippedDates,
           });
-          logger.response(200, Date.now() - startTime);
-          res.status(200).json({
+          ctx.response.ok({
             success: true,
             notesReset: resetResult.resetCount,
             notesProcessed: processResult.processed,
@@ -576,26 +544,27 @@ export default async function handler(
             memoriesUpdated: processResult.updated,
             dates: processResult.dates,
             skippedDates: processResult.skippedDates,
-            message: processResult.processed === 0
-              ? "No daily notes to process (only past days are processed, not today)"
-              : `Reprocessed ${processResult.processed} daily notes → ${processResult.created} new + ${processResult.updated} updated memories`
-                + (skippedCount > 0 ? ` (${skippedCount} days deferred to next run)` : ""),
+            message:
+              processResult.processed === 0
+                ? "No daily notes to process (only past days are processed, not today)"
+                : `Reprocessed ${processResult.processed} daily notes → ${processResult.created} new + ${processResult.updated} updated memories`
+                    + (skippedCount > 0
+                      ? ` (${skippedCount} days deferred to next run)`
+                      : ""),
           });
           return;
-        } catch (error) {
-          logger.error("Force process daily notes failed", { targetUsername, error });
-          logger.response(500, Date.now() - startTime);
-          res.status(500).json({ error: "Failed to process daily notes" });
+        } catch (routeError) {
+          ctx.logger.error("Force process daily notes failed", {
+            targetUsername,
+            error: routeError,
+          });
+          ctx.response.serverError("Failed to process daily notes");
           return;
         }
       }
       default:
-        logger.response(400, Date.now() - startTime);
-        res.status(400).json({ error: "Invalid action" });
+        ctx.response.badRequest("Invalid action");
         return;
     }
   }
-
-  logger.response(405, Date.now() - startTime);
-  res.status(405).json({ error: "Method not allowed" });
-}
+);

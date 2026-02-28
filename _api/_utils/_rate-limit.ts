@@ -100,13 +100,13 @@ export async function checkAndIncrementAIMessageCount(
 // Generic rate-limit utilities
 // ------------------------------
 
-interface CounterLimitArgs {
+export interface CounterLimitArgs {
   key: string;
   windowSeconds: number;
   limit: number;
 }
 
-interface CounterLimitResult {
+export interface CounterLimitResult {
   allowed: boolean;
   count: number;
   limit: number;
