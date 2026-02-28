@@ -1,23 +1,17 @@
 /**
  * POST /api/listen/sessions/[id]/join
  * Join a listen-together session
- * 
+ *
  * Supports both logged-in users (username) and anonymous listeners (anonymousId).
  * Anonymous listeners don't trigger user-joined broadcasts to save Pusher events.
  */
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { createApiHandler } from "../../../_utils/handler.js";
 import {
   assertValidRoomId,
   assertValidUsername,
   isProfaneUsername,
 } from "../../../_utils/_validation.js";
-import { initLogger } from "../../../_utils/_logging.js";
-import {
-  isAllowedOrigin,
-  getEffectiveOrigin,
-  setCorsHeaders,
-} from "../../../_utils/_cors.js";
 import {
   createRedisClient,
   getCurrentTimestamp,
@@ -40,149 +34,119 @@ export { runtime, maxDuration };
 
 const MAX_ANONYMOUS_LISTENERS = 50; // Limit anonymous listeners
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-): Promise<void> {
-  const { logger } = initLogger();
-  const startTime = Date.now();
-  const origin = getEffectiveOrigin(req);
-  const sessionId = req.query.id as string | undefined;
-
-  logger.request(req.method || "POST", req.url || "/api/listen/sessions/[id]/join", `listen-join:${sessionId}`);
-
-  if (req.method === "OPTIONS") {
-    setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"], headers: ["Content-Type"] });
-    res.setHeader("Content-Type", "application/json");
-    logger.response(204, Date.now() - startTime);
-    res.status(204).end();
-    return;
-  }
-
-  setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"], headers: ["Content-Type"] });
-  res.setHeader("Content-Type", "application/json");
-
-  if (!isAllowedOrigin(origin)) {
-    logger.response(403, Date.now() - startTime);
-    res.status(403).json({ error: "Unauthorized" });
-    return;
-  }
-
-  if (req.method !== "POST") {
-    logger.response(405, Date.now() - startTime);
-    res.status(405).json({ error: "Method not allowed" });
-    return;
-  }
-
-  if (!sessionId) {
-    logger.response(400, Date.now() - startTime);
-    res.status(400).json({ error: "Session ID is required" });
-    return;
-  }
-
-  const body = req.body as JoinSessionRequest;
-  const username = body?.username?.toLowerCase();
-  const anonymousId = body?.anonymousId;
-
-  // Must provide either username or anonymousId
-  if (!username && !anonymousId) {
-    logger.response(400, Date.now() - startTime);
-    res.status(400).json({ error: "Username or anonymousId is required" });
-    return;
-  }
-
-  try {
-    assertValidRoomId(sessionId, "listen-join");
-    if (username) {
-      assertValidUsername(username, "listen-join");
+export default createApiHandler(
+  {
+    operation: "listen-join",
+    methods: ["POST"],
+    cors: {
+      headers: ["Content-Type"],
+    },
+  },
+  async (_req, _res, ctx): Promise<void> => {
+    const sessionId = ctx.getQueryParam("id");
+    if (!sessionId) {
+      ctx.response.badRequest("Session ID is required");
+      return;
     }
-  } catch (error) {
-    logger.response(400, Date.now() - startTime);
-    res.status(400).json({ error: error instanceof Error ? error.message : "Validation error" });
-    return;
-  }
 
-  if (username && isProfaneUsername(username)) {
-    logger.response(401, Date.now() - startTime);
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
+    const { data: body, error } = ctx.parseJsonBody<JoinSessionRequest>();
+    if (error || !body) {
+      ctx.response.badRequest(error ?? "Invalid JSON body");
+      return;
+    }
 
-  try {
-    const redis = createRedisClient();
-    
-    // For logged-in users, verify they exist
-    if (username) {
-      const [session, userData] = await Promise.all([
-        getSession(sessionId),
-        redis.get(`chat:users:${username}`),
-      ]);
+    const username = body.username?.toLowerCase();
+    const anonymousId = body.anonymousId;
+    if (!username && !anonymousId) {
+      ctx.response.badRequest("Username or anonymousId is required");
+      return;
+    }
 
-      if (!session) {
-        logger.response(404, Date.now() - startTime);
-        res.status(404).json({ error: "Session not found" });
-        return;
+    try {
+      assertValidRoomId(sessionId, "listen-join");
+      if (username) {
+        assertValidUsername(username, "listen-join");
       }
+    } catch (validationError) {
+      ctx.response.badRequest(
+        validationError instanceof Error
+          ? validationError.message
+          : "Validation error"
+      );
+      return;
+    }
 
-      if (!userData) {
-        logger.response(404, Date.now() - startTime);
-        res.status(404).json({ error: "User not found" });
-        return;
-      }
+    if (username && isProfaneUsername(username)) {
+      ctx.response.unauthorized("Unauthorized");
+      return;
+    }
 
-      const now = getCurrentTimestamp();
-      const existingIndex = session.users.findIndex((user) => user.username === username);
-      let shouldBroadcast = false;
+    try {
+      const redis = createRedisClient();
 
-      if (existingIndex === -1) {
-        if (session.users.length >= LISTEN_SESSION_MAX_USERS) {
-          logger.response(403, Date.now() - startTime);
-          res.status(403).json({ error: "Session is full" });
+      if (username) {
+        const [session, userData] = await Promise.all([
+          getSession(sessionId),
+          redis.get(`chat:users:${username}`),
+        ]);
+
+        if (!session) {
+          ctx.response.notFound("Session not found");
           return;
         }
 
-        const newUser: ListenSessionUser = {
-          username,
-          joinedAt: now,
-          isOnline: true,
-        };
-        session.users.push(newUser);
-        shouldBroadcast = true;
-      } else {
-        const existingUser = session.users[existingIndex];
-        if (!existingUser.isOnline) {
-          shouldBroadcast = true;
+        if (!userData) {
+          ctx.response.notFound("User not found");
+          return;
         }
-        session.users[existingIndex] = {
-          ...existingUser,
-          isOnline: true,
-        };
-      }
 
-      session.lastSyncAt = now;
-      session.users.sort((a, b) => a.joinedAt - b.joinedAt);
+        const now = getCurrentTimestamp();
+        const existingIndex = session.users.findIndex((user) => user.username === username);
+        let shouldBroadcast = false;
 
-      await setSession(sessionId, session);
+        if (existingIndex === -1) {
+          if (session.users.length >= LISTEN_SESSION_MAX_USERS) {
+            ctx.response.forbidden("Session is full");
+            return;
+          }
 
-      // Only broadcast for logged-in users
-      if (shouldBroadcast) {
-        await broadcastUserJoined(sessionId, { username });
-      }
+          const newUser: ListenSessionUser = {
+            username,
+            joinedAt: now,
+            isOnline: true,
+          };
+          session.users.push(newUser);
+          shouldBroadcast = true;
+        } else {
+          const existingUser = session.users[existingIndex];
+          if (!existingUser.isOnline) {
+            shouldBroadcast = true;
+          }
+          session.users[existingIndex] = {
+            ...existingUser,
+            isOnline: true,
+          };
+        }
 
-      logger.info("User joined listen session", { sessionId, username });
-      logger.response(200, Date.now() - startTime);
-      res.status(200).json({ session });
-    } else {
-      // Anonymous listener - no broadcast, just add to list
-      const session = await getSession(sessionId);
+        session.lastSyncAt = now;
+        session.users.sort((a, b) => a.joinedAt - b.joinedAt);
+        await setSession(sessionId, session);
 
-      if (!session) {
-        logger.response(404, Date.now() - startTime);
-        res.status(404).json({ error: "Session not found" });
+        if (shouldBroadcast) {
+          await broadcastUserJoined(sessionId, { username });
+        }
+
+        ctx.logger.info("User joined listen session", { sessionId, username });
+        ctx.response.ok({ session });
         return;
       }
 
-      // Initialize anonymousListeners if not present (for backwards compatibility)
+      const session = await getSession(sessionId);
+      if (!session) {
+        ctx.response.notFound("Session not found");
+        return;
+      }
+
       if (!session.anonymousListeners) {
         session.anonymousListeners = [];
       }
@@ -193,10 +157,8 @@ export default async function handler(
       );
 
       if (existingIndex === -1) {
-        // Check limit
         if (session.anonymousListeners.length >= MAX_ANONYMOUS_LISTENERS) {
-          logger.response(403, Date.now() - startTime);
-          res.status(403).json({ error: "Too many listeners" });
+          ctx.response.forbidden("Too many listeners");
           return;
         }
 
@@ -206,19 +168,15 @@ export default async function handler(
         };
         session.anonymousListeners.push(newListener);
       }
-      // If already exists, just refresh (no action needed)
 
       session.lastSyncAt = now;
       await setSession(sessionId, session);
 
-      // NO broadcast for anonymous listeners - saves Pusher events
-      logger.info("Anonymous listener joined", { sessionId, anonymousId });
-      logger.response(200, Date.now() - startTime);
-      res.status(200).json({ session });
+      ctx.logger.info("Anonymous listener joined", { sessionId, anonymousId });
+      ctx.response.ok({ session });
+    } catch (routeError) {
+      ctx.logger.error("Failed to join listen session", routeError);
+      ctx.response.serverError("Failed to join session");
     }
-  } catch (error) {
-    logger.error("Failed to join listen session", error);
-    logger.response(500, Date.now() - startTime);
-    res.status(500).json({ error: "Failed to join session" });
   }
-}
+);
