@@ -151,7 +151,7 @@ export function IpodMenuBar({
   }));
 
   const appTheme = useThemeStore((state) => state.current);
-  const isXpTheme = appTheme === "xp" || appTheme === "win98";
+  const isXpTheme = appTheme === "xp" || appTheme === "win98" || appTheme === "win7";
   const isMacOsxTheme = appTheme === "macosx";
   const debugMode = useDisplaySettingsStore((state) => state.debugMode);
   const username = useChatsStore((state) => state.username);

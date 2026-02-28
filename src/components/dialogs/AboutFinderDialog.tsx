@@ -38,7 +38,7 @@ export function AboutFinderDialog({
   const version = useAppStore((state) => state.ryOSVersion);
   const buildNumber = useAppStore((state) => state.ryOSBuildNumber);
   const buildTime = useAppStore((state) => state.ryOSBuildTime);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const [versionDisplayMode, setVersionDisplayMode] = useState(0); // 0: version, 1: commit, 2: date
   const [desktopVersion, setDesktopVersion] = useState<string | null>(null);
   const isMac = useMemo(() => 

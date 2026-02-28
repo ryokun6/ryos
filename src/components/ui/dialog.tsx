@@ -64,7 +64,7 @@ const DialogContent = React.forwardRef<
   DialogContentProps
 >(({ className, children, overlayClassName, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isMacOsxTheme = currentTheme === "macosx";
   const isSystem7Theme = currentTheme === "system7";
 
@@ -146,7 +146,7 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isMacOsxTheme = currentTheme === "macosx";
 
   if (isXpTheme) {

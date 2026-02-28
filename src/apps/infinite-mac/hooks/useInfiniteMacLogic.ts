@@ -106,7 +106,7 @@ export function useInfiniteMacLogic({
 
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const translatedHelpItems = useTranslatedHelpItems("infinite-mac", helpItems);
   const embedUrl = selectedPreset ? buildWrapperUrl(selectedPreset, currentScale) : null;
 

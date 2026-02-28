@@ -12,7 +12,7 @@ export function useStickiesLogic() {
 
   // Theme state
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
 
   // Dialog state
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);

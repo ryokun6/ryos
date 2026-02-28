@@ -83,13 +83,13 @@ const DropdownMenuSubTrigger = React.forwardRef<
       )}
       style={{
         fontFamily:
-          currentTheme === "xp" || currentTheme === "win98"
+          currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : currentTheme === "macosx"
             ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
             : undefined,
         fontSize:
-          currentTheme === "xp" || currentTheme === "win98"
+          currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
             ? "11px"
             : currentTheme === "macosx"
             ? "12px !important"
@@ -200,7 +200,7 @@ const DropdownMenuItem = React.forwardRef<
 >(({ className, inset, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current);
   const isMacOSTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
 
   return (
     <DropdownMenuPrimitive.Item
@@ -242,7 +242,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
 >(({ className, children, checked, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current);
   const isMacOSTheme = currentTheme === "macosx";
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isSystem7 = currentTheme === "system7";
 
   return (
@@ -314,13 +314,13 @@ const DropdownMenuRadioItem = React.forwardRef<
       )}
       style={{
         fontFamily:
-          currentTheme === "xp" || currentTheme === "win98"
+          currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : currentTheme === "macosx"
             ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
             : undefined,
         fontSize:
-          currentTheme === "xp" || currentTheme === "win98"
+          currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
             ? "11px"
             : undefined,
       }}
@@ -355,13 +355,13 @@ const DropdownMenuLabel = React.forwardRef<
       )}
       style={{
         fontFamily:
-          currentTheme === "xp" || currentTheme === "win98"
+          currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : currentTheme === "macosx"
             ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
             : undefined,
         fontSize:
-          currentTheme === "xp" || currentTheme === "win98"
+          currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
             ? "11px"
             : undefined,
       }}

@@ -55,7 +55,7 @@ export function Desktop({
 
   // Get current theme for layout adjustments
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   
   // Check if running in Tauri
   const isTauriApp = typeof window !== "undefined" && "__TAURI__" in window;

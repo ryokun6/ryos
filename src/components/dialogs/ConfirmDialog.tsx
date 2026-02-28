@@ -33,7 +33,7 @@ export function ConfirmDialog({
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const { play: playAlertSound } = useSound(Sounds.ALERT_SOSUMI);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isMacTheme = currentTheme === "macosx";
 
   // Play sound when dialog opens

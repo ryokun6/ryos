@@ -45,7 +45,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const { t } = useTranslation();
   const { play: playButtonClick } = useSound(Sounds.BUTTON_CLICK);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isWindowsLegacyTheme = isXpTheme;
 
   const publicRooms = rooms.filter((r) => r.type !== "private");

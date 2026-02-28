@@ -8,7 +8,7 @@ export function useWinampLogic() {
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("winamp", helpItems);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
 
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);

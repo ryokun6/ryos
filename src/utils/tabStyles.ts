@@ -8,7 +8,7 @@ export interface TabStyleConfig {
 }
 
 export function getTabStyles(currentTheme: OsThemeId): TabStyleConfig {
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isMacOSXTheme = currentTheme === "macosx";
   const isSystem7Theme = currentTheme === "system7";
   const isWindowsLegacyTheme = isXpTheme;

@@ -60,7 +60,7 @@ export function CreateRoomDialog({
 
   // Theme detection
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
 
   // Reset form when dialog opens
   useEffect(() => {

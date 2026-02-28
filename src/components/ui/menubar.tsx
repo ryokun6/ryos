@@ -68,7 +68,7 @@ const MenubarTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Trigger>
 >(({ className, style, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current)
-  const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98"
+  const isWindowsTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
   const isSystem7 = currentTheme === "system7"
   const isMacOSX = currentTheme === "macosx"
 
@@ -115,7 +115,7 @@ const MenubarSubTrigger = React.forwardRef<
 >(({ className, inset, children, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current)
   const isMacOSTheme = currentTheme === "macosx"
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98"
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
   const isSystem7 = currentTheme === "system7"
 
   return (
@@ -256,7 +256,7 @@ const MenubarItem = React.forwardRef<
 >(({ className, inset, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current)
   const isMacOSTheme = currentTheme === "macosx"
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98"
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
   const isSystem7 = currentTheme === "system7"
 
   return (
@@ -307,7 +307,7 @@ const MenubarCheckboxItem = React.forwardRef<
 >(({ className, children, checked, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current)
   const isMacOSTheme = currentTheme === "macosx"
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98"
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
   const isSystem7 = currentTheme === "system7"
 
   return (
@@ -369,7 +369,7 @@ const MenubarRadioItem = React.forwardRef<
 >(({ className, children, ...props }, ref) => {
   const currentTheme = useThemeStore((state) => state.current)
   const isMacOSTheme = currentTheme === "macosx"
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98"
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
   const isSystem7 = currentTheme === "system7"
 
   return (
@@ -442,13 +442,13 @@ const MenubarLabel = React.forwardRef<
       )}
       style={{
         fontFamily:
-          currentTheme === "xp" || currentTheme === "win98"
+          currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
             ? '"Pixelated MS Sans Serif", "ArkPixel", Arial'
             : currentTheme === "macosx"
             ? '"LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans", "Hiragino Sans GB", "Heiti SC", "Lucida Sans Unicode", sans-serif'
             : undefined,
         fontSize:
-          currentTheme === "xp" || currentTheme === "win98"
+          currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7"
             ? "11px"
             : undefined,
       }}

@@ -55,6 +55,7 @@
     "test:chat-regression": "bun run tests/run-all-tests.ts chat- && bun run tests/run-all-tests.ts pusher"
   },
   "dependencies": {
+    "7.css": "^0.21.1",
     "@ai-sdk/anthropic": "^3.0.23",
     "@ai-sdk/google": "^3.0.13",
     "@ai-sdk/openai": "^3.0.18",

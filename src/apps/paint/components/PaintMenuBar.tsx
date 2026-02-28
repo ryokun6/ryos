@@ -647,7 +647,7 @@ export function PaintMenuBar({
 
   const appId = "paint";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isMacOsxTheme = currentTheme === "macosx";
 
   if (!isWindowOpen) return null;
