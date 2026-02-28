@@ -8,7 +8,7 @@
  * to useChatsStore.
  */
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   header,
@@ -20,8 +20,35 @@ import {
   assertEq,
 } from "./test-utils";
 
-const readStoreSource = (): string =>
-  readFileSync(resolve(process.cwd(), "src/stores/useChatsStore.ts"), "utf-8");
+const collectTypeScriptFiles = (dirPath: string): string[] => {
+  const entries = readdirSync(dirPath, { withFileTypes: true });
+  const files: string[] = [];
+
+  entries.forEach((entry) => {
+    const fullPath = resolve(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...collectTypeScriptFiles(fullPath));
+      return;
+    }
+    if (entry.isFile() && entry.name.endsWith(".ts")) {
+      files.push(fullPath);
+    }
+  });
+
+  return files;
+};
+
+const readStoreSource = (): string => {
+  const root = process.cwd();
+  const sourcePaths = [
+    resolve(root, "src/stores/useChatsStore.ts"),
+    ...collectTypeScriptFiles(resolve(root, "src/stores/chats-store")),
+  ].sort();
+
+  return sourcePaths
+    .map((path) => readFileSync(path, "utf-8"))
+    .join("\n\n/* --- next source file --- */\n\n");
+};
 
 const countMatches = (source: string, pattern: RegExp): number =>
   source.match(new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`))
