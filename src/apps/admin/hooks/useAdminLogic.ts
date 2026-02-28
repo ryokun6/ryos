@@ -71,6 +71,36 @@ type AdminSection = "users" | "rooms" | "songs";
 
 const USERS_PER_PAGE = 100;
 const SONGS_PER_PAGE = 100;
+const EXPORT_FETCH_BATCH_SIZE = 50;
+const EXPORT_TRANSFORM_BATCH_SIZE = 25;
+
+function chunkArray<T>(items: T[], chunkSize: number): T[][] {
+  if (chunkSize <= 0) return [items];
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += chunkSize) {
+    chunks.push(items.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+interface ExportSongDocument {
+  id: string;
+  title: string;
+  artist?: string;
+  album?: string;
+  cover?: string;
+  lyricOffset?: number;
+  lyricsSource?: CachedSongMetadata["lyricsSource"];
+  createdBy?: string;
+  createdAt: number;
+  updatedAt: number;
+  importOrder?: number;
+  lyrics?: { lrc?: string; krc?: string };
+  translations?: Record<string, string>;
+  furigana?: Array<Array<{ text: string; reading?: string }>>;
+  soramimi?: Array<Array<{ text: string; reading?: string }>>;
+  soramimiByLang?: Record<string, Array<Array<{ text: string; reading?: string }>>>;
+}
 
 export interface UseAdminLogicProps {
   isWindowOpen: boolean;
@@ -531,53 +561,57 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     setIsExporting(true);
 
     try {
-      // Fetch full song data including content (lyrics, translations, furigana, soramimi)
-      const response = await abortableFetch(
-        getApiUrl(
-          "/api/songs?include=metadata,lyrics,translations,furigana,soramimi"
-        ),
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          timeout: 20000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
+      // Fetch in batches to avoid oversized responses for large libraries.
+      const songIds = Array.from(
+        new Set(
+          songs
+            .map((song) => song.youtubeId)
+            .filter((id): id is string => Boolean(id))
+        )
       );
+      const idBatches = chunkArray(songIds, EXPORT_FETCH_BATCH_SIZE);
+      const fetchedSongs: ExportSongDocument[] = [];
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch songs: ${response.status}`);
+      for (const idBatch of idBatches) {
+        const idsParam = encodeURIComponent(idBatch.join(","));
+        const response = await abortableFetch(
+          getApiUrl(
+            `/api/songs?ids=${idsParam}&include=metadata,lyrics,translations,furigana,soramimi`
+          ),
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            timeout: 30000,
+            throwOnHttpError: false,
+            retry: { maxAttempts: 1, initialDelayMs: 250 },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch songs batch: ${response.status}`);
+        }
+
+        const data = (await response.json()) as { songs?: ExportSongDocument[] };
+        if (Array.isArray(data.songs)) {
+          fetchedSongs.push(...data.songs);
+        }
       }
 
-      const data = await response.json();
-      const fullSongs = data.songs || [];
+      // Preserve UI ordering in the exported file.
+      const songMap = new Map(fetchedSongs.map((song) => [song.id, song]));
+      const fullSongs = songIds
+        .map((id) => songMap.get(id))
+        .filter((song): song is ExportSongDocument => Boolean(song));
 
       // Map songs to export format with compressed content
-      const exportVideos = await Promise.all(
-        fullSongs.map(
-          async (song: {
-            id: string;
-            title: string;
-            artist?: string;
-            album?: string;
-            cover?: string; // Cover is now in metadata
-            lyricOffset?: number;
-            lyricsSource?: CachedSongMetadata["lyricsSource"];
-            createdBy?: string;
-            createdAt: number;
-            updatedAt: number;
-            importOrder?: number;
-            lyrics?: { lrc?: string; krc?: string };
-            translations?: Record<string, string>;
-            furigana?: Array<Array<{ text: string; reading?: string }>>;
-            soramimi?: Array<Array<{ text: string; reading?: string }>>;
-            soramimiByLang?: Record<
-              string,
-              Array<Array<{ text: string; reading?: string }>>
-            >;
-          }) => {
+      const exportVideos: Record<string, unknown>[] = [];
+      const songBatches = chunkArray(fullSongs, EXPORT_TRANSFORM_BATCH_SIZE);
+
+      for (const songBatch of songBatches) {
+        const exportBatch = await Promise.all(
+          songBatch.map(async (song) => {
             const result: Record<string, unknown> = {
               // Metadata (never compressed - small and needs to be readable)
               id: song.id,
@@ -637,9 +671,10 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
             }
 
             return result;
-          }
-        )
-      );
+          })
+        );
+        exportVideos.push(...exportBatch);
+      }
 
       const exportData = {
         exportedAt: new Date().toISOString(),
@@ -665,8 +700,8 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
       toast.success(
         t("apps.admin.messages.exportSuccess", {
-          count: fullSongs.length,
-          defaultValue: `Exported ${fullSongs.length} songs`,
+          count: exportVideos.length,
+          defaultValue: `Exported ${exportVideos.length} songs`,
         })
       );
     } catch (error) {
@@ -675,7 +710,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     } finally {
       setIsExporting(false);
     }
-  }, [songs.length, t, compressToBase64]);
+  }, [songs, t, compressToBase64]);
 
   // Prompt delete all songs (opens dialog)
   const handleDeleteAllSongs = useCallback(() => {

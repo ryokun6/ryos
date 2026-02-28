@@ -10,6 +10,22 @@
 import { getApiUrl } from "./platform";
 import { abortableFetch } from "./abortableFetch";
 
+const BULK_IMPORT_BATCH_SIZE = 100;
+const BULK_IMPORT_MAX_RATE_LIMIT_RETRIES = 4;
+
+function splitIntoChunks<T>(items: T[], size: number): T[][] {
+  if (size <= 0) return [items];
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Lyrics source stored in cache
  */
@@ -392,45 +408,114 @@ export async function bulkImportSongMetadata(
   auth: SongMetadataAuthCredentials
 ): Promise<{ success: boolean; imported: number; updated: number; total: number; error?: string }> {
   try {
-    const response = await abortableFetch(getApiUrl("/api/songs"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${auth.authToken}`,
-        "X-Username": auth.username,
-      },
-      body: JSON.stringify({ action: "import", songs }),
-      timeout: 30000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
-    });
-
-    if (response.status === 401) {
-      console.warn(`[SongMetadataCache] Unauthorized - user must be logged in to import`);
-      return { success: false, imported: 0, updated: 0, total: 0, error: "Unauthorized" };
+    if (songs.length === 0) {
+      return { success: true, imported: 0, updated: 0, total: 0 };
     }
 
-    if (response.status === 403) {
-      console.warn(`[SongMetadataCache] Forbidden - admin access required to import`);
-      return { success: false, imported: 0, updated: 0, total: 0, error: "Forbidden - admin only" };
+    const batches = splitIntoChunks(songs, BULK_IMPORT_BATCH_SIZE);
+    let imported = 0;
+    let updated = 0;
+    let total = 0;
+
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      let completedBatch = false;
+      let rateLimitRetries = 0;
+
+      while (!completedBatch) {
+        const response = await abortableFetch(getApiUrl("/api/songs"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${auth.authToken}`,
+            "X-Username": auth.username,
+          },
+          body: JSON.stringify({ action: "import", songs: batch }),
+          timeout: 30000,
+          throwOnHttpError: false,
+          retry: { maxAttempts: 1, initialDelayMs: 250 },
+        });
+
+        if (response.status === 429) {
+          if (rateLimitRetries >= BULK_IMPORT_MAX_RATE_LIMIT_RETRIES) {
+            console.warn(
+              `[SongMetadataCache] Rate limited too many times while importing batch ${i + 1}/${batches.length}`
+            );
+            return {
+              success: false,
+              imported,
+              updated,
+              total,
+              error: "Rate limited while importing songs",
+            };
+          }
+
+          rateLimitRetries += 1;
+          const retryAfterHeader = response.headers.get("Retry-After");
+          const retryAfterSeconds = retryAfterHeader
+            ? Number.parseInt(retryAfterHeader, 10)
+            : NaN;
+          const waitMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+            ? retryAfterSeconds * 1000
+            : 4000 * Math.pow(2, rateLimitRetries - 1);
+
+          console.warn(
+            `[SongMetadataCache] Import rate limited on batch ${i + 1}/${batches.length}, retrying in ${waitMs}ms`
+          );
+          await sleep(waitMs);
+          continue;
+        }
+
+        if (response.status === 401) {
+          console.warn(`[SongMetadataCache] Unauthorized - user must be logged in to import`);
+          return { success: false, imported, updated, total, error: "Unauthorized" };
+        }
+
+        if (response.status === 403) {
+          console.warn(`[SongMetadataCache] Forbidden - admin access required to import`);
+          return {
+            success: false,
+            imported,
+            updated,
+            total,
+            error: "Forbidden - admin only",
+          };
+        }
+
+        if (!response.ok) {
+          console.warn(`[SongMetadataCache] Failed to import songs: ${response.status}`);
+          return {
+            success: false,
+            imported,
+            updated,
+            total,
+            error: `HTTP ${response.status}`,
+          };
+        }
+
+        const data = await response.json();
+        if (!data.success) {
+          console.warn(`[SongMetadataCache] Failed to import: ${data.error}`);
+          return {
+            success: false,
+            imported,
+            updated,
+            total,
+            error: data.error,
+          };
+        }
+
+        imported += Number(data.imported) || 0;
+        updated += Number(data.updated) || 0;
+        total += Number(data.total) || batch.length;
+        completedBatch = true;
+      }
     }
 
-    if (!response.ok) {
-      console.warn(`[SongMetadataCache] Failed to import songs: ${response.status}`);
-      return { success: false, imported: 0, updated: 0, total: 0, error: `HTTP ${response.status}` };
-    }
-
-    const data = await response.json();
-
-    if (data.success) {
-      console.log(
-        `[SongMetadataCache] Imported ${data.imported} new, updated ${data.updated}, total ${data.total}`
-      );
-      return { success: true, imported: data.imported, updated: data.updated, total: data.total };
-    }
-
-    console.warn(`[SongMetadataCache] Failed to import: ${data.error}`);
-    return { success: false, imported: 0, updated: 0, total: 0, error: data.error };
+    console.log(
+      `[SongMetadataCache] Imported ${imported} new, updated ${updated}, total ${total}`
+    );
+    return { success: true, imported, updated, total };
   } catch (error) {
     console.error(`[SongMetadataCache] Error importing songs:`, error);
     return { success: false, imported: 0, updated: 0, total: 0, error: String(error) };
