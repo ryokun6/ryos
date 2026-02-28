@@ -16,6 +16,9 @@ const isDev = process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
 // Browserslist warns if caniuse-lite is stale; suppress when up-to-date
 process.env.BROWSERSLIST_IGNORE_OLD_DATA ??= "1";
 
+// Port where `vercel dev` runs API functions (for `bun run dev` proxy mode)
+const vercelApiPort = process.env.VERCEL_API_PORT ? Number(process.env.VERCEL_API_PORT) : null;
+
 // https://vite.dev/config/
 export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_ENV_*'],
@@ -38,6 +41,15 @@ export default defineConfig({
     cors: { origin: ["*"] },
     // Pre-transform requests for faster page loads
     preTransformRequests: true,
+    // Proxy API requests to a separate vercel dev instance when using `bun run dev:full`.
+    // This avoids the ~190ms/request overhead of the vercel dev proxy for frontend
+    // modules while still providing full API endpoint support.
+    proxy: vercelApiPort ? {
+      '/api': {
+        target: `http://localhost:${vercelApiPort}`,
+        changeOrigin: true,
+      },
+    } : undefined,
     watch: {
       // Each pattern must be a separate array element for proper matching
       ignored: [
@@ -69,7 +81,7 @@ export default defineConfig({
       timeout: 5000,
     },
     // Enable warmup for critical files to speed up first page load
-    // These files are always needed and pre-transforming them improves perceived startup
+    // Pre-transforming these avoids on-demand transform latency for the initial render
     warmup: {
       clientFiles: [
         "./src/main.tsx",
@@ -77,6 +89,14 @@ export default defineConfig({
         "./src/config/appRegistry.tsx",
         "./src/stores/useAppStore.ts",
         "./src/components/layout/WindowFrame.tsx",
+        "./src/components/layout/MenuBar.tsx",
+        "./src/components/layout/Desktop.tsx",
+        "./src/components/layout/Dock.tsx",
+        "./src/stores/useThemeStore.ts",
+        "./src/stores/useDisplaySettingsStore.ts",
+        "./src/utils/prefetch.ts",
+        "./src/lib/i18n.ts",
+        "./src/hooks/useIsMobile.ts",
       ],
     },
   },
@@ -88,16 +108,42 @@ export default defineConfig({
       'src/main.tsx',
       'src/App.tsx',
     ],
-    // Force pre-bundle these core deps to avoid slow unbundled ESM loading
-    // Keep this list minimal - only include deps used on initial page load
+    // Force pre-bundle these deps to reduce the number of individual ESM requests.
+    // Each pre-bundled dep becomes a single file instead of many individual modules.
+    // This is critical when using vercel dev, where the proxy adds ~190ms/request.
     include: [
       "react",
       "react-dom",
+      "react-dom/client",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
       "zustand",
+      "zustand/middleware",
+      "zustand/react/shallow",
       "clsx",
       "tailwind-merge",
-      // framer-motion is used on initial load for animations
       "framer-motion",
+      "sonner",
+      "react-i18next",
+      "i18next",
+      "i18next-browser-languagedetector",
+      "@phosphor-icons/react",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-dropdown-menu",
+      "@radix-ui/react-menubar",
+      "@radix-ui/react-scroll-area",
+      "@radix-ui/react-tooltip",
+      "@radix-ui/react-slot",
+      "@radix-ui/react-visually-hidden",
+      "@radix-ui/react-label",
+      "@radix-ui/react-select",
+      "@radix-ui/react-slider",
+      "@radix-ui/react-switch",
+      "@radix-ui/react-checkbox",
+      "@radix-ui/react-tabs",
+      "class-variance-authority",
+      "dompurify",
+      "@vercel/analytics/react",
     ],
     // Exclude heavy deps from initial pre-bundling to reduce memory
     // These will be bundled on-demand when their apps are opened

@@ -163,9 +163,9 @@ import { appMetadata as stickiesMetadata, helpItems as stickiesHelpItems } from 
 import {
   appMetadata as infiniteMacMetadata,
   helpItems as infiniteMacHelpItems,
+  DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize,
 } from "@/apps/infinite-mac/metadata";
 import { appMetadata as winampMetadata, helpItems as winampHelpItems } from "@/apps/winamp";
-import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/hooks/useInfiniteMacLogic";
 
 // ============================================================================
 // APP REGISTRY

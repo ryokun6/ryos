@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "NODE_OPTIONS='--max-old-space-size=4096' vite --port ${PORT:-5173}",
+    "dev:api": "bash scripts/ensure-api-symlink.sh && vercel dev --listen ${VERCEL_API_PORT:-3001}",
+    "dev:full": "bash scripts/dev-full.sh",
     "dev:vercel": "bash scripts/ensure-api-symlink.sh && vercel dev",
     "version:bump": "bun run scripts/generate-build-version.ts --bump",
     "prebuild": "bun run scripts/generate-build-version.ts",
