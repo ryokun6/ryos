@@ -12,6 +12,7 @@ const __dirname = path.dirname(__filename);
 
 // Detect dev mode for memory optimizations
 const isDev = process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
+const standaloneApiProxyTarget = process.env.STANDALONE_API_PROXY_TARGET?.trim();
 
 // Browserslist warns if caniuse-lite is stale; suppress when up-to-date
 process.env.BROWSERSLIST_IGNORE_OLD_DATA ??= "1";
@@ -36,6 +37,16 @@ export default defineConfig({
   server: {
     port: process.env.PORT ? Number(process.env.PORT) : 5173,
     cors: { origin: ["*"] },
+    ...(standaloneApiProxyTarget
+      ? {
+          proxy: {
+            "/api": {
+              target: standaloneApiProxyTarget,
+              changeOrigin: true,
+            },
+          },
+        }
+      : {}),
     // Pre-transform requests for faster page loads
     preTransformRequests: true,
     watch: {
