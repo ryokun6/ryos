@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   MenubarMenu,
   MenubarTrigger,
@@ -68,10 +68,13 @@ export function AppletViewerMenuBar({
   const bringInstanceToForeground = useAppStore(
     (s) => s.bringInstanceToForeground
   );
-  const appletInstances = useAppStore((s) =>
-    Object.values(s.instances).filter(
-      (inst) => inst.appId === "applet-viewer" && inst.isOpen
-    )
+  const instances = useAppStore((s) => s.instances);
+  const appletInstances = useMemo(
+    () =>
+      Object.values(instances).filter(
+        (inst) => inst.appId === "applet-viewer" && inst.isOpen
+      ),
+    [instances]
   );
   const username = useChatsStore((s) => s.username);
   const authToken = useChatsStore((s) => s.authToken);
