@@ -12,14 +12,9 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { del, head } from "@vercel/blob";
 import { createRedis } from "../_utils/redis.js";
 import {
-  extractAuthNormalized,
-  validateAuth,
   USER_TTL_SECONDS,
 } from "../_utils/auth/index.js";
-import {
-  setCorsHeaders,
-  handlePreflight,
-} from "../_utils/_cors.js";
+import { createApiHandler } from "../_utils/handler.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -40,45 +35,33 @@ interface BackupMeta {
   createdAt: string;
 }
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-): Promise<void> {
-  // Handle CORS preflight
-  if (
-    handlePreflight(req, res, {
-      methods: ["GET", "POST", "DELETE", "OPTIONS"],
-    })
-  ) {
-    return;
+export default createApiHandler(
+  {
+    operation: "sync-backup",
+    methods: ["DELETE", "GET", "POST"],
+  },
+  async (_req, _res, ctx): Promise<void> => {
+    const user = await ctx.requireAuth({
+      missingMessage: "Authentication required",
+      invalidMessage: "Authentication required",
+    });
+    if (!user) {
+      return;
+    }
+
+    if (ctx.method === "POST") {
+      await handleSaveMetadata(ctx.req, ctx.res, ctx.redis, user.username);
+      return;
+    }
+
+    if (ctx.method === "GET") {
+      await handleDownload(ctx.res, ctx.redis, user.username);
+      return;
+    }
+
+    await handleDelete(ctx.res, ctx.redis, user.username);
   }
-
-  const origin = req.headers.origin as string | undefined;
-  setCorsHeaders(res, origin, {
-    methods: ["GET", "POST", "DELETE", "OPTIONS"],
-  });
-
-  const redis = createRedis();
-
-  // Extract and validate auth
-  const { username, token } = extractAuthNormalized(req);
-  const authResult = await validateAuth(redis, username, token);
-
-  if (!authResult.valid || !username) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-
-  if (req.method === "POST") {
-    await handleSaveMetadata(req, res, redis, username);
-  } else if (req.method === "GET") {
-    await handleDownload(res, redis, username);
-  } else if (req.method === "DELETE") {
-    await handleDelete(res, redis, username);
-  } else {
-    res.status(405).json({ error: "Method not allowed" });
-  }
-}
+);
 
 async function handleSaveMetadata(
   req: VercelRequest,

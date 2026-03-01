@@ -9,14 +9,10 @@
  * Then a consolidation step merges with existing long-term memories where keys overlap.
  */
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
-import { Redis } from "@upstash/redis";
-import { validateAuth } from "../_utils/auth/index.js";
-import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
-import { initLogger } from "../_utils/_logging.js";
+import { createApiHandler } from "../_utils/handler.js";
 import {
   getMemoryIndex,
   getMemoryDetail,
@@ -87,13 +83,6 @@ function getMessageText(msg: ChatMessage): string {
   return msg.content || "";
 }
 
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
-
 // ============================================================================
 // Prompt
 // ============================================================================
@@ -141,246 +130,253 @@ Rules:
 // Handler
 // ============================================================================
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { logger } = initLogger();
-  const startTime = Date.now();
-
-  const origin = getEffectiveOrigin(req);
-  setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
-
-  logger.request(req.method || "POST", req.url || "/api/ai/extract-memories");
-
-  if (req.method === "OPTIONS") {
-    logger.response(204, Date.now() - startTime);
-    return res.status(204).end();
-  }
-
-  if (!isAllowedOrigin(origin)) {
-    logger.warn("Unauthorized origin", { origin });
-    logger.response(403, Date.now() - startTime);
-    return res.status(403).json({ error: "Unauthorized" });
-  }
-
-  if (req.method !== "POST") {
-    logger.response(405, Date.now() - startTime);
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  // Validate auth
-  const authHeader = req.headers.authorization as string | undefined;
-  const usernameHeader = req.headers["x-username"] as string | undefined;
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
-  if (!token || !usernameHeader) {
-    logger.warn("Missing credentials");
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - missing credentials" });
-  }
-
-  const redis = createRedis();
-  const authResult = await validateAuth(redis, usernameHeader, token, {});
-
-  if (!authResult.valid) {
-    logger.warn("Invalid token", { username: usernameHeader });
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - invalid token" });
-  }
-
-  const username = usernameHeader.toLowerCase();
-
-  // Parse request body
-  const { messages, timeZone: bodyTimeZone } = req.body as {
-    messages?: ChatMessage[];
-    timeZone?: string;
-  };
-  const headerTimeZoneRaw = req.headers["x-user-timezone"];
-  const headerTimeZone = Array.isArray(headerTimeZoneRaw)
-    ? headerTimeZoneRaw[0]
-    : headerTimeZoneRaw;
-  const userTimeZone = normalizeTimeZone(bodyTimeZone || headerTimeZone);
-
-  if (!messages || !Array.isArray(messages) || messages.length === 0) {
-    logger.warn("No messages provided");
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Messages array required" });
-  }
-
-  // Format conversation with clear role labels
-  const conversationText = messages
-    .filter(m => m.role === "user" || m.role === "assistant")
-    .map(m => {
-      const text = getMessageText(m);
-      const role = m.role === "user" ? "User" : "Ryo";
-      return `${role}: ${text}`;
-    })
-    .join("\n\n");
-
-  if (conversationText.trim().length < 50) {
-    logger.info("Conversation too short for extraction");
-    logger.response(200, Date.now() - startTime);
-    return res.status(200).json({ extracted: 0, dailyNotes: 0, message: "Conversation too short" });
-  }
-
-  logger.info("Starting extraction", { 
-    username, 
-    messageCount: messages.length,
-    conversationLength: conversationText.length,
-  });
-
-  try {
-    // ========================================================================
-    // Gather existing state (for dedup in prompt)
-    // ========================================================================
-
-    // Existing daily notes — only unprocessed entries to save tokens
-    const today = getTodayDateString(userTimeZone);
-    const existingDailyNote = await getDailyNote(redis, username, today);
-    const hasUnprocessedEntries = existingDailyNote && !existingDailyNote.processedForMemories && existingDailyNote.entries.length > 0;
-    const existingDailyNotesText = hasUnprocessedEntries
-      ? existingDailyNote.entries.map(e => `- ${e.content}`).join("\n")
-      : "";
-
-    // Existing long-term memories
-    const currentIndex = await getMemoryIndex(redis, username);
-    const currentCount = currentIndex?.memories.length || 0;
-    const remainingSlots = MAX_MEMORIES_PER_USER - currentCount;
-    const existingKeys = currentIndex?.memories.map(m => m.key) || [];
-    const existingMemoriesText = currentIndex && currentIndex.memories.length > 0
-      ? currentIndex.memories.map(m => `- ${m.key}: ${m.summary}`).join("\n")
-      : "";
-
-    // ========================================================================
-    // Single-pass extraction: daily notes + long-term memories in one call
-    // ========================================================================
-
-    // Build existing state section — only include non-empty sections
-    let existingStateSection = "";
-    if (existingDailyNotesText) {
-      existingStateSection += `\nEXISTING DAILY NOTES (do NOT repeat):\n${existingDailyNotesText}`;
-    }
-    if (existingMemoriesText) {
-      existingStateSection += `\nEXISTING LONG-TERM MEMORIES (do NOT duplicate):\n${existingMemoriesText}`;
+export default createApiHandler(
+  {
+    operation: "ai-extract-memories",
+    methods: ["POST"],
+    cors: {
+      headers: ["Content-Type", "Authorization", "X-Username", "X-User-Timezone"],
+    },
+  },
+  async (_req, _res, ctx): Promise<void> => {
+    const user = await ctx.requireAuth({
+      missingMessage: "Unauthorized - missing credentials",
+      invalidMessage: "Unauthorized - invalid token",
+    });
+    if (!user) {
+      return;
     }
 
-    const maxLongTerm = remainingSlots > 0 ? Math.min(5, remainingSlots) : 0;
+    const username = user.username;
+    const requestBody = (ctx.req.body || {}) as {
+      messages?: ChatMessage[];
+      timeZone?: string;
+    };
+    const { messages, timeZone: bodyTimeZone } = requestBody;
 
-    logger.info("Extracting", { username, existingDailyNotes: existingDailyNote?.entries.length || 0, existingMemories: currentCount, remainingSlots });
+    const headerTimeZoneRaw = ctx.req.headers["x-user-timezone"];
+    const headerTimeZone = Array.isArray(headerTimeZoneRaw)
+      ? headerTimeZoneRaw[0]
+      : headerTimeZoneRaw;
+    const userTimeZone = normalizeTimeZone(bodyTimeZone || headerTimeZone);
 
-    const { object: result } = await generateObject({
-      model: google("gemini-2.0-flash"),
-      schema: extractionSchema,
-      prompt: `${EXTRACTION_PROMPT}${existingStateSection}\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\nExtract up to 8 daily notes and up to ${maxLongTerm} long-term memories. Return empty arrays if nothing qualifies.`,
-      temperature: 0.3,
-    });
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      ctx.logger.warn("No messages provided");
+      ctx.response.badRequest("Messages array required");
+      return;
+    }
 
-    logger.info("Extraction complete", {
-      username,
-      dailyNotes: result.dailyNotes.length,
-      longTermMemories: result.longTermMemories.length,
-    });
+    // Format conversation with clear role labels
+    const conversationText = messages
+      .filter(m => m.role === "user" || m.role === "assistant")
+      .map(m => {
+        const text = getMessageText(m);
+        const role = m.role === "user" ? "User" : "Ryo";
+        return `${role}: ${text}`;
+      })
+      .join("\n\n");
 
-    // ========================================================================
-    // Store daily notes
-    // ========================================================================
-    let dailyNotesStored = 0;
-    for (const note of result.dailyNotes) {
-      const storeResult = await appendDailyNote(redis, username, note, {
-        timeZone: userTimeZone,
+    if (conversationText.trim().length < 50) {
+      ctx.logger.info("Conversation too short for extraction");
+      ctx.response.ok({
+        extracted: 0,
+        dailyNotes: 0,
+        message: "Conversation too short",
       });
-      if (storeResult.success) dailyNotesStored++;
+      return;
     }
 
-    // ========================================================================
-    // Store long-term memories (with consolidation for overlapping keys)
-    // ========================================================================
-    let longTermStored = 0;
-    const toProcess = result.longTermMemories.slice(0, remainingSlots);
+    ctx.logger.info("Starting extraction", {
+      username,
+      messageCount: messages.length,
+      conversationLength: conversationText.length,
+    });
 
-    for (const mem of toProcess) {
-      const key = mem.key.toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 30);
-      if (!key || !/^[a-z]/.test(key)) continue;
+    try {
+      // ========================================================================
+      // Gather existing state (for dedup in prompt)
+      // ========================================================================
 
-      let finalSummary = mem.summary;
-      let finalContent = mem.content;
-      const keysToDelete: string[] = [];
+      // Existing daily notes — only unprocessed entries to save tokens
+      const today = getTodayDateString(userTimeZone);
+      const existingDailyNote = await getDailyNote(ctx.redis, username, today);
+      const hasUnprocessedEntries =
+        existingDailyNote &&
+        !existingDailyNote.processedForMemories &&
+        existingDailyNote.entries.length > 0;
+      const existingDailyNotesText = hasUnprocessedEntries
+        ? existingDailyNote.entries.map(e => `- ${e.content}`).join("\n")
+        : "";
 
-      const relatedKeys = (mem.relatedKeys || [])
-        .map(k => k.toLowerCase().replace(/[^a-z0-9_]/g, "_"))
-        .filter(k => k !== key && existingKeys.includes(k));
+      // Existing long-term memories
+      const currentIndex = await getMemoryIndex(ctx.redis, username);
+      const currentCount = currentIndex?.memories.length || 0;
+      const remainingSlots = MAX_MEMORIES_PER_USER - currentCount;
+      const existingKeys = currentIndex?.memories.map(m => m.key) || [];
+      const existingMemoriesText =
+        currentIndex && currentIndex.memories.length > 0
+          ? currentIndex.memories.map(m => `- ${m.key}: ${m.summary}`).join("\n")
+          : "";
 
-      const targetKeyExists = existingKeys.includes(key);
+      // ========================================================================
+      // Single-pass extraction: daily notes + long-term memories in one call
+      // ========================================================================
 
-      // Consolidate with existing if keys overlap
-      if (relatedKeys.length > 0 || targetKeyExists) {
-        const keysToFetch = targetKeyExists ? [key, ...relatedKeys] : relatedKeys;
-        const uniqueKeysToFetch = [...new Set(keysToFetch)];
-        
-        logger.info("Consolidating", { username, key, merging: uniqueKeysToFetch });
+      // Build existing state section — only include non-empty sections
+      let existingStateSection = "";
+      if (existingDailyNotesText) {
+        existingStateSection += `\nEXISTING DAILY NOTES (do NOT repeat):\n${existingDailyNotesText}`;
+      }
+      if (existingMemoriesText) {
+        existingStateSection += `\nEXISTING LONG-TERM MEMORIES (do NOT duplicate):\n${existingMemoriesText}`;
+      }
 
-        const existingContents = await Promise.all(
-          uniqueKeysToFetch.map(async (k) => {
-            const detail = await getMemoryDetail(redis, username, k);
-            const entry = currentIndex?.memories.find(m => m.key === k);
-            return { key: k, summary: entry?.summary || "", content: detail?.content || "" };
-          })
+      const maxLongTerm = remainingSlots > 0 ? Math.min(5, remainingSlots) : 0;
+
+      ctx.logger.info("Extracting", {
+        username,
+        existingDailyNotes: existingDailyNote?.entries.length || 0,
+        existingMemories: currentCount,
+        remainingSlots,
+      });
+
+      const { object: result } = await generateObject({
+        model: google("gemini-2.0-flash"),
+        schema: extractionSchema,
+        prompt: `${EXTRACTION_PROMPT}${existingStateSection}\n\n--- CONVERSATION ---\n${conversationText}\n--- END CONVERSATION ---\n\nExtract up to 8 daily notes and up to ${maxLongTerm} long-term memories. Return empty arrays if nothing qualifies.`,
+        temperature: 0.3,
+      });
+
+      ctx.logger.info("Extraction complete", {
+        username,
+        dailyNotes: result.dailyNotes.length,
+        longTermMemories: result.longTermMemories.length,
+      });
+
+      // ========================================================================
+      // Store daily notes
+      // ========================================================================
+      let dailyNotesStored = 0;
+      for (const note of result.dailyNotes) {
+        const storeResult = await appendDailyNote(ctx.redis, username, note, {
+          timeZone: userTimeZone,
+        });
+        if (storeResult.success) dailyNotesStored++;
+      }
+
+      // ========================================================================
+      // Store long-term memories (with consolidation for overlapping keys)
+      // ========================================================================
+      let longTermStored = 0;
+      const toProcess = result.longTermMemories.slice(0, remainingSlots);
+
+      for (const mem of toProcess) {
+        const key = mem.key.toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 30);
+        if (!key || !/^[a-z]/.test(key)) continue;
+
+        let finalSummary = mem.summary;
+        let finalContent = mem.content;
+        const keysToDelete: string[] = [];
+
+        const relatedKeys = (mem.relatedKeys || [])
+          .map(k => k.toLowerCase().replace(/[^a-z0-9_]/g, "_"))
+          .filter(k => k !== key && existingKeys.includes(k));
+
+        const targetKeyExists = existingKeys.includes(key);
+
+        // Consolidate with existing if keys overlap
+        if (relatedKeys.length > 0 || targetKeyExists) {
+          const keysToFetch = targetKeyExists ? [key, ...relatedKeys] : relatedKeys;
+          const uniqueKeysToFetch = [...new Set(keysToFetch)];
+
+          ctx.logger.info("Consolidating", {
+            username,
+            key,
+            merging: uniqueKeysToFetch,
+          });
+
+          const existingContents = await Promise.all(
+            uniqueKeysToFetch.map(async (k) => {
+              const detail = await getMemoryDetail(ctx.redis, username, k);
+              const entry = currentIndex?.memories.find(m => m.key === k);
+              return {
+                key: k,
+                summary: entry?.summary || "",
+                content: detail?.content || "",
+              };
+            })
+          );
+
+          const existingContentText = existingContents
+            .map(m => `Key: ${m.key}\nSummary: ${m.summary}\nContent: ${m.content}`)
+            .join("\n\n");
+
+          const { object: consolidated } = await generateObject({
+            model: google("gemini-2.0-flash"),
+            schema: consolidationSchema,
+            prompt: `${CONSOLIDATION_PROMPT}\n\nNEW:\nSummary: ${mem.summary}\nContent: ${mem.content}\n\nEXISTING:\n${existingContentText}\n\nMerge into one clean, deduplicated entry.`,
+            temperature: 0.3,
+          });
+
+          finalSummary = consolidated.summary;
+          finalContent = consolidated.content;
+          keysToDelete.push(...relatedKeys);
+        }
+
+        const mode = targetKeyExists ? "update" : "add";
+        const storeResult = await upsertMemory(
+          ctx.redis,
+          username,
+          key,
+          finalSummary,
+          finalContent,
+          mode
         );
 
-        const existingContentText = existingContents
-          .map(m => `Key: ${m.key}\nSummary: ${m.summary}\nContent: ${m.content}`)
-          .join("\n\n");
+        if (storeResult.success) {
+          longTermStored++;
+          ctx.logger.info("Stored memory", {
+            username,
+            key,
+            confidence: mem.confidence,
+            mode,
+          });
 
-        const { object: consolidated } = await generateObject({
-          model: google("gemini-2.0-flash"),
-          schema: consolidationSchema,
-          prompt: `${CONSOLIDATION_PROMPT}\n\nNEW:\nSummary: ${mem.summary}\nContent: ${mem.content}\n\nEXISTING:\n${existingContentText}\n\nMerge into one clean, deduplicated entry.`,
-          temperature: 0.3,
-        });
-
-        finalSummary = consolidated.summary;
-        finalContent = consolidated.content;
-        keysToDelete.push(...relatedKeys);
-      }
-
-      const mode = targetKeyExists ? "update" : "add";
-      const storeResult = await upsertMemory(redis, username, key, finalSummary, finalContent, mode);
-
-      if (storeResult.success) {
-        longTermStored++;
-        logger.info("Stored memory", { username, key, confidence: mem.confidence, mode });
-        
-        for (const oldKey of keysToDelete) {
-          const deleteResult = await deleteMemory(redis, username, oldKey);
-          if (deleteResult.success) {
-            logger.info("Deleted merged key", { username, oldKey, mergedInto: key });
+          for (const oldKey of keysToDelete) {
+            const deleteResult = await deleteMemory(ctx.redis, username, oldKey);
+            if (deleteResult.success) {
+              ctx.logger.info("Deleted merged key", { username, oldKey, mergedInto: key });
+            }
           }
+        } else {
+          ctx.logger.warn("Failed to store memory", {
+            username,
+            key,
+            error: storeResult.message,
+          });
         }
-      } else {
-        logger.warn("Failed to store memory", { username, key, error: storeResult.message });
       }
+
+      // Only mark today's note as processed — this extraction only analyzed
+      // the conversation + today's entries. Past daily notes should be processed
+      // separately by /api/ai/process-daily-notes which actually reads their content.
+      if (dailyNotesStored > 0 || (existingDailyNote && existingDailyNote.entries.length > 0)) {
+        await markDailyNoteProcessed(ctx.redis, username, today);
+      }
+
+      ctx.logger.info("Done", { username, dailyNotes: dailyNotesStored, longTerm: longTermStored });
+      ctx.response.ok({
+        extracted: longTermStored,
+        dailyNotes: dailyNotesStored,
+        analyzed: result.longTermMemories.length,
+        message:
+          longTermStored > 0 || dailyNotesStored > 0
+            ? `Logged ${dailyNotesStored} daily notes, extracted ${longTermStored} long-term memories`
+            : "No noteworthy information found",
+      });
+    } catch (error) {
+      ctx.logger.error("Memory extraction failed", error);
+      ctx.response.serverError("Failed to extract memories");
     }
-
-    // Only mark today's note as processed — this extraction only analyzed
-    // the conversation + today's entries. Past daily notes should be processed
-    // separately by /api/ai/process-daily-notes which actually reads their content.
-    if (dailyNotesStored > 0 || (existingDailyNote && existingDailyNote.entries.length > 0)) {
-      await markDailyNoteProcessed(redis, username, today);
-    }
-
-    logger.info("Done", { username, dailyNotes: dailyNotesStored, longTerm: longTermStored });
-    logger.response(200, Date.now() - startTime);
-
-    return res.status(200).json({
-      extracted: longTermStored,
-      dailyNotes: dailyNotesStored,
-      analyzed: result.longTermMemories.length,
-      message: longTermStored > 0 || dailyNotesStored > 0
-        ? `Logged ${dailyNotesStored} daily notes, extracted ${longTermStored} long-term memories`
-        : "No noteworthy information found",
-    });
-
-  } catch (error) {
-    logger.error("Memory extraction failed", error);
-    logger.response(500, Date.now() - startTime);
-    return res.status(500).json({ error: "Failed to extract memories" });
   }
-}
+);

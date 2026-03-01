@@ -18,14 +18,11 @@
  * - Called from frontend on chat clear (fire-and-forget)
  */
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { Redis } from "@upstash/redis";
-import { validateAuth } from "../_utils/auth/index.js";
-import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
-import { initLogger } from "../_utils/_logging.js";
+import { createApiHandler } from "../_utils/handler.js";
 import {
   getMemoryIndex,
   getMemoryDetail,
@@ -116,13 +113,6 @@ Rules:
 // ============================================================================
 // Helpers
 // ============================================================================
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
 
 type LogFn = (...args: unknown[]) => void;
 
@@ -473,97 +463,62 @@ async function _processSingleDayBatch(
 // Handler
 // ============================================================================
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { logger } = initLogger();
-  const startTime = Date.now();
-
-  const origin = getEffectiveOrigin(req);
-  setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
-
-  logger.request(req.method || "POST", req.url || "/api/ai/process-daily-notes");
-
-  if (req.method === "OPTIONS") {
-    logger.response(204, Date.now() - startTime);
-    return res.status(204).end();
-  }
-
-  if (!isAllowedOrigin(origin)) {
-    logger.warn("Unauthorized origin", { origin });
-    logger.response(403, Date.now() - startTime);
-    return res.status(403).json({ error: "Unauthorized" });
-  }
-
-  if (req.method !== "POST") {
-    logger.response(405, Date.now() - startTime);
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  // ========================================================================
-  // Authentication
-  // ========================================================================
-  const authHeader = req.headers.authorization as string | undefined;
-  const usernameHeader = req.headers["x-username"] as string | undefined;
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
-  if (!token || !usernameHeader) {
-    logger.warn("Missing credentials");
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - missing credentials" });
-  }
-
-  const redis = createRedis();
-  const authResult = await validateAuth(redis, usernameHeader, token, {});
-
-  if (!authResult.valid) {
-    logger.warn("Invalid token", { username: usernameHeader });
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - invalid token" });
-  }
-
-  const username = usernameHeader.toLowerCase();
-  const requestBody = (req.body || {}) as { timeZone?: string };
-  const requestTimeZone = requestBody.timeZone;
-
-  try {
-    const result = await processDailyNotesForUser(
-      redis,
-      username,
-      (...args: unknown[]) => logger.info(String(args[0]), args[1]),
-      (...args: unknown[]) => logger.error(String(args[0]), args[1]),
-      requestTimeZone,
-    );
-
-    const totalExtracted = result.created + result.updated;
-
-    logger.info("Daily notes processing complete", {
-      username,
-      notesProcessed: result.processed,
-      memoriesCreated: result.created,
-      memoriesUpdated: result.updated,
+export default createApiHandler(
+  {
+    operation: "ai-process-daily-notes",
+    methods: ["POST"],
+  },
+  async (_req, _res, ctx): Promise<void> => {
+    const user = await ctx.requireAuth({
+      missingMessage: "Unauthorized - missing credentials",
+      invalidMessage: "Unauthorized - invalid token",
     });
-    logger.response(200, Date.now() - startTime);
+    if (!user) {
+      return;
+    }
 
-    const skippedCount = result.skippedDates.length;
+    const username = user.username;
+    const requestBody = (ctx.req.body || {}) as { timeZone?: string };
+    const requestTimeZone = requestBody.timeZone;
 
-    return res.status(200).json({
-      processed: result.processed,
-      extracted: totalExtracted,
-      created: result.created,
-      updated: result.updated,
-      dates: result.dates,
-      skippedDates: result.skippedDates,
-      message: result.processed === 0
-        ? "No unprocessed daily notes to process"
-        : totalExtracted > 0
-          ? `Processed ${result.processed} daily notes → ${result.created} new memories, ${result.updated} updated`
-            + (skippedCount > 0 ? ` (${skippedCount} days deferred to next run)` : "")
-          : `Processed ${result.processed} daily notes — no new long-term memories extracted`
-            + (skippedCount > 0 ? ` (${skippedCount} days deferred to next run)` : ""),
-    });
+    try {
+      const result = await processDailyNotesForUser(
+        ctx.redis,
+        username,
+        (...args: unknown[]) => ctx.logger.info(String(args[0]), args[1]),
+        (...args: unknown[]) => ctx.logger.error(String(args[0]), args[1]),
+        requestTimeZone,
+      );
 
-  } catch (error) {
-    logger.error("Daily notes processing failed", error);
-    logger.response(500, Date.now() - startTime);
-    return res.status(500).json({ error: "Failed to process daily notes" });
+      const totalExtracted = result.created + result.updated;
+      const skippedCount = result.skippedDates.length;
+
+      ctx.logger.info("Daily notes processing complete", {
+        username,
+        notesProcessed: result.processed,
+        memoriesCreated: result.created,
+        memoriesUpdated: result.updated,
+      });
+
+      ctx.response.ok({
+        processed: result.processed,
+        extracted: totalExtracted,
+        created: result.created,
+        updated: result.updated,
+        dates: result.dates,
+        skippedDates: result.skippedDates,
+        message:
+          result.processed === 0
+            ? "No unprocessed daily notes to process"
+            : totalExtracted > 0
+              ? `Processed ${result.processed} daily notes → ${result.created} new memories, ${result.updated} updated`
+                + (skippedCount > 0 ? ` (${skippedCount} days deferred to next run)` : "")
+              : `Processed ${result.processed} daily notes — no new long-term memories extracted`
+                + (skippedCount > 0 ? ` (${skippedCount} days deferred to next run)` : ""),
+      });
+    } catch (error) {
+      ctx.logger.error("Daily notes processing failed", error);
+      ctx.response.serverError("Failed to process daily notes");
+    }
   }
-}
+);
