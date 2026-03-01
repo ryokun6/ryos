@@ -1279,12 +1279,13 @@ export function WindowFrame({
             >
               <div
                 className={cn(
-                  "title-bar-text",
-                  !isForeground && "inactive" // Add inactive class for text too
+                  "title-bar-text min-w-0",
+                  !isForeground && "inactive"
                 )}
                 style={{
                   display: "flex",
                   alignItems: "center",
+                  overflow: "hidden",
                   ...(!isForeground
                     ? {
                         color: theme.colors.titleBar.inactiveText,
@@ -1296,12 +1297,12 @@ export function WindowFrame({
                 <ThemedIcon
                   name={getAppIconPath(appId)}
                   alt={title}
-                  className="w-4 h-4 mr-1 [image-rendering:pixelated]"
+                  className="w-4 h-4 mr-1 shrink-0 [image-rendering:pixelated]"
                   style={{
                     filter: !isForeground ? "grayscale(100%)" : "none",
                   }}
                 />
-                {title}
+                <span className="truncate">{title}</span>
               </div>
               <div className="title-bar-controls" data-titlebar-controls>
                 {(titleBarRightContent || onFullscreenToggle) &&
@@ -1454,7 +1455,7 @@ export function WindowFrame({
               {/* Title - absolutely centered so it stays centered regardless of left/right content width */}
               <span
                 className={cn(
-                  "select-none absolute left-1/2 -translate-x-1/2 px-2 py-0 h-full flex items-center justify-center whitespace-nowrap overflow-hidden text-ellipsis max-w-[80%] text-[13px] pointer-events-none",
+                  "select-none absolute left-1/2 -translate-x-1/2 px-2 py-0 h-full flex items-center justify-center whitespace-nowrap overflow-hidden text-ellipsis max-w-[calc(100%-140px)] text-[13px] pointer-events-none",
                   isNoTitlebar
                     ? "text-white"
                     : isForeground
@@ -1572,7 +1573,7 @@ export function WindowFrame({
               </div>
               <span
                 className={cn(
-                  "select-none mx-auto px-2 py-0 h-full flex items-center whitespace-nowrap overflow-hidden text-ellipsis max-w-[80%]",
+                  "select-none mx-auto px-2 py-0 h-full flex items-center whitespace-nowrap overflow-hidden text-ellipsis min-w-0 max-w-[calc(100%-56px)]",
                   !isTransparent && "bg-os-button-face",
                   isForeground
                     ? "text-os-titlebar-active-text"
