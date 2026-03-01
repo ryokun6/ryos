@@ -16,6 +16,7 @@ import { AppSwitcher } from "@/components/layout/AppSwitcher";
 import type { SwitcherApp } from "@/components/layout/AppSwitcher";
 import { AppErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { resolveInitialRoute } from "./appRouteRegistry";
+import { isTextEditInitialData } from "@/types/appInitialData";
 import {
   emitAppUpdate,
   onAppLaunchRequest,
@@ -494,11 +495,19 @@ export function AppManager({ apps }: AppManagerProps) {
               appName={app?.name ?? appId}
               instanceId={instance.instanceId}
               onCrash={() => bringInstanceToForeground(instance.instanceId)}
+              onQuit={() => {
+                closeAppInstance(instance.instanceId);
+              }}
               onRelaunch={() => {
+                const relaunchInitialData =
+                  appId === "textedit" && isTextEditInitialData(instance.initialData)
+                    ? { path: instance.initialData.path }
+                    : instance.initialData;
+
                 closeAppInstance(instance.instanceId);
                 launchApp(
                   appId,
-                  instance.initialData,
+                  relaunchInitialData,
                   instance.title,
                   supportsMultiWindowApp(appId),
                 );
