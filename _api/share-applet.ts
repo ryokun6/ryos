@@ -1,29 +1,12 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
-import { validateAuth, generateAuthToken } from "./_utils/auth/index.js";
+import { generateAuthToken } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
-import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
-import { Redis } from "@upstash/redis";
-import { initLogger } from "./_utils/_logging.js";
+import { apiHandler } from "./_utils/api-handler.js";
+import { resolveRequestAuth } from "./_utils/request-auth.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
-
-// Helper functions for Node.js runtime
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
-
-async function isAdmin(redis: Redis, username: string | null, token: string | null): Promise<boolean> {
-  if (!username || !token) return false;
-  if (username.toLowerCase() !== "ryo") return false;
-  const authResult = await validateAuth(redis, username, token, { allowExpired: false });
-  return authResult.valid;
-}
 
 // Rate limiting configuration
 const RATE_LIMITS = {
@@ -51,43 +34,18 @@ const SaveAppletRequestSchema = z.object({
   shareId: z.string().optional(),
 });
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-): Promise<void> {
-  const { requestId: _requestId, logger } = initLogger();
-  const startTime = Date.now();
-  const effectiveOrigin = getEffectiveOrigin(req);
+export default apiHandler<Record<string, unknown>>(
+  {
+    methods: ["GET", "POST", "DELETE", "PATCH"],
+    parseJsonBody: true,
+  },
+  async ({ req, res, redis, logger, startTime, body, origin }): Promise<void> => {
+    const authResolution = await resolveRequestAuth(req, redis, {
+      required: false,
+      allowExpired: false,
+    });
 
-  logger.request(req.method || "GET", req.url || "/api/share-applet", "share-applet");
-
-  if (req.method === "OPTIONS") {
-    res.setHeader("Content-Type", "application/json");
-    setCorsHeaders(res, effectiveOrigin, { methods: ["GET", "POST", "DELETE", "PATCH", "OPTIONS"] });
-    logger.response(204, Date.now() - startTime);
-    res.status(204).end();
-    return;
-  }
-
-  if (!["GET", "POST", "DELETE", "PATCH"].includes(req.method || "")) {
-    logger.response(405, Date.now() - startTime);
-    res.status(405).send("Method not allowed");
-    return;
-  }
-
-  res.setHeader("Content-Type", "application/json");
-  setCorsHeaders(res, effectiveOrigin, { methods: ["GET", "POST", "DELETE", "PATCH", "OPTIONS"] });
-
-  if (!isAllowedOrigin(effectiveOrigin)) {
-    logger.warn("Unauthorized origin", { origin: effectiveOrigin });
-    logger.response(403, Date.now() - startTime);
-    res.status(403).send("Unauthorized");
-    return;
-  }
-
-  const redis = createRedis();
-
-  try {
+    try {
     // GET: Retrieve applet by ID or list featured applets
     if (req.method === "GET") {
       const listParam = req.query.list as string | undefined;
@@ -193,13 +151,8 @@ export default async function handler(
 
     // POST: Save applet
     if (req.method === "POST") {
-      const authHeader = req.headers.authorization;
-      const usernameHeader = req.headers["x-username"] as string | undefined;
-      const authToken = authHeader?.replace("Bearer ", "") || null;
-      const username = usernameHeader || null;
-
-      const authResult = await validateAuth(redis, username, authToken);
-      if (!authResult.valid) {
+      const username = authResolution.user?.username || null;
+      if (authResolution.error || !username) {
         logger.response(401, Date.now() - startTime);
         res.status(401).json({ error: "Unauthorized" });
         return;
@@ -220,7 +173,7 @@ export default async function handler(
         return;
       }
 
-      const validation = SaveAppletRequestSchema.safeParse(req.body);
+      const validation = SaveAppletRequestSchema.safeParse(body);
       if (!validation.success) {
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: "Invalid request body", details: validation.error.format() });
@@ -271,7 +224,7 @@ export default async function handler(
       };
 
       await redis.set(key, JSON.stringify(appletData));
-      const shareUrl = `${effectiveOrigin}/applet-viewer/${id}`;
+      const shareUrl = `${origin || "https://os.ryo.lu"}/applet-viewer/${id}`;
 
       logger.info("Saved applet", { id, isUpdate });
       logger.response(200, Date.now() - startTime);
@@ -281,12 +234,8 @@ export default async function handler(
 
     // DELETE: Delete applet (admin only)
     if (req.method === "DELETE") {
-      const authHeader = req.headers.authorization;
-      const usernameHeader = req.headers["x-username"] as string | undefined;
-      const authToken = authHeader?.replace("Bearer ", "") || null;
-      const username = usernameHeader || null;
-
-      const adminAccess = await isAdmin(redis, username, authToken);
+      const username = authResolution.user?.username || null;
+      const adminAccess = !authResolution.error && username === "ryo";
       if (!adminAccess) {
         logger.response(403, Date.now() - startTime);
         res.status(403).json({ error: "Forbidden" });
@@ -331,12 +280,8 @@ export default async function handler(
 
     // PATCH: Update applet (admin only)
     if (req.method === "PATCH") {
-      const authHeader = req.headers.authorization;
-      const usernameHeader = req.headers["x-username"] as string | undefined;
-      const authToken = authHeader?.replace("Bearer ", "") || null;
-      const username = usernameHeader || null;
-
-      const adminAccess = await isAdmin(redis, username, authToken);
+      const username = authResolution.user?.username || null;
+      const adminAccess = !authResolution.error && username === "ryo";
       if (!adminAccess) {
         logger.response(403, Date.now() - startTime);
         res.status(403).json({ error: "Forbidden" });
@@ -364,7 +309,7 @@ export default async function handler(
         return;
       }
 
-      const { featured } = req.body || {};
+      const { featured } = body || {};
       if (typeof featured !== "boolean") {
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: "Invalid request body: featured must be boolean" });
@@ -400,3 +345,4 @@ export default async function handler(
     res.status(500).json({ error: errorMessage });
   }
 }
+);
