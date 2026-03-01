@@ -16,7 +16,17 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  banAdminUser,
+  clearAdminUserMemories,
+  deleteAdminUser,
+  forceAdminDailyNotes,
+  getAdminUserMemories,
+  getAdminUserMessages,
+  getAdminUserProfile,
+  unbanAdminUser,
+} from "@/api/admin";
+import { ApiRequestError } from "@/api/core";
 
 interface UserProfile {
   username: string;
@@ -90,22 +100,14 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const fetchProfile = useCallback(async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await abortableFetch(
-        `/api/admin?action=getUserProfile&username=${encodeURIComponent(username)}`,
+      const data = await getAdminUserProfile<UserProfile>(
         {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "x-username": currentUser,
-          },
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
+          username: currentUser,
+          token: authToken,
+        },
+        username
       );
-      if (response.ok) {
-        const data = await response.json();
-        setProfile(data);
-      }
+      setProfile(data);
     } catch (error) {
       console.error("Failed to fetch profile:", error);
       toast.error(t("apps.admin.errors.failedToFetchProfile"));
@@ -115,22 +117,15 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const fetchMessages = useCallback(async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await abortableFetch(
-        `/api/admin?action=getUserMessages&username=${encodeURIComponent(username)}&limit=50`,
+      const data = await getAdminUserMessages<{ messages?: UserMessage[] }>(
         {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "x-username": currentUser,
-          },
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
+          username: currentUser,
+          token: authToken,
+        },
+        username,
+        50
       );
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data.messages || []);
-      }
+      setMessages(data.messages || []);
     } catch (error) {
       console.error("Failed to fetch messages:", error);
     }
@@ -139,23 +134,18 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const fetchMemories = useCallback(async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await abortableFetch(
-        `/api/admin?action=getUserMemories&username=${encodeURIComponent(username)}`,
+      const data = await getAdminUserMemories<{
+        memories?: UserMemory[];
+        dailyNotes?: DailyNote[];
+      }>(
         {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "x-username": currentUser,
-          },
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
+          username: currentUser,
+          token: authToken,
+        },
+        username
       );
-      if (response.ok) {
-        const data = await response.json();
-        setMemories(data.memories || []);
-        setDailyNotes(data.dailyNotes || []);
-      }
+      setMemories(data.memories || []);
+      setDailyNotes(data.dailyNotes || []);
     } catch (error) {
       console.error("Failed to fetch memories:", error);
     }
@@ -200,35 +190,25 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const handleBan = async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await abortableFetch(`/api/admin`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-          "x-username": currentUser,
+      await banAdminUser<{ success: boolean }>(
+        {
+          username: currentUser,
+          token: authToken,
         },
-        body: JSON.stringify({
-          action: "banUser",
-          targetUsername: username,
-          reason: banReason || undefined,
-        }),
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      });
-
-      if (response.ok) {
-        toast.success(t("apps.admin.messages.userBanned", { username }));
-        setShowBanInput(false);
-        setBanReason("");
-        fetchProfile();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || t("apps.admin.errors.failedToBanUser"));
-      }
+        username,
+        banReason || undefined
+      );
+      toast.success(t("apps.admin.messages.userBanned", { username }));
+      setShowBanInput(false);
+      setBanReason("");
+      fetchProfile();
     } catch (error) {
       console.error("Failed to ban user:", error);
+      if (error instanceof ApiRequestError && error.message) {
+        toast.error(error.message);
+      } else {
       toast.error(t("apps.admin.errors.failedToBanUser"));
+      }
     }
     setIsBanDialogOpen(false);
   };
@@ -236,65 +216,45 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
   const handleUnban = async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await abortableFetch(`/api/admin`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-          "x-username": currentUser,
+      await unbanAdminUser<{ success: boolean }>(
+        {
+          username: currentUser,
+          token: authToken,
         },
-        body: JSON.stringify({
-          action: "unbanUser",
-          targetUsername: username,
-        }),
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      });
-
-      if (response.ok) {
-        toast.success(t("apps.admin.messages.userUnbanned", { username }));
-        fetchProfile();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || t("apps.admin.errors.failedToUnbanUser"));
-      }
+        username
+      );
+      toast.success(t("apps.admin.messages.userUnbanned", { username }));
+      fetchProfile();
     } catch (error) {
       console.error("Failed to unban user:", error);
-      toast.error(t("apps.admin.errors.failedToUnbanUser"));
+      if (error instanceof ApiRequestError && error.message) {
+        toast.error(error.message);
+      } else {
+        toast.error(t("apps.admin.errors.failedToUnbanUser"));
+      }
     }
   };
 
   const handleDelete = async () => {
     if (!currentUser || !authToken) return;
     try {
-      const response = await abortableFetch(`/api/admin`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-          "x-username": currentUser,
+      await deleteAdminUser<{ success: boolean }>(
+        {
+          username: currentUser,
+          token: authToken,
         },
-        body: JSON.stringify({
-          action: "deleteUser",
-          targetUsername: username,
-        }),
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      });
-
-      if (response.ok) {
-        toast.success(t("apps.admin.messages.userDeleted", { username }));
-        onUserDeleted();
-        onBack();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || t("apps.admin.errors.failedToDeleteUser"));
-      }
+        username
+      );
+      toast.success(t("apps.admin.messages.userDeleted", { username }));
+      onUserDeleted();
+      onBack();
     } catch (error) {
       console.error("Failed to delete user:", error);
-      toast.error(t("apps.admin.errors.failedToDeleteUser"));
+      if (error instanceof ApiRequestError && error.message) {
+        toast.error(error.message);
+      } else {
+        toast.error(t("apps.admin.errors.failedToDeleteUser"));
+      }
     }
     setIsDeleteDialogOpen(false);
   };
@@ -303,33 +263,22 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     if (!currentUser || !authToken) return;
     setIsClearingMemory(true);
     try {
-      const response = await abortableFetch(`/api/admin`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-          "x-username": currentUser,
+      const data = await clearAdminUserMemories<{ message?: string }>(
+        {
+          username: currentUser,
+          token: authToken,
         },
-        body: JSON.stringify({
-          action: "clearUserMemories",
-          targetUsername: username,
-        }),
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        toast.success(data.message || "Memories cleared");
-        fetchMemories();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || "Failed to clear memories");
-      }
+        username
+      );
+      toast.success(data.message || "Memories cleared");
+      fetchMemories();
     } catch (error) {
       console.error("Failed to clear memories:", error);
-      toast.error("Failed to clear memories");
+      if (error instanceof ApiRequestError && error.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to clear memories");
+      }
     } finally {
       setIsClearingMemory(false);
       setIsClearMemoryDialogOpen(false);
@@ -340,33 +289,22 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
     if (!currentUser || !authToken) return;
     setIsProcessingNotes(true);
     try {
-      const response = await abortableFetch(`/api/admin`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-          "x-username": currentUser,
+      const data = await forceAdminDailyNotes<{ message?: string }>(
+        {
+          username: currentUser,
+          token: authToken,
         },
-        body: JSON.stringify({
-          action: "forceProcessDailyNotes",
-          targetUsername: username,
-        }),
-        timeout: 60000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        toast.success(data.message || "Daily notes processed");
-        fetchMemories();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || "Failed to process daily notes");
-      }
+        username
+      );
+      toast.success(data.message || "Daily notes processed");
+      fetchMemories();
     } catch (error) {
       console.error("Failed to process daily notes:", error);
-      toast.error("Failed to process daily notes");
+      if (error instanceof ApiRequestError && error.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to process daily notes");
+      }
     } finally {
       setIsProcessingNotes(false);
       setIsForceProcessDialogOpen(false);

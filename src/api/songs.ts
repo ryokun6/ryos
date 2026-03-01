@@ -1,0 +1,136 @@
+import { apiRequest, type ApiAuthContext } from "@/api/core";
+import { abortableFetch } from "@/utils/abortableFetch";
+import { getApiUrl } from "@/utils/platform";
+
+export interface SongListQuery {
+  include?: string;
+  createdBy?: string;
+  ids?: string[];
+}
+
+export interface SongSaveResponse {
+  success: boolean;
+  id?: string;
+  isUpdate?: boolean;
+  createdBy?: string;
+  error?: string;
+}
+
+export interface SongDeleteAllResponse {
+  success: boolean;
+  deleted: number;
+  error?: string;
+}
+
+export interface SongImportBatchResult {
+  ok: boolean;
+  status: number;
+  retryAfterSeconds?: number;
+  data?: Record<string, unknown>;
+}
+
+export async function listSongs<TSong = Record<string, unknown>>(
+  query: SongListQuery = {}
+): Promise<{ songs: TSong[] }> {
+  const include = query.include || "metadata";
+  return apiRequest<{ songs: TSong[] }>({
+    path: "/api/songs",
+    method: "GET",
+    query: {
+      include,
+      createdBy: query.createdBy,
+      ids: query.ids?.length ? query.ids.join(",") : undefined,
+    },
+  });
+}
+
+export async function getSongById<TSong = Record<string, unknown>>(
+  songId: string,
+  options: { include?: string } = {}
+): Promise<TSong> {
+  return apiRequest<TSong>({
+    path: `/api/songs/${encodeURIComponent(songId)}`,
+    method: "GET",
+    query: { include: options.include || "metadata" },
+  });
+}
+
+export async function updateSongById<TPayload extends Record<string, unknown>>(
+  songId: string,
+  payload: TPayload,
+  auth: ApiAuthContext
+): Promise<SongSaveResponse> {
+  return apiRequest<SongSaveResponse, TPayload>({
+    path: `/api/songs/${encodeURIComponent(songId)}`,
+    method: "POST",
+    auth,
+    body: payload,
+  });
+}
+
+export async function deleteSongById(
+  songId: string,
+  auth: ApiAuthContext
+): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }>({
+    path: `/api/songs/${encodeURIComponent(songId)}`,
+    method: "DELETE",
+    auth,
+  });
+}
+
+export async function deleteAllSongs(
+  auth: ApiAuthContext
+): Promise<SongDeleteAllResponse> {
+  return apiRequest<SongDeleteAllResponse>({
+    path: "/api/songs",
+    method: "DELETE",
+    auth,
+  });
+}
+
+export async function importSongsBatch(params: {
+  songs: Record<string, unknown>[];
+  auth: ApiAuthContext;
+  timeout?: number;
+}): Promise<SongImportBatchResult> {
+  const response = await abortableFetch(getApiUrl("/api/songs"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(params.auth.token && params.auth.username
+        ? {
+            Authorization: `Bearer ${params.auth.token}`,
+            "X-Username": params.auth.username,
+          }
+        : {}),
+    },
+    body: JSON.stringify({ action: "import", songs: params.songs }),
+    timeout: params.timeout ?? 30000,
+    throwOnHttpError: false,
+    retry: { maxAttempts: 1, initialDelayMs: 250 },
+  });
+
+  let data: Record<string, unknown> | undefined;
+  try {
+    data = (await response.json()) as Record<string, unknown>;
+  } catch {
+    data = undefined;
+  }
+
+  const retryAfterHeader = response.headers.get("Retry-After");
+  const retryAfterSeconds = retryAfterHeader
+    ? Number.parseInt(retryAfterHeader, 10)
+    : NaN;
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    retryAfterSeconds:
+      Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+        ? retryAfterSeconds
+        : undefined,
+    data,
+  };
+}
+

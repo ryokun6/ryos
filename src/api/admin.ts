@@ -63,11 +63,16 @@ export async function getAdminUserMemories<TResponse>(
 
 export async function banAdminUser<TResponse>(
   auth: ApiAuthContext,
-  username: string
+  username: string,
+  reason?: string
 ): Promise<TResponse> {
-  return adminPost<TResponse, { action: string; targetUsername: string }>(auth, {
+  return adminPost<
+    TResponse,
+    { action: string; targetUsername: string; reason?: string }
+  >(auth, {
     action: "banUser",
     targetUsername: username,
+    ...(reason ? { reason } : {}),
   });
 }
 

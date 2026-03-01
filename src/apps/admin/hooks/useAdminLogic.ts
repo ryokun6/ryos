@@ -14,8 +14,19 @@ import {
   type BulkImportProgress,
   type CachedSongMetadata,
 } from "@/utils/songMetadataCache";
-import { getApiUrl } from "@/utils/platform";
-import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  deleteAdminUser,
+  getAdminStats,
+  getAdminUsers,
+} from "@/api/admin";
+import { ApiRequestError } from "@/api/core";
+import {
+  deleteRoom as deleteRoomApi,
+  deleteRoomMessage as deleteRoomMessageApi,
+  getRoomMessages as getRoomMessagesApi,
+  listRooms as listRoomsApi,
+} from "@/api/rooms";
+import { listSongs } from "@/api/songs";
 import { helpItems } from "..";
 
 /**
@@ -233,20 +244,12 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     if (isOffline) return; // Skip API calls when offline
 
     try {
-      const response = await abortableFetch(`/api/admin?action=getStats`, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          "x-username": username,
-        },
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
+      const data = await getAdminStats<Partial<Stats>>({
+        username,
+        token: authToken,
       });
-      if (response.ok) {
-        const data = await response.json();
-        // Merge with existing stats to preserve totalSongs (which comes from fetchSongs)
-        setStats((prev) => ({ ...prev, ...data }));
-      }
+      // Merge with existing stats to preserve totalSongs (which comes from fetchSongs)
+      setStats((prev) => ({ ...prev, ...data }));
     } catch (error) {
       console.error("Failed to fetch stats:", error);
     }
@@ -260,16 +263,10 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
       setIsLoading(true);
       try {
-        const response = await abortableFetch(`/api/admin?action=getAllUsers`, {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "x-username": username,
-          },
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
+        const data = await getAdminUsers<{ users?: User[] }>({
+          username,
+          token: authToken,
         });
-        const data = await response.json();
         // Sort users: banned first, then by most recently active
         let sortedUsers = (data.users || []).sort((a: User, b: User) => {
           // Banned users first
@@ -304,20 +301,15 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
     setIsLoading(true);
     try {
-      const response = await abortableFetch(
-        `/api/rooms?username=${encodeURIComponent(username)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "x-username": username,
-          },
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        }
-      );
-      const data = await response.json();
-      setRooms(data.rooms || []);
+      const data = await listRoomsApi({
+        username,
+        token: authToken,
+      });
+      const normalizedRooms = data.rooms.map((room) => ({
+        ...room,
+        type: room.type ?? "public",
+      }));
+      setRooms(normalizedRooms);
     } catch (error) {
       console.error("Failed to fetch rooms:", error);
       toast.error(t("apps.admin.errors.failedToFetchRooms"));
@@ -334,19 +326,10 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
       setIsLoading(true);
       try {
-        const response = await abortableFetch(
-          `/api/rooms/${encodeURIComponent(roomId)}/messages?limit=200`,
-          {
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-              "x-username": username,
-            },
-            timeout: 15000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
-        );
-        const data = await response.json();
+        const data = await getRoomMessagesApi(roomId, {
+          username,
+          token: authToken,
+        });
         setRoomMessages(data.messages || []);
       } catch (error) {
         console.error("Failed to fetch messages:", error);
@@ -384,34 +367,21 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       if (!username || !authToken) return;
 
       try {
-        const response = await abortableFetch(`/api/admin`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-            "x-username": username,
-          },
-          body: JSON.stringify({
-            action: "deleteUser",
-            targetUsername,
-          }),
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        });
-
-        if (response.ok) {
-          toast.success(
-            t("apps.admin.messages.userDeleted", { username: targetUsername })
-          );
-          fetchUsers(userSearch);
-          fetchStats();
-        } else {
-          const data = await response.json();
-          toast.error(data.error || t("apps.admin.errors.failedToDeleteUser"));
-        }
+        await deleteAdminUser<{ success: boolean }>({
+          username,
+          token: authToken,
+        }, targetUsername);
+        toast.success(
+          t("apps.admin.messages.userDeleted", { username: targetUsername })
+        );
+        fetchUsers(userSearch);
+        fetchStats();
       } catch (error) {
         console.error("Failed to delete user:", error);
+        if (error instanceof ApiRequestError && error.message) {
+          toast.error(error.message);
+          return;
+        }
         toast.error(t("apps.admin.errors.failedToDeleteUser"));
       }
     },
@@ -424,32 +394,21 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       if (!username || !authToken) return;
 
       try {
-        const response = await abortableFetch(
-          `/api/rooms/${encodeURIComponent(roomId)}`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-              "x-username": username,
-            },
-            timeout: 15000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
-        );
-
-        if (response.ok) {
-          toast.success(t("apps.admin.messages.roomDeleted"));
-          fetchRooms();
-          fetchStats();
-          setSelectedRoomId(null);
-          setRoomMessages([]);
-        } else {
-          const data = await response.json();
-          toast.error(data.error || t("apps.admin.errors.failedToDeleteRoom"));
-        }
+        await deleteRoomApi(roomId, {
+          username,
+          token: authToken,
+        });
+        toast.success(t("apps.admin.messages.roomDeleted"));
+        fetchRooms();
+        fetchStats();
+        setSelectedRoomId(null);
+        setRoomMessages([]);
       } catch (error) {
         console.error("Failed to delete room:", error);
+        if (error instanceof ApiRequestError && error.message) {
+          toast.error(error.message);
+          return;
+        }
         toast.error(t("apps.admin.errors.failedToDeleteRoom"));
       }
     },
@@ -462,31 +421,18 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       if (!username || !authToken) return;
 
       try {
-        const response = await abortableFetch(
-          `/api/rooms/${encodeURIComponent(roomId)}/messages/${encodeURIComponent(
-            messageId
-          )}`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${authToken}`,
-              "x-username": username,
-            },
-            timeout: 15000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
-        );
-
-        if (response.ok) {
-          toast.success(t("apps.admin.messages.messageDeleted"));
-          fetchRoomMessages(roomId);
-        } else {
-          const data = await response.json();
-          toast.error(data.error || t("apps.admin.errors.failedToDeleteMessage"));
-        }
+        await deleteRoomMessageApi(roomId, messageId, {
+          username,
+          token: authToken,
+        });
+        toast.success(t("apps.admin.messages.messageDeleted"));
+        fetchRoomMessages(roomId);
       } catch (error) {
         console.error("Failed to delete message:", error);
+        if (error instanceof ApiRequestError && error.message) {
+          toast.error(error.message);
+          return;
+        }
         toast.error(t("apps.admin.errors.failedToDeleteMessage"));
       }
     },
@@ -799,27 +745,10 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
       const fetchedSongs: ExportSongDocument[] = [];
 
       for (const idBatch of idBatches) {
-        const idsParam = encodeURIComponent(idBatch.join(","));
-        const response = await abortableFetch(
-          getApiUrl(
-            `/api/songs?ids=${idsParam}&include=metadata,lyrics,translations,furigana,soramimi`
-          ),
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            timeout: 30000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch songs batch: ${response.status}`);
-        }
-
-        const data = (await response.json()) as { songs?: ExportSongDocument[] };
+        const data = await listSongs<ExportSongDocument>({
+          ids: idBatch,
+          include: "metadata,lyrics,translations,furigana,soramimi",
+        });
         if (Array.isArray(data.songs)) {
           fetchedSongs.push(...data.songs);
         }

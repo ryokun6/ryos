@@ -71,3 +71,28 @@ export async function switchPresence(
   });
 }
 
+export async function deleteRoom(
+  roomId: string,
+  auth: ApiAuthContext
+): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }>({
+    path: `/api/rooms/${encodeURIComponent(roomId)}`,
+    method: "DELETE",
+    auth,
+  });
+}
+
+export async function deleteRoomMessage(
+  roomId: string,
+  messageId: string,
+  auth: ApiAuthContext
+): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }>({
+    path: `/api/rooms/${encodeURIComponent(roomId)}/messages/${encodeURIComponent(
+      messageId
+    )}`,
+    method: "DELETE",
+    auth,
+  });
+}
+
