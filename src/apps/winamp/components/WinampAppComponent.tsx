@@ -176,7 +176,7 @@ export function WinampAppComponent({
       t("apps.winamp.status.unknownArtist")
     );
 
-    const webamp = new Webamp({
+    const webampOptions = {
       initialTracks:
         webampTracks.length > 0
           ? webampTracks
@@ -201,9 +201,10 @@ export function WinampAppComponent({
           size: { extraHeight: 0, extraWidth: 0 },
         },
       },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      __customMediaClass: YouTubeMedia as any,
-    } as any);
+      __customMediaClass: YouTubeMedia,
+    } as unknown as ConstructorParameters<typeof Webamp>[0];
+
+    const webamp = new Webamp(webampOptions);
 
     webampRef.current = webamp;
     isInitializedRef.current = true;

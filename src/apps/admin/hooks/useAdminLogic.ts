@@ -541,7 +541,6 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
 
         // Map to the expected song format, including content fields
         const songsToImport: Parameters<typeof bulkImportSongMetadata>[0] = [];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         for (let i = 0; i < videos.length; i++) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const v = videos[i] as Record<string, any>;

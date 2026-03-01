@@ -219,7 +219,7 @@ function pickPrimaryColor(palette: string[]): string {
 /** Boost saturation and brightness of a hex color so it pops as a glow */
 function boostGlowColor(hex: string): string {
   const [r, g, b] = hexToRgb(hex);
-  let rn = r / 255, gn = g / 255, bn = b / 255;
+  const rn = r / 255, gn = g / 255, bn = b / 255;
   const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
   let h = 0;
   const l = (max + min) / 2;

@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll } from "bun:test";
+import { describe, test, expect } from "bun:test";
 
 import {
   BASE_URL,
@@ -95,7 +95,7 @@ async function testChatBasicRequest(): Promise<void> {
   });
   if (res.status === 200) {
     const contentType = res.headers.get("content-type") || "";
-    expect(contentType).toContain("text/") || contentType.includes("stream");
+    expect(contentType.includes("text/") || contentType.includes("stream")).toBeTruthy();
   } else if (res.status === 429) {
     const data = await res.json();
     expect(data.error === "rate_limit_exceeded").toBeTruthy();
@@ -350,7 +350,7 @@ async function testIeGenerateBasicRequest(): Promise<void> {
   });
   if (res.status === 200) {
     const contentType = res.headers.get("content-type") || "";
-    expect(contentType).toContain("text/") || contentType.includes("stream");
+    expect(contentType.includes("text/") || contentType.includes("stream")).toBeTruthy();
   } else if (res.status === 429) {
     const data = await res.json();
     expect(data.error === "rate_limit_exceeded").toBeTruthy();

@@ -14,8 +14,7 @@ const readSource = (relativePath: string): string =>
   readFileSync(resolve(process.cwd(), relativePath), "utf-8");
 
 const assertUsesSharedNotificationGate = (
-  source: string,
-  label: string
+  source: string
 ): void => {
   expect(/from\s+["']@\/utils\/chatNotifications["']/.test(source)).toBe(true);
   expect(/shouldNotifyForRoomMessage/.test(source)).toBe(true);
@@ -26,14 +25,14 @@ describe("Chat Notification Integration Wiring", () => {
   describe("Background hook wiring", () => {
     test("background notifications hook uses shared gate", async () => {
       const source = readSource("src/hooks/useBackgroundChatNotifications.ts");
-      assertUsesSharedNotificationGate(source, "useBackgroundChatNotifications");
+      assertUsesSharedNotificationGate(source);
     });
   });
 
   describe("Foreground hook wiring", () => {
     test("chat room hook uses shared gate", async () => {
       const source = readSource("src/apps/chats/hooks/useChatRoom.ts");
-      assertUsesSharedNotificationGate(source, "useChatRoom");
+      assertUsesSharedNotificationGate(source);
     });
   });
 });

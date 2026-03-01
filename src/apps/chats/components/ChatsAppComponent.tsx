@@ -450,6 +450,12 @@ export function ChatsAppComponent({
     />
   );
 
+  const previousUserMessages = useMemo(
+    () => extractPreviousUserMessages(aiMessages),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [aiMessageCount]
+  );
+
   if (!isWindowOpen) return null;
 
   const currentMessagesToDisplay = buildDisplayMessages({
@@ -459,11 +465,6 @@ export function ChatsAppComponent({
     messageRenderLimit,
     username,
   });
-  const previousUserMessages = useMemo(
-    () => extractPreviousUserMessages(aiMessages),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [aiMessageCount]
-  );
 
   return (
     <>

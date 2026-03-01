@@ -34,6 +34,22 @@ interface DesktopProps {
   desktopStyles?: DesktopStyles;
 }
 
+const DEFAULT_SHORTCUT_ORDER: AppId[] = [
+  "ipod",
+  "chats",
+  "applet-viewer",
+  "internet-explorer",
+  "textedit",
+  "photo-booth",
+  "videos",
+  "paint",
+  "soundboard",
+  "minesweeper",
+  "synth",
+  "terminal",
+  "pc",
+];
+
 export function Desktop({
   apps,
   toggleApp,
@@ -86,23 +102,6 @@ export function Desktop({
   const trashItem = desktopAndTrashItems.find(item => item.path === "/Trash");
   const trashIcon = trashItem?.icon || "/icons/trash-empty.png";
 
-  // Define the default order for desktop shortcuts
-  const defaultShortcutOrder: AppId[] = [
-    "ipod",
-    "chats",
-    "applet-viewer",
-    "internet-explorer",
-    "textedit",
-    "photo-booth",
-    "videos",
-    "paint",
-    "soundboard",
-    "minesweeper",
-    "synth",
-    "terminal",
-    "pc",
-  ];
-
   // Get desktop shortcuts - derived from targeted store subscription
   const desktopShortcuts = useMemo(
     () =>
@@ -117,8 +116,8 @@ export function Desktop({
         )
         .sort((a, b) => {
           if (a.aliasType === "app" && b.aliasType === "app") {
-            const aIndex = defaultShortcutOrder.indexOf(a.aliasTarget as AppId);
-            const bIndex = defaultShortcutOrder.indexOf(b.aliasTarget as AppId);
+            const aIndex = DEFAULT_SHORTCUT_ORDER.indexOf(a.aliasTarget as AppId);
+            const bIndex = DEFAULT_SHORTCUT_ORDER.indexOf(b.aliasTarget as AppId);
             if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
             if (aIndex !== -1) return -1;
             if (bIndex !== -1) return 1;
@@ -128,7 +127,7 @@ export function Desktop({
           if (a.aliasType !== "app" && b.aliasType === "app") return 1;
           return a.name.localeCompare(b.name);
         }),
-    [desktopAndTrashItems, currentTheme, defaultShortcutOrder]
+    [desktopAndTrashItems, currentTheme]
   );
 
   // Get display name for desktop shortcuts (with translation)
