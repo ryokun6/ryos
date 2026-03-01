@@ -166,7 +166,8 @@ function CrashDialog({
         : "font-geneva-12 text-[12px]",
   );
 
-  const buttonVariant = isMacTheme ? "default" : "retro";
+  const primaryButtonVariant = isMacTheme ? "default" : "retro";
+  const secondaryButtonVariant = isMacTheme ? "secondary" : "retro";
 
   const dialogBody = (
     <div
@@ -216,7 +217,7 @@ function CrashDialog({
             {secondaryActionLabel && onSecondaryAction ? (
               <Button
                 ref={secondaryActionButtonRef}
-                variant={buttonVariant}
+                variant={secondaryButtonVariant}
                 onClick={onSecondaryAction}
                 className={cn(
                   !isMacTheme && "h-7",
@@ -232,7 +233,7 @@ function CrashDialog({
             ) : null}
             <Button
               ref={primaryActionButtonRef}
-              variant={buttonVariant}
+              variant={primaryButtonVariant}
               onClick={onPrimaryAction}
               className={cn(
                 !isMacTheme && "h-7",
@@ -275,10 +276,6 @@ function CrashDialog({
         style={isXpTheme ? { fontSize: "11px" } : undefined}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
-          if (onSecondaryAction) {
-            secondaryActionButtonRef.current?.focus();
-            return;
-          }
           primaryActionButtonRef.current?.focus();
         }}
         onEscapeKeyDown={(event) => {
