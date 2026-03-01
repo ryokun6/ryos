@@ -201,12 +201,12 @@ await saveFile({
 ### Move to Trash Flow
 1. Mark item as `status: "trashed"` in metadata
 2. Store `originalPath` and `deletedAt` timestamp
-3. Move content from original store to `trash` store in IndexedDB
+3. For Documents/Images files, move content from original store to `trash` store in IndexedDB
 4. Update Trash folder icon (`trash-full.png`)
 
 ### Restore from Trash Flow
 1. Reset `status` to `"active"`, clear `originalPath` and `deletedAt`
-2. Move content back from `trash` store to original store
+2. For Documents/Images files, move content back from `trash` store to original store
 3. Update Trash folder icon if empty
 
 ## Lazy Loading
@@ -222,6 +222,8 @@ await ensureFileContentLoaded(filePath, uuid);
 ```
 
 Files with `assetPath` in `public/data/filesystem.json` are fetched on-demand, not during app initialization. This improves startup performance.
+
+`preloadFileSystemData()` starts fetching `filesystem.json` and `applets.json` during bootstrap so metadata is warm before Finder mounts, while binary file assets still load on first open.
 
 ## Finder App Integration
 
@@ -249,9 +251,11 @@ Per-path view type preferences persist across sessions:
 // Default view types by path
 getDefaultViewTypeForPath(path) {
   if (path === "/" || path.startsWith("/Images") || 
-      path.startsWith("/Applications") || path.startsWith("/Applets"))
+      path.startsWith("/Videos") || path.startsWith("/Applications") ||
+      path.startsWith("/Applets") || path.startsWith("/Trash") ||
+      path.startsWith("/Music"))
     return "large";
-  if (path.startsWith("/Documents") || path.startsWith("/Music"))
+  if (path.startsWith("/Documents"))
     return "list";
   return "list";
 }
@@ -265,7 +269,8 @@ function getFileTypeFromExtension(fileName: string): string {
   switch (ext) {
     case "md": return "markdown";
     case "txt": return "text";
-    case "png": case "jpg": case "gif": case "webp": case "bmp": return ext;
+    case "png": case "gif": case "webp": case "bmp": return ext;
+    case "jpg": case "jpeg": return "jpg";
     case "app": return "application";
     default: return "unknown";
   }
@@ -278,7 +283,7 @@ function getFileTypeFromExtension(fileName: string): string {
 |-----------|------|------------|---------|
 | `.md` | Markdown | TextEdit | IndexedDB (documents) |
 | `.txt` | Plain text | TextEdit | IndexedDB (documents) |
-| `.png`, `.jpg`, `.gif`, `.webp`, `.bmp` | Image | Paint | IndexedDB (images) |
+| `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp` | Image | Paint | IndexedDB (images) |
 | `.app`, `.html` | HTML Applet | Applet Viewer | IndexedDB (applets) |
 | `.mp3` | Audio | iPod | Virtual (iPod store) |
 | `.mov` | Video | Videos | Virtual (Video store) |
