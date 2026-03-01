@@ -1,13 +1,13 @@
 # Overview
 
-ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 18 fully-functional apps, an AI assistant, and a complete virtual file system.
+ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 20 fully-functional apps, an AI assistant, and a complete virtual file system.
 
 Whether you're exploring the retro aesthetics, building HTML applets, or chatting with Ryo (the AI assistant), ryOS offers a unique blend of nostalgia and modern web technology.
 
 ```mermaid
 graph TB
     subgraph Presentation["Presentation Layer"]
-        Apps[18 App Modules]
+        Apps[20 App Modules]
         UI[UI Components]
         Themes[4 Themes]
     end
@@ -19,7 +19,7 @@ graph TB
     subgraph Data["Data Layer"]
         IndexedDB[(IndexedDB)]
         LocalStorage[(LocalStorage)]
-        API[Vercel API]
+        API[Vercel + Bun API]
     end
     
     subgraph External["External Services"]
@@ -52,12 +52,14 @@ graph TB
 ## Key Features
 
 - **[Multi-Theme Support](/docs/theme-system):** System 7, Mac OS X (Aqua), Windows XP, Windows 98
-- **[18 Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Terminal, Chats, and more
+- **[20 Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, and more
 - **[AI Assistant (Ryo)](/docs/ai-system):** Chat, tool calling, app control, code generation
 - **[Virtual File System](/docs/file-system):** IndexedDB-backed with lazy loading
 - **[Real-time Chat](/docs/rooms-api):** RESTful rooms with AI integration
 - **[Audio System](/docs/audio-system):** Synthesizer, soundboard, TTS, and UI sounds
 - **[Component Library](/docs/component-library):** shadcn/ui + custom components with i18n
+- **[Unified API Layer](/docs/api-architecture):** Shared `apiHandler` + middleware utilities for consistent CORS, method routing, auth, and error handling
+- **Runtime Reliability & Performance:** App/desktop error boundaries, typed app event bus primitives, lazy-loaded non-default locales, and worker-offloaded Spotlight indexing
 
 ## Tech Stack
 
@@ -69,19 +71,23 @@ graph TB
 | 3D | Three.js (shaders) |
 | Text Editor | TipTap |
 | Storage | IndexedDB, LocalStorage, Redis (Upstash) |
+| API Runtime | Vercel Node.js handlers + standalone Bun server |
 | AI | OpenAI, Anthropic, Google via Vercel AI SDK |
 | Real-time | Pusher |
+| Package Manager | Bun (`bun@1.3.5`) |
 | Build | Vite, Bun |
 | Desktop | Tauri (macOS, Windows, Linux) |
-| Deployment | Vercel |
+| Deployment | Vercel (web), standalone Bun API (self-hosted) |
 
 ## Project Structure
 
 ```
-├── api/              # Vercel API endpoints (Node.js runtime)
+├── _api/             # Node-style API endpoints (Vercel + standalone Bun server)
+│   └── _utils/       # Shared API utilities (api-handler, middleware, auth, redis, etc.)
 ├── public/           # Static assets
 ├── src/
-│   ├── apps/         # 18 app modules
+│   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen)
+│   ├── apps/         # 20 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
 │   ├── hooks/        # 35 custom hooks
