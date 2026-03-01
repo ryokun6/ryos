@@ -12,6 +12,7 @@ import { AppId } from "@/config/appIds";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useAppStoreShallow } from "@/stores/helpers";
+import { useAppStore } from "@/stores/useAppStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { getTheme } from "@/themes";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
@@ -108,25 +109,29 @@ export function WindowFrame({
     bringInstanceToForeground,
     updateInstanceWindowState,
     minimizeInstance,
-    instances,
     closeAppInstance,
     updateInstanceTitle,
     exposeMode,
+    openInstanceCount,
   } = useAppStoreShallow((state) => ({
     bringInstanceToForeground: state.bringInstanceToForeground,
     updateInstanceWindowState: state.updateInstanceWindowState,
     minimizeInstance: state.minimizeInstance,
-    instances: state.instances,
     closeAppInstance: state.closeAppInstance,
     updateInstanceTitle: state.updateInstanceTitle,
     exposeMode: state.exposeMode,
+    openInstanceCount: state.exposeMode
+      ? Object.values(state.instances).filter(inst => inst.isOpen && !inst.isMinimized).length
+      : 0,
   }));
   
   // Debug mode from display settings store
   const debugMode = useDisplaySettingsStore((s) => s.debugMode);
   
-  // Check if this instance is minimized
-  const isMinimized = instanceId ? instances[instanceId]?.isMinimized ?? false : false;
+  // Subscribe only to this instance's minimized state, not all instances
+  const isMinimized = useAppStore((state) =>
+    instanceId ? state.instances[instanceId]?.isMinimized ?? false : false
+  );
   const { play: playWindowOpen } = useSound(Sounds.WINDOW_OPEN);
   const { play: playWindowClose } = useSound(Sounds.WINDOW_CLOSE);
   // For green button zoom (maximize/restore window size)
@@ -408,7 +413,9 @@ export function WindowFrame({
   }, [dockIconCenter, windowPosition, windowSize]);
 
   // Get launch origin from instance (position of icon that launched this window)
-  const launchOrigin = instanceId ? instances[instanceId]?.launchOrigin : undefined;
+  const launchOrigin = useAppStore((state) =>
+    instanceId ? state.instances[instanceId]?.launchOrigin : undefined
+  );
 
   // Calculate launch origin offset relative to window center (used for initial open animation)
   const launchOriginOffset = useMemo(() => {
@@ -426,12 +433,16 @@ export function WindowFrame({
     };
   }, [launchOrigin, windowPosition, windowSize]);
 
-  // Calculate expose transform for Mission Control view
+  // Calculate expose transform for Mission Control view.
+  // Uses openInstanceCount as a reactive dependency to recompute when windows
+  // open/close, and reads instance order imperatively to avoid infinite loops
+  // from selectors that return new arrays.
   const exposeTransform = useMemo(() => {
     if (!exposeMode || !instanceId) return null;
     
-    // Get all open instances (excluding minimized) and find this instance's index
-    const openInstances = Object.values(instances).filter(inst => inst.isOpen && !inst.isMinimized);
+    const allInstances = useAppStore.getState().instances;
+    const openInstances = Object.values(allInstances)
+      .filter(inst => inst.isOpen && !inst.isMinimized);
     const myIndex = openInstances.findIndex(inst => inst.instanceId === instanceId);
     
     if (myIndex === -1 || openInstances.length === 0) return null;
@@ -457,7 +468,9 @@ export function WindowFrame({
     );
     
     return { ...transform, index: myIndex };
-  }, [exposeMode, instanceId, instances, windowPosition, windowSize, isMobile]);
+    // openInstanceCount triggers recomputation when windows open/close/minimize
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exposeMode, instanceId, openInstanceCount, windowPosition, windowSize, isMobile]);
 
 
   // No longer track maximized state based on window dimensions

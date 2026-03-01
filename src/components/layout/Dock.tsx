@@ -561,7 +561,6 @@ function MacDock() {
   const { play: playZoomMinimize } = useSound(Sounds.WINDOW_ZOOM_MINIMIZE);
 
   const launchApp = useLaunchApp();
-  const files = useFilesStore((s) => s.items);
   const getFileItem = useFilesStore((s) => s.getItem);
   const getFilesInPath = useFilesStore((s) => s.getItemsInPath);
   const removeFileItem = useFilesStore((s) => s.removeItem);
@@ -902,14 +901,11 @@ function MacDock() {
   // Use long press hook for divider
   const dividerLongPress = useLongPress(handleDividerLongPress);
 
-  // Get trash items to check if trash is empty
-  // Use a selector that directly filters items to avoid infinite loops
-  const allItems = useFilesStore((s) => s.items);
-  const trashItems = useMemo(
-    () => Object.values(allItems).filter((item) => item.status === "trashed"),
-    [allItems]
+  // Get trash items to check if trash is empty - use targeted selector
+  const trashItemCount = useFilesStore(
+    (s) => Object.values(s.items).filter((item) => item.status === "trashed").length
   );
-  const isTrashEmpty = trashItems.length === 0;
+  const isTrashEmpty = trashItemCount === 0;
 
   // Helper to get applet info (icon and name) from instance
   const getAppletInfo = useCallback(
@@ -918,18 +914,16 @@ function MacDock() {
         | AppletViewerInitialData
         | undefined;
       const path = initialData?.path || "";
-      const file = files[path];
+      const file = path ? getFileItem(path) : undefined;
 
-      // Get filename from path for label
-      const getFileName = (path: string): string => {
-        const parts = path.split("/");
+      const getFileName = (p: string): string => {
+        const parts = p.split("/");
         const fileName = parts[parts.length - 1];
         return fileName.replace(/\.(html|app)$/i, "");
       };
 
       const label = path ? getFileName(path) : t("common.dock.appletStore");
 
-      // Check if the file icon is an emoji (not a file path)
       const fileIcon = file?.icon;
       const isEmojiIcon =
         fileIcon &&
@@ -937,12 +931,9 @@ function MacDock() {
         !fileIcon.startsWith("http") &&
         fileIcon.length <= 10;
 
-      // If no path (applet store), use the applet viewer icon
-      // Otherwise, use file icon if emoji, or fallback to package emoji
       let icon: string;
       let isEmoji: boolean;
       if (!path) {
-        // Applet store - use app icon
         icon = getAppIconPath("applet-viewer");
         isEmoji = false;
       } else {
@@ -952,7 +943,7 @@ function MacDock() {
 
       return { icon, label, isEmoji };
     },
-    [files, t]
+    [getFileItem, t]
   );
 
   // Pinned apps on the left side (from dock store)

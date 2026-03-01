@@ -39,7 +39,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
     restoreInstance: state.restoreInstance,
   }));
 
-  const files = useFilesStore((s) => s.items);
+  const getFileItem = useFilesStore((s) => s.getItem);
   const currentTheme = useThemeStore((state) => state.current);
   const isMacOSXTheme = currentTheme === "macosx";
   const isMobile = useIsMobile();
@@ -85,7 +85,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
         | AppletViewerInitialData
         | undefined;
       const path = initialData?.path || "";
-      const file = files[path];
+      const file = path ? getFileItem(path) : undefined;
 
       // Get filename from path for label
       const getFileName = (filePath: string): string => {
@@ -119,7 +119,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
 
       return { icon, label, isEmoji };
     },
-    [files, t]
+    [getFileItem, t]
   );
 
   // Handle window selection (called from AppManager)

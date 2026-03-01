@@ -265,7 +265,7 @@ const createUseAppStore = () =>
 
           if (!isLazy) {
             Object.keys(instances).forEach((id) => {
-              if (id !== createdId)
+              if (id !== createdId && instances[id].isForeground)
                 instances[id] = { ...instances[id], isForeground: false };
             });
           }
@@ -325,22 +325,16 @@ const createUseAppStore = () =>
           const inst = state.instances[instanceId];
           if (!inst || !inst.isLoading) return state;
 
-          // When loaded, bring to foreground
           const instances = { ...state.instances };
           Object.keys(instances).forEach((id) => {
-            instances[id] = {
-              ...instances[id],
-              isForeground: id === instanceId,
-            };
+            const shouldBeForeground = id === instanceId;
+            if (id === instanceId) {
+              instances[id] = { ...inst, isLoading: false, isForeground: true };
+            } else if (instances[id].isForeground !== shouldBeForeground) {
+              instances[id] = { ...instances[id], isForeground: false };
+            }
           });
 
-          instances[instanceId] = {
-            ...inst,
-            isLoading: false,
-            isForeground: true,
-          };
-
-          // Ensure it's at the end of order
           const order = [
             ...state.instanceOrder.filter((id) => id !== instanceId),
             instanceId,
@@ -371,7 +365,6 @@ const createUseAppStore = () =>
           const instances = { ...state.instances };
           delete instances[instanceId];
           let order = state.instanceOrder.filter((id) => id !== instanceId);
-          // pick next foreground: last same-app in order, else last overall
           let nextForeground: string | null = null;
           for (let i = order.length - 1; i >= 0; i--) {
             const id = order[i];
@@ -383,10 +376,13 @@ const createUseAppStore = () =>
           if (!nextForeground && order.length)
             nextForeground = order[order.length - 1];
           Object.keys(instances).forEach((id) => {
-            instances[id] = {
-              ...instances[id],
-              isForeground: id === nextForeground,
-            };
+            const shouldBeForeground = id === nextForeground;
+            if (instances[id].isForeground !== shouldBeForeground) {
+              instances[id] = {
+                ...instances[id],
+                isForeground: shouldBeForeground,
+              };
+            }
           });
           if (nextForeground) {
             order = [
@@ -413,19 +409,27 @@ const createUseAppStore = () =>
             console.warn(`[AppStore] focus missing instance ${instanceId}`);
             return state;
           }
+
+          if (instanceId === state.foregroundInstanceId) return state;
+
           const instances = { ...state.instances };
-          let order = [...state.instanceOrder];
+          let order = state.instanceOrder;
           let foreground: string | null = null;
           if (!instanceId) {
             Object.keys(instances).forEach((id) => {
-              instances[id] = { ...instances[id], isForeground: false };
+              if (instances[id].isForeground) {
+                instances[id] = { ...instances[id], isForeground: false };
+              }
             });
           } else {
             Object.keys(instances).forEach((id) => {
-              instances[id] = {
-                ...instances[id],
-                isForeground: id === instanceId,
-              };
+              const shouldBeForeground = id === instanceId;
+              if (instances[id].isForeground !== shouldBeForeground) {
+                instances[id] = {
+                  ...instances[id],
+                  isForeground: shouldBeForeground,
+                };
+              }
             });
             order = [...order.filter((id) => id !== instanceId), instanceId];
             foreground = instanceId;
@@ -448,12 +452,24 @@ const createUseAppStore = () =>
       },
 
       updateInstanceWindowState: (instanceId, position, size) =>
-        set((state) => ({
-          instances: {
-            ...state.instances,
-            [instanceId]: { ...state.instances[instanceId], position, size },
-          },
-        })),
+        set((state) => {
+          const inst = state.instances[instanceId];
+          if (
+            !inst ||
+            (inst.position?.x === position.x &&
+              inst.position?.y === position.y &&
+              inst.size?.width === size.width &&
+              inst.size?.height === size.height)
+          ) {
+            return state;
+          }
+          return {
+            instances: {
+              ...state.instances,
+              [instanceId]: { ...inst, position, size },
+            },
+          };
+        }),
 
       getInstancesByAppId: (appId) =>
         Object.values(get().instances).filter((i) => i.appId === appId),
@@ -517,12 +533,13 @@ const createUseAppStore = () =>
           if (!inst || !inst.isMinimized) return state;
 
           const instances = { ...state.instances };
-          // Remove foreground from all others
           Object.keys(instances).forEach((id) => {
-            instances[id] = { ...instances[id], isForeground: false };
+            if (id === instanceId) {
+              instances[id] = { ...inst, isMinimized: false, isForeground: true };
+            } else if (instances[id].isForeground) {
+              instances[id] = { ...instances[id], isForeground: false };
+            }
           });
-          // Restore and bring to foreground
-          instances[instanceId] = { ...inst, isMinimized: false, isForeground: true };
 
           // Move to end of order
           const order = [

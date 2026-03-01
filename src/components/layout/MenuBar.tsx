@@ -936,8 +936,8 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   // Check if on phone (must be called before any early returns)
   const isPhone = useIsPhone();
 
-  // Get file system items for applet icons
-  const files = useFilesStore((s) => s.items);
+  // Use targeted store access for applet icons
+  const getFileItem = useFilesStore((s) => s.getItem);
 
   // Helper to get applet info (icon and name) from instance
   const getAppletInfo = (instance: AppInstance) => {
@@ -945,7 +945,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       | AppletViewerInitialData
       | undefined;
     const path = initialData?.path || "";
-    const file = files[path];
+    const file = path ? getFileItem(path) : undefined;
 
     // Get filename from path for label
     const getFileName = (path: string): string => {

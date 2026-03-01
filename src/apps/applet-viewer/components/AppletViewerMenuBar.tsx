@@ -68,15 +68,14 @@ export function AppletViewerMenuBar({
   const bringInstanceToForeground = useAppStore(
     (s) => s.bringInstanceToForeground
   );
-  const instances = useAppStore((s) => s.instances);
+  const appletInstances = useAppStore((s) =>
+    Object.values(s.instances).filter(
+      (inst) => inst.appId === "applet-viewer" && inst.isOpen
+    )
+  );
   const username = useChatsStore((s) => s.username);
   const authToken = useChatsStore((s) => s.authToken);
   const isLoggedIn = !!(username && authToken);
-
-  // Get all active applet viewer instances
-  const appletInstances = Object.values(instances).filter(
-    (inst) => inst.appId === "applet-viewer" && inst.isOpen
-  );
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>

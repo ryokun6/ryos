@@ -149,19 +149,21 @@ export const useWindowManager = ({
     [scheduleWindowFrame]
   );
 
-  // Sync local state with store when store changes (for programmatic updates)
+  // Sync local state with store when store changes (for programmatic updates).
+  // Use refs for comparison to avoid re-running on every local state change during drag.
   useEffect(() => {
     const storeSize = instanceStateFromStore?.size;
     if (
       storeSize &&
       !isDragging &&
       !resizeType &&
-      (storeSize.width !== windowSize.width ||
-        storeSize.height !== windowSize.height)
+      (storeSize.width !== latestWindowSizeRef.current.width ||
+        storeSize.height !== latestWindowSizeRef.current.height)
     ) {
       setWindowSize(storeSize);
+      latestWindowSizeRef.current = storeSize;
     }
-  }, [instanceStateFromStore?.size, isDragging, resizeType, windowSize]);
+  }, [instanceStateFromStore?.size, isDragging, resizeType]);
 
   useEffect(() => {
     latestWindowSizeRef.current = windowSize;
@@ -173,12 +175,13 @@ export const useWindowManager = ({
       storePosition &&
       !isDragging &&
       !resizeType &&
-      (storePosition.x !== windowPosition.x ||
-        storePosition.y !== windowPosition.y)
+      (storePosition.x !== latestWindowPositionRef.current.x ||
+        storePosition.y !== latestWindowPositionRef.current.y)
     ) {
       setWindowPosition(storePosition);
+      latestWindowPositionRef.current = storePosition;
     }
-  }, [instanceStateFromStore?.position, isDragging, resizeType, windowPosition]);
+  }, [instanceStateFromStore?.position, isDragging, resizeType]);
 
   useEffect(() => {
     latestWindowPositionRef.current = windowPosition;
