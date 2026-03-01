@@ -112,6 +112,7 @@ export function WindowFrame({
     closeAppInstance,
     updateInstanceTitle,
     exposeMode,
+    openInstanceCount,
   } = useAppStoreShallow((state) => ({
     bringInstanceToForeground: state.bringInstanceToForeground,
     updateInstanceWindowState: state.updateInstanceWindowState,
@@ -119,6 +120,9 @@ export function WindowFrame({
     closeAppInstance: state.closeAppInstance,
     updateInstanceTitle: state.updateInstanceTitle,
     exposeMode: state.exposeMode,
+    openInstanceCount: state.exposeMode
+      ? Object.values(state.instances).filter(inst => inst.isOpen && !inst.isMinimized).length
+      : 0,
   }));
   
   // Debug mode from display settings store
@@ -429,25 +433,22 @@ export function WindowFrame({
     };
   }, [launchOrigin, windowPosition, windowSize]);
 
-  // Only subscribe to instance count/order when expose mode is active.
-  // Use store state directly to avoid closure-based selector recreation.
-  const openInstanceIds = useAppStore((state) => {
-    if (!state.exposeMode) return null;
-    return Object.values(state.instances)
-      .filter(inst => inst.isOpen && !inst.isMinimized)
-      .map(inst => inst.instanceId);
-  });
-
-  // Calculate expose transform for Mission Control view
+  // Calculate expose transform for Mission Control view.
+  // Uses openInstanceCount as a reactive dependency to recompute when windows
+  // open/close, and reads instance order imperatively to avoid infinite loops
+  // from selectors that return new arrays.
   const exposeTransform = useMemo(() => {
-    if (!exposeMode || !instanceId || !openInstanceIds) return null;
+    if (!exposeMode || !instanceId) return null;
     
-    const myIndex = openInstanceIds.indexOf(instanceId);
+    const allInstances = useAppStore.getState().instances;
+    const openInstances = Object.values(allInstances)
+      .filter(inst => inst.isOpen && !inst.isMinimized);
+    const myIndex = openInstances.findIndex(inst => inst.instanceId === instanceId);
     
-    if (myIndex === -1 || openInstanceIds.length === 0) return null;
+    if (myIndex === -1 || openInstances.length === 0) return null;
     
     const grid = calculateExposeGrid(
-      openInstanceIds.length,
+      openInstances.length,
       window.innerWidth,
       window.innerHeight,
       60, // padding
@@ -467,7 +468,9 @@ export function WindowFrame({
     );
     
     return { ...transform, index: myIndex };
-  }, [exposeMode, instanceId, openInstanceIds, windowPosition, windowSize, isMobile]);
+    // openInstanceCount triggers recomputation when windows open/close/minimize
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exposeMode, instanceId, openInstanceCount, windowPosition, windowSize, isMobile]);
 
 
   // No longer track maximized state based on window dimensions
