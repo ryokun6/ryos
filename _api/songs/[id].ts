@@ -18,12 +18,10 @@
  * - POST with action=search-lyrics: Search for lyrics matches
  */
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { Redis } from "@upstash/redis";
-import { validateAuth } from "../_utils/auth/index.js";
+import type { VercelResponse } from "@vercel/node";
 import * as RateLimit from "../_utils/_rate-limit.js";
-import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
+import { apiHandler } from "../_utils/api-handler.js";
 import {
   getSong,
   saveSong,
@@ -90,21 +88,9 @@ import {
 
 import { streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { initLogger } from "../_utils/_logging.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
-
-// ============================================================================
-// Local Helper Functions
-// ============================================================================
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
-}
 
 // Helper for SSE responses with Node.js VercelResponse
 function sendSSEResponse(res: VercelResponse, origin: string | null, data: unknown): void {
@@ -133,23 +119,20 @@ const RATE_LIMITS = {
 // Main Handler
 // =============================================================================
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { requestId, logger } = initLogger();
-  const startTime = Date.now();
-
-  // Extract song ID from query params
+export default apiHandler<Record<string, unknown>>(
+  {
+    methods: ["GET", "POST", "DELETE"],
+    auth: "optional",
+    parseJsonBody: true,
+    contentType: null,
+  },
+  async ({ req, res, redis, logger, startTime, origin, user, body }) => {
+  const requestIdHeader = req.headers["x-request-id"];
+  const requestId = Array.isArray(requestIdHeader)
+    ? requestIdHeader[0]
+    : requestIdHeader || "unknown";
   const songId = req.query.id as string | undefined;
-
-  const effectiveOrigin = getEffectiveOrigin(req);
-  setCorsHeaders(res, effectiveOrigin, { methods: ["GET", "POST", "DELETE", "OPTIONS"] });
-
-  logger.request(req.method || "GET", `/api/songs/${songId || "[id]"}`);
-
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    logger.response(204, Date.now() - startTime);
-    return res.status(204).end();
-  }
+  const effectiveOrigin = origin;
 
   // Helper for JSON responses
   const jsonResponse = (data: unknown, status = 200, headers: Record<string, string> = {}) => {
@@ -164,14 +147,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     logger.info(`Response: ${status} - ${message}`);
     return jsonResponse({ error: message }, status);
   };
-
-  if (!isAllowedOrigin(effectiveOrigin)) {
-    logger.warn("Unauthorized origin", { effectiveOrigin });
-    return errorResponse("Unauthorized", 403);
-  }
-
-  // Create Redis client
-  const redis = createRedis();
 
   if (!songId || songId === "[id]") {
     logger.warn("Song ID is required");
@@ -255,16 +230,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // POST: Update song or perform action
     // =========================================================================
     if (req.method === "POST") {
-      // Vercel throws an error when accessing req.body with malformed JSON
-      // Wrap in try-catch to return proper 400 error
-      let bodyObj: Record<string, unknown>;
-      try {
-        const body = req.body;
-        if (body === undefined || body === null || typeof body !== 'object' || Array.isArray(body)) {
-          return errorResponse("Invalid JSON body", 400);
-        }
-        bodyObj = body as Record<string, unknown>;
-      } catch {
+      const bodyObj =
+        body && typeof body === "object" && !Array.isArray(body)
+          ? body
+          : null;
+      if (!bodyObj) {
         return errorResponse("Invalid JSON body", 400);
       }
       const action = bodyObj?.action;
@@ -276,11 +246,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         query: bodyObj?.query,
       });
 
-      // Extract auth credentials
-      const authHeader = req.headers.authorization as string | undefined;
-      const usernameHeader = req.headers["x-username"] as string | undefined;
-      const authToken = authHeader?.replace("Bearer ", "") || null;
-      const username = usernameHeader || null;
+      const username = user?.username || null;
       const requestIp = getClientIp(req);
       const rateLimitUser = username?.toLowerCase() || requestIp;
 
@@ -413,14 +379,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // First-time fetch (no existing lyrics source) is allowed for anyone
         if ((force || lyricsSourceChanged) && song?.lyricsSource) {
           const isPublicSong = !song.createdBy;
-          const allowAnonymousRefresh = isPublicSong && !username && !authToken;
+          const allowAnonymousRefresh = isPublicSong && !username;
           if (!allowAnonymousRefresh) {
-            if (!username || !authToken) {
+            if (!username) {
               return errorResponse("Unauthorized - authentication required to change lyrics source or force refresh", 401);
-            }
-            const authResult = await validateAuth(redis, username, authToken);
-            if (!authResult.valid) {
-              return errorResponse("Unauthorized - invalid credentials", 401);
             }
             const permission = canModifySong(song, username);
             if (!permission.canModify) {
@@ -737,12 +699,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Permission check: force refresh requires auth when translation already exists
         if (force && song.translations?.[language]) {
-          if (!username || !authToken) {
+          if (!username) {
             return errorResponse("Unauthorized - authentication required to force refresh translation", 401);
-          }
-          const authResult = await validateAuth(redis, username, authToken);
-          if (!authResult.valid) {
-            return errorResponse("Unauthorized - invalid credentials", 401);
           }
           const permission = canModifySong(song, username);
           if (!permission.canModify) {
@@ -859,12 +817,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Permission check: force refresh requires auth when translation already exists
         if (force && song.translations?.[language]) {
-          if (!username || !authToken) {
+          if (!username) {
             return errorResponse("Unauthorized - authentication required to force refresh translation", 401);
-          }
-          const authResult = await validateAuth(redis, username, authToken);
-          if (!authResult.valid) {
-            return errorResponse("Unauthorized - invalid credentials", 401);
           }
           const permission = canModifySong(song, username);
           if (!permission.canModify) {
@@ -927,7 +881,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         res.setHeader("Cache-Control", "no-cache, no-transform");
         res.setHeader("Connection", "keep-alive");
         res.setHeader("X-Accel-Buffering", "no");
-        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        if (effectiveOrigin) {
+          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
+        }
 
         const allTranslations: string[] = new Array(totalLines).fill("");
         let completedLines = 0;
@@ -1074,12 +1030,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Permission check: force refresh requires auth when furigana already exists
         if (force && song.furigana && song.furigana.length > 0) {
-          if (!username || !authToken) {
+          if (!username) {
             return errorResponse("Unauthorized - authentication required to force refresh furigana", 401);
-          }
-          const authResult = await validateAuth(redis, username, authToken);
-          if (!authResult.valid) {
-            return errorResponse("Unauthorized - invalid credentials", 401);
           }
           const permission = canModifySong(song, username);
           if (!permission.canModify) {
@@ -1130,7 +1082,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         res.setHeader("Cache-Control", "no-cache, no-transform");
         res.setHeader("Connection", "keep-alive");
         res.setHeader("X-Accel-Buffering", "no");
-        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        if (effectiveOrigin) {
+          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
+        }
 
         const allFurigana: Array<Array<{ text: string; reading?: string }>> = 
           new Array(totalLines).fill(null).map((_, i) => [{ text: lines[i].words }]);
@@ -1314,12 +1268,8 @@ Output:
         const existingSoramimi = song.soramimiByLang?.[targetLanguage]
           ?? (targetLanguage === "zh-TW" ? song.soramimi : undefined);
         if (force && existingSoramimi && existingSoramimi.length > 0) {
-          if (!username || !authToken) {
+          if (!username) {
             return errorResponse("Unauthorized - authentication required to force refresh soramimi", 401);
-          }
-          const authResult = await validateAuth(redis, username, authToken);
-          if (!authResult.valid) {
-            return errorResponse("Unauthorized - invalid credentials", 401);
           }
           const permission = canModifySong(song, username);
           if (!permission.canModify) {
@@ -1440,7 +1390,9 @@ Output:
         res.setHeader("Cache-Control", "no-cache, no-transform");
         res.setHeader("Connection", "keep-alive");
         res.setHeader("X-Accel-Buffering", "no");
-        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+        if (effectiveOrigin) {
+          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
+        }
 
         const allSoramimi: Array<Array<{ text: string; reading?: string }>> =
           new Array(totalLines).fill(null).map(() => []);
@@ -1625,9 +1577,7 @@ Output:
           return errorResponse("Invalid request body");
         }
 
-        // Validate auth
-        const authResult = await validateAuth(redis, username, authToken);
-        if (!authResult.valid) {
+        if (!username) {
           return errorResponse("Unauthorized - authentication required", 401);
         }
 
@@ -1662,8 +1612,7 @@ Output:
       }
 
       // Default POST: Update song metadata (requires auth)
-      const authResult = await validateAuth(redis, username, authToken);
-      if (!authResult.valid) {
+      if (!username) {
         return errorResponse("Unauthorized - authentication required", 401);
       }
 
@@ -1738,13 +1687,8 @@ Output:
     // DELETE: Delete song (admin only)
     // =========================================================================
     if (req.method === "DELETE") {
-      const authHeader = req.headers.authorization as string | undefined;
-      const usernameHeader = req.headers["x-username"] as string | undefined;
-      const authToken = authHeader?.replace("Bearer ", "") || null;
-      const username = usernameHeader || null;
-
-      const authResult = await validateAuth(redis, username, authToken);
-      if (!authResult.valid) {
+      const username = user?.username || null;
+      if (!username) {
         return errorResponse("Unauthorized - authentication required", 401);
       }
 
@@ -1769,4 +1713,5 @@ Output:
     logger.error("Song API error", error);
     return errorResponse(errorMessage, 500);
   }
-}
+  }
+);
