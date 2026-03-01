@@ -2,7 +2,12 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
-import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
+import {
+  isAllowedOrigin,
+  getEffectiveOrigin,
+  setCorsHeaders,
+  getRuntimeEnv,
+} from "./_utils/_cors.js";
 import { initLogger } from "./_utils/_logging.js";
 
 export const runtime = "nodejs";
@@ -78,7 +83,9 @@ export default async function handler(
     method: req.method, 
     effectiveOrigin,
     youtubeKeyCount: [process.env.YOUTUBE_API_KEY, process.env.YOUTUBE_API_KEY_2].filter(Boolean).length,
-    vercelEnv: process.env.VERCEL_ENV || "not set"
+    runtimeEnv: getRuntimeEnv(),
+    vercelEnv: process.env.VERCEL_ENV || "not set",
+    nodeEnv: process.env.NODE_ENV || "not set",
   });
 
   if (req.method === "OPTIONS") {
@@ -99,12 +106,8 @@ export default async function handler(
   res.setHeader("Content-Type", "application/json");
   setCorsHeaders(res, effectiveOrigin, { methods: ["POST", "OPTIONS"], headers: ["Content-Type"] });
 
-  // Check origin - be more permissive in development
-  const vercelEnv = process.env.VERCEL_ENV;
-  const isDev = !vercelEnv || vercelEnv === "development";
-  
-  if (!isDev && !isAllowedOrigin(effectiveOrigin)) {
-    logger.error("Origin not allowed", { effectiveOrigin, vercelEnv });
+  if (!isAllowedOrigin(effectiveOrigin)) {
+    logger.error("Origin not allowed", { effectiveOrigin, runtimeEnv: getRuntimeEnv() });
     logger.response(403, Date.now() - startTime);
     res.status(403).json({ error: "Origin not allowed" });
     return;
@@ -163,7 +166,7 @@ export default async function handler(
     logger.response(500, Date.now() - startTime);
     res.status(500).json({ 
       error: "YouTube API is not configured",
-      hint: "Add YOUTUBE_API_KEY to your .env.local file and restart vercel dev"
+      hint: "Add YOUTUBE_API_KEY to your .env.local file and restart the API server"
     });
     return;
   }

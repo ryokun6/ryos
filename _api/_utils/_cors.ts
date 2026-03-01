@@ -1,7 +1,7 @@
 // Shared CORS utilities for API routes (Node.js runtime only)
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-type VercelEnv = "production" | "preview" | "development";
+type RuntimeEnv = "production" | "preview" | "development";
 
 // Helper to get header value from Node.js IncomingMessage headers
 function getHeader(req: VercelRequest, name: string): string | null {
@@ -28,11 +28,35 @@ const ALLOWED_VERCEL_PREVIEW_PREFIXES = [
   "os-ryo-",    // Alternative naming
 ];
 
-function getRuntimeEnv(): VercelEnv {
-  const env = process.env.VERCEL_ENV;
+function normalizeEnv(env: string | undefined): RuntimeEnv | null {
   if (env === "production" || env === "preview" || env === "development") {
     return env;
   }
+  return null;
+}
+
+/**
+ * Resolve runtime environment in non-Vercel contexts too.
+ *
+ * Priority:
+ * 1) API_RUNTIME_ENV / API_ENV (self-host explicit override)
+ * 2) VERCEL_ENV (Vercel deployments)
+ * 3) NODE_ENV=production
+ * 4) development fallback
+ */
+export function getRuntimeEnv(): RuntimeEnv {
+  const explicitApiEnv = normalizeEnv(
+    process.env.API_RUNTIME_ENV || process.env.API_ENV
+  );
+  if (explicitApiEnv) return explicitApiEnv;
+
+  const vercelEnv = normalizeEnv(process.env.VERCEL_ENV);
+  if (vercelEnv) return vercelEnv;
+
+  if (process.env.NODE_ENV === "production") {
+    return "production";
+  }
+
   return "development";
 }
 
@@ -74,6 +98,40 @@ function isTailscaleOrigin(origin: string): boolean {
   return parsed.hostname.endsWith(TAILSCALE_ALLOWED_SUFFIX);
 }
 
+function normalizeOrigin(origin: string): string | null {
+  const parsed = parseOrigin(origin);
+  return parsed?.origin ?? null;
+}
+
+function getConfiguredAllowedOrigins(): {
+  allowAll: boolean;
+  origins: Set<string>;
+} {
+  const raw = process.env.API_ALLOWED_ORIGINS;
+  if (!raw) {
+    return { allowAll: false, origins: new Set() };
+  }
+
+  const tokens = raw
+    .split(",")
+    .map((token) => token.trim())
+    .filter(Boolean);
+
+  if (tokens.includes("*")) {
+    return { allowAll: true, origins: new Set() };
+  }
+
+  const origins = new Set<string>();
+  for (const token of tokens) {
+    const normalized = normalizeOrigin(token);
+    if (normalized) {
+      origins.add(normalized);
+    }
+  }
+
+  return { allowAll: false, origins };
+}
+
 export function getEffectiveOrigin(req: VercelRequest): string | null {
   try {
     const origin = getHeader(req, "origin");
@@ -92,16 +150,32 @@ export function isAllowedOrigin(origin: string | null): boolean {
   // Always allow tailscale origins (for local network access)
   if (isTailscaleOrigin(origin)) return true;
   
+  const normalizedOrigin = normalizeOrigin(origin);
+  if (!normalizedOrigin) return false;
+
   const env = getRuntimeEnv();
+  const configuredOrigins = getConfiguredAllowedOrigins();
+
+  if (configuredOrigins.allowAll) {
+    return true;
+  }
+
+  // Explicit self-host allowlist takes precedence.
+  if (configuredOrigins.origins.size > 0) {
+    if (configuredOrigins.origins.has(normalizedOrigin)) return true;
+    // Keep localhost available in development even with explicit allowlist.
+    if (env === "development" && isLocalhostOrigin(normalizedOrigin)) return true;
+    return false;
+  }
 
   if (env === "production") {
-    return origin === PROD_ALLOWED_ORIGIN;
+    return normalizedOrigin === PROD_ALLOWED_ORIGIN;
   }
   if (env === "preview") {
-    return isVercelPreviewOrigin(origin);
+    return isVercelPreviewOrigin(normalizedOrigin);
   }
   // Development is default fallback
-  return isLocalhostOrigin(origin);
+  return isLocalhostOrigin(normalizedOrigin);
 }
 
 /**
@@ -162,8 +236,9 @@ export function setCorsHeaders(
     maxAge = 86400,
   } = options;
 
-  if (origin) {
+  if (origin && isAllowedOrigin(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
   }
   res.setHeader("Access-Control-Allow-Methods", methods.join(", "));
   res.setHeader("Access-Control-Allow-Headers", headers.join(", "));
