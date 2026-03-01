@@ -199,6 +199,7 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
   const [selectedSongId, setSelectedSongId] = useState<string | null>(null);
   const [songs, setSongs] = useState<CachedSongMetadata[]>([]);
   const [songSearch, setSongSearch] = useState("");
+  const [songsFilterByRyoOnly, setSongsFilterByRyoOnly] = useState(false);
   const [visibleSongsCount, setVisibleSongsCount] = useState(SONGS_PER_PAGE);
 
   // Sidebar visibility and mobile detection
@@ -1125,6 +1126,8 @@ export function useAdminLogic({ isWindowOpen }: UseAdminLogicProps) {
     songs,
     songSearch,
     setSongSearch,
+    songsFilterByRyoOnly,
+    setSongsFilterByRyoOnly,
     visibleSongsCount,
     setVisibleSongsCount,
     SONGS_PER_PAGE,

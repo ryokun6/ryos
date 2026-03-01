@@ -2,7 +2,8 @@
  * Romanization utilities for CJK (Chinese, Japanese, Korean) text
  * Provides shared rendering functions for ruby annotations
  */
-import { convert as romanizeKorean } from "hangul-romanization";
+import * as hangulRomanization from "hangul-romanization";
+const romanizeKorean = (hangulRomanization as { convert: (text: string) => string }).convert;
 import { pinyin } from "pinyin-pro";
 import { toRomaji } from "wanakana";
 import { hasKoreanText, isChineseText } from "./languageDetection";

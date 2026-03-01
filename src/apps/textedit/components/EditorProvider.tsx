@@ -38,7 +38,7 @@ export function EditorProvider({ children }: EditorProviderProps) {
 
   return (
     <EditorContext.Provider value={editor}>
-      {children}
+      {editor ? children : null}
     </EditorContext.Provider>
   );
 }

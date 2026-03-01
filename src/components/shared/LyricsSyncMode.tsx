@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Minus, Plus, CaretDoubleDown, MagnifyingGlass } from "@phosphor-icons/react";
 import type { LyricLine, RomanizationSettings } from "@/types/lyrics";
-import { convert as romanizeKorean } from "hangul-romanization";
+import * as hangulRomanization from "hangul-romanization";
+const romanizeKorean = (hangulRomanization as { convert: (text: string) => string }).convert;
 import { pinyin } from "pinyin-pro";
 import { toRomaji } from "wanakana";
 import {

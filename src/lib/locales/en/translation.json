@@ -2530,6 +2530,8 @@
         "export": "Export Library",
         "deleteAll": "Delete All Songs",
         "noSongs": "No songs in cache",
+        "noSongsMatchFilter": "No songs match the current filter",
+        "filterByRyo": "Filter: songs created by ryo",
         "noSongsToExport": "No songs to export",
         "allSongs": "all songs"
       },

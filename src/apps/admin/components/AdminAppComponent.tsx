@@ -21,6 +21,7 @@ import {
   UploadSimple,
   DownloadSimple,
   WifiSlash,
+  Funnel,
 } from "@phosphor-icons/react";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
@@ -31,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useAdminLogic } from "../hooks/useAdminLogic";
 
@@ -81,6 +83,8 @@ export function AdminAppComponent({
     songs,
     songSearch,
     setSongSearch,
+    songsFilterByRyoOnly,
+    setSongsFilterByRyoOnly,
     visibleSongsCount,
     setVisibleSongsCount,
     SONGS_PER_PAGE,
@@ -120,6 +124,23 @@ export function AdminAppComponent({
       onSectionChange={setActiveSection}
     />
   );
+
+  const filteredSongs = useMemo(() => {
+    let list = songs;
+    if (songsFilterByRyoOnly) {
+      list = list.filter((s) => s.createdBy?.toLowerCase() === "ryo");
+    }
+    if (songSearch.length > 0) {
+      list = list.filter(
+        (song) =>
+          song.title.toLowerCase().includes(songSearch.toLowerCase()) ||
+          (song.artist
+            ?.toLowerCase()
+            .includes(songSearch.toLowerCase()) ?? false)
+      );
+    }
+    return list;
+  }, [songs, songsFilterByRyoOnly, songSearch]);
 
   const shouldShowImportStatus =
     activeSection === "songs" &&
@@ -352,6 +373,24 @@ export function AdminAppComponent({
                         className="pl-7 h-7 text-[12px]"
                       />
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSongsFilterByRyoOnly((v) => !v)}
+                      className={cn(
+                        "h-7 w-7 p-0",
+                        songsFilterByRyoOnly && "bg-neutral-200"
+                      )}
+                      title={t(
+                        "apps.admin.songs.filterByRyo",
+                        "Filter: songs created by ryo"
+                      )}
+                    >
+                      <Funnel
+                        size={14}
+                        weight={songsFilterByRyoOnly ? "fill" : "bold"}
+                      />
+                    </Button>
                     {/* Import button */}
                     <input
                       ref={fileInputRef}
@@ -673,21 +712,23 @@ export function AdminAppComponent({
                           {t("apps.admin.songs.noSongs", "No songs in cache")}
                         </span>
                       </div>
+                    ) : filteredSongs.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 text-neutral-400">
+                        <Funnel
+                          className="h-8 w-8 mb-2 opacity-50"
+                          weight="bold"
+                        />
+                        <span className="text-[11px]">
+                          {t(
+                            "apps.admin.songs.noSongsMatchFilter",
+                            "No songs match the current filter"
+                          )}
+                        </span>
+                      </div>
                     ) : (
                       <>
                         <div className="divide-y divide-gray-200">
-                          {songs
-                            .filter(
-                              (song) =>
-                                songSearch.length === 0 ||
-                                song.title
-                                  .toLowerCase()
-                                  .includes(songSearch.toLowerCase()) ||
-                                (song.artist
-                                  ?.toLowerCase()
-                                  .includes(songSearch.toLowerCase()) ??
-                                  false)
-                            )
+                          {filteredSongs
                             .slice(0, visibleSongsCount)
                             .map((song) => (
                               <div
@@ -749,17 +790,7 @@ export function AdminAppComponent({
                               </div>
                             ))}
                         </div>
-                        {songs.filter(
-                          (song) =>
-                            songSearch.length === 0 ||
-                            song.title
-                              .toLowerCase()
-                              .includes(songSearch.toLowerCase()) ||
-                            (song.artist
-                              ?.toLowerCase()
-                              .includes(songSearch.toLowerCase()) ??
-                              false)
-                        ).length > visibleSongsCount && (
+                        {filteredSongs.length > visibleSongsCount && (
                           <div className="pt-2 pb-1 flex justify-center">
                             <Button
                               variant="ghost"
@@ -773,17 +804,7 @@ export function AdminAppComponent({
                             >
                               {t("apps.admin.loadMore", {
                                 remaining:
-                                  songs.filter(
-                                    (song) =>
-                                      songSearch.length === 0 ||
-                                      song.title
-                                        .toLowerCase()
-                                        .includes(songSearch.toLowerCase()) ||
-                                      (song.artist
-                                        ?.toLowerCase()
-                                        .includes(songSearch.toLowerCase()) ??
-                                        false)
-                                  ).length - visibleSongsCount,
+                                  filteredSongs.length - visibleSongsCount,
                               })}
                             </Button>
                           </div>
@@ -870,8 +891,8 @@ export function AdminAppComponent({
                     })
                   : activeSection === "songs" && !selectedRoomId
                   ? t("apps.admin.statusBar.songsCount", {
-                      count: songs.length,
-                      defaultValue: `${songs.length} songs`,
+                      count: filteredSongs.length,
+                      defaultValue: `${filteredSongs.length} songs`,
                     })
                   : selectedRoomId
                   ? t("apps.admin.statusBar.messagesCount", {
