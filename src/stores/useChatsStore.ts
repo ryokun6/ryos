@@ -10,6 +10,12 @@ import { APP_ANALYTICS } from "@/utils/analytics";
 import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  getBulkMessages as getBulkMessagesApi,
+  getRoomMessages as getRoomMessagesApi,
+  listRooms as listRoomsApi,
+  switchPresence as switchPresenceApi,
+} from "@/api/rooms";
 
 // Recovery mechanism - uses different prefix to avoid reset
 const USERNAME_RECOVERY_KEY = "_usr_recovery_key_";
@@ -96,34 +102,6 @@ const decodeHtmlEntities = (str: string): string =>
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&apos;/g, "'");
-
-const readJsonBody = async <T>(
-  response: Response,
-  context: string
-): Promise<{ ok: true; data: T } | { ok: false; error: string }> => {
-  const contentType = response.headers.get("content-type")?.toLowerCase() || "";
-  if (!contentType.includes("json")) {
-    return {
-      ok: false,
-      error: `${context}: expected JSON but got ${contentType || "unknown content-type"}`,
-    };
-  }
-
-  try {
-    return { ok: true, data: (await response.json()) as T };
-  } catch {
-    return { ok: false, error: `${context}: invalid JSON response body` };
-  }
-};
-
-const warnedStoreIssues = new Set<string>();
-const warnChatsStoreOnce = (key: string, message: string): void => {
-  if (warnedStoreIssues.has(key)) {
-    return;
-  }
-  warnedStoreIssues.add(key);
-  console.warn(message);
-};
 
 const API_UNAVAILABLE_COOLDOWN_MS = 10_000;
 const apiUnavailableUntil: Record<string, number> = {};
@@ -996,47 +974,17 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { ok: false, error: "Rooms API temporarily unavailable" };
           }
           const currentUsername = get().username;
+          const currentToken = get().authToken;
 
           try {
-            const queryParams = new URLSearchParams();
-            if (currentUsername) {
-              queryParams.append("username", currentUsername);
-            }
-
-            const url = queryParams.toString() 
-              ? `/api/rooms?${queryParams.toString()}`
-              : "/api/rooms";
-            
-            const response = await abortableFetch(url, {
-              method: "GET",
-              timeout: 15000,
-              throwOnHttpError: false,
-              retry: { maxAttempts: 1, initialDelayMs: 250 },
-            });
-            if (!response.ok) {
-              const errorData = await readJsonBody<{ error?: string }>(
-                response,
-                "fetchRooms error response"
-              );
-              return {
-                ok: false,
-                error: errorData.ok
-                  ? errorData.data.error || "Failed to fetch rooms"
-                  : `HTTP error! status: ${response.status}`,
-              };
-            }
-
-            const roomsData = await readJsonBody<{ rooms?: ChatRoom[] }>(
-              response,
-              "fetchRooms success response"
+            const data = await listRoomsApi(
+              currentUsername && currentToken
+                ? {
+                    username: currentUsername,
+                    token: currentToken,
+                  }
+                : undefined
             );
-            if (!roomsData.ok) {
-              warnChatsStoreOnce("fetchRooms-success-response", `[ChatsStore] ${roomsData.error}`);
-              markApiTemporarilyUnavailable("rooms");
-              return { ok: false, error: "Rooms API unavailable" };
-            }
-
-            const data = roomsData.data;
             if (data.rooms && Array.isArray(data.rooms)) {
               clearApiUnavailable("rooms");
               // Normalize ordering via setRooms to enforce alphabetical sections
@@ -1048,7 +996,13 @@ export const useChatsStore = create<ChatsStoreState>()(
           } catch (error) {
             console.error("[ChatsStore] Error fetching rooms:", error);
             markApiTemporarilyUnavailable("rooms");
-            return { ok: false, error: "Network error. Please try again." };
+            return {
+              ok: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Network error. Please try again.",
+            };
           }
         },
         fetchMessagesForRoom: async (roomId: string) => {
@@ -1060,42 +1014,17 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const response = await abortableFetch(
-              `/api/rooms/${encodeURIComponent(roomId)}/messages`,
-              {
-                method: "GET",
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
+            const username = get().username;
+            const authToken = get().authToken;
+            const data = await getRoomMessagesApi(
+              roomId,
+              username && authToken
+                ? {
+                    username,
+                    token: authToken,
+                  }
+                : undefined
             );
-            if (!response.ok) {
-              const errorData = await readJsonBody<{ error?: string }>(
-                response,
-                "fetchMessagesForRoom error response"
-              );
-              return {
-                ok: false,
-                error: errorData.ok
-                  ? errorData.data.error || "Failed to fetch messages"
-                  : `HTTP error! status: ${response.status}`,
-              };
-            }
-
-            const messagesData = await readJsonBody<{ messages?: ApiMessage[] }>(
-              response,
-              "fetchMessagesForRoom success response"
-            );
-            if (!messagesData.ok) {
-              warnChatsStoreOnce(
-                "fetchMessagesForRoom-success-response",
-                `[ChatsStore] ${messagesData.error}`
-              );
-              markApiTemporarilyUnavailable("room-messages");
-              return { ok: false, error: "Messages API unavailable" };
-            }
-
-            const data = messagesData.data;
             if (data.messages) {
               clearApiUnavailable("room-messages");
               const fetchedMessages: ChatMessage[] = (data.messages || [])
@@ -1200,7 +1129,13 @@ export const useChatsStore = create<ChatsStoreState>()(
               error
             );
             markApiTemporarilyUnavailable("room-messages");
-            return { ok: false, error: "Network error. Please try again." };
+            return {
+              ok: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Network error. Please try again.",
+            };
           }
         },
         fetchBulkMessages: async (roomIds: string[]) => {
@@ -1215,45 +1150,17 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
-            const queryParams = new URLSearchParams({
-              roomIds: roomIds.join(","),
-            });
-
-            const response = await abortableFetch(
-              `/api/messages/bulk?${queryParams.toString()}`,
-              {
-                method: "GET",
-                timeout: 15000,
-                throwOnHttpError: false,
-                retry: { maxAttempts: 1, initialDelayMs: 250 },
-              }
+            const username = get().username;
+            const authToken = get().authToken;
+            const data = await getBulkMessagesApi(
+              roomIds,
+              username && authToken
+                ? {
+                    username,
+                    token: authToken,
+                  }
+                : undefined
             );
-            if (!response.ok) {
-              const errorData = await readJsonBody<{ error?: string }>(
-                response,
-                "fetchBulkMessages error response"
-              );
-              return {
-                ok: false,
-                error: errorData.ok
-                  ? errorData.data.error || "Failed to fetch messages"
-                  : `HTTP error! status: ${response.status}`,
-              };
-            }
-
-            const bulkData = await readJsonBody<{
-              messagesMap?: Record<string, ApiMessage[]>;
-            }>(response, "fetchBulkMessages success response");
-            if (!bulkData.ok) {
-              warnChatsStoreOnce(
-                "fetchBulkMessages-success-response",
-                `[ChatsStore] ${bulkData.error}`
-              );
-              markApiTemporarilyUnavailable("bulk-messages");
-              return { ok: false, error: "Bulk messages API unavailable" };
-            }
-
-            const data = bulkData.data;
             const messagesMap = data.messagesMap;
             if (messagesMap) {
               clearApiUnavailable("bulk-messages");
@@ -1355,12 +1262,19 @@ export const useChatsStore = create<ChatsStoreState>()(
               error
             );
             markApiTemporarilyUnavailable("bulk-messages");
-            return { ok: false, error: "Network error. Please try again." };
+            return {
+              ok: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Network error. Please try again.",
+            };
           }
         },
         switchRoom: async (newRoomId: string | null) => {
           const currentRoomId = get().currentRoomId;
           const username = get().username;
+          const authToken = get().authToken;
 
           console.log(
             `[ChatsStore] Switching from ${currentRoomId} to ${newRoomId}`
@@ -1375,46 +1289,37 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           // If switching to a real room and we have a username, handle the API call
-          if (username) {
+          if (username && authToken) {
             try {
-              const response = await abortableFetch(
-                "/api/presence/switch",
+              await switchPresenceApi(
                 {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    previousRoomId: currentRoomId,
-                    nextRoomId: newRoomId,
-                    username,
-                  }),
-                  timeout: 15000,
-                  throwOnHttpError: false,
-                  retry: { maxAttempts: 1, initialDelayMs: 250 },
+                  previousRoomId: currentRoomId,
+                  nextRoomId: newRoomId,
+                },
+                {
+                  username,
+                  token: authToken,
                 }
               );
 
-              if (!response.ok) {
-                const errorData = await response.json().catch(() => ({
-                  error: `HTTP error! status: ${response.status}`,
-                }));
-                console.error("[ChatsStore] Error switching rooms:", errorData);
-                // Don't revert the room change on API error, just log it
-              } else {
-                console.log("[ChatsStore] Room switch API call successful");
-                // Immediately refresh rooms to show updated presence counts
-                // This ensures the UI reflects the change immediately rather than waiting for Pusher
-                setTimeout(() => {
-                  console.log("[ChatsStore] Refreshing rooms after switch");
-                  get().fetchRooms();
-                }, 50); // Small delay to let the server finish processing
-              }
+              console.log("[ChatsStore] Room switch API call successful");
+              // Immediately refresh rooms to show updated presence counts
+              // This ensures the UI reflects the change immediately rather than waiting for Pusher
+              setTimeout(() => {
+                console.log("[ChatsStore] Refreshing rooms after switch");
+                get().fetchRooms();
+              }, 50); // Small delay to let the server finish processing
             } catch (error) {
               console.error(
-                "[ChatsStore] Network error switching rooms:",
+                "[ChatsStore] Error switching rooms:",
                 error
               );
               // Don't revert the room change on network error, just log it
             }
+          } else if (username && !authToken) {
+            console.warn(
+              "[ChatsStore] Skipping presence switch API call due to missing auth token"
+            );
           }
 
           // Always fetch messages for the new room to ensure latest content

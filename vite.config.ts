@@ -5,10 +5,19 @@ import vercel from "vite-plugin-vercel";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  buildViteApiRewrites,
+  discoverApiRouteManifest,
+} from "./scripts/api-route-manifest";
 
 // Polyfill __dirname in ESM context (Node >=16)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const apiRouteManifest = await discoverApiRouteManifest({
+  workspaceRoot: __dirname,
+  apiRoot: path.resolve(__dirname, "_api"),
+});
+const apiRouteRewrites = buildViteApiRewrites(apiRouteManifest);
 
 // Detect dev mode for memory optimizations
 const isDev = process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
@@ -435,15 +444,8 @@ export default defineConfig({
   },
   vercel: {
     defaultSupportsResponseStreaming: true,
-    // Fix routing for subdirectory index files
-    rewrites: [
-      // Route /api/songs to /api/songs/index
-      { source: "/api/songs", destination: "/api/songs/index" },
-      // Route /api/rooms to /api/rooms/index
-      { source: "/api/rooms", destination: "/api/rooms/index" },
-      // Route /api/users to /api/users/index
-      { source: "/api/users", destination: "/api/users/index" },
-    ],
+    // Route /api/* index handlers from shared API manifest.
+    rewrites: apiRouteRewrites,
   },
   // esbuild options for faster dev transforms
   esbuild: {

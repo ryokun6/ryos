@@ -18,6 +18,8 @@ import {
   getEffectiveOrigin,
   setCorsHeaders,
 } from "../../../_utils/_cors.js";
+import { createRedis } from "../../../_utils/redis.js";
+import { resolveRequestAuth } from "../../../_utils/request-auth.js";
 import {
   createRedisClient,
   getCurrentTimestamp,
@@ -80,15 +82,38 @@ export default async function handler(
     return;
   }
 
-  const body = req.body as JoinSessionRequest;
-  const username = body?.username?.toLowerCase();
-  const anonymousId = body?.anonymousId;
+  const body = (req.body || {}) as JoinSessionRequest;
+  const claimedUsername = body?.username?.toLowerCase();
+  const anonymousId = body?.anonymousId?.trim();
+  let username: string | null = null;
 
-  // Must provide either username or anonymousId
-  if (!username && !anonymousId) {
+  if (claimedUsername && anonymousId) {
     logger.response(400, Date.now() - startTime);
-    res.status(400).json({ error: "Username or anonymousId is required" });
+    res.status(400).json({ error: "Provide either username or anonymousId, not both" });
     return;
+  }
+
+  if (!anonymousId) {
+    const authRedis = createRedis();
+    const auth = await resolveRequestAuth(req, authRedis, { required: true });
+    if (auth.error || !auth.user) {
+      logger.response(auth.error?.status ?? 401, Date.now() - startTime);
+      res.status(auth.error?.status ?? 401).json({
+        error: auth.error?.error ?? "Unauthorized - missing credentials",
+      });
+      return;
+    }
+
+    username = auth.user.username;
+    if (claimedUsername && claimedUsername !== username) {
+      logger.warn("Username mismatch in listen join body", {
+        claimedUsername,
+        authenticatedUsername: username,
+      });
+      logger.response(403, Date.now() - startTime);
+      res.status(403).json({ error: "Forbidden - username mismatch" });
+      return;
+    }
   }
 
   try {

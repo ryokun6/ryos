@@ -9,14 +9,10 @@
  * Then a consolidation step merges with existing long-term memories where keys overlap.
  */
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
-import { Redis } from "@upstash/redis";
-import { validateAuth } from "../_utils/auth/index.js";
-import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
-import { initLogger } from "../_utils/_logging.js";
+import { apiHandler } from "../_utils/api-handler.js";
 import {
   getMemoryIndex,
   getMemoryDetail,
@@ -87,13 +83,6 @@ function getMessageText(msg: ChatMessage): string {
   return msg.content || "";
 }
 
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
-
 // ============================================================================
 // Prompt
 // ============================================================================
@@ -141,69 +130,28 @@ Rules:
 // Handler
 // ============================================================================
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { logger } = initLogger();
-  const startTime = Date.now();
+export default apiHandler<{ messages?: ChatMessage[]; timeZone?: string }>(
+  {
+    methods: ["POST"],
+    auth: "required",
+    parseJsonBody: true,
+  },
+  async ({ req, res, redis, logger, startTime, user, body }) => {
+    const username = user?.username || "";
+    const messages = body?.messages;
+    const bodyTimeZone = body?.timeZone;
+    const headerTimeZoneRaw = req.headers["x-user-timezone"];
+    const headerTimeZone = Array.isArray(headerTimeZoneRaw)
+      ? headerTimeZoneRaw[0]
+      : headerTimeZoneRaw;
+    const userTimeZone = normalizeTimeZone(bodyTimeZone || headerTimeZone);
 
-  const origin = getEffectiveOrigin(req);
-  setCorsHeaders(res, origin, { methods: ["POST", "OPTIONS"] });
-
-  logger.request(req.method || "POST", req.url || "/api/ai/extract-memories");
-
-  if (req.method === "OPTIONS") {
-    logger.response(204, Date.now() - startTime);
-    return res.status(204).end();
-  }
-
-  if (!isAllowedOrigin(origin)) {
-    logger.warn("Unauthorized origin", { origin });
-    logger.response(403, Date.now() - startTime);
-    return res.status(403).json({ error: "Unauthorized" });
-  }
-
-  if (req.method !== "POST") {
-    logger.response(405, Date.now() - startTime);
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  // Validate auth
-  const authHeader = req.headers.authorization as string | undefined;
-  const usernameHeader = req.headers["x-username"] as string | undefined;
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
-  if (!token || !usernameHeader) {
-    logger.warn("Missing credentials");
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - missing credentials" });
-  }
-
-  const redis = createRedis();
-  const authResult = await validateAuth(redis, usernameHeader, token, {});
-
-  if (!authResult.valid) {
-    logger.warn("Invalid token", { username: usernameHeader });
-    logger.response(401, Date.now() - startTime);
-    return res.status(401).json({ error: "Unauthorized - invalid token" });
-  }
-
-  const username = usernameHeader.toLowerCase();
-
-  // Parse request body
-  const { messages, timeZone: bodyTimeZone } = req.body as {
-    messages?: ChatMessage[];
-    timeZone?: string;
-  };
-  const headerTimeZoneRaw = req.headers["x-user-timezone"];
-  const headerTimeZone = Array.isArray(headerTimeZoneRaw)
-    ? headerTimeZoneRaw[0]
-    : headerTimeZoneRaw;
-  const userTimeZone = normalizeTimeZone(bodyTimeZone || headerTimeZone);
-
-  if (!messages || !Array.isArray(messages) || messages.length === 0) {
-    logger.warn("No messages provided");
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Messages array required" });
-  }
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      logger.warn("No messages provided");
+      logger.response(400, Date.now() - startTime);
+      res.status(400).json({ error: "Messages array required" });
+      return;
+    }
 
   // Format conversation with clear role labels
   const conversationText = messages
@@ -218,7 +166,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (conversationText.trim().length < 50) {
     logger.info("Conversation too short for extraction");
     logger.response(200, Date.now() - startTime);
-    return res.status(200).json({ extracted: 0, dailyNotes: 0, message: "Conversation too short" });
+    res
+      .status(200)
+      .json({ extracted: 0, dailyNotes: 0, message: "Conversation too short" });
+    return;
   }
 
   logger.info("Starting extraction", { 
@@ -366,21 +317,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await markDailyNoteProcessed(redis, username, today);
     }
 
-    logger.info("Done", { username, dailyNotes: dailyNotesStored, longTerm: longTermStored });
-    logger.response(200, Date.now() - startTime);
+      logger.info("Done", { username, dailyNotes: dailyNotesStored, longTerm: longTermStored });
+      logger.response(200, Date.now() - startTime);
 
-    return res.status(200).json({
-      extracted: longTermStored,
-      dailyNotes: dailyNotesStored,
-      analyzed: result.longTermMemories.length,
-      message: longTermStored > 0 || dailyNotesStored > 0
-        ? `Logged ${dailyNotesStored} daily notes, extracted ${longTermStored} long-term memories`
-        : "No noteworthy information found",
-    });
-
-  } catch (error) {
-    logger.error("Memory extraction failed", error);
-    logger.response(500, Date.now() - startTime);
-    return res.status(500).json({ error: "Failed to extract memories" });
+      res.status(200).json({
+        extracted: longTermStored,
+        dailyNotes: dailyNotesStored,
+        analyzed: result.longTermMemories.length,
+        message:
+          longTermStored > 0 || dailyNotesStored > 0
+            ? `Logged ${dailyNotesStored} daily notes, extracted ${longTermStored} long-term memories`
+            : "No noteworthy information found",
+      });
+    } catch (error) {
+      logger.error("Memory extraction failed", error);
+      logger.response(500, Date.now() - startTime);
+      res.status(500).json({ error: "Failed to extract memories" });
+    }
   }
-}
+);

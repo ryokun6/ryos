@@ -6,7 +6,6 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { validateAuth } from "../../_utils/auth/index.js";
 import {
   isProfaneUsername,
   assertValidRoomId,
@@ -24,12 +23,14 @@ import {
   USER_EXPIRATION_TIME,
 } from "../_helpers/_constants.js";
 import { ensureUserExists } from "../_helpers/_users.js";
-import { addMessage, generateId, getCurrentTimestamp, getLastMessage, getMessages, getRoom, roomExists, setUser } from "../_helpers/_redis.js";
+import { addMessage, generateId, getCurrentTimestamp, getLastMessage, getMessages, getRoom, setUser } from "../_helpers/_redis.js";
 import { refreshRoomPresence } from "../_helpers/_presence.js";
 import type { Message } from "../_helpers/_types.js";
 import { initLogger } from "../../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../../_utils/_cors.js";
 import { createRedis } from "../../_utils/redis.js";
+import { resolveRequestAuth } from "../../_utils/request-auth.js";
+import { getRoomReadAccessError, getRoomWriteAccessError } from "../_helpers/_access.js";
 import { broadcastNewMessage } from "../_helpers/_pusher.js";
 
 export const runtime = "nodejs";
@@ -54,6 +55,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ error: "Unauthorized" });
   }
 
+  const redis = createRedis();
+
   // Extract room ID from query params
   const roomId = req.query.id as string | undefined;
   if (!roomId) {
@@ -73,11 +76,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // GET - Get messages
   if (req.method === "GET") {
     try {
-      const exists = await roomExists(roomId);
-      if (!exists) {
+      const auth = await resolveRequestAuth(req, redis, { required: false });
+      if (auth.error) {
+        logger.warn("Invalid auth on room messages read", { error: auth.error.error });
+        logger.response(auth.error.status, Date.now() - startTime);
+        return res.status(auth.error.status).json({ error: auth.error.error });
+      }
+
+      const roomData = await getRoom(roomId);
+      if (!roomData) {
         logger.warn("Room not found", { roomId });
         logger.response(404, Date.now() - startTime);
         return res.status(404).json({ error: "Room not found" });
+      }
+
+      const accessError = getRoomReadAccessError(roomData, auth.user);
+      if (accessError) {
+        logger.warn("Forbidden room messages read", {
+          roomId,
+          viewer: auth.user?.username ?? null,
+        });
+        logger.response(accessError.status, Date.now() - startTime);
+        return res.status(accessError.status).json({ error: accessError.error });
       }
 
       const limitParam = req.query.limit as string | undefined;
@@ -97,24 +117,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // POST - Send message
   if (req.method === "POST") {
-    const authHeader = req.headers.authorization as string | undefined;
-    const usernameHeader = req.headers["x-username"] as string | undefined;
-    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
-    if (!token || !usernameHeader) {
-      logger.warn("Missing credentials");
-      logger.response(401, Date.now() - startTime);
-      return res.status(401).json({ error: "Unauthorized - missing credentials" });
+    const auth = await resolveRequestAuth(req, redis, { required: true });
+    if (auth.error || !auth.user) {
+      logger.warn("Invalid auth on room message write", { error: auth.error?.error });
+      logger.response(auth.error?.status ?? 401, Date.now() - startTime);
+      return res.status(auth.error?.status ?? 401).json({
+        error: auth.error?.error ?? "Unauthorized - missing credentials",
+      });
     }
 
-    const authResult = await validateAuth(createRedis(), usernameHeader, token, {});
-    if (!authResult.valid) {
-      logger.warn("Invalid token", { username: usernameHeader });
-      logger.response(401, Date.now() - startTime);
-      return res.status(401).json({ error: "Unauthorized - invalid token" });
-    }
-
-    const username = usernameHeader.toLowerCase();
+    const username = auth.user.username;
 
     if (isProfaneUsername(username)) {
       logger.warn("Profane username", { username });
@@ -138,6 +150,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       logger.warn("Room not found", { roomId });
       logger.response(404, Date.now() - startTime);
       return res.status(404).json({ error: "Room not found" });
+    }
+
+    const writeAccessError = getRoomWriteAccessError(roomData, auth.user);
+    if (writeAccessError) {
+      logger.warn("Forbidden room message write", { roomId, username });
+      logger.response(writeAccessError.status, Date.now() - startTime);
+      return res.status(writeAccessError.status).json({ error: writeAccessError.error });
     }
 
     const isPublicRoom = !roomData.type || roomData.type === "public";
@@ -227,7 +246,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const updatedUser = { ...userData, lastActive: getCurrentTimestamp() };
       await setUser(username, updatedUser);
-      await createRedis().expire(`chat:users:${username}`, USER_EXPIRATION_TIME);
+      await redis.expire(`chat:users:${username}`, USER_EXPIRATION_TIME);
       await refreshRoomPresence(roomId, username);
 
       await broadcastNewMessage(roomId, message, roomData);

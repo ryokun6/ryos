@@ -1,26 +1,10 @@
-// No Next.js types needed – omit unused import to keep file framework‑agnostic.
-
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { Redis } from "@upstash/redis";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
-import { isAllowedOrigin, getEffectiveOrigin } from "./_utils/_cors.js";
+import { apiHandler } from "./_utils/api-handler.js";
 import { normalizeUrlForCacheKey } from "./_utils/_url.js";
-import { initLogger } from "./_utils/_logging.js";
 import { safeFetchWithRedirects, validatePublicUrl, SsrfBlockedError } from "./_utils/_ssrf.js";
 
 export const runtime = "nodejs";
-
-// ============================================================================
-// Local Helper Functions
-// ============================================================================
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
-}
 
 // --- Utility Functions ----------------------------------------------------
 
@@ -146,23 +130,17 @@ const WAYBACK_CACHE_PREFIX = "wayback:cache:";
  * blocked accidentally (the front‑end still has its own error handling for actual iframe errors).
  */
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { requestId: _requestId, logger } = initLogger();
-  const startTime = Date.now();
-  
+export default apiHandler(
+  {
+    methods: ["GET"],
+    contentType: null,
+  },
+  async ({ req, res, redis, logger, startTime, origin }) => {
   const urlParam = req.query.url as string | undefined;
   let mode = (req.query.mode as string | undefined) || "proxy"; // "check" | "proxy" | "ai" | "list-cache"
   const year = req.query.year as string | undefined;
   const month = req.query.month as string | undefined;
-  const effectiveOrigin = getEffectiveOrigin(req);
-  
-  logger.request(req.method || "GET", req.url || "/api/iframe-check", mode);
-  
-  if (!isAllowedOrigin(effectiveOrigin)) {
-    logger.warn("Unauthorized origin", { effectiveOrigin });
-    logger.response(403, Date.now() - startTime);
-    return res.status(403).send("Unauthorized");
-  }
+  const effectiveOrigin = origin;
 
   // Generate a fresh, randomized browser header set for this request
   const BROWSER_HEADERS = generateRandomBrowserHeaders();
@@ -320,7 +298,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-      const redis = createRedis();
       const key = `${IE_CACHE_PREFIX}${encodeURIComponent(
         normalizedUrlForKey
       )}:${year}`;
@@ -360,8 +337,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-      const redis = createRedis();
-
       const uniqueYears = new Set<string>();
 
       // Scan for AI Cache keys (ie:cache:...)
@@ -501,7 +476,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (isWaybackRequest && waybackYear && waybackMonth) {
     try {
       logger.info(`Initializing Wayback cache check for ${normalizedUrl} (${waybackYear}/${waybackMonth})`);
-      const redis = createRedis();
       const normalizedUrlForKey = normalizeUrlForCacheKey(normalizedUrl);
       if (normalizedUrlForKey) {
         const cacheKey = `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(
@@ -991,10 +965,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ) {
           try {
             logger.info(`Attempting to cache Wayback content for ${normalizedUrl} (${waybackYear}/${waybackMonth})`);
-            const redis = new Redis({
-              url: process.env.REDIS_KV_REST_API_URL as string,
-              token: process.env.REDIS_KV_REST_API_TOKEN as string,
-            });
             const normalizedUrlForKey = normalizeUrlForCacheKey(normalizedUrl);
             if (normalizedUrlForKey) {
               const cacheKey = `${WAYBACK_CACHE_PREFIX}${encodeURIComponent(
@@ -1068,4 +1038,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     logger.error("General handler error", error);
     return errorResponseWithCors((error as Error).message, 500);
   }
-}
+  }
+);

@@ -7,11 +7,15 @@
  * to the Vercel Node handler shape used in `_api`.
  */
 
-import { readdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { EventEmitter } from "node:events";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import {
+  discoverApiRouteManifest,
+  type ApiRouteManifestEntry,
+} from "./api-route-manifest";
 
 type QueryValue = string | string[];
 type QueryMap = Record<string, QueryValue>;
@@ -22,16 +26,7 @@ type RouteHandler = (
   res: BunResponseShim
 ) => Promise<unknown> | unknown;
 
-interface RouteDefinition {
-  filePath: string;
-  relativePath: string;
-  routePath: string;
-  segmentCount: number;
-  staticSegmentCount: number;
-  dynamicSegmentCount: number;
-  matcher: RegExp;
-  paramNames: string[];
-}
+type RouteDefinition = ApiRouteManifestEntry;
 
 interface ParsedBody {
   bodyValue: unknown;
@@ -340,139 +335,6 @@ async function loadEnv(): Promise<void> {
   await loadEnvFile(path.join(WORKSPACE_ROOT, ".env.local"));
 }
 
-async function walkDirectory(dirPath: string): Promise<string[]> {
-  const entries = await readdir(dirPath, { withFileTypes: true });
-  const discoveredFiles: string[] = [];
-
-  for (const entry of entries) {
-    const fullPath = path.join(dirPath, entry.name);
-    if (entry.isDirectory()) {
-      discoveredFiles.push(...(await walkDirectory(fullPath)));
-      continue;
-    }
-    if (entry.isFile()) {
-      discoveredFiles.push(fullPath);
-    }
-  }
-
-  return discoveredFiles;
-}
-
-function isRouteFile(filePath: string): boolean {
-  const relativePath = path.relative(API_ROOT, filePath);
-  const segments = relativePath.split(path.sep);
-  const fileName = segments[segments.length - 1];
-
-  if (!fileName.endsWith(".ts")) return false;
-  if (fileName.startsWith("_")) return false;
-
-  if (segments.slice(0, -1).some((segment) => segment.startsWith("_"))) {
-    return false;
-  }
-
-  return true;
-}
-
-async function hasDefaultExport(filePath: string): Promise<boolean> {
-  const content = await readFile(filePath, "utf8");
-  return /\bexport\s+default\b/.test(content);
-}
-
-function toRoutePath(relativePath: string): string {
-  const noExtension = relativePath.replace(/\.ts$/, "");
-  const rawSegments = noExtension.split(path.sep).filter(Boolean);
-  const routeSegments: string[] = [];
-
-  for (const segment of rawSegments) {
-    if (segment === "index") continue;
-    const dynamicMatch = segment.match(/^\[(.+)\]$/);
-    if (dynamicMatch) {
-      routeSegments.push(`:${dynamicMatch[1]}`);
-      continue;
-    }
-    routeSegments.push(segment);
-  }
-
-  return routeSegments.length > 0 ? `/api/${routeSegments.join("/")}` : "/api";
-}
-
-function escapeRegex(input: string): string {
-  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function createRouteMatcher(routePath: string): {
-  matcher: RegExp;
-  paramNames: string[];
-} {
-  const segments = routePath.split("/").filter(Boolean);
-  const regexSegments: string[] = [];
-  const paramNames: string[] = [];
-
-  for (const segment of segments) {
-    if (segment.startsWith(":")) {
-      paramNames.push(segment.slice(1));
-      regexSegments.push("([^/]+)");
-      continue;
-    }
-    regexSegments.push(escapeRegex(segment));
-  }
-
-  const matcher =
-    regexSegments.length === 0
-      ? /^\/?$/
-      : new RegExp(`^/${regexSegments.join("/")}/?$`);
-
-  return { matcher, paramNames };
-}
-
-function compareRoutes(a: RouteDefinition, b: RouteDefinition): number {
-  if (a.staticSegmentCount !== b.staticSegmentCount) {
-    return b.staticSegmentCount - a.staticSegmentCount;
-  }
-
-  if (a.dynamicSegmentCount !== b.dynamicSegmentCount) {
-    return a.dynamicSegmentCount - b.dynamicSegmentCount;
-  }
-
-  if (a.segmentCount !== b.segmentCount) {
-    return b.segmentCount - a.segmentCount;
-  }
-
-  return a.routePath.localeCompare(b.routePath);
-}
-
-async function discoverRoutes(): Promise<RouteDefinition[]> {
-  const allFiles = await walkDirectory(API_ROOT);
-  const routeFiles = allFiles.filter(isRouteFile);
-  const routeDefinitions: RouteDefinition[] = [];
-
-  for (const filePath of routeFiles) {
-    if (!(await hasDefaultExport(filePath))) continue;
-
-    const relativePath = path.relative(API_ROOT, filePath);
-    const routePath = toRoutePath(relativePath);
-    const routeSegments = routePath.split("/").filter(Boolean).slice(1);
-    const dynamicSegmentCount = routeSegments.filter((part) =>
-      part.startsWith(":")
-    ).length;
-    const staticSegmentCount = routeSegments.length - dynamicSegmentCount;
-    const { matcher, paramNames } = createRouteMatcher(routePath);
-
-    routeDefinitions.push({
-      filePath,
-      relativePath,
-      routePath,
-      segmentCount: routeSegments.length,
-      staticSegmentCount,
-      dynamicSegmentCount,
-      matcher,
-      paramNames,
-    });
-  }
-
-  return routeDefinitions.sort(compareRoutes);
-}
-
 function appendQueryValue(query: QueryMap, key: string, value: string): void {
   const existing = query[key];
   if (existing === undefined) {
@@ -609,7 +471,10 @@ async function bootstrap(): Promise<void> {
 
   const API_PORT = Number(process.env.API_PORT || process.env.PORT || "3000");
   const API_HOST = process.env.API_HOST || "0.0.0.0";
-  const routes = await discoverRoutes();
+  const routes = await discoverApiRouteManifest({
+    workspaceRoot: WORKSPACE_ROOT,
+    apiRoot: API_ROOT,
+  });
 
   Bun.serve({
     port: API_PORT,

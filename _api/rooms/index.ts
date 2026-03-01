@@ -8,15 +8,16 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { validateAuth } from "../_utils/auth/index.js";
 import { isProfaneUsername } from "../_utils/_validation.js";
 import { initLogger } from "../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
 import { createRedis } from "../_utils/redis.js";
+import { resolveRequestAuth } from "../_utils/request-auth.js";
 import { getRoomsWithCountsFast } from "./_helpers/_presence.js";
 import { generateId, getCurrentTimestamp, setRoom, registerRoom } from "./_helpers/_redis.js";
 import { setRoomPresence } from "./_helpers/_presence.js";
 import { broadcastRoomCreated } from "./_helpers/_pusher.js";
+import { filterVisibleRooms } from "./_helpers/_access.js";
 import type { Room } from "./_helpers/_types.js";
 
 export const runtime = "nodejs";
@@ -46,20 +47,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
+  const redis = createRedis();
+
   // GET - List rooms
   if (req.method === "GET") {
     try {
-      const username = (req.query.username as string)?.toLowerCase() || null;
-      const allRooms = await getRoomsWithCountsFast();
-      const visibleRooms = allRooms.filter((room) => {
-        if (!room.type || room.type === "public") return true;
-        if (room.type === "private" && room.members && username) {
-          return room.members.includes(username);
-        }
-        return false;
-      });
+      const auth = await resolveRequestAuth(req, redis, { required: false });
+      if (auth.error) {
+        logger.response(auth.error.status, Date.now() - startTime);
+        res.status(auth.error.status).json({ error: auth.error.error });
+        return;
+      }
 
-      logger.info("Listed rooms", { total: allRooms.length, visible: visibleRooms.length, username });
+      const claimedUsername = (req.query.username as string | undefined)?.toLowerCase() || null;
+      const allRooms = await getRoomsWithCountsFast();
+      const visibleRooms = filterVisibleRooms(allRooms, auth.user);
+
+      logger.info("Listed rooms", {
+        total: allRooms.length,
+        visible: visibleRooms.length,
+        viewerUsername: auth.user?.username ?? null,
+        claimedUsername,
+      });
       logger.response(200, Date.now() - startTime);
       res.status(200).json({ rooms: visibleRooms });
       return;
@@ -73,24 +82,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   // POST - Create room
   if (req.method === "POST") {
-    const authHeader = req.headers.authorization;
-    const usernameHeader = req.headers["x-username"] as string | undefined;
-    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
-    if (!token || !usernameHeader) {
-      logger.response(401, Date.now() - startTime);
-      res.status(401).json({ error: "Unauthorized - missing credentials" });
+    const auth = await resolveRequestAuth(req, redis, { required: true });
+    if (auth.error || !auth.user) {
+      logger.response(auth.error?.status ?? 401, Date.now() - startTime);
+      res.status(auth.error?.status ?? 401).json({
+        error: auth.error?.error ?? "Unauthorized - missing credentials",
+      });
       return;
     }
 
-    const authResult = await validateAuth(createRedis(), usernameHeader, token, {});
-    if (!authResult.valid) {
-      logger.response(401, Date.now() - startTime);
-      res.status(401).json({ error: "Unauthorized - invalid token" });
-      return;
-    }
-
-    const username = usernameHeader.toLowerCase();
+    const username = auth.user.username;
     const body = req.body || {};
     const { name: originalName, type = "public", members = [] } = body;
 

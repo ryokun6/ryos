@@ -5,24 +5,19 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { Redis } from "@upstash/redis";
 import { isProfaneUsername, assertValidRoomId, assertValidUsername } from "../../_utils/_validation.js";
 import { initLogger } from "../../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../../_utils/_cors.js";
+import { createRedis } from "../../_utils/redis.js";
+import { resolveRequestAuth } from "../../_utils/request-auth.js";
 import { getRoom, setRoom } from "../_helpers/_redis.js";
+import { getRoomWriteAccessError } from "../_helpers/_access.js";
 import { setRoomPresence, refreshRoomUserCount } from "../_helpers/_presence.js";
 import { broadcastRoomUpdated } from "../_helpers/_pusher.js";
 import type { Room } from "../_helpers/_types.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const { logger } = initLogger();
@@ -55,6 +50,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
+  const redis = createRedis();
+  const auth = await resolveRequestAuth(req, redis, { required: true });
+  if (auth.error || !auth.user) {
+    logger.response(auth.error?.status ?? 401, Date.now() - startTime);
+    res.status(auth.error?.status ?? 401).json({
+      error: auth.error?.error ?? "Unauthorized - missing credentials",
+    });
+    return;
+  }
+
   if (!roomId) {
     logger.response(400, Date.now() - startTime);
     res.status(400).json({ error: "Room ID is required" });
@@ -62,11 +67,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   const body = req.body || {};
-  const username = body?.username?.toLowerCase();
-
-  if (!username) {
-    logger.response(400, Date.now() - startTime);
-    res.status(400).json({ error: "Username is required" });
+  const claimedUsername = (body?.username as string | undefined)?.toLowerCase();
+  const username = auth.user.username;
+  if (claimedUsername && claimedUsername !== username) {
+    logger.warn("Username mismatch in join body", {
+      claimedUsername,
+      authenticatedUsername: username,
+    });
+    logger.response(403, Date.now() - startTime);
+    res.status(403).json({ error: "Forbidden - username mismatch" });
     return;
   }
 
@@ -88,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   try {
     const [roomData, userData] = await Promise.all([
       getRoom(roomId),
-      createRedis().get(`chat:users:${username}`),
+      redis.get(`chat:users:${username}`),
     ]);
 
     if (!roomData) {
@@ -100,6 +109,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     if (!userData) {
       logger.response(404, Date.now() - startTime);
       res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const accessError = getRoomWriteAccessError(roomData, auth.user);
+    if (accessError) {
+      logger.response(accessError.status, Date.now() - startTime);
+      res.status(accessError.status).json({ error: accessError.error });
       return;
     }
 

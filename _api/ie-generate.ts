@@ -1,4 +1,3 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   streamText,
   smoothStream,
@@ -6,10 +5,8 @@ import {
   type ModelMessage,
   type UIMessage,
 } from "ai";
-import { Redis } from "@upstash/redis";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
-import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
 import {
   SupportedModel,
   DEFAULT_MODEL,
@@ -22,21 +19,10 @@ import {
   IE_HTML_GENERATION_INSTRUCTIONS,
   } from "./_utils/_aiPrompts.js";
 import { SUPPORTED_AI_MODELS } from "./_utils/_aiModels.js";
-import { initLogger } from "./_utils/_logging.js";
+import { apiHandler } from "./_utils/api-handler.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 80;
-
-// ============================================================================
-// Local Helper Functions
-// ============================================================================
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
-}
 
 // ============================================================================
 // Constants and Types
@@ -160,35 +146,14 @@ ${RYO_PERSONA_INSTRUCTIONS}`;
 // Route Handler
 // ============================================================================
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { requestId: _requestId, logger } = initLogger();
-  const startTime = Date.now();
-  
-  const effectiveOrigin = getEffectiveOrigin(req);
-  setCorsHeaders(res, effectiveOrigin, { methods: ["POST", "OPTIONS"] });
-  
-  logger.request(req.method || "POST", req.url || "/api/ie-generate");
-  
-  if (req.method === "OPTIONS") {
-    logger.response(204, Date.now() - startTime);
-    return res.status(204).end();
-  }
-  
-  if (!isAllowedOrigin(effectiveOrigin)) {
-    logger.warn("Unauthorized origin", { effectiveOrigin });
-    logger.response(403, Date.now() - startTime);
-    return res.status(403).send("Unauthorized");
-  }
-
-  if (req.method !== "POST") {
-    logger.warn("Method not allowed", { method: req.method });
-    logger.response(405, Date.now() - startTime);
-    return res.status(405).send("Method not allowed");
-  }
-
-  const redis = createRedis();
-
-  try {
+export default apiHandler<IEGenerateRequestBody>(
+  {
+    methods: ["POST"],
+    parseJsonBody: true,
+    contentType: null,
+  },
+  async ({ req, res, redis, logger, startTime, origin, body }) => {
+    try {
     // ---------------------------
     // Rate limiting (burst + budget per IP)
     // ---------------------------
@@ -252,7 +217,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const targetYear = req.query.year as string | undefined;
 
     // Parse JSON body
-    const bodyData = (req.body || {}) as IEGenerateRequestBody;
+    const bodyData = (body || {}) as IEGenerateRequestBody;
 
     const bodyUrl = bodyData.url;
     const bodyYear = bodyData.year;
@@ -385,7 +350,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     // Set CORS headers
-    res.setHeader("Access-Control-Allow-Origin", effectiveOrigin!);
+    if (origin) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+    }
 
     logger.info("Streaming response started");
     
@@ -405,3 +372,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).send("Internal Server Error");
   }
 }
+);

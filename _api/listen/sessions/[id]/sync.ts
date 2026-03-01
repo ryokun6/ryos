@@ -15,6 +15,8 @@ import {
   getEffectiveOrigin,
   setCorsHeaders,
 } from "../../../_utils/_cors.js";
+import { createRedis } from "../../../_utils/redis.js";
+import { resolveRequestAuth } from "../../../_utils/request-auth.js";
 import {
   getCurrentTimestamp,
   getSession,
@@ -66,13 +68,28 @@ export default async function handler(
     return;
   }
 
-  const body = req.body as SyncSessionRequest;
-  const username = body?.username?.toLowerCase();
+  const authRedis = createRedis();
+  const auth = await resolveRequestAuth(req, authRedis, { required: true });
+  if (auth.error || !auth.user) {
+    logger.response(auth.error?.status ?? 401, Date.now() - startTime);
+    res.status(auth.error?.status ?? 401).json({
+      error: auth.error?.error ?? "Unauthorized - missing credentials",
+    });
+    return;
+  }
+
+  const body = (req.body || {}) as SyncSessionRequest;
+  const claimedUsername = body?.username?.toLowerCase();
+  const username = auth.user.username;
   const state = body?.state;
 
-  if (!username) {
-    logger.response(400, Date.now() - startTime);
-    res.status(400).json({ error: "Username is required" });
+  if (claimedUsername && claimedUsername !== username) {
+    logger.warn("Username mismatch in listen sync body", {
+      claimedUsername,
+      authenticatedUsername: username,
+    });
+    logger.response(403, Date.now() - startTime);
+    res.status(403).json({ error: "Forbidden - username mismatch" });
     return;
   }
 

@@ -17,13 +17,9 @@
  * { action: "import", songs: [...] }
  */
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { z } from "zod";
 import pako from "pako";
-import { Redis } from "@upstash/redis";
-import { validateAuth } from "../_utils/auth/index.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
-import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
 import {
   listSongs,
@@ -40,20 +36,9 @@ import {
   type LyricsSource,
 } from "../_utils/_song-service.js";
 import { fetchCoverUrl } from "./_kugou.js";
-import { initLogger } from "../_utils/_logging.js";
+import { apiHandler } from "../_utils/api-handler.js";
 
 export const runtime = "nodejs";
-
-// ============================================================================
-// Local Helper Functions
-// ============================================================================
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
-}
 
 
 // ============================================================================
@@ -192,30 +177,13 @@ function getFieldValue<T>(value: unknown): T | undefined {
 // Main Handler
 // =============================================================================
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { requestId: _requestId, logger } = initLogger();
-  const startTime = Date.now();
-
-  const effectiveOrigin = getEffectiveOrigin(req);
-  setCorsHeaders(res, effectiveOrigin, { methods: ["GET", "POST", "DELETE", "OPTIONS"] });
-
-  logger.request(req.method || "GET", req.url || "/api/songs");
-
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    logger.response(204, Date.now() - startTime);
-    return res.status(204).end();
-  }
-
-  // Validate origin
-  if (!isAllowedOrigin(effectiveOrigin)) {
-    logger.warn("Unauthorized origin", { effectiveOrigin });
-    logger.response(403, Date.now() - startTime);
-    return res.status(403).send("Unauthorized");
-  }
-
-  // Create Redis client
-  const redis = createRedis();
+export default apiHandler<Record<string, unknown>>(
+  {
+    methods: ["GET", "POST", "DELETE"],
+    auth: "optional",
+    contentType: null,
+  },
+  async ({ req, res, redis, logger, startTime, user }) => {
 
   // Helper for JSON responses
   const jsonResponse = (data: unknown, status = 200, headers: Record<string, string> = {}) => {
@@ -288,28 +256,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // POST: Create song or bulk import
     // =========================================================================
     if (req.method === "POST") {
-      // Extract auth credentials
-      const authHeader = req.headers.authorization as string | undefined;
-      const usernameHeader = req.headers["x-username"] as string | undefined;
-      const authToken = authHeader?.replace("Bearer ", "") || null;
-      const username = usernameHeader || null;
-
-      // Validate authentication
-      const authResult = await validateAuth(redis, username, authToken);
-      if (!authResult.valid) {
+      const username = user?.username || null;
+      if (!username) {
         logger.warn("Unauthorized - authentication required");
         return errorResponse("Unauthorized - authentication required", 401);
       }
 
-      const body = req.body as Record<string, unknown>;
+      const requestBody = req.body as Record<string, unknown>;
       
-      logger.info(`POST action=${body?.action || "create"}`, { 
-        hasId: !!body?.id,
-        songsCount: Array.isArray(body?.songs) ? body.songs.length : undefined 
+      logger.info(`POST action=${requestBody?.action || "create"}`, { 
+        hasId: !!requestBody?.id,
+        songsCount: Array.isArray(requestBody?.songs) ? requestBody.songs.length : undefined 
       });
 
       // Handle bulk import (admin only)
-      if (body?.action === "import") {
+      if (requestBody?.action === "import") {
         // Only admin can bulk import
         if (username?.toLowerCase() !== "ryo") {
           logger.warn("Forbidden - admin access required for bulk import");
@@ -333,7 +294,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }, 429, { "Retry-After": String(rlResult.resetSeconds) });
         }
 
-        const parsed = BulkImportSchema.safeParse(body);
+        const parsed = BulkImportSchema.safeParse(requestBody);
         if (!parsed.success) {
           logger.warn("Invalid request body", parsed.error.format());
           return jsonResponse(
@@ -519,7 +480,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       // Single song creation
-      const parsed = CreateSongSchema.safeParse(body);
+      const parsed = CreateSongSchema.safeParse(requestBody);
       if (!parsed.success) {
         logger.warn("Invalid request body", parsed.error.format());
         return jsonResponse(
@@ -579,15 +540,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // DELETE: Delete all songs (admin only)
     // =========================================================================
     if (req.method === "DELETE") {
-      // Extract auth credentials
-      const authHeader = req.headers.authorization as string | undefined;
-      const usernameHeader = req.headers["x-username"] as string | undefined;
-      const authToken = authHeader?.replace("Bearer ", "") || null;
-      const username = usernameHeader || null;
-
-      // Validate authentication
-      const authResult = await validateAuth(redis, username, authToken);
-      if (!authResult.valid) {
+      const username = user?.username || null;
+      if (!username) {
         logger.warn("Unauthorized - authentication required");
         return errorResponse("Unauthorized - authentication required", 401);
       }
@@ -638,3 +592,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return errorResponse(errorMessage, 500);
   }
 }
+);

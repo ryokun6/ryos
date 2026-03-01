@@ -9,6 +9,10 @@ import { assertValidRoomId } from "../../_utils/_validation.js";
 import { getActiveUsersAndPrune } from "../_helpers/_presence.js";
 import { initLogger } from "../../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../../_utils/_cors.js";
+import { createRedis } from "../../_utils/redis.js";
+import { resolveRequestAuth } from "../../_utils/request-auth.js";
+import { getRoom } from "../_helpers/_redis.js";
+import { getRoomReadAccessError } from "../_helpers/_access.js";
 
 export const runtime = "nodejs";
 
@@ -38,6 +42,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  const redis = createRedis();
+  const auth = await resolveRequestAuth(req, redis, { required: false });
+  if (auth.error) {
+    logger.response(auth.error.status, Date.now() - startTime);
+    return res.status(auth.error.status).json({ error: auth.error.error });
+  }
+
   // Extract room ID from query params
   const roomId = req.query.id as string | undefined;
   if (!roomId) {
@@ -55,6 +66,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const room = await getRoom(roomId);
+    if (!room) {
+      logger.warn("Room not found", { roomId });
+      logger.response(404, Date.now() - startTime);
+      return res.status(404).json({ error: "Room not found" });
+    }
+
+    const accessError = getRoomReadAccessError(room, auth.user);
+    if (accessError) {
+      logger.warn("Forbidden room users read", { roomId, viewer: auth.user?.username ?? null });
+      logger.response(accessError.status, Date.now() - startTime);
+      return res.status(accessError.status).json({ error: accessError.error });
+    }
+
     const users = await getActiveUsersAndPrune(roomId);
     
     logger.info("Users retrieved", { roomId, count: users.length });

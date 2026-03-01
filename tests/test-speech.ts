@@ -115,8 +115,12 @@ async function testElevenLabsModel(): Promise<void> {
     assert(contentType.includes("audio"), "Expected audio content type");
   } else if (res.status === 429) {
     assert(true, "Rate limited - test passes");
-  } else if (res.status === 500) {
-    assert(true, "ElevenLabs not configured - test passes");
+  } else if (res.status === 503) {
+    const data = await res.json();
+    assert(
+      typeof data.error === "string" && data.error.includes("ElevenLabs"),
+      "Expected ElevenLabs configuration error"
+    );
   } else {
     throw new Error(`Unexpected status: ${res.status}`);
   }
@@ -154,8 +158,10 @@ async function testDefaultModelIsElevenLabs(): Promise<void> {
       text: "Testing default model.",
     }),
   });
-  assert(res.status === 200 || res.status === 429 || res.status === 500, 
-    `Expected 200, 429, or 500, got ${res.status}`);
+  assert(
+    res.status === 200 || res.status === 429 || res.status === 503,
+    `Expected 200, 429, or 503, got ${res.status}`
+  );
 }
 
 async function testRateLimitHeaders(): Promise<void> {
@@ -193,7 +199,7 @@ async function testInvalidJson(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: "not valid json{",
   });
-  assert(res.status >= 400, `Expected error status, got ${res.status}`);
+  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
 }
 
 // ============================================================================

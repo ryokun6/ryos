@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelRequest } from "@vercel/node";
 import {
   streamText,
   generateText,
@@ -26,10 +26,7 @@ import {
 import { getMemoryIndex, getDailyNotesForPrompt, getUnprocessedDailyNotesExcludingToday, type MemoryIndex } from "./_utils/_memory.js";
 import { SUPPORTED_AI_MODELS } from "./_utils/_aiModels.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
-import { validateAuth } from "./_utils/auth/index.js";
-import { Redis } from "@upstash/redis";
-import { initLogger } from "./_utils/_logging.js";
-import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
+import { apiHandler } from "./_utils/api-handler.js";
 import { createChatTools } from "./chat/tools/index.js";
 
 // Helper to ensure messages are in UIMessage format for AI SDK v6
@@ -148,14 +145,6 @@ interface SystemState {
 // Node.js runtime configuration
 export const runtime = "nodejs";
 export const maxDuration = 80;
-
-// Helper functions for Node.js runtime
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
 
 // Helper to get header value from Node.js IncomingMessage headers
 function getHeader(req: VercelRequest, name: string): string | null {
@@ -433,42 +422,22 @@ const buildContextAwarePrompts = () => {
 };
 
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { requestId: _requestId, logger } = initLogger();
-  const startTime = Date.now();
-  
-  // Check origin before processing request
-  const effectiveOrigin = getEffectiveOrigin(req);
-  
-  logger.request(req.method || "POST", req.url || "/api/chat", "chat");
-  
-  if (!isAllowedOrigin(effectiveOrigin)) {
-    logger.warn("Unauthorized origin", { origin: effectiveOrigin });
-    logger.response(403, Date.now() - startTime);
-    res.status(403).send("Unauthorized");
-    return;
-  }
-
-  // At this point origin is guaranteed to be a valid string
-  const validOrigin = effectiveOrigin as string;
-
-  if (req.method === "OPTIONS") {
-    logger.response(204, Date.now() - startTime);
-    setCorsHeaders(res, validOrigin, { methods: ["POST", "OPTIONS"] });
-    res.status(204).end();
-    return;
-  }
-
-  if (req.method !== "POST") {
-    logger.response(405, Date.now() - startTime);
-    res.status(405).send("Method not allowed");
-    return;
-  }
-
-  // Create Redis client for auth validation
-  const redis = createRedis();
-
-  try {
+export default apiHandler<{
+  messages: unknown[];
+  systemState?: SystemState;
+  model?: string;
+  proactiveGreeting?: boolean;
+}>(
+  {
+    methods: ["POST"],
+    auth: "optional",
+    allowExpiredAuth: true,
+    parseJsonBody: true,
+    contentType: null,
+  },
+  async ({ req, res, redis, logger, startTime, origin, user }) => {
+    const validOrigin = origin || "http://localhost";
+    try {
     // Parse query string to get model parameter
     // Handle both full URLs and relative paths (vercel dev uses relative paths)
     const url = new URL(req.url || "/", "http://localhost");
@@ -489,19 +458,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Use query parameter if available, otherwise use body parameter, otherwise use default
     const model = queryModel || bodyModel || DEFAULT_MODEL;
 
+    if (!messages || !Array.isArray(messages)) {
+      logger.error("400 Error: Invalid messages format", { messages });
+      logger.response(400, Date.now() - startTime);
+      res.setHeader("Access-Control-Allow-Origin", validOrigin);
+      res.status(400).send("Invalid messages format");
+      return;
+    }
+
     // ---------------------------
     // Extract auth headers FIRST so we can use username for logging
     // ---------------------------
 
-    const authHeaderInitial = getHeader(req, "authorization");
-    const headerAuthTokenInitial =
-      authHeaderInitial && authHeaderInitial.startsWith("Bearer ")
-        ? authHeaderInitial.substring(7)
-        : null;
     const headerUsernameInitial = getHeader(req, "x-username");
 
     // Helper: prefix log lines with username (for easier tracing)
-    const usernameForLogs = headerUsernameInitial ?? "unknown";
+    const usernameForLogs = user?.username ?? headerUsernameInitial ?? "unknown";
     const log = (...args: unknown[]) =>
       logger.info(`[User: ${usernameForLogs}]`, args);
     const logError = (...args: unknown[]) =>
@@ -527,45 +499,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     log(`Request origin: ${validOrigin}, IP: ${ip}`);
 
-    // ---------------------------
-    // Authentication extraction
-    // ---------------------------
-    // Prefer credentials in the incoming system state (back-compat),
-    // but fall back to HTTP headers for multi-token support (Authorization & X-Username)
-
-    const headerAuthToken = headerAuthTokenInitial ?? undefined;
-    const headerUsername = headerUsernameInitial;
-
-    const username = headerUsername || null;
-    const authToken: string | undefined = headerAuthToken;
-
-    // ---------------------------
-    // Rate-limit & auth checks
-    // ---------------------------
-    // Validate authentication (all users, including "ryo", must present a valid token)
-    // Enable grace period for expired tokens (client is responsible for token refresh)
-    const validationResult = await validateAuth(redis, username, authToken, {
-      allowExpired: true,
-      refreshOnGrace: false,
-    });
-
-    // If a username was provided but the token is missing/invalid, reject the request early
-    if (username && !validationResult.valid) {
-      console.log(
-        `[User: ${username}] Authentication failed – invalid or missing token`
-      );
-      res.setHeader("Access-Control-Allow-Origin", validOrigin);
-      res.status(401).json({
-        error: "authentication_failed",
-        message: "Invalid or missing authentication token",
-      });
-      return;
-    }
-
-    // Use validated auth status for rate limiting
-    const isAuthenticated = validationResult.valid;
-    const identifier =
-      isAuthenticated && username ? username.toLowerCase() : `anon:${ip}`;
+    const username = user?.username ?? null;
+    const authToken: string | undefined = user?.token;
+    const isAuthenticated = !!user;
+    const identifier = isAuthenticated && username ? username : `anon:${ip}`;
 
     // Only check rate limits for user messages (not system messages)
     const userMessages = (messages as Array<{ role: string }>).filter(
@@ -591,7 +528,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           message: `You've hit your limit of ${rateLimitResult.limit} messages in this 5-hour window. Please wait a few hours and try again.`,
         };
 
-        res.setHeader("Access-Control-Allow-Origin", validOrigin);
         res.status(429).json(errorResponse);
         return;
       }
@@ -607,19 +543,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })`
     );
 
-    if (!messages || !Array.isArray(messages)) {
-      logError(
-        `400 Error: Invalid messages format - ${JSON.stringify({ messages })}`
-      );
-      res.setHeader("Access-Control-Allow-Origin", validOrigin);
-      res.status(400).send("Invalid messages format");
-      return;
-    }
-
     // Additional validation for model
     if (model !== null && !SUPPORTED_AI_MODELS.includes(model as SupportedModel)) {
       logError(`400 Error: Unsupported model - ${model}`);
-      res.setHeader("Access-Control-Allow-Origin", validOrigin);
       res.status(400).send(`Unsupported model: ${model}`);
       return;
     }
@@ -660,7 +586,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Fetch user memories and daily notes for authenticated users
     let userMemories: MemoryIndex | null = null;
     let dailyNotesText: string | null = null;
-    if (username && validationResult.valid) {
+    if (username && isAuthenticated) {
       try {
         const [memories, notes] = await Promise.all([
           getMemoryIndex(redis, username),
@@ -685,7 +611,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Proactive greeting mode – quick non-streaming JSON response
     // Only for authenticated users with memories available
     // -------------------------------------------------------------
-    if (isProactiveGreeting && username && validationResult.valid) {
+    if (isProactiveGreeting && username && isAuthenticated) {
       log("Proactive greeting requested");
 
       // Background: process past daily notes into long-term memory (fire-and-forget)
@@ -718,7 +644,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // If no memories, return null (client will keep the generic greeting)
       if (!memoryContext) {
         log("No memories available for proactive greeting");
-        res.setHeader("Access-Control-Allow-Origin", validOrigin);
         res.status(200).json({ greeting: null, reason: "no memories available" });
         return;
       }
@@ -771,12 +696,10 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
         const greeting = text.trim();
         log(`Generated proactive greeting: "${greeting.substring(0, 50)}..."`);
 
-        res.setHeader("Access-Control-Allow-Origin", validOrigin);
         res.status(200).json({ greeting });
         return;
       } catch (greetingErr) {
         logError("Failed to generate proactive greeting", greetingErr);
-        res.setHeader("Access-Control-Allow-Origin", validOrigin);
         res.status(200).json({ greeting: null, reason: "generation failed" });
         return;
       }
@@ -814,8 +737,8 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
         YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
       },
       // Memory tool context - only available for authenticated users
-      username: validationResult.valid ? username : null,
-      redis: validationResult.valid ? redis : undefined,
+      username: isAuthenticated ? username : null,
+      redis: isAuthenticated ? redis : undefined,
       timeZone: userTimeZone,
     });
 
@@ -892,3 +815,4 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
+);

@@ -1,0 +1,127 @@
+import { apiRequest, type ApiAuthContext } from "@/api/core";
+
+export interface ListenTrackMeta {
+  title: string;
+  artist?: string;
+  cover?: string;
+}
+
+export interface ListenSessionUser {
+  username: string;
+  joinedAt: number;
+  isOnline: boolean;
+}
+
+export interface ListenAnonymousListener {
+  anonymousId: string;
+  joinedAt: number;
+}
+
+export interface ListenSession {
+  id: string;
+  hostUsername: string;
+  djUsername: string;
+  createdAt: number;
+  currentTrackId: string | null;
+  currentTrackMeta: ListenTrackMeta | null;
+  isPlaying: boolean;
+  positionMs: number;
+  lastSyncAt: number;
+  users: ListenSessionUser[];
+  anonymousListeners?: ListenAnonymousListener[];
+}
+
+export interface ListenSessionSummary {
+  id: string;
+  hostUsername: string;
+  djUsername: string;
+  createdAt: number;
+  currentTrackMeta: {
+    title: string;
+    artist?: string;
+    cover?: string;
+  } | null;
+  isPlaying: boolean;
+  listenerCount: number;
+}
+
+export async function fetchListenSessions(): Promise<{ sessions: ListenSessionSummary[] }> {
+  return apiRequest<{ sessions: ListenSessionSummary[] }>({
+    path: "/api/listen/sessions",
+    method: "GET",
+  });
+}
+
+export async function createListenSession(
+  auth: ApiAuthContext,
+  username?: string
+): Promise<{ session: ListenSession }> {
+  return apiRequest<{ session: ListenSession }, { username?: string }>({
+    path: "/api/listen/sessions",
+    method: "POST",
+    auth,
+    body: username ? { username } : {},
+  });
+}
+
+export async function joinListenSession(
+  sessionId: string,
+  payload: { username?: string; anonymousId?: string },
+  auth?: ApiAuthContext
+): Promise<{ session: ListenSession }> {
+  return apiRequest<{ session: ListenSession }, typeof payload>({
+    path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/join`,
+    method: "POST",
+    auth,
+    body: payload,
+  });
+}
+
+export async function leaveListenSession(
+  sessionId: string,
+  payload: { username?: string; anonymousId?: string },
+  auth?: ApiAuthContext
+): Promise<{ success: boolean; session?: ListenSession }> {
+  return apiRequest<{ success: boolean; session?: ListenSession }, typeof payload>({
+    path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/leave`,
+    method: "POST",
+    auth,
+    body: payload,
+  });
+}
+
+export async function syncListenSession(
+  sessionId: string,
+  payload: {
+    username?: string;
+    state: {
+      currentTrackId: string | null;
+      currentTrackMeta: ListenTrackMeta | null;
+      isPlaying: boolean;
+      positionMs: number;
+      djUsername?: string;
+    };
+  },
+  auth: ApiAuthContext
+): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }, typeof payload>({
+    path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/sync`,
+    method: "POST",
+    auth,
+    body: payload,
+  });
+}
+
+export async function reactListenSession(
+  sessionId: string,
+  payload: { username?: string; emoji: string },
+  auth: ApiAuthContext
+): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }, typeof payload>({
+    path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/reaction`,
+    method: "POST",
+    auth,
+    body: payload,
+  });
+}
+

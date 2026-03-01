@@ -7,8 +7,15 @@
  * Uses the unified /api/songs endpoint.
  */
 
-import { getApiUrl } from "./platform";
-import { abortableFetch } from "./abortableFetch";
+import { ApiRequestError } from "@/api/core";
+import {
+  deleteAllSongs,
+  deleteSongById,
+  getSongById,
+  importSongsBatch,
+  listSongs,
+  updateSongById,
+} from "@/api/songs";
 
 const BULK_IMPORT_BATCH_SIZE = 100;
 const BULK_IMPORT_MAX_PAYLOAD_BYTES = 3_500_000;
@@ -65,24 +72,6 @@ interface UnifiedSongDocument {
   createdAt: number;
   updatedAt: number;
   importOrder?: number;
-}
-
-/**
- * Response from unified /api/songs list endpoint
- */
-interface UnifiedSongListResponse {
-  songs: UnifiedSongDocument[];
-}
-
-/**
- * Response from the song API when saving
- */
-interface SaveSongResponse {
-  success: boolean;
-  id?: string;
-  isUpdate?: boolean;
-  createdBy?: string;
-  error?: string;
 }
 
 /**
@@ -217,33 +206,16 @@ export async function getCachedSongMetadata(
   youtubeId: string
 ): Promise<CachedSongMetadata | null> {
   try {
-    const response = await abortableFetch(
-      getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}?include=metadata`),
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      }
-    );
-
-    if (response.ok) {
-      const data: UnifiedSongDocument = await response.json();
-      console.log(`[SongMetadataCache] Cache HIT for ${youtubeId}`);
-      return unifiedToMetadata(data);
-    }
-
-    if (response.status === 404) {
+    const data = await getSongById<UnifiedSongDocument>(youtubeId, {
+      include: "metadata",
+    });
+    console.log(`[SongMetadataCache] Cache HIT for ${youtubeId}`);
+    return unifiedToMetadata(data);
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 404) {
       console.log(`[SongMetadataCache] Cache MISS for ${youtubeId}`);
       return null;
     }
-
-    console.warn(`[SongMetadataCache] Failed to fetch metadata for ${youtubeId}: ${response.status}`);
-    return null;
-  } catch (error) {
     console.error(`[SongMetadataCache] Error fetching metadata for ${youtubeId}:`, error);
     return null;
   }
@@ -257,30 +229,10 @@ export async function getCachedSongMetadata(
  */
 export async function listAllCachedSongMetadata(createdBy?: string): Promise<CachedSongMetadata[]> {
   try {
-    let url = "/api/songs?include=metadata";
-    if (createdBy) {
-      url += `&createdBy=${encodeURIComponent(createdBy)}`;
-    }
-    
-    const response = await abortableFetch(
-      getApiUrl(url),
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      }
-    );
-
-    if (!response.ok) {
-      console.warn(`[SongMetadataCache] Failed to list all metadata: ${response.status}`);
-      return [];
-    }
-
-    const data: UnifiedSongListResponse = await response.json();
+    const data = await listSongs<UnifiedSongDocument>({
+      include: "metadata",
+      createdBy,
+    });
     const songs = data.songs?.map(unifiedToMetadata) || [];
     console.log(`[SongMetadataCache] Listed ${songs.length} songs${createdBy ? ` (by ${createdBy})` : ""}`);
     return songs;
@@ -303,44 +255,27 @@ export async function deleteSongMetadata(
   auth: SongMetadataAuthCredentials
 ): Promise<boolean> {
   try {
-    const response = await abortableFetch(
-      getApiUrl(`/api/songs/${encodeURIComponent(youtubeId)}`),
-      {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${auth.authToken}`,
-          "X-Username": auth.username,
-        },
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
-      }
-    );
-
-    if (response.status === 401) {
-      console.warn(`[SongMetadataCache] Unauthorized - user must be logged in to delete metadata`);
-      return false;
-    }
-
-    if (response.status === 403) {
-      console.warn(`[SongMetadataCache] Forbidden - admin access required to delete metadata`);
-      return false;
-    }
-
-    if (response.status === 404) {
-      console.warn(`[SongMetadataCache] Song not found: ${youtubeId}`);
-      return false;
-    }
-
-    if (response.ok) {
-      console.log(`[SongMetadataCache] Deleted metadata for ${youtubeId}`);
-      return true;
-    }
-
-    console.warn(`[SongMetadataCache] Failed to delete metadata for ${youtubeId}: ${response.status}`);
-    return false;
+    await deleteSongById(youtubeId, {
+      username: auth.username,
+      token: auth.authToken,
+    });
+    console.log(`[SongMetadataCache] Deleted metadata for ${youtubeId}`);
+    return true;
   } catch (error) {
+    if (error instanceof ApiRequestError) {
+      if (error.status === 401) {
+        console.warn(`[SongMetadataCache] Unauthorized - user must be logged in to delete metadata`);
+        return false;
+      }
+      if (error.status === 403) {
+        console.warn(`[SongMetadataCache] Forbidden - admin access required to delete metadata`);
+        return false;
+      }
+      if (error.status === 404) {
+        console.warn(`[SongMetadataCache] Song not found: ${youtubeId}`);
+        return false;
+      }
+    }
     console.error(`[SongMetadataCache] Error deleting metadata for ${youtubeId}:`, error);
     return false;
   }
@@ -359,38 +294,23 @@ export async function deleteAllSongMetadata(
 ): Promise<{ success: number; total: number }> {
   try {
     console.log(`[SongMetadataCache] Deleting all songs...`);
-
-    const response = await abortableFetch(getApiUrl("/api/songs"), {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${auth.authToken}`,
-        "X-Username": auth.username,
-      },
-      timeout: 15000,
-      throwOnHttpError: false,
-      retry: { maxAttempts: 1, initialDelayMs: 250 },
+    const data = await deleteAllSongs({
+      username: auth.username,
+      token: auth.authToken,
     });
-
-    if (response.status === 401) {
-      console.warn(`[SongMetadataCache] Unauthorized - user must be logged in`);
-      return { success: 0, total: 0 };
-    }
-
-    if (response.status === 403) {
-      console.warn(`[SongMetadataCache] Forbidden - admin access required`);
-      return { success: 0, total: 0 };
-    }
-
-    if (response.ok) {
-      const data = await response.json();
-      console.log(`[SongMetadataCache] Deleted ${data.deleted} songs`);
-      return { success: data.deleted, total: data.deleted };
-    }
-
-    console.warn(`[SongMetadataCache] Failed to delete all: ${response.status}`);
-    return { success: 0, total: 0 };
+    console.log(`[SongMetadataCache] Deleted ${data.deleted} songs`);
+    return { success: data.deleted, total: data.deleted };
   } catch (error) {
+    if (error instanceof ApiRequestError) {
+      if (error.status === 401) {
+        console.warn(`[SongMetadataCache] Unauthorized - user must be logged in`);
+        return { success: 0, total: 0 };
+      }
+      if (error.status === 403) {
+        console.warn(`[SongMetadataCache] Forbidden - admin access required`);
+        return { success: 0, total: 0 };
+      }
+    }
     console.error(`[SongMetadataCache] Error deleting all metadata:`, error);
     return { success: 0, total: 0 };
   }
@@ -419,45 +339,30 @@ export async function saveSongMetadata(
   options?: { isShare?: boolean }
 ): Promise<boolean> {
   try {
-    const response = await abortableFetch(
-      getApiUrl(`/api/songs/${encodeURIComponent(metadata.youtubeId)}`),
+    const data = await updateSongById(
+      metadata.youtubeId,
       {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${auth.authToken}`,
-          "X-Username": auth.username,
-        },
-        body: JSON.stringify({
-          title: metadata.title,
-          artist: metadata.artist,
-          album: metadata.album,
-          lyricOffset: metadata.lyricOffset,
-          lyricsSource: metadata.lyricsSource,
-          isShare: options?.isShare,
-        }),
-        timeout: 15000,
-        throwOnHttpError: false,
-        retry: { maxAttempts: 1, initialDelayMs: 250 },
+        title: metadata.title,
+        artist: metadata.artist,
+        album: metadata.album,
+        lyricOffset: metadata.lyricOffset,
+        lyricsSource: metadata.lyricsSource,
+        isShare: options?.isShare,
+      },
+      {
+        username: auth.username,
+        token: auth.authToken,
       }
     );
-
-    if (response.status === 401) {
-      console.warn(`[SongMetadataCache] Unauthorized - user must be logged in to save metadata`);
-      return false;
-    }
-
-    if (!response.ok) {
-      console.warn(`[SongMetadataCache] Failed to save metadata for ${metadata.youtubeId}: ${response.status}`);
-      return false;
-    }
-
-    const data: SaveSongResponse = await response.json();
     console.log(
       `[SongMetadataCache] ${data.isUpdate ? "Updated" : "Saved"} metadata for ${metadata.youtubeId} (by ${data.createdBy || auth.username})`
     );
     return true;
   } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 401) {
+      console.warn(`[SongMetadataCache] Unauthorized - user must be logged in to save metadata`);
+      return false;
+    }
     console.error(`[SongMetadataCache] Error saving metadata for ${metadata.youtubeId}:`, error);
     return false;
   }
@@ -525,7 +430,7 @@ export async function bulkImportSongMetadata(
           message: "Uploading batch",
         });
 
-        const { body, byteLength } = buildBulkImportRequestBody(batch);
+        const { byteLength } = buildBulkImportRequestBody(batch);
         if (byteLength > BULK_IMPORT_MAX_PAYLOAD_BYTES) {
           if (batch.length <= 1) {
             reportProgress({
@@ -556,17 +461,13 @@ export async function bulkImportSongMetadata(
           break;
         }
 
-        const response = await abortableFetch(getApiUrl("/api/songs"), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${auth.authToken}`,
-            "X-Username": auth.username,
+        const response = await importSongsBatch({
+          songs: batch as Record<string, unknown>[],
+          auth: {
+            username: auth.username,
+            token: auth.authToken,
           },
-          body,
           timeout: 30000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
         });
 
         if (response.status === 413) {
@@ -627,10 +528,7 @@ export async function bulkImportSongMetadata(
           }
 
           rateLimitRetries += 1;
-          const retryAfterHeader = response.headers.get("Retry-After");
-          const retryAfterSeconds = retryAfterHeader
-            ? Number.parseInt(retryAfterHeader, 10)
-            : NaN;
+          const retryAfterSeconds = response.retryAfterSeconds ?? Number.NaN;
           const waitMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
             ? retryAfterSeconds * 1000
             : 4000 * Math.pow(2, rateLimitRetries - 1);
@@ -703,22 +601,31 @@ export async function bulkImportSongMetadata(
           };
         }
 
-        const data = await response.json();
-        if (!data.success) {
-          console.warn(`[SongMetadataCache] Failed to import: ${data.error}`);
+        const data = response.data as
+          | {
+              success?: boolean;
+              imported?: number;
+              updated?: number;
+              total?: number;
+              error?: string;
+            }
+          | undefined;
+
+        if (!data?.success) {
+          console.warn(`[SongMetadataCache] Failed to import: ${data?.error}`);
           reportProgress({
             stage: "error",
             batchIndex: i + 1,
             batchCount: batches.length,
             batchSize: batch.length,
-            message: data.error,
+            message: data?.error || "Import failed",
           });
           return {
             success: false,
             imported,
             updated,
             total,
-            error: data.error,
+            error: data?.error || "Import failed",
           };
         }
 

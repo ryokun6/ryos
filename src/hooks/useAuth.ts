@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { track } from "@vercel/analytics";
 import { APP_ANALYTICS } from "@/utils/analytics";
 import { useChatsStoreShallow } from "@/stores/helpers";
-import { abortableFetch } from "@/utils/abortableFetch";
+import { loginWithPassword, verifyAuthToken } from "@/api/auth";
 
 export function useAuth() {
   const {
@@ -142,32 +142,11 @@ export function useAuth() {
           }
 
           // Authenticate with password
-          const response = await abortableFetch(
-            "/api/auth/login",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-              },
-              body: JSON.stringify({
-                username: targetUsername,
-                password: input.trim(),
-                ...(authToken ? { oldToken: authToken } : {}),
-              }),
-              timeout: 15000,
-              throwOnHttpError: false,
-              retry: { maxAttempts: 1, initialDelayMs: 250 },
-            }
-          );
-
-          if (!response.ok) {
-            const data = await response.json();
-            setVerifyError(data.error || "Invalid username or password");
-            return;
-          }
-
-          const result = await response.json();
+          const result = await loginWithPassword({
+            username: targetUsername,
+            password: input.trim(),
+            oldToken: authToken ?? undefined,
+          });
           if (result.token) {
             setAuthToken(result.token);
             // Set username from the response to ensure it's properly stored
@@ -196,34 +175,10 @@ export function useAuth() {
           }
 
           // Test the token using the dedicated verification endpoint
-          const testResponse = await abortableFetch(
-            "/api/auth/token/verify",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${input.trim()}`,
-                "X-Username": verifyUsernameInput.trim() || "",
-              },
-              timeout: 15000,
-              throwOnHttpError: false,
-              retry: { maxAttempts: 1, initialDelayMs: 250 },
-            }
-          );
-
-          if (!testResponse.ok) {
-            if (testResponse.status === 401) {
-              setVerifyError("Invalid token - authentication failed");
-            } else {
-              setVerifyError(
-                `Token validation failed (${testResponse.status})`
-              );
-            }
-            return;
-          }
-
-          // Parse the response to get validation details
-          const result = await testResponse.json();
+          const result = await verifyAuthToken({
+            username: verifyUsernameInput.trim() || "",
+            token: input.trim(),
+          });
           console.log("[useAuth] Token validation successful:", result);
 
           // Token is valid, set it in the store
@@ -249,7 +204,9 @@ export function useAuth() {
         }
       } catch (err) {
         console.error("[useAuth] Error verifying:", err);
-        setVerifyError("Network error while verifying");
+        const message =
+          err instanceof Error ? err.message : "Network error while verifying";
+        setVerifyError(message);
       } finally {
         setIsVerifyingToken(false);
       }
