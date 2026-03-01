@@ -1,6 +1,6 @@
 # API Reference
 
-ryOS uses Vercel Serverless Functions with Node.js runtime for all backend APIs.
+ryOS backend APIs use Node.js route handlers in `_api/`, deployable on Vercel or the standalone Bun API server.
 
 ## API Request Flow
 

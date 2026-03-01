@@ -52,9 +52,10 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 ## Project Structure
 
 ```
-├── _api/             # Vercel API endpoints (AI, chat, lyrics, etc.)
+├── _api/             # API route handlers (Vercel-style modules)
 ├── api/              # Local dev only: symlink to _api (created by dev:vercel; gitignored)
 ├── public/           # Static assets (icons, wallpapers, sounds, fonts)
+├── scripts/          # Build + maintenance + standalone API runner
 ├── src/
 │   ├── apps/         # Individual app modules
 │   ├── components/   # Shared React components (ui, dialogs, layout)
@@ -88,9 +89,53 @@ bun run build        # Build for production
 bun run lint         # Run ESLint
 bun run preview      # Preview production build
 bun run dev:vercel   # Run with Vercel dev server (recommended); ensures api -> _api for local dev only
+bun run api:dev      # Run standalone API server (no vercel CLI)
+bun run dev:standalone # Run Vite with /api proxy to standalone API server
+bun run api:start    # Run standalone API server in production mode
 ```
 
 For local development only: `bun run dev:vercel` creates an `api` → `_api` symlink so Vercel dev serves your API routes (Vercel looks for `api/`). The symlink is gitignored and not used in production.
+
+## Run API without Vercel
+
+Use this when you want API routes locally without `vercel dev`.
+
+```bash
+# Terminal 1 - standalone API (loads .env/.env.local)
+bun run api:dev
+
+# Terminal 2 - frontend with /api proxy -> http://localhost:3000
+bun run dev:standalone
+```
+
+The standalone API listens on:
+
+- `API_PORT` (fallback: `PORT`, then `3000`)
+- `API_HOST` (fallback: `0.0.0.0`)
+
+You can run API tests directly against it:
+
+```bash
+API_URL=http://localhost:3000 bun run test:new-api
+```
+
+## VPS / self-hosting path
+
+You can host ryOS on a VPS without Vercel by running:
+
+1. `bun run build` for frontend assets
+2. `bun run api:start` for API process
+3. Nginx/Caddy reverse proxy:
+   - Serve static frontend
+   - Proxy `/api/*` to the standalone API process
+
+Set `API_ALLOWED_ORIGINS` (comma-separated origins) in production, for example:
+
+```bash
+API_ALLOWED_ORIGINS="https://your-domain.com,https://www.your-domain.com"
+```
+
+Detailed runbook: [`docs/self-hosting-vps.md`](docs/self-hosting-vps.md)
 
 ## License
 

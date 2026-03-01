@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "NODE_OPTIONS='--max-old-space-size=4096' vite --port ${PORT:-5173}",
     "dev:vercel": "bash scripts/ensure-api-symlink.sh && vercel dev",
+    "dev:standalone": "STANDALONE_API_PROXY_TARGET=http://localhost:${API_PORT:-3000} bun run dev",
+    "api:dev": "bun --watch scripts/api-standalone-server.ts",
+    "api:start": "NODE_ENV=production bun run scripts/api-standalone-server.ts",
     "version:bump": "bun run scripts/generate-build-version.ts --bump",
     "prebuild": "bun run scripts/generate-build-version.ts",
     "build": "tsc -b && vite build && cp dist/sw.js dist/version.json .vercel/output/static/ && (cp dist/workbox-*.js .vercel/output/static/ 2>/dev/null || true) && node -e \"const c=require('./.vercel/output/config.json');c.cleanUrls=true;c.trailingSlash=false;require('fs').writeFileSync('./.vercel/output/config.json',JSON.stringify(c,null,2))\"",

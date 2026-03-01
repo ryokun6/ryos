@@ -21,9 +21,12 @@ type PusherConstructor = new (
 ) => PusherType;
 
 // Use development Pusher key for local dev and Vercel preview deployments
-const PUSHER_APP_KEY =
+const isDevLikeEnvironment =
+  import.meta.env.DEV ||
   import.meta.env.VITE_VERCEL_ENV === "development" ||
-  import.meta.env.VITE_VERCEL_ENV === "preview"
+  import.meta.env.VITE_VERCEL_ENV === "preview";
+
+const PUSHER_APP_KEY = isDevLikeEnvironment
     ? "988dd649f3bdb6f0f995"
     : "b47fd563805c8c42da1a";
 const PUSHER_CLUSTER = "us3";

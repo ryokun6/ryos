@@ -1,0 +1,147 @@
+# Self-hosting ryOS on a VPS (without Vercel)
+
+This guide explains how to run ryOS with:
+
+- static frontend files
+- standalone Bun API server (`_api` handlers)
+- reverse proxy (Nginx)
+
+No `vercel dev` or Vercel runtime is required.
+
+---
+
+## 1) Prerequisites
+
+- Linux VPS (Ubuntu/Debian recommended)
+- Bun installed
+- Node-compatible build toolchain (`bun install` dependencies)
+- A reverse proxy (Nginx or Caddy)
+- Domain + TLS certs
+
+---
+
+## 2) Environment variables
+
+Create a `.env.local` (or export env vars in systemd) with required keys.
+
+### Core
+
+- `REDIS_KV_REST_API_URL`
+- `REDIS_KV_REST_API_TOKEN`
+
+### Real-time / chat
+
+- `PUSHER_APP_ID`
+- `PUSHER_KEY`
+- `PUSHER_SECRET`
+- `PUSHER_CLUSTER`
+
+### AI / media (as needed)
+
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+- `GOOGLE_GENERATIVE_AI_API_KEY`
+- `YOUTUBE_API_KEY` (+ optional `YOUTUBE_API_KEY_2`)
+- `ELEVENLABS_API_KEY` (optional)
+
+### Standalone API / CORS
+
+- `NODE_ENV=production`
+- `API_PORT=3000` (or your port)
+- `API_HOST=127.0.0.1` (recommended behind Nginx)
+- `API_ALLOWED_ORIGINS=https://your-domain.com,https://www.your-domain.com`
+
+`API_ALLOWED_ORIGINS` is comma-separated and should include every browser origin allowed to call `/api/*`.
+
+---
+
+## 3) Build + run
+
+```bash
+bun install
+bun run build
+bun run api:start
+```
+
+The standalone API server automatically discovers route handlers under `_api`.
+
+---
+
+## 4) Production process manager (systemd)
+
+Example unit file (`/etc/systemd/system/ryos-api.service`):
+
+```ini
+[Unit]
+Description=ryOS standalone API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/ryos
+Environment=NODE_ENV=production
+Environment=API_HOST=127.0.0.1
+Environment=API_PORT=3000
+Environment=API_ALLOWED_ORIGINS=https://your-domain.com,https://www.your-domain.com
+EnvironmentFile=/srv/ryos/.env.local
+ExecStart=/usr/local/bin/bun run api:start
+Restart=always
+RestartSec=3
+User=www-data
+Group=www-data
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now ryos-api
+sudo systemctl status ryos-api
+```
+
+---
+
+## 5) Nginx reverse proxy example
+
+```nginx
+server {
+  listen 443 ssl http2;
+  server_name your-domain.com www.your-domain.com;
+
+  # Frontend build output
+  root /srv/ryos/dist;
+  index index.html;
+
+  # API -> standalone Bun server
+  location /api/ {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_read_timeout 300s; # streaming endpoints
+  }
+
+  # SPA fallback
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+}
+```
+
+---
+
+## 6) Notes and caveats
+
+- `/api/sync/*` endpoints use Vercel Blob APIs (`@vercel/blob`).  
+  If you are fully off Vercel infrastructure, plan a storage replacement (S3, R2, MinIO, etc.).
+- For local development without Vercel:
+  - `bun run api:dev` (API)
+  - `bun run dev:standalone` (frontend with `/api` proxy)
+- API tests can target standalone mode:
+  - `API_URL=http://localhost:3000 bun run test:new-api`
+

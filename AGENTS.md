@@ -4,7 +4,7 @@
 
 ## Development Environment
 
-This project uses **Bun** as the package manager and runtime. The environment is configured to run on **Vercel**.
+This project uses **Bun** as the package manager and runtime. Local API testing should use the standalone Bun server + Vite proxy, while production deployment can still target **Vercel**.
 
 ### Package Manager
 
@@ -16,8 +16,10 @@ This project uses **Bun** as the package manager and runtime. The environment is
 
 ```bash
 # Development
-bun run dev        # Start Vite dev server (port 5173)
-vercel dev         # Start Vercel dev server (recommended for API testing)
+bun run api:dev        # Start standalone Bun API server (port 3000 by default)
+bun run dev:standalone # Start Vite dev server with /api proxy to standalone API
+bun run dev            # Start Vite dev server only (frontend-only)
+bun run dev:vercel     # Optional: Vercel dev server (parity/debugging only)
 
 # Build & Production
 bun run build      # TypeScript compile + Vite build
@@ -30,7 +32,11 @@ bun run test       # Run all API tests (requires server running)
 
 For **full functionality** including API endpoints:
 ```bash
-vercel dev
+# Terminal 1
+bun run api:dev
+
+# Terminal 2
+bun run dev:standalone
 ```
 
 For **frontend-only** development:
@@ -38,7 +44,7 @@ For **frontend-only** development:
 bun run dev
 ```
 
-The frontend runs on port 5173 by default, but Vercel dev will use port 3000.
+The frontend runs on port 5173 by default. The standalone API defaults to port 3000.
 
 ## Environment Variables
 
@@ -80,7 +86,7 @@ bun run scripts/machine-translate.ts
 
 ## Project Structure
 
-- `_api/` - Vercel serverless API endpoints (Edge runtime, uses `_api` prefix to avoid vite-plugin-vercel conflicts)
+- `_api/` - Node-style API route handlers (Vercel-compatible, also used by standalone Bun server)
 - `src/apps/` - Individual application modules (Finder, TextEdit, Chats, etc.)
 - `public/` - Static assets (fonts, icons, wallpapers, sounds)
 - `scripts/` - Build and maintenance scripts
@@ -94,22 +100,26 @@ bun run build
 
 For running live server (when API or UI testing is needed):
 ```bash
-vercel dev
+# Terminal 1
+bun run api:dev
+
+# Terminal 2
+bun run dev:standalone
 ```
 
 ### Manual Testing Guidelines
 
 - **Skip computer use / GUI-driven testing** unless the user explicitly requests it
 - For most changes, `bun run build` is sufficient to verify the code compiles correctly
-- Only start `vercel dev` when you need to test API endpoints or run the live application
+- For API testing, use standalone API + Vite proxy (`bun run api:dev` + `bun run dev:standalone`)
 - Only use the `computerUse` subagent for manual browser testing when the user specifically asks for visual verification or UI testing
 
 ## Important Notes
 
 - **Linter warnings**: The codebase has pre-existing linter warnings for unused variables. These are not blockers.
 - **Pre-existing lint error**: There is one pre-existing `@typescript-eslint/no-explicit-any` error in `src/apps/winamp/components/WinampAppComponent.tsx`. Do not attempt to fix it unless asked.
-- **API endpoints**: Most API endpoints are Edge Functions and require Redis for caching/storage.
+- **API endpoints**: API routes are Node-style handlers under `_api/` and require Redis for caching/storage.
 - **Build process**: The build generates service worker files (`sw.js`, `workbox-*.js`) which are copied to `.vercel/output/static/`.
-- **API symlink**: `vercel dev` requires an `api -> _api` symlink for local dev. The `dev:vercel` script creates it automatically via `scripts/ensure-api-symlink.sh`. If running `vercel dev` directly, run the symlink script first.
-- **Vercel CLI**: Installed globally via `npm install -g vercel`. Must be logged in and linked to the project for `vercel dev` to pull environment variables.
-- **Port conflicts**: If port 3000 is occupied, `vercel dev` auto-increments (3001, etc.). Kill stale processes on 3000 before starting if you need the canonical port.
+- **API symlink**: Only needed for `vercel dev` fallback. `dev:vercel` creates `api -> _api` automatically.
+- **Vercel CLI**: Installed globally, but optional for local testing now that standalone Bun API is available.
+- **Port conflicts**: If port 3000 is occupied, set `API_PORT=<port>` for `bun run api:dev` and adjust proxy target accordingly.
