@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -299,7 +305,8 @@
     <main class="content">
       <article>
         <h1>API Reference</h1>
-<p>ryOS uses Vercel Serverless Functions with Node.js runtime for all backend APIs.</p>
+<p>ryOS backend APIs use Node.js route handlers in <code>_api/</code>, deployable on Vercel or the standalone Bun API server.</p>
+<p>Most actively refactored JSON routes use the shared <code>apiHandler</code> utility (<code>_<a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/api-handler.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/api-handler.ts</a></code>) for CORS, method checks, auth resolution, and consistent error handling. Some specialized routes (for example multipart upload handlers) still use explicit/manual handling.</p>
 <h2>API Request Flow</h2>
 <pre class="mermaid">graph LR
     Client[Client App] --> Auth{Auth Check}
@@ -314,6 +321,8 @@
     Response --> Client</pre>
 <h2>Endpoint Documentation</h2>
 <table><thead><tr><th>Endpoint Group</th><th>Description</th></tr></thead><tbody><tr><td><a href="/docs/chat-api">Chat API</a></td><td>Main AI chat with streaming and tool calling</td></tr><tr><td><a href="/docs/song-api">Song API</a></td><td>Music library CRUD, lyrics, furigana, translations</td></tr><tr><td><a href="/docs/media-api">Media API</a></td><td>Text-to-speech, transcription, YouTube search</td></tr><tr><td><a href="/docs/auth-api">Auth API</a></td><td>User registration, login, token management</td></tr><tr><td><a href="/docs/rooms-api">Rooms API</a></td><td>Chat room creation and management</td></tr><tr><td><a href="/docs/messages-api">Messages API</a></td><td>Send and retrieve chat messages</td></tr><tr><td><a href="/docs/presence-api">Presence API</a></td><td>Presence tracking, user search, AI replies</td></tr><tr><td><a href="/docs/ai-generation-apis">AI Generation APIs</a></td><td>Applet generation, IE time-travel, parse-title</td></tr><tr><td><a href="/docs/utility-apis">Utility APIs</a></td><td>Link preview, iframe check, share applet, admin</td></tr><tr><td><a href="/docs/api-design-guide">API Design Guide</a></td><td>Patterns and conventions for API development</td></tr></tbody></table>
+<h2>Cross-Cutting Handler Pattern</h2>
+<ul><li><strong><code>apiHandler</code></strong>: shared wrapper for CORS preflight, origin checks, method allowlists, optional JSON parsing, unified logger wiring, and default JSON error handling.</li></ul><ul><li><strong><code>request-auth</code></strong>: shared auth resolver for token endpoints, expecting:<ul><li><code>Authorization: Bearer {token}</code></li><li><code>X-Username: {username}</code></li></ul></li><li><strong>Partial auth headers</strong> return <code>400</code>.</li><li><strong>Invalid token/username pairs</strong> return <code>401</code>.</li><li><strong>Optional-auth endpoints</strong> can be anonymous while still validating provided auth headers.</li></ul>
 <h2>Quick Reference</h2>
 <h3>AI Endpoints</h3>
 <table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat</code></td><td>Main AI chat with tool calling</td></tr><tr><td><code>/api/applet-ai</code></td><td>Applet text + image generation</td></tr><tr><td><code>/api/ie-generate</code></td><td>Time-travel page generation</td></tr><tr><td><code>/api/parse-title</code></td><td>Music metadata extraction</td></tr></tbody></table>
@@ -322,7 +331,7 @@
 <h3>Communication Endpoints</h3>
 <table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/rooms</code></td><td>Room list + create</td></tr><tr><td><code>/api/rooms/[id]</code></td><td>Room detail + delete</td></tr><tr><td><code>/api/rooms/[id]/join</code></td><td>Join a room</td></tr><tr><td><code>/api/rooms/[id]/leave</code></td><td>Leave a room</td></tr><tr><td><code>/api/rooms/[id]/users</code></td><td>Get active users in room</td></tr><tr><td><code>/api/rooms/[id]/messages</code></td><td>List/send messages</td></tr><tr><td><code>/api/rooms/[id]/messages/[msgId]</code></td><td>Delete message (admin)</td></tr><tr><td><code>/api/messages/bulk</code></td><td>Bulk message fetch</td></tr><tr><td><code>/api/presence/switch</code></td><td>Presence switching</td></tr><tr><td><code>/api/users</code></td><td>User search</td></tr><tr><td><code>/api/ai/ryo-reply</code></td><td>AI reply in rooms</td></tr><tr><td><code>/api/listen/sessions</code></td><td>List/create listen-together sessions</td></tr><tr><td><code>/api/listen/sessions/[id]</code></td><td>Get session state</td></tr><tr><td><code>/api/listen/sessions/[id]/join</code></td><td>Join listen session</td></tr><tr><td><code>/api/listen/sessions/[id]/leave</code></td><td>Leave listen session</td></tr><tr><td><code>/api/listen/sessions/[id]/sync</code></td><td>Sync playback state (DJ only)</td></tr><tr><td><code>/api/listen/sessions/[id]/reaction</code></td><td>Send emoji reaction</td></tr></tbody></table>
 <h3>Utility Endpoints</h3>
-<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/link-preview</code></td><td>URL metadata extraction</td></tr><tr><td><code>/api/iframe-check</code></td><td>Embeddability checking</td></tr><tr><td><code>/api/share-applet</code></td><td>Applet sharing</td></tr><tr><td><code>/api/admin</code></td><td>Admin operations</td></tr></tbody></table>
+<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/link-preview</code></td><td>URL metadata extraction</td></tr><tr><td><code>/api/iframe-check</code></td><td>Embeddability checking</td></tr><tr><td><code>/api/share-applet</code></td><td>Applet sharing</td></tr><tr><td><code>/api/sync/backup-token</code></td><td>Generate cloud backup upload token</td></tr><tr><td><code>/api/sync/backup</code></td><td>Save/list/delete cloud backup metadata</td></tr><tr><td><code>/api/sync/status</code></td><td>Cloud backup status summary</td></tr><tr><td><code>/api/admin</code></td><td>Admin operations</td></tr><tr><td><code>/api/pusher/broadcast</code></td><td>Internal Pusher event relay</td></tr></tbody></table>
 <h3>Endpoint Categories Overview</h3>
 <pre class="mermaid">graph TD
     API["/api/*"]
@@ -355,9 +364,9 @@
 <h2>Authentication</h2>
 <pre><code>Authorization: Bearer {token}
 X-Username: {username}</code></pre>
-<p>Token-based with 90-day expiration.</p>
+<p>Token-based sessions use a 90-day TTL. Auth-required endpoints use the shared <code>request-auth</code> validation boundary for consistent <code>400/401</code> semantics.</p>
 <h2>AI Providers</h2>
-<table><thead><tr><th>Provider</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td>gpt-5, gpt-5.1, gpt-5-mini, gpt-4o, gpt-4.1, gpt-4.1-mini</td></tr><tr><td>Anthropic</td><td>claude-4.5, claude-4, claude-3.7, claude-3.5</td></tr><tr><td>Google</td><td>gemini-2.5-pro, gemini-2.5-flash, gemini-3.1-pro-preview</td></tr></tbody></table>
+<table><thead><tr><th>Provider</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td>gpt-5.2, gpt-4.1-mini, tts-1, whisper-1</td></tr><tr><td>Anthropic</td><td>sonnet-4.6</td></tr><tr><td>Google</td><td>gemini-3-flash, gemini-3.1-pro-preview, gemini-2.5-flash, gemini-2.5-flash-image, gemini-2.0-flash</td></tr></tbody></table>
       </article>
       
       <nav class="nav">

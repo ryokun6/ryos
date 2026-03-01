@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -299,7 +305,7 @@
     <main class="content">
       <article>
         <h1>Component Architecture</h1>
-<p>ryOS uses a layered component architecture with theme-aware rendering, organized into layout, UI, dialog, and shared component categories.</p>
+<p>ryOS uses a layered component architecture with theme-aware rendering, organized into layout, UI, dialog, shared, and error-isolation component categories.</p>
 <h2>Architecture Overview</h2>
 <pre class="mermaid">graph TD
     subgraph Layer4["Layer 4: Application"]
@@ -346,7 +352,9 @@
 │   ├── AppleMenu.tsx
 │   ├── StartMenu.tsx
 │   ├── ExposeView.tsx
-│   └── AppManager.tsx
+│   ├── SpotlightSearch.tsx
+│   ├── AppSwitcher.tsx
+│   └── AppMenu.tsx
 ├── ui/               # Base UI components
 │   ├── button.tsx
 │   ├── dialog.tsx
@@ -364,18 +372,24 @@
 │   ├── ConfirmDialog.tsx
 │   ├── HelpDialog.tsx
 │   └── ...
+├── errors/           # Error boundary components
+│   └── ErrorBoundaries.tsx
 └── shared/           # Cross-app utilities
     ├── ThemedIcon.tsx
     ├── TrafficLightButton.tsx
     ├── EmojiAquarium.tsx
     └── ...</code></pre>
+<code>AppManager</code> is part of the application shell (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/base/AppManager.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/base/AppManager.tsx</a></code>), where windows are rendered and wrapped with per-instance <code>AppErrorBoundary</code>.
 <h2>Layout Components</h2>
 <h3>Desktop (<code>Desktop.tsx</code>)</h3>
 <p>The root desktop surface handling wallpaper, icons, and drag-drop.</p>
 <pre><code>interface DesktopProps {
   apps: AnyApp[];
-  appStates: AppManagerState;
-  toggleApp: (appId: AppId, initialData?: unknown) =&gt; void;
+  toggleApp: (
+    appId: AppId,
+    initialData?: unknown,
+    launchOrigin?: { x: number; y: number; width: number; height: number }
+  ) =&gt; void;
   onClick?: () =&gt; void;
   desktopStyles?: DesktopStyles;
 }</code></pre>
@@ -392,6 +406,9 @@
   instanceId?: string;
   menuBar?: React.ReactNode;
   keepMountedWhenMinimized?: boolean;
+  onFullscreenToggle?: () =&gt; void;
+  disableTitlebarAutoHide?: boolean;
+  titleBarRightContent?: React.ReactNode;
 }</code></pre>
 <strong>Theme-Specific Rendering:</strong>
 <table><thead><tr><th>Theme</th><th>Title Bar</th><th>Controls</th><th>Position</th></tr></thead><tbody><tr><td>macOS X</td><td>Pinstripe gradient</td><td>Traffic lights</td><td>Left</td></tr><tr><td>System 7</td><td>Dotted pattern</td><td>Close box</td><td>Left</td></tr><tr><td>XP</td><td>Blue gradient</td><td>Min/Max/Close</td><td>Right</td></tr><tr><td>Win98</td><td>3D beveled</td><td>Min/Max/Close</td><td>Right</td></tr></tbody></table>
@@ -580,6 +597,9 @@
   onLoad?: (data: OGData) =&gt; void;
   compact?: boolean;
 }</code></pre>
+<h2>Error Boundary Components</h2>
+<code><a href="https://github.com/ryokun6/ryos/blob/main/src/components/errors/ErrorBoundaries.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/components/errors/ErrorBoundaries.tsx</a></code> provides two shell-level resilience primitives:
+<ul><li><code>DesktopErrorBoundary</code>: wraps the desktop shell in <code>App.tsx</code> and offers a desktop reload recovery action.</li><li><code>AppErrorBoundary</code>: wraps each rendered app instance in <code>AppManager</code>, allowing relaunch/quit for a crashed window without taking down other windows.</li></ul>
 <h2>Theme Integration Pattern</h2>
 <h3>Standard Pattern</h3>
 <pre><code>function MyComponent() {

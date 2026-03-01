@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -301,6 +307,7 @@
         <h1>Media API</h1>
 <p>The Media API provides endpoints for text-to-speech synthesis, audio transcription, and YouTube music search. These endpoints power the audio-related features in ryOS applications like iPod, Karaoke, and voice input.</p>
 <p>All endpoints run on Vercel Node.js runtime and implement rate limiting to prevent abuse.</p>
+<code>/api/speech</code> is implemented with the shared <code>apiHandler</code> utility. <code>/api/audio-transcribe</code> is a multipart upload route and still uses explicit body-parser/CORS handling.
 <hr>
 <h2>Text-to-Speech</h2>
 <p>Convert text to spoken audio using OpenAI or ElevenLabs voice synthesis.</p>
@@ -329,7 +336,9 @@
 <p>Returns audio stream with headers:</p>
 <table><thead><tr><th>Header</th><th>Value</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td><code>audio/mpeg</code></td></tr><tr><td><code>Content-Length</code></td><td>Audio byte length</td></tr><tr><td><code>Cache-Control</code></td><td><code>no-store</code></td></tr></tbody></table>
 <strong>Error (400):</strong>
-<pre><code>'text' is required</code></pre>
+<pre><code>{
+  "error": "'text' is required"
+}</code></pre>
 <strong>Rate Limit (429):</strong>
 <pre><code>{
   "error": "rate_limit_exceeded",
@@ -459,7 +468,7 @@ console.log('Transcription:', text);</code></pre>
 <strong>Error (500) - Not configured:</strong>
 <pre><code>{
   "error": "YouTube API is not configured",
-  "hint": "Add YOUTUBE_API_KEY to your .env.local file and restart vercel dev"
+    "hint": "Add YOUTUBE_API_KEY to your .env.local file and restart the API server"
 }</code></pre>
 <strong>Rate Limit (429):</strong>
 <pre><code>{

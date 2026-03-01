@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -301,15 +307,15 @@
         <h1>Messages API</h1>
 <p>Endpoints for sending, retrieving, and managing messages in chat rooms.</p>
 <h2>Overview</h2>
-<p>Messages are the core communication unit in chat rooms. Authenticated users can send messages, and anyone can retrieve message history.</p>
+<p>Messages are the core communication unit in chat rooms. Authenticated users can send messages, and read access depends on room visibility (public/private membership).</p>
 <h2>Endpoint Summary</h2>
 <table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/rooms/{id}/messages</code></td><td>List messages</td><td>No</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/messages</code></td><td>Send message</td><td>Yes</td></tr><tr><td>DELETE</td><td><code>/api/rooms/{id}/messages/{messageId}</code></td><td>Delete message</td><td>Yes (admin)</td></tr><tr><td>GET</td><td><code>/api/messages/bulk?roomIds=...</code></td><td>Bulk fetch messages</td><td>No</td></tr></tbody></table>
 <h2>Endpoints</h2>
 <h3>List Messages</h3>
 <p>Get message history for a room.</p>
-<pre><code>GET /api/rooms/{id}/messages?limit=50&amp;before=1704153600000</code></pre>
+<pre><code>GET /api/rooms/{id}/messages?limit=50</code></pre>
 <strong>Query Parameters:</strong>
-<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>limit</code></td><td>number</td><td>No</td><td>Max messages to return (default: 50, max: 100)</td></tr><tr><td><code>before</code></td><td>number</td><td>No</td><td>Fetch messages before this timestamp</td></tr><tr><td><code>after</code></td><td>number</td><td>No</td><td>Fetch messages after this timestamp</td></tr></tbody></table>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>limit</code></td><td>number</td><td>No</td><td>Max messages to return (default: 20, max: 500)</td></tr></tbody></table>
 <strong>Response (200):</strong>
 <pre><code>{
   "messages": [
@@ -327,8 +333,7 @@
       "content": "Hi Alice!",
       "timestamp": 1704067260000
     }
-  ],
-  "hasMore": true
+  ]
 }</code></pre>
 <h3>Send Message</h3>
 <p>Send a message to a room. Requires authentication.</p>
@@ -341,8 +346,8 @@ Content-Type: application/json
   "content": "Hello world!"
 }</code></pre>
 <strong>Request Body:</strong>
-<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>content</code></td><td>string</td><td>Yes</td><td>Message content (max 2000 chars)</td></tr></tbody></table>
-<strong>Response (200):</strong>
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>content</code></td><td>string</td><td>Yes</td><td>Message content (max 1000 chars)</td></tr></tbody></table>
+<strong>Response (201):</strong>
 <pre><code>{
   "message": {
     "id": "msg125",
@@ -365,36 +370,25 @@ X-Username: ryo</code></pre>
 <p>Fetch messages from multiple rooms in a single request.</p>
 <pre><code>GET /api/messages/bulk?roomIds=general,random,private123</code></pre>
 <strong>Query Parameters:</strong>
-<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>roomIds</code></td><td>string</td><td>Yes</td><td>Comma-separated room IDs</td></tr><tr><td><code>limit</code></td><td>number</td><td>No</td><td>Max messages per room (default: 20)</td></tr></tbody></table>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>roomIds</code></td><td>string</td><td>Yes</td><td>Comma-separated room IDs</td></tr></tbody></table>
 <strong>Response (200):</strong>
 <pre><code>{
-  "rooms": {
-    "general": {
-      "messages": [
-        {
-          "id": "msg123",
-          "username": "alice",
-          "content": "Hello!",
-          "timestamp": 1704067200000
-        }
-      ],
-      "hasMore": true
-    },
-    "random": {
-      "messages": [],
-      "hasMore": false
-    }
-  }
+  "messagesMap": {
+    "general": [{ "id": "msg123", "username": "alice", "content": "Hello!", "timestamp": 1704067200000 }],
+    "random": []
+  },
+  "validRoomIds": ["general", "random"],
+  "invalidRoomIds": ["private123"]
 }</code></pre>
 <h2>Rate Limits</h2>
 <p>Messages in public rooms have burst protection:</p>
-<table><thead><tr><th>Limit Type</th><th>Window</th><th>Max Messages</th></tr></thead><tbody><tr><td>Short burst</td><td>10 seconds</td><td>5 messages</td></tr><tr><td>Long burst</td><td>1 minute</td><td>15 messages</td></tr><tr><td>Min interval</td><td>-</td><td>500ms between messages</td></tr></tbody></table>
+<table><thead><tr><th>Limit Type</th><th>Window</th><th>Max Messages</th></tr></thead><tbody><tr><td>Short burst</td><td>10 seconds</td><td>3 messages</td></tr><tr><td>Long burst</td><td>1 minute</td><td>20 messages</td></tr><tr><td>Min interval</td><td>-</td><td>2 seconds between messages</td></tr></tbody></table>
 <p>Private rooms have relaxed rate limits.</p>
 <h2>Message Format</h2>
 <p>Messages contain the following fields:</p>
 <table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>string</td><td>Unique message identifier</td></tr><tr><td><code>roomId</code></td><td>string</td><td>Room the message belongs to</td></tr><tr><td><code>username</code></td><td>string</td><td>Author's username</td></tr><tr><td><code>content</code></td><td>string</td><td>Message text content</td></tr><tr><td><code>timestamp</code></td><td>number</td><td>Unix timestamp (milliseconds)</td></tr></tbody></table>
 <h2>Error Responses</h2>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request</code></td><td>Missing or invalid parameters</td></tr><tr><td>400</td><td><code>Content too long</code></td><td>Message exceeds 2000 characters</td></tr><tr><td>401</td><td><code>Authentication required</code></td><td>Token missing or invalid</td></tr><tr><td>403</td><td><code>Forbidden</code></td><td>Not authorized to delete (non-admin)</td></tr><tr><td>404</td><td><code>Room not found</code></td><td>Room ID doesn't exist</td></tr><tr><td>404</td><td><code>Message not found</code></td><td>Message ID doesn't exist</td></tr><tr><td>429</td><td><code>Rate limit exceeded</code></td><td>Too many messages too quickly</td></tr></tbody></table>
+<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request</code></td><td>Missing or invalid parameters</td></tr><tr><td>400</td><td><code>Message exceeds maximum length of 1000</code></td><td>Message too long</td></tr><tr><td>401</td><td><code>Authentication required</code></td><td>Token missing or invalid</td></tr><tr><td>403</td><td><code>Forbidden</code></td><td>Not authorized to delete (non-admin)</td></tr><tr><td>404</td><td><code>Room not found</code></td><td>Room ID doesn't exist</td></tr><tr><td>404</td><td><code>Message not found</code></td><td>Message ID doesn't exist</td></tr><tr><td>429</td><td><code>Rate limit exceeded</code></td><td>Too many messages too quickly</td></tr></tbody></table>
 <h2>Related</h2>
 <ul><li><a href="/docs/rooms-api">Rooms API</a> - Room endpoints</li></ul><ul><li><a href="/docs/presence-api">Presence API</a> - Presence tracking</li><li><a href="/docs/auth-api">Auth API</a> - Authentication endpoints</li></ul>
       </article>

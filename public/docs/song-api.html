@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -300,6 +306,7 @@
       <article>
         <h1>Song API</h1>
 <p>The Song API provides endpoints for managing a music library in ryOS, including CRUD operations for songs, lyrics fetching from KuGou, AI-powered translations, Japanese furigana annotations, and "soramimi" (空耳) phonetic readings.</p>
+<p>Refactored song routes use the shared <code>apiHandler</code> pattern with optional auth plus action-specific permission checks.</p>
 <h2>Overview</h2>
 <p>Songs are identified by their YouTube video ID (11 characters). The API stores: <ul><li><strong>Metadata</strong> (lightweight ~300 bytes): title, artist, album, cover, timestamps</li><li><strong>Content</strong> (heavy ~5-50KB): lyrics, translations, furigana, soramimi annotations</li></ul></p>
 <p>Data is stored in Redis (Upstash) with split storage to avoid exceeding request size limits when listing songs.</p>
@@ -445,7 +452,7 @@ X-Username: &lt;username&gt;</code></pre>
 <h3>POST /api/songs/{id}</h3>
 <p>Update song metadata or perform an action.</p>
 <h4>Actions</h4>
-<table><thead><tr><th>Action</th><th>Description</th><th>Auth Required</th></tr></thead><tbody><tr><td>(none)</td><td>Update metadata</td><td>Yes (owner)</td></tr><tr><td><code>search-lyrics</code></td><td>Search KuGou for lyrics</td><td>No</td></tr><tr><td><code>fetch-lyrics</code></td><td>Fetch lyrics from KuGou</td><td>First fetch: No, Force refresh: Yes</td></tr><tr><td><code>translate-stream</code></td><td>Generate translation (SSE)</td><td>First: No, Force: Yes</td></tr><tr><td><code>furigana-stream</code></td><td>Generate furigana (SSE)</td><td>First: No, Force: Yes</td></tr><tr><td><code>soramimi-stream</code></td><td>Generate soramimi (SSE)</td><td>First: No, Force: Yes</td></tr><tr><td><code>clear-cached-data</code></td><td>Clear cached annotations</td><td>No</td></tr><tr><td><code>unshare</code></td><td>Clear createdBy field</td><td>Admin only</td></tr></tbody></table>
+<table><thead><tr><th>Action</th><th>Description</th><th>Auth Required</th></tr></thead><tbody><tr><td>(none)</td><td>Update metadata</td><td>Yes (owner)</td></tr><tr><td><code>search-lyrics</code></td><td>Search KuGou for lyrics</td><td>No</td></tr><tr><td><code>fetch-lyrics</code></td><td>Fetch lyrics from KuGou</td><td>First fetch: No, Force refresh: Yes</td></tr><tr><td><code>translate</code></td><td>Generate full translation (non-streaming JSON)</td><td>First: No, Force: Yes</td></tr><tr><td><code>translate-stream</code></td><td>Generate translation (SSE)</td><td>First: No, Force: Yes</td></tr><tr><td><code>furigana-stream</code></td><td>Generate furigana (SSE)</td><td>First: No, Force: Yes</td></tr><tr><td><code>soramimi-stream</code></td><td>Generate soramimi (SSE)</td><td>First: No, Force: Yes</td></tr><tr><td><code>clear-cached-data</code></td><td>Clear cached annotations</td><td>No</td></tr><tr><td><code>unshare</code></td><td>Clear createdBy field</td><td>Admin only</td></tr></tbody></table>
 <hr>
 <h2>Action: search-lyrics</h2>
 <p>Search for matching lyrics on KuGou.</p>
@@ -521,6 +528,20 @@ X-Username: &lt;username&gt;</code></pre>
   }
 }</code></pre>
 <hr>
+<h2>Action: translate</h2>
+<p>Generate full translated LRC in one JSON response (non-streaming).</p>
+<h4>Request</h4>
+<pre><code>{
+  "action": "translate",
+  "language": "en",
+  "force": false
+}</code></pre>
+<h4>Response</h4>
+<pre><code>{
+  "translation": "[00:00.00]First translated line...",
+  "cached": true
+}</code></pre>
+<hr>
 <h2>Action: translate-stream</h2>
 <p>Generate AI translation with Server-Sent Events (SSE) streaming.</p>
 <h4>Request</h4>
@@ -531,11 +552,11 @@ X-Username: &lt;username&gt;</code></pre>
 }</code></pre>
 <h4>Response (SSE)</h4>
 <p>If cached: <pre><code>{"type": "cached", "translation": "[00:00.00]First line..."}</code></pre></p>
-<p>If generating: <pre><code>{"type": "data-start", "data": {"totalLines": 50, "message": "Translation started"}}
-{"type": "data-line", "data": {"lineIndex": 0, "translation": "First line", "progress": 2}}
-{"type": "data-line", "data": {"lineIndex": 1, "translation": "Second line", "progress": 4}}
+<p>If generating: <pre><code>{"type":"start","totalLines":50,"message":"Translation started"}
+{"type":"line","lineIndex":0,"translation":"First line","progress":2}
+{"type":"line","lineIndex":1,"translation":"Second line","progress":4}
 ...
-{"type": "data-complete", "data": {"totalLines": 50, "successCount": 50, "translations": [...], "success": true}}</code></pre></p>
+{"type":"complete","totalLines":50,"successCount":50,"translations":[...],"success":true}</code></pre></p>
 <hr>
 <h2>Action: furigana-stream</h2>
 <p>Generate furigana (Japanese reading annotations) with SSE streaming.</p>
@@ -546,10 +567,10 @@ X-Username: &lt;username&gt;</code></pre>
 }</code></pre>
 <h4>Response (SSE)</h4>
 <p>If cached: <pre><code>{"type": "cached", "furigana": [[{"text": "歌詞", "reading": "かし"}]]}</code></pre></p>
-<p>If generating: <pre><code>{"type": "data-start", "data": {"totalLines": 50, "message": "Furigana generation started"}}
-{"type": "data-line", "data": {"lineIndex": 0, "furigana": [{"text": "私", "reading": "わたし"}], "progress": 2}}
+<p>If generating: <pre><code>{"type":"start","totalLines":50,"message":"Furigana generation started"}
+{"type":"line","lineIndex":0,"furigana":[{"text":"私","reading":"わたし"}],"progress":2}
 ...
-{"type": "data-complete", "data": {"totalLines": 50, "successCount": 50, "furigana": [...], "success": true}}</code></pre></p>
+{"type":"complete","totalLines":50,"successCount":50,"furigana":[...],"success":true}</code></pre></p>
 <hr>
 <h2>Action: soramimi-stream</h2>
 <p>Generate soramimi (空耳 - phonetic misheard lyrics) with SSE streaming.</p>
@@ -563,10 +584,10 @@ X-Username: &lt;username&gt;</code></pre>
 }</code></pre>
 <table><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>force</code></td><td>boolean</td><td>Force regeneration</td></tr><tr><td><code>targetLanguage</code></td><td>string</td><td><code>zh-TW</code> (Chinese) or <code>en</code> (English)</td></tr><tr><td><code>furigana</code></td><td>array</td><td>Optional furigana to help AI know kanji pronunciation</td></tr></tbody></table>
 <h4>Response (SSE)</h4>
-<pre><code>{"type": "data-start", "data": {"totalLines": 50, "message": "AI processing started"}}
-{"type": "data-line", "data": {"lineIndex": 0, "soramimi": [{"text": "私", "reading": "娃她惜"}], "progress": 2}}
+<pre><code>{"type":"start","totalLines":50,"message":"AI processing started"}
+{"type":"line","lineIndex":0,"soramimi":[{"text":"私","reading":"娃她惜"}],"progress":2}
 ...
-{"type": "data-complete", "data": {"totalLines": 50, "successCount": 50, "soramimi": [...], "success": true}}</code></pre>
+{"type":"complete","totalLines":50,"successCount":50,"soramimi":[...],"success":true}</code></pre>
 <strong>Note</strong>: Chinese soramimi is automatically skipped for Chinese lyrics (returns <code>{"skipped": true, "skipReason": "chinese_lyrics"}</code>).
 <hr>
 <h2>Action: clear-cached-data</h2>
@@ -765,9 +786,9 @@ while (true) {
   for (const line of lines) {
     const data = JSON.parse(line.slice(6));
     
-    if (data.type === 'data-line') {
-      console.log(`Line ${data.data.lineIndex}: ${data.data.translation}`);
-    } else if (data.type === 'data-complete') {
+    if (data.type === 'line') {
+      console.log(`Line ${data.lineIndex}: ${data.translation}`);
+    } else if (data.type === 'complete') {
       console.log('Translation complete!');
     }
   }

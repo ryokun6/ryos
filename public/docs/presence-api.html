@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -303,11 +309,13 @@
 <h2>Overview</h2>
 <p>Presence tracking keeps track of which users are currently active in which rooms. The AI endpoint allows users to get AI-generated responses within chat rooms.</p>
 <h2>Endpoint Summary</h2>
-<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/presence/switch</code></td><td>Switch rooms (presence tracking)</td><td>No</td></tr><tr><td>GET</td><td><code>/api/users?search=...</code></td><td>Search users</td><td>No</td></tr><tr><td>POST</td><td><code>/api/ai/ryo-reply</code></td><td>Generate Ryo AI reply</td><td>Yes</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/presence/switch</code></td><td>Switch rooms (presence tracking)</td><td>Yes</td></tr><tr><td>GET</td><td><code>/api/users?search=...</code></td><td>Search users</td><td>No</td></tr><tr><td>POST</td><td><code>/api/ai/ryo-reply</code></td><td>Generate Ryo AI reply</td><td>Yes</td></tr></tbody></table>
 <h2>Presence</h2>
 <h3>Switch Rooms</h3>
 <p>Update presence when a user switches between rooms. This is used for real-time "who's online" functionality.</p>
 <pre><code>POST /api/presence/switch
+Authorization: Bearer {token}
+X-Username: alice
 Content-Type: application/json
 
 {
@@ -328,7 +336,7 @@ Content-Type: application/json
 <p>Search for users by username prefix.</p>
 <pre><code>GET /api/users?search=ali</code></pre>
 <strong>Query Parameters:</strong>
-<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>search</code></td><td>string</td><td>Yes</td><td>Username prefix to search (min 1 char)</td></tr><tr><td><code>limit</code></td><td>number</td><td>No</td><td>Max results (default: 10)</td></tr></tbody></table>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>search</code></td><td>string</td><td>Yes</td><td>Username search string (minimum 2 chars; shorter queries return empty list)</td></tr></tbody></table>
 <strong>Response (200):</strong>
 <pre><code>{
   "users": [
@@ -353,15 +361,24 @@ Content-Type: application/json
 {
   "roomId": "general",
   "prompt": "what's up?",
-  "recentContext": "alice: hey everyone\nbob: hi alice\nalice: @ryo what's up?"
+  "systemState": {
+    "chatRoomContext": {
+      "recentMessages": "alice: hey everyone\nbob: hi alice\nalice: @ryo what's up?",
+      "mentionedMessage": "@ryo what's up?"
+    }
+  }
 }</code></pre>
 <strong>Request Body:</strong>
-<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>roomId</code></td><td>string</td><td>Yes</td><td>Room where the mention occurred</td></tr><tr><td><code>prompt</code></td><td>string</td><td>Yes</td><td>The user's message/question</td></tr><tr><td><code>recentContext</code></td><td>string</td><td>No</td><td>Recent chat history for context</td></tr></tbody></table>
-<strong>Response (200):</strong>
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>roomId</code></td><td>string</td><td>Yes</td><td>Room where the mention occurred</td></tr><tr><td><code>prompt</code></td><td>string</td><td>Yes</td><td>The user's message/question</td></tr><tr><td><code>systemState.chatRoomContext.recentMessages</code></td><td>string</td><td>No</td><td>Recent chat history</td></tr><tr><td><code>systemState.chatRoomContext.mentionedMessage</code></td><td>string</td><td>No</td><td>Message that mentioned <code>@ryo</code></td></tr></tbody></table>
+<strong>Response (201):</strong>
 <pre><code>{
-  "reply": "Hey! Just hanging out in the chat. How can I help you today?",
-  "roomId": "general",
-  "timestamp": 1704067320000
+  "message": {
+    "id": "msg_123",
+    "roomId": "general",
+    "username": "ryo",
+    "content": "hey, what's up",
+    "timestamp": 1704067320000
+  }
 }</code></pre>
 <h3>Rate Limits</h3>
 <table><thead><tr><th>User Type</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Authenticated</td><td>5 requests</td><td>1 minute</td></tr></tbody></table>
@@ -369,9 +386,9 @@ Content-Type: application/json
 <p>When mentioned in chat rooms, Ryo: <ul><li>Considers recent chat context</li></ul><ul><li>Responds in a casual, friendly tone</li><li>Can answer questions, provide information, or just chat</li><li>Respects the room's conversation flow</li></ul></p>
 <h2>Real-time Updates</h2>
 <p>Presence changes and AI replies trigger Pusher broadcasts to connected clients:</p>
-<table><thead><tr><th>Event</th><th>Channel</th><th>Payload</th></tr></thead><tbody><tr><td><code>user-joined</code></td><td><code>presence-{roomId}</code></td><td><code>{ username, timestamp }</code></td></tr><tr><td><code>user-left</code></td><td><code>presence-{roomId}</code></td><td><code>{ username, timestamp }</code></td></tr><tr><td><code>ai-reply</code></td><td><code>room-{roomId}</code></td><td><code>{ message, timestamp }</code></td></tr></tbody></table>
+<table><thead><tr><th>Event</th><th>Channel</th><th>Payload</th></tr></thead><tbody><tr><td><code>room-updated</code></td><td><code>chats-public</code> / <code>chats-{username}</code></td><td><code>{ room }</code></td></tr><tr><td><code>room-message</code></td><td><code>room-{roomId}</code></td><td><code>{ roomId, message }</code></td></tr></tbody></table>
 <h2>Error Responses</h2>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>Authentication required</code></td><td>Token missing (for AI reply)</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Origin not allowed</td></tr><tr><td>404</td><td><code>Room not found</code></td><td>Room ID doesn't exist</td></tr><tr><td>429</td><td><code>Rate limit exceeded</code></td><td>Too many AI requests</td></tr><tr><td>500</td><td><code>AI generation failed</code></td><td>AI service error</td></tr></tbody></table>
+<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>Authentication required</code></td><td>Token missing (for AI reply)</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Origin not allowed</td></tr><tr><td>404</td><td><code>Room not found</code></td><td>Room ID doesn't exist</td></tr><tr><td>429</td><td><code>Rate limit exceeded</code></td><td>Too many AI requests</td></tr><tr><td>500</td><td><code>Failed to generate reply</code></td><td>AI service error</td></tr></tbody></table>
 <h2>Related</h2>
 <ul><li><a href="/docs/rooms-api">Rooms API</a> - Room endpoints</li></ul><ul><li><a href="/docs/messages-api">Messages API</a> - Message endpoints</li><li><a href="/docs/chat-api">Chat API</a> - Main AI chat endpoint (different from room @mentions)</li><li><a href="/docs/ai-system">AI System</a> - AI providers and capabilities</li></ul>
       </article>

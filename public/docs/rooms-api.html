@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -303,13 +309,13 @@
 <h2>Overview</h2>
 <p>Chat rooms are either <strong>public</strong> (visible to all users) or <strong>private</strong> (visible only to members). Users can create, join, leave, and delete rooms.</p>
 <h2>Endpoint Summary</h2>
-<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/rooms</code></td><td>List rooms (public + private membership)</td><td>No</td></tr><tr><td>POST</td><td><code>/api/rooms</code></td><td>Create room</td><td>Yes</td></tr><tr><td>GET</td><td><code>/api/rooms/{id}</code></td><td>Get room by ID</td><td>No</td></tr><tr><td>DELETE</td><td><code>/api/rooms/{id}</code></td><td>Delete room</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/join</code></td><td>Join room</td><td>No</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/leave</code></td><td>Leave room</td><td>No</td></tr><tr><td>GET</td><td><code>/api/rooms/{id}/users</code></td><td>List active users</td><td>No</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/rooms</code></td><td>List rooms (public + private membership)</td><td>No</td></tr><tr><td>POST</td><td><code>/api/rooms</code></td><td>Create room</td><td>Yes</td></tr><tr><td>GET</td><td><code>/api/rooms/{id}</code></td><td>Get room by ID</td><td>No</td></tr><tr><td>DELETE</td><td><code>/api/rooms/{id}</code></td><td>Delete room</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/join</code></td><td>Join room</td><td>Yes</td></tr><tr><td>POST</td><td><code>/api/rooms/{id}/leave</code></td><td>Leave room</td><td>Yes</td></tr><tr><td>GET</td><td><code>/api/rooms/{id}/users</code></td><td>List active users</td><td>No</td></tr></tbody></table>
 <h2>Endpoints</h2>
 <h3>List Rooms</h3>
-<p>Get all public rooms and private rooms where the user is a member.</p>
+<p>Get all public rooms and private rooms visible to the authenticated user (if provided).</p>
 <pre><code>GET /api/rooms?username=alice</code></pre>
 <strong>Query Parameters:</strong>
-<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>username</code></td><td>string</td><td>No</td><td>Filter to include user's private rooms</td></tr></tbody></table>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>username</code></td><td>string</td><td>No</td><td>Legacy compatibility query param (visibility still comes from auth token when present)</td></tr></tbody></table>
 <strong>Response (200):</strong>
 <pre><code>{
   "rooms": [
@@ -318,8 +324,7 @@
       "name": "General Chat",
       "type": "public",
       "createdAt": 1704067200000,
-      "createdBy": "ryo",
-      "memberCount": 15
+      "userCount": 15
     },
     {
       "id": "abc123",
@@ -327,12 +332,13 @@
       "type": "private",
       "members": ["alice", "bob"],
       "createdAt": 1704153600000,
-      "createdBy": "alice"
+      "userCount": 2
     }
   ]
 }</code></pre>
 <h3>Create Room</h3>
 <p>Create a new chat room. Requires authentication.</p>
+<p>Notes: <ul><li>Public room creation is admin-only (<code>ryo</code>).</li><li>Private room creation requires at least one member; creator is auto-included.</li></ul></p>
 <pre><code>POST /api/rooms
 Authorization: Bearer {token}
 X-Username: alice
@@ -344,16 +350,16 @@ Content-Type: application/json
   "name": "Project Discussion"  // optional
 }</code></pre>
 <strong>Request Body:</strong>
-<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>type</code></td><td>string</td><td>Yes</td><td><code>"public"</code> or <code>"private"</code></td></tr><tr><td><code>members</code></td><td>string[]</td><td>For private</td><td>List of usernames</td></tr><tr><td><code>name</code></td><td>string</td><td>No</td><td>Room display name</td></tr></tbody></table>
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>type</code></td><td>string</td><td>Yes</td><td><code>"public"</code> or <code>"private"</code></td></tr><tr><td><code>members</code></td><td>string[]</td><td>For private</td><td>List of usernames</td></tr><tr><td><code>name</code></td><td>string</td><td>Public</td><td>Public room name (private names are generated)</td></tr></tbody></table>
 <strong>Response (200):</strong>
 <pre><code>{
   "room": {
     "id": "abc123def456",
-    "name": "Project Discussion",
+    "name": "@alice, @bob",
     "type": "private",
     "members": ["alice", "bob"],
     "createdAt": 1704067200000,
-    "createdBy": "alice"
+    "userCount": 2
   }
 }</code></pre>
 <h3>Get Room</h3>
@@ -366,12 +372,11 @@ Content-Type: application/json
     "name": "General Chat",
     "type": "public",
     "createdAt": 1704067200000,
-    "createdBy": "ryo",
-    "memberCount": 15
+    "userCount": 15
   }
 }</code></pre>
 <h3>Delete Room</h3>
-<p>Delete a room. Only the room creator or admin can delete.</p>
+<p>Delete a room. <ul><li>Public rooms: admin-only (<code>ryo</code>).</li></ul><ul><li>Private rooms: members can "delete" by leaving; room is removed automatically when <= 1 members remain.</li></ul></p>
 <pre><code>DELETE /api/rooms/{id}
 Authorization: Bearer {token}
 X-Username: alice</code></pre>
@@ -382,6 +387,8 @@ X-Username: alice</code></pre>
 <h3>Join Room</h3>
 <p>Join a room to participate in chat.</p>
 <pre><code>POST /api/rooms/{id}/join
+Authorization: Bearer {token}
+X-Username: alice
 Content-Type: application/json
 
 {
@@ -394,6 +401,8 @@ Content-Type: application/json
 <h3>Leave Room</h3>
 <p>Leave a room.</p>
 <pre><code>POST /api/rooms/{id}/leave
+Authorization: Bearer {token}
+X-Username: alice
 Content-Type: application/json
 
 {
@@ -425,7 +434,7 @@ Content-Type: application/json
 <h3>Private Rooms</h3>
 <ul><li>Only visible to members</li></ul><ul><li>Created with a specific member list</li><li>Ideal for direct messages or group chats</li></ul>
 <h2>Error Responses</h2>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>Authentication required</code></td><td>Token missing or invalid</td></tr><tr><td>403</td><td><code>Forbidden</code></td><td>Not authorized to perform action</td></tr><tr><td>404</td><td><code>Room not found</code></td><td>Room ID doesn't exist</td></tr><tr><td>429</td><td><code>Rate limit exceeded</code></td><td>Too many requests</td></tr></tbody></table>
+<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>Authentication required</code></td><td>Token missing or invalid</td></tr><tr><td>403</td><td><code>Forbidden</code></td><td>Not authorized to perform action (admin/member checks)</td></tr><tr><td>404</td><td><code>Room not found</code></td><td>Room ID doesn't exist</td></tr><tr><td>429</td><td><code>Rate limit exceeded</code></td><td>Too many requests</td></tr></tbody></table>
 <h2>Related</h2>
 <ul><li><a href="/docs/auth-api">Auth API</a> - Authentication endpoints</li></ul><ul><li><a href="/docs/messages-api">Messages API</a> - Message endpoints</li><li><a href="/docs/presence-api">Presence API</a> - Presence tracking</li></ul>
       </article>

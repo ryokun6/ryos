@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -299,7 +305,7 @@
     <main class="content">
       <article>
         <h1>State Management</h1>
-<p>ryOS uses Zustand for state management with 21+ stores following consistent patterns, combined with localStorage and IndexedDB for persistence.</p>
+<p>ryOS uses Zustand for state management with 25 stores following consistent patterns, combined with localStorage and IndexedDB for persistence. CPU-intensive search indexing (Spotlight dynamic results) is offloaded to a dedicated Web Worker rather than running on the main thread.</p>
 <h2>Architecture Overview</h2>
 <pre class="mermaid">flowchart TB
     subgraph "Presentation Layer"
@@ -354,9 +360,9 @@
     API --> REDIS</pre>
 <h2>Store Inventory</h2>
 <h3>Core System Stores</h3>
-<table><thead><tr><th>Store</th><th>Persistence Key</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useAppStore</code></td><td><code>ryos:app-store</code></td><td>Window/instance management, boot state, AI model selection, recent apps/documents, expose mode</td></tr><tr><td><code>useFilesStore</code></td><td><code>ryos:files</code></td><td>Virtual filesystem metadata</td></tr><tr><td><code>useThemeStore</code></td><td><code>os_theme</code> (manual)</td><td>OS theme selection</td></tr><tr><td><code>useDisplaySettingsStore</code></td><td><code>ryos:display-settings</code></td><td>Wallpaper, shaders, screen saver</td></tr><tr><td><code>useDockStore</code></td><td><code>dock-storage</code></td><td>Dock pinned items, scale, visibility</td></tr><tr><td><code>useAudioSettingsStore</code></td><td><code>ryos:audio-settings</code></td><td>Volume controls, audio feature toggles</td></tr><tr><td><code>useLanguageStore</code></td><td><code>ryos:language</code></td><td>UI language preference</td></tr></tbody></table>
+<table><thead><tr><th>Store</th><th>Persistence Key</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useAppStore</code></td><td><code>ryos:app-store</code></td><td>Instance-based window management, boot state, AI model selection, recent apps/documents, expose mode</td></tr><tr><td><code>useFilesStore</code></td><td><code>ryos:files</code></td><td>Virtual filesystem metadata</td></tr><tr><td><code>useThemeStore</code></td><td><code>ryos:theme</code> (manual, with <code>os_theme</code> legacy fallback)</td><td>OS theme selection + legacy Windows CSS loading</td></tr><tr><td><code>useDisplaySettingsStore</code></td><td><code>ryos:display-settings</code></td><td>Wallpaper, shaders, screen saver</td></tr><tr><td><code>useDockStore</code></td><td><code>dock-storage</code></td><td>Dock pinned items, scale, visibility</td></tr><tr><td><code>useAudioSettingsStore</code></td><td><code>ryos:audio-settings</code></td><td>Volume controls, audio feature toggles</td></tr><tr><td><code>useLanguageStore</code></td><td><code>ryos:language</code> + <code>ryos:language-initialized</code> (manual)</td><td>UI language preference and first-run detection</td></tr><tr><td><code>useSpotlightStore</code></td><td>None (ephemeral UI state)</td><td>Spotlight open/query/selection UI state</td></tr></tbody></table>
 <h3>App-Specific Stores</h3>
-<table><thead><tr><th>Store</th><th>Persistence Key</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useChatsStore</code></td><td><code>ryos:chats</code></td><td>Chat rooms, messages, authentication</td></tr><tr><td><code>useIpodStore</code></td><td><code>ryos:ipod</code></td><td>Music library, playback state, lyrics</td></tr><tr><td><code>useVideoStore</code></td><td><code>ryos:videos</code></td><td>Video library, playback</td></tr><tr><td><code>useKaraokeStore</code></td><td><code>ryos:karaoke</code></td><td>Karaoke session state</td></tr><tr><td><code>useTerminalStore</code></td><td><code>ryos:terminal</code></td><td>Command history, vim state</td></tr><tr><td><code>useSynthStore</code></td><td><code>ryos:synth</code></td><td>Synthesizer presets</td></tr><tr><td><code>useSoundboardStore</code></td><td><code>ryos:soundboard</code></td><td>Soundboard slots and recordings</td></tr><tr><td><code>useAppletStore</code></td><td><code>applet-storage</code></td><td>Applet window dimensions</td></tr><tr><td><code>useFinderStore</code></td><td><code>ryos:finder</code></td><td>Finder instances, view preferences</td></tr><tr><td><code>useTextEditStore</code></td><td><code>ryos:textedit</code></td><td>Recent documents</td></tr><tr><td><code>useInternetExplorerStore</code></td><td><code>ryos:ie</code></td><td>Favorites, history</td></tr><tr><td><code>usePaintStore</code></td><td><code>ryos:paint</code></td><td>Tool settings</td></tr><tr><td><code>usePhotoBoothStore</code></td><td><code>ryos:photobooth</code></td><td>Recent photos</td></tr><tr><td><code>usePcStore</code></td><td><code>ryos:pc</code></td><td>Virtual PC state</td></tr></tbody></table>
+<table><thead><tr><th>Store</th><th>Persistence Key</th><th>Purpose</th></tr></thead><tbody><tr><td><code>useChatsStore</code></td><td><code>ryos:chats</code></td><td>Chat rooms, messages, authentication</td></tr><tr><td><code>useIpodStore</code></td><td><code>ryos:ipod</code></td><td>Music library, playback state, lyrics</td></tr><tr><td><code>useVideoStore</code></td><td><code>ryos:videos</code></td><td>Video library, playback</td></tr><tr><td><code>useKaraokeStore</code></td><td><code>ryos:karaoke</code></td><td>Karaoke session state</td></tr><tr><td><code>useTerminalStore</code></td><td><code>ryos:terminal</code></td><td>Command history, vim state</td></tr><tr><td><code>useSynthStore</code></td><td><code>ryos:synth</code></td><td>Synthesizer presets</td></tr><tr><td><code>useSoundboardStore</code></td><td><code>ryos:soundboard</code></td><td>Soundboard slots and recordings</td></tr><tr><td><code>useAppletStore</code></td><td><code>applet-storage</code></td><td>Applet window dimensions</td></tr><tr><td><code>useFinderStore</code></td><td><code>ryos:finder</code></td><td>Finder instances, view preferences</td></tr><tr><td><code>useTextEditStore</code></td><td><code>ryos:textedit</code></td><td>Recent documents</td></tr><tr><td><code>useInternetExplorerStore</code></td><td><code>ryos:internet-explorer</code></td><td>Favorites, history</td></tr><tr><td><code>usePaintStore</code></td><td><code>ryos:paint</code></td><td>Tool settings</td></tr><tr><td><code>usePhotoBoothStore</code></td><td><code>ryos:photobooth</code></td><td>Recent photos</td></tr><tr><td><code>usePcStore</code></td><td><code>ryos:pc</code></td><td>Virtual PC state</td></tr><tr><td><code>useStickiesStore</code></td><td><code>stickies-storage</code></td><td>Sticky notes and note layout</td></tr><tr><td><code>useInfiniteMacStore</code></td><td><code>ryos:infinite-mac</code></td><td>Infinite Mac runtime preferences</td></tr></tbody></table>
 <h3>Store Architecture Diagram</h3>
 <pre class="mermaid">graph TD
     subgraph Core["Core System"]
@@ -515,16 +521,20 @@ interface StoredContent {
 <p>Some stores use manual persistence for more control:</p>
 <pre><code>setTheme: (theme) =&gt; {
   set({ current: theme });
-  localStorage.setItem("os_theme", theme);  // Manual save
+  localStorage.setItem("ryos:theme", theme);   // Current key
+  localStorage.removeItem("os_theme");         // Cleanup legacy key
   document.documentElement.dataset.osTheme = theme;
   ensureLegacyCss(theme);
 },
 
 hydrate: () =&gt; {
-  const saved = localStorage.getItem("os_theme");
+  const saved =
+    localStorage.getItem("ryos:theme") ??
+    localStorage.getItem("os_theme");          // Legacy fallback
   const theme = saved || "macosx";
   set({ current: theme });
   document.documentElement.dataset.osTheme = theme;
+  ensureLegacyCss(theme);
 },</code></pre>
 <h2>Migration System</h2>
 <h3>Version-Based Migrations</h3>
@@ -603,22 +613,21 @@ createAppInstance: (appId, initialData, title) =&gt; {
   }
 }</code></pre>
 <h3>Event-Based Communication</h3>
-<pre><code>// Window state changes broadcast via CustomEvents
-window.dispatchEvent(
-  new CustomEvent("appStateChange", {
-    detail: { appId, isOpen: true, isForeground: true },
-  })
-);
+<p>ryOS now uses typed app-event primitives for most cross-feature interactions:</p>
+<pre><code>// Typed launch/update/focus events
+requestAppLaunch({ appId: "finder", initialPath: "/Documents" });
+emitAppUpdate({ appId: "textedit", instanceId, initialData });
+requestWindowFocus({ instanceId });
 
-window.dispatchEvent(
-  new CustomEvent("instanceStateChange", {
-    detail: { instanceId, isOpen: true, isForeground: true },
-  })
-);
+// Typed global UI toggles
+toggleSpotlightSearch();
+toggleExposeView();
+selectExposeWindow({ instanceId });
 
-window.dispatchEvent(
-  new CustomEvent("wallpaperChange", { detail: wallpaperPath })
-);</code></pre>
+// Typed document/applet update events
+emitDocumentUpdated({ path, content });
+emitAppletUpdated({ path, content });</code></pre>
+<p>Legacy <code>window.dispatchEvent(new CustomEvent(...))</code> broadcasts still exist for a few low-level flows (for example <code>instanceStateChange</code>, <code>wallpaperChange</code>, and close-request events), but new app-level integrations should use <code><a href="https://github.com/ryokun6/ryos/blob/main/src/utils/appEventBus.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/utils/appEventBus.ts</a></code>.</p>
 <h3>Cross-Store Dependencies Map</h3>
 <pre class="mermaid">flowchart LR
     subgraph Components["React Components"]
@@ -692,6 +701,8 @@ window.dispatchEvent(
         S->>S: syncRootDirectories()
         S->>S: ensureDefaultDesktopShortcuts()
     end</pre>
+<h3>Spotlight Search Indexing (Worker Offload)</h3>
+<code>useSpotlightSearch</code> builds snapshots from <code>useFilesStore</code>, <code>useIpodStore</code>, <code>useInternetExplorerStore</code>, and <code>useVideoStore</code>, then posts indexing/query requests to <code>spotlightSearch.worker.ts</code>. Initial indexing is deferred with <code>requestIdleCallback</code> (fallback timeout), which keeps first-render interactions responsive while search data is prepared in the background.
 <h2>Best Practices</h2>
 <h3>Selective Persistence (<code>partialize</code>)</h3>
 <pre><code>partialize: (state) =&gt; ({

@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -299,7 +305,8 @@
     <main class="content">
       <article>
         <h1>Utility APIs</h1>
-<p>ryOS provides several utility API endpoints for common operations like fetching link previews, checking iframe embeddability, sharing applets, and admin operations. These endpoints are implemented as Vercel Serverless Functions (Node.js runtime).</p>
+<p>ryOS provides several utility API endpoints for common operations like fetching link previews, checking iframe embeddability, sharing applets, cloud backup metadata, and admin operations. These endpoints are implemented as Node.js API functions.</p>
+<p>Many utility endpoints now use the shared <code>apiHandler</code> + <code>request-auth</code> utilities for consistent CORS/auth/method handling.</p>
 <h2>Link Preview</h2>
 <p>Fetches metadata from URLs for rich link previews. Supports Open Graph, Twitter Cards, and standard meta tags with special handling for YouTube URLs.</p>
 <h3>Endpoint</h3>
@@ -510,8 +517,64 @@ const applet = await fetch(`/api/share-applet?id=${id}`).then(r =&gt; r.json());
 // List all applets
 const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.json());</code></pre>
 <hr>
+<h2>Sync APIs (Cloud Backup Metadata)</h2>
+<p>The sync endpoints manage backup metadata and retrieval around client-side Vercel Blob uploads.</p>
+<h3>Endpoint Summary</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/sync/backup-token</code></td><td>Generate short-lived Blob client upload token</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/status</code></td><td>Check whether cloud backup metadata exists</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/sync/backup</code></td><td>Save backup metadata after upload</td><td>Required</td></tr><tr><td>GET</td><td><code>/api/sync/backup</code></td><td>Download backup payload (base64) + metadata</td><td>Required</td></tr><tr><td>DELETE</td><td><code>/api/sync/backup</code></td><td>Delete backup blob + metadata</td><td>Required</td></tr></tbody></table>
+<h3>POST /api/sync/backup-token</h3>
+<p>Generates a direct-upload token for <code>backups/{username}/backup.gz</code>.</p>
+<p>Response:</p>
+<pre><code>{
+  "clientToken": "vercel_blob_client_token..."
+}</code></pre>
+<h3>GET /api/sync/status</h3>
+<p>Response:</p>
+<pre><code>{
+  "hasBackup": true,
+  "metadata": {
+    "timestamp": "2026-02-29T12:34:56.000Z",
+    "version": 3,
+    "totalSize": 1234567,
+    "createdAt": "2026-02-29T12:35:10.000Z"
+  }
+}</code></pre>
+<h3>/api/sync/backup</h3>
+<h4>POST request body</h4>
+<pre><code>{
+  "blobUrl": "https://...blob.vercel-storage.com/backups/user/backup.gz",
+  "timestamp": "2026-02-29T12:34:56.000Z",
+  "version": 3,
+  "totalSize": 1234567
+}</code></pre>
+<h4>POST response</h4>
+<pre><code>{
+  "ok": true,
+  "metadata": {
+    "timestamp": "2026-02-29T12:34:56.000Z",
+    "version": 3,
+    "totalSize": 1234567,
+    "createdAt": "2026-02-29T12:35:10.000Z"
+  }
+}</code></pre>
+<h4>GET response</h4>
+<pre><code>{
+  "ok": true,
+  "data": "BASE64_GZIP_DATA",
+  "metadata": {
+    "timestamp": "2026-02-29T12:34:56.000Z",
+    "version": 3,
+    "totalSize": 1234567,
+    "createdAt": "2026-02-29T12:35:10.000Z"
+  }
+}</code></pre>
+<h4>DELETE response</h4>
+<pre><code>{
+  "ok": true
+}</code></pre>
+<hr>
 <h2>Admin API</h2>
-<p>Administrative endpoints for user management in the chat system. All operations require admin authentication (user "ryo" with valid token).</p>
+<p>Administrative endpoints for user and memory management in the chat system. All operations require admin authentication (user <code>ryo</code> with valid token).</p>
+<p>The endpoint is rate-limited to 30 admin requests/minute.</p>
 <h3>Endpoint</h3>
 <table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/admin</code></td><td>Query users and statistics</td></tr><tr><td>POST</td><td><code>/api/admin</code></td><td>Perform admin actions</td></tr></tbody></table>
 <h3>Authentication</h3>
@@ -579,6 +642,29 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
     }
   ]
 }</code></pre>
+<h4><code>getUserMemories</code> Action</h4>
+<p>Get long-term memories plus recent daily notes for a user.</p>
+<strong>Additional Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>username</code></td><td>string</td><td>Yes</td><td>Target username</td></tr></tbody></table>
+<strong>Response:</strong>
+<pre><code>{
+  "memories": [
+    {
+      "key": "work",
+      "summary": "Design lead at Cursor",
+      "content": "...",
+      "createdAt": 1704067200000,
+      "updatedAt": 1704153600000
+    }
+  ],
+  "dailyNotes": [
+    {
+      "date": "2026-02-29",
+      "entries": [{ "timestamp": 1704067200000, "content": "..." }],
+      "processedForMemories": false
+    }
+  ]
+}</code></pre>
 <h3>POST Operations</h3>
 <strong>Request Body:</strong>
 <table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>action</code></td><td>string</td><td>Yes</td><td>Operation to perform</td></tr><tr><td><code>targetUsername</code></td><td>string</td><td>Yes</td><td>User to act on</td></tr><tr><td><code>reason</code></td><td>string</td><td>No</td><td>Reason for action (for bans)</td></tr></tbody></table>
@@ -620,6 +706,34 @@ const { applets } = await fetch('/api/share-applet?list=true').then(r =&gt; r.js
 <pre><code>{
   "success": true
 }</code></pre>
+<h4><code>clearUserMemories</code> Action</h4>
+<p>Delete all long-term memories for a user.</p>
+<pre><code>{
+  "action": "clearUserMemories",
+  "targetUsername": "alice"
+}</code></pre>
+<p>Response:</p>
+<pre><code>{
+  "success": true,
+  "deletedCount": 12,
+  "message": "Cleared 12 memories for alice"
+}</code></pre>
+<h4><code>forceProcessDailyNotes</code> Action</h4>
+<p>Reset processed flags and force reprocessing of recent daily notes into long-term memories.</p>
+<pre><code>{
+  "action": "forceProcessDailyNotes",
+  "targetUsername": "alice"
+}</code></pre>
+<p>Response:</p>
+<pre><code>{
+  "success": true,
+  "notesReset": 7,
+  "notesProcessed": 6,
+  "memoriesCreated": 2,
+  "memoriesUpdated": 1,
+  "dates": ["2026-02-23", "2026-02-24"],
+  "skippedDates": []
+}</code></pre>
 <h3>Example</h3>
 <pre><code>const adminHeaders = {
   'Authorization': `Bearer ${adminToken}`,
@@ -654,6 +768,24 @@ await fetch('/api/admin', {
     reason: 'Repeated spam violations'
   })
 });</code></pre>
+<hr>
+<h2>Pusher Broadcast API (Internal)</h2>
+<p>Internal relay endpoint used by server-side components that need to trigger Pusher from Node runtime.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/pusher/broadcast</code></td><td>Trigger arbitrary Pusher event</td></tr></tbody></table>
+<h3>Security</h3>
+<p>Requires internal header:</p>
+<pre><code>X-Internal-Secret: &lt;INTERNAL_API_SECRET&gt;</code></pre>
+<h3>Request body</h3>
+<pre><code>{
+  "channel": "room-general",
+  "event": "room-message",
+  "data": { "message": "hello" }
+}</code></pre>
+<h3>Response</h3>
+<pre><code>{
+  "success": true
+}</code></pre>
 <hr>
 <h2>Error Handling</h2>
 <p>All utility APIs return consistent error responses:</p>

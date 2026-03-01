@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group expanded">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
@@ -299,7 +305,7 @@
     <main class="content">
       <article>
         <h1>Architecture & Build</h1>
-<p>Vite + Bun build system with multiple deployment targets and optimized chunk splitting for performance.</p>
+<p>Vite + Bun build system with multiple deployment targets, including dual API runtime support (Vercel serverless and standalone Bun server), plus optimized chunk splitting for performance.</p>
 <h2>System Architecture Overview</h2>
 <pre class="mermaid">graph TB
     subgraph Client["Client Layer"]
@@ -308,7 +314,7 @@
     end
     
     subgraph Presentation["Presentation Layer"]
-        Apps[18 App Modules]
+        Apps[20 App Modules]
         Layout[Layout Components]
         UI[UI Components]
         Themes[4 OS Themes]
@@ -324,7 +330,8 @@
         IndexedDB[(IndexedDB)]
     end
     
-    subgraph API["API Layer (Vercel Node.js)"]
+    subgraph API["API Layer (Vercel Node.js + standalone Bun server)"]
+        Shared[apiHandler + _api/_utils]
         Chat[Chat API]
         Media[Media APIs]
         Rooms[Chat Rooms API]
@@ -343,10 +350,14 @@
     Presentation --> State
     State --> Persistence
     Presentation --> API
+    Shared --> Chat
+    Shared --> Media
+    Shared --> Rooms
+    Shared --> Utility
     API --> External
     State --> API</pre>
 <h2>Deployment Targets</h2>
-<table><thead><tr><th>Target</th><th>Technology</th><th>Description</th></tr></thead><tbody><tr><td><strong>Web (PWA)</strong></td><td>Vercel</td><td>Primary deployment with CDN, serverless functions</td></tr><tr><td><strong>Desktop</strong></td><td>Tauri</td><td>Native app for macOS, Windows, Linux</td></tr><tr><td><strong>Development</strong></td><td>Vite</td><td>Local server with HMR</td></tr></tbody></table>
+<table><thead><tr><th>Target</th><th>Technology</th><th>Description</th></tr></thead><tbody><tr><td><strong>Web (PWA)</strong></td><td>Vercel</td><td>Primary deployment with CDN, serverless functions</td></tr><tr><td><strong>Desktop</strong></td><td>Tauri</td><td>Native app for macOS, Windows, Linux</td></tr><tr><td><strong>Development</strong></td><td>Vite + Bun</td><td>Local frontend with HMR and optional standalone API proxy</td></tr><tr><td><strong>Self-hosted API</strong></td><td>Bun (<code>Bun.serve</code>)</td><td>Run <code>_api/<em></code> routes without Vercel via <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">scripts/api-standalone-server.ts</a></code></td></tr></tbody></table>
 <pre class="mermaid">graph LR
     subgraph Source
         A[Source Code]
@@ -370,6 +381,10 @@
     C --> F[Vercel CDN]
     D --> G[Tauri - macOS/Windows/Linux]
     E --> H[localhost + HMR]</pre>
+<h2>API Runtime Modes</h2>
+<p>The API layer is shared across two execution environments: <ul><li><strong>Vercel serverless functions:</strong> <code>_api/</em></code> handlers run as Node.js functions for primary web deployment.</li></ul><ul><li><strong>Standalone Bun server:</strong> <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">scripts/api-standalone-server.ts</a></code> uses <code>Bun.serve</code> and adapts requests/responses to the Vercel handler shape for non-Vercel environments.</li></ul></p>
+<p>Shared utilities under <code>_api/_utils/</code> (including <code>api-handler.ts</code>, <code>middleware.ts</code>, <code>request-auth.ts</code>, <code>redis.ts</code>, <code>constants.ts</code>, <code>_cors.ts</code>, <code>_ssrf.ts</code>, <code>_rate-limit.ts</code>, <code>_validation.ts</code>, <code>_logging.ts</code>, and <code>_sse.ts</code>) provide consistent API patterns across routes.</p>
+<p>Frontend clients under <code>src/api/</code> (<code>auth</code>, <code>rooms</code>, <code>admin</code>, <code>songs</code>, and <code>listen</code>) centralize request logic for app modules.</p>
 <h2>Chunk Splitting Strategy</h2>
 <p>The build system uses intelligent chunk splitting to optimize initial load time while enabling on-demand loading of heavy dependencies.</p>
 <h3>Core Chunks (Immediate Load)</h3>
@@ -474,7 +489,9 @@ function createLazyComponent&lt;T = unknown&gt;(
 <h3>Development</h3>
 <pre><code># Local development with HMR
 bun run dev           # Vite dev server
-bun run dev:vercel    # Vercel CLI (recommended for API routes)</code></pre>
+bun run dev:vercel    # Optional Vercel parity/debugging
+bun run api:dev       # Standalone API server (no vercel CLI)
+bun run dev:standalone # Vite with /api proxy to standalone API</code></pre>
 <h3>Production Build</h3>
 <pre><code>bun run build         # Production build
 bun run preview       # Preview production build</code></pre>
@@ -482,10 +499,12 @@ bun run preview       # Preview production build</code></pre>
 <pre><code>bun run tauri:dev     # Development with native shell
 bun run tauri:build   # Build native applications</code></pre>
 <h2>Performance Optimizations</h2>
+<h3>Runtime Stability & App Coordination</h3>
+<ol><li><strong>Error Boundaries:</strong> Desktop-level and app-level boundaries isolate crashes and allow targeted recovery flows.</li></ol><ol><li><strong>Typed App Event Bus:</strong> <code><a href="https://github.com/ryokun6/ryos/blob/main/src/utils/appEventBus.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/utils/appEventBus.ts</a></code> defines typed primitives for app launch/update, window focus, Spotlight/Expose toggles, and file/document events.</li></ol>
 <h3>Initial Load Optimizations</h3>
-<ol><li><strong>Code Splitting</strong>: Apps loaded on-demand via React.lazy</li></ol><ol><li><strong>Font Loading</strong>: System font stacks with web font fallbacks</li><li><strong>Image Optimization</strong>: Responsive images, WebP format</li><li><strong>CSS Layers</strong>: Tailwind with theme-specific overrides</li></ol>
+<ol><li><strong>Code Splitting</strong>: Apps loaded on-demand via React.lazy</li></ol><ol><li><strong>Font Loading</strong>: System font stacks with web font fallbacks</li><li><strong>Image Optimization</strong>: Responsive images, WebP format</li><li><strong>CSS Layers</strong>: Tailwind with theme-specific overrides</li><li><strong>Locale Loading</strong>: Non-default locales are loaded lazily via dynamic imports</li></ol>
 <h3>Runtime Optimizations</h3>
-<ol><li><strong>Zustand Selectors</strong>: Fine-grained subscriptions prevent re-renders</li></ol><ol><li><strong>Memo/Callback</strong>: Strategic memoization for expensive computations</li><li><strong>Virtual Lists</strong>: Large lists use virtualization (iPod, Finder)</li><li><strong>Debounced Actions</strong>: User inputs debounced for performance</li></ol>
+<ol><li><strong>Zustand Selectors</strong>: Fine-grained subscriptions prevent re-renders</li></ol><ol><li><strong>Memo/Callback</strong>: Strategic memoization for expensive computations</li><li><strong>Virtual Lists</strong>: Large lists use virtualization (iPod, Finder)</li><li><strong>Debounced Actions</strong>: User inputs debounced for performance</li><li><strong>Spotlight Offloading</strong>: Spotlight indexing/search for dynamic datasets runs in a dedicated Web Worker</li></ol>
 <h3>Audio Optimizations</h3>
 <ol><li><strong>Shared AudioContext</strong>: Single context prevents resource exhaustion</li></ol><ol><li><strong>Lazy AudioBuffer Loading</strong>: Sounds loaded on first interaction</li><li><strong>LRU Cache</strong>: Limited audio buffer cache with eviction</li><li><strong>Concurrent Source Limiting</strong>: Prevents audio overload</li></ol>
 <pre class="mermaid">graph TD
@@ -529,7 +548,7 @@ bun run tauri:build   # Build native applications</code></pre>
     Rollup --> StyleSheet
     Rollup --> SW</pre>
 <h2>Related Documentation</h2>
-<ul><li><a href="/docs/application-framework">Application Framework</a> - App structure and lifecycle</li></ul><ul><li><a href="/docs/state-management">State Management</a> - Zustand stores and persistence</li><li><a href="/docs/api-architecture">API Architecture</a> - Backend API design</li></ul>
+<ul><li><a href="/docs/application-framework">Application Framework</a> - App structure and lifecycle</li></ul><ul><li><a href="/docs/state-management">State Management</a> - Zustand stores and persistence</li><li><a href="/docs/api-architecture">API Architecture</a> - Backend API design</li><li><a href="/docs/self-hosting-vps">Self-hosting on VPS</a> - Run API/frontend without Vercel</li></ul>
       </article>
       
       <nav class="nav">

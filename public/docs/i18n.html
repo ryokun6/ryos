@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -303,7 +309,9 @@
 <h2>Supported Languages</h2>
 <table><thead><tr><th>Code</th><th>Language</th><th>Native Name</th></tr></thead><tbody><tr><td><code>en</code></td><td>English (default)</td><td>English</td></tr><tr><td><code>zh-TW</code></td><td>Chinese Traditional</td><td>中文</td></tr><tr><td><code>ja</code></td><td>Japanese</td><td>日本語</td></tr><tr><td><code>ko</code></td><td>Korean</td><td>한국어</td></tr><tr><td><code>fr</code></td><td>French</td><td>Français</td></tr><tr><td><code>de</code></td><td>German</td><td>Deutsch</td></tr><tr><td><code>es</code></td><td>Spanish</td><td>Español</td></tr><tr><td><code>pt</code></td><td>Portuguese</td><td>Português</td></tr><tr><td><code>it</code></td><td>Italian</td><td>Italiano</td></tr><tr><td><code>ru</code></td><td>Russian</td><td>Русский</td></tr></tbody></table>
 <h2>i18n Configuration</h2>
-<p>The i18n system is configured in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/i18n.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/i18n.ts</a></code>: <ul><li><strong>Library</strong>: i18next with react-i18next bindings</li></ul><ul><li><strong>Detection</strong>: Browser language auto-detection via <code>i18next-browser-languagedetector</code></li><li><strong>Storage</strong>: Language preference saved to localStorage (<code>ryos_language</code>)</li><li><strong>Fallback</strong>: English (<code>en</code>) as default fallback language</li></ul></p>
+<p>The i18n system is configured in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/i18n.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/i18n.ts</a></code> and <code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/languageConfig.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/lib/languageConfig.ts</a></code>: <ul><li><strong>Library</strong>: i18next with react-i18next bindings</li></ul><ul><li><strong>Detection</strong>: Custom locale resolution via <code>resolveInitialLanguage()</code> (uses <code>navigator.languages</code> with fuzzy locale matching)</li><li><strong>Storage</strong>: Language preference saved to localStorage (<code>ryos:language</code>, <code>ryos:language-initialized</code>) with legacy key migration from <code>ryos_language</code></li><li><strong>Fallback</strong>: English (<code>en</code>) as default fallback language</li><li><strong>Runtime switching</strong>: <code>applyLanguage()</code> ensures resources are loaded before <code>i18n.changeLanguage()</code></li></ul></p>
+<h3>Locale Bundle Loading</h3>
+<ul><li><strong>Eager default locale</strong>: English (<code>en</code>) translation bundle is imported at startup</li></ul><ul><li><strong>Lazy non-default locales</strong>: Other locale JSON files are dynamically imported on demand (<code>localeLoaders</code>)</li><li><strong>Deduplicated loading</strong>: Concurrent requests for the same locale share a single promise (<code>loadingLanguages</code>)</li><li><strong>Bootstrap flow</strong>: <code>initializeI18n()</code> initializes i18n, resolves initial language, lazy-loads if needed, then applies language</li></ul>
 <h3>Translation File Structure</h3>
 <p>Translations are stored in <code>src/lib/locales/{lang}/translation.json</code>:</p>
 <pre><code>src/lib/locales/

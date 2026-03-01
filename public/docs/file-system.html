@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -444,9 +450,9 @@ const {
   icon: "/icons/file-text.png",
 });</code></pre>
 <h3>Move to Trash Flow</h3>
-<ol><li>Mark item as <code>status: "trashed"</code> in metadata</li><li>Store <code>originalPath</code> and <code>deletedAt</code> timestamp</li><li>Move content from original store to <code>trash</code> store in IndexedDB</li><li>Update Trash folder icon (<code>trash-full.png</code>)</li></ol>
+<ol><li>Mark item as <code>status: "trashed"</code> in metadata</li><li>Store <code>originalPath</code> and <code>deletedAt</code> timestamp</li><li>For Documents/Images files, move content from original store to <code>trash</code> store in IndexedDB</li><li>Update Trash folder icon (<code>trash-full.png</code>)</li></ol>
 <h3>Restore from Trash Flow</h3>
-<ol><li>Reset <code>status</code> to <code>"active"</code>, clear <code>originalPath</code> and <code>deletedAt</code></li><li>Move content back from <code>trash</code> store to original store</li><li>Update Trash folder icon if empty</li></ol>
+<ol><li>Reset <code>status</code> to <code>"active"</code>, clear <code>originalPath</code> and <code>deletedAt</code></li><li>For Documents/Images files, move content back from <code>trash</code> store to original store</li><li>Update Trash folder icon if empty</li></ol>
 <h2>Lazy Loading</h2>
 <p>Default file content is lazy-loaded on first access:</p>
 <pre><code>// Register files for lazy loading during initialization
@@ -455,6 +461,7 @@ registerFilesForLazyLoad(files, items);
 // Load content when file is opened
 await ensureFileContentLoaded(filePath, uuid);</code></pre>
 <p>Files with <code>assetPath</code> in <code><a href="https://github.com/ryokun6/ryos/blob/main/public/data/filesystem.js" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">public/data/filesystem.js</a>on</code> are fetched on-demand, not during app initialization. This improves startup performance.</p>
+<code>preloadFileSystemData()</code> starts fetching <code>filesystem.json</code> and <code>applets.json</code> during bootstrap so metadata is warm before Finder mounts, while binary file assets still load on first open.
 <h2>Finder App Integration</h2>
 <h3>Multi-Window Support</h3>
 <p>Each Finder window is an instance with its own state:</p>
@@ -472,9 +479,11 @@ await ensureFileContentLoaded(filePath, uuid);</code></pre>
 <pre><code>// Default view types by path
 getDefaultViewTypeForPath(path) {
   if (path === "/" || path.startsWith("/Images") || 
-      path.startsWith("/Applications") || path.startsWith("/Applets"))
+      path.startsWith("/Videos") || path.startsWith("/Applications") ||
+      path.startsWith("/Applets") || path.startsWith("/Trash") ||
+      path.startsWith("/Music"))
     return "large";
-  if (path.startsWith("/Documents") || path.startsWith("/Music"))
+  if (path.startsWith("/Documents"))
     return "list";
   return "list";
 }</code></pre>
@@ -484,13 +493,14 @@ getDefaultViewTypeForPath(path) {
   switch (ext) {
     case "md": return "markdown";
     case "txt": return "text";
-    case "png": case "jpg": case "gif": case "webp": case "bmp": return ext;
+    case "png": case "gif": case "webp": case "bmp": return ext;
+    case "jpg": case "jpeg": return "jpg";
     case "app": return "application";
     default: return "unknown";
   }
 }</code></pre>
 <h2>Supported File Types</h2>
-<table><thead><tr><th>Extension</th><th>Type</th><th>Opens With</th><th>Storage</th></tr></thead><tbody><tr><td><code>.md</code></td><td>Markdown</td><td>TextEdit</td><td>IndexedDB (documents)</td></tr><tr><td><code>.txt</code></td><td>Plain text</td><td>TextEdit</td><td>IndexedDB (documents)</td></tr><tr><td><code>.png</code>, <code>.jpg</code>, <code>.gif</code>, <code>.webp</code>, <code>.bmp</code></td><td>Image</td><td>Paint</td><td>IndexedDB (images)</td></tr><tr><td><code>.app</code>, <code>.html</code></td><td>HTML Applet</td><td>Applet Viewer</td><td>IndexedDB (applets)</td></tr><tr><td><code>.mp3</code></td><td>Audio</td><td>iPod</td><td>Virtual (iPod store)</td></tr><tr><td><code>.mov</code></td><td>Video</td><td>Videos</td><td>Virtual (Video store)</td></tr><tr><td><code>.webloc</code></td><td>Web link</td><td>Internet Explorer</td><td>Virtual (IE store)</td></tr></tbody></table>
+<table><thead><tr><th>Extension</th><th>Type</th><th>Opens With</th><th>Storage</th></tr></thead><tbody><tr><td><code>.md</code></td><td>Markdown</td><td>TextEdit</td><td>IndexedDB (documents)</td></tr><tr><td><code>.txt</code></td><td>Plain text</td><td>TextEdit</td><td>IndexedDB (documents)</td></tr><tr><td><code>.png</code>, <code>.jpg</code>, <code>.jpeg</code>, <code>.gif</code>, <code>.webp</code>, <code>.bmp</code></td><td>Image</td><td>Paint</td><td>IndexedDB (images)</td></tr><tr><td><code>.app</code>, <code>.html</code></td><td>HTML Applet</td><td>Applet Viewer</td><td>IndexedDB (applets)</td></tr><tr><td><code>.mp3</code></td><td>Audio</td><td>iPod</td><td>Virtual (iPod store)</td></tr><tr><td><code>.mov</code></td><td>Video</td><td>Videos</td><td>Virtual (Video store)</td></tr><tr><td><code>.webloc</code></td><td>Web link</td><td>Internet Explorer</td><td>Virtual (IE store)</td></tr></tbody></table>
 <h2>Desktop Shortcuts</h2>
 <p>Aliases/shortcuts on Desktop:</p>
 <pre><code>// Create alias from context menu or drag

@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -305,8 +311,9 @@
 <pre><code>Authorization: Bearer {token}
 X-Username: {username}</code></pre>
 <p>Tokens are issued by <code>/api/auth/register</code> and <code>/api/auth/login</code>.</p>
+<p>Most auth-protected endpoints now resolve credentials through the shared <code>request-auth</code> utility (both headers required together). <code>register</code>, <code>login</code>, and <code>token/refresh</code> remain explicit handlers.</p>
 <h2>Endpoint Summary</h2>
-<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/auth/register</code></td><td>Create user + issue token</td></tr><tr><td>POST</td><td><code>/api/auth/login</code></td><td>Login with password</td></tr><tr><td>POST</td><td><code>/api/auth/logout</code></td><td>Logout current session</td></tr><tr><td>POST</td><td><code>/api/auth/logout-all</code></td><td>Logout all sessions</td></tr><tr><td>POST</td><td><code>/api/auth/token/verify</code></td><td>Verify token</td></tr><tr><td>POST</td><td><code>/api/auth/token/refresh</code></td><td>Refresh token</td></tr><tr><td>GET</td><td><code>/api/auth/password/check</code></td><td>Check if password set</td></tr><tr><td>POST</td><td><code>/api/auth/password/set</code></td><td>Set password</td></tr><tr><td>GET</td><td><code>/api/auth/tokens</code></td><td>List active tokens</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/auth/register</code></td><td>Create user + issue token</td></tr><tr><td>POST</td><td><code>/api/auth/login</code></td><td>Login with password</td></tr><tr><td>POST</td><td><code>/api/auth/logout</code></td><td>Logout current session</td></tr><tr><td>POST</td><td><code>/api/auth/logout-all</code></td><td>Logout all sessions</td></tr><tr><td>POST</td><td><code>/api/auth/token/verify</code></td><td>Verify token</td></tr><tr><td>POST</td><td><code>/api/auth/token/refresh</code></td><td>Refresh token with <code>{ username, oldToken }</code></td></tr><tr><td>GET</td><td><code>/api/auth/password/check</code></td><td>Check if password set</td></tr><tr><td>POST</td><td><code>/api/auth/password/set</code></td><td>Set password</td></tr><tr><td>GET</td><td><code>/api/auth/tokens</code></td><td>List active tokens</td></tr></tbody></table>
 <h2>Endpoints</h2>
 <h3>Register User</h3>
 <p>Create a new user account and receive an authentication token.</p>
@@ -315,12 +322,12 @@ Content-Type: application/json
 
 {
   "username": "alice",
-  "password": "testpassword123"  // optional
+  "password": "testpassword123"
 }</code></pre>
-<strong>Response (200):</strong>
+<strong>Response (201, new account):</strong>
 <pre><code>{
-  "user": { "username": "alice" },
-  "token": "eyJhbGciOiJIUzI1NiIs..."
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "user": { "username": "alice" }
 }</code></pre>
 <h3>Login</h3>
 <p>Authenticate with username and password.</p>
@@ -333,8 +340,8 @@ Content-Type: application/json
 }</code></pre>
 <strong>Response (200):</strong>
 <pre><code>{
-  "user": { "username": "alice" },
-  "token": "eyJhbGciOiJIUzI1NiIs..."
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "username": "alice"
 }</code></pre>
 <h3>Logout</h3>
 <p>Invalidate the current session token.</p>
@@ -343,7 +350,8 @@ Authorization: Bearer {token}
 X-Username: alice</code></pre>
 <strong>Response (200):</strong>
 <pre><code>{
-  "success": true
+  "success": true,
+  "message": "Logged out successfully"
 }</code></pre>
 <h3>Logout All Sessions</h3>
 <p>Invalidate all active tokens for the user.</p>
@@ -352,7 +360,9 @@ Authorization: Bearer {token}
 X-Username: alice</code></pre>
 <strong>Response (200):</strong>
 <pre><code>{
-  "success": true
+  "success": true,
+  "message": "Logged out from 2 devices",
+  "deletedCount": 2
 }</code></pre>
 <h3>Verify Token</h3>
 <p>Check if a token is valid.</p>
@@ -362,14 +372,26 @@ X-Username: alice</code></pre>
 <strong>Response (200):</strong>
 <pre><code>{
   "valid": true,
-  "username": "alice"
+  "username": "alice",
+  "message": "Token is valid"
+}</code></pre>
+<p>If the token is in grace-period mode:</p>
+<pre><code>{
+  "valid": true,
+  "username": "alice",
+  "expired": true,
+  "message": "Token is within grace period"
 }</code></pre>
 <h3>Refresh Token</h3>
-<p>Get a new token before the current one expires.</p>
+<p>Get a new token before/after expiry (within grace period) using the old token.</p>
 <pre><code>POST /api/auth/token/refresh
-Authorization: Bearer {token}
-X-Username: alice</code></pre>
-<strong>Response (200):</strong>
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "oldToken": "previous-token"
+}</code></pre>
+<strong>Response (201):</strong>
 <pre><code>{
   "token": "eyJhbGciOiJIUzI1NiIs..."
 }</code></pre>
@@ -380,7 +402,8 @@ Authorization: Bearer {token}
 X-Username: alice</code></pre>
 <strong>Response (200):</strong>
 <pre><code>{
-  "hasPassword": true
+  "hasPassword": true,
+  "username": "alice"
 }</code></pre>
 <h3>Set Password</h3>
 <p>Set or update the user's password.</p>
@@ -405,14 +428,15 @@ X-Username: alice</code></pre>
 <pre><code>{
   "tokens": [
     {
-      "id": "token1",
+      "maskedToken": "...c0ffee12",
       "createdAt": 1704067200000,
-      "lastUsed": 1704153600000
+      "isCurrent": true
     }
-  ]
+  ],
+  "count": 1
 }</code></pre>
 <h2>Error Responses</h2>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>Invalid credentials</code></td><td>Wrong username or password</td></tr><tr><td>401</td><td><code>Invalid token</code></td><td>Token is invalid or expired</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Origin not allowed</td></tr><tr><td>404</td><td><code>User not found</code></td><td>Username doesn't exist</td></tr><tr><td>409</td><td><code>User already exists</code></td><td>Username taken (on register)</td></tr><tr><td>429</td><td><code>Rate limit exceeded</code></td><td>Too many requests</td></tr></tbody></table>
+<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request</code></td><td>Missing/invalid parameters (or partial auth headers)</td></tr><tr><td>401</td><td><code>Invalid credentials</code></td><td>Wrong username or password</td></tr><tr><td>401</td><td><code>Unauthorized - invalid token</code></td><td>Token is invalid for username</td></tr><tr><td>403</td><td><code>Unauthorized</code> / <code>Forbidden - Admin access required</code></td><td>Origin or permissions blocked</td></tr><tr><td>404</td><td><code>User not found</code></td><td>Username doesn't exist</td></tr><tr><td>409</td><td><code>Username already taken</code></td><td>Register collision with different password</td></tr><tr><td>429</td><td><code>Rate limit exceeded</code></td><td>Too many requests</td></tr></tbody></table>
 <h2>Related</h2>
 <ul><li><a href="/docs/rooms-api">Rooms API</a> - Room endpoints</li></ul><ul><li><a href="/docs/messages-api">Messages API</a> - Message endpoints</li><li><a href="/docs/api-design-guide">API Design Guide</a> - API patterns and conventions</li></ul>
       </article>

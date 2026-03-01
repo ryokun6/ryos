@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group expanded">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
@@ -299,7 +305,7 @@
     <main class="content">
       <article>
         <h1>API Architecture</h1>
-<p>ryOS uses Vercel Serverless Functions (Node.js runtime) for its backend API, with AI providers, Redis caching, and real-time features.</p>
+<p>ryOS APIs are implemented as Vercel-style Node.js route handlers under <code>_api/</code>. They run on Vercel serverless functions or via the standalone Bun API server for self-hosted deployments, with shared <code>apiHandler</code> and <code>_api/_utils</code> primitives providing consistent CORS, method routing, auth, and error handling patterns.</p>
 <h2>Architecture Overview</h2>
 <pre class="mermaid">graph TB
     subgraph Client["Client Layer"]
@@ -307,12 +313,14 @@
         Hooks[Custom Hooks]
     end
     
-    subgraph API["Vercel Serverless (Node.js)"]
+    subgraph API["API Runtime (Vercel Node.js + standalone Bun server)"]
+        Handler[apiHandler + _api/_utils]
         ChatAPI[chat]
         SongAPI[songs]
         SpeechAPI[speech]
         RoomsAPI[rooms]
         MessagesAPI[rooms/messages]
+        ListenAPI[listen/sessions]
         PresenceAPI[presence]
         UsersAPI[users]
         IEAPI[ie-generate]
@@ -327,7 +335,6 @@
     
     subgraph Storage["Storage"]
         Redis[(Redis)]
-        KV[(Vercel KV)]
     end
     
     subgraph Realtime["Real-time"]
@@ -336,189 +343,126 @@
     
     UI --> Hooks
     Hooks --> API
+    Handler --> ChatAPI
+    Handler --> SongAPI
+    Handler --> RoomsAPI
+    Handler --> ListenAPI
     API --> AI
     API --> Storage
     API --> Realtime
     RoomsAPI --> Pusher</pre>
 <h2>API Directory Structure</h2>
-<pre><code>api/
-├── _utils/                    # Shared utilities (global)
-│   ├── middleware.ts          # Main middleware (consolidated utilities) ★
+<pre><code>_api/
+├── _utils/                    # Shared API primitives
+│   ├── api-handler.ts         # Shared handler wrapper (CORS, methods, auth, errors)
+│   ├── middleware.ts          # Consolidated re-exports + request-context helpers
+│   ├── request-auth.ts        # Header parsing + auth resolution
 │   ├── redis.ts               # Redis client factory
-│   ├── constants.ts           # Centralized constants (REDIS_PREFIXES, TTL, etc.)
-│   ├── _aiModels.ts          # AI provider abstraction
-│   ├── _aiPrompts.ts         # System prompts
-│   ├── _cors.ts              # CORS handling
-│   ├── _hash.ts              # Hashing utilities
-│   ├── _logging.ts           # Logging utilities
-│   ├── _rate-limit.ts        # Rate limiting
-│   ├── _song-service.ts      # Song data service
-│   ├── _sse.ts               # SSE streaming helpers
-│   ├── _url.ts               # URL utilities
-│   ├── _validation.ts        # Input validation
-│   └── auth/                 # Auth utilities (modular)
-│       ├── index.ts          # Main auth exports
-│       ├── _validate.ts      # Token validation
-│       ├── _tokens.ts        # Token management
-│       ├── _extract.ts       # Request auth extraction
-│       ├── _password.ts      # Password hashing (bcrypt)
-│       ├── _password-storage.ts # Password storage operations
-│       ├── _constants.ts     # Auth-specific constants
-│       └── _types.ts         # TypeScript types
+│   ├── constants.ts           # Shared constants (REDIS_PREFIXES, TTL, limits)
+│   ├── _cors.ts               # CORS helpers
+│   ├── _ssrf.ts               # SSRF-safe fetch/URL validation
+│   ├── _rate-limit.ts         # Rate limiting primitives
+│   ├── _validation.ts         # Input validation helpers
+│   ├── _logging.ts            # Structured request logging
+│   ├── _sse.ts                # SSE helpers
+│   ├── _song-service.ts       # Song storage service
+│   └── auth/                  # Token/password/auth helpers
 ├── auth/                      # Auth endpoints
-│   ├── register.ts
-│   ├── login.ts
-│   ├── logout.ts
-│   ├── logout-all.ts
-│   ├── token/
-│   │   ├── refresh.ts
-│   │   └── verify.ts
-│   ├── password/
-│   │   ├── check.ts
-│   │   └── set.ts
-│   └── tokens.ts
-├── rooms/                     # Room endpoints
-│   ├── _helpers/              # Room-specific helpers
-│   │   ├── _constants.ts
-│   │   ├── _presence.ts
-│   │   ├── _redis.ts
-│   │   ├── _messages.ts
-│   │   ├── _rooms.ts
-│   │   ├── _users.ts
-│   │   └── _types.ts
-│   ├── index.ts
-│   └── [id]/
-│       ├── index.ts
-│       ├── join.ts
-│       ├── leave.ts
-│       ├── users.ts
-│       └── messages/
-│           ├── index.ts
-│           └── [msgId].ts
-├── messages/
-│   └── bulk.ts
-├── presence/
-│   └── switch.ts
-├── users/
-│   └── index.ts
-├── ai/
-│   └── ryo-reply.ts
-├── songs/                    # Multi-file module
-│   ├── index.ts              # List/batch operations
-│   ├── [id].ts               # Single song CRUD
-│   ├── _constants.ts         # Song-specific constants
-│   ├── _lyrics.ts            # Lyrics parsing
-│   ├── _furigana.ts          # Japanese furigana
-│   ├── _soramimi.ts          # Soramimi generation
-│   ├── _kugou.ts             # KuGou lyrics API
-│   └── _utils.ts             # Song utilities
-└── [endpoint].ts             # Individual endpoints</code></pre>
+├── rooms/                     # Chat room endpoints
+├── listen/                    # Listen-together session endpoints
+├── songs/                     # Song library endpoints
+├── messages/                  # Bulk message endpoints
+├── presence/                  # Presence switching endpoints
+├── users/                     # User search endpoints
+├── ai/                        # AI helper endpoints
+├── sync/                      # Backup/sync endpoints
+└── [endpoint].ts              # Individual top-level endpoints (chat, speech, ie-generate, etc.)</code></pre>
 <h2>Middleware Utilities</h2>
-<p>The <code>middleware.ts</code> file consolidates common utilities and re-exports them for convenient importing. This reduces boilerplate and ensures consistent patterns across all endpoints.</p>
+<p>The API layer standardizes route behavior through <code>apiHandler</code> plus shared <code>_api/_utils/<em></code> modules. This keeps CORS handling, method routing, auth resolution, and error handling consistent across refactored endpoints.</p>
 <h3>Consolidated Imports</h3>
 <pre><code>import {
-  // Redis
+  // Route wrapper
+  apiHandler,
+
+  // Redis + request context
   createRedis,
-  
+  createRequestContext,
+
   // CORS
   getEffectiveOrigin,
   isAllowedOrigin,
-  preflightIfNeeded,
-  
-  // Auth middleware
-  requireAuth,
-  optionalAuth,
-  requireAdmin,
-  isAdmin,
+  setCorsHeaders,
+
+  // Auth
   extractAuth,
-  
-  // Response helpers
-  jsonResponse,
-  errorResponse,
-  successResponse,
-  rateLimitResponse,
-  
+  extractAuthNormalized,
+  isAdmin,
+
   // Rate limiting
-  checkRateLimit,
   RATE_LIMITS,
-  getClientIp,
-  
-  // Request helpers
-  parseJsonBody,
-  getQueryParam,
-  getQueryParams,
-  
-  // Request context
-  createRequestContext,
-  
+
   // Constants
   REDIS_PREFIXES,
   TTL,
   RATE_LIMIT_TIERS,
-} from "./_utils/middleware.js";</code></pre>
+} from "../_utils/middleware.js";</code></pre>
+<h3><code>apiHandler</code> Pattern</h3>
+<p>Refactored routes use <code>apiHandler()</code> as the entry wrapper:</p>
+<pre><code>export default apiHandler&lt;RequestBody&gt;(
+  {
+    methods: ["POST"],
+    auth: "required",
+    parseJsonBody: true,
+  },
+  async ({ res, user, logger, startTime }) =&gt; {
+    logger.info("Request accepted", { username: user?.username });
+    logger.response(200, Date.now() - startTime);
+    res.status(200).json({ success: true });
+  }
+);</code></pre>
+<code>apiHandler</code> provides:
+<ul><li>Shared CORS + origin checks</li></ul><ul><li>Method allow-list enforcement (<code>405</code> on unsupported methods)</li><li>Optional/required auth resolution via <code>request-auth.ts</code></li><li>Shared Redis/logger/request context for handlers</li><li>Consistent <code>500</code> handling for uncaught exceptions</li></ul>
 <h3>Request Context Pattern</h3>
-<p>For complex handlers, <code>createRequestContext()</code> reduces boilerplate by extracting common data from requests:</p>
-<pre><code>export default async function handler(req: Request) {
-  const ctx = await createRequestContext(req, { requireAuth: true });
-  
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["POST", "OPTIONS"], ctx.origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
-  }
-
-  if (!ctx.originAllowed) {
-    return errorResponse("Unauthorized", 403, ctx.origin);
-  }
-
-  if (!ctx.user) {
-    return errorResponse("Authentication required", 401, ctx.origin);
-  }
-
-  // Use ctx.log for request-scoped logging
-  ctx.log("Processing request", { username: ctx.user.username });
-
-  // Access Redis via ctx.redis
-  const data = await ctx.redis.get("key");
-  
-  return jsonResponse({ data }, 200, ctx.origin);
-}</code></pre>
-<strong>RequestContext interface:</strong>
+<p>For endpoints that still use explicit middleware composition, <code>createRequestContext()</code> reduces boilerplate by extracting common data from requests.</p>
+<strong><code>RequestContext</code> interface:</strong>
 <table><thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>requestId</code></td><td>string</td><td>Unique ID for logging</td></tr><tr><td><code>origin</code></td><td>string \</td><td>null</td><td>Effective origin from request</td></tr><tr><td><code>originAllowed</code></td><td>boolean</td><td>Whether origin is allowed</td></tr><tr><td><code>ip</code></td><td>string</td><td>Client IP address</td></tr><tr><td><code>user</code></td><td>AuthenticatedUser \</td><td>null</td><td>Authenticated user (if any)</td></tr><tr><td><code>redis</code></td><td>Redis</td><td>Redis client instance</td></tr><tr><td><code>log</code></td><td>function</td><td>Logging helper with request ID</td></tr><tr><td><code>logError</code></td><td>function</td><td>Error logging helper</td></tr></tbody></table>
-<h3>Auth Middleware Functions</h3>
-<table><thead><tr><th>Function</th><th>Description</th></tr></thead><tbody><tr><td><code>requireAuth(req, redis, origin)</code></td><td>Returns user or 401 error</td></tr><tr><td><code>optionalAuth(req, redis)</code></td><td>Returns user or null</td></tr><tr><td><code>requireAdmin(req, redis, origin)</code></td><td>Returns user + isAdmin or 403 error</td></tr><tr><td><code>isAdmin(redis, username, token)</code></td><td>Simple admin check (boolean)</td></tr></tbody></table>
+<h3>Auth Utilities</h3>
+<table><thead><tr><th>Function</th><th>Description</th></tr></thead><tbody><tr><td><code>resolveRequestAuth(req, redis, { required, allowExpired })</code></td><td>Resolves optional/required auth and validates token</td></tr><tr><td><code>extractAuthNormalized(req)</code></td><td>Normalized header extraction (<code>Authorization</code>, <code>X-Username</code>)</td></tr><tr><td><code>validateAuth(redis, username, token, options)</code></td><td>Low-level token validation + expiry/grace handling</td></tr><tr><td><code>isAdmin(redis, username, token)</code></td><td>Admin check helper</td></tr></tbody></table>
 <h3>Rate Limit Presets</h3>
-<pre><code>// Built-in rate limit configurations
+<pre><code>// Built-in rate limit configuration helpers
 const RATE_LIMITS = {
-  burst: (prefix) =&gt; ({ prefix, windowSeconds: 60, limit: 10, byIp: true }),
-  daily: (prefix, limit = 100) =&gt; ({ prefix, windowSeconds: 86400, limit, byIp: true }),
-  hourly: (prefix, limit = 60) =&gt; ({ prefix, windowSeconds: 3600, limit, byIp: false }),
-  budget5h: (prefix, limit = 15) =&gt; ({ prefix, windowSeconds: 18000, limit, byIp: false }),
+  burst: (prefix) =&gt; ({ prefix: `${prefix}:burst`, windowSeconds: 60, limit: 10, byIp: true }),
+  daily: (prefix, limit = 100) =&gt; ({ prefix: `${prefix}:daily`, windowSeconds: 86400, limit, byIp: true }),
+  hourly: (prefix, limit = 60) =&gt; ({ prefix: `${prefix}:hourly`, windowSeconds: 3600, limit, byIp: false }),
+  budget5h: (prefix, limit = 15) =&gt; ({ prefix: `${prefix}:5h`, windowSeconds: 18000, limit, byIp: false }),
 };
 
 // Usage
-const rlResult = await checkRateLimit(req, RATE_LIMITS.burst("my-endpoint"), user, origin);
-if (!rlResult.allowed) return rlResult.error;</code></pre>
+const burst = RATE_LIMITS.burst("songs");
+const daily = RATE_LIMITS.daily("songs", 500);</code></pre>
 <p>> <strong>See Also:</strong> <a href="/docs/api-design-guide">API Design Guide</a> for comprehensive patterns and examples.</p>
 <h2>API Endpoint Inventory</h2>
 <h3>Core APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat</code></td><td>POST</td><td>AI chat with streaming and tool calling</td></tr><tr><td><code>/api/speech</code></td><td>POST</td><td>Text-to-speech synthesis</td></tr><tr><td><code>/api/audio-transcribe</code></td><td>POST</td><td>Speech-to-text (Whisper)</td></tr></tbody></table>
 <h3>Media APIs</h3>
-<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/songs</code></td><td>GET, POST, DELETE</td><td>Song list and batch operations</td></tr><tr><td><code>/api/songs/[id]</code></td><td>GET, POST, DELETE</td><td>Single song CRUD + lyrics</td></tr><tr><td><code>/api/youtube-search</code></td><td>POST</td><td>YouTube video search</td></tr><tr><td><code>/api/parse-title</code></td><td>GET</td><td>YouTube title parsing</td></tr><tr><td><code>/api/cover</code></td><td>GET</td><td>Album art fetching</td></tr></tbody></table>
+<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/songs</code></td><td>GET, POST, DELETE</td><td>Song list and batch operations</td></tr><tr><td><code>/api/songs/[id]</code></td><td>GET, POST, DELETE</td><td>Single song CRUD + lyrics</td></tr><tr><td><code>/api/youtube-search</code></td><td>POST</td><td>YouTube video search</td></tr><tr><td><code>/api/parse-title</code></td><td>POST</td><td>YouTube title parsing</td></tr></tbody></table>
 <h3>AI Generation APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/ie-generate</code></td><td>POST</td><td>Internet Explorer time-travel</td></tr><tr><td><code>/api/applet-ai</code></td><td>POST</td><td>Applet AI assistant</td></tr></tbody></table>
 <h3>Communication APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/rooms</code></td><td>GET, POST</td><td>Rooms list + create</td></tr><tr><td><code>/api/rooms/[id]</code></td><td>GET, DELETE</td><td>Room detail + delete</td></tr><tr><td><code>/api/rooms/[id]/messages</code></td><td>GET, POST</td><td>Messages</td></tr><tr><td><code>/api/rooms/[id]/messages/[msgId]</code></td><td>DELETE</td><td>Delete message (admin)</td></tr><tr><td><code>/api/messages/bulk</code></td><td>GET</td><td>Bulk messages</td></tr><tr><td><code>/api/presence/switch</code></td><td>POST</td><td>Presence switching</td></tr><tr><td><code>/api/users</code></td><td>GET</td><td>User search</td></tr><tr><td><code>/api/ai/ryo-reply</code></td><td>POST</td><td>AI reply in rooms</td></tr><tr><td><code>/api/share-applet</code></td><td>GET, POST, PATCH, DELETE</td><td>Applet sharing/store</td></tr></tbody></table>
+<h3>Listen APIs</h3>
+<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/listen/sessions</code></td><td>GET, POST</td><td>List/create listen-together sessions</td></tr><tr><td><code>/api/listen/sessions/[id]</code></td><td>GET</td><td>Fetch session state</td></tr><tr><td><code>/api/listen/sessions/[id]/join</code></td><td>POST</td><td>Join session</td></tr><tr><td><code>/api/listen/sessions/[id]/leave</code></td><td>POST</td><td>Leave session</td></tr><tr><td><code>/api/listen/sessions/[id]/sync</code></td><td>POST</td><td>Sync DJ playback state</td></tr><tr><td><code>/api/listen/sessions/[id]/reaction</code></td><td>POST</td><td>Send emoji reaction</td></tr></tbody></table>
 <h3>Utility APIs</h3>
-<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/iframe-check</code></td><td>GET</td><td>Check/proxy iframe embedding</td></tr><tr><td><code>/api/link-preview</code></td><td>GET</td><td>OpenGraph metadata extraction</td></tr><tr><td><code>/api/admin</code></td><td>Various</td><td>Admin operations</td></tr></tbody></table>
+<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/iframe-check</code></td><td>GET</td><td>Check/proxy iframe embedding</td></tr><tr><td><code>/api/link-preview</code></td><td>GET</td><td>OpenGraph metadata extraction</td></tr><tr><td><code>/api/sync/status</code></td><td>GET</td><td>Backup availability/status metadata</td></tr><tr><td><code>/api/admin</code></td><td>Various</td><td>Admin operations</td></tr></tbody></table>
+<h2>Frontend API Client Layer</h2>
+<p>Client-side API access is centralized in <code>src/api/</code>: <ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/api/core.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/api/core.ts</a></code> - shared request wrapper, auth headers, error normalization</li></ul><ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/api/auth.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/api/auth.ts</a></code> - login/register/token verification/logout flows</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/api/rooms.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/api/rooms.ts</a></code> - room, message, and presence operations</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/api/admin.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/api/admin.ts</a></code> - admin actions and dashboard operations</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/api/songs.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/api/songs.ts</a></code> - song CRUD/import operations</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/api/listen.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/api/listen.ts</a></code> - listen-together session flows</li></ul></p>
 <h2>AI Provider Abstraction</h2>
 <h3>Supported Models (AI SDK 6.0)</h3>
 <p>The API uses Vercel AI SDK 6.0 with structured outputs for type-safe responses.</p>
 <table><thead><tr><th>Provider</th><th>Models</th><th>Use Cases</th></tr></thead><tbody><tr><td><strong>OpenAI</strong></td><td>gpt-5, gpt-5.1, gpt-5-mini, gpt-4o, gpt-4.1</td><td>Default chat, code generation</td></tr><tr><td><strong>Anthropic</strong></td><td>claude-4.5, claude-4, claude-3.7, claude-3.5</td><td>Complex reasoning</td></tr><tr><td><strong>Google</strong></td><td>gemini-2.5-pro, gemini-2.5-flash, gemini-2.5-flash-image</td><td>Image generation, title parsing</td></tr></tbody></table>
 <strong>Structured Outputs:</strong> Used for deterministic responses like song title parsing (<code>/api/parse-title</code>).
 <h3>Model Selection</h3>
-<pre><code>// api/_utils/_aiModels.ts
+<pre><code>// _api/_utils/_aiModels.ts
 export const getModelInstance = (model: SupportedModel): LanguageModel =&gt; {
   switch (model) {
     case "gpt-5":
@@ -588,7 +532,7 @@ export const getModelInstance = (model: SupportedModel): LanguageModel =&gt; {
   // ... more tools
 }</code></pre>
 <h3>System Prompts</h3>
-<pre><code>// api/_utils/_aiPrompts.ts
+<pre><code>// _api/_utils/_aiPrompts.ts
 export const CORE_PRIORITY_INSTRUCTIONS = `
   You are Ryo, an AI assistant in ryOS...
 `;
@@ -625,7 +569,7 @@ export const TOOL_USAGE_INSTRUCTIONS = `
 <table><thead><tr><th>Route</th><th>Action</th><th>Description</th></tr></thead><tbody><tr><td><code>GET /api/songs</code></td><td>List</td><td>Songs with filters</td></tr><tr><td><code>POST /api/songs</code></td><td>Create/Import</td><td>New songs or bulk import</td></tr><tr><td><code>GET /api/songs/[id]</code></td><td>Read</td><td>Song with lyrics, translations</td></tr><tr><td><code>POST /api/songs/[id]</code></td><td>Fetch</td><td>Body: <code>{ action: "fetch-lyrics" }</code></td></tr><tr><td><code>POST /api/songs/[id]</code></td><td>Translate</td><td>Body: <code>{ action: "translate-stream" }</code></td></tr><tr><td><code>POST /api/songs/[id]</code></td><td>Furigana</td><td>Body: <code>{ action: "furigana-stream" }</code></td></tr><tr><td><code>DELETE /api/songs/[id]</code></td><td>Delete</td><td>Remove song</td></tr></tbody></table>
 <h2>Speech APIs</h2>
 <h3>Text-to-Speech</h3>
-<pre><code>// api/speech.ts
+<pre><code>// _api/speech.ts
 const providers = {
   openai: {
     models: ["tts-1", "tts-1-hd"],
@@ -648,14 +592,14 @@ if (model === "elevenlabs") {
   });
 }</code></pre>
 <h3>Audio Transcription</h3>
-<pre><code>// api/audio-transcribe.ts
+<pre><code>// _api/audio-transcribe.ts
 const transcription = await openai.audio.transcriptions.create({
   file: audioFile,
   model: "whisper-1",
 });</code></pre>
 <h2>Rate Limiting</h2>
 <h3>Counter-Based Limiting</h3>
-<pre><code>// api/_utils/_rate-limit.ts
+<pre><code>// _api/_utils/_rate-limit.ts
 export async function checkCounterLimit({
   key,
   windowSeconds,
@@ -689,7 +633,7 @@ export async function checkCounterLimit({
 <table><thead><tr><th>Endpoint</th><th>Burst Limit</th><th>Daily/Budget</th><th>Window</th></tr></thead><tbody><tr><td>Chat AI (auth)</td><td>15</td><td>per 5 hours</td><td>Sliding</td></tr><tr><td>Chat AI (anon)</td><td>3</td><td>per 24 hours</td><td>Sliding</td></tr><tr><td>Speech TTS</td><td>10/min</td><td>50/day</td><td>Fixed</td></tr><tr><td>IE Generate</td><td>3/min</td><td>10/5hr</td><td>Fixed</td></tr><tr><td>Applet AI (auth text)</td><td>50</td><td>per hour</td><td>Fixed</td></tr><tr><td>Applet AI (anon text)</td><td>15</td><td>per hour</td><td>Fixed</td></tr><tr><td>Applet AI (auth image)</td><td>12</td><td>per hour</td><td>Fixed</td></tr><tr><td>Applet AI (anon image)</td><td>1</td><td>per hour</td><td>Fixed</td></tr><tr><td>Transcribe</td><td>10/min</td><td>50/day</td><td>Fixed</td></tr><tr><td>Parse Title</td><td>15/min</td><td>500/day</td><td>Fixed</td></tr><tr><td>YouTube Search</td><td>20/min</td><td>200/day</td><td>Fixed</td></tr></tbody></table>
 <h2>Authentication</h2>
 <h3>Token Validation</h3>
-<pre><code>// api/_utils/auth/_validate.ts
+<pre><code>// _api/_utils/auth/_validate.ts
 export async function validateAuth(
   redis: RedisLike,
   username: string,
@@ -720,7 +664,7 @@ export async function validateAuth(
 <h3>Token Configuration</h3>
 <table><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody><tr><td>Token TTL</td><td>90 days</td></tr><tr><td>Grace period</td><td>30 days</td></tr><tr><td>Admin bypass</td><td>User "ryo"</td></tr></tbody></table>
 <h2>CORS Handling</h2>
-<pre><code>// api/_utils/_cors.ts
+<pre><code>// _api/_utils/_cors.ts
 export function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
   
@@ -799,9 +743,10 @@ return new Response(stream, {
   },
 });</code></pre>
 <h2>Runtime Configuration</h2>
-<p>All APIs use Vercel Node.js runtime:</p>
+<p>Route modules export Vercel-compatible runtime metadata:</p>
 <pre><code>export const runtime = "nodejs";
 export const maxDuration = 60; // seconds (80 for AI endpoints)</code></pre>
+<ul><li>On <strong>Vercel</strong>, these exports configure serverless execution.</li></ul><ul><li>On the <strong>standalone Bun server</strong>, <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">scripts/api-standalone-server.ts</a></code> loads and executes the same <code>_api/</em></code> handlers via a request/response adapter.</li><li>API development/runtime scripts use Bun (<code>bun run api:dev</code>, <code>bun run api:start</code>).</li></ul>
 <h2>Redis Key Patterns</h2>
 <table><thead><tr><th>Prefix</th><th>Purpose</th><th>Example</th></tr></thead><tbody><tr><td><code>rl:ai:</code></td><td>AI rate limiting</td><td><code>rl:ai:chat:user123</code></td></tr><tr><td><code>song:meta:</code></td><td>Song metadata</td><td><code>song:meta:abc123</code></td></tr><tr><td><code>song:content:</code></td><td>Song content</td><td><code>song:content:abc123</code></td></tr><tr><td><code>ie:cache:</code></td><td>IE generation cache</td><td><code>ie:cache:hash</code></td></tr><tr><td><code>applet:share:</code></td><td>Shared applets</td><td><code>applet:share:xyz</code></td></tr><tr><td><code>chat:token:user:</code></td><td>Auth tokens</td><td><code>chat:token:user:alice:tok</code></td></tr><tr><td><code>chat:room:</code></td><td>Chat room data</td><td><code>chat:room:general</code></td></tr></tbody></table>
 <h2>Related Documentation</h2>
