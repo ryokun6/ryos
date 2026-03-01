@@ -16,9 +16,9 @@ This project uses **Bun** as the package manager and runtime. Local API testing 
 
 ```bash
 # Development
-bun run api:dev        # Start standalone Bun API server (port 3000 by default)
-bun run dev:standalone # Start Vite dev server with /api proxy to standalone API
-bun run dev            # Start Vite dev server only (frontend-only)
+bun run dev            # Start full stack (API + Vite with proxy) — the default
+bun run dev:vite       # Start Vite dev server only (frontend-only, no API)
+bun run dev:api        # Start standalone Bun API server only (port 3000)
 bun run dev:vercel     # Optional: Vercel dev server (parity/debugging only)
 
 # Build & Production
@@ -32,18 +32,19 @@ bun run test:api   # API integration tests only
 
 ### Running the Application
 
-For **full functionality** including API endpoints:
-```bash
-# Terminal 1
-bun run api:dev
-
-# Terminal 2
-bun run dev:standalone
-```
-
-For **frontend-only** development:
+For **full functionality** (default):
 ```bash
 bun run dev
+```
+
+For **frontend-only** development (no API):
+```bash
+bun run dev:vite
+```
+
+For **API server only** (e.g. to run tests against):
+```bash
+bun run dev:api
 ```
 
 The frontend runs on port 5173 by default. The standalone API defaults to port 3000.
@@ -135,7 +136,7 @@ API integration tests require the standalone API server to be running:
 
 ```bash
 # Terminal 1
-bun run api:dev
+bun run dev:api
 
 # Terminal 2
 bun test                    # all tests
@@ -156,7 +157,7 @@ Tests use `describe`/`test`/`expect` from `bun:test`. Shared HTTP helpers are in
 
 - **Skip computer use / GUI-driven testing** unless the user explicitly requests it
 - For most changes, `bun run build` is sufficient to verify the code compiles correctly
-- For API testing, use standalone API + Vite proxy (`bun run api:dev` + `bun run dev:standalone`)
+- For API testing, use `bun run dev` (full stack) or `bun run dev:api` + `bun run dev:vite` separately
 - Only use the `computerUse` subagent for manual browser testing when the user specifically asks for visual verification or UI testing
 
 ## Important Notes
@@ -167,4 +168,4 @@ Tests use `describe`/`test`/`expect` from `bun:test`. Shared HTTP helpers are in
 - **Build process**: The build generates service worker files (`sw.js`, `workbox-*.js`) which are copied to `.vercel/output/static/`.
 - **API symlink**: Only needed for `vercel dev` fallback. `dev:vercel` creates `api -> _api` automatically.
 - **Vercel CLI**: Installed globally, but optional for local testing now that standalone Bun API is available.
-- **Port conflicts**: If port 3000 is occupied, set `API_PORT=<port>` for `bun run api:dev` and adjust proxy target accordingly.
+- **Port conflicts**: If port 3000 is occupied, set `API_PORT=<port>` for `bun run dev:api` and adjust proxy target accordingly.

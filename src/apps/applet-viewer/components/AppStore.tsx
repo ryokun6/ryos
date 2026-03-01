@@ -251,16 +251,13 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
 
     const fetchSelectedAppletContent = async () => {
       if (selectedApplet) {
-      // If content is already set (from sharedAppletId fetch), don't fetch again
-      if (selectedAppletContent && isSharedApplet) {
+      if (isSharedApplet) {
         return;
       }
-      // Check if offline
       if (typeof navigator !== "undefined" && "onLine" in navigator && !navigator.onLine) {
         setSelectedAppletContent("");
         return;
       }
-      // Reset content immediately to show loading
       setSelectedAppletContent("");
       try {
         const response = await abortableFetch(
@@ -283,7 +280,6 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
         }
         if (!isActive || controller.signal.aborted) return;
         console.error("Error fetching applet content:", error);
-        // Keep content empty to show loading state indefinitely
         setSelectedAppletContent("");
       }
       } else {
@@ -296,7 +292,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       isActive = false;
       controller.abort();
     };
-  }, [selectedApplet, selectedAppletContent, isSharedApplet]);
+  }, [selectedApplet, isSharedApplet]);
 
   // Ensure macOSX theme uses Lucida Grande/system/emoji-safe fonts inside iframe content
   const ensureMacFonts = (content: string): string => {
