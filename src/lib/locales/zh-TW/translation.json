@@ -754,6 +754,8 @@
         "tooLarge": "備份檔過大（{{size}}MB）。壓縮後上限為 {{limit}}MB。"
       },
       "color": "全彩",
+      "crashApp": "App 崩潰",
+      "crashDesktop": "桌面崩潰",
       "crt": "CRT",
       "custom": "自訂",
       "debugMode": "偵錯模式",
@@ -765,6 +767,8 @@
       "dream": "夢幻",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ElevenLabs 語音 ID",
+      "errorBoundaries": "錯誤邊界",
+      "errorBoundariesDescription": "觸發 App 或桌面崩潰的備用方案以供測試。",
       "formatFileSystem": "格式化檔案系統",
       "formatFileSystemDescription": "這將清除所有檔案（範例檔案除外）、圖片和自訂桌布。格式化後 ryOS 將重新啟動。",
       "help": {

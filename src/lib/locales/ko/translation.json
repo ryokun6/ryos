@@ -754,6 +754,8 @@
         "tooLarge": "백업이 너무 큽니다 ({{size}}MB). 압축 후 최대 크기는 {{limit}}MB입니다."
       },
       "color": "색상",
+      "crashApp": "앱 충돌",
+      "crashDesktop": "데스크톱 충돌",
       "crt": "CRT",
       "custom": "사용자 설정",
       "debugMode": "디버그 모드",
@@ -765,6 +767,8 @@
       "dream": "꿈",
       "elevenlabs": "일레븐랩스",
       "elevenlabsVoiceId": "일레븐랩스 음성 ID",
+      "errorBoundaries": "오류 경계",
+      "errorBoundariesDescription": "테스트를 위해 앱 또는 데스크톱 충돌 대체 기능을 유발합니다.",
       "formatFileSystem": "파일 시스템 포맷",
       "formatFileSystemDescription": "샘플 문서, 이미지, 사용자 지정 배경화면을 제외한 모든 파일이 지워집니다. 포맷 후 ryOS가 다시 시작됩니다.",
       "help": {

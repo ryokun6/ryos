@@ -754,6 +754,8 @@
         "tooLarge": "La copia es demasiado grande ({{size}} MB). El tamaño máximo comprimido es {{limit}} MB."
       },
       "color": "Color",
+      "crashApp": "Bloquear app",
+      "crashDesktop": "Bloquear escritorio",
       "crt": "CRT",
       "custom": "Personalizado",
       "debugMode": "Modo de depuración",
@@ -765,6 +767,8 @@
       "dream": "Sueño",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ID de voz de ElevenLabs",
+      "errorBoundaries": "Límites de error",
+      "errorBoundariesDescription": "Activa los mecanismos de recuperación ante fallos de la aplicación o del escritorio para pruebas.",
       "formatFileSystem": "Formatear sistema de archivos",
       "formatFileSystemDescription": "Esto borrará todos los archivos (excepto los documentos de muestra), imágenes y fondos de pantalla personalizados. ryOS se reiniciará después del formato.",
       "help": {

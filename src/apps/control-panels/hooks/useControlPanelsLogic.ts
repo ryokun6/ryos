@@ -24,6 +24,7 @@ import { getTabStyles } from "@/utils/tabStyles";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import type { ControlPanelsInitialData } from "@/apps/base/types";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
 
 interface StoreItem {
   name: string;
@@ -1568,6 +1569,19 @@ export function useControlPanelsLogic({
     window.location.reload();
   };
 
+  const handleTriggerAppCrashTest = useCallback(() => {
+    triggerRuntimeCrashTest({
+      scope: "app",
+      appId: "control-panels",
+    });
+  }, []);
+
+  const handleTriggerDesktopCrashTest = useCallback(() => {
+    triggerRuntimeCrashTest({
+      scope: "desktop",
+    });
+  }, []);
+
   return {
     t,
     translatedHelpItems,
@@ -1597,6 +1611,8 @@ export function useControlPanelsLogic({
     handleConfirmFormat,
     handleCheckForUpdates,
     handleShowBootScreen,
+    handleTriggerAppCrashTest,
+    handleTriggerDesktopCrashTest,
     AI_MODELS,
     aiModel,
     setAiModel,

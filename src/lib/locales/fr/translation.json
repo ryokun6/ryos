@@ -754,6 +754,8 @@
         "tooLarge": "Sauvegarde trop volumineuse ({{size}} Mo). La taille maximale compressée est de {{limit}} Mo."
       },
       "color": "Couleur",
+      "crashApp": "Planter l'appli",
+      "crashDesktop": "Planter le bureau",
       "crt": "CRT",
       "custom": "Personnalisé",
       "debugMode": "Mode débogage",
@@ -765,6 +767,8 @@
       "dream": "Rêve",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "Identifiant vocal ElevenLabs",
+      "errorBoundaries": "Limites d'erreur",
+      "errorBoundariesDescription": "Déclencher les solutions de repli en cas de plantage de l'appli ou du bureau pour les tests.",
       "formatFileSystem": "Formater le système de fichiers",
       "formatFileSystemDescription": "Ceci effacera tous les fichiers (sauf les documents d'exemple), les images et les fonds d'écran personnalisés. ryOS redémarrera après le formatage.",
       "help": {

@@ -754,6 +754,8 @@
         "tooLarge": "Backup troppo grande ({{size}} MB). La dimensione massima compressa è {{limit}} MB."
       },
       "color": "Colore",
+      "crashApp": "Arresta app",
+      "crashDesktop": "Arresta desktop",
       "crt": "CRT",
       "custom": "Personalizzato",
       "debugMode": "Modalità Debug",
@@ -765,6 +767,8 @@
       "dream": "Sogno",
       "elevenlabs": "ElevenLabs",
       "elevenlabsVoiceId": "ID Voce ElevenLabs",
+      "errorBoundaries": "Limiti di errore",
+      "errorBoundariesDescription": "Attiva i fallback di crash dell'app o del desktop per i test.",
       "formatFileSystem": "Formatta File System",
       "formatFileSystemDescription": "Questo cancellerà tutti i file (eccetto i documenti di esempio), le immagini e gli sfondi personalizzati. ryOS si riavvierà dopo la formattazione.",
       "help": {

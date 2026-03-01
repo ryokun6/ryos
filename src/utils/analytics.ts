@@ -14,6 +14,8 @@
 export const APP_ANALYTICS = {
   // App lifecycle
   APP_LAUNCH: "app:launch",
+  APP_CRASH: "app:crash",
+  DESKTOP_CRASH: "desktop:crash",
   
   // User lifecycle
   USER_CREATE: "user:create",
