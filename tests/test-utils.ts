@@ -129,6 +129,26 @@ export function assertEq<T>(actual: T, expected: T, message?: string): void {
 }
 
 /**
+ * Assert status is one of the expected values
+ */
+export function assertStatus(
+  actual: number,
+  expected: number | readonly number[],
+  message?: string
+): void {
+  if (Array.isArray(expected)) {
+    if (!expected.includes(actual)) {
+      throw new Error(message || `Expected one of [${expected.join(", ")}], got ${actual}`);
+    }
+    return;
+  }
+
+  if (actual !== expected) {
+    throw new Error(message || `Expected ${expected}, got ${actual}`);
+  }
+}
+
+/**
  * Assert string includes substring
  */
 export function assertIncludes(actual: string, expected: string, message?: string): void {
@@ -184,6 +204,20 @@ export function printSummary(): { passed: number; failed: number } {
  */
 export function clearResults(): void {
   results.length = 0;
+}
+
+/**
+ * Generate headers that reduce auth-rate-limit test collisions.
+ */
+export function makeRateLimitBypassHeaders(
+  extraHeaders: Record<string, string> = {}
+): Record<string, string> {
+  const now = Date.now();
+  return {
+    "Content-Type": "application/json",
+    "X-Forwarded-For": `10.${Math.floor((now / 17) % 255)}.${Math.floor((now / 7) % 255)}.${Math.floor(Math.random() * 255)}`,
+    ...extraHeaders,
+  };
 }
 
 /**

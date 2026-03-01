@@ -23,6 +23,7 @@ import { runPusherClientConstructorWiringTests } from "./test-pusher-client-cons
 import { runChatBroadcastWiringTests } from "./test-chat-broadcast-wiring";
 import { runChatStoreGuardsWiringTests } from "./test-chat-store-guards-wiring";
 import { runChatHookChannelLifecycleWiringTests } from "./test-chat-hook-channel-lifecycle-wiring";
+import { runInfraApiTests } from "./test-infra-api";
 
 const BASE_URL = process.env.API_URL || "http://localhost:3000";
 
@@ -97,6 +98,7 @@ async function runAllTests(): Promise<void> {
     { name: "media", run: runMediaTests },
     { name: "auth-extra", run: runAuthExtraTests },
     { name: "rooms-extra", run: runRoomsExtraTests },
+    { name: "infra-api", run: runInfraApiTests },
     { name: "chat-notifications", run: runChatNotificationLogicTests },
     { name: "chat-notification-wiring", run: runChatNotificationIntegrationWiringTests },
     { name: "chat-hook-lifecycle-wiring", run: runChatHookChannelLifecycleWiringTests },

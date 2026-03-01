@@ -14,6 +14,7 @@ import {
   fetchWithOrigin,
   fetchWithAuth,
   section,
+  makeRateLimitBypassHeaders,
 } from "./test-utils";
 
 // Store test data between tests
@@ -29,7 +30,7 @@ async function setupTestUser(): Promise<void> {
   testUsername = `tuser${Date.now()}`;
   const res = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Forwarded-For": `10.1.${Date.now() % 255}.${Math.floor(Math.random() * 255)}` },
+    headers: makeRateLimitBypassHeaders(),
     body: JSON.stringify({
       username: testUsername,
       password: "testpassword123",
@@ -247,7 +248,7 @@ async function testUpdateByNonOwner(): Promise<void> {
   const otherUsername = `ouser${Date.now()}`;
   const createRes = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: makeRateLimitBypassHeaders(),
     body: JSON.stringify({
       username: otherUsername,
       password: "testpassword123",

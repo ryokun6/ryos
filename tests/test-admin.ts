@@ -13,6 +13,7 @@ import {
   fetchWithOrigin,
   fetchWithAuth,
   section,
+  makeRateLimitBypassHeaders,
 } from "./test-utils";
 
 // Admin user credentials for dev testing
@@ -49,7 +50,7 @@ async function setupAdminAuth(): Promise<void> {
   // Try to create admin user
   const createRes = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: makeRateLimitBypassHeaders(),
     body: JSON.stringify({
       username: ADMIN_USERNAME,
       password: ADMIN_PASSWORD,
@@ -79,7 +80,7 @@ async function setupTestUser(): Promise<void> {
   testUsername = `testuser_${Date.now()}`;
   const res = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Forwarded-For": `10.0.${Date.now() % 255}.${Math.floor(Math.random() * 255)}` },
+    headers: makeRateLimitBypassHeaders(),
     body: JSON.stringify({
       username: testUsername,
       password: "testpassword123",
