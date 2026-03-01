@@ -199,7 +199,7 @@ export function InternetExplorerMenuBar({
   ].reverse();
 
   const currentTheme = useThemeStore((s) => s.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isMacOsxTheme = currentTheme === "macosx";
 
   return (

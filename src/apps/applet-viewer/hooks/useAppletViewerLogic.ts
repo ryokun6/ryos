@@ -54,7 +54,7 @@ export function useAppletViewerLogic({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentTheme = useThemeStore((state) => state.current);
-  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98" || currentTheme === "win7";
   const isMacTheme = currentTheme === "macosx";
   const username = useChatsStore((state) => state.username);
   const authToken = useChatsStore((state) => state.authToken);
