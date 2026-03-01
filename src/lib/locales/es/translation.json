@@ -2584,9 +2584,9 @@
     },
     "errorBoundaries": {
       "appDescription": "Reiníciala para abrir una ventana nueva, o cierra esta ventana bloqueada. Otras aplicaciones abiertas seguirán ejecutándose.",
-      "appHeading": "{{appName}} se cerró inesperadamente.",
+      "appHeading": "{{appName}} se cerró inesperadamente",
       "desktopDescription": "Recarga ryOS para restaurar el Dock, el Escritorio y la barra de menú.",
-      "desktopHeading": "El Escritorio se cerró inesperadamente.",
+      "desktopHeading": "El Escritorio se cerró inesperadamente",
       "relaunch": "Reiniciar",
       "reloadDesktop": "Recargar Escritorio"
     },

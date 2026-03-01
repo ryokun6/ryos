@@ -147,10 +147,10 @@
       "noWindows": "No open windows"
     },
     "errorBoundaries": {
-      "appHeading": "{{appName}} quit unexpectedly.",
+      "appHeading": "{{appName}} quit unexpectedly",
       "appDescription": "Relaunch it to open a fresh window, or quit this crashed window. Other open apps will keep running.",
       "relaunch": "Relaunch",
-      "desktopHeading": "Desktop quit unexpectedly.",
+      "desktopHeading": "Desktop quit unexpectedly",
       "desktopDescription": "Reload ryOS to restore the Dock, Desktop, and menu bar.",
       "reloadDesktop": "Reload Desktop"
     },

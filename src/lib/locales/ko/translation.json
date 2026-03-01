@@ -2584,9 +2584,9 @@
     },
     "errorBoundaries": {
       "appDescription": "새 창을 열려면 다시 실행하거나, 충돌한 이 창을 종료하세요. 다른 열려 있는 앱은 계속 실행됩니다.",
-      "appHeading": "{{appName}}이(가) 예기치 않게 종료되었습니다.",
+      "appHeading": "{{appName}}이(가) 예기치 않게 종료되었습니다",
       "desktopDescription": "Dock, 데스크탑 및 메뉴 막대를 복원하려면 ryOS를 다시 로드하세요.",
-      "desktopHeading": "데스크탑이 예기치 않게 종료되었습니다.",
+      "desktopHeading": "데스크탑이 예기치 않게 종료되었습니다",
       "relaunch": "다시 실행",
       "reloadDesktop": "데스크탑 다시 로드"
     },

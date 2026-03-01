@@ -959,18 +959,18 @@ export function ControlPanelsAppComponent({
                         {t("apps.control-panels.errorBoundariesDescription")}
                       </Label>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex gap-2">
                       <Button
                         variant="retro"
                         onClick={handleTriggerAppCrashTest}
-                        className="w-fit"
+                        className="flex-1"
                       >
                         {t("apps.control-panels.crashApp")}
                       </Button>
                       <Button
                         variant="retro"
                         onClick={handleTriggerDesktopCrashTest}
-                        className="w-fit"
+                        className="flex-1"
                       >
                         {t("apps.control-panels.crashDesktop")}
                       </Button>

@@ -168,6 +168,7 @@ function CrashDialog({
 
   const primaryButtonVariant = isMacTheme ? "default" : "retro";
   const secondaryButtonVariant = isMacTheme ? "secondary" : "retro";
+  const handleDismissCrashDialog = onSecondaryAction ?? onPrimaryAction;
 
   const dialogBody = (
     <div
@@ -258,18 +259,21 @@ function CrashDialog({
       modal={scope === "desktop"}
       onOpenChange={(open) => {
         if (!open) {
-          if (onSecondaryAction) {
-            onSecondaryAction();
-            return;
-          }
-          onPrimaryAction();
+          handleDismissCrashDialog();
         }
       }}
     >
+      {scope === "app" ? (
+        <div
+          role="presentation"
+          className="fixed inset-0 z-[49] bg-black/20"
+          onClick={handleDismissCrashDialog}
+        />
+      ) : null}
       <DialogContent
         overlayClassName={
           scope === "app"
-            ? "bg-transparent pointer-events-none"
+            ? "bg-black/20 pointer-events-none"
             : "bg-black/25"
         }
         className={cn("max-w-[420px]", isXpTheme && "p-0 overflow-hidden")}

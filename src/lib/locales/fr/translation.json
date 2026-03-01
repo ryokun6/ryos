@@ -2584,9 +2584,9 @@
     },
     "errorBoundaries": {
       "appDescription": "Relancez-la pour ouvrir une nouvelle fenêtre, ou quittez cette fenêtre plantée. Les autres applications ouvertes continueront de fonctionner.",
-      "appHeading": "{{appName}} a quitté de manière inattendue.",
+      "appHeading": "{{appName}} a quitté de manière inattendue",
       "desktopDescription": "Recharger ryOS pour restaurer le Dock, le Bureau et la barre des menus.",
-      "desktopHeading": "Le Bureau a quitté de manière inattendue.",
+      "desktopHeading": "Le Bureau a quitté de manière inattendue",
       "relaunch": "Relancer",
       "reloadDesktop": "Recharger le Bureau"
     },

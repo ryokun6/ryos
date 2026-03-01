@@ -2584,9 +2584,9 @@
     },
     "errorBoundaries": {
       "appDescription": "重新啟動以開啟新視窗，或結束此已當機的視窗。其他已開啟的應用程式將會繼續執行。",
-      "appHeading": "{{appName}} 意外結束。",
+      "appHeading": "「{{appName}}」意外結束",
       "desktopDescription": "重新載入 ryOS 以回復 Dock、桌面和選單列。",
-      "desktopHeading": "桌面意外結束。",
+      "desktopHeading": "桌面意外結束",
       "relaunch": "重新啟動",
       "reloadDesktop": "重新載入桌面"
     },

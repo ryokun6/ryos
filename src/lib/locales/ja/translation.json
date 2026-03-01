@@ -2584,9 +2584,9 @@
     },
     "errorBoundaries": {
       "appDescription": "新しいウィンドウを開くには再起動するか、このクラッシュしたウィンドウを終了してください。他の開いているアプリは引き続き動作します。",
-      "appHeading": "{{appName}}は予期せず終了しました。",
+      "appHeading": "{{appName}}は予期せず終了しました",
       "desktopDescription": "Dock、デスクトップ、メニューバーを復元するには、ryOSをリロードしてください。",
-      "desktopHeading": "デスクトップは予期せず終了しました。",
+      "desktopHeading": "デスクトップは予期せず終了しました",
       "relaunch": "再起動",
       "reloadDesktop": "デスクトップを再読み込み"
     },

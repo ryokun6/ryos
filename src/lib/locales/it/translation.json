@@ -2584,9 +2584,9 @@
     },
     "errorBoundaries": {
       "appDescription": "Riavvia per aprire una nuova finestra, o chiudi questa finestra bloccata. Le altre app aperte continueranno a funzionare.",
-      "appHeading": "{{appName}} si è chiusa inaspettatamente.",
+      "appHeading": "{{appName}} si è chiusa inaspettatamente",
       "desktopDescription": "Ricarica ryOS per ripristinare il Dock, il Desktop e la barra dei menu.",
-      "desktopHeading": "Desktop si è chiuso inaspettatamente.",
+      "desktopHeading": "Desktop si è chiuso inaspettatamente",
       "relaunch": "Riavvia",
       "reloadDesktop": "Ricarica Desktop"
     },

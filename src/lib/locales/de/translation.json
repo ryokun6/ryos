@@ -2584,9 +2584,9 @@
     },
     "errorBoundaries": {
       "appDescription": "Starten Sie es neu, um ein neues Fenster zu öffnen, oder beenden Sie dieses abgestürzte Fenster. Andere geöffnete Apps werden weiter ausgeführt.",
-      "appHeading": "{{appName}} wurde unerwartet beendet.",
+      "appHeading": "{{appName}} wurde unerwartet beendet",
       "desktopDescription": "ryOS neu laden, um das Dock, den Schreibtisch und die Menüleiste wiederherzustellen.",
-      "desktopHeading": "Der Schreibtisch wurde unerwartet beendet.",
+      "desktopHeading": "Der Schreibtisch wurde unerwartet beendet",
       "relaunch": "Neu starten",
       "reloadDesktop": "Schreibtisch neu laden"
     },

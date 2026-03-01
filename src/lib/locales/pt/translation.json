@@ -2584,9 +2584,9 @@
     },
     "errorBoundaries": {
       "appDescription": "Reinicie-o para abrir uma nova janela, ou feche esta janela travada. Outros aplicativos abertos continuarão em execução.",
-      "appHeading": "{{appName}} encerrou inesperadamente.",
+      "appHeading": "{{appName}} encerrou inesperadamente",
       "desktopDescription": "Recarregar o ryOS para restaurar o Dock, a Mesa e a barra de menus.",
-      "desktopHeading": "A Mesa encerrou inesperadamente.",
+      "desktopHeading": "A Mesa encerrou inesperadamente",
       "relaunch": "Reiniciar",
       "reloadDesktop": "Recarregar Mesa"
     },

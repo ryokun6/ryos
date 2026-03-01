@@ -15,6 +15,7 @@ import { SpotlightSearch } from "@/components/layout/SpotlightSearch";
 import { AppSwitcher } from "@/components/layout/AppSwitcher";
 import type { SwitcherApp } from "@/components/layout/AppSwitcher";
 import { AppErrorBoundary } from "@/components/errors/ErrorBoundaries";
+import { getTranslatedAppName } from "@/utils/i18n";
 import { resolveInitialRoute } from "./appRouteRegistry";
 import { isTextEditInitialData } from "@/types/appInitialData";
 import {
@@ -65,12 +66,20 @@ export function AppManager({ apps }: AppManagerProps) {
   // Get current theme to determine if we should show the desktop menubar
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+
+  const [crashedInstanceIds, setCrashedInstanceIds] = useState<Set<string>>(
+    () => new Set()
+  );
   
   // For Mac/System7 themes, hide the desktop menubar when there's a foreground app
   // For XP/98, the menubar is actually a taskbar and should always show
   // Always show menubar in expose mode
   const hasForegroundApp = !!foregroundInstanceId;
-  const showDesktopMenuBar = isXpTheme || !hasForegroundApp || exposeMode;
+  const isForegroundAppCrashed = foregroundInstanceId
+    ? crashedInstanceIds.has(foregroundInstanceId)
+    : false;
+  const showDesktopMenuBar =
+    isXpTheme || !hasForegroundApp || exposeMode || isForegroundAppCrashed;
 
   const [isInitialMount, setIsInitialMount] = useState(true);
   const [isExposeViewOpen, setIsExposeViewOpen] = useState(false);
@@ -130,6 +139,27 @@ export function AppManager({ apps }: AppManagerProps) {
   useEffect(() => {
     navigateToPreviousInstanceRef.current = navigateToPreviousInstance;
   }, [navigateToPreviousInstance]);
+
+  // Prune stale crash state when crashed instances are closed.
+  useEffect(() => {
+    setCrashedInstanceIds((prev) => {
+      if (prev.size === 0) {
+        return prev;
+      }
+
+      let changed = false;
+      const next = new Set<string>();
+      prev.forEach((instanceId) => {
+        if (instances[instanceId]?.isOpen) {
+          next.add(instanceId);
+        } else {
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [instances]);
 
 
   const getZIndexForInstance = (instanceId: string) => {
@@ -472,6 +502,11 @@ export function AppManager({ apps }: AppManagerProps) {
         const zIndex = getZIndexForInstance(instance.instanceId);
         const AppComponent = getAppComponent(appId);
         const app = apps.find((registeredApp) => registeredApp.id === appId);
+        const translatedAppName = getTranslatedAppName(appId);
+        const crashDialogAppName =
+          translatedAppName !== appId
+            ? translatedAppName
+            : (app?.name ?? appId);
 
         return (
           <div
@@ -492,13 +527,39 @@ export function AppManager({ apps }: AppManagerProps) {
           >
             <AppErrorBoundary
               appId={appId}
-              appName={app?.name ?? appId}
+              appName={crashDialogAppName}
               instanceId={instance.instanceId}
-              onCrash={() => bringInstanceToForeground(instance.instanceId)}
+              onCrash={() => {
+                setCrashedInstanceIds((prev) => {
+                  if (prev.has(instance.instanceId)) {
+                    return prev;
+                  }
+                  const next = new Set(prev);
+                  next.add(instance.instanceId);
+                  return next;
+                });
+                bringInstanceToForeground(instance.instanceId);
+              }}
               onQuit={() => {
+                setCrashedInstanceIds((prev) => {
+                  if (!prev.has(instance.instanceId)) {
+                    return prev;
+                  }
+                  const next = new Set(prev);
+                  next.delete(instance.instanceId);
+                  return next;
+                });
                 closeAppInstance(instance.instanceId);
               }}
               onRelaunch={() => {
+                setCrashedInstanceIds((prev) => {
+                  if (!prev.has(instance.instanceId)) {
+                    return prev;
+                  }
+                  const next = new Set(prev);
+                  next.delete(instance.instanceId);
+                  return next;
+                });
                 const relaunchInitialData =
                   appId === "textedit" && isTextEditInitialData(instance.initialData)
                     ? { path: instance.initialData.path }
