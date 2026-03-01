@@ -1,4 +1,3 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   generateText,
   type ImagePart,
@@ -8,26 +7,12 @@ import {
 } from "ai";
 import { google } from "@ai-sdk/google";
 import { z } from "zod";
-import { Redis } from "@upstash/redis";
-import { validateAuth } from "./_utils/auth/index.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
-import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "./_utils/_cors.js";
-import { initLogger } from "./_utils/_logging.js";
+import { apiHandler } from "./_utils/api-handler.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-// ============================================================================
-// Local Helper Functions
-// ============================================================================
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL as string,
-    token: process.env.REDIS_KV_REST_API_TOKEN as string,
-  });
-}
 
 // ============================================================================
 // Constants and Schemas
@@ -309,107 +294,55 @@ const buildModelMessages = (
 // Route Handler
 // ============================================================================
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { requestId: _requestId, logger } = initLogger();
-  const startTime = Date.now();
-  
-  const effectiveOrigin = getEffectiveOrigin(req);
-  setCorsHeaders(res, effectiveOrigin, { methods: ["POST", "OPTIONS"] });
-  
-  logger.request(req.method || "POST", req.url || "/api/applet-ai");
-  
-  if (req.method === "OPTIONS") {
-    logger.response(204, Date.now() - startTime);
-    return res.status(204).end();
-  }
-
-  if (!isAllowedOrigin(effectiveOrigin)) {
-    logger.warn("Unauthorized origin", { effectiveOrigin });
-    logger.response(403, Date.now() - startTime);
-    return res.status(403).json({ error: "Unauthorized" });
-  }
-
-  const host = req.headers.host as string | undefined;
-  if (!isRyOSHost(host || null)) {
-    logger.warn("Unauthorized host", { host });
-    logger.response(403, Date.now() - startTime);
-    return res.status(403).json({ error: "Unauthorized host" });
-  }
-
-  if (req.method !== "POST") {
-    logger.warn("Method not allowed", { method: req.method });
-    logger.response(405, Date.now() - startTime);
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  // Initialize Redis for auth token validation
-  const redis = createRedis();
-
-  // Extract auth headers
-  const authHeader = req.headers.authorization as string | undefined;
-  const authToken =
-    authHeader && authHeader.startsWith("Bearer ")
-      ? authHeader.substring(7)
-      : null;
-  const usernameHeaderRaw = req.headers["x-username"] as string | undefined;
-  const usernameHeader =
-    usernameHeaderRaw && usernameHeaderRaw.trim().length > 0
-      ? usernameHeaderRaw.trim().toLowerCase()
-      : null;
-  const usernameLogLabel =
-    usernameHeaderRaw && usernameHeaderRaw.trim().length > 0
-      ? usernameHeaderRaw.trim()
-      : "anonymous";
-
-  // Validate authentication (all users, including "ryo", must present a valid token)
-  if (usernameHeader) {
-    const validationResult = await validateAuth(redis, usernameHeader, authToken);
-    if (!validationResult.valid) {
-      logger.error("Authentication failed – invalid or missing token", { username: usernameLogLabel });
-      logger.response(401, Date.now() - startTime);
-      return res.status(401).json({
-        error: "authentication_failed",
-        message: "Invalid or missing authentication token",
-      });
+export default apiHandler<z.infer<typeof RequestSchema>>(
+  {
+    methods: ["POST"],
+    auth: "optional",
+    parseJsonBody: true,
+    contentType: null,
+  },
+  async ({ req, res, logger, startTime, origin, user, body }) => {
+    const host = req.headers.host as string | undefined;
+    if (!isRyOSHost(host || null)) {
+      logger.warn("Unauthorized host", { host });
+      logger.response(403, Date.now() - startTime);
+      res.status(403).json({ error: "Unauthorized host" });
+      return;
     }
-  }
 
-  const ip = getClientIp(req);
-  logger.info("Request received", {
-    origin: effectiveOrigin ?? "unknown",
-    host,
-    ip,
-    method: req.method,
-    user: usernameLogLabel,
-  });
+    const usernameHeader = user?.username || null;
+    const usernameLogLabel = usernameHeader || "anonymous";
 
-  let parsedBody: z.infer<typeof RequestSchema>;
-  try {
-    const body = req.body;
-    const result = RequestSchema.safeParse(body);
-    if (!result.success) {
-      logger.error("Invalid request body", result.error.format());
+    const ip = getClientIp(req);
+    logger.info("Request received", {
+      origin: origin ?? "unknown",
+      host,
+      ip,
+      method: req.method,
+      user: usernameLogLabel,
+    });
+
+    const parsedBodyResult = RequestSchema.safeParse(body);
+    if (!parsedBodyResult.success) {
+      logger.error("Invalid request body", parsedBodyResult.error.format());
       logger.response(400, Date.now() - startTime);
-      return res.status(400).json({ error: "Invalid request body", details: result.error.format() });
+      res
+        .status(400)
+        .json({ error: "Invalid request body", details: parsedBodyResult.error.format() });
+      return;
     }
-    parsedBody = result.data;
-  } catch (error) {
-    logger.error("Failed to parse JSON body", error);
-    logger.response(400, Date.now() - startTime);
-    return res.status(400).json({ error: "Invalid JSON in request body" });
-  }
+    const parsedBody = parsedBodyResult.data;
 
-  const { prompt, messages, context, temperature, mode: requestedMode } =
-    parsedBody;
-  const mode = requestedMode ?? "text";
+    const { prompt, messages, context, temperature, mode: requestedMode } =
+      parsedBody;
+    const mode = requestedMode ?? "text";
 
-  // Allow trusted user "ryo" to bypass rate limits (but still requires valid auth token)
-  const rateLimitBypass = usernameHeader === "ryo";
-  // If usernameHeader is not null, we've already validated the token, so user is authenticated
-  const isAuthenticatedUser = usernameHeader !== null;
-  const identifier = isAuthenticatedUser
-    ? `user:${usernameHeader}`
-    : `ip:${ip}`;
+    // Allow trusted user "ryo" to bypass rate limits (requires valid auth token).
+    const rateLimitBypass = usernameHeader === "ryo";
+    const isAuthenticatedUser = usernameHeader !== null;
+    const identifier = isAuthenticatedUser
+      ? `user:${usernameHeader}`
+      : `ip:${ip}`;
 
   const promptChars =
     typeof prompt === "string" ? prompt.trim().length : 0;
@@ -669,3 +602,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: "Failed to generate response" });
   }
 }
+);
