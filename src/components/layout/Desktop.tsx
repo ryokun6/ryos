@@ -1,6 +1,6 @@
 import { AnyApp } from "@/apps/base/types";
 import { AppId } from "@/config/appRegistry";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { FileIcon } from "@/apps/finder/components/FileIcon";
 import { getAppIconPath } from "@/config/appRegistry";
 import { useWallpaper } from "@/hooks/useWallpaper";
@@ -9,6 +9,7 @@ import { SortType } from "@/apps/finder/components/FinderMenuBar";
 import { useLongPress } from "@/hooks/useLongPress";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useFilesStore, FileSystemItem } from "@/stores/useFilesStore";
+import { useShallow } from "zustand/react/shallow";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { dbOperations } from "@/apps/finder/hooks/useFileSystem";
@@ -63,8 +64,18 @@ export function Desktop({
   // File system and launch app hooks
   const launchApp = useLaunchApp();
   
-  // Files store selectors/actions (avoid broad full-store subscription)
-  const allItems = useFilesStore((state) => state.items);
+  // Targeted file store subscriptions - only re-render when desktop/trash items change
+  const desktopAndTrashItems = useFilesStore(
+    useShallow((state) => {
+      const result: FileSystemItem[] = [];
+      for (const [path, item] of Object.entries(state.items)) {
+        if (path.startsWith("/Desktop/") || path === "/Trash") {
+          result.push(item);
+        }
+      }
+      return result;
+    })
+  );
   const getItem = useFilesStore((state) => state.getItem);
   const getItemsInPath = useFilesStore((state) => state.getItemsInPath);
   const updateItemMetadata = useFilesStore((state) => state.updateItemMetadata);
@@ -72,7 +83,8 @@ export function Desktop({
   const removeItem = useFilesStore((state) => state.removeItem);
   const emptyTrash = useFilesStore((state) => state.emptyTrash);
   const getTrashItems = useFilesStore((state) => state.getTrashItems);
-  const trashIcon = allItems["/Trash"]?.icon || "/icons/trash-empty.png";
+  const trashItem = desktopAndTrashItems.find(item => item.path === "/Trash");
+  const trashIcon = trashItem?.icon || "/icons/trash-empty.png";
 
   // Define the default order for desktop shortcuts
   const defaultShortcutOrder: AppId[] = [
@@ -91,41 +103,33 @@ export function Desktop({
     "pc",
   ];
 
-  // Get desktop shortcuts - subscribe to store changes
-  // Access items directly to ensure reactivity
-  const desktopShortcuts = Object.values(allItems)
-    .filter(
-      (item) =>
-        item.status === "active" &&
-        item.path.startsWith("/Desktop/") &&
-        !item.isDirectory &&
-        // Theme-conditional defaults: hide items that are marked hidden for
-        // the current theme, but always show user-pinned (no hiddenOnThemes).
-        (!item.hiddenOnThemes ||
-          !item.hiddenOnThemes.includes(currentTheme))
-    )
-    .sort((a, b) => {
-      // Sort by default order if both are app aliases
-      if (a.aliasType === "app" && b.aliasType === "app") {
-        const aIndex = defaultShortcutOrder.indexOf(a.aliasTarget as AppId);
-        const bIndex = defaultShortcutOrder.indexOf(b.aliasTarget as AppId);
-        
-        // If both are in the order list, sort by their position
-        if (aIndex !== -1 && bIndex !== -1) {
-          return aIndex - bIndex;
-        }
-        // If only one is in the list, prioritize it
-        if (aIndex !== -1) return -1;
-        if (bIndex !== -1) return 1;
-        // If neither is in the list, sort alphabetically by name
-        return a.name.localeCompare(b.name);
-      }
-      // App aliases come before file aliases
-      if (a.aliasType === "app" && b.aliasType !== "app") return -1;
-      if (a.aliasType !== "app" && b.aliasType === "app") return 1;
-      // Both are file aliases, sort alphabetically
-      return a.name.localeCompare(b.name);
-    });
+  // Get desktop shortcuts - derived from targeted store subscription
+  const desktopShortcuts = useMemo(
+    () =>
+      desktopAndTrashItems
+        .filter(
+          (item) =>
+            item.status === "active" &&
+            item.path.startsWith("/Desktop/") &&
+            !item.isDirectory &&
+            (!item.hiddenOnThemes ||
+              !item.hiddenOnThemes.includes(currentTheme))
+        )
+        .sort((a, b) => {
+          if (a.aliasType === "app" && b.aliasType === "app") {
+            const aIndex = defaultShortcutOrder.indexOf(a.aliasTarget as AppId);
+            const bIndex = defaultShortcutOrder.indexOf(b.aliasTarget as AppId);
+            if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+            if (aIndex !== -1) return -1;
+            if (bIndex !== -1) return 1;
+            return a.name.localeCompare(b.name);
+          }
+          if (a.aliasType === "app" && b.aliasType !== "app") return -1;
+          if (a.aliasType !== "app" && b.aliasType === "app") return 1;
+          return a.name.localeCompare(b.name);
+        }),
+    [desktopAndTrashItems, currentTheme, defaultShortcutOrder]
+  );
 
   // Get display name for desktop shortcuts (with translation)
   const getDisplayName = (shortcut: FileSystemItem): string => {

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { AppProps } from "../../base/types";
 import type { ChatsInitialData } from "../../base/types";
 import { WindowFrame } from "@/components/layout/WindowFrame";
@@ -48,6 +48,7 @@ export function ChatsAppComponent({
   const initialData = rawInitialData as ChatsInitialData | undefined;
   const { t } = useTranslation();
   const translatedHelpItems = useTranslatedHelpItems("chats", helpItems);
+  const aiMessageCount = useChatsStore((state) => state.aiMessages.length);
   const aiMessages = useChatsStore((state) => state.aiMessages);
 
   // Use auth hook for authentication functionality
@@ -458,7 +459,11 @@ export function ChatsAppComponent({
     messageRenderLimit,
     username,
   });
-  const previousUserMessages = extractPreviousUserMessages(aiMessages);
+  const previousUserMessages = useMemo(
+    () => extractPreviousUserMessages(aiMessages),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [aiMessageCount]
+  );
 
   return (
     <>
