@@ -489,6 +489,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Use query parameter if available, otherwise use body parameter, otherwise use default
     const model = queryModel || bodyModel || DEFAULT_MODEL;
 
+    if (!messages || !Array.isArray(messages)) {
+      logger.error("400 Error: Invalid messages format", { messages });
+      logger.response(400, Date.now() - startTime);
+      res.setHeader("Access-Control-Allow-Origin", validOrigin);
+      res.status(400).send("Invalid messages format");
+      return;
+    }
+
     // ---------------------------
     // Extract auth headers FIRST so we can use username for logging
     // ---------------------------
@@ -606,15 +614,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         queryModel ? "from query" : model ? "from body" : "using default"
       })`
     );
-
-    if (!messages || !Array.isArray(messages)) {
-      logError(
-        `400 Error: Invalid messages format - ${JSON.stringify({ messages })}`
-      );
-      res.setHeader("Access-Control-Allow-Origin", validOrigin);
-      res.status(400).send("Invalid messages format");
-      return;
-    }
 
     // Additional validation for model
     if (model !== null && !SUPPORTED_AI_MODELS.includes(model as SupportedModel)) {

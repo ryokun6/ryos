@@ -33,6 +33,9 @@ let adminToken: string | null = null;
 
 // Test room for message tests
 let testRoomId: string | null = null;
+let privateRoomId: string | null = null;
+let outsiderUsername: string | null = null;
+let outsiderToken: string | null = null;
 let authRateLimited = false;
 
 const makeRateLimitBypassHeaders = (): Record<string, string> => ({
@@ -47,6 +50,36 @@ const skipIfAuthRateLimited = (label: string): boolean => {
   }
   return false;
 };
+
+async function ensureUserAuth(
+  username: string,
+  password: string
+): Promise<string | null> {
+  const registerRes = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
+    method: "POST",
+    headers: makeRateLimitBypassHeaders(),
+    body: JSON.stringify({ username, password }),
+  });
+
+  if (registerRes.status === 201) {
+    const registerData = await registerRes.json();
+    return registerData.token ?? null;
+  }
+
+  if (registerRes.status === 409) {
+    const loginRes = await fetchWithOrigin(`${BASE_URL}/api/auth/login`, {
+      method: "POST",
+      headers: makeRateLimitBypassHeaders(),
+      body: JSON.stringify({ username, password }),
+    });
+    if (loginRes.ok) {
+      const loginData = await loginRes.json();
+      return loginData.token ?? null;
+    }
+  }
+
+  return null;
+}
 
 // ============================================================================
 // Auth Tests
@@ -261,7 +294,17 @@ async function testGetRooms(): Promise<void> {
 }
 
 async function testGetRoomsWithUsername(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/rooms?username=${testUsername}`);
+  if (!testToken || !testUsername) {
+    console.log("  ⚠️  Skipped (missing auth token)");
+    return;
+  }
+
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/rooms?username=${testUsername}`,
+    testUsername,
+    testToken,
+    { method: "GET" }
+  );
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
   const data = await res.json();
   assert(Array.isArray(data.rooms), "Expected rooms array");
@@ -278,6 +321,127 @@ async function testGetSingleRoom(): Promise<void> {
   const data = await res.json();
   assert(data.room, "Expected room object");
   assertEq(data.room.id, testRoomId, "Room ID should match");
+}
+
+async function testCreatePrivateRoom(): Promise<void> {
+  if (!testToken || !testUsername) {
+    console.log("  ⚠️  Skipped (missing auth)");
+    return;
+  }
+
+  outsiderUsername = `outsider${Date.now()}`;
+  outsiderToken = await ensureUserAuth(outsiderUsername, "testpassword123");
+  if (!outsiderToken) {
+    console.log("  ⚠️  Skipped (could not provision outsider user)");
+    return;
+  }
+
+  const res = await fetchWithAuth(`${BASE_URL}/api/rooms`, testUsername, testToken, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      type: "private",
+      members: [testUsername],
+    }),
+  });
+  assertEq(res.status, 201, `Expected 201, got ${res.status}`);
+  const data = await res.json();
+  assert(data.room?.id, "Expected private room id");
+  assertEq(data.room.type, "private", "Expected private room");
+  privateRoomId = data.room.id;
+}
+
+async function testPrivateRoomHiddenFromAnonymousQuerySpoof(): Promise<void> {
+  if (!privateRoomId || !testUsername) {
+    console.log("  ⚠️  Skipped (no private room available)");
+    return;
+  }
+
+  const res = await fetchWithOrigin(`${BASE_URL}/api/rooms?username=${testUsername}`);
+  assertEq(res.status, 200, `Expected 200, got ${res.status}`);
+  const data = await res.json();
+  assert(Array.isArray(data.rooms), "Expected rooms array");
+  const containsPrivate = data.rooms.some((room: { id: string }) => room.id === privateRoomId);
+  assert(containsPrivate === false, "Expected anonymous query spoof to hide private room");
+}
+
+async function testPrivateRoomVisibleToMemberWithAuth(): Promise<void> {
+  if (!privateRoomId || !testToken || !testUsername) {
+    console.log("  ⚠️  Skipped (missing private room or auth)");
+    return;
+  }
+
+  const res = await fetchWithAuth(`${BASE_URL}/api/rooms`, testUsername, testToken, {
+    method: "GET",
+  });
+  assertEq(res.status, 200, `Expected 200, got ${res.status}`);
+  const data = await res.json();
+  const containsPrivate = data.rooms.some((room: { id: string }) => room.id === privateRoomId);
+  assert(containsPrivate, "Expected authenticated member to see private room");
+}
+
+async function testPrivateRoomForbiddenForOutsiderRead(): Promise<void> {
+  if (!privateRoomId || !outsiderUsername || !outsiderToken) {
+    console.log("  ⚠️  Skipped (missing outsider auth or private room)");
+    return;
+  }
+
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/rooms/${privateRoomId}`,
+    outsiderUsername,
+    outsiderToken,
+    { method: "GET" }
+  );
+  assertEq(res.status, 403, `Expected 403, got ${res.status}`);
+}
+
+async function testPrivateRoomForbiddenForOutsiderMessagesRead(): Promise<void> {
+  if (!privateRoomId || !outsiderUsername || !outsiderToken) {
+    console.log("  ⚠️  Skipped (missing outsider auth or private room)");
+    return;
+  }
+
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/rooms/${privateRoomId}/messages`,
+    outsiderUsername,
+    outsiderToken,
+    { method: "GET" }
+  );
+  assertEq(res.status, 403, `Expected 403, got ${res.status}`);
+}
+
+async function testPrivateRoomForbiddenForOutsiderMessagesWrite(): Promise<void> {
+  if (!privateRoomId || !outsiderUsername || !outsiderToken) {
+    console.log("  ⚠️  Skipped (missing outsider auth or private room)");
+    return;
+  }
+
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/rooms/${privateRoomId}/messages`,
+    outsiderUsername,
+    outsiderToken,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "outsider write attempt" }),
+    }
+  );
+  assertEq(res.status, 403, `Expected 403, got ${res.status}`);
+}
+
+async function testPrivateRoomForbiddenForOutsiderUsersRead(): Promise<void> {
+  if (!privateRoomId || !outsiderUsername || !outsiderToken) {
+    console.log("  ⚠️  Skipped (missing outsider auth or private room)");
+    return;
+  }
+
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/rooms/${privateRoomId}/users`,
+    outsiderUsername,
+    outsiderToken,
+    { method: "GET" }
+  );
+  assertEq(res.status, 403, `Expected 403, got ${res.status}`);
 }
 
 // ============================================================================
@@ -330,18 +494,17 @@ async function testBulkMessages(): Promise<void> {
 // ============================================================================
 
 async function testPresenceSwitch(): Promise<void> {
-  if (!testRoomId || !testUsername) {
-    console.log("  ⚠️  Skipped (missing test room or username)");
+  if (!testRoomId || !testUsername || !testToken) {
+    console.log("  ⚠️  Skipped (missing test room or auth)");
     return;
   }
   
-  const res = await fetchWithOrigin(`${BASE_URL}/api/presence/switch`, {
+  const res = await fetchWithAuth(`${BASE_URL}/api/presence/switch`, testUsername, testToken, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       previousRoomId: null,
       nextRoomId: testRoomId,
-      username: testUsername,
     }),
   });
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
@@ -412,6 +575,31 @@ export async function runNewApiTests(): Promise<{ passed: number; failed: number
   await runTest("Get rooms", testGetRooms);
   await runTest("Get rooms with username", testGetRoomsWithUsername);
   await runTest("Get single room", testGetSingleRoom);
+  await runTest("Create private room", testCreatePrivateRoom);
+  await runTest(
+    "Private room hidden from anonymous query spoof",
+    testPrivateRoomHiddenFromAnonymousQuerySpoof
+  );
+  await runTest(
+    "Private room visible to authenticated member",
+    testPrivateRoomVisibleToMemberWithAuth
+  );
+  await runTest(
+    "Private room read forbidden for outsider",
+    testPrivateRoomForbiddenForOutsiderRead
+  );
+  await runTest(
+    "Private room messages read forbidden for outsider",
+    testPrivateRoomForbiddenForOutsiderMessagesRead
+  );
+  await runTest(
+    "Private room message write forbidden for outsider",
+    testPrivateRoomForbiddenForOutsiderMessagesWrite
+  );
+  await runTest(
+    "Private room users read forbidden for outsider",
+    testPrivateRoomForbiddenForOutsiderUsersRead
+  );
 
   // Message Tests
   section("Message Tests");

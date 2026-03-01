@@ -16,6 +16,7 @@ import { runAiTests } from "./test-ai";
 import { runMediaTests } from "./test-media";
 import { runAuthExtraTests } from "./test-auth-extra";
 import { runRoomsExtraTests } from "./test-rooms-extra";
+import { runListenSecurityTests } from "./test-listen-security";
 import { runChatNotificationLogicTests } from "./test-chat-notification-logic";
 import { runChatNotificationIntegrationWiringTests } from "./test-chat-notification-integration-wiring";
 import { runPusherClientRefcountTests } from "./test-pusher-client-refcount";
@@ -97,6 +98,7 @@ async function runAllTests(): Promise<void> {
     { name: "media", run: runMediaTests },
     { name: "auth-extra", run: runAuthExtraTests },
     { name: "rooms-extra", run: runRoomsExtraTests },
+    { name: "listen-security", run: runListenSecurityTests },
     { name: "chat-notifications", run: runChatNotificationLogicTests },
     { name: "chat-notification-wiring", run: runChatNotificationIntegrationWiringTests },
     { name: "chat-hook-lifecycle-wiring", run: runChatHookChannelLifecycleWiringTests },

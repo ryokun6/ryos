@@ -59,7 +59,7 @@ async function testInvalidBody(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: "not valid json",
   });
-  assert(res.status >= 400, `Expected error status, got ${res.status}`);
+  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
 }
 
 async function testBasicTitleParsing(): Promise<void> {

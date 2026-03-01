@@ -31,6 +31,8 @@ export { getEffectiveOrigin, isAllowedOrigin, handlePreflight, setCorsHeaders } 
 export type { SetCorsHeadersOptions } from "./_cors.js";
 export { extractAuth, extractAuthNormalized } from "./auth/index.js";
 export type { AuthenticatedUser } from "./auth/index.js";
+export { apiHandler } from "./api-handler.js";
+export type { ApiHandlerOptions, ApiHandlerContext } from "./api-handler.js";
 
 export {
   REDIS_PREFIXES,

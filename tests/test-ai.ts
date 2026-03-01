@@ -40,11 +40,9 @@ async function testChatMissingMessages(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({}),
   });
-  // API returns 500 when messages is missing (unhandled error during processing)
-  // or 400 if validation catches it, or 429 if rate limited
   assert(
-    res.status === 400 || res.status === 500 || res.status === 429,
-    `Expected 400, 500, or 429, got ${res.status}`
+    res.status === 400 || res.status === 429,
+    `Expected 400 or 429, got ${res.status}`
   );
 }
 
@@ -54,11 +52,9 @@ async function testChatInvalidMessagesFormat(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages: "not an array" }),
   });
-  // API returns 500 when messages format is invalid (unhandled error during processing)
-  // or 400 if validation catches it, or 429 if rate limited
   assert(
-    res.status === 400 || res.status === 500 || res.status === 429,
-    `Expected 400, 500, or 429, got ${res.status}`
+    res.status === 400 || res.status === 429,
+    `Expected 400 or 429, got ${res.status}`
   );
 }
 

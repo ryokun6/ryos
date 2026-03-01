@@ -4,6 +4,7 @@ import { getPusherClient } from "@/lib/pusherClient";
 import { getApiUrl } from "@/utils/platform";
 import { toast } from "@/hooks/useToast";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { useChatsStore } from "@/stores/useChatsStore";
 
 export interface ListenTrackMeta {
   title: string;
@@ -123,6 +124,17 @@ const initialState = {
 // Generate a random anonymous ID
 function generateAnonymousId(): string {
   return `anon-${Math.random().toString(36).substring(2, 10)}`;
+}
+
+function buildSessionAuthHeaders(username: string): Record<string, string> | null {
+  const { username: authUsername, authToken } = useChatsStore.getState();
+  if (!authUsername || !authToken) return null;
+  if (authUsername.toLowerCase() !== username.toLowerCase()) return null;
+
+  return {
+    Authorization: `Bearer ${authToken}`,
+    "X-Username": authUsername,
+  };
 }
 
 let pusherClient: ReturnType<typeof getPusherClient> | null = null;
@@ -310,10 +322,15 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     },
 
     createSession: async (username: string) => {
+      const authHeaders = buildSessionAuthHeaders(username);
+      if (!authHeaders) {
+        return { ok: false, error: "Authentication required" };
+      }
+
       try {
         const response = await abortableFetch(getApiUrl("/api/listen/sessions"), {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify({ username }),
           timeout: 15000,
           throwOnHttpError: false,
@@ -354,12 +371,22 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         // If no username, join as anonymous
         const isAnonymous = !username;
         const anonymousId = isAnonymous ? generateAnonymousId() : null;
+        const authHeaders = !isAnonymous && username
+          ? buildSessionAuthHeaders(username)
+          : null;
+
+        if (!isAnonymous && !authHeaders) {
+          return { ok: false, error: "Authentication required" };
+        }
 
         const response = await abortableFetch(
           getApiUrl(`/api/listen/sessions/${encodeURIComponent(sessionId)}/join`),
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              ...(authHeaders || {}),
+            },
             body: JSON.stringify(
               isAnonymous ? { anonymousId } : { username }
             ),
@@ -421,11 +448,22 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       }
 
       try {
+        const authHeaders = !isAnonymous && username
+          ? buildSessionAuthHeaders(username)
+          : null;
+
+        if (!isAnonymous && !authHeaders) {
+          return { ok: false, error: "Authentication required" };
+        }
+
         const response = await abortableFetch(
           getApiUrl(`/api/listen/sessions/${encodeURIComponent(currentSession.id)}/leave`),
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              ...(authHeaders || {}),
+            },
             body: JSON.stringify(
               isAnonymous ? { anonymousId } : { username }
             ),
@@ -457,12 +495,20 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         return { ok: false, error: "No active session" };
       }
 
+      const authHeaders = buildSessionAuthHeaders(username);
+      if (!authHeaders) {
+        return { ok: false, error: "Authentication required" };
+      }
+
       try {
         const response = await abortableFetch(
           getApiUrl(`/api/listen/sessions/${encodeURIComponent(currentSession.id)}/sync`),
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              ...authHeaders,
+            },
             body: JSON.stringify({
               username,
               state: payload,
@@ -498,12 +544,20 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         return { ok: false, error: "Sign in to send reactions" };
       }
 
+      const authHeaders = buildSessionAuthHeaders(username);
+      if (!authHeaders) {
+        return { ok: false, error: "Authentication required" };
+      }
+
       try {
         const response = await abortableFetch(
           getApiUrl(`/api/listen/sessions/${encodeURIComponent(currentSession.id)}/reaction`),
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              ...authHeaders,
+            },
             body: JSON.stringify({ username, emoji }),
             timeout: 15000,
             throwOnHttpError: false,

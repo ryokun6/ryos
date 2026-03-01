@@ -996,19 +996,21 @@ export const useChatsStore = create<ChatsStoreState>()(
             return { ok: false, error: "Rooms API temporarily unavailable" };
           }
           const currentUsername = get().username;
+          const currentToken = get().authToken;
 
           try {
-            const queryParams = new URLSearchParams();
-            if (currentUsername) {
-              queryParams.append("username", currentUsername);
+            const requestHeaders: HeadersInit = {};
+            if (currentUsername && currentToken) {
+              requestHeaders["Authorization"] = `Bearer ${currentToken}`;
+              requestHeaders["X-Username"] = currentUsername;
             }
-
-            const url = queryParams.toString() 
-              ? `/api/rooms?${queryParams.toString()}`
-              : "/api/rooms";
             
-            const response = await abortableFetch(url, {
+            const response = await abortableFetch("/api/rooms", {
               method: "GET",
+              headers:
+                Object.keys(requestHeaders).length > 0
+                  ? requestHeaders
+                  : undefined,
               timeout: 15000,
               throwOnHttpError: false,
               retry: { maxAttempts: 1, initialDelayMs: 250 },
@@ -1060,10 +1062,22 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
+            const username = get().username;
+            const authToken = get().authToken;
+            const requestHeaders: HeadersInit = {};
+            if (username && authToken) {
+              requestHeaders["Authorization"] = `Bearer ${authToken}`;
+              requestHeaders["X-Username"] = username;
+            }
+
             const response = await abortableFetch(
               `/api/rooms/${encodeURIComponent(roomId)}/messages`,
               {
                 method: "GET",
+                headers:
+                  Object.keys(requestHeaders).length > 0
+                    ? requestHeaders
+                    : undefined,
                 timeout: 15000,
                 throwOnHttpError: false,
                 retry: { maxAttempts: 1, initialDelayMs: 250 },
@@ -1215,6 +1229,14 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           try {
+            const username = get().username;
+            const authToken = get().authToken;
+            const requestHeaders: HeadersInit = {};
+            if (username && authToken) {
+              requestHeaders["Authorization"] = `Bearer ${authToken}`;
+              requestHeaders["X-Username"] = username;
+            }
+
             const queryParams = new URLSearchParams({
               roomIds: roomIds.join(","),
             });
@@ -1223,6 +1245,10 @@ export const useChatsStore = create<ChatsStoreState>()(
               `/api/messages/bulk?${queryParams.toString()}`,
               {
                 method: "GET",
+                headers:
+                  Object.keys(requestHeaders).length > 0
+                    ? requestHeaders
+                    : undefined,
                 timeout: 15000,
                 throwOnHttpError: false,
                 retry: { maxAttempts: 1, initialDelayMs: 250 },
@@ -1361,6 +1387,7 @@ export const useChatsStore = create<ChatsStoreState>()(
         switchRoom: async (newRoomId: string | null) => {
           const currentRoomId = get().currentRoomId;
           const username = get().username;
+          const authToken = get().authToken;
 
           console.log(
             `[ChatsStore] Switching from ${currentRoomId} to ${newRoomId}`
@@ -1375,17 +1402,20 @@ export const useChatsStore = create<ChatsStoreState>()(
           }
 
           // If switching to a real room and we have a username, handle the API call
-          if (username) {
+          if (username && authToken) {
             try {
               const response = await abortableFetch(
                 "/api/presence/switch",
                 {
                   method: "POST",
-                  headers: { "Content-Type": "application/json" },
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${authToken}`,
+                    "X-Username": username,
+                  },
                   body: JSON.stringify({
                     previousRoomId: currentRoomId,
                     nextRoomId: newRoomId,
-                    username,
                   }),
                   timeout: 15000,
                   throwOnHttpError: false,
@@ -1415,6 +1445,10 @@ export const useChatsStore = create<ChatsStoreState>()(
               );
               // Don't revert the room change on network error, just log it
             }
+          } else if (username && !authToken) {
+            console.warn(
+              "[ChatsStore] Skipping presence switch API call due to missing auth token"
+            );
           }
 
           // Always fetch messages for the new room to ensure latest content

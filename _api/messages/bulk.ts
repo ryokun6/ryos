@@ -8,7 +8,10 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { ROOM_ID_REGEX } from "../_utils/_validation.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
-import { roomExists, getMessages } from "../rooms/_helpers/_redis.js";
+import { createRedis } from "../_utils/redis.js";
+import { resolveRequestAuth } from "../_utils/request-auth.js";
+import { getMessages, getRoom } from "../rooms/_helpers/_redis.js";
+import { getRoomReadAccessError } from "../rooms/_helpers/_access.js";
 import type { Message } from "../rooms/_helpers/_types.js";
 
 export const runtime = "nodejs";
@@ -44,6 +47,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
+  const redis = createRedis();
+  const auth = await resolveRequestAuth(req, redis, { required: false });
+  if (auth.error) {
+    logger.response(auth.error.status, Date.now() - startTime);
+    res.status(auth.error.status).json({ error: auth.error.error });
+    return;
+  }
+
   const roomIdsParam = req.query.roomIds as string | undefined;
   
   if (!roomIdsParam) {
@@ -69,9 +80,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   try {
-    const roomExistenceChecks = await Promise.all(roomIds.map((roomId) => roomExists(roomId)));
-    const validRoomIds = roomIds.filter((_, index) => roomExistenceChecks[index]);
-    const invalidRoomIds = roomIds.filter((_, index) => !roomExistenceChecks[index]);
+    const rooms = await Promise.all(roomIds.map((roomId) => getRoom(roomId)));
+    const validRoomIds: string[] = [];
+    const invalidRoomIds: string[] = [];
+
+    for (let index = 0; index < roomIds.length; index++) {
+      const roomId = roomIds[index];
+      const room = rooms[index];
+
+      if (!room) {
+        invalidRoomIds.push(roomId);
+        continue;
+      }
+
+      const accessError = getRoomReadAccessError(room, auth.user);
+      if (accessError) {
+        invalidRoomIds.push(roomId);
+        continue;
+      }
+
+      validRoomIds.push(roomId);
+    }
 
     const messagePromises = validRoomIds.map(async (roomId) => {
       const messages = await getMessages(roomId, 20);

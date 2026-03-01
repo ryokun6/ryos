@@ -14,8 +14,9 @@ import {
   getEffectiveOrigin,
   setCorsHeaders,
 } from "../../_utils/_cors.js";
+import { createRedis } from "../../_utils/redis.js";
+import { resolveRequestAuth } from "../../_utils/request-auth.js";
 import {
-  createRedisClient,
   generateSessionId,
   getCurrentTimestamp,
   setSession,
@@ -144,12 +145,26 @@ export default async function handler(
     return;
   }
 
-  const body = req.body as CreateSessionRequest;
-  const username = body?.username?.toLowerCase();
+  const authRedis = createRedis();
+  const auth = await resolveRequestAuth(req, authRedis, { required: true });
+  if (auth.error || !auth.user) {
+    logger.response(auth.error?.status ?? 401, Date.now() - startTime);
+    res.status(auth.error?.status ?? 401).json({
+      error: auth.error?.error ?? "Unauthorized - missing credentials",
+    });
+    return;
+  }
 
-  if (!username) {
-    logger.response(400, Date.now() - startTime);
-    res.status(400).json({ error: "Username is required" });
+  const body = (req.body || {}) as CreateSessionRequest;
+  const claimedUsername = body?.username?.toLowerCase();
+  const username = auth.user.username;
+  if (claimedUsername && claimedUsername !== username) {
+    logger.warn("Username mismatch in listen create body", {
+      claimedUsername,
+      authenticatedUsername: username,
+    });
+    logger.response(403, Date.now() - startTime);
+    res.status(403).json({ error: "Forbidden - username mismatch" });
     return;
   }
 
@@ -167,8 +182,7 @@ export default async function handler(
     return;
   }
 
-  const redis = createRedisClient();
-  const userData = await redis.get(`chat:users:${username}`);
+  const userData = await authRedis.get(`chat:users:${username}`);
   if (!userData) {
     logger.response(404, Date.now() - startTime);
     res.status(404).json({ error: "User not found" });

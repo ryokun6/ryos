@@ -119,7 +119,7 @@ async function testJoinRoomMissingRoomId(): Promise<void> {
     `Expected 400, 404, or 405, got ${res.status}`);
 }
 
-async function testJoinRoomMissingUsername(): Promise<void> {
+async function testJoinRoomMissingAuth(): Promise<void> {
   if (!testRoomId) {
     console.log("  ⚠️  Skipped (no test room available)");
     return;
@@ -130,65 +130,66 @@ async function testJoinRoomMissingUsername(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({}),
   });
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
+  assertEq(res.status, 401, `Expected 401, got ${res.status}`);
   const data = await res.json();
-  assert(data.error?.includes("Username"), "Expected username error");
+  assert(data.error?.includes("Unauthorized"), "Expected unauthorized error");
 }
 
-async function testJoinRoomInvalidUsername(): Promise<void> {
+async function testJoinRoomInvalidToken(): Promise<void> {
   if (!testRoomId) {
     console.log("  ⚠️  Skipped (no test room available)");
     return;
   }
 
-  const res = await fetchWithOrigin(`${BASE_URL}/api/rooms/${testRoomId}/join`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: "ab" }), // Too short
-  });
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/rooms/${testRoomId}/join`,
+    testUsername || "fallback-user",
+    "invalid-token",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "ab" }),
+    }
+  );
+  assertEq(res.status, 401, `Expected 401, got ${res.status}`);
 }
 
 async function testJoinRoomNonExistentRoom(): Promise<void> {
-  if (!testUsername) {
-    console.log("  ⚠️  Skipped (no test user available)");
+  if (!testUsername || !testToken) {
+    console.log("  ⚠️  Skipped (no test auth available)");
     return;
   }
 
-  const res = await fetchWithOrigin(`${BASE_URL}/api/rooms/nonexistent-room-xyz/join`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: testUsername }),
-  });
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/rooms/nonexistent-room-xyz/join`,
+    testUsername,
+    testToken,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: testUsername }),
+    }
+  );
   // API returns 400 for invalid room ID format
   assert(res.status === 400 || res.status === 404, `Expected 400 or 404, got ${res.status}`);
 }
 
-async function testJoinRoomNonExistentUser(): Promise<void> {
-  if (!testRoomId) {
-    console.log("  ⚠️  Skipped (no test room available)");
-    return;
-  }
-
-  const res = await fetchWithOrigin(`${BASE_URL}/api/rooms/${testRoomId}/join`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: `nonexistent_user_${Date.now()}` }),
-  });
-  assertEq(res.status, 404, `Expected 404, got ${res.status}`);
-}
-
 async function testJoinRoomSuccess(): Promise<void> {
-  if (!testRoomId || !testUsername) {
-    console.log("  ⚠️  Skipped (missing test room or user)");
+  if (!testRoomId || !testUsername || !testToken) {
+    console.log("  ⚠️  Skipped (missing test room or auth)");
     return;
   }
 
-  const res = await fetchWithOrigin(`${BASE_URL}/api/rooms/${testRoomId}/join`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: testUsername }),
-  });
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/rooms/${testRoomId}/join`,
+    testUsername,
+    testToken,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: testUsername }),
+    }
+  );
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
   const data = await res.json();
   assert(data.success === true, "Expected success: true");
@@ -210,7 +211,7 @@ async function testJoinRoomWrongMethod(): Promise<void> {
 // Leave Room Tests
 // ============================================================================
 
-async function testLeaveRoomMissingUsername(): Promise<void> {
+async function testLeaveRoomMissingAuth(): Promise<void> {
   if (!testRoomId) {
     console.log("  ⚠️  Skipped (no test room available)");
     return;
@@ -221,51 +222,66 @@ async function testLeaveRoomMissingUsername(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({}),
   });
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
+  assertEq(res.status, 401, `Expected 401, got ${res.status}`);
   const data = await res.json();
-  assert(data.error?.includes("Username"), "Expected username error");
+  assert(data.error?.includes("Unauthorized"), "Expected unauthorized error");
 }
 
-async function testLeaveRoomInvalidUsername(): Promise<void> {
+async function testLeaveRoomInvalidToken(): Promise<void> {
   if (!testRoomId) {
     console.log("  ⚠️  Skipped (no test room available)");
     return;
   }
 
-  const res = await fetchWithOrigin(`${BASE_URL}/api/rooms/${testRoomId}/leave`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: "x" }), // Too short
-  });
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/rooms/${testRoomId}/leave`,
+    testUsername || "fallback-user",
+    "invalid-token",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "x" }),
+    }
+  );
+  assertEq(res.status, 401, `Expected 401, got ${res.status}`);
 }
 
 async function testLeaveRoomNonExistentRoom(): Promise<void> {
-  if (!testUsername) {
-    console.log("  ⚠️  Skipped (no test user available)");
+  if (!testUsername || !testToken) {
+    console.log("  ⚠️  Skipped (no test auth available)");
     return;
   }
 
-  const res = await fetchWithOrigin(`${BASE_URL}/api/rooms/nonexistent-room-xyz/leave`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: testUsername }),
-  });
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/rooms/nonexistent-room-xyz/leave`,
+    testUsername,
+    testToken,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: testUsername }),
+    }
+  );
   // API returns 400 for invalid room ID format
   assert(res.status === 400 || res.status === 404, `Expected 400 or 404, got ${res.status}`);
 }
 
 async function testLeaveRoomSuccess(): Promise<void> {
-  if (!testRoomId || !testUsername) {
-    console.log("  ⚠️  Skipped (missing test room or user)");
+  if (!testRoomId || !testUsername || !testToken) {
+    console.log("  ⚠️  Skipped (missing test room or auth)");
     return;
   }
 
-  const res = await fetchWithOrigin(`${BASE_URL}/api/rooms/${testRoomId}/leave`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: testUsername }),
-  });
+  const res = await fetchWithAuth(
+    `${BASE_URL}/api/rooms/${testRoomId}/leave`,
+    testUsername,
+    testToken,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: testUsername }),
+    }
+  );
   assertEq(res.status, 200, `Expected 200, got ${res.status}`);
   const data = await res.json();
   assert(data.success === true, "Expected success: true");
@@ -440,17 +456,16 @@ export async function runRoomsExtraTests(): Promise<{ passed: number; failed: nu
   // Join Room Tests
   console.log(section("Join Room Tests"));
   await runTest("Join room - missing room ID", testJoinRoomMissingRoomId);
-  await runTest("Join room - missing username", testJoinRoomMissingUsername);
-  await runTest("Join room - invalid username", testJoinRoomInvalidUsername);
+  await runTest("Join room - missing auth", testJoinRoomMissingAuth);
+  await runTest("Join room - invalid token", testJoinRoomInvalidToken);
   await runTest("Join room - non-existent room", testJoinRoomNonExistentRoom);
-  await runTest("Join room - non-existent user", testJoinRoomNonExistentUser);
   await runTest("Join room - success", testJoinRoomSuccess);
   await runTest("Join room - wrong method", testJoinRoomWrongMethod);
 
   // Leave Room Tests
   console.log(section("Leave Room Tests"));
-  await runTest("Leave room - missing username", testLeaveRoomMissingUsername);
-  await runTest("Leave room - invalid username", testLeaveRoomInvalidUsername);
+  await runTest("Leave room - missing auth", testLeaveRoomMissingAuth);
+  await runTest("Leave room - invalid token", testLeaveRoomInvalidToken);
   await runTest("Leave room - non-existent room", testLeaveRoomNonExistentRoom);
   await runTest("Leave room - success", testLeaveRoomSuccess);
   await runTest("Leave room - wrong method", testLeaveRoomWrongMethod);

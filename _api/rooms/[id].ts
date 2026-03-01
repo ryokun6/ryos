@@ -8,12 +8,13 @@
  */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { Redis } from "@upstash/redis";
-import { validateAuth } from "../_utils/auth/index.js";
 import { assertValidRoomId } from "../_utils/_validation.js";
 import { initLogger } from "../_utils/_logging.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
+import { createRedis } from "../_utils/redis.js";
+import { resolveRequestAuth } from "../_utils/request-auth.js";
 import { getRoom, setRoom } from "./_helpers/_redis.js";
+import { getRoomReadAccessError } from "./_helpers/_access.js";
 import { CHAT_ROOM_PREFIX, CHAT_ROOM_USERS_PREFIX, CHAT_ROOMS_SET } from "./_helpers/_constants.js";
 import { refreshRoomUserCount, deleteRoomPresence } from "./_helpers/_presence.js";
 import { broadcastRoomDeleted, broadcastRoomUpdated } from "./_helpers/_pusher.js";
@@ -21,13 +22,6 @@ import type { Room } from "./_helpers/_types.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
-
-function createRedis(): Redis {
-  return new Redis({
-    url: process.env.REDIS_KV_REST_API_URL!,
-    token: process.env.REDIS_KV_REST_API_TOKEN!,
-  });
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   const { requestId: _requestId, logger } = initLogger();
@@ -54,6 +48,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
+  const redis = createRedis();
+
   if (!roomId) {
     logger.response(400, Date.now() - startTime);
     res.status(400).json({ error: "Room ID is required" });
@@ -70,12 +66,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   if (req.method === "GET") {
     try {
+      const auth = await resolveRequestAuth(req, redis, { required: false });
+      if (auth.error) {
+        logger.response(auth.error.status, Date.now() - startTime);
+        res.status(auth.error.status).json({ error: auth.error.error });
+        return;
+      }
+
       const roomObj = await getRoom(roomId);
       if (!roomObj) {
         logger.response(404, Date.now() - startTime);
         res.status(404).json({ error: "Room not found" });
         return;
       }
+
+      const accessError = getRoomReadAccessError(roomObj, auth.user);
+      if (accessError) {
+        logger.response(accessError.status, Date.now() - startTime);
+        res.status(accessError.status).json({ error: accessError.error });
+        return;
+      }
+
       const userCount = await refreshRoomUserCount(roomId);
       const room: Room = { ...roomObj, userCount };
       logger.info("Room fetched", { roomId, userCount });
@@ -91,24 +102,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   if (req.method === "DELETE") {
-    const authHeader = req.headers.authorization;
-    const usernameHeader = req.headers["x-username"] as string | undefined;
-    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
-    if (!token || !usernameHeader) {
-      logger.response(401, Date.now() - startTime);
-      res.status(401).json({ error: "Unauthorized - missing credentials" });
+    const auth = await resolveRequestAuth(req, redis, { required: true });
+    if (auth.error || !auth.user) {
+      logger.response(auth.error?.status ?? 401, Date.now() - startTime);
+      res.status(auth.error?.status ?? 401).json({
+        error: auth.error?.error ?? "Unauthorized - missing credentials",
+      });
       return;
     }
 
-    const authResult = await validateAuth(createRedis(), usernameHeader, token, {});
-    if (!authResult.valid) {
-      logger.response(401, Date.now() - startTime);
-      res.status(401).json({ error: "Unauthorized - invalid token" });
-      return;
-    }
-
-    const username = usernameHeader.toLowerCase();
+    const username = auth.user.username;
 
     try {
       const roomData = await getRoom(roomId);
@@ -135,7 +138,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       if (roomData.type === "private") {
         const updatedMembers = roomData.members!.filter((m) => m !== username);
         if (updatedMembers.length <= 1) {
-          const pipeline = createRedis().pipeline();
+          const pipeline = redis.pipeline();
           pipeline.del(`${CHAT_ROOM_PREFIX}${roomId}`);
           pipeline.del(`chat:messages:${roomId}`);
           pipeline.del(`${CHAT_ROOM_USERS_PREFIX}${roomId}`);
@@ -163,7 +166,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
           });
         }
       } else {
-        const pipeline = createRedis().pipeline();
+        const pipeline = redis.pipeline();
         pipeline.del(`${CHAT_ROOM_PREFIX}${roomId}`);
         pipeline.del(`chat:messages:${roomId}`);
         pipeline.del(`${CHAT_ROOM_USERS_PREFIX}${roomId}`);

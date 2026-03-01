@@ -8,7 +8,10 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { isProfaneUsername, assertValidRoomId } from "../_utils/_validation.js";
 import { isAllowedOrigin, getEffectiveOrigin, setCorsHeaders } from "../_utils/_cors.js";
 import { initLogger } from "../_utils/_logging.js";
+import { createRedis } from "../_utils/redis.js";
+import { resolveRequestAuth } from "../_utils/request-auth.js";
 import { getRoom, setRoom } from "../rooms/_helpers/_redis.js";
+import { getRoomWriteAccessError } from "../rooms/_helpers/_access.js";
 import { setRoomPresence, removeRoomPresence, refreshRoomUserCount } from "../rooms/_helpers/_presence.js";
 import { broadcastRoomUpdated } from "../rooms/_helpers/_pusher.js";
 import { ensureUserExists } from "../rooms/_helpers/_users.js";
@@ -19,7 +22,7 @@ export const maxDuration = 15;
 interface SwitchRequest {
   previousRoomId?: string;
   nextRoomId?: string;
-  username: string;
+  username?: string;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -52,13 +55,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  const body = req.body as SwitchRequest;
-  const { previousRoomId, nextRoomId } = body;
-  const username = body.username?.toLowerCase();
+  const redis = createRedis();
+  const auth = await resolveRequestAuth(req, redis, { required: true });
+  if (auth.error || !auth.user) {
+    logger.response(auth.error?.status ?? 401, Date.now() - startTime);
+    res.status(auth.error?.status ?? 401).json({
+      error: auth.error?.error ?? "Unauthorized - missing credentials",
+    });
+    return;
+  }
 
-  if (!username) {
-    logger.response(400, Date.now() - startTime);
-    res.status(400).json({ error: "Username is required" });
+  const body = (req.body || {}) as SwitchRequest;
+  const { previousRoomId, nextRoomId } = body;
+  const claimedUsername = body.username?.toLowerCase();
+  const username = auth.user.username;
+
+  if (claimedUsername && claimedUsername !== username) {
+    logger.warn("Username mismatch in presence switch body", {
+      claimedUsername,
+      authenticatedUsername: username,
+    });
+    logger.response(403, Date.now() - startTime);
+    res.status(403).json({ error: "Forbidden - username mismatch" });
     return;
   }
 
@@ -100,6 +118,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       if (!roomData) {
         logger.response(404, Date.now() - startTime);
         res.status(404).json({ error: "Next room not found" });
+        return;
+      }
+
+      const accessError = getRoomWriteAccessError(roomData, auth.user);
+      if (accessError) {
+        logger.response(accessError.status, Date.now() - startTime);
+        res.status(accessError.status).json({ error: accessError.error });
         return;
       }
 
