@@ -25,7 +25,9 @@ bun run dev:vercel     # Optional: Vercel dev server (parity/debugging only)
 bun run build      # TypeScript compile + Vite build
 
 # Testing
-bun run test       # Run all API tests (requires server running)
+bun test           # Run all tests via bun:test (API tests require server running)
+bun run test:unit  # Unit/wiring tests only (no server needed)
+bun run test:api   # API integration tests only
 ```
 
 ### Running the Application
@@ -93,19 +95,62 @@ bun run scripts/machine-translate.ts
 
 ## Testing
 
-For simple tests (build verification):
+Tests use **Bun's native test runner** (`bun:test`). Test files live in `tests/` and use the `.test.ts` extension.
+
+### Running Tests
+
 ```bash
-bun run build
+# Run all tests (unit + API integration — requires API server running)
+bun test
+
+# Run only unit/wiring tests (no server required)
+bun test tests/test-chat-notification-logic.test.ts tests/test-pusher-client-refcount.test.ts
+
+# Run a single suite
+bun test tests/test-admin.test.ts
+
+# Run API integration tests only (requires server)
+bun run test:api
 ```
 
-For running live server (when API or UI testing is needed):
+### Targeted Suite Commands (package.json)
+
+| Command | What it runs |
+|---------|-------------|
+| `bun run test` | All tests (`bun test`) |
+| `bun run test:api` | All API integration suites |
+| `bun run test:unit` | All unit/wiring suites |
+| `bun run test:new-api` | Auth, rooms, messages, presence |
+| `bun run test:admin` | Admin endpoint |
+| `bun run test:song` | Songs endpoints |
+| `bun run test:ai` | AI endpoints (chat, applet-ai, ie-generate, ryo-reply) |
+| `bun run test:media` | audio-transcribe, youtube-search |
+| `bun run test:chat-wiring` | All chat wiring suites |
+| `bun run test:pusher-regression` | All Pusher-related suites |
+| `bun run test:chat-regression` | Chat + Pusher regression suites |
+
+### API Integration Tests
+
+API integration tests require the standalone API server to be running:
+
 ```bash
 # Terminal 1
 bun run api:dev
 
 # Terminal 2
-bun run dev:standalone
+bun test                    # all tests
+bun run test:api            # API integration only
+bun test tests/test-admin.test.ts  # single suite
 ```
+
+### Writing Tests
+
+Tests use `describe`/`test`/`expect` from `bun:test`. Shared HTTP helpers are in `tests/test-utils.ts`:
+
+- `fetchWithOrigin(url, opts)` — adds `Origin: http://localhost:3000`
+- `fetchWithAuth(url, username, token, opts)` — adds Origin + Authorization + X-Username
+- `makeRateLimitBypassHeaders()` — random IP to avoid rate limits in tests
+- `ensureUserAuth(username, password)` — register-or-login, returns token
 
 ### Manual Testing Guidelines
 

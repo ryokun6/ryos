@@ -1,20 +1,14 @@
-#!/usr/bin/env bun
+import { describe, test, expect, beforeAll } from "bun:test";
+
+import {
+  BASE_URL,
+  fetchWithOrigin,
+  fetchWithAuth,
+} from "./test-utils";
 /**
  * Tests for AI-related API endpoints
  * Tests: /api/chat, /api/applet-ai, /api/ie-generate, /api/ai/ryo-reply
  */
-
-import {
-  BASE_URL,
-  runTest,
-  assert,
-  assertEq,
-  printSummary,
-  clearResults,
-  fetchWithOrigin,
-  fetchWithAuth,
-  section,
-} from "./test-utils";
 
 // ============================================================================
 // /api/chat Tests
@@ -24,14 +18,14 @@ async function testChatMethodNotAllowed(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/chat`, {
     method: "GET",
   });
-  assertEq(res.status, 405, `Expected 405, got ${res.status}`);
+  expect(res.status).toBe(405);
 }
 
 async function testChatOptionsRequest(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/chat`, {
     method: "OPTIONS",
   });
-  assert(res.status === 200 || res.status === 204, `Expected 200 or 204, got ${res.status}`);
+  expect(res.status === 200 || res.status === 204).toBeTruthy();
 }
 
 async function testChatMissingMessages(): Promise<void> {
@@ -40,10 +34,7 @@ async function testChatMissingMessages(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({}),
   });
-  assert(
-    res.status === 400 || res.status === 429,
-    `Expected 400 or 429, got ${res.status}`
-  );
+  expect(res.status === 400 || res.status === 429).toBeTruthy();
 }
 
 async function testChatInvalidMessagesFormat(): Promise<void> {
@@ -52,10 +43,7 @@ async function testChatInvalidMessagesFormat(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages: "not an array" }),
   });
-  assert(
-    res.status === 400 || res.status === 429,
-    `Expected 400 or 429, got ${res.status}`
-  );
+  expect(res.status === 400 || res.status === 429).toBeTruthy();
 }
 
 async function testChatInvalidModel(): Promise<void> {
@@ -69,10 +57,7 @@ async function testChatInvalidModel(): Promise<void> {
   });
   // Rate limiting is checked before model validation, so may get 429 first
   // Otherwise expect 400 for invalid model
-  assert(
-    res.status === 400 || res.status === 429,
-    `Expected 400 or 429, got ${res.status}`
-  );
+  expect(res.status === 400 || res.status === 429).toBeTruthy();
 }
 
 async function testChatInvalidJson(): Promise<void> {
@@ -81,7 +66,7 @@ async function testChatInvalidJson(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: "not valid json{",
   });
-  assert(res.status >= 400, `Expected error status, got ${res.status}`);
+  expect(res.status >= 400).toBeTruthy();
 }
 
 async function testChatInvalidAuthToken(): Promise<void> {
@@ -97,7 +82,7 @@ async function testChatInvalidAuthToken(): Promise<void> {
       }),
     }
   );
-  assertEq(res.status, 401, `Expected 401, got ${res.status}`);
+  expect(res.status).toBe(401);
 }
 
 async function testChatBasicRequest(): Promise<void> {
@@ -110,13 +95,10 @@ async function testChatBasicRequest(): Promise<void> {
   });
   if (res.status === 200) {
     const contentType = res.headers.get("content-type") || "";
-    assert(
-      contentType.includes("text/") || contentType.includes("stream"),
-      "Expected streaming content type"
-    );
+    expect(contentType).toContain("text/") || contentType.includes("stream");
   } else if (res.status === 429) {
     const data = await res.json();
-    assert(data.error === "rate_limit_exceeded", "Expected rate limit error");
+    expect(data.error === "rate_limit_exceeded").toBeTruthy();
   } else {
     throw new Error(`Unexpected status: ${res.status}`);
   }
@@ -130,10 +112,7 @@ async function testChatWithModelQuery(): Promise<void> {
       messages: [{ role: "user", content: "Say hi" }],
     }),
   });
-  assert(
-    res.status === 200 || res.status === 429,
-    `Expected 200 or 429, got ${res.status}`
-  );
+  expect(res.status === 200 || res.status === 429).toBeTruthy();
 }
 
 // ============================================================================
@@ -144,14 +123,14 @@ async function testAppletAiMethodNotAllowed(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/applet-ai`, {
     method: "GET",
   });
-  assertEq(res.status, 405, `Expected 405, got ${res.status}`);
+  expect(res.status).toBe(405);
 }
 
 async function testAppletAiOptionsRequest(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/applet-ai`, {
     method: "OPTIONS",
   });
-  assert(res.status === 200 || res.status === 204, `Expected 200 or 204, got ${res.status}`);
+  expect(res.status === 200 || res.status === 204).toBeTruthy();
 }
 
 async function testAppletAiMissingPromptAndMessages(): Promise<void> {
@@ -160,7 +139,7 @@ async function testAppletAiMissingPromptAndMessages(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({}),
   });
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
+  expect(res.status).toBe(400);
 }
 
 async function testAppletAiEmptyPrompt(): Promise<void> {
@@ -169,7 +148,7 @@ async function testAppletAiEmptyPrompt(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt: "" }),
   });
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
+  expect(res.status).toBe(400);
 }
 
 async function testAppletAiEmptyMessagesArray(): Promise<void> {
@@ -178,7 +157,7 @@ async function testAppletAiEmptyMessagesArray(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages: [] }),
   });
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
+  expect(res.status).toBe(400);
 }
 
 async function testAppletAiPromptTooLong(): Promise<void> {
@@ -187,7 +166,7 @@ async function testAppletAiPromptTooLong(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt: "a".repeat(5000) }),
   });
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
+  expect(res.status).toBe(400);
 }
 
 async function testAppletAiTooManyMessages(): Promise<void> {
@@ -200,7 +179,7 @@ async function testAppletAiTooManyMessages(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages }),
   });
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
+  expect(res.status).toBe(400);
 }
 
 async function testAppletAiInvalidJson(): Promise<void> {
@@ -209,7 +188,7 @@ async function testAppletAiInvalidJson(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: "not valid json{",
   });
-  assert(res.status >= 400, `Expected error status, got ${res.status}`);
+  expect(res.status >= 400).toBeTruthy();
 }
 
 async function testAppletAiInvalidAuthToken(): Promise<void> {
@@ -223,7 +202,7 @@ async function testAppletAiInvalidAuthToken(): Promise<void> {
       body: JSON.stringify({ prompt: "Hello" }),
     }
   );
-  assertEq(res.status, 401, `Expected 401, got ${res.status}`);
+  expect(res.status).toBe(401);
 }
 
 async function testAppletAiBasicTextRequest(): Promise<void> {
@@ -234,11 +213,11 @@ async function testAppletAiBasicTextRequest(): Promise<void> {
   });
   if (res.status === 200) {
     const data = await res.json();
-    assert(typeof data.reply === "string", "Expected reply string in response");
-    assert(data.reply.length > 0, "Expected non-empty reply");
+    expect(typeof data.reply === "string").toBeTruthy();
+    expect(data.reply.length > 0).toBeTruthy();
   } else if (res.status === 429) {
     const data = await res.json();
-    assert(data.error === "rate_limit_exceeded", "Expected rate limit error");
+    expect(data.error === "rate_limit_exceeded").toBeTruthy();
   } else {
     throw new Error(`Unexpected status: ${res.status}`);
   }
@@ -253,10 +232,7 @@ async function testAppletAiWithContext(): Promise<void> {
       context: "You are a calculator assistant.",
     }),
   });
-  assert(
-    res.status === 200 || res.status === 429,
-    `Expected 200 or 429, got ${res.status}`
-  );
+  expect(res.status === 200 || res.status === 429).toBeTruthy();
 }
 
 async function testAppletAiWithMessagesArray(): Promise<void> {
@@ -271,10 +247,7 @@ async function testAppletAiWithMessagesArray(): Promise<void> {
       ],
     }),
   });
-  assert(
-    res.status === 200 || res.status === 429,
-    `Expected 200 or 429, got ${res.status}`
-  );
+  expect(res.status === 200 || res.status === 429).toBeTruthy();
 }
 
 async function testAppletAiInvalidImageModeWithoutPrompt(): Promise<void> {
@@ -283,7 +256,7 @@ async function testAppletAiInvalidImageModeWithoutPrompt(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ mode: "image" }),
   });
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
+  expect(res.status).toBe(400);
 }
 
 async function testAppletAiImagesWithoutImageMode(): Promise<void> {
@@ -297,7 +270,7 @@ async function testAppletAiImagesWithoutImageMode(): Promise<void> {
       images: [{ mediaType: "image/png", data: tinyPng }],
     }),
   });
-  assertEq(res.status, 400, `Expected 400, got ${res.status}`);
+  expect(res.status).toBe(400);
 }
 
 async function testAppletAiRateLimitHeaders(): Promise<void> {
@@ -308,11 +281,11 @@ async function testAppletAiRateLimitHeaders(): Promise<void> {
   });
   if (res.status === 429) {
     const retryAfter = res.headers.get("Retry-After");
-    assert(retryAfter !== null, "Expected Retry-After header on rate limit");
+    expect(retryAfter !== null).toBeTruthy();
     const limitHeader = res.headers.get("X-RateLimit-Limit");
-    assert(limitHeader !== null, "Expected X-RateLimit-Limit header");
+    expect(limitHeader !== null).toBeTruthy();
   }
-  assert(true, "Rate limit headers check passed");
+  expect(true).toBeTruthy();
 }
 
 // ============================================================================
@@ -323,14 +296,14 @@ async function testIeGenerateMethodNotAllowed(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/ie-generate`, {
     method: "GET",
   });
-  assertEq(res.status, 405, `Expected 405, got ${res.status}`);
+  expect(res.status).toBe(405);
 }
 
 async function testIeGenerateOptionsRequest(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/ie-generate`, {
     method: "OPTIONS",
   });
-  assert(res.status === 200 || res.status === 204, `Expected 200 or 204, got ${res.status}`);
+  expect(res.status === 200 || res.status === 204).toBeTruthy();
 }
 
 async function testIeGenerateInvalidMessagesFormat(): Promise<void> {
@@ -340,10 +313,7 @@ async function testIeGenerateInvalidMessagesFormat(): Promise<void> {
     body: JSON.stringify({ messages: "not an array" }),
   });
   // Rate limiting may be checked before input validation, so 429 is also acceptable
-  assert(
-    res.status === 400 || res.status === 429,
-    `Expected 400 or 429, got ${res.status}`
-  );
+  expect(res.status === 400 || res.status === 429).toBeTruthy();
 }
 
 async function testIeGenerateInvalidModel(): Promise<void> {
@@ -358,10 +328,7 @@ async function testIeGenerateInvalidModel(): Promise<void> {
     }),
   });
   // Rate limiting may be checked before model validation, so 429 is also acceptable
-  assert(
-    res.status === 400 || res.status === 429,
-    `Expected 400 or 429, got ${res.status}`
-  );
+  expect(res.status === 400 || res.status === 429).toBeTruthy();
 }
 
 async function testIeGenerateInvalidJson(): Promise<void> {
@@ -370,7 +337,7 @@ async function testIeGenerateInvalidJson(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: "not valid json{",
   });
-  assert(res.status >= 400, `Expected error status, got ${res.status}`);
+  expect(res.status >= 400).toBeTruthy();
 }
 
 async function testIeGenerateBasicRequest(): Promise<void> {
@@ -383,13 +350,10 @@ async function testIeGenerateBasicRequest(): Promise<void> {
   });
   if (res.status === 200) {
     const contentType = res.headers.get("content-type") || "";
-    assert(
-      contentType.includes("text/") || contentType.includes("stream"),
-      "Expected streaming content type"
-    );
+    expect(contentType).toContain("text/") || contentType.includes("stream");
   } else if (res.status === 429) {
     const data = await res.json();
-    assert(data.error === "rate_limit_exceeded", "Expected rate limit error");
+    expect(data.error === "rate_limit_exceeded").toBeTruthy();
   } else {
     throw new Error(`Unexpected status: ${res.status}`);
   }
@@ -405,10 +369,7 @@ async function testIeGenerateWithBodyParams(): Promise<void> {
       messages: [{ role: "user", content: "Generate a futuristic page" }],
     }),
   });
-  assert(
-    res.status === 200 || res.status === 429,
-    `Expected 200 or 429, got ${res.status}`
-  );
+  expect(res.status === 200 || res.status === 429).toBeTruthy();
 }
 
 async function testIeGenerateRateLimitBurst(): Promise<void> {
@@ -424,11 +385,11 @@ async function testIeGenerateRateLimitBurst(): Promise<void> {
   });
   if (res.status === 429) {
     const data = await res.json();
-    assert(data.error === "rate_limit_exceeded", "Expected rate_limit_exceeded error");
-    assert(typeof data.scope === "string", "Expected scope in rate limit response");
-    assert(typeof data.limit === "number", "Expected limit in rate limit response");
+    expect(data.error === "rate_limit_exceeded").toBeTruthy();
+    expect(typeof data.scope === "string").toBeTruthy();
+    expect(typeof data.limit === "number").toBeTruthy();
   }
-  assert(true, "Rate limit structure check passed");
+  expect(true).toBeTruthy();
 }
 
 // ============================================================================
@@ -439,14 +400,14 @@ async function testRyoReplyMethodNotAllowed(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/ai/ryo-reply`, {
     method: "GET",
   });
-  assertEq(res.status, 405, `Expected 405, got ${res.status}`);
+  expect(res.status).toBe(405);
 }
 
 async function testRyoReplyOptionsRequest(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/ai/ryo-reply`, {
     method: "OPTIONS",
   });
-  assert(res.status === 200 || res.status === 204, `Expected 200 or 204, got ${res.status}`);
+  expect(res.status === 200 || res.status === 204).toBeTruthy();
 }
 
 async function testRyoReplyMissingAuth(): Promise<void> {
@@ -455,7 +416,7 @@ async function testRyoReplyMissingAuth(): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ roomId: "test-room", prompt: "Hello" }),
   });
-  assertEq(res.status, 401, `Expected 401, got ${res.status}`);
+  expect(res.status).toBe(401);
 }
 
 async function testRyoReplyInvalidAuthToken(): Promise<void> {
@@ -469,7 +430,7 @@ async function testRyoReplyInvalidAuthToken(): Promise<void> {
       body: JSON.stringify({ roomId: "test-room", prompt: "Hello" }),
     }
   );
-  assertEq(res.status, 401, `Expected 401, got ${res.status}`);
+  expect(res.status).toBe(401);
 }
 
 async function testRyoReplyMissingRoomId(): Promise<void> {
@@ -484,7 +445,7 @@ async function testRyoReplyMissingRoomId(): Promise<void> {
     }
   );
   // Will fail auth first (401) since token is invalid, which is expected
-  assert(res.status === 400 || res.status === 401, `Expected 400 or 401, got ${res.status}`);
+  expect(res.status === 400 || res.status === 401).toBeTruthy();
 }
 
 async function testRyoReplyMissingPrompt(): Promise<void> {
@@ -499,7 +460,7 @@ async function testRyoReplyMissingPrompt(): Promise<void> {
     }
   );
   // Will fail auth first (401) since token is invalid, which is expected
-  assert(res.status === 400 || res.status === 401, `Expected 400 or 401, got ${res.status}`);
+  expect(res.status === 400 || res.status === 401).toBeTruthy();
 }
 
 async function testRyoReplyInvalidRoomId(): Promise<void> {
@@ -514,7 +475,7 @@ async function testRyoReplyInvalidRoomId(): Promise<void> {
     }
   );
   // Will fail auth first (401) or validation (400)
-  assert(res.status === 400 || res.status === 401, `Expected 400 or 401, got ${res.status}`);
+  expect(res.status === 400 || res.status === 401).toBeTruthy();
 }
 
 async function testRyoReplyInvalidJson(): Promise<void> {
@@ -528,101 +489,179 @@ async function testRyoReplyInvalidJson(): Promise<void> {
       body: "not valid json{",
     }
   );
-  assert(res.status >= 400, `Expected error status, got ${res.status}`);
+  expect(res.status >= 400).toBeTruthy();
 }
 
 // ============================================================================
 // Main
 // ============================================================================
 
-export async function runAiTests(): Promise<{ passed: number; failed: number }> {
-  console.log(section("AI Endpoints"));
-  clearResults();
-
-  // --- /api/chat ---
-  console.log("\n  /api/chat - HTTP Methods\n");
-  await runTest("GET method not allowed", testChatMethodNotAllowed);
-  await runTest("OPTIONS request (CORS preflight)", testChatOptionsRequest);
-
-  console.log("\n  /api/chat - Input Validation\n");
-  await runTest("Missing messages", testChatMissingMessages);
-  await runTest("Invalid messages format", testChatInvalidMessagesFormat);
-  await runTest("Invalid model", testChatInvalidModel);
-  await runTest("Invalid JSON", testChatInvalidJson);
-
-  console.log("\n  /api/chat - Authentication\n");
-  await runTest("Invalid auth token", testChatInvalidAuthToken);
-
-  console.log("\n  /api/chat - Generation\n");
-  await runTest("Basic chat request", testChatBasicRequest);
-  await runTest("Chat with model query param", testChatWithModelQuery);
-
-  // --- /api/applet-ai ---
-  console.log("\n  /api/applet-ai - HTTP Methods\n");
-  await runTest("GET method not allowed", testAppletAiMethodNotAllowed);
-  await runTest("OPTIONS request (CORS preflight)", testAppletAiOptionsRequest);
-
-  console.log("\n  /api/applet-ai - Input Validation\n");
-  await runTest("Missing prompt and messages", testAppletAiMissingPromptAndMessages);
-  await runTest("Empty prompt", testAppletAiEmptyPrompt);
-  await runTest("Empty messages array", testAppletAiEmptyMessagesArray);
-  await runTest("Prompt too long", testAppletAiPromptTooLong);
-  await runTest("Too many messages", testAppletAiTooManyMessages);
-  await runTest("Invalid JSON", testAppletAiInvalidJson);
-  await runTest("Invalid image mode without prompt", testAppletAiInvalidImageModeWithoutPrompt);
-  await runTest("Images without image mode", testAppletAiImagesWithoutImageMode);
-
-  console.log("\n  /api/applet-ai - Authentication\n");
-  await runTest("Invalid auth token", testAppletAiInvalidAuthToken);
-
-  console.log("\n  /api/applet-ai - Generation\n");
-  await runTest("Basic text request", testAppletAiBasicTextRequest);
-  await runTest("Request with context", testAppletAiWithContext);
-  await runTest("Request with messages array", testAppletAiWithMessagesArray);
-
-  console.log("\n  /api/applet-ai - Rate Limiting\n");
-  await runTest("Rate limit headers", testAppletAiRateLimitHeaders);
-
-  // --- /api/ie-generate ---
-  console.log("\n  /api/ie-generate - HTTP Methods\n");
-  await runTest("GET method not allowed", testIeGenerateMethodNotAllowed);
-  await runTest("OPTIONS request (CORS preflight)", testIeGenerateOptionsRequest);
-
-  console.log("\n  /api/ie-generate - Input Validation\n");
-  await runTest("Invalid messages format", testIeGenerateInvalidMessagesFormat);
-  await runTest("Invalid model", testIeGenerateInvalidModel);
-  await runTest("Invalid JSON", testIeGenerateInvalidJson);
-
-  console.log("\n  /api/ie-generate - Generation\n");
-  await runTest("Basic IE generate request", testIeGenerateBasicRequest);
-  await runTest("IE generate with body params", testIeGenerateWithBodyParams);
-
-  console.log("\n  /api/ie-generate - Rate Limiting\n");
-  await runTest("Rate limit response structure", testIeGenerateRateLimitBurst);
-
-  // --- /api/ai/ryo-reply ---
-  console.log("\n  /api/ai/ryo-reply - HTTP Methods\n");
-  await runTest("GET method not allowed", testRyoReplyMethodNotAllowed);
-  await runTest("OPTIONS request (CORS preflight)", testRyoReplyOptionsRequest);
-
-  console.log("\n  /api/ai/ryo-reply - Authentication\n");
-  await runTest("Missing auth credentials", testRyoReplyMissingAuth);
-  await runTest("Invalid auth token", testRyoReplyInvalidAuthToken);
-
-  console.log("\n  /api/ai/ryo-reply - Input Validation\n");
-  await runTest("Missing roomId", testRyoReplyMissingRoomId);
-  await runTest("Missing prompt", testRyoReplyMissingPrompt);
-  await runTest("Invalid roomId format", testRyoReplyInvalidRoomId);
-  await runTest("Invalid JSON", testRyoReplyInvalidJson);
-
-  return printSummary();
-}
-
-if (import.meta.main) {
-  runAiTests()
-    .then(({ failed }) => process.exit(failed > 0 ? 1 : 0))
-    .catch((error) => {
-      console.error("Test runner error:", error);
-      process.exit(1);
+describe("Ai", () => {
+  describe("AI Endpoints - /api/chat - HTTP Methods", () => {
+    test("GET method not allowed", async () => {
+      await testChatMethodNotAllowed();
     });
-}
+    test("OPTIONS request (CORS preflight)", async () => {
+      await testChatOptionsRequest();
+    });
+  });
+
+  describe("AI Endpoints - /api/chat - Input Validation", () => {
+    test("Missing messages", async () => {
+      await testChatMissingMessages();
+    });
+    test("Invalid messages format", async () => {
+      await testChatInvalidMessagesFormat();
+    });
+    test("Invalid model", async () => {
+      await testChatInvalidModel();
+    });
+    test("Invalid JSON", async () => {
+      await testChatInvalidJson();
+    });
+  });
+
+  describe("AI Endpoints - /api/chat - Authentication", () => {
+    test("Invalid auth token", async () => {
+      await testChatInvalidAuthToken();
+    });
+  });
+
+  describe("AI Endpoints - /api/chat - Generation", () => {
+    test("Basic chat request", async () => {
+      await testChatBasicRequest();
+    });
+    test("Chat with model query param", async () => {
+      await testChatWithModelQuery();
+    });
+  });
+
+  describe("AI Endpoints - /api/applet-ai - HTTP Methods", () => {
+    test("GET method not allowed", async () => {
+      await testAppletAiMethodNotAllowed();
+    });
+    test("OPTIONS request (CORS preflight)", async () => {
+      await testAppletAiOptionsRequest();
+    });
+  });
+
+  describe("AI Endpoints - /api/applet-ai - Input Validation", () => {
+    test("Missing prompt and messages", async () => {
+      await testAppletAiMissingPromptAndMessages();
+    });
+    test("Empty prompt", async () => {
+      await testAppletAiEmptyPrompt();
+    });
+    test("Empty messages array", async () => {
+      await testAppletAiEmptyMessagesArray();
+    });
+    test("Prompt too long", async () => {
+      await testAppletAiPromptTooLong();
+    });
+    test("Too many messages", async () => {
+      await testAppletAiTooManyMessages();
+    });
+    test("Invalid JSON", async () => {
+      await testAppletAiInvalidJson();
+    });
+    test("Invalid image mode without prompt", async () => {
+      await testAppletAiInvalidImageModeWithoutPrompt();
+    });
+    test("Images without image mode", async () => {
+      await testAppletAiImagesWithoutImageMode();
+    });
+  });
+
+  describe("AI Endpoints - /api/applet-ai - Authentication", () => {
+    test("Invalid auth token", async () => {
+      await testAppletAiInvalidAuthToken();
+    });
+  });
+
+  describe("AI Endpoints - /api/applet-ai - Generation", () => {
+    test("Basic text request", async () => {
+      await testAppletAiBasicTextRequest();
+    });
+    test("Request with context", async () => {
+      await testAppletAiWithContext();
+    });
+    test("Request with messages array", async () => {
+      await testAppletAiWithMessagesArray();
+    });
+  });
+
+  describe("AI Endpoints - /api/applet-ai - Rate Limiting", () => {
+    test("Rate limit headers", async () => {
+      await testAppletAiRateLimitHeaders();
+    });
+  });
+
+  describe("AI Endpoints - /api/ie-generate - HTTP Methods", () => {
+    test("GET method not allowed", async () => {
+      await testIeGenerateMethodNotAllowed();
+    });
+    test("OPTIONS request (CORS preflight)", async () => {
+      await testIeGenerateOptionsRequest();
+    });
+  });
+
+  describe("AI Endpoints - /api/ie-generate - Input Validation", () => {
+    test("Invalid messages format", async () => {
+      await testIeGenerateInvalidMessagesFormat();
+    });
+    test("Invalid model", async () => {
+      await testIeGenerateInvalidModel();
+    });
+    test("Invalid JSON", async () => {
+      await testIeGenerateInvalidJson();
+    });
+  });
+
+  describe("AI Endpoints - /api/ie-generate - Generation", () => {
+    test("Basic IE generate request", async () => {
+      await testIeGenerateBasicRequest();
+    });
+    test("IE generate with body params", async () => {
+      await testIeGenerateWithBodyParams();
+    });
+  });
+
+  describe("AI Endpoints - /api/ie-generate - Rate Limiting", () => {
+    test("Rate limit response structure", async () => {
+      await testIeGenerateRateLimitBurst();
+    });
+  });
+
+  describe("AI Endpoints - /api/ai/ryo-reply - HTTP Methods", () => {
+    test("GET method not allowed", async () => {
+      await testRyoReplyMethodNotAllowed();
+    });
+    test("OPTIONS request (CORS preflight)", async () => {
+      await testRyoReplyOptionsRequest();
+    });
+  });
+
+  describe("AI Endpoints - /api/ai/ryo-reply - Authentication", () => {
+    test("Missing auth credentials", async () => {
+      await testRyoReplyMissingAuth();
+    });
+    test("Invalid auth token", async () => {
+      await testRyoReplyInvalidAuthToken();
+    });
+  });
+
+  describe("AI Endpoints - /api/ai/ryo-reply - Input Validation", () => {
+    test("Missing roomId", async () => {
+      await testRyoReplyMissingRoomId();
+    });
+    test("Missing prompt", async () => {
+      await testRyoReplyMissingPrompt();
+    });
+    test("Invalid roomId format", async () => {
+      await testRyoReplyInvalidRoomId();
+    });
+    test("Invalid JSON", async () => {
+      await testRyoReplyInvalidJson();
+    });
+  });
+});
