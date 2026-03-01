@@ -5,16 +5,7 @@
  * Requires authentication (Bearer token + X-Username).
  */
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createRedis } from "../_utils/redis.js";
-import {
-  extractAuthNormalized,
-  validateAuth,
-} from "../_utils/auth/index.js";
-import {
-  setCorsHeaders,
-  handlePreflight,
-} from "../_utils/_cors.js";
+import { apiHandler } from "../_utils/api-handler.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 10;
@@ -31,59 +22,39 @@ interface BackupMeta {
   createdAt: string;
 }
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-): Promise<void> {
-  // Handle CORS preflight
-  if (handlePreflight(req, res, { methods: ["GET", "OPTIONS"] })) {
-    return;
-  }
+export default apiHandler(
+  {
+    methods: ["GET"],
+    auth: "required",
+  },
+  async ({ res, redis, user }): Promise<void> => {
+    try {
+      const username = user?.username || "";
+      const rawMeta = await redis.get<string | BackupMeta>(metaKey(username));
 
-  const origin = req.headers.origin as string | undefined;
-  setCorsHeaders(res, origin, { methods: ["GET", "OPTIONS"] });
+      if (!rawMeta) {
+        res.status(200).json({
+          hasBackup: false,
+          metadata: null,
+        });
+        return;
+      }
 
-  if (req.method !== "GET") {
-    res.status(405).json({ error: "Method not allowed" });
-    return;
-  }
+      const meta: BackupMeta =
+        typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta;
 
-  const redis = createRedis();
-
-  // Extract and validate auth
-  const { username, token } = extractAuthNormalized(req);
-  const authResult = await validateAuth(redis, username, token);
-
-  if (!authResult.valid || !username) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-
-  try {
-    const rawMeta = await redis.get<string | BackupMeta>(metaKey(username));
-
-    if (!rawMeta) {
       res.status(200).json({
-        hasBackup: false,
-        metadata: null,
+        hasBackup: true,
+        metadata: {
+          timestamp: meta.timestamp,
+          version: meta.version,
+          totalSize: meta.totalSize,
+          createdAt: meta.createdAt,
+        },
       });
-      return;
+    } catch (error) {
+      console.error("Error checking backup status:", error);
+      res.status(500).json({ error: "Failed to check backup status" });
     }
-
-    const meta: BackupMeta =
-      typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta;
-
-    res.status(200).json({
-      hasBackup: true,
-      metadata: {
-        timestamp: meta.timestamp,
-        version: meta.version,
-        totalSize: meta.totalSize,
-        createdAt: meta.createdAt,
-      },
-    });
-  } catch (error) {
-    console.error("Error checking backup status:", error);
-    res.status(500).json({ error: "Failed to check backup status" });
   }
-}
+);

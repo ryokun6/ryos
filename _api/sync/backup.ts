@@ -8,18 +8,11 @@
  * Requires authentication (Bearer token + X-Username).
  */
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelResponse } from "@vercel/node";
+import type { Redis } from "@upstash/redis";
 import { del, head } from "@vercel/blob";
-import { createRedis } from "../_utils/redis.js";
-import {
-  extractAuthNormalized,
-  validateAuth,
-  USER_TTL_SECONDS,
-} from "../_utils/auth/index.js";
-import {
-  setCorsHeaders,
-  handlePreflight,
-} from "../_utils/_cors.js";
+import { USER_TTL_SECONDS } from "../_utils/auth/index.js";
+import { apiHandler } from "../_utils/api-handler.js";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -40,60 +33,48 @@ interface BackupMeta {
   createdAt: string;
 }
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-): Promise<void> {
-  // Handle CORS preflight
-  if (
-    handlePreflight(req, res, {
-      methods: ["GET", "POST", "DELETE", "OPTIONS"],
-    })
-  ) {
-    return;
-  }
-
-  const origin = req.headers.origin as string | undefined;
-  setCorsHeaders(res, origin, {
-    methods: ["GET", "POST", "DELETE", "OPTIONS"],
-  });
-
-  const redis = createRedis();
-
-  // Extract and validate auth
-  const { username, token } = extractAuthNormalized(req);
-  const authResult = await validateAuth(redis, username, token);
-
-  if (!authResult.valid || !username) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-
-  if (req.method === "POST") {
-    await handleSaveMetadata(req, res, redis, username);
-  } else if (req.method === "GET") {
-    await handleDownload(res, redis, username);
-  } else if (req.method === "DELETE") {
-    await handleDelete(res, redis, username);
-  } else {
-    res.status(405).json({ error: "Method not allowed" });
-  }
+interface SaveBackupMetadataBody {
+  blobUrl: string;
+  timestamp: string;
+  version: number;
+  totalSize: number;
 }
 
-async function handleSaveMetadata(
-  req: VercelRequest,
-  res: VercelResponse,
-  redis: ReturnType<typeof createRedis>,
-  username: string
-): Promise<void> {
-  // Parse body - expects metadata from client after direct blob upload
-  const body = req.body as {
-    blobUrl: string;
-    timestamp: string;
-    version: number;
-    totalSize: number;
-  } | null;
+export default apiHandler<SaveBackupMetadataBody>(
+  {
+    methods: ["GET", "POST", "DELETE"],
+    auth: "required",
+    parseJsonBody: true,
+  },
+  async ({ req, res, redis, user, body }): Promise<void> => {
+    const username = user?.username || "";
+    const method = (req.method || "GET").toUpperCase();
 
+    if (method === "POST") {
+      await handleSaveMetadata(res, redis, username, body);
+      return;
+    }
+
+    if (method === "GET") {
+      await handleDownload(res, redis, username);
+      return;
+    }
+
+    if (method === "DELETE") {
+      await handleDelete(res, redis, username);
+      return;
+    }
+
+    res.status(405).json({ error: "Method not allowed" });
+  }
+);
+
+async function handleSaveMetadata(
+  res: VercelResponse,
+  redis: Redis,
+  username: string,
+  body: SaveBackupMetadataBody | null
+): Promise<void> {
   if (!body?.blobUrl || !body?.timestamp) {
     res.status(400).json({ error: "Missing required fields: blobUrl, timestamp" });
     return;
@@ -157,7 +138,7 @@ async function handleSaveMetadata(
 
 async function handleDownload(
   res: VercelResponse,
-  redis: ReturnType<typeof createRedis>,
+  redis: Redis,
   username: string
 ): Promise<void> {
   try {
@@ -213,7 +194,7 @@ async function handleDownload(
 
 async function handleDelete(
   res: VercelResponse,
-  redis: ReturnType<typeof createRedis>,
+  redis: Redis,
   username: string
 ): Promise<void> {
   try {
