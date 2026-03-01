@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -299,266 +305,109 @@
     <main class="content">
       <article>
         <h1>ryOS API Design Guide</h1>
-<p>This document outlines the patterns and conventions used in the ryOS API.</p>
+<p>This document outlines the current patterns and conventions used in the ryOS API.</p>
 <h2>Architecture Overview</h2>
-<p>The API uses Vercel serverless functions with Node.js runtime for all endpoints. This provides full Node.js API access including native modules like <code>bcrypt</code> for password hashing.</p>
+<p>The API is implemented as Node.js route handlers under <code>_api/</code>.   The default implementation pattern is the shared <code>apiHandler</code> wrapper, which centralizes: <ul><li>CORS preflight and response headers</li></ul><ul><li>origin allowlist checks</li><li>method allowlists</li><li>optional JSON body handling</li><li>optional/required auth resolution</li><li>logger setup and consistent fallback error handling</li></ul></p>
+<p>Auth boundaries are unified through <code>request-auth.ts</code>, which enforces paired auth headers.</p>
 <h2>File Structure</h2>
-<pre><code>api/
-├── _utils/                    # Shared utilities (global)
-│   ├── middleware.ts          # Main middleware (consolidated utilities)
-│   ├── redis.ts               # Redis client factory
-│   ├── constants.ts           # Centralized constants
-│   ├── _cors.ts               # CORS handling
-│   ├── _rate-limit.ts         # Rate limiting
-│   ├── _validation.ts         # Input validation
-│   └── auth/                  # Authentication utilities
-│       ├── index.ts           # Main auth exports
-│       ├── _validate.ts       # Token validation
-│       ├── _tokens.ts         # Token management
-│       ├── _extract.ts        # Request auth extraction
-│       ├── _constants.ts      # Auth-specific constants
-│       └── _types.ts          # TypeScript types
-├── auth/                      # Authentication endpoints
-├── rooms/                     # Chat room endpoints
-│   ├── _helpers/              # Room-specific helpers
-│   │   ├── _constants.ts
-│   │   ├── _presence.ts
-│   │   ├── _redis.ts
-│   │   ├── _types.ts
-│   │   └── ...
-│   ├── [id]/                  # Dynamic room routes
-│   └── index.ts               # Room list endpoint
-├── songs/                     # Music library endpoints
-│   ├── _*.ts                  # Song-specific helpers
-│   ├── [id].ts                # Single song endpoint
-│   └── index.ts               # Song list endpoint
-└── ...                        # Other endpoints</code></pre>
+<pre><code>_api/
+├── _utils/
+│   ├── api-handler.ts      # Primary route wrapper
+│   ├── request-auth.ts     # Unified auth extraction + token validation
+│   ├── redis.ts            # Redis client factory
+│   ├── _cors.ts            # Origin policy + CORS helpers
+│   ├── _rate-limit.ts      # Counter-based rate limit utilities
+│   ├── _validation.ts      # Input/profanity/escaping helpers
+│   ├── _ssrf.ts            # Safe URL fetch + SSRF protections
+│   ├── _sse.ts             # SSE stream helpers
+│   ├── _logging.ts         # Request-scoped logger
+│   └── constants.ts        # Shared constants
+├── auth/                   # Auth/session endpoints
+├── rooms/                  # Chat rooms/messages/presence
+├── listen/                 # Listen Together session APIs
+├── songs/                  # Song library + lyric processing
+├── ai/                     # Memory processing + room AI reply
+├── sync/                   # Cloud backup metadata endpoints
+└── ...                     # Other feature routes</code></pre>
 <h3>Naming Conventions</h3>
-<ul><li><code>_helpers/</code> - Domain-specific helper modules (internal to a feature)</li></ul><ul><li><code>_utils/</code> - Global shared utilities</li><li><code>_*.ts</code> - Internal/private helper files (prefixed with underscore)</li><li><code>index.ts</code> - Main entry point for a feature</li><li><code>[param].ts</code> - Dynamic route handlers</li></ul>
+<ul><li><code>_helpers/</code> for domain-specific internal helpers</li></ul><ul><li><code>_utils/</code> for globally shared API utilities</li><li><code>_*.ts</code> files for internal/private modules</li><li><code>index.ts</code> for collection routes</li><li><code>[id].ts</code> and nested dynamic route folders for path params</li></ul>
 <h2>Common Patterns</h2>
 <h3>1. Runtime Declaration</h3>
-<pre><code>// Node.js runtime (standard for all endpoints)
-export const runtime = "nodejs";
-export const maxDuration = 30; // optional timeout in seconds (default 10, max 60)</code></pre>
-<h3>2. Imports from Middleware</h3>
-<pre><code>import {
-  // Redis
-  createRedis,
-  
-  // CORS
-  getEffectiveOrigin,
-  isAllowedOrigin,
-  preflightIfNeeded,
-  
-  // Auth
-  extractAuth,
-  extractAuthNormalized,
-  
-  // Response helpers
-  jsonResponse,
-  errorResponse,
-  successResponse,
-  rateLimitResponse,
-  
-  // Rate limiting
-  getClientIp,
-  checkRateLimit,
-  RATE_LIMITS,
-  
-  // Request helpers
-  parseJsonBody,
-  getQueryParam,
-  
-  // Request context (reduces boilerplate)
-  createRequestContext,
-  
-  // Constants
-  REDIS_PREFIXES,
-  TTL,
-  RATE_LIMIT_TIERS,
-} from "./_utils/middleware.js";</code></pre>
-<h3>3. Basic Handler Structure</h3>
-<pre><code>export default async function handler(req: Request) {
-  const origin = getEffectiveOrigin(req);
-  
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["GET", "POST", "OPTIONS"], origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
+<pre><code>export const runtime = "nodejs";
+export const maxDuration = 30; // endpoint-dependent</code></pre>
+<h3>2. <code>apiHandler</code> Wrapper (Primary Pattern)</h3>
+<pre><code>import { apiHandler } from "../_utils/api-handler.js";
+
+export default apiHandler(
+  {
+    methods: ["GET", "POST"],
+    auth: "optional",         // "none" | "optional" | "required"
+    allowExpiredAuth: false,  // optional
+    parseJsonBody: true,      // optional
+    contentType: "application/json", // optional, null disables default header
+  },
+  async ({ req, res, redis, logger, startTime, origin, user, body }) =&gt; {
+    // business logic
+    logger.response(200, Date.now() - startTime);
+    res.status(200).json({ ok: true });
   }
+);</code></pre>
+<code>apiHandler</code> provides:
+<ul><li><code>OPTIONS</code> handling (<code>204</code>) with endpoint-specific method list</li></ul><ul><li>consistent <code>403</code> for disallowed origins</li><li>consistent <code>405</code> for unsupported methods</li><li>Redis client injection via <code>createRedis()</code></li><li>auth resolution via <code>resolveRequestAuth()</code></li><li>fallback <code>500</code> JSON error guard</li></ul>
+<h3>3. Endpoint Function Signature</h3>
+<p>When using <code>apiHandler</code>, handlers receive: <ul><li><code>req</code>, <code>res</code></li></ul><ul><li><code>redis</code></li><li><code>logger</code>, <code>startTime</code></li><li><code>origin</code></li><li><code>user</code> (<code>null</code> or resolved auth user)</li><li><code>body</code> (<code>null</code> or parsed JSON when <code>parseJsonBody: true</code>)</li></ul></p>
+<h3>4. Auth Boundaries via <code>request-auth</code></h3>
+<code>resolveRequestAuth()</code> enforces a shared policy:
+<ul><li>required auth endpoints need <strong>both</strong> headers:<ul><li><code>Authorization: Bearer &lt;token&gt;</code></li><li><code>X-Username: &lt;username&gt;</code></li></ul></li></ul><ul><li>partial credentials return <code>400</code></li><li>invalid token/username pairs return <code>401</code></li><li>optional-auth endpoints allow anonymous requests, but validate credentials if provided</li></ul>
+<p>For non-<code>apiHandler</code> routes (legacy/multipart), call <code>resolveRequestAuth()</code> directly to keep behavior aligned.</p>
+<h3>5. Rate Limiting</h3>
+<p>Use <code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/_rate-limit.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/_rate-limit.ts</a></code> primitives:</p>
+<pre><code>import * as RateLimit from "../_utils/_rate-limit.js";
+import { getClientIp } from "../_utils/_rate-limit.js";
 
-  // Check origin
-  if (!isAllowedOrigin(origin)) {
-    return errorResponse("Unauthorized", 403, origin);
-  }
-
-  // Method check
-  if (req.method !== "GET" &amp;&amp; req.method !== "POST") {
-    return errorResponse("Method not allowed", 405, origin);
-  }
-
-  // Create Redis client
-  const redis = createRedis();
-
-  try {
-    // Handler logic here
-    return jsonResponse({ data: "example" }, 200, origin);
-  } catch (error) {
-    console.error("Error:", error);
-    return errorResponse("Internal server error", 500, origin);
-  }
-}</code></pre>
-<h3>4. Using Request Context (Recommended for Complex Handlers)</h3>
-<pre><code>export default async function handler(req: Request) {
-  const ctx = await createRequestContext(req, { requireAuth: true });
-  
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    const preflight = preflightIfNeeded(req, ["POST", "OPTIONS"], ctx.origin);
-    if (preflight) return preflight;
-    return new Response(null, { status: 204 });
-  }
-
-  if (!ctx.originAllowed) {
-    return errorResponse("Unauthorized", 403, ctx.origin);
-  }
-
-  if (!ctx.user) {
-    return errorResponse("Authentication required", 401, ctx.origin);
-  }
-
-  ctx.log("Processing request for user", { username: ctx.user.username });
-
-  // Handler logic using ctx.redis, ctx.user, etc.
-}</code></pre>
-<h3>5. Authentication</h3>
-<pre><code>import { validateAuthToken } from "./_utils/auth/index.js";
-
-// Extract and validate auth
-const authHeader = req.headers.get("authorization");
-const usernameHeader = req.headers.get("x-username");
-const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-
-const authResult = await validateAuthToken(redis, usernameHeader, token, {
-  allowExpired: true,  // Allow tokens within grace period
-});
-
-if (!authResult.valid) {
-  return errorResponse("Unauthorized", 401, origin);
-}</code></pre>
-<h3>6. Rate Limiting</h3>
-<pre><code>import { checkRateLimit, RATE_LIMITS } from "./_utils/middleware.js";
-
-// Using preset configurations
-const rlResult = await checkRateLimit(
-  req,
-  RATE_LIMITS.burst("my-endpoint"),
-  user,  // optional authenticated user
-  origin
-);
-
-if (!rlResult.allowed) {
-  return rlResult.error!;
-}
-
-// Or use rateLimitResponse helper
 const ip = getClientIp(req);
-const rlKey = RateLimit.makeKey(["rl", "endpoint", "ip", ip]);
+const key = RateLimit.makeKey(["rl", "feature", "burst", "ip", ip]);
 const result = await RateLimit.checkCounterLimit({
-  key: rlKey,
+  key,
   windowSeconds: 60,
   limit: 30,
 });
 
 if (!result.allowed) {
-  return rateLimitResponse(origin, 30, result.resetSeconds ?? 60);
+  res.setHeader("Retry-After", String(result.resetSeconds));
+  return res.status(429).json({
+    error: "rate_limit_exceeded",
+    limit: result.limit,
+    retryAfter: result.resetSeconds,
+  });
 }</code></pre>
-<h3>7. Response Helpers</h3>
-<pre><code>// Success with data
-return jsonResponse({ items: data }, 200, origin);
+<h3>6. Response & Error Handling</h3>
+<p>The preferred API shape is JSON for standard requests and SSE for streaming endpoints. <ul><li>success: explicit payloads (<code>{ success: true }</code>, <code>{ data: ... }</code>, etc.)</li></ul><ul><li>client errors: <code>400/401/403/404/405/429</code> with JSON <code>{ error: "..." }</code></li><li>server errors: <code>500</code> with JSON <code>{ error: "..." }</code></li></ul></p>
+<p>For SSE endpoints, set stream headers explicitly and send structured events (<code>start</code>, <code>line</code>, <code>complete</code>, <code>error</code>, etc.).</p>
+<h3>7. Manual Handlers (When Needed)</h3>
+<p>Some endpoints intentionally keep explicit handlers (for example multipart uploads such as <code>/api/audio-transcribe</code>).</p>
+<p>When writing a manual handler, still mirror shared behavior: <ul><li><code>getEffectiveOrigin()</code> + <code>isAllowedOrigin()</code> + <code>setCorsHeaders()</code></li></ul><ul><li>method checks and <code>OPTIONS</code> handling</li><li><code>initLogger()</code> + status timing logs</li><li><code>resolveRequestAuth()</code> for authenticated routes</li></ul></p>
+<h3>8. Logging</h3>
+<p>Use request-scoped logger utilities from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/_logging.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/_logging.ts</a></code>:</p>
+<pre><code>import { initLogger } from "../_utils/_logging.js";
 
-// Success response with "success: true"
-return successResponse({ message: "Created" }, 201, origin);
-
-// Error response
-return errorResponse("Not found", 404, origin);
-
-// Error with code and details
-return errorResponse(
-  "Validation failed",
-  400,
-  origin,
-  "VALIDATION_ERROR",
-  { field: "email", issue: "invalid format" }
-);
-
-// Rate limit response
-return rateLimitResponse(origin, limit, resetSeconds, "burst");</code></pre>
-<h3>8. Admin Check</h3>
-<pre><code>import { isAdmin } from "./_utils/middleware.js";
-
-// Check if user is admin (ryo) with valid token
-const adminAccess = await isAdmin(redis, username, token);
-if (!adminAccess) {
-  return errorResponse("Forbidden - admin access required", 403, origin);
-}</code></pre>
-<h3>9. Logging</h3>
-<p>Use the logging utility for consistent, color-coded terminal output:</p>
-<pre><code>import { initLogger } from "./_utils/_logging.js";
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { requestId, logger } = initLogger();
-  const startTime = Date.now();
-  
-  logger.request(req.method || "POST", req.url || "/api/endpoint", "endpoint-name");
-  
-  try {
-    // Handler logic
-    logger.info("Processing request", { userId: "123" });
-    
-    logger.response(200, Date.now() - startTime);
-    res.status(200).json({ success: true });
-  } catch (error) {
-    logger.error("Handler failed", error);
-    logger.response(500, Date.now() - startTime);
-    res.status(500).json({ error: "Internal error" });
-  }
-}</code></pre>
-<strong>Logger Methods:</strong>
-<table><thead><tr><th>Method</th><th>Usage</th></tr></thead><tbody><tr><td><code>logger.request(method, url, action?)</code></td><td>Log incoming request with color-coded method</td></tr><tr><td><code>logger.response(status, duration?)</code></td><td>Log response with status color and timing</td></tr><tr><td><code>logger.info(message, data?)</code></td><td>General information logging</td></tr><tr><td><code>logger.warn(message, data?)</code></td><td>Warning messages (yellow)</td></tr><tr><td><code>logger.error(message, error?)</code></td><td>Error logging (red)</td></tr><tr><td><code>logger.debug(message, data?)</code></td><td>Debug output (dev only)</td></tr></tbody></table>
+const { logger } = initLogger();
+logger.request(req.method || "GET", req.url || "/api/example");
+logger.info("Processing request", { user: "alice" });
+logger.response(200, Date.now() - startTime);</code></pre>
+<h3>9. Utility Modules</h3>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/_validation.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/_validation.ts</a></code>: username/room/message validation, profanity filtering, HTML escaping</li></ul><ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/_ssrf.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/_ssrf.ts</a></code>: <code>validatePublicUrl()</code> and <code>safeFetchWithRedirects()</code> for outbound URL safety</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/_sse.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/_sse.ts</a></code>: SSE stream helper for chunked/line-based emissions</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/constants.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/constants.ts</a></code>: shared prefixes, TTLs, rate-limit tiers, validation constraints</li></ul>
 <h2>Constants</h2>
-<p>Use centralized constants from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/constants.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/constants.ts</a></code>:</p>
-<pre><code>import { REDIS_PREFIXES, TTL, RATE_LIMIT_TIERS, PASSWORD, VALIDATION } from "./_utils/constants.js";
-
-// Redis keys
-const userKey = `${REDIS_PREFIXES.users}${username}`;
-const tokenKey = `${REDIS_PREFIXES.authToken}user:${username}:${token}`;
-
-// TTLs (in seconds)
-await redis.set(key, value, { ex: TTL.user }); // 90 days
-
-// Rate limits
-const limit = RATE_LIMIT_TIERS.ai.authenticated.limit;  // 15
-const window = RATE_LIMIT_TIERS.ai.authenticated.window; // 5 hours</code></pre>
-<strong>Available Constants:</strong>
-<table><thead><tr><th>Module</th><th>Contents</th></tr></thead><tbody><tr><td><code>REDIS_PREFIXES</code></td><td>Key prefixes: <code>authToken</code>, <code>passwordHash</code>, <code>users</code>, <code>room</code>, <code>messages</code>, <code>songMeta</code>, <code>songContent</code>, etc.</td></tr><tr><td><code>TTL</code></td><td>Expiration times: <code>user</code> (90 days), <code>tokenGrace</code> (30 days), <code>presence</code> (1 day), etc.</td></tr><tr><td><code>RATE_LIMIT_TIERS</code></td><td>Burst, hourly, daily, AI rate limit configs for public/authenticated/admin</td></tr><tr><td><code>PASSWORD</code></td><td><code>minLength</code> (8), <code>maxLength</code> (128), <code>bcryptRounds</code> (10)</td></tr><tr><td><code>VALIDATION</code></td><td>Username/message/roomId regex and length constraints</td></tr><tr><td><code>TOKEN</code></td><td>Token byte length (32)</td></tr></tbody></table>
+<p>Use shared constants from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/constants.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/constants.ts</a></code> where possible instead of hardcoding: <ul><li><code>REDIS_PREFIXES</code></li></ul><ul><li><code>TTL</code></li><li><code>RATE_LIMIT_TIERS</code></li><li><code>PASSWORD</code></li><li><code>VALIDATION</code></li><li><code>TOKEN</code></li></ul></p>
+<p>Feature-specific constants should stay in feature helper modules (for example <code><a href="https://github.com/ryokun6/ryos/blob/main/src/rooms/_helpers/_constants.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">rooms/_helpers/_constants.ts</a></code>, <code><a href="https://github.com/ryokun6/ryos/blob/main/src/listen/_helpers/_constants.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">listen/_helpers/_constants.ts</a></code>).</p>
 <h2>Best Practices</h2>
-<ol><li><strong>Always validate origin</strong> before processing requests</li></ol><ol><li><strong>Use response helpers</strong> for consistent error formats</li><li><strong>Implement rate limiting</strong> on all public endpoints</li><li><strong>Use initLogger()</strong> for consistent request tracing and timing</li><li><strong>Use createRedis()</strong> instead of instantiating Redis directly</li><li><strong>Set appropriate maxDuration</strong> for long-running operations (AI: 80s, standard: 30s)</li><li><strong>Validate all user input</strong> using the validation utilities</li><li><strong>Handle errors gracefully</strong> with try/catch blocks</li></ol>
+<ol><li>Prefer <code>apiHandler</code> for new JSON endpoints.</li></ol><ol><li>Keep auth semantics consistent through <code>request-auth</code>.</li><li>Apply rate limits to public and expensive routes.</li><li>Validate all user-provided input before use.</li><li>Keep response shapes stable and explicit.</li><li>Use SSRF-safe fetch helpers for untrusted URLs.</li><li>Add structured logs for request/response and key branch decisions.</li><li>Keep endpoint docs updated whenever request/response contracts change.</li></ol>
 <h2>Error Response Format</h2>
-<p>All error responses follow this format:</p>
+<p>Most endpoints use:</p>
 <pre><code>{
-  "error": "Human-readable error message",
-  "code": "MACHINE_READABLE_CODE",  // optional
-  "details": { ... }                // optional validation errors
+  "error": "Human-readable error message"
 }</code></pre>
-<p>Rate limit errors include additional fields:</p>
-<pre><code>{
-  "error": "rate_limit_exceeded",
-  "limit": 30,
-  "retryAfter": 45,
-  "scope": "burst"  // optional
-}</code></pre>
+<p>Some endpoints include extra fields (for example rate-limit metadata, validation details, or endpoint-specific diagnostics). Keep these additions additive and backward-compatible.</p>
       </article>
       
       <nav class="nav">

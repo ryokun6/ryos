@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -301,11 +307,12 @@
         <h1>Audio System</h1>
 <p>Overview of ryOS audio capabilities and architecture.</p>
 <h2>Technologies</h2>
-<table><thead><tr><th>Technology</th><th>Usage</th></tr></thead><tbody><tr><td>Web Audio API</td><td>Core audio processing, centralized AudioContext management, UI sound playback, TTS audio scheduling</td></tr><tr><td>Tone.js</td><td>Synthesizer app with polyphonic synthesis, effects chain, and Chat typing synthesis</td></tr><tr><td>WaveSurfer.js</td><td>Waveform visualization for recorded sounds in Soundboard app</td></tr><tr><td>MediaRecorder API</td><td>Audio recording functionality for Soundboard app</td></tr><tr><td>ReactPlayer</td><td>YouTube video/audio playback in iPod app</td></tr></tbody></table>
+<table><thead><tr><th>Technology</th><th>Usage</th></tr></thead><tbody><tr><td>Web Audio API</td><td>Core audio processing, centralized AudioContext management, UI sound playback, TTS audio scheduling</td></tr><tr><td>Tone.js</td><td>Synthesizer app with polyphonic synthesis, effects chain, and Chat typing synthesis</td></tr><tr><td>WaveSurfer.js</td><td>Waveform visualization for recorded sounds in Soundboard app</td></tr><tr><td>MediaRecorder API</td><td>Audio recording functionality for Soundboard app</td></tr><tr><td>ReactPlayer</td><td>YouTube video/audio playback in iPod app</td></tr><tr><td>Webamp + YouTube IFrame API</td><td>Winamp playback via custom YouTube-backed media class</td></tr></tbody></table>
 <h2>Architecture Overview</h2>
 <pre class="mermaid">graph TB
     subgraph Sources["Audio Sources"]
         iPod["iPod App<br/>(ReactPlayer)"]
+        Winamp["Winamp App<br/>(Webamp + YouTubeMedia)"]
         Soundboard["Soundboard<br/>(HTMLAudioElement)"]
         UI["UI Sounds<br/>(useSound)"]
         Synth["Synthesizer<br/>(Tone.js)"]
@@ -329,6 +336,7 @@
     end
     
     iPod --> Ducking
+    Winamp -->|"YouTube IFrame output"| Dest
     Soundboard --> GainNode
     UI --> GainNode
     Synth --> Effects --> GainNode
@@ -370,6 +378,8 @@ source.stop(0);</code></pre>
 <p>ryOS provides multiple audio playback mechanisms:</p>
 <h3>iPod App</h3>
 <p>Uses ReactPlayer for YouTube video/audio playback with: <ul><li>Volume control via <code>ipodVolume</code> setting</li><li>Seeking and playback state management</li><li>Fullscreen playback with synchronized lyrics display</li><li>Volume ducking when TTS is speaking (35% of original on non-iOS)</li></ul></p>
+<h3>Winamp App</h3>
+<p>Uses Webamp with a custom <code>YouTubeMedia</code> backend: <ul><li>Loads tracks from the iPod library into a Webamp playlist (YouTube IDs/URLs)</li><li>Supports transport controls plus shuffle/repeat and skin switching</li><li>Uses a hidden YouTube iframe player with duration/time polling for Webamp sync</li><li>Playback currently stays outside the shared <code>AudioContext</code> ducking path</li></ul></p>
 <h3>Soundboard App</h3>
 <p>Plays recorded audio clips using HTMLAudioElement: <ul><li>Supports multiple formats (WebM, MP4) with automatic browser detection</li><li>Base64-encoded audio storage</li><li>Waveform visualization using WaveSurfer.js (dynamically imported)</li><li>Per-slot playback state tracking</li></ul></p>
 <h3>UI Sounds (<code>useSound</code>)</h3>

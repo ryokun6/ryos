@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -299,8 +305,8 @@
     <main class="content">
       <article>
         <h1>AI Endpoints</h1>
-<p>ryOS provides several AI-powered endpoints for content generation, separate from the main chat interface. These endpoints power specialized features like applet generation, time-travel web pages, and music metadata extraction.</p>
-<p>All AI endpoints run on Vercel Serverless Functions (Node.js) with rate limiting and CORS protection.</p>
+<p>ryOS provides several AI-powered endpoints for content generation, separate from the main chat interface. These endpoints power specialized features like applet generation, time-travel web pages, memory extraction, and music metadata extraction.</p>
+<p>Most AI endpoints are wrapped with the shared <code>apiHandler</code> utility (CORS, method checks, auth boundaries, Redis/logger context), with endpoint-specific rate limits layered on top.</p>
 <h2>Applet AI</h2>
 <p>The Applet AI endpoint powers intelligent responses within sandboxed HTML applets, supporting both text generation and AI image generation.</p>
 <h3>Endpoint</h3>
@@ -388,7 +394,7 @@
     ]
   }'</code></pre>
 <h3>Error Responses</h3>
-<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request body</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>authentication_failed</code></td><td>Invalid or missing auth token</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Rate limit exceeded</td></tr><tr><td>500</td><td><code>Failed to generate response</code></td><td>AI generation error</td></tr><tr><td>502</td><td><code>The model did not return an image</code></td><td>Image generation failed</td></tr></tbody></table>
+<table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request body</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>Unauthorized - invalid token</code></td><td>Invalid auth token pair when headers are provided</td></tr><tr><td>403</td><td><code>Unauthorized host</code></td><td>Host header not in allowlist</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Rate limit exceeded</td></tr><tr><td>500</td><td><code>Failed to generate response</code></td><td>AI generation error</td></tr><tr><td>502</td><td><code>The model did not return an image</code></td><td>Image generation failed</td></tr></tbody></table>
 <hr>
 <h2>Internet Explorer Generator</h2>
 <p>The Internet Explorer Generator creates "time-travel" web pages, reimagining how websites might have looked in different eras (past or future). It generates complete HTML pages styled to match historical design trends or speculative future aesthetics.</p>
@@ -417,7 +423,7 @@
 <h3>Rate Limits</h3>
 <table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>3 requests</td><td>1 minute</td></tr><tr><td>Budget</td><td>10 requests</td><td>5 hours</td></tr></tbody></table>
 <h3>Supported Models</h3>
-<table><thead><tr><th>Model</th><th>Provider</th></tr></thead><tbody><tr><td><code>gemini-2.5-pro</code></td><td>Google</td></tr><tr><td><code>gemini-2.5-flash</code></td><td>Google</td></tr><tr><td><code>gemini-3.1-pro-preview</code></td><td>Google</td></tr><tr><td><code>claude-4.5</code></td><td>Anthropic</td></tr><tr><td><code>claude-4</code></td><td>Anthropic</td></tr><tr><td><code>claude-3.7</code></td><td>Anthropic</td></tr><tr><td><code>claude-3.5</code></td><td>Anthropic</td></tr><tr><td><code>gpt-5</code></td><td>OpenAI</td></tr><tr><td><code>gpt-5.1</code> (default)</td><td>OpenAI</td></tr><tr><td><code>gpt-5-mini</code></td><td>OpenAI</td></tr><tr><td><code>gpt-4o</code></td><td>OpenAI</td></tr><tr><td><code>gpt-4.1</code></td><td>OpenAI</td></tr><tr><td><code>gpt-4.1-mini</code></td><td>OpenAI</td></tr></tbody></table>
+<table><thead><tr><th>Model</th><th>Provider</th></tr></thead><tbody><tr><td><code>gpt-5.2</code> (default)</td><td>OpenAI</td></tr><tr><td><code>sonnet-4.6</code></td><td>Anthropic</td></tr><tr><td><code>gemini-3-flash</code></td><td>Google</td></tr><tr><td><code>gemini-3.1-pro-preview</code></td><td>Google</td></tr></tbody></table>
 <h3>Design Guidelines</h3>
 <p>The AI applies different design principles based on the target year:</p>
 <strong>Future Years</strong> (after current year):
@@ -490,6 +496,39 @@
 }</code></pre>
 <h3>Error Responses</h3>
 <table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>No title provided</code></td><td>Missing or invalid title field</td></tr><tr><td>403</td><td><code>Unauthorized</code></td><td>Origin not allowed</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Burst or daily limit exceeded</td></tr><tr><td>500</td><td><code>Error parsing title</code></td><td>AI parsing failed</td></tr></tbody></table>
+<hr>
+<h2>Memory Extraction Endpoints</h2>
+<p>These endpoints support ryOS memory features (daily notes + long-term memory).</p>
+<h3>Endpoint Summary</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th><th>Auth</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/ai/extract-memories</code></td><td>Extract daily notes + long-term memories from chat conversation</td><td>Required</td></tr><tr><td>POST</td><td><code>/api/ai/process-daily-notes</code></td><td>Process unprocessed past daily notes into long-term memories</td><td>Required</td></tr></tbody></table>
+<h3>POST /api/ai/extract-memories</h3>
+<p>Request body:</p>
+<pre><code>{
+  "messages": [{ "role": "user", "content": "..." }],
+  "timeZone": "America/Los_Angeles"
+}</code></pre>
+<p>Response:</p>
+<pre><code>{
+  "extracted": 2,
+  "dailyNotes": 4,
+  "analyzed": 3,
+  "message": "Logged 4 daily notes, extracted 2 long-term memories"
+}</code></pre>
+<h3>POST /api/ai/process-daily-notes</h3>
+<p>Request body (optional):</p>
+<pre><code>{
+  "timeZone": "America/Los_Angeles"
+}</code></pre>
+<p>Response:</p>
+<pre><code>{
+  "processed": 3,
+  "extracted": 2,
+  "created": 1,
+  "updated": 1,
+  "dates": ["2026-02-26", "2026-02-27", "2026-02-28"],
+  "skippedDates": [],
+  "message": "Processed 3 daily notes → 1 new memories, 1 updated"
+}</code></pre>
 <hr>
 <h2>Related</h2>
 <ul><li><strong><a href="/docs/chat-api">Chat API</a></strong> - Main AI chat endpoint with tool calling</li></ul><ul><li><strong><a href="/docs/ai-system">AI System</a></strong> - AI providers and available tools</li><li><strong><a href="/docs/api-reference">API Reference</a></strong> - Overview of all ryOS API endpoints</li><li><strong><a href="/docs/chats">Chats App</a></strong> - Frontend chat application documentation</li></ul>

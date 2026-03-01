@@ -6,9 +6,9 @@ The ryOS application framework provides a unified system for building and managi
 
 The ryOS application framework is built around three core pillars: **Window Management**, **State Management**, and **Theme System**. Together, these systems enable apps to have native desktop-like behavior including multiple windows, window positioning, resizing, minimizing, and theming that adapts to different operating system aesthetics.
 
-Apps in ryOS are organized as self-contained modules in `src/apps/[app-name]/`, each exporting a standardized app definition that includes the app component, metadata, and configuration. The framework handles window lifecycle, state persistence, and theme-aware rendering automatically, while apps focus on their specific functionality.
+Apps in ryOS are still organized as self-contained modules in `src/apps/[app-name]/`, but app registration is centralized in `src/config/appRegistry.tsx`. The registry combines lightweight app metadata with lazily loaded app components via `createLazyComponent`, so non-critical apps are loaded on demand while core shell behavior stays responsive. The framework handles window lifecycle, state persistence, and theme-aware rendering automatically, while apps focus on their specific functionality.
 
-The framework supports multiple window instances per app (multi-window), allowing users to open several windows of the same application simultaneously. Window state, including position and size, is persisted across sessions. Apps can also define custom window constraints, menu bars, and help content that integrates seamlessly with the system.
+The framework supports multiple window instances per app (multi-window), allowing users to open several windows of the same application simultaneously. Window state, including position and size, is persisted across sessions. Apps can also define custom window constraints, menu bars, and help content that integrates seamlessly with the system. Runtime resilience is handled by desktop-level and app-level error boundaries, so a crashing app instance does not bring down the full desktop shell.
 
 ```mermaid
 graph TD
@@ -43,6 +43,8 @@ graph TD
 | Window Management | Handles window rendering, positioning, resizing, minimizing, maximizing, and multi-instance support through the `WindowFrame` component and `useWindowManager` hook |
 | State Management | Manages app state, window instances, foreground ordering, and persistence using Zustand stores with localStorage integration |
 | Theme System | Provides OS-themed appearance (Mac OS X, System 7, Windows XP, Windows 98) with theme-aware components, colors, fonts, and layout metadata |
+| App Registration & Lazy Loading | Centralizes app configuration in `appRegistry`, lazy-loads app components with `createLazyComponent`, and marks lazy instances ready via `LazyLoadSignal` |
+| Error Isolation & Eventing | Wraps the desktop and each app instance with error boundaries, and uses typed `appEventBus` primitives for launch/focus/expose/spotlight/document events |
 
 ## App Structure
 
@@ -50,10 +52,11 @@ Apps follow a standardized structure and naming convention. Each app is defined 
 
 - **Main Component**: `[AppName]AppComponent.tsx` - The primary app component that receives `AppProps` and renders the app content wrapped in `WindowFrame`
 - **Menu Bar**: `[AppName]MenuBar.tsx` - App-specific menu bar component (rendered outside `WindowFrame` for macOS themes, inside for Windows themes)
-- **App Definition**: `index.tsx` or `index.ts` - Exports the app definition object conforming to `BaseApp` interface, including component, metadata, help items, and window constraints
+- **App Metadata**: `metadata.ts` (or lightweight `index.ts`) - Exports app metadata/help content without importing heavy UI components
+- **App Registration**: `src/config/appRegistry.tsx` - Wires metadata, lazy component loaders, and window constraints into a single runtime registry
 - **Optional Folders**: `hooks/`, `utils/`, `types/`, `components/` - App-specific logic, utilities, types, and sub-components
 
-Apps receive common props via the `AppProps` interface, including `isWindowOpen`, `onClose`, `isForeground`, `instanceId`, and `initialData`. The `WindowFrame` component handles all window chrome, controls, and interactions, while apps focus on their content and functionality.
+Apps receive common props via the `AppProps` interface, including `isWindowOpen`, `onClose`, `isForeground`, `instanceId`, and `initialData`. The `WindowFrame` component handles all window chrome, controls, and interactions, while apps focus on their content and functionality. Non-default locale bundles are also loaded lazily, so internationalization support does not eagerly inflate the initial JS payload.
 
 ```mermaid
 graph TD
@@ -207,6 +210,8 @@ export function useIpodLogic({
 | Photo Booth | `usePhotoBoothLogic` | Camera, effects, capture |
 | Soundboard | `useSoundboardLogic` | Audio recording, playback, boards |
 | Synth | `useSynthLogic` | Synthesis, presets, waveform |
+
+Framework-level search performance is also optimized by moving Spotlight indexing/querying work to a dedicated worker (`src/workers/spotlightSearch.worker.ts`), while hooks and UI subscribe to typed request/response payloads.
 
 ## Subsections
 

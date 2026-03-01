@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -299,47 +305,79 @@
     <main class="content">
       <article>
         <h1>AI System</h1>
-<p>Multi-provider AI with tool calling support and streaming responses.</p>
+<p>Multi-provider AI with streaming responses, tool-loop orchestration, and a two-tier memory pipeline.</p>
 <h2>Providers</h2>
-<table><thead><tr><th>Provider</th><th>SDK</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td><code>@ai-sdk/openai</code></td><td>gpt-5, gpt-5.1, gpt-5-mini, gpt-4o, gpt-4.1, gpt-4.1-mini</td></tr><tr><td>Anthropic</td><td><code>@ai-sdk/anthropic</code></td><td>claude-4.5, claude-4, claude-3.7, claude-3.5</td></tr><tr><td>Google</td><td><code>@ai-sdk/google</code></td><td>gemini-2.5-pro, gemini-2.5-flash, gemini-3.1-pro-preview</td></tr></tbody></table>
-<p>Default model: <code>gpt-5.1</code></p>
+<table><thead><tr><th>Provider</th><th>SDK</th><th>Models</th></tr></thead><tbody><tr><td>OpenAI</td><td><code>@ai-sdk/openai</code></td><td><code>gpt-5.2</code></td></tr><tr><td>Anthropic</td><td><code>@ai-sdk/anthropic</code></td><td><code>sonnet-4.6</code></td></tr><tr><td>Google</td><td><code>@ai-sdk/google</code></td><td><code>gemini-3-flash</code>, <code>gemini-3.1-pro-preview</code></td></tr></tbody></table>
+<p>Default model: <code>gpt-5.2</code></p>
+<p>Specialized models used by specific flows: <ul><li><code>gemini-2.5-flash</code> (proactive greeting, applet text mode, chat-room auto replies)</li><li><code>gemini-2.5-flash-image</code> (applet image generation)</li><li><code>gemini-2.0-flash</code> (memory extraction and daily-notes processing)</li></ul></p>
 <pre class="mermaid">graph TD
     A[User Message] --> B[Chat API]
     B --> C{Provider Selection}
-    C -->|OpenAI| D[GPT Models]
-    C -->|Anthropic| E[Claude Models]
-    C -->|Google| F[Gemini Models]
+    C -->|OpenAI| D[gpt-5.2]
+    C -->|Anthropic| E[claude-sonnet-4-6]
+    C -->|Google| F[gemini-3-flash / gemini-3.1-pro-preview]
     D --> G[AI SDK Stream]
     E --> G
     F --> G
-    G --> H[Response Handler]
+    G --> H[Tool Loop + Response Handler]
     H --> I[UI Update]</pre>
 <h2>Available Tools</h2>
-<table><thead><tr><th>Tool</th><th>Description</th></tr></thead><tbody><tr><td><code>launchApp</code></td><td>Open applications (with Internet Explorer time-travel support)</td></tr><tr><td><code>closeApp</code></td><td>Close applications</td></tr><tr><td><code>ipodControl</code></td><td>Music playback: toggle/play/pause/playKnown/addAndPlay/next/previous, video mode, fullscreen, lyrics translation</td></tr><tr><td><code>karaokeControl</code></td><td>Karaoke playback (shared library with iPod, independent playback state)</td></tr><tr><td><code>generateHtml</code></td><td>Create HTML applets with title and emoji icon</td></tr><tr><td><code>aquarium</code></td><td>Render interactive emoji aquarium in chat</td></tr><tr><td><code>list</code></td><td>List VFS items: /Applets, /Documents, /Applications, /Music, /Applets Store</td></tr><tr><td><code>open</code></td><td>Open files/apps from virtual file system</td></tr><tr><td><code>read</code></td><td>Read file contents (applets, documents, store items)</td></tr><tr><td><code>write</code></td><td>Create/modify markdown documents (overwrite/append/prepend modes)</td></tr><tr><td><code>edit</code></td><td>Edit existing files with precise text replacement</td></tr><tr><td><code>searchSongs</code></td><td>Search YouTube for songs (with API key rotation)</td></tr><tr><td><code>settings</code></td><td>Change language, theme, volume, speech, check for updates</td></tr></tbody></table>
+<table><thead><tr><th>Tool</th><th>Description</th></tr></thead><tbody><tr><td><code>launchApp</code></td><td>Open applications (supports Internet Explorer URL + year time-travel launch)</td></tr><tr><td><code>closeApp</code></td><td>Close applications</td></tr><tr><td><code>ipodControl</code></td><td>iPod playback control: toggle/play/pause/playKnown/addAndPlay/next/previous (+ video/fullscreen/lyrics translation options)</td></tr><tr><td><code>karaokeControl</code></td><td>Karaoke playback control (shared music library with iPod, independent playback state)</td></tr><tr><td><code>generateHtml</code></td><td>Create HTML applets with title and emoji icon</td></tr><tr><td><code>aquarium</code></td><td>Render interactive emoji aquarium in chat</td></tr><tr><td><code>list</code></td><td>List VFS items: <code>/Applets</code>, <code>/Documents</code>, <code>/Applications</code>, <code>/Music</code>, <code>/Applets Store</code></td></tr><tr><td><code>open</code></td><td>Open files/apps/media from virtual file system</td></tr><tr><td><code>read</code></td><td>Read file contents (applets, documents, Applets Store items)</td></tr><tr><td><code>write</code></td><td>Create/modify markdown documents (overwrite/append/prepend modes)</td></tr><tr><td><code>edit</code></td><td>Edit existing files with precise text replacement</td></tr><tr><td><code>searchSongs</code></td><td>Search YouTube for songs (with API-key rotation and retry)</td></tr><tr><td><code>settings</code></td><td>Change language, theme, volume, speech, check-for-updates</td></tr><tr><td><code>stickiesControl</code></td><td>List/create/update/delete/clear sticky notes</td></tr><tr><td><code>infiniteMacControl</code></td><td>Control Infinite Mac emulator (launch system, screen read, mouse/keyboard actions, pause state)</td></tr><tr><td><code>memoryWrite</code></td><td>Unified memory writer (<code>long_term</code> or <code>daily</code>)</td></tr><tr><td><code>memoryRead</code></td><td>Unified memory reader (<code>long_term</code> by key or <code>daily</code> by date)</td></tr><tr><td><code>memoryDelete</code></td><td>Delete long-term memory by key</td></tr></tbody></table>
 <h2>API Endpoints</h2>
-<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><a href="/docs/chat-api"><code>/api/chat</code></a></td><td>Main chat with streaming and tool calling</td></tr><tr><td><a href="/docs/ai-generation-apis"><code>/api/applet-ai</code></a></td><td>Applet AI assistant and image generation</td></tr><tr><td><a href="/docs/ai-generation-apis"><code>/api/ie-generate</code></a></td><td>Internet Explorer time-travel</td></tr><tr><td><a href="/docs/media-api"><code>/api/speech</code></a></td><td>Text-to-speech synthesis</td></tr><tr><td><a href="/docs/media-api"><code>/api/audio-transcribe</code></a></td><td>Audio transcription</td></tr></tbody></table>
+<table><thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead><tbody><tr><td><a href="/docs/chat-api"><code>/api/chat</code></a></td><td>Main chat with streaming, tool-calling, and context-aware prompt assembly</td></tr><tr><td><a href="/docs/chat-api"><code>/api/ai/extract-memories</code></a></td><td>Single-pass extraction of daily notes + long-term memories from chat history</td></tr><tr><td><a href="/docs/chat-api"><code>/api/ai/process-daily-notes</code></a></td><td>Background processing of past daily notes into long-term memories</td></tr><tr><td><a href="/docs/chat-api"><code>/api/ai/ryo-reply</code></a></td><td>Auto-reply generation for chat rooms</td></tr><tr><td><a href="/docs/ai-generation-apis"><code>/api/applet-ai</code></a></td><td>Applet AI assistant (text + image mode, multimodal input)</td></tr><tr><td><a href="/docs/ai-generation-apis"><code>/api/ie-generate</code></a></td><td>Internet Explorer time-travel page generation</td></tr><tr><td><a href="/docs/media-api"><code>/api/speech</code></a></td><td>Text-to-speech synthesis</td></tr><tr><td><a href="/docs/media-api"><code>/api/audio-transcribe</code></a></td><td>Audio transcription</td></tr></tbody></table>
 <h2>Architecture</h2>
 <pre class="mermaid">sequenceDiagram
     participant U as User
     participant C as Chat UI
-    participant A as AI Provider
-    participant T as Tool Handler
-    participant S as System
+    participant API as /api/chat
+    participant M as AI Model
+    participant T as Tool Runtime
+    participant S as ryOS State
 
     U->>C: Send message
-    C->>A: Stream request
-    A->>A: Process message
-    A-->>C: Tool call (e.g., launchApp)
-    C->>T: Execute tool
-    T->>S: Perform action
+    C->>API: POST messages + systemState
+    API->>M: streamText (static+dynamic prompts)
+    M-->>API: Tool call(s)
+    API->>T: Execute server tools / emit client tools
+    T->>S: Read or mutate state
     S-->>T: Result
-    T-->>A: Tool result
-    A-->>C: Final response
-    C-->>U: Display result</pre>
+    T-->>M: Tool result
+    M-->>API: Final tokens
+    API-->>C: UI message stream
+    C-->>U: Display response</pre>
 <h2>Tool Handlers</h2>
-<p>Tool handlers in <code>src/apps/chats/tools/</code> follow a registry pattern: <ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/appHandlers.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/appHandlers.ts</a></code> - Launch/close app handlers</li></ul><ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/ipodHandler.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/ipodHandler.ts</a></code> - iPod playback control with iOS detection</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/karaokeHandler.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/karaokeHandler.ts</a></code> - Karaoke playback with fuzzy search</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/settingsHandler.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/settingsHandler.ts</a></code> - System settings changes</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/chats/tools/helpers.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/chats/tools/helpers.ts</a></code> - Shared utilities (track formatting, i18n)</li></ul></p>
+<p>Backend tool registry lives in <code>_api/chat/tools/</code>: <ul><li><code>_<a href="https://github.com/ryokun6/ryos/blob/main/api/chat/tools/types.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/chat/tools/types.ts</a></code> - Tool constants and TypeScript contracts</li></ul><ul><li><code>_<a href="https://github.com/ryokun6/ryos/blob/main/api/chat/tools/schemas.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/chat/tools/schemas.ts</a></code> - Zod input schemas and action-specific validation</li><li><code>_<a href="https://github.com/ryokun6/ryos/blob/main/api/chat/tools/executors.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/chat/tools/executors.ts</a></code> - Server-side executors (<code>generateHtml</code>, <code>searchSongs</code>, memory tools)</li><li><code>_<a href="https://github.com/ryokun6/ryos/blob/main/api/chat/tools/index.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/chat/tools/index.ts</a></code> - <code>createChatTools()</code> registry (mixes server and client tools)</li></ul></p>
+<p>Client execution handlers remain in <code>src/apps/chats/tools/</code>: <ul><li><code>appHandlers.ts</code> - Launch/close app execution</li></ul><ul><li><code>ipodHandler.ts</code> / <code>karaokeHandler.ts</code> - Media control execution</li><li><code>settingsHandler.ts</code> - System settings updates</li><li><code>stickiesHandler.ts</code> - Sticky note operations</li><li><code>infiniteMacHandler.ts</code> - Infinite Mac control bridge</li></ul></p>
+<h3>Tool schema highlights</h3>
+<ul><li><code>launchApp</code> now enforces that <code>internet-explorer</code> launches must provide both <code>url</code> and <code>year</code> together (or neither), with year-range validation.</li></ul><ul><li><code>ipodControl</code> and <code>karaokeControl</code> schemas enforce action-specific arguments (e.g. <code>addAndPlay</code> requires <code>id</code>; playback-state actions must not include track identifiers).</li><li><code>memoryWrite</code> / <code>memoryRead</code> are unified schemas using a <code>type</code> field:<ul><li><code>long_term</code> (default): key-based memory operations</li><li><code>daily</code>: journal-style per-day operations</li></ul></li><li><code>infiniteMacControl</code> supports multimodal screen inspection by returning screen captures that can be converted into model-readable image content.</li></ul>
 <h2>System Prompts</h2>
-<p>Defined in <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/_aiPrompts.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/_aiPrompts.ts</a></code>: <ul><li><code>CORE_PRIORITY_INSTRUCTIONS</code> - Persona adherence rules</li></ul><ul><li><code>RYO_PERSONA_INSTRUCTIONS</code> - Ryo's identity and background</li><li><code>ANSWER_STYLE_INSTRUCTIONS</code> - Response style and tone</li><li><code>CODE_GENERATION_INSTRUCTIONS</code> - HTML applet generation rules</li><li><code>CHAT_INSTRUCTIONS</code> - Chat behavior and nudge handling</li><li><code>TOOL_USAGE_INSTRUCTIONS</code> - VFS and tool usage patterns</li></ul></p>
+<p>Core prompt constants are defined in <code>_<a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/_aiPrompts.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/_aiPrompts.ts</a></code>: <ul><li><code>CORE_PRIORITY_INSTRUCTIONS</code> - Priority and memory-override rules</li></ul><ul><li><code>RYO_PERSONA_INSTRUCTIONS</code> - Ryo identity and background</li><li><code>ANSWER_STYLE_INSTRUCTIONS</code> - Style and language behavior</li><li><code>CODE_GENERATION_INSTRUCTIONS</code> - Applet generation constraints</li><li><code>CHAT_INSTRUCTIONS</code> - Chats behavior and memory usage guidance</li><li><code>TOOL_USAGE_INSTRUCTIONS</code> - VFS and tool workflow rules</li><li><code>MEMORY_INSTRUCTIONS</code> - Two-tier memory strategy and tool usage policy</li><li><code>IE_HTML_GENERATION_INSTRUCTIONS</code> - Internet Explorer HTML generation rules</li></ul></p>
+<p>Endpoint-specific prompts: <ul><li><code>/api/chat</code> composes a static system prompt from the core constants, then appends dynamic user/system state.</li><li><code>/api/applet-ai</code> uses a dedicated compact applet system prompt for embedded UI contexts.</li><li><code>/api/ie-generate</code> splits prompts into static + dynamic sections for year/URL-aware generation.</li></ul></p>
+<h2>Memory System</h2>
+<p>ryOS uses a two-tier Redis-backed memory model:</p>
+<h3>Tier 1: Daily Notes (journal memory)</h3>
+<ul><li>Append-only entries grouped by date (<code>YYYY-MM-DD</code>) in user timezone.</li></ul><ul><li>Each entry stores:<ul><li>Unix timestamp (<code>timestamp</code>)</li><li>UTC ISO timestamp (<code>isoTimestamp</code>)</li><li>Local date/time (<code>localDate</code>, <code>localTime</code>)</li><li>Timezone (<code>timeZone</code>)</li><li>Entry content</li></ul></li><li>Daily notes auto-expire after 30 days (TTL).</li><li>Recent notes from the last 3 days are injected into chat prompt context.</li></ul>
+<h3>Tier 2: Long-Term Memories</h3>
+<ul><li>Two-layer structure:<ul><li>Index: key + summary + <code>updatedAt</code> (always visible to the model)</li><li>Detail: full content + <code>createdAt</code> + <code>updatedAt</code></li></ul></li></ul><ul><li>Capped at 50 memories per user.</li><li>Canonical key guidance (e.g. <code>name</code>, <code>preferences</code>, <code>projects</code>, <code>instructions</code>) is used by extraction pipelines.</li></ul>
+<h3>Stale-memory cleanup</h3>
+<ul><li>Long-term hygiene includes automatic cleanup of stale temporary memories.</li></ul><ul><li>Temporary context-like memories (e.g. short-lived travel/meeting context) are removed when old enough (default retention: 7 days) and heuristics identify them as transient.</li><li>Cleanup runs as part of the daily-notes processing cycle before new extraction.</li></ul>
+<h2>Daily Notes Processing Pipeline</h2>
+<pre class="mermaid">flowchart TD
+    A[Conversation / tool writes] --> B[/api/ai/extract-memories]
+    B --> C[Append daily notes + optional long-term updates]
+    C --> D[Unprocessed daily notes accumulate]
+    D --> E[/api/chat proactive greeting trigger]
+    E --> F[/api/ai/process-daily-notes]
+    F --> G[Cleanup stale temporary memories]
+    G --> H[Process past days only, oldest first]
+    H --> I[Extract + consolidate long-term memories]
+    I --> J[Mark daily note processed]</pre>
+<p>Pipeline behavior: <ol><li><code>extract-memories</code> performs single-pass extraction from chat history (daily notes + candidate long-term facts).</li><li>Daily notes continue collecting while a day is active.</li><li><code>process-daily-notes</code> processes unprocessed past days (excludes today), consolidates overlaps, and marks each processed day.</li><li>Chat endpoint can trigger <code>process-daily-notes</code> in the background during proactive greeting flow.</li></ol></p>
+<h2>apiHandler Pattern</h2>
+<p>AI endpoints use a shared <code>_<a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/api-handler.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">api/_utils/api-handler.ts</a></code> wrapper for consistency: <ul><li>CORS and allowed-origin checks</li></ul><ul><li>Method gating + automatic <code>OPTIONS</code> handling</li><li>Optional JSON body parsing</li><li>Shared per-request context injection (<code>req</code>, <code>res</code>, <code>redis</code>, <code>logger</code>, <code>origin</code>, <code>user</code>, <code>body</code>)</li><li>Unified auth modes (<code>none</code>, <code>optional</code>, <code>required</code>) with optional expired-token allowance</li><li>Unified top-level error handling and status logging</li></ul></p>
+<p>Common endpoint configurations in this AI stack: <ul><li><code>/api/chat</code>: <code>auth: "optional"</code>, <code>allowExpiredAuth: true</code>, <code>parseJsonBody: true</code>, <code>contentType: null</code></li></ul><ul><li><code>/api/applet-ai</code>: <code>auth: "optional"</code>, <code>parseJsonBody: true</code>, <code>contentType: null</code></li><li><code>/api/ie-generate</code>: <code>auth: "none"</code>, <code>parseJsonBody: true</code>, <code>contentType: null</code></li><li><code>/api/ai/extract-memories</code>: <code>auth: "required"</code>, <code>parseJsonBody: true</code></li><li><code>/api/ai/process-daily-notes</code>: <code>auth: "required"</code>, <code>parseJsonBody: true</code></li><li><code>/api/ai/ryo-reply</code>: <code>auth: "required"</code>, <code>parseJsonBody: true</code></li></ul></p>
+<h2>Additional AI Capabilities</h2>
+<ul><li><strong>Proactive greetings</strong>: <code>/api/chat</code> supports a non-streaming proactive greeting mode that uses memory context and can kick off background daily-note processing.</li></ul><ul><li><strong>Chat-room auto replies</strong>: <code>/api/ai/ryo-reply</code> generates room messages as <code>ryo</code> with dedicated rate limits.</li><li><strong>Applet multimodal AI</strong>: <code>/api/applet-ai</code> supports text chat, image attachments in message history, and binary image generation responses.</li><li><strong>Infinite Mac visual loop</strong>: <code>infiniteMacControl</code> can return screenshots for model-visible state inspection.</li><li><strong>Internet Explorer caching</strong>: <code>/api/ie-generate</code> stores cleaned generated HTML snapshots in Redis for recent-history retrieval.</li></ul>
 
       </article>
       

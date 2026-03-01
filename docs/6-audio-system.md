@@ -11,6 +11,7 @@ Overview of ryOS audio capabilities and architecture.
 | WaveSurfer.js | Waveform visualization for recorded sounds in Soundboard app |
 | MediaRecorder API | Audio recording functionality for Soundboard app |
 | ReactPlayer | YouTube video/audio playback in iPod app |
+| Webamp + YouTube IFrame API | Winamp playback via custom YouTube-backed media class |
 
 ## Architecture Overview
 
@@ -18,6 +19,7 @@ Overview of ryOS audio capabilities and architecture.
 graph TB
     subgraph Sources["Audio Sources"]
         iPod["iPod App<br/>(ReactPlayer)"]
+        Winamp["Winamp App<br/>(Webamp + YouTubeMedia)"]
         Soundboard["Soundboard<br/>(HTMLAudioElement)"]
         UI["UI Sounds<br/>(useSound)"]
         Synth["Synthesizer<br/>(Tone.js)"]
@@ -41,6 +43,7 @@ graph TB
     end
     
     iPod --> Ducking
+    Winamp -->|"YouTube IFrame output"| Dest
     Soundboard --> GainNode
     UI --> GainNode
     Synth --> Effects --> GainNode
@@ -111,6 +114,14 @@ Uses ReactPlayer for YouTube video/audio playback with:
 - Seeking and playback state management
 - Fullscreen playback with synchronized lyrics display
 - Volume ducking when TTS is speaking (35% of original on non-iOS)
+
+### Winamp App
+
+Uses Webamp with a custom `YouTubeMedia` backend:
+- Loads tracks from the iPod library into a Webamp playlist (YouTube IDs/URLs)
+- Supports transport controls plus shuffle/repeat and skin switching
+- Uses a hidden YouTube iframe player with duration/time polling for Webamp sync
+- Playback currently stays outside the shared `AudioContext` ducking path
 
 ### Soundboard App
 

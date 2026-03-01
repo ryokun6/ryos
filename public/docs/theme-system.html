@@ -182,7 +182,13 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group ">
+      <div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/self-hosting-vps" class="">Self-hosting ryOS on a VPS (without Vercel)</a>
+  </div>
+</div>
+<div class="nav-group ">
   <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
     <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
@@ -299,7 +305,7 @@
     <main class="content">
       <article>
         <h1>Theme System</h1>
-<p>ryOS supports 4 themes emulating classic operating systems with comprehensive CSS variable systems and platform-specific UI behaviors.</p>
+<p>ryOS supports 4 themes emulating classic operating systems with comprehensive CSS variable systems, centralized metadata helpers, and platform-specific UI behaviors.</p>
 <h2>Available Themes</h2>
 <table><thead><tr><th>Theme ID</th><th>Name</th><th>Platform</th><th>Era</th><th>Key Elements</th></tr></thead><tbody><tr><td><code>macosx</code></td><td>Aqua</td><td>Mac OS X</td><td>~2001</td><td>Glossy buttons, traffic lights, pinstripe, dock</td></tr><tr><td><code>system7</code></td><td>System 7</td><td>Classic Mac</td><td>~1991</td><td>Black & white, dotted titlebar pattern</td></tr><tr><td><code>xp</code></td><td>Luna</td><td>Windows XP</td><td>~2001</td><td>Blue chrome, rounded corners, taskbar</td></tr><tr><td><code>win98</code></td><td>Classic</td><td>Windows 98</td><td>~1998</td><td>3D beveled face, blue gradient titlebar</td></tr></tbody></table>
 <h2>Theme Architecture</h2>
@@ -449,13 +455,16 @@ export const useThemeStore = create&lt;ThemeState&gt;((set) =&gt; ({
   
   setTheme: (theme) =&gt; {
     set({ current: theme });
-    localStorage.setItem("os_theme", theme);
+    localStorage.setItem("ryos:theme", theme);
+    localStorage.removeItem("os_theme"); // legacy cleanup
     document.documentElement.dataset.osTheme = theme;
     ensureLegacyCss(theme);
   },
   
   hydrate: () =&gt; {
-    const saved = localStorage.getItem("os_theme") as OsThemeId | null;
+    const saved =
+      (localStorage.getItem("ryos:theme") as OsThemeId | null) ??
+      (localStorage.getItem("os_theme") as OsThemeId | null); // legacy fallback
     const theme = saved || "macosx";
     set({ current: theme });
     document.documentElement.dataset.osTheme = theme;
@@ -463,7 +472,7 @@ export const useThemeStore = create&lt;ThemeState&gt;((set) =&gt; ({
   },
 }));</code></pre>
 <h3>Legacy CSS Loading</h3>
-<p>Windows themes dynamically load additional CSS:</p>
+<p>Windows themes dynamically load additional CSS (<code>xp-custom.css</code> / <code>98-custom.css</code>):</p>
 <pre><code>async function ensureLegacyCss(theme: OsThemeId) {
   // Only XP and Win98 use legacy CSS
   if (theme !== "xp" &amp;&amp; theme !== "win98") {
@@ -566,6 +575,7 @@ export function isMacTheme(theme: OsThemeId): boolean {
 export function getThemeMetadata(theme: OsThemeId): ThemeMetadata {
   return themes[theme].metadata;
 }</code></pre>
+<p>These helpers are now the preferred way to branch on platform behavior, instead of scattered inline <code>theme === "xp" || theme === "win98"</code> checks.</p>
 <h2>Theme-Aware Icon System</h2>
 <p>Icons are resolved based on the current theme:</p>
 <pre><code>// src/utils/icons.ts

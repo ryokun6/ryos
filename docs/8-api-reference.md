@@ -2,6 +2,8 @@
 
 ryOS backend APIs use Node.js route handlers in `_api/`, deployable on Vercel or the standalone Bun API server.
 
+Most actively refactored JSON routes use the shared `apiHandler` utility (`_api/_utils/api-handler.ts`) for CORS, method checks, auth resolution, and consistent error handling. Some specialized routes (for example multipart upload handlers) still use explicit/manual handling.
+
 ## API Request Flow
 
 ```mermaid
@@ -32,6 +34,16 @@ graph LR
 | [AI Generation APIs](/docs/ai-generation-apis) | Applet generation, IE time-travel, parse-title |
 | [Utility APIs](/docs/utility-apis) | Link preview, iframe check, share applet, admin |
 | [API Design Guide](/docs/api-design-guide) | Patterns and conventions for API development |
+
+## Cross-Cutting Handler Pattern
+
+- **`apiHandler`**: shared wrapper for CORS preflight, origin checks, method allowlists, optional JSON parsing, unified logger wiring, and default JSON error handling.
+- **`request-auth`**: shared auth resolver for token endpoints, expecting:
+  - `Authorization: Bearer {token}`
+  - `X-Username: {username}`
+- **Partial auth headers** return `400`.
+- **Invalid token/username pairs** return `401`.
+- **Optional-auth endpoints** can be anonymous while still validating provided auth headers.
 
 ## Quick Reference
 
@@ -83,7 +95,11 @@ graph LR
 | `/api/link-preview` | URL metadata extraction |
 | `/api/iframe-check` | Embeddability checking |
 | `/api/share-applet` | Applet sharing |
+| `/api/sync/backup-token` | Generate cloud backup upload token |
+| `/api/sync/backup` | Save/list/delete cloud backup metadata |
+| `/api/sync/status` | Cloud backup status summary |
 | `/api/admin` | Admin operations |
+| `/api/pusher/broadcast` | Internal Pusher event relay |
 
 ### Endpoint Categories Overview
 
@@ -125,12 +141,12 @@ Authorization: Bearer {token}
 X-Username: {username}
 ```
 
-Token-based with 90-day expiration.
+Token-based sessions use a 90-day TTL. Auth-required endpoints use the shared `request-auth` validation boundary for consistent `400/401` semantics.
 
 ## AI Providers
 
 | Provider | Models |
 |----------|--------|
-| OpenAI | gpt-5, gpt-5.1, gpt-5-mini, gpt-4o, gpt-4.1, gpt-4.1-mini |
-| Anthropic | claude-4.5, claude-4, claude-3.7, claude-3.5 |
-| Google | gemini-2.5-pro, gemini-2.5-flash, gemini-3.1-pro-preview |
+| OpenAI | gpt-5.2, gpt-4.1-mini, tts-1, whisper-1 |
+| Anthropic | sonnet-4.6 |
+| Google | gemini-3-flash, gemini-3.1-pro-preview, gemini-2.5-flash, gemini-2.5-flash-image, gemini-2.0-flash |
