@@ -69,6 +69,11 @@ export const useLaunchApp = () => {
                 `[useLaunchApp] Applet with ${data.path ? 'path' : 'shareCode'} ${identifier} already open in instance ${existingInstance.instanceId}, bringing to foreground`
               );
               bringInstanceToForeground(existingInstance.instanceId);
+              // Refresh initialData so persisted instances (whose content was
+              // stripped to "" for storage) pick up the freshly loaded content.
+              if (data.content) {
+                updateInstanceInitialData(existingInstance.instanceId, initialData);
+              }
               return existingInstance.instanceId;
             }
             // If opening a specific applet that's not already open, create a new instance
