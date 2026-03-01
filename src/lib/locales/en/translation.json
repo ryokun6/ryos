@@ -146,6 +146,14 @@
     "expose": {
       "noWindows": "No open windows"
     },
+    "errorBoundaries": {
+      "appHeading": "{{appName}} quit unexpectedly.",
+      "appDescription": "Relaunch it to open a fresh window, or quit this crashed window. Other open apps will keep running.",
+      "relaunch": "Relaunch",
+      "desktopHeading": "Desktop quit unexpectedly.",
+      "desktopDescription": "Reload ryOS to restore the Dock, Desktop, and menu bar.",
+      "reloadDesktop": "Reload Desktop"
+    },
     "window": {
       "minimize": "Minimize",
       "maximize": "Maximize",
@@ -2329,6 +2337,15 @@
           "title": "System",
           "description": "Reset preferences or format the virtual file system"
         }
+      },
+      "alerts": {
+        "selectImageFile": "Please select an image file. Videos are not supported.",
+        "errorUploadingWallpaper": "Error uploading wallpaper. Please try again with a smaller file.",
+        "failedToBackupFileSystem": "Failed to backup file system data. Only settings will be backed up.",
+        "failedToCreateBackup": "Failed to create compressed backup: {{error}}",
+        "failedToRestoreFileSystem": "Failed to restore file system data. Only settings will be restored.",
+        "failedToRestoreBackup": "Failed to restore backup: {{error}}",
+        "unknownError": "Unknown error"
       }
     },
     "stickies": {

@@ -739,6 +739,15 @@
     "control-panels": {
       "aiModel": "AI 模型",
       "aiModelDescription": "用於聊天、IE 等",
+      "alerts": {
+        "errorUploadingWallpaper": "上傳桌布時發生錯誤。請使用較小的檔案再試一次。",
+        "failedToBackupFileSystem": "無法備份檔案系統資料。只有設定會被備份。",
+        "failedToCreateBackup": "無法建立壓縮備份：{{error}}",
+        "failedToRestoreBackup": "無法回復備份：{{error}}",
+        "failedToRestoreFileSystem": "無法回復檔案系統資料。只有設定會被回復。",
+        "selectImageFile": "請選取圖片檔。不支援影片。",
+        "unknownError": "未知錯誤"
+      },
       "appearance": "外觀",
       "backup": "備份",
       "backupRestoreDescription": "備份或還原所有應用程式設定和檔案。",
@@ -2572,6 +2581,14 @@
       "turnHidingOn": "開啟自動隱藏",
       "turnMagnificationOff": "關閉放大效果",
       "turnMagnificationOn": "開啟放大效果"
+    },
+    "errorBoundaries": {
+      "appDescription": "重新啟動以開啟新視窗，或結束此已當機的視窗。其他已開啟的應用程式將會繼續執行。",
+      "appHeading": "{{appName}} 意外結束。",
+      "desktopDescription": "重新載入 ryOS 以回復 Dock、桌面和選單列。",
+      "desktopHeading": "桌面意外結束。",
+      "relaunch": "重新啟動",
+      "reloadDesktop": "重新載入桌面"
     },
     "errors": {
       "failedToFetchFurigana": "無法取得假名",

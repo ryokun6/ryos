@@ -739,6 +739,15 @@
     "control-panels": {
       "aiModel": "Modello AI",
       "aiModelDescription": "Utilizzato in Chat, IE e altro",
+      "alerts": {
+        "errorUploadingWallpaper": "Errore durante il caricamento dello sfondo. Riprova con un file più piccolo.",
+        "failedToBackupFileSystem": "Impossibile eseguire il backup dei dati del file system. Verrà eseguito il backup solo delle impostazioni.",
+        "failedToCreateBackup": "Impossibile creare il backup compresso: {{error}}",
+        "failedToRestoreBackup": "Impossibile ripristinare il backup: {{error}}",
+        "failedToRestoreFileSystem": "Impossibile ripristinare i dati del file system. Verranno ripristinate solo le impostazioni.",
+        "selectImageFile": "Seleziona un file immagine. I video non sono supportati.",
+        "unknownError": "Errore sconosciuto"
+      },
       "appearance": "Aspetto",
       "backup": "Backup",
       "backupRestoreDescription": "Esegui il backup o ripristina tutte le impostazioni e i file dell'app.",
@@ -2572,6 +2581,14 @@
       "turnHidingOn": "Attiva nascondimento automatico",
       "turnMagnificationOff": "Disattiva ingrandimento",
       "turnMagnificationOn": "Attiva ingrandimento"
+    },
+    "errorBoundaries": {
+      "appDescription": "Riavvia per aprire una nuova finestra, o chiudi questa finestra bloccata. Le altre app aperte continueranno a funzionare.",
+      "appHeading": "{{appName}} si è chiusa inaspettatamente.",
+      "desktopDescription": "Ricarica ryOS per ripristinare il Dock, il Desktop e la barra dei menu.",
+      "desktopHeading": "Desktop si è chiuso inaspettatamente.",
+      "relaunch": "Riavvia",
+      "reloadDesktop": "Ricarica Desktop"
     },
     "errors": {
       "failedToFetchFurigana": "Impossibile recuperare furigana",

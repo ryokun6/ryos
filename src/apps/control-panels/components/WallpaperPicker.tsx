@@ -269,7 +269,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     const isImage = file.type.startsWith("image/");
 
     if (!isImage) {
-      alert("Please select an image file. Videos are not supported.");
+      alert(t("apps.control-panels.alerts.selectImageFile"));
       return;
     }
 
@@ -300,7 +300,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
       setSelectedCategory("custom");
     } catch (error) {
       console.error("Error uploading wallpaper:", error);
-      alert("Error uploading wallpaper. Please try again with a smaller file.");
+      alert(t("apps.control-panels.alerts.errorUploadingWallpaper"));
     }
 
     // Reset the file input

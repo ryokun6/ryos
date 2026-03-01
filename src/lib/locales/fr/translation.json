@@ -739,6 +739,15 @@
     "control-panels": {
       "aiModel": "Modèle d'IA",
       "aiModelDescription": "Utilisé dans les discussions, IE, et plus encore",
+      "alerts": {
+        "errorUploadingWallpaper": "Erreur lors du téléchargement du fond d'écran. Veuillez réessayer avec un fichier plus petit.",
+        "failedToBackupFileSystem": "Échec de la sauvegarde des données du système de fichiers. Seuls les réglages seront sauvegardés.",
+        "failedToCreateBackup": "Échec de la création de la sauvegarde compressée : {{error}}",
+        "failedToRestoreBackup": "Échec de la restauration de la sauvegarde : {{error}}",
+        "failedToRestoreFileSystem": "Échec de la restauration des données du système de fichiers. Seuls les réglages seront restaurés.",
+        "selectImageFile": "Veuillez sélectionner un fichier image. Les vidéos ne sont pas prises en charge.",
+        "unknownError": "Erreur inconnue"
+      },
       "appearance": "Apparence",
       "backup": "Sauvegarde",
       "backupRestoreDescription": "Sauvegarder ou restaurer tous les réglages et fichiers de l'application.",
@@ -2572,6 +2581,14 @@
       "turnHidingOn": "Activer le masquage automatique",
       "turnMagnificationOff": "Désactiver l'agrandissement",
       "turnMagnificationOn": "Activer l'agrandissement"
+    },
+    "errorBoundaries": {
+      "appDescription": "Relancez-la pour ouvrir une nouvelle fenêtre, ou quittez cette fenêtre plantée. Les autres applications ouvertes continueront de fonctionner.",
+      "appHeading": "{{appName}} a quitté de manière inattendue.",
+      "desktopDescription": "Recharger ryOS pour restaurer le Dock, le Bureau et la barre des menus.",
+      "desktopHeading": "Le Bureau a quitté de manière inattendue.",
+      "relaunch": "Relancer",
+      "reloadDesktop": "Recharger le Bureau"
     },
     "errors": {
       "failedToFetchFurigana": "Impossible de récupérer le furigana",

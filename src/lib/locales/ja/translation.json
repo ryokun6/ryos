@@ -739,6 +739,15 @@
     "control-panels": {
       "aiModel": "AIモデル",
       "aiModelDescription": "チャット、IEなどで使用",
+      "alerts": {
+        "errorUploadingWallpaper": "壁紙のアップロード中にエラーが発生しました。より小さいファイルでお試しください。",
+        "failedToBackupFileSystem": "ファイルシステムデータのバックアップに失敗しました。設定のみがバックアップされます。",
+        "failedToCreateBackup": "圧縮バックアップの作成に失敗しました: {{error}}",
+        "failedToRestoreBackup": "バックアップの復元に失敗しました: {{error}}",
+        "failedToRestoreFileSystem": "ファイルシステムデータの復元に失敗しました。設定のみが復元されます。",
+        "selectImageFile": "画像ファイルを選択してください。ビデオはサポートされていません。",
+        "unknownError": "不明なエラー"
+      },
       "appearance": "外観",
       "backup": "バックアップ",
       "backupRestoreDescription": "すべてのアプリ設定とファイルをバックアップまたは復元します。",
@@ -2572,6 +2581,14 @@
       "turnHidingOn": "「自動的に非表示」をオンにする",
       "turnMagnificationOff": "「拡大」機能をオフにする",
       "turnMagnificationOn": "「拡大」機能をオンにする"
+    },
+    "errorBoundaries": {
+      "appDescription": "新しいウィンドウを開くには再起動するか、このクラッシュしたウィンドウを終了してください。他の開いているアプリは引き続き動作します。",
+      "appHeading": "{{appName}}は予期せず終了しました。",
+      "desktopDescription": "Dock、デスクトップ、メニューバーを復元するには、ryOSをリロードしてください。",
+      "desktopHeading": "デスクトップは予期せず終了しました。",
+      "relaunch": "再起動",
+      "reloadDesktop": "デスクトップを再読み込み"
     },
     "errors": {
       "failedToFetchFurigana": "フリガナの取得に失敗しました",

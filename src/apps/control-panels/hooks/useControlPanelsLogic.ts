@@ -1186,9 +1186,7 @@ export function useControlPanelsLogic({
       db.close();
     } catch (error) {
       console.error("Error backing up IndexedDB:", error);
-      alert(
-        "Failed to backup file system data. Only settings will be backed up."
-      );
+      alert(t("apps.control-panels.alerts.failedToBackupFileSystem"));
     }
 
     // Convert to JSON string
@@ -1249,13 +1247,9 @@ export function useControlPanelsLogic({
       URL.revokeObjectURL(url);
     } catch (compressionError) {
       console.error("Compression failed:", compressionError);
-      alert(
-        `Failed to create compressed backup: ${
-          compressionError instanceof Error
-            ? compressionError.message
-            : "Unknown error"
-        }`
-      );
+      alert(t("apps.control-panels.alerts.failedToCreateBackup", {
+        error: compressionError instanceof Error ? compressionError.message : t("apps.control-panels.alerts.unknownError"),
+      }));
     }
   };
 
@@ -1442,9 +1436,7 @@ export function useControlPanelsLogic({
             db.close();
           } catch (error) {
             console.error("Error restoring IndexedDB:", error);
-            alert(
-              "Failed to restore file system data. Only settings will be restored."
-            );
+            alert(t("apps.control-panels.alerts.failedToRestoreFileSystem"));
           }
         }
 
@@ -1512,17 +1504,12 @@ export function useControlPanelsLogic({
       } catch (err) {
         console.error("Restore failed:", err);
 
-        // Show more specific error message
-        let errorMessage = "Failed to restore backup: ";
-        if (err instanceof Error) {
-          errorMessage += err.message;
-        } else if (typeof err === "string") {
-          errorMessage += err;
-        } else {
-          errorMessage += "Unknown error occurred";
-        }
-
-        alert(errorMessage);
+        const detail = err instanceof Error
+          ? err.message
+          : typeof err === "string"
+            ? err
+            : t("apps.control-panels.alerts.unknownError");
+        alert(t("apps.control-panels.alerts.failedToRestoreBackup", { error: detail }));
         clearNextBootMessage();
       }
     };

@@ -739,6 +739,15 @@
     "control-panels": {
       "aiModel": "KI-Modell",
       "aiModelDescription": "Wird in Chats, IE und mehr verwendet",
+      "alerts": {
+        "errorUploadingWallpaper": "Fehler beim Hochladen des Hintergrundbilds. Bitte versuchen Sie es mit einer kleineren Datei erneut.",
+        "failedToBackupFileSystem": "Fehler beim Sichern der Dateisystemdaten. Es werden nur die Einstellungen gesichert.",
+        "failedToCreateBackup": "Fehler beim Erstellen der komprimierten Sicherung: {{error}}",
+        "failedToRestoreBackup": "Fehler beim Wiederherstellen der Sicherung: {{error}}",
+        "failedToRestoreFileSystem": "Fehler beim Wiederherstellen der Dateisystemdaten. Es werden nur die Einstellungen wiederhergestellt.",
+        "selectImageFile": "Bitte wählen Sie eine Bilddatei aus. Videos werden nicht unterstützt.",
+        "unknownError": "Unbekannter Fehler"
+      },
       "appearance": "Erscheinungsbild",
       "backup": "Sicherung",
       "backupRestoreDescription": "Alle App-Einstellungen und Dateien sichern oder wiederherstellen.",
@@ -2572,6 +2581,14 @@
       "turnHidingOn": "Automatisch ausblenden aktivieren",
       "turnMagnificationOff": "Vergrößerung deaktivieren",
       "turnMagnificationOn": "Vergrößerung aktivieren"
+    },
+    "errorBoundaries": {
+      "appDescription": "Starten Sie es neu, um ein neues Fenster zu öffnen, oder beenden Sie dieses abgestürzte Fenster. Andere geöffnete Apps werden weiter ausgeführt.",
+      "appHeading": "{{appName}} wurde unerwartet beendet.",
+      "desktopDescription": "ryOS neu laden, um das Dock, den Schreibtisch und die Menüleiste wiederherzustellen.",
+      "desktopHeading": "Der Schreibtisch wurde unerwartet beendet.",
+      "relaunch": "Neu starten",
+      "reloadDesktop": "Schreibtisch neu laden"
     },
     "errors": {
       "failedToFetchFurigana": "Abrufen von Furigana fehlgeschlagen",

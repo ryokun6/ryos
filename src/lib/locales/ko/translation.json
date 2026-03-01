@@ -739,6 +739,15 @@
     "control-panels": {
       "aiModel": "AI 모델",
       "aiModelDescription": "채팅, IE 등에서 사용됨",
+      "alerts": {
+        "errorUploadingWallpaper": "배경화면 업로드 오류. 더 작은 파일로 다시 시도해 주세요.",
+        "failedToBackupFileSystem": "파일 시스템 데이터 백업에 실패했습니다. 설정만 백업됩니다.",
+        "failedToCreateBackup": "압축 백업 생성에 실패했습니다: {{error}}",
+        "failedToRestoreBackup": "백업 복원에 실패했습니다: {{error}}",
+        "failedToRestoreFileSystem": "파일 시스템 데이터 복원에 실패했습니다. 설정만 복원됩니다.",
+        "selectImageFile": "이미지 파일을 선택해 주세요. 동영상은 지원되지 않습니다.",
+        "unknownError": "알 수 없는 오류"
+      },
       "appearance": "모양",
       "backup": "백업",
       "backupRestoreDescription": "모든 앱 설정과 파일을 백업하거나 복원합니다.",
@@ -2572,6 +2581,14 @@
       "turnHidingOn": "자동 숨김 켜기",
       "turnMagnificationOff": "확대 끄기",
       "turnMagnificationOn": "확대 켜기"
+    },
+    "errorBoundaries": {
+      "appDescription": "새 창을 열려면 다시 실행하거나, 충돌한 이 창을 종료하세요. 다른 열려 있는 앱은 계속 실행됩니다.",
+      "appHeading": "{{appName}}이(가) 예기치 않게 종료되었습니다.",
+      "desktopDescription": "Dock, 데스크탑 및 메뉴 막대를 복원하려면 ryOS를 다시 로드하세요.",
+      "desktopHeading": "데스크탑이 예기치 않게 종료되었습니다.",
+      "relaunch": "다시 실행",
+      "reloadDesktop": "데스크탑 다시 로드"
     },
     "errors": {
       "failedToFetchFurigana": "후리가나 가져오기 실패",

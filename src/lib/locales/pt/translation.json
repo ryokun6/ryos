@@ -739,6 +739,15 @@
     "control-panels": {
       "aiModel": "Modelo de IA",
       "aiModelDescription": "Usado em Chats, IE e mais",
+      "alerts": {
+        "errorUploadingWallpaper": "Erro ao carregar o papel de parede. Tente novamente com um arquivo menor.",
+        "failedToBackupFileSystem": "Falha ao fazer backup dos dados do sistema de arquivos. Apenas as configurações serão copiadas.",
+        "failedToCreateBackup": "Falha ao criar backup compactado: {{error}}",
+        "failedToRestoreBackup": "Falha ao restaurar backup: {{error}}",
+        "failedToRestoreFileSystem": "Falha ao restaurar os dados do sistema de arquivos. Apenas as configurações serão restauradas.",
+        "selectImageFile": "Selecione um arquivo de imagem. Vídeos não são suportados.",
+        "unknownError": "Erro desconhecido"
+      },
       "appearance": "Aparência",
       "backup": "Backup",
       "backupRestoreDescription": "Fazer backup ou restaurar todas as definições e ficheiros da aplicação.",
@@ -2572,6 +2581,14 @@
       "turnHidingOn": "Ativar ocultação automática",
       "turnMagnificationOff": "Desativar ampliação",
       "turnMagnificationOn": "Ativar ampliação"
+    },
+    "errorBoundaries": {
+      "appDescription": "Reinicie-o para abrir uma nova janela, ou feche esta janela travada. Outros aplicativos abertos continuarão em execução.",
+      "appHeading": "{{appName}} encerrou inesperadamente.",
+      "desktopDescription": "Recarregar o ryOS para restaurar o Dock, a Mesa e a barra de menus.",
+      "desktopHeading": "A Mesa encerrou inesperadamente.",
+      "relaunch": "Reiniciar",
+      "reloadDesktop": "Recarregar Mesa"
     },
     "errors": {
       "failedToFetchFurigana": "Falha ao buscar furigana",
