@@ -245,17 +245,19 @@ export default apiHandler(
         metadata.siteName = new URL(finalUrl).hostname;
       }
 
-      const decodeHtml = (text: string) => {
-        return text
-          .replace(/&amp;/g, '&')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .replace(/&apos;/g, "'")
-          .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
-          .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)));
+      const HTML_ENTITIES: Record<string, string> = {
+        '&amp;': '&', '&lt;': '<', '&gt;': '>',
+        '&quot;': '"', '&#39;': "'", '&apos;': "'",
       };
+      const decodeHtml = (text: string) =>
+        text.replace(
+          /&amp;|&lt;|&gt;|&quot;|&#39;|&apos;|&#x([0-9a-fA-F]+);|&#(\d+);/g,
+          (match, hex, dec) => {
+            if (hex) return String.fromCharCode(parseInt(hex, 16));
+            if (dec) return String.fromCharCode(parseInt(dec, 10));
+            return HTML_ENTITIES[match] ?? match;
+          }
+        );
 
       if (metadata.title) {
         metadata.title = decodeHtml(metadata.title);
