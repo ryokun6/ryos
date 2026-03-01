@@ -828,6 +828,7 @@
       },
       "highContrast": "Hoher Kontrast",
       "invert": "Invertieren",
+      "iosVolumeHint": "Unter iOS verwenden Sie Hardware-Tasten, um die Medienlautstärke zu steuern.",
       "ipod": "iPod",
       "ipodVolume": "iPod-Lautstärke",
       "logIn": "Anmelden",
@@ -852,6 +853,7 @@
       "mono": "Mono",
       "name": "Systemsteuerung",
       "nameForMacosX": "Systemeinstellungen",
+      "noWallpapers": "Keine Hintergrundbilder",
       "openai": "OpenAI",
       "openaiVoice": "OpenAI Voice",
       "patterns": "Muster",
@@ -897,6 +899,11 @@
       "selectScreenSaver": "Bildschirmschoner auswählen",
       "sepia": "Sepia",
       "setPassword": "Passwort festlegen",
+      "setPasswordDialog": {
+        "description": "Legen Sie ein Passwort fest, um die Kontowiederherstellung zu ermöglichen. Sie können dieses Passwort verwenden, um ein neues Token zu erhalten, wenn Sie den Zugriff verlieren.",
+        "submitLabel": "Passwort festlegen",
+        "title": "Passwort festlegen"
+      },
       "shaderEffect": "Shader-Effekt",
       "shaderEffectDescription": "Leistungsintensiver Hintergrundeffekt",
       "show": "Anzeigen",
@@ -914,7 +921,17 @@
       "ttsVoice": "TTS Stimme",
       "ui": "UI",
       "uiSounds": "UI Töne",
-      "uiVolume": "UI-Lautstärke"
+      "uiVolume": "UI-Lautstärke",
+      "wallpaperCategories": {
+        "aqua": "Aqua",
+        "convergency": "Konvergenz",
+        "foliage": "Blattwerk",
+        "graphics": "Grafiken",
+        "landscapes": "Landschaften",
+        "nostalgia": "Nostalgie",
+        "objects": "Objekte",
+        "structures": "Strukturen"
+      }
     },
     "finder": {
       "contextMenu": {

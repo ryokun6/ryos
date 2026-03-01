@@ -828,6 +828,7 @@
       },
       "highContrast": "Высокий контраст",
       "invert": "Инвертировать",
+      "iosVolumeHint": "На iOS используйте аппаратные кнопки для управления громкостью медиа.",
       "ipod": "iPod",
       "ipodVolume": "Громкость iPod",
       "logIn": "Войти",
@@ -852,6 +853,7 @@
       "mono": "Моно",
       "name": "Панели управления",
       "nameForMacosX": "Системные настройки",
+      "noWallpapers": "Нет обоев",
       "openai": "OpenAI",
       "openaiVoice": "Голос OpenAI",
       "patterns": "Шаблоны",
@@ -897,6 +899,11 @@
       "selectScreenSaver": "Выбрать заставку",
       "sepia": "Сепия",
       "setPassword": "Установить пароль",
+      "setPasswordDialog": {
+        "description": "Установите пароль, чтобы включить восстановление учетной записи. Вы можете использовать этот пароль для получения нового токена, если потеряете доступ.",
+        "submitLabel": "Установить пароль",
+        "title": "Установить пароль"
+      },
       "shaderEffect": "Эффект шейдера",
       "shaderEffectDescription": "Фоновый эффект, требовательный к производительности",
       "show": "Показать",
@@ -914,7 +921,17 @@
       "ttsVoice": "Голос TTS",
       "ui": "Интерфейс",
       "uiSounds": "Звуки интерфейса",
-      "uiVolume": "Громкость интерфейса"
+      "uiVolume": "Громкость интерфейса",
+      "wallpaperCategories": {
+        "aqua": "Аква",
+        "convergency": "Конвергенция",
+        "foliage": "Листва",
+        "graphics": "Графика",
+        "landscapes": "Пейзажи",
+        "nostalgia": "Ностальгия",
+        "objects": "Объекты",
+        "structures": "Структуры"
+      }
     },
     "finder": {
       "contextMenu": {

@@ -324,6 +324,9 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
   }, [currentWallpaper, INDEXEDDB_PREFIX]);
 
   const formatCategoryLabel = (category: string) => {
+    const key = `apps.control-panels.wallpaperCategories.${category}`;
+    const translated = t(key);
+    if (translated !== key) return translated;
     return category
       .split("_")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -473,7 +476,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
             ))
           ) : (
             <div className="col-span-4 text-center py-8 text-gray-500">
-              No wallpapers
+              {t("apps.control-panels.noWallpapers")}
             </div>
           )}
         </div>

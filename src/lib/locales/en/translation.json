@@ -2338,6 +2338,23 @@
           "description": "Reset preferences or format the virtual file system"
         }
       },
+      "setPasswordDialog": {
+        "title": "Set Password",
+        "description": "Set a password to enable account recovery. You can use this password to get a new token if you lose access.",
+        "submitLabel": "Set Password"
+      },
+      "noWallpapers": "No wallpapers",
+      "iosVolumeHint": "On iOS, use hardware buttons to control media volume.",
+      "wallpaperCategories": {
+        "landscapes": "Landscapes",
+        "structures": "Structures",
+        "objects": "Objects",
+        "convergency": "Convergency",
+        "nostalgia": "Nostalgia",
+        "aqua": "Aqua",
+        "foliage": "Foliage",
+        "graphics": "Graphics"
+      },
       "alerts": {
         "selectImageFile": "Please select an image file. Videos are not supported.",
         "errorUploadingWallpaper": "Error uploading wallpaper. Please try again with a smaller file.",

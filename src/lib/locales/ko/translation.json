@@ -828,6 +828,7 @@
       },
       "highContrast": "고대비",
       "invert": "반전",
+      "iosVolumeHint": "iOS에서 하드웨어 버튼을 사용하여 미디어 볼륨을 제어합니다.",
       "ipod": "iPod",
       "ipodVolume": "iPod 음량",
       "logIn": "로그인",
@@ -852,6 +853,7 @@
       "mono": "모노",
       "name": "제어판",
       "nameForMacosX": "시스템 환경설정",
+      "noWallpapers": "배경화면 없음",
       "openai": "OpenAI",
       "openaiVoice": "OpenAI 음성",
       "patterns": "패턴",
@@ -897,6 +899,11 @@
       "selectScreenSaver": "화면 보호기 선택",
       "sepia": "세피아",
       "setPassword": "비밀번호 설정",
+      "setPasswordDialog": {
+        "description": "계정 복구를 활성화하려면 암호를 설정하십시오. 접근 권한을 잃어버린 경우 이 암호를 사용하여 새 토큰을 받을 수 있습니다.",
+        "submitLabel": "암호 설정",
+        "title": "암호 설정"
+      },
       "shaderEffect": "셰이더 효과",
       "shaderEffectDescription": "성능 집약적인 배경 효과",
       "show": "표시",
@@ -914,7 +921,17 @@
       "ttsVoice": "TTS 음성",
       "ui": "UI",
       "uiSounds": "UI 소리",
-      "uiVolume": "UI 음량"
+      "uiVolume": "UI 음량",
+      "wallpaperCategories": {
+        "aqua": "아쿠아",
+        "convergency": "수렴",
+        "foliage": "나뭇잎",
+        "graphics": "그래픽",
+        "landscapes": "풍경",
+        "nostalgia": "향수",
+        "objects": "사물",
+        "structures": "구조물"
+      }
     },
     "finder": {
       "contextMenu": {
