@@ -1,10 +1,17 @@
 import { create } from "zustand";
 import type { PusherChannel } from "@/lib/pusherClient";
 import { getPusherClient } from "@/lib/pusherClient";
-import { getApiUrl } from "@/utils/platform";
 import { toast } from "@/hooks/useToast";
-import { abortableFetch } from "@/utils/abortableFetch";
 import { useChatsStore } from "@/stores/useChatsStore";
+import {
+  createListenSession,
+  fetchListenSessions,
+  joinListenSession,
+  leaveListenSession,
+  reactListenSession,
+  syncListenSession,
+} from "@/api/listen";
+import type { ApiAuthContext } from "@/api/core";
 
 export interface ListenTrackMeta {
   title: string;
@@ -126,14 +133,14 @@ function generateAnonymousId(): string {
   return `anon-${Math.random().toString(36).substring(2, 10)}`;
 }
 
-function buildSessionAuthHeaders(username: string): Record<string, string> | null {
+function buildSessionAuthContext(username: string): ApiAuthContext | null {
   const { username: authUsername, authToken } = useChatsStore.getState();
   if (!authUsername || !authToken) return null;
   if (authUsername.toLowerCase() !== username.toLowerCase()) return null;
 
   return {
-    Authorization: `Bearer ${authToken}`,
-    "X-Username": authUsername,
+    username: authUsername,
+    token: authToken,
   };
 }
 
@@ -298,53 +305,23 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
 
     fetchSessions: async () => {
       try {
-        const response = await abortableFetch(getApiUrl("/api/listen/sessions"), {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({
-            error: `HTTP error! status: ${response.status}`,
-          }));
-          return { ok: false, error: errorData.error || "Failed to fetch sessions" };
-        }
-
-        const data = await response.json();
+        const data = await fetchListenSessions();
         return { ok: true, sessions: data.sessions as ListenSessionSummary[] };
       } catch (error) {
         console.error("[ListenSession] fetchSessions failed", error);
-        return { ok: false, error: "Network error. Please try again." };
+        const message = error instanceof Error ? error.message : "Network error. Please try again.";
+        return { ok: false, error: message };
       }
     },
 
     createSession: async (username: string) => {
-      const authHeaders = buildSessionAuthHeaders(username);
-      if (!authHeaders) {
+      const auth = buildSessionAuthContext(username);
+      if (!auth) {
         return { ok: false, error: "Authentication required" };
       }
 
       try {
-        const response = await abortableFetch(getApiUrl("/api/listen/sessions"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...authHeaders },
-          body: JSON.stringify({ username }),
-          timeout: 15000,
-          throwOnHttpError: false,
-          retry: { maxAttempts: 1, initialDelayMs: 250 },
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({
-            error: `HTTP error! status: ${response.status}`,
-          }));
-          return { ok: false, error: errorData.error || "Failed to create session" };
-        }
-
-        const data = await response.json();
+        const data = await createListenSession(auth, username);
         const session = data.session as ListenSession;
         const identity = updateIdentityFlags(session, username);
 
@@ -362,7 +339,8 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         return { ok: true, session };
       } catch (error) {
         console.error("[ListenSession] createSession failed", error);
-        return { ok: false, error: "Network error. Please try again." };
+        const message = error instanceof Error ? error.message : "Network error. Please try again.";
+        return { ok: false, error: message };
       }
     },
 
@@ -371,39 +349,19 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         // If no username, join as anonymous
         const isAnonymous = !username;
         const anonymousId = isAnonymous ? generateAnonymousId() : null;
-        const authHeaders = !isAnonymous && username
-          ? buildSessionAuthHeaders(username)
+        const auth = !isAnonymous && username
+          ? buildSessionAuthContext(username)
           : null;
 
-        if (!isAnonymous && !authHeaders) {
+        if (!isAnonymous && !auth) {
           return { ok: false, error: "Authentication required" };
         }
 
-        const response = await abortableFetch(
-          getApiUrl(`/api/listen/sessions/${encodeURIComponent(sessionId)}/join`),
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(authHeaders || {}),
-            },
-            body: JSON.stringify(
-              isAnonymous ? { anonymousId } : { username }
-            ),
-            timeout: 15000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
+        const data = await joinListenSession(
+          sessionId,
+          isAnonymous ? { anonymousId: anonymousId || undefined } : { username },
+          auth || undefined
         );
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({
-            error: `HTTP error! status: ${response.status}`,
-          }));
-          return { ok: false, error: errorData.error || "Failed to join session" };
-        }
-
-        const data = await response.json();
         const session = data.session as ListenSession;
         const identity = isAnonymous
           ? { isHost: false, isDj: false }
@@ -430,7 +388,8 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         return { ok: true, session };
       } catch (error) {
         console.error("[ListenSession] joinSession failed", error);
-        return { ok: false, error: "Network error. Please try again." };
+        const message = error instanceof Error ? error.message : "Network error. Please try again.";
+        return { ok: false, error: message };
       }
     },
 
@@ -448,44 +407,27 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       }
 
       try {
-        const authHeaders = !isAnonymous && username
-          ? buildSessionAuthHeaders(username)
+        const auth = !isAnonymous && username
+          ? buildSessionAuthContext(username)
           : null;
 
-        if (!isAnonymous && !authHeaders) {
+        if (!isAnonymous && !auth) {
           return { ok: false, error: "Authentication required" };
         }
 
-        const response = await abortableFetch(
-          getApiUrl(`/api/listen/sessions/${encodeURIComponent(currentSession.id)}/leave`),
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(authHeaders || {}),
-            },
-            body: JSON.stringify(
-              isAnonymous ? { anonymousId } : { username }
-            ),
-            timeout: 15000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
+        await leaveListenSession(
+          currentSession.id,
+          isAnonymous ? { anonymousId: anonymousId || undefined } : { username: username || undefined },
+          auth || undefined
         );
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({
-            error: `HTTP error! status: ${response.status}`,
-          }));
-          return { ok: false, error: errorData.error || "Failed to leave session" };
-        }
 
         unsubscribeFromSession();
         set({ ...initialState });
         return { ok: true };
       } catch (error) {
         console.error("[ListenSession] leaveSession failed", error);
-        return { ok: false, error: "Network error. Please try again." };
+        const message = error instanceof Error ? error.message : "Network error. Please try again.";
+        return { ok: false, error: message };
       }
     },
 
@@ -495,41 +437,26 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         return { ok: false, error: "No active session" };
       }
 
-      const authHeaders = buildSessionAuthHeaders(username);
-      if (!authHeaders) {
+      const auth = buildSessionAuthContext(username);
+      if (!auth) {
         return { ok: false, error: "Authentication required" };
       }
 
       try {
-        const response = await abortableFetch(
-          getApiUrl(`/api/listen/sessions/${encodeURIComponent(currentSession.id)}/sync`),
+        await syncListenSession(
+          currentSession.id,
           {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...authHeaders,
-            },
-            body: JSON.stringify({
-              username,
-              state: payload,
-            }),
-            timeout: 15000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
+            username,
+            state: payload,
+          },
+          auth
         );
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({
-            error: `HTTP error! status: ${response.status}`,
-          }));
-          return { ok: false, error: errorData.error || "Failed to sync session" };
-        }
 
         return { ok: true };
       } catch (error) {
         console.error("[ListenSession] syncSession failed", error);
-        return { ok: false, error: "Network error. Please try again." };
+        const message = error instanceof Error ? error.message : "Network error. Please try again.";
+        return { ok: false, error: message };
       }
     },
 
@@ -544,38 +471,23 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
         return { ok: false, error: "Sign in to send reactions" };
       }
 
-      const authHeaders = buildSessionAuthHeaders(username);
-      if (!authHeaders) {
+      const auth = buildSessionAuthContext(username);
+      if (!auth) {
         return { ok: false, error: "Authentication required" };
       }
 
       try {
-        const response = await abortableFetch(
-          getApiUrl(`/api/listen/sessions/${encodeURIComponent(currentSession.id)}/reaction`),
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...authHeaders,
-            },
-            body: JSON.stringify({ username, emoji }),
-            timeout: 15000,
-            throwOnHttpError: false,
-            retry: { maxAttempts: 1, initialDelayMs: 250 },
-          }
+        await reactListenSession(
+          currentSession.id,
+          { username, emoji },
+          auth
         );
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({
-            error: `HTTP error! status: ${response.status}`,
-          }));
-          return { ok: false, error: errorData.error || "Failed to send reaction" };
-        }
 
         return { ok: true };
       } catch (error) {
         console.error("[ListenSession] sendReaction failed", error);
-        return { ok: false, error: "Network error. Please try again." };
+        const message = error instanceof Error ? error.message : "Network error. Please try again.";
+        return { ok: false, error: message };
       }
     },
 
