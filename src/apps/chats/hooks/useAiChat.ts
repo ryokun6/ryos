@@ -79,13 +79,14 @@ import {
 // Track newly created TextEdit instances for fallback mechanism
 const recentlyCreatedTextEditInstances = new Map<
   string,
-  { instanceId: string; timestamp: number }
+  { instanceId: string; path: string; timestamp: number }
 >();
 
 // Helper to add a newly created instance to tracking
-const trackNewTextEditInstance = (instanceId: string) => {
+const trackNewTextEditInstance = (instanceId: string, path: string) => {
   recentlyCreatedTextEditInstances.set(instanceId, {
     instanceId,
+    path,
     timestamp: Date.now(),
   });
   // Clean up old entries (older than 5 minutes)
@@ -95,6 +96,29 @@ const trackNewTextEditInstance = (instanceId: string) => {
       recentlyCreatedTextEditInstances.delete(id);
     }
   }
+};
+
+const getRecentTextEditInstanceForPath = (path: string): string | null => {
+  const appStore = useAppStore.getState();
+  let newestMatch: { instanceId: string; timestamp: number } | null = null;
+
+  for (const [id, tracked] of recentlyCreatedTextEditInstances.entries()) {
+    if (tracked.path !== path) {
+      continue;
+    }
+
+    const instance = appStore.instances[id];
+    if (!instance || !instance.isOpen || instance.appId !== "textedit") {
+      recentlyCreatedTextEditInstances.delete(id);
+      continue;
+    }
+
+    if (!newestMatch || tracked.timestamp > newestMatch.timestamp) {
+      newestMatch = { instanceId: id, timestamp: tracked.timestamp };
+    }
+  }
+
+  return newestMatch?.instanceId ?? null;
 };
 
 
@@ -1086,9 +1110,46 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                 // Open document in TextEdit
                 const filesStore = useFilesStore.getState();
                 const fileItem = filesStore.items[path];
+                const appStore = useAppStore.getState();
+                const textEditStore = useTextEditStore.getState();
 
                 if (!fileItem || fileItem.status !== "active") {
                   throw new Error(`Document not found: ${path}`);
+                }
+
+                const existingInstanceId = textEditStore.getInstanceIdByPath(path);
+                if (existingInstanceId) {
+                  if (appStore.instances[existingInstanceId]) {
+                    appStore.bringInstanceToForeground(existingInstanceId);
+                    addToolResult({
+                      tool: toolCall.toolName,
+                      toolCallId: toolCall.toolCallId,
+                      output: i18n.t("apps.chats.toolCalls.openedDocument", {
+                        fileName: fileItem.name,
+                      }),
+                    });
+                    result = "";
+                    break;
+                  }
+
+                  // Stale reference in TextEdit store; clean it up and continue.
+                  textEditStore.removeInstance(existingInstanceId);
+                }
+
+                // Fallback for write->open races: a freshly launched TextEdit window
+                // may not have registered its file path yet.
+                const recentInstanceId = getRecentTextEditInstanceForPath(path);
+                if (recentInstanceId) {
+                  appStore.bringInstanceToForeground(recentInstanceId);
+                  addToolResult({
+                    tool: toolCall.toolName,
+                    toolCallId: toolCall.toolCallId,
+                    output: i18n.t("apps.chats.toolCalls.openedDocument", {
+                      fileName: fileItem.name,
+                    }),
+                  });
+                  result = "";
+                  break;
                 }
 
                 if (!fileItem.uuid) {
@@ -1111,8 +1172,8 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   content = contentData.content;
                 }
 
-                // Pass initialData directly to launchApp (consistent with Terminal/Finder approach)
-                // TextEdit will handle markdown-to-HTML conversion internally
+                // Pass initialData directly to launchApp (consistent with Terminal/Finder approach).
+                // TextEdit handles markdown-to-HTML conversion internally.
                 launchApp("textedit", {
                   multiWindow: true,
                   initialData: { path, content },
@@ -1405,7 +1466,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
                   windowTitle,
                   true
                 );
-                trackNewTextEditInstance(targetInstanceId);
+                trackNewTextEditInstance(targetInstanceId, path);
               }
 
               const outputKey = isNewFile ? "createdDocument" : "updatedDocument";

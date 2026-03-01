@@ -35,8 +35,10 @@ interface CrashDialogProps {
   titleBarLabel: string;
   heading: string;
   description: string;
-  actionLabel: string;
-  onAction: () => void;
+  primaryActionLabel: string;
+  onPrimaryAction: () => void;
+  secondaryActionLabel?: string;
+  onSecondaryAction?: () => void;
   error: Error;
 }
 
@@ -46,6 +48,7 @@ export interface AppErrorBoundaryProps {
   appName: string;
   instanceId: string;
   onRelaunch: () => void;
+  onQuit: () => void;
   onCrash?: () => void;
 }
 
@@ -138,13 +141,16 @@ function CrashDialog({
   titleBarLabel,
   heading,
   description,
-  actionLabel,
-  onAction,
+  primaryActionLabel,
+  onPrimaryAction,
+  secondaryActionLabel,
+  onSecondaryAction,
   error,
 }: CrashDialogProps) {
   const currentTheme = useThemeStore((state) => state.current);
   const { t } = useTranslation();
-  const actionButtonRef = React.useRef<HTMLButtonElement>(null);
+  const primaryActionButtonRef = React.useRef<HTMLButtonElement>(null);
+  const secondaryActionButtonRef = React.useRef<HTMLButtonElement>(null);
   const headingId = React.useId();
   const descriptionId = React.useId();
 
@@ -160,7 +166,8 @@ function CrashDialog({
         : "font-geneva-12 text-[12px]",
   );
 
-  const buttonVariant = isMacTheme ? "default" : "retro";
+  const primaryButtonVariant = isMacTheme ? "default" : "retro";
+  const secondaryButtonVariant = isMacTheme ? "secondary" : "retro";
 
   const dialogBody = (
     <div
@@ -206,11 +213,28 @@ function CrashDialog({
             </div>
           ) : null}
 
-          <div className="flex justify-end pt-0.5">
+          <div className="flex justify-end gap-2 pt-0.5">
+            {secondaryActionLabel && onSecondaryAction ? (
+              <Button
+                ref={secondaryActionButtonRef}
+                variant={secondaryButtonVariant}
+                onClick={onSecondaryAction}
+                className={cn(
+                  !isMacTheme && "h-7",
+                  isXpTheme
+                    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+                    : isMacTheme
+                      ? "text-[13px]"
+                      : "font-geneva-12 text-[12px]",
+                )}
+              >
+                {secondaryActionLabel}
+              </Button>
+            ) : null}
             <Button
-              ref={actionButtonRef}
-              variant={buttonVariant}
-              onClick={onAction}
+              ref={primaryActionButtonRef}
+              variant={primaryButtonVariant}
+              onClick={onPrimaryAction}
               className={cn(
                 !isMacTheme && "h-7",
                 isXpTheme
@@ -220,7 +244,7 @@ function CrashDialog({
                     : "font-geneva-12 text-[12px]",
               )}
             >
-              {actionLabel}
+              {primaryActionLabel}
             </Button>
           </div>
         </div>
@@ -234,7 +258,11 @@ function CrashDialog({
       modal={scope === "desktop"}
       onOpenChange={(open) => {
         if (!open) {
-          onAction();
+          if (onSecondaryAction) {
+            onSecondaryAction();
+            return;
+          }
+          onPrimaryAction();
         }
       }}
     >
@@ -248,7 +276,7 @@ function CrashDialog({
         style={isXpTheme ? { fontSize: "11px" } : undefined}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
-          actionButtonRef.current?.focus();
+          primaryActionButtonRef.current?.focus();
         }}
         onEscapeKeyDown={(event) => {
           event.preventDefault();
@@ -291,6 +319,7 @@ export function AppErrorBoundary({
   appName,
   instanceId,
   onRelaunch,
+  onQuit,
   onCrash,
 }: AppErrorBoundaryProps) {
   const currentTheme = useThemeStore((state) => state.current);
@@ -308,12 +337,16 @@ export function AppErrorBoundary({
           })}
           description={t("common.errorBoundaries.appDescription", {
             defaultValue:
-              "Relaunch it to open a fresh window. Other open apps will keep running.",
+              "Relaunch it to open a fresh window, or quit this crashed window. Other open apps will keep running.",
           })}
-          actionLabel={t("common.errorBoundaries.relaunch", {
+          primaryActionLabel={t("common.errorBoundaries.relaunch", {
             defaultValue: "Relaunch",
           })}
-          onAction={onRelaunch}
+          onPrimaryAction={onRelaunch}
+          secondaryActionLabel={t("common.dock.quit", {
+            defaultValue: "Quit",
+          })}
+          onSecondaryAction={onQuit}
           error={error}
         />
       )}
@@ -355,10 +388,10 @@ export function DesktopErrorBoundary({
             defaultValue:
               "Reload ryOS to restore the Dock, Desktop, and menu bar.",
           })}
-          actionLabel={t("common.errorBoundaries.reloadDesktop", {
+          primaryActionLabel={t("common.errorBoundaries.reloadDesktop", {
             defaultValue: "Reload Desktop",
           })}
-          onAction={() => window.location.reload()}
+          onPrimaryAction={() => window.location.reload()}
           error={error}
         />
       )}
