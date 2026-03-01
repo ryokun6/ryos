@@ -10,10 +10,14 @@
       "dialogs": {
         "banDescription": "¿Está seguro de que desea banear a {{username}}? Se cerrará su sesión y no podrán acceder al servicio.",
         "banTitle": "¿Banear usuario?",
+        "clearMemoriesDescription": "Esto eliminará permanentemente todas las {{count}} memorias a largo plazo de {{username}}. Las notas diarias se conservarán. Esta acción no se puede deshacer.",
+        "clearMemoriesTitle": "Borrar todas las memorias",
         "deleteDescription": "¿Estás seguro de que quieres eliminar {{type}} \"{{name}}\"? Esta acción no se puede deshacer.",
         "deleteTitle": "¿Eliminar {{type}}?",
         "editSong": "Editar {{field}}",
         "editSongDescription": "Introduzca el nuevo valor",
+        "reprocessDailyNotesDescription": "Esto restablecerá todas las notas diarias de {{username}} y volverá a extraer memorias a largo plazo de ellas. Las memorias existentes se actualizarán/fusionarán. Solo se procesarán los días pasados (no hoy).",
+        "reprocessDailyNotesTitle": "Reprocesar notas diarias",
         "unshareDescription": "Esto eliminará \"{{name}}\" de las canciones compartidas de {{user}}. La canción permanecerá en la biblioteca pero no estará asociada a ningún usuario.",
         "unshareTitle": "Dejar de compartir canción"
       },
@@ -23,6 +27,7 @@
         "exportFailed": "Error en la exportación",
         "failedToAddToLibrary": "Error al añadir a la biblioteca",
         "failedToBanUser": "Error al banear al usuario",
+        "failedToClearMemories": "Error al borrar memorias",
         "failedToDeleteMessage": "Error al eliminar mensaje",
         "failedToDeleteRoom": "Error al eliminar sala",
         "failedToDeleteSong": "No se pudo eliminar la canción",
@@ -33,6 +38,7 @@
         "failedToFetchSong": "No se pudo obtener la canción",
         "failedToFetchSongs": "No se pudieron obtener las canciones",
         "failedToFetchUsers": "Error al obtener usuarios",
+        "failedToProcessDailyNotes": "Error al procesar notas diarias",
         "failedToRefreshLyrics": "Error al actualizar letras",
         "failedToResetLyrics": "Error al restablecer letras",
         "failedToUnbanUser": "Error al desbanear al usuario",
@@ -121,11 +127,18 @@
         "banReasonPlaceholder": "Motivo del baneo (opcional)",
         "banned": "Baneado",
         "bannedOn": "Baneado el",
+        "clearAll": "Borrar todo",
+        "clearing": "Borrando…",
         "confirmBan": "Banear",
+        "dailyNotes": "Notas diarias",
+        "dailyNotesProcessed": "Notas diarias procesadas",
         "delete": "Eliminar usuario",
+        "entries": "entradas",
         "lastActive": "Última actividad",
         "loading": "Cargando perfil...",
+        "longTermMemories": "Memorias a largo plazo",
         "memories": "Recuerdos",
+        "memoriesCleared": "Memorias borradas",
         "memoryKey": "Tecla",
         "memorySummary": "Resumen",
         "messages": "Mensajes",
@@ -133,10 +146,17 @@
         "noMessages": "No se encontraron mensajes",
         "noReason": "No se proporcionó ningún motivo",
         "notFound": "Usuario no encontrado",
+        "pending": "pendiente",
+        "pendingTooltip": "Aún no procesado en memoria a largo plazo",
+        "processed": "procesado",
+        "processedTooltip": "Procesado en memoria a largo plazo",
+        "processing": "Procesando…",
         "reason": "Motivo",
         "recentMessages": "Mensajes recientes",
+        "reprocess": "Reprocesar",
         "room": "Sala",
         "rooms": "Salas",
+        "today": "hoy",
         "unban": "Desbloquear usuario"
       },
       "room": {
@@ -1276,6 +1296,11 @@
         "toggleRomanization": "Alternar Romanización",
         "translateLyrics": "Traducir letras"
       },
+      "coverFlow": {
+        "hideMedia": "Ocultar medios",
+        "noTrack": "Sin pista",
+        "showMedia": "Mostrar medios"
+      },
       "description": "Reproductor de música",
       "dialogs": {
         "addSongDescription": "Pega un enlace de YouTube para añadirlo a tu iPod.",
@@ -1608,6 +1633,10 @@
     },
     "minesweeper": {
       "description": "Juego de puzle clásico",
+      "dialogs": {
+        "newGameDescription": "¿Estás seguro de que quieres empezar una partida nueva?",
+        "newGameTitle": "Nueva Partida"
+      },
       "help": {
         "desktopControls": {
           "description": "Haz clic izquierdo para revelar, clic derecho para marcar, doble clic en los números para auto-revelar vecinos.",
@@ -1907,6 +1936,14 @@
       "soundboards": "Mesas de sonido"
     },
     "stickies": {
+      "colors": {
+        "blue": "Azul",
+        "green": "Verde",
+        "orange": "Naranja",
+        "pink": "Rosa",
+        "purple": "Morado",
+        "yellow": "Amarillo"
+      },
       "description": "Notas adhesivas para recordatorios rápidos",
       "empty": {
         "createNote": "Nueva nota",
@@ -2597,6 +2634,11 @@
       "undo": "Deshacer",
       "videos": "Vídeos",
       "view": "Ver"
+    },
+    "menuBar": {
+      "missionControl": "Mission Control (F3)",
+      "offline": "Actualmente estás sin conexión",
+      "showAllWindows": "Haz clic para mostrar todas las ventanas (F3)"
     },
     "startMenu": {
       "aboutThisComputer": "Acerca de Este Equipo",

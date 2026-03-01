@@ -10,10 +10,14 @@
       "dialogs": {
         "banDescription": "{{username}}をBANしてもよろしいですか？彼らはログアウトされ、サービスにアクセスできなくなります。",
         "banTitle": "ユーザーをBAN",
+        "clearMemoriesDescription": "{{username}}の長期記憶{{count}}件をすべて完全に削除します。日次メモは保持されます。この操作は元に戻せません。",
+        "clearMemoriesTitle": "すべての記憶を消去",
         "deleteDescription": "{{type}}「{{name}}」を削除しますか？この操作は元に戻せません。",
         "deleteTitle": "{{type}}を削除しますか？",
         "editSong": "{{field}}を編集",
         "editSongDescription": "新しい値を入力",
+        "reprocessDailyNotesDescription": "{{username}}のすべての日次メモをリセットし、そこから長期記憶を再抽出します。既存の記憶は更新または統合されます。過去の日付のみが処理されます（本日分は含まれません）。",
+        "reprocessDailyNotesTitle": "日次メモを再処理",
         "unshareDescription": "これにより、{{user}}の共有曲リストから「{{name}}」が削除されます。曲はライブラリに残りますが、どのユーザーとも関連付けられなくなります。",
         "unshareTitle": "曲の共有を解除"
       },
@@ -23,6 +27,7 @@
         "exportFailed": "エクスポートに失敗しました",
         "failedToAddToLibrary": "ライブラリへの追加に失敗しました",
         "failedToBanUser": "ユーザーのBANに失敗しました",
+        "failedToClearMemories": "記憶の消去に失敗しました",
         "failedToDeleteMessage": "メッセージの削除に失敗しました。",
         "failedToDeleteRoom": "ルームの削除に失敗しました。",
         "failedToDeleteSong": "曲の削除に失敗しました",
@@ -33,6 +38,7 @@
         "failedToFetchSong": "曲の取得に失敗しました",
         "failedToFetchSongs": "曲の取得に失敗しました",
         "failedToFetchUsers": "ユーザーの取得に失敗しました。",
+        "failedToProcessDailyNotes": "日次メモの処理に失敗しました",
         "failedToRefreshLyrics": "歌詞の更新に失敗しました",
         "failedToResetLyrics": "歌詞のリセットに失敗しました",
         "failedToUnbanUser": "ユーザーのBAN解除に失敗しました",
@@ -121,11 +127,18 @@
         "banReasonPlaceholder": "BAN理由（任意）",
         "banned": "BAN済み",
         "bannedOn": "BAN日時",
+        "clearAll": "すべて消去",
+        "clearing": "消去中…",
         "confirmBan": "BAN",
+        "dailyNotes": "日次メモ",
+        "dailyNotesProcessed": "日次メモを処理しました",
         "delete": "ユーザーを削除",
+        "entries": "件",
         "lastActive": "最終アクティブ",
         "loading": "プロフィールを読み込み中...",
+        "longTermMemories": "長期記憶",
         "memories": "思い出",
+        "memoriesCleared": "記憶を消去しました",
         "memoryKey": "キー",
         "memorySummary": "概要",
         "messages": "メッセージ",
@@ -133,10 +146,17 @@
         "noMessages": "メッセージが見つかりませんでした",
         "noReason": "理由が指定されていません",
         "notFound": "ユーザーが見つかりませんでした",
+        "pending": "処理待ち",
+        "pendingTooltip": "まだ長期記憶として処理されていません",
+        "processed": "処理済み",
+        "processedTooltip": "長期記憶として処理済み",
+        "processing": "処理中…",
         "reason": "理由",
         "recentMessages": "最近のメッセージ",
+        "reprocess": "再処理",
         "room": "ルーム",
         "rooms": "ルーム",
+        "today": "今日",
         "unban": "ユーザーのBANを解除"
       },
       "room": {
@@ -1276,6 +1296,11 @@
         "toggleRomanization": "読み仮名の切り替え",
         "translateLyrics": "歌詞を翻訳"
       },
+      "coverFlow": {
+        "hideMedia": "メディアを非表示",
+        "noTrack": "トラックなし",
+        "showMedia": "メディアを表示"
+      },
       "description": "ミュージックプレーヤー",
       "dialogs": {
         "addSongDescription": "iPodに追加するにはYouTubeリンクを貼り付けてください",
@@ -1608,6 +1633,10 @@
     },
     "minesweeper": {
       "description": "クラシックなパズルゲーム",
+      "dialogs": {
+        "newGameDescription": "本当に新しいゲームを開始しますか？",
+        "newGameTitle": "新しいゲーム"
+      },
       "help": {
         "desktopControls": {
           "description": "左クリックで表示、右クリックでフラグ、数字をダブルクリックで隣接セルを自動表示",
@@ -1907,6 +1936,14 @@
       "soundboards": "サウンドボード"
     },
     "stickies": {
+      "colors": {
+        "blue": "青",
+        "green": "緑",
+        "orange": "オレンジ",
+        "pink": "ピンク",
+        "purple": "紫",
+        "yellow": "黄色"
+      },
       "description": "ちょっとした付箋",
       "empty": {
         "createNote": "新規付箋",
@@ -2612,6 +2649,11 @@
       "undo": "取り消す",
       "videos": "ビデオ",
       "view": "表示"
+    },
+    "menuBar": {
+      "missionControl": "ミッションコントロール (F3)",
+      "offline": "現在オフラインです",
+      "showAllWindows": "すべてのウィンドウを表示 (F3) をクリックしてください"
     },
     "startMenu": {
       "aboutThisComputer": "このコンピュータについて",

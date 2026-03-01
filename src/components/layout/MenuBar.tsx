@@ -42,6 +42,7 @@ import { WifiSlash } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { isTauri, isTauriWindows } from "@/utils/platform";
 import { useSpotlightStore } from "@/stores/useSpotlightStore";
@@ -287,7 +288,7 @@ function Clock({ enableExposeToggle = false }: ClockProps) {
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
-  const { i18n: i18nInstance } = useTranslation();
+  const { t, i18n: i18nInstance } = useTranslation();
   
   // Get current locale from i18n (reactive to language changes)
   const currentLocale = i18nInstance.language || "en";
@@ -405,7 +406,7 @@ function Clock({ enableExposeToggle = false }: ClockProps) {
             : undefined,
       }}
       onClick={handleClick}
-      title={enableExposeToggle ? "Click to show all windows (F3)" : undefined}
+      title={enableExposeToggle ? t("common.menuBar.showAllWindows") : undefined}
     >
       {displayTime}
     </div>
@@ -418,6 +419,7 @@ function FinderAppMenu() {
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const translatedHelpItems = useTranslatedHelpItems("finder", finderHelpItems);
 
   const {
     instances,
@@ -508,7 +510,7 @@ function FinderAppMenu() {
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
         appId="finder"
-        helpItems={finderHelpItems}
+        helpItems={translatedHelpItems}
       />
 
       {/* About Dialog */}
@@ -525,7 +527,7 @@ function FinderAppMenu() {
         onClose={() => setIsShareDialogOpen(false)}
         itemType="App"
         itemIdentifier="finder"
-        title="Finder"
+        title={translatedFinderName}
         generateShareUrl={generateAppShareUrl}
       />
     </>
@@ -537,6 +539,7 @@ function DefaultMenuItems() {
   const launchApp = useLaunchApp();
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const translatedHelpItems = useTranslatedHelpItems("finder", finderHelpItems);
 
   const handleLaunchFinder = (path: string) => {
     launchApp("finder", { initialPath: path });
@@ -816,7 +819,7 @@ function DefaultMenuItems() {
         isOpen={isHelpDialogOpen}
         onOpenChange={setIsHelpDialogOpen}
         appId="finder"
-        helpItems={finderHelpItems}
+        helpItems={translatedHelpItems}
       />
       <AboutDialog
         isOpen={isAboutDialogOpen}
@@ -1486,7 +1489,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           {currentTheme === "macosx" && hasActiveApp && foregroundInstance && (
             <AppMenu
               appId={foregroundInstance.appId}
-              appName={appRegistry[foregroundInstance.appId]?.name || foregroundInstance.appId}
+              appName={getTranslatedAppName(foregroundInstance.appId) || foregroundInstance.appId}
               instanceId={foregroundInstance.instanceId}
             />
           )}
@@ -1579,6 +1582,7 @@ function SpotlightMenuBarButton() {
 }
 
 function OfflineIndicator() {
+  const { t } = useTranslation();
   const isOffline = useOffline();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -1597,7 +1601,7 @@ function OfflineIndicator() {
             ? "#ffffff"
             : "var(--os-color-menubar-text)",
       }}
-      title="You are currently offline"
+      title={t("common.menuBar.offline")}
     >
       <WifiSlash
         className={isXpTheme ? "h-3 w-3" : "h-4 w-4"}
@@ -1611,6 +1615,7 @@ function OfflineIndicator() {
 }
 
 function ExposeButton() {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   
@@ -1629,8 +1634,8 @@ function ExposeButton() {
       style={{
         marginRight: "4px",
       }}
-      title="Mission Control (F3)"
-      aria-label="Mission Control (F3)"
+      title={t("common.menuBar.missionControl")}
+      aria-label={t("common.menuBar.missionControl")}
     >
       <DotsThree aria-hidden="true" className="h-4 w-4" weight="bold" />
     </button>

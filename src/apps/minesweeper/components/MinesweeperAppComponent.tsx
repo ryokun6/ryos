@@ -315,8 +315,8 @@ export function MinesweeperAppComponent({
           isOpen={isNewGameDialogOpen}
           onOpenChange={setIsNewGameDialogOpen}
           onConfirm={startNewGame}
-          title="New Game"
-          description="Are you sure you want to start a new game?"
+          title={t("apps.minesweeper.dialogs.newGameTitle")}
+          description={t("apps.minesweeper.dialogs.newGameDescription")}
         />
       </WindowFrame>
     </>

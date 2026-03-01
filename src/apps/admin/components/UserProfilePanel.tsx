@@ -270,14 +270,14 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         },
         username
       );
-      toast.success(data.message || "Memories cleared");
+      toast.success(data.message || t("apps.admin.profile.memoriesCleared"));
       fetchMemories();
     } catch (error) {
       console.error("Failed to clear memories:", error);
       if (error instanceof ApiRequestError && error.message) {
         toast.error(error.message);
       } else {
-        toast.error("Failed to clear memories");
+        toast.error(t("apps.admin.errors.failedToClearMemories"));
       }
     } finally {
       setIsClearingMemory(false);
@@ -296,14 +296,14 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         },
         username
       );
-      toast.success(data.message || "Daily notes processed");
+      toast.success(data.message || t("apps.admin.profile.dailyNotesProcessed"));
       fetchMemories();
     } catch (error) {
       console.error("Failed to process daily notes:", error);
       if (error instanceof ApiRequestError && error.message) {
         toast.error(error.message);
       } else {
-        toast.error("Failed to process daily notes");
+        toast.error(t("apps.admin.errors.failedToProcessDailyNotes"));
       }
     } finally {
       setIsProcessingNotes(false);
@@ -561,7 +561,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
           {/* Long-Term Memories */}
           {isLoading ? (
             <div className="space-y-2">
-              <SectionHeader>Long-Term Memories</SectionHeader>
+              <SectionHeader>{t("apps.admin.profile.longTermMemories")}</SectionHeader>
               <div className="space-y-1">
                 <Skeleton className="h-6 w-full" />
                 <Skeleton className="h-6 w-full" />
@@ -571,7 +571,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <SectionHeader>
-                  Long-Term Memories ({memories.length})
+                  {t("apps.admin.profile.longTermMemories")} ({memories.length})
                 </SectionHeader>
                 {memories.length > 0 && (
                   <button
@@ -580,7 +580,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                     className="aqua-button secondary h-6 px-2 text-[10px] flex items-center gap-1 disabled:opacity-50"
                   >
                     <Eraser className="h-3 w-3" weight="bold" />
-                    <span>{isClearingMemory ? "Clearing…" : "Clear All"}</span>
+                    <span>{isClearingMemory ? t("apps.admin.profile.clearing") : t("apps.admin.profile.clearAll")}</span>
                   </button>
                 )}
               </div>
@@ -662,7 +662,7 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <SectionHeader>
-                  Daily Notes ({dailyNotes.reduce((acc, n) => acc + n.entries.length, 0)} entries)
+                  {t("apps.admin.profile.dailyNotes")} ({dailyNotes.reduce((acc, n) => acc + n.entries.length, 0)} {t("apps.admin.profile.entries")})
                 </SectionHeader>
                 <button
                   onClick={() => setIsForceProcessDialogOpen(true)}
@@ -670,14 +670,14 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                   className="aqua-button secondary h-6 px-2 text-[10px] flex items-center gap-1 disabled:opacity-50"
                 >
                   <ArrowsClockwise className={cn("h-3 w-3", isProcessingNotes && "animate-spin")} weight="bold" />
-                  <span>{isProcessingNotes ? "Processing…" : "Reprocess"}</span>
+                  <span>{isProcessingNotes ? t("apps.admin.profile.processing") : t("apps.admin.profile.reprocess")}</span>
                 </button>
               </div>
               <div className="space-y-1">
                 {dailyNotes.map((note) => {
                   const isExpanded = expandedDailyNotes.has(note.date);
                   const today = new Date().toISOString().split("T")[0];
-                  const dateLabel = note.date === today ? `${note.date} (today)` : note.date;
+                  const dateLabel = note.date === today ? `${note.date} (${t("apps.admin.profile.today")})` : note.date;
                   return (
                     <div key={note.date}>
                       <button
@@ -693,11 +693,11 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
                         />
                         <span className="text-amber-700 font-medium">{dateLabel}</span>
                         <span className="text-neutral-400 ml-1">
-                          ({note.entries.length} entries)
+                          ({note.entries.length} {t("apps.admin.profile.entries")})
                           {note.processedForMemories ? (
-                            <span className="text-green-600 ml-1" title="Processed into long-term memory">✓ processed</span>
+                            <span className="text-green-600 ml-1" title={t("apps.admin.profile.processedTooltip")}>✓ {t("apps.admin.profile.processed")}</span>
                           ) : (
-                            <span className="text-amber-500 ml-1" title="Not yet processed into long-term memory">○ pending</span>
+                            <span className="text-amber-500 ml-1" title={t("apps.admin.profile.pendingTooltip")}>○ {t("apps.admin.profile.pending")}</span>
                           )}
                         </span>
                       </button>
@@ -851,15 +851,15 @@ export const UserProfilePanel: React.FC<UserProfilePanelProps> = ({
         isOpen={isClearMemoryDialogOpen}
         onOpenChange={setIsClearMemoryDialogOpen}
         onConfirm={handleClearMemory}
-        title="Clear All Memories"
-        description={`This will permanently delete all ${memories.length} long-term memories for ${username}. Daily notes will be preserved. This action cannot be undone.`}
+        title={t("apps.admin.dialogs.clearMemoriesTitle")}
+        description={t("apps.admin.dialogs.clearMemoriesDescription", { count: memories.length, username })}
       />
       <ConfirmDialog
         isOpen={isForceProcessDialogOpen}
         onOpenChange={setIsForceProcessDialogOpen}
         onConfirm={handleForceProcessDailyNotes}
-        title="Reprocess Daily Notes"
-        description={`This will reset all daily notes for ${username} and re-extract long-term memories from them. Existing memories will be updated/merged. Only past days will be processed (not today).`}
+        title={t("apps.admin.dialogs.reprocessDailyNotesTitle")}
+        description={t("apps.admin.dialogs.reprocessDailyNotesDescription", { username })}
       />
     </div>
   );

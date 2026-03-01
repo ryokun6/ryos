@@ -10,10 +10,14 @@
       "dialogs": {
         "banDescription": "Voulez-vous vraiment bannir {{username}} ? Il/Elle sera déconnecté(e) et ne pourra plus accéder au service.",
         "banTitle": "Bannir l'utilisateur ?",
+        "clearMemoriesDescription": "Ceci supprimera définitivement tous les {{count}} souvenirs à long terme de {{username}}. Les notes quotidiennes seront conservées. Cette action est irréversible.",
+        "clearMemoriesTitle": "Effacer tous les souvenirs",
         "deleteDescription": "Êtes-vous sûr de vouloir supprimer {{type}} « {{name}} » ? Cette action est irréversible.",
         "deleteTitle": "Supprimer {{type}} ?",
         "editSong": "Modifier {{field}}",
         "editSongDescription": "Saisir la nouvelle valeur",
+        "reprocessDailyNotesDescription": "Ceci réinitialisera toutes les notes quotidiennes de {{username}} et en réextraira les souvenirs à long terme. Les souvenirs existants seront mis à jour/fusionnés. Seuls les jours passés seront traités (pas aujourd'hui).",
+        "reprocessDailyNotesTitle": "Retraiter les notes quotidiennes",
         "unshareDescription": "Ceci supprimera \"{{name}}\" des chansons partagées de {{user}}. La chanson restera dans la bibliothèque mais ne sera associée à aucun utilisateur.",
         "unshareTitle": "Cesser le partage"
       },
@@ -23,6 +27,7 @@
         "exportFailed": "Échec de l'exportation",
         "failedToAddToLibrary": "Échec de l'ajout à la bibliothèque",
         "failedToBanUser": "Échec du bannissement de l'utilisateur",
+        "failedToClearMemories": "Échec de l'effacement des souvenirs",
         "failedToDeleteMessage": "Échec de la suppression du message",
         "failedToDeleteRoom": "Échec de la suppression du salon",
         "failedToDeleteSong": "Impossible de supprimer le morceau",
@@ -33,6 +38,7 @@
         "failedToFetchSong": "Échec de la récupération de la chanson",
         "failedToFetchSongs": "Impossible de récupérer les morceaux",
         "failedToFetchUsers": "Échec de la récupération des utilisateurs",
+        "failedToProcessDailyNotes": "Échec du traitement des notes quotidiennes",
         "failedToRefreshLyrics": "Échec de l'actualisation des paroles",
         "failedToResetLyrics": "Échec de la réinitialisation des paroles",
         "failedToUnbanUser": "Échec du débannissement de l'utilisateur",
@@ -121,11 +127,18 @@
         "banReasonPlaceholder": "Raison du bannissement (facultatif)",
         "banned": "Banni",
         "bannedOn": "Banni le",
+        "clearAll": "Tout effacer",
+        "clearing": "Effacement…",
         "confirmBan": "Bannir",
+        "dailyNotes": "Notes quotidiennes",
+        "dailyNotesProcessed": "Notes quotidiennes traitées",
         "delete": "Supprimer l'utilisateur",
+        "entries": "entrées",
         "lastActive": "Dernière activité",
         "loading": "Chargement du profil...",
+        "longTermMemories": "Souvenirs à long terme",
         "memories": "Souvenirs",
+        "memoriesCleared": "Souvenirs effacés",
         "memoryKey": "Touche",
         "memorySummary": "Résumé",
         "messages": "Messages",
@@ -133,10 +146,17 @@
         "noMessages": "Aucun message trouvé",
         "noReason": "Aucune raison fournie",
         "notFound": "Utilisateur introuvable",
+        "pending": "en attente",
+        "pendingTooltip": "Pas encore traités en souvenirs à long terme",
+        "processed": "traités",
+        "processedTooltip": "Traités en souvenirs à long terme",
+        "processing": "Traitement…",
         "reason": "Raison",
         "recentMessages": "Messages récents",
+        "reprocess": "Retraiter",
         "room": "Salon",
         "rooms": "Salons",
+        "today": "aujourd'hui",
         "unban": "Débannir l'utilisateur"
       },
       "room": {
@@ -1276,6 +1296,11 @@
         "toggleRomanization": "Basculer la romanisation",
         "translateLyrics": "Traduire les paroles"
       },
+      "coverFlow": {
+        "hideMedia": "Masquer les médias",
+        "noTrack": "Aucune piste",
+        "showMedia": "Afficher les médias"
+      },
       "description": "Lecteur de musique",
       "dialogs": {
         "addSongDescription": "Collez un lien YouTube pour l'ajouter à votre iPod",
@@ -1608,6 +1633,10 @@
     },
     "minesweeper": {
       "description": "Jeu de puzzle classique",
+      "dialogs": {
+        "newGameDescription": "Voulez-vous vraiment commencer une nouvelle partie ?",
+        "newGameTitle": "Nouvelle partie"
+      },
       "help": {
         "desktopControls": {
           "description": "Clic gauche pour révéler, clic droit pour marquer, double-clic sur les nombres pour révéler automatiquement les voisins",
@@ -1907,6 +1936,14 @@
       "soundboards": "Tableaux sonores"
     },
     "stickies": {
+      "colors": {
+        "blue": "Bleu",
+        "green": "Vert",
+        "orange": "Orange",
+        "pink": "Rose",
+        "purple": "Violet",
+        "yellow": "Jaune"
+      },
       "description": "Pense-bêtes pour des rappels rapides",
       "empty": {
         "createNote": "Nouveau pense-bête",
@@ -2612,6 +2649,11 @@
       "undo": "Annuler",
       "videos": "Vidéos",
       "view": "Affichage"
+    },
+    "menuBar": {
+      "missionControl": "Mission Control (F3)",
+      "offline": "Vous êtes actuellement hors ligne",
+      "showAllWindows": "Cliquer pour afficher toutes les fenêtres (F3)"
     },
     "startMenu": {
       "aboutThisComputer": "À propos de cet ordinateur",

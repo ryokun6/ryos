@@ -10,10 +10,14 @@
       "dialogs": {
         "banDescription": "您確定要封鎖 {{username}} 嗎？他們將會登出且無法存取服務。",
         "banTitle": "封鎖使用者？",
+        "clearMemoriesDescription": "這將永久刪除 {{username}} 的所有 {{count}} 條長期記憶。每日筆記將會保留。此動作無法復原。",
+        "clearMemoriesTitle": "清除所有記憶",
         "deleteDescription": "您確定要刪除{{type}}「{{name}}」嗎？此動作無法復原。",
         "deleteTitle": "刪除{{type}}？",
         "editSong": "編輯 {{field}}",
         "editSongDescription": "輸入新值",
+        "reprocessDailyNotesDescription": "這將重設 {{username}} 的所有每日筆記，並從中重新提取長期記憶。現有記憶將會更新/合併。只會處理過去的日期（不包括今天）。",
+        "reprocessDailyNotesTitle": "重新處理每日筆記",
         "unshareDescription": "這會從 {{user}} 的共享歌曲中移除「{{name}}」。歌曲會保留在資料庫中，但不會與任何使用者關聯。",
         "unshareTitle": "停止共享歌曲"
       },
@@ -23,6 +27,7 @@
         "exportFailed": "匯出失敗",
         "failedToAddToLibrary": "加入資料庫失敗",
         "failedToBanUser": "無法封鎖使用者",
+        "failedToClearMemories": "清除記憶失敗",
         "failedToDeleteMessage": "無法刪除訊息",
         "failedToDeleteRoom": "無法刪除聊天室",
         "failedToDeleteSong": "刪除歌曲失敗",
@@ -33,6 +38,7 @@
         "failedToFetchSong": "無法取得歌曲",
         "failedToFetchSongs": "擷取歌曲失敗",
         "failedToFetchUsers": "無法擷取使用者",
+        "failedToProcessDailyNotes": "處理每日筆記失敗",
         "failedToRefreshLyrics": "重新整理歌詞失敗",
         "failedToResetLyrics": "重設歌詞失敗",
         "failedToUnbanUser": "無法解除封鎖使用者",
@@ -121,11 +127,18 @@
         "banReasonPlaceholder": "封鎖原因 (選填)",
         "banned": "已封鎖",
         "bannedOn": "封鎖於",
+        "clearAll": "清除所有",
+        "clearing": "清除中…",
         "confirmBan": "封鎖",
+        "dailyNotes": "每日筆記",
+        "dailyNotesProcessed": "每日筆記已處理",
         "delete": "刪除使用者",
+        "entries": "條",
         "lastActive": "上次活躍",
         "loading": "載入個人檔案中...",
+        "longTermMemories": "長期記憶",
         "memories": "回憶",
+        "memoriesCleared": "記憶已清除",
         "memoryKey": "鍵",
         "memorySummary": "摘要",
         "messages": "訊息",
@@ -133,10 +146,17 @@
         "noMessages": "找不到訊息",
         "noReason": "未提供原因",
         "notFound": "找不到使用者",
+        "pending": "待處理",
+        "pendingTooltip": "尚未處理成長期記憶",
+        "processed": "已處理",
+        "processedTooltip": "已處理成長期記憶",
+        "processing": "處理中…",
         "reason": "原因",
         "recentMessages": "最新訊息",
+        "reprocess": "重新處理",
         "room": "聊天室",
         "rooms": "聊天室",
+        "today": "今天",
         "unban": "解除使用者封鎖"
       },
       "room": {
@@ -1276,6 +1296,11 @@
         "toggleRomanization": "切換羅馬拼音",
         "translateLyrics": "翻譯歌詞"
       },
+      "coverFlow": {
+        "hideMedia": "隱藏媒體",
+        "noTrack": "沒有曲目",
+        "showMedia": "顯示媒體"
+      },
       "description": "音樂播放器",
       "dialogs": {
         "addSongDescription": "貼上 YouTube 連結以新增至您的 iPod",
@@ -1608,6 +1633,10 @@
     },
     "minesweeper": {
       "description": "經典益智遊戲",
+      "dialogs": {
+        "newGameDescription": "您確定要開始新遊戲嗎？",
+        "newGameTitle": "新遊戲"
+      },
       "help": {
         "desktopControls": {
           "description": "左鍵點擊以顯示，右鍵點擊以標記，雙擊數字以自動顯示相鄰格子。",
@@ -1907,6 +1936,14 @@
       "soundboards": "音效板"
     },
     "stickies": {
+      "colors": {
+        "blue": "藍色",
+        "green": "綠色",
+        "orange": "橘色",
+        "pink": "粉紅色",
+        "purple": "紫色",
+        "yellow": "黃色"
+      },
       "description": "用於快速提醒的便利貼",
       "empty": {
         "createNote": "新增便利貼",
@@ -2612,6 +2649,11 @@
       "undo": "還原",
       "videos": "影片",
       "view": "檢視"
+    },
+    "menuBar": {
+      "missionControl": "任務控制 (F3)",
+      "offline": "您目前離線",
+      "showAllWindows": "按一下來顯示所有視窗 (F3)"
     },
     "startMenu": {
       "aboutThisComputer": "關於這部電腦",

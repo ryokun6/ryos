@@ -10,10 +10,14 @@
       "dialogs": {
         "banDescription": "Sei sicuro di voler bannare {{username}}? Verrà disconnesso e non potrà più accedere al servizio.",
         "banTitle": "Bannare utente?",
+        "clearMemoriesDescription": "Questo eliminerà definitivamente tutte le {{count}} memorie a lungo termine di {{username}}. Le note giornaliere verranno conservate. Questa azione non può essere annullata.",
+        "clearMemoriesTitle": "Cancella tutte le memorie",
         "deleteDescription": "Sei sicuro di voler eliminare {{type}} \"{{name}}\"? Questa azione non può essere annullata.",
         "deleteTitle": "Eliminare {{type}}?",
         "editSong": "Modifica {{field}}",
         "editSongDescription": "Inserisci il nuovo valore",
+        "reprocessDailyNotesDescription": "Questo reimposterà tutte le note giornaliere di {{username}} e ne estrarrà nuovamente le memorie a lungo termine. Le memorie esistenti verranno aggiornate/unite. Verranno elaborati solo i giorni passati (non oggi).",
+        "reprocessDailyNotesTitle": "Rielabora note giornaliere",
         "unshareDescription": "Questo rimuoverà \"{{name}}\" dai brani condivisi di {{user}}. Il brano rimarrà nella libreria ma non sarà associato a nessun utente.",
         "unshareTitle": "Interrompi condivisione brano"
       },
@@ -23,6 +27,7 @@
         "exportFailed": "Esportazione fallita",
         "failedToAddToLibrary": "Impossibile aggiungere alla libreria",
         "failedToBanUser": "Impossibile bannare l'utente",
+        "failedToClearMemories": "Impossibile cancellare le memorie",
         "failedToDeleteMessage": "Impossibile eliminare il messaggio",
         "failedToDeleteRoom": "Impossibile eliminare la stanza",
         "failedToDeleteSong": "Impossibile eliminare il brano",
@@ -33,6 +38,7 @@
         "failedToFetchSong": "Impossibile recuperare il brano",
         "failedToFetchSongs": "Impossibile recuperare i brani",
         "failedToFetchUsers": "Impossibile recuperare gli utenti",
+        "failedToProcessDailyNotes": "Impossibile elaborare le note giornaliere",
         "failedToRefreshLyrics": "Impossibile aggiornare i testi",
         "failedToResetLyrics": "Impossibile reimpostare i testi",
         "failedToUnbanUser": "Impossibile sbannare l'utente",
@@ -121,11 +127,18 @@
         "banReasonPlaceholder": "Motivo del ban (facoltativo)",
         "banned": "Bannato",
         "bannedOn": "Bannato il",
+        "clearAll": "Cancella tutto",
+        "clearing": "Cancellazione…",
         "confirmBan": "Ban",
+        "dailyNotes": "Note giornaliere",
+        "dailyNotesProcessed": "Note giornaliere elaborate",
         "delete": "Elimina utente",
+        "entries": "voci",
         "lastActive": "Ultima attività",
         "loading": "Caricamento profilo...",
+        "longTermMemories": "Memorie a lungo termine",
         "memories": "Ricordi",
+        "memoriesCleared": "Memorie cancellate",
         "memoryKey": "Chiave",
         "memorySummary": "Riepilogo",
         "messages": "Messaggi",
@@ -133,10 +146,17 @@
         "noMessages": "Nessun messaggio trovato",
         "noReason": "Nessun motivo fornito",
         "notFound": "Utente non trovato",
+        "pending": "in attesa",
+        "pendingTooltip": "Non ancora elaborate in memoria a lungo termine",
+        "processed": "elaborate",
+        "processedTooltip": "Elaborate in memoria a lungo termine",
+        "processing": "Elaborazione…",
         "reason": "Motivo",
         "recentMessages": "Messaggi recenti",
+        "reprocess": "Rielabora",
         "room": "Stanza",
         "rooms": "Stanze",
+        "today": "oggi",
         "unban": "Sblocca utente"
       },
       "room": {
@@ -1276,6 +1296,11 @@
         "toggleRomanization": "Alterna romanizzazione",
         "translateLyrics": "Traduci testi"
       },
+      "coverFlow": {
+        "hideMedia": "Nascondi media",
+        "noTrack": "Nessun brano",
+        "showMedia": "Mostra media"
+      },
       "description": "Lettore musicale",
       "dialogs": {
         "addSongDescription": "Incolla un link di YouTube da aggiungere al tuo iPod",
@@ -1608,6 +1633,10 @@
     },
     "minesweeper": {
       "description": "Classico rompicapo",
+      "dialogs": {
+        "newGameDescription": "Sei sicuro di voler iniziare una nuova partita?",
+        "newGameTitle": "Nuova partita"
+      },
       "help": {
         "desktopControls": {
           "description": "Fai clic sinistro per rivelare, fai clic destro per contrassegnare, fai doppio clic sui numeri per rivelare automaticamente le caselle adiacenti.",
@@ -1907,6 +1936,14 @@
       "soundboards": "Pannelli Suoni"
     },
     "stickies": {
+      "colors": {
+        "blue": "Blu",
+        "green": "Verde",
+        "orange": "Arancione",
+        "pink": "Rosa",
+        "purple": "Viola",
+        "yellow": "Giallo"
+      },
       "description": "Note adesive per promemoria rapidi",
       "empty": {
         "createNote": "Nuova nota",
@@ -2597,6 +2634,11 @@
       "undo": "Annulla",
       "videos": "Video",
       "view": "Vista"
+    },
+    "menuBar": {
+      "missionControl": "Mission Control (F3)",
+      "offline": "Sei attualmente offline",
+      "showAllWindows": "Clicca per mostrare tutte le finestre (F3)"
     },
     "startMenu": {
       "aboutThisComputer": "Informazioni su questo computer",
