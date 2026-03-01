@@ -18,6 +18,7 @@ import {
   fetchWithOrigin,
   fetchWithAuth,
   section,
+  makeRateLimitBypassHeaders,
 } from "./test-utils";
 
 let testToken: string | null = null;
@@ -27,11 +28,6 @@ let isAdminUser = false;
 // Admin test credentials
 const ADMIN_USERNAME = "ryo";
 const ADMIN_PASSWORD = "testtest";
-
-const makeRateLimitBypassHeaders = (): Record<string, string> => ({
-  "Content-Type": "application/json",
-  "X-Forwarded-For": `10.3.${Date.now() % 255}.${Math.floor(Math.random() * 255)}`,
-});
 
 // ============================================================================
 // Setup - Use admin user or create a test user for auth tests

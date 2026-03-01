@@ -21,6 +21,7 @@ import {
   fetchWithOrigin,
   fetchWithAuth,
   section,
+  makeRateLimitBypassHeaders,
 } from "./test-utils";
 
 let testToken: string | null = null;
@@ -34,11 +35,6 @@ let adminToken: string | null = null;
 // Test room for message tests
 let testRoomId: string | null = null;
 let authRateLimited = false;
-
-const makeRateLimitBypassHeaders = (): Record<string, string> => ({
-  "Content-Type": "application/json",
-  "X-Forwarded-For": `10.2.${Date.now() % 255}.${Math.floor(Math.random() * 255)}`,
-});
 
 const skipIfAuthRateLimited = (label: string): boolean => {
   if (authRateLimited) {

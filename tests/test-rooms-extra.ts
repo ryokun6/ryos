@@ -18,6 +18,7 @@ import {
   fetchWithOrigin,
   fetchWithAuth,
   section,
+  makeRateLimitBypassHeaders,
 } from "./test-utils";
 
 // Test state
@@ -49,7 +50,7 @@ async function setupTestUser(): Promise<void> {
   testUsername = `testuser${Date.now()}`;
   const res = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: makeRateLimitBypassHeaders(),
     body: JSON.stringify({ username: testUsername, password: "testpassword123" }),
   });
 
