@@ -1063,8 +1063,8 @@ export function ControlPanelsAppComponent({
           isOpen={isPasswordDialogOpen}
           onOpenChange={setIsPasswordDialogOpen}
           onSubmit={handleSetPassword}
-          title="Set Password"
-          description="Set a password to enable account recovery. You can use this password to get a new token if you lose access."
+          title={t("apps.control-panels.setPasswordDialog.title")}
+          description={t("apps.control-panels.setPasswordDialog.description")}
           value={passwordInput}
           onChange={(value) => {
             setPasswordInput(value);
@@ -1072,7 +1072,7 @@ export function ControlPanelsAppComponent({
           }}
           isLoading={isSettingPassword}
           errorMessage={passwordError}
-          submitLabel="Set Password"
+          submitLabel={t("apps.control-panels.setPasswordDialog.submitLabel")}
         />
         <LogoutDialog
           isOpen={isLogoutConfirmDialogOpen}

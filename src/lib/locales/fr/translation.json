@@ -828,6 +828,7 @@
       },
       "highContrast": "Contraste élevé",
       "invert": "Inversion",
+      "iosVolumeHint": "Sous iOS, utilisez les boutons physiques pour contrôler le volume des médias.",
       "ipod": "iPod",
       "ipodVolume": "Volume de l'iPod",
       "logIn": "Se connecter",
@@ -852,6 +853,7 @@
       "mono": "Mono",
       "name": "Panneaux de configuration",
       "nameForMacosX": "Préférences Système",
+      "noWallpapers": "Aucun fond d'écran",
       "openai": "OpenAI",
       "openaiVoice": "Voix OpenAI",
       "patterns": "Motifs",
@@ -897,6 +899,11 @@
       "selectScreenSaver": "Sélectionner un économiseur d'écran",
       "sepia": "Sépia",
       "setPassword": "Définir le mot de passe",
+      "setPasswordDialog": {
+        "description": "Définissez un mot de passe pour activer la récupération de compte. Vous pourrez l'utiliser pour obtenir un nouveau jeton si vous perdez l'accès.",
+        "submitLabel": "Définir le mot de passe",
+        "title": "Définir le mot de passe"
+      },
       "shaderEffect": "Effet Shader",
       "shaderEffectDescription": "Effet d'arrière-plan gourmand en performances",
       "show": "Afficher",
@@ -914,7 +921,17 @@
       "ttsVoice": "Voix TTS",
       "ui": "Interface utilisateur",
       "uiSounds": "Sons de l'interface utilisateur",
-      "uiVolume": "Volume de l'interface utilisateur"
+      "uiVolume": "Volume de l'interface utilisateur",
+      "wallpaperCategories": {
+        "aqua": "Aqua",
+        "convergency": "Convergence",
+        "foliage": "Feuillage",
+        "graphics": "Graphiques",
+        "landscapes": "Paysages",
+        "nostalgia": "Nostalgie",
+        "objects": "Objets",
+        "structures": "Structures"
+      }
     },
     "finder": {
       "contextMenu": {

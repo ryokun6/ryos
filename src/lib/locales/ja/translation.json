@@ -828,6 +828,7 @@
       },
       "highContrast": "ハイコントラスト",
       "invert": "反転",
+      "iosVolumeHint": "iOSでは、ハードウェアボタンでメディア音量を調整します。",
       "ipod": "iPod",
       "ipodVolume": "iPodの音量",
       "logIn": "ログイン",
@@ -852,6 +853,7 @@
       "mono": "モノラル",
       "name": "コントロールパネル",
       "nameForMacosX": "システム環境設定",
+      "noWallpapers": "壁紙なし",
       "openai": "OpenAI",
       "openaiVoice": "OpenAI 音声",
       "patterns": "パターン",
@@ -897,6 +899,11 @@
       "selectScreenSaver": "スクリーンセーバーを選択",
       "sepia": "セピア",
       "setPassword": "パスワードを設定",
+      "setPasswordDialog": {
+        "description": "アカウント復元を有効にするにはパスワードを設定してください。アクセスできなくなった場合、このパスワードで新しいトークンを取得できます。",
+        "submitLabel": "パスワードを設定",
+        "title": "パスワードを設定"
+      },
       "shaderEffect": "シェーダーエフェクト",
       "shaderEffectDescription": "パフォーマンスに負荷のかかる背景エフェクト",
       "show": "表示",
@@ -914,7 +921,17 @@
       "ttsVoice": "TTS 音声",
       "ui": "UI",
       "uiSounds": "UI サウンド",
-      "uiVolume": "UI 音量"
+      "uiVolume": "UI 音量",
+      "wallpaperCategories": {
+        "aqua": "アクア",
+        "convergency": "コンバージェンス",
+        "foliage": "フォリッジ",
+        "graphics": "グラフィックス",
+        "landscapes": "風景",
+        "nostalgia": "ノスタルジア",
+        "objects": "オブジェクト",
+        "structures": "ストラクチャ"
+      }
     },
     "finder": {
       "contextMenu": {

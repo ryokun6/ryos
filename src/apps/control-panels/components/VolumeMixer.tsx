@@ -254,7 +254,7 @@ export function VolumeMixer({
       {isIOS && (
         <div className="flex justify-center">
           <p className="text-[10px] text-center text-neutral-600 font-geneva-12">
-            On iOS, use hardware buttons to control media volume.
+            {t("apps.control-panels.iosVolumeHint")}
           </p>
         </div>
       )}

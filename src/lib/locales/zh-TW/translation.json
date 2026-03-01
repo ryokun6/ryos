@@ -828,6 +828,7 @@
       },
       "highContrast": "高對比",
       "invert": "反轉",
+      "iosVolumeHint": "在 iOS 上，使用硬體按鈕控制媒體音量。",
       "ipod": "iPod",
       "ipodVolume": "iPod 音量",
       "logIn": "登入",
@@ -852,6 +853,7 @@
       "mono": "黑白",
       "name": "控制台",
       "nameForMacosX": "系統偏好設定",
+      "noWallpapers": "沒有背景圖片",
       "openai": "OpenAI",
       "openaiVoice": "OpenAI 語音",
       "patterns": "樣式",
@@ -897,6 +899,11 @@
       "selectScreenSaver": "選取螢幕保護程式",
       "sepia": "褐色",
       "setPassword": "設定密碼",
+      "setPasswordDialog": {
+        "description": "設定密碼以啟用帳戶復原。如果您失去存取權，可以使用此密碼來取得新的權杖。",
+        "submitLabel": "設定密碼",
+        "title": "設定密碼"
+      },
       "shaderEffect": "著色器效果",
       "shaderEffectDescription": "效能密集型背景效果",
       "show": "顯示",
@@ -914,7 +921,17 @@
       "ttsVoice": "TTS 語音",
       "ui": "使用者介面",
       "uiSounds": "UI 音效",
-      "uiVolume": "使用者介面音量"
+      "uiVolume": "使用者介面音量",
+      "wallpaperCategories": {
+        "aqua": "水藍",
+        "convergency": "匯聚",
+        "foliage": "綠葉",
+        "graphics": "圖形",
+        "landscapes": "風景",
+        "nostalgia": "懷舊",
+        "objects": "物件",
+        "structures": "建築"
+      }
     },
     "finder": {
       "contextMenu": {
