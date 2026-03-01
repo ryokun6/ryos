@@ -617,7 +617,12 @@ function ChatMessagesContent({
         </motion.div>
       )}
       {messages.map((message) => {
-        const messageText = getMessageText(message);
+        let messageText = getMessageText(message);
+        const isStaticGreeting =
+          message.role === "assistant" && message.id === "1";
+        if (isStaticGreeting && !messageText) {
+          messageText = t("apps.chats.messages.greeting");
+        }
         // Use a stable key for greeting messages so React doesn't remount the
         // element when the ID changes from "1" to "proactive-1"
         const messageKey = (message.id === "1" || message.id === "proactive-1")
@@ -628,8 +633,6 @@ function ChatMessagesContent({
         // The static greeting (id "1") should never animate.
         // The proactive greeting (id "proactive-1") SHOULD animate word-by-word
         // so it looks like streaming text.
-        const isStaticGreeting =
-          message.role === "assistant" && message.id === "1";
         // Show typing dots instead of text when proactive greeting is loading
         const showTypingDots =
           isLoadingGreeting && !isRoomView && isStaticGreeting;
@@ -1088,7 +1091,7 @@ function ChatMessagesContent({
                           case "text": {
                             const partText =
                               (part as { type: string; text?: string }).text ||
-                              "";
+                              (isStaticGreeting ? t("apps.chats.messages.greeting") : "");
                             const hasXmlTags =
                               /<textedit:(insert|replace|delete)/i.test(
                                 partText
