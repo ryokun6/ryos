@@ -68,8 +68,11 @@ export function AppManager({ apps }: AppManagerProps) {
   // For Mac/System7 themes, hide the desktop menubar when there's a foreground app
   // For XP/98, the menubar is actually a taskbar and should always show
   // Always show menubar in expose mode
-  const hasForegroundApp = !!foregroundInstanceId;
-  const showDesktopMenuBar = isXpTheme || !hasForegroundApp || exposeMode;
+  // If the foreground instance is still loading (lazy), show the desktop menubar
+  // as a placeholder since the loading app can't render its own menu bar yet
+  const foregroundInstance = foregroundInstanceId ? instances[foregroundInstanceId] : null;
+  const foregroundIsLoaded = !!foregroundInstance && !foregroundInstance.isLoading;
+  const showDesktopMenuBar = isXpTheme || !foregroundIsLoaded || exposeMode;
 
   const [isInitialMount, setIsInitialMount] = useState(true);
   const [isExposeViewOpen, setIsExposeViewOpen] = useState(false);

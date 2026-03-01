@@ -927,7 +927,9 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
   const debugMode = useDisplaySettingsStoreShallow((s) => s.debugMode);
 
   const foregroundInstance = getForegroundInstance();
-  const hasActiveApp = !!foregroundInstance;
+  // Treat a still-loading foreground instance as "no active app" so the
+  // Finder/default menu bar shows as a placeholder during lazy load
+  const hasActiveApp = !!foregroundInstance && !foregroundInstance.isLoading;
 
   // Get current theme
   const currentTheme = useThemeStore((state) => state.current);
