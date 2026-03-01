@@ -65,9 +65,9 @@ export async function banAdminUser<TResponse>(
   auth: ApiAuthContext,
   username: string
 ): Promise<TResponse> {
-  return adminPost<TResponse, { action: string; username: string }>(auth, {
+  return adminPost<TResponse, { action: string; targetUsername: string }>(auth, {
     action: "banUser",
-    username,
+    targetUsername: username,
   });
 }
 
@@ -75,9 +75,9 @@ export async function unbanAdminUser<TResponse>(
   auth: ApiAuthContext,
   username: string
 ): Promise<TResponse> {
-  return adminPost<TResponse, { action: string; username: string }>(auth, {
+  return adminPost<TResponse, { action: string; targetUsername: string }>(auth, {
     action: "unbanUser",
-    username,
+    targetUsername: username,
   });
 }
 
@@ -85,9 +85,9 @@ export async function deleteAdminUser<TResponse>(
   auth: ApiAuthContext,
   username: string
 ): Promise<TResponse> {
-  return adminPost<TResponse, { action: string; username: string }>(auth, {
+  return adminPost<TResponse, { action: string; targetUsername: string }>(auth, {
     action: "deleteUser",
-    username,
+    targetUsername: username,
   });
 }
 
@@ -95,17 +95,19 @@ export async function clearAdminUserMemories<TResponse>(
   auth: ApiAuthContext,
   username: string
 ): Promise<TResponse> {
-  return adminPost<TResponse, { action: string; username: string }>(auth, {
+  return adminPost<TResponse, { action: string; targetUsername: string }>(auth, {
     action: "clearUserMemories",
-    username,
+    targetUsername: username,
   });
 }
 
 export async function forceAdminDailyNotes<TResponse>(
-  auth: ApiAuthContext
+  auth: ApiAuthContext,
+  username: string
 ): Promise<TResponse> {
-  return adminPost<TResponse, { action: string }>(auth, {
+  return adminPost<TResponse, { action: string; targetUsername: string }>(auth, {
     action: "forceProcessDailyNotes",
+    targetUsername: username,
   });
 }
 
