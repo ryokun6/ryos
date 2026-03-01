@@ -175,7 +175,7 @@ const mapWorkerResultToSpotlightResult = (
         isEmoji: result.isEmoji,
         action: () =>
           launchApp("applet-viewer", {
-            initialData: { path: result.path, content: "" },
+            initialData: { path: result.path },
           }),
       };
     case "music":
