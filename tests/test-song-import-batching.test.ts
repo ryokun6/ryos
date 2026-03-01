@@ -1,4 +1,5 @@
-#!/usr/bin/env bun
+import { describe, test, expect, beforeAll } from "bun:test";
+
 /**
  * Regression tests for client-side song import batching.
  *
@@ -8,15 +9,6 @@
 
 import { bulkImportSongMetadata } from "../src/utils/songMetadataCache";
 import type { BulkImportProgress } from "../src/utils/songMetadataCache";
-import {
-  assert,
-  assertEq,
-  clearResults,
-  printSummary,
-  runTest,
-  section,
-} from "./test-utils";
-
 const CLIENT_BATCH_LIMIT_BYTES = 3_500_000;
 
 type BulkImportRequest = {
@@ -55,10 +47,7 @@ async function testLargePayloadIsPreSplit(): Promise<void> {
     const bytes = new TextEncoder().encode(body).length;
     requestSizes.push(bytes);
 
-    assert(
-      bytes <= CLIENT_BATCH_LIMIT_BYTES,
-      `Client sent oversize payload: ${bytes} bytes`
-    );
+    expect(bytes <= CLIENT_BATCH_LIMIT_BYTES).toBeTruthy();
 
     const parsed = JSON.parse(body) as BulkImportRequest;
     return new Response(
@@ -83,12 +72,9 @@ async function testLargePayloadIsPreSplit(): Promise<void> {
       authToken: "test-token",
     });
 
-    assert(result.success, `Expected import success, got: ${result.error}`);
-    assertEq(result.total, songs.length, "Expected all songs to be imported");
-    assert(
-      requestSizes.length >= 2,
-      `Expected multiple requests, got ${requestSizes.length}`
-    );
+    expect(result.success).toBeTruthy();
+    expect(result.total).toBe(songs.length);
+    expect(requestSizes.length >= 2).toBeTruthy();
   });
 }
 
@@ -132,13 +118,10 @@ async function testServer413TriggersSplitRetry(): Promise<void> {
       authToken: "test-token",
     });
 
-    assert(result.success, `Expected import success, got: ${result.error}`);
-    assertEq(result.total, songs.length, "Expected all songs to be imported");
-    assert(received413 > 0, "Expected at least one 413 response");
-    assert(
-      successfulBatches.length >= 2,
-      `Expected split retry to create multiple successful batches, got ${successfulBatches.length}`
-    );
+    expect(result.success).toBeTruthy();
+    expect(result.total).toBe(songs.length);
+    expect(received413 > 0).toBeTruthy();
+    expect(successfulBatches.length >= 2).toBeTruthy();
   });
 }
 
@@ -172,11 +155,8 @@ async function testSingleOversizedSongFailsGracefully(): Promise<void> {
       authToken: "test-token",
     });
 
-    assert(!result.success, "Expected oversized single-song import to fail");
-    assert(
-      (result.error || "").toLowerCase().includes("payload too large"),
-      `Expected payload-too-large error message, got: ${result.error}`
-    );
+    expect(!result.success).toBeTruthy();
+    expect((result.error || "").toLowerCase()).toContain("payload too large");
   });
 }
 
@@ -216,22 +196,12 @@ async function testProgressCallbacksReportPhases(): Promise<void> {
       }
     );
 
-    assert(result.success, `Expected import success, got: ${result.error}`);
-    assert(progressEvents.length > 0, "Expected progress callbacks to run");
-    assertEq(progressEvents[0].stage, "starting", "Expected starting event first");
-    assertEq(
-      progressEvents[progressEvents.length - 1]?.stage,
-      "complete",
-      "Expected complete event last"
-    );
-    assert(
-      progressEvents.some((event) => event.stage === "batch-start"),
-      "Expected at least one batch-start event"
-    );
-    assert(
-      progressEvents.some((event) => event.stage === "batch-success"),
-      "Expected at least one batch-success event"
-    );
+    expect(result.success).toBeTruthy();
+    expect(progressEvents.length > 0).toBeTruthy();
+    expect(progressEvents[0].stage).toBe("starting");
+    expect(progressEvents[progressEvents.length - 1]?.stage).toBe("complete");
+    expect(progressEvents.some((event) => event.stage === "batch-start")).toBeTruthy();
+    expect(progressEvents.some((event) => event.stage === "batch-success")).toBeTruthy();
   });
 }
 
@@ -277,41 +247,33 @@ async function testRateLimitedProgressEventIsReported(): Promise<void> {
       }
     );
 
-    assert(result.success, `Expected import success after retry, got: ${result.error}`);
-    assert(
-      progressEvents.some((event) => event.stage === "rate-limited"),
-      "Expected a rate-limited progress event"
-    );
+    expect(result.success).toBeTruthy();
+    expect(progressEvents.some((event) => event.stage === "rate-limited")).toBeTruthy();
 
     const rateLimitedEvent = progressEvents.find(
       (event) => event.stage === "rate-limited"
     );
-    assertEq(rateLimitedEvent?.statusCode, 429, "Expected 429 status on rate-limited event");
-    assert(
-      (rateLimitedEvent?.retryAfterMs || 0) >= 1000,
-      "Expected retryAfterMs to be populated for rate-limited event"
-    );
+    expect(rateLimitedEvent?.statusCode).toBe(429);
+    expect((rateLimitedEvent?.retryAfterMs || 0) >= 1000).toBeTruthy();
   });
 }
 
-async function runImportBatchingTests(): Promise<{ passed: number; failed: number }> {
-  console.log(section("song import batching"));
-  clearResults();
-
-  await runTest("Pre-splits large payloads before sending", testLargePayloadIsPreSplit);
-  await runTest("Handles 413 by splitting and retrying", testServer413TriggersSplitRetry);
-  await runTest("Returns clear error for oversized single entry", testSingleOversizedSongFailsGracefully);
-  await runTest("Reports progress phases during import", testProgressCallbacksReportPhases);
-  await runTest("Reports rate-limited retry progress", testRateLimitedProgressEventIsReported);
-
-  return printSummary();
-}
-
-if (import.meta.main) {
-  runImportBatchingTests()
-    .then(({ failed }) => process.exit(failed > 0 ? 1 : 0))
-    .catch((error) => {
-      console.error("Test runner error:", error);
-      process.exit(1);
+describe("Song Import Batching", () => {
+  describe("song import batching", () => {
+    test("Pre-splits large payloads before sending", async () => {
+      await testLargePayloadIsPreSplit();
     });
-}
+    test("Handles 413 by splitting and retrying", async () => {
+      await testServer413TriggersSplitRetry();
+    });
+    test("Returns clear error for oversized single entry", async () => {
+      await testSingleOversizedSongFailsGracefully();
+    });
+    test("Reports progress phases during import", async () => {
+      await testProgressCallbacksReportPhases();
+    });
+    test("Reports rate-limited retry progress", async () => {
+      await testRateLimitedProgressEventIsReported();
+    });
+  });
+});

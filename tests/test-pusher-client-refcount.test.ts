@@ -1,4 +1,5 @@
-#!/usr/bin/env bun
+import { describe, test, expect, beforeAll } from "bun:test";
+
 /**
  * Regression tests for shared Pusher channel reference counting.
  *
@@ -7,15 +8,6 @@
  * We must not unsubscribe a shared channel until all consumers release it.
  */
 
-import {
-  header,
-  section,
-  runTest,
-  printSummary,
-  clearResults,
-  assert,
-  assertEq,
-} from "./test-utils";
 import {
   subscribePusherChannel,
   unsubscribePusherChannel,
@@ -86,27 +78,20 @@ const resetGlobalPusherState = (pusher: FakePusher) => {
   globalWithPusherState.__pusherChannelRecoveryWarnings = {};
 };
 
-export async function runPusherClientRefcountTests(): Promise<{
-  passed: number;
-  failed: number;
-}> {
-  clearResults();
-  console.log(header("Pusher Channel Refcount Tests"));
-
-  console.log(section("Shared subscribe lifecycle"));
-  await runTest("subscribes only once for repeated acquire", async () => {
+describe("Pusher Client Refcount", () => {
+  describe("Shared subscribe lifecycle", () => {
+    test("subscribes only once for repeated acquire", async () => {
     const { pusher, calls } = createFakePusher();
     resetGlobalPusherState(pusher);
 
     subscribePusherChannel("room-a");
     subscribePusherChannel("room-a");
 
-    assertEq(calls.length, 1, "Expected exactly one underlying subscribe");
-    assertEq(calls[0].type, "subscribe");
-    assertEq(calls[0].channel, "room-a");
+    expect(calls.length).toBe(1);
+    expect(calls[0].type).toBe("subscribe");
+    expect(calls[0].channel).toBe("room-a");
   });
-
-  await runTest("unsubscribes only after final release", async () => {
+    test("unsubscribes only after final release", async () => {
     const { pusher, calls } = createFakePusher();
     resetGlobalPusherState(pusher);
 
@@ -115,15 +100,16 @@ export async function runPusherClientRefcountTests(): Promise<{
     unsubscribePusherChannel("room-b");
     unsubscribePusherChannel("room-b");
 
-    assertEq(calls.length, 2, "Expected one subscribe and one unsubscribe");
-    assertEq(calls[0].type, "subscribe");
-    assertEq(calls[0].channel, "room-b");
-    assertEq(calls[1].type, "unsubscribe");
-    assertEq(calls[1].channel, "room-b");
+    expect(calls.length).toBe(2);
+    expect(calls[0].type).toBe("subscribe");
+    expect(calls[0].channel).toBe("room-b");
+    expect(calls[1].type).toBe("unsubscribe");
+    expect(calls[1].channel).toBe("room-b");
+  });
   });
 
-  console.log(section("Independent channel accounting"));
-  await runTest("tracks channel counts independently", async () => {
+  describe("Independent channel accounting", () => {
+    test("tracks channel counts independently", async () => {
     const { pusher, calls } = createFakePusher();
     resetGlobalPusherState(pusher);
 
@@ -134,18 +120,17 @@ export async function runPusherClientRefcountTests(): Promise<{
     unsubscribePusherChannel("room-d");
     unsubscribePusherChannel("room-c");
 
-    assertEq(calls.length, 4, "Expected 2 subscribes and 2 unsubscribes");
-    assertEq(calls[0].type, "subscribe");
-    assertEq(calls[0].channel, "room-c");
-    assertEq(calls[1].type, "subscribe");
-    assertEq(calls[1].channel, "room-d");
-    assertEq(calls[2].type, "unsubscribe");
-    assertEq(calls[2].channel, "room-d");
-    assertEq(calls[3].type, "unsubscribe");
-    assertEq(calls[3].channel, "room-c");
+    expect(calls.length).toBe(4);
+    expect(calls[0].type).toBe("subscribe");
+    expect(calls[0].channel).toBe("room-c");
+    expect(calls[1].type).toBe("subscribe");
+    expect(calls[1].channel).toBe("room-d");
+    expect(calls[2].type).toBe("unsubscribe");
+    expect(calls[2].channel).toBe("room-d");
+    expect(calls[3].type).toBe("unsubscribe");
+    expect(calls[3].channel).toBe("room-c");
   });
-
-  await runTest("allows re-subscribe after full release", async () => {
+    test("allows re-subscribe after full release", async () => {
     const { pusher, calls } = createFakePusher();
     resetGlobalPusherState(pusher);
 
@@ -153,16 +138,15 @@ export async function runPusherClientRefcountTests(): Promise<{
     unsubscribePusherChannel("room-e");
     subscribePusherChannel("room-e");
 
-    assertEq(calls.length, 3, "Expected subscribe/unsubscribe/subscribe");
-    assertEq(calls[0].type, "subscribe");
-    assertEq(calls[0].channel, "room-e");
-    assertEq(calls[1].type, "unsubscribe");
-    assertEq(calls[1].channel, "room-e");
-    assertEq(calls[2].type, "subscribe");
-    assertEq(calls[2].channel, "room-e");
+    expect(calls.length).toBe(3);
+    expect(calls[0].type).toBe("subscribe");
+    expect(calls[0].channel).toBe("room-e");
+    expect(calls[1].type).toBe("unsubscribe");
+    expect(calls[1].channel).toBe("room-e");
+    expect(calls[2].type).toBe("subscribe");
+    expect(calls[2].channel).toBe("room-e");
   });
-
-  await runTest("ignores extra releases after zero refs", async () => {
+    test("ignores extra releases after zero refs", async () => {
     const { pusher, calls } = createFakePusher();
     resetGlobalPusherState(pusher);
 
@@ -177,18 +161,13 @@ export async function runPusherClientRefcountTests(): Promise<{
       console.warn = originalWarn;
     }
 
-    assertEq(
-      calls.length,
-      2,
-      "Expected one subscribe and one unsubscribe with extra releases ignored"
-    );
-    assertEq(calls[0].type, "subscribe");
-    assertEq(calls[0].channel, "room-f");
-    assertEq(calls[1].type, "unsubscribe");
-    assertEq(calls[1].channel, "room-f");
+    expect(calls.length).toBe(2);
+    expect(calls[0].type).toBe("subscribe");
+    expect(calls[0].channel).toBe("room-f");
+    expect(calls[1].type).toBe("unsubscribe");
+    expect(calls[1].channel).toBe("room-f");
   });
-
-  await runTest("re-subscribes if channel lookup is missing", async () => {
+    test("re-subscribes if channel lookup is missing", async () => {
     const calls: FakeCall[] = [];
     const fakePusher: FakePusher = {
       subscribe: (channel) => {
@@ -214,18 +193,13 @@ export async function runPusherClientRefcountTests(): Promise<{
       console.warn = originalWarn;
     }
 
-    assertEq(
-      calls.length,
-      2,
-      "Expected recovery to reset stale count and unsubscribe on first release"
-    );
-    assertEq(calls[0].type, "subscribe");
-    assertEq(calls[0].channel, "room-g");
-    assertEq(calls[1].type, "unsubscribe");
-    assertEq(calls[1].channel, "room-g");
+    expect(calls.length).toBe(2);
+    expect(calls[0].type).toBe("subscribe");
+    expect(calls[0].channel).toBe("room-g");
+    expect(calls[1].type).toBe("unsubscribe");
+    expect(calls[1].channel).toBe("room-g");
   });
-
-  await runTest("subscribes when count starts at zero even with channel object", async () => {
+    test("subscribes when count starts at zero even with channel object", async () => {
     const calls: FakeCall[] = [];
     const existingChannel: FakeChannel = {
       name: "room-h",
@@ -249,19 +223,16 @@ export async function runPusherClientRefcountTests(): Promise<{
     subscribePusherChannel("room-h");
     unsubscribePusherChannel("room-h");
 
-    assertEq(
-      calls.length,
-      2,
-      "Expected explicit subscribe then unsubscribe for zero-count acquisition"
-    );
-    assertEq(calls[0].type, "subscribe");
-    assertEq(calls[0].channel, "room-h");
-    assertEq(calls[1].type, "unsubscribe");
-    assertEq(calls[1].channel, "room-h");
+    expect(calls.length).toBe(2);
+    expect(calls[0].type).toBe("subscribe");
+    expect(calls[0].channel).toBe("room-h");
+    expect(calls[1].type).toBe("unsubscribe");
+    expect(calls[1].channel).toBe("room-h");
+  });
   });
 
-  console.log(section("Recovery warning dedupe"));
-  await runTest("warns once for repeated unsubscribe underflow", async () => {
+  describe("Recovery warning dedupe", () => {
+    test("warns once for repeated unsubscribe underflow", async () => {
     const { pusher, calls } = createFakePusher();
     resetGlobalPusherState(pusher);
 
@@ -279,13 +250,12 @@ export async function runPusherClientRefcountTests(): Promise<{
       console.warn = originalWarn;
     }
 
-    assertEq(calls.length, 0, "Expected no underlying unsubscribe on underflow");
-    assertEq(warnings.length, 1, "Expected one deduplicated underflow warning");
+    expect(calls.length).toBe(0);
+    expect(warnings.length).toBe(1);
     const warningContainsUnderflow = warnings[0]?.includes("underflow");
-    assertEq(warningContainsUnderflow, true, "Expected underflow warning message");
+    expect(warningContainsUnderflow).toBeTruthy();
   });
-
-  await runTest("warns once for repeated missing-channel recovery", async () => {
+    test("warns once for repeated missing-channel recovery", async () => {
     const calls: FakeCall[] = [];
     const fakePusher: FakePusher = {
       subscribe: (channel) => {
@@ -315,17 +285,12 @@ export async function runPusherClientRefcountTests(): Promise<{
       console.warn = originalWarn;
     }
 
-    assertEq(calls.length, 2, "Expected two subscribe recovery attempts");
-    assertEq(warnings.length, 1, "Expected one deduplicated missing-channel warning");
+    expect(calls.length).toBe(2);
+    expect(warnings.length).toBe(1);
     const warningContainsRecovery = warnings[0]?.includes("Recovered missing channel");
-    assertEq(
-      warningContainsRecovery,
-      true,
-      "Expected missing-channel recovery warning message"
-    );
+    expect(warningContainsRecovery).toBeTruthy();
   });
-
-  await runTest("re-allows underflow warning after full release reset", async () => {
+    test("re-allows underflow warning after full release reset", async () => {
     const { pusher, calls } = createFakePusher();
     resetGlobalPusherState(pusher);
 
@@ -347,50 +312,44 @@ export async function runPusherClientRefcountTests(): Promise<{
       console.warn = originalWarn;
     }
 
-    assertEq(calls.length, 2, "Expected one subscribe and one unsubscribe");
-    assertEq(calls[0].type, "subscribe");
-    assertEq(calls[0].channel, "room-k-reset");
-    assertEq(calls[1].type, "unsubscribe");
-    assertEq(calls[1].channel, "room-k-reset");
-    assertEq(
-      warnings.length,
-      2,
-      "Expected underflow warning to emit again after full release reset"
-    );
+    expect(calls.length).toBe(2);
+    expect(calls[0].type).toBe("subscribe");
+    expect(calls[0].channel).toBe("room-k-reset");
+    expect(calls[1].type).toBe("unsubscribe");
+    expect(calls[1].channel).toBe("room-k-reset");
+    expect(warnings.length).toBe(2);
+  });
   });
 
-  console.log(section("Channel name normalization"));
-  await runTest("normalizes channel names for subscribe/unsubscribe", async () => {
+  describe("Channel name normalization", () => {
+    test("normalizes channel names for subscribe/unsubscribe", async () => {
     const { pusher, calls } = createFakePusher();
     resetGlobalPusherState(pusher);
 
     subscribePusherChannel(" room-k ");
     unsubscribePusherChannel("room-k");
 
-    assertEq(calls.length, 2, "Expected normalized subscribe/unsubscribe pair");
-    assertEq(calls[0].type, "subscribe");
-    assertEq(calls[0].channel, "room-k");
-    assertEq(calls[1].type, "unsubscribe");
-    assertEq(calls[1].channel, "room-k");
+    expect(calls.length).toBe(2);
+    expect(calls[0].type).toBe("subscribe");
+    expect(calls[0].channel).toBe("room-k");
+    expect(calls[1].type).toBe("unsubscribe");
+    expect(calls[1].channel).toBe("room-k");
   });
-
-  await runTest("ignores whitespace-only channel release", async () => {
+    test("ignores whitespace-only channel release", async () => {
     const { pusher, calls } = createFakePusher();
     resetGlobalPusherState(pusher);
 
     unsubscribePusherChannel("   ");
-    assertEq(calls.length, 0, "Expected no unsubscribe for blank channel name");
+    expect(calls.length).toBe(0);
   });
-
-  await runTest("ignores undefined channel release", async () => {
+    test("ignores undefined channel release", async () => {
     const { pusher, calls } = createFakePusher();
     resetGlobalPusherState(pusher);
 
     unsubscribePusherChannel(undefined as unknown as string);
-    assertEq(calls.length, 0, "Expected no unsubscribe for undefined channel name");
+    expect(calls.length).toBe(0);
   });
-
-  await runTest("throws when subscribing with whitespace-only channel", async () => {
+    test("throws when subscribing with whitespace-only channel", async () => {
     const { pusher } = createFakePusher();
     resetGlobalPusherState(pusher);
 
@@ -403,10 +362,9 @@ export async function runPusherClientRefcountTests(): Promise<{
         error.message.includes("channelName is required");
     }
 
-    assert(threw, "Expected blank subscribe channel to throw");
+    expect(threw).toBeTruthy();
   });
-
-  await runTest("throws clear error for undefined subscribe channel", async () => {
+    test("throws clear error for undefined subscribe channel", async () => {
     const { pusher } = createFakePusher();
     resetGlobalPusherState(pusher);
 
@@ -419,17 +377,7 @@ export async function runPusherClientRefcountTests(): Promise<{
         error.message.includes("channelName is required");
     }
 
-    assert(threw, "Expected undefined subscribe channel to throw clear error");
+    expect(threw).toBeTruthy();
   });
-
-  return printSummary();
-}
-
-if (import.meta.main) {
-  runPusherClientRefcountTests()
-    .then(({ failed }) => process.exit(failed > 0 ? 1 : 0))
-    .catch((error) => {
-      console.error(error);
-      process.exit(1);
-    });
-}
+  });
+});
