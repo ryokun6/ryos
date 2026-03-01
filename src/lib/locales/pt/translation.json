@@ -10,10 +10,14 @@
       "dialogs": {
         "banDescription": "Tem certeza de que deseja banir {{username}}? Ele(a) será desconectado(a) e não poderá acessar o serviço.",
         "banTitle": "Banir Usuário?",
+        "clearMemoriesDescription": "Isso apagará permanentemente todas as {{count}} memórias de longo prazo de {{username}}. As notas diárias serão preservadas. Esta ação não pode ser desfeita.",
+        "clearMemoriesTitle": "Limpar Todas as Memórias",
         "deleteDescription": "Tem certeza de que deseja excluir {{type}} \"{{name}}\"? Esta ação não pode ser desfeita.",
         "deleteTitle": "Excluir {{type}}?",
         "editSong": "Editar {{field}}",
         "editSongDescription": "Digite o novo valor",
+        "reprocessDailyNotesDescription": "Isso redefinirá todas as notas diárias de {{username}} e reextrairá memórias de longo prazo delas. As memórias existentes serão atualizadas/mescladas. Apenas dias passados serão processados (não hoje).",
+        "reprocessDailyNotesTitle": "Reprocessar Notas Diárias",
         "unshareDescription": "Isto removerá \"{{name}}\" das músicas compartilhadas de {{user}}. A música permanecerá na biblioteca, mas não será associada a nenhum usuário.",
         "unshareTitle": "Descompartilhar Música"
       },
@@ -23,6 +27,7 @@
         "exportFailed": "Falha na exportação",
         "failedToAddToLibrary": "Falha ao adicionar à biblioteca",
         "failedToBanUser": "Falha ao banir usuário",
+        "failedToClearMemories": "Falha ao limpar memórias",
         "failedToDeleteMessage": "Falha ao excluir mensagem",
         "failedToDeleteRoom": "Falha ao excluir sala",
         "failedToDeleteSong": "Falha ao excluir música",
@@ -33,6 +38,7 @@
         "failedToFetchSong": "Falha ao buscar música",
         "failedToFetchSongs": "Falha ao buscar músicas",
         "failedToFetchUsers": "Falha ao buscar usuários",
+        "failedToProcessDailyNotes": "Falha ao processar notas diárias",
         "failedToRefreshLyrics": "Falha ao atualizar letras",
         "failedToResetLyrics": "Falha ao redefinir letras",
         "failedToUnbanUser": "Falha ao desbanir usuário",
@@ -121,11 +127,18 @@
         "banReasonPlaceholder": "Motivo do banimento (opcional)",
         "banned": "Banido",
         "bannedOn": "Banido em",
+        "clearAll": "Limpar Tudo",
+        "clearing": "Limpando…",
         "confirmBan": "Banir",
+        "dailyNotes": "Notas Diárias",
+        "dailyNotesProcessed": "Notas diárias processadas",
         "delete": "Excluir Usuário",
+        "entries": "entradas",
         "lastActive": "Última atividade",
         "loading": "Carregando perfil...",
+        "longTermMemories": "Memórias de Longo Prazo",
         "memories": "Memórias",
+        "memoriesCleared": "Memórias limpas",
         "memoryKey": "Tecla",
         "memorySummary": "Resumo",
         "messages": "Mensagens",
@@ -133,10 +146,17 @@
         "noMessages": "Nenhuma mensagem encontrada",
         "noReason": "Nenhum motivo fornecido",
         "notFound": "Usuário não encontrado",
+        "pending": "pendente",
+        "pendingTooltip": "Ainda não processado em memória de longo prazo",
+        "processed": "processado",
+        "processedTooltip": "Processado em memória de longo prazo",
+        "processing": "Processando…",
         "reason": "Motivo",
         "recentMessages": "Mensagens Recentes",
+        "reprocess": "Reprocessar",
         "room": "Sala",
         "rooms": "Salas",
+        "today": "hoje",
         "unban": "Desbanir Usuário"
       },
       "room": {
@@ -719,6 +739,15 @@
     "control-panels": {
       "aiModel": "Modelo de IA",
       "aiModelDescription": "Usado em Chats, IE e mais",
+      "alerts": {
+        "errorUploadingWallpaper": "Erro ao carregar o papel de parede. Tente novamente com um arquivo menor.",
+        "failedToBackupFileSystem": "Falha ao fazer backup dos dados do sistema de arquivos. Apenas as configurações serão copiadas.",
+        "failedToCreateBackup": "Falha ao criar backup compactado: {{error}}",
+        "failedToRestoreBackup": "Falha ao restaurar backup: {{error}}",
+        "failedToRestoreFileSystem": "Falha ao restaurar os dados do sistema de arquivos. Apenas as configurações serão restauradas.",
+        "selectImageFile": "Selecione um arquivo de imagem. Vídeos não são suportados.",
+        "unknownError": "Erro desconhecido"
+      },
       "appearance": "Aparência",
       "backup": "Backup",
       "backupRestoreDescription": "Fazer backup ou restaurar todas as definições e ficheiros da aplicação.",
@@ -1276,6 +1305,11 @@
         "toggleRomanization": "Alternar Romanização",
         "translateLyrics": "Traduzir letra"
       },
+      "coverFlow": {
+        "hideMedia": "Ocultar Mídia",
+        "noTrack": "Nenhuma faixa",
+        "showMedia": "Mostrar Mídia"
+      },
       "description": "Reprodutor de música",
       "dialogs": {
         "addSongDescription": "Cole um link do YouTube para adicionar ao seu iPod",
@@ -1608,6 +1642,10 @@
     },
     "minesweeper": {
       "description": "Jogo clássico de quebra-cabeça",
+      "dialogs": {
+        "newGameDescription": "Tem certeza de que deseja iniciar um novo jogo?",
+        "newGameTitle": "Novo Jogo"
+      },
       "help": {
         "desktopControls": {
           "description": "Clique esquerdo para revelar, clique direito para sinalizar, clique duplo em números para revelar vizinhos automaticamente.",
@@ -1907,6 +1945,14 @@
       "soundboards": "Mesas de Som"
     },
     "stickies": {
+      "colors": {
+        "blue": "Azul",
+        "green": "Verde",
+        "orange": "Laranja",
+        "pink": "Rosa",
+        "purple": "Roxo",
+        "yellow": "Amarelo"
+      },
       "description": "Notas autoadesivas para lembretes rápidos",
       "empty": {
         "createNote": "Nova Nota",
@@ -2536,6 +2582,14 @@
       "turnMagnificationOff": "Desativar ampliação",
       "turnMagnificationOn": "Ativar ampliação"
     },
+    "errorBoundaries": {
+      "appDescription": "Reinicie-o para abrir uma nova janela, ou feche esta janela travada. Outros aplicativos abertos continuarão em execução.",
+      "appHeading": "{{appName}} encerrou inesperadamente.",
+      "desktopDescription": "Recarregar o ryOS para restaurar o Dock, a Mesa e a barra de menus.",
+      "desktopHeading": "A Mesa encerrou inesperadamente.",
+      "relaunch": "Reiniciar",
+      "reloadDesktop": "Recarregar Mesa"
+    },
     "errors": {
       "failedToFetchFurigana": "Falha ao buscar furigana",
       "failedToFetchSoramimi": "Falha ao buscar soramimi"
@@ -2597,6 +2651,11 @@
       "undo": "Desfazer",
       "videos": "Vídeos",
       "view": "Visualizar"
+    },
+    "menuBar": {
+      "missionControl": "Mission Control (F3)",
+      "offline": "Você está offline",
+      "showAllWindows": "Clique para mostrar todas as janelas (F3)"
     },
     "startMenu": {
       "aboutThisComputer": "Sobre Este Computador",

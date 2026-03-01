@@ -10,10 +10,14 @@
       "dialogs": {
         "banDescription": "Möchten Sie {{username}} wirklich sperren? Die Person wird abgemeldet und kann den Dienst nicht mehr nutzen.",
         "banTitle": "Nutzer sperren?",
+        "clearMemoriesDescription": "Dies löscht dauerhaft alle {{count}} Langzeitgedächtnisse für {{username}}. Tägliche Notizen bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden.",
+        "clearMemoriesTitle": "Alle Gedächtnisse löschen",
         "deleteDescription": "Möchten Sie {{type}} „{{name}}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
         "deleteTitle": "{{type}} löschen?",
         "editSong": "{{field}} bearbeiten",
         "editSongDescription": "Neuen Wert eingeben",
+        "reprocessDailyNotesDescription": "Dies setzt alle täglichen Notizen für {{username}} zurück und extrahiert Langzeitgedächtnisse neu daraus. Bestehende Gedächtnisse werden aktualisiert/zusammengeführt. Nur vergangene Tage werden verarbeitet (nicht heute).",
+        "reprocessDailyNotesTitle": "Tägliche Notizen neu verarbeiten",
         "unshareDescription": "Dadurch wird „{{name}}“ aus den geteilten Liedern von {{user}} entfernt. Das Lied verbleibt in der Mediathek, wird aber keinem Benutzer zugeordnet.",
         "unshareTitle": "Freigabe aufheben"
       },
@@ -23,6 +27,7 @@
         "exportFailed": "Export fehlgeschlagen",
         "failedToAddToLibrary": "Hinzufügen zur Bibliothek fehlgeschlagen",
         "failedToBanUser": "Nutzer konnte nicht gesperrt werden",
+        "failedToClearMemories": "Fehler beim Löschen der Gedächtnisse",
         "failedToDeleteMessage": "Nachricht konnte nicht gelöscht werden",
         "failedToDeleteRoom": "Raum konnte nicht gelöscht werden",
         "failedToDeleteSong": "Löschen des Liedes fehlgeschlagen",
@@ -33,6 +38,7 @@
         "failedToFetchSong": "Laden des Songs fehlgeschlagen",
         "failedToFetchSongs": "Abrufen der Lieder fehlgeschlagen",
         "failedToFetchUsers": "Benutzer konnten nicht abgerufen werden",
+        "failedToProcessDailyNotes": "Fehler beim Verarbeiten der täglichen Notizen",
         "failedToRefreshLyrics": "Fehler beim Aktualisieren der Liedtexte",
         "failedToResetLyrics": "Fehler beim Zurücksetzen der Liedtexte",
         "failedToUnbanUser": "Nutzer konnte nicht entsperrt werden",
@@ -121,11 +127,18 @@
         "banReasonPlaceholder": "Sperrgrund (optional)",
         "banned": "Gesperrt",
         "bannedOn": "Gesperrt am",
+        "clearAll": "Alle löschen",
+        "clearing": "Wird gelöscht…",
         "confirmBan": "Sperren",
+        "dailyNotes": "Tägliche Notizen",
+        "dailyNotesProcessed": "Tägliche Notizen verarbeitet",
         "delete": "Nutzer löschen",
+        "entries": "Einträge",
         "lastActive": "Zuletzt aktiv",
         "loading": "Profil wird geladen...",
+        "longTermMemories": "Langzeitgedächtnisse",
         "memories": "Erinnerungen",
+        "memoriesCleared": "Gedächtnisse gelöscht",
         "memoryKey": "Taste",
         "memorySummary": "Zusammenfassung",
         "messages": "Nachrichten",
@@ -133,10 +146,17 @@
         "noMessages": "Keine Nachrichten gefunden",
         "noReason": "Kein Grund angegeben",
         "notFound": "Benutzer nicht gefunden",
+        "pending": "ausstehend",
+        "pendingTooltip": "Noch nicht ins Langzeitgedächtnis verarbeitet",
+        "processed": "verarbeitet",
+        "processedTooltip": "Ins Langzeitgedächtnis verarbeitet",
+        "processing": "Wird verarbeitet…",
         "reason": "Grund",
         "recentMessages": "Aktuelle Nachrichten",
+        "reprocess": "Neu verarbeiten",
         "room": "Raum",
         "rooms": "Räume",
+        "today": "heute",
         "unban": "Nutzer entbannen"
       },
       "room": {
@@ -719,6 +739,15 @@
     "control-panels": {
       "aiModel": "KI-Modell",
       "aiModelDescription": "Wird in Chats, IE und mehr verwendet",
+      "alerts": {
+        "errorUploadingWallpaper": "Fehler beim Hochladen des Hintergrundbilds. Bitte versuchen Sie es mit einer kleineren Datei erneut.",
+        "failedToBackupFileSystem": "Fehler beim Sichern der Dateisystemdaten. Es werden nur die Einstellungen gesichert.",
+        "failedToCreateBackup": "Fehler beim Erstellen der komprimierten Sicherung: {{error}}",
+        "failedToRestoreBackup": "Fehler beim Wiederherstellen der Sicherung: {{error}}",
+        "failedToRestoreFileSystem": "Fehler beim Wiederherstellen der Dateisystemdaten. Es werden nur die Einstellungen wiederhergestellt.",
+        "selectImageFile": "Bitte wählen Sie eine Bilddatei aus. Videos werden nicht unterstützt.",
+        "unknownError": "Unbekannter Fehler"
+      },
       "appearance": "Erscheinungsbild",
       "backup": "Sicherung",
       "backupRestoreDescription": "Alle App-Einstellungen und Dateien sichern oder wiederherstellen.",
@@ -1276,6 +1305,11 @@
         "toggleRomanization": "Romanisierung umschalten",
         "translateLyrics": "Liedtext übersetzen"
       },
+      "coverFlow": {
+        "hideMedia": "Medien ausblenden",
+        "noTrack": "Kein Titel",
+        "showMedia": "Medien anzeigen"
+      },
       "description": "Musikplayer",
       "dialogs": {
         "addSongDescription": "Füge einen YouTube-Link ein, um ihn zu deinem iPod hinzuzufügen",
@@ -1608,6 +1642,10 @@
     },
     "minesweeper": {
       "description": "Klassisches Puzzlespiel",
+      "dialogs": {
+        "newGameDescription": "Möchten Sie wirklich ein neues Spiel starten?",
+        "newGameTitle": "Neues Spiel"
+      },
       "help": {
         "desktopControls": {
           "description": "Linksklick zum Aufdecken, Rechtsklick zum Markieren, Doppelklick auf Zahlen, um Nachbarn automatisch aufzudecken",
@@ -1907,6 +1945,14 @@
       "soundboards": "Soundboards"
     },
     "stickies": {
+      "colors": {
+        "blue": "Blau",
+        "green": "Grün",
+        "orange": "Orange",
+        "pink": "Pink",
+        "purple": "Lila",
+        "yellow": "Gelb"
+      },
       "description": "Haftnotizen für schnelle Erinnerungen",
       "empty": {
         "createNote": "Neue Notiz",
@@ -2536,6 +2582,14 @@
       "turnMagnificationOff": "Vergrößerung deaktivieren",
       "turnMagnificationOn": "Vergrößerung aktivieren"
     },
+    "errorBoundaries": {
+      "appDescription": "Starten Sie es neu, um ein neues Fenster zu öffnen, oder beenden Sie dieses abgestürzte Fenster. Andere geöffnete Apps werden weiter ausgeführt.",
+      "appHeading": "{{appName}} wurde unerwartet beendet.",
+      "desktopDescription": "ryOS neu laden, um das Dock, den Schreibtisch und die Menüleiste wiederherzustellen.",
+      "desktopHeading": "Der Schreibtisch wurde unerwartet beendet.",
+      "relaunch": "Neu starten",
+      "reloadDesktop": "Schreibtisch neu laden"
+    },
     "errors": {
       "failedToFetchFurigana": "Abrufen von Furigana fehlgeschlagen",
       "failedToFetchSoramimi": "Abrufen von Soramimi fehlgeschlagen"
@@ -2612,6 +2666,11 @@
       "undo": "Rückgängig",
       "videos": "Filme",
       "view": "Darstellung"
+    },
+    "menuBar": {
+      "missionControl": "Mission Control (F3)",
+      "offline": "Sie sind derzeit offline",
+      "showAllWindows": "Klicken, um alle Fenster anzuzeigen (F3)"
     },
     "startMenu": {
       "aboutThisComputer": "Über diesen Computer",

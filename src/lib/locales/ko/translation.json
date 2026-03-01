@@ -10,10 +10,14 @@
       "dialogs": {
         "banDescription": "{{username}}님을 차단하시겠습니까? 해당 사용자는 로그아웃되며 서비스에 접속할 수 없게 됩니다.",
         "banTitle": "사용자 차단",
+        "clearMemoriesDescription": "{{username}}님의 모든 {{count}}개 장기 기억이 영구적으로 삭제됩니다. 일일 노트는 보존됩니다. 이 작업은 되돌릴 수 없습니다.",
+        "clearMemoriesTitle": "모든 기억 지우기",
         "deleteDescription": "{{type}} \"{{name}}\"을(를) 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
         "deleteTitle": "{{type}}(을)를 삭제하시겠습니까?",
         "editSong": "{{field}} 수정",
         "editSongDescription": "새 값을 입력하세요.",
+        "reprocessDailyNotesDescription": "{{username}}님의 모든 일일 노트가 초기화되고, 일일 노트에서 장기 기억을 다시 추출합니다. 기존 기억은 업데이트/병합됩니다. 오늘을 제외한 지난 날짜만 처리됩니다.",
+        "reprocessDailyNotesTitle": "일일 노트 다시 처리",
         "unshareDescription": "이것은 {{user}}님의 공유된 노래 목록에서 \"{{name}}\"을(를) 제거합니다. 이 노래는 보관함에 남아있지만, 어떤 사용자에게도 연결되지 않습니다.",
         "unshareTitle": "노래 공유 해제"
       },
@@ -23,6 +27,7 @@
         "exportFailed": "내보내기 실패",
         "failedToAddToLibrary": "라이브러리에 추가 실패",
         "failedToBanUser": "사용자 차단 실패",
+        "failedToClearMemories": "기억 지우기 실패",
         "failedToDeleteMessage": "메시지 삭제 실패",
         "failedToDeleteRoom": "채팅방 삭제 실패",
         "failedToDeleteSong": "곡 삭제에 실패했습니다.",
@@ -33,6 +38,7 @@
         "failedToFetchSong": "노래를 가져오지 못했습니다.",
         "failedToFetchSongs": "곡을 가져오는 데 실패했습니다.",
         "failedToFetchUsers": "사용자 불러오기 실패",
+        "failedToProcessDailyNotes": "일일 노트 처리 실패",
         "failedToRefreshLyrics": "가사 새로 고침 실패",
         "failedToResetLyrics": "가사 재설정 실패",
         "failedToUnbanUser": "사용자 차단 해제 실패",
@@ -121,11 +127,18 @@
         "banReasonPlaceholder": "차단 사유 (선택 사항)",
         "banned": "차단됨",
         "bannedOn": "차단일",
+        "clearAll": "모두 지우기",
+        "clearing": "지우는 중…",
         "confirmBan": "차단",
+        "dailyNotes": "일일 노트",
+        "dailyNotesProcessed": "일일 노트 처리됨",
         "delete": "사용자 삭제",
+        "entries": "항목",
         "lastActive": "마지막 활동",
         "loading": "프로필 로드 중...",
+        "longTermMemories": "장기 기억",
         "memories": "추억",
+        "memoriesCleared": "기억 지워짐",
         "memoryKey": "키",
         "memorySummary": "요약",
         "messages": "메시지",
@@ -133,10 +146,17 @@
         "noMessages": "메시지를 찾을 수 없음",
         "noReason": "사유 없음",
         "notFound": "사용자를 찾을 수 없음",
+        "pending": "대기 중",
+        "pendingTooltip": "아직 장기 기억으로 처리되지 않음",
+        "processed": "처리됨",
+        "processedTooltip": "장기 기억으로 처리됨",
+        "processing": "처리 중…",
         "reason": "사유",
         "recentMessages": "최근 메시지",
+        "reprocess": "다시 처리",
         "room": "방",
         "rooms": "방",
+        "today": "오늘",
         "unban": "사용자 차단 해제"
       },
       "room": {
@@ -719,6 +739,15 @@
     "control-panels": {
       "aiModel": "AI 모델",
       "aiModelDescription": "채팅, IE 등에서 사용됨",
+      "alerts": {
+        "errorUploadingWallpaper": "배경화면 업로드 오류. 더 작은 파일로 다시 시도해 주세요.",
+        "failedToBackupFileSystem": "파일 시스템 데이터 백업에 실패했습니다. 설정만 백업됩니다.",
+        "failedToCreateBackup": "압축 백업 생성에 실패했습니다: {{error}}",
+        "failedToRestoreBackup": "백업 복원에 실패했습니다: {{error}}",
+        "failedToRestoreFileSystem": "파일 시스템 데이터 복원에 실패했습니다. 설정만 복원됩니다.",
+        "selectImageFile": "이미지 파일을 선택해 주세요. 동영상은 지원되지 않습니다.",
+        "unknownError": "알 수 없는 오류"
+      },
       "appearance": "모양",
       "backup": "백업",
       "backupRestoreDescription": "모든 앱 설정과 파일을 백업하거나 복원합니다.",
@@ -1276,6 +1305,11 @@
         "toggleRomanization": "발음 표기 전환",
         "translateLyrics": "가사 번역"
       },
+      "coverFlow": {
+        "hideMedia": "미디어 숨기기",
+        "noTrack": "트랙 없음",
+        "showMedia": "미디어 보기"
+      },
       "description": "음악 플레이어",
       "dialogs": {
         "addSongDescription": "iPod에 추가하려면 YouTube 링크를 붙여넣으세요.",
@@ -1608,6 +1642,10 @@
     },
     "minesweeper": {
       "description": "클래식 퍼즐 게임",
+      "dialogs": {
+        "newGameDescription": "새 게임을 시작하시겠습니까?",
+        "newGameTitle": "새 게임"
+      },
       "help": {
         "desktopControls": {
           "description": "왼쪽 클릭으로 표시, 오른쪽 클릭으로 깃발, 숫자 더블 클릭으로 인접 셀 자동 표시",
@@ -1907,6 +1945,14 @@
       "soundboards": "사운드보드"
     },
     "stickies": {
+      "colors": {
+        "blue": "파랑",
+        "green": "초록",
+        "orange": "주황",
+        "pink": "분홍",
+        "purple": "보라",
+        "yellow": "노랑"
+      },
       "description": "빠른 알림을 위한 스티커 메모",
       "empty": {
         "createNote": "새 메모",
@@ -2536,6 +2582,14 @@
       "turnMagnificationOff": "확대 끄기",
       "turnMagnificationOn": "확대 켜기"
     },
+    "errorBoundaries": {
+      "appDescription": "새 창을 열려면 다시 실행하거나, 충돌한 이 창을 종료하세요. 다른 열려 있는 앱은 계속 실행됩니다.",
+      "appHeading": "{{appName}}이(가) 예기치 않게 종료되었습니다.",
+      "desktopDescription": "Dock, 데스크탑 및 메뉴 막대를 복원하려면 ryOS를 다시 로드하세요.",
+      "desktopHeading": "데스크탑이 예기치 않게 종료되었습니다.",
+      "relaunch": "다시 실행",
+      "reloadDesktop": "데스크탑 다시 로드"
+    },
     "errors": {
       "failedToFetchFurigana": "후리가나 가져오기 실패",
       "failedToFetchSoramimi": "소라미미 가져오기 실패"
@@ -2612,6 +2666,11 @@
       "undo": "실행 취소",
       "videos": "동영상",
       "view": "보기"
+    },
+    "menuBar": {
+      "missionControl": "Mission Control (F3)",
+      "offline": "현재 오프라인입니다.",
+      "showAllWindows": "모든 윈도우 표시 (F3) 클릭"
     },
     "startMenu": {
       "aboutThisComputer": "이 컴퓨터에 관하여",

@@ -44,6 +44,11 @@
       "trash": "Trash",
       "shareApp": "Share App..."
     },
+    "menuBar": {
+      "showAllWindows": "Click to show all windows (F3)",
+      "offline": "You are currently offline",
+      "missionControl": "Mission Control (F3)"
+    },
     "dialog": {
       "save": "Save",
       "cancel": "Cancel",
@@ -140,6 +145,14 @@
     },
     "expose": {
       "noWindows": "No open windows"
+    },
+    "errorBoundaries": {
+      "appHeading": "{{appName}} quit unexpectedly.",
+      "appDescription": "Relaunch it to open a fresh window, or quit this crashed window. Other open apps will keep running.",
+      "relaunch": "Relaunch",
+      "desktopHeading": "Desktop quit unexpectedly.",
+      "desktopDescription": "Reload ryOS to restore the Dock, Desktop, and menu bar.",
+      "reloadDesktop": "Reload Desktop"
     },
     "window": {
       "minimize": "Minimize",
@@ -1332,6 +1345,10 @@
           "title": "Restart",
           "description": "Press the smiley face or choose File ▸ New Game to start a fresh board."
         }
+      },
+      "dialogs": {
+        "newGameTitle": "New Game",
+        "newGameDescription": "Are you sure you want to start a new game?"
       }
     },
     "videos": {
@@ -1538,6 +1555,11 @@
         "increaseOffset": "Increase offset",
         "syncScroll": "Sync Scroll",
         "searchLyrics": "Search Lyrics"
+      },
+      "coverFlow": {
+        "noTrack": "No track",
+        "hideMedia": "Hide Media",
+        "showMedia": "Show Media"
       },
       "dialogs": {
         "clearLibraryTitle": "Clear Library",
@@ -2315,6 +2337,15 @@
           "title": "System",
           "description": "Reset preferences or format the virtual file system"
         }
+      },
+      "alerts": {
+        "selectImageFile": "Please select an image file. Videos are not supported.",
+        "errorUploadingWallpaper": "Error uploading wallpaper. Please try again with a smaller file.",
+        "failedToBackupFileSystem": "Failed to backup file system data. Only settings will be backed up.",
+        "failedToCreateBackup": "Failed to create compressed backup: {{error}}",
+        "failedToRestoreFileSystem": "Failed to restore file system data. Only settings will be restored.",
+        "failedToRestoreBackup": "Failed to restore backup: {{error}}",
+        "unknownError": "Unknown error"
       }
     },
     "stickies": {
@@ -2330,6 +2361,14 @@
         "clearAll": "Clear All Notes",
         "help": "Stickies Help",
         "about": "About Stickies"
+      },
+      "colors": {
+        "yellow": "Yellow",
+        "blue": "Blue",
+        "green": "Green",
+        "pink": "Pink",
+        "purple": "Purple",
+        "orange": "Orange"
       },
       "empty": {
         "title": "No sticky notes yet",
@@ -2606,7 +2645,9 @@
         "failedToUpdateLyrics": "Failed to update lyrics",
         "failedToUpdateMetadata": "Failed to update metadata",
         "failedToResetLyrics": "Failed to reset lyrics",
-        "failedToUnshareSong": "Failed to unshare song"
+        "failedToUnshareSong": "Failed to unshare song",
+        "failedToClearMemories": "Failed to clear memories",
+        "failedToProcessDailyNotes": "Failed to process daily notes"
       },
       "statusBar": {
         "usersCount": "{{count}} user",
@@ -2648,13 +2689,31 @@
         "memories": "Memories",
         "noMemories": "No memories stored",
         "memoryKey": "Key",
-        "memorySummary": "Summary"
+        "memorySummary": "Summary",
+        "longTermMemories": "Long-Term Memories",
+        "memoriesCleared": "Memories cleared",
+        "dailyNotesProcessed": "Daily notes processed",
+        "dailyNotes": "Daily Notes",
+        "entries": "entries",
+        "today": "today",
+        "clearing": "Clearing…",
+        "clearAll": "Clear All",
+        "processing": "Processing…",
+        "reprocess": "Reprocess",
+        "processed": "processed",
+        "pending": "pending",
+        "processedTooltip": "Processed into long-term memory",
+        "pendingTooltip": "Not yet processed into long-term memory"
       },
       "dialogs": {
         "deleteTitle": "Delete {{type}}?",
         "deleteDescription": "Are you sure you want to delete {{type}} \"{{name}}\"? This action cannot be undone.",
         "banTitle": "Ban User?",
         "banDescription": "Are you sure you want to ban {{username}}? They will be logged out and unable to access the service.",
+        "clearMemoriesTitle": "Clear All Memories",
+        "clearMemoriesDescription": "This will permanently delete all {{count}} long-term memories for {{username}}. Daily notes will be preserved. This action cannot be undone.",
+        "reprocessDailyNotesTitle": "Reprocess Daily Notes",
+        "reprocessDailyNotesDescription": "This will reset all daily notes for {{username}} and re-extract long-term memories from them. Existing memories will be updated/merged. Only past days will be processed (not today).",
         "editSong": "Edit {{field}}",
         "editSongDescription": "Enter the new value",
         "unshareTitle": "Unshare Song",

@@ -339,7 +339,7 @@ export function StickyNote({
               border: `1px solid ${colors.border}`,
               backgroundColor: colors.bg,
             }}
-            title="Close"
+            title={t("common.menu.close")}
           />
         )}
       </div>

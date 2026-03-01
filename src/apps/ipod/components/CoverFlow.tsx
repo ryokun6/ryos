@@ -5,6 +5,7 @@ import type { Track } from "@/stores/useIpodStore";
 import { Play, Pause, VinylRecord } from "@phosphor-icons/react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useEventListener } from "@/hooks/useEventListener";
+import { useTranslation } from "react-i18next";
 
 // Long press delay in milliseconds
 const LONG_PRESS_DELAY = 500;
@@ -482,6 +483,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
   onTogglePlay,
   onPlayTrackInPlace,
 }, ref) {
+  const { t } = useTranslation();
   const [selectedIndex, setSelectedIndex] = useState(currentIndex);
   const [showCD, setShowCD] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -770,7 +772,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     background: "rgba(255, 255, 255, 0.08)",
                   }),
                 }}
-                title={isPlaying && selectedIndex === currentIndex ? "Pause" : "Play"}
+                title={isPlaying && selectedIndex === currentIndex ? t("apps.ipod.menu.pause") : t("apps.ipod.menu.play")}
               >
                 {isMacTheme && <AquaShineOverlay />}
                 {isPlaying && selectedIndex === currentIndex ? (
@@ -787,7 +789,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                 className={`text-white truncate leading-tight ${ipodMode ? "text-[10px]" : ""}`}
                 style={ipodMode ? undefined : { fontSize: "clamp(14px, 5cqmin, 24px)" }}
               >
-                {currentTrack?.title || "No track"}
+                {currentTrack?.title || t("apps.ipod.coverFlow.noTrack")}
               </div>
               {currentTrack?.artist && (
                 <div 
@@ -821,7 +823,7 @@ export const CoverFlow = forwardRef<CoverFlowRef, CoverFlowProps>(function Cover
                     background: showCD ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.08)",
                   }),
                 }}
-                title={showCD ? "Hide Media" : "Show Media"}
+                title={showCD ? t("apps.ipod.coverFlow.hideMedia") : t("apps.ipod.coverFlow.showMedia")}
               >
                 {isMacTheme && <AquaShineOverlay />}
                 <VinylRecord className="w-full h-full relative z-10" weight="fill" />
