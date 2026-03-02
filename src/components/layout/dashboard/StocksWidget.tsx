@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type StocksWidgetConfig } from "@/stores/useDashboardStore";
 import { useTranslation } from "react-i18next";
-import { MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
+import { MagnifyingGlass, Plus, X, ArrowClockwise } from "@phosphor-icons/react";
 
 interface StockQuote {
   symbol: string;
@@ -15,73 +15,50 @@ interface ChartPoint {
   y: number;
 }
 
-const DEMO_STOCKS: Record<string, { price: number; change: number; history: number[] }> = {
-  INDU: {
-    price: 10784.41,
-    change: -11.6,
-    history: [9680, 9750, 9900, 10100, 10050, 10200, 10350, 10457, 10600, 10450, 10700, 10923, 10784],
-  },
-  COMPX: {
-    price: 2080.53,
-    change: 3.87,
-    history: [1850, 1900, 1920, 1980, 1950, 2010, 2040, 2000, 2050, 2070, 2060, 2090, 2080],
-  },
-  AAPL: {
-    price: 83.11,
-    change: 1.9,
-    history: [55, 58, 60, 62, 65, 68, 70, 72, 75, 78, 80, 82, 83],
-  },
-  MSFT: {
-    price: 26.0,
-    change: 0.03,
-    history: [24, 24.5, 25, 24.8, 25.2, 25.5, 25.3, 25.8, 26, 25.7, 26.1, 25.9, 26],
-  },
-  GOOG: {
-    price: 186.0,
-    change: -1.4,
-    history: [200, 198, 195, 190, 188, 185, 182, 184, 187, 190, 188, 185, 186],
-  },
-  AMZN: {
-    price: 36.1582,
-    change: 0.37,
-    history: [30, 31, 32, 33, 32.5, 33.5, 34, 34.5, 35, 35.5, 35.8, 36, 36.16],
-  },
-  TSLA: {
-    price: 248.42,
-    change: 5.73,
-    history: [180, 190, 200, 210, 205, 215, 220, 230, 235, 240, 245, 250, 248],
-  },
-  META: {
-    price: 512.3,
-    change: -3.21,
-    history: [480, 490, 500, 510, 505, 515, 520, 518, 515, 510, 512, 514, 512],
-  },
-  NFLX: {
-    price: 628.15,
-    change: 8.42,
-    history: [550, 560, 570, 580, 590, 595, 600, 610, 615, 620, 625, 630, 628],
-  },
-  NVDA: {
-    price: 875.28,
-    change: 12.45,
-    history: [700, 720, 740, 760, 780, 800, 820, 840, 850, 860, 870, 880, 875],
-  },
+interface ApiQuote {
+  symbol: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  name: string;
+}
+
+interface ApiChartPoint {
+  timestamp: number;
+  close: number;
+}
+
+const DEFAULT_SYMBOLS = ["^DJI", "^IXIC", "AAPL", "MSFT", "GOOG", "AMZN"];
+
+const DISPLAY_NAMES: Record<string, string> = {
+  "^DJI": "INDU",
+  "^IXIC": "COMPX",
+  "^GSPC": "S&P 500",
 };
 
-const DEFAULT_SYMBOLS = ["INDU", "COMPX", "AAPL", "MSFT", "GOOG", "AMZN"];
-const ALL_SYMBOLS = Object.keys(DEMO_STOCKS);
+const POPULAR_SYMBOLS = [
+  "AAPL", "MSFT", "GOOG", "AMZN", "TSLA", "META", "NFLX", "NVDA",
+  "^DJI", "^IXIC", "^GSPC",
+  "JPM", "V", "WMT", "DIS", "PYPL", "INTC", "AMD", "CRM", "ADBE",
+];
 
 const TIME_RANGES = ["1d", "3m", "6m", "1y", "2y"] as const;
-const MONTH_LABELS_MAP: Record<string, string[]> = {
-  "1d": ["9AM", "10AM", "11AM", "12PM", "1PM", "2PM", "3PM", "4PM"],
-  "3m": ["Jan", "Feb", "Mar"],
-  "6m": ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb"],
-  "1y": ["Mar", "May", "Jul", "Sep", "Nov", "Jan"],
-  "2y": ["2024", "Q2", "Q3", "Q4", "2025", "Q2"],
+type TimeRange = (typeof TIME_RANGES)[number];
+
+const RANGE_TO_API: Record<TimeRange, string> = {
+  "1d": "1d",
+  "3m": "3mo",
+  "6m": "6mo",
+  "1y": "1y",
+  "2y": "2y",
 };
 
+function displaySymbol(sym: string): string {
+  return DISPLAY_NAMES[sym] ?? sym;
+}
+
 function formatPrice(price: number): string {
-  if (price >= 1000) return price.toFixed(2);
+  if (price >= 10000) return price.toFixed(2);
   if (price >= 100) return price.toFixed(2);
   return price.toFixed(price % 1 === 0 ? 2 : price < 1 ? 4 : 2);
 }
@@ -91,98 +68,93 @@ function formatChange(change: number): string {
   return sign + change.toFixed(2);
 }
 
-function generateChartPoints(
-  history: number[],
-  width: number,
-  height: number,
-  padding: number
-): { line: ChartPoint[]; area: string; yLabels: { value: number; y: number }[] } {
-  const min = Math.min(...history);
-  const max = Math.max(...history);
-  const range = max - min || 1;
-  const chartW = width - padding * 2;
-  const chartH = height - padding * 2;
+function generateXLabels(timestamps: number[], range: TimeRange): string[] {
+  if (timestamps.length < 2) return [];
+  const count = 6;
+  const step = Math.max(1, Math.floor(timestamps.length / count));
+  const labels: string[] = [];
 
-  const line: ChartPoint[] = history.map((val, i) => ({
-    x: padding + (i / (history.length - 1)) * chartW,
-    y: padding + chartH - ((val - min) / range) * chartH,
-  }));
-
-  const areaPath =
-    `M ${line[0].x} ${line[0].y} ` +
-    line
-      .slice(1)
-      .map((p) => `L ${p.x} ${p.y}`)
-      .join(" ") +
-    ` L ${line[line.length - 1].x} ${padding + chartH} L ${line[0].x} ${padding + chartH} Z`;
-
-  const labelCount = 4;
-  const yLabels = Array.from({ length: labelCount }, (_, i) => {
-    const val = min + (range * (labelCount - 1 - i)) / (labelCount - 1);
-    return {
-      value: Math.round(val),
-      y: padding + (i / (labelCount - 1)) * chartH,
-    };
-  });
-
-  return { line, area: areaPath, yLabels };
+  for (let i = 0; i < timestamps.length; i += step) {
+    const d = new Date(timestamps[i]);
+    if (range === "1d") {
+      labels.push(d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
+    } else if (range === "2y") {
+      labels.push(d.toLocaleDateString([], { year: "2-digit", month: "short" }));
+    } else {
+      labels.push(d.toLocaleDateString([], { month: "short" }));
+    }
+    if (labels.length >= count) break;
+  }
+  return labels;
 }
 
 function MiniChart({
   history,
-  selectedRange,
+  xLabels,
   isXpTheme,
+  widgetId,
 }: {
   history: number[];
-  selectedRange: string;
+  xLabels: string[];
   isXpTheme: boolean;
+  widgetId: string;
 }) {
   const width = 220;
-  const height = 80;
-  const padding = 4;
+  const height = 90;
+  const topPad = 4;
+  const bottomPad = 14;
+  const leftPad = 4;
   const rightPad = 40;
+  const gradientId = `chartFill-${widgetId}`;
 
-  const { line, area, yLabels } = useMemo(
-    () => generateChartPoints(history, width - rightPad, height, padding),
-    [history]
-  );
+  const chartW = width - rightPad - leftPad;
+  const chartH = height - topPad - bottomPad;
 
-  const monthLabels = MONTH_LABELS_MAP[selectedRange] || MONTH_LABELS_MAP["6m"];
+  const { line, area, yLabels } = useMemo(() => {
+    if (history.length < 2)
+      return { line: [] as ChartPoint[], area: "", yLabels: [] as { value: number; y: number }[] };
+    const min = Math.min(...history);
+    const max = Math.max(...history);
+    const range = max - min || 1;
+
+    const pts: ChartPoint[] = history.map((val, i) => ({
+      x: leftPad + (i / (history.length - 1)) * chartW,
+      y: topPad + chartH - ((val - min) / range) * chartH,
+    }));
+
+    const areaPath =
+      `M ${pts[0].x} ${pts[0].y} ` +
+      pts.slice(1).map((p) => `L ${p.x} ${p.y}`).join(" ") +
+      ` L ${pts[pts.length - 1].x} ${topPad + chartH} L ${pts[0].x} ${topPad + chartH} Z`;
+
+    const labelCount = 4;
+    const yLbls = Array.from({ length: labelCount }, (_, i) => {
+      const val = min + (range * (labelCount - 1 - i)) / (labelCount - 1);
+      return {
+        value: Math.round(val),
+        y: topPad + (i / (labelCount - 1)) * chartH,
+      };
+    });
+
+    return { line: pts, area: areaPath, yLabels: yLbls };
+  }, [history, chartW, chartH]);
+
+  if (line.length < 2) return null;
+
   const linePath =
     `M ${line[0].x} ${line[0].y} ` +
-    line
-      .slice(1)
-      .map((p) => `L ${p.x} ${p.y}`)
-      .join(" ");
+    line.slice(1).map((p) => `L ${p.x} ${p.y}`).join(" ");
 
   return (
-    <svg
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      className="block"
-    >
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="block">
       <defs>
-        <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-          <stop
-            offset="0%"
-            stopColor={isXpTheme ? "#4A90D9" : "#4A90D9"}
-            stopOpacity={0.5}
-          />
-          <stop
-            offset="100%"
-            stopColor={isXpTheme ? "#4A90D9" : "#4A90D9"}
-            stopOpacity={0.05}
-          />
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#4A90D9" stopOpacity={0.5} />
+          <stop offset="100%" stopColor="#4A90D9" stopOpacity={0.05} />
         </linearGradient>
       </defs>
-      <path d={area} fill="url(#chartFill)" />
-      <path
-        d={linePath}
-        fill="none"
-        stroke={isXpTheme ? "#2060A0" : "#6AB4FF"}
-        strokeWidth={1.5}
-      />
+      <path d={area} fill={`url(#${gradientId})`} />
+      <path d={linePath} fill="none" stroke={isXpTheme ? "#2060A0" : "#6AB4FF"} strokeWidth={1.5} />
       {yLabels.map((label) => (
         <text
           key={label.value}
@@ -195,14 +167,13 @@ function MiniChart({
           {label.value}
         </text>
       ))}
-      {monthLabels.map((label, i) => {
-        const xPos =
-          padding + (i / (monthLabels.length - 1)) * (width - rightPad - padding * 2);
+      {xLabels.map((label, i) => {
+        const xPos = leftPad + (i / Math.max(xLabels.length - 1, 1)) * chartW;
         return (
           <text
             key={`${label}-${i}`}
             x={xPos}
-            y={height - 1}
+            y={height - 2}
             fill={isXpTheme ? "#666" : "rgba(255,255,255,0.4)"}
             fontSize={7}
             fontFamily="'Helvetica Neue', Helvetica, Arial, sans-serif"
@@ -216,6 +187,51 @@ function MiniChart({
   );
 }
 
+const quotesCache = new Map<string, { quotes: StockQuote[]; ts: number }>();
+const chartCache = new Map<string, { history: number[]; timestamps: number[]; ts: number }>();
+const CACHE_TTL_QUOTES = 60_000;
+const CACHE_TTL_CHART = 120_000;
+
+async function fetchQuotes(symbols: string[]): Promise<StockQuote[]> {
+  const key = symbols.join(",");
+  const cached = quotesCache.get(key);
+  if (cached && Date.now() - cached.ts < CACHE_TTL_QUOTES) return cached.quotes;
+
+  const res = await fetch(`/api/stocks?symbols=${encodeURIComponent(key)}`);
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  const data = await res.json();
+  const quotes: StockQuote[] = (data.quotes as ApiQuote[]).map((q) => ({
+    symbol: q.symbol,
+    price: q.price,
+    change: q.change,
+  }));
+  quotesCache.set(key, { quotes, ts: Date.now() });
+  return quotes;
+}
+
+async function fetchChart(
+  symbol: string,
+  range: TimeRange
+): Promise<{ history: number[]; timestamps: number[] }> {
+  const key = `${symbol}:${range}`;
+  const cached = chartCache.get(key);
+  if (cached && Date.now() - cached.ts < CACHE_TTL_CHART) return cached;
+
+  const apiRange = RANGE_TO_API[range];
+  const res = await fetch(
+    `/api/stocks?symbols=${encodeURIComponent(symbol)}&chart=${encodeURIComponent(symbol)}&range=${apiRange}`
+  );
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  const data = await res.json();
+  const points = (data.chart ?? []) as ApiChartPoint[];
+  const result = {
+    history: points.map((p) => p.close),
+    timestamps: points.map((p) => p.timestamp),
+  };
+  chartCache.set(key, { ...result, ts: Date.now() });
+  return result;
+}
+
 interface StocksWidgetProps {
   widgetId: string;
 }
@@ -225,26 +241,114 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
-  const widget = useDashboardStore((s) =>
-    s.widgets.find((w) => w.id === widgetId)
-  );
+  const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
   const config = widget?.config as StocksWidgetConfig | undefined;
   const symbols = config?.symbols ?? DEFAULT_SYMBOLS;
 
+  const [stocks, setStocks] = useState<StockQuote[]>([]);
+  const [chartHistory, setChartHistory] = useState<number[]>([]);
+  const [chartTimestamps, setChartTimestamps] = useState<number[]>([]);
   const [selectedSymbol, setSelectedSymbol] = useState<string>(symbols[0]);
-  const [selectedRange, setSelectedRange] = useState<string>("6m");
+  const [selectedRange, setSelectedRange] = useState<TimeRange>("6m");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const stocks: StockQuote[] = symbols
-    .filter((sym) => DEMO_STOCKS[sym])
-    .map((sym) => ({
-      symbol: sym,
-      price: DEMO_STOCKS[sym].price,
-      change: DEMO_STOCKS[sym].change,
-    }));
+  const loadQuotes = useCallback(async () => {
+    try {
+      const quotes = await fetchQuotes(symbols);
+      setStocks(quotes);
+      setError(false);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [symbols]);
 
-  const selectedStock = DEMO_STOCKS[selectedSymbol] || DEMO_STOCKS[symbols[0]];
+  const loadChart = useCallback(async () => {
+    try {
+      const { history, timestamps } = await fetchChart(selectedSymbol, selectedRange);
+      setChartHistory(history);
+      setChartTimestamps(timestamps);
+    } catch {
+      setChartHistory([]);
+      setChartTimestamps([]);
+    }
+  }, [selectedSymbol, selectedRange]);
+
+  useEffect(() => {
+    loadQuotes();
+    if (refreshTimer.current) clearInterval(refreshTimer.current);
+    refreshTimer.current = setInterval(loadQuotes, 60_000);
+    return () => {
+      if (refreshTimer.current) clearInterval(refreshTimer.current);
+    };
+  }, [loadQuotes]);
+
+  useEffect(() => {
+    loadChart();
+  }, [loadChart]);
+
+  useEffect(() => {
+    if (!symbols.includes(selectedSymbol)) {
+      setSelectedSymbol(symbols[0]);
+    }
+  }, [symbols, selectedSymbol]);
+
+  const xLabels = useMemo(
+    () => generateXLabels(chartTimestamps, selectedRange),
+    [chartTimestamps, selectedRange]
+  );
 
   const font = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+
+  if (loading && stocks.length === 0) {
+    return (
+      <div
+        className="flex items-center justify-center"
+        style={{
+          minHeight: 200,
+          color: isXpTheme ? "#888" : "rgba(255,255,255,0.4)",
+          fontSize: 11,
+          fontFamily: font,
+        }}
+      >
+        {t("apps.dashboard.stocks.loading")}
+      </div>
+    );
+  }
+
+  if (error && stocks.length === 0) {
+    return (
+      <div
+        className="flex flex-col items-center justify-center gap-2 p-4"
+        style={{
+          minHeight: 200,
+          color: isXpTheme ? "#888" : "rgba(255,255,255,0.4)",
+          fontSize: 11,
+          fontFamily: font,
+        }}
+      >
+        <span>{t("apps.dashboard.stocks.unavailable")}</span>
+        <button
+          type="button"
+          onClick={loadQuotes}
+          className="flex items-center gap-1 hover:opacity-80"
+          style={{
+            color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
+            fontSize: 10,
+            cursor: "pointer",
+            border: "none",
+            background: "none",
+          }}
+        >
+          <ArrowClockwise size={10} weight="bold" />
+          {t("apps.dashboard.stocks.retry")}
+        </button>
+      </div>
+    );
+  }
 
   if (isXpTheme) {
     return (
@@ -261,15 +365,12 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                     : i % 2 === 0
                       ? "rgba(0,0,0,0.02)"
                       : "transparent",
-                borderRadius: 2,
+                borderRadius: selectedSymbol === stock.symbol ? 4 : 2,
               }}
               onClick={() => setSelectedSymbol(stock.symbol)}
             >
-              <span
-                className="font-bold"
-                style={{ fontSize: 11, color: "#333", width: 48 }}
-              >
-                {stock.symbol}
+              <span className="font-bold" style={{ fontSize: 11, color: "#333", width: 50 }}>
+                {displaySymbol(stock.symbol)}
               </span>
               <span style={{ fontSize: 11, color: "#333", flex: 1, textAlign: "right" }}>
                 {formatPrice(stock.price)}
@@ -278,7 +379,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                 className="font-medium text-right"
                 style={{
                   fontSize: 10,
-                  width: 48,
+                  width: 50,
                   marginLeft: 6,
                   color: stock.change >= 0 ? "#2E8B2E" : "#CC0000",
                 }}
@@ -288,10 +389,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
             </div>
           ))}
         </div>
-        <div
-          className="mt-1 pt-1"
-          style={{ borderTop: "1px solid #D5D2CA" }}
-        >
+        <div className="mt-1 pt-1" style={{ borderTop: "1px solid #D5D2CA" }}>
           <div className="flex items-center gap-1 mb-1 justify-center">
             {TIME_RANGES.map((r) => (
               <button
@@ -316,15 +414,13 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
           </div>
           <div className="flex justify-center">
             <MiniChart
-              history={selectedStock.history}
-              selectedRange={selectedRange}
+              history={chartHistory}
+              xLabels={xLabels}
               isXpTheme={isXpTheme}
+              widgetId={widgetId}
             />
           </div>
-          <div
-            className="text-center mt-0.5"
-            style={{ fontSize: 8, color: "#999" }}
-          >
+          <div className="text-center mt-0.5" style={{ fontSize: 8, color: "#999" }}>
             {t("apps.dashboard.stocks.delayed")}
           </div>
         </div>
@@ -334,21 +430,17 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
 
   return (
     <div
-      className="flex flex-col"
-      style={{
-        fontFamily: font,
-        borderRadius: "inherit",
-        overflow: "hidden",
-      }}
+      className="flex flex-col flex-1"
+      style={{ fontFamily: font, borderRadius: "inherit", overflow: "hidden", minHeight: "inherit" }}
     >
       <div
+        className="flex flex-col flex-1"
         style={{
-          background:
-            "linear-gradient(180deg, #1B3A5C 0%, #0F2844 40%, #0A1E36 100%)",
+          background: "linear-gradient(180deg, #1B3A5C 0%, #0F2844 40%, #0A1E36 100%)",
           borderRadius: "inherit",
+          minHeight: "inherit",
         }}
       >
-        {/* Stock rows */}
         <div className="px-1 pt-1.5">
           {stocks.map((stock, i) => {
             const isFirst = i === 0;
@@ -359,13 +451,9 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                 className="flex items-center px-2 cursor-pointer transition-colors"
                 style={{
                   height: isFirst ? 28 : 24,
-                  background: isSelected
-                    ? "rgba(255,255,255,0.08)"
-                    : "transparent",
-                  borderBottom:
-                    i < stocks.length - 1
-                      ? "1px solid rgba(255,255,255,0.06)"
-                      : "none",
+                  background: isSelected ? "rgba(255,255,255,0.08)" : "transparent",
+                  borderRadius: isSelected ? 6 : 0,
+                  borderBottom: !isSelected && i < stocks.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
                 }}
                 onClick={() => setSelectedSymbol(stock.symbol)}
               >
@@ -378,7 +466,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                     letterSpacing: "0.02em",
                   }}
                 >
-                  {stock.symbol}
+                  {displaySymbol(stock.symbol)}
                 </span>
                 <span
                   className="flex-1 text-right font-medium"
@@ -412,8 +500,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
           })}
         </div>
 
-        {/* Chart section */}
-        <div className="px-2 pt-1.5 pb-1">
+        <div className="flex flex-col flex-1 px-2 pt-1.5 pb-1.5 justify-end">
           <div className="flex items-center gap-1 mb-1 justify-center">
             {TIME_RANGES.map((r) => (
               <button
@@ -423,14 +510,8 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                 style={{
                   fontSize: 9,
                   fontWeight: selectedRange === r ? 700 : 400,
-                  color:
-                    selectedRange === r
-                      ? "#FFF"
-                      : "rgba(255,255,255,0.45)",
-                  background:
-                    selectedRange === r
-                      ? "rgba(255,255,255,0.15)"
-                      : "transparent",
+                  color: selectedRange === r ? "#FFF" : "rgba(255,255,255,0.45)",
+                  background: selectedRange === r ? "rgba(255,255,255,0.15)" : "transparent",
                   borderRadius: 3,
                   padding: "1px 5px",
                   border: "none",
@@ -442,20 +523,17 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
               </button>
             ))}
           </div>
-          <div className="flex justify-center">
+          <div className="flex flex-1 items-end justify-center">
             <MiniChart
-              history={selectedStock.history}
-              selectedRange={selectedRange}
+              history={chartHistory}
+              xLabels={xLabels}
               isXpTheme={false}
+              widgetId={widgetId}
             />
           </div>
           <div
-            className="text-center mt-0.5"
-            style={{
-              fontSize: 8,
-              color: "rgba(255,255,255,0.3)",
-              letterSpacing: "0.02em",
-            }}
+            className="text-center mt-1"
+            style={{ fontSize: 8, color: "rgba(255,255,255,0.3)", letterSpacing: "0.02em" }}
           >
             {t("apps.dashboard.stocks.delayed")}
           </div>
@@ -477,26 +555,58 @@ export function StocksBackPanel({
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
 
-  const widget = useDashboardStore((s) =>
-    s.widgets.find((w) => w.id === widgetId)
-  );
+  const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
   const config = widget?.config as StocksWidgetConfig | undefined;
   const currentSymbols = config?.symbols ?? DEFAULT_SYMBOLS;
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [searching, setSearching] = useState(false);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const availableSymbols = useMemo(() => {
-    const filtered = ALL_SYMBOLS.filter(
-      (s) => !currentSymbols.includes(s)
-    );
-    if (!searchQuery) return filtered;
-    return filtered.filter((s) =>
-      s.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [currentSymbols, searchQuery]);
+  const availablePopular = useMemo(
+    () => POPULAR_SYMBOLS.filter((s) => !currentSymbols.includes(s)),
+    [currentSymbols]
+  );
+
+  const searchSymbols = useCallback(
+    (query: string) => {
+      if (query.length < 1) {
+        setSearchResults([]);
+        setSearching(false);
+        return;
+      }
+      setSearching(true);
+      const upper = query.toUpperCase();
+      const matches = POPULAR_SYMBOLS.filter(
+        (s) => s.includes(upper) && !currentSymbols.includes(s)
+      );
+      if (matches.length > 0) {
+        setSearchResults(matches);
+      } else {
+        setSearchResults([upper]);
+      }
+      setSearching(false);
+    },
+    [currentSymbols]
+  );
+
+  const handleSearchInput = useCallback(
+    (value: string) => {
+      setSearchQuery(value);
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+      if (!value) {
+        setSearchResults([]);
+        return;
+      }
+      searchTimerRef.current = setTimeout(() => searchSymbols(value), 400);
+    },
+    [searchSymbols]
+  );
 
   const addSymbol = useCallback(
     (symbol: string) => {
+      if (currentSymbols.includes(symbol)) return;
       const updated = [...currentSymbols, symbol];
       updateWidgetConfig(widgetId, { symbols: updated } as StocksWidgetConfig);
     },
@@ -517,6 +627,7 @@ export function StocksBackPanel({
     onDone?.();
   }, [widgetId, updateWidgetConfig, onDone]);
 
+  const symbolsToShow = searchQuery ? searchResults.filter((s) => !currentSymbols.includes(s)) : availablePopular;
   const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.8)";
 
   return (
@@ -524,39 +635,28 @@ export function StocksBackPanel({
       <div
         className="flex items-center gap-1.5 px-3 py-1.5"
         style={{
-          borderBottom: isXpTheme
-            ? "1px solid #D5D2CA"
-            : "1px solid rgba(255,255,255,0.08)",
+          borderBottom: isXpTheme ? "1px solid #D5D2CA" : "1px solid rgba(255,255,255,0.08)",
         }}
       >
         <MagnifyingGlass
           size={12}
           weight="bold"
-          style={{
-            color: isXpTheme ? "#888" : "rgba(255,255,255,0.35)",
-            flexShrink: 0,
-          }}
+          style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.35)", flexShrink: 0 }}
         />
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => handleSearchInput(e.target.value)}
           placeholder={t("apps.dashboard.stocks.searchSymbol")}
           className="flex-1 bg-transparent outline-none text-[11px]"
-          style={{
-            color: textColor,
-            caretColor: isXpTheme ? "#000" : "rgba(255,255,255,0.7)",
-          }}
+          style={{ color: textColor, caretColor: isXpTheme ? "#000" : "rgba(255,255,255,0.7)" }}
         />
       </div>
 
-      {/* Current symbols */}
       <div
         className="px-3 py-1.5"
         style={{
-          borderBottom: isXpTheme
-            ? "1px solid #D5D2CA"
-            : "1px solid rgba(255,255,255,0.08)",
+          borderBottom: isXpTheme ? "1px solid #D5D2CA" : "1px solid rgba(255,255,255,0.08)",
         }}
       >
         <div
@@ -571,13 +671,11 @@ export function StocksBackPanel({
               key={sym}
               className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium"
               style={{
-                background: isXpTheme
-                  ? "rgba(0,0,0,0.06)"
-                  : "rgba(255,255,255,0.1)",
+                background: isXpTheme ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.1)",
                 color: textColor,
               }}
             >
-              {sym}
+              {displaySymbol(sym)}
               {currentSymbols.length > 1 && (
                 <button
                   type="button"
@@ -588,11 +686,7 @@ export function StocksBackPanel({
                   <X
                     size={8}
                     weight="bold"
-                    style={{
-                      color: isXpTheme
-                        ? "#CC0000"
-                        : "rgba(255,100,100,0.8)",
-                    }}
+                    style={{ color: isXpTheme ? "#CC0000" : "rgba(255,100,100,0.8)" }}
                   />
                 </button>
               )}
@@ -601,61 +695,59 @@ export function StocksBackPanel({
         </div>
       </div>
 
-      {/* Available symbols to add */}
       <div className="overflow-y-auto" style={{ maxHeight: 140 }}>
-        {availableSymbols.map((sym) => (
-          <button
-            key={sym}
-            type="button"
-            onClick={() => addSymbol(sym)}
-            className="w-full flex items-center gap-1.5 px-3 py-1 text-left transition-colors"
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background = isXpTheme
-                ? "rgba(0,102,204,0.08)"
-                : "rgba(255,255,255,0.06)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background = "transparent")
-            }
+        {searching ? (
+          <div
+            className="px-3 py-3 text-center text-[10px]"
+            style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.3)" }}
           >
-            <Plus
-              size={10}
-              weight="bold"
-              style={{
-                color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.7)",
-                flexShrink: 0,
-              }}
-            />
-            <span className="text-[11px]" style={{ color: textColor }}>
-              {sym}
-            </span>
-            <span
-              className="text-[9px] ml-auto"
-              style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.3)" }}
+            {t("apps.dashboard.stocks.searching")}
+          </div>
+        ) : (
+          symbolsToShow.map((sym) => (
+            <button
+              key={sym}
+              type="button"
+              onClick={() => addSymbol(sym)}
+              className="w-full flex items-center gap-1.5 px-3 py-1 text-left transition-colors"
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = isXpTheme
+                  ? "rgba(0,102,204,0.08)"
+                  : "rgba(255,255,255,0.06)")
+              }
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
-              {formatPrice(DEMO_STOCKS[sym].price)}
-            </span>
-          </button>
-        ))}
-        {availableSymbols.length === 0 && (
+              <Plus
+                size={10}
+                weight="bold"
+                style={{ color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.7)", flexShrink: 0 }}
+              />
+              <span className="text-[11px]" style={{ color: textColor }}>
+                {displaySymbol(sym)}
+              </span>
+              <span
+                className="text-[9px] ml-auto"
+                style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.3)" }}
+              >
+                {sym}
+              </span>
+            </button>
+          ))
+        )}
+        {!searching && symbolsToShow.length === 0 && (
           <div
             className="px-3 py-2 text-center text-[10px]"
             style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.3)" }}
           >
-            {searchQuery
-              ? t("apps.dashboard.stocks.noResults")
-              : t("apps.dashboard.stocks.allAdded")}
+            {searchQuery ? t("apps.dashboard.stocks.noResults") : t("apps.dashboard.stocks.allAdded")}
           </div>
         )}
       </div>
 
-      {/* Reset button */}
       <div
         className="px-3 py-1.5"
         style={{
-          borderTop: isXpTheme
-            ? "1px solid #D5D2CA"
-            : "1px solid rgba(255,255,255,0.08)",
+          borderTop: isXpTheme ? "1px solid #D5D2CA" : "1px solid rgba(255,255,255,0.08)",
         }}
       >
         <button
