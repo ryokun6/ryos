@@ -28,7 +28,7 @@ export interface ApiHandlerContext<TBody = unknown> {
 
 type WrappedApiHandler<TBody = unknown> = (
   context: ApiHandlerContext<TBody>
-) => Promise<void>;
+) => Promise<void | VercelResponse>;
 
 function sendJsonError(
   res: VercelResponse,

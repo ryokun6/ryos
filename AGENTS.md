@@ -89,7 +89,7 @@ bun run scripts/machine-translate.ts
 
 ## Project Structure
 
-- `_api/` - Node-style API route handlers (Vercel-compatible, also used by standalone Bun server)
+- `api/` - Node-style API route handlers (Vercel-compatible, also used by standalone Bun server)
 - `src/apps/` - Individual application modules (Finder, TextEdit, Chats, etc.)
 - `public/` - Static assets (fonts, icons, wallpapers, sounds)
 - `scripts/` - Build and maintenance scripts
@@ -164,8 +164,7 @@ Tests use `describe`/`test`/`expect` from `bun:test`. Shared HTTP helpers are in
 
 - **Linter warnings**: The codebase has pre-existing linter warnings for unused variables. These are not blockers.
 - **Pre-existing lint error**: There is one pre-existing `@typescript-eslint/no-explicit-any` error in `src/apps/winamp/components/WinampAppComponent.tsx`. Do not attempt to fix it unless asked.
-- **API endpoints**: API routes are Node-style handlers under `_api/` and require Redis for caching/storage.
+- **API endpoints**: API routes are Node-style handlers under `api/` and require Redis for caching/storage.
 - **Build process**: The build generates service worker files (`sw.js`, `workbox-*.js`) which are copied to `.vercel/output/static/`.
-- **API symlink**: Only needed for `vercel dev` fallback. `dev:vercel` creates `api -> _api` automatically.
 - **Vercel CLI**: Installed globally, but optional for local testing now that standalone Bun API is available.
 - **Port conflicts**: If port 3000 is occupied, set `API_PORT=<port>` for `bun run dev:api` and adjust proxy target accordingly.

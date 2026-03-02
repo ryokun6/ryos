@@ -8,7 +8,7 @@ import { z } from "zod";
 // Constants
 // =============================================================================
 
-export const kugouHeaders: HeadersInit = {
+export const kugouHeaders: Record<string, string> = {
   "User-Agent":
     '{"percent": 21.4, "useragent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36", "system": "Chrome 116.0 Win10", "browser": "chrome", "version": 116.0, "os": "win10"}',
 };

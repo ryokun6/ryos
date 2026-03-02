@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 
 /**
- * Standalone API server for running `_api/*` routes without Vercel CLI.
+ * Standalone API server for running `api/*` routes without Vercel CLI.
  *
  * Uses Bun's native HTTP server (`Bun.serve`) and adapts requests/responses
- * to the Vercel Node handler shape used in `_api`.
+ * to the Vercel Node handler shape used in `api`.
  */
 
 import { readFile } from "node:fs/promises";
@@ -272,7 +272,7 @@ class BunResponseShim extends EventEmitter {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const WORKSPACE_ROOT = path.resolve(__dirname, "..");
-const API_ROOT = path.join(WORKSPACE_ROOT, "_api");
+const API_ROOT = path.join(WORKSPACE_ROOT, "api");
 const handlerCache = new Map<string, RouteHandler>();
 
 function toUint8Array(chunk: unknown): Uint8Array | null {
@@ -592,7 +592,7 @@ async function bootstrap(): Promise<void> {
     `[api-standalone] Listening on http://${API_HOST}:${API_PORT} (${routes.length} routes)`
   );
   for (const route of routes) {
-    console.log(`  ${route.routePath}  ->  _api/${route.relativePath}`);
+    console.log(`  ${route.routePath}  ->  api/${route.relativePath}`);
   }
 }
 

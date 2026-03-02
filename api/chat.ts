@@ -665,7 +665,7 @@ export default apiHandler<{
         const { text } = await generateText({
           model: google("gemini-2.5-flash"),
           temperature: 1,
-          maxTokens: 150,
+          maxOutputTokens: 150,
           system: `You are Ryo, a friendly AI assistant. You're greeting a returning user at the start of a new chat.
 
 Your style:
@@ -746,7 +746,8 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
     // Ensure messages are in UIMessage format (handles both simple and parts-based formats)
     // Pass tools so toModelOutput can convert tool results to multimodal content
     const uiMessages = ensureUIMessageFormat(messages as SimpleMessage[]);
-    const modelMessages = await convertToModelMessages(uiMessages, { tools });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const modelMessages = await convertToModelMessages(uiMessages, { tools: tools as any });
 
     // Merge all messages: static sys → dynamic sys → user/assistant turns
     const enrichedMessages = [
@@ -764,10 +765,11 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
       log(`Message ${index} [${msg.role}]: ${contentStr.substring(0, 100)}...`);
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = streamText({
       model: selectedModel,
       messages: enrichedMessages,
-      tools,
+      tools: tools as any,
       temperature: 0.7,
       maxOutputTokens: 48000, // Increased from 6000 to prevent code generation cutoff
       stopWhen: stepCountIs(10), // Allow up to 10 steps for multi-tool workflows (agent loop)

@@ -34,7 +34,5 @@ package-lock.json
 src-tauri/target
 src-tauri/apple.p8
 
-# Local dev symlink (vercel dev only looks in /api, not /_api)
-/api
 
 core
