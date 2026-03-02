@@ -483,10 +483,10 @@ function createLazyComponent&lt;T = unknown&gt;(
 <h2>Environment Configuration</h2>
 <h3>Development</h3>
 <pre><code># Local development with HMR
-bun run dev           # Vite dev server
-bun run dev:vercel    # Optional Vercel parity/debugging
-bun run api:dev       # Standalone API server (no vercel CLI)
-bun run dev:standalone # Vite with /api proxy to standalone API</code></pre>
+bun run dev           # Full stack (API + Vite with proxy) — the default
+bun run dev:vite      # Vite dev server only (frontend-only, no API)
+bun run dev:api       # Standalone Bun API server only (port 3000)
+bun run dev:vercel    # Optional: Vercel dev server (parity/debugging only)</code></pre>
 <h3>Production Build</h3>
 <pre><code>bun run build         # Production build
 bun run preview       # Preview production build</code></pre>

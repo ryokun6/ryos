@@ -84,28 +84,30 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 ## Scripts
 
 ```bash
-bun dev              # Start development server
+bun run dev          # Start full stack (API + Vite with proxy) — the default
+bun run dev:vite     # Start Vite dev server only (frontend-only, no API)
+bun run dev:api      # Start standalone Bun API server only (port 3000)
+bun run dev:vercel   # Optional: Vercel dev server (parity/debugging only)
 bun run build        # Build for production
 bun run lint         # Run ESLint
 bun run preview      # Preview production build
-bun run dev:vercel   # Run with Vercel dev server (recommended); ensures api -> _api for local dev only
-bun run api:dev      # Run standalone API server (no vercel CLI)
-bun run dev:standalone # Run Vite with /api proxy to standalone API server
 bun run api:start    # Run standalone API server in production mode
 ```
 
-For local development only: `bun run dev:vercel` creates an `api` → `_api` symlink so Vercel dev serves your API routes (Vercel looks for `api/`). The symlink is gitignored and not used in production.
+For local development, `bun run dev` starts both the standalone Bun API server and the Vite dev server with an `/api` proxy — no Vercel CLI required.
 
-## Run API without Vercel
+`bun run dev:vercel` is an optional fallback that creates an `api` → `_api` symlink so Vercel dev serves your API routes (Vercel looks for `api/`). The symlink is gitignored and not used in production.
 
-Use this when you want API routes locally without `vercel dev`.
+## Running the API Separately
+
+Use this when you only need the API server (e.g. for running tests):
 
 ```bash
 # Terminal 1 - standalone API (loads .env/.env.local)
-bun run api:dev
+bun run dev:api
 
-# Terminal 2 - frontend with /api proxy -> http://localhost:3000
-bun run dev:standalone
+# Terminal 2 - frontend (optional, if you also need the UI)
+bun run dev:vite
 ```
 
 The standalone API listens on:
