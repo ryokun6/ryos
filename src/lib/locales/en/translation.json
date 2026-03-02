@@ -2558,8 +2558,21 @@
         "clock": "Clock",
         "calendar": "Calendar",
         "weather": "Weather",
+        "stocks": "Stocks",
         "addWidget": "Add Widget...",
         "removeWidget": "Remove Widget"
+      },
+      "stocks": {
+        "delayed": "Delayed up to 20 minutes",
+        "loading": "Loading stocks...",
+        "unavailable": "Stock data unavailable",
+        "retry": "Retry",
+        "searching": "Searching...",
+        "searchSymbol": "Search symbols...",
+        "currentSymbols": "Current Symbols",
+        "noResults": "No symbols found",
+        "allAdded": "All symbols added",
+        "resetDefaults": "Reset to Defaults"
       },
       "weather": {
         "loading": "Loading weather...",

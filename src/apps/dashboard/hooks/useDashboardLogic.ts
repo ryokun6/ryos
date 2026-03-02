@@ -40,6 +40,7 @@ export function useDashboardLogic() {
         clock: { width: 170, height: 170 },
         calendar: { width: 240, height: 350 },
         weather: { width: 340, height: 180 },
+        stocks: { width: 240, height: 340 },
       };
       // Place near center with some randomness
       const x = 200 + Math.floor(Math.random() * 200);

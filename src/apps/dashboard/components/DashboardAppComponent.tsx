@@ -10,6 +10,7 @@ import { WidgetChrome } from "@/components/layout/dashboard/WidgetChrome";
 import { ClockWidget, ClockBackPanel } from "@/components/layout/dashboard/ClockWidget";
 import { CalendarWidget, CalendarBackPanel } from "@/components/layout/dashboard/CalendarWidget";
 import { WeatherWidget, WeatherEmojiOverflow, WeatherBackPanel } from "@/components/layout/dashboard/WeatherWidget";
+import { StocksWidget, StocksBackPanel } from "@/components/layout/dashboard/StocksWidget";
 import { DashboardMenuBar } from "./DashboardMenuBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
@@ -24,6 +25,8 @@ function WidgetContent({ type, widgetId }: { type: string; widgetId: string }) {
       return <CalendarWidget widgetId={widgetId} />;
     case "weather":
       return <WeatherWidget widgetId={widgetId} />;
+    case "stocks":
+      return <StocksWidget widgetId={widgetId} />;
     default:
       return null;
   }
@@ -37,6 +40,8 @@ function WidgetBackContent({ type, widgetId, onDone }: { type: string; widgetId:
       return <CalendarBackPanel widgetId={widgetId} />;
     case "weather":
       return <WeatherBackPanel widgetId={widgetId} onDone={onDone} />;
+    case "stocks":
+      return <StocksBackPanel widgetId={widgetId} onDone={onDone} />;
     default:
       return null;
   }
@@ -63,6 +68,7 @@ function WidgetPicker({
     { type: "clock", icon: "🕐", label: t("apps.dashboard.widgets.clock") },
     { type: "calendar", icon: "📅", label: t("apps.dashboard.widgets.calendar") },
     { type: "weather", icon: "🌤️", label: t("apps.dashboard.widgets.weather") },
+    { type: "stocks", icon: "📈", label: t("apps.dashboard.widgets.stocks") },
   ];
 
   return (
@@ -179,6 +185,7 @@ export function DashboardAppComponent({
       onAddClock={() => handleAddWidget("clock")}
       onAddCalendar={() => handleAddWidget("calendar")}
       onAddWeather={() => handleAddWidget("weather")}
+      onAddStocks={() => handleAddWidget("stocks")}
       onResetWidgets={resetToDefaults}
     />
   );
