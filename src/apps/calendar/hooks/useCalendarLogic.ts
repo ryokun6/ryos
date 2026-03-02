@@ -44,6 +44,9 @@ export function useCalendarLogic() {
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacTheme = currentTheme === "macosx" || currentTheme === "system7";
+  const isMacOSTheme = currentTheme === "macosx";
+  const isSystem7Theme = currentTheme === "system7";
+  const isClassicTheme = isXpTheme || isSystem7Theme; // non-Aqua themes
 
   // Dialog states
   const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
@@ -350,6 +353,9 @@ export function useCalendarLogic() {
     currentTheme,
     isXpTheme,
     isMacTheme,
+    isMacOSTheme,
+    isSystem7Theme,
+    isClassicTheme,
 
     // Dialogs
     isHelpDialogOpen,

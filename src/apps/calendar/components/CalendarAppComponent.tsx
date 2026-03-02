@@ -14,6 +14,7 @@ import {
 import { getTranslatedAppName } from "@/utils/i18n";
 import { CaretLeft, CaretRight, Plus } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/stores/useCalendarStore";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 
@@ -37,9 +38,9 @@ const EVENT_COLOR_LIGHT: Record<string, string> = {
   purple: "#ECDAFC",
 };
 
-const HOUR_START = 7; // 7 AM
-const HOUR_END = 21; // 9 PM
-const HOUR_HEIGHT = 40; // px per hour row
+const HOUR_START = 7;
+const HOUR_END = 21;
+const HOUR_HEIGHT = 40;
 const DAY_HEADERS_MONTH = ["S", "M", "T", "W", "T", "F", "S"];
 
 // ============================================================================
@@ -52,6 +53,7 @@ function MiniCalendar({
   todayStr,
   onDateClick,
   isXpTheme,
+  isMacOSTheme,
   monthYearLabel,
   onPrevMonth,
   onNextMonth,
@@ -61,29 +63,30 @@ function MiniCalendar({
   todayStr: string;
   onDateClick: (date: string) => void;
   isXpTheme: boolean;
+  isMacOSTheme: boolean;
   monthYearLabel: string;
   onPrevMonth: () => void;
   onNextMonth: () => void;
 }) {
   return (
-    <div className="flex flex-col select-none" style={{ width: 160, minWidth: 160, flexShrink: 0 }}>
+    <div className="flex flex-col select-none py-1 px-1.5" style={{ width: 156, minWidth: 156, flexShrink: 0 }}>
       {/* Mini month header */}
-      <div className="flex items-center justify-between px-1 py-1">
-        <button type="button" onClick={onPrevMonth} className="p-0.5 hover:opacity-70">
+      <div className="flex items-center justify-between px-0.5 py-1">
+        <button type="button" onClick={onPrevMonth} className="p-0.5 hover:opacity-70 rounded">
           <CaretLeft size={10} weight="bold" />
         </button>
-        <span className="text-[10px] font-semibold">{monthYearLabel}</span>
-        <button type="button" onClick={onNextMonth} className="p-0.5 hover:opacity-70">
+        <span className={cn("text-[10px] font-semibold", isMacOSTheme && "font-geneva-12")}>{monthYearLabel}</span>
+        <button type="button" onClick={onNextMonth} className="p-0.5 hover:opacity-70 rounded">
           <CaretRight size={10} weight="bold" />
         </button>
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-7 mb-0.5">
         {DAY_HEADERS_MONTH.map((d, i) => (
           <div
             key={i}
-            className="text-center text-[9px] font-medium"
+            className={cn("text-center text-[9px] font-medium", isMacOSTheme && "font-geneva-12")}
             style={{
               color: i === 0 || i === 6 ? (isXpTheme ? "#CC0000" : "#FF3B30") : undefined,
               opacity: 0.5,
@@ -102,24 +105,24 @@ function MiniCalendar({
               key={cell.date}
               type="button"
               onClick={() => onDateClick(cell.date)}
-              className="flex items-center justify-center h-[18px]"
+              className="flex items-center justify-center h-[18px] transition-colors rounded-sm"
               style={{ opacity: cell.isCurrentMonth ? 1 : 0.25 }}
             >
               <span
-                className="text-[10px] leading-none flex items-center justify-center"
+                className={cn("text-[10px] leading-none flex items-center justify-center", isMacOSTheme && "font-geneva-12")}
                 style={{
                   width: 16,
                   height: 16,
                   borderRadius: "50%",
                   backgroundColor:
                     cell.date === todayStr
-                      ? isXpTheme ? "#CC0000" : "#007AFF"
+                      ? "var(--os-color-selection-bg, #007AFF)"
                       : cell.date === selectedDate
-                        ? isXpTheme ? "#316AC5" : "#D4E6FC"
+                        ? isXpTheme ? "#316AC5" : "rgba(0,122,255,0.15)"
                         : "transparent",
                   color:
                     cell.date === todayStr
-                      ? "#FFF"
+                      ? "var(--os-color-selection-text, #FFF)"
                       : cell.date === selectedDate && isXpTheme
                         ? "#FFF"
                         : undefined,
@@ -148,6 +151,7 @@ function WeekTimeGrid({
   onEventClick,
   onEventDoubleClick,
   isXpTheme,
+  isMacOSTheme,
 }: {
   weekDates: WeekDay[];
   selectedEventId: string | null;
@@ -156,6 +160,7 @@ function WeekTimeGrid({
   onEventClick: (event: CalendarEvent) => void;
   onEventDoubleClick: (event: CalendarEvent) => void;
   isXpTheme: boolean;
+  isMacOSTheme: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentMinute, setCurrentMinute] = useState(() => {
@@ -163,7 +168,6 @@ function WeekTimeGrid({
     return now.getHours() * 60 + now.getMinutes();
   });
 
-  // Scroll to ~8 AM on mount
   useEffect(() => {
     if (scrollRef.current) {
       const scrollTo = (8 - HOUR_START) * HOUR_HEIGHT;
@@ -171,7 +175,6 @@ function WeekTimeGrid({
     }
   }, []);
 
-  // Update current time indicator every minute
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date();
@@ -181,17 +184,16 @@ function WeekTimeGrid({
   }, []);
 
   const totalHours = HOUR_END - HOUR_START;
-
-  // Check if any day has all-day events
   const hasAllDayEvents = weekDates.some((d) => d.allDayEvents.length > 0);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Column headers */}
-      <div className="flex border-b" style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.1)" }}>
-        {/* Time gutter header */}
+      <div
+        className="flex border-b"
+        style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.1)" }}
+      >
         <div style={{ width: 48, minWidth: 48, flexShrink: 0 }} />
-        {/* Day columns */}
         {weekDates.map((day) => (
           <button
             key={day.date}
@@ -200,20 +202,18 @@ function WeekTimeGrid({
             className="flex-1 text-center py-1.5 min-w-0 transition-colors"
             style={{
               backgroundColor: day.isToday
-                ? isXpTheme ? "rgba(49,106,197,0.12)" : "rgba(0,122,255,0.08)"
+                ? isMacOSTheme ? "rgba(56,117,215,0.1)" : isXpTheme ? "rgba(49,106,197,0.12)" : "rgba(0,0,0,0.06)"
                 : "transparent",
               borderBottom: day.isToday
-                ? `2px solid ${isXpTheme ? "#316AC5" : "#007AFF"}`
+                ? `2px solid var(--os-color-selection-bg, #007AFF)`
                 : "2px solid transparent",
             }}
           >
-            <div className="text-[10px] opacity-50 leading-none">{day.dayName}</div>
+            <div className={cn("text-[10px] opacity-50 leading-none", isMacOSTheme && "font-geneva-12")}>{day.dayName}</div>
             <div
               className="text-sm font-semibold leading-tight mt-0.5"
               style={{
-                color: day.isToday
-                  ? isXpTheme ? "#316AC5" : "#007AFF"
-                  : undefined,
+                color: day.isToday ? "var(--os-color-selection-bg, #007AFF)" : undefined,
               }}
             >
               {day.dayOfMonth}
@@ -232,7 +232,7 @@ function WeekTimeGrid({
           }}
         >
           <div
-            className="flex items-center justify-end px-1 text-[9px] opacity-40"
+            className={cn("flex items-center justify-end px-1 text-[9px] opacity-40", isMacOSTheme && "font-geneva-12")}
             style={{ width: 48, minWidth: 48, flexShrink: 0 }}
           >
             all-day
@@ -277,7 +277,7 @@ function WeekTimeGrid({
               return (
                 <div
                   key={hour}
-                  className="absolute right-1 text-[10px] opacity-40 text-right"
+                  className={cn("absolute right-1 text-[10px] opacity-40 text-right", isMacOSTheme && "font-geneva-12")}
                   style={{ top: i * HOUR_HEIGHT - 6, width: 40 }}
                 >
                   {label}
@@ -293,8 +293,9 @@ function WeekTimeGrid({
               className="flex-1 relative min-w-0"
               style={{
                 backgroundColor: day.isToday
-                  ? isXpTheme ? "rgba(49,106,197,0.04)" : "rgba(0,122,255,0.03)"
+                  ? isMacOSTheme ? "rgba(56,117,215,0.04)" : isXpTheme ? "rgba(49,106,197,0.04)" : "rgba(0,0,0,0.02)"
                   : "transparent",
+                borderLeft: isXpTheme ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(0,0,0,0.04)",
               }}
             >
               {/* Hour grid lines */}
@@ -335,13 +336,13 @@ function WeekTimeGrid({
                       borderLeft: `3px solid ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`,
                       boxShadow: selectedEventId === ev.id
                         ? `0 0 0 1px ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`
-                        : "0 1px 2px rgba(0,0,0,0.08)",
+                        : isMacOSTheme ? "0 1px 3px rgba(0,0,0,0.1)" : "0 1px 2px rgba(0,0,0,0.08)",
                       zIndex: 2,
                     }}
                   >
                     <div className="px-1 py-0.5">
                       <div
-                        className="text-[10px] font-semibold truncate"
+                        className={cn("text-[10px] font-semibold truncate", isMacOSTheme && "font-geneva-12")}
                         style={{ color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue }}
                       >
                         {ev.startTime}
@@ -383,7 +384,7 @@ function WeekTimeGrid({
 }
 
 // ============================================================================
-// DAY VIEW (with hour grid — used on mobile too)
+// DAY VIEW (with hour grid)
 // ============================================================================
 
 function DayTimeGrid({
@@ -395,6 +396,7 @@ function DayTimeGrid({
   onEventClick,
   onEventDoubleClick,
   isXpTheme,
+  isMacOSTheme,
 }: {
   date: string;
   dateLabel: string;
@@ -404,6 +406,7 @@ function DayTimeGrid({
   onEventClick: (event: CalendarEvent) => void;
   onEventDoubleClick: (event: CalendarEvent) => void;
   isXpTheme: boolean;
+  isMacOSTheme: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentMinute, setCurrentMinute] = useState(() => {
@@ -479,7 +482,6 @@ function DayTimeGrid({
       {/* Scrollable hour grid */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="flex relative" style={{ height: totalHours * HOUR_HEIGHT }}>
-          {/* Time gutter */}
           <div style={{ width: 52, minWidth: 52, flexShrink: 0 }} className="relative">
             {Array.from({ length: totalHours }, (_, i) => {
               const hour = HOUR_START + i;
@@ -491,7 +493,7 @@ function DayTimeGrid({
               return (
                 <div
                   key={hour}
-                  className="absolute right-1 text-[10px] opacity-40 text-right"
+                  className={cn("absolute right-1 text-[10px] opacity-40 text-right", isMacOSTheme && "font-geneva-12")}
                   style={{ top: i * HOUR_HEIGHT - 6, width: 44 }}
                 >
                   {label}
@@ -500,9 +502,7 @@ function DayTimeGrid({
             })}
           </div>
 
-          {/* Main area */}
           <div className="flex-1 relative">
-            {/* Hour lines */}
             {Array.from({ length: totalHours }, (_, i) => (
               <button
                 key={i}
@@ -517,7 +517,6 @@ function DayTimeGrid({
               />
             ))}
 
-            {/* Timed events */}
             {timedEvents.map((ev) => {
               const [sh, sm] = (ev.startTime || "9:00").split(":").map(Number);
               const [eh, em] = (ev.endTime || `${sh + 1}:00`).split(":").map(Number);
@@ -540,12 +539,12 @@ function DayTimeGrid({
                     borderLeft: `3px solid ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`,
                     boxShadow: selectedEventId === ev.id
                       ? `0 0 0 1px ${EVENT_COLOR_MAP[ev.color]}`
-                      : "0 1px 2px rgba(0,0,0,0.08)",
+                      : isMacOSTheme ? "0 1px 3px rgba(0,0,0,0.1)" : "0 1px 2px rgba(0,0,0,0.08)",
                     zIndex: 2,
                   }}
                 >
                   <div className="px-1.5 py-0.5">
-                    <div className="text-[11px] font-semibold truncate" style={{ color: EVENT_COLOR_MAP[ev.color] }}>
+                    <div className={cn("text-[11px] font-semibold truncate", isMacOSTheme && "font-geneva-12")} style={{ color: EVENT_COLOR_MAP[ev.color] }}>
                       {ev.startTime}{ev.endTime ? ` – ${ev.endTime}` : ""}
                     </div>
                     <div className="text-xs truncate leading-tight">{ev.title}</div>
@@ -554,24 +553,14 @@ function DayTimeGrid({
               );
             })}
 
-            {/* Current time line */}
             {isToday && (() => {
               const topPos = ((currentMinute - HOUR_START * 60) / 60) * HOUR_HEIGHT;
               if (topPos < 0 || topPos > totalHours * HOUR_HEIGHT) return null;
               return (
-                <div
-                  className="absolute left-0 right-0 pointer-events-none"
-                  style={{ top: topPos, zIndex: 5 }}
-                >
+                <div className="absolute left-0 right-0 pointer-events-none" style={{ top: topPos, zIndex: 5 }}>
                   <div className="flex items-center">
-                    <div
-                      className="w-2 h-2 rounded-full -ml-1"
-                      style={{ backgroundColor: isXpTheme ? "#CC0000" : "#FF3B30" }}
-                    />
-                    <div
-                      className="flex-1 h-px"
-                      style={{ backgroundColor: isXpTheme ? "#CC0000" : "#FF3B30" }}
-                    />
+                    <div className="w-2 h-2 rounded-full -ml-1" style={{ backgroundColor: isXpTheme ? "#CC0000" : "#FF3B30" }} />
+                    <div className="flex-1 h-px" style={{ backgroundColor: isXpTheme ? "#CC0000" : "#FF3B30" }} />
                   </div>
                 </div>
               );
@@ -606,11 +595,7 @@ function MonthGrid({
 }) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Day headers */}
-      <div
-        className="grid grid-cols-7 border-b"
-        style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)" }}
-      >
+      <div className="grid grid-cols-7 border-b" style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)" }}>
         {DAY_HEADERS_MONTH.map((d, i) => (
           <div
             key={i}
@@ -625,14 +610,9 @@ function MonthGrid({
         ))}
       </div>
 
-      {/* Calendar grid */}
       <div className="flex-1 grid grid-rows-6">
         {calendarGrid.map((week, wi) => (
-          <div
-            key={wi}
-            className="grid grid-cols-7 border-b"
-            style={{ borderColor: isXpTheme ? "rgba(0,0,0,0.04)" : "rgba(0,0,0,0.04)" }}
-          >
+          <div key={wi} className="grid grid-cols-7 border-b" style={{ borderColor: "rgba(0,0,0,0.04)" }}>
             {week.map((cell) => (
               <button
                 key={cell.date}
@@ -650,21 +630,14 @@ function MonthGrid({
                 <span
                   className="text-[10px] font-medium self-end mr-0.5"
                   style={{
-                    width: 18,
-                    height: 18,
-                    lineHeight: "18px",
-                    textAlign: "center",
-                    borderRadius: "50%",
-                    display: "inline-block",
-                    backgroundColor: cell.isToday
-                      ? isXpTheme ? "#CC0000" : "#007AFF"
-                      : "transparent",
-                    color: cell.isToday ? "#FFFFFF" : undefined,
+                    width: 18, height: 18, lineHeight: "18px", textAlign: "center",
+                    borderRadius: "50%", display: "inline-block",
+                    backgroundColor: cell.isToday ? "var(--os-color-selection-bg, #007AFF)" : "transparent",
+                    color: cell.isToday ? "var(--os-color-selection-text, #FFF)" : undefined,
                   }}
                 >
                   {cell.day}
                 </span>
-                {/* Event dots/labels */}
                 <div className="flex flex-col gap-px mt-px w-full">
                   {cell.events.slice(0, 2).map((ev) => (
                     <button
@@ -698,7 +671,7 @@ function MonthGrid({
 }
 
 // ============================================================================
-// BOTTOM TOOLBAR (Day | Week | Month)
+// BOTTOM TOOLBAR (Day | Week | Month) — with brushed metal + Aqua buttons
 // ============================================================================
 
 function BottomToolbar({
@@ -707,6 +680,8 @@ function BottomToolbar({
   onGoToToday,
   onNewEvent,
   isXpTheme,
+  isMacOSTheme,
+  isSystem7Theme,
   t,
 }: {
   view: string;
@@ -714,6 +689,8 @@ function BottomToolbar({
   onGoToToday: () => void;
   onNewEvent: () => void;
   isXpTheme: boolean;
+  isMacOSTheme: boolean;
+  isSystem7Theme: boolean;
   t: (key: string) => string;
 }) {
   const views: { id: "day" | "week" | "month"; label: string }[] = [
@@ -724,58 +701,60 @@ function BottomToolbar({
 
   return (
     <div
-      className="flex items-center justify-between px-2 py-1.5 border-t"
+      className={cn(
+        "flex items-center justify-between px-2 py-1.5 border-t",
+        isMacOSTheme && "os-toolbar-texture"
+      )}
       style={{
         borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.1)",
-        background: isXpTheme
-          ? "#ECE9D8"
-          : "linear-gradient(180deg, rgba(248,248,248,0.95) 0%, rgba(235,235,235,0.95) 100%)",
+        ...(!isMacOSTheme ? {
+          background: isXpTheme
+            ? "#ECE9D8"
+            : "#e0e0e0",
+        } : {}),
       }}
     >
-      {/* View switcher */}
-      <div
-        className="flex rounded overflow-hidden"
-        style={{
-          border: isXpTheme ? "1px solid #ACA899" : "1px solid rgba(0,0,0,0.15)",
-        }}
-      >
+      {/* Segmented view switcher */}
+      <div className={cn("flex gap-0", isMacOSTheme && "aqua-select-group")}>
         {views.map((v) => (
-          <button
+          <Button
             key={v.id}
-            type="button"
+            variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
+            data-state={view === v.id ? "on" : "off"}
             onClick={() => onSetView(v.id)}
-            className="px-2.5 py-0.5 text-[11px] font-medium transition-colors"
-            style={{
-              backgroundColor:
-                view === v.id
-                  ? isXpTheme ? "#316AC5" : "#007AFF"
-                  : isXpTheme ? "#ECE9D8" : "rgba(255,255,255,0.8)",
-              color: view === v.id ? "#FFF" : undefined,
-              borderRight: v.id !== "month"
-                ? isXpTheme ? "1px solid #ACA899" : "1px solid rgba(0,0,0,0.1)"
-                : undefined,
-            }}
+            className={cn(
+              isMacOSTheme
+                ? "aqua-compact font-geneva-12 !text-[11px]"
+                : "h-[22px] px-2.5 text-[11px]",
+              isXpTheme && "text-black"
+            )}
           >
             {v.label}
-          </button>
+          </Button>
         ))}
       </div>
 
-      {/* Right side buttons */}
-      <div className="flex items-center gap-1">
+      {/* Right side */}
+      <div className={cn("flex items-center gap-1", isMacOSTheme && "aqua-select-group")}>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 text-[11px] px-2"
+          variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "ghost"}
           onClick={onGoToToday}
+          className={cn(
+            isMacOSTheme
+              ? "aqua-compact font-geneva-12 !text-[11px]"
+              : "h-6 text-[11px] px-2",
+            isXpTheme && "text-black"
+          )}
         >
           {t("apps.calendar.today")}
         </Button>
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6"
+          variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "ghost"}
           onClick={onNewEvent}
+          className={cn(
+            isMacOSTheme ? "aqua-compact" : "h-6 w-6",
+            isXpTheme && "text-black"
+          )}
           title={t("apps.calendar.menu.newEvent")}
         >
           <Plus size={12} weight="bold" />
@@ -809,6 +788,8 @@ export function CalendarAppComponent({
     isEventDialogOpen,
     setIsEventDialogOpen,
     isXpTheme,
+    isMacOSTheme,
+    isSystem7Theme,
     selectedDate,
     view,
     monthYearLabel,
@@ -835,7 +816,7 @@ export function CalendarAppComponent({
     handleDeleteSelectedEvent,
   } = logic;
 
-  // Responsive width detection
+  // Responsive width
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(700);
   useResizeObserverWithRef(containerRef, (entry) => {
@@ -844,16 +825,12 @@ export function CalendarAppComponent({
 
   const showSidebar = containerWidth >= 540;
   const forceDay = containerWidth < 420;
-
-  // Effective view (forced to day on very narrow widths)
   const effectiveView = forceDay && view === "week" ? "day" : view;
 
-  // Header navigation depends on view
   const handlePrev = useCallback(() => {
     if (effectiveView === "week") navigateWeek(-1);
     else if (effectiveView === "month") navigateMonth(-1);
     else {
-      // Day: move one day back
       const [y, m, d] = selectedDate.split("-").map(Number);
       const prev = new Date(y, m - 1, d - 1);
       setSelectedDate(`${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}-${String(prev.getDate()).padStart(2, "0")}`);
@@ -870,7 +847,6 @@ export function CalendarAppComponent({
     }
   }, [effectiveView, navigateWeek, navigateMonth, selectedDate, setSelectedDate]);
 
-  // Header label depends on view
   const headerLabel = effectiveView === "week" ? weekLabel : effectiveView === "day" ? selectedDateLabel : monthYearLabel;
 
   const menuBar = (
@@ -911,37 +887,58 @@ export function CalendarAppComponent({
           ref={containerRef}
           className="flex flex-col h-full bg-[var(--os-color-window-bg)] font-os-ui overflow-hidden"
         >
-          {/* Header bar */}
+          {/* Header — brushed metal on macOS */}
           <div
-            className="flex items-center justify-between px-2 py-1.5 border-b"
+            className={cn(
+              "flex items-center justify-between px-2 py-1.5 border-b",
+              isMacOSTheme && "os-toolbar-texture"
+            )}
             style={{
               borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.1)",
-              background: isXpTheme
-                ? "#ECE9D8"
-                : "linear-gradient(180deg, rgba(248,248,248,0.95) 0%, rgba(238,238,238,0.95) 100%)",
+              ...(!isMacOSTheme ? {
+                background: isXpTheme
+                  ? "#ECE9D8"
+                  : "#e0e0e0",
+              } : {}),
             }}
           >
-            <div className="flex items-center gap-0.5">
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handlePrev}>
+            <div className={cn("flex items-center gap-0", isMacOSTheme && "aqua-select-group")}>
+              <Button
+                variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "ghost"}
+                size="icon"
+                className={cn(isMacOSTheme ? "aqua-compact" : "h-6 w-6", isXpTheme && "text-black")}
+                onClick={handlePrev}
+              >
                 <CaretLeft size={12} weight="bold" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleNext}>
+              <Button
+                variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "ghost"}
+                size="icon"
+                className={cn(isMacOSTheme ? "aqua-compact" : "h-6 w-6", isXpTheme && "text-black")}
+                onClick={handleNext}
+              >
                 <CaretRight size={12} weight="bold" />
               </Button>
             </div>
             <span className="text-xs font-semibold truncate px-2 flex-1 text-center">
               {headerLabel}
             </span>
-            <div style={{ width: 52 }} /> {/* Spacer for balance */}
+            <div style={{ width: 52 }} />
           </div>
 
-          {/* Main content area */}
+          {/* Main content */}
           <div className="flex-1 flex overflow-hidden">
-            {/* Mini calendar sidebar (desktop only) */}
+            {/* Mini calendar sidebar — pinstripe on macOS */}
             {showSidebar && effectiveView !== "month" && (
               <div
-                className="border-r overflow-y-auto py-1 px-1"
-                style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)" }}
+                className="border-r overflow-y-auto"
+                style={{
+                  borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)",
+                  ...(isMacOSTheme ? {
+                    backgroundImage: "var(--os-pinstripe-window)",
+                    backgroundAttachment: "fixed",
+                  } : {}),
+                }}
               >
                 <MiniCalendar
                   calendarGrid={calendarGrid}
@@ -949,6 +946,7 @@ export function CalendarAppComponent({
                   todayStr={logic.todayStr}
                   onDateClick={handleDateClick}
                   isXpTheme={isXpTheme}
+                  isMacOSTheme={isMacOSTheme}
                   monthYearLabel={monthYearLabel}
                   onPrevMonth={() => navigateMonth(-1)}
                   onNextMonth={() => navigateMonth(1)}
@@ -966,6 +964,7 @@ export function CalendarAppComponent({
                 onEventClick={(ev) => setSelectedEventId(ev.id)}
                 onEventDoubleClick={handleEditEvent}
                 isXpTheme={isXpTheme}
+                isMacOSTheme={isMacOSTheme}
               />
             )}
 
@@ -979,6 +978,7 @@ export function CalendarAppComponent({
                 onEventClick={(ev) => setSelectedEventId(ev.id)}
                 onEventDoubleClick={handleEditEvent}
                 isXpTheme={isXpTheme}
+                isMacOSTheme={isMacOSTheme}
               />
             )}
 
@@ -995,13 +995,15 @@ export function CalendarAppComponent({
             )}
           </div>
 
-          {/* Bottom toolbar */}
+          {/* Bottom toolbar — brushed metal + Aqua buttons on macOS */}
           <BottomToolbar
             view={effectiveView}
             onSetView={setView}
             onGoToToday={goToToday}
             onNewEvent={handleNewEvent}
             isXpTheme={isXpTheme}
+            isMacOSTheme={isMacOSTheme}
+            isSystem7Theme={isSystem7Theme}
             t={t}
           />
         </div>
