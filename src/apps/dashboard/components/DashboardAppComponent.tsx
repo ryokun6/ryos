@@ -216,14 +216,13 @@ export function DashboardAppComponent({
               }}
             >
               {/* Widgets */}
-              {widgets.map((widget, index) => (
+              {widgets.map((widget) => (
                 <motion.div
                   key={widget.id}
                   initial={{ opacity: 0, scale: 0.8, y: 30 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8, y: 30 }}
                   transition={{
-                    delay: 0.04 * index,
                     duration: 0.35,
                     type: "spring",
                     stiffness: 300,
@@ -263,14 +262,16 @@ export function DashboardAppComponent({
               <motion.button
                 type="button"
                 initial={{ opacity: 0, scale: 0 }}
-                animate={{ opacity: 1, scale: 1 }}
+                animate={{ opacity: 1, scale: 1, rotate: isPickerOpen ? 45 : 0 }}
                 exit={{ opacity: 0, scale: 0 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 400, damping: 25 }}
+                whileHover={{ filter: "brightness(1.25)" }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsPickerOpen((prev) => !prev);
                 }}
-                className="absolute flex items-center justify-center transition-all hover:brightness-125 active:scale-95"
+                className="absolute flex items-center justify-center"
                 style={{
                   bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
                   left: 16,
@@ -288,7 +289,6 @@ export function DashboardAppComponent({
                     : "0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
                   color: isXpTheme ? "#000" : "rgba(255,255,255,0.7)",
                   zIndex: 10,
-                  transform: isPickerOpen ? "rotate(45deg)" : undefined,
                 }}
                 title={t("apps.dashboard.widgets.addWidget")}
               >
