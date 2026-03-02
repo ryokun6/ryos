@@ -593,7 +593,7 @@
   font-weight: 500 !important;
 }
 
-:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger):not(.dashboard-overlay *) {
+:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger):not(.dashboard-overlay *):not(.calendar-grid *) {
   font-size: 13px !important;
   font-weight: normal !important;
 }
@@ -609,7 +609,7 @@
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] label:not(.dashboard-overlay *) {
+:root[data-os-theme="macosx"] label:not(.dashboard-overlay *):not(.calendar-grid *) {
   font-size: 11px !important;
 }
 
@@ -617,8 +617,8 @@
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] p:not(.dashboard-overlay *),
-:root[data-os-theme="macosx"] div:not(.dashboard-overlay *) {
+:root[data-os-theme="macosx"] p:not(.dashboard-overlay *):not(.calendar-grid *),
+:root[data-os-theme="macosx"] div:not(.dashboard-overlay *):not(.calendar-grid *) {
   font-size: 13px !important;
 }
 
