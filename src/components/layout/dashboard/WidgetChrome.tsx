@@ -171,16 +171,20 @@ export function WidgetChrome({
     >
       {/* Close button */}
       {onRemove && (
-        <button
+        <motion.button
           data-close-btn
           type="button"
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="absolute flex items-center justify-center transition-all"
+          className="absolute flex items-center justify-center"
+          animate={{
+            opacity: showControls ? 1 : 0,
+            scale: showControls ? 1 : 0.5,
+          }}
+          transition={{ duration: 0.15 }}
           style={{
             top: -6, left: -6, width: 20, height: 20,
             borderRadius: "50%", zIndex: 20,
-            opacity: showControls ? 1 : 0,
-            transform: showControls ? "scale(1)" : "scale(0.5)",
+            pointerEvents: showControls ? "auto" : "none",
             background: isXpTheme ? "#CC0000" : "linear-gradient(180deg, #5a5a5a 0%, #333333 100%)",
             border: isXpTheme ? "1px solid #990000" : "1.5px solid rgba(255,255,255,0.3)",
             boxShadow: isXpTheme ? "0 1px 3px rgba(0,0,0,0.4)" : "0 2px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2)",
@@ -188,25 +192,29 @@ export function WidgetChrome({
           }}
         >
           <X size={10} weight="bold" />
-        </button>
+        </motion.button>
       )}
 
       {/* Info/flip button */}
       {hasBack && !isFlipped && (
-        <button
+        <motion.button
           data-flip-btn
           type="button"
           onClick={(e) => { e.stopPropagation(); doFlip(true); }}
-          className="absolute flex items-center justify-center transition-opacity"
+          className="absolute flex items-center justify-center"
+          animate={{
+            opacity: showControls && !isFlipAnimating ? 0.5 : 0,
+          }}
+          transition={{ duration: 0.15 }}
           style={{
             bottom: 4, right: 4, padding: 4, zIndex: 20,
-            opacity: showControls && !isFlipAnimating ? 0.5 : 0,
+            pointerEvents: showControls && !isFlipAnimating ? "auto" : "none",
             color: "#FFF",
             filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
           }}
         >
           <Info size={18} weight="fill" />
-        </button>
+        </motion.button>
       )}
 
       {/* Overflow content — animates in/out with flip */}
@@ -226,12 +234,12 @@ export function WidgetChrome({
 
       {/* 3D flip container */}
       <div style={{ perspective: 800, WebkitPerspective: 800 }}>
-        <div
+        <motion.div
+          animate={{ rotateY: isFlipped ? 180 : 0 }}
+          transition={{ duration: 0.6, ease: [0.42, 0, 0.58, 1] }}
           style={{
             transformStyle: "preserve-3d",
             WebkitTransformStyle: "preserve-3d",
-            transition: "transform 0.6s ease-in-out",
-            transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
           }}
         >
           {/* Front face */}
@@ -270,12 +278,13 @@ export function WidgetChrome({
             >
               <div className="flex flex-col" style={{ minHeight: "inherit", transform: "translateZ(1px)" }}>
                 <div className="flex justify-end px-1 pt-1">
-                  <button
+                  <motion.button
                     data-flip-btn
                     type="button"
                     onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => { e.stopPropagation(); doFlip(false); }}
-                    className="font-bold transition-opacity hover:opacity-80"
+                    className="font-bold"
+                    whileHover={{ opacity: 0.8 }}
                     style={{
                       fontSize: 12, padding: "4px 10px", cursor: "pointer",
                       color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
@@ -283,13 +292,13 @@ export function WidgetChrome({
                     }}
                   >
                     Done
-                  </button>
+                  </motion.button>
                 </div>
                 {resolvedBackContent}
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
 
     </div>
