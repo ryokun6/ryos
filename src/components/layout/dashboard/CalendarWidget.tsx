@@ -3,10 +3,21 @@ import { useCalendarStore, type CalendarEvent } from "@/stores/useCalendarStore"
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useShallow } from "zustand/react/shallow";
 import { requestAppLaunch } from "@/utils/appEventBus";
+import { useTranslation } from "react-i18next";
 
-const DAY_HEADERS = ["S", "M", "T", "W", "T", "F", "S"];
-const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+function getLocalizedDayHeaders(locale: string): string[] {
+  const fmt = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
+  // Dec 31, 2023 is a Sunday — iterate from there for Sun–Sat
+  return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(2023, 11, 31 + i)));
+}
+
+function getLocalizedDayName(date: Date, locale: string, style: "long" | "short" = "short"): string {
+  return new Intl.DateTimeFormat(locale, { weekday: style }).format(date);
+}
+
+function getLocalizedMonthName(date: Date, locale: string, style: "long" | "short" = "short"): string {
+  return new Intl.DateTimeFormat(locale, { month: style }).format(date);
+}
 
 const EVENT_COLOR_MAP: Record<string, string> = {
   blue: "#3B82F6",
@@ -17,6 +28,8 @@ const EVENT_COLOR_MAP: Record<string, string> = {
 };
 
 export function CalendarWidget() {
+  const { i18n } = useTranslation();
+  const locale = i18n.language || "en";
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
@@ -91,6 +104,8 @@ export function CalendarWidget() {
     return weeks;
   }, [events, currentMonth, currentYear, todayStr, now]);
 
+  const dayHeaders = useMemo(() => getLocalizedDayHeaders(locale), [locale]);
+
   const handleClick = () => {
     requestAppLaunch({ appId: "calendar" });
   };
@@ -100,10 +115,10 @@ export function CalendarWidget() {
     return (
       <div className="p-2 cursor-pointer" onClick={handleClick} style={{ color: "#000" }}>
         <div className="text-center text-xs font-semibold mb-1">
-          {MONTH_NAMES[now.getMonth()]} {now.getFullYear()}
+          {getLocalizedMonthName(now, locale, "long")} {now.getFullYear()}
         </div>
         <div className="grid grid-cols-7 mb-0.5">
-          {DAY_HEADERS.map((d, i) => (
+          {dayHeaders.map((d, i) => (
             <div key={i} className="text-center text-[9px] font-medium" style={{ color: i === 0 || i === 6 ? "#CC0000" : "#666" }}>
               {d}
             </div>
@@ -130,88 +145,103 @@ export function CalendarWidget() {
     );
   }
 
-  // Tiger iCal-style: Red header with day name, large date, month mini grid below
-  const dayOfWeek = DAY_NAMES[now.getDay()];
-  const dayAbbrev = dayOfWeek.substring(0, 3);
-  const monthAbbrev = MONTH_NAMES[now.getMonth()].substring(0, 3);
+  const dayAbbrev = getLocalizedDayName(now, locale, "short");
+  const monthAbbrev = getLocalizedMonthName(now, locale, "short");
+
+  const brown = "#A33A2A";
+  const brownDark = "#7C2418";
+  const brownLight = "#C4503A";
 
   return (
-    <div className="cursor-pointer overflow-hidden" onClick={handleClick} style={{ borderRadius: "inherit" }}>
-      {/* Red header — Tiger iCal torn-calendar style */}
-      <div
-        className="text-center py-1 px-2"
-        style={{
-          background: "linear-gradient(180deg, #E84040 0%, #CC2020 100%)",
-          borderBottom: "1px solid #A01010",
-        }}
-      >
-        <div className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.85)" }}>
-          {dayAbbrev}
+    <div
+      className="cursor-pointer overflow-hidden flex flex-col"
+      onClick={handleClick}
+      style={{
+        borderRadius: "inherit",
+        background: `linear-gradient(180deg, ${brownLight} 0%, ${brown} 30%, ${brownDark} 100%)`,
+        height: "100%",
+      }}
+    >
+      {/* Top torn-calendar cards */}
+      <div className="flex gap-2 px-3 pt-3 pb-2">
+        {/* Day + Month card */}
+        <div
+          className="flex-1 relative flex flex-col items-center justify-center"
+          style={{
+            aspectRatio: "1",
+            borderRadius: 8,
+            background: "linear-gradient(180deg, #FFFFFF 0%, #F0EDE8 100%)",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8)",
+          }}
+        >
+          <div className="font-bold" style={{ fontSize: 16, color: brown, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>{dayAbbrev}</div>
+          <div className="font-bold leading-tight" style={{ fontSize: 24, color: brown, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>{monthAbbrev}</div>
         </div>
-      </div>
 
-      {/* Large date number + month */}
-      <div
-        className="flex flex-col items-center py-1"
-        style={{
-          background: "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)",
-        }}
-      >
+        {/* Date number card */}
         <div
-          className="text-[10px] font-semibold tracking-wide uppercase"
-          style={{ color: "rgba(255,255,255,0.5)" }}
+          className="flex-1 relative flex items-center justify-center"
+          style={{
+            aspectRatio: "1",
+            borderRadius: 8,
+            background: "linear-gradient(180deg, #FFFFFF 0%, #F0EDE8 100%)",
+            boxShadow: "0 2px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8)",
+          }}
         >
-          {monthAbbrev}
-        </div>
-        <div
-          className="text-3xl font-bold leading-none"
-          style={{ color: "rgba(255,255,255,0.95)" }}
-        >
-          {now.getDate()}
+          <div className="font-bold leading-none" style={{ fontSize: 56, color: brown, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>{now.getDate()}</div>
         </div>
       </div>
 
       {/* Mini month grid */}
-      <div className="px-2 pb-2 pt-1">
-        <div className="grid grid-cols-7 mb-0.5">
-          {DAY_HEADERS.map((d, i) => (
+      <div className="px-3 pb-2 flex-1">
+        {/* Day headers */}
+        <div className="grid grid-cols-7 pb-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.15)" }}>
+          {dayHeaders.map((d, i) => (
             <div
               key={i}
-              className="text-center text-[8px] font-medium"
-              style={{ color: i === 0 || i === 6 ? "#FF6B6B" : "rgba(255,255,255,0.35)" }}
+              className="text-center font-bold"
+              style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
             >
               {d}
             </div>
           ))}
         </div>
+
+        {/* Week rows */}
         {weeks.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-7">
+          <div
+            key={wi}
+            className="grid grid-cols-7"
+            style={{ borderBottom: wi < weeks.length - 1 ? "1px solid rgba(255,255,255,0.08)" : "none" }}
+          >
             {week.map((cell) => (
               <div
                 key={cell.dateStr}
-                className="flex flex-col items-center py-px"
-                style={{ opacity: cell.isCurrentMonth ? 1 : 0.2 }}
+                className="relative flex items-center justify-center py-[6px]"
+                style={{ opacity: cell.isCurrentMonth ? 1 : 0 }}
               >
                 <span
-                  className="text-[9px] leading-none flex items-center justify-center"
+                  className="leading-none flex items-center justify-center"
                   style={{
-                    width: 15,
-                    height: 15,
-                    borderRadius: "50%",
-                    backgroundColor: cell.isToday ? "#CC3333" : "transparent",
-                    color: cell.isToday ? "#FFF" : "rgba(255,255,255,0.7)",
-                    fontWeight: cell.isToday ? "bold" : "normal",
+                    fontSize: 15,
+                    fontWeight: cell.isToday ? 800 : 700,
+                    width: 26,
+                    height: 26,
+                    borderRadius: 6,
+                    backgroundColor: cell.isToday ? "rgba(255,255,255,0.25)" : "transparent",
+                    color: cell.isToday ? "#FFF" : "rgba(255,255,255,0.55)",
+                    fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
                   }}
                 >
                   {cell.day}
                 </span>
                 {cell.events.length > 0 && (
-                  <div className="flex gap-px">
+                  <div className="absolute flex gap-0.5" style={{ bottom: 1, left: "50%", transform: "translateX(-50%)" }}>
                     {cell.events.slice(0, 2).map((ev, i) => (
                       <span
                         key={i}
                         className="w-1 h-1 rounded-full"
-                        style={{ backgroundColor: EVENT_COLOR_MAP[ev.color] || "#3B82F6" }}
+                        style={{ backgroundColor: EVENT_COLOR_MAP[ev.color] || "#F0A060" }}
                       />
                     ))}
                   </div>
@@ -221,6 +251,7 @@ export function CalendarWidget() {
           </div>
         ))}
       </div>
+
     </div>
   );
 }

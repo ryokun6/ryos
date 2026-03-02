@@ -9,24 +9,29 @@ import { useDashboardLogic } from "../hooks/useDashboardLogic";
 import { WidgetChrome } from "@/components/layout/dashboard/WidgetChrome";
 import { ClockWidget } from "@/components/layout/dashboard/ClockWidget";
 import { CalendarWidget } from "@/components/layout/dashboard/CalendarWidget";
-import { WeatherWidget } from "@/components/layout/dashboard/WeatherWidget";
+import { WeatherWidget, WeatherEmojiOverflow } from "@/components/layout/dashboard/WeatherWidget";
 import { DashboardMenuBar } from "./DashboardMenuBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
 import { Plus } from "@phosphor-icons/react";
 import type { WidgetType } from "@/stores/useDashboardStore";
 
-function WidgetContent({ type }: { type: string }) {
+function WidgetContent({ type, widgetId }: { type: string; widgetId: string }) {
   switch (type) {
     case "clock":
       return <ClockWidget />;
     case "calendar":
       return <CalendarWidget />;
     case "weather":
-      return <WeatherWidget />;
+      return <WeatherWidget widgetId={widgetId} />;
     default:
       return null;
   }
+}
+
+function WidgetOverflow({ type, widgetId }: { type: string; widgetId: string }) {
+  if (type === "weather") return <WeatherEmojiOverflow widgetId={widgetId} />;
+  return null;
 }
 
 // Widget picker tray — dark pill style matching karaoke controls
@@ -100,6 +105,7 @@ export function DashboardAppComponent({
   const { t } = useTranslation();
   const closeAppInstance = useAppStore((state) => state.closeAppInstance);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   const {
     translatedHelpItems,
@@ -112,10 +118,16 @@ export function DashboardAppComponent({
     handleAddWidget,
     removeWidget,
     moveWidget,
+    bringToFront,
     resetToDefaults,
   } = useDashboardLogic();
 
   const handleClose = useCallback(() => {
+    if (isClosing) return;
+    setIsClosing(true);
+  }, [isClosing]);
+
+  const handleExitComplete = useCallback(() => {
     if (instanceId) {
       closeAppInstance(instanceId);
     }
@@ -158,22 +170,22 @@ export function DashboardAppComponent({
     />
   );
 
-  if (!isWindowOpen) return null;
+  const showOverlay = isWindowOpen && !isClosing;
 
   return (
     <>
-      {!isXpTheme && isForeground && menuBar}
+      {isWindowOpen && !isXpTheme && isForeground && menuBar}
 
       {createPortal(
-        <AnimatePresence>
-          {isWindowOpen && (
+        <AnimatePresence onExitComplete={handleExitComplete}>
+          {showOverlay && (
             <motion.div
               key="dashboard-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="fixed inset-0"
+              initial={{ opacity: 0, scale: 1.15 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.15 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              className="fixed inset-0 dashboard-overlay"
               style={{
                 zIndex: 9998,
                 background: isXpTheme
@@ -210,10 +222,13 @@ export function DashboardAppComponent({
                     height={widget.size.height}
                     x={widget.position.x}
                     y={widget.position.y}
+                    zIndex={widget.zIndex ?? 1}
                     onRemove={() => removeWidget(widget.id)}
                     onMove={(pos) => moveWidget(widget.id, pos)}
+                    onBringToFront={() => bringToFront(widget.id)}
+                    overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
                   >
-                    <WidgetContent type={widget.type} />
+                    <WidgetContent type={widget.type} widgetId={widget.id} />
                   </WidgetChrome>
                 </motion.div>
               ))}

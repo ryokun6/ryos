@@ -2567,7 +2567,14 @@
         "locationDenied": "Location access denied",
         "feelsLike": "Feels like",
         "humidity": "Humidity",
-        "wind": "Wind"
+        "wind": "Wind",
+        "searchCity": "Search cities...",
+        "useMyLocation": "Use My Location",
+        "changeCity": "Change city",
+        "searching": "Searching...",
+        "noResults": "No cities found",
+        "selectCity": "Choose a city",
+        "unavailable": "Weather unavailable"
       },
       "menu": {
         "help": "Dashboard Help",

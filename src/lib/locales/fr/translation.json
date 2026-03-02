@@ -208,8 +208,10 @@
         "allSongs": "toutes les chansons",
         "deleteAll": "Supprimer toutes les chansons",
         "export": "Exporter la bibliothèque",
+        "filterByRyo": "Filtre : chansons créées par ryo",
         "import": "Importation",
         "noSongs": "Aucun morceau en cache",
+        "noSongsMatchFilter": "Aucune chanson ne correspond au filtre actuel",
         "noSongsToExport": "Aucune chanson à exporter"
       },
       "statusBar": {
@@ -384,6 +386,42 @@
         "updatedWeeksAgo": "Mis à jour il y a {{weeks}} sem",
         "updatedYearsAgo": "Mis à jour il y a {{years}} ans",
         "updatedYesterday": "Mis à jour hier"
+      }
+    },
+    "calendar": {
+      "description": "Calendrier avec événements",
+      "event": {
+        "allDay": "Toute la journée",
+        "cancel": "Annuler",
+        "color": "Couleur",
+        "date": "Date",
+        "deleteConfirm": "Supprimer cet événement ?",
+        "editEvent": "Modifier l'événement",
+        "endTime": "Heure de fin",
+        "newEvent": "Nouvel événement",
+        "noEvents": "Aucun événement",
+        "notes": "Notes",
+        "save": "Enregistrer",
+        "startTime": "Heure de début",
+        "title": "Titre"
+      },
+      "menu": {
+        "about": "À propos de Calendrier",
+        "dayView": "Vue Jour",
+        "deleteEvent": "Supprimer l'événement",
+        "goToToday": "Aller à aujourd'hui",
+        "help": "Aide Calendrier",
+        "monthView": "Vue Mois",
+        "newEvent": "Nouvel événement",
+        "weekView": "Vue Semaine"
+      },
+      "name": "Calendrier",
+      "title": "Calendrier",
+      "today": "Aujourd'hui",
+      "views": {
+        "day": "Jour",
+        "month": "Mois",
+        "week": "Semaine"
       }
     },
     "chats": {
@@ -931,6 +969,39 @@
         "nostalgia": "Nostalgie",
         "objects": "Objets",
         "structures": "Structures"
+      }
+    },
+    "dashboard": {
+      "description": "Superposition du tableau de bord des widgets",
+      "menu": {
+        "about": "À propos du tableau de bord",
+        "addWidget": "Ajouter un widget",
+        "help": "Aide Tableau de bord",
+        "resetWidgets": "Rétablir les valeurs par défaut"
+      },
+      "name": "Tableau de bord",
+      "title": "Tableau de bord",
+      "weather": {
+        "changeCity": "Changer de ville",
+        "enableLocation": "Activer la localisation pour la météo",
+        "feelsLike": "Ressenti",
+        "humidity": "Humidité",
+        "loading": "Chargement de la météo...",
+        "locationDenied": "Accès à la localisation refusé",
+        "noResults": "Aucune ville trouvée",
+        "searchCity": "Rechercher des villes...",
+        "searching": "Recherche...",
+        "selectCity": "Choisir une ville",
+        "unavailable": "Météo indisponible",
+        "useMyLocation": "Utiliser ma position",
+        "wind": "Vent"
+      },
+      "widgets": {
+        "addWidget": "Ajouter un widget...",
+        "calendar": "Calendrier",
+        "clock": "Horloge",
+        "removeWidget": "Supprimer le widget",
+        "weather": "Météo"
       }
     },
     "finder": {

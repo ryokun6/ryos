@@ -208,8 +208,10 @@
         "allSongs": "todas las canciones",
         "deleteAll": "Eliminar todas las canciones",
         "export": "Exportar biblioteca",
+        "filterByRyo": "Filtro: canciones creadas por ryo",
         "import": "Importar",
         "noSongs": "No hay canciones en caché",
+        "noSongsMatchFilter": "Ninguna canción coincide con el filtro actual",
         "noSongsToExport": "No hay canciones para exportar"
       },
       "statusBar": {
@@ -384,6 +386,42 @@
         "updatedWeeksAgo": "Actualizado hace {{weeks}}s",
         "updatedYearsAgo": "Actualizado hace {{years}}a",
         "updatedYesterday": "Actualizado ayer"
+      }
+    },
+    "calendar": {
+      "description": "Calendario con eventos",
+      "event": {
+        "allDay": "Todo el día",
+        "cancel": "Cancelar",
+        "color": "Color",
+        "date": "Fecha",
+        "deleteConfirm": "¿Eliminar este evento?",
+        "editEvent": "Editar evento",
+        "endTime": "Hora de finalización",
+        "newEvent": "Nuevo evento",
+        "noEvents": "Ningún evento",
+        "notes": "Notas",
+        "save": "Guardar",
+        "startTime": "Hora de inicio",
+        "title": "Título"
+      },
+      "menu": {
+        "about": "Acerca de Calendario",
+        "dayView": "Vista de día",
+        "deleteEvent": "Eliminar evento",
+        "goToToday": "Ir a hoy",
+        "help": "Ayuda del Calendario",
+        "monthView": "Vista Mensual",
+        "newEvent": "Nuevo Evento",
+        "weekView": "Vista Semanal"
+      },
+      "name": "Calendario",
+      "title": "Calendario",
+      "today": "Hoy",
+      "views": {
+        "day": "Día",
+        "month": "Mes",
+        "week": "Semana"
       }
     },
     "chats": {
@@ -931,6 +969,39 @@
         "nostalgia": "Nostalgia",
         "objects": "Objetos",
         "structures": "Estructuras"
+      }
+    },
+    "dashboard": {
+      "description": "Superposición del panel de widgets",
+      "menu": {
+        "about": "Acerca del Panel",
+        "addWidget": "Añadir Widget",
+        "help": "Ayuda del Panel",
+        "resetWidgets": "Restablecer valores predeterminados"
+      },
+      "name": "Panel",
+      "title": "Panel",
+      "weather": {
+        "changeCity": "Cambiar ciudad",
+        "enableLocation": "Habilitar ubicación para el clima",
+        "feelsLike": "Sensación térmica",
+        "humidity": "Humedad",
+        "loading": "Cargando el tiempo...",
+        "locationDenied": "Acceso a la ubicación denegado",
+        "noResults": "No se encontraron ciudades",
+        "searchCity": "Buscar ciudades...",
+        "searching": "Buscando...",
+        "selectCity": "Elegir una ciudad",
+        "unavailable": "Tiempo no disponible",
+        "useMyLocation": "Usar mi ubicación",
+        "wind": "Viento"
+      },
+      "widgets": {
+        "addWidget": "Añadir widget...",
+        "calendar": "Calendario",
+        "clock": "Reloj",
+        "removeWidget": "Eliminar widget",
+        "weather": "Tiempo"
       }
     },
     "finder": {

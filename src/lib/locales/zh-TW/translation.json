@@ -208,8 +208,10 @@
         "allSongs": "所有歌曲",
         "deleteAll": "刪除所有歌曲",
         "export": "匯出資料庫",
+        "filterByRyo": "篩選：ryo 建立的歌曲",
         "import": "匯入",
         "noSongs": "快取中沒有歌曲",
+        "noSongsMatchFilter": "沒有歌曲符合目前的篩選條件",
         "noSongsToExport": "沒有歌曲可供匯出"
       },
       "statusBar": {
@@ -384,6 +386,42 @@
         "updatedWeeksAgo": "{{weeks}} 週前更新",
         "updatedYearsAgo": "{{years}} 年前更新",
         "updatedYesterday": "昨天更新"
+      }
+    },
+    "calendar": {
+      "description": "含有事件的日曆",
+      "event": {
+        "allDay": "全天",
+        "cancel": "取消",
+        "color": "顏色",
+        "date": "日期",
+        "deleteConfirm": "刪除此事件？",
+        "editEvent": "編輯事件",
+        "endTime": "結束時間",
+        "newEvent": "新增事件",
+        "noEvents": "沒有事件",
+        "notes": "備註",
+        "save": "儲存",
+        "startTime": "開始時間",
+        "title": "標題"
+      },
+      "menu": {
+        "about": "關於日曆",
+        "dayView": "日檢視",
+        "deleteEvent": "刪除事件",
+        "goToToday": "前往今天",
+        "help": "行事曆輔助說明",
+        "monthView": "月檢視",
+        "newEvent": "新增行程",
+        "weekView": "週檢視"
+      },
+      "name": "行事曆",
+      "title": "行事曆",
+      "today": "今天",
+      "views": {
+        "day": "日",
+        "month": "月",
+        "week": "週"
       }
     },
     "chats": {
@@ -931,6 +969,39 @@
         "nostalgia": "懷舊",
         "objects": "物件",
         "structures": "建築"
+      }
+    },
+    "dashboard": {
+      "description": "小工具儀表板疊層",
+      "menu": {
+        "about": "關於儀表板",
+        "addWidget": "新增小工具",
+        "help": "儀表板輔助說明",
+        "resetWidgets": "重設為預設值"
+      },
+      "name": "儀表板",
+      "title": "儀表板",
+      "weather": {
+        "changeCity": "更改城市",
+        "enableLocation": "啟用定位以取得天氣",
+        "feelsLike": "體感溫度",
+        "humidity": "濕度",
+        "loading": "正在載入天氣...",
+        "locationDenied": "位置取用遭拒",
+        "noResults": "找不到城市",
+        "searchCity": "搜尋城市...",
+        "searching": "正在搜尋...",
+        "selectCity": "選擇城市",
+        "unavailable": "天氣資訊無法取得",
+        "useMyLocation": "使用我的位置",
+        "wind": "風"
+      },
+      "widgets": {
+        "addWidget": "加入小工具...",
+        "calendar": "日曆",
+        "clock": "時鐘",
+        "removeWidget": "移除小工具",
+        "weather": "天氣"
       }
     },
     "finder": {

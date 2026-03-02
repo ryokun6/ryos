@@ -208,8 +208,10 @@
         "allSongs": "tutte le canzoni",
         "deleteAll": "Elimina tutte le canzoni",
         "export": "Esporta libreria",
+        "filterByRyo": "Filtro: brani creati da ryo",
         "import": "Importa",
         "noSongs": "Nessun brano nella cache",
+        "noSongsMatchFilter": "Nessun brano corrisponde al filtro attuale",
         "noSongsToExport": "Nessuna canzone da esportare"
       },
       "statusBar": {
@@ -384,6 +386,42 @@
         "updatedWeeksAgo": "Aggiornato {{weeks}} settimane fa",
         "updatedYearsAgo": "Aggiornato {{years}} anni fa",
         "updatedYesterday": "Aggiornato ieri"
+      }
+    },
+    "calendar": {
+      "description": "Calendario con eventi",
+      "event": {
+        "allDay": "Tutto il giorno",
+        "cancel": "Annulla",
+        "color": "Colore",
+        "date": "Data",
+        "deleteConfirm": "Eliminare questo evento?",
+        "editEvent": "Modifica evento",
+        "endTime": "Ora fine",
+        "newEvent": "Nuovo evento",
+        "noEvents": "Nessun evento",
+        "notes": "Note",
+        "save": "Salva",
+        "startTime": "Ora inizio",
+        "title": "Titolo"
+      },
+      "menu": {
+        "about": "Informazioni su Calendario",
+        "dayView": "Vista giorno",
+        "deleteEvent": "Elimina evento",
+        "goToToday": "Vai a oggi",
+        "help": "Aiuto Calendario",
+        "monthView": "Mese",
+        "newEvent": "Nuovo Evento",
+        "weekView": "Settimana"
+      },
+      "name": "Calendario",
+      "title": "Calendario",
+      "today": "Oggi",
+      "views": {
+        "day": "Giorno",
+        "month": "Mese",
+        "week": "Settimana"
       }
     },
     "chats": {
@@ -931,6 +969,39 @@
         "nostalgia": "Nostalgia",
         "objects": "Oggetti",
         "structures": "Strutture"
+      }
+    },
+    "dashboard": {
+      "description": "Sovrapposizione dashboard widget",
+      "menu": {
+        "about": "Informazioni su Dashboard",
+        "addWidget": "Aggiungi Widget",
+        "help": "Aiuto Dashboard",
+        "resetWidgets": "Ripristina impostazioni predefinite"
+      },
+      "name": "Dashboard",
+      "title": "Dashboard",
+      "weather": {
+        "changeCity": "Cambia città",
+        "enableLocation": "Abilita posizione per il meteo",
+        "feelsLike": "Percepita",
+        "humidity": "Umidità",
+        "loading": "Caricamento meteo...",
+        "locationDenied": "Accesso alla posizione negato",
+        "noResults": "Nessuna città trovata",
+        "searchCity": "Cerca città...",
+        "searching": "Ricerca in corso...",
+        "selectCity": "Scegli una città",
+        "unavailable": "Meteo non disponibile",
+        "useMyLocation": "Usa la mia posizione",
+        "wind": "Vento"
+      },
+      "widgets": {
+        "addWidget": "Aggiungi widget...",
+        "calendar": "Calendario",
+        "clock": "Orologio",
+        "removeWidget": "Rimuovi widget",
+        "weather": "Meteo"
       }
     },
     "finder": {

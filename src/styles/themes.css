@@ -593,7 +593,7 @@
   font-weight: 500 !important;
 }
 
-:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger) {
+:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger):not(.dashboard-overlay *) {
   font-size: 13px !important;
   font-weight: normal !important;
 }
@@ -603,13 +603,13 @@
   font-weight: bold !important;
 }
 
-:root[data-os-theme="macosx"] input,
-:root[data-os-theme="macosx"] select,
-:root[data-os-theme="macosx"] textarea {
+:root[data-os-theme="macosx"] input:not(.dashboard-overlay *),
+:root[data-os-theme="macosx"] select:not(.dashboard-overlay *),
+:root[data-os-theme="macosx"] textarea:not(.dashboard-overlay *) {
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] label {
+:root[data-os-theme="macosx"] label:not(.dashboard-overlay *) {
   font-size: 11px !important;
 }
 
@@ -617,8 +617,8 @@
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] p,
-:root[data-os-theme="macosx"] div {
+:root[data-os-theme="macosx"] p:not(.dashboard-overlay *),
+:root[data-os-theme="macosx"] div:not(.dashboard-overlay *) {
   font-size: 13px !important;
 }
 

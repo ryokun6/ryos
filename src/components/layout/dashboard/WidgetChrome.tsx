@@ -4,22 +4,28 @@ import { useThemeStore } from "@/stores/useThemeStore";
 
 interface WidgetChromeProps {
   children: ReactNode;
+  overflowContent?: ReactNode;
   width: number;
   height: number;
   x: number;
   y: number;
+  zIndex?: number;
   onRemove?: () => void;
   onMove?: (position: { x: number; y: number }) => void;
+  onBringToFront?: () => void;
 }
 
 export function WidgetChrome({
   children,
+  overflowContent,
   width,
   height,
   x,
   y,
+  zIndex = 1,
   onRemove,
   onMove,
+  onBringToFront,
 }: WidgetChromeProps) {
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -37,6 +43,8 @@ export function WidgetChrome({
       e.preventDefault();
       e.stopPropagation();
 
+      onBringToFront?.();
+
       // Capture pointer so we get events even outside the element
       containerRef.current?.setPointerCapture(e.pointerId);
 
@@ -48,7 +56,7 @@ export function WidgetChrome({
       };
       setIsDragging(true);
     },
-    [x, y]
+    [x, y, onBringToFront]
   );
 
   const handlePointerMove = useCallback(
@@ -94,7 +102,7 @@ export function WidgetChrome({
         width,
         height: "auto",
         cursor: isDragging ? "grabbing" : "grab",
-        zIndex: isDragging ? 100 : 1,
+        zIndex: isDragging ? 9999 : zIndex,
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -138,13 +146,16 @@ export function WidgetChrome({
         </button>
       )}
 
+      {/* Overflow content — renders outside the clipped card (e.g. floating emoji) */}
+      {overflowContent}
+
       {/* Widget card */}
       <div
         className="relative overflow-hidden"
         style={{
           width,
           minHeight: height,
-          borderRadius: isXpTheme ? "4px" : "14px",
+          borderRadius: isXpTheme ? "4px" : "20px",
           background: isXpTheme
             ? "rgba(255,255,255,0.92)"
             : "linear-gradient(to bottom, rgba(50,50,50,0.8), rgba(25,25,25,0.85))",
@@ -157,9 +168,44 @@ export function WidgetChrome({
         }}
       >
         {/* Widget content — disable pointer events while dragging to prevent accidental clicks */}
-        <div style={{ pointerEvents: isDragging ? "none" : "auto" }}>
+        <div className="flex flex-col" style={{ pointerEvents: isDragging ? "none" : "auto", minHeight: "inherit" }}>
           {children}
         </div>
+
+        {/* Aqua shine overlay (non-XP only) */}
+        {!isXpTheme && (
+          <>
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                top: 2,
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: "calc(100% - 6px)",
+                height: "35%",
+                maxHeight: 50,
+                borderRadius: "18px 18px 50% 50%",
+                background: "linear-gradient(rgba(255,255,255,0.3), rgba(255,255,255,0))",
+                zIndex: 10,
+              }}
+            />
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                bottom: 2,
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: "calc(100% - 10px)",
+                height: "20%",
+                maxHeight: 30,
+                borderRadius: "50% 50% 16px 16px",
+                background: "linear-gradient(rgba(255,255,255,0), rgba(255,255,255,0.08))",
+                filter: "blur(1px)",
+                zIndex: 10,
+              }}
+            />
+          </>
+        )}
       </div>
     </div>
   );

@@ -389,7 +389,6 @@ function WeekTimeGrid({
 
 function DayTimeGrid({
   date,
-  dateLabel,
   events,
   selectedEventId,
   onTimeSlotClick,
@@ -399,7 +398,6 @@ function DayTimeGrid({
   isMacOSTheme,
 }: {
   date: string;
-  dateLabel: string;
   events: CalendarEvent[];
   selectedEventId: string | null;
   onTimeSlotClick: (date: string, hour: number) => void;
@@ -443,15 +441,7 @@ function DayTimeGrid({
   const totalHours = HOUR_END - HOUR_START;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Day header */}
-      <div
-        className="px-3 py-2 border-b text-sm font-semibold"
-        style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)" }}
-      >
-        {dateLabel}
-      </div>
-
+    <div className="flex-1 flex flex-col overflow-hidden min-w-0">
       {/* All-day events */}
       {allDayEvents.length > 0 && (
         <div
@@ -481,7 +471,7 @@ function DayTimeGrid({
 
       {/* Scrollable hour grid */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="flex relative" style={{ height: totalHours * HOUR_HEIGHT }}>
+        <div className="flex relative w-full" style={{ height: totalHours * HOUR_HEIGHT }}>
           <div style={{ width: 52, minWidth: 52, flexShrink: 0 }} className="relative">
             {Array.from({ length: totalHours }, (_, i) => {
               const hour = HOUR_START + i;
@@ -502,7 +492,7 @@ function DayTimeGrid({
             })}
           </div>
 
-          <div className="flex-1 relative">
+          <div className="flex-1 relative min-w-0">
             {Array.from({ length: totalHours }, (_, i) => (
               <button
                 key={i}
@@ -679,6 +669,9 @@ function BottomToolbar({
   onSetView,
   onGoToToday,
   onNewEvent,
+  onPrev,
+  onNext,
+  headerLabel,
   isXpTheme,
   isMacOSTheme,
   isSystem7Theme,
@@ -688,6 +681,9 @@ function BottomToolbar({
   onSetView: (v: "day" | "week" | "month") => void;
   onGoToToday: () => void;
   onNewEvent: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+  headerLabel: string;
   isXpTheme: boolean;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
@@ -714,28 +710,53 @@ function BottomToolbar({
         } : {}),
       }}
     >
-      {/* Segmented view switcher */}
-      <div className={cn("flex gap-0", isMacOSTheme && "aqua-select-group")}>
-        {views.map((v) => (
+      {/* Left: nav arrows + segmented view switcher */}
+      <div className="flex items-center gap-1">
+        <div className={cn("flex gap-0", isMacOSTheme && "aqua-select-group")}>
           <Button
-            key={v.id}
-            variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
-            data-state={view === v.id ? "on" : "off"}
-            onClick={() => onSetView(v.id)}
-            className={cn(
-              isMacOSTheme
-                ? "aqua-compact font-geneva-12 !text-[11px]"
-                : "h-[22px] px-2.5 text-[11px]",
-              isXpTheme && "text-black"
-            )}
+            variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "ghost"}
+            size="icon"
+            className={cn(isMacOSTheme ? "aqua-compact" : "h-[22px] w-6", isXpTheme && "text-black")}
+            onClick={onPrev}
           >
-            {v.label}
+            <CaretLeft size={12} weight="bold" />
           </Button>
-        ))}
+        </div>
+        <div className={cn("flex gap-0", isMacOSTheme && "aqua-select-group")}>
+          {views.map((v) => (
+            <Button
+              key={v.id}
+              variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
+              data-state={view === v.id ? "on" : "off"}
+              onClick={() => onSetView(v.id)}
+              className={cn(
+                isMacOSTheme
+                  ? "aqua-compact font-geneva-12 !text-[11px]"
+                  : "h-[22px] px-2.5 text-[11px]",
+                isXpTheme && "text-black"
+              )}
+            >
+              {v.label}
+            </Button>
+          ))}
+        </div>
+        <div className={cn("flex gap-0", isMacOSTheme && "aqua-select-group")}>
+          <Button
+            variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "ghost"}
+            size="icon"
+            className={cn(isMacOSTheme ? "aqua-compact" : "h-[22px] w-6", isXpTheme && "text-black")}
+            onClick={onNext}
+          >
+            <CaretRight size={12} weight="bold" />
+          </Button>
+        </div>
       </div>
 
-      {/* Right side */}
-      <div className={cn("flex items-center gap-1", isMacOSTheme && "aqua-select-group")}>
+      {/* Center: header label */}
+      <span className="text-xs font-semibold truncate px-2">{headerLabel}</span>
+
+      {/* Right: Today + New */}
+      <div className={cn("flex items-center gap-0", isMacOSTheme && "aqua-select-group")}>
         <Button
           variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "ghost"}
           onClick={onGoToToday}
@@ -885,47 +906,8 @@ export function CalendarAppComponent({
       >
         <div
           ref={containerRef}
-          className="flex flex-col h-full bg-[var(--os-color-window-bg)] font-os-ui overflow-hidden"
+          className="flex flex-col h-full w-full bg-[var(--os-color-window-bg)] font-os-ui overflow-hidden"
         >
-          {/* Header — brushed metal on macOS */}
-          <div
-            className={cn(
-              "flex items-center justify-between px-2 py-1.5 border-b",
-              isMacOSTheme && "os-toolbar-texture"
-            )}
-            style={{
-              borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.1)",
-              ...(!isMacOSTheme ? {
-                background: isXpTheme
-                  ? "#ECE9D8"
-                  : "#e0e0e0",
-              } : {}),
-            }}
-          >
-            <div className={cn("flex items-center gap-0", isMacOSTheme && "aqua-select-group")}>
-              <Button
-                variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "ghost"}
-                size="icon"
-                className={cn(isMacOSTheme ? "aqua-compact" : "h-6 w-6", isXpTheme && "text-black")}
-                onClick={handlePrev}
-              >
-                <CaretLeft size={12} weight="bold" />
-              </Button>
-              <Button
-                variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "ghost"}
-                size="icon"
-                className={cn(isMacOSTheme ? "aqua-compact" : "h-6 w-6", isXpTheme && "text-black")}
-                onClick={handleNext}
-              >
-                <CaretRight size={12} weight="bold" />
-              </Button>
-            </div>
-            <span className="text-xs font-semibold truncate px-2 flex-1 text-center">
-              {headerLabel}
-            </span>
-            <div style={{ width: 52 }} />
-          </div>
-
           {/* Main content */}
           <div className="flex-1 flex overflow-hidden">
             {/* Mini calendar sidebar — pinstripe on macOS */}
@@ -971,7 +953,6 @@ export function CalendarAppComponent({
             {effectiveView === "day" && (
               <DayTimeGrid
                 date={selectedDate}
-                dateLabel={selectedDateLabel}
                 events={selectedDateEvents}
                 selectedEventId={selectedEventId}
                 onTimeSlotClick={handleNewEventAtTime}
@@ -1001,6 +982,9 @@ export function CalendarAppComponent({
             onSetView={setView}
             onGoToToday={goToToday}
             onNewEvent={handleNewEvent}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            headerLabel={headerLabel}
             isXpTheme={isXpTheme}
             isMacOSTheme={isMacOSTheme}
             isSystem7Theme={isSystem7Theme}

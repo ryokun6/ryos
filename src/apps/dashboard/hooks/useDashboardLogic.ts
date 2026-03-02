@@ -21,6 +21,7 @@ export function useDashboardLogic() {
     addWidget,
     removeWidget,
     moveWidget,
+    bringToFront,
     resetToDefaults,
   } = useDashboardStore(
     useShallow((state) => ({
@@ -28,6 +29,7 @@ export function useDashboardLogic() {
       addWidget: state.addWidget,
       removeWidget: state.removeWidget,
       moveWidget: state.moveWidget,
+      bringToFront: state.bringToFront,
       resetToDefaults: state.resetToDefaults,
     }))
   );
@@ -35,9 +37,9 @@ export function useDashboardLogic() {
   const handleAddWidget = useCallback(
     (type: WidgetType) => {
       const sizeMap: Record<WidgetType, { width: number; height: number }> = {
-        clock: { width: 160, height: 160 },
-        calendar: { width: 220, height: 240 },
-        weather: { width: 200, height: 170 },
+        clock: { width: 170, height: 170 },
+        calendar: { width: 240, height: 350 },
+        weather: { width: 340, height: 180 },
       };
       // Place near center with some randomness
       const x = 200 + Math.floor(Math.random() * 200);
@@ -60,6 +62,7 @@ export function useDashboardLogic() {
     handleAddWidget,
     removeWidget,
     moveWidget,
+    bringToFront,
     resetToDefaults,
   };
 }

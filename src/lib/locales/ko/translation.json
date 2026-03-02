@@ -208,8 +208,10 @@
         "allSongs": "모든 노래",
         "deleteAll": "모든 노래 삭제",
         "export": "보관함 내보내기",
+        "filterByRyo": "필터: ryo가 만든 노래",
         "import": "가져오기",
         "noSongs": "캐시에 곡 없음",
+        "noSongsMatchFilter": "현재 필터와 일치하는 노래가 없습니다.",
         "noSongsToExport": "내보낼 노래가 없습니다."
       },
       "statusBar": {
@@ -384,6 +386,42 @@
         "updatedWeeksAgo": "{{weeks}}주 전 업데이트됨",
         "updatedYearsAgo": "{{years}}년 전 업데이트됨",
         "updatedYesterday": "어제 업데이트됨"
+      }
+    },
+    "calendar": {
+      "description": "이벤트 캘린더",
+      "event": {
+        "allDay": "종일",
+        "cancel": "취소",
+        "color": "색상",
+        "date": "날짜",
+        "deleteConfirm": "이 이벤트를 삭제하시겠습니까?",
+        "editEvent": "이벤트 편집",
+        "endTime": "종료 시간",
+        "newEvent": "새 이벤트",
+        "noEvents": "이벤트 없음",
+        "notes": "메모",
+        "save": "저장",
+        "startTime": "시작 시간",
+        "title": "제목"
+      },
+      "menu": {
+        "about": "캘린더 정보",
+        "dayView": "일 보기",
+        "deleteEvent": "이벤트 삭제",
+        "goToToday": "오늘로 이동",
+        "help": "캘린더 도움말",
+        "monthView": "월 보기",
+        "newEvent": "새 이벤트",
+        "weekView": "주 보기"
+      },
+      "name": "캘린더",
+      "title": "캘린더",
+      "today": "오늘",
+      "views": {
+        "day": "일",
+        "month": "월",
+        "week": "주"
       }
     },
     "chats": {
@@ -931,6 +969,39 @@
         "nostalgia": "향수",
         "objects": "사물",
         "structures": "구조물"
+      }
+    },
+    "dashboard": {
+      "description": "위젯 대시보드 오버레이",
+      "menu": {
+        "about": "대시보드 정보",
+        "addWidget": "위젯 추가",
+        "help": "대시보드 도움말",
+        "resetWidgets": "기본값으로 재설정"
+      },
+      "name": "대시보드",
+      "title": "대시보드",
+      "weather": {
+        "changeCity": "도시 변경",
+        "enableLocation": "날씨를 위해 위치 활성화",
+        "feelsLike": "체감",
+        "humidity": "습도",
+        "loading": "날씨 로드 중...",
+        "locationDenied": "위치 접근 거부됨",
+        "noResults": "도시를 찾을 수 없음",
+        "searchCity": "도시 검색...",
+        "searching": "검색 중...",
+        "selectCity": "도시 선택",
+        "unavailable": "날씨 정보를 이용할 수 없음",
+        "useMyLocation": "내 위치 사용",
+        "wind": "바람"
+      },
+      "widgets": {
+        "addWidget": "위젯 추가...",
+        "calendar": "캘린더",
+        "clock": "시계",
+        "removeWidget": "위젯 제거",
+        "weather": "날씨"
       }
     },
     "finder": {

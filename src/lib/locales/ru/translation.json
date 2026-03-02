@@ -208,8 +208,10 @@
         "allSongs": "Все песни",
         "deleteAll": "Удалить все песни",
         "export": "Экспорт медиатеки",
+        "filterByRyo": "Фильтр: песни, созданные ryo",
         "import": "Импорт",
         "noSongs": "Нет песен в кэше",
+        "noSongsMatchFilter": "Песни не найдены, соответствующие текущему фильтру",
         "noSongsToExport": "Нет песен для экспорта"
       },
       "statusBar": {
@@ -384,6 +386,42 @@
         "updatedWeeksAgo": "Обновлено {{weeks}} нед. назад",
         "updatedYearsAgo": "Обновлено {{years}} г. назад",
         "updatedYesterday": "Обновлено вчера"
+      }
+    },
+    "calendar": {
+      "description": "Календарь с событиями",
+      "event": {
+        "allDay": "Весь день",
+        "cancel": "Отмена",
+        "color": "Цвет",
+        "date": "Дата",
+        "deleteConfirm": "Удалить это событие?",
+        "editEvent": "Редактировать событие",
+        "endTime": "Время окончания",
+        "newEvent": "Новое событие",
+        "noEvents": "Нет событий",
+        "notes": "Заметки",
+        "save": "Сохранить",
+        "startTime": "Время начала",
+        "title": "Заголовок"
+      },
+      "menu": {
+        "about": "О Календаре",
+        "dayView": "Дневной вид",
+        "deleteEvent": "Удалить событие",
+        "goToToday": "Перейти на сегодня",
+        "help": "Справка Календаря",
+        "monthView": "Вид Месяц",
+        "newEvent": "Новое событие",
+        "weekView": "Вид Неделя"
+      },
+      "name": "Календарь",
+      "title": "Календарь",
+      "today": "Сегодня",
+      "views": {
+        "day": "День",
+        "month": "Месяц",
+        "week": "Неделя"
       }
     },
     "chats": {
@@ -931,6 +969,39 @@
         "nostalgia": "Ностальгия",
         "objects": "Объекты",
         "structures": "Структуры"
+      }
+    },
+    "dashboard": {
+      "description": "Наложение панели виджетов",
+      "menu": {
+        "about": "О Панели",
+        "addWidget": "Добавить виджет",
+        "help": "Справка по Панели",
+        "resetWidgets": "Сбросить до значений по умолчанию"
+      },
+      "name": "Панель",
+      "title": "Панель",
+      "weather": {
+        "changeCity": "Изменить город",
+        "enableLocation": "Включить определение местоположения для погоды",
+        "feelsLike": "Ощущается как",
+        "humidity": "Влажность",
+        "loading": "Загрузка погоды...",
+        "locationDenied": "Доступ к местоположению запрещен",
+        "noResults": "Города не найдены",
+        "searchCity": "Поиск городов...",
+        "searching": "Поиск...",
+        "selectCity": "Выберите город",
+        "unavailable": "Погода недоступна",
+        "useMyLocation": "Использовать мое местоположение",
+        "wind": "Ветер"
+      },
+      "widgets": {
+        "addWidget": "Добавить виджет...",
+        "calendar": "Календарь",
+        "clock": "Часы",
+        "removeWidget": "Удалить виджет",
+        "weather": "Погода"
       }
     },
     "finder": {
