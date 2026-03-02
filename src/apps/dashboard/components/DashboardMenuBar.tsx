@@ -19,6 +19,7 @@ interface DashboardMenuBarProps {
   onAddClock: () => void;
   onAddCalendar: () => void;
   onAddWeather: () => void;
+  onAddStocks: () => void;
   onResetWidgets: () => void;
 }
 
@@ -29,6 +30,7 @@ export function DashboardMenuBar({
   onAddClock,
   onAddCalendar,
   onAddWeather,
+  onAddStocks,
   onResetWidgets,
 }: DashboardMenuBarProps) {
   const { t } = useTranslation();
@@ -57,6 +59,9 @@ export function DashboardMenuBar({
               </MenubarItem>
               <MenubarItem onClick={onAddWeather} className="text-md h-6 px-3">
                 🌤️ {t("apps.dashboard.widgets.weather")}
+              </MenubarItem>
+              <MenubarItem onClick={onAddStocks} className="text-md h-6 px-3">
+                📈 {t("apps.dashboard.widgets.stocks")}
               </MenubarItem>
             </MenubarSubContent>
           </MenubarSub>
