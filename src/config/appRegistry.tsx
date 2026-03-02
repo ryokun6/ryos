@@ -137,6 +137,16 @@ const LazyWinampApp = createLazyComponent<unknown>(
   "winamp"
 );
 
+const LazyCalendarApp = createLazyComponent<unknown>(
+  () => import("@/apps/calendar/components/CalendarAppComponent").then(m => ({ default: m.CalendarAppComponent })),
+  "calendar"
+);
+
+const LazyDashboardApp = createLazyComponent<unknown>(
+  () => import("@/apps/dashboard/components/DashboardAppComponent").then(m => ({ default: m.DashboardAppComponent })),
+  "dashboard"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small, isolated from components)
 // Import from metadata.ts files to avoid eager loading of components
@@ -165,6 +175,8 @@ import {
   helpItems as infiniteMacHelpItems,
 } from "@/apps/infinite-mac/metadata";
 import { appMetadata as winampMetadata, helpItems as winampHelpItems } from "@/apps/winamp";
+import { appMetadata as calendarMetadata, helpItems as calendarHelpItems } from "@/apps/calendar/metadata";
+import { appMetadata as dashboardMetadata, helpItems as dashboardHelpItems } from "@/apps/dashboard/metadata";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/hooks/useInfiniteMacLogic";
 
 // ============================================================================
@@ -439,6 +451,32 @@ export const appRegistry = {
     windowConfig: {
       defaultSize: { width: 275, height: 116 },
       minSize: { width: 275, height: 116 },
+    } as WindowConstraints,
+  },
+  ["calendar"]: {
+    id: "calendar",
+    name: "Calendar",
+    icon: { type: "image", src: calendarMetadata.icon },
+    description: "Calendar with events",
+    component: LazyCalendarApp,
+    helpItems: calendarHelpItems,
+    metadata: calendarMetadata,
+    windowConfig: {
+      defaultSize: { width: 340, height: 460 },
+      minSize: { width: 300, height: 380 },
+    } as WindowConstraints,
+  },
+  ["dashboard"]: {
+    id: "dashboard",
+    name: "Dashboard",
+    icon: { type: "image", src: dashboardMetadata.icon },
+    description: "Widget dashboard overlay",
+    component: LazyDashboardApp,
+    helpItems: dashboardHelpItems,
+    metadata: dashboardMetadata,
+    windowConfig: {
+      defaultSize: { width: 500, height: 400 },
+      minSize: { width: 300, height: 250 },
     } as WindowConstraints,
   },
 } as const;

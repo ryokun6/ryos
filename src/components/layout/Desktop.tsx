@@ -46,8 +46,10 @@ const DEFAULT_SHORTCUT_ORDER: AppId[] = [
   "soundboard",
   "minesweeper",
   "synth",
+  "calendar",
   "terminal",
   "pc",
+  "dashboard",
 ];
 
 export function Desktop({

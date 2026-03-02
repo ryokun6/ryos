@@ -132,6 +132,22 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "shuffleRepeat",
     "controls",
   ],
+  calendar: [
+    "navigateMonths",
+    "createEvents",
+    "dayView",
+    "colorCoding",
+    "deleteEvents",
+    "autoSave",
+  ],
+  dashboard: [
+    "openDashboard",
+    "clockWidget",
+    "calendarWidget",
+    "weatherWidget",
+    "moveWidgets",
+    "closeDashboard",
+  ],
 };
 
 /**
