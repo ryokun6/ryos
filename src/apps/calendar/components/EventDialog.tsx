@@ -3,14 +3,17 @@ import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
-  DialogTitle,
   DialogFooter,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useThemeStore } from "@/stores/useThemeStore";
+import { cn } from "@/lib/utils";
 import type { CalendarEvent, EventColor } from "@/stores/useCalendarStore";
 
 interface EventDialogProps {
@@ -30,11 +33,11 @@ interface EventDialogProps {
 }
 
 const EVENT_COLORS: { value: EventColor; hex: string }[] = [
-  { value: "blue", hex: "#3B82F6" },
-  { value: "red", hex: "#EF4444" },
-  { value: "green", hex: "#22C55E" },
-  { value: "orange", hex: "#F97316" },
-  { value: "purple", hex: "#A855F7" },
+  { value: "blue", hex: "#4A90D9" },
+  { value: "red", hex: "#D94A4A" },
+  { value: "green", hex: "#5AB55A" },
+  { value: "orange", hex: "#E89B3E" },
+  { value: "purple", hex: "#9B59B6" },
 ];
 
 export function EventDialog({
@@ -46,6 +49,9 @@ export function EventDialog({
   prefillTime,
 }: EventDialogProps) {
   const { t } = useTranslation();
+  const currentTheme = useThemeStore((state) => state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacTheme = currentTheme === "macosx";
 
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(selectedDate);
@@ -55,7 +61,6 @@ export function EventDialog({
   const [color, setColor] = useState<EventColor>("blue");
   const [notes, setNotes] = useState("");
 
-  // Reset form when dialog opens
   useEffect(() => {
     if (isOpen) {
       if (editingEvent) {
@@ -84,7 +89,7 @@ export function EventDialog({
         setNotes("");
       }
     }
-  }, [isOpen, editingEvent, selectedDate]);
+  }, [isOpen, editingEvent, selectedDate, prefillTime]);
 
   const handleSave = () => {
     if (!title.trim()) return;
@@ -98,127 +103,223 @@ export function EventDialog({
     });
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[360px]">
-        <DialogHeader>
-          <DialogTitle>
-            {editingEvent
-              ? t("apps.calendar.event.editEvent")
-              : t("apps.calendar.event.newEvent")}
-          </DialogTitle>
-        </DialogHeader>
+  const themeFont = isXpTheme
+    ? "font-['Pixelated_MS_Sans_Serif',Arial] text-[11px]"
+    : "font-geneva-12 text-[12px]";
 
-        <div className="grid gap-3 py-2">
-          {/* Title */}
-          <div className="grid gap-1.5">
-            <Label htmlFor="event-title">{t("apps.calendar.event.title")}</Label>
-            <Input
-              id="event-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t("apps.calendar.event.title")}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSave();
-              }}
-            />
-          </div>
+  const themeFontStyle: React.CSSProperties | undefined = isXpTheme
+    ? { fontFamily: '"Pixelated MS Sans Serif", "ArkPixel", Arial', fontSize: "11px" }
+    : undefined;
 
-          {/* Date */}
-          <div className="grid gap-1.5">
-            <Label htmlFor="event-date">{t("apps.calendar.event.date")}</Label>
-            <Input
-              id="event-date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </div>
+  const dialogTitle = editingEvent
+    ? t("apps.calendar.event.editEvent")
+    : t("apps.calendar.event.newEvent");
 
-          {/* All Day checkbox */}
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="event-allday"
-              checked={allDay}
-              onCheckedChange={(checked) => setAllDay(checked === true)}
-            />
-            <Label htmlFor="event-allday" className="cursor-pointer">
-              {t("apps.calendar.event.allDay")}
+  const dialogContent = (
+    <div className={isXpTheme ? "p-2 px-4 pb-4" : "p-4 px-6"}>
+      {/* Title */}
+      <div className="mb-3">
+        <Label
+          htmlFor="event-title"
+          className={cn("text-gray-700 mb-1 block", themeFont)}
+          style={themeFontStyle}
+        >
+          {t("apps.calendar.event.title")}
+        </Label>
+        <Input
+          id="event-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={t("apps.calendar.event.title")}
+          autoFocus
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            if (e.key === "Enter") handleSave();
+          }}
+          className={cn("shadow-none h-7", themeFont)}
+          style={themeFontStyle}
+        />
+      </div>
+
+      {/* Date */}
+      <div className="mb-3">
+        <Label
+          htmlFor="event-date"
+          className={cn("text-gray-700 mb-1 block", themeFont)}
+          style={themeFontStyle}
+        >
+          {t("apps.calendar.event.date")}
+        </Label>
+        <Input
+          id="event-date"
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className={cn("shadow-none h-7", themeFont)}
+          style={themeFontStyle}
+        />
+      </div>
+
+      {/* All Day */}
+      <div className="flex items-center gap-2 mb-3">
+        <Checkbox
+          id="event-allday"
+          checked={allDay}
+          onCheckedChange={(checked) => setAllDay(checked === true)}
+          className="h-3.5 w-3.5"
+        />
+        <Label
+          htmlFor="event-allday"
+          className={cn("cursor-pointer", themeFont)}
+          style={themeFontStyle}
+        >
+          {t("apps.calendar.event.allDay")}
+        </Label>
+      </div>
+
+      {/* Time inputs */}
+      {!allDay && (
+        <div className="flex gap-2 mb-3">
+          <div className="flex-1">
+            <Label
+              htmlFor="event-start"
+              className={cn("text-gray-700 mb-1 block", themeFont)}
+              style={themeFontStyle}
+            >
+              {t("apps.calendar.event.startTime")}
             </Label>
+            <Input
+              id="event-start"
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className={cn("shadow-none h-7", themeFont)}
+              style={themeFontStyle}
+            />
           </div>
-
-          {/* Time inputs (hidden when all-day) */}
-          {!allDay && (
-            <div className="grid grid-cols-2 gap-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="event-start">
-                  {t("apps.calendar.event.startTime")}
-                </Label>
-                <Input
-                  id="event-start"
-                  type="time"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="event-end">
-                  {t("apps.calendar.event.endTime")}
-                </Label>
-                <Input
-                  id="event-end"
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Color picker */}
-          <div className="grid gap-1.5">
-            <Label>{t("apps.calendar.event.color")}</Label>
-            <div className="flex gap-2">
-              {EVENT_COLORS.map((c) => (
-                <button
-                  key={c.value}
-                  type="button"
-                  onClick={() => setColor(c.value)}
-                  className="w-6 h-6 rounded-full border-2 transition-transform"
-                  style={{
-                    backgroundColor: c.hex,
-                    borderColor: color === c.value ? "#000" : "transparent",
-                    transform: color === c.value ? "scale(1.2)" : "scale(1)",
-                  }}
-                  aria-label={c.value}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className="grid gap-1.5">
-            <Label htmlFor="event-notes">{t("apps.calendar.event.notes")}</Label>
-            <textarea
-              id="event-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={t("apps.calendar.event.notes")}
-              rows={2}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+          <div className="flex-1">
+            <Label
+              htmlFor="event-end"
+              className={cn("text-gray-700 mb-1 block", themeFont)}
+              style={themeFontStyle}
+            >
+              {t("apps.calendar.event.endTime")}
+            </Label>
+            <Input
+              id="event-end"
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              className={cn("shadow-none h-7", themeFont)}
+              style={themeFontStyle}
             />
           </div>
         </div>
+      )}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t("apps.calendar.event.cancel")}
-          </Button>
-          <Button onClick={handleSave} disabled={!title.trim()}>
-            {t("apps.calendar.event.save")}
-          </Button>
-        </DialogFooter>
+      {/* Color */}
+      <div className="mb-3">
+        <Label
+          className={cn("text-gray-700 mb-1 block", themeFont)}
+          style={themeFontStyle}
+        >
+          {t("apps.calendar.event.color")}
+        </Label>
+        <div className="flex gap-1.5">
+          {EVENT_COLORS.map((c) => (
+            <button
+              key={c.value}
+              type="button"
+              onClick={() => setColor(c.value)}
+              className="w-5 h-5 rounded-full transition-all"
+              style={{
+                backgroundColor: c.hex,
+                border: color === c.value ? "2px solid #333" : "2px solid transparent",
+                boxShadow: color === c.value ? "0 0 0 1px rgba(255,255,255,0.8)" : "none",
+                transform: color === c.value ? "scale(1.15)" : "scale(1)",
+              }}
+              aria-label={c.value}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Notes */}
+      <div className="mb-3">
+        <Label
+          htmlFor="event-notes"
+          className={cn("text-gray-700 mb-1 block", themeFont)}
+          style={themeFontStyle}
+        >
+          {t("apps.calendar.event.notes")}
+        </Label>
+        <textarea
+          id="event-notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder={t("apps.calendar.event.notes")}
+          rows={2}
+          className={cn(
+            "flex w-full rounded-md border border-input bg-background px-3 py-1.5 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none shadow-none",
+            themeFont
+          )}
+          style={themeFontStyle}
+        />
+      </div>
+
+      {/* Footer */}
+      <DialogFooter className="mt-4 gap-1 sm:gap-0">
+        <Button
+          variant="retro"
+          onClick={() => onOpenChange(false)}
+          className={cn("h-7", themeFont)}
+          style={themeFontStyle}
+        >
+          {t("apps.calendar.event.cancel")}
+        </Button>
+        <Button
+          variant={isMacTheme ? "default" : "retro"}
+          onClick={handleSave}
+          disabled={!title.trim()}
+          className={cn(!isMacTheme && "h-7", themeFont)}
+          style={themeFontStyle}
+        >
+          {t("apps.calendar.event.save")}
+        </Button>
+      </DialogFooter>
+    </div>
+  );
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent
+        className={cn("max-w-[400px]", isXpTheme && "p-0 overflow-hidden")}
+        style={isXpTheme ? { fontSize: "11px" } : undefined}
+        onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
+      >
+        {isXpTheme ? (
+          <>
+            <DialogHeader>{dialogTitle}</DialogHeader>
+            <div className="window-body">{dialogContent}</div>
+          </>
+        ) : currentTheme === "macosx" ? (
+          <>
+            <DialogHeader>{dialogTitle}</DialogHeader>
+            {dialogContent}
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="font-normal text-[16px]">
+                {dialogTitle}
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                {dialogTitle}
+              </DialogDescription>
+            </DialogHeader>
+            {dialogContent}
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
