@@ -2,6 +2,8 @@
  * TypeScript types for listen-together sessions
  */
 
+import type { RealtimeSessionUser } from "../../_utils/realtime-session-types.js";
+
 // ============================================================================
 // Session Types
 // ============================================================================
@@ -12,11 +14,7 @@ export interface ListenTrackMeta {
   cover?: string;
 }
 
-export interface ListenSessionUser {
-  username: string;
-  joinedAt: number;
-  isOnline: boolean;
-}
+export type ListenSessionUser = RealtimeSessionUser;
 
 export interface ListenAnonymousListener {
   anonymousId: string;

@@ -17,6 +17,13 @@ export type RouteAction =
       urlCleanupTiming: UrlCleanupTiming;
     }
   | {
+      kind: "live-desktop-join";
+      sessionId: string;
+      delayMs: number;
+      toast?: RouteToastDescriptor;
+      urlCleanupTiming: UrlCleanupTiming;
+    }
+  | {
       kind: "cleanup";
       urlCleanupTiming: Exclude<UrlCleanupTiming, "never">;
     };
@@ -143,6 +150,20 @@ export function resolveInitialRoute(pathname: string): RouteAction | null {
     );
   }
 
+  const liveDesktopMatch = pathname.match(/^\/live\/(.+)$/);
+  if (liveDesktopMatch) {
+    return {
+      kind: "live-desktop-join",
+      sessionId: liveDesktopMatch[1],
+      delayMs: 0,
+      toast: {
+        type: "text",
+        message: "Joining live desktop...",
+      },
+      urlCleanupTiming: "immediate",
+    };
+  }
+
   const karaokeMatch = pathname.match(/^\/karaoke\/(.+)$/);
   if (karaokeMatch) {
     return createLaunchAction(
@@ -188,6 +209,7 @@ export function resolveInitialRoute(pathname: string): RouteAction | null {
     pathname.startsWith("/applet-viewer/") ||
     pathname.startsWith("/ipod/") ||
     pathname.startsWith("/listen/") ||
+    pathname.startsWith("/live/") ||
     pathname.startsWith("/karaoke/") ||
     pathname.startsWith("/videos/")
   ) {

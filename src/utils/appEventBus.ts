@@ -20,6 +20,10 @@ export interface WindowFocusRequest {
   instanceId: string;
 }
 
+export interface LiveDesktopJoinRequest {
+  sessionId: string;
+}
+
 export interface FileSavedEventDetail {
   name: string;
   path: string;
@@ -54,6 +58,7 @@ const APP_EVENT_NAMES = {
   launchApp: "launchApp",
   updateApp: "updateApp",
   focusWindow: "focusWindow",
+  liveDesktopJoin: "liveDesktopJoin",
   spotlightToggle: "toggleSpotlight",
   exposeToggle: "toggleExposeView",
   exposeWindowSelect: "exposeWindowSelect",
@@ -70,6 +75,7 @@ type AppEventDetailMap = {
   launchApp: AppLaunchRequest;
   updateApp: AppUpdateRequest;
   focusWindow: WindowFocusRequest;
+  liveDesktopJoin: LiveDesktopJoinRequest;
   spotlightToggle: undefined;
   exposeToggle: undefined;
   exposeWindowSelect: ExposeWindowSelectEventDetail;
@@ -171,6 +177,20 @@ export function onWindowFocusRequest(
   target?: AppEventTarget | null,
 ): () => void {
   return subscribeToEvent("focusWindow", handler, target);
+}
+
+export function requestLiveDesktopJoin(
+  detail: LiveDesktopJoinRequest,
+  target?: AppEventTarget | null,
+): void {
+  emitEvent("liveDesktopJoin", detail, target);
+}
+
+export function onLiveDesktopJoinRequest(
+  handler: (event: CustomEvent<LiveDesktopJoinRequest>) => void,
+  target?: AppEventTarget | null,
+): () => void {
+  return subscribeToEvent("liveDesktopJoin", handler, target);
 }
 
 export function toggleSpotlightSearch(target?: AppEventTarget | null): void {
