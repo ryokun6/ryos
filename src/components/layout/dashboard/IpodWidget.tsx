@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { useAppStore } from "@/stores/useAppStore";
 import { requestAppLaunch } from "@/utils/appEventBus";
 import {
   Play,
@@ -249,6 +250,10 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
   const toggleLoopCurrent = useIpodStore((s) => s.toggleLoopCurrent);
 
   const elapsedTime = useIpodStore((s) => s.elapsedTime);
+  const isIpodOpen = useAppStore(
+    (s) => Object.values(s.instances).some((inst) => inst.appId === "ipod" && inst.isOpen)
+  );
+
   const track = getCurrentTrack();
   const title = track?.title || "iPod";
   const artist = track?.artist || "";
@@ -256,13 +261,13 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
 
   const launchOrDo = useCallback(
     (action: () => void) => {
-      if (!hasTrack) {
+      if (!isIpodOpen) {
         requestAppLaunch({ appId: "ipod" });
         return;
       }
       action();
     },
-    [hasTrack]
+    [isIpodOpen]
   );
 
   const handlePlayPause = useCallback(() => launchOrDo(togglePlay), [launchOrDo, togglePlay]);

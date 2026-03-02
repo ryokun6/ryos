@@ -63,6 +63,7 @@ export function WidgetChrome({
     (e: React.PointerEvent) => {
       if ((e.target as HTMLElement).closest("[data-close-btn]")) return;
       if ((e.target as HTMLElement).closest("[data-flip-btn]")) return;
+      if ((e.target as HTMLElement).closest("button, input, select, textarea, a")) return;
       if (isFlipped) return;
       if (e.button !== 0) return;
       e.preventDefault();
