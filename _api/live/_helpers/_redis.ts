@@ -1,23 +1,23 @@
 /**
- * Redis helpers for listen-together sessions.
+ * Redis helpers for Live Desktop sessions.
  * Built on shared realtime session core utilities.
  */
 
-import type { ListenSession } from "./_types.js";
+import type { LiveDesktopSession } from "./_types.js";
 import {
-  LISTEN_SESSION_PREFIX,
-  LISTEN_SESSIONS_SET,
-  LISTEN_SESSION_TTL_SECONDS,
+  LIVE_SESSION_PREFIX,
+  LIVE_SESSIONS_SET,
+  LIVE_SESSION_TTL_SECONDS,
 } from "./_constants.js";
 import {
   createRealtimeSessionCore,
   parseRealtimeJSON,
 } from "../../_utils/realtime-session-core.js";
 
-const realtimeSessionCore = createRealtimeSessionCore<ListenSession>({
-  sessionPrefix: LISTEN_SESSION_PREFIX,
-  sessionsSetKey: LISTEN_SESSIONS_SET,
-  sessionTtlSeconds: LISTEN_SESSION_TTL_SECONDS,
+const realtimeSessionCore = createRealtimeSessionCore<LiveDesktopSession>({
+  sessionPrefix: LIVE_SESSION_PREFIX,
+  sessionsSetKey: LIVE_SESSIONS_SET,
+  sessionTtlSeconds: LIVE_SESSION_TTL_SECONDS,
 });
 
 export const generateSessionId = realtimeSessionCore.generateSessionId;
@@ -28,10 +28,6 @@ export const deleteSession = realtimeSessionCore.deleteSession;
 export const touchSession = realtimeSessionCore.touchSession;
 export const getActiveSessionIds = realtimeSessionCore.getActiveSessionIds;
 
-export function parseJSON<T>(data: unknown): T | null {
-  return parseRealtimeJSON<T>(data);
-}
-
-export function parseSessionData(data: unknown): ListenSession | null {
-  return parseRealtimeJSON<ListenSession>(data);
+export function parseSessionData(data: unknown): LiveDesktopSession | null {
+  return parseRealtimeJSON<LiveDesktopSession>(data);
 }
