@@ -1,7 +1,13 @@
 {
   "common": {
     "loading": {
-      "default": "Loading..."
+      "default": "Loading...",
+      "openingAppletStore": "Opening Applet Store...",
+      "openingSharedIELink": "Opening shared Internet Explorer link...",
+      "openingSharedApplet": "Opening shared applet...",
+      "openingSharedIpodTrack": "Opening shared iPod track...",
+      "openingSharedKaraokeTrack": "Opening shared Karaoke track...",
+      "openingSharedVideo": "Opening shared video..."
     },
     "activity": {
       "adding": "Adding",
@@ -10,7 +16,11 @@
     },
     "window": {
       "minimizeDisabled": "Minimize (disabled)",
-      "maximizeDisabled": "Maximize (disabled)"
+      "maximizeDisabled": "Maximize (disabled)",
+      "minimize": "Minimize",
+      "maximize": "Maximize",
+      "close": "Close",
+      "fullscreen": "Full Screen"
     },
     "colors": {
       "yellow": "yellow",
@@ -105,7 +115,9 @@
       }
     },
     "errors": {
-      "failedToAccessCamera": "Failed to access camera"
+      "failedToAccessCamera": "Failed to access camera",
+      "failedToFetchFurigana": "Failed to fetch furigana",
+      "failedToFetchSoramimi": "Failed to fetch soramimi"
     },
     "system": {
       "systemRestoring": "System Restoring...",
@@ -153,12 +165,6 @@
       "desktopHeading": "Desktop quit unexpectedly",
       "desktopDescription": "Reload ryOS to restore the Dock, Desktop, and menu bar.",
       "reloadDesktop": "Reload Desktop"
-    },
-    "window": {
-      "minimize": "Minimize",
-      "maximize": "Maximize",
-      "close": "Close",
-      "fullscreen": "Full Screen"
     },
     "keys": {
       "escape": "Escape",
@@ -236,10 +242,6 @@
       "logOut": "Log Out",
       "logOutDescription": "Are you sure you want to log out? You will be signed out of your account."
     },
-    "errors": {
-      "failedToFetchFurigana": "Failed to fetch furigana",
-      "failedToFetchSoramimi": "Failed to fetch soramimi"
-    },
     "htmlPreview": {
       "toastSaved": "Applet saved successfully",
       "toastSaveFailed": "Failed to save applet",
@@ -265,17 +267,6 @@
       "previous": "Previous",
       "next": "Next",
       "description": "Swipe left or right to navigate between open windows"
-    },
-    "loading": {
-      "openingAppletStore": "Opening Applet Store...",
-      "openingSharedIELink": "Opening shared Internet Explorer link...",
-      "openingSharedApplet": "Opening shared applet...",
-      "openingSharedIpodTrack": "Opening shared iPod track...",
-      "openingSharedKaraokeTrack": "Opening shared Karaoke track...",
-      "openingSharedVideo": "Opening shared video..."
-    },
-    "keys": {
-      "enter": "Enter"
     }
   },
   "spotlight": {
