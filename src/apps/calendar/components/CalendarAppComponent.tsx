@@ -330,7 +330,7 @@ function WeekTimeGrid({
                       type="button"
                       onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
                       onDoubleClick={(e) => { e.stopPropagation(); onEventDoubleClick(ev); }}
-                      className="absolute left-0.5 right-0.5 rounded text-left overflow-hidden transition-shadow"
+                      className="absolute left-0.5 right-0.5 rounded text-left overflow-hidden transition-shadow flex items-start"
                       style={{
                         top: Math.max(top, 0),
                         height,
@@ -342,14 +342,14 @@ function WeekTimeGrid({
                         zIndex: 2,
                       }}
                     >
-                      <div className="px-1 py-0.5">
-                        <div
-                          className={cn("text-[10px] font-semibold truncate", isMacOSTheme && "font-geneva-12")}
+                      <div className="px-1 py-0.5 flex flex-wrap items-baseline gap-x-1 min-w-0">
+                        <span
+                          className={cn("text-[10px] font-semibold shrink-0 whitespace-nowrap", isMacOSTheme && "font-geneva-12")}
                           style={{ color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue }}
                         >
                           {ev.startTime}
-                        </div>
-                        <div className="text-[10px] truncate leading-tight">{ev.title}</div>
+                        </span>
+                        <span className="text-[10px] truncate leading-tight">{ev.title}</span>
                       </div>
                     </button>
                   );
@@ -524,7 +524,7 @@ function DayTimeGrid({
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
                   onDoubleClick={(e) => { e.stopPropagation(); onEventDoubleClick(ev); }}
-                  className="absolute left-1 right-1 rounded text-left overflow-hidden transition-shadow"
+                  className="absolute left-1 right-1 rounded text-left overflow-hidden transition-shadow flex items-start"
                   style={{
                     top: Math.max(top, 0),
                     height,
@@ -536,11 +536,11 @@ function DayTimeGrid({
                     zIndex: 2,
                   }}
                 >
-                  <div className="px-1.5 py-0.5">
-                    <div className={cn("text-[11px] font-semibold truncate", isMacOSTheme && "font-geneva-12")} style={{ color: EVENT_COLOR_MAP[ev.color] }}>
+                  <div className="px-1.5 py-0.5 flex flex-wrap items-baseline gap-x-1.5 min-w-0">
+                    <span className={cn("text-[11px] font-semibold shrink-0 whitespace-nowrap", isMacOSTheme && "font-geneva-12")} style={{ color: EVENT_COLOR_MAP[ev.color] }}>
                       {ev.startTime}{ev.endTime ? ` – ${ev.endTime}` : ""}
-                    </div>
-                    <div className="text-xs truncate leading-tight">{ev.title}</div>
+                    </span>
+                    <span className="text-xs truncate leading-tight">{ev.title}</span>
                   </div>
                 </button>
               );
