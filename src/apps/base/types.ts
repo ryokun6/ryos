@@ -40,7 +40,9 @@ export interface BaseApp<TInitialData = unknown> {
     | "admin"
     | "stickies"
     | "infinite-mac"
-    | "winamp";
+    | "winamp"
+    | "calendar"
+    | "dashboard";
   name: string;
   icon: string | { type: "image"; src: string };
   description: string;

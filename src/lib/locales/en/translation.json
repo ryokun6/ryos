@@ -2514,6 +2514,68 @@
         }
       }
     },
+    "calendar": {
+      "name": "Calendar",
+      "title": "Calendar",
+      "description": "Calendar with events",
+      "menu": {
+        "newEvent": "New Event",
+        "deleteEvent": "Delete Event",
+        "dayView": "Day View",
+        "weekView": "Week View",
+        "monthView": "Month View",
+        "goToToday": "Go to Today",
+        "help": "Calendar Help",
+        "about": "About Calendar"
+      },
+      "views": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month"
+      },
+      "event": {
+        "title": "Title",
+        "date": "Date",
+        "startTime": "Start Time",
+        "endTime": "End Time",
+        "allDay": "All Day",
+        "notes": "Notes",
+        "color": "Color",
+        "save": "Save",
+        "cancel": "Cancel",
+        "newEvent": "New Event",
+        "editEvent": "Edit Event",
+        "deleteConfirm": "Delete this event?",
+        "noEvents": "No events"
+      },
+      "today": "Today"
+    },
+    "dashboard": {
+      "name": "Dashboard",
+      "title": "Dashboard",
+      "description": "Widget dashboard overlay",
+      "widgets": {
+        "clock": "Clock",
+        "calendar": "Calendar",
+        "weather": "Weather",
+        "addWidget": "Add Widget...",
+        "removeWidget": "Remove Widget"
+      },
+      "weather": {
+        "loading": "Loading weather...",
+        "enableLocation": "Enable location for weather",
+        "locationDenied": "Location access denied",
+        "feelsLike": "Feels like",
+        "humidity": "Humidity",
+        "wind": "Wind"
+      },
+      "menu": {
+        "help": "Dashboard Help",
+        "about": "About Dashboard",
+        "addWidget": "Add Widget",
+        "resetWidgets": "Reset to Defaults"
+      }
+    },
     "admin": {
       "name": "Admin",
       "description": "System administration panel",

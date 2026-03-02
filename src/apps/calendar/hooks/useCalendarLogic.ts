@@ -1,0 +1,404 @@
+import { useState, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
+import { useThemeStore } from "@/stores/useThemeStore";
+import {
+  useCalendarStore,
+  type CalendarEvent,
+  type EventColor,
+} from "@/stores/useCalendarStore";
+import { helpItems } from "../metadata";
+import { useShallow } from "zustand/react/shallow";
+
+export interface CalendarDayCell {
+  date: string; // YYYY-MM-DD
+  day: number;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  isSelected: boolean;
+  events: CalendarEvent[];
+}
+
+export interface WeekDay {
+  date: string; // YYYY-MM-DD
+  dayOfMonth: number;
+  dayName: string; // "Sun", "Mon", ...
+  isToday: boolean;
+  isSelected: boolean;
+  events: CalendarEvent[];
+  allDayEvents: CalendarEvent[];
+  timedEvents: CalendarEvent[];
+}
+
+/** Format Date as YYYY-MM-DD */
+const formatDate = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+const SHORT_DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export function useCalendarLogic() {
+  const { t } = useTranslation();
+  const translatedHelpItems = useTranslatedHelpItems("calendar", helpItems);
+
+  // Theme
+  const currentTheme = useThemeStore((state) => state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isMacTheme = currentTheme === "macosx" || currentTheme === "system7";
+  const isMacOSTheme = currentTheme === "macosx";
+  const isSystem7Theme = currentTheme === "system7";
+  const isClassicTheme = isXpTheme || isSystem7Theme; // non-Aqua themes
+
+  // Dialog states
+  const [isHelpDialogOpen, setIsHelpDialogOpen] = useState(false);
+  const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
+  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+
+  // Store
+  const {
+    events,
+    selectedDate,
+    currentMonth,
+    currentYear,
+    view,
+    addEvent,
+    updateEvent,
+    deleteEvent,
+    setSelectedDate,
+    setView,
+    navigateMonth,
+    navigateWeek,
+    goToToday,
+  } = useCalendarStore(
+    useShallow((state) => ({
+      events: state.events,
+      selectedDate: state.selectedDate,
+      currentMonth: state.currentMonth,
+      currentYear: state.currentYear,
+      view: state.view,
+      addEvent: state.addEvent,
+      updateEvent: state.updateEvent,
+      deleteEvent: state.deleteEvent,
+      setSelectedDate: state.setSelectedDate,
+      setView: state.setView,
+      navigateMonth: state.navigateMonth,
+      navigateWeek: state.navigateWeek,
+      goToToday: state.goToToday,
+    }))
+  );
+
+  // Today string
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    return formatDate(d);
+  }, []);
+
+  // ==========================================================================
+  // WEEK VIEW DATA
+  // ==========================================================================
+
+  /** 7 dates (Sun–Sat) of the week containing selectedDate */
+  const weekDates = useMemo((): WeekDay[] => {
+    const [y, m, d] = selectedDate.split("-").map(Number);
+    const sel = new Date(y, m - 1, d);
+    const dayOfWeek = sel.getDay(); // 0=Sun
+    const sunday = new Date(sel);
+    sunday.setDate(sunday.getDate() - dayOfWeek);
+
+    // Build event lookup
+    const eventsByDate = new Map<string, CalendarEvent[]>();
+    for (const ev of events) {
+      const existing = eventsByDate.get(ev.date);
+      if (existing) existing.push(ev);
+      else eventsByDate.set(ev.date, [ev]);
+    }
+
+    const days: WeekDay[] = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(sunday);
+      date.setDate(date.getDate() + i);
+      const dateStr = formatDate(date);
+      const dayEvents = eventsByDate.get(dateStr) || [];
+
+      days.push({
+        date: dateStr,
+        dayOfMonth: date.getDate(),
+        dayName: SHORT_DAY_NAMES[date.getDay()],
+        isToday: dateStr === todayStr,
+        isSelected: dateStr === selectedDate,
+        events: dayEvents,
+        allDayEvents: dayEvents.filter((ev) => !ev.startTime),
+        timedEvents: dayEvents
+          .filter((ev) => !!ev.startTime)
+          .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || "")),
+      });
+    }
+    return days;
+  }, [selectedDate, events, todayStr]);
+
+  /** Label for the week header, e.g. "Mar 2 – 8, 2026" */
+  const weekLabel = useMemo(() => {
+    if (weekDates.length === 0) return "";
+    const first = weekDates[0];
+    const last = weekDates[6];
+    const [fy, fm, fd] = first.date.split("-").map(Number);
+    const [ly, lm, ld] = last.date.split("-").map(Number);
+    const firstDate = new Date(fy, fm - 1, fd);
+    const lastDate = new Date(ly, lm - 1, ld);
+
+    const fMonth = firstDate.toLocaleDateString(undefined, { month: "short" });
+    const lMonth = lastDate.toLocaleDateString(undefined, { month: "short" });
+
+    if (fm === lm) {
+      return `${fMonth} ${fd} – ${ld}, ${fy}`;
+    }
+    return `${fMonth} ${fd} – ${lMonth} ${ld}, ${ly}`;
+  }, [weekDates]);
+
+  // ==========================================================================
+  // MONTH VIEW DATA
+  // ==========================================================================
+
+  const calendarGrid = useMemo((): CalendarDayCell[][] => {
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const startDayOfWeek = firstDay.getDay();
+
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+    const eventsByDate = new Map<string, CalendarEvent[]>();
+    for (const ev of events) {
+      const existing = eventsByDate.get(ev.date);
+      if (existing) existing.push(ev);
+      else eventsByDate.set(ev.date, [ev]);
+    }
+
+    const weeks: CalendarDayCell[][] = [];
+    let dayCounter = 1;
+    let nextMonthCounter = 1;
+
+    for (let week = 0; week < 6; week++) {
+      const row: CalendarDayCell[] = [];
+      for (let dow = 0; dow < 7; dow++) {
+        const cellIndex = week * 7 + dow;
+
+        if (cellIndex < startDayOfWeek) {
+          const prevDay = daysInPrevMonth - startDayOfWeek + cellIndex + 1;
+          const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+          const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+          const dateStr = `${prevYear}-${String(prevMonth + 1).padStart(2, "0")}-${String(prevDay).padStart(2, "0")}`;
+          row.push({
+            date: dateStr,
+            day: prevDay,
+            isCurrentMonth: false,
+            isToday: dateStr === todayStr,
+            isSelected: dateStr === selectedDate,
+            events: eventsByDate.get(dateStr) || [],
+          });
+        } else if (dayCounter <= daysInMonth) {
+          const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(dayCounter).padStart(2, "0")}`;
+          row.push({
+            date: dateStr,
+            day: dayCounter,
+            isCurrentMonth: true,
+            isToday: dateStr === todayStr,
+            isSelected: dateStr === selectedDate,
+            events: eventsByDate.get(dateStr) || [],
+          });
+          dayCounter++;
+        } else {
+          const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+          const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+          const dateStr = `${nextYear}-${String(nextMonth + 1).padStart(2, "0")}-${String(nextMonthCounter).padStart(2, "0")}`;
+          row.push({
+            date: dateStr,
+            day: nextMonthCounter,
+            isCurrentMonth: false,
+            isToday: dateStr === todayStr,
+            isSelected: dateStr === selectedDate,
+            events: eventsByDate.get(dateStr) || [],
+          });
+          nextMonthCounter++;
+        }
+      }
+      weeks.push(row);
+    }
+    return weeks;
+  }, [currentYear, currentMonth, events, todayStr, selectedDate]);
+
+  // Events for the selected date
+  const selectedDateEvents = useMemo(() => {
+    return events
+      .filter((ev) => ev.date === selectedDate)
+      .sort((a, b) => {
+        if (!a.startTime && b.startTime) return -1;
+        if (a.startTime && !b.startTime) return 1;
+        if (a.startTime && b.startTime)
+          return a.startTime.localeCompare(b.startTime);
+        return a.createdAt - b.createdAt;
+      });
+  }, [events, selectedDate]);
+
+  // Month/Year display label
+  const monthYearLabel = useMemo(() => {
+    const date = new Date(currentYear, currentMonth, 1);
+    return date.toLocaleDateString(undefined, {
+      month: "long",
+      year: "numeric",
+    });
+  }, [currentYear, currentMonth]);
+
+  // Selected date display label
+  const selectedDateLabel = useMemo(() => {
+    const [year, month, day] = selectedDate.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, [selectedDate]);
+
+  // ==========================================================================
+  // HANDLERS
+  // ==========================================================================
+
+  const handleDateClick = useCallback(
+    (date: string) => {
+      setSelectedDate(date);
+    },
+    [setSelectedDate]
+  );
+
+  const handleDateDoubleClick = useCallback(
+    (date: string) => {
+      setSelectedDate(date);
+      setEditingEvent(null);
+      setIsEventDialogOpen(true);
+    },
+    [setSelectedDate]
+  );
+
+  /** Create a new event pre-filled with a specific time */
+  const handleNewEventAtTime = useCallback(
+    (date: string, hour: number) => {
+      setSelectedDate(date);
+      setEditingEvent(null);
+      // We'll pass the pre-filled time via a ref or state
+      setIsEventDialogOpen(true);
+      // Store the prefill time for the dialog
+      setPrefillTime({
+        date,
+        startTime: `${String(hour).padStart(2, "0")}:00`,
+        endTime: `${String(hour + 1).padStart(2, "0")}:00`,
+      });
+    },
+    [setSelectedDate]
+  );
+
+  const [prefillTime, setPrefillTime] = useState<{
+    date: string;
+    startTime: string;
+    endTime: string;
+  } | null>(null);
+
+  const handleNewEvent = useCallback(() => {
+    setEditingEvent(null);
+    setPrefillTime(null);
+    setIsEventDialogOpen(true);
+  }, []);
+
+  const handleEditEvent = useCallback((event: CalendarEvent) => {
+    setEditingEvent(event);
+    setPrefillTime(null);
+    setIsEventDialogOpen(true);
+  }, []);
+
+  const handleSaveEvent = useCallback(
+    (eventData: {
+      title: string;
+      date: string;
+      startTime?: string;
+      endTime?: string;
+      color: EventColor;
+      notes?: string;
+    }) => {
+      if (editingEvent) {
+        updateEvent(editingEvent.id, eventData);
+      } else {
+        addEvent(eventData);
+      }
+      setIsEventDialogOpen(false);
+      setEditingEvent(null);
+      setPrefillTime(null);
+    },
+    [editingEvent, addEvent, updateEvent]
+  );
+
+  const handleDeleteSelectedEvent = useCallback(() => {
+    if (selectedEventId) {
+      deleteEvent(selectedEventId);
+      setSelectedEventId(null);
+    }
+  }, [selectedEventId, deleteEvent]);
+
+  return {
+    // i18n
+    t,
+    translatedHelpItems,
+
+    // Theme
+    currentTheme,
+    isXpTheme,
+    isMacTheme,
+    isMacOSTheme,
+    isSystem7Theme,
+    isClassicTheme,
+
+    // Dialogs
+    isHelpDialogOpen,
+    setIsHelpDialogOpen,
+    isAboutDialogOpen,
+    setIsAboutDialogOpen,
+    isEventDialogOpen,
+    setIsEventDialogOpen,
+
+    // Calendar state
+    selectedDate,
+    currentMonth,
+    currentYear,
+    view,
+    monthYearLabel,
+    selectedDateLabel,
+    calendarGrid,
+    selectedDateEvents,
+    todayStr,
+
+    // Week view
+    weekDates,
+    weekLabel,
+    navigateWeek,
+
+    // Event state
+    editingEvent,
+    setEditingEvent,
+    selectedEventId,
+    setSelectedEventId,
+    prefillTime,
+
+    // Actions
+    setSelectedDate,
+    setView,
+    navigateMonth,
+    goToToday,
+    handleDateClick,
+    handleDateDoubleClick,
+    handleNewEvent,
+    handleNewEventAtTime,
+    handleEditEvent,
+    handleSaveEvent,
+    handleDeleteSelectedEvent,
+  };
+}

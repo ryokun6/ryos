@@ -256,9 +256,34 @@ export function AppManager({ apps }: AppManagerProps) {
     return onAppLaunchRequest(handleAppLaunch);
   }, []);
 
+  // Dashboard toggle helper: launch if not open, close if open
+  const toggleDashboard = () => {
+    const insts = instancesRef.current;
+    const dashboardInstance = Object.values(insts).find(
+      (inst) => inst.appId === "dashboard" && inst.isOpen
+    );
+    if (dashboardInstance) {
+      closeAppInstance(dashboardInstance.instanceId);
+    } else {
+      launchAppRef.current("dashboard");
+    }
+  };
+
+  // Close Dashboard if it's currently open
+  const closeDashboardIfOpen = () => {
+    const insts = instancesRef.current;
+    const dashboardInstance = Object.values(insts).find(
+      (inst) => inst.appId === "dashboard" && inst.isOpen
+    );
+    if (dashboardInstance) {
+      closeAppInstance(dashboardInstance.instanceId);
+    }
+  };
+
   // Listen for expose view toggle events (e.g., from keyboard shortcut, dock menu)
   useEffect(() => {
     const handleExposeToggle = () => {
+      closeDashboardIfOpen();
       setIsExposeViewOpen((prev) => !prev);
     };
 
@@ -266,13 +291,23 @@ export function AppManager({ apps }: AppManagerProps) {
       // F3 key to toggle Expose view (Mission Control)
       if (e.key === "F3" || (e.key === "f" && e.metaKey)) {
         e.preventDefault();
+        // Close Dashboard if open
+        closeDashboardIfOpen();
         setIsExposeViewOpen((prev) => !prev);
+      }
+      // F4 key to toggle Dashboard
+      if (e.key === "F4") {
+        e.preventDefault();
+        // Close Expose if open
+        setIsExposeViewOpen(false);
+        toggleDashboard();
       }
       // ⌘+Space / Ctrl+Space to toggle Spotlight Search
       if (e.key === " " && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        // Close Expose if open before toggling Spotlight
+        // Close Expose and Dashboard if open before toggling Spotlight
         setIsExposeViewOpen(false);
+        closeDashboardIfOpen();
         toggleSpotlightSearch();
       }
     };
@@ -280,6 +315,7 @@ export function AppManager({ apps }: AppManagerProps) {
     // Close Expose when Spotlight opens via any trigger (icon click, Start Menu "Run...")
     const handleSpotlightToggle = () => {
       setIsExposeViewOpen(false);
+      closeDashboardIfOpen();
     };
 
     const unsubscribeExposeToggle = onExposeToggle(handleExposeToggle);

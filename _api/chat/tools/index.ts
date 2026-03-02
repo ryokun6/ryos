@@ -147,6 +147,15 @@ export const TOOL_DESCRIPTIONS = {
     "IMPORTANT: Mouse coordinates are 1:1 with the screenshot pixels - use exact pixel positions from the image. " +
     "Mouse control works best on classic Mac OS (System 1-9). Mac OS X systems have limited mouse support due to emulator constraints.",
 
+  calendarControl:
+    "Manage calendar events in ryOS. Actions: " +
+    "'list' returns all events (optionally filter by date); " +
+    "'create' adds a new event (requires title and date in YYYY-MM-DD format, optional startTime/endTime in HH:MM, color, notes); " +
+    "'update' modifies an existing event by ID; " +
+    "'delete' removes an event by ID. " +
+    "The Calendar app opens automatically when creating events. " +
+    "Use 'list' first to get event IDs before updating or deleting.",
+
   // Unified Memory Tools
   memoryWrite:
     "Write to user memory. Supports two types via the 'type' parameter:\n" +
@@ -326,6 +335,15 @@ export function createChatTools(context: MemoryToolContext) {
         // For other outputs, return as JSON
         return { type: "json" as const, value: output };
       },
+    },
+
+    // ============================================================================
+    // Calendar Control Tools (Client-side execution)
+    // ============================================================================
+    calendarControl: {
+      description: TOOL_DESCRIPTIONS.calendarControl,
+      inputSchema: schemas.calendarControlSchema,
+      // No execute - handled client-side (requires Zustand store access)
     },
 
     // ============================================================================

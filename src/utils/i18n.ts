@@ -21,7 +21,9 @@ export type AppId =
   | "admin"
   | "stickies"
   | "infinite-mac"
-  | "winamp";
+  | "winamp"
+  | "calendar"
+  | "dashboard";
 
 /**
  * Get translated app name with theme-awareness
@@ -146,6 +148,8 @@ export function getTranslatedHelpItems(appId: AppId): Array<{
     stickies: ["createNote", "colors", "deleteNote", "autoSave"],
     "infinite-mac": ["classicMacEmulator", "selectSystem", "pauseResume", "backToSystems"],
     winamp: ["playMusic", "equalizer", "playlist", "skins", "shuffleRepeat", "controls"],
+    calendar: ["navigateMonths", "createEvents", "dayView", "colorCoding", "deleteEvents", "autoSave"],
+    dashboard: ["openDashboard", "clockWidget", "calendarWidget", "weatherWidget", "moveWidgets", "closeDashboard"],
   };
 
   const keys = helpKeys[appId] || [];

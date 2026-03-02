@@ -271,6 +271,50 @@ export interface InfiniteMacControlOutput {
 }
 
 // ============================================================================
+// Calendar Control Types
+// ============================================================================
+
+export const CALENDAR_ACTIONS = ["list", "create", "update", "delete"] as const;
+export type CalendarAction = typeof CALENDAR_ACTIONS[number];
+
+export const CALENDAR_COLORS = ["blue", "red", "green", "orange", "purple"] as const;
+export type CalendarColor = typeof CALENDAR_COLORS[number];
+
+export interface CalendarControlInput {
+  action: CalendarAction;
+  id?: string;
+  title?: string;
+  date?: string; // YYYY-MM-DD
+  startTime?: string; // HH:MM
+  endTime?: string; // HH:MM
+  color?: CalendarColor;
+  notes?: string;
+}
+
+export interface CalendarControlOutput {
+  success: boolean;
+  message: string;
+  events?: Array<{
+    id: string;
+    title: string;
+    date: string;
+    startTime?: string;
+    endTime?: string;
+    color: string;
+    notes?: string;
+  }>;
+  event?: {
+    id: string;
+    title: string;
+    date: string;
+    startTime?: string;
+    endTime?: string;
+    color: string;
+    notes?: string;
+  };
+}
+
+// ============================================================================
 // Memory Tool Types (Unified for both daily notes and long-term memories)
 // ============================================================================
 

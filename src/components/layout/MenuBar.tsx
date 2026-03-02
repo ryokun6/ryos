@@ -46,7 +46,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { isTauri, isTauriWindows } from "@/utils/platform";
 import { useSpotlightStore } from "@/stores/useSpotlightStore";
-import { toggleExposeView, toggleSpotlightSearch } from "@/utils/appEventBus";
+import { toggleExposeView, toggleSpotlightSearch, requestAppLaunch } from "@/utils/appEventBus";
 
 // Helper function to get app name (using translations)
 const getAppName = (appId: string): string => {
@@ -281,9 +281,10 @@ function ScrollableMenuWrapper({ children }: { children: React.ReactNode }) {
 
 interface ClockProps {
   enableExposeToggle?: boolean;
+  enableCalendarOpen?: boolean;
 }
 
-function Clock({ enableExposeToggle = false }: ClockProps) {
+function Clock({ enableExposeToggle = false, enableCalendarOpen = false }: ClockProps) {
   const [time, setTime] = useState(new Date());
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   const currentTheme = useThemeStore((state) => state.current);
@@ -296,9 +297,12 @@ function Clock({ enableExposeToggle = false }: ClockProps) {
   // Determine if locale prefers 24-hour format
   const prefers24Hour = ["zh-TW", "ja", "de", "fr", "ko"].includes(currentLocale);
   
-  // Handle click to toggle expose view
+  // Handle click on clock
   const handleClick = () => {
-    if (enableExposeToggle) {
+    if (enableCalendarOpen) {
+      // Open Calendar app when clicking the clock/date
+      requestAppLaunch({ appId: "calendar" });
+    } else if (enableExposeToggle) {
       toggleExposeView();
     }
   };
@@ -406,7 +410,7 @@ function Clock({ enableExposeToggle = false }: ClockProps) {
             : undefined,
       }}
       onClick={handleClick}
-      title={enableExposeToggle ? t("common.menuBar.showAllWindows") : undefined}
+      title={enableCalendarOpen ? t("apps.calendar.title") : enableExposeToggle ? t("common.menuBar.showAllWindows") : undefined}
     >
       {displayTime}
     </div>
@@ -1530,7 +1534,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
         <div className="hidden sm:flex">
           <VolumeControl />
         </div>
-        <Clock enableExposeToggle />
+        <Clock enableCalendarOpen />
         <SpotlightMenuBarButton />
       </div>
     </div>
