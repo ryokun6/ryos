@@ -17,7 +17,29 @@ const AUTO_PROXY_DOMAINS = [
   "wikimedia.org",
   "wikipedia.com",
   "cursor.com",
-  // Add more domains as needed
+  "github.com",
+  "stackoverflow.com",
+  "stackexchange.com",
+  "reddit.com",
+  "twitter.com",
+  "x.com",
+  "medium.com",
+  "nytimes.com",
+  "bbc.com",
+  "bbc.co.uk",
+  "theguardian.com",
+  "cnn.com",
+  "washingtonpost.com",
+  "linkedin.com",
+  "instagram.com",
+  "facebook.com",
+  "amazon.com",
+  "youtube.com",
+  "twitch.tv",
+  "netflix.com",
+  "docs.google.com",
+  "drive.google.com",
+  "mail.google.com",
 ];
 
 /**
@@ -519,7 +541,7 @@ export default apiHandler(
           method: "GET",
           headers: BROWSER_HEADERS,
         },
-        { maxRedirects: 5 }
+        { maxRedirects: 10 }
       );
 
       if (!fetchRes.ok) {
@@ -635,7 +657,12 @@ export default apiHandler(
     logger.info(`Executing in 'proxy' mode for: ${targetUrl}`);
     // Create an AbortController with timeout for the upstream fetch
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000); // 15-second timeout
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30-second timeout
+
+    // Add Referer header for the target site (some sites require valid referer)
+    try {
+      BROWSER_HEADERS['Referer'] = new URL(targetUrl).origin + '/';
+    } catch { /* ignore URL parse errors */ }
 
     try {
       const { response: upstreamRes, finalUrl } = await safeFetchWithRedirects(
@@ -645,7 +672,7 @@ export default apiHandler(
           signal: controller.signal,
           headers: BROWSER_HEADERS,
         },
-        { maxRedirects: 5 }
+        { maxRedirects: 10 }
       );
 
       clearTimeout(timeout); // Clear timeout on successful fetch
@@ -672,12 +699,24 @@ export default apiHandler(
       let pageTitle: string | undefined = undefined; // Initialize title for proxy mode
 
       // Set response headers
-      res.setHeader("content-security-policy", "frame-ancestors *; sandbox allow-scripts allow-forms allow-same-origin allow-popups allow-pointer-lock");
+      res.setHeader("content-security-policy", "frame-ancestors *");
       res.setHeader("access-control-allow-origin", "*");
 
       // If it's HTML, inject the <base> tag and click interceptor script
       if (contentType.includes("text/html")) {
         let html = await upstreamRes.text();
+
+        // --- Sanitize HTML for proxy embedding ---
+        // Strip existing <base> tags to prevent conflicts with our injected base tag
+        html = html.replace(/<base\s[^>]*>/gi, '');
+        // Strip meta CSP tags that block resource loading in proxied context
+        html = html.replace(/<meta[^>]*http-equiv\s*=\s*["']?Content-Security-Policy["']?[^>]*>/gi, '');
+        // Strip meta X-Frame-Options tags
+        html = html.replace(/<meta[^>]*http-equiv\s*=\s*["']?X-Frame-Options["']?[^>]*>/gi, '');
+        // Strip meta refresh redirects (they bypass the proxy and cause broken navigation)
+        html = html.replace(/<meta[^>]*http-equiv\s*=\s*["']?refresh["']?[^>]*>/gi, '');
+        // Strip Content-Security-Policy headers embedded via <meta> with reversed attribute order
+        html = html.replace(/<meta[^>]*content\s*=\s*["'][^"']*["'][^>]*http-equiv\s*=\s*["']?Content-Security-Policy["']?[^>]*>/gi, '');
 
         // Extract title before modifying HTML
         const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
@@ -717,54 +756,99 @@ export default apiHandler(
 <script>
 (function() {
   'use strict';
-  
-  // Helper to resolve and post navigation URL to parent
+
+  // Save real parent reference BEFORE any overrides
+  var realParent = window.parent;
+
+  // Helper to resolve and post navigation URL to real parent
   function postNavigation(url, source) {
     try {
       var absoluteUrl = new URL(url, document.baseURI || window.location.href).href;
-      // Skip javascript: URLs, anchors, and blob/data URLs
-      if (absoluteUrl.startsWith('javascript:') || 
-          absoluteUrl.startsWith('blob:') || 
+      if (absoluteUrl.startsWith('javascript:') ||
+          absoluteUrl.startsWith('blob:') ||
           absoluteUrl.startsWith('data:') ||
           (absoluteUrl.indexOf('#') !== -1 && absoluteUrl.split('#')[0] === window.location.href.split('#')[0])) {
         return false;
       }
-      window.parent.postMessage({ type: 'iframeNavigation', url: absoluteUrl, source: source }, '*');
+      realParent.postMessage({ type: 'iframeNavigation', url: absoluteUrl, source: source }, '*');
       return true;
     } catch (e) {
-      console.error('[IE Proxy] Error posting navigation:', e);
       return false;
     }
   }
-  
-  // Click interceptor - capture phase for highest priority
+
+  // --- Frame-busting neutralization ---
+  // Make the page think it is the top-level window so that
+  // "if (top !== self) top.location = ..." guards become no-ops.
+  try {
+    Object.defineProperty(window, 'top', {
+      get: function() { return window.self; },
+      configurable: true
+    });
+  } catch(e) {}
+
+  try {
+    Object.defineProperty(window, 'parent', {
+      get: function() { return window.self; },
+      configurable: true
+    });
+  } catch(e) {}
+
+  try {
+    Object.defineProperty(window, 'frameElement', {
+      get: function() { return null; },
+      configurable: true
+    });
+  } catch(e) {}
+
+  // --- Block Service Worker registration (prevents SW interference in proxied context) ---
+  try {
+    var fakeReg = {
+      installing: null, waiting: null, active: null, scope: '',
+      unregister: function() { return Promise.resolve(true); },
+      update: function() { return Promise.resolve(); },
+      addEventListener: function() {}, removeEventListener: function() {}
+    };
+    Object.defineProperty(navigator, 'serviceWorker', {
+      get: function() {
+        return {
+          register: function() { return Promise.resolve(fakeReg); },
+          getRegistration: function() { return Promise.resolve(undefined); },
+          getRegistrations: function() { return Promise.resolve([]); },
+          ready: Promise.resolve(fakeReg),
+          controller: null,
+          addEventListener: function() {}, removeEventListener: function() {}
+        };
+      },
+      configurable: true
+    });
+  } catch(e) {}
+
+  // --- Suppress Notification / Push permission requests ---
+  try {
+    if (window.Notification) {
+      window.Notification.requestPermission = function() { return Promise.resolve('denied'); };
+    }
+  } catch(e) {}
+
+  // --- Click interceptor (capture phase for highest priority) ---
   function handleClick(event) {
-    // Skip if modifier keys are pressed (let browser handle new tab/window)
     if (event.ctrlKey || event.metaKey || event.shiftKey) return;
-    // Only handle left clicks
     if (event.button !== 0) return;
-    
+
     var target = event.target;
     var anchor = null;
-    
-    // Walk up the DOM tree to find an anchor element
+
     while (target && target !== document.documentElement) {
       if (target.tagName === 'A' && target.href) {
         anchor = target;
         break;
       }
-      // Check for elements with onclick that navigate
       target = target.parentElement;
     }
-    
+
     if (anchor && anchor.href) {
       var href = anchor.getAttribute('href');
-      // Skip if target is _blank or similar
-      var linkTarget = anchor.getAttribute('target');
-      if (linkTarget === '_blank' || linkTarget === '_top' || linkTarget === '_parent') {
-        // Still intercept but let parent decide
-      }
-      
       if (postNavigation(href, 'click')) {
         event.preventDefault();
         event.stopPropagation();
@@ -772,16 +856,15 @@ export default apiHandler(
       }
     }
   }
-  
-  // Form submission interceptor
+
+  // --- Form submission interceptor ---
   function handleSubmit(event) {
     var form = event.target;
     if (form && form.tagName === 'FORM') {
       var action = form.getAttribute('action') || window.location.href;
       var method = (form.getAttribute('method') || 'GET').toUpperCase();
-      
+
       if (method === 'GET') {
-        // For GET forms, construct the URL with query params
         var formData = new FormData(form);
         var params = new URLSearchParams();
         formData.forEach(function(value, key) {
@@ -794,13 +877,12 @@ export default apiHandler(
           event.stopImmediatePropagation();
         }
       }
-      // For POST forms, let them go through (they'll be blocked by CORS anyway)
     }
   }
-  
-  // Mousedown interceptor for middle-click
+
+  // --- Mousedown interceptor for middle-click ---
   function handleMouseDown(event) {
-    if (event.button === 1) { // Middle click
+    if (event.button === 1) {
       var target = event.target;
       while (target && target !== document.documentElement) {
         if (target.tagName === 'A' && target.href) {
@@ -816,22 +898,18 @@ export default apiHandler(
       }
     }
   }
-  
-  // Add event listeners with capture phase for highest priority
+
   document.addEventListener('click', handleClick, true);
   document.addEventListener('submit', handleSubmit, true);
   document.addEventListener('mousedown', handleMouseDown, true);
-  
-  // Also listen on window in case document listeners are removed
   window.addEventListener('click', handleClick, true);
-  
-  // Re-add listeners periodically in case site removes them
+
   setInterval(function() {
     document.removeEventListener('click', handleClick, true);
     document.addEventListener('click', handleClick, true);
   }, 2000);
-  
-  // Patch window.location assignments
+
+  // --- Patch window.location assignments ---
   var locationDescriptor = Object.getOwnPropertyDescriptor(window, 'location');
   if (locationDescriptor && locationDescriptor.configurable !== false) {
     try {
@@ -839,24 +917,19 @@ export default apiHandler(
       Object.defineProperty(window, 'location', {
         get: function() { return originalLocation; },
         set: function(url) {
-          if (postNavigation(url, 'location-set')) {
-            return;
-          }
+          if (postNavigation(url, 'location-set')) return;
           originalLocation.href = url;
         },
         configurable: true
       });
-    } catch (e) {
-      // Location override failed, continue without it
-    }
+    } catch (e) {}
   }
-  
-  // Patch location.href, location.assign, location.replace
+
   try {
     var loc = window.location;
     var originalAssign = loc.assign;
     var originalReplace = loc.replace;
-    
+
     if (originalAssign) {
       loc.assign = function(url) {
         if (!postNavigation(url, 'location-assign')) {
@@ -864,7 +937,7 @@ export default apiHandler(
         }
       };
     }
-    
+
     if (originalReplace) {
       loc.replace = function(url) {
         if (!postNavigation(url, 'location-replace')) {
@@ -872,8 +945,7 @@ export default apiHandler(
         }
       };
     }
-    
-    // Try to intercept href setter
+
     var hrefDescriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(loc), 'href');
     if (hrefDescriptor && hrefDescriptor.set) {
       var originalHrefSetter = hrefDescriptor.set;
@@ -887,11 +959,9 @@ export default apiHandler(
         configurable: true
       });
     }
-  } catch (e) {
-    // Location patching failed, continue without it
-  }
-  
-  // Patch history API to avoid cross-origin SecurityError (e.g. Next.js apps inside proxy)
+  } catch (e) {}
+
+  // --- Patch history API to avoid cross-origin SecurityError ---
   var makeRelative = function(url) {
     try {
       if (!url) return url;
@@ -902,7 +972,7 @@ export default apiHandler(
     } catch (e) {}
     return url;
   };
-  
+
   ['pushState', 'replaceState'].forEach(function(fn) {
     var original = history[fn];
     if (typeof original === 'function') {
@@ -910,21 +980,57 @@ export default apiHandler(
         try {
           return original.call(this, state, title, makeRelative(url));
         } catch (err) {
-          console.warn('[IE Proxy] history.' + fn + ' blocked URL', url, err);
           return original.call(this, state, title, null);
         }
       };
     }
   });
-  
-  // Intercept window.open
+
+  // --- Intercept window.open ---
   var originalOpen = window.open;
   window.open = function(url, target, features) {
-    if (url && postNavigation(url, 'window-open')) {
-      return null;
-    }
+    if (url && postNavigation(url, 'window-open')) return null;
     return originalOpen ? originalOpen.call(window, url, target, features) : null;
   };
+
+  // --- Sub-resource proxy: route fetch/XHR through the proxy for CORS-blocked requests ---
+  var proxyOrigin = window.location.origin;
+  var baseOrigin = null;
+  try { baseOrigin = new URL(document.baseURI).origin; } catch(e) {}
+
+  if (baseOrigin && baseOrigin !== proxyOrigin) {
+    var origFetch = window.fetch;
+    window.fetch = function(input, init) {
+      try {
+        var url = typeof input === 'string' ? input : (input instanceof Request ? input.url : String(input));
+        var resolved = new URL(url, document.baseURI);
+        var method = 'GET';
+        if (init && init.method) method = init.method.toUpperCase();
+        else if (input instanceof Request) method = input.method.toUpperCase();
+
+        if (method === 'GET' && resolved.origin === baseOrigin) {
+          var proxyUrl = proxyOrigin + '/api/iframe-check?url=' + encodeURIComponent(resolved.href);
+          return origFetch.call(window, proxyUrl, init);
+        }
+      } catch(e) {}
+      return origFetch.call(window, input, init);
+    };
+
+    var origXHROpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function() {
+      try {
+        var method = arguments[0];
+        var url = arguments[1];
+        if (typeof url === 'string' && method && method.toUpperCase() === 'GET') {
+          var resolved = new URL(url, document.baseURI);
+          if (resolved.origin === baseOrigin) {
+            arguments[1] = proxyOrigin + '/api/iframe-check?url=' + encodeURIComponent(resolved.href);
+          }
+        }
+      } catch(e) {}
+      return origXHROpen.apply(this, arguments);
+    };
+  }
 })();
 </script>
 `;
