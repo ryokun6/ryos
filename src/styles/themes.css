@@ -530,11 +530,11 @@
 }
 
 /* Ensure all UI elements in macOS theme use proper antialiasing */
-:root[data-os-theme="macosx"] input,
-:root[data-os-theme="macosx"] label,
-:root[data-os-theme="macosx"] button,
-:root[data-os-theme="macosx"] select,
-:root[data-os-theme="macosx"] textarea,
+:root[data-os-theme="macosx"] input:not(.dashboard-overlay *),
+:root[data-os-theme="macosx"] label:not(.dashboard-overlay *),
+:root[data-os-theme="macosx"] button:not(.dashboard-overlay *),
+:root[data-os-theme="macosx"] select:not(.dashboard-overlay *),
+:root[data-os-theme="macosx"] textarea:not(.dashboard-overlay *),
 :root[data-os-theme="macosx"] .menubar,
 :root[data-os-theme="macosx"] .window,
 :root[data-os-theme="macosx"] .title-bar {
@@ -814,7 +814,7 @@
 }
 
 /* macOS select styling - similar to aqua buttons */
-:root[data-os-theme="macosx"] select {
+:root[data-os-theme="macosx"] select:not(.dashboard-overlay *) {
   font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
@@ -853,7 +853,7 @@
 }
 
 /* Top shine/gloss for macOS select */
-:root[data-os-theme="macosx"] select:before,
+:root[data-os-theme="macosx"] select:not(.dashboard-overlay *):before,
 :root[data-os-theme="macosx"] .macos-select-trigger:before {
   content: "";
   position: absolute;
@@ -960,13 +960,13 @@
     0 0 0 1px rgba(0, 0, 0, 0.42) !important;
 }
 
-:root[data-os-theme="macosx"] select:focus {
+:root[data-os-theme="macosx"] select:not(.dashboard-overlay *):focus {
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(0, 0, 0, 0.3), 0 0 3px var(--os-color-selection-glow);
   outline: none;
 }
 
-:root[data-os-theme="macosx"] select:active {
+:root[data-os-theme="macosx"] select:not(.dashboard-overlay *):active {
   background: linear-gradient(
     rgba(140, 140, 140, 0.625),
     rgba(235, 235, 235, 0.625)
