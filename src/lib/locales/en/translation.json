@@ -2559,8 +2559,13 @@
         "calendar": "Calendar",
         "weather": "Weather",
         "stocks": "Stocks",
+        "stickyNote": "Sticky Note",
         "addWidget": "Add Widget...",
         "removeWidget": "Remove Widget"
+      },
+      "stickyNote": {
+        "placeholder": "Type a note...",
+        "noteColor": "Note Color"
       },
       "stocks": {
         "delayed": "Delayed up to 20 minutes",
