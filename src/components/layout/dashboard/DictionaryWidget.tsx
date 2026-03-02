@@ -119,11 +119,11 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
 
   if (isXpTheme) {
     return (
-      <div style={{ fontFamily: font, display: "flex", flexDirection: "column", minHeight: 220 }}>
+      <div style={{ fontFamily: font, display: "flex", flexDirection: "column", minHeight: "inherit" }}>
         {/* XP header */}
         <div
           className="flex items-center gap-1.5 px-2 py-1.5"
-          style={{ borderBottom: "1px solid #D5D2CA" }}
+          style={{ borderBottom: "1px solid #D5D2CA", flexShrink: 0 }}
         >
           <MagnifyingGlass size={12} weight="bold" style={{ color: "#888", flexShrink: 0 }} />
           <input
@@ -138,7 +138,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
         </div>
 
         {/* XP content */}
-        <div className="flex-1 overflow-y-auto px-3 py-2" style={{ fontSize: 11 }}>
+        <div className="flex-1 overflow-y-auto px-3 py-2" style={{ fontSize: 11, minHeight: 0 }}>
           {loading && (
             <div className="text-center text-gray-400 py-4" style={{ fontSize: 10 }}>
               Looking up…
@@ -191,7 +191,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
         fontFamily: font,
         display: "flex",
         flexDirection: "column",
-        minHeight: 220,
+        minHeight: "inherit",
         borderRadius: "inherit",
         overflow: "hidden",
       }}
@@ -203,6 +203,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
           borderBottom: "1px solid #3E2A14",
           padding: "6px 10px 8px",
           position: "relative",
+          flexShrink: 0,
         }}
       >
         {/* Subtle leather texture via inset shadow */}
@@ -307,7 +308,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
         style={{
           background: "linear-gradient(180deg, #F5F0E8 0%, #EDE7DA 100%)",
           padding: "8px 12px",
-          minHeight: 140,
+          minHeight: 0,
         }}
       >
         {loading && (

@@ -163,11 +163,11 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
     return (
       <div
         className="flex flex-col"
-        style={{ fontFamily: font, padding: 8, gap: 6 }}
+        style={{ fontFamily: font, padding: 8, gap: 6, minHeight: "inherit" }}
         onPointerDown={(e) => e.stopPropagation()}
       >
         {/* Language selectors */}
-        <div className="flex items-center gap-1" style={{ fontSize: 11 }}>
+        <div className="flex items-center gap-1" style={{ fontSize: 11, flexShrink: 0 }}>
           <select
             value={fromLang}
             onChange={(e) => handleFromLangChange(e.target.value)}
@@ -234,6 +234,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
           onChange={(e) => handleSourceChange(e.target.value)}
           placeholder={t("apps.dashboard.translation.inputPlaceholder", "Enter text...")}
           style={{
+            flex: 1,
             fontSize: 11,
             padding: 4,
             border: "1px solid #ACA899",
@@ -241,7 +242,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
             background: "#FFF",
             color: "#000",
             resize: "none",
-            height: 60,
+            minHeight: 40,
             fontFamily: font,
             outline: "none",
           }}
@@ -250,13 +251,14 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
         {/* Output */}
         <div
           style={{
+            flex: 1,
             fontSize: 11,
             padding: 4,
             border: "1px solid #ACA899",
             borderRadius: 2,
             background: "#F5F5F0",
             color: loading ? "#888" : "#000",
-            minHeight: 60,
+            minHeight: 40,
             fontFamily: font,
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",

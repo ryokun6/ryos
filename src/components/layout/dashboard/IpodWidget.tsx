@@ -86,11 +86,12 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
 
   return (
     <div
-      className="flex flex-col items-center select-none"
+      className="flex flex-col items-center justify-center select-none"
       style={{
         padding: "8px 10px 6px",
         gap: 4,
         width: "100%",
+        minHeight: "inherit",
       }}
     >
       {/* LCD display */}
