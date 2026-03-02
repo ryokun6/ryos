@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type TranslationWidgetConfig } from "@/stores/useDashboardStore";
 import { useTranslation } from "react-i18next";
-import { ArrowsLeftRight } from "@phosphor-icons/react";
+import { ArrowsLeftRight, ArrowsDownUp } from "@phosphor-icons/react";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -16,10 +16,6 @@ const LANGUAGES = [
   { code: "zh-CN", label: "Chinese" },
   { code: "ru", label: "Russian" },
 ] as const;
-
-function getLangLabel(code: string): string {
-  return LANGUAGES.find((l) => l.code === code)?.label ?? code;
-}
 
 interface TranslationWidgetProps {
   widgetId?: string;
@@ -279,215 +275,218 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
     );
   }
 
-  // macOS Aqua theme
+  // macOS Aqua theme — Apple Dashboard-style translator widget
+  const aquaSelectStyle = {
+    fontSize: 12,
+    fontWeight: 600 as const,
+    padding: "3px 8px",
+    borderRadius: 6,
+    border: "1px solid rgba(0,0,0,0.25)",
+    background: "linear-gradient(180deg, #6AB0F3 0%, #3B82D0 50%, #2E6DB8 100%)",
+    color: "#FFF",
+    cursor: "pointer" as const,
+    boxShadow: "0 1px 3px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.3)",
+    fontFamily: font,
+    appearance: "none" as const,
+    WebkitAppearance: "none" as const,
+    outline: "none" as const,
+    textShadow: "0 -1px 1px rgba(0,0,0,0.25)",
+    minWidth: 0,
+  };
+
   return (
     <div
       className="flex flex-col flex-1"
-      style={{ borderRadius: "inherit", overflow: "hidden", minHeight: "inherit", fontFamily: font }}
+      style={{
+        borderRadius: "inherit",
+        overflow: "hidden",
+        minHeight: "inherit",
+        fontFamily: font,
+        position: "relative",
+      }}
     >
-      {/* Blue gradient header with globe watermark */}
+      {/* Globe watermark — large, right-center positioned */}
       <div
-        className="relative px-3 py-2.5"
+        className="absolute pointer-events-none"
         style={{
-          background: "linear-gradient(180deg, #5BA3E6 0%, #4A90D9 30%, #3B7CC8 70%, #3570B0 100%)",
-          borderBottom: "1px solid rgba(0,0,0,0.15)",
+          top: "50%",
+          right: -10,
+          transform: "translateY(-50%)",
+          width: 180,
+          height: 180,
+          zIndex: 0,
+          opacity: 0.22,
         }}
       >
-        {/* Globe watermark */}
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            top: "50%",
-            right: 12,
-            transform: "translateY(-50%)",
-            width: 60,
-            height: 60,
-            borderRadius: "50%",
-            border: "1.5px solid rgba(255,255,255,0.15)",
-            background: "radial-gradient(circle at 40% 35%, rgba(255,255,255,0.1) 0%, transparent 60%)",
-          }}
-        >
-          {/* Globe lines */}
-          <div
-            className="absolute"
-            style={{
-              top: "50%",
-              left: 0,
-              right: 0,
-              height: 0,
-              borderTop: "1px solid rgba(255,255,255,0.12)",
-            }}
-          />
-          <div
-            className="absolute"
-            style={{
-              left: "50%",
-              top: 0,
-              bottom: 0,
-              width: 0,
-              borderLeft: "1px solid rgba(255,255,255,0.12)",
-            }}
-          />
-          <div
-            className="absolute"
-            style={{
-              top: 6,
-              bottom: 6,
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: 30,
-              borderRadius: "50%",
-              border: "1px solid rgba(255,255,255,0.1)",
-            }}
-          />
-        </div>
-
-        {/* Language selectors row */}
-        <div
-          className="relative flex items-center gap-1.5"
-          style={{ zIndex: 1 }}
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <select
-            value={fromLang}
-            onChange={(e) => handleFromLangChange(e.target.value)}
-            style={{
-              flex: 1,
-              fontSize: 11,
-              fontWeight: 600,
-              padding: "3px 6px",
-              borderRadius: 6,
-              border: "1px solid rgba(0,0,0,0.2)",
-              background: "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(230,235,240,0.9) 100%)",
-              color: "#2A2A2A",
-              cursor: "pointer",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.8)",
-              fontFamily: font,
-              appearance: "auto",
-              outline: "none",
-            }}
-          >
-            {LANGUAGES.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.label}
-              </option>
-            ))}
-          </select>
-
-          <button
-            type="button"
-            onClick={handleSwap}
-            onPointerDown={(e) => e.stopPropagation()}
-            style={{
-              padding: "3px 6px",
-              borderRadius: 6,
-              border: "1px solid rgba(0,0,0,0.2)",
-              background: "linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(220,225,230,0.85) 100%)",
-              cursor: "pointer",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.8)",
-              display: "flex",
-              alignItems: "center",
-              lineHeight: 1,
-              color: "#3570B0",
-              flexShrink: 0,
-            }}
-            title="Swap languages"
-          >
-            <ArrowsLeftRight size={12} weight="bold" />
-          </button>
-
-          <select
-            value={toLang}
-            onChange={(e) => handleToLangChange(e.target.value)}
-            style={{
-              flex: 1,
-              fontSize: 11,
-              fontWeight: 600,
-              padding: "3px 6px",
-              borderRadius: 6,
-              border: "1px solid rgba(0,0,0,0.2)",
-              background: "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(230,235,240,0.9) 100%)",
-              color: "#2A2A2A",
-              cursor: "pointer",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.8)",
-              fontFamily: font,
-              appearance: "auto",
-              outline: "none",
-            }}
-          >
-            {LANGUAGES.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Label row */}
-        <div
-          className="flex items-center mt-1"
-          style={{
-            fontSize: 9,
-            color: "rgba(255,255,255,0.7)",
-            fontWeight: 500,
-            letterSpacing: "0.02em",
-            textShadow: "0 1px 2px rgba(0,0,0,0.2)",
-          }}
-        >
-          <span style={{ flex: 1 }}>{getLangLabel(fromLang)}</span>
-          <span style={{ flex: 1, textAlign: "right" }}>{getLangLabel(toLang)}</span>
-        </div>
+        <svg viewBox="0 0 180 180" width="180" height="180" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Outer circle */}
+          <circle cx="90" cy="90" r="85" stroke="rgba(120,160,220,1)" strokeWidth="1.8" />
+          {/* Major meridian ellipses */}
+          <ellipse cx="90" cy="90" rx="55" ry="85" stroke="rgba(120,160,220,1)" strokeWidth="1.4" />
+          <ellipse cx="90" cy="90" rx="28" ry="85" stroke="rgba(120,160,220,1)" strokeWidth="1.2" />
+          {/* Central vertical */}
+          <line x1="90" y1="5" x2="90" y2="175" stroke="rgba(120,160,220,1)" strokeWidth="1.4" />
+          {/* Equator */}
+          <line x1="5" y1="90" x2="175" y2="90" stroke="rgba(120,160,220,1)" strokeWidth="1.4" />
+          {/* Latitude lines */}
+          <ellipse cx="90" cy="90" rx="85" ry="28" stroke="rgba(120,160,220,1)" strokeWidth="1" />
+          <ellipse cx="90" cy="50" rx="72" ry="1" stroke="rgba(120,160,220,1)" strokeWidth="0.8" />
+          <ellipse cx="90" cy="130" rx="72" ry="1" stroke="rgba(120,160,220,1)" strokeWidth="0.8" />
+        </svg>
       </div>
 
-      {/* Text areas */}
+      {/* "Translate from" header bar */}
       <div
-        className="flex flex-col flex-1"
+        className="relative"
         style={{
-          background: "linear-gradient(180deg, #E8EDF2 0%, #D8DDE5 100%)",
-          padding: 8,
-          gap: 6,
+          background: "linear-gradient(180deg, #5BA3E6 0%, #4A90D9 40%, #3B7CC8 100%)",
+          padding: "8px 10px 6px",
+          zIndex: 1,
         }}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        {/* Source input */}
+        <div className="flex items-center gap-2">
+          <span
+            style={{
+              fontSize: 12,
+              color: "rgba(255,255,255,0.85)",
+              fontWeight: 500,
+              textShadow: "0 1px 2px rgba(0,0,0,0.2)",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+            }}
+          >
+            {t("apps.dashboard.translation.from", "Translate from")}
+          </span>
+          <div style={{ position: "relative", flex: 1 }}>
+            <select
+              value={fromLang}
+              onChange={(e) => handleFromLangChange(e.target.value)}
+              style={{ ...aquaSelectStyle, width: "100%", paddingRight: 20 }}
+            >
+              {LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code} style={{ color: "#000", background: "#FFF" }}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+            <div style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "rgba(255,255,255,0.8)", fontSize: 8, lineHeight: 1 }}>▼</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Source text area */}
+      <div
+        className="relative"
+        style={{ padding: "8px 10px 4px", zIndex: 1 }}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         <textarea
           value={sourceText}
           onChange={(e) => handleSourceChange(e.target.value)}
           placeholder={t("apps.dashboard.translation.inputPlaceholder", "Enter text...")}
           style={{
-            flex: 1,
-            fontSize: 12,
-            padding: "6px 8px",
+            width: "100%",
+            fontSize: 13,
+            padding: "8px 10px",
             borderRadius: 8,
             border: "1px solid rgba(0,0,0,0.12)",
-            background: "rgba(255,255,255,0.85)",
+            background: "rgba(255,255,255,0.92)",
             color: "#1A1A1A",
             resize: "none",
             minHeight: 52,
             fontFamily: font,
             outline: "none",
-            boxShadow: "inset 0 1px 3px rgba(0,0,0,0.08)",
-            lineHeight: 1.35,
+            boxShadow: "inset 0 1px 3px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.05)",
+            lineHeight: 1.4,
+            display: "block",
           }}
         />
+      </div>
 
-        {/* Output area */}
+      {/* "To" middle bar with swap button */}
+      <div
+        className="relative"
+        style={{
+          background: "linear-gradient(180deg, #5BA3E6 0%, #4A90D9 40%, #3B7CC8 100%)",
+          padding: "6px 10px",
+          zIndex: 1,
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleSwap}
+            onPointerDown={(e) => e.stopPropagation()}
+            style={{
+              padding: "2px 4px",
+              borderRadius: 4,
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              lineHeight: 1,
+              color: "rgba(255,255,255,0.85)",
+              flexShrink: 0,
+            }}
+            title="Swap languages"
+          >
+            <ArrowsDownUp size={16} weight="bold" />
+          </button>
+          <span
+            style={{
+              fontSize: 12,
+              color: "rgba(255,255,255,0.85)",
+              fontWeight: 500,
+              textShadow: "0 1px 2px rgba(0,0,0,0.2)",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+            }}
+          >
+            {t("apps.dashboard.translation.to", "To")}
+          </span>
+          <div style={{ position: "relative", flex: 1 }}>
+            <select
+              value={toLang}
+              onChange={(e) => handleToLangChange(e.target.value)}
+              style={{ ...aquaSelectStyle, width: "100%", paddingRight: 20 }}
+            >
+              {LANGUAGES.map((l) => (
+                <option key={l.code} value={l.code} style={{ color: "#000", background: "#FFF" }}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+            <div style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "rgba(255,255,255,0.8)", fontSize: 8, lineHeight: 1 }}>▼</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Output text area */}
+      <div
+        className="relative flex-1"
+        style={{ padding: "4px 10px 10px", zIndex: 1 }}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         <div
           style={{
-            flex: 1,
-            fontSize: 12,
-            padding: "6px 8px",
+            width: "100%",
+            height: "100%",
+            fontSize: 13,
+            padding: "8px 10px",
             borderRadius: 8,
             border: "1px solid rgba(0,0,0,0.08)",
-            background: "rgba(255,255,255,0.6)",
+            background: "rgba(255,255,255,0.85)",
             color: loading ? "rgba(0,0,0,0.4)" : "#1A1A1A",
             minHeight: 52,
             fontFamily: font,
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
             overflow: "auto",
-            boxShadow: "inset 0 1px 2px rgba(0,0,0,0.04)",
-            lineHeight: 1.35,
+            boxShadow: "inset 0 1px 2px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,0.05)",
+            lineHeight: 1.4,
           }}
         >
           {loading ? (

@@ -44,7 +44,7 @@ export function useDashboardLogic() {
         ipod: { width: 200, height: 90 },
         dictionary: { width: 240, height: 280 },
         stickynote: { width: 200, height: 200 },
-        translation: { width: 300, height: 240 },
+        translation: { width: 300, height: 310 },
       };
       // Place near center with some randomness
       const x = 200 + Math.floor(Math.random() * 200);
