@@ -41,6 +41,10 @@ export function useDashboardLogic() {
         calendar: { width: 240, height: 350 },
         weather: { width: 340, height: 180 },
         stocks: { width: 240, height: 340 },
+        ipod: { width: 170, height: 120 },
+        dictionary: { width: 260, height: 280 },
+        translation: { width: 280, height: 240 },
+        stickynote: { width: 200, height: 180 },
       };
       // Place near center with some randomness
       const x = 200 + Math.floor(Math.random() * 200);

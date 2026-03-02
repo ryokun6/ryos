@@ -11,6 +11,10 @@ import { ClockWidget, ClockBackPanel } from "@/components/layout/dashboard/Clock
 import { CalendarWidget, CalendarBackPanel } from "@/components/layout/dashboard/CalendarWidget";
 import { WeatherWidget, WeatherEmojiOverflow, WeatherBackPanel } from "@/components/layout/dashboard/WeatherWidget";
 import { StocksWidget, StocksBackPanel } from "@/components/layout/dashboard/StocksWidget";
+import { IpodWidget } from "@/components/layout/dashboard/IpodWidget";
+import { DictionaryWidget } from "@/components/layout/dashboard/DictionaryWidget";
+import { TranslationWidget } from "@/components/layout/dashboard/TranslationWidget";
+import { StickyNoteWidget, StickyNoteBackPanel } from "@/components/layout/dashboard/StickyNoteWidget";
 import { DashboardMenuBar } from "./DashboardMenuBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
@@ -27,6 +31,14 @@ function WidgetContent({ type, widgetId }: { type: string; widgetId: string }) {
       return <WeatherWidget widgetId={widgetId} />;
     case "stocks":
       return <StocksWidget widgetId={widgetId} />;
+    case "ipod":
+      return <IpodWidget />;
+    case "dictionary":
+      return <DictionaryWidget widgetId={widgetId} />;
+    case "translation":
+      return <TranslationWidget widgetId={widgetId} />;
+    case "stickynote":
+      return <StickyNoteWidget widgetId={widgetId} />;
     default:
       return null;
   }
@@ -42,6 +54,8 @@ function WidgetBackContent({ type, widgetId, onDone }: { type: string; widgetId:
       return <WeatherBackPanel widgetId={widgetId} onDone={onDone} />;
     case "stocks":
       return <StocksBackPanel widgetId={widgetId} onDone={onDone} />;
+    case "stickynote":
+      return <StickyNoteBackPanel widgetId={widgetId} onDone={onDone} />;
     default:
       return null;
   }
@@ -51,6 +65,8 @@ function WidgetOverflow({ type, widgetId }: { type: string; widgetId: string }) 
   if (type === "weather") return <WeatherEmojiOverflow widgetId={widgetId} />;
   return null;
 }
+
+const TYPES_WITH_BACK_PANEL = new Set(["clock", "calendar", "weather", "stocks", "stickynote"]);
 
 // Widget picker tray — dark pill style matching karaoke controls
 function WidgetPicker({
@@ -69,6 +85,10 @@ function WidgetPicker({
     { type: "calendar", icon: "📅", label: t("apps.dashboard.widgets.calendar") },
     { type: "weather", icon: "🌤️", label: t("apps.dashboard.widgets.weather") },
     { type: "stocks", icon: "📈", label: t("apps.dashboard.widgets.stocks") },
+    { type: "ipod", icon: "🎵", label: t("apps.dashboard.widgets.ipod", "iPod") },
+    { type: "dictionary", icon: "📖", label: t("apps.dashboard.widgets.dictionary", "Dictionary") },
+    { type: "translation", icon: "🌐", label: t("apps.dashboard.widgets.translation", "Translation") },
+    { type: "stickynote", icon: "📝", label: t("apps.dashboard.widgets.stickyNote", "Sticky Note") },
   ];
 
   return (
@@ -186,6 +206,10 @@ export function DashboardAppComponent({
       onAddCalendar={() => handleAddWidget("calendar")}
       onAddWeather={() => handleAddWidget("weather")}
       onAddStocks={() => handleAddWidget("stocks")}
+      onAddIpod={() => handleAddWidget("ipod")}
+      onAddDictionary={() => handleAddWidget("dictionary")}
+      onAddTranslation={() => handleAddWidget("translation")}
+      onAddStickyNote={() => handleAddWidget("stickynote")}
       onResetWidgets={resetToDefaults}
     />
   );
@@ -247,7 +271,9 @@ export function DashboardAppComponent({
                     onMove={(pos) => moveWidget(widget.id, pos)}
                     onBringToFront={() => bringToFront(widget.id)}
                     overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
-                    backContent={(onFlipBack) => <WidgetBackContent type={widget.type} widgetId={widget.id} onDone={onFlipBack} />}
+                    backContent={TYPES_WITH_BACK_PANEL.has(widget.type)
+                      ? (onFlipBack) => <WidgetBackContent type={widget.type} widgetId={widget.id} onDone={onFlipBack} />
+                      : undefined}
                   >
                     <WidgetContent type={widget.type} widgetId={widget.id} />
                   </WidgetChrome>
