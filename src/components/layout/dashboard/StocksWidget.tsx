@@ -333,6 +333,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
         <span>{t("apps.dashboard.stocks.unavailable")}</span>
         <button
           type="button"
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={loadQuotes}
           className="flex items-center gap-1 hover:opacity-80"
           style={{
@@ -367,6 +368,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                       : "transparent",
                 borderRadius: selectedSymbol === stock.symbol ? 4 : 2,
               }}
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={() => setSelectedSymbol(stock.symbol)}
             >
               <span className="font-bold" style={{ fontSize: 11, color: "#333", width: 50 }}>
@@ -395,6 +397,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
               <button
                 key={r}
                 type="button"
+                onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setSelectedRange(r)}
                 className="transition-colors"
                 style={{
@@ -455,6 +458,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                   borderRadius: isSelected ? 6 : 0,
                   borderBottom: !isSelected && i < stocks.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
                 }}
+                onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setSelectedSymbol(stock.symbol)}
               >
                 <span
@@ -506,6 +510,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
               <button
                 key={r}
                 type="button"
+                onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setSelectedRange(r)}
                 style={{
                   fontSize: 9,
