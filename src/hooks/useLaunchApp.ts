@@ -38,7 +38,13 @@ export const useLaunchApp = () => {
 
       // If launching with content (initialData exists)
       if (initialData) {
-        const data = initialData as { path?: string; content?: string; shareCode?: string; forceNewInstance?: boolean };
+        const data = initialData as {
+          path?: string;
+          content?: string;
+          shareCode?: string;
+          mode?: "browse" | "create";
+          forceNewInstance?: boolean;
+        };
         
         // Skip empty instance check if forceNewInstance is true
         if (!data.forceNewInstance) {
@@ -70,8 +76,9 @@ export const useLaunchApp = () => {
               );
               bringInstanceToForeground(existingInstance.instanceId);
               // Refresh initialData so persisted instances (whose content was
-              // stripped to "" for storage) pick up the freshly loaded content.
-              if (data.content) {
+              // stripped to "" for storage) pick up the freshly loaded content,
+              // and so studio-mode transitions can reuse existing windows.
+              if (data.content || data.mode === "create") {
                 updateInstanceInitialData(existingInstance.instanceId, initialData);
               }
               return existingInstance.instanceId;
@@ -82,7 +89,7 @@ export const useLaunchApp = () => {
             // Opening applet store (no path, no shareCode) - can reuse empty instance
             const emptyInstance = appletInstances.find((inst) => {
               const instData = inst.initialData as
-                | { path?: string; content?: string; shareCode?: string }
+                | { path?: string; content?: string; shareCode?: string; mode?: "browse" | "create" }
                 | undefined;
               // Empty instance is one without path, content, or shareCode
               return !instData?.path && !instData?.content && !instData?.shareCode;
@@ -94,6 +101,9 @@ export const useLaunchApp = () => {
                 `[useLaunchApp] Found empty applet store instance ${emptyInstance.instanceId}, reusing`
               );
               bringInstanceToForeground(emptyInstance.instanceId);
+              if (data.mode === "create") {
+                updateInstanceInitialData(emptyInstance.instanceId, initialData);
+              }
               return emptyInstance.instanceId;
             }
           }

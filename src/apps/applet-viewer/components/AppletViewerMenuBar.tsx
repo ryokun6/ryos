@@ -37,6 +37,12 @@ interface AppletViewerMenuBarProps {
   updateCount?: number;
   onCheckForUpdates?: () => Promise<void>;
   onUpdateAll?: () => Promise<void>;
+  isStudioActive?: boolean;
+  hasStudioDraft?: boolean;
+  onOpenStudio?: () => void;
+  onCloseStudio?: () => void;
+  onSaveStudioDraft?: () => Promise<unknown>;
+  onPublishStudioDraft?: () => Promise<unknown>;
 }
 
 export function AppletViewerMenuBar({
@@ -55,6 +61,12 @@ export function AppletViewerMenuBar({
   updateCount = 0,
   onCheckForUpdates,
   onUpdateAll,
+  isStudioActive = false,
+  hasStudioDraft = false,
+  onOpenStudio,
+  onCloseStudio,
+  onSaveStudioDraft,
+  onPublishStudioDraft,
 }: AppletViewerMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -101,7 +113,51 @@ export function AppletViewerMenuBar({
           >
             {t("apps.applet-viewer.menu.open")}
           </MenubarItem>
-          {hasAppletContent && isLoggedIn && (
+          {hasAppletContent && !isStudioActive && onOpenStudio && (
+            <MenubarItem
+              onClick={onOpenStudio}
+              className="text-md h-6 px-3"
+            >
+              {t("apps.applet-viewer.menu.editInStudio", {
+                defaultValue: "Edit in Ryo Studio",
+              })}
+            </MenubarItem>
+          )}
+          {isStudioActive && (
+            <>
+              {hasStudioDraft && onSaveStudioDraft ? (
+                <MenubarItem
+                  onClick={() => void onSaveStudioDraft()}
+                  className="text-md h-6 px-3"
+                >
+                  {t("apps.applet-viewer.menu.saveDraft", {
+                    defaultValue: "Save Draft",
+                  })}
+                </MenubarItem>
+              ) : null}
+              {hasStudioDraft && onPublishStudioDraft ? (
+                <MenubarItem
+                  onClick={() => void onPublishStudioDraft()}
+                  className="text-md h-6 px-3"
+                >
+                  {t("apps.applet-viewer.menu.publishDraft", {
+                    defaultValue: "Publish Draft",
+                  })}
+                </MenubarItem>
+              ) : null}
+              {onCloseStudio ? (
+                <MenubarItem
+                  onClick={onCloseStudio}
+                  className="text-md h-6 px-3"
+                >
+                  {t("apps.applet-viewer.menu.exitStudio", {
+                    defaultValue: "Exit Ryo Studio",
+                  })}
+                </MenubarItem>
+              ) : null}
+            </>
+          )}
+          {hasAppletContent && isLoggedIn && !isStudioActive && (
             <MenubarItem
               onClick={onShareApplet}
               className="text-md h-6 px-3"
@@ -161,6 +217,16 @@ export function AppletViewerMenuBar({
           >
             {t("apps.applet-viewer.menu.openAppletStore")}
           </MenubarItem>
+          {onOpenStudio && (
+            <MenubarItem
+              onClick={onOpenStudio}
+              className="text-md h-6 px-3"
+            >
+              {t("apps.applet-viewer.menu.createWithRyoStudio", {
+                defaultValue: "Create with Ryo Studio",
+              })}
+            </MenubarItem>
+          )}
           <MenubarItem
             onClick={async () => {
               if (updateCount > 0 && onUpdateAll) {

@@ -10,6 +10,8 @@ import { BASE_URL, fetchWithOrigin, fetchWithAuth, ensureUserAuth } from "./test
 let testAppletId: string | null = null;
 let testToken: string | null = null;
 let testUsername: string | null = null;
+let initialCreatedAt: number | null = null;
+let initialUpdatedAt: number | null = null;
 
 describe("share-applet", () => {
   beforeAll(async () => {
@@ -127,7 +129,12 @@ describe("share-applet", () => {
       const data = await res.json();
       expect(data.id).toBeTruthy();
       expect(data.shareUrl).toBeTruthy();
+      expect(data.version).toBe(1);
+      expect(typeof data.createdAt).toBe("number");
+      expect(typeof data.updatedAt).toBe("number");
       testAppletId = data.id;
+      initialCreatedAt = data.createdAt;
+      initialUpdatedAt = data.updatedAt;
     });
 
     test("GET - created applet", async () => {
@@ -144,6 +151,7 @@ describe("share-applet", () => {
       expect(data.title).toBe("Test Applet Title");
       expect(data.icon).toBe("game");
       expect(data.createdBy?.toLowerCase()).toBe(testUsername?.toLowerCase());
+      expect(data.version).toBe(1);
     });
 
     test("GET - list applets", async () => {
@@ -186,6 +194,10 @@ describe("share-applet", () => {
       const data = await res.json();
       expect(data.id).toBe(testAppletId);
       expect(data.updated).toBe(true);
+      expect(data.version).toBe(2);
+      expect(data.createdAt).toBe(initialCreatedAt);
+      expect(typeof data.updatedAt).toBe("number");
+      expect(data.updatedAt >= (initialUpdatedAt || 0)).toBe(true);
     });
 
     test("POST - update by non-owner (should create new)", async () => {
@@ -210,6 +222,8 @@ describe("share-applet", () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.id !== testAppletId).toBe(true);
+      expect(data.version).toBe(1);
+      expect(data.forkedFrom).toBe(testAppletId);
     });
   });
 

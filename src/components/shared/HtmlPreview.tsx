@@ -6,6 +6,7 @@ import {
   loadHtmlPreviewSplit,
   saveHtmlPreviewSplit,
 } from "@/stores/useDisplaySettingsStore";
+import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { useSound, Sounds } from "../../hooks/useSound";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -46,6 +47,7 @@ interface HtmlPreviewProps {
   isInternetExplorer?: boolean;
   baseUrlForAiContent?: string;
   mode?: "past" | "future" | "now";
+  studioLaunchInitialData?: AppletViewerInitialData;
 }
 
 export default function HtmlPreview({
@@ -67,6 +69,7 @@ export default function HtmlPreview({
   isInternetExplorer = false,
   baseUrlForAiContent,
   mode = "now",
+  studioLaunchInitialData,
 }: HtmlPreviewProps) {
   const [isFullScreen, setIsFullScreen] = useState(initialFullScreen);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -724,6 +727,24 @@ export default function HtmlPreview({
     }
   };
 
+  const handleOpenInStudio = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    launchApp("applet-viewer", {
+      initialData: {
+        ...studioLaunchInitialData,
+        mode: "create",
+        content: studioLaunchInitialData?.content || processedHtmlContentForSave,
+        title: studioLaunchInitialData?.title || appletTitle || undefined,
+        icon: studioLaunchInitialData?.icon || appletIcon || undefined,
+        name:
+          studioLaunchInitialData?.name ||
+          appletTitle ||
+          t("common.htmlPreview.bannerFallbackTitle"),
+        forceNewInstance: true,
+      },
+    });
+  };
+
   const toggleFullScreen = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isFullScreen) {
@@ -1037,6 +1058,16 @@ export default function HtmlPreview({
               >
                 {t("common.dialog.save")}
               </Button>
+              {studioLaunchInitialData ? (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleOpenInStudio}
+                  disabled={isStreaming}
+                >
+                  Ryo Studio
+                </Button>
+              ) : null}
             </div>
         )}
 
@@ -1061,6 +1092,20 @@ export default function HtmlPreview({
               disabled={isStreaming}
             >
               <DownloadSimple
+                size={16}
+                className="text-neutral-400/50 group-hover:text-neutral-300"
+              />
+            </button>
+            <button
+              onClick={handleOpenInStudio}
+              onMouseDown={(e) => e.stopPropagation()}
+              className={`flex items-center justify-center w-6 h-6 hover:bg-black/10 rounded mr-1 group ${
+                studioLaunchInitialData ? "" : "hidden"
+              }`}
+              aria-label="Open in Ryo Studio"
+              disabled={isStreaming || !studioLaunchInitialData}
+            >
+              <Code
                 size={16}
                 className="text-neutral-400/50 group-hover:text-neutral-300"
               />

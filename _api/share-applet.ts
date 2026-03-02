@@ -34,6 +34,21 @@ const SaveAppletRequestSchema = z.object({
   shareId: z.string().optional(),
 });
 
+type SharedAppletRecord = {
+  content: string;
+  title?: string;
+  icon?: string;
+  name?: string;
+  windowWidth?: number;
+  windowHeight?: number;
+  createdAt: number;
+  updatedAt: number;
+  createdBy?: string;
+  featured?: boolean;
+  version: number;
+  forkedFrom?: string;
+};
+
 export default apiHandler<Record<string, unknown>>(
   {
     methods: ["GET", "POST", "DELETE", "PATCH"],
@@ -79,7 +94,18 @@ export default apiHandler<Record<string, unknown>>(
           }
         } while (cursor !== 0);
         
-        const applets: { id: string; title?: string; name?: string; icon?: string; createdAt: number; featured: boolean; createdBy?: string }[] = [];
+        const applets: {
+          id: string;
+          title?: string;
+          name?: string;
+          icon?: string;
+          createdAt: number;
+          updatedAt?: number;
+          featured: boolean;
+          createdBy?: string;
+          version?: number;
+          forkedFrom?: string;
+        }[] = [];
         
         if (appletIds.length > 0) {
           const appletKeys = appletIds.map((id) => `${APPLET_SHARE_PREFIX}${id}`);
@@ -96,8 +122,11 @@ export default apiHandler<Record<string, unknown>>(
                 name: parsed.name,
                 icon: parsed.icon,
                 createdAt: parsed.createdAt || 0,
+                updatedAt: parsed.updatedAt || parsed.createdAt || 0,
                 featured: parsed.featured || false,
                 createdBy: parsed.createdBy || undefined,
+                version: parsed.version || 1,
+                forkedFrom: parsed.forkedFrom || undefined,
               });
             } catch {
               continue;
@@ -107,7 +136,7 @@ export default apiHandler<Record<string, unknown>>(
           applets.sort((a, b) => {
             if (a.featured && !b.featured) return -1;
             if (!a.featured && b.featured) return 1;
-            return (b.createdAt || 0) - (a.createdAt || 0);
+            return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
           });
         }
         
@@ -184,7 +213,17 @@ export default apiHandler<Record<string, unknown>>(
 
       let id: string;
       let isUpdate = false;
-      let existingAppletData: { createdAt?: number; createdBy?: string; featured?: boolean } | null = null;
+      let existingAppletData:
+        | {
+            createdAt?: number;
+            updatedAt?: number;
+            createdBy?: string;
+            featured?: boolean;
+            version?: number;
+            forkedFrom?: string;
+          }
+        | null = null;
+      let forkedFrom: string | undefined;
 
       if (shareId) {
         const existingKey = `${APPLET_SHARE_PREFIX}${shareId}`;
@@ -196,12 +235,21 @@ export default apiHandler<Record<string, unknown>>(
             if (parsed && parsed.createdBy && parsed.createdBy.toLowerCase() === username?.toLowerCase()) {
               id = shareId;
               isUpdate = true;
-              existingAppletData = { createdAt: parsed.createdAt, createdBy: parsed.createdBy, featured: parsed.featured };
+              existingAppletData = {
+                createdAt: parsed.createdAt,
+                updatedAt: parsed.updatedAt,
+                createdBy: parsed.createdBy,
+                featured: parsed.featured,
+                version: parsed.version,
+                forkedFrom: parsed.forkedFrom,
+              };
             } else {
               id = generateId();
+              forkedFrom = shareId;
             }
           } catch {
             id = generateId();
+            forkedFrom = shareId;
           }
         } else {
           id = shareId;
@@ -211,16 +259,26 @@ export default apiHandler<Record<string, unknown>>(
       }
 
       const key = `${APPLET_SHARE_PREFIX}${id}`;
-      const appletData = {
+      const now = Date.now();
+      const appletData: SharedAppletRecord = {
         content,
         title: title || undefined,
         icon: icon || undefined,
         name: name || undefined,
         windowWidth: windowWidth || undefined,
         windowHeight: windowHeight || undefined,
-        createdAt: Date.now(),
+        createdAt:
+          isUpdate && existingAppletData?.createdAt
+            ? existingAppletData.createdAt
+            : now,
+        updatedAt: now,
         createdBy: isUpdate && existingAppletData?.createdBy ? existingAppletData.createdBy : (username || undefined),
         featured: isUpdate && existingAppletData?.featured !== undefined ? existingAppletData.featured : undefined,
+        version: isUpdate ? (existingAppletData?.version || 1) + 1 : 1,
+        forkedFrom:
+          isUpdate
+            ? existingAppletData?.forkedFrom
+            : forkedFrom,
       };
 
       await redis.set(key, JSON.stringify(appletData));
@@ -228,7 +286,15 @@ export default apiHandler<Record<string, unknown>>(
 
       logger.info("Saved applet", { id, isUpdate });
       logger.response(200, Date.now() - startTime);
-      res.status(200).json({ id, shareUrl, updated: isUpdate, createdAt: appletData.createdAt });
+      res.status(200).json({
+        id,
+        shareUrl,
+        updated: isUpdate,
+        createdAt: appletData.createdAt,
+        updatedAt: appletData.updatedAt,
+        version: appletData.version,
+        forkedFrom: appletData.forkedFrom,
+      });
       return;
     }
 

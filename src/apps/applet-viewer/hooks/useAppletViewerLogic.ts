@@ -359,8 +359,8 @@ export function useAppletViewerLogic({
           metadataUpdates.windowWidth = data.windowWidth;
           metadataUpdates.windowHeight = data.windowHeight;
         }
-        if (typeof data.createdAt === "number") {
-          metadataUpdates.storeCreatedAt = data.createdAt;
+        if (typeof (data.updatedAt || data.createdAt) === "number") {
+          metadataUpdates.storeCreatedAt = data.updatedAt || data.createdAt;
         }
 
         if (Object.keys(metadataUpdates).length > 0) {
@@ -1188,9 +1188,9 @@ export function useAppletViewerLogic({
             createdBy: currentFileItem.createdBy || username,
           });
 
-          if (data.createdAt) {
+          if (data.updatedAt || data.createdAt) {
             updateFileItemMetadata(appletPath, {
-              storeCreatedAt: data.createdAt,
+              storeCreatedAt: data.updatedAt || data.createdAt,
             });
           }
         }
@@ -1441,6 +1441,8 @@ export function useAppletViewerLogic({
       ? getFileName(appletPath)
       : getAppletTitle(htmlContent, false) ||
         t("common.dock.appletStore")
+    : typedInitialData?.mode === "create"
+    ? "Ryo Studio"
     : t("common.dock.appletStore");
 
   return {
@@ -1494,5 +1496,6 @@ export function useAppletViewerLogic({
     verifyError,
     handleVerifyTokenSubmit,
     getAppletTitle,
+    appletPath,
   };
 }

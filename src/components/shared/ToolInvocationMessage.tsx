@@ -513,6 +513,14 @@ export function ToolInvocationMessage({
           htmlContent={htmlContent}
           appletTitle={appletTitle}
           appletIcon={appletIcon}
+          studioLaunchInitialData={{
+            mode: "create",
+            path: "",
+            content: htmlContent,
+            title: appletTitle || undefined,
+            icon: appletIcon || undefined,
+            name: appletTitle || undefined,
+          }}
           onInteractionChange={setIsInteractingWithPreview}
           playElevatorMusic={playElevatorMusic}
           stopElevatorMusic={stopElevatorMusic}
@@ -539,6 +547,14 @@ export function ToolInvocationMessage({
             appletIcon={appletIcon}
             isStreaming={true}
             minWidth="320px"
+            studioLaunchInitialData={{
+              mode: "create",
+              path: "",
+              content: htmlContent,
+              title: appletTitle || undefined,
+              icon: appletIcon || undefined,
+              name: appletTitle || undefined,
+            }}
             onInteractionChange={setIsInteractingWithPreview}
             playElevatorMusic={playElevatorMusic}
             stopElevatorMusic={stopElevatorMusic}
@@ -569,6 +585,14 @@ export function ToolInvocationMessage({
             appletTitle={appletTitle}
             appletIcon={appletIcon}
             isStreaming={false}
+            studioLaunchInitialData={{
+              mode: "create",
+              path: "",
+              content: htmlContent,
+              title: appletTitle || undefined,
+              icon: appletIcon || undefined,
+              name: appletTitle || undefined,
+            }}
             onInteractionChange={setIsInteractingWithPreview}
             playElevatorMusic={playElevatorMusic}
             stopElevatorMusic={stopElevatorMusic}

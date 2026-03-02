@@ -273,6 +273,18 @@ async function testAppletAiImagesWithoutImageMode(): Promise<void> {
   expect(res.status).toBe(400);
 }
 
+async function testAppletAiStudioEditWithoutDraft(): Promise<void> {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/applet-ai`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt: "Make the button bigger",
+      studio: { action: "edit" },
+    }),
+  });
+  expect(res.status).toBe(400);
+}
+
 async function testAppletAiRateLimitHeaders(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/applet-ai`, {
     method: "POST",
@@ -286,6 +298,64 @@ async function testAppletAiRateLimitHeaders(): Promise<void> {
     expect(limitHeader !== null).toBeTruthy();
   }
   expect(true).toBeTruthy();
+}
+
+async function testAppletAiStudioCreateDraft(): Promise<void> {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/applet-ai`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt: "Build a tiny counter app with increment and reset buttons",
+      studio: { action: "create" },
+    }),
+  });
+
+  if (res.status === 200) {
+    const data = await res.json();
+    expect(typeof data.reply === "string").toBeTruthy();
+    expect(typeof data.applet?.html === "string").toBeTruthy();
+    expect(data.applet.html.length > 0).toBeTruthy();
+    expect(typeof data.applet?.title === "string").toBeTruthy();
+    expect(typeof data.applet?.icon === "string").toBeTruthy();
+    expect(typeof data.applet?.name === "string").toBeTruthy();
+  } else if (res.status === 429) {
+    const data = await res.json();
+    expect(data.error === "rate_limit_exceeded").toBeTruthy();
+  } else {
+    throw new Error(`Unexpected status: ${res.status}`);
+  }
+}
+
+async function testAppletAiStudioEditDraft(): Promise<void> {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/applet-ai`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt: "Add a dark mode toggle",
+      studio: {
+        action: "edit",
+        currentHtml:
+          '<div class="p-4"><button id="count">Count: 0</button><script>const b=document.getElementById("count");let n=0;b.onclick=()=>{n+=1;b.textContent=`Count: ${n}`}</script></div>',
+        title: "Counter",
+        icon: "🔢",
+        name: "Counter",
+        windowWidth: 360,
+        windowHeight: 480,
+      },
+    }),
+  });
+
+  if (res.status === 200) {
+    const data = await res.json();
+    expect(typeof data.applet?.html === "string").toBeTruthy();
+    expect(data.applet.html.length > 0).toBeTruthy();
+    expect(typeof data.applet?.title === "string").toBeTruthy();
+  } else if (res.status === 429) {
+    const data = await res.json();
+    expect(data.error === "rate_limit_exceeded").toBeTruthy();
+  } else {
+    throw new Error(`Unexpected status: ${res.status}`);
+  }
 }
 
 // ============================================================================
@@ -570,6 +640,9 @@ describe("Ai", () => {
     test("Images without image mode", async () => {
       await testAppletAiImagesWithoutImageMode();
     });
+    test("Studio edit without draft html", async () => {
+      await testAppletAiStudioEditWithoutDraft();
+    });
   });
 
   describe("AI Endpoints - /api/applet-ai - Authentication", () => {
@@ -587,6 +660,12 @@ describe("Ai", () => {
     });
     test("Request with messages array", async () => {
       await testAppletAiWithMessagesArray();
+    });
+    test("Studio create draft", { timeout: 20000 }, async () => {
+      await testAppletAiStudioCreateDraft();
+    });
+    test("Studio edit draft", { timeout: 20000 }, async () => {
+      await testAppletAiStudioEditDraft();
     });
   });
 
