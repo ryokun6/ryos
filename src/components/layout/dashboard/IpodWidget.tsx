@@ -248,22 +248,31 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
   const loopAll = useIpodStore((s) => s.loopAll);
   const toggleLoopCurrent = useIpodStore((s) => s.toggleLoopCurrent);
 
+  const elapsedTime = useIpodStore((s) => s.elapsedTime);
   const track = getCurrentTrack();
   const title = track?.title || "iPod";
   const artist = track?.artist || "";
   const hasTrack = !!track;
 
-  const handlePlayPause = useCallback(() => {
-    if (!hasTrack) {
-      requestAppLaunch({ appId: "ipod" });
-      return;
-    }
-    togglePlay();
-  }, [hasTrack, togglePlay]);
+  const launchOrDo = useCallback(
+    (action: () => void) => {
+      if (!hasTrack) {
+        requestAppLaunch({ appId: "ipod" });
+        return;
+      }
+      action();
+    },
+    [hasTrack]
+  );
+
+  const handlePlayPause = useCallback(() => launchOrDo(togglePlay), [launchOrDo, togglePlay]);
+  const handlePrev = useCallback(() => launchOrDo(previousTrack), [launchOrDo, previousTrack]);
+  const handleNext = useCallback(() => launchOrDo(nextTrack), [launchOrDo, nextTrack]);
+  const handleShufflePress = useCallback(() => launchOrDo(toggleShuffle), [launchOrDo, toggleShuffle]);
 
   const handleToggleRepeat = useCallback(() => {
-    toggleLoopCurrent();
-  }, [toggleLoopCurrent]);
+    launchOrDo(toggleLoopCurrent);
+  }, [launchOrDo, toggleLoopCurrent]);
 
   const RepeatIcon = loopCurrent ? RepeatOnce : Repeat;
   const repeatActive = loopCurrent || loopAll;
@@ -317,8 +326,8 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
         }}
       >
         <ClickWheel
-          onPrev={previousTrack}
-          onNext={nextTrack}
+          onPrev={handlePrev}
+          onNext={handleNext}
           onPlayPause={handlePlayPause}
           isPlaying={isPlaying}
           isXpTheme={isXpTheme}
@@ -418,7 +427,7 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
         >
           <button
             type="button"
-            onClick={toggleShuffle}
+            onClick={handleShufflePress}
             title={t("apps.dashboard.ipod.shuffle", "Shuffle")}
             style={{
               background: "transparent",
@@ -443,7 +452,9 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
               letterSpacing: "0.5px",
             }}
           >
-            0:00
+            {hasTrack
+              ? `${Math.floor(elapsedTime / 60)}:${String(Math.floor(elapsedTime % 60)).padStart(2, "0")}`
+              : "0:00"}
           </span>
 
           <button

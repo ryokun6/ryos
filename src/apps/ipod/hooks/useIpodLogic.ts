@@ -446,6 +446,7 @@ export function useIpodLogic({
       
       if (newLyricOffset < 0 && seekTarget >= 1) {
         setElapsedTime(seekTarget);
+        useIpodStore.getState().setElapsedTime(seekTarget);
         
         trackSwitchTimeoutRef.current = setTimeout(() => {
           isTrackSwitchingRef.current = false;
@@ -458,6 +459,7 @@ export function useIpodLogic({
       } else {
         // Start from beginning for positive/zero offset or small negative offset
         setElapsedTime(0);
+        useIpodStore.getState().setElapsedTime(0);
         trackSwitchTimeoutRef.current = setTimeout(() => {
           isTrackSwitchingRef.current = false;
         }, 2000);
@@ -959,10 +961,12 @@ export function useIpodLogic({
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
     setElapsedTime(state.playedSeconds);
+    useIpodStore.getState().setElapsedTime(state.playedSeconds);
   }, []);
 
   const handleDuration = useCallback((duration: number) => {
     setTotalTime(duration);
+    useIpodStore.getState().setTotalTime(duration);
   }, []);
 
   const handlePlay = useCallback(() => {

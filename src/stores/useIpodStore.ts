@@ -75,6 +75,10 @@ interface IpodData {
   lastKnownVersion: number;
   playbackHistory: string[]; // Track IDs in playback order for back functionality and avoiding recent tracks
   historyPosition: number; // Current position in playback history (-1 means at the end)
+  /** Current playback position in seconds (not persisted, synced from ReactPlayer) */
+  elapsedTime: number;
+  /** Total duration of current track in seconds (not persisted, synced from ReactPlayer) */
+  totalTime: number;
 }
 
 // ============================================================================
@@ -192,6 +196,8 @@ const initialIpodData: IpodData = {
   lastKnownVersion: 0,
   playbackHistory: [],
   historyPosition: -1,
+  elapsedTime: 0,
+  totalTime: 0,
 };
 
 /** Helper to get current index from song ID */
@@ -269,6 +275,10 @@ export interface IpodState extends IpodData {
   ) => void;
   /** Clear lyrics source override for a specific track */
   clearTrackLyricsSource: (trackId: string) => void;
+  /** Update current playback position (called from ReactPlayer progress) */
+  setElapsedTime: (time: number) => void;
+  /** Update total duration of current track (called from ReactPlayer) */
+  setTotalTime: (time: number) => void;
 }
 
 const CURRENT_IPOD_STORE_VERSION = 30; // Replace Liquid display mode with Water
@@ -634,8 +644,10 @@ export const useIpodStore = create<IpodState>()(
           currentFuriganaMap: null,
           isPlaying: false,
           libraryState: "cleared",
-          playbackHistory: [], // Clear playback history when clearing library
+          playbackHistory: [],
           historyPosition: -1,
+          elapsedTime: 0,
+          totalTime: 0,
         }),
       resetLibrary: async () => {
         const { tracks, version } = await loadDefaultTracks();
@@ -647,8 +659,10 @@ export const useIpodStore = create<IpodState>()(
           isPlaying: false,
           libraryState: "loaded",
           lastKnownVersion: version,
-          playbackHistory: [], // Clear playback history when resetting library
+          playbackHistory: [],
           historyPosition: -1,
+          elapsedTime: 0,
+          totalTime: 0,
         });
       },
       nextTrack: () =>
@@ -1385,6 +1399,8 @@ export const useIpodStore = create<IpodState>()(
         // Save to server (clearing the source) and clear translations/furigana
         saveLyricsSourceToServer(trackId, null);
       },
+      setElapsedTime: (time) => set({ elapsedTime: time }),
+      setTotalTime: (time) => set({ totalTime: time }),
     }),
     {
       name: "ryos:ipod", // Unique name for localStorage persistence
