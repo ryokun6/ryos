@@ -2559,8 +2559,40 @@
         "calendar": "Calendar",
         "weather": "Weather",
         "stocks": "Stocks",
+        "stickyNote": "Sticky Note",
+        "ipod": "iPod",
+        "dictionary": "Dictionary",
+        "translation": "Translation",
         "addWidget": "Add Widget...",
         "removeWidget": "Remove Widget"
+      },
+      "stickyNote": {
+        "placeholder": "Type a note...",
+        "noteColor": "Note Color"
+      },
+      "dictionary": {
+        "title": "Dictionary",
+        "thesaurus": "Thesaurus",
+        "searchPlaceholder": "Search",
+        "placeholder": "Type a word to look it up",
+        "noDefinition": "No definition found",
+        "loading": "Looking up...",
+        "error": "Could not look up word",
+        "poweredBy": "Powered by Free Dictionary API"
+      },
+      "translation": {
+        "translateFrom": "Translate from",
+        "to": "To",
+        "inputPlaceholder": "Enter text",
+        "translating": "Translating...",
+        "error": "Translation failed",
+        "swap": "Swap languages",
+        "poweredBy": "Powered by MyMemory"
+      },
+      "ipod": {
+        "noTrack": "No Track",
+        "openIpod": "Open iPod",
+        "nowPlaying": "Now Playing"
       },
       "stocks": {
         "delayed": "Delayed up to 20 minutes",

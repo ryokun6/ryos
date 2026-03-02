@@ -75,6 +75,7 @@ export function ClockWidget({ widgetId }: ClockWidgetProps) {
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const widget = useDashboardStore((s) => widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined);
   const config = widget?.config as ClockWidgetConfig | undefined;
+  const gradId = useMemo(() => widgetId?.replace(/[^a-zA-Z0-9]/g, "") ?? "default", [widgetId]);
 
   const cityName = useMemo(() => {
     if (config?.cityKey) return t(config.cityKey).toUpperCase();
@@ -98,6 +99,7 @@ export function ClockWidget({ widgetId }: ClockWidgetProps) {
   }, [time, config?.timezone]);
 
   const hours = displayTime.getHours();
+  const isDark = !isXpTheme && (hours >= 19 || hours < 6);
   const minutes = displayTime.getMinutes();
   const seconds = displayTime.getSeconds();
 
@@ -124,11 +126,11 @@ export function ClockWidget({ widgetId }: ClockWidgetProps) {
       <defs>
         {!isXpTheme && (
           <>
-            <radialGradient id="faceGrad" cx="50%" cy="38%" r="58%">
-              <stop offset="0%" stopColor="#f8f8f8" />
-              <stop offset="100%" stopColor="#ddd" />
+            <radialGradient id={`faceGrad-${gradId}`} cx="50%" cy="38%" r="58%">
+              <stop offset="0%" stopColor={isDark ? "#3a3a3a" : "#f8f8f8"} />
+              <stop offset="100%" stopColor={isDark ? "#1a1a1a" : "#ddd"} />
             </radialGradient>
-            <filter id="clockShadow" x="-10%" y="-10%" width="120%" height="120%">
+            <filter id={`clockShadow-${gradId}`} x="-10%" y="-10%" width="120%" height="120%">
               <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000" floodOpacity="0.35" />
             </filter>
           </>
@@ -151,10 +153,10 @@ export function ClockWidget({ widgetId }: ClockWidgetProps) {
         cx={clockCenterX}
         cy={clockCenterY}
         r={faceRadius}
-        fill={isXpTheme ? "#FFFFFF" : "url(#faceGrad)"}
+        fill={isXpTheme ? "#FFFFFF" : `url(#faceGrad-${gradId})`}
         stroke={isXpTheme ? "#808080" : "none"}
         strokeWidth={isXpTheme ? 1.5 : 0}
-        filter={isXpTheme ? undefined : "url(#clockShadow)"}
+        filter={isXpTheme ? undefined : `url(#clockShadow-${gradId})`}
       />
 
       {Array.from({ length: 12 }, (_, i) => {
@@ -170,7 +172,7 @@ export function ClockWidget({ widgetId }: ClockWidgetProps) {
             dominantBaseline="central"
             fontSize={14}
             fontWeight="700"
-            fill="#333"
+            fill={!isXpTheme && isDark ? "rgba(255,255,255,0.9)" : "#333"}
             style={{ fontFamily: "Helvetica Neue, Helvetica, Arial, sans-serif" }}
           >
             {num}
@@ -180,12 +182,12 @@ export function ClockWidget({ widgetId }: ClockWidgetProps) {
 
       <polygon
         points={handPolygon(clockCenterX, clockCenterY, hourAngle, 28, 3.5, 5)}
-        fill="#222"
+        fill={!isXpTheme && isDark ? "#DDD" : "#222"}
       />
 
       <polygon
         points={handPolygon(clockCenterX, clockCenterY, minuteAngle, 40, 2.5, 5)}
-        fill="#222"
+        fill={!isXpTheme && isDark ? "#DDD" : "#222"}
       />
 
       <line
@@ -198,7 +200,7 @@ export function ClockWidget({ widgetId }: ClockWidgetProps) {
         strokeLinecap="round"
       />
 
-      <circle cx={clockCenterX} cy={clockCenterY} r={6} fill="#D95030" />
+      <circle cx={clockCenterX} cy={clockCenterY} r={6} fill={!isXpTheme && isDark ? "#DDD" : "#D95030"} />
       <circle cx={clockCenterX} cy={clockCenterY} r={2.5} fill="#FFF" />
 
       <text

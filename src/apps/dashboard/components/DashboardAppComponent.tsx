@@ -11,6 +11,10 @@ import { ClockWidget, ClockBackPanel } from "@/components/layout/dashboard/Clock
 import { CalendarWidget, CalendarBackPanel } from "@/components/layout/dashboard/CalendarWidget";
 import { WeatherWidget, WeatherEmojiOverflow, WeatherBackPanel } from "@/components/layout/dashboard/WeatherWidget";
 import { StocksWidget, StocksBackPanel } from "@/components/layout/dashboard/StocksWidget";
+import { IpodWidget, IpodBackPanel } from "@/components/layout/dashboard/IpodWidget";
+import { TranslationWidget, TranslationBackPanel } from "@/components/layout/dashboard/TranslationWidget";
+import { StickyNoteWidget, StickyNoteBackPanel } from "@/components/layout/dashboard/StickyNoteWidget";
+import { DictionaryWidget, DictionaryBackPanel } from "@/components/layout/dashboard/DictionaryWidget";
 import { DashboardMenuBar } from "./DashboardMenuBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
@@ -27,6 +31,14 @@ function WidgetContent({ type, widgetId }: { type: string; widgetId: string }) {
       return <WeatherWidget widgetId={widgetId} />;
     case "stocks":
       return <StocksWidget widgetId={widgetId} />;
+    case "ipod":
+      return <IpodWidget widgetId={widgetId} />;
+    case "translation":
+      return <TranslationWidget widgetId={widgetId} />;
+    case "stickynote":
+      return <StickyNoteWidget widgetId={widgetId} />;
+    case "dictionary":
+      return <DictionaryWidget widgetId={widgetId} />;
     default:
       return null;
   }
@@ -42,6 +54,14 @@ function WidgetBackContent({ type, widgetId, onDone }: { type: string; widgetId:
       return <WeatherBackPanel widgetId={widgetId} onDone={onDone} />;
     case "stocks":
       return <StocksBackPanel widgetId={widgetId} onDone={onDone} />;
+    case "ipod":
+      return <IpodBackPanel widgetId={widgetId} onDone={onDone} />;
+    case "translation":
+      return <TranslationBackPanel widgetId={widgetId} onDone={onDone} />;
+    case "stickynote":
+      return <StickyNoteBackPanel widgetId={widgetId} onDone={onDone} />;
+    case "dictionary":
+      return <DictionaryBackPanel widgetId={widgetId} onDone={onDone} />;
     default:
       return null;
   }
@@ -69,6 +89,10 @@ function WidgetPicker({
     { type: "calendar", icon: "📅", label: t("apps.dashboard.widgets.calendar") },
     { type: "weather", icon: "🌤️", label: t("apps.dashboard.widgets.weather") },
     { type: "stocks", icon: "📈", label: t("apps.dashboard.widgets.stocks") },
+    { type: "ipod", icon: "🎵", label: t("apps.dashboard.widgets.ipod", "iPod") },
+    { type: "translation", icon: "🌐", label: t("apps.dashboard.widgets.translation", "Translation") },
+    { type: "stickynote", icon: "📝", label: t("apps.dashboard.widgets.stickyNote", "Sticky Note") },
+    { type: "dictionary", icon: "📖", label: t("apps.dashboard.widgets.dictionary", "Dictionary") },
   ];
 
   return (
@@ -186,6 +210,10 @@ export function DashboardAppComponent({
       onAddCalendar={() => handleAddWidget("calendar")}
       onAddWeather={() => handleAddWidget("weather")}
       onAddStocks={() => handleAddWidget("stocks")}
+      onAddIpod={() => handleAddWidget("ipod")}
+      onAddTranslation={() => handleAddWidget("translation")}
+      onAddStickyNote={() => handleAddWidget("stickynote")}
+      onAddDictionary={() => handleAddWidget("dictionary")}
       onResetWidgets={resetToDefaults}
     />
   );
