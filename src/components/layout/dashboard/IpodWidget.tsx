@@ -250,6 +250,14 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
   const artist = track?.artist || "";
   const hasTrack = !!track;
 
+  const handlePlayPause = useCallback(() => {
+    if (!hasTrack) {
+      requestAppLaunch({ appId: "ipod" });
+      return;
+    }
+    togglePlay();
+  }, [hasTrack, togglePlay]);
+
   const handleToggleRepeat = useCallback(() => {
     toggleLoopCurrent();
   }, [toggleLoopCurrent]);
@@ -308,7 +316,7 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
         <ClickWheel
           onPrev={previousTrack}
           onNext={nextTrack}
-          onPlayPause={togglePlay}
+          onPlayPause={handlePlayPause}
           isPlaying={isPlaying}
           isXpTheme={isXpTheme}
         />
