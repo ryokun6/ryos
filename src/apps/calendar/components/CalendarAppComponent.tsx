@@ -11,7 +11,6 @@ import {
   type CalendarDayCell,
   type WeekDay,
 } from "../hooks/useCalendarLogic";
-import { getTranslatedAppName } from "@/utils/i18n";
 import { CaretLeft, CaretRight, Plus } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -671,7 +670,6 @@ function BottomToolbar({
   onNewEvent,
   onPrev,
   onNext,
-  headerLabel,
   isXpTheme,
   isMacOSTheme,
   isSystem7Theme,
@@ -683,7 +681,6 @@ function BottomToolbar({
   onNewEvent: () => void;
   onPrev: () => void;
   onNext: () => void;
-  headerLabel: string;
   isXpTheme: boolean;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
@@ -751,9 +748,6 @@ function BottomToolbar({
           </Button>
         </div>
       </div>
-
-      {/* Center: header label */}
-      <span className="text-xs font-semibold truncate px-2">{headerLabel}</span>
 
       {/* Right: Today + New */}
       <div className={cn("flex items-center gap-0", isMacOSTheme && "aqua-select-group")}>
@@ -890,7 +884,7 @@ export function CalendarAppComponent({
     <>
       {!isXpTheme && isForeground && menuBar}
       <WindowFrame
-        title={getTranslatedAppName("calendar")}
+        title={headerLabel}
         onClose={onClose}
         isForeground={isForeground}
         appId="calendar"
@@ -984,7 +978,6 @@ export function CalendarAppComponent({
             onNewEvent={handleNewEvent}
             onPrev={handlePrev}
             onNext={handleNext}
-            headerLabel={headerLabel}
             isXpTheme={isXpTheme}
             isMacOSTheme={isMacOSTheme}
             isSystem7Theme={isSystem7Theme}
