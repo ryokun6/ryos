@@ -182,197 +182,202 @@ function WeekTimeGrid({
   const totalHours = HOUR_END - HOUR_START;
   const hasAllDayEvents = weekDates.some((d) => d.allDayEvents.length > 0);
 
+  const MIN_DAY_COL = 52;
+  const MIN_WEEK_WIDTH = 48 + 7 * MIN_DAY_COL;
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Column headers */}
-      <div
-        className="flex border-b"
-        style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.1)" }}
-      >
-        <div style={{ width: 48, minWidth: 48, flexShrink: 0 }} />
-        {weekDates.map((day) => (
-          <button
-            key={day.date}
-            type="button"
-            onClick={() => onDateClick(day.date)}
-            className="flex-1 text-center py-1.5 min-w-0 transition-colors"
-            style={{
-              backgroundColor: day.isToday
-                ? isMacOSTheme ? "rgba(56,117,215,0.1)" : isXpTheme ? "rgba(49,106,197,0.12)" : "rgba(0,0,0,0.06)"
-                : "transparent",
-              borderBottom: day.isToday
-                ? `2px solid ${isXpTheme ? "#CC0000" : "#FF3B30"}`
-                : "2px solid transparent",
-            }}
-          >
-            <div className={cn("text-[10px] opacity-50 leading-none", isMacOSTheme && "font-geneva-12")}>{day.dayName}</div>
-            <div
-              className="text-sm font-semibold leading-tight mt-0.5"
-              style={{
-                color: day.isToday ? (isXpTheme ? "#CC0000" : "#FF3B30") : undefined,
-              }}
-            >
-              {day.dayOfMonth}
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* All-day events row */}
-      {hasAllDayEvents && (
+    <div className="flex-1 overflow-x-auto overflow-y-hidden">
+      <div className="flex flex-col h-full" style={{ minWidth: MIN_WEEK_WIDTH }}>
+        {/* Column headers */}
         <div
-          className="flex border-b"
-          style={{
-            borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)",
-            minHeight: 24,
-          }}
+          className="flex border-b shrink-0"
+          style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.1)" }}
         >
-          <div
-            className={cn("flex items-center justify-end px-1 text-[9px] opacity-40", isMacOSTheme && "font-geneva-12")}
-            style={{ width: 48, minWidth: 48, flexShrink: 0 }}
-          >
-            all-day
-          </div>
+          <div style={{ width: 48, minWidth: 48, flexShrink: 0 }} />
           {weekDates.map((day) => (
-            <div key={day.date} className="flex-1 flex flex-col gap-px py-px px-px min-w-0">
-              {day.allDayEvents.map((ev) => (
-                <button
-                  key={ev.id}
-                  type="button"
-                  onClick={() => onEventClick(ev)}
-                  onDoubleClick={() => onEventDoubleClick(ev)}
-                  className="text-[9px] truncate rounded px-1 leading-snug text-left"
-                  style={{
-                    backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue,
-                    color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue,
-                    border: selectedEventId === ev.id
-                      ? `1px solid ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`
-                      : "1px solid transparent",
-                  }}
-                >
-                  {ev.title}
-                </button>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Scrollable time grid */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="flex relative" style={{ height: totalHours * HOUR_HEIGHT }}>
-          {/* Time gutter */}
-          <div style={{ width: 48, minWidth: 48, flexShrink: 0 }} className="relative">
-            {Array.from({ length: totalHours }, (_, i) => {
-              const hour = HOUR_START + i;
-              const label =
-                hour === 0 ? "12 AM" :
-                hour < 12 ? `${hour} AM` :
-                hour === 12 ? "12 PM" :
-                `${hour - 12} PM`;
-              return (
-                <div
-                  key={hour}
-                  className={cn("absolute right-1 text-[10px] opacity-40 text-right", isMacOSTheme && "font-geneva-12")}
-                  style={{ top: i * HOUR_HEIGHT - 6, width: 40 }}
-                >
-                  {label}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Day columns */}
-          {weekDates.map((day) => (
-            <div
+            <button
               key={day.date}
-              className="flex-1 relative min-w-0"
+              type="button"
+              onClick={() => onDateClick(day.date)}
+              className="flex-1 text-center py-1.5 min-w-0 transition-colors"
               style={{
                 backgroundColor: day.isToday
-                  ? isMacOSTheme ? "rgba(56,117,215,0.04)" : isXpTheme ? "rgba(49,106,197,0.04)" : "rgba(0,0,0,0.02)"
+                  ? isMacOSTheme ? "rgba(56,117,215,0.1)" : isXpTheme ? "rgba(49,106,197,0.12)" : "rgba(0,0,0,0.06)"
                   : "transparent",
-                borderLeft: isXpTheme ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(0,0,0,0.04)",
+                borderBottom: day.isToday
+                  ? `2px solid ${isXpTheme ? "#CC0000" : "#FF3B30"}`
+                  : "2px solid transparent",
               }}
             >
-              {/* Hour grid lines */}
-              {Array.from({ length: totalHours }, (_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => onTimeSlotClick(day.date, HOUR_START + i)}
-                  className="absolute left-0 right-0 border-t hover:bg-black/[0.02] transition-colors"
-                  style={{
-                    top: i * HOUR_HEIGHT,
-                    height: HOUR_HEIGHT,
-                    borderColor: isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
-                  }}
-                />
-              ))}
+              <div className={cn("text-[10px] opacity-50 leading-none", isMacOSTheme && "font-geneva-12")}>{day.dayName}</div>
+              <div
+                className="text-sm font-semibold leading-tight mt-0.5"
+                style={{
+                  color: day.isToday ? (isXpTheme ? "#CC0000" : "#FF3B30") : undefined,
+                }}
+              >
+                {day.dayOfMonth}
+              </div>
+            </button>
+          ))}
+        </div>
 
-              {/* Timed events */}
-              {day.timedEvents.map((ev) => {
-                const [sh, sm] = (ev.startTime || "9:00").split(":").map(Number);
-                const [eh, em] = (ev.endTime || `${sh + 1}:00`).split(":").map(Number);
-                const startMin = sh * 60 + sm;
-                const endMin = eh * 60 + em;
-                const top = ((startMin - HOUR_START * 60) / 60) * HOUR_HEIGHT;
-                const height = Math.max(((endMin - startMin) / 60) * HOUR_HEIGHT, 18);
-
-                return (
+        {/* All-day events row */}
+        {hasAllDayEvents && (
+          <div
+            className="flex border-b shrink-0"
+            style={{
+              borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)",
+              minHeight: 24,
+            }}
+          >
+            <div
+              className={cn("flex items-center justify-end px-1 text-[9px] opacity-40", isMacOSTheme && "font-geneva-12")}
+              style={{ width: 48, minWidth: 48, flexShrink: 0 }}
+            >
+              all-day
+            </div>
+            {weekDates.map((day) => (
+              <div key={day.date} className="flex-1 flex flex-col gap-px py-px px-px min-w-0">
+                {day.allDayEvents.map((ev) => (
                   <button
                     key={ev.id}
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                    onDoubleClick={(e) => { e.stopPropagation(); onEventDoubleClick(ev); }}
-                    className="absolute left-0.5 right-0.5 rounded text-left overflow-hidden transition-shadow"
+                    onClick={() => onEventClick(ev)}
+                    onDoubleClick={() => onEventDoubleClick(ev)}
+                    className="text-[9px] truncate rounded px-1 leading-snug text-left"
                     style={{
-                      top: Math.max(top, 0),
-                      height,
                       backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue,
-                      borderLeft: `3px solid ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`,
-                      boxShadow: selectedEventId === ev.id
-                        ? `0 0 0 1px ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`
-                        : isMacOSTheme ? "0 1px 3px rgba(0,0,0,0.1)" : "0 1px 2px rgba(0,0,0,0.08)",
-                      zIndex: 2,
+                      color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue,
+                      border: selectedEventId === ev.id
+                        ? `1px solid ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`
+                        : "1px solid transparent",
                     }}
                   >
-                    <div className="px-1 py-0.5">
-                      <div
-                        className={cn("text-[10px] font-semibold truncate", isMacOSTheme && "font-geneva-12")}
-                        style={{ color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue }}
-                      >
-                        {ev.startTime}
-                      </div>
-                      <div className="text-[10px] truncate leading-tight">{ev.title}</div>
-                    </div>
+                    {ev.title}
                   </button>
-                );
-              })}
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
 
-              {/* Current time line */}
-              {day.isToday && (() => {
-                const topPos = ((currentMinute - HOUR_START * 60) / 60) * HOUR_HEIGHT;
-                if (topPos < 0 || topPos > totalHours * HOUR_HEIGHT) return null;
+        {/* Scrollable time grid */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex relative" style={{ height: totalHours * HOUR_HEIGHT }}>
+            {/* Time gutter */}
+            <div style={{ width: 48, minWidth: 48, flexShrink: 0 }} className="relative">
+              {Array.from({ length: totalHours }, (_, i) => {
+                const hour = HOUR_START + i;
+                const label =
+                  hour === 0 ? "12 AM" :
+                  hour < 12 ? `${hour} AM` :
+                  hour === 12 ? "12 PM" :
+                  `${hour - 12} PM`;
                 return (
                   <div
-                    className="absolute left-0 right-0 pointer-events-none"
-                    style={{ top: topPos, zIndex: 5 }}
+                    key={hour}
+                    className={cn("absolute right-1 text-[10px] opacity-40 text-right", isMacOSTheme && "font-geneva-12")}
+                    style={{ top: i * HOUR_HEIGHT - 6, width: 40 }}
                   >
-                    <div className="flex items-center">
-                      <div
-                        className="w-2 h-2 rounded-full -ml-1"
-                        style={{ backgroundColor: isXpTheme ? "#CC0000" : "#FF3B30" }}
-                      />
-                      <div
-                        className="flex-1 h-px"
-                        style={{ backgroundColor: isXpTheme ? "#CC0000" : "#FF3B30" }}
-                      />
-                    </div>
+                    {label}
                   </div>
                 );
-              })()}
+              })}
             </div>
-          ))}
+
+            {/* Day columns */}
+            {weekDates.map((day) => (
+              <div
+                key={day.date}
+                className="flex-1 relative min-w-0"
+                style={{
+                  backgroundColor: day.isToday
+                    ? isMacOSTheme ? "rgba(56,117,215,0.04)" : isXpTheme ? "rgba(49,106,197,0.04)" : "rgba(0,0,0,0.02)"
+                    : "transparent",
+                  borderLeft: isXpTheme ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(0,0,0,0.04)",
+                }}
+              >
+                {/* Hour grid lines */}
+                {Array.from({ length: totalHours }, (_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => onTimeSlotClick(day.date, HOUR_START + i)}
+                    className="absolute left-0 right-0 border-t hover:bg-black/[0.02] transition-colors"
+                    style={{
+                      top: i * HOUR_HEIGHT,
+                      height: HOUR_HEIGHT,
+                      borderColor: isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
+                    }}
+                  />
+                ))}
+
+                {/* Timed events */}
+                {day.timedEvents.map((ev) => {
+                  const [sh, sm] = (ev.startTime || "9:00").split(":").map(Number);
+                  const [eh, em] = (ev.endTime || `${sh + 1}:00`).split(":").map(Number);
+                  const startMin = sh * 60 + sm;
+                  const endMin = eh * 60 + em;
+                  const top = ((startMin - HOUR_START * 60) / 60) * HOUR_HEIGHT;
+                  const height = Math.max(((endMin - startMin) / 60) * HOUR_HEIGHT, 18);
+
+                  return (
+                    <button
+                      key={ev.id}
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
+                      onDoubleClick={(e) => { e.stopPropagation(); onEventDoubleClick(ev); }}
+                      className="absolute left-0.5 right-0.5 rounded text-left overflow-hidden transition-shadow"
+                      style={{
+                        top: Math.max(top, 0),
+                        height,
+                        backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue,
+                        borderLeft: `3px solid ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`,
+                        boxShadow: selectedEventId === ev.id
+                          ? `0 0 0 1px ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`
+                          : isMacOSTheme ? "0 1px 3px rgba(0,0,0,0.1)" : "0 1px 2px rgba(0,0,0,0.08)",
+                        zIndex: 2,
+                      }}
+                    >
+                      <div className="px-1 py-0.5">
+                        <div
+                          className={cn("text-[10px] font-semibold truncate", isMacOSTheme && "font-geneva-12")}
+                          style={{ color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue }}
+                        >
+                          {ev.startTime}
+                        </div>
+                        <div className="text-[10px] truncate leading-tight">{ev.title}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+
+                {/* Current time line */}
+                {day.isToday && (() => {
+                  const topPos = ((currentMinute - HOUR_START * 60) / 60) * HOUR_HEIGHT;
+                  if (topPos < 0 || topPos > totalHours * HOUR_HEIGHT) return null;
+                  return (
+                    <div
+                      className="absolute left-0 right-0 pointer-events-none"
+                      style={{ top: topPos, zIndex: 5 }}
+                    >
+                      <div className="flex items-center">
+                        <div
+                          className="w-2 h-2 rounded-full -ml-1"
+                          style={{ backgroundColor: isXpTheme ? "#CC0000" : "#FF3B30" }}
+                        />
+                        <div
+                          className="flex-1 h-px"
+                          style={{ backgroundColor: isXpTheme ? "#CC0000" : "#FF3B30" }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -833,8 +838,7 @@ export function CalendarAppComponent({
   });
 
   const showSidebar = containerWidth >= 540;
-  const forceDay = containerWidth < 420;
-  const effectiveView = forceDay && view === "week" ? "day" : view;
+  const effectiveView = view;
 
   const handlePrev = useCallback(() => {
     if (effectiveView === "week") navigateWeek(-1);
