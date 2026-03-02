@@ -530,11 +530,11 @@
 }
 
 /* Ensure all UI elements in macOS theme use proper antialiasing */
-:root[data-os-theme="macosx"] input:not(.dashboard-overlay *),
-:root[data-os-theme="macosx"] label:not(.dashboard-overlay *),
-:root[data-os-theme="macosx"] button:not(.dashboard-overlay *),
-:root[data-os-theme="macosx"] select:not(.dashboard-overlay *),
-:root[data-os-theme="macosx"] textarea:not(.dashboard-overlay *),
+:root[data-os-theme="macosx"] input:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *),
+:root[data-os-theme="macosx"] label:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *),
+:root[data-os-theme="macosx"] button:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *),
+:root[data-os-theme="macosx"] select:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *),
+:root[data-os-theme="macosx"] textarea:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *),
 :root[data-os-theme="macosx"] .menubar,
 :root[data-os-theme="macosx"] .window,
 :root[data-os-theme="macosx"] .title-bar {
@@ -593,7 +593,7 @@
   font-weight: 500 !important;
 }
 
-:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger):not(.dashboard-overlay *):not(.calendar-grid *) {
+:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger):not(.dashboard-overlay *):not(.calendar-grid *):not(.ipod-force-font *):not(.karaoke-force-font *) {
   font-size: 13px !important;
   font-weight: normal !important;
 }
@@ -603,13 +603,13 @@
   font-weight: bold !important;
 }
 
-:root[data-os-theme="macosx"] input:not(.dashboard-overlay *),
-:root[data-os-theme="macosx"] select:not(.dashboard-overlay *),
-:root[data-os-theme="macosx"] textarea:not(.dashboard-overlay *) {
+:root[data-os-theme="macosx"] input:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *),
+:root[data-os-theme="macosx"] select:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *),
+:root[data-os-theme="macosx"] textarea:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *) {
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] label:not(.dashboard-overlay *):not(.calendar-grid *) {
+:root[data-os-theme="macosx"] label:not(.dashboard-overlay *):not(.calendar-grid *):not(.ipod-force-font *):not(.karaoke-force-font *) {
   font-size: 11px !important;
 }
 
@@ -617,8 +617,8 @@
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] p:not(.dashboard-overlay *):not(.calendar-grid *),
-:root[data-os-theme="macosx"] div:not(.dashboard-overlay *):not(.calendar-grid *) {
+:root[data-os-theme="macosx"] p:not(.dashboard-overlay *):not(.calendar-grid *):not(.ipod-force-font *):not(.karaoke-force-font *),
+:root[data-os-theme="macosx"] div:not(.dashboard-overlay *):not(.calendar-grid *):not(.ipod-force-font *):not(.karaoke-force-font *) {
   font-size: 13px !important;
 }
 
@@ -814,7 +814,7 @@
 }
 
 /* macOS select styling - similar to aqua buttons */
-:root[data-os-theme="macosx"] select:not(.dashboard-overlay *) {
+:root[data-os-theme="macosx"] select:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *) {
   font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
