@@ -25,46 +25,69 @@ export function WidgetChrome({
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const [isHovered, setIsHovered] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef<{ x: number; y: number; startX: number; startY: number } | null>(null);
+  const dragStartRef = useRef<{ px: number; py: number; startX: number; startY: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  // Use Pointer Events for unified mouse + touch drag handling
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
       if ((e.target as HTMLElement).closest("[data-close-btn]")) return;
+      // Only handle primary button (mouse left / single finger)
+      if (e.button !== 0) return;
       e.preventDefault();
+      e.stopPropagation();
+
+      // Capture pointer so we get events even outside the element
+      containerRef.current?.setPointerCapture(e.pointerId);
+
       dragStartRef.current = {
-        x: e.clientX,
-        y: e.clientY,
+        px: e.clientX,
+        py: e.clientY,
         startX: x,
         startY: y,
       };
       setIsDragging(true);
-
-      const handleMouseMove = (ev: MouseEvent) => {
-        if (!dragStartRef.current) return;
-        const dx = ev.clientX - dragStartRef.current.x;
-        const dy = ev.clientY - dragStartRef.current.y;
-        onMove?.({
-          x: dragStartRef.current.startX + dx,
-          y: dragStartRef.current.startY + dy,
-        });
-      };
-
-      const handleMouseUp = () => {
-        dragStartRef.current = null;
-        setIsDragging(false);
-        window.removeEventListener("mousemove", handleMouseMove);
-        window.removeEventListener("mouseup", handleMouseUp);
-      };
-
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
     },
-    [x, y, onMove]
+    [x, y]
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!dragStartRef.current) return;
+      e.preventDefault();
+      const dx = e.clientX - dragStartRef.current.px;
+      const dy = e.clientY - dragStartRef.current.py;
+      onMove?.({
+        x: dragStartRef.current.startX + dx,
+        y: dragStartRef.current.startY + dy,
+      });
+    },
+    [onMove]
+  );
+
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (!dragStartRef.current) return;
+      containerRef.current?.releasePointerCapture(e.pointerId);
+      dragStartRef.current = null;
+      setIsDragging(false);
+    },
+    []
+  );
+
+  const handlePointerCancel = useCallback(
+    (e: React.PointerEvent) => {
+      containerRef.current?.releasePointerCapture(e.pointerId);
+      dragStartRef.current = null;
+      setIsDragging(false);
+    },
+    []
   );
 
   return (
     <div
-      className="absolute select-none"
+      ref={containerRef}
+      className="absolute select-none touch-none"
       style={{
         left: x,
         top: y,
@@ -73,7 +96,10 @@ export function WidgetChrome({
         cursor: isDragging ? "grabbing" : "grab",
         zIndex: isDragging ? 100 : 1,
       }}
-      onMouseDown={handleMouseDown}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -132,7 +158,7 @@ export function WidgetChrome({
             : "0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08)",
         }}
       >
-        {/* Widget content */}
+        {/* Widget content — disable pointer events while dragging to prevent accidental clicks */}
         <div style={{ pointerEvents: isDragging ? "none" : "auto" }}>
           {children}
         </div>

@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
 
+/** Format hours to 12-hour with AM/PM */
+function formatTime12(hours: number, minutes: number): { time: string; ampm: string } {
+  const ampm = hours >= 12 ? "PM" : "AM";
+  const h12 = hours % 12 || 12;
+  const time = `${h12}:${String(minutes).padStart(2, "0")}`;
+  return { time, ampm };
+}
+
 export function ClockWidget() {
   const [time, setTime] = useState(new Date());
   const currentTheme = useThemeStore((state) => state.current);
@@ -19,13 +27,9 @@ export function ClockWidget() {
   const minuteAngle = (minutes / 60) * 360 + (seconds / 60) * 6;
   const hourAngle = ((hours % 12) / 12) * 360 + (minutes / 60) * 30;
 
-  const size = 150;
-  const center = size / 2;
-  const outerR = size / 2 - 2;
-  const faceRadius = size / 2 - 14;
+  const { time: digitalTime, ampm } = formatTime12(hours, minutes);
 
   if (isXpTheme) {
-    // Simple flat clock for XP/98
     return (
       <div className="flex flex-col items-center p-2">
         <svg width={130} height={130} viewBox="0 0 130 130">
@@ -45,20 +49,24 @@ export function ClockWidget() {
           <line x1={65} y1={65} x2={65 + 44 * Math.cos(((secondAngle - 90) * Math.PI) / 180)} y2={65 + 44 * Math.sin(((secondAngle - 90) * Math.PI) / 180)} stroke="#CC0000" strokeWidth={1} strokeLinecap="round" />
           <circle cx={65} cy={65} r={3} fill="#CC0000" />
         </svg>
+        {/* Digital time for XP */}
+        <div className="text-center mt-1">
+          <span className="text-sm font-bold">{digitalTime}</span>
+          <span className="text-[10px] ml-1 opacity-60">{ampm}</span>
+        </div>
       </div>
     );
   }
 
-  // Tiger-style clock: dark metallic bezel, white face, red second hand
+  // Tiger-style clock
+  const size = 150;
+  const center = size / 2;
+  const outerR = size / 2 - 2;
+  const faceRadius = size / 2 - 14;
+
   return (
     <div className="flex flex-col items-center py-2 px-2">
-      {/* AM/PM indicator */}
-      <div className="text-[10px] font-semibold mb-1 tracking-wider" style={{ color: "rgba(255,255,255,0.5)" }}>
-        {hours >= 12 ? "PM" : "AM"}
-      </div>
-
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {/* Outer bezel — dark metallic ring */}
         <defs>
           <radialGradient id="bezelGrad" cx="50%" cy="40%" r="50%">
             <stop offset="0%" stopColor="#666" />
@@ -78,21 +86,21 @@ export function ClockWidget() {
         <circle cx={center} cy={center} r={outerR} fill="url(#bezelGrad)" />
         <circle cx={center} cy={center} r={outerR - 1} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={0.5} />
 
-        {/* Clock face — white/cream */}
+        {/* Clock face */}
         <circle cx={center} cy={center} r={faceRadius} fill="url(#faceGrad)" filter="url(#clockShadow)" />
         <circle cx={center} cy={center} r={faceRadius} fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
 
-        {/* Hour markers */}
+        {/* Minute markers */}
         {Array.from({ length: 60 }, (_, i) => {
           const angle = ((i * 6 - 90) * Math.PI) / 180;
           const isHour = i % 5 === 0;
-          const innerR = faceRadius - (isHour ? 10 : 5);
+          const innerR2 = faceRadius - (isHour ? 10 : 5);
           const outerR2 = faceRadius - 2;
           return (
             <line
               key={i}
-              x1={center + innerR * Math.cos(angle)}
-              y1={center + innerR * Math.sin(angle)}
+              x1={center + innerR2 * Math.cos(angle)}
+              y1={center + innerR2 * Math.sin(angle)}
               x2={center + outerR2 * Math.cos(angle)}
               y2={center + outerR2 * Math.sin(angle)}
               stroke={isHour ? "#333" : "#bbb"}
@@ -146,7 +154,7 @@ export function ClockWidget() {
           strokeLinecap="round"
         />
 
-        {/* Second hand — red */}
+        {/* Second hand */}
         <line
           x1={center - 10 * Math.cos(((secondAngle - 90) * Math.PI) / 180)}
           y1={center - 10 * Math.sin(((secondAngle - 90) * Math.PI) / 180)}
@@ -161,6 +169,22 @@ export function ClockWidget() {
         <circle cx={center} cy={center} r={4} fill="#333" />
         <circle cx={center} cy={center} r={2.5} fill="#CC3333" />
       </svg>
+
+      {/* Digital time + AM/PM below clock */}
+      <div className="text-center mt-1">
+        <span
+          className="text-sm font-semibold tabular-nums"
+          style={{ color: "rgba(255,255,255,0.85)" }}
+        >
+          {digitalTime}
+        </span>
+        <span
+          className="text-[10px] ml-1 font-medium"
+          style={{ color: "rgba(255,255,255,0.45)" }}
+        >
+          {ampm}
+        </span>
+      </div>
     </div>
   );
 }
