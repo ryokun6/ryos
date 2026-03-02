@@ -340,7 +340,6 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
       <div
         className="relative"
         style={{
-          background: "linear-gradient(180deg, rgba(91,163,230,0.7) 0%, rgba(74,144,217,0.75) 40%, rgba(59,124,200,0.8) 100%)",
           padding: "7px 10px 5px",
           zIndex: 1,
         }}
@@ -409,7 +408,6 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
       <div
         className="relative"
         style={{
-          background: "linear-gradient(180deg, rgba(91,163,230,0.7) 0%, rgba(74,144,217,0.75) 40%, rgba(59,124,200,0.8) 100%)",
           padding: "5px 10px",
           zIndex: 1,
         }}
