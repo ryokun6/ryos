@@ -32,7 +32,7 @@ function MarqueeText({ text, color }: { text: string; color: string }) {
     <div
       ref={containerRef}
       className="overflow-hidden whitespace-nowrap"
-      style={{ width: "100%", position: "relative" }}
+      style={{ width: "100%", position: "relative", textAlign: shouldScroll ? "left" : "center" }}
     >
       <span
         ref={textRef}
@@ -352,7 +352,9 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
+            alignItems: "center",
             padding: "0 18px",
+            textAlign: "center",
           }}
         >
           {hasTrack ? (
@@ -368,6 +370,8 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
+                    width: "100%",
+                    textAlign: "center",
                   }}
                 >
                   {artist}
