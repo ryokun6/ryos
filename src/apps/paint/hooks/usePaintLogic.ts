@@ -19,7 +19,7 @@ interface PaintCanvasHandle {
   redo: () => void;
   clear: () => void;
   exportCanvas: () => Promise<Blob>;
-  importImage: (dataUrl: string) => void;
+  importImage: (source: string | HTMLImageElement) => void;
   cut: () => Promise<void>;
   copy: () => Promise<void>;
   paste: () => Promise<void>;
@@ -91,13 +91,14 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
         setCanvasWidth(newWidth);
         setCanvasHeight(newHeight);
         setIsLoadingFile(true);
-        canvasRef.current?.importImage(blobUrl);
+        // Pass the already-loaded Image element to avoid a second async load
+        // from a blob URL that we're about to revoke
+        canvasRef.current?.importImage(img);
         setLastFilePath(path);
         setHasUnsavedChanges(false);
         setIsLoadingFile(false);
         setError(null);
 
-        console.log("[Paint] Revoking Blob URL after successful load:", blobUrl);
         URL.revokeObjectURL(blobUrl);
         if (lastConsumedBlobUrl.current === blobUrl) {
           lastConsumedBlobUrl.current = null;
@@ -113,7 +114,6 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
         );
         setError("Failed to load image content.");
 
-        console.log("[Paint] Revoking Blob URL after load error:", blobUrl);
         URL.revokeObjectURL(blobUrl);
         if (lastConsumedBlobUrl.current === blobUrl) {
           lastConsumedBlobUrl.current = null;
@@ -321,7 +321,7 @@ export function usePaintLogic({ initialData, instanceId }: UsePaintLogicProps) {
           setCanvasWidth(newWidth);
           setCanvasHeight(newHeight);
           setIsLoadingFile(true);
-          canvasRef.current?.importImage(dataUrl);
+          canvasRef.current?.importImage(img);
           setIsLoadingFile(false);
           setSaveFileName(file.name);
           setIsSaveDialogOpen(true);

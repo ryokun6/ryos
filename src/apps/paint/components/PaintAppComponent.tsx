@@ -112,6 +112,7 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
         onNavigateNext={onNavigateNext}
         onNavigatePrevious={onNavigatePrevious}
         menuBar={isXpTheme ? menuBar : undefined}
+        keepMountedWhenMinimized
       >
         <div
           className="flex flex-col h-full w-full min-h-0 p-2"

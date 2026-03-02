@@ -27,7 +27,7 @@ interface PaintCanvasRef {
   redo: () => void;
   clear: () => void;
   exportCanvas: () => Promise<Blob>;
-  importImage: (dataUrl: string) => void;
+  importImage: (source: string | HTMLImageElement) => void;
   cut: () => Promise<void>;
   copy: () => Promise<void>;
   paste: () => Promise<void>;
@@ -105,7 +105,7 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
     const containerRef = useRef<HTMLDivElement>(null);
     const lassoPathRef = useRef<Point[]>([]);
 
-    // Handle canvas resize
+    // Handle canvas resize — preserve content at original position (no scaling)
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -113,8 +113,12 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
       const resizeObserver = new ResizeObserver((entries) => {
         for (const entry of entries) {
           const { width, height } = entry.contentRect;
+          const newW = Math.round(width);
+          const newH = Math.round(height);
 
-          // Store current canvas content
+          if (canvas.width === newW && canvas.height === newH) return;
+
+          // Snapshot current content at 1:1 (no scaling)
           const tempCanvas = document.createElement("canvas");
           const tempContext = tempCanvas.getContext("2d", {
             willReadFrequently: true,
@@ -125,11 +129,11 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
             tempContext.drawImage(canvas, 0, 0);
           }
 
-          // Update canvas size
-          canvas.width = width;
-          canvas.height = height;
+          // Update canvas pixel dimensions
+          canvas.width = newW;
+          canvas.height = newH;
 
-          // Restore context properties
+          // Restore context properties (setting canvas.width resets the context)
           const context = canvas.getContext("2d", { willReadFrequently: true });
           if (context) {
             context.lineCap = "round";
@@ -137,7 +141,6 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
             context.lineWidth = strokeWidth;
             contextRef.current = context;
 
-            // Restore pattern if exists
             if (patternRef.current) {
               const pattern = context.createPattern(
                 patternRef.current,
@@ -149,19 +152,11 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
               }
             }
 
-            // Restore canvas content
+            // Fill new area with white, then paste old content at 1:1
+            context.fillStyle = "#FFFFFF";
+            context.fillRect(0, 0, newW, newH);
             if (tempContext) {
-              context.drawImage(
-                tempCanvas,
-                0,
-                0,
-                tempCanvas.width,
-                tempCanvas.height,
-                0,
-                0,
-                width,
-                height
-              );
+              context.drawImage(tempCanvas, 0, 0);
             }
           }
         }
@@ -883,23 +878,45 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
             }, "image/png");
           });
         },
-        importImage: (dataUrl: string) => {
-          const img = new Image();
-          img.src = dataUrl;
-          img.onload = () => {
-            if (!contextRef.current || !canvasRef.current) return;
+        importImage: (source: string | HTMLImageElement) => {
+          const drawOnCanvas = (img: HTMLImageElement) => {
+            if (!canvasRef.current) return;
 
             const canvas = canvasRef.current;
-            const ctx = contextRef.current;
 
-            // Clear the canvas first
+            // Set canvas pixel dimensions to match the target size
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+
+            // Re-acquire context after resizing (resets all state)
+            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            if (!ctx) return;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.lineWidth = strokeWidth;
+            contextRef.current = ctx;
+
+            if (patternRef.current) {
+              const pattern = ctx.createPattern(patternRef.current, "repeat");
+              if (pattern) {
+                ctx.strokeStyle = pattern;
+                ctx.fillStyle = pattern;
+              }
+            }
+
             ctx.fillStyle = "#FFFFFF";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw the image at the canvas dimensions (which are already scaled)
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             saveToHistory();
           };
+
+          if (source instanceof HTMLImageElement) {
+            drawOnCanvas(source);
+          } else {
+            const img = new Image();
+            img.src = source;
+            img.onload = () => drawOnCanvas(img);
+          }
         },
         cut: async () => {
           if (selection) {
@@ -936,6 +953,9 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
         handlePaste,
         onContentChange,
         selection,
+        canvasWidth,
+        canvasHeight,
+        strokeWidth,
       ]
     );
 
