@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { EventColor } from "./useCalendarStore";
 
-export type WidgetType = "clock" | "weather" | "calendar" | "stocks";
+export type WidgetType = "clock" | "weather" | "calendar" | "stocks" | "ipod" | "dictionary" | "stickynote" | "translation";
 
 export interface WeatherWidgetConfig {
   cityName?: string;
@@ -25,7 +25,25 @@ export interface StocksWidgetConfig {
   symbols?: string[];
 }
 
-export type WidgetConfig = WeatherWidgetConfig | ClockWidgetConfig | CalendarWidgetConfig | StocksWidgetConfig;
+export interface IpodWidgetConfig {
+  placeholder?: boolean;
+}
+
+export interface DictionaryWidgetConfig {
+  lastWord?: string;
+}
+
+export interface StickyNoteWidgetConfig {
+  text?: string;
+  color?: string;
+}
+
+export interface TranslationWidgetConfig {
+  fromLang?: string;
+  toLang?: string;
+}
+
+export type WidgetConfig = WeatherWidgetConfig | ClockWidgetConfig | CalendarWidgetConfig | StocksWidgetConfig | IpodWidgetConfig | DictionaryWidgetConfig | StickyNoteWidgetConfig | TranslationWidgetConfig;
 
 export interface DashboardWidget {
   id: string;

@@ -20,6 +20,9 @@ interface DashboardMenuBarProps {
   onAddCalendar: () => void;
   onAddWeather: () => void;
   onAddStocks: () => void;
+  onAddIpod: () => void;
+  onAddTranslation: () => void;
+  onAddStickyNote: () => void;
   onResetWidgets: () => void;
 }
 
@@ -31,6 +34,9 @@ export function DashboardMenuBar({
   onAddCalendar,
   onAddWeather,
   onAddStocks,
+  onAddIpod,
+  onAddTranslation,
+  onAddStickyNote,
   onResetWidgets,
 }: DashboardMenuBarProps) {
   const { t } = useTranslation();
@@ -62,6 +68,15 @@ export function DashboardMenuBar({
               </MenubarItem>
               <MenubarItem onClick={onAddStocks} className="text-md h-6 px-3">
                 📈 {t("apps.dashboard.widgets.stocks")}
+              </MenubarItem>
+              <MenubarItem onClick={onAddIpod} className="text-md h-6 px-3">
+                🎵 {t("apps.dashboard.widgets.ipod", "iPod")}
+              </MenubarItem>
+              <MenubarItem onClick={onAddTranslation} className="text-md h-6 px-3">
+                🌐 {t("apps.dashboard.widgets.translation", "Translation")}
+              </MenubarItem>
+              <MenubarItem onClick={onAddStickyNote} className="text-md h-6 px-3">
+                📝 {t("apps.dashboard.widgets.stickyNote", "Sticky Note")}
               </MenubarItem>
             </MenubarSubContent>
           </MenubarSub>
