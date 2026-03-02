@@ -2559,6 +2559,10 @@
         "calendar": "Calendar",
         "weather": "Weather",
         "stocks": "Stocks",
+        "ipod": "iPod",
+        "dictionary": "Dictionary",
+        "translation": "Translation",
+        "stickyNote": "Sticky Note",
         "addWidget": "Add Widget...",
         "removeWidget": "Remove Widget"
       },
@@ -2602,6 +2606,32 @@
         "hongKong": "Hong Kong",
         "taipei": "Taipei",
         "local": "LOCAL"
+      },
+      "clock": {
+        "style": "Style",
+        "light": "Light",
+        "dark": "Dark"
+      },
+      "dictionary": {
+        "title": "Dictionary",
+        "searchWord": "Search word...",
+        "searching": "Searching...",
+        "noResults": "No definition found",
+        "placeholder": "Look up any word"
+      },
+      "translation": {
+        "to": "To",
+        "inputPlaceholder": "Enter text...",
+        "outputPlaceholder": "Translation",
+        "translating": "Translating..."
+      },
+      "stickyNote": {
+        "color": "Color",
+        "yellow": "Yellow",
+        "pink": "Pink",
+        "blue": "Blue",
+        "green": "Green",
+        "purple": "Purple"
       },
       "menu": {
         "help": "Dashboard Help",
