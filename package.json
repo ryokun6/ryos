@@ -1,7 +1,7 @@
 {
-  "name": "soundboard",
+  "name": "ryos",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "bun run scripts/dev-with-api.ts",
@@ -36,7 +36,7 @@
     "tauri:build:windows": "tauri build --target x86_64-pc-windows-msvc",
     "seed:dev": "bun run scripts/seed-dev-users.ts",
     "test": "bun test",
-    "test:unit": "bun test --filter 'notification|wiring|refcount|constructor|batching|memory|boundary'",
+    "test:unit": "bun test tests/test-chat-notification-logic.test.ts tests/test-chat-notification-integration-wiring.test.ts tests/test-chat-broadcast-wiring.test.ts tests/test-chat-hook-channel-lifecycle-wiring.test.ts tests/test-chat-store-guards-wiring.test.ts tests/test-pusher-client-refcount.test.ts tests/test-pusher-client-constructor-wiring.test.ts tests/test-song-import-batching.test.ts tests/test-memory-system.test.ts tests/test-error-boundary-wiring.test.ts",
     "test:api": "bun test --filter 'new-api|admin|iframe|link-preview|parse-title|song|speech|share-applet|ai|media|auth-extra|rooms-extra|listen-security'",
     "test:new-api": "bun test tests/test-new-api.test.ts",
     "test:chat-rooms": "bun test tests/test-new-api.test.ts",
@@ -164,6 +164,7 @@
     "@vitejs/plugin-react-swc": "^4.2.2",
     "esbuild": "0.27.0",
     "eslint": "^9.39.2",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.26",
     "globals": "^15.15.0",
