@@ -830,6 +830,15 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   display: none; /* WebKit browsers */
 }
 
+.widget-strip-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.widget-strip-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;

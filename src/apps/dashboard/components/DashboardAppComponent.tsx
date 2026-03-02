@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppProps } from "@/apps/base/types";
@@ -72,69 +72,100 @@ function WidgetOverflow({ type, widgetId }: { type: string; widgetId: string }) 
   return null;
 }
 
-// Widget picker tray — dark pill style matching karaoke controls
-function WidgetPicker({
+const WIDGET_ICONS: Record<WidgetType, string> = {
+  clock: "🕐",
+  calendar: "📅",
+  weather: "🌤️",
+  stocks: "📈",
+  ipod: "🎵",
+  translation: "🌐",
+  stickynote: "📝",
+  dictionary: "📖",
+};
+
+function WidgetStrip({
   onAdd,
-  onClose,
   isXpTheme,
 }: {
   onAdd: (type: WidgetType) => void;
-  onClose: () => void;
   isXpTheme: boolean;
 }) {
   const { t } = useTranslation();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const widgets: { type: WidgetType; icon: string; label: string }[] = [
-    { type: "clock", icon: "🕐", label: t("apps.dashboard.widgets.clock") },
-    { type: "calendar", icon: "📅", label: t("apps.dashboard.widgets.calendar") },
-    { type: "weather", icon: "🌤️", label: t("apps.dashboard.widgets.weather") },
-    { type: "stocks", icon: "📈", label: t("apps.dashboard.widgets.stocks") },
-    { type: "ipod", icon: "🎵", label: t("apps.dashboard.widgets.ipod", "iPod") },
-    { type: "translation", icon: "🌐", label: t("apps.dashboard.widgets.translation", "Translation") },
-    { type: "stickynote", icon: "📝", label: t("apps.dashboard.widgets.stickyNote", "Sticky Note") },
-    { type: "dictionary", icon: "📖", label: t("apps.dashboard.widgets.dictionary", "Dictionary") },
+  const widgets: { type: WidgetType; label: string }[] = [
+    { type: "clock", label: t("apps.dashboard.widgets.clock") },
+    { type: "calendar", label: t("apps.dashboard.widgets.calendar") },
+    { type: "weather", label: t("apps.dashboard.widgets.weather") },
+    { type: "stocks", label: t("apps.dashboard.widgets.stocks") },
+    { type: "ipod", label: t("apps.dashboard.widgets.ipod", "iPod") },
+    { type: "translation", label: t("apps.dashboard.widgets.translation", "Translation") },
+    { type: "stickynote", label: t("apps.dashboard.widgets.stickyNote", "Sticky Note") },
+    { type: "dictionary", label: t("apps.dashboard.widgets.dictionary", "Dictionary") },
   ];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 12, scale: 0.95 }}
-      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-      className="absolute left-4 flex gap-2"
-      style={{ zIndex: 10, bottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}
+      initial={{ y: "100%", opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: "100%", opacity: 0 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className="absolute bottom-0 left-0 right-0"
+      style={{ zIndex: 11 }}
+      onClick={(e) => e.stopPropagation()}
     >
-      {widgets.map((w) => (
-        <button
-          key={w.type}
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAdd(w.type);
-            onClose();
-          }}
-          className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all hover:brightness-125 active:scale-95"
+      <div
+        style={{
+          background: isXpTheme
+            ? "linear-gradient(to bottom, rgba(200,200,200,0.95), rgba(180,180,180,0.98))"
+            : "linear-gradient(to bottom, rgba(60,60,60,0.75), rgba(20,20,20,0.92))",
+          borderTop: isXpTheme
+            ? "1px solid rgba(255,255,255,0.8)"
+            : "1px solid rgba(255,255,255,0.12)",
+          backdropFilter: "blur(24px) saturate(1.5)",
+          WebkitBackdropFilter: "blur(24px) saturate(1.5)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        }}
+      >
+        <div
+          ref={scrollRef}
+          className="widget-strip-scroll flex items-start gap-5 overflow-x-auto px-6 py-4"
           style={{
-            background: isXpTheme
-              ? "rgba(255,255,255,0.9)"
-              : "linear-gradient(to bottom, rgba(60,60,60,0.7), rgba(30,30,30,0.6))",
-            border: isXpTheme
-              ? "1px solid #ACA899"
-              : "1px solid rgba(255,255,255,0.1)",
-            boxShadow: isXpTheme
-              ? "1px 1px 4px rgba(0,0,0,0.3)"
-              : "0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
+            justifyContent: "center",
           }}
         >
-          <span className="text-2xl">{w.icon}</span>
-          <span
-            className="text-[10px] font-medium"
-            style={{ color: isXpTheme ? "#000" : "rgba(255,255,255,0.7)" }}
-          >
-            {w.label}
-          </span>
-        </button>
-      ))}
+          {widgets.map((w) => (
+            <button
+              key={w.type}
+              type="button"
+              onClick={() => onAdd(w.type)}
+              className="flex flex-col items-center gap-1.5 shrink-0 group"
+              style={{ minWidth: 72 }}
+            >
+              <motion.div
+                whileHover={{ scale: 1.12, y: -4 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                className="flex items-center justify-center"
+                style={{
+                  filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.4))",
+                }}
+              >
+                <span className="text-4xl">{WIDGET_ICONS[w.type]}</span>
+              </motion.div>
+              <span
+                className="text-[10px] font-medium text-center leading-tight max-w-[72px] truncate"
+                style={{
+                  color: isXpTheme ? "rgba(0,0,0,0.75)" : "rgba(255,255,255,0.7)",
+                  textShadow: isXpTheme ? "none" : "0 1px 3px rgba(0,0,0,0.5)",
+                }}
+              >
+                {w.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -283,18 +314,17 @@ export function DashboardAppComponent({
                 </motion.div>
               ))}
 
-              {/* Widget picker tray */}
+              {/* Widget strip */}
               <AnimatePresence>
                 {isPickerOpen && (
-                  <WidgetPicker
+                  <WidgetStrip
                     onAdd={handleAddWidget}
-                    onClose={() => setIsPickerOpen(false)}
                     isXpTheme={isXpTheme}
                   />
                 )}
               </AnimatePresence>
 
-              {/* + Button */}
+              {/* + / × toggle button */}
               <motion.button
                 type="button"
                 initial={{ opacity: 0, scale: 0 }}
@@ -309,7 +339,9 @@ export function DashboardAppComponent({
                 }}
                 className="absolute flex items-center justify-center"
                 style={{
-                  bottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
+                  bottom: isPickerOpen
+                    ? "calc(110px + env(safe-area-inset-bottom, 0px))"
+                    : "calc(16px + env(safe-area-inset-bottom, 0px))",
                   left: 16,
                   width: 36,
                   height: 36,
@@ -324,7 +356,8 @@ export function DashboardAppComponent({
                     ? "1px 1px 4px rgba(0,0,0,0.3)"
                     : "0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
                   color: isXpTheme ? "#000" : "rgba(255,255,255,0.7)",
-                  zIndex: 10,
+                  zIndex: 12,
+                  transition: "bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                 }}
                 title={t("apps.dashboard.widgets.addWidget")}
               >
