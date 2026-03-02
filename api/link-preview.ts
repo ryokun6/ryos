@@ -39,7 +39,7 @@ async function getYouTubeMetadata(url: string): Promise<LinkMetadata> {
     throw new Error(`Failed to fetch YouTube oEmbed data (${response.status})`);
   }
 
-  const oembedData = await response.json();
+  const oembedData = await response.json() as { title?: string; author_name?: string; thumbnail_url?: string };
 
   return {
     url: url,

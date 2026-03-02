@@ -15,14 +15,13 @@ import {
   getUserTokens,
   validateAuth,
   extractAuth,
-  verifyPassword,
-  hashPassword,
   getUserPasswordHash,
   setUserPasswordHash,
   TOKEN_GRACE_PERIOD,
   PASSWORD_MIN_LENGTH,
   PASSWORD_MAX_LENGTH,
 } from "../../_utils/auth/index.js";
+import { verifyPassword, hashPassword } from "../../_utils/auth/_password.js";
 import { createErrorResponse } from "./_helpers.js";
 import type {
   GenerateTokenData,

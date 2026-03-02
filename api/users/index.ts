@@ -16,7 +16,7 @@ export default apiHandler(
 
     try {
       const response = await handleGetUsers("users-search", searchQuery);
-      const data = await response.json();
+      const data = await response.json() as { users?: unknown[] };
 
       logger.info("Users searched", { query: searchQuery, count: data.users?.length || 0 });
       logger.response(response.status, Date.now() - startTime);

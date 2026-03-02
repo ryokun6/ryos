@@ -80,14 +80,7 @@ export default apiHandler(
       const quoteResults = await Promise.allSettled(
         symbols.map((sym) =>
           yahooFinance.quote(sym).then(
-            (q: {
-              symbol?: string;
-              shortName?: string;
-              longName?: string;
-              regularMarketPrice?: number;
-              regularMarketChange?: number;
-              regularMarketChangePercent?: number;
-            }) => ({
+            (q) => ({
               symbol: q.symbol ?? sym,
               price: q.regularMarketPrice ?? 0,
               change: q.regularMarketChange ?? 0,
@@ -119,12 +112,12 @@ export default apiHandler(
           if (chartResult?.quotes) {
             response.chart = chartResult.quotes
               .filter(
-                (q: { date?: Date | null; close?: number | null }) =>
+                (q: Record<string, unknown>) =>
                   q.date != null && q.close != null
               )
-              .map((q: { date: Date; close: number }) => ({
-                timestamp: new Date(q.date).getTime(),
-                close: q.close,
+              .map((q: Record<string, unknown>) => ({
+                timestamp: new Date(q.date as string | number | Date).getTime(),
+                close: q.close as number,
               }));
           }
         } catch (chartErr) {

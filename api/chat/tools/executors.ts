@@ -136,7 +136,10 @@ export async function executeSearchSongs(
         throw new Error(`YouTube search failed: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as { items?: Array<{
+        id: { videoId: string };
+        snippet: { title: string; channelTitle: string; publishedAt: string; thumbnails: { medium?: { url: string } } };
+      }> };
 
       if (!data.items || data.items.length === 0) {
         return {
@@ -145,7 +148,6 @@ export async function executeSearchSongs(
         };
       }
 
-      // Transform results to a simpler format
       const results: SearchSongsResult[] = data.items.map((item: {
         id: { videoId: string };
         snippet: {
