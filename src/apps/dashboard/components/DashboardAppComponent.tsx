@@ -14,6 +14,7 @@ import { StocksWidget, StocksBackPanel } from "@/components/layout/dashboard/Sto
 import { IpodWidget, IpodBackPanel } from "@/components/layout/dashboard/IpodWidget";
 import { TranslationWidget, TranslationBackPanel } from "@/components/layout/dashboard/TranslationWidget";
 import { StickyNoteWidget, StickyNoteBackPanel } from "@/components/layout/dashboard/StickyNoteWidget";
+import { DictionaryWidget, DictionaryBackPanel } from "@/components/layout/dashboard/DictionaryWidget";
 import { DashboardMenuBar } from "./DashboardMenuBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
@@ -36,6 +37,8 @@ function WidgetContent({ type, widgetId }: { type: string; widgetId: string }) {
       return <TranslationWidget widgetId={widgetId} />;
     case "stickynote":
       return <StickyNoteWidget widgetId={widgetId} />;
+    case "dictionary":
+      return <DictionaryWidget widgetId={widgetId} />;
     default:
       return null;
   }
@@ -57,6 +60,8 @@ function WidgetBackContent({ type, widgetId, onDone }: { type: string; widgetId:
       return <TranslationBackPanel widgetId={widgetId} onDone={onDone} />;
     case "stickynote":
       return <StickyNoteBackPanel widgetId={widgetId} onDone={onDone} />;
+    case "dictionary":
+      return <DictionaryBackPanel widgetId={widgetId} onDone={onDone} />;
     default:
       return null;
   }
@@ -87,6 +92,7 @@ function WidgetPicker({
     { type: "ipod", icon: "🎵", label: t("apps.dashboard.widgets.ipod", "iPod") },
     { type: "translation", icon: "🌐", label: t("apps.dashboard.widgets.translation", "Translation") },
     { type: "stickynote", icon: "📝", label: t("apps.dashboard.widgets.stickyNote", "Sticky Note") },
+    { type: "dictionary", icon: "📖", label: t("apps.dashboard.widgets.dictionary", "Dictionary") },
   ];
 
   return (
@@ -207,6 +213,7 @@ export function DashboardAppComponent({
       onAddIpod={() => handleAddWidget("ipod")}
       onAddTranslation={() => handleAddWidget("translation")}
       onAddStickyNote={() => handleAddWidget("stickynote")}
+      onAddDictionary={() => handleAddWidget("dictionary")}
       onResetWidgets={resetToDefaults}
     />
   );
