@@ -972,6 +972,16 @@
       }
     },
     "dashboard": {
+      "calendar": {
+        "colors": {
+          "blue": "藍色",
+          "green": "綠色",
+          "orange": "橘色",
+          "purple": "紫色",
+          "red": "紅色"
+        },
+        "showColors": "顯示顏色"
+      },
       "cities": {
         "berlin": "柏林",
         "hongKong": "香港",
@@ -987,6 +997,32 @@
         "tokyo": "東京"
       },
       "description": "小工具儀表板疊層",
+      "dictionary": {
+        "dataSources": "資料來源為維基詞典及其他開放詞典。不常見的詞彙結果可能有所不同。",
+        "error": "查詢失敗。",
+        "loading": "正在查詢…",
+        "noDefinition": "找不到定義。",
+        "noResults": "沒有結果。",
+        "placeholder": "輸入單字以查詢。",
+        "poweredBy": "定義由 Free Dictionary API (一個開源專案) 提供。",
+        "searchPlaceholder": "搜尋…",
+        "thesaurus": "同義詞典",
+        "title": "詞典"
+      },
+      "ipod": {
+        "iTunesNotOpen": "iTunes 未開啟",
+        "menu": "選單",
+        "next": "下一首",
+        "noTrack": "無曲目",
+        "nowPlaying": "正在播放",
+        "openIpod": "開啟 iPod App",
+        "pause": "暫停",
+        "play": "播放",
+        "previous": "上一首",
+        "repeatAll": "重複全部",
+        "repeatOne": "重複一首",
+        "shuffle": "隨機播放"
+      },
       "menu": {
         "about": "關於儀表板",
         "addWidget": "新增小工具",
@@ -994,7 +1030,43 @@
         "resetWidgets": "重設為預設值"
       },
       "name": "儀表板",
+      "stickyNote": {
+        "colors": {
+          "blue": "藍色",
+          "green": "綠色",
+          "pink": "粉紅色",
+          "purple": "紫色",
+          "yellow": "黃色"
+        },
+        "noteColor": "備註顏色",
+        "placeholder": "輸入備註..."
+      },
+      "stocks": {
+        "allAdded": "已加入所有符號",
+        "currentSymbols": "目前符號",
+        "delayed": "最多延遲 20 分鐘",
+        "loading": "正在載入股票...",
+        "noResults": "找不到符號",
+        "resetDefaults": "恢復預設值",
+        "retry": "重試",
+        "searchSymbol": "搜尋符號...",
+        "searching": "搜尋中...",
+        "unavailable": "股票資料無法取得"
+      },
       "title": "儀表板",
+      "translation": {
+        "defaultLanguages": "預設語言",
+        "error": "翻譯失敗",
+        "from": "從",
+        "inputPlaceholder": "輸入文字...",
+        "outputPlaceholder": "翻譯",
+        "poweredBy": "由 MyMemory 提供技術支援",
+        "save": "儲存",
+        "swap": "交換語言",
+        "to": "到",
+        "translateFrom": "從...翻譯",
+        "translating": "翻譯中..."
+      },
       "weather": {
         "changeCity": "更改城市",
         "enableLocation": "啟用定位以取得天氣",
@@ -1014,7 +1086,12 @@
         "addWidget": "加入小工具...",
         "calendar": "日曆",
         "clock": "時鐘",
+        "dictionary": "字典",
+        "ipod": "iPod",
         "removeWidget": "移除小工具",
+        "stickyNote": "便利貼",
+        "stocks": "股票",
+        "translation": "翻譯",
         "weather": "天氣"
       }
     },
@@ -2693,6 +2770,7 @@
       "reloadDesktop": "重新載入桌面"
     },
     "errors": {
+      "failedToAccessCamera": "無法存取相機",
       "failedToFetchFurigana": "無法取得假名",
       "failedToFetchSoramimi": "無法取得空耳"
     },
@@ -2720,9 +2798,11 @@
       "toggleSplitView": "切換分割視圖"
     },
     "keys": {
-      "enter": "確定"
+      "enter": "確定",
+      "escape": "離開"
     },
     "loading": {
+      "default": "載入中...",
       "openingAppletStore": "正在開啟小程式商店...",
       "openingSharedApplet": "正在開啟共享小程式...",
       "openingSharedIELink": "正在開啟共享 Internet Explorer 連結...",
@@ -2820,7 +2900,9 @@
       "close": "關閉",
       "fullscreen": "全螢幕",
       "maximize": "最大化",
-      "minimize": "最小化"
+      "maximizeDisabled": "最大化 (已停用)",
+      "minimize": "最小化",
+      "minimizeDisabled": "最小化 (已停用)"
     }
   },
   "components": {

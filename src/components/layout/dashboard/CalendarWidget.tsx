@@ -270,15 +270,16 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
   );
 }
 
-const ALL_COLORS: { id: EventColor; label: string; hex: string }[] = [
-  { id: "blue", label: "Blue", hex: "#3B82F6" },
-  { id: "red", label: "Red", hex: "#EF4444" },
-  { id: "green", label: "Green", hex: "#22C55E" },
-  { id: "orange", label: "Orange", hex: "#F97316" },
-  { id: "purple", label: "Purple", hex: "#A855F7" },
+const ALL_COLORS: { id: EventColor; hex: string }[] = [
+  { id: "blue", hex: "#3B82F6" },
+  { id: "red", hex: "#EF4444" },
+  { id: "green", hex: "#22C55E" },
+  { id: "orange", hex: "#F97316" },
+  { id: "purple", hex: "#A855F7" },
 ];
 
 export function CalendarBackPanel({ widgetId }: { widgetId: string }) {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
@@ -308,7 +309,7 @@ export function CalendarBackPanel({ widgetId }: { widgetId: string }) {
           fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
         }}
       >
-        Show Colors
+        {t("apps.dashboard.calendar.showColors", "Show Colors")}
       </div>
       <div className="flex flex-col gap-1">
         {ALL_COLORS.map((c) => {
@@ -341,7 +342,7 @@ export function CalendarBackPanel({ widgetId }: { widgetId: string }) {
                 }}
               />
               <span className="text-[11px]" style={{ color: textColor, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                {c.label}
+                {t(`apps.dashboard.calendar.colors.${c.id}`, c.id)}
               </span>
               <span className="ml-auto text-[11px]" style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.4)" }}>
                 {visible ? "✓" : ""}

@@ -198,7 +198,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
               display: "flex",
               alignItems: "center",
             }}
-            title="Swap languages"
+            title={t("apps.dashboard.translation.swap", "Swap languages")}
           >
             <ArrowsLeftRight size={12} weight="bold" />
           </button>
@@ -430,7 +430,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
               color: "rgba(255,255,255,0.85)",
               flexShrink: 0,
             }}
-            title="Swap languages"
+            title={t("apps.dashboard.translation.swap", "Swap languages")}
           >
             <ArrowsDownUp size={16} weight="bold" />
           </button>

@@ -972,6 +972,16 @@
       }
     },
     "dashboard": {
+      "calendar": {
+        "colors": {
+          "blue": "青",
+          "green": "緑",
+          "orange": "オレンジ",
+          "purple": "紫",
+          "red": "赤"
+        },
+        "showColors": "色を表示"
+      },
       "cities": {
         "berlin": "ベルリン",
         "hongKong": "香港",
@@ -987,6 +997,32 @@
         "tokyo": "東京"
       },
       "description": "ウィジェットダッシュボードオーバーレイ",
+      "dictionary": {
+        "dataSources": "データはWiktionaryおよびその他のオープン辞書から取得しています。珍しい単語では結果が異なる場合があります。",
+        "error": "検索に失敗しました。",
+        "loading": "検索中…",
+        "noDefinition": "定義が見つかりませんでした。",
+        "noResults": "結果なし。",
+        "placeholder": "単語を入力して検索してください。",
+        "poweredBy": "定義はオープンソースプロジェクトであるFree Dictionary APIによって提供されています。",
+        "searchPlaceholder": "検索…",
+        "thesaurus": "シソーラス",
+        "title": "辞書"
+      },
+      "ipod": {
+        "iTunesNotOpen": "iTunesが起動していません",
+        "menu": "メニュー",
+        "next": "次へ",
+        "noTrack": "トラックなし",
+        "nowPlaying": "再生中",
+        "openIpod": "iPodアプリを開く",
+        "pause": "一時停止",
+        "play": "再生",
+        "previous": "前へ",
+        "repeatAll": "すべてをリピート",
+        "repeatOne": "1曲リピート",
+        "shuffle": "シャッフル"
+      },
       "menu": {
         "about": "ダッシュボードについて",
         "addWidget": "ウィジェットを追加",
@@ -994,7 +1030,43 @@
         "resetWidgets": "デフォルトに戻す"
       },
       "name": "ダッシュボード",
+      "stickyNote": {
+        "colors": {
+          "blue": "青",
+          "green": "緑",
+          "pink": "ピンク",
+          "purple": "紫",
+          "yellow": "黄"
+        },
+        "noteColor": "メモの色",
+        "placeholder": "メモを入力..."
+      },
+      "stocks": {
+        "allAdded": "すべてのシンボルを追加しました",
+        "currentSymbols": "現在のシンボル",
+        "delayed": "最大20分遅延",
+        "loading": "株価を読み込み中...",
+        "noResults": "シンボルが見つかりません",
+        "resetDefaults": "初期設定に戻す",
+        "retry": "再試行",
+        "searchSymbol": "シンボルを検索...",
+        "searching": "検索中...",
+        "unavailable": "株価データが利用できません"
+      },
       "title": "ダッシュボード",
+      "translation": {
+        "defaultLanguages": "デフォルト言語",
+        "error": "翻訳に失敗しました",
+        "from": "から",
+        "inputPlaceholder": "テキストを入力...",
+        "outputPlaceholder": "翻訳",
+        "poweredBy": "MyMemory 提供",
+        "save": "保存",
+        "swap": "言語を入れ替える",
+        "to": "へ",
+        "translateFrom": "翻訳元",
+        "translating": "翻訳中..."
+      },
       "weather": {
         "changeCity": "都市を変更",
         "enableLocation": "天気予報の位置情報を有効にする",
@@ -1014,7 +1086,12 @@
         "addWidget": "ウィジェットを追加...",
         "calendar": "カレンダー",
         "clock": "時計",
+        "dictionary": "辞書",
+        "ipod": "iPod",
         "removeWidget": "ウィジェットを削除",
+        "stickyNote": "付箋",
+        "stocks": "株価",
+        "translation": "翻訳",
         "weather": "天気"
       }
     },
@@ -2693,6 +2770,7 @@
       "reloadDesktop": "デスクトップを再読み込み"
     },
     "errors": {
+      "failedToAccessCamera": "カメラにアクセスできませんでした",
       "failedToFetchFurigana": "フリガナの取得に失敗しました",
       "failedToFetchSoramimi": "ソラミミの取得に失敗しました"
     },
@@ -2720,9 +2798,11 @@
       "toggleSplitView": "分割表示の切り替え"
     },
     "keys": {
-      "enter": "確定"
+      "enter": "確定",
+      "escape": "エスケープ"
     },
     "loading": {
+      "default": "読み込み中...",
       "openingAppletStore": "アプレットストアを開いています...",
       "openingSharedApplet": "共有アプレットを開いています...",
       "openingSharedIELink": "共有Internet Explorerリンクを開いています...",
@@ -2820,7 +2900,9 @@
       "close": "閉じる",
       "fullscreen": "フルスクリーン",
       "maximize": "最大化",
-      "minimize": "最小化"
+      "maximizeDisabled": "最大化 (無効)",
+      "minimize": "最小化",
+      "minimizeDisabled": "最小化 (無効)"
     }
   },
   "components": {

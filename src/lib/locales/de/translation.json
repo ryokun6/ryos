@@ -972,6 +972,16 @@
       }
     },
     "dashboard": {
+      "calendar": {
+        "colors": {
+          "blue": "Blau",
+          "green": "Grün",
+          "orange": "Orange",
+          "purple": "Lila",
+          "red": "Rot"
+        },
+        "showColors": "Farben anzeigen"
+      },
       "cities": {
         "berlin": "Berlin",
         "hongKong": "Hongkong",
@@ -987,6 +997,32 @@
         "tokyo": "Tokio"
       },
       "description": "Widget-Dashboard-Overlay",
+      "dictionary": {
+        "dataSources": "Daten stammen von Wiktionary und anderen offenen Wörterbüchern. Ergebnisse können bei seltenen Wörtern variieren.",
+        "error": "Nachschlagen fehlgeschlagen.",
+        "loading": "Wird nachgeschlagen…",
+        "noDefinition": "Keine Definition gefunden.",
+        "noResults": "Keine Ergebnisse.",
+        "placeholder": "Geben Sie ein Wort ein, um es nachzuschlagen.",
+        "poweredBy": "Definitionen bereitgestellt von der Free Dictionary API, einem Open-Source-Projekt.",
+        "searchPlaceholder": "Suchen…",
+        "thesaurus": "Thesaurus",
+        "title": "Wörterbuch"
+      },
+      "ipod": {
+        "iTunesNotOpen": "iTunes ist nicht geöffnet",
+        "menu": "MENÜ",
+        "next": "Weiter",
+        "noTrack": "Kein Titel",
+        "nowPlaying": "Aktuelle Wiedergabe",
+        "openIpod": "iPod-App öffnen",
+        "pause": "Pause",
+        "play": "Wiedergabe",
+        "previous": "Zurück",
+        "repeatAll": "Alle wiederholen",
+        "repeatOne": "Einen wiederholen",
+        "shuffle": "Zufallswiedergabe"
+      },
       "menu": {
         "about": "Über das Dashboard",
         "addWidget": "Widget hinzufügen",
@@ -994,7 +1030,43 @@
         "resetWidgets": "Auf Standard zurücksetzen"
       },
       "name": "Dashboard",
+      "stickyNote": {
+        "colors": {
+          "blue": "Blau",
+          "green": "Grün",
+          "pink": "Rosa",
+          "purple": "Lila",
+          "yellow": "Gelb"
+        },
+        "noteColor": "Notizfarbe",
+        "placeholder": "Notiz eingeben..."
+      },
+      "stocks": {
+        "allAdded": "Alle Symbole hinzugefügt",
+        "currentSymbols": "Aktuelle Symbole",
+        "delayed": "Bis zu 20 Minuten verzögert",
+        "loading": "Aktien werden geladen...",
+        "noResults": "Keine Symbole gefunden",
+        "resetDefaults": "Auf Standard zurücksetzen",
+        "retry": "Wiederholen",
+        "searchSymbol": "Symbole suchen...",
+        "searching": "Sucht...",
+        "unavailable": "Börsendaten nicht verfügbar"
+      },
       "title": "Dashboard",
+      "translation": {
+        "defaultLanguages": "Standardsprachen",
+        "error": "Übersetzung fehlgeschlagen",
+        "from": "Von",
+        "inputPlaceholder": "Text eingeben...",
+        "outputPlaceholder": "Übersetzung",
+        "poweredBy": "Unterstützt von MyMemory",
+        "save": "Speichern",
+        "swap": "Sprachen tauschen",
+        "to": "Nach",
+        "translateFrom": "Übersetzen von",
+        "translating": "Übersetzt..."
+      },
       "weather": {
         "changeCity": "Stadt ändern",
         "enableLocation": "Standort für Wetter aktivieren",
@@ -1014,7 +1086,12 @@
         "addWidget": "Widget hinzufügen...",
         "calendar": "Kalender",
         "clock": "Uhr",
+        "dictionary": "Wörterbuch",
+        "ipod": "iPod",
         "removeWidget": "Widget entfernen",
+        "stickyNote": "Haftnotiz",
+        "stocks": "Aktien",
+        "translation": "Übersetzung",
         "weather": "Wetter"
       }
     },
@@ -2693,6 +2770,7 @@
       "reloadDesktop": "Schreibtisch neu laden"
     },
     "errors": {
+      "failedToAccessCamera": "Fehler beim Zugriff auf die Kamera",
       "failedToFetchFurigana": "Abrufen von Furigana fehlgeschlagen",
       "failedToFetchSoramimi": "Abrufen von Soramimi fehlgeschlagen"
     },
@@ -2720,9 +2798,11 @@
       "toggleSplitView": "Geteilte Ansicht umschalten"
     },
     "keys": {
-      "enter": "Bestätigen"
+      "enter": "Bestätigen",
+      "escape": "Escape"
     },
     "loading": {
+      "default": "Lädt...",
       "openingAppletStore": "Applet Store wird geöffnet...",
       "openingSharedApplet": "Freigegebenes Applet wird geöffnet...",
       "openingSharedIELink": "Freigegebener Internet Explorer-Link wird geöffnet...",
@@ -2820,7 +2900,9 @@
       "close": "Schließen",
       "fullscreen": "Vollbild",
       "maximize": "Maximieren",
-      "minimize": "Minimieren"
+      "maximizeDisabled": "Maximieren (deaktiviert)",
+      "minimize": "Minimieren",
+      "minimizeDisabled": "Minimieren (deaktiviert)"
     }
   },
   "components": {

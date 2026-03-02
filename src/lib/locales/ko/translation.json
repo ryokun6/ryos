@@ -972,6 +972,16 @@
       }
     },
     "dashboard": {
+      "calendar": {
+        "colors": {
+          "blue": "파랑",
+          "green": "초록",
+          "orange": "주황",
+          "purple": "보라",
+          "red": "빨강"
+        },
+        "showColors": "색상 표시"
+      },
       "cities": {
         "berlin": "베를린",
         "hongKong": "홍콩",
@@ -987,6 +997,32 @@
         "tokyo": "도쿄"
       },
       "description": "위젯 대시보드 오버레이",
+      "dictionary": {
+        "dataSources": "데이터는 위키낱말사전 및 기타 공개 사전에서 가져왔습니다. 흔치 않은 단어의 경우 결과가 다를 수 있습니다.",
+        "error": "조회 실패.",
+        "loading": "조회 중…",
+        "noDefinition": "정의를 찾을 수 없습니다.",
+        "noResults": "결과 없음.",
+        "placeholder": "단어를 입력하여 찾아보세요.",
+        "poweredBy": "정의는 오픈 소스 프로젝트인 Free Dictionary API에서 제공됩니다.",
+        "searchPlaceholder": "검색…",
+        "thesaurus": "유의어 사전",
+        "title": "사전"
+      },
+      "ipod": {
+        "iTunesNotOpen": "iTunes가 열려 있지 않습니다.",
+        "menu": "메뉴",
+        "next": "다음",
+        "noTrack": "트랙 없음",
+        "nowPlaying": "지금 재생 중",
+        "openIpod": "iPod 앱 열기",
+        "pause": "일시 정지",
+        "play": "재생",
+        "previous": "이전",
+        "repeatAll": "모두 반복",
+        "repeatOne": "한 곡 반복",
+        "shuffle": "임의 재생"
+      },
       "menu": {
         "about": "대시보드 정보",
         "addWidget": "위젯 추가",
@@ -994,7 +1030,43 @@
         "resetWidgets": "기본값으로 재설정"
       },
       "name": "대시보드",
+      "stickyNote": {
+        "colors": {
+          "blue": "파랑",
+          "green": "초록",
+          "pink": "분홍",
+          "purple": "보라",
+          "yellow": "노랑"
+        },
+        "noteColor": "메모 색상",
+        "placeholder": "메모 입력..."
+      },
+      "stocks": {
+        "allAdded": "모든 기호 추가됨",
+        "currentSymbols": "현재 기호",
+        "delayed": "최대 20분 지연",
+        "loading": "주식 로드 중...",
+        "noResults": "기호를 찾을 수 없음",
+        "resetDefaults": "기본값으로 재설정",
+        "retry": "다시 시도",
+        "searchSymbol": "심볼 검색...",
+        "searching": "검색 중...",
+        "unavailable": "주식 데이터 없음"
+      },
       "title": "대시보드",
+      "translation": {
+        "defaultLanguages": "기본 언어",
+        "error": "번역 실패",
+        "from": "원본",
+        "inputPlaceholder": "텍스트 입력...",
+        "outputPlaceholder": "번역",
+        "poweredBy": "MyMemory 제공",
+        "save": "저장",
+        "swap": "언어 바꾸기",
+        "to": "대상",
+        "translateFrom": "번역할 언어",
+        "translating": "번역 중..."
+      },
       "weather": {
         "changeCity": "도시 변경",
         "enableLocation": "날씨를 위해 위치 활성화",
@@ -1014,7 +1086,12 @@
         "addWidget": "위젯 추가...",
         "calendar": "캘린더",
         "clock": "시계",
+        "dictionary": "사전",
+        "ipod": "iPod",
         "removeWidget": "위젯 제거",
+        "stickyNote": "스티커 메모",
+        "stocks": "주식",
+        "translation": "번역",
         "weather": "날씨"
       }
     },
@@ -2693,6 +2770,7 @@
       "reloadDesktop": "데스크탑 다시 로드"
     },
     "errors": {
+      "failedToAccessCamera": "카메라 접근에 실패했습니다",
       "failedToFetchFurigana": "후리가나 가져오기 실패",
       "failedToFetchSoramimi": "소라미미 가져오기 실패"
     },
@@ -2720,9 +2798,11 @@
       "toggleSplitView": "분할 보기 전환"
     },
     "keys": {
-      "enter": "확인"
+      "enter": "확인",
+      "escape": "Esc"
     },
     "loading": {
+      "default": "로드 중...",
       "openingAppletStore": "애플릿 스토어 여는 중...",
       "openingSharedApplet": "공유된 애플릿 여는 중...",
       "openingSharedIELink": "공유된 Internet Explorer 링크 여는 중...",
@@ -2820,7 +2900,9 @@
       "close": "닫기",
       "fullscreen": "전체 화면",
       "maximize": "최대화",
-      "minimize": "최소화"
+      "maximizeDisabled": "최대화 (비활성화됨)",
+      "minimize": "최소화",
+      "minimizeDisabled": "최소화 (비활성화됨)"
     }
   },
   "components": {
