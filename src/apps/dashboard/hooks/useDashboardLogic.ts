@@ -41,7 +41,7 @@ export function useDashboardLogic() {
         calendar: { width: 240, height: 350 },
         weather: { width: 340, height: 180 },
         stocks: { width: 240, height: 340 },
-        ipod: { width: 200, height: 90 },
+        ipod: { width: 320, height: 125 },
         dictionary: { width: 240, height: 280 },
         stickynote: { width: 200, height: 200 },
         translation: { width: 300, height: 240 },
