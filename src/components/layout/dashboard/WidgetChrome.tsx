@@ -12,6 +12,7 @@ interface WidgetChromeProps {
   x: number;
   y: number;
   zIndex?: number;
+  borderRadius?: string;
   onRemove?: () => void;
   onMove?: (position: { x: number; y: number }) => void;
   onBringToFront?: () => void;
@@ -26,6 +27,7 @@ export function WidgetChrome({
   x,
   y,
   zIndex = 1,
+  borderRadius: borderRadiusProp,
   onRemove,
   onMove,
   onBringToFront,
@@ -132,7 +134,7 @@ export function WidgetChrome({
   const resolvedBackContent = typeof backContent === "function" ? backContent(flipBack) : backContent;
   const hasBack = !!backContent;
 
-  const borderRadius = isXpTheme ? "4px" : "20px";
+  const borderRadius = borderRadiusProp ?? (isXpTheme ? "4px" : "20px");
 
   const cardStyle = {
     width,

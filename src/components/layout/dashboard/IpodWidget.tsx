@@ -52,6 +52,8 @@ function MarqueeText({ text, color }: { text: string; color: string }) {
   );
 }
 
+const WHEEL_SIZE = 104;
+
 function ClickWheel({
   onPrev,
   onNext,
@@ -65,7 +67,6 @@ function ClickWheel({
   isPlaying: boolean;
   isXpTheme: boolean;
 }) {
-  const wheelSize = 104;
   const centerSize = 38;
   const iconColor = "#999";
   const iconColorDark = "#888";
@@ -74,8 +75,8 @@ function ClickWheel({
     <div
       style={{
         position: "relative",
-        width: wheelSize,
-        height: wheelSize,
+        width: WHEEL_SIZE,
+        height: WHEEL_SIZE,
         flexShrink: 0,
       }}
     >
@@ -259,6 +260,9 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
   const shuffleColor = isShuffled ? "#1a3a00" : "#5a7a20";
   const repeatColor = repeatActive ? "#1a3a00" : "#5a7a20";
 
+  const displayHeight = WHEEL_SIZE;
+  const displayRadius = displayHeight / 2;
+
   return (
     <div
       style={{
@@ -271,8 +275,8 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
           ? "linear-gradient(180deg, #e4e4e4 0%, #d4d4d4 30%, #c8c8c8 60%, #d4d4d4 100%)"
           : "linear-gradient(180deg, #e2e2e2 0%, #d6d6d6 12%, #cccccc 28%, #c0c0c0 45%, #b8b8b8 55%, #c0c0c0 68%, #cccccc 82%, #d6d6d6 100%)",
         borderRadius: "inherit",
-        padding: "0 10px 0 6px",
-        gap: 4,
+        padding: "0 10px 0 8px",
+        gap: 6,
         userSelect: "none",
         position: "relative",
         overflow: "hidden",
@@ -297,7 +301,6 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
           alignItems: "center",
           justifyContent: "center",
           flexShrink: 0,
-          padding: "4px 0 4px 4px",
           position: "relative",
           zIndex: 1,
         }}
@@ -311,44 +314,48 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
         />
       </div>
 
-      {/* Right: Display */}
+      {/* Right: Fully green LCD pill — same height as wheel */}
       <div
         style={{
           flex: 1,
+          height: displayHeight,
+          minWidth: 0,
+          borderRadius: displayRadius,
+          overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          gap: 5,
-          minWidth: 0,
-          padding: "10px 4px 10px 2px",
           position: "relative",
           zIndex: 1,
+          background:
+            "linear-gradient(180deg, #d6ec82 0%, #c4e050 15%, #b0d63c 35%, #a0cc2c 55%, #94c420 75%, #8cbc18 100%)",
+          border: "1px solid #6a8a14",
+          boxShadow: [
+            "inset 0 3px 8px rgba(0,0,0,0.22)",
+            "inset 0 1px 2px rgba(0,0,0,0.15)",
+            "inset 0 -2px 4px rgba(255,255,255,0.10)",
+            "0 1px 0 rgba(255,255,255,0.45)",
+          ].join(", "),
         }}
       >
-        {/* Track info panel - subtle inset look */}
+        {/* Upper area: Track info text */}
         <div
           style={{
-            padding: "5px 10px",
-            borderRadius: 8,
-            background: isXpTheme
-              ? "rgba(255,255,255,0.35)"
-              : "linear-gradient(180deg, rgba(220,220,220,0.6) 0%, rgba(235,235,235,0.5) 100%)",
-            border: "1px solid rgba(255,255,255,0.45)",
-            boxShadow: "inset 0 1px 2px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,0.6)",
-            minHeight: 22,
+            flex: 1,
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
+            padding: "0 18px",
           }}
         >
           {hasTrack ? (
             <>
-              <MarqueeText text={title} color="#333" />
+              <MarqueeText text={title} color="#1a3300" />
               {artist && (
                 <div
                   style={{
                     fontSize: 9,
                     fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-                    color: "#888",
+                    color: "#3a5a10",
                     marginTop: 1,
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -365,7 +372,7 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
                 fontSize: 11,
                 fontWeight: 500,
                 fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-                color: "#555",
+                color: "#2a4a00",
                 textAlign: "center",
               }}
             >
@@ -374,22 +381,24 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
           )}
         </div>
 
-        {/* Green LCD */}
+        {/* Subtle divider */}
         <div
           style={{
-            background:
-              "linear-gradient(180deg, #d4e880 0%, #bce040 25%, #a8d430 55%, #98c820 80%, #90c418 100%)",
-            borderRadius: 8,
-            padding: "6px 12px",
-            border: "1px solid #6e9018",
-            boxShadow: [
-              "inset 0 2px 4px rgba(0,0,0,0.16)",
-              "inset 0 -1px 1px rgba(255,255,255,0.12)",
-              "0 1px 0 rgba(255,255,255,0.5)",
-            ].join(", "),
+            height: 1,
+            margin: "0 14px",
+            background: "rgba(0,0,0,0.08)",
+            boxShadow: "0 1px 0 rgba(255,255,255,0.12)",
+          }}
+        />
+
+        {/* Lower area: Shuffle / Time / Repeat */}
+        <div
+          style={{
+            flex: 1,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            padding: "0 16px",
           }}
         >
           <button
