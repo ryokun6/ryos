@@ -112,6 +112,54 @@ interface AppStoreState {
   clearRecentItems: () => void;
 }
 
+export interface InstanceStateChangeDetail {
+  instanceId: string;
+  appId?: AppId;
+  title?: string;
+  initialData?: unknown;
+  isOpen: boolean;
+  isForeground: boolean;
+  isMinimized?: boolean;
+  changeType?:
+    | "created"
+    | "closed"
+    | "focused"
+    | "window-updated"
+    | "minimized"
+    | "restored";
+}
+
+export interface InstanceWindowStateChangeDetail {
+  instanceId: string;
+  appId: AppId;
+  title?: string;
+  isForeground: boolean;
+  isMinimized: boolean;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  initialData?: unknown;
+}
+
+function emitInstanceStateChange(detail: InstanceStateChangeDetail): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent("instanceStateChange", {
+      detail,
+    })
+  );
+}
+
+function emitInstanceWindowStateChange(
+  detail: InstanceWindowStateChangeDetail
+): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent("instanceWindowStateChange", {
+      detail,
+    })
+  );
+}
+
 const CURRENT_APP_STORE_VERSION = 4; // migrate to instance-only state
 
 // ---------------- Store ---------------------------------------------------------
@@ -305,15 +353,16 @@ const createUseAppStore = () =>
             get().addRecentDocument(dataWithPath.path, fileName, appId, dataWithPath.icon);
           }
           
-          window.dispatchEvent(
-            new CustomEvent("instanceStateChange", {
-              detail: {
-                instanceId: createdId,
-                isOpen: true,
-                isForeground: appId === "finder", // Only finder is foreground immediately
-              },
-            })
-          );
+          emitInstanceStateChange({
+            instanceId: createdId,
+            appId,
+            title,
+            initialData,
+            isOpen: true,
+            isForeground: appId === "finder", // Only finder is foreground immediately
+            isMinimized: false,
+            changeType: "created",
+          });
           // Track app launch analytics
           track(APP_ANALYTICS.APP_LAUNCH, { appId });
         }
@@ -340,15 +389,16 @@ const createUseAppStore = () =>
             instanceId,
           ];
 
-          window.dispatchEvent(
-            new CustomEvent("instanceStateChange", {
-              detail: {
-                instanceId,
-                isOpen: true,
-                isForeground: true,
-              },
-            })
-          );
+          emitInstanceStateChange({
+            instanceId,
+            appId: instances[instanceId]?.appId,
+            title: instances[instanceId]?.title,
+            initialData: instances[instanceId]?.initialData,
+            isOpen: true,
+            isForeground: true,
+            isMinimized: Boolean(instances[instanceId]?.isMinimized),
+            changeType: "focused",
+          });
 
           return {
             instances,
@@ -390,11 +440,16 @@ const createUseAppStore = () =>
               nextForeground,
             ];
           }
-          window.dispatchEvent(
-            new CustomEvent("instanceStateChange", {
-              detail: { instanceId, isOpen: false, isForeground: false },
-            })
-          );
+          emitInstanceStateChange({
+            instanceId,
+            appId: inst.appId,
+            title: inst.title,
+            initialData: inst.initialData,
+            isOpen: false,
+            isForeground: false,
+            isMinimized: Boolean(inst.isMinimized),
+            changeType: "closed",
+          });
           return {
             instances,
             instanceOrder: order,
@@ -434,15 +489,19 @@ const createUseAppStore = () =>
             order = [...order.filter((id) => id !== instanceId), instanceId];
             foreground = instanceId;
           }
-          window.dispatchEvent(
-            new CustomEvent("instanceStateChange", {
-              detail: {
-                instanceId,
-                isOpen: !!instances[instanceId]?.isOpen,
-                isForeground: !!foreground && foreground === instanceId,
-              },
-            })
-          );
+          if (instanceId && instances[instanceId]) {
+            const focusedInstance = instances[instanceId];
+            emitInstanceStateChange({
+              instanceId,
+              appId: focusedInstance.appId,
+              title: focusedInstance.title,
+              initialData: focusedInstance.initialData,
+              isOpen: Boolean(focusedInstance.isOpen),
+              isForeground: Boolean(foreground && foreground === instanceId),
+              isMinimized: Boolean(focusedInstance.isMinimized),
+              changeType: "focused",
+            });
+          }
           return {
             instances,
             instanceOrder: order,
@@ -451,7 +510,7 @@ const createUseAppStore = () =>
         });
       },
 
-      updateInstanceWindowState: (instanceId, position, size) =>
+      updateInstanceWindowState: (instanceId, position, size) => {
         set((state) => {
           const inst = state.instances[instanceId];
           if (
@@ -469,7 +528,22 @@ const createUseAppStore = () =>
               [instanceId]: { ...inst, position, size },
             },
           };
-        }),
+        });
+
+        const updatedInstance = get().instances[instanceId];
+        if (updatedInstance) {
+          emitInstanceWindowStateChange({
+            instanceId,
+            appId: updatedInstance.appId,
+            title: updatedInstance.title,
+            isForeground: Boolean(updatedInstance.isForeground),
+            isMinimized: Boolean(updatedInstance.isMinimized),
+            position,
+            size,
+            initialData: updatedInstance.initialData,
+          });
+        }
+      },
 
       getInstancesByAppId: (appId) =>
         Object.values(get().instances).filter((i) => i.appId === appId),
@@ -515,11 +589,16 @@ const createUseAppStore = () =>
             instances[nextForeground] = { ...instances[nextForeground], isForeground: true };
           }
 
-          window.dispatchEvent(
-            new CustomEvent("instanceStateChange", {
-              detail: { instanceId, isOpen: true, isForeground: false, isMinimized: true },
-            })
-          );
+          emitInstanceStateChange({
+            instanceId,
+            appId: inst.appId,
+            title: inst.title,
+            initialData: inst.initialData,
+            isOpen: true,
+            isForeground: false,
+            isMinimized: true,
+            changeType: "minimized",
+          });
 
           return {
             instances,
@@ -547,11 +626,16 @@ const createUseAppStore = () =>
             instanceId,
           ];
 
-          window.dispatchEvent(
-            new CustomEvent("instanceStateChange", {
-              detail: { instanceId, isOpen: true, isForeground: true, isMinimized: false },
-            })
-          );
+          emitInstanceStateChange({
+            instanceId,
+            appId: inst.appId,
+            title: inst.title,
+            initialData: inst.initialData,
+            isOpen: true,
+            isForeground: true,
+            isMinimized: false,
+            changeType: "restored",
+          });
 
           return {
             instances,

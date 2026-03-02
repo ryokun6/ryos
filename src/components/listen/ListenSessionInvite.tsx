@@ -19,14 +19,16 @@ interface ListenSessionInviteProps {
   isOpen: boolean;
   onClose: () => void;
   sessionId: string;
-  appType: "ipod" | "karaoke";
+  appType?: "ipod" | "karaoke";
+  mode?: "listen" | "liveDesktop";
 }
 
 export function ListenSessionInvite({
   isOpen,
   onClose,
   sessionId,
-  appType,
+  appType = "karaoke",
+  mode = "listen",
 }: ListenSessionInviteProps) {
   const { t } = useTranslation();
   const [shareUrl, setShareUrl] = useState("");
@@ -47,8 +49,36 @@ export function ListenSessionInvite({
       setShareUrl("");
       return;
     }
+    if (mode === "liveDesktop") {
+      setShareUrl(`${baseUrl}/live/${sessionId}`);
+      return;
+    }
     setShareUrl(`${baseUrl}/listen/${sessionId}?app=${appType}`);
-  }, [appType, baseUrl, isOpen, sessionId]);
+  }, [appType, baseUrl, isOpen, mode, sessionId]);
+
+  const labels = useMemo(
+    () =>
+      mode === "liveDesktop"
+        ? {
+            linkCopied: t("apps.liveDesktop.linkCopied"),
+            linkCopiedDescription: t("apps.liveDesktop.linkCopiedDescription"),
+            copyFailed: t("apps.liveDesktop.copyFailed"),
+            copyFailedDescription: t("apps.liveDesktop.copyFailedDescription"),
+            shareLinkInvite: t("apps.liveDesktop.shareLinkInvite"),
+            copyLink: t("apps.liveDesktop.copyLink"),
+            inviteTitle: t("apps.liveDesktop.inviteToSession"),
+          }
+        : {
+            linkCopied: t("apps.karaoke.liveListen.linkCopied"),
+            linkCopiedDescription: t("apps.karaoke.liveListen.linkCopiedDescription"),
+            copyFailed: t("apps.karaoke.liveListen.copyFailed"),
+            copyFailedDescription: t("apps.karaoke.liveListen.copyFailedDescription"),
+            shareLinkInvite: t("apps.karaoke.liveListen.shareLinkInvite"),
+            copyLink: t("apps.karaoke.liveListen.copyLink"),
+            inviteTitle: t("apps.karaoke.liveListen.inviteToListen"),
+          },
+    [mode, t]
+  );
 
   useEffect(() => {
     if (shareUrl && inputRef.current) {
@@ -61,13 +91,13 @@ export function ListenSessionInvite({
     if (!shareUrl) return;
     try {
       await navigator.clipboard.writeText(shareUrl);
-      toast.success(t("apps.karaoke.liveListen.linkCopied"), {
-        description: t("apps.karaoke.liveListen.linkCopiedDescription"),
+      toast.success(labels.linkCopied, {
+        description: labels.linkCopiedDescription,
       });
       onClose();
     } catch {
-      toast.error(t("apps.karaoke.liveListen.copyFailed"), {
-        description: t("apps.karaoke.liveListen.copyFailedDescription"),
+      toast.error(labels.copyFailed, {
+        description: labels.copyFailedDescription,
       });
       inputRef.current?.focus();
       inputRef.current?.select();
@@ -100,7 +130,7 @@ export function ListenSessionInvite({
             fontSize: isXpTheme ? "10px" : undefined,
           }}
         >
-          {t("apps.karaoke.liveListen.shareLinkInvite")}
+          {labels.shareLinkInvite}
         </p>
 
         <Input
@@ -139,7 +169,7 @@ export function ListenSessionInvite({
             fontSize: isXpTheme ? "11px" : undefined,
           }}
         >
-          {t("apps.karaoke.liveListen.copyLink")}
+          {labels.copyLink}
         </Button>
       </DialogFooter>
     </div>
@@ -157,7 +187,7 @@ export function ListenSessionInvite({
             className="title-bar"
             style={currentTheme === "xp" ? { minHeight: "30px" } : undefined}
           >
-            <div className="title-bar-text">{t("apps.karaoke.liveListen.inviteToListen")}</div>
+            <div className="title-bar-text">{labels.inviteTitle}</div>
             <div className="title-bar-controls">
               <button aria-label="Close" data-action="close" onClick={onClose} />
             </div>
@@ -176,18 +206,18 @@ export function ListenSessionInvite({
       >
         {isMacOsxTheme ? (
           <>
-            <DialogHeader>{t("apps.karaoke.liveListen.inviteToListen")}</DialogHeader>
+            <DialogHeader>{labels.inviteTitle}</DialogHeader>
             <DialogDescription className="sr-only">
-              {t("apps.karaoke.liveListen.shareLinkInvite")}
+              {labels.shareLinkInvite}
             </DialogDescription>
           </>
         ) : (
           <DialogHeader>
             <DialogTitle className="font-normal text-[13px]">
-              {t("apps.karaoke.liveListen.inviteToListen")}
+              {labels.inviteTitle}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              {t("apps.karaoke.liveListen.shareLinkInvite")}
+              {labels.shareLinkInvite}
             </DialogDescription>
           </DialogHeader>
         )}

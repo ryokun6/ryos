@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import type { PusherChannel } from "@/lib/pusherClient";
-import { getPusherClient } from "@/lib/pusherClient";
+import {
+  subscribePusherChannel,
+  unsubscribePusherChannel,
+} from "@/lib/pusherClient";
 import { toast } from "@/hooks/useToast";
 import { useChatsStore } from "@/stores/useChatsStore";
 import {
@@ -144,15 +147,7 @@ function buildSessionAuthContext(username: string): ApiAuthContext | null {
   };
 }
 
-let pusherClient: ReturnType<typeof getPusherClient> | null = null;
 let channelRef: PusherChannel | null = null;
-
-function ensurePusherClient(): ReturnType<typeof getPusherClient> {
-  if (!pusherClient) {
-    pusherClient = getPusherClient();
-  }
-  return pusherClient;
-}
 
 function getChannelName(sessionId: string): string {
   return `listen-${sessionId}`;
@@ -172,23 +167,21 @@ function updateIdentityFlags(
 }
 
 function unsubscribeFromSession(): void {
-  if (pusherClient && channelRef) {
-    pusherClient.unsubscribe(channelRef.name);
+  if (channelRef) {
+    unsubscribePusherChannel(channelRef.name);
   }
   channelRef = null;
 }
 
 export const useListenSessionStore = create<ListenSessionState>((set, get) => {
   const bindChannelEvents = (sessionId: string) => {
-    const client = ensurePusherClient();
-
     if (channelRef && channelRef.name !== getChannelName(sessionId)) {
-      client.unsubscribe(channelRef.name);
+      unsubscribePusherChannel(channelRef.name);
       channelRef = null;
     }
 
     if (!channelRef) {
-      channelRef = client.subscribe(getChannelName(sessionId));
+      channelRef = subscribePusherChannel(getChannelName(sessionId));
     }
 
     channelRef.unbind("sync");

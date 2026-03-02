@@ -47,6 +47,12 @@ import { useIsPhone } from "@/hooks/useIsPhone";
 import { isTauri, isTauriWindows } from "@/utils/platform";
 import { useSpotlightStore } from "@/stores/useSpotlightStore";
 import { toggleExposeView, toggleSpotlightSearch } from "@/utils/appEventBus";
+import { toast } from "sonner";
+import { useChatsStore } from "@/stores/useChatsStore";
+import { useLiveDesktopSessionStore } from "@/stores/useLiveDesktopSessionStore";
+import { JoinSessionDialog } from "@/components/listen/JoinSessionDialog";
+import { ListenSessionInvite } from "@/components/listen/ListenSessionInvite";
+import { useShallow } from "zustand/react/shallow";
 
 // Helper function to get app name (using translations)
 const getAppName = (appId: string): string => {
@@ -530,6 +536,136 @@ function FinderAppMenu() {
         title={translatedFinderName}
         generateShareUrl={generateAppShareUrl}
       />
+    </>
+  );
+}
+
+function LiveDesktopMenu() {
+  const { t } = useTranslation();
+  const username = useChatsStore((state) => state.username);
+  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+
+  const {
+    currentSession,
+    isHost,
+    participantCount,
+    createSession,
+    joinSession,
+    leaveSession,
+    fetchSessions,
+  } = useLiveDesktopSessionStore(
+    useShallow((state) => ({
+      currentSession: state.currentSession,
+      isHost: state.isHost,
+      participantCount: state.participantCount,
+      createSession: state.createSession,
+      joinSession: state.joinSession,
+      leaveSession: state.leaveSession,
+      fetchSessions: state.fetchSessions,
+    }))
+  );
+
+  const handleStartSession = async () => {
+    if (!username) {
+      toast.error(t("apps.liveDesktop.loginRequired"), {
+        description: t("apps.liveDesktop.setUsernameDescription"),
+      });
+      return;
+    }
+
+    const result = await createSession(username);
+    if (!result.ok) {
+      toast.error(t("apps.liveDesktop.failedStart"), {
+        description: result.error || t("apps.liveDesktop.failedStart"),
+      });
+      return;
+    }
+
+    toast.success(t("apps.liveDesktop.startedSession"));
+    setIsInviteDialogOpen(true);
+  };
+
+  const handleJoinSession = async (sessionId: string) => {
+    if (!username) {
+      toast.error(t("apps.liveDesktop.loginRequired"), {
+        description: t("apps.liveDesktop.setUsernameDescription"),
+      });
+      return;
+    }
+
+    const result = await joinSession(sessionId, username);
+    if (!result.ok) {
+      toast.error(t("apps.liveDesktop.failedJoin"), {
+        description: result.error || t("apps.liveDesktop.failedJoin"),
+      });
+      return;
+    }
+    toast.success(t("apps.liveDesktop.joinedSession"));
+  };
+
+  const handleLeaveSession = async () => {
+    const result = await leaveSession();
+    if (!result.ok) {
+      toast.error(t("apps.liveDesktop.failedLeave"), {
+        description: result.error || t("apps.liveDesktop.failedLeave"),
+      });
+      return;
+    }
+  };
+
+  return (
+    <>
+      <MenubarMenu>
+        <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
+          {t("apps.liveDesktop.menuTitle")}
+          {currentSession ? ` (${participantCount})` : ""}
+        </MenubarTrigger>
+        <MenubarContent align="start" sideOffset={1} className="px-0">
+          {!currentSession ? (
+            <>
+              <MenubarItem onClick={handleStartSession} className="text-md h-6 px-3">
+                {t("apps.liveDesktop.start")}
+              </MenubarItem>
+              <MenubarItem
+                onClick={() => setIsJoinDialogOpen(true)}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.liveDesktop.join")}
+              </MenubarItem>
+            </>
+          ) : (
+            <>
+              <MenubarItem
+                onClick={() => setIsInviteDialogOpen(true)}
+                className="text-md h-6 px-3"
+              >
+                {t("apps.liveDesktop.invite")}
+              </MenubarItem>
+              <MenubarItem onClick={handleLeaveSession} className="text-md h-6 px-3">
+                {isHost ? t("apps.liveDesktop.end") : t("apps.liveDesktop.leave")}
+              </MenubarItem>
+            </>
+          )}
+        </MenubarContent>
+      </MenubarMenu>
+
+      <JoinSessionDialog
+        isOpen={isJoinDialogOpen}
+        onClose={() => setIsJoinDialogOpen(false)}
+        onJoin={handleJoinSession}
+        mode="liveDesktop"
+        fetchSessions={fetchSessions}
+      />
+
+      {currentSession && (
+        <ListenSessionInvite
+          isOpen={isInviteDialogOpen}
+          onClose={() => setIsInviteDialogOpen(false)}
+          sessionId={currentSession.id}
+          mode="liveDesktop"
+        />
+      )}
     </>
   );
 }
@@ -1485,6 +1621,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
           className="flex items-stretch border-none bg-transparent space-x-0 p-0 rounded-none h-full"
         >
           <AppleMenu />
+          <LiveDesktopMenu />
           {/* App Menu - only shown in macOS X theme */}
           {currentTheme === "macosx" && hasActiveApp && foregroundInstance && (
             <AppMenu

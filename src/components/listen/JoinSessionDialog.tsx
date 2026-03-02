@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -17,30 +17,41 @@ import {
   type ListenSessionSummary,
 } from "@/stores/useListenSessionStore";
 import { cn } from "@/lib/utils";
+import type { LiveDesktopSessionSummary } from "@/api/liveDesktop";
 
 interface JoinSessionDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onJoin: (sessionId: string) => void;
+  mode?: "listen" | "liveDesktop";
+  fetchSessions?: () => Promise<{
+    ok: boolean;
+    sessions?: JoinableSessionSummary[];
+    error?: string;
+  }>;
 }
 
-function extractSessionId(value: string): string {
+type JoinableSessionSummary =
+  | ListenSessionSummary
+  | LiveDesktopSessionSummary;
+
+function extractSessionId(value: string, routeSegment: string): string {
   const trimmed = value.trim();
   if (!trimmed) return "";
 
   try {
     const url = new URL(trimmed);
     const segments = url.pathname.split("/").filter(Boolean);
-    const listenIndex = segments.indexOf("listen");
-    if (listenIndex >= 0 && segments[listenIndex + 1]) {
-      return segments[listenIndex + 1].split("?")[0];
+    const routeIndex = segments.indexOf(routeSegment);
+    if (routeIndex >= 0 && segments[routeIndex + 1]) {
+      return segments[routeIndex + 1].split("?")[0];
     }
   } catch {
     // Not a URL, fall through
   }
 
-  if (trimmed.includes("/listen/")) {
-    const parts = trimmed.split("/listen/");
+  if (trimmed.includes(`/${routeSegment}/`)) {
+    const parts = trimmed.split(`/${routeSegment}/`);
     const sessionPart = parts[1]?.split("/")[0] || "";
     return sessionPart.split("?")[0] || trimmed;
   }
@@ -52,16 +63,51 @@ export function JoinSessionDialog({
   isOpen,
   onClose,
   onJoin,
+  mode = "listen",
+  fetchSessions: fetchSessionsProp,
 }: JoinSessionDialogProps) {
   const { t } = useTranslation();
   const [value, setValue] = useState("");
-  const [sessions, setSessions] = useState<ListenSessionSummary[]>([]);
+  const [sessions, setSessions] = useState<JoinableSessionSummary[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const currentTheme = useThemeStore((state) => state.current);
-  const fetchSessions = useListenSessionStore((state) => state.fetchSessions);
+  const fetchListenSessions = useListenSessionStore((state) => state.fetchSessions);
+  const routeSegment = mode === "liveDesktop" ? "live" : "listen";
+
+  const labels = useMemo(
+    () =>
+      mode === "liveDesktop"
+        ? {
+            loading: t("apps.liveDesktop.loadingSessions"),
+            none: t("apps.liveDesktop.noActiveSessions"),
+            participant: t("apps.liveDesktop.participant"),
+            participantPlural: t("apps.liveDesktop.participantPlural"),
+            orEnter: t("apps.liveDesktop.orEnterSessionId"),
+            placeholder: t("apps.liveDesktop.sessionLinkPlaceholder"),
+            joinButton: t("apps.liveDesktop.joinButton"),
+            cancel: t("apps.liveDesktop.cancel"),
+            joinTitle: t("apps.liveDesktop.joinSession"),
+            pasteLabel: t("apps.liveDesktop.pasteLinkOrId"),
+            idle: t("apps.liveDesktop.idle"),
+          }
+        : {
+            loading: t("apps.karaoke.liveListen.loadingSessions"),
+            none: t("apps.karaoke.liveListen.noActiveSessions"),
+            participant: t("apps.karaoke.liveListen.listener"),
+            participantPlural: t("apps.karaoke.liveListen.listenerPlural"),
+            orEnter: t("apps.karaoke.liveListen.orEnterSessionId"),
+            placeholder: t("apps.karaoke.liveListen.sessionLinkPlaceholder"),
+            joinButton: t("apps.karaoke.liveListen.joinButton"),
+            cancel: t("apps.karaoke.liveListen.cancel"),
+            joinTitle: t("apps.karaoke.liveListen.joinSession"),
+            pasteLabel: t("apps.karaoke.liveListen.pasteLinkOrId"),
+            idle: t("apps.karaoke.liveListen.idle"),
+          },
+    [mode, t]
+  );
 
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacTheme = currentTheme === "macosx";
@@ -69,15 +115,16 @@ export function JoinSessionDialog({
   const loadSessions = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    const result = await fetchSessions();
+    const effectiveFetchSessions = fetchSessionsProp || fetchListenSessions;
+    const result = await effectiveFetchSessions();
     if (result.ok && result.sessions) {
-      setSessions(result.sessions);
+      setSessions(result.sessions as JoinableSessionSummary[]);
     } else {
       setError(result.error || "Failed to load sessions");
       setSessions([]);
     }
     setIsLoading(false);
-  }, [fetchSessions]);
+  }, [fetchSessionsProp, fetchListenSessions]);
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -91,13 +138,13 @@ export function JoinSessionDialog({
 
   const handleJoin = useCallback(
     (sessionId?: string) => {
-      const id = sessionId || extractSessionId(value);
+      const id = sessionId || extractSessionId(value, routeSegment);
       if (!id) return;
       onJoin(id);
       setValue("");
       onClose();
     },
-    [value, onJoin, onClose]
+    [value, routeSegment, onJoin, onClose]
   );
 
   const handleJoinSelected = useCallback(() => {
@@ -144,7 +191,7 @@ export function JoinSessionDialog({
                   fontSize: isXpTheme ? "11px" : undefined,
                 }}
               >
-                {t("apps.karaoke.liveListen.loadingSessions")}
+                {labels.loading}
               </div>
             ) : error ? (
               <div
@@ -178,7 +225,7 @@ export function JoinSessionDialog({
                   fontSize: isXpTheme ? "11px" : undefined,
                 }}
               >
-                {t("apps.karaoke.liveListen.noActiveSessions")}
+                {labels.none}
               </div>
             ) : (
               sessions.map((session, index) => (
@@ -219,7 +266,11 @@ export function JoinSessionDialog({
                   }}
                 >
                   <div className="font-semibold">
-                    @{session.djUsername}
+                    @{mode === "liveDesktop"
+                      ? session.hostUsername
+                      : ("djUsername" in session
+                        ? session.djUsername
+                        : session.hostUsername)}
                     <span
                       className={cn(
                         "font-normal ml-2",
@@ -228,13 +279,25 @@ export function JoinSessionDialog({
                           : "text-neutral-500"
                       )}
                     >
-                      {session.listenerCount}{" "}
-                      {session.listenerCount === 1
-                        ? t("apps.karaoke.liveListen.listener")
-                        : t("apps.karaoke.liveListen.listenerPlural")}
+                      {(mode === "liveDesktop"
+                        ? ("participantCount" in session
+                          ? session.participantCount
+                          : 0)
+                        : ("listenerCount" in session
+                          ? session.listenerCount
+                          : 0))}{" "}
+                      {(mode === "liveDesktop"
+                        ? ("participantCount" in session
+                          ? session.participantCount
+                          : 0)
+                        : ("listenerCount" in session
+                          ? session.listenerCount
+                          : 0)) === 1
+                        ? labels.participant
+                        : labels.participantPlural}
                     </span>
                   </div>
-                  {session.currentTrackMeta && (
+                  {mode === "listen" && "currentTrackMeta" in session && session.currentTrackMeta && (
                     <div
                       className={cn(
                         selectedIndex === index
@@ -245,6 +308,21 @@ export function JoinSessionDialog({
                       {session.currentTrackMeta.title}
                       {session.currentTrackMeta.artist &&
                         ` • ${session.currentTrackMeta.artist}`}
+                    </div>
+                  )}
+                  {mode === "liveDesktop" && (
+                    <div
+                      className={cn(
+                        selectedIndex === index
+                          ? "opacity-80"
+                          : "text-neutral-600"
+                      )}
+                    >
+                      {"currentAction" in session && session.currentAction
+                        ? t(`apps.liveDesktop.actions.${session.currentAction}`, {
+                            defaultValue: session.currentAction,
+                          })
+                        : labels.idle}
                     </div>
                   )}
                 </div>
@@ -269,7 +347,7 @@ export function JoinSessionDialog({
           fontSize: isXpTheme ? "11px" : undefined,
         }}
       >
-        {t("apps.karaoke.liveListen.orEnterSessionId")}
+        {labels.orEnter}
       </p>
       <div className="flex gap-2">
         <Input
@@ -281,7 +359,7 @@ export function JoinSessionDialog({
               handleJoin();
             }
           }}
-          placeholder={t("apps.karaoke.liveListen.sessionLinkPlaceholder")}
+          placeholder={labels.placeholder}
           className={cn(
             "shadow-none flex-1",
             isXpTheme
@@ -313,7 +391,7 @@ export function JoinSessionDialog({
             fontSize: isXpTheme ? "11px" : undefined,
           }}
         >
-          {t("apps.karaoke.liveListen.joinButton")}
+          {labels.joinButton}
         </Button>
       </div>
 
@@ -338,7 +416,7 @@ export function JoinSessionDialog({
                 fontSize: isXpTheme ? "11px" : undefined,
               }}
             >
-              {t("apps.karaoke.liveListen.cancel")}
+              {labels.cancel}
             </Button>
             <Button
               variant={isMacTheme ? "default" : "retro"}
@@ -358,7 +436,7 @@ export function JoinSessionDialog({
                 fontSize: isXpTheme ? "11px" : undefined,
               }}
             >
-              {t("apps.karaoke.liveListen.joinButton")}
+              {labels.joinButton}
             </Button>
           </div>
         </DialogFooter>
@@ -376,14 +454,14 @@ export function JoinSessionDialog({
         {isXpTheme ? (
           <>
             <DialogHeader>
-              {t("apps.karaoke.liveListen.joinSession")}
+              {labels.joinTitle}
             </DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : isMacTheme ? (
           <>
             <DialogHeader>
-              {t("apps.karaoke.liveListen.joinSession")}
+              {labels.joinTitle}
             </DialogHeader>
             {dialogContent}
           </>
@@ -391,10 +469,10 @@ export function JoinSessionDialog({
           <>
             <DialogHeader>
               <DialogTitle className="font-normal text-[16px]">
-                {t("apps.karaoke.liveListen.joinSession")}
+                {labels.joinTitle}
               </DialogTitle>
               <DialogDescription className="sr-only">
-                {t("apps.karaoke.liveListen.pasteLinkOrId")}
+                {labels.pasteLabel}
               </DialogDescription>
             </DialogHeader>
             {dialogContent}

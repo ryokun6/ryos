@@ -22,6 +22,7 @@ import {
   emitAppUpdate,
   onAppLaunchRequest,
   onExposeToggle,
+  requestLiveDesktopJoin,
   onSpotlightToggle,
   requestAppLaunch,
   toggleSpotlightSearch,
@@ -203,7 +204,11 @@ export function AppManager({ apps }: AppManagerProps) {
     }
 
     const timer = window.setTimeout(() => {
-      requestAppLaunch(routeAction.request);
+      if (routeAction.kind === "launch") {
+        requestAppLaunch(routeAction.request);
+      } else if (routeAction.kind === "live-desktop-join") {
+        requestLiveDesktopJoin({ sessionId: routeAction.sessionId });
+      }
 
       if (routeAction.urlCleanupTiming === "after-dispatch") {
         resetUrl();

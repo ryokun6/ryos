@@ -18,6 +18,7 @@ import { DownloadSimple } from "@phosphor-icons/react";
 import { ScreenSaverOverlay } from "./components/screensavers/ScreenSaverOverlay";
 import { useBackgroundChatNotifications } from "./hooks/useBackgroundChatNotifications";
 import { DesktopErrorBoundary } from "@/components/errors/ErrorBoundaries";
+import { useLiveDesktopSync } from "@/hooks/useLiveDesktopSync";
 
 // Convert registry to array
 const apps: AnyApp[] = Object.values(appRegistry);
@@ -37,6 +38,7 @@ export function App() {
   // Initialize offline detection
   useOffline();
   useBackgroundChatNotifications();
+  useLiveDesktopSync();
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {
