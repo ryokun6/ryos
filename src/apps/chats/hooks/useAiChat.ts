@@ -53,6 +53,7 @@ import {
   handleKaraokeControl,
   handleStickiesControl,
   handleInfiniteMacControl,
+  handleCalendarControl,
   type ToolContext,
   type LaunchAppInput,
   type CloseAppInput,
@@ -61,6 +62,7 @@ import {
   type KaraokeControlInput,
   type StickiesControlInput,
   type InfiniteMacControlInput,
+  type CalendarControlInput,
 } from "../tools";
 
 /**
@@ -1719,6 +1721,15 @@ export function useAiChat(onPromptSetUsername?: () => void) {
           case "infiniteMacControl": {
             await handleInfiniteMacControl(
               toolCall.input as InfiniteMacControlInput,
+              toolCall.toolCallId,
+              toolContext
+            );
+            result = ""; // Handler manages its own result
+            break;
+          }
+          case "calendarControl": {
+            handleCalendarControl(
+              toolCall.input as CalendarControlInput,
               toolCall.toolCallId,
               toolContext
             );

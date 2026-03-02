@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { appIds } from "../../../src/config/appIds.js";
-import { THEME_IDS, LANGUAGE_CODES, VFS_PATHS, MEMORY_TYPES, MEMORY_MODES } from "./types.js";
+import { THEME_IDS, LANGUAGE_CODES, VFS_PATHS, MEMORY_TYPES, MEMORY_MODES, CALENDAR_ACTIONS, CALENDAR_COLORS } from "./types.js";
 import {
   MAX_KEY_LENGTH,
   MAX_SUMMARY_LENGTH,
@@ -538,6 +538,78 @@ export const infiniteMacControlSchema = z.object({
       code: z.ZodIssueCode.custom,
       message: "The 'keyPress' action requires the 'key' parameter.",
       path: ["key"],
+    });
+  }
+});
+
+// ============================================================================
+// Calendar Control Schema
+// ============================================================================
+
+/**
+ * Calendar control schema
+ */
+export const calendarControlSchema = z.object({
+  action: z
+    .enum(CALENDAR_ACTIONS)
+    .describe(
+      "Action to perform: 'list' returns events (optionally filtered by date), " +
+      "'create' adds a new event, 'update' modifies an existing event by ID, " +
+      "'delete' removes an event by ID."
+    ),
+  id: z
+    .string()
+    .optional()
+    .describe("For 'update' and 'delete' actions: the event ID."),
+  title: z
+    .string()
+    .max(200)
+    .optional()
+    .describe("For 'create' and 'update': the event title."),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date must be YYYY-MM-DD format" })
+    .optional()
+    .describe("For 'create'/'update': event date (YYYY-MM-DD). For 'list': filter by date."),
+  startTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, { message: "Time must be HH:MM format" })
+    .optional()
+    .describe("For 'create' and 'update': start time (HH:MM). Omit for all-day events."),
+  endTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, { message: "Time must be HH:MM format" })
+    .optional()
+    .describe("For 'create' and 'update': end time (HH:MM). Omit for all-day events."),
+  color: z
+    .enum(CALENDAR_COLORS)
+    .optional()
+    .describe("Event color: 'blue', 'red', 'green', 'orange', or 'purple'. Defaults to 'blue'."),
+  notes: z
+    .string()
+    .max(500)
+    .optional()
+    .describe("Optional notes for the event."),
+}).superRefine((data, ctx) => {
+  if (data.action === "create" && !data.title) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "The 'create' action requires the 'title' parameter.",
+      path: ["title"],
+    });
+  }
+  if (data.action === "create" && !data.date) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "The 'create' action requires the 'date' parameter (YYYY-MM-DD).",
+      path: ["date"],
+    });
+  }
+  if ((data.action === "update" || data.action === "delete") && !data.id) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `The '${data.action}' action requires the 'id' parameter.`,
+      path: ["id"],
     });
   }
 });

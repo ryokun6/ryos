@@ -127,6 +127,9 @@ export type { StickiesControlInput } from "./stickiesHandler";
 export { handleInfiniteMacControl } from "./infiniteMacHandler";
 export type { InfiniteMacControlInput } from "./infiniteMacHandler";
 
+export { handleCalendarControl } from "./calendarHandler";
+export type { CalendarControlInput } from "./calendarHandler";
+
 // ============================================================================
 // Register tool handlers for automatic dispatch (optional)
 // ============================================================================
@@ -136,12 +139,14 @@ import { handleIpodControl } from "./ipodHandler";
 import { handleKaraokeControl } from "./karaokeHandler";
 import { handleStickiesControl } from "./stickiesHandler";
 import { handleInfiniteMacControl } from "./infiniteMacHandler";
+import { handleCalendarControl } from "./calendarHandler";
 
 registerToolHandler("settings", handleSettings);
 registerToolHandler("ipodControl", handleIpodControl);
 registerToolHandler("karaokeControl", handleKaraokeControl);
 registerToolHandler("stickiesControl", handleStickiesControl);
 registerToolHandler("infiniteMacControl", handleInfiniteMacControl);
+registerToolHandler("calendarControl", handleCalendarControl);
 
 // Note: launchApp and closeApp handlers require additional context
 // so they are called directly from useAiChat rather than through the registry
