@@ -691,7 +691,7 @@ export function StocksBackPanel({
                   <X
                     size={8}
                     weight="bold"
-                    style={{ color: isXpTheme ? "#CC0000" : "rgba(255,100,100,0.8)" }}
+                    style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.4)" }}
                   />
                 </button>
               )}
