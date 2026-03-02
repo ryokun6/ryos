@@ -303,6 +303,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
         minHeight: "inherit",
         fontFamily: font,
         position: "relative",
+        background: "linear-gradient(180deg, rgba(80,130,190,0.85) 0%, rgba(55,100,165,0.9) 50%, rgba(40,80,140,0.92) 100%)",
       }}
     >
       {/* Globe watermark — large, right-center positioned */}
@@ -339,8 +340,8 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
       <div
         className="relative"
         style={{
-          background: "linear-gradient(180deg, #5BA3E6 0%, #4A90D9 40%, #3B7CC8 100%)",
-          padding: "8px 10px 6px",
+          background: "linear-gradient(180deg, rgba(91,163,230,0.7) 0%, rgba(74,144,217,0.75) 40%, rgba(59,124,200,0.8) 100%)",
+          padding: "7px 10px 5px",
           zIndex: 1,
         }}
         onPointerDown={(e) => e.stopPropagation()}
@@ -378,7 +379,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
       {/* Source text area */}
       <div
         className="relative"
-        style={{ padding: "8px 10px 4px", zIndex: 1 }}
+        style={{ padding: "6px 10px 4px", zIndex: 1 }}
         onPointerDown={(e) => e.stopPropagation()}
       >
         <textarea
@@ -388,13 +389,13 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
           style={{
             width: "100%",
             fontSize: 13,
-            padding: "8px 10px",
+            padding: "6px 10px",
             borderRadius: 8,
             border: "1px solid rgba(0,0,0,0.12)",
             background: "rgba(255,255,255,0.92)",
             color: "#1A1A1A",
             resize: "none",
-            minHeight: 52,
+            minHeight: 40,
             fontFamily: font,
             outline: "none",
             boxShadow: "inset 0 1px 3px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.05)",
@@ -408,8 +409,8 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
       <div
         className="relative"
         style={{
-          background: "linear-gradient(180deg, #5BA3E6 0%, #4A90D9 40%, #3B7CC8 100%)",
-          padding: "6px 10px",
+          background: "linear-gradient(180deg, rgba(91,163,230,0.7) 0%, rgba(74,144,217,0.75) 40%, rgba(59,124,200,0.8) 100%)",
+          padding: "5px 10px",
           zIndex: 1,
         }}
         onPointerDown={(e) => e.stopPropagation()}
@@ -467,7 +468,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
       {/* Output text area */}
       <div
         className="relative flex-1"
-        style={{ padding: "4px 10px 10px", zIndex: 1 }}
+        style={{ padding: "4px 10px 8px", zIndex: 1 }}
         onPointerDown={(e) => e.stopPropagation()}
       >
         <div
@@ -475,12 +476,12 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
             width: "100%",
             height: "100%",
             fontSize: 13,
-            padding: "8px 10px",
+            padding: "6px 10px",
             borderRadius: 8,
             border: "1px solid rgba(0,0,0,0.08)",
             background: "rgba(255,255,255,0.85)",
             color: loading ? "rgba(0,0,0,0.4)" : "#1A1A1A",
-            minHeight: 52,
+            minHeight: 40,
             fontFamily: font,
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
