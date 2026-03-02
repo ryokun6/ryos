@@ -10,7 +10,6 @@ interface WidgetChromeProps {
   y: number;
   onRemove?: () => void;
   onMove?: (position: { x: number; y: number }) => void;
-  title?: string;
 }
 
 export function WidgetChrome({
@@ -21,7 +20,6 @@ export function WidgetChrome({
   y,
   onRemove,
   onMove,
-  title,
 }: WidgetChromeProps) {
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
@@ -79,66 +77,61 @@ export function WidgetChrome({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Close button — Tiger ⊗ style, top-left, only visible on hover */}
+      {onRemove && (
+        <button
+          data-close-btn
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          className="absolute flex items-center justify-center transition-all"
+          style={{
+            top: -6,
+            left: -6,
+            width: 20,
+            height: 20,
+            borderRadius: "50%",
+            zIndex: 20,
+            opacity: isHovered ? 1 : 0,
+            transform: isHovered ? "scale(1)" : "scale(0.5)",
+            background: isXpTheme
+              ? "#CC0000"
+              : "linear-gradient(180deg, #5a5a5a 0%, #333333 100%)",
+            border: isXpTheme
+              ? "1px solid #990000"
+              : "1.5px solid rgba(255,255,255,0.3)",
+            boxShadow: isXpTheme
+              ? "0 1px 3px rgba(0,0,0,0.4)"
+              : "0 2px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2)",
+            color: "#FFF",
+          }}
+        >
+          <X size={10} weight="bold" />
+        </button>
+      )}
+
       {/* Widget card */}
       <div
         className="relative overflow-hidden"
         style={{
           width,
           minHeight: height,
-          borderRadius: isXpTheme ? "4px" : "12px",
+          borderRadius: isXpTheme ? "4px" : "14px",
           background: isXpTheme
             ? "rgba(255,255,255,0.92)"
-            : "rgba(255,255,255,0.2)",
-          backdropFilter: isXpTheme ? "none" : "blur(20px) saturate(1.8)",
-          WebkitBackdropFilter: isXpTheme ? "none" : "blur(20px) saturate(1.8)",
+            : "rgba(30,30,30,0.75)",
+          backdropFilter: isXpTheme ? "none" : "blur(20px) saturate(1.6)",
+          WebkitBackdropFilter: isXpTheme ? "none" : "blur(20px) saturate(1.6)",
           border: isXpTheme
             ? "1px solid #ACA899"
-            : "1px solid rgba(255,255,255,0.3)",
+            : "1px solid rgba(255,255,255,0.12)",
           boxShadow: isXpTheme
             ? "1px 1px 4px rgba(0,0,0,0.3)"
-            : "0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)",
+            : "0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08)",
         }}
       >
-        {/* Optional title */}
-        {title && (
-          <div
-            className="text-xs font-medium text-center py-1"
-            style={{
-              color: isXpTheme ? "#000" : "rgba(255,255,255,0.8)",
-              borderBottom: isXpTheme
-                ? "1px solid #ACA899"
-                : "1px solid rgba(255,255,255,0.1)",
-            }}
-          >
-            {title}
-          </div>
-        )}
-
-        {/* Close button (Apple Dashboard style - top-left on hover) */}
-        {onRemove && isHovered && (
-          <button
-            data-close-btn
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemove();
-            }}
-            className="absolute z-10 flex items-center justify-center transition-opacity"
-            style={{
-              top: 4,
-              left: 4,
-              width: 18,
-              height: 18,
-              borderRadius: "50%",
-              background: isXpTheme ? "#CC0000" : "rgba(255,255,255,0.3)",
-              border: isXpTheme ? "1px solid #990000" : "1px solid rgba(255,255,255,0.4)",
-              color: isXpTheme ? "#FFF" : "rgba(255,255,255,0.9)",
-            }}
-          >
-            <X size={10} weight="bold" />
-          </button>
-        )}
-
         {/* Widget content */}
         <div style={{ pointerEvents: isDragging ? "none" : "auto" }}>
           {children}

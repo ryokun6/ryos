@@ -15,58 +15,96 @@ export function ClockWidget() {
   const minutes = time.getMinutes();
   const seconds = time.getSeconds();
 
-  // Calculate hand angles
   const secondAngle = (seconds / 60) * 360;
   const minuteAngle = (minutes / 60) * 360 + (seconds / 60) * 6;
   const hourAngle = ((hours % 12) / 12) * 360 + (minutes / 60) * 30;
 
-  const size = 140;
+  const size = 150;
   const center = size / 2;
-  const faceRadius = size / 2 - 6;
+  const outerR = size / 2 - 2;
+  const faceRadius = size / 2 - 14;
 
-  // Colors based on theme
-  const faceColor = isXpTheme ? "#FFFFFF" : "rgba(255,255,255,0.15)";
-  const faceBorder = isXpTheme ? "#808080" : "rgba(255,255,255,0.3)";
-  const hourHandColor = isXpTheme ? "#000000" : "#FFFFFF";
-  const minuteHandColor = isXpTheme ? "#000000" : "#FFFFFF";
-  const secondHandColor = isXpTheme ? "#CC0000" : "#FF6B6B";
-  const tickColor = isXpTheme ? "#333333" : "rgba(255,255,255,0.6)";
-  const numberColor = isXpTheme ? "#000000" : "rgba(255,255,255,0.8)";
+  if (isXpTheme) {
+    // Simple flat clock for XP/98
+    return (
+      <div className="flex flex-col items-center p-2">
+        <svg width={130} height={130} viewBox="0 0 130 130">
+          <circle cx={65} cy={65} r={60} fill="#FFFFFF" stroke="#808080" strokeWidth={2} />
+          {Array.from({ length: 12 }, (_, i) => {
+            const angle = ((i * 30 - 90) * Math.PI) / 180;
+            return (
+              <line key={i} x1={65 + 48 * Math.cos(angle)} y1={65 + 48 * Math.sin(angle)} x2={65 + 54 * Math.cos(angle)} y2={65 + 54 * Math.sin(angle)} stroke="#333" strokeWidth={i % 3 === 0 ? 2 : 1} strokeLinecap="round" />
+            );
+          })}
+          {[12, 3, 6, 9].map((num) => {
+            const angle = ((num * 30 - 90) * Math.PI) / 180;
+            return <text key={num} x={65 + 40 * Math.cos(angle)} y={65 + 40 * Math.sin(angle)} textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight="bold" fill="#000">{num}</text>;
+          })}
+          <line x1={65} y1={65} x2={65 + 28 * Math.cos(((hourAngle - 90) * Math.PI) / 180)} y2={65 + 28 * Math.sin(((hourAngle - 90) * Math.PI) / 180)} stroke="#000" strokeWidth={3} strokeLinecap="round" />
+          <line x1={65} y1={65} x2={65 + 40 * Math.cos(((minuteAngle - 90) * Math.PI) / 180)} y2={65 + 40 * Math.sin(((minuteAngle - 90) * Math.PI) / 180)} stroke="#000" strokeWidth={2} strokeLinecap="round" />
+          <line x1={65} y1={65} x2={65 + 44 * Math.cos(((secondAngle - 90) * Math.PI) / 180)} y2={65 + 44 * Math.sin(((secondAngle - 90) * Math.PI) / 180)} stroke="#CC0000" strokeWidth={1} strokeLinecap="round" />
+          <circle cx={65} cy={65} r={3} fill="#CC0000" />
+        </svg>
+      </div>
+    );
+  }
 
+  // Tiger-style clock: dark metallic bezel, white face, red second hand
   return (
-    <div className="flex items-center justify-center p-2">
+    <div className="flex flex-col items-center py-2 px-2">
+      {/* AM/PM indicator */}
+      <div className="text-[10px] font-semibold mb-1 tracking-wider" style={{ color: "rgba(255,255,255,0.5)" }}>
+        {hours >= 12 ? "PM" : "AM"}
+      </div>
+
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {/* Clock face */}
-        <circle
-          cx={center}
-          cy={center}
-          r={faceRadius}
-          fill={faceColor}
-          stroke={faceBorder}
-          strokeWidth={isXpTheme ? 2 : 1}
-        />
+        {/* Outer bezel — dark metallic ring */}
+        <defs>
+          <radialGradient id="bezelGrad" cx="50%" cy="40%" r="50%">
+            <stop offset="0%" stopColor="#666" />
+            <stop offset="70%" stopColor="#333" />
+            <stop offset="100%" stopColor="#1a1a1a" />
+          </radialGradient>
+          <radialGradient id="faceGrad" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stopColor="#f8f8f8" />
+            <stop offset="100%" stopColor="#e0e0e0" />
+          </radialGradient>
+          <filter id="clockShadow" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="1" stdDeviation="2" floodColor="#000" floodOpacity="0.4" />
+          </filter>
+        </defs>
+
+        {/* Bezel ring */}
+        <circle cx={center} cy={center} r={outerR} fill="url(#bezelGrad)" />
+        <circle cx={center} cy={center} r={outerR - 1} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={0.5} />
+
+        {/* Clock face — white/cream */}
+        <circle cx={center} cy={center} r={faceRadius} fill="url(#faceGrad)" filter="url(#clockShadow)" />
+        <circle cx={center} cy={center} r={faceRadius} fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth={0.5} />
 
         {/* Hour markers */}
-        {Array.from({ length: 12 }, (_, i) => {
-          const angle = ((i * 30 - 90) * Math.PI) / 180;
-          const innerR = faceRadius - 10;
-          const outerR = faceRadius - 4;
+        {Array.from({ length: 60 }, (_, i) => {
+          const angle = ((i * 6 - 90) * Math.PI) / 180;
+          const isHour = i % 5 === 0;
+          const innerR = faceRadius - (isHour ? 10 : 5);
+          const outerR2 = faceRadius - 2;
           return (
             <line
               key={i}
               x1={center + innerR * Math.cos(angle)}
               y1={center + innerR * Math.sin(angle)}
-              x2={center + outerR * Math.cos(angle)}
-              y2={center + outerR * Math.sin(angle)}
-              stroke={tickColor}
-              strokeWidth={i % 3 === 0 ? 2 : 1}
+              x2={center + outerR2 * Math.cos(angle)}
+              y2={center + outerR2 * Math.sin(angle)}
+              stroke={isHour ? "#333" : "#bbb"}
+              strokeWidth={isHour ? 1.5 : 0.5}
               strokeLinecap="round"
             />
           );
         })}
 
         {/* Hour numbers */}
-        {[12, 3, 6, 9].map((num) => {
+        {Array.from({ length: 12 }, (_, i) => {
+          const num = i === 0 ? 12 : i;
           const angle = ((num * 30 - 90) * Math.PI) / 180;
           const r = faceRadius - 20;
           return (
@@ -76,9 +114,9 @@ export function ClockWidget() {
               y={center + r * Math.sin(angle)}
               textAnchor="middle"
               dominantBaseline="central"
-              fontSize={12}
-              fontWeight="bold"
-              fill={numberColor}
+              fontSize={11}
+              fontWeight="600"
+              fill="#333"
               style={{ fontFamily: "var(--os-font-ui)" }}
             >
               {num}
@@ -90,9 +128,9 @@ export function ClockWidget() {
         <line
           x1={center}
           y1={center}
-          x2={center + 32 * Math.cos(((hourAngle - 90) * Math.PI) / 180)}
-          y2={center + 32 * Math.sin(((hourAngle - 90) * Math.PI) / 180)}
-          stroke={hourHandColor}
+          x2={center + 30 * Math.cos(((hourAngle - 90) * Math.PI) / 180)}
+          y2={center + 30 * Math.sin(((hourAngle - 90) * Math.PI) / 180)}
+          stroke="#222"
           strokeWidth={3.5}
           strokeLinecap="round"
         />
@@ -101,26 +139,27 @@ export function ClockWidget() {
         <line
           x1={center}
           y1={center}
-          x2={center + 45 * Math.cos(((minuteAngle - 90) * Math.PI) / 180)}
-          y2={center + 45 * Math.sin(((minuteAngle - 90) * Math.PI) / 180)}
-          stroke={minuteHandColor}
+          x2={center + 42 * Math.cos(((minuteAngle - 90) * Math.PI) / 180)}
+          y2={center + 42 * Math.sin(((minuteAngle - 90) * Math.PI) / 180)}
+          stroke="#222"
           strokeWidth={2.5}
           strokeLinecap="round"
         />
 
-        {/* Second hand */}
+        {/* Second hand — red */}
         <line
-          x1={center}
-          y1={center}
-          x2={center + 50 * Math.cos(((secondAngle - 90) * Math.PI) / 180)}
-          y2={center + 50 * Math.sin(((secondAngle - 90) * Math.PI) / 180)}
-          stroke={secondHandColor}
+          x1={center - 10 * Math.cos(((secondAngle - 90) * Math.PI) / 180)}
+          y1={center - 10 * Math.sin(((secondAngle - 90) * Math.PI) / 180)}
+          x2={center + 48 * Math.cos(((secondAngle - 90) * Math.PI) / 180)}
+          y2={center + 48 * Math.sin(((secondAngle - 90) * Math.PI) / 180)}
+          stroke="#CC3333"
           strokeWidth={1}
           strokeLinecap="round"
         />
 
-        {/* Center dot */}
-        <circle cx={center} cy={center} r={3} fill={secondHandColor} />
+        {/* Center cap */}
+        <circle cx={center} cy={center} r={4} fill="#333" />
+        <circle cx={center} cy={center} r={2.5} fill="#CC3333" />
       </svg>
     </div>
   );

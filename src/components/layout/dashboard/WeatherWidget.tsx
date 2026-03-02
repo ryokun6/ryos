@@ -11,7 +11,6 @@ interface WeatherData {
   humidity: number;
 }
 
-// WMO Weather Codes → emoji
 function getWeatherEmoji(code: number): string {
   if (code === 0) return "☀️";
   if (code <= 3) return "⛅";
@@ -65,7 +64,6 @@ export function WeatherWidget() {
         temperatureMin: Math.round(data.daily.temperature_2m_min[0]),
       });
 
-      // Reverse geocode for city name (nominatim)
       try {
         const geoRes = await fetch(
           `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`
@@ -81,7 +79,7 @@ export function WeatherWidget() {
           setLocationName(city);
         }
       } catch {
-        // Silently fail — location name is optional
+        // Location name optional
       }
 
       setLoading(false);
@@ -110,12 +108,33 @@ export function WeatherWidget() {
     );
   }, [fetchWeather, t]);
 
-  const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.9)";
-  const dimColor = isXpTheme ? "#666" : "rgba(255,255,255,0.5)";
+  // XP theme — simple white style
+  if (isXpTheme) {
+    if (loading) return <div className="flex items-center justify-center p-4 text-xs text-gray-500" style={{ minHeight: 120 }}>{t("apps.dashboard.weather.loading")}</div>;
+    if (error) return <div className="flex items-center justify-center p-4 text-xs text-gray-500 text-center" style={{ minHeight: 120 }}>{error}</div>;
+    if (!weather) return null;
+    return (
+      <div className="p-3 text-black">
+        {locationName && <div className="text-[10px] font-medium text-gray-500 truncate">{locationName}</div>}
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-2xl">{getWeatherEmoji(weather.weatherCode)}</span>
+          <div>
+            <div className="text-xl font-light">{weather.temperature}°</div>
+            <div className="text-[10px] text-gray-500">{getWeatherLabel(weather.weatherCode)}</div>
+          </div>
+        </div>
+        <div className="flex gap-3 text-[10px] text-gray-500 mt-1">
+          <span>H: {weather.temperatureMax}°</span>
+          <span>L: {weather.temperatureMin}°</span>
+        </div>
+      </div>
+    );
+  }
 
+  // Tiger-style — dark gradient, large temp, minimal layout
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-4" style={{ color: dimColor, minHeight: 140 }}>
+      <div className="flex items-center justify-center p-4" style={{ color: "rgba(255,255,255,0.4)", minHeight: 140 }}>
         <span className="text-xs">{t("apps.dashboard.weather.loading")}</span>
       </div>
     );
@@ -123,7 +142,7 @@ export function WeatherWidget() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center p-4 text-center" style={{ color: dimColor, minHeight: 140 }}>
+      <div className="flex items-center justify-center p-4 text-center" style={{ color: "rgba(255,255,255,0.4)", minHeight: 140 }}>
         <span className="text-xs">{error}</span>
       </div>
     );
@@ -132,37 +151,45 @@ export function WeatherWidget() {
   if (!weather) return null;
 
   return (
-    <div className="p-3 flex flex-col gap-1" style={{ color: textColor }}>
-      {/* Location */}
-      {locationName && (
-        <div className="text-xs font-medium truncate" style={{ color: dimColor }}>
-          {locationName}
+    <div className="px-3 py-3 flex flex-col">
+      {/* Location + High/Low header */}
+      <div className="flex items-baseline justify-between">
+        <div className="text-xs font-semibold truncate" style={{ color: "rgba(255,255,255,0.85)" }}>
+          {locationName || "—"}
         </div>
-      )}
+        <div className="text-[10px] flex gap-1.5" style={{ color: "rgba(255,255,255,0.4)" }}>
+          <span>H: {weather.temperatureMax}°</span>
+          <span>L: {weather.temperatureMin}°</span>
+        </div>
+      </div>
 
-      {/* Main temp + icon */}
-      <div className="flex items-center gap-2">
-        <span className="text-3xl leading-none">
+      {/* Main temperature + condition */}
+      <div className="flex items-center gap-3 mt-2">
+        <span className="text-4xl leading-none">
           {getWeatherEmoji(weather.weatherCode)}
         </span>
         <div>
-          <div className="text-2xl font-light leading-none">
+          <div
+            className="text-4xl font-extralight leading-none tracking-tight"
+            style={{ color: "rgba(255,255,255,0.95)" }}
+          >
             {weather.temperature}°
-          </div>
-          <div className="text-[10px] mt-0.5" style={{ color: dimColor }}>
-            {getWeatherLabel(weather.weatherCode)}
           </div>
         </div>
       </div>
 
-      {/* High / Low */}
-      <div className="flex gap-3 text-[10px] mt-1" style={{ color: dimColor }}>
-        <span>H: {weather.temperatureMax}°</span>
-        <span>L: {weather.temperatureMin}°</span>
+      <div className="text-[11px] mt-1" style={{ color: "rgba(255,255,255,0.5)" }}>
+        {getWeatherLabel(weather.weatherCode)}
       </div>
 
       {/* Details row */}
-      <div className="flex gap-3 text-[10px]" style={{ color: dimColor }}>
+      <div
+        className="flex gap-3 text-[10px] mt-2 pt-2"
+        style={{
+          color: "rgba(255,255,255,0.4)",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
         <span>{t("apps.dashboard.weather.humidity")}: {weather.humidity}%</span>
         <span>{t("apps.dashboard.weather.wind")}: {weather.windSpeed} km/h</span>
       </div>
