@@ -836,9 +836,18 @@ export function useControlPanelsLogic({
             return new Promise<void>((resolve, reject) => {
               const transaction = db.transaction(storeName, "readwrite");
               const store = transaction.objectStore(storeName);
+
+              transaction.oncomplete = () => resolve();
+              transaction.onerror = () => reject(transaction.error);
+              transaction.onabort = () =>
+                reject(
+                  transaction.error ||
+                    new Error(`Transaction aborted for ${storeName}`)
+                );
+
               const clearRequest = store.clear();
 
-              clearRequest.onsuccess = async () => {
+              clearRequest.onsuccess = () => {
                 try {
                   for (const item of items) {
                     const itemValue: Record<string, unknown> = {
@@ -870,8 +879,8 @@ export function useControlPanelsLogic({
                     }
                     store.put(itemValue, item.key);
                   }
-                  resolve();
                 } catch (error) {
+                  transaction.abort();
                   reject(error);
                 }
               };
@@ -1346,17 +1355,23 @@ export function useControlPanelsLogic({
                 const transaction = db.transaction(storeName, "readwrite");
                 const store = transaction.objectStore(storeName);
 
-                // First clear the existing store
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = () => reject(transaction.error);
+                transaction.onabort = () =>
+                  reject(
+                    transaction.error ||
+                      new Error(`Transaction aborted for ${storeName}`)
+                  );
+
                 const clearRequest = store.clear();
 
-                clearRequest.onsuccess = async () => {
+                clearRequest.onsuccess = () => {
                   try {
                     for (const item of items) {
                       const itemValue: Record<string, unknown> = {
                         ...item.value,
                       };
 
-                      // Convert base64 strings back to blobs where needed
                       for (const key of Object.keys(item.value)) {
                         const isBlobKey = `_isBlob_${key}`;
 
@@ -1368,14 +1383,11 @@ export function useControlPanelsLogic({
                         }
                       }
 
-                      // Special handling for older backup formats
                       if (backup.version < 2) {
-                        // Ensure we have required metadata
                         if (
                           storeName === "documents" ||
                           storeName === "images"
                         ) {
-                          // Older backups might not have a UUID or contentUrl
                           if (!itemValue.uuid) {
                             itemValue.uuid = uuidv4();
                           }
@@ -1387,11 +1399,10 @@ export function useControlPanelsLogic({
                         }
                       }
 
-                      // Add the item to the store
                       store.put(itemValue, item.key);
                     }
-                    resolve();
                   } catch (error) {
+                    transaction.abort();
                     reject(error);
                   }
                 };
