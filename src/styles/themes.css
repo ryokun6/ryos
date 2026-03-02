@@ -530,11 +530,12 @@
 }
 
 /* Ensure all UI elements in macOS theme use proper antialiasing */
-:root[data-os-theme="macosx"] input:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *),
-:root[data-os-theme="macosx"] label:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *),
-:root[data-os-theme="macosx"] button:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *),
-:root[data-os-theme="macosx"] select:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *),
-:root[data-os-theme="macosx"] textarea:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *),
+/* :where() wraps ancestry exclusions to avoid specificity inflation */
+:root[data-os-theme="macosx"] input:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)),
+:root[data-os-theme="macosx"] label:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)),
+:root[data-os-theme="macosx"] button:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)),
+:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)),
+:root[data-os-theme="macosx"] textarea:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)),
 :root[data-os-theme="macosx"] .menubar,
 :root[data-os-theme="macosx"] .window,
 :root[data-os-theme="macosx"] .title-bar {
@@ -593,7 +594,7 @@
   font-weight: 500 !important;
 }
 
-:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger):not(.dashboard-overlay *):not(.calendar-grid *):not(.ipod-force-font *):not(.karaoke-force-font *) {
+:root[data-os-theme="macosx"] button:not(.aqua-button):not(.aqua-tab):not(.app-menu-trigger):where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.ipod-force-font *):not(.karaoke-force-font *)) {
   font-size: 13px !important;
   font-weight: normal !important;
 }
@@ -603,13 +604,13 @@
   font-weight: bold !important;
 }
 
-:root[data-os-theme="macosx"] input:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *),
-:root[data-os-theme="macosx"] select:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *),
-:root[data-os-theme="macosx"] textarea:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *) {
+:root[data-os-theme="macosx"] input:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)),
+:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)),
+:root[data-os-theme="macosx"] textarea:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)) {
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] label:not(.dashboard-overlay *):not(.calendar-grid *):not(.ipod-force-font *):not(.karaoke-force-font *) {
+:root[data-os-theme="macosx"] label:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.ipod-force-font *):not(.karaoke-force-font *)) {
   font-size: 11px !important;
 }
 
@@ -617,8 +618,8 @@
   font-size: 12px !important;
 }
 
-:root[data-os-theme="macosx"] p:not(.dashboard-overlay *):not(.calendar-grid *):not(.ipod-force-font *):not(.karaoke-force-font *),
-:root[data-os-theme="macosx"] div:not(.dashboard-overlay *):not(.calendar-grid *):not(.ipod-force-font *):not(.karaoke-force-font *) {
+:root[data-os-theme="macosx"] p:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.ipod-force-font *):not(.karaoke-force-font *)),
+:root[data-os-theme="macosx"] div:where(:not(.dashboard-overlay *):not(.calendar-grid *):not(.ipod-force-font *):not(.karaoke-force-font *)) {
   font-size: 13px !important;
 }
 
@@ -814,7 +815,7 @@
 }
 
 /* macOS select styling - similar to aqua buttons */
-:root[data-os-theme="macosx"] select:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *) {
+:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *):not(.ipod-force-font *):not(.karaoke-force-font *)) {
   font-family: "LucidaGrande", "Lucida Grande", "AquaKana", "Hiragino Sans",
     "Hiragino Sans GB", "Heiti SC", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
@@ -853,7 +854,7 @@
 }
 
 /* Top shine/gloss for macOS select */
-:root[data-os-theme="macosx"] select:not(.dashboard-overlay *):before,
+:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *)):before,
 :root[data-os-theme="macosx"] .macos-select-trigger:before {
   content: "";
   position: absolute;
@@ -960,13 +961,13 @@
     0 0 0 1px rgba(0, 0, 0, 0.42) !important;
 }
 
-:root[data-os-theme="macosx"] select:not(.dashboard-overlay *):focus {
+:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *)):focus {
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2), 0 1px 1px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(0, 0, 0, 0.3), 0 0 3px var(--os-color-selection-glow);
   outline: none;
 }
 
-:root[data-os-theme="macosx"] select:not(.dashboard-overlay *):active {
+:root[data-os-theme="macosx"] select:where(:not(.dashboard-overlay *)):active {
   background: linear-gradient(
     rgba(140, 140, 140, 0.625),
     rgba(235, 235, 235, 0.625)
