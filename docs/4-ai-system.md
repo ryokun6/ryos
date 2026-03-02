@@ -17,6 +17,8 @@ Specialized models used by specific flows:
 - `gemini-2.5-flash-image` (applet image generation)
 - `gemini-2.0-flash` (memory extraction and daily-notes processing)
 
+Ryo Studio also uses the applet AI stack to generate and iteratively refine tiny HTML applets from prompts inside the Applet Store create flow.
+
 ```mermaid
 graph TD
     A[User Message] --> B[Chat API]
@@ -53,6 +55,8 @@ graph TD
 | `memoryWrite` | Unified memory writer (`long_term` or `daily`) |
 | `memoryRead` | Unified memory reader (`long_term` by key or `daily` by date) |
 | `memoryDelete` | Delete long-term memory by key |
+
+In addition to the chat tool loop above, the Applet Store's Ryo Studio flow can directly call `/api/applet-ai` in a structured draft mode to create or edit applets while preserving local file metadata and publish state.
 
 ## API Endpoints
 
@@ -132,7 +136,7 @@ Core prompt constants are defined in `_api/_utils/_aiPrompts.ts`:
 
 Endpoint-specific prompts:
 - `/api/chat` composes a static system prompt from the core constants, then appends dynamic user/system state.
-- `/api/applet-ai` uses a dedicated compact applet system prompt for embedded UI contexts.
+- `/api/applet-ai` uses a compact applet system prompt for embedded UI contexts and a stricter structured-generation prompt for Ryo Studio draft create/edit requests.
 - `/api/ie-generate` splits prompts into static + dynamic sections for year/URL-aware generation.
 
 ## Memory System
@@ -211,6 +215,7 @@ Common endpoint configurations in this AI stack:
 - **Proactive greetings**: `/api/chat` supports a non-streaming proactive greeting mode that uses memory context and can kick off background daily-note processing.
 - **Chat-room auto replies**: `/api/ai/ryo-reply` generates room messages as `ryo` with dedicated rate limits.
 - **Applet multimodal AI**: `/api/applet-ai` supports text chat, image attachments in message history, and binary image generation responses.
+- **Ryo Studio draft loop**: the Applet Store can generate an applet draft, reopen it in a larger two-panel workspace, refine it with follow-up prompts, and save or publish the result without leaving the desktop shell.
 - **Infinite Mac visual loop**: `infiniteMacControl` can return screenshots for model-visible state inspection.
 - **Internet Explorer caching**: `/api/ie-generate` stores cleaned generated HTML snapshots in Redis for recent-history retrieval.
 
