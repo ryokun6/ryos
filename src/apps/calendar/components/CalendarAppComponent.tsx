@@ -901,7 +901,7 @@ export function CalendarAppComponent({
           className="flex flex-col h-full w-full bg-[var(--os-color-window-bg)] font-os-ui overflow-hidden"
         >
           {/* Main content */}
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 flex overflow-hidden calendar-grid">
             {/* Mini calendar sidebar — pinstripe on macOS */}
             {showSidebar && effectiveView !== "month" && (
               <div
