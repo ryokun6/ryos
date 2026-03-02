@@ -395,7 +395,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
             background: "rgba(255,255,255,0.92)",
             color: "#1A1A1A",
             resize: "none",
-            minHeight: 40,
+            height: 40,
             fontFamily: font,
             outline: "none",
             boxShadow: "inset 0 1px 3px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.05)",
@@ -467,21 +467,20 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
 
       {/* Output text area */}
       <div
-        className="relative flex-1"
+        className="relative"
         style={{ padding: "4px 10px 8px", zIndex: 1 }}
         onPointerDown={(e) => e.stopPropagation()}
       >
         <div
           style={{
             width: "100%",
-            height: "100%",
             fontSize: 13,
             padding: "6px 10px",
             borderRadius: 8,
             border: "1px solid rgba(0,0,0,0.08)",
             background: "rgba(255,255,255,0.85)",
             color: loading ? "rgba(0,0,0,0.4)" : "#1A1A1A",
-            minHeight: 40,
+            height: 40,
             fontFamily: font,
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
