@@ -13,7 +13,7 @@ ryOS includes 20 built-in applications, each designed to replicate classic deskt
 | [iPod](/docs/ipod) | Music player with YouTube integration & synced lyrics | Media |
 | [Karaoke](/docs/karaoke) | Karaoke player with synced lyrics display | Media |
 | [Videos](/docs/videos) | Video player for watching media | Media |
-| Winamp | Classic Winamp media player | Media |
+| [Winamp](/docs/winamp) | Classic Winamp media player | Media |
 | [Soundboard](/docs/soundboard) | Record and play sound effects | Audio |
 | [Synth](/docs/synth) | Virtual synthesizer with 3D waveform visualization | Audio |
 | [Terminal](/docs/terminal) | Command line interface with AI integration | Development |

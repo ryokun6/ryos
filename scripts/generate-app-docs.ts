@@ -40,6 +40,7 @@ const APP_CONFIGS: Record<string, { sectionNum: string; docName: string }> = {
   "admin": { sectionNum: "2.16", docName: "admin" },
   "applet-viewer": { sectionNum: "2.17", docName: "applet-store" },
   "stickies": { sectionNum: "2.18", docName: "stickies" },
+  "winamp": { sectionNum: "2.20", docName: "winamp" },
 };
 
 const APP_IDS = Object.keys(APP_CONFIGS) as (keyof typeof APP_CONFIGS)[];
@@ -262,6 +263,10 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
     stickies: {
       defaultSize: { width: 500, height: 400 },
       minSize: { width: 300, height: 250 },
+    },
+    winamp: {
+      defaultSize: { width: 275, height: 116 },
+      minSize: { width: 275, height: 116 },
     },
   };
 
@@ -525,6 +530,7 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false, 
     "control-panels": "System settings for themes, wallpapers, screen savers, and audio volume mixing",
     admin: "System administration panel for managing users, songs, and system configuration (admin only)",
     stickies: "Create and manage colorful sticky notes for quick reminders and note-taking",
+    winamp: "Classic Winamp media player powered by Webamp with YouTube playback, skins, and iPod library integration",
   };
 
   appInfo.description = descriptions[appId] || `A ${metadata.name} application for ryOS`;
