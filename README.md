@@ -32,6 +32,7 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 - **Photo Booth** — Camera app with real-time filters and photo gallery
 - **Internet Explorer** — Time Machine that explores web history via Wayback Machine; AI generates sites for years before 1996 or in the future
 - **Chats** — AI chat with Ryo, public/private chat rooms, voice messages, and tool calling
+- **Ryo Studio inside Applet Store** — Prompt, preview, refine, save, and publish tiny custom applets
 - **Control Panels** — System preferences: appearance, sounds, backup/restore, and file system management
 - **Minesweeper** — Classic puzzle game
 - **Virtual PC** — DOS emulator for classic games (Doom, SimCity, etc.)
@@ -47,7 +48,8 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 2. Drag windows to move, drag edges to resize
 3. Use Control Panels to customize appearance and sounds
 4. Chat with Ryo AI for help or to control apps
-5. Files auto-save to browser storage
+5. Open Applet Store → Create to build a tiny tool with Ryo Studio
+6. Files auto-save to browser storage
 
 ## Project Structure
 

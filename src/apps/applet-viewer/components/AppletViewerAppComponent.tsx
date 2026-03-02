@@ -6,9 +6,11 @@ import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { LoginDialog } from "@/components/dialogs/LoginDialog";
 import { AppletViewerMenuBar } from "./AppletViewerMenuBar";
 import { AppStore } from "./AppStore";
+import { RyoStudioWorkspace } from "./RyoStudioWorkspace";
 import { appMetadata, AppletViewerInitialData } from "../index";
 import { generateAppletShareUrl } from "@/utils/sharedUrl";
 import { useAppletViewerLogic } from "../hooks/useAppletViewerLogic";
+import { useRyoStudio } from "../hooks/useRyoStudio";
 
 export function AppletViewerAppComponent({
   onClose,
@@ -69,7 +71,17 @@ export function AppletViewerAppComponent({
     verifyError,
     handleVerifyTokenSubmit,
     getAppletTitle,
+    appletPath,
   } = useAppletViewerLogic({ instanceId, initialData });
+
+  const studio = useRyoStudio({
+    instanceId,
+    initialData,
+    currentAppletPath: appletPath,
+    currentHtmlContent: htmlContent,
+    currentShareCode: shareCode,
+    getAppletTitle,
+  });
 
   const menuBar = (
     <AppletViewerMenuBar
@@ -88,6 +100,16 @@ export function AppletViewerAppComponent({
       updateCount={updateCount}
       onCheckForUpdates={handleCheckForUpdates}
       onUpdateAll={handleUpdateAll}
+      isStudioActive={studio.isStudioActive}
+      hasStudioDraft={studio.hasDraft}
+      onOpenStudio={
+        hasAppletContent
+          ? studio.startStudioFromCurrentApplet
+          : () => studio.openCreateMode("", { fresh: true })
+      }
+      onCloseStudio={studio.closeStudio}
+      onSaveStudioDraft={studio.saveDraft}
+      onPublishStudioDraft={studio.publishDraft}
     />
   );
 
@@ -106,7 +128,29 @@ export function AppletViewerAppComponent({
         menuBar={isXpTheme ? menuBar : undefined}
       >
         <div className="w-full h-full bg-white overflow-hidden">
-          {hasAppletContent ? (
+          {studio.isStudioActive ? (
+            <RyoStudioWorkspace
+              promptInput={studio.promptInput}
+              setPromptInput={studio.setPromptInput}
+              isGenerating={studio.isGenerating}
+              studioError={studio.studioError}
+              lastReply={studio.lastReply}
+              studioDraft={studio.studioDraft}
+              draftPath={studio.draftPath}
+              draftShareId={studio.draftShareId}
+              canUndo={studio.canUndo}
+              hasDraft={studio.hasDraft}
+              isLoggedIn={studio.isLoggedIn}
+              starterPrompts={studio.starterPrompts}
+              onCreateDraft={studio.createDraft}
+              onRefineDraft={studio.refineDraft}
+              onUndoDraft={studio.undoDraft}
+              onSaveDraft={studio.saveDraft}
+              onPublishDraft={studio.publishDraft}
+              onCloseStudio={studio.closeStudio}
+              onUpdateMetadata={studio.setDraftMetadata}
+            />
+          ) : hasAppletContent ? (
             <div className="relative h-full w-full">
               <iframe
                 ref={iframeRef}
@@ -156,6 +200,10 @@ export function AppletViewerAppComponent({
                 theme={currentTheme}
                 sharedAppletId={shareCode || undefined}
                 focusWindow={focusWindow}
+                initialMode={initialData?.mode === "create" ? "create" : "discover"}
+                onCreateStudio={(prompt) => {
+                  void studio.beginCreateFlow(prompt);
+                }}
               />
               {!isForeground && (
                 <div

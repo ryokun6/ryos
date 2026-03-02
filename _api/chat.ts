@@ -6,6 +6,7 @@ import {
   convertToModelMessages,
   stepCountIs,
   type UIMessage,
+  type ModelMessage,
 } from "ai";
 import { geolocation } from "@vercel/functions";
 import { google } from "@ai-sdk/google";
@@ -49,6 +50,64 @@ const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
       parts: [{ type: 'text', text: msg.content || '' }],
     } as UIMessage;
   });
+};
+
+const extractPlainTextFromParts = (
+  parts?: Array<Record<string, unknown>>
+): string => {
+  if (!parts || !Array.isArray(parts)) {
+    return "";
+  }
+
+  return parts
+    .map((part) => {
+      if (!part || typeof part !== "object") {
+        return "";
+      }
+
+      if (part.type === "text" && typeof part.text === "string") {
+        return part.text;
+      }
+
+      if (typeof part.type === "string" && part.type.startsWith("tool-")) {
+        if (typeof part.output === "string") {
+          return part.output;
+        }
+        if (typeof part.errorText === "string") {
+          return part.errorText;
+        }
+      }
+
+      return "";
+    })
+    .filter(Boolean)
+    .join("\n\n");
+};
+
+const convertMessagesToPlainTextModelMessages = (
+  messages: SimpleMessage[]
+): ModelMessage[] => {
+  return messages
+    .map((msg) => {
+      const role =
+        msg.role === "assistant" || msg.role === "system" ? msg.role : "user";
+      const text =
+        typeof msg.content === "string" && msg.content.trim().length > 0
+          ? msg.content.trim()
+          : extractPlainTextFromParts(
+              msg.parts as Array<Record<string, unknown>> | undefined
+            ).trim();
+
+      if (!text) {
+        return null;
+      }
+
+      return {
+        role,
+        content: text,
+      } satisfies ModelMessage;
+    })
+    .filter((msg): msg is ModelMessage => msg !== null);
 };
 
 // Update SystemState type to match new store structure (optimized for token efficiency)
@@ -746,7 +805,18 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
     // Ensure messages are in UIMessage format (handles both simple and parts-based formats)
     // Pass tools so toModelOutput can convert tool results to multimodal content
     const uiMessages = ensureUIMessageFormat(messages as SimpleMessage[]);
-    const modelMessages = await convertToModelMessages(uiMessages, { tools });
+    let modelMessages: ModelMessage[];
+    try {
+      modelMessages = await convertToModelMessages(uiMessages, { tools });
+    } catch (error) {
+      logError(
+        "convertToModelMessages failed, retrying with text-only fallback",
+        error,
+      );
+      modelMessages = convertMessagesToPlainTextModelMessages(
+        messages as SimpleMessage[],
+      );
+    }
 
     // Merge all messages: static sys → dynamic sys → user/assistant turns
     const enrichedMessages = [

@@ -15,8 +15,11 @@ export interface Applet {
   name?: string;
   icon?: string;
   createdAt?: number;
+  updatedAt?: number;
   featured?: boolean;
   createdBy?: string;
+  version?: number;
+  forkedFrom?: string;
 }
 
 // Helper function to extract emoji from start of string
@@ -98,7 +101,7 @@ export const useAppletActions = () => {
       const fileItem = getFileItem(installedFile.path);
       if (!fileItem) return false;
 
-      const currentCreatedAt = applet.createdAt || 0;
+      const currentCreatedAt = applet.updatedAt || applet.createdAt || 0;
 
       if (!fileItem.storeCreatedAt && currentCreatedAt) {
         scheduleStoreCreatedAtUpdate(installedFile.path, currentCreatedAt);
@@ -191,7 +194,7 @@ export const useAppletActions = () => {
         createdBy: data.createdBy || applet.createdBy,
       });
       
-      const storeCreatedAtValue = data.createdAt || Date.now();
+      const storeCreatedAtValue = data.updatedAt || data.createdAt || Date.now();
       updateFileItemMetadata(finalPath, {
         storeCreatedAt: storeCreatedAtValue,
       });

@@ -43,9 +43,16 @@ export const appMetadata = {
 };
 
 export interface AppletViewerInitialData {
-  path: string;
-  content: string;
+  path?: string;
+  content?: string;
   shareCode?: string;
   icon?: string;
   name?: string;
+  title?: string;
+  shareId?: string;
+  mode?: "browse" | "create";
+  prefillPrompt?: string;
+  windowWidth?: number;
+  windowHeight?: number;
+  forceNewInstance?: boolean;
 }

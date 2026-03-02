@@ -43,6 +43,13 @@ export interface AppletViewerInitialData {
   shareCode?: string;
   icon?: string;
   name?: string;
+  title?: string;
+  shareId?: string;
+  mode?: "browse" | "create";
+  prefillPrompt?: string;
+  windowWidth?: number;
+  windowHeight?: number;
+  forceNewInstance?: boolean;
 }
 
 /** Finder initial data - for opening specific paths */
@@ -151,6 +158,7 @@ export function isAppletViewerInitialData(
   return (
     ("path" in av && typeof av.path === "string") ||
     ("content" in av && typeof av.content === "string") ||
-    ("shareCode" in av && typeof av.shareCode === "string")
+    ("shareCode" in av && typeof av.shareCode === "string") ||
+    ("mode" in av && typeof av.mode === "string")
   );
 }

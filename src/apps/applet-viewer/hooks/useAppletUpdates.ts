@@ -26,7 +26,7 @@ export function useAppletUpdates() {
       const data = await response.json();
       // Sort by createdAt descending (latest first)
       const sortedApplets = (data.applets || []).sort((a: Applet, b: Applet) => {
-        return (b.createdAt || 0) - (a.createdAt || 0);
+        return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
       });
       setApplets(sortedApplets);
       return sortedApplets;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -15,13 +16,23 @@ interface AppStoreProps {
   theme?: string;
   sharedAppletId?: string; // ID of shared applet to show in detail view
   focusWindow?: () => void;
+  initialMode?: "discover" | "create";
+  onCreateStudio?: (prompt: string) => void;
 }
 
-export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) {
+export function AppStore({
+  theme,
+  sharedAppletId,
+  focusWindow,
+  initialMode = "discover",
+  onCreateStudio,
+}: AppStoreProps) {
   const { t } = useTranslation();
   const [applets, setApplets] = useState<Applet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [mode, setMode] = useState<"discover" | "create">(initialMode);
   const [searchQuery, setSearchQuery] = useState("");
+  const [createPrompt, setCreatePrompt] = useState("");
   const [selectedApplet, setSelectedApplet] = useState<Applet | null>(null);
   const [selectedAppletContent, setSelectedAppletContent] = useState<string>("");
   const [isSharedApplet, setIsSharedApplet] = useState(false);
@@ -40,6 +51,10 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
   const lastUpdateToastKeyRef = useRef<string | null>(null);
   const updateToastIdRef = useRef<string | number | null>(null);
 
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+
 
   const fetchApplets = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -56,9 +71,9 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       const data = await response.json();
       if (signal?.aborted) return;
 
-      // Sort by createdAt descending (latest first)
+      // Sort by latest remote revision descending
       const sortedApplets = (data.applets || []).sort((a: Applet, b: Applet) => {
-        return (b.createdAt || 0) - (a.createdAt || 0);
+        return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
       });
       setApplets(sortedApplets);
     } catch (error) {
@@ -214,6 +229,7 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
             name: data.name,
             icon: data.icon,
             createdAt: data.createdAt || Date.now(),
+            updatedAt: data.updatedAt || data.createdAt || Date.now(),
             createdBy: data.createdBy,
           };
           setSelectedApplet(applet);
@@ -431,30 +447,30 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
   }, [applets, searchQuery, t]);
 
   // Separate into updates available, installed (no updates), featured (not installed), and all (not installed, not featured)
-  // Sort each group by createdAt descending (latest first)
+  // Sort each group by latest remote revision descending
   // Memoize these calculations to avoid recalculating on every render
   const updatesAvailable = useMemo(() => 
     filteredApplets
       .filter((applet) => actions.isAppletInstalled(applet.id) && actions.needsUpdate(applet))
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+      .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0)),
     [filteredApplets, actions]
   );
   const installedApplets = useMemo(() =>
     filteredApplets
       .filter((applet) => actions.isAppletInstalled(applet.id) && !actions.needsUpdate(applet))
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+      .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0)),
     [filteredApplets, actions]
   );
   const featuredApplets = useMemo(() =>
     filteredApplets
       .filter((applet) => applet.featured && !actions.isAppletInstalled(applet.id))
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+      .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0)),
     [filteredApplets, actions]
   );
   const allApplets = useMemo(() =>
     filteredApplets
       .filter((applet) => !applet.featured && !actions.isAppletInstalled(applet.id))
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+      .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0)),
     [filteredApplets, actions]
   );
 
@@ -467,6 +483,23 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
       justify-content: center !important;
     }
   `;
+
+  const starterPrompts = [
+    "Make a tiny Pomodoro timer with a huge start button.",
+    "Create a minimalist habit tracker with daily streaks.",
+    "Build a note card app for quick study prompts.",
+    "Make a tea timer with preset brew buttons.",
+  ];
+
+  const handleCreateStudio = () => {
+    const trimmed = createPrompt.trim();
+    if (!trimmed) {
+      toast.error("Describe the applet you want first.");
+      return;
+    }
+    focusWindow?.();
+    onCreateStudio?.(trimmed);
+  };
 
   // Early returns - all hooks must be called before these
   if (isLoading) {
@@ -551,9 +584,9 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
                 {displayName}
               </span>
             </div>
-            {updateAvailable && applet.createdAt ? (
+            {updateAvailable && (applet.updatedAt || applet.createdAt) ? (
               <div className="text-[10px] text-gray-500 font-geneva-12 truncate">
-                {formatUpdateTime(applet.createdAt)}
+                {formatUpdateTime(applet.updatedAt || applet.createdAt || Date.now())}
               </div>
             ) : applet.createdBy ? (
               <div className="text-[10px] text-gray-500 font-geneva-12 truncate">
@@ -631,6 +664,101 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
             <p className="text-[11px] text-neutral-600 font-geneva-12">
               {t("apps.applet-viewer.dialogs.noAppletsAvailable")}
             </p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (mode === "create" && !selectedApplet) {
+    return (
+      <>
+        <style>{appletIconStyles}</style>
+        <div className="flex h-full w-full flex-col bg-white">
+          <div
+            className={`px-3 py-2 flex items-center justify-between gap-2 ${
+              isXpTheme
+                ? "border-b border-[#919b9c]"
+                : currentTheme === "macosx"
+                ? ""
+                : currentTheme === "system7"
+                ? "bg-gray-100 border-b border-black"
+                : "bg-gray-100 border-b border-gray-200"
+            }`}
+            style={{
+              background: isXpTheme ? "transparent" : undefined,
+              backgroundImage: currentTheme === "macosx" ? "var(--os-pinstripe-window)" : undefined,
+              borderBottom:
+                currentTheme === "macosx"
+                  ? `var(--os-metrics-titlebar-border-width, 1px) solid var(--os-color-titlebar-border-inactive, rgba(0, 0, 0, 0.2))`
+                  : undefined,
+            }}
+          >
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.18em] text-black/50 font-geneva-12">
+                Ryo Studio
+              </div>
+              <div className="text-sm font-medium font-geneva-12">
+                {t("apps.applet-viewer.labels.createWithRyo", {
+                  defaultValue: "Create with Ryo",
+                })}
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMode("discover")}
+              className="text-xs font-geneva-12"
+            >
+              {t("apps.applet-viewer.labels.discover", {
+                defaultValue: "Discover",
+              })}
+            </Button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            <div className="mx-auto flex max-w-[520px] flex-col gap-4">
+              <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                <div className="mb-2 text-lg font-semibold text-neutral-900">
+                  Turn an idea into a tiny app
+                </div>
+                <p className="text-sm text-neutral-600">
+                  Describe a focused tool. Ryo Studio will generate the first
+                  draft, open a live preview, and let you refine it with follow-up prompts.
+                </p>
+              </div>
+
+              <Textarea
+                value={createPrompt}
+                onChange={(event) => setCreatePrompt(event.target.value)}
+                placeholder="Build me a tiny timer, tracker, generator, dashboard, or utility…"
+                className="min-h-36 resize-none text-sm"
+              />
+
+              <div className="flex flex-wrap gap-2">
+                {starterPrompts.map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => setCreatePrompt(prompt)}
+                    className="rounded-full border border-neutral-300 bg-white px-3 py-1 text-left text-[11px] text-neutral-700 transition hover:bg-neutral-100"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={handleCreateStudio}>
+                  {t("apps.applet-viewer.labels.startStudio", {
+                    defaultValue: "Start Ryo Studio",
+                  })}
+                </Button>
+                <Button variant="secondary" onClick={() => setCreatePrompt("")}>
+                  Clear
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </>
@@ -770,6 +898,18 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
               <Button
                 variant={isMacTheme ? "aqua" : "default"}
                 size="sm"
+                onClick={() => setMode("create")}
+                style={{ height: "28px" }}
+              >
+                <span className="text-sm font-medium font-geneva-12">
+                  {t("apps.applet-viewer.labels.create", {
+                    defaultValue: "Create",
+                  })}
+                </span>
+              </Button>
+              <Button
+                variant={isMacTheme ? "aqua" : "default"}
+                size="sm"
                 onClick={() => feedRef.current?.goToNext()}
                 className={`h-7 w-7 p-0 flex items-center justify-center ${
                   isMacTheme ? "rounded-full" : "rounded-none"
@@ -830,6 +970,19 @@ export function AppStore({ theme, sharedAppletId, focusWindow }: AppStoreProps) 
               >
                 <Sparkle className="h-4 w-4" weight="fill" />
                 <span className="text-xs font-geneva-12">{t("apps.applet-viewer.labels.discover")}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMode("create")}
+                className="flex items-center gap-1 px-1"
+              >
+                <Sparkle className="h-4 w-4" weight="fill" />
+                <span className="text-xs font-geneva-12">
+                  {t("apps.applet-viewer.labels.create", {
+                    defaultValue: "Create",
+                  })}
+                </span>
               </Button>
             </div>
             <div className="flex-1 overflow-y-auto bg-white">
