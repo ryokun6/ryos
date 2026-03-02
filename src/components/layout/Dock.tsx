@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useEffect,
   forwardRef,
+  memo,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -168,7 +169,7 @@ const DockSpacer = forwardRef<HTMLDivElement, DockSpacerProps>(
   }
 );
 
-const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
+const IconButton = memo(forwardRef<HTMLDivElement, IconButtonProps>(
   (
     {
       label,
@@ -444,7 +445,7 @@ const IconButton = forwardRef<HTMLDivElement, IconButtonProps>(
       </motion.div>
     );
   }
-);
+));
 
 interface DividerProps {
   idKey: string;
