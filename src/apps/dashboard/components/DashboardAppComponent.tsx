@@ -29,7 +29,7 @@ function WidgetContent({ type }: { type: string }) {
   }
 }
 
-// Widget picker tray (shown when + is clicked)
+// Widget picker tray — dark pill style matching karaoke controls
 function WidgetPicker({
   onAdd,
   onClose,
@@ -49,9 +49,9 @@ function WidgetPicker({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.9 }}
+      initial={{ opacity: 0, y: 12, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 20, scale: 0.9 }}
+      exit={{ opacity: 0, y: 12, scale: 0.95 }}
       transition={{ type: "spring", stiffness: 400, damping: 30 }}
       className="absolute bottom-14 left-4 flex gap-2"
       style={{ zIndex: 10 }}
@@ -65,27 +65,23 @@ function WidgetPicker({
             onAdd(w.type);
             onClose();
           }}
-          className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-transform hover:scale-105 active:scale-95"
+          className="flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all hover:brightness-125 active:scale-95"
           style={{
             background: isXpTheme
               ? "rgba(255,255,255,0.9)"
-              : "rgba(255,255,255,0.15)",
-            backdropFilter: isXpTheme ? "none" : "blur(12px)",
-            WebkitBackdropFilter: isXpTheme ? "none" : "blur(12px)",
+              : "linear-gradient(to bottom, rgba(60,60,60,0.7), rgba(30,30,30,0.6))",
             border: isXpTheme
               ? "1px solid #ACA899"
-              : "1px solid rgba(255,255,255,0.2)",
+              : "1px solid rgba(255,255,255,0.1)",
             boxShadow: isXpTheme
               ? "1px 1px 4px rgba(0,0,0,0.3)"
-              : "0 4px 16px rgba(0,0,0,0.3)",
+              : "0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
           }}
         >
           <span className="text-2xl">{w.icon}</span>
           <span
             className="text-[10px] font-medium"
-            style={{
-              color: isXpTheme ? "#000" : "rgba(255,255,255,0.8)",
-            }}
+            style={{ color: isXpTheme ? "#000" : "rgba(255,255,255,0.7)" }}
           >
             {w.label}
           </span>
@@ -182,9 +178,7 @@ export function DashboardAppComponent({
                 zIndex: 9998,
                 background: isXpTheme
                   ? "rgba(0,0,0,0.6)"
-                  : "rgba(0,0,0,0.5)",
-                backdropFilter: isXpTheme ? "none" : "blur(24px) saturate(1.4)",
-                WebkitBackdropFilter: isXpTheme ? "none" : "blur(24px) saturate(1.4)",
+                  : "rgba(0,0,0,0.55)",
               }}
               onClick={(e) => {
                 if (e.target === e.currentTarget) {
@@ -235,7 +229,7 @@ export function DashboardAppComponent({
                 )}
               </AnimatePresence>
 
-              {/* + Button (bottom-left, Tiger-style) */}
+              {/* + Button — dark pill style matching karaoke/iPod controls */}
               <motion.button
                 type="button"
                 initial={{ opacity: 0, scale: 0 }}
@@ -246,7 +240,7 @@ export function DashboardAppComponent({
                   e.stopPropagation();
                   setIsPickerOpen((prev) => !prev);
                 }}
-                className="absolute flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+                className="absolute flex items-center justify-center transition-all hover:brightness-125 active:scale-95"
                 style={{
                   bottom: 16,
                   left: 16,
@@ -255,16 +249,14 @@ export function DashboardAppComponent({
                   borderRadius: "50%",
                   background: isXpTheme
                     ? "rgba(255,255,255,0.85)"
-                    : "rgba(255,255,255,0.15)",
-                  backdropFilter: isXpTheme ? "none" : "blur(12px)",
-                  WebkitBackdropFilter: isXpTheme ? "none" : "blur(12px)",
+                    : "linear-gradient(to bottom, rgba(60,60,60,0.7), rgba(30,30,30,0.6))",
                   border: isXpTheme
                     ? "1px solid #ACA899"
-                    : "1px solid rgba(255,255,255,0.3)",
+                    : "1px solid rgba(255,255,255,0.12)",
                   boxShadow: isXpTheme
                     ? "1px 1px 4px rgba(0,0,0,0.3)"
-                    : "0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15)",
-                  color: isXpTheme ? "#000" : "rgba(255,255,255,0.8)",
+                    : "0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
+                  color: isXpTheme ? "#000" : "rgba(255,255,255,0.7)",
                   zIndex: 10,
                   transform: isPickerOpen ? "rotate(45deg)" : undefined,
                 }}

@@ -147,15 +147,13 @@ export function WidgetChrome({
           borderRadius: isXpTheme ? "4px" : "14px",
           background: isXpTheme
             ? "rgba(255,255,255,0.92)"
-            : "rgba(30,30,30,0.75)",
-          backdropFilter: isXpTheme ? "none" : "blur(20px) saturate(1.6)",
-          WebkitBackdropFilter: isXpTheme ? "none" : "blur(20px) saturate(1.6)",
+            : "linear-gradient(to bottom, rgba(50,50,50,0.8), rgba(25,25,25,0.85))",
           border: isXpTheme
             ? "1px solid #ACA899"
-            : "1px solid rgba(255,255,255,0.12)",
+            : "1px solid rgba(255,255,255,0.1)",
           boxShadow: isXpTheme
             ? "1px 1px 4px rgba(0,0,0,0.3)"
-            : "0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08)",
+            : "0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)",
         }}
       >
         {/* Widget content — disable pointer events while dragging to prevent accidental clicks */}
