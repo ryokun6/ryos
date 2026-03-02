@@ -66,7 +66,7 @@ export function RyoStudioWorkspace({
   return (
     <div className="h-full w-full bg-neutral-100">
       <div className="flex h-full flex-col lg:flex-row">
-        <div className="flex w-full max-w-[360px] flex-col border-b border-neutral-300 bg-white lg:h-full lg:border-b-0 lg:border-r">
+        <div className="flex w-full max-w-[380px] min-h-0 flex-col overflow-y-auto border-b border-neutral-300 bg-white lg:h-full lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3">
             <div>
               <div className="text-[11px] uppercase tracking-[0.18em] text-neutral-500">

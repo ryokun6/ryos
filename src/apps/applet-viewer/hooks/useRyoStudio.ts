@@ -31,6 +31,8 @@ interface UseRyoStudioOptions {
 
 const DEFAULT_WINDOW_WIDTH = 360;
 const DEFAULT_WINDOW_HEIGHT = 520;
+const STUDIO_WORKSPACE_WIDTH = 860;
+const STUDIO_WORKSPACE_HEIGHT = 600;
 
 const sanitizeFileStem = (value: string): string => {
   const cleaned = value
@@ -97,7 +99,7 @@ export function useRyoStudio({
     [instanceId]
   );
 
-  const applyStudioWindowSize = useCallback(
+  const updateWindowSize = useCallback(
     (width: number, height: number) => {
       if (!instanceId) return;
       const appStore = useAppStore.getState();
@@ -115,6 +117,10 @@ export function useRyoStudio({
     },
     [instanceId]
   );
+
+  const ensureStudioWorkspaceSize = useCallback(() => {
+    updateWindowSize(STUDIO_WORKSPACE_WIDTH, STUDIO_WORKSPACE_HEIGHT);
+  }, [updateWindowSize]);
 
   const setDraftFromSnapshot = useCallback(
     (
@@ -145,7 +151,7 @@ export function useRyoStudio({
       if (options?.createdBy !== undefined) {
         setDraftCreatedBy(options.createdBy);
       }
-      applyStudioWindowSize(snapshot.windowWidth, snapshot.windowHeight);
+      ensureStudioWorkspaceSize();
       syncInitialData({
         mode: "create",
         path: options?.path ?? draftPath,
@@ -160,9 +166,9 @@ export function useRyoStudio({
       });
     },
     [
-      applyStudioWindowSize,
       draftPath,
       draftShareId,
+      ensureStudioWorkspaceSize,
       historyIndex,
       syncInitialData,
     ]
@@ -225,13 +231,14 @@ export function useRyoStudio({
       setHistory([snapshot]);
       setHistoryIndex(0);
       setLastReply(snapshot.reply);
-      applyStudioWindowSize(snapshot.windowWidth, snapshot.windowHeight);
+      ensureStudioWorkspaceSize();
     } else {
       setHistory([]);
       setHistoryIndex(-1);
       setLastReply("");
+      ensureStudioWorkspaceSize();
     }
-  }, [applyStudioWindowSize, getAppletTitle, getFileItem, initialData]);
+  }, [ensureStudioWorkspaceSize, getAppletTitle, getFileItem, initialData]);
 
   useEffect(() => {
     if (currentAppletPath) {
@@ -298,6 +305,7 @@ export function useRyoStudio({
         setStudioError(null);
       }
       setIsStudioActive(true);
+      ensureStudioWorkspaceSize();
       setPromptInput(prefillPrompt);
       syncInitialData({
         mode: "create",
@@ -311,7 +319,7 @@ export function useRyoStudio({
         name: options?.fresh ? undefined : studioDraft?.name,
       });
     },
-    [draftPath, draftShareId, studioDraft?.html, syncInitialData]
+    [draftPath, draftShareId, ensureStudioWorkspaceSize, studioDraft?.html, syncInitialData]
   );
 
   const closeStudio = useCallback(() => {
@@ -564,6 +572,7 @@ export function useRyoStudio({
     setDraftPath(nextPath);
     setDraftShareId(existingFile?.shareId || draftShareId || "");
     setDraftCreatedBy(existingFile?.createdBy || draftCreatedBy || username || null);
+    ensureStudioWorkspaceSize();
     syncInitialData({
       mode: "create",
       path: nextPath,
@@ -704,7 +713,7 @@ export function useRyoStudio({
     const snapshot = history[nextIndex];
     setHistoryIndex(nextIndex);
     setLastReply(snapshot.reply);
-    applyStudioWindowSize(snapshot.windowWidth, snapshot.windowHeight);
+    ensureStudioWorkspaceSize();
     syncInitialData({
       mode: "create",
       path: draftPath,
@@ -713,7 +722,7 @@ export function useRyoStudio({
       icon: snapshot.icon,
       name: snapshot.name,
     });
-  }, [applyStudioWindowSize, draftPath, history, historyIndex, syncInitialData]);
+  }, [draftPath, ensureStudioWorkspaceSize, history, historyIndex, syncInitialData]);
 
   const starterPrompts = useMemo(
     () => [
