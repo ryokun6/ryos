@@ -380,7 +380,7 @@ sudo systemctl status ryos-api</code></pre>
 <h2>6) Notes and caveats</h2>
 <ul><li><code>/api/sync/</em></code> endpoints use Vercel Blob APIs (<code>@vercel/blob</code>).  </li></ul>
   If you are fully off Vercel infrastructure, plan a storage replacement (S3, R2, MinIO, etc.).
-<ul><li>For local development without Vercel:<ul><li><code>bun run api:dev</code> (API)</li><li><code>bun run dev:standalone</code> (frontend with <code>/api</code> proxy)</li></ul></li><li>API tests can target standalone mode:<ul><li><code>API_URL=http://localhost:3000 bun run test:new-api</code></li></ul></li></ul>
+<ul><li>For local development without Vercel:<ul><li><code>bun run dev</code> (full stack: API + Vite with proxy)</li><li>Or separately: <code>bun run dev:api</code> (API) + <code>bun run dev:vite</code> (frontend)</li></ul></li><li>API tests can target standalone mode:<ul><li><code>API_URL=http://localhost:3000 bun run test:new-api</code></li></ul></li></ul>
 
       </article>
       
