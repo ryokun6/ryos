@@ -156,7 +156,7 @@ export function EventDialog({
           value={date}
           onChange={(e) => setDate(e.target.value)}
           className={cn("shadow-none h-7", themeFont)}
-          style={themeFontStyle}
+          style={{ ...themeFontStyle, width: "100%" }}
         />
       </div>
 
@@ -180,7 +180,7 @@ export function EventDialog({
       {/* Time inputs */}
       {!allDay && (
         <div className="flex gap-2 mb-3">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <Label
               htmlFor="event-start"
               className={cn("text-gray-700 mb-1 block", themeFont)}
@@ -194,10 +194,10 @@ export function EventDialog({
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
               className={cn("shadow-none h-7", themeFont)}
-              style={themeFontStyle}
+              style={{ ...themeFontStyle, width: "100%" }}
             />
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <Label
               htmlFor="event-end"
               className={cn("text-gray-700 mb-1 block", themeFont)}
@@ -211,7 +211,7 @@ export function EventDialog({
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
               className={cn("shadow-none h-7", themeFont)}
-              style={themeFontStyle}
+              style={{ ...themeFontStyle, width: "100%" }}
             />
           </div>
         </div>
