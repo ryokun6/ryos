@@ -34,6 +34,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useInternetExplorerStoreShallow } from "@/stores/helpers";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { onAppUpdate } from "@/utils/appEventBus";
+import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 
 // Helper function to get language display name
 const getLanguageDisplayName = (lang: LanguageOption): string => {
@@ -666,9 +667,7 @@ export function useInternetExplorerLogic({
           try {
             loadedTitle = iframeRef.current?.contentDocument?.title || null;
             if (loadedTitle) {
-              const txt = document.createElement("textarea");
-              txt.innerHTML = loadedTitle;
-              loadedTitle = txt.value.trim();
+              loadedTitle = decodeHtmlEntities(loadedTitle).trim();
             }
           } catch (error) {
             console.warn(

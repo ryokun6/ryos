@@ -717,7 +717,7 @@ export const useTerminalLogic = ({
       files,
       navigateToPath,
       saveFile,
-      moveToTrash,
+      moveToTrash: (file) => moveToTrash(file),
       playCommandSound,
       playErrorSound,
       playMooSound,

@@ -1,6 +1,6 @@
 import { UIMessage as VercelMessage } from "@ai-sdk/react";
 import { WarningCircle, ChatCircle, Copy, Check, CaretDown, Trash, SpeakerHigh, Pause, PaperPlaneRight } from "@phosphor-icons/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { AnimatePresence, motion } from "framer-motion";
@@ -31,6 +31,7 @@ import EmojiAquarium from "@/components/shared/EmojiAquarium";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -72,25 +73,6 @@ const getUserColorClass = (username?: string): string => {
   return userColors[hash % userColors.length];
 };
 // --- End Color Hashing ---
-
-// Helper to decode common HTML entities so they render correctly
-const decodeHtmlEntities = (str: string): string => {
-  if (!str) return str;
-  // Prefer DOM-based decoding when available (browser environment)
-  if (typeof window !== "undefined" && typeof document !== "undefined") {
-    const txt = document.createElement("textarea");
-    txt.innerHTML = str;
-    return txt.value;
-  }
-  // Fallback: basic replacements (covers most common entities)
-  return str
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'");
-};
 
 // Helper function to parse markdown and segment text
 const parseMarkdown = (
@@ -154,6 +136,8 @@ const isUrlOnly = (text: string): boolean => {
   const urlRegex = /^https?:\/\/[^\s]+$/;
   return urlRegex.test(trimmedText);
 };
+
+const isUrgentMessage = (content: string) => content.startsWith("!!!!");
 
 // Helper function to extract user-friendly error message
 const getErrorMessage = (error: Error): string => {
@@ -352,6 +336,781 @@ function ScrollToBottomButton() {
   );
 }
 
+// Memoized chat message item - extracted for list rendering performance
+interface ChatMessageItemProps {
+  message: ChatMessage;
+  messageKey: string;
+  isInitialMessage: boolean;
+  isLoading: boolean;
+  isLoadingGreeting: boolean;
+  isRoomView: boolean;
+  fontSize: number;
+  currentTheme: string;
+  copiedMessageId: string | null;
+  hoveredMessageId: string | null;
+  playingMessageId: string | null;
+  speechLoadingId: string | null;
+  highlightSegment: { messageId: string; start: number; end: number } | null;
+  localHighlightSegment: { messageId: string; start: number; end: number } | null;
+  isSpeaking: boolean;
+  localTtsSpeaking: boolean;
+  speechEnabled: boolean;
+  isAdmin: boolean;
+  roomId?: string;
+  username?: string;
+  onMessageDeleted?: (messageId: string) => void;
+  onSendMessage?: (username: string) => void;
+  onCopyMessage: (message: ChatMessage) => void;
+  onDeleteMessage: (message: ChatMessage) => void;
+  setHoveredMessageId: (id: string | null) => void;
+  setIsInteractingWithPreview: (v: boolean) => void;
+  setLocalHighlightSegment: (seg: { messageId: string; start: number; end: number } | null) => void;
+  setPlayingMessageId: (id: string | null) => void;
+  setSpeechLoadingId: (id: string | null) => void;
+  localHighlightQueueRef: React.MutableRefObject<{ messageId: string; start: number; end: number }[]>;
+  isInteractingWithPreview: boolean;
+  speak: (text: string, onDone?: () => void) => void;
+  stop: () => void;
+  playNote: () => void;
+  playElevatorMusic: () => void;
+  stopElevatorMusic: () => void;
+  playDingSound: () => void;
+}
+
+const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProps) {
+  const { t } = useTranslation();
+  const {
+    message,
+    messageKey,
+    isInitialMessage,
+    isLoading,
+    isLoadingGreeting,
+    isRoomView,
+    fontSize,
+    currentTheme,
+    copiedMessageId,
+    hoveredMessageId,
+    playingMessageId,
+    speechLoadingId,
+    highlightSegment,
+    localHighlightSegment,
+    isSpeaking,
+    localTtsSpeaking,
+    speechEnabled,
+    isAdmin,
+    roomId: _roomId,
+    username: _username,
+    onMessageDeleted: _onMessageDeleted,
+    onSendMessage,
+    onCopyMessage,
+    onDeleteMessage,
+    setHoveredMessageId,
+    setIsInteractingWithPreview,
+    setLocalHighlightSegment,
+    setPlayingMessageId,
+    setSpeechLoadingId,
+    localHighlightQueueRef,
+    isInteractingWithPreview,
+    speak,
+    stop,
+    playNote,
+    playElevatorMusic,
+    stopElevatorMusic,
+    playDingSound,
+  } = props;
+
+  let messageText = getMessageText(message);
+  const isStaticGreeting = message.role === "assistant" && message.id === "1";
+  if (isStaticGreeting && !messageText) {
+    messageText = t("apps.chats.messages.greeting");
+  }
+  const showTypingDots = isLoadingGreeting && !isRoomView && isStaticGreeting;
+  const variants = { initial: { opacity: 0 }, animate: { opacity: 1 } };
+  const isUrgent = isUrgentMessage(messageText);
+  let bgColorClass = "";
+  if (isUrgent) {
+    bgColorClass = "bg-transparent text-current";
+  } else if (message.role === "user")
+    bgColorClass = "bg-yellow-100 text-black";
+  else if (message.role === "assistant")
+    bgColorClass = "bg-blue-100 text-black";
+  else if (message.role === "human")
+    bgColorClass = getUserColorClass(message.username);
+
+  const rawContent = isUrgent ? messageText.slice(4).trimStart() : messageText;
+  const decodedContent = decodeHtmlEntities(rawContent);
+  const hasAquariumToken = decodedContent.includes("[[AQUARIUM]]");
+  const displayContent = decodedContent.replace(/\[\[AQUARIUM\]\]/g, "").trim();
+
+  let hasAquarium = false;
+  if (message.role === "assistant" && message.parts) {
+    const aquariumParts = message.parts.filter(
+      (p: ToolInvocationPart | { type: string }) => p.type === "tool-aquarium"
+    );
+    hasAquarium = aquariumParts.length > 0;
+  }
+  if (
+    (message.role === "human" || message.username === "ryo") &&
+    hasAquariumToken
+  ) {
+    hasAquarium = true;
+  }
+
+  const combinedHighlightSeg = highlightSegment || localHighlightSegment;
+  const combinedIsSpeaking = isSpeaking || localTtsSpeaking;
+  const highlightActive =
+    combinedIsSpeaking &&
+    combinedHighlightSeg &&
+    combinedHighlightSeg.messageId === message.id;
+
+  const isTouchDevice = () =>
+    "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+  const extractUrls = (content: string): string[] => {
+    const urls = new Set<string>();
+    segmentText(content).forEach((token) => {
+      if (token.type === "link" && token.url) urls.add(token.url);
+    });
+    return Array.from(urls);
+  };
+
+  return (
+    <motion.div
+      key={messageKey}
+      variants={variants}
+      initial={isInitialMessage || isStaticGreeting ? "animate" : "initial"}
+      animate="animate"
+      transition={
+        isStaticGreeting ? { duration: 0 } : { duration: 0.15, ease: "easeOut" }
+      }
+      className={`flex flex-col z-10 w-full ${
+        message.role === "user" ? "items-end" : "items-start"
+      }`}
+      style={{
+        transformOrigin: message.role === "user" ? "bottom right" : "bottom left",
+      }}
+      onMouseEnter={() =>
+        !isInteractingWithPreview && !isTouchDevice() && setHoveredMessageId(messageKey)
+      }
+      onMouseLeave={() =>
+        !isInteractingWithPreview && !isTouchDevice() && setHoveredMessageId(null)
+      }
+      onTouchStart={(e) => {
+        if (!isInteractingWithPreview && isTouchDevice()) {
+          const target = e.target as HTMLElement;
+          const isLinkPreview = target.closest("[data-link-preview]");
+          if (!isLinkPreview) {
+            e.preventDefault();
+            setHoveredMessageId(messageKey);
+          }
+        }
+      }}
+    >
+      <div
+        className={`${
+          currentTheme === "macosx" ? "text-[10px]" : "text-[16px]"
+        } chat-messages-meta text-gray-500 mb-0.5 font-['Geneva-9'] mb-[-2px] select-text flex items-center gap-2`}
+      >
+        {message.role === "user" && (
+          <>
+            {isAdmin && isRoomView && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{
+                        opacity: hoveredMessageId === messageKey ? 1 : 0,
+                        scale: 1,
+                      }}
+                      className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
+                      onClick={() => onDeleteMessage(message)}
+                      aria-label={t("apps.chats.ariaLabels.deleteMessage")}
+                    >
+                      <Trash className="h-3 w-3" weight="bold" />
+                    </motion.button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{t("apps.chats.messages.delete")}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{
+                opacity: hoveredMessageId === messageKey ? 1 : 0,
+                scale: 1,
+              }}
+              className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+              onClick={() => onCopyMessage(message)}
+              aria-label={t("apps.chats.ariaLabels.copyMessage")}
+            >
+              {copiedMessageId === messageKey ? (
+                <Check className="h-3 w-3" weight="bold" />
+              ) : (
+                <Copy className="h-3 w-3" weight="bold" />
+              )}
+            </motion.button>
+          </>
+        )}
+        <span
+          className="max-w-[120px] inline-block overflow-hidden text-ellipsis whitespace-nowrap"
+          title={
+            message.username ||
+            (message.role === "user"
+              ? t("apps.chats.messages.you")
+              : t("apps.chats.messages.ryo"))
+          }
+        >
+          {message.username ||
+            (message.role === "user"
+              ? t("apps.chats.messages.you")
+              : t("apps.chats.messages.ryo"))}
+        </span>{" "}
+        <span className="text-gray-400 select-text">
+          {message.metadata?.createdAt ? (
+            (() => {
+              const messageDate = new Date(message.metadata.createdAt);
+              const today = new Date();
+              const isBeforeToday =
+                messageDate.getDate() !== today.getDate() ||
+                messageDate.getMonth() !== today.getMonth() ||
+                messageDate.getFullYear() !== today.getFullYear();
+              return isBeforeToday
+                ? messageDate.toLocaleDateString([], {
+                    month: "short",
+                    day: "numeric",
+                  })
+                : messageDate.toLocaleTimeString([], {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  });
+            })()
+          ) : (
+            <ActivityIndicator size="xs" />
+          )}
+        </span>
+        {message.role === "assistant" && (
+          <>
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{
+                opacity: hoveredMessageId === messageKey ? 1 : 0,
+                scale: 1,
+              }}
+              className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+              onClick={() => onCopyMessage(message)}
+              aria-label={t("apps.chats.ariaLabels.copyMessage")}
+            >
+              {copiedMessageId === messageKey ? (
+                <Check className="h-3 w-3" weight="bold" />
+              ) : (
+                <Copy className="h-3 w-3" weight="bold" />
+              )}
+            </motion.button>
+            {speechEnabled && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{
+                  opacity: hoveredMessageId === messageKey ? 1 : 0,
+                  scale: 1,
+                }}
+                className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
+                onClick={() => {
+                  if (playingMessageId === messageKey) {
+                    stop();
+                    setPlayingMessageId(null);
+                  } else {
+                    stop();
+                    setLocalHighlightSegment(null);
+                    localHighlightQueueRef.current = [];
+                    setSpeechLoadingId(null);
+                    const text = displayContent.trim();
+                    if (text) {
+                      const chunks: string[] = [];
+                      const lines = text.split(/\r?\n/);
+                      for (const line of lines) {
+                        const trimmedLine = line.trim();
+                        if (trimmedLine && trimmedLine.length > 0) {
+                          chunks.push(trimmedLine);
+                        }
+                      }
+                      if (chunks.length > 0) {
+                        let charCursor = 0;
+                        const segments = chunks.map((chunk) => {
+                          const visibleLen = segmentText(chunk).reduce(
+                            (acc, token) => acc + token.content.length,
+                            0
+                          );
+                          const seg = {
+                            messageId: message.id || messageKey,
+                            start: charCursor,
+                            end: charCursor + visibleLen,
+                          };
+                          charCursor += visibleLen;
+                          return seg;
+                        });
+                        localHighlightQueueRef.current = segments;
+                        setLocalHighlightSegment(segments[0]);
+                        setSpeechLoadingId(messageKey);
+                        setPlayingMessageId(messageKey);
+                        chunks.forEach((chunk) => {
+                          speak(chunk, () => {
+                            localHighlightQueueRef.current.shift();
+                            if (localHighlightQueueRef.current.length > 0) {
+                              setLocalHighlightSegment(
+                                localHighlightQueueRef.current[0]
+                              );
+                            } else {
+                              setLocalHighlightSegment(null);
+                              setPlayingMessageId(null);
+                              setSpeechLoadingId(null);
+                            }
+                          });
+                        });
+                      } else {
+                        setPlayingMessageId(null);
+                        setSpeechLoadingId(null);
+                      }
+                    } else {
+                      setPlayingMessageId(null);
+                      setSpeechLoadingId(null);
+                    }
+                  }
+                }}
+                aria-label={
+                  playingMessageId === messageKey
+                    ? t("apps.chats.ariaLabels.stopSpeech")
+                    : t("apps.chats.ariaLabels.speakMessage")
+                }
+              >
+                {playingMessageId === messageKey ? (
+                  speechLoadingId === messageKey ? (
+                    <ActivityIndicator size="xs" />
+                  ) : (
+                    <Pause className="h-3 w-3" weight="bold" />
+                  )
+                ) : (
+                  <SpeakerHigh className="h-3 w-3" weight="bold" />
+                )}
+              </motion.button>
+            )}
+          </>
+        )}
+        {isRoomView &&
+          message.role === "human" &&
+          onSendMessage &&
+          message.username && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{
+                      opacity: hoveredMessageId === messageKey ? 1 : 0,
+                      scale: 1,
+                    }}
+                    className="h-3 w-3 text-gray-400 hover:text-blue-600 transition-colors"
+                    onClick={() => onSendMessage(message.username!)}
+                    aria-label={t("apps.chats.ariaLabels.messageUser", {
+                      username: message.username,
+                    })}
+                  >
+                    <PaperPlaneRight className="h-3 w-3" weight="bold" />
+                  </motion.button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    {t("apps.chats.ariaLabels.messageUser", {
+                      username: message.username,
+                    })}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        {isAdmin && isRoomView && message.role !== "user" && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{
+                    opacity: hoveredMessageId === messageKey ? 1 : 0,
+                    scale: 1,
+                  }}
+                  className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
+                  onClick={() => onDeleteMessage(message)}
+                  aria-label={t("apps.chats.ariaLabels.deleteMessage")}
+                >
+                  <Trash className="h-3 w-3" weight="bold" />
+                </motion.button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{t("apps.chats.messages.delete")}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
+
+      {hasAquarium && <EmojiAquarium />}
+
+      {message.role === "user" &&
+        (() => {
+          const imageUrls = extractImageParts(message as {
+            parts?: Array<{ type: string; url?: string; mediaType?: string }>;
+          });
+          if (imageUrls.length === 0) return null;
+          return (
+            <div
+              className={`flex flex-col gap-2 w-full mb-1 ${
+                message.role === "user" ? "items-end" : "items-start"
+              }`}
+            >
+              {imageUrls.map((url, idx) => (
+                <ImageAttachment
+                  key={`${messageKey}-img-${idx}`}
+                  src={url}
+                  alt={`Attached image ${idx + 1}`}
+                  showRemoveButton={false}
+                  className="max-w-[280px]"
+                />
+              ))}
+            </div>
+          );
+        })()}
+
+      {!isUrlOnly(displayContent) && (
+        <motion.div
+          initial={
+            isUrgent
+              ? {
+                  opacity: 0,
+                  backgroundColor: "#bfdbfe",
+                  color: "#111827",
+                }
+              : { opacity: 0 }
+          }
+          animate={
+            isUrgent
+              ? {
+                  opacity: 1,
+                  backgroundColor: [
+                    "#bfdbfe",
+                    "#fecaca",
+                    "#fee2e2",
+                  ],
+                  color: ["#111827", "#b91c1c", "#b91c1c"],
+                }
+              : { opacity: 1 }
+          }
+          transition={
+            isUrgent
+              ? {
+                  opacity: { duration: 0.12, ease: "easeOut" },
+                  backgroundColor: {
+                    duration: 0.9,
+                    ease: "easeInOut",
+                    times: [0, 0.5, 1],
+                  },
+                  color: {
+                    duration: 0.9,
+                    ease: "easeInOut",
+                    times: [0, 0.5, 1],
+                  },
+                }
+              : undefined
+          }
+          className={`p-1.5 px-2 chat-bubble ${
+            showTypingDots
+              ? "bg-neutral-200 text-neutral-400"
+              : bgColorClass ||
+                (message.role === "user"
+                  ? "bg-yellow-100 text-black"
+                  : "bg-blue-100 text-black")
+          } w-fit max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words select-text`}
+          style={{ fontSize: `${fontSize}px` }}
+        >
+          {showTypingDots ? (
+            <TypingDots />
+          ) : message.role === "assistant" ? (
+            <motion.div className="select-text flex flex-col gap-1">
+              {message.parts?.map(
+                (
+                  part: ToolInvocationPart | { type: string; text?: string },
+                  partIndex: number
+                ) => {
+                  const partKey = `${messageKey}-part-${partIndex}`;
+                  switch (part.type) {
+                    case "text": {
+                      const partText =
+                        (part as { type: string; text?: string }).text ||
+                        (isStaticGreeting ? t("apps.chats.messages.greeting") : "");
+                      const hasXmlTags =
+                        /<textedit:(insert|replace|delete)/i.test(partText);
+                      if (hasXmlTags) {
+                        const openTags = (
+                          partText.match(/<textedit:(insert|replace|delete)/g) || []
+                        ).length;
+                        const closeTags = (
+                          partText.match(
+                            /<\/textedit:(insert|replace)>|<textedit:delete[^>]*\/>/g
+                          ) || []
+                        ).length;
+                        if (openTags !== closeTags) {
+                          return (
+                            <motion.span
+                              key={partKey}
+                              initial={{ opacity: 1 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ duration: 0 }}
+                              className="select-text italic"
+                            >
+                              {t("apps.chats.status.editing")}
+                            </motion.span>
+                          );
+                        }
+                      }
+                      const rawPartContent = isUrgentMessage(partText)
+                        ? partText.slice(4).trimStart()
+                        : partText;
+                      const partDisplayContent = decodeHtmlEntities(rawPartContent);
+                      const textContent = partDisplayContent;
+                      return (
+                        <div key={partKey} className="w-full">
+                          <div className="whitespace-pre-wrap">
+                            {textContent &&
+                              (() => {
+                                const tokens = segmentText(textContent.trim());
+                                let charPos = 0;
+                                return tokens.map((segment, idx) => {
+                                  const start = charPos;
+                                  const end = charPos + segment.content.length;
+                                  charPos = end;
+                                  return (
+                                    <motion.span
+                                      key={`${partKey}-segment-${idx}`}
+                                      initial={
+                                        isInitialMessage
+                                          ? { opacity: 1, y: 0 }
+                                          : { opacity: 0, y: 12 }
+                                      }
+                                      animate={{ opacity: 1, y: 0 }}
+                                      className={`select-text ${
+                                        isEmojiOnly(textContent)
+                                          ? "text-[24px]"
+                                          : ""
+                                      } ${
+                                        segment.type === "bold"
+                                          ? "font-bold"
+                                          : segment.type === "italic"
+                                          ? "italic"
+                                          : ""
+                                      }`}
+                                      style={{
+                                        userSelect: "text",
+                                        fontSize: isEmojiOnly(textContent)
+                                          ? undefined
+                                          : `${fontSize}px`,
+                                      }}
+                                      transition={{
+                                        duration: 0.08,
+                                        delay: idx * 0.02,
+                                        ease: "easeOut",
+                                        onComplete: () => {
+                                          if (idx % 2 === 0) playNote();
+                                        },
+                                      }}
+                                    >
+                                      {highlightActive &&
+                                      start < (combinedHighlightSeg?.end ?? 0) &&
+                                      end > (combinedHighlightSeg?.start ?? 0) ? (
+                                        <span className="animate-highlight">
+                                          {segment.type === "link" && segment.url ? (
+                                            <a
+                                              href={segment.url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-blue-600 hover:underline"
+                                              style={{
+                                                color: isUrgent ? "inherit" : undefined,
+                                              }}
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              {segment.content}
+                                            </a>
+                                          ) : (
+                                            segment.content
+                                          )}
+                                        </span>
+                                      ) : segment.type === "link" && segment.url ? (
+                                        <a
+                                          href={segment.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-blue-600 hover:underline"
+                                          style={{
+                                            color: isUrgent ? "inherit" : undefined,
+                                          }}
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {segment.content}
+                                        </a>
+                                      ) : (
+                                        segment.content
+                                      )}
+                                    </motion.span>
+                                  );
+                                });
+                              })()}
+                          </div>
+                        </div>
+                      );
+                    }
+                    default: {
+                      if (part.type.startsWith("tool-")) {
+                        const toolPart = part as ToolInvocationPart;
+                        const toolName = part.type.slice(5);
+                        if (toolName === "aquarium") return null;
+                        return (
+                          <ToolInvocationMessage
+                            key={partKey}
+                            part={toolPart}
+                            partKey={partKey}
+                            isLoading={isLoading}
+                            getAppName={getAppName}
+                            formatToolName={formatToolName}
+                            setIsInteractingWithPreview={
+                              setIsInteractingWithPreview
+                            }
+                            playElevatorMusic={playElevatorMusic}
+                            stopElevatorMusic={stopElevatorMusic}
+                            playDingSound={playDingSound}
+                          />
+                        );
+                      }
+                      return null;
+                    }
+                  }
+                }
+              )}
+            </motion.div>
+          ) : (
+            <>
+              {displayContent && (
+                <span
+                  className={`select-text whitespace-pre-wrap ${
+                    isEmojiOnly(displayContent) ? "text-[24px]" : ""
+                  }`}
+                  style={{
+                    userSelect: "text",
+                    fontSize: isEmojiOnly(displayContent)
+                      ? undefined
+                      : `${fontSize}px`,
+                  }}
+                >
+                  {(() => {
+                    const tokens = segmentText(displayContent);
+                    let charPos2 = 0;
+                    return tokens.map((segment, idx) => {
+                      const start2 = charPos2;
+                      const end2 = charPos2 + segment.content.length;
+                      charPos2 = end2;
+                      const isHighlight =
+                        highlightActive &&
+                        start2 < (combinedHighlightSeg?.end ?? 0) &&
+                        end2 > (combinedHighlightSeg?.start ?? 0);
+                      const contentNode =
+                        segment.type === "link" && segment.url ? (
+                          <a
+                            href={segment.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                            style={{
+                              color: isUrgent ? "inherit" : undefined,
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {segment.content}
+                          </a>
+                        ) : (
+                          segment.content
+                        );
+                      return (
+                        <span
+                          key={`${messageKey}-segment-${idx}`}
+                          className={`${
+                            segment.type === "bold"
+                              ? "font-bold"
+                              : segment.type === "italic"
+                              ? "italic"
+                              : ""
+                          }`}
+                        >
+                          {isHighlight ? (
+                            <span className="bg-yellow-200 animate-highlight">
+                              {contentNode}
+                            </span>
+                          ) : (
+                            contentNode
+                          )}
+                        </span>
+                      );
+                    });
+                  })()}
+                </span>
+              )}
+            </>
+          )}
+        </motion.div>
+      )}
+
+      {(() => {
+        const allUrls = new Set<string>();
+        if (message.role === "assistant") {
+          message.parts?.forEach(
+            (
+              part: ToolInvocationPart | { type: string; text?: string }
+            ) => {
+              if (part.type === "text") {
+                const partText =
+                  (part as { type: string; text?: string }).text || "";
+                const partContent = isUrgentMessage(partText)
+                  ? partText.slice(4).trimStart()
+                  : partText;
+                extractUrls(decodeHtmlEntities(partContent)).forEach((u) =>
+                  allUrls.add(u)
+                );
+              }
+            }
+          );
+        } else {
+          extractUrls(displayContent).forEach((u) => allUrls.add(u));
+        }
+        if (allUrls.size === 0) return null;
+        return (
+          <div
+            className={`flex flex-col gap-2 w-full ${
+              !isUrlOnly(displayContent) ? "mt-2" : ""
+            } ${message.role === "user" ? "items-end" : "items-start"}`}
+          >
+            {Array.from(allUrls).map((url, index) => (
+              <LinkPreview
+                key={`${messageKey}-link-${index}`}
+                url={url}
+                className="max-w-[90%]"
+              />
+            ))}
+          </div>
+        );
+      })()}
+    </motion.div>
+  );
+});
+
 // --- NEW INNER COMPONENT ---
 interface ChatMessagesContentProps {
   messages: ChatMessage[];
@@ -403,11 +1162,6 @@ function ChatMessagesContent({
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [isInteractingWithPreview, setIsInteractingWithPreview] =
     useState(false);
-
-  // Helper to detect if we're on a touch device
-  const isTouchDevice = () => {
-    return "ontouchstart" in window || navigator.maxTouchPoints > 0;
-  };
 
   // Local highlight state for manual speech triggered from this component
   const [localHighlightSegment, setLocalHighlightSegment] = useState<{
@@ -577,22 +1331,6 @@ function ChatMessagesContent({
     }
   };
 
-  const isUrgentMessage = (content: string) => content.startsWith("!!!!");
-
-  // Helper function to extract URLs from message content for link previews
-  const extractUrls = (content: string): string[] => {
-    const urls = new Set<string>();
-    const tokens = segmentText(content);
-
-    tokens.forEach((token) => {
-      if (token.type === "link" && token.url) {
-        urls.add(token.url);
-      }
-    });
-
-    return Array.from(urls);
-  };
-
   // Return the message list rendering logic
   return (
     <AnimatePresence initial={false} mode="sync">
@@ -617,781 +1355,52 @@ function ChatMessagesContent({
         </motion.div>
       )}
       {messages.map((message) => {
-        let messageText = getMessageText(message);
-        const isStaticGreeting =
-          message.role === "assistant" && message.id === "1";
-        if (isStaticGreeting && !messageText) {
-          messageText = t("apps.chats.messages.greeting");
-        }
-        // Use a stable key for greeting messages so React doesn't remount the
-        // element when the ID changes from "1" to "proactive-1"
+        const messageText = getMessageText(message);
         const messageKey = (message.id === "1" || message.id === "proactive-1")
           ? "greeting"
           : message.id || `${message.role}-${messageText.substring(0, 10)}`;
         const isInitialMessage = initialMessageIdsRef.current.has(messageKey);
-
-        // The static greeting (id "1") should never animate.
-        // The proactive greeting (id "proactive-1") SHOULD animate word-by-word
-        // so it looks like streaming text.
-        // Show typing dots instead of text when proactive greeting is loading
-        const showTypingDots =
-          isLoadingGreeting && !isRoomView && isStaticGreeting;
-
-        const variants = { initial: { opacity: 0 }, animate: { opacity: 1 } };
-        const isUrgent = isUrgentMessage(messageText);
-        let bgColorClass = "";
-        if (isUrgent) {
-          // Urgent bubbles will be driven by inline animation; avoid bg-* and text-* so theme overrides don't interfere
-          // Provide a truthy class to skip the default fallback color classes
-          bgColorClass = "bg-transparent text-current";
-        } else if (message.role === "user")
-          bgColorClass = "bg-yellow-100 text-black";
-        else if (message.role === "assistant")
-          bgColorClass = "bg-blue-100 text-black";
-        else if (message.role === "human")
-          bgColorClass = getUserColorClass(message.username);
-
-        // Trim leading "!!!!" for urgent messages and decode HTML entities
-        const rawContent = isUrgent
-          ? messageText.slice(4).trimStart()
-          : messageText;
-        const decodedContent = decodeHtmlEntities(rawContent);
-
-        // Check for [[AQUARIUM]] token in the content
-        const hasAquariumToken = decodedContent.includes("[[AQUARIUM]]");
-
-        // Remove [[AQUARIUM]] token from display content
-        const displayContent = decodedContent
-          .replace(/\[\[AQUARIUM\]\]/g, "")
-          .trim();
-
-        // Detect aquarium tool calls for this assistant message or chat room message
-        let hasAquarium = false;
-
-        // Check for aquarium in AI assistant messages (using parts)
-        // In AI SDK v5, tool parts have type like "tool-aquarium"
-        if (message.role === "assistant" && message.parts) {
-          const aquariumParts = message.parts.filter(
-            (p: ToolInvocationPart | { type: string }) => {
-              return p.type === "tool-aquarium";
-            }
-          );
-          hasAquarium = aquariumParts.length > 0;
-        }
-
-        // Check for aquarium token in chat room messages
-        // In chat rooms, messages from ryo don't have a role, just a username
-        if (
-          (message.role === "human" || message.username === "ryo") &&
-          hasAquariumToken
-        ) {
-          hasAquarium = true;
-        }
-
-        const combinedHighlightSeg = highlightSegment || localHighlightSegment;
-        const combinedIsSpeaking = isSpeaking || localTtsSpeaking;
-
-        const highlightActive =
-          combinedIsSpeaking &&
-          combinedHighlightSeg &&
-          combinedHighlightSeg.messageId === message.id;
-
-        // base background calculation no longer needed; inline animation drives color for urgent
-
-          return (
-          <motion.div
+        return (
+          <ChatMessageItem
             key={messageKey}
-            variants={variants}
-            initial={isInitialMessage || isStaticGreeting ? "animate" : "initial"}
-            animate="animate"
-            transition={isStaticGreeting ? { duration: 0 } : { duration: 0.15, ease: "easeOut" }}
-            className={`flex flex-col z-10 w-full ${
-              message.role === "user" ? "items-end" : "items-start"
-            }`}
-            style={{
-              transformOrigin:
-                message.role === "user" ? "bottom right" : "bottom left",
-            }}
-            onMouseEnter={() =>
-              !isInteractingWithPreview &&
-              !isTouchDevice() &&
-              setHoveredMessageId(messageKey)
-            }
-            onMouseLeave={() =>
-              !isInteractingWithPreview &&
-              !isTouchDevice() &&
-              setHoveredMessageId(null)
-            }
-            onTouchStart={(e) => {
-              // Only show hover buttons on touch if not touching a link preview
-              if (!isInteractingWithPreview && isTouchDevice()) {
-                const target = e.target as HTMLElement;
-                const isLinkPreview = target.closest("[data-link-preview]");
-                if (!isLinkPreview) {
-                  e.preventDefault();
-                  setHoveredMessageId(messageKey);
-                }
-              }
-            }}
-          >
-            <div
-              className={`${
-                currentTheme === "macosx" ? "text-[10px]" : "text-[16px]"
-              } chat-messages-meta text-gray-500 mb-0.5 font-['Geneva-9'] mb-[-2px] select-text flex items-center gap-2`}
-            >
-              {message.role === "user" && (
-                <>
-                  {isAdmin && isRoomView && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <motion.button
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{
-                              opacity: hoveredMessageId === messageKey ? 1 : 0,
-                              scale: 1,
-                            }}
-                            className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
-                            onClick={() => deleteMessage(message)}
-                            aria-label={t("apps.chats.ariaLabels.deleteMessage")}
-                          >
-                            <Trash className="h-3 w-3" weight="bold" />
-                          </motion.button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{t("apps.chats.messages.delete")}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{
-                      opacity: hoveredMessageId === messageKey ? 1 : 0,
-                      scale: 1,
-                    }}
-                    className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
-                    onClick={() => copyMessage(message)}
-                    aria-label={t("apps.chats.ariaLabels.copyMessage")}
-                  >
-                    {copiedMessageId === messageKey ? (
-                      <Check className="h-3 w-3" weight="bold" />
-                    ) : (
-                      <Copy className="h-3 w-3" weight="bold" />
-                    )}
-                  </motion.button>
-                </>
-              )}
-              <span
-                className="max-w-[120px] inline-block overflow-hidden text-ellipsis whitespace-nowrap"
-                title={
-                  message.username || (message.role === "user" ? t("apps.chats.messages.you") : t("apps.chats.messages.ryo"))
-                }
-              >
-                {message.username || (message.role === "user" ? t("apps.chats.messages.you") : t("apps.chats.messages.ryo"))}
-              </span>{" "}
-              <span className="text-gray-400 select-text">
-                {message.metadata?.createdAt ? (
-                  (() => {
-                    const messageDate = new Date(message.metadata.createdAt);
-                    const today = new Date();
-                    const isBeforeToday =
-                      messageDate.getDate() !== today.getDate() ||
-                      messageDate.getMonth() !== today.getMonth() ||
-                      messageDate.getFullYear() !== today.getFullYear();
-
-                    return isBeforeToday
-                      ? messageDate.toLocaleDateString([], {
-                          month: "short",
-                          day: "numeric",
-                        })
-                      : messageDate.toLocaleTimeString([], {
-                          hour: "numeric",
-                          minute: "2-digit",
-                        });
-                  })()
-                ) : (
-                  <ActivityIndicator size="xs" />
-                )}
-              </span>
-              {message.role === "assistant" && (
-                <>
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{
-                      opacity: hoveredMessageId === messageKey ? 1 : 0,
-                      scale: 1,
-                    }}
-                    className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
-                    onClick={() => copyMessage(message)}
-                    aria-label={t("apps.chats.ariaLabels.copyMessage")}
-                  >
-                    {copiedMessageId === messageKey ? (
-                      <Check className="h-3 w-3" weight="bold" />
-                    ) : (
-                      <Copy className="h-3 w-3" weight="bold" />
-                    )}
-                  </motion.button>
-                  {speechEnabled && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{
-                        opacity: hoveredMessageId === messageKey ? 1 : 0,
-                        scale: 1,
-                      }}
-                      className="h-3 w-3 text-gray-400 hover:text-neutral-600 transition-colors"
-                      onClick={() => {
-                        if (playingMessageId === messageKey) {
-                          // Stop current playback
-                          stop();
-                          setPlayingMessageId(null);
-                        } else {
-                          stop();
-                          // ensure any existing queue/segment cleared
-                          setLocalHighlightSegment(null);
-                          localHighlightQueueRef.current = [];
-                          setSpeechLoadingId(null);
-
-                          const text = displayContent.trim();
-                          if (text) {
-                            // Split into line-based chunks so each fetch starts immediately and
-                            // the UI can advance per chunk.
-                            const chunks: string[] = [];
-                            const lines = text.split(/\r?\n/);
-
-                            for (const line of lines) {
-                              const trimmedLine = line.trim();
-                              if (trimmedLine && trimmedLine.length > 0) {
-                                chunks.push(trimmedLine);
-                              }
-                            }
-
-                            if (chunks.length === 0) {
-                              setPlayingMessageId(null);
-                              setSpeechLoadingId(null);
-                              return;
-                            }
-
-                            // Build highlight segments data ? use *visible* character
-                            // length (without Markdown markup like ** or []()) so the
-                            // highlight aligns with what is actually rendered.
-                            let charCursor = 0;
-                            const segments = chunks.map((chunk) => {
-                              // Calculate how many visible characters this chunk
-                              // contributes by summing the lengths of the token
-                              // contents produced by segmentText().
-                              const visibleLen = segmentText(chunk).reduce(
-                                (acc, token) => acc + token.content.length,
-                                0
-                              );
-
-                              const seg = {
-                                messageId: message.id || messageKey,
-                                start: charCursor,
-                                end: charCursor + visibleLen,
-                              };
-                              charCursor += visibleLen;
-                              return seg;
-                            });
-
-                            localHighlightQueueRef.current = segments;
-                            setLocalHighlightSegment(segments[0]);
-                            setSpeechLoadingId(messageKey);
-
-                            // Queue all chunks so network requests overlap.
-                            chunks.forEach((chunk) => {
-                              speak(chunk, () => {
-                                // Shift queue and update highlight
-                                localHighlightQueueRef.current.shift();
-                                if (localHighlightQueueRef.current.length > 0) {
-                                  setLocalHighlightSegment(
-                                    localHighlightQueueRef.current[0]
-                                  );
-                                } else {
-                                  setLocalHighlightSegment(null);
-                                  setPlayingMessageId(null);
-                                  setSpeechLoadingId(null);
-                                }
-                              });
-                            });
-
-                            setPlayingMessageId(messageKey);
-                          } else {
-                            setPlayingMessageId(null);
-                            setSpeechLoadingId(null);
-                          }
-                        }
-                      }}
-                      aria-label={
-                        playingMessageId === messageKey
-                          ? t("apps.chats.ariaLabels.stopSpeech")
-                          : t("apps.chats.ariaLabels.speakMessage")
-                      }
-                    >
-                      {playingMessageId === messageKey ? (
-                        speechLoadingId === messageKey ? (
-                          <ActivityIndicator size="xs" />
-                        ) : (
-                          <Pause className="h-3 w-3" weight="bold" />
-                        )
-                      ) : (
-                        <SpeakerHigh className="h-3 w-3" weight="bold" />
-                      )}
-                    </motion.button>
-                  )}
-                </>
-              )}
-              {isRoomView &&
-                message.role === "human" &&
-                onSendMessage &&
-                message.username && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <motion.button
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{
-                            opacity: hoveredMessageId === messageKey ? 1 : 0,
-                            scale: 1,
-                          }}
-                          className="h-3 w-3 text-gray-400 hover:text-blue-600 transition-colors"
-                          onClick={() => onSendMessage(message.username!)}
-                          aria-label={t("apps.chats.ariaLabels.messageUser", { username: message.username })}
-                        >
-                          <PaperPlaneRight className="h-3 w-3" weight="bold" />
-                        </motion.button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{t("apps.chats.ariaLabels.messageUser", { username: message.username })}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              {isAdmin && isRoomView && message.role !== "user" && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <motion.button
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{
-                          opacity: hoveredMessageId === messageKey ? 1 : 0,
-                          scale: 1,
-                        }}
-                        className="h-3 w-3 text-gray-400 hover:text-red-600 transition-colors"
-                        onClick={() => deleteMessage(message)}
-                        aria-label={t("apps.chats.ariaLabels.deleteMessage")}
-                      >
-                        <Trash className="h-3 w-3" weight="bold" />
-                      </motion.button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{t("apps.chats.messages.delete")}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-
-            {/* Render aquarium tool(s) as their own element; component styles itself as a chat bubble */}
-            {hasAquarium && <EmojiAquarium />}
-
-            {/* Image Attachments - Rendered BEFORE the text message bubble */}
-            {message.role === "user" && (() => {
-              const imageUrls = extractImageParts(message as { parts?: Array<{ type: string; url?: string; mediaType?: string }> });
-              if (imageUrls.length === 0) return null;
-              
-              return (
-                <div
-                  className={`flex flex-col gap-2 w-full mb-1 ${
-                    message.role === "user" ? "items-end" : "items-start"
-                  }`}
-                >
-                  {imageUrls.map((url, idx) => (
-                    <ImageAttachment
-                      key={`${messageKey}-img-${idx}`}
-                      src={url}
-                      alt={`Attached image ${idx + 1}`}
-                      showRemoveButton={false}
-                      className="max-w-[280px]"
-                    />
-                  ))}
-                </div>
-              );
-            })()}
-
-            {/* Show the standard message bubble if it's not URL-only (even if aquarium exists) */}
-            {!isUrlOnly(displayContent) && (
-              <motion.div
-                initial={
-                  isUrgent
-                    ? {
-                        opacity: 0,
-                        backgroundColor: "#bfdbfe",
-                        color: "#111827",
-                      } // quick fade-in for urgent, then color-only animation
-                    : { opacity: 0 }
-                }
-                animate={
-                  isUrgent
-                    ? {
-                        opacity: 1,
-                        backgroundColor: [
-                          "#bfdbfe", // blue-200
-                          "#fecaca", // red-200 pulse
-                          "#fee2e2", // red-100 final (one level lighter)
-                        ],
-                        color: [
-                          "#111827", // black
-                          "#b91c1c", // red-700 pulse
-                          "#b91c1c", // red-700 final
-                        ],
-                      }
-                    : { opacity: 1 }
-                }
-                transition={
-                  isUrgent
-                    ? {
-                        opacity: { duration: 0.12, ease: "easeOut" },
-                        backgroundColor: {
-                          duration: 0.9,
-                          ease: "easeInOut",
-                          times: [0, 0.5, 1],
-                        },
-                        color: {
-                          duration: 0.9,
-                          ease: "easeInOut",
-                          times: [0, 0.5, 1],
-                        },
-                      }
-                    : undefined
-                }
-                className={`p-1.5 px-2 chat-bubble ${
-                  showTypingDots
-                    ? "bg-neutral-200 text-neutral-400"
-                    : bgColorClass ||
-                      (message.role === "user"
-                        ? "bg-yellow-100 text-black"
-                        : "bg-blue-100 text-black")
-                } w-fit max-w-[90%] min-h-[12px] rounded leading-snug font-geneva-12 break-words select-text`}
-                style={{ fontSize: `${fontSize}px` }}
-              >
-                {showTypingDots ? (
-                  <TypingDots />
-                ) : message.role === "assistant" ? (
-                  <motion.div className="select-text flex flex-col gap-1">
-                    {message.parts?.map(
-                      (
-                        part:
-                          | ToolInvocationPart
-                          | { type: string; text?: string },
-                        partIndex: number
-                      ) => {
-                        const partKey = `${messageKey}-part-${partIndex}`;
-                        switch (part.type) {
-                          case "text": {
-                            const partText =
-                              (part as { type: string; text?: string }).text ||
-                              (isStaticGreeting ? t("apps.chats.messages.greeting") : "");
-                            const hasXmlTags =
-                              /<textedit:(insert|replace|delete)/i.test(
-                                partText
-                              );
-                            if (hasXmlTags) {
-                              const openTags = (
-                                partText.match(
-                                  /<textedit:(insert|replace|delete)/g
-                                ) || []
-                              ).length;
-                              const closeTags = (
-                                partText.match(
-                                  /<\/textedit:(insert|replace)>|<textedit:delete[^>]*\/>/g
-                                ) || []
-                              ).length;
-                              if (openTags !== closeTags) {
-                                return (
-                                  <motion.span
-                                    key={partKey}
-                                    initial={{ opacity: 1 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ duration: 0 }}
-                                    className="select-text italic"
-                                  >
-                                    {t("apps.chats.status.editing")}
-                                  </motion.span>
-                                );
-                              }
-                            }
-
-                            const rawPartContent = isUrgentMessage(partText)
-                              ? partText.slice(4).trimStart()
-                              : partText;
-                            const displayContent =
-                              decodeHtmlEntities(rawPartContent);
-                            const textContent = displayContent;
-
-                            return (
-                              <div key={partKey} className="w-full">
-                                <div className="whitespace-pre-wrap">
-                                  {textContent &&
-                                    (() => {
-                                      const tokens = segmentText(
-                                        textContent.trim()
-                                      );
-                                      let charPos = 0;
-                                      return tokens.map((segment, idx) => {
-                                        const start = charPos;
-                                        const end =
-                                          charPos + segment.content.length;
-                                        charPos = end;
-                                        return (
-                                          <motion.span
-                                            key={`${partKey}-segment-${idx}`}
-                                            initial={
-                                              isInitialMessage
-                                                ? { opacity: 1, y: 0 }
-                                                : { opacity: 0, y: 12 }
-                                            }
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className={`select-text ${
-                                              isEmojiOnly(textContent)
-                                                ? "text-[24px]"
-                                                : ""
-                                            } ${
-                                              segment.type === "bold"
-                                                ? "font-bold"
-                                                : segment.type === "italic"
-                                                ? "italic"
-                                                : ""
-                                            }`}
-                                            style={{
-                                              userSelect: "text",
-                                              fontSize: isEmojiOnly(textContent)
-                                                ? undefined
-                                                : `${fontSize}px`,
-                                            }}
-                                            transition={{
-                                              duration: 0.08,
-                                              delay: idx * 0.02,
-                                              ease: "easeOut",
-                                              onComplete: () => {
-                                                if (idx % 2 === 0) {
-                                                  playNote();
-                                                }
-                                              },
-                                            }}
-                                          >
-                                            {/* Apply highlight */}
-                                            {highlightActive &&
-                                            start <
-                                              (combinedHighlightSeg?.end ??
-                                                0) &&
-                                            end >
-                                              (combinedHighlightSeg?.start ??
-                                                0) ? (
-                                              <span className="animate-highlight">
-                                                {segment.type === "link" &&
-                                                segment.url ? (
-                                                  <a
-                                                    href={segment.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-blue-600 hover:underline"
-                                                    style={{
-                                                      color: isUrgent
-                                                        ? "inherit"
-                                                        : undefined,
-                                                    }}
-                                                    onClick={(e) =>
-                                                      e.stopPropagation()
-                                                    }
-                                                  >
-                                                    {segment.content}
-                                                  </a>
-                                                ) : (
-                                                  segment.content
-                                                )}
-                                              </span>
-                                            ) : segment.type === "link" &&
-                                              segment.url ? (
-                                              <a
-                                                href={segment.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-blue-600 hover:underline"
-                                                style={{
-                                                  color: isUrgent
-                                                    ? "inherit"
-                                                    : undefined,
-                                                }}
-                                                onClick={(e) =>
-                                                  e.stopPropagation()
-                                                }
-                                              >
-                                                {segment.content}
-                                              </a>
-                                            ) : (
-                                              segment.content
-                                            )}
-                                          </motion.span>
-                                        );
-                                      });
-                                    })()}
-                                </div>
-                              </div>
-                            );
-                          }
-                          default: {
-                            // AI SDK v5 tool parts have type like "tool-launchApp", "tool-switchTheme", etc.
-                            if (part.type.startsWith("tool-")) {
-                              const toolPart = part as ToolInvocationPart;
-                              const toolName = part.type.slice(5); // Remove "tool-" prefix
-
-                              // Skip aquarium tool - it's rendered separately below the bubble
-                              if (toolName === "aquarium") {
-                                return null;
-                              }
-
-                              return (
-                                <ToolInvocationMessage
-                                  key={partKey}
-                                  part={toolPart}
-                                  partKey={partKey}
-                                  isLoading={isLoading}
-                                  getAppName={getAppName}
-                                  formatToolName={formatToolName}
-                                  setIsInteractingWithPreview={
-                                    setIsInteractingWithPreview
-                                  }
-                                  playElevatorMusic={playElevatorMusic}
-                                  stopElevatorMusic={stopElevatorMusic}
-                                  playDingSound={playDingSound}
-                                />
-                              );
-                            }
-                            return null;
-                          }
-                        }
-                      }
-                    )}
-                  </motion.div>
-                ) : (
-                  <>
-                    {displayContent && (
-                      <span
-                        className={`select-text whitespace-pre-wrap ${
-                          isEmojiOnly(displayContent) ? "text-[24px]" : ""
-                        }`}
-                        style={{
-                          userSelect: "text",
-                          fontSize: isEmojiOnly(displayContent)
-                            ? undefined
-                            : `${fontSize}px`,
-                        }} // Apply font size via style prop
-                      >
-                        {(() => {
-                          const tokens = segmentText(displayContent);
-                          let charPos2 = 0;
-                          return tokens.map((segment, idx) => {
-                            const start2 = charPos2;
-                            const end2 = charPos2 + segment.content.length;
-                            charPos2 = end2;
-                            const isHighlight =
-                              highlightActive &&
-                              start2 < (combinedHighlightSeg?.end ?? 0) &&
-                              end2 > (combinedHighlightSeg?.start ?? 0);
-                            const contentNode =
-                              segment.type === "link" && segment.url ? (
-                                <a
-                                  href={segment.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:underline"
-                                  style={{
-                                    color: isUrgent ? "inherit" : undefined,
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {segment.content}
-                                </a>
-                              ) : (
-                                segment.content
-                              );
-                            return (
-                              <span
-                                key={`${messageKey}-segment-${idx}`}
-                                className={`${
-                                  segment.type === "bold"
-                                    ? "font-bold"
-                                    : segment.type === "italic"
-                                    ? "italic"
-                                    : ""
-                                }`}
-                              >
-                                {isHighlight ? (
-                                  <span className="bg-yellow-200 animate-highlight">
-                                    {contentNode}
-                                  </span>
-                                ) : (
-                                  contentNode
-                                )}
-                              </span>
-                            );
-                          });
-                        })()}
-                      </span>
-                    )}
-                  </>
-                )}
-              </motion.div>
-            )}
-
-            {/* Link Previews - Rendered after the message bubble */}
-            {(() => {
-              const allUrls = new Set<string>();
-
-              if (message.role === "assistant") {
-                // Extract URLs from assistant message parts
-                message.parts?.forEach(
-                  (
-                    part: ToolInvocationPart | { type: string; text?: string }
-                  ) => {
-                    if (part.type === "text") {
-                      const partText =
-                        (part as { type: string; text?: string }).text || "";
-                      const partContent = isUrgentMessage(partText)
-                        ? partText.slice(4).trimStart()
-                        : partText;
-                      const decodedContent = decodeHtmlEntities(partContent);
-                      extractUrls(decodedContent).forEach((url) =>
-                        allUrls.add(url)
-                      );
-                    }
-                  }
-                );
-              } else {
-                // Extract URLs from user/human message content
-                extractUrls(displayContent).forEach((url) => allUrls.add(url));
-              }
-
-              if (allUrls.size === 0) return null;
-
-              return (
-                <div
-                  className={`flex flex-col gap-2 w-full ${
-                    !isUrlOnly(displayContent) ? "mt-2" : ""
-                  } ${message.role === "user" ? "items-end" : "items-start"}`}
-                >
-                  {Array.from(allUrls).map((url, index) => (
-                    <LinkPreview
-                      key={`${messageKey}-link-${index}`}
-                      url={url}
-                      className="max-w-[90%]"
-                    />
-                  ))}
-                </div>
-              );
-            })()}
-          </motion.div>
+            message={message}
+            messageKey={messageKey}
+            isInitialMessage={isInitialMessage}
+            isLoading={isLoading}
+            isLoadingGreeting={!!isLoadingGreeting}
+            isRoomView={isRoomView}
+            fontSize={fontSize}
+            currentTheme={currentTheme}
+            copiedMessageId={copiedMessageId}
+            hoveredMessageId={hoveredMessageId}
+            playingMessageId={playingMessageId}
+            speechLoadingId={speechLoadingId}
+            highlightSegment={highlightSegment ?? null}
+            localHighlightSegment={localHighlightSegment}
+            isSpeaking={!!isSpeaking}
+            localTtsSpeaking={localTtsSpeaking}
+            speechEnabled={speechEnabled}
+            isAdmin={isAdmin}
+            roomId={roomId}
+            username={username}
+            onMessageDeleted={onMessageDeleted}
+            onSendMessage={onSendMessage}
+            onCopyMessage={copyMessage}
+            onDeleteMessage={deleteMessage}
+            setHoveredMessageId={setHoveredMessageId}
+            setIsInteractingWithPreview={setIsInteractingWithPreview}
+            setLocalHighlightSegment={setLocalHighlightSegment}
+            setPlayingMessageId={setPlayingMessageId}
+            setSpeechLoadingId={setSpeechLoadingId}
+            localHighlightQueueRef={localHighlightQueueRef}
+            isInteractingWithPreview={isInteractingWithPreview}
+            speak={speak}
+            stop={stop}
+            playNote={playNote}
+            playElevatorMusic={playElevatorMusic}
+            stopElevatorMusic={stopElevatorMusic}
+            playDingSound={playDingSound}
+          />
         );
       })}
       {error &&

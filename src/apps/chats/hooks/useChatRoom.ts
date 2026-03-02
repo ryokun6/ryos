@@ -6,44 +6,19 @@ import {
   subscribePusherChannel,
   unsubscribePusherChannel,
 } from "@/lib/pusherClient";
-import { useChatsStore } from "../../../stores/useChatsStore";
+import { useChatsStore } from "@/stores/useChatsStore";
 import { toast } from "@/hooks/useToast";
-import { type ChatRoom, type ChatMessage } from "../../../../src/types/chat";
+import { type ChatRoom, type ChatMessage } from "@/types/chat";
 import { useChatsStoreShallow } from "@/stores/helpers";
 import { removeChatRoomById, upsertChatRoom } from "@/utils/chatRoomList";
 import { shouldNotifyForRoomMessage } from "@/utils/chatNotifications";
 import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
+import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 
 const getGlobalChannelName = (username?: string | null): string =>
   username
     ? `chats-${username.toLowerCase().replace(/[^a-zA-Z0-9_\-.]/g, "_")}`
     : "chats-public";
-
-const HTML_ENTITY_MAP: Record<string, string> = {
-  "&amp;": "&",
-  "&lt;": "<",
-  "&gt;": ">",
-  "&quot;": '"',
-  "&#39;": "'",
-  "&apos;": "'",
-};
-
-const HTML_ENTITY_PATTERN = /&(amp|lt|gt|quot|#39|apos);/g;
-
-// Decode common HTML entities so toast previews show readable text
-const decodeHtmlEntities = (str: string): string => {
-  if (!str) return str;
-  if (typeof window !== "undefined" && typeof document !== "undefined") {
-    const txt = document.createElement("textarea");
-    txt.innerHTML = str;
-    return txt.value;
-  }
-  // Single-pass decode to avoid double-unescaping sequences like "&amp;lt;"
-  return str.replace(
-    HTML_ENTITY_PATTERN,
-    (entity) => HTML_ENTITY_MAP[entity] || entity
-  );
-};
 
 interface GlobalHandlers {
   onRoomCreated: (data: { room: ChatRoom }) => void;

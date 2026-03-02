@@ -466,8 +466,45 @@ function jsonResponse(data: unknown, status = 200): Response {
   });
 }
 
+function validateEnv(): void {
+  const required: { name: string; description: string }[] = [
+    { name: "REDIS_KV_REST_API_URL", description: "Upstash Redis REST API URL" },
+    { name: "REDIS_KV_REST_API_TOKEN", description: "Upstash Redis REST API token" },
+  ];
+
+  const optional: { name: string; description: string }[] = [
+    { name: "PUSHER_APP_ID", description: "Pusher app ID (real-time features)" },
+    { name: "PUSHER_KEY", description: "Pusher key" },
+    { name: "PUSHER_SECRET", description: "Pusher secret" },
+    { name: "PUSHER_CLUSTER", description: "Pusher cluster" },
+    { name: "OPENAI_API_KEY", description: "OpenAI API key (AI + transcription)" },
+    { name: "ELEVENLABS_API_KEY", description: "ElevenLabs API key (TTS)" },
+    { name: "YOUTUBE_API_KEY", description: "YouTube Data API key" },
+    { name: "INTERNAL_API_SECRET", description: "Internal API secret (Pusher broadcast)" },
+  ];
+
+  const missing = required.filter((v) => !process.env[v.name]);
+  const missingOptional = optional.filter((v) => !process.env[v.name]);
+
+  if (missingOptional.length > 0) {
+    console.warn(
+      `[api-standalone] Optional env vars not set (some features will be unavailable):\n` +
+        missingOptional.map((v) => `  - ${v.name}: ${v.description}`).join("\n")
+    );
+  }
+
+  if (missing.length > 0) {
+    console.error(
+      `[api-standalone] Required env vars missing:\n` +
+        missing.map((v) => `  - ${v.name}: ${v.description}`).join("\n")
+    );
+    process.exit(1);
+  }
+}
+
 async function bootstrap(): Promise<void> {
   await loadEnv();
+  validateEnv();
 
   const API_PORT = Number(process.env.API_PORT || process.env.PORT || "3000");
   const API_HOST = process.env.API_HOST || "0.0.0.0";

@@ -173,7 +173,7 @@ async function openFile(
 
   // Handle applications
   if (path.startsWith("/Applications/") && fileMetadata?.appId) {
-    context.launchApp(fileMetadata.appId);
+    context.launchApp(fileMetadata.appId as AppId);
     context.playCommandSound();
     return {
       output: i18n.t("apps.terminal.output.openedApp", { app: fileMetadata.appId }),
