@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-01-12T00:16:53.132Z",
+  "generatedAt": "2026-03-02T04:01:59.039Z",
   "themes": {
     "default": [
       "app.png",
@@ -9,6 +9,7 @@
       "applets.png",
       "applications.png",
       "bomb.svg",
+      "calendar.png",
       "cdrom.png",
       "cola.png",
       "control-panels/appearance-manager/app.png",
@@ -32,6 +33,7 @@
       "control-panels/sound-manager/sound-on.png",
       "control-panels/sound-manager/stt.png",
       "control-panels/sound-manager/tts.png",
+      "dashboard.png",
       "desktop.png",
       "directory.png",
       "disk.png",
@@ -49,6 +51,7 @@
       "ie.png",
       "image.png",
       "images.png",
+      "infinite-mac.png",
       "info.png",
       "internet.png",
       "ipod.png",
