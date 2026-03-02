@@ -972,6 +972,20 @@
       }
     },
     "dashboard": {
+      "cities": {
+        "berlin": "ベルリン",
+        "hongKong": "香港",
+        "local": "ローカル",
+        "london": "ロンドン",
+        "newYork": "ニューヨーク",
+        "paris": "パリ",
+        "sanFrancisco": "サンフランシスコ",
+        "shanghai": "上海",
+        "singapore": "シンガポール",
+        "sydney": "シドニー",
+        "taipei": "台北",
+        "tokyo": "東京"
+      },
       "description": "ウィジェットダッシュボードオーバーレイ",
       "menu": {
         "about": "ダッシュボードについて",

@@ -972,6 +972,20 @@
       }
     },
     "dashboard": {
+      "cities": {
+        "berlin": "Berlino",
+        "hongKong": "Hong Kong",
+        "local": "LOCALE",
+        "london": "Londra",
+        "newYork": "New York",
+        "paris": "Parigi",
+        "sanFrancisco": "San Francisco",
+        "shanghai": "Shanghai",
+        "singapore": "Singapore",
+        "sydney": "Sydney",
+        "taipei": "Taipei",
+        "tokyo": "Tokyo"
+      },
       "description": "Sovrapposizione dashboard widget",
       "menu": {
         "about": "Informazioni su Dashboard",

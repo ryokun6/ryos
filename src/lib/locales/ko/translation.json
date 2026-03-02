@@ -972,6 +972,20 @@
       }
     },
     "dashboard": {
+      "cities": {
+        "berlin": "베를린",
+        "hongKong": "홍콩",
+        "local": "현지",
+        "london": "런던",
+        "newYork": "뉴욕",
+        "paris": "파리",
+        "sanFrancisco": "샌프란시스코",
+        "shanghai": "상하이",
+        "singapore": "싱가포르",
+        "sydney": "시드니",
+        "taipei": "타이베이",
+        "tokyo": "도쿄"
+      },
       "description": "위젯 대시보드 오버레이",
       "menu": {
         "about": "대시보드 정보",

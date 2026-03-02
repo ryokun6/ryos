@@ -972,6 +972,20 @@
       }
     },
     "dashboard": {
+      "cities": {
+        "berlin": "Берлин",
+        "hongKong": "Гонконг",
+        "local": "МЕСТНОЕ",
+        "london": "Лондон",
+        "newYork": "Нью-Йорк",
+        "paris": "Париж",
+        "sanFrancisco": "Сан-Франциско",
+        "shanghai": "Шанхай",
+        "singapore": "Сингапур",
+        "sydney": "Сидней",
+        "taipei": "Тайбэй",
+        "tokyo": "Токио"
+      },
       "description": "Наложение панели виджетов",
       "menu": {
         "about": "О Панели",

@@ -972,6 +972,20 @@
       }
     },
     "dashboard": {
+      "cities": {
+        "berlin": "Berlin",
+        "hongKong": "Hong Kong",
+        "local": "Local",
+        "london": "Londres",
+        "newYork": "New York",
+        "paris": "Paris",
+        "sanFrancisco": "San Francisco",
+        "shanghai": "Shanghai",
+        "singapore": "Singapour",
+        "sydney": "Sydney",
+        "taipei": "Taipei",
+        "tokyo": "Tokyo"
+      },
       "description": "Superposition du tableau de bord des widgets",
       "menu": {
         "about": "À propos du tableau de bord",

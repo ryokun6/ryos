@@ -2576,6 +2576,20 @@
         "selectCity": "Choose a city",
         "unavailable": "Weather unavailable"
       },
+      "cities": {
+        "newYork": "New York",
+        "london": "London",
+        "tokyo": "Tokyo",
+        "paris": "Paris",
+        "sydney": "Sydney",
+        "sanFrancisco": "San Francisco",
+        "berlin": "Berlin",
+        "singapore": "Singapore",
+        "shanghai": "Shanghai",
+        "hongKong": "Hong Kong",
+        "taipei": "Taipei",
+        "local": "LOCAL"
+      },
       "menu": {
         "help": "Dashboard Help",
         "about": "About Dashboard",

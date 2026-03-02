@@ -7,9 +7,9 @@ import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { appMetadata } from "../metadata";
 import { useDashboardLogic } from "../hooks/useDashboardLogic";
 import { WidgetChrome } from "@/components/layout/dashboard/WidgetChrome";
-import { ClockWidget } from "@/components/layout/dashboard/ClockWidget";
-import { CalendarWidget } from "@/components/layout/dashboard/CalendarWidget";
-import { WeatherWidget, WeatherEmojiOverflow } from "@/components/layout/dashboard/WeatherWidget";
+import { ClockWidget, ClockBackPanel } from "@/components/layout/dashboard/ClockWidget";
+import { CalendarWidget, CalendarBackPanel } from "@/components/layout/dashboard/CalendarWidget";
+import { WeatherWidget, WeatherEmojiOverflow, WeatherBackPanel } from "@/components/layout/dashboard/WeatherWidget";
 import { DashboardMenuBar } from "./DashboardMenuBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
@@ -19,11 +19,24 @@ import type { WidgetType } from "@/stores/useDashboardStore";
 function WidgetContent({ type, widgetId }: { type: string; widgetId: string }) {
   switch (type) {
     case "clock":
-      return <ClockWidget />;
+      return <ClockWidget widgetId={widgetId} />;
     case "calendar":
-      return <CalendarWidget />;
+      return <CalendarWidget widgetId={widgetId} />;
     case "weather":
       return <WeatherWidget widgetId={widgetId} />;
+    default:
+      return null;
+  }
+}
+
+function WidgetBackContent({ type, widgetId, onDone }: { type: string; widgetId: string; onDone: () => void }) {
+  switch (type) {
+    case "clock":
+      return <ClockBackPanel widgetId={widgetId} onDone={onDone} />;
+    case "calendar":
+      return <CalendarBackPanel widgetId={widgetId} />;
+    case "weather":
+      return <WeatherBackPanel widgetId={widgetId} onDone={onDone} />;
     default:
       return null;
   }
@@ -216,6 +229,7 @@ export function DashboardAppComponent({
                     stiffness: 300,
                     damping: 25,
                   }}
+                  style={{ zIndex: widget.zIndex ?? 1 }}
                 >
                   <WidgetChrome
                     width={widget.size.width}
@@ -227,6 +241,7 @@ export function DashboardAppComponent({
                     onMove={(pos) => moveWidget(widget.id, pos)}
                     onBringToFront={() => bringToFront(widget.id)}
                     overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
+                    backContent={(onFlipBack) => <WidgetBackContent type={widget.type} widgetId={widget.id} onDone={onFlipBack} />}
                   >
                     <WidgetContent type={widget.type} widgetId={widget.id} />
                   </WidgetChrome>
@@ -244,7 +259,7 @@ export function DashboardAppComponent({
                 )}
               </AnimatePresence>
 
-              {/* + Button — dark pill style matching karaoke/iPod controls */}
+              {/* + Button */}
               <motion.button
                 type="button"
                 initial={{ opacity: 0, scale: 0 }}

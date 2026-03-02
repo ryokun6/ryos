@@ -972,6 +972,20 @@
       }
     },
     "dashboard": {
+      "cities": {
+        "berlin": "Berlin",
+        "hongKong": "Hongkong",
+        "local": "LOKAL",
+        "london": "London",
+        "newYork": "New York",
+        "paris": "Paris",
+        "sanFrancisco": "San Francisco",
+        "shanghai": "Shanghai",
+        "singapore": "Singapur",
+        "sydney": "Sydney",
+        "taipei": "Taipeh",
+        "tokyo": "Tokio"
+      },
       "description": "Widget-Dashboard-Overlay",
       "menu": {
         "about": "Über das Dashboard",

@@ -972,6 +972,20 @@
       }
     },
     "dashboard": {
+      "cities": {
+        "berlin": "Berlim",
+        "hongKong": "Hong Kong",
+        "local": "LOCAL",
+        "london": "Londres",
+        "newYork": "Nova Iorque",
+        "paris": "Paris",
+        "sanFrancisco": "São Francisco",
+        "shanghai": "Xangai",
+        "singapore": "Singapura",
+        "sydney": "Sydney",
+        "taipei": "Taipé",
+        "tokyo": "Tóquio"
+      },
       "description": "Sobreposição do painel de widgets",
       "menu": {
         "about": "Sobre o Painel de Controlo",

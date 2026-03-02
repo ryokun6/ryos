@@ -1,13 +1,27 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { EventColor } from "./useCalendarStore";
 
 export type WidgetType = "clock" | "weather" | "calendar";
 
 export interface WeatherWidgetConfig {
   cityName?: string;
+  cityKey?: string;
   lat?: number;
   lon?: number;
 }
+
+export interface ClockWidgetConfig {
+  timezone?: string;
+  cityName?: string;
+  cityKey?: string;
+}
+
+export interface CalendarWidgetConfig {
+  hiddenColors?: EventColor[];
+}
+
+export type WidgetConfig = WeatherWidgetConfig | ClockWidgetConfig | CalendarWidgetConfig;
 
 export interface DashboardWidget {
   id: string;
@@ -15,7 +29,7 @@ export interface DashboardWidget {
   position: { x: number; y: number };
   size: { width: number; height: number };
   zIndex?: number;
-  config?: WeatherWidgetConfig;
+  config?: WidgetConfig;
 }
 
 interface DashboardStoreState {
@@ -25,7 +39,7 @@ interface DashboardStoreState {
   addWidget: (widget: Omit<DashboardWidget, "id">) => string;
   removeWidget: (id: string) => void;
   updateWidget: (id: string, updates: Partial<DashboardWidget>) => void;
-  updateWidgetConfig: (id: string, config: WeatherWidgetConfig | undefined) => void;
+  updateWidgetConfig: (id: string, config: WidgetConfig | undefined) => void;
   moveWidget: (id: string, position: { x: number; y: number }) => void;
   bringToFront: (id: string) => void;
   resetToDefaults: () => void;

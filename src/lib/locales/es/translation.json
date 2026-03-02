@@ -972,6 +972,20 @@
       }
     },
     "dashboard": {
+      "cities": {
+        "berlin": "Berlín",
+        "hongKong": "Hong Kong",
+        "local": "LOCAL",
+        "london": "Londres",
+        "newYork": "Nueva York",
+        "paris": "París",
+        "sanFrancisco": "San Francisco",
+        "shanghai": "Shanghái",
+        "singapore": "Singapur",
+        "sydney": "Sídney",
+        "taipei": "Taipéi",
+        "tokyo": "Tokio"
+      },
       "description": "Superposición del panel de widgets",
       "menu": {
         "about": "Acerca del Panel",

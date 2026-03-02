@@ -1,9 +1,10 @@
-import { useMemo } from "react";
-import { useCalendarStore, type CalendarEvent } from "@/stores/useCalendarStore";
+import { useMemo, useCallback } from "react";
+import { useCalendarStore, type CalendarEvent, type EventColor } from "@/stores/useCalendarStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useShallow } from "zustand/react/shallow";
 import { requestAppLaunch } from "@/utils/appEventBus";
 import { useTranslation } from "react-i18next";
+import { useDashboardStore, type CalendarWidgetConfig } from "@/stores/useDashboardStore";
 
 function getLocalizedDayHeaders(locale: string): string[] {
   const fmt = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
@@ -27,19 +28,32 @@ const EVENT_COLOR_MAP: Record<string, string> = {
   purple: "#A855F7",
 };
 
-export function CalendarWidget() {
+interface CalendarWidgetProps {
+  widgetId?: string;
+}
+
+export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
   const { i18n } = useTranslation();
   const locale = i18n.language || "en";
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
-  const { events, currentMonth, currentYear } = useCalendarStore(
+  const widget = useDashboardStore((s) => widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined);
+  const calConfig = widget?.config as CalendarWidgetConfig | undefined;
+  const hiddenColors = calConfig?.hiddenColors ?? [];
+
+  const { allEvents, currentMonth, currentYear } = useCalendarStore(
     useShallow((state) => ({
-      events: state.events,
+      allEvents: state.events,
       currentMonth: state.currentMonth,
       currentYear: state.currentYear,
     }))
   );
+
+  const events = useMemo(() => {
+    if (hiddenColors.length === 0) return allEvents;
+    return allEvents.filter((ev) => !hiddenColors.includes(ev.color));
+  }, [allEvents, hiddenColors]);
 
   const now = new Date();
   const todayStr = useMemo(() => {
@@ -252,6 +266,90 @@ export function CalendarWidget() {
         ))}
       </div>
 
+    </div>
+  );
+}
+
+const ALL_COLORS: { id: EventColor; label: string; hex: string }[] = [
+  { id: "blue", label: "Blue", hex: "#3B82F6" },
+  { id: "red", label: "Red", hex: "#EF4444" },
+  { id: "green", label: "Green", hex: "#22C55E" },
+  { id: "orange", label: "Orange", hex: "#F97316" },
+  { id: "purple", label: "Purple", hex: "#A855F7" },
+];
+
+export function CalendarBackPanel({ widgetId }: { widgetId: string }) {
+  const currentTheme = useThemeStore((state) => state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
+  const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
+  const calConfig = widget?.config as CalendarWidgetConfig | undefined;
+  const hiddenColors = calConfig?.hiddenColors ?? [];
+
+  const toggleColor = useCallback(
+    (color: EventColor) => {
+      const next = hiddenColors.includes(color)
+        ? hiddenColors.filter((c) => c !== color)
+        : [...hiddenColors, color];
+      updateWidgetConfig(widgetId, { hiddenColors: next.length > 0 ? next : undefined } as CalendarWidgetConfig);
+    },
+    [hiddenColors, widgetId, updateWidgetConfig]
+  );
+
+  const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.8)";
+
+  return (
+    <div className="px-3 pb-3" onPointerDown={(e) => e.stopPropagation()}>
+      <div
+        className="font-bold mb-2"
+        style={{
+          fontSize: 11,
+          color: isXpTheme ? "#333" : "rgba(255,255,255,0.5)",
+          fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+        }}
+      >
+        Show Colors
+      </div>
+      <div className="flex flex-col gap-1">
+        {ALL_COLORS.map((c) => {
+          const visible = !hiddenColors.includes(c.id);
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => toggleColor(c.id)}
+              className="flex items-center gap-2 px-2 py-1.5 rounded transition-colors"
+              style={{
+                opacity: visible ? 1 : 0.4,
+                background: visible
+                  ? isXpTheme ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)"
+                  : "transparent",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = visible
+                ? isXpTheme ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)"
+                : "transparent"
+              )}
+            >
+              <span
+                className="rounded-full"
+                style={{
+                  width: 10,
+                  height: 10,
+                  backgroundColor: c.hex,
+                  flexShrink: 0,
+                }}
+              />
+              <span className="text-[11px]" style={{ color: textColor, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
+                {c.label}
+              </span>
+              <span className="ml-auto text-[11px]" style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.4)" }}>
+                {visible ? "✓" : ""}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

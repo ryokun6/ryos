@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { useThemeStore } from "@/stores/useThemeStore";
-import { useDashboardStore } from "@/stores/useDashboardStore";
+import { useDashboardStore, type WeatherWidgetConfig } from "@/stores/useDashboardStore";
 import { MapPin, MagnifyingGlass, NavigationArrow } from "@phosphor-icons/react";
 
 interface DailyForecast {
@@ -27,18 +28,24 @@ interface CityResult {
   state?: string;
   lat: number;
   lon: number;
+  cityKey?: string;
 }
 
-const POPULAR_CITIES: CityResult[] = [
-  { name: "New York", country: "US", state: "NY", lat: 40.7128, lon: -74.006 },
-  { name: "London", country: "GB", lat: 51.5074, lon: -0.1278 },
-  { name: "Tokyo", country: "JP", lat: 35.6762, lon: 139.6503 },
-  { name: "Paris", country: "FR", lat: 48.8566, lon: 2.3522 },
-  { name: "Sydney", country: "AU", lat: -33.8688, lon: 151.2093 },
-  { name: "San Francisco", country: "US", state: "CA", lat: 37.7749, lon: -122.4194 },
-  { name: "Berlin", country: "DE", lat: 52.52, lon: 13.405 },
-  { name: "Singapore", country: "SG", lat: 1.3521, lon: 103.8198 },
-];
+function getPopularCities(t: TFunction): CityResult[] {
+  return [
+    { name: t("apps.dashboard.cities.newYork"), country: "US", state: "NY", lat: 40.7128, lon: -74.006, cityKey: "apps.dashboard.cities.newYork" },
+    { name: t("apps.dashboard.cities.london"), country: "GB", lat: 51.5074, lon: -0.1278, cityKey: "apps.dashboard.cities.london" },
+    { name: t("apps.dashboard.cities.tokyo"), country: "JP", lat: 35.6762, lon: 139.6503, cityKey: "apps.dashboard.cities.tokyo" },
+    { name: t("apps.dashboard.cities.paris"), country: "FR", lat: 48.8566, lon: 2.3522, cityKey: "apps.dashboard.cities.paris" },
+    { name: t("apps.dashboard.cities.sydney"), country: "AU", lat: -33.8688, lon: 151.2093, cityKey: "apps.dashboard.cities.sydney" },
+    { name: t("apps.dashboard.cities.sanFrancisco"), country: "US", state: "CA", lat: 37.7749, lon: -122.4194, cityKey: "apps.dashboard.cities.sanFrancisco" },
+    { name: t("apps.dashboard.cities.berlin"), country: "DE", lat: 52.52, lon: 13.405, cityKey: "apps.dashboard.cities.berlin" },
+    { name: t("apps.dashboard.cities.singapore"), country: "SG", lat: 1.3521, lon: 103.8198, cityKey: "apps.dashboard.cities.singapore" },
+    { name: t("apps.dashboard.cities.shanghai"), country: "CN", lat: 31.2304, lon: 121.4737, cityKey: "apps.dashboard.cities.shanghai" },
+    { name: t("apps.dashboard.cities.hongKong"), country: "HK", lat: 22.3193, lon: 114.1694, cityKey: "apps.dashboard.cities.hongKong" },
+    { name: t("apps.dashboard.cities.taipei"), country: "TW", lat: 25.033, lon: 121.5654, cityKey: "apps.dashboard.cities.taipei" },
+  ];
+}
 
 
 function getWeatherEmoji(code: number, isDay = true): string {
@@ -56,7 +63,6 @@ function getWeatherEmoji(code: number, isDay = true): string {
 
 function getSkyGradient(code: number, isDay: boolean): string {
   if (!isDay) {
-    // Night gradients
     if (code === 0)
       return "linear-gradient(180deg, #0B1A2E 0%, #1A2D4A 40%, #2A3F5C 100%)";
     if (code <= 3)
@@ -73,7 +79,6 @@ function getSkyGradient(code: number, isDay: boolean): string {
       return "linear-gradient(180deg, #0A0F15 0%, #181E28 40%, #252D38 100%)";
     return "linear-gradient(180deg, #0B1A2E 0%, #1A2D4A 40%, #2A3F5C 100%)";
   }
-  // Day gradients
   if (code === 0)
     return "linear-gradient(180deg, #4A90C4 0%, #7AB4D8 40%, #A8CBE0 100%)";
   if (code <= 3)
@@ -115,21 +120,18 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
   const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
-  const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
-  const cityConfig = widget?.config;
+  const cityConfig = widget?.config as WeatherWidgetConfig | undefined;
 
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [locationName, setLocationName] = useState<string>("");
+  const [geoLocationName, setGeoLocationName] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<CityResult[]>([]);
-  const [searching, setSearching] = useState(false);
 
-  const pickerRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const locationName = useMemo(() => {
+    if (cityConfig?.cityKey) return t(cityConfig.cityKey);
+    if (cityConfig?.cityName) return cityConfig.cityName;
+    return geoLocationName;
+  }, [cityConfig?.cityKey, cityConfig?.cityName, geoLocationName, t]);
 
   const fetchWeather = useCallback(async (lat: number, lon: number) => {
     try {
@@ -183,7 +185,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
           geoData.address?.village ||
           geoData.address?.county ||
           "";
-        setLocationName(city);
+        setGeoLocationName(city);
       }
     } catch {
       // Location name optional
@@ -194,9 +196,9 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
     setWeather(null);
     setError(null);
     setLoading(true);
+    setGeoLocationName("");
 
     if (cityConfig?.lat != null && cityConfig?.lon != null) {
-      setLocationName(cityConfig.cityName || "");
       fetchWeather(cityConfig.lat, cityConfig.lon);
       return;
     }
@@ -220,25 +222,207 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
     );
   }, [cityConfig?.lat, cityConfig?.lon, cityConfig?.cityName, fetchWeather, fetchLocationName, t]);
 
-  useEffect(() => {
-    if (!pickerOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setPickerOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", handleClick);
-    return () => document.removeEventListener("pointerdown", handleClick);
-  }, [pickerOpen]);
+  const needsCitySelection = !loading && error && !weather;
 
-  useEffect(() => {
-    if (pickerOpen) {
-      setTimeout(() => searchInputRef.current?.focus(), 50);
-    } else {
-      setSearchQuery("");
-      setSearchResults([]);
-    }
-  }, [pickerOpen]);
+  if (needsCitySelection) {
+    return (
+      <div
+        className="flex items-center justify-center p-4"
+        style={{
+          minHeight: 120,
+          color: isXpTheme ? "#666" : "rgba(255,255,255,0.45)",
+          fontSize: 11,
+          fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+        }}
+      >
+        {t("apps.dashboard.weather.selectCity")}
+      </div>
+    );
+  }
+
+  if (isXpTheme) {
+    if (loading)
+      return (
+        <div
+          className="flex items-center justify-center p-4 text-xs text-gray-500"
+          style={{ minHeight: 120 }}
+        >
+          {t("apps.dashboard.weather.loading")}
+        </div>
+      );
+    if (!weather) return null;
+    return (
+      <div className="p-3 text-black">
+        <span
+          className="font-bold truncate"
+          style={{ fontSize: 14, color: "#888", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
+        >
+          {locationName || "—"}
+        </span>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-2xl">{getWeatherEmoji(weather.weatherCode, weather.isDay)}</span>
+          <div>
+            <div className="text-xl font-light">{weather.temperature}°</div>
+            <div className="text-[10px] text-gray-500">
+              H: {weather.temperatureMax}° L: {weather.temperatureMin}°
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div
+        className="flex items-center justify-center"
+        style={{
+          color: "rgba(255,255,255,0.4)",
+          minHeight: 180,
+          background: "linear-gradient(180deg, #5A8AAF 0%, #8BAFC5 40%, #B0C8D8 100%)",
+          borderRadius: "inherit",
+        }}
+      >
+        <span className="text-xs">{t("apps.dashboard.weather.loading")}</span>
+      </div>
+    );
+  }
+
+  if (!weather) return null;
+
+  const textShadow = "0 1px 3px rgba(0,0,0,0.4)";
+
+  return (
+    <div
+      className="flex flex-col flex-1"
+      style={{ borderRadius: "inherit" }}
+    >
+      <div
+        className="relative px-3 py-3 flex flex-1"
+        style={{ background: getSkyGradient(weather.weatherCode, weather.isDay) }}
+      >
+        <div className="flex flex-col justify-center flex-1 min-w-0" style={{ zIndex: 1, marginTop: -8 }}>
+          <div
+            className="font-medium"
+            style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", textShadow, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
+          >
+            H: {weather.temperatureMax}°
+          </div>
+          <span
+            className="font-bold truncate"
+            style={{
+              fontSize: 14,
+              color: "#FFF",
+              maxWidth: 180,
+              textShadow: "0 1px 3px rgba(0,0,0,0.4)",
+              fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+            }}
+          >
+            {locationName || "—"}
+          </span>
+          <div
+            className="font-medium"
+            style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", textShadow, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
+          >
+            L: {weather.temperatureMin}°
+          </div>
+        </div>
+
+        <div className="flex items-center shrink-0" style={{ marginTop: -8 }}>
+          <span
+            className="font-light leading-none"
+            style={{
+              fontSize: 64,
+              letterSpacing: "-0.04em",
+              color: "#FFF",
+              textShadow: "0 2px 8px rgba(0,0,0,0.25)",
+              fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+            }}
+          >
+            {weather.temperature}°
+          </span>
+        </div>
+      </div>
+
+      {weather.forecast.length > 0 && (
+        <div>
+          <div
+            className="flex"
+            style={{
+              background: weather.isDay
+                ? "linear-gradient(180deg, rgba(100,140,180,0.7) 0%, rgba(80,120,160,0.6) 100%)"
+                : "linear-gradient(180deg, rgba(30,45,65,0.8) 0%, rgba(20,35,55,0.7) 100%)",
+              borderTop: "1px solid rgba(255,255,255,0.15)",
+              borderBottom: "1px solid rgba(0,0,0,0.15)",
+            }}
+          >
+            {weather.forecast.map((day) => (
+              <div key={day.dayLabel} className="flex-1 text-center py-1">
+                <span
+                  className="font-bold tracking-wide"
+                  style={{ fontSize: 11, color: "#FFF", textShadow: "0 1px 2px rgba(0,0,0,0.3)", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
+                >
+                  {day.dayLabel}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div
+            className="flex"
+            style={{
+              background: weather.isDay
+                ? "linear-gradient(180deg, rgba(50,60,75,0.85) 0%, rgba(35,45,55,0.9) 100%)"
+                : "linear-gradient(180deg, rgba(15,22,35,0.9) 0%, rgba(10,16,28,0.95) 100%)",
+            }}
+          >
+            {weather.forecast.map((day) => (
+              <div key={day.dayLabel} className="flex-1 flex flex-col items-center py-2 gap-1">
+                <span style={{ fontSize: 24, lineHeight: 1 }}>
+                  {getWeatherEmoji(day.weatherCode)}
+                </span>
+                <span
+                  className="font-semibold"
+                  style={{ fontSize: 16, color: "rgba(255,255,255,0.85)", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
+                >
+                  {day.tempHigh}°
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function WeatherEmojiOverflow({ widgetId }: { widgetId: string }) {
+  const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
+  const weather = useWeatherCache(widgetId);
+  if (!weather || !widget) return null;
+
+  return (
+    <div className="absolute inset-x-0 flex items-center justify-center pointer-events-none" style={{ top: -16, zIndex: 10 }}>
+      <span style={{ fontSize: 100, lineHeight: 1, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", opacity: 0.9 }}>
+        {getWeatherEmoji(weather.weatherCode, weather.isDay)}
+      </span>
+    </div>
+  );
+}
+
+// Back panel: city picker for the weather widget settings
+export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDone?: () => void }) {
+  const { t } = useTranslation();
+  const popularCities = useMemo(() => getPopularCities(t), [t]);
+  const currentTheme = useThemeStore((state) => state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<CityResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const searchCities = useCallback(async (query: string) => {
     if (query.length < 2) {
@@ -255,8 +439,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
         const data = await res.json();
         const results: CityResult[] = data
           .filter((r: { type: string; class: string }) =>
-            ["city", "town", "village", "administrative"].includes(r.type) ||
-            r.class === "place"
+            ["city", "town", "village", "administrative"].includes(r.type) || r.class === "place"
           )
           .slice(0, 5)
           .map((r: { address?: { city?: string; town?: string; village?: string; state?: string; country_code?: string }; display_name?: string; lat: string; lon: string }) => ({
@@ -285,37 +468,27 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
 
   const selectCity = useCallback(
     (city: CityResult) => {
-      updateWidgetConfig(widgetId, {
-        cityName: city.name,
-        lat: city.lat,
-        lon: city.lon,
-      });
-      setPickerOpen(false);
+      updateWidgetConfig(widgetId, { cityName: city.name, cityKey: city.cityKey, lat: city.lat, lon: city.lon } as WeatherWidgetConfig);
+      onDone?.();
     },
-    [widgetId, updateWidgetConfig]
+    [widgetId, updateWidgetConfig, onDone]
   );
 
   const useMyLocation = useCallback(() => {
     updateWidgetConfig(widgetId, undefined);
-    setPickerOpen(false);
-  }, [widgetId, updateWidgetConfig]);
+    onDone?.();
+  }, [widgetId, updateWidgetConfig, onDone]);
 
-  const citiesToShow = searchQuery.length >= 2 ? searchResults : POPULAR_CITIES;
-  const needsCitySelection = !loading && error && !weather;
+  const citiesToShow = searchQuery.length >= 2 ? searchResults : popularCities;
+  const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.8)";
 
-  const cityPickerList = (
-    <>
+  return (
+    <div onPointerDown={(e) => e.stopPropagation()}>
       <div
-        className="flex items-center gap-1.5 px-2 py-1.5"
-        style={{
-          borderBottom: isXpTheme ? "1px solid #D5D2CA" : "1px solid rgba(255,255,255,0.08)",
-        }}
+        className="flex items-center gap-1.5 px-3 py-1.5"
+        style={{ borderBottom: isXpTheme ? "1px solid #D5D2CA" : "1px solid rgba(255,255,255,0.08)" }}
       >
-        <MagnifyingGlass
-          size={12}
-          weight="bold"
-          style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.35)", flexShrink: 0 }}
-        />
+        <MagnifyingGlass size={12} weight="bold" style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.35)", flexShrink: 0 }} />
         <input
           ref={searchInputRef}
           type="text"
@@ -323,27 +496,20 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
           onChange={(e) => handleSearchInput(e.target.value)}
           placeholder={t("apps.dashboard.weather.searchCity")}
           className="flex-1 bg-transparent outline-none text-[11px]"
-          style={{
-            color: isXpTheme ? "#000" : "rgba(255,255,255,0.9)",
-            caretColor: isXpTheme ? "#000" : "rgba(255,255,255,0.7)",
-          }}
+          style={{ color: textColor, caretColor: isXpTheme ? "#000" : "rgba(255,255,255,0.7)" }}
         />
       </div>
 
-      <div className="overflow-y-auto" style={{ maxHeight: 190 }}>
+      <div className="overflow-y-auto" style={{ maxHeight: 200 }}>
         <button
           type="button"
           onClick={useMyLocation}
-          className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left transition-colors"
+          className="w-full flex items-center gap-1.5 px-3 py-1.5 text-left transition-colors"
           style={{
             borderBottom: isXpTheme ? "1px solid #EAE8E1" : "1px solid rgba(255,255,255,0.05)",
             color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
           }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.background = isXpTheme
-              ? "rgba(0,102,204,0.08)"
-              : "rgba(255,255,255,0.06)")
-          }
+          onMouseEnter={(e) => (e.currentTarget.style.background = isXpTheme ? "rgba(0,102,204,0.08)" : "rgba(255,255,255,0.06)")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
         >
           <NavigationArrow size={11} weight="fill" style={{ flexShrink: 0 }} />
@@ -351,17 +517,11 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
         </button>
 
         {searching ? (
-          <div
-            className="px-2 py-3 text-center text-[10px]"
-            style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.3)" }}
-          >
+          <div className="px-3 py-3 text-center text-[10px]" style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.3)" }}>
             {t("apps.dashboard.weather.searching")}
           </div>
         ) : searchQuery.length >= 2 && citiesToShow.length === 0 ? (
-          <div
-            className="px-2 py-3 text-center text-[10px]"
-            style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.3)" }}
-          >
+          <div className="px-3 py-3 text-center text-[10px]" style={{ color: isXpTheme ? "#888" : "rgba(255,255,255,0.3)" }}>
             {t("apps.dashboard.weather.noResults")}
           </div>
         ) : (
@@ -370,273 +530,16 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
               key={`${city.lat}-${city.lon}-${i}`}
               type="button"
               onClick={() => selectCity(city)}
-              className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left transition-colors"
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = isXpTheme
-                  ? "rgba(0,102,204,0.08)"
-                  : "rgba(255,255,255,0.06)")
-              }
+              className="w-full flex items-center gap-1.5 px-3 py-1.5 text-left transition-colors"
+              onMouseEnter={(e) => (e.currentTarget.style.background = isXpTheme ? "rgba(0,102,204,0.08)" : "rgba(255,255,255,0.06)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
-              <MapPin
-                size={10}
-                weight="fill"
-                style={{
-                  color: isXpTheme ? "#999" : "rgba(255,255,255,0.25)",
-                  flexShrink: 0,
-                }}
-              />
-              <span
-                className="text-[11px] truncate"
-                style={{ color: isXpTheme ? "#000" : "rgba(255,255,255,0.8)" }}
-              >
-                {formatCityLabel(city)}
-              </span>
+              <MapPin size={10} weight="fill" style={{ color: isXpTheme ? "#999" : "rgba(255,255,255,0.25)", flexShrink: 0 }} />
+              <span className="text-[11px] truncate" style={{ color: textColor }}>{formatCityLabel(city)}</span>
             </button>
           ))
         )}
       </div>
-    </>
-  );
-
-  const cityPickerDropdown = (
-    <div
-      ref={pickerRef}
-      className="absolute left-0 right-0 z-50"
-      style={{
-        top: "100%",
-        marginTop: 2,
-      }}
-      onPointerDown={(e) => e.stopPropagation()}
-    >
-      <div
-        className="overflow-hidden"
-        style={{
-          borderRadius: isXpTheme ? 4 : 10,
-          background: isXpTheme
-            ? "rgba(255,255,255,0.97)"
-            : "linear-gradient(to bottom, rgba(55,55,55,0.97), rgba(30,30,30,0.98))",
-          border: isXpTheme ? "1px solid #ACA899" : "1px solid rgba(255,255,255,0.15)",
-          boxShadow: isXpTheme
-            ? "1px 2px 8px rgba(0,0,0,0.35)"
-            : "0 8px 24px rgba(0,0,0,0.6), 0 2px 6px rgba(0,0,0,0.3)",
-          maxHeight: 240,
-        }}
-      >
-        {cityPickerList}
-      </div>
-    </div>
-  );
-
-  const locationButton = (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setPickerOpen((v) => !v);
-        }}
-        className="flex items-center gap-0.5 transition-opacity hover:opacity-80"
-        style={{ cursor: "pointer" }}
-        title={t("apps.dashboard.weather.changeCity")}
-      >
-        <span
-          className="font-bold truncate"
-          style={{
-            fontSize: 14,
-            color: isXpTheme ? "#888" : "#FFF",
-            maxWidth: 180,
-            textShadow: isXpTheme ? "none" : "0 1px 3px rgba(0,0,0,0.4)",
-            fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-          }}
-        >
-          {locationName || "—"}
-        </span>
-      </button>
-      {pickerOpen && cityPickerDropdown}
-    </div>
-  );
-
-  if (needsCitySelection) {
-    return (
-      <div onPointerDown={(e) => e.stopPropagation()}>
-        <div
-          className="px-2 pt-2 pb-1 text-center text-[10px]"
-          style={{ color: isXpTheme ? "#666" : "rgba(255,255,255,0.45)" }}
-        >
-          {t("apps.dashboard.weather.selectCity")}
-        </div>
-        {cityPickerList}
-      </div>
-    );
-  }
-
-  // XP theme
-  if (isXpTheme) {
-    if (loading)
-      return (
-        <div
-          className="flex items-center justify-center p-4 text-xs text-gray-500"
-          style={{ minHeight: 120 }}
-        >
-          {t("apps.dashboard.weather.loading")}
-        </div>
-      );
-    if (!weather) return null;
-    return (
-      <div className="p-3 text-black">
-        {locationButton}
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-2xl">{getWeatherEmoji(weather.weatherCode, weather.isDay)}</span>
-          <div>
-            <div className="text-xl font-light">{weather.temperature}°</div>
-            <div className="text-[10px] text-gray-500">
-              H: {weather.temperatureMax}° L: {weather.temperatureMin}°
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Tiger Dashboard style
-  if (loading) {
-    return (
-      <div
-        className="flex items-center justify-center"
-        style={{
-          color: "rgba(255,255,255,0.4)",
-          minHeight: 180,
-          background: "linear-gradient(180deg, #5A8AAF 0%, #8BAFC5 40%, #B0C8D8 100%)",
-          borderRadius: "inherit",
-        }}
-      >
-        <span className="text-xs">{t("apps.dashboard.weather.loading")}</span>
-      </div>
-    );
-  }
-
-  if (!weather) return null;
-
-  const textShadow = "0 1px 3px rgba(0,0,0,0.4)";
-
-  return (
-    <div
-      className="flex flex-col flex-1"
-      style={{ borderRadius: "inherit" }}
-    >
-
-      {/* Sky section — weather-tinted gradient with city, H/L, and temp */}
-      <div
-        className="relative px-3 py-3 flex flex-1"
-        style={{ background: getSkyGradient(weather.weatherCode, weather.isDay) }}
-      >
-        {/* Left: H/L + City name */}
-        <div className="flex flex-col justify-center flex-1 min-w-0" style={{ zIndex: 1, marginTop: -8 }}>
-          <div
-            className="font-medium"
-            style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", textShadow, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
-          >
-            H: {weather.temperatureMax}°
-          </div>
-          {locationButton}
-          <div
-            className="font-medium"
-            style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", textShadow, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
-          >
-            L: {weather.temperatureMin}°
-          </div>
-        </div>
-
-        {/* Right: Big temperature */}
-        <div className="flex items-center shrink-0" style={{ marginTop: -8 }}>
-          <span
-            className="font-light leading-none"
-            style={{
-              fontSize: 64,
-              letterSpacing: "-0.04em",
-              color: "#FFF",
-              textShadow: "0 2px 8px rgba(0,0,0,0.25)",
-              fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-            }}
-          >
-            {weather.temperature}°
-          </span>
-        </div>
-      </div>
-
-      {/* Forecast strip */}
-      {weather.forecast.length > 0 && (
-        <div>
-          {/* Day labels bar */}
-          <div
-            className="flex"
-            style={{
-              background: weather.isDay
-                ? "linear-gradient(180deg, rgba(100,140,180,0.7) 0%, rgba(80,120,160,0.6) 100%)"
-                : "linear-gradient(180deg, rgba(30,45,65,0.8) 0%, rgba(20,35,55,0.7) 100%)",
-              borderTop: "1px solid rgba(255,255,255,0.15)",
-              borderBottom: "1px solid rgba(0,0,0,0.15)",
-            }}
-          >
-            {weather.forecast.map((day) => (
-              <div
-                key={day.dayLabel}
-                className="flex-1 text-center py-1"
-              >
-                <span
-                  className="font-bold tracking-wide"
-                  style={{ fontSize: 11, color: "#FFF", textShadow: "0 1px 2px rgba(0,0,0,0.3)", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
-                >
-                  {day.dayLabel}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Icons + temps */}
-          <div
-            className="flex"
-            style={{
-              background: weather.isDay
-                ? "linear-gradient(180deg, rgba(50,60,75,0.85) 0%, rgba(35,45,55,0.9) 100%)"
-                : "linear-gradient(180deg, rgba(15,22,35,0.9) 0%, rgba(10,16,28,0.95) 100%)",
-            }}
-          >
-            {weather.forecast.map((day) => (
-              <div
-                key={day.dayLabel}
-                className="flex-1 flex flex-col items-center py-2 gap-1"
-              >
-                <span style={{ fontSize: 24, lineHeight: 1 }}>
-                  {getWeatherEmoji(day.weatherCode)}
-                </span>
-                <span
-                  className="font-semibold"
-                  style={{ fontSize: 16, color: "rgba(255,255,255,0.85)", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
-                >
-                  {day.tempHigh}°
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-    </div>
-  );
-}
-
-export function WeatherEmojiOverflow({ widgetId }: { widgetId: string }) {
-  const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
-  const weather = useWeatherCache(widgetId);
-  if (!weather || !widget) return null;
-
-  return (
-    <div className="absolute inset-x-0 flex items-center justify-center pointer-events-none" style={{ top: -16, zIndex: 10 }}>
-      <span style={{ fontSize: 100, lineHeight: 1, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", opacity: 0.9 }}>
-        {getWeatherEmoji(weather.weatherCode, weather.isDay)}
-      </span>
     </div>
   );
 }
