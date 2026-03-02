@@ -260,10 +260,19 @@ export function EventDialog({
           placeholder={t("apps.calendar.event.notes")}
           rows={2}
           className={cn(
-            "flex w-full rounded-md border border-input bg-background px-3 py-1.5 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none shadow-none",
+            "flex w-full rounded-md border border-input bg-transparent px-3 py-1.5 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none shadow-none",
             themeFont
           )}
-          style={themeFontStyle}
+          style={{
+            ...themeFontStyle,
+            ...(isMacTheme ? {
+              border: "1px solid rgba(0, 0, 0, 0.2)",
+              backgroundColor: "rgba(255, 255, 255, 1)",
+              boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.1)",
+              fontSize: "12px",
+              fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif',
+            } : {}),
+          }}
         />
       </div>
 
