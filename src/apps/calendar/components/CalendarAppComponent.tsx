@@ -86,10 +86,7 @@ function MiniCalendar({
           <div
             key={i}
             className={cn("text-center text-[9px] font-medium", isMacOSTheme && "font-geneva-12")}
-            style={{
-              color: i === 0 || i === 6 ? (isXpTheme ? "#CC0000" : "#FF3B30") : undefined,
-              opacity: 0.5,
-            }}
+            style={{ opacity: 0.5 }}
           >
             {d}
           </div>
@@ -115,13 +112,13 @@ function MiniCalendar({
                   borderRadius: "50%",
                   backgroundColor:
                     cell.date === todayStr
-                      ? "var(--os-color-selection-bg, #007AFF)"
+                      ? isXpTheme ? "#CC0000" : "#FF3B30"
                       : cell.date === selectedDate
                         ? isXpTheme ? "#316AC5" : "rgba(0,122,255,0.15)"
                         : "transparent",
                   color:
                     cell.date === todayStr
-                      ? "var(--os-color-selection-text, #FFF)"
+                      ? "#FFF"
                       : cell.date === selectedDate && isXpTheme
                         ? "#FFF"
                         : undefined,
@@ -204,7 +201,7 @@ function WeekTimeGrid({
                 ? isMacOSTheme ? "rgba(56,117,215,0.1)" : isXpTheme ? "rgba(49,106,197,0.12)" : "rgba(0,0,0,0.06)"
                 : "transparent",
               borderBottom: day.isToday
-                ? `2px solid var(--os-color-selection-bg, #007AFF)`
+                ? `2px solid ${isXpTheme ? "#CC0000" : "#FF3B30"}`
                 : "2px solid transparent",
             }}
           >
@@ -212,7 +209,7 @@ function WeekTimeGrid({
             <div
               className="text-sm font-semibold leading-tight mt-0.5"
               style={{
-                color: day.isToday ? "var(--os-color-selection-bg, #007AFF)" : undefined,
+                color: day.isToday ? (isXpTheme ? "#CC0000" : "#FF3B30") : undefined,
               }}
             >
               {day.dayOfMonth}
@@ -589,10 +586,7 @@ function MonthGrid({
           <div
             key={i}
             className="text-center text-[10px] font-medium py-1 select-none"
-            style={{
-              color: i === 0 || i === 6 ? (isXpTheme ? "#CC0000" : "#FF3B30") : undefined,
-              opacity: 0.5,
-            }}
+            style={{ opacity: 0.5 }}
           >
             {d}
           </div>
@@ -621,8 +615,8 @@ function MonthGrid({
                   style={{
                     width: 18, height: 18, lineHeight: "18px", textAlign: "center",
                     borderRadius: "50%", display: "inline-block",
-                    backgroundColor: cell.isToday ? "var(--os-color-selection-bg, #007AFF)" : "transparent",
-                    color: cell.isToday ? "var(--os-color-selection-text, #FFF)" : undefined,
+                    backgroundColor: cell.isToday ? (isXpTheme ? "#CC0000" : "#FF3B30") : "transparent",
+                    color: cell.isToday ? "#FFF" : undefined,
                   }}
                 >
                   {cell.day}
