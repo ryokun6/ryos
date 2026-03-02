@@ -271,6 +271,7 @@ export function DashboardAppComponent({
                     x={widget.position.x}
                     y={widget.position.y}
                     zIndex={widget.zIndex ?? 1}
+                    borderRadius={widget.type === "ipod" ? "9999px" : undefined}
                     onRemove={() => removeWidget(widget.id)}
                     onMove={(pos) => moveWidget(widget.id, pos)}
                     onBringToFront={() => bringToFront(widget.id)}
