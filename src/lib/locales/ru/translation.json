@@ -972,6 +972,16 @@
       }
     },
     "dashboard": {
+      "calendar": {
+        "colors": {
+          "blue": "Синий",
+          "green": "Зеленый",
+          "orange": "Оранжевый",
+          "purple": "Фиолетовый",
+          "red": "Красный"
+        },
+        "showColors": "Показать цвета"
+      },
       "cities": {
         "berlin": "Берлин",
         "hongKong": "Гонконг",
@@ -987,6 +997,32 @@
         "tokyo": "Токио"
       },
       "description": "Наложение панели виджетов",
+      "dictionary": {
+        "dataSources": "Данные получены из Wiktionary и других открытых словарей. Результаты для редких слов могут отличаться.",
+        "error": "Поиск не удался.",
+        "loading": "Поиск…",
+        "noDefinition": "Определение не найдено.",
+        "noResults": "Нет результатов.",
+        "placeholder": "Введите слово для поиска.",
+        "poweredBy": "Определения предоставлены Free Dictionary API, проектом с открытым исходным кодом.",
+        "searchPlaceholder": "Поиск…",
+        "thesaurus": "Тезаурус",
+        "title": "Словарь"
+      },
+      "ipod": {
+        "iTunesNotOpen": "iTunes не запущен",
+        "menu": "МЕНЮ",
+        "next": "Далее",
+        "noTrack": "Нет трека",
+        "nowPlaying": "Сейчас играет",
+        "openIpod": "Открыть приложение iPod",
+        "pause": "Пауза",
+        "play": "Воспроизвести",
+        "previous": "Предыдущий",
+        "repeatAll": "Повторять все",
+        "repeatOne": "Повторять один",
+        "shuffle": "Перемешать"
+      },
       "menu": {
         "about": "О Панели",
         "addWidget": "Добавить виджет",
@@ -994,7 +1030,43 @@
         "resetWidgets": "Сбросить до значений по умолчанию"
       },
       "name": "Панель",
+      "stickyNote": {
+        "colors": {
+          "blue": "Синий",
+          "green": "Зеленый",
+          "pink": "Розовый",
+          "purple": "Фиолетовый",
+          "yellow": "Желтый"
+        },
+        "noteColor": "Цвет заметки",
+        "placeholder": "Введите заметку..."
+      },
+      "stocks": {
+        "allAdded": "Все символы добавлены",
+        "currentSymbols": "Текущие символы",
+        "delayed": "Задержка до 20 минут",
+        "loading": "Загрузка акций...",
+        "noResults": "Символы не найдены",
+        "resetDefaults": "Сбросить к значениям по умолчанию",
+        "retry": "Повторить",
+        "searchSymbol": "Поиск символов...",
+        "searching": "Поиск...",
+        "unavailable": "Данные о котировках недоступны"
+      },
       "title": "Панель",
+      "translation": {
+        "defaultLanguages": "Языки по умолчанию",
+        "error": "Перевод не удался",
+        "from": "С",
+        "inputPlaceholder": "Введите текст...",
+        "outputPlaceholder": "Перевод",
+        "poweredBy": "На базе MyMemory",
+        "save": "Сохранить",
+        "swap": "Поменять языки местами",
+        "to": "На",
+        "translateFrom": "Перевести с",
+        "translating": "Перевод..."
+      },
       "weather": {
         "changeCity": "Изменить город",
         "enableLocation": "Включить определение местоположения для погоды",
@@ -1014,7 +1086,12 @@
         "addWidget": "Добавить виджет...",
         "calendar": "Календарь",
         "clock": "Часы",
+        "dictionary": "Словарь",
+        "ipod": "iPod",
         "removeWidget": "Удалить виджет",
+        "stickyNote": "Стикер",
+        "stocks": "Акции",
+        "translation": "Перевод",
         "weather": "Погода"
       }
     },
@@ -2693,6 +2770,7 @@
       "reloadDesktop": "Перезагрузить Рабочий стол"
     },
     "errors": {
+      "failedToAccessCamera": "Не удалось получить доступ к камере",
       "failedToFetchFurigana": "Не удалось получить фуригану",
       "failedToFetchSoramimi": "Не удалось получить сорамими"
     },
@@ -2720,9 +2798,11 @@
       "toggleSplitView": "Переключить разделенный вид"
     },
     "keys": {
-      "enter": "Ввод"
+      "enter": "Ввод",
+      "escape": "Отмена"
     },
     "loading": {
+      "default": "Загрузка...",
       "openingAppletStore": "Открытие Applet Store...",
       "openingSharedApplet": "Открытие общего апплета...",
       "openingSharedIELink": "Открытие общей ссылки Internet Explorer...",
@@ -2805,7 +2885,9 @@
       "close": "Закрыть",
       "fullscreen": "На весь экран",
       "maximize": "Развернуть",
-      "minimize": "Свернуть"
+      "maximizeDisabled": "Развернуть (отключено)",
+      "minimize": "Свернуть",
+      "minimizeDisabled": "Свернуть (отключено)"
     }
   },
   "components": {

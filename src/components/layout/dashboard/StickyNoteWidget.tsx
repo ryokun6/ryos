@@ -13,11 +13,11 @@ interface StickyNoteWidgetProps {
 }
 
 const NOTE_COLORS = [
-  { name: "Yellow", value: "#FFFFA5" },
-  { name: "Pink", value: "#FFB8D1" },
-  { name: "Blue", value: "#B8D4FF" },
-  { name: "Green", value: "#B8FFB8" },
-  { name: "Purple", value: "#D4B8FF" },
+  { id: "yellow", value: "#FFFFA5" },
+  { id: "pink", value: "#FFB8D1" },
+  { id: "blue", value: "#B8D4FF" },
+  { id: "green", value: "#B8FFB8" },
+  { id: "purple", value: "#D4B8FF" },
 ];
 
 const FONT_STACK = `"Marker Felt", "Comic Sans MS", "Bradley Hand", cursive`;
@@ -267,7 +267,7 @@ export function StickyNoteBackPanel({
           <button
             key={c.value}
             type="button"
-            title={c.name}
+            title={t(`apps.dashboard.stickyNote.colors.${c.id}`, c.id)}
             onClick={() => selectColor(c.value)}
             style={{
               width: 28,
@@ -295,7 +295,7 @@ export function StickyNoteBackPanel({
       </div>
 
       <span className="text-[10px]" style={{ color: labelColor }}>
-        {NOTE_COLORS.find((c) => c.value === currentColor)?.name || "Yellow"}
+        {t(`apps.dashboard.stickyNote.colors.${NOTE_COLORS.find((c) => c.value === currentColor)?.id ?? "yellow"}`, "Yellow")}
       </span>
     </div>
   );

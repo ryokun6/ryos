@@ -972,6 +972,16 @@
       }
     },
     "dashboard": {
+      "calendar": {
+        "colors": {
+          "blue": "Bleu",
+          "green": "Vert",
+          "orange": "Orange",
+          "purple": "Violet",
+          "red": "Rouge"
+        },
+        "showColors": "Afficher les couleurs"
+      },
       "cities": {
         "berlin": "Berlin",
         "hongKong": "Hong Kong",
@@ -987,6 +997,32 @@
         "tokyo": "Tokyo"
       },
       "description": "Superposition du tableau de bord des widgets",
+      "dictionary": {
+        "dataSources": "Données provenant de Wiktionary et d'autres dictionnaires ouverts. Les résultats peuvent varier pour les mots rares.",
+        "error": "Échec de la recherche.",
+        "loading": "Recherche en cours…",
+        "noDefinition": "Aucune définition trouvée.",
+        "noResults": "Aucun résultat.",
+        "placeholder": "Saisissez un mot pour le rechercher.",
+        "poweredBy": "Définitions fournies par l'API Free Dictionary, un projet open source.",
+        "searchPlaceholder": "Rechercher…",
+        "thesaurus": "Thésaurus",
+        "title": "Dictionnaire"
+      },
+      "ipod": {
+        "iTunesNotOpen": "iTunes n'est pas ouvert",
+        "menu": "MENU",
+        "next": "Suivant",
+        "noTrack": "Aucune piste",
+        "nowPlaying": "Lecture en cours",
+        "openIpod": "Ouvrir l'app iPod",
+        "pause": "Pause",
+        "play": "Lecture",
+        "previous": "Précédent",
+        "repeatAll": "Répéter tout",
+        "repeatOne": "Répéter un",
+        "shuffle": "Aléatoire"
+      },
       "menu": {
         "about": "À propos du tableau de bord",
         "addWidget": "Ajouter un widget",
@@ -994,7 +1030,43 @@
         "resetWidgets": "Rétablir les valeurs par défaut"
       },
       "name": "Tableau de bord",
+      "stickyNote": {
+        "colors": {
+          "blue": "Bleu",
+          "green": "Vert",
+          "pink": "Rose",
+          "purple": "Violet",
+          "yellow": "Jaune"
+        },
+        "noteColor": "Couleur de la note",
+        "placeholder": "Saisir une note..."
+      },
+      "stocks": {
+        "allAdded": "Tous les symboles ajoutés",
+        "currentSymbols": "Symboles actuels",
+        "delayed": "Retardé jusqu'à 20 minutes",
+        "loading": "Chargement des actions...",
+        "noResults": "Aucun symbole trouvé",
+        "resetDefaults": "Rétablir les valeurs par défaut",
+        "retry": "Réessayer",
+        "searchSymbol": "Rechercher des symboles...",
+        "searching": "Recherche en cours...",
+        "unavailable": "Données boursières indisponibles"
+      },
       "title": "Tableau de bord",
+      "translation": {
+        "defaultLanguages": "Langues par défaut",
+        "error": "Échec de la traduction",
+        "from": "De",
+        "inputPlaceholder": "Saisir du texte...",
+        "outputPlaceholder": "Traduction",
+        "poweredBy": "Propulsé par MyMemory",
+        "save": "Enregistrer",
+        "swap": "Inverser les langues",
+        "to": "À",
+        "translateFrom": "Traduire depuis",
+        "translating": "Traduction en cours..."
+      },
       "weather": {
         "changeCity": "Changer de ville",
         "enableLocation": "Activer la localisation pour la météo",
@@ -1014,7 +1086,12 @@
         "addWidget": "Ajouter un widget...",
         "calendar": "Calendrier",
         "clock": "Horloge",
+        "dictionary": "Dictionnaire",
+        "ipod": "iPod",
         "removeWidget": "Supprimer le widget",
+        "stickyNote": "Note adhésive",
+        "stocks": "Bourse",
+        "translation": "Traduction",
         "weather": "Météo"
       }
     },
@@ -2693,6 +2770,7 @@
       "reloadDesktop": "Recharger le Bureau"
     },
     "errors": {
+      "failedToAccessCamera": "Impossible d'accéder à la caméra",
       "failedToFetchFurigana": "Impossible de récupérer le furigana",
       "failedToFetchSoramimi": "Impossible de récupérer le soramimi"
     },
@@ -2720,9 +2798,11 @@
       "toggleSplitView": "Basculer l'affichage fractionné"
     },
     "keys": {
-      "enter": "Entrer"
+      "enter": "Entrer",
+      "escape": "Échap"
     },
     "loading": {
+      "default": "Chargement...",
       "openingAppletStore": "Ouverture de l'Applet Store...",
       "openingSharedApplet": "Ouverture de l'applet partagée...",
       "openingSharedIELink": "Ouverture du lien Internet Explorer partagé...",
@@ -2820,7 +2900,9 @@
       "close": "Fermer",
       "fullscreen": "Plein écran",
       "maximize": "Agrandir",
-      "minimize": "Réduire"
+      "maximizeDisabled": "Agrandir (désactivé)",
+      "minimize": "Réduire",
+      "minimizeDisabled": "Réduire (désactivé)"
     }
   },
   "components": {

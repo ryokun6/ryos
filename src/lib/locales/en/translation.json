@@ -2559,31 +2559,53 @@
       },
       "stickyNote": {
         "placeholder": "Type a note...",
-        "noteColor": "Note Color"
+        "noteColor": "Note Color",
+        "colors": {
+          "yellow": "Yellow",
+          "pink": "Pink",
+          "blue": "Blue",
+          "green": "Green",
+          "purple": "Purple"
+        }
       },
       "dictionary": {
         "title": "Dictionary",
         "thesaurus": "Thesaurus",
-        "searchPlaceholder": "Search",
-        "placeholder": "Type a word to look it up",
-        "noDefinition": "No definition found",
-        "loading": "Looking up...",
-        "error": "Could not look up word",
-        "poweredBy": "Powered by Free Dictionary API"
+        "searchPlaceholder": "Search…",
+        "placeholder": "Type a word to look it up.",
+        "noDefinition": "No definition found.",
+        "noResults": "No results.",
+        "loading": "Looking up…",
+        "error": "Lookup failed.",
+        "poweredBy": "Definitions provided by the Free Dictionary API, an open-source project.",
+        "dataSources": "Data sourced from Wiktionary and other open dictionaries. Results may vary for uncommon words."
       },
       "translation": {
         "translateFrom": "Translate from",
+        "from": "From",
         "to": "To",
-        "inputPlaceholder": "Enter text",
+        "inputPlaceholder": "Enter text...",
+        "outputPlaceholder": "Translation",
         "translating": "Translating...",
         "error": "Translation failed",
         "swap": "Swap languages",
+        "defaultLanguages": "Default Languages",
+        "save": "Save",
         "poweredBy": "Powered by MyMemory"
       },
       "ipod": {
         "noTrack": "No Track",
-        "openIpod": "Open iPod",
-        "nowPlaying": "Now Playing"
+        "openIpod": "Open iPod App",
+        "nowPlaying": "Now Playing",
+        "pause": "Pause",
+        "play": "Play",
+        "previous": "Previous",
+        "next": "Next",
+        "menu": "MENU",
+        "iTunesNotOpen": "iTunes is not open",
+        "shuffle": "Shuffle",
+        "repeatOne": "Repeat One",
+        "repeatAll": "Repeat All"
       },
       "stocks": {
         "delayed": "Delayed up to 20 minutes",
@@ -2625,6 +2647,16 @@
         "hongKong": "Hong Kong",
         "taipei": "Taipei",
         "local": "LOCAL"
+      },
+      "calendar": {
+        "showColors": "Show Colors",
+        "colors": {
+          "blue": "Blue",
+          "red": "Red",
+          "green": "Green",
+          "orange": "Orange",
+          "purple": "Purple"
+        }
       },
       "menu": {
         "help": "Dashboard Help",

@@ -11,6 +11,7 @@ import {
   Repeat,
   RepeatOnce,
 } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 
 interface IpodWidgetProps {
   widgetId?: string;
@@ -67,6 +68,7 @@ function ClickWheel({
   isPlaying: boolean;
   isXpTheme: boolean;
 }) {
+  const { t } = useTranslation();
   const centerSize = 38;
   const iconColor = "#999";
   const iconColorDark = "#888";
@@ -103,7 +105,7 @@ function ClickWheel({
       <button
         type="button"
         onClick={onPlayPause}
-        title={isPlaying ? "Pause" : "Play"}
+        title={isPlaying ? t("apps.dashboard.ipod.pause", "Pause") : t("apps.dashboard.ipod.play", "Play")}
         style={{
           position: "absolute",
           top: "50%",
@@ -139,7 +141,7 @@ function ClickWheel({
       <button
         type="button"
         onClick={onPrev}
-        title="Previous"
+        title={t("apps.dashboard.ipod.previous", "Previous")}
         style={{
           position: "absolute",
           top: "50%",
@@ -163,7 +165,7 @@ function ClickWheel({
       <button
         type="button"
         onClick={onNext}
-        title="Next"
+        title={t("apps.dashboard.ipod.next", "Next")}
         style={{
           position: "absolute",
           top: "50%",
@@ -223,7 +225,7 @@ function ClickWheel({
             letterSpacing: 0.5,
           }}
         >
-          MENU
+          {t("apps.dashboard.ipod.menu", "MENU")}
         </span>
       </div>
     </div>
@@ -231,6 +233,7 @@ function ClickWheel({
 }
 
 export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
@@ -388,7 +391,7 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
                 textAlign: "center",
               }}
             >
-              iTunes is not open
+              {t("apps.dashboard.ipod.iTunesNotOpen", "iTunes is not open")}
             </div>
           )}
         </div>
@@ -416,7 +419,7 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
           <button
             type="button"
             onClick={toggleShuffle}
-            title="Shuffle"
+            title={t("apps.dashboard.ipod.shuffle", "Shuffle")}
             style={{
               background: "transparent",
               border: "none",
@@ -446,7 +449,7 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
           <button
             type="button"
             onClick={handleToggleRepeat}
-            title={loopCurrent ? "Repeat One" : "Repeat All"}
+            title={loopCurrent ? t("apps.dashboard.ipod.repeatOne", "Repeat One") : t("apps.dashboard.ipod.repeatAll", "Repeat All")}
             style={{
               background: "transparent",
               border: "none",
@@ -483,6 +486,7 @@ export function IpodBackPanel({
   widgetId: string;
   onDone?: () => void;
 }) {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.8)";
@@ -498,7 +502,7 @@ export function IpodBackPanel({
       style={{ gap: 8 }}
     >
       <span style={{ fontSize: 11, fontWeight: 600, color: textColor }}>
-        iPod
+        {t("apps.dashboard.widgets.ipod", "iPod")}
       </span>
       <button
         type="button"
@@ -513,7 +517,7 @@ export function IpodBackPanel({
           textUnderlineOffset: 2,
         }}
       >
-        Open iPod App
+        {t("apps.dashboard.ipod.openIpod", "Open iPod App")}
       </button>
     </div>
   );

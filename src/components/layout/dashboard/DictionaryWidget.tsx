@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type DictionaryWidgetConfig } from "@/stores/useDashboardStore";
 import { MagnifyingGlass } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 
 interface DictionaryMeaning {
   partOfSpeech: string;
@@ -22,6 +23,7 @@ interface DictionaryWidgetProps {
 }
 
 export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
@@ -67,9 +69,9 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
         if (!res.ok) {
           if (res.status === 404) {
             setEntry(null);
-            setError("No definition found.");
+            setError(t("apps.dashboard.dictionary.noDefinition", "No definition found."));
           } else {
-            setError("Lookup failed.");
+            setError(t("apps.dashboard.dictionary.error", "Lookup failed."));
           }
           setLoading(false);
           return;
@@ -84,7 +86,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
         }
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
-          setError("Lookup failed.");
+          setError(t("apps.dashboard.dictionary.error", "Lookup failed."));
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -92,7 +94,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
         }
       }
     },
-    [widgetId, updateWidgetConfig]
+    [widgetId, updateWidgetConfig, t]
   );
 
   useEffect(() => {
@@ -131,7 +133,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
             value={query}
             onChange={(e) => handleInput(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
-            placeholder="Search…"
+            placeholder={t("apps.dashboard.dictionary.searchPlaceholder", "Search…")}
             className="flex-1 bg-transparent outline-none text-[11px]"
             style={{ color: "#000", caretColor: "#000" }}
           />
@@ -141,7 +143,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
         <div className="flex-1 overflow-y-auto px-3 py-2" style={{ fontSize: 11, minHeight: 0 }}>
           {loading && (
             <div className="text-center text-gray-400 py-4" style={{ fontSize: 10 }}>
-              Looking up…
+              {t("apps.dashboard.dictionary.loading", "Looking up…")}
             </div>
           )}
           {!loading && error && (
@@ -151,7 +153,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
           )}
           {!loading && !error && !entry && (
             <div className="text-center text-gray-400 py-6" style={{ fontSize: 10 }}>
-              {hasSearched ? "No results." : "Type a word to look it up."}
+              {hasSearched ? t("apps.dashboard.dictionary.noResults", "No results.") : t("apps.dashboard.dictionary.placeholder", "Type a word to look it up.")}
             </div>
           )}
           {!loading && entry && (
@@ -237,7 +239,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
               letterSpacing: "0.02em",
             }}
           >
-            Dictionary
+            {t("apps.dashboard.dictionary.title", "Dictionary")}
           </button>
           <span
             style={{
@@ -265,7 +267,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
               letterSpacing: "0.02em",
             }}
           >
-            Thesaurus
+            {t("apps.dashboard.dictionary.thesaurus", "Thesaurus")}
           </button>
         </div>
 
@@ -290,7 +292,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
             value={query}
             onChange={(e) => handleInput(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
-            placeholder="Search…"
+            placeholder={t("apps.dashboard.dictionary.searchPlaceholder", "Search…")}
             className="flex-1 bg-transparent outline-none text-[11px]"
             style={{
               color: "#FFF",
@@ -316,7 +318,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
             className="flex items-center justify-center py-6"
             style={{ color: "#9E9585", fontSize: 11, fontFamily: serifFont }}
           >
-            Looking up…
+            {t("apps.dashboard.dictionary.loading", "Looking up…")}
           </div>
         )}
 
@@ -334,7 +336,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
             className="flex items-center justify-center py-8"
             style={{ color: "#B5AA98", fontSize: 12, fontFamily: serifFont, fontStyle: "italic" }}
           >
-            {hasSearched ? "No results." : "Type a word to look it up."}
+            {hasSearched ? t("apps.dashboard.dictionary.noResults", "No results.") : t("apps.dashboard.dictionary.placeholder", "Type a word to look it up.")}
           </div>
         )}
 
@@ -413,6 +415,7 @@ export function DictionaryBackPanel({
   widgetId: string;
   onDone?: () => void;
 }) {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.8)";
@@ -422,13 +425,10 @@ export function DictionaryBackPanel({
     <div className="px-4 py-3" onPointerDown={(e) => e.stopPropagation()}>
       <div style={{ fontSize: 11, color: textColor, lineHeight: 1.5 }}>
         <p style={{ marginBottom: 8 }}>
-          Definitions provided by the{" "}
-          <span style={{ fontWeight: 600 }}>Free Dictionary API</span>, an
-          open-source project.
+          {t("apps.dashboard.dictionary.poweredBy", "Definitions provided by the Free Dictionary API, an open-source project.")}
         </p>
         <p style={{ fontSize: 10, color: mutedColor }}>
-          Data sourced from Wiktionary and other open dictionaries. Results may
-          vary for uncommon words.
+          {t("apps.dashboard.dictionary.dataSources", "Data sourced from Wiktionary and other open dictionaries. Results may vary for uncommon words.")}
         </p>
       </div>
       {onDone && (
@@ -444,7 +444,7 @@ export function DictionaryBackPanel({
             padding: 0,
           }}
         >
-          Done
+          {t("common.dialog.done", "Done")}
         </button>
       )}
     </div>

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect, type ReactNode } from "react"
 import { X, Info } from "@phosphor-icons/react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 interface WidgetChromeProps {
   children: ReactNode;
@@ -32,6 +33,7 @@ export function WidgetChrome({
   onMove,
   onBringToFront,
 }: WidgetChromeProps) {
+  const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const [isHovered, setIsHovered] = useState(false);
@@ -293,7 +295,7 @@ export function WidgetChrome({
                       fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
                     }}
                   >
-                    Done
+                    {t("common.dialog.done", "Done")}
                   </motion.button>
                 </div>
                 {resolvedBackContent}
