@@ -1202,6 +1202,21 @@ export function useFileSystem(
     }
   }, [loadFiles, options.skipLoad]); // Depend only on the memoized loadFiles
 
+  // Re-run loadFiles when the file store's items change (e.g., move-to-trash, restore, empty-trash).
+  // The loadFiles callback depends on stable function references from the store, so it won't
+  // re-create when items mutate—this subscription bridges that gap.
+  useEffect(() => {
+    if (options.skipLoad) return;
+
+    const unsubscribe = useFilesStore.subscribe((state, prevState) => {
+      if (state.items !== prevState.items) {
+        loadFiles();
+      }
+    });
+
+    return unsubscribe;
+  }, [loadFiles, options.skipLoad]);
+
   // --- handleFileSelect, Navigation Functions --- //
   const handleFileSelect = useCallback(
     (file: ExtendedDisplayFileItem | undefined) => {
