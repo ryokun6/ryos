@@ -30,11 +30,11 @@ const EVENT_COLOR_MAP: Record<string, string> = {
 };
 
 const EVENT_COLOR_LIGHT: Record<string, string> = {
-  blue: "#D4E6FC",
-  red: "#FCDADA",
-  green: "#DAFCDA",
-  orange: "#FCECD4",
-  purple: "#ECDAFC",
+  blue: "rgba(74, 144, 217, 0.15)",
+  red: "rgba(217, 74, 74, 0.15)",
+  green: "rgba(90, 181, 90, 0.15)",
+  orange: "rgba(232, 155, 62, 0.15)",
+  purple: "rgba(155, 89, 182, 0.15)",
 };
 
 const HOUR_START = 7;
