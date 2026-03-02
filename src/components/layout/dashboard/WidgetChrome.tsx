@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, type ReactNode } from "react";
+import { useState, useRef, useCallback, useEffect, type ReactNode } from "react";
 import { X, Info } from "@phosphor-icons/react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,12 +33,27 @@ export function WidgetChrome({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const [isHovered, setIsHovered] = useState(false);
+  const [isTouchActive, setIsTouchActive] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isFlipAnimating, setIsFlipAnimating] = useState(false);
   const flipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragStartRef = useRef<{ px: number; py: number; startX: number; startY: number } | null>(null);
+  const didDragRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const showControls = isHovered || isTouchActive;
+
+  useEffect(() => {
+    if (!isTouchActive) return;
+    const dismiss = (e: PointerEvent) => {
+      if (e.pointerType !== "touch") return;
+      if (containerRef.current?.contains(e.target as Node)) return;
+      setIsTouchActive(false);
+    };
+    window.addEventListener("pointerdown", dismiss, true);
+    return () => window.removeEventListener("pointerdown", dismiss, true);
+  }, [isTouchActive]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
@@ -52,6 +67,7 @@ export function WidgetChrome({
       onBringToFront?.();
       containerRef.current?.setPointerCapture(e.pointerId);
 
+      didDragRef.current = false;
       dragStartRef.current = { px: e.clientX, py: e.clientY, startX: x, startY: y };
       setIsDragging(true);
     },
@@ -62,9 +78,14 @@ export function WidgetChrome({
     (e: React.PointerEvent) => {
       if (!dragStartRef.current) return;
       e.preventDefault();
+      const dx = e.clientX - dragStartRef.current.px;
+      const dy = e.clientY - dragStartRef.current.py;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+        didDragRef.current = true;
+      }
       onMove?.({
-        x: dragStartRef.current.startX + (e.clientX - dragStartRef.current.px),
-        y: dragStartRef.current.startY + (e.clientY - dragStartRef.current.py),
+        x: dragStartRef.current.startX + dx,
+        y: dragStartRef.current.startY + dy,
       });
     },
     [onMove]
@@ -73,8 +94,13 @@ export function WidgetChrome({
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (!dragStartRef.current) return;
     containerRef.current?.releasePointerCapture(e.pointerId);
+    const wasTap = !didDragRef.current;
     dragStartRef.current = null;
     setIsDragging(false);
+
+    if (wasTap && e.pointerType === "touch") {
+      setIsTouchActive((prev) => !prev);
+    }
   }, []);
 
   const handlePointerCancel = useCallback((e: React.PointerEvent) => {
@@ -86,6 +112,7 @@ export function WidgetChrome({
   const doFlip = useCallback((value: boolean) => {
     setIsFlipped(value);
     setIsFlipAnimating(true);
+    setIsTouchActive(false);
     if (flipTimerRef.current) clearTimeout(flipTimerRef.current);
     flipTimerRef.current = setTimeout(() => setIsFlipAnimating(false), 650);
   }, []);
@@ -152,8 +179,8 @@ export function WidgetChrome({
           style={{
             top: -6, left: -6, width: 20, height: 20,
             borderRadius: "50%", zIndex: 20,
-            opacity: isHovered ? 1 : 0,
-            transform: isHovered ? "scale(1)" : "scale(0.5)",
+            opacity: showControls ? 1 : 0,
+            transform: showControls ? "scale(1)" : "scale(0.5)",
             background: isXpTheme ? "#CC0000" : "linear-gradient(180deg, #5a5a5a 0%, #333333 100%)",
             border: isXpTheme ? "1px solid #990000" : "1.5px solid rgba(255,255,255,0.3)",
             boxShadow: isXpTheme ? "0 1px 3px rgba(0,0,0,0.4)" : "0 2px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2)",
@@ -173,7 +200,7 @@ export function WidgetChrome({
           className="absolute flex items-center justify-center transition-opacity"
           style={{
             bottom: 4, right: 4, padding: 4, zIndex: 20,
-            opacity: isHovered && !isFlipAnimating ? 0.5 : 0,
+            opacity: showControls && !isFlipAnimating ? 0.5 : 0,
             color: "#FFF",
             filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
           }}
@@ -198,10 +225,11 @@ export function WidgetChrome({
       </AnimatePresence>
 
       {/* 3D flip container */}
-      <div style={{ perspective: 800 }}>
+      <div style={{ perspective: 800, WebkitPerspective: 800 }}>
         <div
           style={{
             transformStyle: "preserve-3d",
+            WebkitTransformStyle: "preserve-3d",
             transition: "transform 0.6s ease-in-out",
             transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
           }}
@@ -212,6 +240,8 @@ export function WidgetChrome({
             style={{
               ...cardStyle,
               backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
+              transform: "translateZ(0)",
               pointerEvents: isFlipped ? "none" : isDragging ? "none" : "auto",
             }}
           >
@@ -233,6 +263,7 @@ export function WidgetChrome({
               style={{
                 ...cardStyle,
                 backfaceVisibility: "hidden",
+                WebkitBackfaceVisibility: "hidden",
                 transform: "rotateY(180deg)",
                 pointerEvents: isFlipped && !isFlipAnimating ? "auto" : "none",
               }}
