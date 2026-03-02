@@ -126,7 +126,7 @@ export async function discoverApiRouteManifest(
   options: DiscoverManifestOptions = {}
 ): Promise<ApiRouteManifestEntry[]> {
   const workspaceRoot = options.workspaceRoot || process.cwd();
-  const apiRoot = options.apiRoot || path.join(workspaceRoot, "_api");
+  const apiRoot = options.apiRoot || path.join(workspaceRoot, "api");
   const allFiles = await walkDirectory(apiRoot);
   const routeFiles = allFiles.filter((filePath) => isRouteFile(filePath, apiRoot));
   const routeDefinitions: ApiRouteManifestEntry[] = [];
@@ -165,7 +165,7 @@ export interface ViteApiRewrite {
 }
 
 /**
- * For index-backed routes (e.g. _api/songs/index.ts), Vercel plugin rewrites
+ * For index-backed routes (e.g. api/songs/index.ts), Vercel plugin rewrites
  * /api/songs -> /api/songs/index in dev.
  */
 export function buildViteApiRewrites(

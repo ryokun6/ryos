@@ -7,11 +7,10 @@
     "dev": "bun run scripts/dev-with-api.ts",
     "dev:vite": "NODE_OPTIONS='--max-old-space-size=4096' vite --port ${PORT:-5173}",
     "dev:api": "bun --watch scripts/api-standalone-server.ts",
-    "dev:vercel": "bash scripts/ensure-api-symlink.sh && vercel dev",
     "api:start": "NODE_ENV=production bun run scripts/api-standalone-server.ts",
     "version:bump": "bun run scripts/generate-build-version.ts --bump",
     "prebuild": "bun run scripts/generate-build-version.ts",
-    "build": "tsc -b && vite build && cp dist/sw.js dist/version.json .vercel/output/static/ && (cp dist/workbox-*.js .vercel/output/static/ 2>/dev/null || true) && node -e \"const c=require('./.vercel/output/config.json');c.cleanUrls=true;c.trailingSlash=false;require('fs').writeFileSync('./.vercel/output/config.json',JSON.stringify(c,null,2))\"",
+    "build": "tsc -b && vite build",
     "build:tauri": "bun run scripts/build-tauri.ts",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -176,7 +175,6 @@
     "typescript-eslint": "^8.50.1",
     "vite": "^6.4.1",
     "vite-plugin-pwa": "^1.2.0",
-    "vite-plugin-vercel": "^9.1.1",
     "woff2": "^1.0.0"
   },
   "packageManager": "bun@1.3.5"

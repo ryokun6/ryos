@@ -17,7 +17,7 @@
  * ## Usage
  * 
  * ```typescript
- * import { createChatTools } from './_api/chat/tools';
+ * import { createChatTools } from './api/chat/tools';
  * 
  * const tools = createChatTools({
  *   log: logger.info,

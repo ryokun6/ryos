@@ -15,7 +15,7 @@ import {
   getMemoryDetail,
   saveMemoryIndex,
   cleanupStaleTemporaryMemories,
-} from "../_api/_utils/_memory.js";
+} from "../api/_utils/_memory.js";
 import { describe, test, expect } from "bun:test";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;

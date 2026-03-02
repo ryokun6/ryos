@@ -1,23 +1,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
-import vercel from "vite-plugin-vercel";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  buildViteApiRewrites,
-  discoverApiRouteManifest,
-} from "./scripts/api-route-manifest";
 
 // Polyfill __dirname in ESM context (Node >=16)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const apiRouteManifest = await discoverApiRouteManifest({
-  workspaceRoot: __dirname,
-  apiRoot: path.resolve(__dirname, "_api"),
-});
-const apiRouteRewrites = buildViteApiRewrites(apiRouteManifest);
 
 // Detect dev mode for memory optimizations
 const isDev = process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
@@ -65,7 +55,7 @@ export default defineConfig({
         "**/dist/**",
         "**/.vercel/**",
         "**/src-tauri/**",
-        "**/_api/**",
+        "**/api/**",
         "**/public/**", // 500+ static files don't need HMR watching
         "**/node_modules/**",
         "**/.git/**",
@@ -178,10 +168,9 @@ export default defineConfig({
     },
     react(),
     tailwindcss(),
-    // Only include Vercel and PWA plugins when not building for Tauri
+    // Only include PWA plugin in production builds (not Tauri, not dev)
     // Skip PWA plugin entirely in dev mode to save ~50MB memory (Workbox config is heavy)
-    ...(process.env.TAURI_ENV ? [] : isDev ? [vercel()] : [
-      vercel(),
+    ...(process.env.TAURI_ENV || isDev ? [] : [
       VitePWA({
       registerType: "autoUpdate",
       manifestFilename: "manifest.json",
@@ -441,11 +430,6 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-  },
-  vercel: {
-    defaultSupportsResponseStreaming: true,
-    // Route /api/* index handlers from shared API manifest.
-    rewrites: apiRouteRewrites,
   },
   // esbuild options for faster dev transforms
   esbuild: {

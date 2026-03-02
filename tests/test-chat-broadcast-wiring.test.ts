@@ -30,24 +30,24 @@ const countCalls = (source: string, fnName: string): number => {
 describe("Chat Broadcast Wiring Tests", () => {
   describe("Core room/message routes", () => {
     test("room create route emits room-created", async () => {
-      const source = readRoute("_api/rooms/index.ts");
+      const source = readRoute("api/rooms/index.ts");
       assertHasCall(source, "broadcastRoomCreated");
     });
 
     test("send message route emits room-message", async () => {
-      const source = readRoute("_api/rooms/[id]/messages.ts");
+      const source = readRoute("api/rooms/[id]/messages.ts");
       assertHasCall(source, "broadcastNewMessage");
     });
 
     test("delete message route emits message-deleted", async () => {
-      const source = readRoute("_api/rooms/[id]/messages/[msgId].ts");
+      const source = readRoute("api/rooms/[id]/messages/[msgId].ts");
       assertHasCall(source, "broadcastMessageDeleted");
     });
   });
 
   describe("Presence and membership routes", () => {
     test("presence switch route emits room-updated", async () => {
-      const source = readRoute("_api/presence/switch.ts");
+      const source = readRoute("api/presence/switch.ts");
       assertHasCall(source, "broadcastRoomUpdated");
       expect(countCalls(source, "broadcastRoomUpdated") >= 2).toBe(true);
       expect(/broadcastRoomUpdated\s*\(\s*previousRoomId\s*\)/.test(source)).toBe(true);
@@ -55,37 +55,37 @@ describe("Chat Broadcast Wiring Tests", () => {
     });
 
     test("join route emits room-updated", async () => {
-      const source = readRoute("_api/rooms/[id]/join.ts");
+      const source = readRoute("api/rooms/[id]/join.ts");
       assertHasCall(source, "broadcastRoomUpdated");
     });
 
     test("room delete/leave route emits delete/update events", async () => {
-      const source = readRoute("_api/rooms/[id].ts");
+      const source = readRoute("api/rooms/[id].ts");
       assertHasCall(source, "broadcastRoomDeleted");
       assertHasCall(source, "broadcastRoomUpdated");
     });
 
     test("room delete route removes room from registry and presence", async () => {
-      const source = readRoute("_api/rooms/[id].ts");
+      const source = readRoute("api/rooms/[id].ts");
       expect(source.includes("CHAT_ROOMS_SET")).toBe(true);
       expect(/srem\s*\(\s*CHAT_ROOMS_SET/.test(source)).toBe(true);
       assertHasCall(source, "deleteRoomPresence");
     });
 
     test("leave route emits delete/update events", async () => {
-      const source = readRoute("_api/rooms/[id]/leave.ts");
+      const source = readRoute("api/rooms/[id]/leave.ts");
       assertHasCall(source, "broadcastRoomDeleted");
       assertHasCall(source, "broadcastRoomUpdated");
     });
 
     test("leave route removes deleted private room from registry", async () => {
-      const source = readRoute("_api/rooms/[id]/leave.ts");
+      const source = readRoute("api/rooms/[id]/leave.ts");
       expect(source.includes("CHAT_ROOMS_SET")).toBe(true);
       expect(/srem\s*\(\s*CHAT_ROOMS_SET/.test(source)).toBe(true);
     });
 
     test("leave route clears room presence for deleted private room", async () => {
-      const source = readRoute("_api/rooms/[id]/leave.ts");
+      const source = readRoute("api/rooms/[id]/leave.ts");
       assertHasCall(source, "deleteRoomPresence");
     });
   });

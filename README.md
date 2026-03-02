@@ -52,8 +52,7 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 ## Project Structure
 
 ```
-├── _api/             # API route handlers (Vercel-style modules)
-├── api/              # Local dev only: symlink to _api (created by dev:vercel; gitignored)
+├── api/              # API route handlers (Vercel-compatible serverless functions)
 ├── public/           # Static assets (icons, wallpapers, sounds, fonts)
 ├── scripts/          # Build + maintenance + standalone API runner
 ├── src/
@@ -95,8 +94,6 @@ bun run api:start    # Run standalone API server in production mode
 ```
 
 For local development, `bun run dev` starts both the standalone Bun API server and the Vite dev server with an `/api` proxy — no Vercel CLI required.
-
-`bun run dev:vercel` is an optional fallback that creates an `api` → `_api` symlink so Vercel dev serves your API routes (Vercel looks for `api/`). The symlink is gitignored and not used in production.
 
 ## Running the API Separately
 
