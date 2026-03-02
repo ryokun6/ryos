@@ -40,6 +40,8 @@ const EVENT_COLOR_LIGHT: Record<string, string> = {
 const HOUR_START = 7;
 const HOUR_END = 21;
 const HOUR_HEIGHT = 40;
+const TODAY_RED = "#E25B4F";
+const TODAY_RED_XP = "#B53325";
 const DAY_HEADERS_MONTH = ["S", "M", "T", "W", "T", "F", "S"];
 
 // ============================================================================
@@ -112,7 +114,7 @@ function MiniCalendar({
                   borderRadius: "50%",
                   backgroundColor:
                     cell.date === todayStr
-                      ? isXpTheme ? "#CC0000" : "#FF3B30"
+                      ? isXpTheme ? TODAY_RED_XP : TODAY_RED
                       : cell.date === selectedDate
                         ? isXpTheme ? "#316AC5" : "rgba(0,122,255,0.15)"
                         : "transparent",
@@ -205,7 +207,7 @@ function WeekTimeGrid({
                   ? isMacOSTheme ? "rgba(56,117,215,0.1)" : isXpTheme ? "rgba(49,106,197,0.12)" : "rgba(0,0,0,0.06)"
                   : "transparent",
                 borderBottom: day.isToday
-                  ? `2px solid ${isXpTheme ? "#CC0000" : "#FF3B30"}`
+                  ? `2px solid ${isXpTheme ? TODAY_RED_XP : TODAY_RED}`
                   : "2px solid transparent",
               }}
             >
@@ -213,7 +215,7 @@ function WeekTimeGrid({
               <div
                 className="text-sm font-semibold leading-tight mt-0.5"
                 style={{
-                  color: day.isToday ? (isXpTheme ? "#CC0000" : "#FF3B30") : undefined,
+                  color: day.isToday ? (isXpTheme ? TODAY_RED_XP : TODAY_RED) : undefined,
                 }}
               >
                 {day.dayOfMonth}
@@ -365,11 +367,11 @@ function WeekTimeGrid({
                       <div className="flex items-center">
                         <div
                           className="w-2 h-2 rounded-full -ml-1"
-                          style={{ backgroundColor: isXpTheme ? "#CC0000" : "#FF3B30" }}
+                          style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }}
                         />
                         <div
                           className="flex-1 h-px"
-                          style={{ backgroundColor: isXpTheme ? "#CC0000" : "#FF3B30" }}
+                          style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }}
                         />
                       </div>
                     </div>
@@ -550,8 +552,8 @@ function DayTimeGrid({
               return (
                 <div className="absolute left-0 right-0 pointer-events-none" style={{ top: topPos, zIndex: 5 }}>
                   <div className="flex items-center">
-                    <div className="w-2 h-2 rounded-full -ml-1" style={{ backgroundColor: isXpTheme ? "#CC0000" : "#FF3B30" }} />
-                    <div className="flex-1 h-px" style={{ backgroundColor: isXpTheme ? "#CC0000" : "#FF3B30" }} />
+                    <div className="w-2 h-2 rounded-full -ml-1" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
+                    <div className="flex-1 h-px" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
                   </div>
                 </div>
               );
@@ -620,7 +622,7 @@ function MonthGrid({
                   style={{
                     width: 18, height: 18, lineHeight: "18px", textAlign: "center",
                     borderRadius: "50%", display: "inline-block",
-                    backgroundColor: cell.isToday ? (isXpTheme ? "#CC0000" : "#FF3B30") : "transparent",
+                    backgroundColor: cell.isToday ? (isXpTheme ? TODAY_RED_XP : TODAY_RED) : "transparent",
                     color: cell.isToday ? "#FFF" : undefined,
                   }}
                 >
