@@ -26,6 +26,7 @@ interface EventDialogProps {
   }) => void;
   editingEvent: CalendarEvent | null;
   selectedDate: string;
+  prefillTime?: { date: string; startTime: string; endTime: string } | null;
 }
 
 const EVENT_COLORS: { value: EventColor; hex: string }[] = [
@@ -42,6 +43,7 @@ export function EventDialog({
   onSave,
   editingEvent,
   selectedDate,
+  prefillTime,
 }: EventDialogProps) {
   const { t } = useTranslation();
 
@@ -64,6 +66,14 @@ export function EventDialog({
         setAllDay(!editingEvent.startTime);
         setColor(editingEvent.color);
         setNotes(editingEvent.notes || "");
+      } else if (prefillTime) {
+        setTitle("");
+        setDate(prefillTime.date);
+        setStartTime(prefillTime.startTime);
+        setEndTime(prefillTime.endTime);
+        setAllDay(false);
+        setColor("blue");
+        setNotes("");
       } else {
         setTitle("");
         setDate(selectedDate);

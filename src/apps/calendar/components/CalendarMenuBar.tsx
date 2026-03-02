@@ -80,18 +80,25 @@ export function CalendarMenuBar({
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarCheckboxItem
-            checked={view === "month"}
-            onClick={() => onSetView("month")}
-            className="text-md h-6 px-3"
-          >
-            {t("apps.calendar.menu.monthView")}
-          </MenubarCheckboxItem>
-          <MenubarCheckboxItem
             checked={view === "day"}
             onClick={() => onSetView("day")}
             className="text-md h-6 px-3"
           >
             {t("apps.calendar.menu.dayView")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={view === "week"}
+            onClick={() => onSetView("week")}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.calendar.menu.weekView")}
+          </MenubarCheckboxItem>
+          <MenubarCheckboxItem
+            checked={view === "month"}
+            onClick={() => onSetView("month")}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.calendar.menu.monthView")}
           </MenubarCheckboxItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem onClick={onGoToToday} className="text-md h-6 px-3">

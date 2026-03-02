@@ -462,7 +462,7 @@ export const appRegistry = {
     helpItems: calendarHelpItems,
     metadata: calendarMetadata,
     windowConfig: {
-      defaultSize: { width: 340, height: 460 },
+      defaultSize: { width: 700, height: 520 },
       minSize: { width: 300, height: 380 },
     } as WindowConstraints,
   },

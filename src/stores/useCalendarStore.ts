@@ -15,7 +15,7 @@ export interface CalendarEvent {
   updatedAt: number;
 }
 
-export type CalendarView = "month" | "day";
+export type CalendarView = "month" | "week" | "day";
 
 interface CalendarStoreState {
   events: CalendarEvent[];
@@ -33,6 +33,7 @@ interface CalendarStoreState {
   setSelectedDate: (date: string) => void;
   setView: (view: CalendarView) => void;
   navigateMonth: (delta: number) => void;
+  navigateWeek: (delta: number) => void;
   goToToday: () => void;
   getEventsForDate: (date: string) => CalendarEvent[];
   getEventsForMonth: (year: number, month: number) => CalendarEvent[];
@@ -44,6 +45,10 @@ const getTodayStr = (): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
+/** Format a Date as YYYY-MM-DD */
+const formatDate = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
 export const useCalendarStore = create<CalendarStoreState>()(
   persist(
     (set, get) => {
@@ -53,7 +58,7 @@ export const useCalendarStore = create<CalendarStoreState>()(
         selectedDate: getTodayStr(),
         currentMonth: now.getMonth(),
         currentYear: now.getFullYear(),
-        view: "month" as CalendarView,
+        view: "week" as CalendarView,
 
         addEvent: (eventData) => {
           const id = crypto.randomUUID();
@@ -110,6 +115,20 @@ export const useCalendarStore = create<CalendarStoreState>()(
               newYear -= 1;
             }
             return { currentMonth: newMonth, currentYear: newYear };
+          });
+        },
+
+        navigateWeek: (delta) => {
+          set((state) => {
+            const [y, m, d] = state.selectedDate.split("-").map(Number);
+            const current = new Date(y, m - 1, d);
+            current.setDate(current.getDate() + delta * 7);
+            const newDate = formatDate(current);
+            return {
+              selectedDate: newDate,
+              currentYear: current.getFullYear(),
+              currentMonth: current.getMonth(),
+            };
           });
         },
 

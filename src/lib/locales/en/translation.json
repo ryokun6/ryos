@@ -2521,15 +2521,17 @@
       "menu": {
         "newEvent": "New Event",
         "deleteEvent": "Delete Event",
-        "monthView": "Month View",
         "dayView": "Day View",
+        "weekView": "Week View",
+        "monthView": "Month View",
         "goToToday": "Go to Today",
         "help": "Calendar Help",
         "about": "About Calendar"
       },
       "views": {
-        "month": "Month",
-        "day": "Day"
+        "day": "Day",
+        "week": "Week",
+        "month": "Month"
       },
       "event": {
         "title": "Title",
