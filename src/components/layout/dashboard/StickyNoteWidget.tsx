@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useId } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore } from "@/stores/useDashboardStore";
 import { useTranslation } from "react-i18next";
@@ -83,7 +83,10 @@ export function StickyNoteWidget({ widgetId }: StickyNoteWidgetProps) {
     };
   }, []);
 
-  const foldSize = 14;
+  const uid = useId();
+  const cs = 36;
+  const pad = 8;
+  const total = cs + pad;
 
   return (
     <div
@@ -133,61 +136,66 @@ export function StickyNoteWidget({ widgetId }: StickyNoteWidgetProps) {
         />
       )}
 
-      {/* Corner fold (Mac only) */}
+      {/* Bezier curve page curl (Mac only) */}
       {!isXpTheme && (
-        <>
-          <div
-            style={{
-              position: "absolute",
-              bottom: 0,
-              right: 0,
-              width: foldSize,
-              height: foldSize,
-              background: `linear-gradient(225deg, transparent 50%, ${darkenColor(noteColor, 30)} 50%)`,
-              zIndex: 5,
-              borderTopLeftRadius: 2,
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              bottom: 0,
-              right: foldSize,
-              width: foldSize,
-              height: 2,
-              background: `linear-gradient(to right, transparent, ${darkenColor(noteColor, 20)}44)`,
-              zIndex: 4,
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              bottom: foldSize,
-              right: 0,
-              width: 2,
-              height: foldSize,
-              background: `linear-gradient(to bottom, transparent, ${darkenColor(noteColor, 20)}44)`,
-              zIndex: 4,
-            }}
-          />
-        </>
-      )}
-
-      {/* Drop shadow at bottom for floating effect (Mac only) */}
-      {!isXpTheme && (
-        <div
+        <svg
+          width={total}
+          height={total}
+          viewBox={`0 0 ${total} ${total}`}
           style={{
             position: "absolute",
-            bottom: -4,
-            left: 8,
-            right: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: "rgba(0,0,0,0.08)",
-            filter: "blur(4px)",
-            zIndex: 0,
+            bottom: 0,
+            right: 0,
+            zIndex: 6,
+            pointerEvents: "none",
           }}
-        />
+        >
+          <defs>
+            <linearGradient id={`curl-fold-${uid}`} x1="0.15" y1="0.15" x2="1" y2="1">
+              <stop offset="0%" stopColor={darkenColor(noteColor, 45)} />
+              <stop offset="50%" stopColor={darkenColor(noteColor, 25)} />
+              <stop offset="100%" stopColor={darkenColor(noteColor, 8)} />
+            </linearGradient>
+            <filter id={`curl-blur-${uid}`}>
+              <feGaussianBlur stdDeviation="2" />
+            </filter>
+          </defs>
+
+          {/* Shadow cast by the curl */}
+          <path
+            d={`M ${total} 4 C ${cs * 0.55 + pad} ${cs * 0.25 + pad * 0.3}, ${cs * 0.25 + pad * 0.3} ${cs * 0.55 + pad}, 4 ${total}`}
+            stroke="rgba(0,0,0,0.22)"
+            strokeWidth="8"
+            fill="none"
+            filter={`url(#curl-blur-${uid})`}
+          />
+
+          {/* Gap area — dark background visible through the curl */}
+          <path
+            d={`M ${total} 0 C ${cs * 0.65 + pad} ${cs * 0.1}, ${cs * 0.1 + pad} ${cs * 0.65}, 0 ${total} L ${total} ${total} Z`}
+            fill="rgba(0,0,0,0.6)"
+          />
+
+          {/* Paper curl fold — the curled underside of the page */}
+          <path
+            d={[
+              `M ${total} 0`,
+              `C ${cs * 0.65 + pad} ${cs * 0.1}, ${cs * 0.1 + pad} ${cs * 0.65}, 0 ${total}`,
+              `L ${cs * 0.2} ${total}`,
+              `C ${cs * 0.25 + pad * 0.5} ${cs * 0.7}, ${cs * 0.7} ${cs * 0.25 + pad * 0.5}, ${total} ${cs * 0.2}`,
+              `Z`,
+            ].join(" ")}
+            fill={`url(#curl-fold-${uid})`}
+          />
+
+          {/* Highlight along fold edge */}
+          <path
+            d={`M ${total} 0 C ${cs * 0.65 + pad} ${cs * 0.1}, ${cs * 0.1 + pad} ${cs * 0.65}, 0 ${total}`}
+            stroke="rgba(255,255,255,0.18)"
+            strokeWidth="0.75"
+            fill="none"
+          />
+        </svg>
       )}
 
       <textarea
