@@ -705,46 +705,40 @@ function BottomToolbar({
         } : {}),
       }}
     >
-      {/* Left: nav arrows + segmented view switcher */}
-      <div className="flex items-center gap-1">
-        <div className={cn("flex gap-0", isMacOSTheme && "aqua-select-group")}>
+      {/* Left: unified < Day Week Month > segmented control */}
+      <div className={cn("flex items-center gap-0", isMacOSTheme && "aqua-select-group")}>
+        <Button
+          variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
+          size="icon"
+          className={cn(isMacOSTheme ? "aqua-compact" : "h-[22px] w-6", isXpTheme && "text-black")}
+          onClick={onPrev}
+        >
+          <CaretLeft size={12} weight="bold" />
+        </Button>
+        {views.map((v) => (
           <Button
-            variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "ghost"}
-            size="icon"
-            className={cn(isMacOSTheme ? "aqua-compact" : "h-[22px] w-6", isXpTheme && "text-black")}
-            onClick={onPrev}
+            key={v.id}
+            variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
+            data-state={view === v.id ? "on" : "off"}
+            onClick={() => onSetView(v.id)}
+            className={cn(
+              isMacOSTheme
+                ? "aqua-compact font-geneva-12 !text-[11px]"
+                : "h-[22px] px-2.5 text-[11px]",
+              isXpTheme && "text-black"
+            )}
           >
-            <CaretLeft size={12} weight="bold" />
+            {v.label}
           </Button>
-        </div>
-        <div className={cn("flex gap-0", isMacOSTheme && "aqua-select-group")}>
-          {views.map((v) => (
-            <Button
-              key={v.id}
-              variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
-              data-state={view === v.id ? "on" : "off"}
-              onClick={() => onSetView(v.id)}
-              className={cn(
-                isMacOSTheme
-                  ? "aqua-compact font-geneva-12 !text-[11px]"
-                  : "h-[22px] px-2.5 text-[11px]",
-                isXpTheme && "text-black"
-              )}
-            >
-              {v.label}
-            </Button>
-          ))}
-        </div>
-        <div className={cn("flex gap-0", isMacOSTheme && "aqua-select-group")}>
-          <Button
-            variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "ghost"}
-            size="icon"
-            className={cn(isMacOSTheme ? "aqua-compact" : "h-[22px] w-6", isXpTheme && "text-black")}
-            onClick={onNext}
-          >
-            <CaretRight size={12} weight="bold" />
-          </Button>
-        </div>
+        ))}
+        <Button
+          variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
+          size="icon"
+          className={cn(isMacOSTheme ? "aqua-compact" : "h-[22px] w-6", isXpTheme && "text-black")}
+          onClick={onNext}
+        >
+          <CaretRight size={12} weight="bold" />
+        </Button>
       </div>
 
       {/* Right: Today + New */}
