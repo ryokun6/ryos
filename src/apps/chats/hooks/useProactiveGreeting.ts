@@ -61,17 +61,13 @@ export function useProactiveGreeting() {
   const hasTriggeredFreshRef = useRef(false);
   const hasTriggeredStaleRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+  const isFetchingRef = useRef(false);
 
   const username = useChatsStore((s) => s.username);
   const authToken = useChatsStore((s) => s.authToken);
   const aiMessages = useChatsStore((s) => s.aiMessages);
   const setAiMessages = useChatsStore((s) => s.setAiMessages);
 
-  /**
-   * Check if the current chat state is a fresh chat with only the default
-   * greeting message (id === "1", role === "assistant").
-   * We don't re-trigger if the proactive greeting has already been set (id === "proactive-1").
-   */
   const isFreshChat =
     aiMessages.length === 1 &&
     aiMessages[0].id === "1" &&
@@ -79,14 +75,9 @@ export function useProactiveGreeting() {
 
   const isEligible = !!username && !!authToken;
 
-  /**
-   * Detect a "stale" conversation: the chat has real messages but the last
-   * message was sent more than STALE_CHAT_THRESHOLD_MS ago.
-   */
   const isStaleChat = (() => {
-    if (isFreshChat) return false; // handled by the fresh-chat path
-    if (aiMessages.length < 2) return false; // need at least one real exchange
-    // Don't trigger if the last message is already a proactive greeting
+    if (isFreshChat) return false;
+    if (aiMessages.length < 2) return false;
     const lastMsg = aiMessages[aiMessages.length - 1];
     if (lastMsg.id?.startsWith("proactive-")) return false;
 
@@ -136,18 +127,18 @@ export function useProactiveGreeting() {
 
   /**
    * Fetch a proactive greeting from the server and stream the response.
-   * @param mode  "fresh" → replaces the default greeting;
-   *              "stale" → appends the greeting to the existing conversation.
    */
   const fetchGreeting = useCallback(
     async (mode: "fresh" | "stale" = "fresh") => {
       if (!username || !authToken) return;
+      if (isFetchingRef.current) return;
 
       // Abort any in-flight request
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
 
+      isFetchingRef.current = true;
       setIsLoadingGreeting(true);
       setStreamingGreetingText(null);
 
@@ -214,6 +205,7 @@ export function useProactiveGreeting() {
           setStreamingGreetingText(null);
           setIsLoadingGreeting(false);
         }
+        isFetchingRef.current = false;
       }
     },
     [username, authToken, commitGreeting]
@@ -226,7 +218,6 @@ export function useProactiveGreeting() {
       fetchGreeting("fresh");
     }
 
-    // Reset trigger flag when chat is no longer fresh (user sent a message)
     if (!isFreshChat) {
       hasTriggeredFreshRef.current = false;
     }
@@ -239,8 +230,6 @@ export function useProactiveGreeting() {
       fetchGreeting("stale");
     }
 
-    // Reset the stale trigger once the conversation is no longer stale
-    // (e.g. user sent a message or a greeting was injected)
     if (!isStaleChat) {
       hasTriggeredStaleRef.current = false;
     }
@@ -260,6 +249,7 @@ export function useProactiveGreeting() {
   const triggerGreeting = useCallback(() => {
     hasTriggeredFreshRef.current = false;
     hasTriggeredStaleRef.current = false;
+    isFetchingRef.current = false;
     setTimeout(() => {
       const state = useChatsStore.getState();
       const stillFresh =

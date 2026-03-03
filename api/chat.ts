@@ -693,7 +693,12 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
         });
 
         res.setHeader("Access-Control-Allow-Origin", validOrigin);
-        greetingStream.pipeTextStreamToResponse(res, { status: 200 });
+        res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+
+        for await (const chunk of greetingStream.textStream) {
+          res.write(chunk);
+        }
+        res.end();
         return;
       } catch (greetingErr) {
         logError("Failed to generate proactive greeting", greetingErr);
