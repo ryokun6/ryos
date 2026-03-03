@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -97,9 +97,22 @@ function getSkyGradient(code: number, isDay: boolean): string {
 }
 
 const weatherCache = new Map<string, WeatherData>();
+const weatherCacheListeners = new Set<() => void>();
+
+function setWeatherCacheEntry(key: string, data: WeatherData) {
+  weatherCache.set(key, data);
+  weatherCacheListeners.forEach((cb) => cb());
+}
 
 function useWeatherCache(widgetId: string): WeatherData | null {
-  return weatherCache.get(widgetId) || null;
+  const subscribe = useCallback(
+    (cb: () => void) => {
+      weatherCacheListeners.add(cb);
+      return () => { weatherCacheListeners.delete(cb); };
+    },
+    []
+  );
+  return useSyncExternalStore(subscribe, () => weatherCache.get(widgetId) ?? null);
 }
 
 function formatCityLabel(city: CityResult): string {
@@ -163,7 +176,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
         forecast,
       };
       setWeather(weatherData);
-      weatherCache.set(widgetId, weatherData);
+      setWeatherCacheEntry(widgetId, weatherData);
 
       setLoading(false);
     } catch {
@@ -402,7 +415,7 @@ export function WeatherEmojiOverflow({ widgetId }: { widgetId: string }) {
   if (!weather || !widget) return null;
 
   return (
-    <div className="absolute inset-x-0 flex items-center justify-center pointer-events-none" style={{ top: -16, zIndex: 10 }}>
+    <div className="absolute inset-x-0 flex items-center justify-center pointer-events-none" style={{ top: -21, zIndex: 10 }}>
       <span style={{ fontSize: 100, lineHeight: 1, filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.3))", opacity: 0.9 }}>
         {getWeatherEmoji(weather.weatherCode, weather.isDay)}
       </span>
