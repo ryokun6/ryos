@@ -410,6 +410,7 @@ export function VideosAppComponent({
         onClose={onClose}
         isForeground={isForeground}
         appId="videos"
+        material={isMacOSTheme ? "brushedmetal" : "default"}
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         onNavigateNext={onNavigateNext}
@@ -417,7 +418,7 @@ export function VideosAppComponent({
         menuBar={isXpTheme ? menuBar : undefined}
         onFullscreenToggle={toggleFullScreen}
       >
-        <div className="flex flex-col w-full h-full bg-[#1a1a1a] text-white">
+        <div className={cn("flex flex-col w-full h-full text-white", isMacOSTheme ? "bg-transparent" : "bg-[#1a1a1a]")}>
           <div className="flex-1 relative overflow-hidden">
             {videos.length > 0 ? (
               <div
@@ -553,8 +554,8 @@ export function VideosAppComponent({
           {/* Retro CD Player Controls */}
           <div
             className={cn(
-              "p-4 bg-[#2a2a2a] border-t border-[#3a3a3a] flex flex-col gap-4",
-              "os-toolbar-texture"
+              "flex flex-col gap-4",
+              isMacOSTheme ? "bg-transparent p-2 pt-4 border-t-0" : "bg-[#2a2a2a] os-toolbar-texture p-4 border-t border-[#3a3a3a]"
             )}
           >
             {/* LCD Display */}

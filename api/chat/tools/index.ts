@@ -148,13 +148,19 @@ export const TOOL_DESCRIPTIONS = {
     "Mouse control works best on classic Mac OS (System 1-9). Mac OS X systems have limited mouse support due to emulator constraints.",
 
   calendarControl:
-    "Manage calendar events in ryOS. Actions: " +
+    "Manage calendar events and todos in ryOS. " +
+    "Event actions: " +
     "'list' returns all events (optionally filter by date); " +
     "'create' adds a new event (requires title and date in YYYY-MM-DD format, optional startTime/endTime in HH:MM, color, notes); " +
     "'update' modifies an existing event by ID; " +
     "'delete' removes an event by ID. " +
-    "The Calendar app opens automatically when creating events. " +
-    "Use 'list' first to get event IDs before updating or deleting.",
+    "Todo actions: " +
+    "'listTodos' returns all todos (optionally filter by completed status or due date); " +
+    "'createTodo' adds a new todo (requires title, optional date as due date in YYYY-MM-DD, optional calendarId); " +
+    "'toggleTodo' toggles a todo's completion status by ID; " +
+    "'deleteTodo' removes a todo by ID. " +
+    "The Calendar app opens automatically when creating events or todos. " +
+    "Use 'list'/'listTodos' first to get IDs before updating, toggling, or deleting.",
 
   // Unified Memory Tools
   memoryWrite:

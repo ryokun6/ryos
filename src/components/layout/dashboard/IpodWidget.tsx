@@ -250,6 +250,7 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
   const toggleLoopCurrent = useIpodStore((s) => s.toggleLoopCurrent);
 
   const elapsedTime = useIpodStore((s) => s.elapsedTime);
+  const totalTime = useIpodStore((s) => s.totalTime);
   const isIpodOpen = useAppStore(
     (s) => Object.values(s.instances).some((inst) => inst.appId === "ipod" && inst.isOpen)
   );
@@ -378,21 +379,7 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
             <>
               <MarqueeText text={title} color="#1a3300" />
               {artist && (
-                <div
-                  style={{
-                    fontSize: 9,
-                    fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-                    color: "#3a5a10",
-                    marginTop: 1,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    width: "100%",
-                    textAlign: "center",
-                  }}
-                >
-                  {artist}
-                </div>
+                <MarqueeText text={artist} color="#3a5a10" />
               )}
             </>
           ) : (
@@ -410,15 +397,38 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
           )}
         </div>
 
-        {/* Subtle divider */}
-        <div
-          style={{
-            height: 1,
-            margin: "0 14px",
-            background: "rgba(0,0,0,0.08)",
-            boxShadow: "0 1px 0 rgba(255,255,255,0.12)",
-          }}
-        />
+        {/* Progress bar */}
+        {hasTrack && (
+          <div
+            style={{
+              height: 3,
+              margin: "0 18px",
+              background: "rgba(0,0,0,0.10)",
+              borderRadius: 2,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${totalTime > 0 ? (elapsedTime / totalTime) * 100 : 0}%`,
+                background: "#2a4a00",
+                borderRadius: 2,
+                transition: "width 0.3s linear",
+              }}
+            />
+          </div>
+        )}
+        {!hasTrack && (
+          <div
+            style={{
+              height: 1,
+              margin: "0 14px",
+              background: "rgba(0,0,0,0.08)",
+              boxShadow: "0 1px 0 rgba(255,255,255,0.12)",
+            }}
+          />
+        )}
 
         {/* Lower area: Shuffle / Time / Repeat */}
         <div
@@ -427,7 +437,7 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "0 16px",
+            padding: "0 26px",
           }}
         >
           <button
@@ -452,7 +462,7 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
             style={{
               fontSize: 14,
               fontWeight: 700,
-              fontFamily: "'SF Mono', 'Monaco', 'Consolas', monospace",
+              fontFamily: "'ChicagoKare', 'SF Mono', 'Monaco', monospace",
               color: "#2a4a00",
               letterSpacing: "0.5px",
             }}

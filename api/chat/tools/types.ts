@@ -274,7 +274,7 @@ export interface InfiniteMacControlOutput {
 // Calendar Control Types
 // ============================================================================
 
-export const CALENDAR_ACTIONS = ["list", "create", "update", "delete"] as const;
+export const CALENDAR_ACTIONS = ["list", "create", "update", "delete", "listTodos", "createTodo", "toggleTodo", "deleteTodo"] as const;
 export type CalendarAction = typeof CALENDAR_ACTIONS[number];
 
 export const CALENDAR_COLORS = ["blue", "red", "green", "orange", "purple"] as const;
@@ -289,6 +289,8 @@ export interface CalendarControlInput {
   endTime?: string; // HH:MM
   color?: CalendarColor;
   notes?: string;
+  completed?: boolean;
+  calendarId?: string;
 }
 
 export interface CalendarControlOutput {
@@ -311,6 +313,20 @@ export interface CalendarControlOutput {
     endTime?: string;
     color: string;
     notes?: string;
+  };
+  todos?: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+    dueDate: string | null;
+    calendarId: string;
+  }>;
+  todo?: {
+    id: string;
+    title: string;
+    completed: boolean;
+    dueDate: string | null;
+    calendarId: string;
   };
 }
 

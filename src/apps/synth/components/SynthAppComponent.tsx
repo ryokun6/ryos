@@ -198,6 +198,7 @@ export function SynthAppComponent({
         onClose={onClose}
         isForeground={isForeground}
         appId="synth"
+        material={isMacOSTheme ? "brushedmetal" : "default"}
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         onNavigateNext={onNavigateNext}
@@ -206,15 +207,20 @@ export function SynthAppComponent({
       >
         <div
           ref={appContainerRef}
-          className="flex flex-col h-full w-full bg-[#1a1a1a] text-white overflow-hidden select-none synth-force-font"
+          className={cn(
+            "flex flex-col h-full w-full text-white overflow-hidden select-none synth-force-font",
+            !isMacOSTheme && "bg-[#1a1a1a]"
+          )}
         >
           {/* Main content area */}
           <div className="flex flex-col flex-1 min-h-0 w-full overflow-hidden">
             {/* Presets section */}
             <div
               className={cn(
-                "p-4 py-4 pb-3 bg-[#2a2a2a] w-full border-b border-[#3a3a3a] z-[50] relative",
-                "os-toolbar-texture"
+                "p-4 py-4 pb-3 w-full z-[50] relative",
+                isMacOSTheme
+                  ? "border-b border-black/10"
+                  : "bg-[#2a2a2a] border-b border-[#3a3a3a] os-toolbar-texture"
               )}
             >
               <div className="flex justify-between items-center">
@@ -797,7 +803,10 @@ export function SynthAppComponent({
             </div>
 
             {/* Keyboard - fixed at bottom */}
-            <div className="flex-grow flex flex-col justify-end min-h-[160px] bg-black p-4 w-full">
+            <div className={cn(
+              "flex-grow flex flex-col justify-end min-h-[160px] w-full",
+              isMacOSTheme ? "p-0" : "bg-black p-4"
+            )}>
               <div ref={keyboardContainerRef} className="relative h-full w-full">
                 {/* Keyboard */}
                 {/* White keys container */}

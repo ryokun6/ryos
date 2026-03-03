@@ -21,6 +21,8 @@ interface CalendarMenuBarProps {
   view: CalendarView;
   onSetView: (view: CalendarView) => void;
   onGoToToday: () => void;
+  showTodoSidebar: boolean;
+  onToggleTodoSidebar: () => void;
 }
 
 export function CalendarMenuBar({
@@ -33,6 +35,8 @@ export function CalendarMenuBar({
   view,
   onSetView,
   onGoToToday,
+  showTodoSidebar,
+  onToggleTodoSidebar,
 }: CalendarMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
@@ -41,7 +45,6 @@ export function CalendarMenuBar({
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
-      {/* File Menu */}
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.file")}
@@ -57,7 +60,6 @@ export function CalendarMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
-      {/* Edit Menu */}
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.edit")}
@@ -73,7 +75,6 @@ export function CalendarMenuBar({
         </MenubarContent>
       </MenubarMenu>
 
-      {/* View Menu */}
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.view")}
@@ -101,13 +102,20 @@ export function CalendarMenuBar({
             {t("apps.calendar.menu.monthView")}
           </MenubarCheckboxItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
+          <MenubarCheckboxItem
+            checked={showTodoSidebar}
+            onClick={onToggleTodoSidebar}
+            className="text-md h-6 px-3"
+          >
+            Show To Do Items
+          </MenubarCheckboxItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem onClick={onGoToToday} className="text-md h-6 px-3">
             {t("apps.calendar.menu.goToToday")}
           </MenubarItem>
         </MenubarContent>
       </MenubarMenu>
 
-      {/* Help Menu */}
       <MenubarMenu>
         <MenubarTrigger className="text-md px-2 py-1 border-none focus-visible:ring-0">
           {t("common.menu.help")}

@@ -555,22 +555,25 @@ export const calendarControlSchema = z.object({
     .describe(
       "Action to perform: 'list' returns events (optionally filtered by date), " +
       "'create' adds a new event, 'update' modifies an existing event by ID, " +
-      "'delete' removes an event by ID."
+      "'delete' removes an event by ID. " +
+      "Todo actions: 'listTodos' returns all todos (optionally filter by completed status), " +
+      "'createTodo' adds a new todo, 'toggleTodo' toggles completion by ID, " +
+      "'deleteTodo' removes a todo by ID."
     ),
   id: z
     .string()
     .optional()
-    .describe("For 'update' and 'delete' actions: the event ID."),
+    .describe("For 'update', 'delete', 'toggleTodo', and 'deleteTodo' actions: the item ID."),
   title: z
     .string()
     .max(200)
     .optional()
-    .describe("For 'create' and 'update': the event title."),
+    .describe("For 'create', 'update', and 'createTodo': the title."),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date must be YYYY-MM-DD format" })
     .optional()
-    .describe("For 'create'/'update': event date (YYYY-MM-DD). For 'list': filter by date."),
+    .describe("For events: event date (YYYY-MM-DD). For 'createTodo': optional due date. For 'list'/'listTodos': filter by date."),
   startTime: z
     .string()
     .regex(/^\d{2}:\d{2}$/, { message: "Time must be HH:MM format" })
@@ -590,6 +593,14 @@ export const calendarControlSchema = z.object({
     .max(500)
     .optional()
     .describe("Optional notes for the event."),
+  completed: z
+    .boolean()
+    .optional()
+    .describe("For 'listTodos': filter by completion status (true = completed, false = pending, omit = all)."),
+  calendarId: z
+    .string()
+    .optional()
+    .describe("For 'createTodo': which calendar to assign the todo to (e.g. 'home', 'work'). Defaults to the first calendar."),
 }).superRefine((data, ctx) => {
   if (data.action === "create" && !data.title) {
     ctx.addIssue({
@@ -606,6 +617,20 @@ export const calendarControlSchema = z.object({
     });
   }
   if ((data.action === "update" || data.action === "delete") && !data.id) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `The '${data.action}' action requires the 'id' parameter.`,
+      path: ["id"],
+    });
+  }
+  if (data.action === "createTodo" && !data.title) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "The 'createTodo' action requires the 'title' parameter.",
+      path: ["title"],
+    });
+  }
+  if ((data.action === "toggleTodo" || data.action === "deleteTodo") && !data.id) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: `The '${data.action}' action requires the 'id' parameter.`,
