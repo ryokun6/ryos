@@ -37,8 +37,8 @@ const EVENT_COLOR_LIGHT: Record<string, string> = {
   purple: "rgba(155, 89, 182, 0.15)",
 };
 
-const HOUR_START = 7;
-const HOUR_END = 21;
+const HOUR_START = 0;
+const HOUR_END = 24;
 const HOUR_HEIGHT = 40;
 const TODAY_RED = "#E25B4F";
 const TODAY_RED_XP = "#B53325";
