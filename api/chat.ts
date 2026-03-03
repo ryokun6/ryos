@@ -36,10 +36,16 @@ const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
   return messages.map((msg, index) => {
     // If message already has parts, it's in UIMessage format
     if (msg.parts && Array.isArray(msg.parts)) {
+      const sanitizedParts = msg.parts.map(part => {
+        if (part.type === 'text' && typeof part.text !== 'string') {
+          return { ...part, text: '' };
+        }
+        return part;
+      });
       return {
         id: msg.id || `msg-${index}`,
         role: msg.role as UIMessage['role'],
-        parts: msg.parts,
+        parts: sanitizedParts,
       } as UIMessage;
     }
     // Convert simple { role, content } format to UIMessage format
