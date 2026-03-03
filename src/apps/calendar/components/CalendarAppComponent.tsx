@@ -103,18 +103,33 @@ function CalendarList({
 }) {
   const useGeneva = isMacOSTheme || isSystem7Theme;
   return (
-    <div className="px-2 py-1.5 select-none calendar-sidebar">
-      <div
-        className={cn("text-[9px] font-bold uppercase tracking-wide opacity-50 mb-1 px-0.5", useGeneva && "font-geneva-12")}
-      >
-        Calendars
-      </div>
+    <div className={cn("select-none calendar-sidebar", !isMacOSTheme && "py-1.5")}>
+      {isMacOSTheme ? (
+        <div
+          className={cn("text-[11px] font-regular text-center", useGeneva && "font-geneva-12")}
+          style={{
+            background: "linear-gradient(to bottom, #e6e5e5, #aeadad)",
+            color: "#222",
+            textShadow: "0 1px 0 #e1e1e1",
+            borderTop: "1px solid rgba(255,255,255,0.5)",
+            borderBottom: "1px solid #787878",
+          }}
+        >
+          Calendars
+        </div>
+      ) : (
+        <div
+          className={cn("text-[9px] font-bold uppercase tracking-wide opacity-50 mb-1 px-2.5", useGeneva && "font-geneva-12")}
+        >
+          Calendars
+        </div>
+      )}
       {calendars.map((cal) => (
         <button
           key={cal.id}
           type="button"
           onClick={() => onToggle(cal.id)}
-          className="flex items-center gap-1.5 w-full px-0.5 py-1 rounded hover:bg-black/5 transition-colors"
+          className="flex items-center gap-1.5 w-full px-2 py-1 rounded hover:bg-black/5 transition-colors"
         >
           <AquaCheckbox checked={cal.visible} color={EVENT_COLOR_MAP[cal.color] || EVENT_COLOR_MAP.blue} />
           <span className={cn("text-[11px] truncate", useGeneva && "font-geneva-12")}>{cal.name}</span>
@@ -157,11 +172,26 @@ function TodoSidebar({
 
   return (
     <div className="flex flex-col h-full select-none calendar-sidebar" style={{ width: 180, minWidth: 180 }}>
-      <div
-        className={cn("text-[9px] font-bold uppercase tracking-wide opacity-50 px-2 pt-2 pb-1", useGeneva && "font-geneva-12")}
-      >
-        To Do Items
-      </div>
+      {isMacOSTheme ? (
+        <div
+          className={cn("text-[11px] font-regular text-center", useGeneva && "font-geneva-12")}
+          style={{
+            background: "linear-gradient(to bottom, #e6e5e5, #aeadad)",
+            color: "#222",
+            textShadow: "0 1px 0 #e1e1e1",
+            borderTop: "1px solid rgba(255,255,255,0.5)",
+            borderBottom: "1px solid #787878",
+          }}
+        >
+          To Do Items
+        </div>
+      ) : (
+        <div
+          className={cn("text-[9px] font-bold uppercase tracking-wide opacity-50 px-2 pt-2 pb-1", useGeneva && "font-geneva-12")}
+        >
+          To Do Items
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto px-2">
         {todos.length === 0 && (
           <div className={cn("text-[10px] opacity-30 px-0.5 py-2", useGeneva && "font-geneva-12")}>No to-do items</div>
@@ -241,7 +271,7 @@ function MiniCalendar({
 }) {
   const useGeneva = isMacOSTheme || isSystem7Theme;
   return (
-    <div className="flex flex-col select-none py-1 px-1.5" style={{ minWidth: 150, flexShrink: 0 }}>
+    <div className="flex flex-col select-none py-1 px-1.5 calendar-sidebar" style={{ minWidth: 150, flexShrink: 0 }}>
       <div className="flex items-center justify-between px-0.5 py-1">
         <button type="button" onClick={onPrevMonth} className="p-0.5 hover:opacity-70 rounded">
           <CaretLeft size={10} weight="bold" />
@@ -256,8 +286,8 @@ function MiniCalendar({
         {narrowDayNames.map((d, i) => (
           <div
             key={i}
-            className={cn("text-center text-[9px] font-medium", useGeneva && "font-geneva-12")}
-            style={{ opacity: 0.5 }}
+            className={cn("text-center font-medium", useGeneva && "font-geneva-12")}
+            style={{ opacity: 0.5, fontSize: 9 }}
           >
             {d}
           </div>
@@ -750,39 +780,75 @@ function BottomToolbar({
         background: isXpTheme ? "#ECE9D8" : isMacOSTheme ? "transparent" : "#e0e0e0",
       }}
     >
-      <div className={cn("flex items-center gap-0", isMacOSTheme && "aqua-select-group")}>
-        <Button variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"} size="icon"
-          className={cn(isMacOSTheme ? "aqua-compact" : "h-[22px] w-6", isXpTheme && "text-black")} onClick={onPrev}>
-          <CaretLeft size={12} weight="bold" />
-        </Button>
-        {views.map((v) => (
-          <Button key={v.id} variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
-            data-state={view === v.id ? "on" : "off"} onClick={() => onSetView(v.id)}
-            className={cn(isMacOSTheme ? "aqua-compact font-geneva-12 !text-[11px]" : "h-[22px] px-2.5 text-[11px]", isSystem7Theme && "font-geneva-12", isXpTheme && "text-black")}>
-            {v.label}
-          </Button>
-        ))}
-        <Button variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"} size="icon"
-          className={cn(isMacOSTheme ? "aqua-compact" : "h-[22px] w-6", isXpTheme && "text-black")} onClick={onNext}>
-          <CaretRight size={12} weight="bold" />
-        </Button>
-      </div>
-
-      <div className={cn("flex items-center gap-0", isMacOSTheme && "aqua-select-group")}>
-        <Button variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "ghost"} onClick={onGoToToday}
-          className={cn(isMacOSTheme ? "aqua-compact font-geneva-12 !text-[11px]" : "h-6 text-[11px] px-2", isSystem7Theme && "font-geneva-12", isXpTheme && "text-black")}>
-          {t("apps.calendar.today")}
-        </Button>
-        <Button variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "ghost"} onClick={onNewEvent}
-          className={cn(isMacOSTheme ? "aqua-compact" : "h-6 w-6", isXpTheme && "text-black")} title={t("apps.calendar.menu.newEvent")}>
-          <Plus size={12} weight="bold" />
-        </Button>
-        <Button variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "ghost"}
-          onClick={onToggleTodoSidebar} data-state={showTodoSidebar ? "on" : "off"}
-          className={cn(isMacOSTheme ? "aqua-compact" : "h-6 w-6", isXpTheme && "text-black")} title="To Do Items">
-          <ListChecks size={12} weight="bold" />
-        </Button>
-      </div>
+      {isMacOSTheme ? (
+        <>
+          <div className="metal-inset-btn-group">
+            <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onPrev}>
+              <span className="inline-block w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-r-[5px] border-r-current" />
+            </button>
+            {views.map((v) => (
+              <button key={v.id} type="button" className="metal-inset-btn font-geneva-12 !text-[11px]"
+                data-state={view === v.id ? "on" : "off"} onClick={() => onSetView(v.id)}>
+                {v.label}
+              </button>
+            ))}
+            <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onNext}>
+              <span className="inline-block w-0 h-0 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent border-l-[5px] border-l-current" />
+            </button>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="metal-inset-btn-group">
+              <button type="button" className="metal-inset-btn font-geneva-12 !text-[11px]" onClick={onGoToToday}>
+                {t("apps.calendar.today")}
+              </button>
+            </div>
+            <div className="metal-inset-btn-group">
+              <button type="button" className="metal-inset-btn metal-inset-icon" onClick={onNewEvent} title={t("apps.calendar.menu.newEvent")}>
+                <Plus size={10} weight="bold" />
+              </button>
+              <button type="button" className="metal-inset-btn metal-inset-icon"
+                onClick={onToggleTodoSidebar} data-state={showTodoSidebar ? "on" : "off"} title="To Do Items">
+                <ListChecks size={10} weight="bold" />
+              </button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="flex items-center gap-0">
+            <Button variant={isSystem7Theme ? "player" : "default"} size="icon"
+              className={cn("h-[22px] w-6", isXpTheme && "text-black")} onClick={onPrev}>
+              <CaretLeft size={12} weight="bold" />
+            </Button>
+            {views.map((v) => (
+              <Button key={v.id} variant={isSystem7Theme ? "player" : "default"}
+                data-state={view === v.id ? "on" : "off"} onClick={() => onSetView(v.id)}
+                className={cn("h-[22px] px-2.5 text-[11px]", isSystem7Theme && "font-geneva-12", isXpTheme && "text-black")}>
+                {v.label}
+              </Button>
+            ))}
+            <Button variant={isSystem7Theme ? "player" : "default"} size="icon"
+              className={cn("h-[22px] w-6", isXpTheme && "text-black")} onClick={onNext}>
+              <CaretRight size={12} weight="bold" />
+            </Button>
+          </div>
+          <div className="flex items-center gap-0">
+            <Button variant={isSystem7Theme ? "player" : "ghost"} onClick={onGoToToday}
+              className={cn("h-6 text-[11px] px-2", isSystem7Theme && "font-geneva-12", isXpTheme && "text-black")}>
+              {t("apps.calendar.today")}
+            </Button>
+            <Button variant={isSystem7Theme ? "player" : "ghost"} onClick={onNewEvent}
+              className={cn("h-6 w-6", isXpTheme && "text-black")} title={t("apps.calendar.menu.newEvent")}>
+              <Plus size={12} weight="bold" />
+            </Button>
+            <Button variant={isSystem7Theme ? "player" : "ghost"}
+              onClick={onToggleTodoSidebar} data-state={showTodoSidebar ? "on" : "off"}
+              className={cn("h-6 w-6", isXpTheme && "text-black")} title="To Do Items">
+              <ListChecks size={12} weight="bold" />
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

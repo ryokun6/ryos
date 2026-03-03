@@ -274,6 +274,70 @@
     inset 0 -1px 0 rgba(255, 255, 255, 0.1) !important;
 }
 
+/* Metal inset buttons for brushed metal toolbars */
+.metal-inset-btn-group {
+  display: flex;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.3),
+    inset 0 0 1px rgba(0, 0, 0, 0.15),
+    0 1px 0 rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(0, 0, 0, 0.4);
+}
+
+.metal-inset-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #222;
+  background: linear-gradient(to bottom,
+    #e0e0e0 0%,
+    #efefef 49%,
+    #dcdcdc 50%,
+    #f0f0f0 100%
+  );
+  border: none;
+  border-right: 1px solid rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  min-height: 22px;
+  transition: background 0.1s;
+}
+
+.metal-inset-btn:last-child {
+  border-right: none;
+}
+
+.metal-inset-btn:active {
+  background: linear-gradient(to bottom, #7fa0d8 0%,
+    #a3c3e8 49%,
+    #77a8de 50%,
+    #9fd5f5 100%);
+}
+
+.metal-inset-btn[data-state="on"] {
+  background: linear-gradient(to bottom,
+    #7fa0d8 0%,
+    #a3c3e8 49%,
+    #77a8de 50%,
+    #9fd5f5 100%
+  );
+  color: #1a1a1a;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
+  border-right-color: rgba(0, 0, 0, 0.15);
+}
+
+.metal-inset-btn.metal-inset-icon {
+  padding: 2px 6px;
+  min-width: 24px;
+}
+
 /* Windows 98 Theme */
 :root[data-os-theme="win98"] {
   --os-font-ui: "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
