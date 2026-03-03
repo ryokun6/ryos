@@ -46,10 +46,21 @@ export function useDashboardLogic() {
         stickynote: { width: 200, height: 200 },
         translation: { width: 300, height: 170 },
       };
-      // Place near center with some randomness
-      const x = 200 + Math.floor(Math.random() * 200);
-      const y = 100 + Math.floor(Math.random() * 100);
-      addWidget({ type, position: { x, y }, size: sizeMap[type] });
+      const size = sizeMap[type];
+
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const margin = 20;
+      const bottomReserved = 120;
+      const maxX = Math.max(margin, vw - size.width - margin);
+      const maxY = Math.max(margin, vh - size.height - bottomReserved);
+      const x = Math.max(margin, Math.min(200 + Math.floor(Math.random() * 200), maxX));
+      const y = Math.max(margin, Math.min(100 + Math.floor(Math.random() * 100), maxY));
+
+      const currentWidgets = useDashboardStore.getState().widgets;
+      const maxZ = Math.max(0, ...currentWidgets.map((w) => w.zIndex ?? 0));
+
+      addWidget({ type, position: { x, y }, size, zIndex: maxZ + 1 });
     },
     [addWidget]
   );
