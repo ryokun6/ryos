@@ -151,7 +151,7 @@ export function useCalendarLogic() {
       });
     }
     return days;
-  }, [selectedDate, events, todayStr]);
+  }, [selectedDate, events, todayStr, shortDayNames]);
 
   /** Label for the week header, e.g. "Mar 2 – 8, 2026" */
   const weekLabel = useMemo(() => {
