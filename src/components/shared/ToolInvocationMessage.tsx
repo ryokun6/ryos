@@ -162,6 +162,30 @@ export function ToolInvocationMessage({
         displayCallMessage = t("apps.chats.toolCalls.searchingSongs", { query });
         break;
       }
+      case "calendarControl": {
+        const action = input?.action;
+        const title = typeof input?.title === "string" ? input.title : "";
+        if (action === "create") {
+          displayCallMessage = t("apps.chats.toolCalls.calendar.addingEvent", { title });
+        } else if (action === "update") {
+          displayCallMessage = t("apps.chats.toolCalls.calendar.updatingEvent");
+        } else if (action === "delete") {
+          displayCallMessage = t("apps.chats.toolCalls.calendar.deletingEvent");
+        } else if (action === "list") {
+          displayCallMessage = t("apps.chats.toolCalls.calendar.listingEvents");
+        } else if (action === "createTodo") {
+          displayCallMessage = t("apps.chats.toolCalls.calendar.addingTodo", { title });
+        } else if (action === "toggleTodo") {
+          displayCallMessage = t("apps.chats.toolCalls.calendar.togglingTodo");
+        } else if (action === "deleteTodo") {
+          displayCallMessage = t("apps.chats.toolCalls.calendar.deletingTodo");
+        } else if (action === "listTodos") {
+          displayCallMessage = t("apps.chats.toolCalls.calendar.listingTodos");
+        } else {
+          displayCallMessage = t("apps.chats.toolCalls.running", { toolName: formatToolName(toolName) });
+        }
+        break;
+      }
       case "stickiesControl": {
         displayCallMessage = t("apps.chats.toolCalls.stickies.managing");
         break;
@@ -410,6 +434,37 @@ export function ToolInvocationMessage({
         }
       }
       displayResultMessage = t("apps.chats.toolCalls.foundVideos", { count });
+    } else if (toolName === "calendarControl") {
+      const out = output as { success?: boolean; message?: string; event?: { title?: string }; todo?: { title?: string; completed?: boolean }; events?: unknown[]; todos?: unknown[] } | undefined;
+      const action = input?.action;
+      if (out?.success) {
+        if (action === "create" && out.event?.title) {
+          displayResultMessage = t("apps.chats.toolCalls.calendar.addedEvent", { title: out.event.title });
+        } else if (action === "update" && out.event?.title) {
+          displayResultMessage = t("apps.chats.toolCalls.calendar.updatedEvent", { title: out.event.title });
+        } else if (action === "update" && out.message) {
+          const titleMatch = out.message.match(/\"(.+?)\"/);
+          displayResultMessage = t("apps.chats.toolCalls.calendar.updatedEvent", { title: titleMatch?.[1] ?? "event" });
+        } else if (action === "delete" && out.message) {
+          const titleMatch = out.message.match(/\"(.+?)\"/);
+          displayResultMessage = t("apps.chats.toolCalls.calendar.deletedEvent", { title: titleMatch?.[1] ?? "event" });
+        } else if (action === "list" && out.events) {
+          displayResultMessage = t("apps.chats.toolCalls.calendar.foundEvents", { count: out.events.length });
+        } else if (action === "createTodo" && out.todo?.title) {
+          displayResultMessage = t("apps.chats.toolCalls.calendar.addedTodo", { title: out.todo.title });
+        } else if (action === "toggleTodo" && out.todo) {
+          displayResultMessage = out.todo.completed
+            ? t("apps.chats.toolCalls.calendar.toggledTodoCompleted", { title: out.todo.title ?? "to-do" })
+            : t("apps.chats.toolCalls.calendar.toggledTodoPending", { title: out.todo.title ?? "to-do" });
+        } else if (action === "deleteTodo" && out.message) {
+          const titleMatch = out.message.match(/\"(.+?)\"/);
+          displayResultMessage = t("apps.chats.toolCalls.calendar.deletedTodo", { title: titleMatch?.[1] ?? "to-do" });
+        } else if (action === "listTodos" && out.todos) {
+          displayResultMessage = t("apps.chats.toolCalls.calendar.foundTodos", { count: out.todos.length });
+        } else if (out.message) {
+          displayResultMessage = out.message;
+        }
+      }
     } else if (toolName === "stickiesControl") {
       if (typeof output === "string") {
         // Extract just the first line (the summary) for display

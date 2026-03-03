@@ -984,6 +984,25 @@
           "noUpdates": "No updates provided",
           "invalidAction": "Invalid action: {{action}}"
         },
+        "calendar": {
+          "addingEvent": "Adding event \"{{title}}\"…",
+          "updatingEvent": "Updating event…",
+          "deletingEvent": "Deleting event…",
+          "listingEvents": "Listing events…",
+          "addingTodo": "Adding to-do \"{{title}}\"…",
+          "togglingTodo": "Updating to-do…",
+          "deletingTodo": "Deleting to-do…",
+          "listingTodos": "Listing to-dos…",
+          "addedEvent": "Added event \"{{title}}\"",
+          "updatedEvent": "Updated event \"{{title}}\"",
+          "deletedEvent": "Deleted event \"{{title}}\"",
+          "foundEvents": "Found {{count}} event(s)",
+          "addedTodo": "Added to-do \"{{title}}\"",
+          "toggledTodoCompleted": "Completed \"{{title}}\"",
+          "toggledTodoPending": "Marked \"{{title}}\" incomplete",
+          "deletedTodo": "Deleted to-do \"{{title}}\"",
+          "foundTodos": "Found {{count}} to-do(s)"
+        },
         "infiniteMac": {
           "startingSystem": "Starting {{system}}…",
           "gettingStatus": "Getting status…",
