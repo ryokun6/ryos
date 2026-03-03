@@ -212,17 +212,15 @@ function WeekTimeGrid({
               <div className={cn("text-[10px] opacity-50 leading-none", isMacOSTheme && "font-geneva-12")}>{day.dayName}</div>
               <div
                 className={cn(
-                  "text-sm font-semibold leading-tight mt-0.5 mx-auto",
-                  day.isToday && "flex items-center justify-center rounded-full text-white"
+                  "text-sm font-semibold mt-0.5 mx-auto flex items-center justify-center",
+                  day.isToday && "rounded-full text-white"
                 )}
                 style={{
+                  width: 22,
+                  height: 22,
+                  lineHeight: "22px",
                   ...(day.isToday
-                    ? {
-                        backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED,
-                        width: 22,
-                        height: 22,
-                        lineHeight: "22px",
-                      }
+                    ? { backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }
                     : {}),
                 }}
               >
