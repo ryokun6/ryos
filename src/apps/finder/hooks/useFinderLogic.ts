@@ -22,6 +22,7 @@ import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { getTranslatedFolderNameFromName } from "@/utils/i18n";
 import { helpItems } from "../index";
 import { useFilesStoreShallow } from "@/stores/helpers";
+import { useDockStore } from "@/stores/useDockStore";
 import {
   emitFileRenamed,
   emitFileSaved,
@@ -159,6 +160,8 @@ export function useFinderLogic({
     updateItemMetadata: state.updateItemMetadata,
     createAlias: state.createAlias,
   }));
+  const addDockItem = useDockStore((state) => state.addItem);
+  const hasDockItem = useDockStore((state) => state.hasItem);
   const createFinderInstance = useFinderStore((state) => state.createInstance);
   const removeFinderInstance = useFinderStore((state) => state.removeInstance);
   const updateFinderInstance = useFinderStore((state) => state.updateInstance);
@@ -965,6 +968,57 @@ export function useFinderLogic({
     }
   };
 
+  const handleAddToDock = (file: FileItem) => {
+    if (file.path.startsWith("/Applications/") && file.appId) {
+      addDockItem({ type: "app", id: file.appId });
+    } else if (
+      !file.isDirectory &&
+      (file.path.endsWith(".app") || file.path.endsWith(".html"))
+    ) {
+      const fileName =
+        file.path
+          .split("/")
+          .pop()
+          ?.replace(/\.(app|html)$/i, "") || file.name;
+      addDockItem({
+        type: "file",
+        id: `file-${file.path}`,
+        path: file.path,
+        name: fileName,
+        icon: file.icon,
+      });
+    } else if (file.aliasType === "app" && file.aliasTarget) {
+      addDockItem({ type: "app", id: file.aliasTarget });
+    }
+  };
+
+  const isDockable = (file: FileItem): boolean => {
+    if (file.path.startsWith("/Applications/") && file.appId) return true;
+    if (
+      !file.isDirectory &&
+      (file.path.endsWith(".app") || file.path.endsWith(".html"))
+    )
+      return true;
+    if (file.aliasType === "app" && file.aliasTarget) return true;
+    return false;
+  };
+
+  const isAlreadyInDock = (file: FileItem): boolean => {
+    if (file.path.startsWith("/Applications/") && file.appId) {
+      return hasDockItem(file.appId);
+    }
+    if (
+      !file.isDirectory &&
+      (file.path.endsWith(".app") || file.path.endsWith(".html"))
+    ) {
+      return hasDockItem(`file-${file.path}`);
+    }
+    if (file.aliasType === "app" && file.aliasTarget) {
+      return hasDockItem(file.aliasTarget);
+    }
+    return false;
+  };
+
   const fileMenuItems = (file: FileItem): MenuItem[] => [
     {
       type: "item",
@@ -980,6 +1034,12 @@ export function useFinderLogic({
         file.isDirectory ||
         file.path.startsWith("/Desktop") ||
         file.path === "/Desktop",
+    },
+    {
+      type: "item",
+      label: t("common.dock.addToDock"),
+      onSelect: () => handleAddToDock(file),
+      disabled: !isDockable(file) || isAlreadyInDock(file),
     },
     { type: "separator" },
     {

@@ -83,8 +83,6 @@ export function StickyNoteWidget({ widgetId }: StickyNoteWidgetProps) {
     };
   }, []);
 
-  const foldSize = 14;
-
   return (
     <div
       style={{
@@ -133,45 +131,6 @@ export function StickyNoteWidget({ widgetId }: StickyNoteWidgetProps) {
         />
       )}
 
-      {/* Corner fold (Mac only) */}
-      {!isXpTheme && (
-        <>
-          <div
-            style={{
-              position: "absolute",
-              bottom: 0,
-              right: 0,
-              width: foldSize,
-              height: foldSize,
-              background: `linear-gradient(225deg, transparent 50%, ${darkenColor(noteColor, 30)} 50%)`,
-              zIndex: 5,
-              borderTopLeftRadius: 2,
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              bottom: 0,
-              right: foldSize,
-              width: foldSize,
-              height: 2,
-              background: `linear-gradient(to right, transparent, ${darkenColor(noteColor, 20)}44)`,
-              zIndex: 4,
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              bottom: foldSize,
-              right: 0,
-              width: 2,
-              height: foldSize,
-              background: `linear-gradient(to bottom, transparent, ${darkenColor(noteColor, 20)}44)`,
-              zIndex: 4,
-            }}
-          />
-        </>
-      )}
 
       {/* Drop shadow at bottom for floating effect (Mac only) */}
       {!isXpTheme && (

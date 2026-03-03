@@ -161,7 +161,7 @@ function MiniChart({
           x={width - rightPad + 4}
           y={label.y + 3}
           fill={isXpTheme ? "#666" : "rgba(255,255,255,0.4)"}
-          fontSize={8}
+          fontSize={9}
           fontFamily="'Helvetica Neue', Helvetica, Arial, sans-serif"
         >
           {label.value}
@@ -175,7 +175,7 @@ function MiniChart({
             x={xPos}
             y={height - 2}
             fill={isXpTheme ? "#666" : "rgba(255,255,255,0.4)"}
-            fontSize={7}
+            fontSize={9}
             fontFamily="'Helvetica Neue', Helvetica, Arial, sans-serif"
             textAnchor="middle"
           >
@@ -310,7 +310,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
         style={{
           minHeight: 200,
           color: isXpTheme ? "#888" : "rgba(255,255,255,0.4)",
-          fontSize: 11,
+          fontSize: 13,
           fontFamily: font,
         }}
       >
@@ -326,7 +326,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
         style={{
           minHeight: 200,
           color: isXpTheme ? "#888" : "rgba(255,255,255,0.4)",
-          fontSize: 11,
+          fontSize: 13,
           fontFamily: font,
         }}
       >
@@ -338,13 +338,13 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
           className="flex items-center gap-1 hover:opacity-80"
           style={{
             color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
-            fontSize: 10,
+            fontSize: 12,
             cursor: "pointer",
             border: "none",
             background: "none",
           }}
         >
-          <ArrowClockwise size={10} weight="bold" />
+          <ArrowClockwise size={12} weight="bold" />
           {t("apps.dashboard.stocks.retry")}
         </button>
       </div>
@@ -371,17 +371,17 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => setSelectedSymbol(stock.symbol)}
             >
-              <span className="font-bold" style={{ fontSize: 11, color: "#333", width: 50 }}>
+              <span className="font-bold" style={{ fontSize: 13, color: "#333", width: 58 }}>
                 {displaySymbol(stock.symbol)}
               </span>
-              <span style={{ fontSize: 11, color: "#333", flex: 1, textAlign: "right" }}>
+              <span style={{ fontSize: 13, color: "#333", flex: 1, textAlign: "right" }}>
                 {formatPrice(stock.price)}
               </span>
               <span
                 className="font-medium text-right"
                 style={{
-                  fontSize: 10,
-                  width: 50,
+                  fontSize: 12,
+                  width: 56,
                   marginLeft: 6,
                   color: stock.change >= 0 ? "#2E8B2E" : "#CC0000",
                 }}
@@ -401,12 +401,12 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                 onClick={() => setSelectedRange(r)}
                 className="transition-colors"
                 style={{
-                  fontSize: 9,
+                  fontSize: 11,
                   fontWeight: selectedRange === r ? 700 : 400,
                   color: selectedRange === r ? "#0066CC" : "#888",
                   background: selectedRange === r ? "rgba(0,102,204,0.08)" : "transparent",
                   borderRadius: 3,
-                  padding: "1px 4px",
+                  padding: "1px 5px",
                   border: "none",
                   cursor: "pointer",
                 }}
@@ -423,7 +423,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
               widgetId={widgetId}
             />
           </div>
-          <div className="text-center mt-0.5" style={{ fontSize: 8, color: "#999" }}>
+          <div className="text-center mt-0.5" style={{ fontSize: 10, color: "#999" }}>
             {t("apps.dashboard.stocks.delayed")}
           </div>
         </div>
@@ -453,7 +453,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                 key={stock.symbol}
                 className="flex items-center px-2 cursor-pointer transition-colors"
                 style={{
-                  height: isFirst ? 28 : 24,
+                  height: isFirst ? 32 : 28,
                   background: isSelected ? "rgba(255,255,255,0.08)" : "transparent",
                   borderRadius: isSelected ? 6 : 0,
                   borderBottom: !isSelected && i < stocks.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
@@ -464,9 +464,9 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                 <span
                   className="font-bold"
                   style={{
-                    fontSize: isFirst ? 13 : 12,
+                    fontSize: isFirst ? 15 : 14,
                     color: "rgba(255,255,255,0.9)",
-                    width: 52,
+                    width: 58,
                     letterSpacing: "0.02em",
                   }}
                 >
@@ -475,7 +475,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                 <span
                   className="flex-1 text-right font-medium"
                   style={{
-                    fontSize: isFirst ? 13 : 12,
+                    fontSize: isFirst ? 15 : 14,
                     color: "rgba(255,255,255,0.85)",
                     letterSpacing: "-0.01em",
                   }}
@@ -485,8 +485,8 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                 <span
                   className="font-bold text-right"
                   style={{
-                    fontSize: isFirst ? 11 : 10,
-                    width: 50,
+                    fontSize: isFirst ? 13 : 12,
+                    width: 56,
                     marginLeft: 6,
                     padding: "1px 5px",
                     borderRadius: 3,
@@ -513,12 +513,12 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setSelectedRange(r)}
                 style={{
-                  fontSize: 9,
+                  fontSize: 11,
                   fontWeight: selectedRange === r ? 700 : 400,
                   color: selectedRange === r ? "#FFF" : "rgba(255,255,255,0.45)",
                   background: selectedRange === r ? "rgba(255,255,255,0.15)" : "transparent",
                   borderRadius: 3,
-                  padding: "1px 5px",
+                  padding: "2px 6px",
                   border: "none",
                   cursor: "pointer",
                   letterSpacing: "0.02em",
@@ -538,7 +538,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
           </div>
           <div
             className="text-center mt-1"
-            style={{ fontSize: 8, color: "rgba(255,255,255,0.3)", letterSpacing: "0.02em" }}
+            style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", letterSpacing: "0.02em" }}
           >
             {t("apps.dashboard.stocks.delayed")}
           </div>

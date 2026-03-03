@@ -216,7 +216,7 @@
   position: absolute;
   inset: 0;
   background: url("/assets/brushed-metal.jpg") center / cover no-repeat;
-  filter: contrast(0.85) brightness(1.05);
+  filter: contrast(0.7) brightness(1.1);
   border-radius: inherit;
   transition: filter 0.2s ease;
 }

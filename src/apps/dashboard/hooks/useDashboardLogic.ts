@@ -42,7 +42,7 @@ export function useDashboardLogic() {
         weather: { width: 340, height: 180 },
         stocks: { width: 240, height: 340 },
         ipod: { width: 320, height: 125 },
-        dictionary: { width: 240, height: 280 },
+        dictionary: { width: 240, height: 220 },
         stickynote: { width: 200, height: 200 },
         translation: { width: 300, height: 170 },
       };

@@ -18,7 +18,7 @@ interface IpodWidgetProps {
   widgetId?: string;
 }
 
-function MarqueeText({ text, color }: { text: string; color: string }) {
+function MarqueeText({ text, color, fontWeight = 600 }: { text: string; color: string; fontWeight?: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const [shouldScroll, setShouldScroll] = useState(false);
@@ -43,7 +43,7 @@ function MarqueeText({ text, color }: { text: string; color: string }) {
           display: "inline-block",
           paddingRight: shouldScroll ? "3em" : 0,
           fontSize: 11,
-          fontWeight: 600,
+          fontWeight,
           fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
           color,
         }}
@@ -61,18 +61,15 @@ function ClickWheel({
   onNext,
   onPlayPause,
   isPlaying,
-  isXpTheme,
 }: {
   onPrev: () => void;
   onNext: () => void;
   onPlayPause: () => void;
   isPlaying: boolean;
-  isXpTheme: boolean;
 }) {
   const { t } = useTranslation();
-  const centerSize = 38;
-  const iconColor = "#999";
-  const iconColorDark = "#888";
+  const centerSize = 46;
+  const iconColor = "#aaa";
 
   return (
     <div
@@ -89,16 +86,9 @@ function ClickWheel({
           position: "absolute",
           inset: 0,
           borderRadius: "50%",
-          background: isXpTheme
-            ? "linear-gradient(160deg, #e4e4e4 0%, #d0d0d0 50%, #c0c0c0 100%)"
-            : "radial-gradient(ellipse at 38% 32%, #e6e6e6 0%, #d8d8d8 20%, #c8c8c8 45%, #b4b4b4 70%, #bdbdbd 100%)",
-          boxShadow: [
-            "0 3px 10px rgba(0,0,0,0.3)",
-            "0 1px 3px rgba(0,0,0,0.15)",
-            "inset 0 2px 5px rgba(255,255,255,0.65)",
-            "inset 0 -2px 4px rgba(0,0,0,0.07)",
-          ].join(", "),
+          background: "linear-gradient(180deg, #f8f8f8 0%, #eee 100%)",
           border: "1px solid rgba(0,0,0,0.2)",
+          boxShadow: "inset 0 2px 3px rgba(0,0,0,0.08), inset 0 -1px 2px rgba(255,255,255,0.6)",
         }}
       />
 
@@ -115,15 +105,9 @@ function ClickWheel({
           width: centerSize,
           height: centerSize,
           borderRadius: "50%",
-          background: isXpTheme
-            ? "linear-gradient(160deg, #f8f8f8 0%, #e0e0e0 100%)"
-            : "radial-gradient(ellipse at 40% 35%, #fafafa 0%, #f0f0f0 35%, #e0e0e0 70%, #d4d4d4 100%)",
-          boxShadow: [
-            "0 2px 6px rgba(0,0,0,0.2)",
-            "inset 0 1px 2px rgba(255,255,255,0.95)",
-            "inset 0 -1px 2px rgba(0,0,0,0.06)",
-          ].join(", "),
-          border: "1px solid rgba(0,0,0,0.14)",
+          background: "linear-gradient(180deg, #fff 0%, #f0f0f0 100%)",
+          border: "1px solid rgba(0,0,0,0.15)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           cursor: "pointer",
           zIndex: 2,
           display: "flex",
@@ -132,9 +116,9 @@ function ClickWheel({
         }}
       >
         {isPlaying ? (
-          <Pause size={13} weight="fill" color="#666" />
+          <Pause size={20} weight="fill" color="#aaa" />
         ) : (
-          <Play size={13} weight="fill" color="#666" style={{ marginLeft: 1 }} />
+          <Play size={20} weight="fill" color="#aaa" style={{ marginLeft: 1 }} />
         )}
       </button>
 
@@ -159,7 +143,7 @@ function ClickWheel({
           zIndex: 2,
         }}
       >
-        <SkipBack size={10} weight="fill" color={iconColorDark} />
+        <SkipBack size={10} weight="fill" color={iconColor} />
       </button>
 
       {/* Next (right) */}
@@ -183,52 +167,8 @@ function ClickWheel({
           zIndex: 2,
         }}
       >
-        <SkipForward size={10} weight="fill" color={iconColorDark} />
+        <SkipForward size={10} weight="fill" color={iconColor} />
       </button>
-
-      {/* Play/Pause at bottom */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 8,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 1,
-          pointerEvents: "none",
-        }}
-      >
-        <Play size={7} weight="fill" color={iconColor} />
-        <span style={{ fontSize: 5, color: iconColor, fontWeight: 700 }}>/</span>
-        <Pause size={7} weight="fill" color={iconColor} />
-      </div>
-
-      {/* MENU at top */}
-      <div
-        style={{
-          position: "absolute",
-          top: 9,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 1,
-          pointerEvents: "none",
-        }}
-      >
-        <span
-          style={{
-            fontSize: 7,
-            fontWeight: 700,
-            fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-            color: iconColor,
-            letterSpacing: 0.5,
-          }}
-        >
-          {t("apps.dashboard.ipod.menu", "MENU")}
-        </span>
-      </div>
     </div>
   );
 }
@@ -319,6 +259,38 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
           borderRadius: "inherit",
         }}
       />
+      {/* Top highlight shine */}
+      <div
+        style={{
+          position: "absolute",
+          top: 2,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "calc(100% - 6px)",
+          height: "35%",
+          maxHeight: 50,
+          borderRadius: "9999px 9999px 50% 50%",
+          background: "linear-gradient(rgba(255,255,255,0.7), rgba(255,255,255,0))",
+          pointerEvents: "none",
+          zIndex: 2,
+        }}
+      />
+      {/* Bottom subtle glow */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 2,
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "calc(100% - 10px)",
+          height: "20%",
+          maxHeight: 30,
+          borderRadius: "50% 50% 9999px 9999px",
+          background: "linear-gradient(rgba(255,255,255,0), rgba(255,255,255,0.25))",
+          pointerEvents: "none",
+          zIndex: 2,
+        }}
+      />
 
       {/* Left: Click Wheel */}
       <div
@@ -336,7 +308,6 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
           onNext={handleNext}
           onPlayPause={handlePlayPause}
           isPlaying={isPlaying}
-          isXpTheme={isXpTheme}
         />
       </div>
 
@@ -356,10 +327,11 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
             "linear-gradient(180deg, #d6ec82 0%, #c4e050 15%, #b0d63c 35%, #a0cc2c 55%, #94c420 75%, #8cbc18 100%)",
           border: "1px solid #6a8a14",
           boxShadow: [
-            "inset 0 3px 8px rgba(0,0,0,0.22)",
-            "inset 0 1px 2px rgba(0,0,0,0.15)",
-            "inset 0 -2px 4px rgba(255,255,255,0.10)",
-            "0 1px 0 rgba(255,255,255,0.45)",
+            "inset 0 4px 6px rgba(0,0,0,0.3)",
+            "inset 0 1px 1px rgba(0,0,0,0.2)",
+            "inset 0 -3px 6px rgba(255,255,255,0.25)",
+            "inset 0 -1px 1px rgba(255,255,255,0.4)",
+            "0 1px 0 rgba(255,255,255,0.5)",
           ].join(", "),
         }}
       >
@@ -369,19 +341,19 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            justifyContent: "center",
+            justifyContent: "flex-end",
             alignItems: "center",
-            padding: "0 18px",
+            padding: "0 18px 4px",
             textAlign: "center",
           }}
         >
           {hasTrack ? (
-            <>
+            <div style={{ display: "flex", flexDirection: "column", gap: 0, width: "100%", lineHeight: 1.2 }}>
               <MarqueeText text={title} color="#1a3300" />
               {artist && (
-                <MarqueeText text={artist} color="#3a5a10" />
+                <MarqueeText text={artist} color="#3a5a10" fontWeight={400} />
               )}
-            </>
+            </div>
           ) : (
             <div
               style={{
@@ -460,9 +432,9 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
 
           <span
             style={{
-              fontSize: 14,
+              fontSize: 11,
               fontWeight: 700,
-              fontFamily: "'ChicagoKare', 'SF Mono', 'Monaco', monospace",
+              fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
               color: "#2a4a00",
               letterSpacing: "0.5px",
             }}

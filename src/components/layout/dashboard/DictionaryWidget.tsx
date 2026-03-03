@@ -140,7 +140,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
         </div>
 
         {/* XP content */}
-        <div className="flex-1 overflow-y-auto px-3 py-2" style={{ fontSize: 11, minHeight: 0 }}>
+        <div className="flex-1 overflow-y-auto px-3 py-2" style={{ fontSize: 11, minHeight: 0, maxHeight: 200 }}>
           {loading && (
             <div className="text-center text-gray-400 py-4" style={{ fontSize: 10 }}>
               {t("apps.dashboard.dictionary.loading", "Looking up…")}
@@ -311,6 +311,7 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
           background: "linear-gradient(180deg, #F5F0E8 0%, #EDE7DA 100%)",
           padding: "8px 12px",
           minHeight: 0,
+          maxHeight: 220,
         }}
       >
         {loading && (

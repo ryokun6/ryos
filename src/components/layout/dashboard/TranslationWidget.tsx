@@ -1,28 +1,32 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useDashboardStore, type TranslationWidgetConfig } from "@/stores/useDashboardStore";
 import { useTranslation } from "react-i18next";
 import { ArrowsLeftRight, ArrowsDownUp } from "@phosphor-icons/react";
 
-const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "fr", label: "French" },
-  { code: "es", label: "Spanish" },
-  { code: "de", label: "German" },
-  { code: "it", label: "Italian" },
-  { code: "pt", label: "Portuguese" },
-  { code: "ja", label: "Japanese" },
-  { code: "ko", label: "Korean" },
-  { code: "zh-CN", label: "Chinese" },
-  { code: "ru", label: "Russian" },
-] as const;
+const LANGUAGE_CODES = ["en", "fr", "es", "de", "it", "pt", "ja", "ko", "zh-TW", "ru"] as const;
+
+function useLocalizedLanguages(locale: string) {
+  return useMemo(() => {
+    try {
+      const displayNames = new Intl.DisplayNames([locale], { type: "language" });
+      return LANGUAGE_CODES.map((code) => ({
+        code,
+        label: displayNames.of(code) ?? code,
+      }));
+    } catch {
+      return LANGUAGE_CODES.map((code) => ({ code, label: code }));
+    }
+  }, [locale]);
+}
 
 interface TranslationWidgetProps {
   widgetId?: string;
 }
 
 export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const LANGUAGES = useLocalizedLanguages(i18n.language);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
@@ -360,7 +364,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
           >
             {t("apps.dashboard.translation.from", "Translate from")}
           </span>
-          <div style={{ position: "relative", width: 156, marginLeft: "auto", flexShrink: 0 }}>
+          <div style={{ position: "relative", flex: 1, minWidth: 0, marginLeft: "auto" }}>
             <select
               value={fromLang}
               onChange={(e) => handleFromLangChange(e.target.value)}
@@ -397,7 +401,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
             background: "rgba(255,255,255,0.92)",
             color: "#1A1A1A",
             resize: "none",
-            height: 40,
+            minHeight: 56,
             fontFamily: font,
             outline: "none",
             boxShadow: "inset 0 1px 3px rgba(0,0,0,0.06), 0 1px 0 rgba(255,255,255,0.05)",
@@ -421,20 +425,21 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
             onClick={handleSwap}
             onPointerDown={(e) => e.stopPropagation()}
             style={{
-              padding: "2px 4px",
-              borderRadius: 4,
-              border: "none",
-              background: "transparent",
+              padding: "3px 6px",
+              borderRadius: 6,
+              border: "1px solid rgba(0,0,0,0.25)",
+              background: "linear-gradient(180deg, #6AB0F3 0%, #3B82D0 50%, #2E6DB8 100%)",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               lineHeight: 1,
-              color: "rgba(255,255,255,0.85)",
+              color: "#FFF",
               flexShrink: 0,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.3)",
             }}
             title={t("apps.dashboard.translation.swap", "Swap languages")}
           >
-            <ArrowsDownUp size={16} weight="bold" />
+            <ArrowsDownUp size={14} weight="bold" />
           </button>
           <span
             style={{
@@ -448,7 +453,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
           >
             {t("apps.dashboard.translation.to", "To")}
           </span>
-          <div style={{ position: "relative", width: 156, marginLeft: "auto", flexShrink: 0 }}>
+          <div style={{ position: "relative", flex: 1, minWidth: 0, marginLeft: "auto" }}>
             <select
               value={toLang}
               onChange={(e) => handleToLangChange(e.target.value)}
@@ -480,7 +485,8 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
             border: "1px solid rgba(0,0,0,0.08)",
             background: "rgba(255,255,255,0.85)",
             color: loading ? "rgba(0,0,0,0.4)" : "#1A1A1A",
-            height: 40,
+            minHeight: 56,
+            maxHeight: 120,
             fontFamily: font,
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
@@ -515,7 +521,8 @@ export function TranslationBackPanel({
   widgetId: string;
   onDone?: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const LANGUAGES = useLocalizedLanguages(i18n.language);
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);

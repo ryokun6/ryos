@@ -118,20 +118,52 @@ function WidgetStrip({
         style={{
           background: isXpTheme
             ? "linear-gradient(to bottom, rgba(200,200,200,0.95), rgba(180,180,180,0.98))"
-            : "linear-gradient(to bottom, rgba(60,60,60,0.75), rgba(20,20,20,0.92))",
+            : "linear-gradient(180deg, #404040 0%, #353535 30%, #2a2a2a 100%)",
           borderTop: isXpTheme
             ? "1px solid rgba(255,255,255,0.8)"
-            : "1px solid rgba(255,255,255,0.12)",
-          backdropFilter: "saturate(1.5)",
-          WebkitBackdropFilter: "saturate(1.5)",
+            : "1px solid rgba(255,255,255,0.15)",
+          borderBottom: isXpTheme ? undefined : "1px solid #000",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
+        {/* Perforated metal dot pattern */}
+        {!isXpTheme && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage: `radial-gradient(circle, rgba(0,0,0,0.35) 1px, transparent 1px)`,
+              backgroundSize: "6px 6px",
+              backgroundPosition: "0 0",
+              pointerEvents: "none",
+              zIndex: 0,
+            }}
+          />
+        )}
+        {/* Top inner highlight */}
+        {!isXpTheme && (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 1,
+              background: "rgba(255,255,255,0.08)",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          />
+        )}
         <div
           ref={scrollRef}
           className="widget-strip-scroll flex items-start gap-5 overflow-x-auto px-6 py-4"
           style={{
             justifyContent: "center",
+            position: "relative",
+            zIndex: 2,
           }}
         >
           {widgets.map((w) => (
@@ -143,7 +175,6 @@ function WidgetStrip({
               style={{ minWidth: 72 }}
             >
               <motion.div
-                whileHover={{ scale: 1.12, y: -4 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 400, damping: 20 }}
                 className="flex items-center justify-center"
@@ -306,37 +337,41 @@ export function DashboardAppComponent({
               }}
             >
               {/* Widgets */}
-              {widgets.map((widget) => (
-                <motion.div
-                  key={widget.id}
-                  initial={{ opacity: 0, scale: 0.8, y: 30, zIndex: widget.zIndex ?? 1 }}
-                  animate={{ opacity: 1, scale: 1, y: 0, zIndex: widget.zIndex ?? 1 }}
-                  exit={{ opacity: 0, scale: 0.8, y: 30, zIndex: widget.zIndex ?? 1 }}
-                  transition={{
-                    duration: 0.35,
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 25,
-                  }}
-                  style={{ position: "relative", zIndex: widget.zIndex ?? 1 }}
-                >
-                  <WidgetChrome
-                    width={widget.size.width}
-                    height={widget.size.height}
-                    x={widget.position.x}
-                    y={widget.position.y}
-                    zIndex={widget.zIndex ?? 1}
-                    borderRadius={widget.type === "ipod" ? "9999px" : undefined}
-                    onRemove={() => removeWidget(widget.id)}
-                    onMove={(pos) => moveWidget(widget.id, pos)}
-                    onBringToFront={() => bringToFront(widget.id)}
-                    overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
-                    backContent={(onFlipBack) => <WidgetBackContent type={widget.type} widgetId={widget.id} onDone={onFlipBack} />}
+              <AnimatePresence>
+                {widgets.map((widget) => (
+                  <motion.div
+                    key={widget.id}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{
+                      duration: 0.3,
+                      ease: [0.4, 0, 0.2, 1],
+                    }}
+                    style={{
+                      position: "relative",
+                      zIndex: widget.zIndex ?? 1,
+                      transformOrigin: `${widget.position.x + widget.size.width / 2}px ${widget.position.y + widget.size.height / 2}px`,
+                    }}
                   >
-                    <WidgetContent type={widget.type} widgetId={widget.id} />
-                  </WidgetChrome>
-                </motion.div>
-              ))}
+                    <WidgetChrome
+                      width={widget.size.width}
+                      height={widget.size.height}
+                      x={widget.position.x}
+                      y={widget.position.y}
+                      zIndex={widget.zIndex ?? 1}
+                      borderRadius={widget.type === "ipod" ? "9999px" : undefined}
+                      onRemove={() => removeWidget(widget.id)}
+                      onMove={(pos) => moveWidget(widget.id, pos)}
+                      onBringToFront={() => bringToFront(widget.id)}
+                      overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
+                      backContent={(onFlipBack) => <WidgetBackContent type={widget.type} widgetId={widget.id} onDone={onFlipBack} />}
+                    >
+                      <WidgetContent type={widget.type} widgetId={widget.id} />
+                    </WidgetChrome>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
 
               {/* Widget strip */}
               <AnimatePresence>
