@@ -185,7 +185,7 @@ function WidgetStrip({
                 <span className="text-4xl">{WIDGET_ICONS[w.type]}</span>
               </motion.div>
               <span
-                className="text-[10px] font-medium text-center leading-tight max-w-[72px] truncate"
+                className="text-[10px] font-bold text-center leading-tight max-w-[72px] truncate"
                 style={{
                   color: isXpTheme ? "rgba(0,0,0,0.75)" : "rgba(255,255,255,0.7)",
                   textShadow: isXpTheme ? "none" : "0 1px 3px rgba(0,0,0,0.5)",
