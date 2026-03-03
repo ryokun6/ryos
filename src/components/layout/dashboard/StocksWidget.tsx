@@ -149,12 +149,14 @@ function MiniChart({
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="block">
       <defs>
         <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#4A90D9" stopOpacity={0.5} />
-          <stop offset="100%" stopColor="#4A90D9" stopOpacity={0.05} />
+          <stop offset="0%" stopColor={isXpTheme ? "#4A90D9" : "#FFFFFF"} stopOpacity={0.3} />
+          <stop offset="20%" stopColor={isXpTheme ? "#4A90D9" : "#FFFFFF"} stopOpacity={0.15} />
+          <stop offset="50%" stopColor={isXpTheme ? "#4A90D9" : "#FFFFFF"} stopOpacity={0.05} />
+          <stop offset="100%" stopColor={isXpTheme ? "#4A90D9" : "#FFFFFF"} stopOpacity={0} />
         </linearGradient>
       </defs>
       <path d={area} fill={`url(#${gradientId})`} />
-      <path d={linePath} fill="none" stroke={isXpTheme ? "#2060A0" : "#6AB4FF"} strokeWidth={1.5} />
+      <path d={linePath} fill="none" stroke={isXpTheme ? "#2060A0" : "#FFFFFF"} strokeWidth={1.5} />
       {yLabels.map((label) => (
         <text
           key={label.value}
@@ -456,7 +458,7 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                   height: isFirst ? 32 : 28,
                   background: isSelected ? "rgba(255,255,255,0.08)" : "transparent",
                   borderRadius: isSelected ? 6 : 0,
-                  borderBottom: !isSelected && i < stocks.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                  borderBottom: !isSelected && i < stocks.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "1px solid transparent",
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setSelectedSymbol(stock.symbol)}
@@ -517,8 +519,8 @@ export function StocksWidget({ widgetId }: StocksWidgetProps) {
                   fontWeight: selectedRange === r ? 700 : 400,
                   color: selectedRange === r ? "#FFF" : "rgba(255,255,255,0.45)",
                   background: selectedRange === r ? "rgba(255,255,255,0.15)" : "transparent",
-                  borderRadius: 3,
-                  padding: "2px 6px",
+                  borderRadius: 9999,
+                  padding: "2px 8px",
                   border: "none",
                   cursor: "pointer",
                   letterSpacing: "0.02em",
