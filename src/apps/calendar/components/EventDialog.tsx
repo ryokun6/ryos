@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AquaCheckbox } from "@/components/ui/aqua-checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent, EventColor, CalendarGroup } from "@/stores/useCalendarStore";
@@ -34,13 +36,13 @@ interface EventDialogProps {
   calendars?: CalendarGroup[];
 }
 
-const EVENT_COLORS: { value: EventColor; hex: string }[] = [
-  { value: "blue", hex: "#4A90D9" },
-  { value: "red", hex: "#D94A4A" },
-  { value: "green", hex: "#5AB55A" },
-  { value: "orange", hex: "#E89B3E" },
-  { value: "purple", hex: "#9B59B6" },
-];
+const COLOR_HEX: Record<string, string> = {
+  blue: "#4A90D9",
+  red: "#D94A4A",
+  green: "#5AB55A",
+  orange: "#E89B3E",
+  purple: "#9B59B6",
+};
 
 export function EventDialog({
   isOpen,
@@ -177,16 +179,23 @@ export function EventDialog({
 
       {/* All Day */}
       <div className="flex items-center gap-2 mb-3">
-        <Checkbox
-          id="event-allday"
-          checked={allDay}
-          onCheckedChange={(checked) => setAllDay(checked === true)}
-          className="h-3.5 w-3.5"
-        />
+        {isMacTheme ? (
+          <button type="button" onClick={() => setAllDay(!allDay)} className="shrink-0">
+            <AquaCheckbox checked={allDay} color="#4A90D9" />
+          </button>
+        ) : (
+          <Checkbox
+            id="event-allday"
+            checked={allDay}
+            onCheckedChange={(checked) => setAllDay(checked === true)}
+            className="h-3.5 w-3.5"
+          />
+        )}
         <Label
-          htmlFor="event-allday"
+          htmlFor={isMacTheme ? undefined : "event-allday"}
           className={cn("cursor-pointer", themeFont)}
           style={themeFontStyle}
+          onClick={isMacTheme ? () => setAllDay(!allDay) : undefined}
         >
           {t("apps.calendar.event.allDay")}
         </Label>
@@ -232,33 +241,6 @@ export function EventDialog({
         </div>
       )}
 
-      {/* Color */}
-      <div className="mb-3">
-        <Label
-          className={cn("text-gray-700 mb-1 block", themeFont)}
-          style={themeFontStyle}
-        >
-          {t("apps.calendar.event.color")}
-        </Label>
-        <div className="flex gap-1.5">
-          {EVENT_COLORS.map((c) => (
-            <button
-              key={c.value}
-              type="button"
-              onClick={() => setColor(c.value)}
-              className="w-5 h-5 rounded-full transition-all"
-              style={{
-                backgroundColor: c.hex,
-                border: color === c.value ? "2px solid #333" : "2px solid transparent",
-                boxShadow: color === c.value ? "0 0 0 1px rgba(255,255,255,0.8)" : "none",
-                transform: color === c.value ? "scale(1.15)" : "scale(1)",
-              }}
-              aria-label={c.value}
-            />
-          ))}
-        </div>
-      </div>
-
       {/* Calendar */}
       {calendars.length > 0 && (
         <div className="mb-3">
@@ -268,16 +250,24 @@ export function EventDialog({
           >
             {t("apps.calendar.event.calendar")}
           </Label>
-          <select
-            value={calendarId}
-            onChange={(e) => handleCalendarChange(e.target.value)}
-            className={cn("w-full h-7 rounded-md border border-input bg-transparent px-2", themeFont)}
-            style={themeFontStyle}
-          >
-            {calendars.map((cal) => (
-              <option key={cal.id} value={cal.id}>{cal.name}</option>
-            ))}
-          </select>
+          <Select value={calendarId} onValueChange={handleCalendarChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {calendars.map((cal) => (
+                <SelectItem key={cal.id} value={cal.id}>
+                  <span className="flex items-center gap-2">
+                    <span
+                      className="w-3 h-3 shrink-0 border border-black/20"
+                      style={{ backgroundColor: COLOR_HEX[cal.color] || COLOR_HEX.blue }}
+                    />
+                    {cal.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 
