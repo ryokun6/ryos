@@ -222,7 +222,7 @@
 }
 
 :root[data-os-theme="macosx"] .window-material-brushedmetal:not(.is-foreground)::before {
-  filter: contrast(0.4) brightness(1.15) saturate(0.7);
+  filter: contrast(0.55) brightness(1.25) saturate(0.5);
   z-index: 0;
   pointer-events: none;
 }
