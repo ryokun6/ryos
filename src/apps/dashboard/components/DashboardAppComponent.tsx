@@ -122,8 +122,8 @@ function WidgetStrip({
           borderTop: isXpTheme
             ? "1px solid rgba(255,255,255,0.8)"
             : "1px solid rgba(255,255,255,0.12)",
-          backdropFilter: "blur(24px) saturate(1.5)",
-          WebkitBackdropFilter: "blur(24px) saturate(1.5)",
+          backdropFilter: "saturate(1.5)",
+          WebkitBackdropFilter: "saturate(1.5)",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
       >
