@@ -902,7 +902,7 @@ export function CalendarAppComponent({
       >
         <div
           ref={containerRef}
-          className="flex flex-col h-full w-full bg-[var(--os-color-window-bg)] font-os-ui overflow-hidden"
+          className="flex flex-col h-full w-full bg-white font-os-ui overflow-hidden"
         >
           {/* Main content */}
           <div className="flex-1 flex overflow-hidden calendar-grid">
