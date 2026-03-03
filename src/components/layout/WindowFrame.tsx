@@ -30,8 +30,8 @@ interface WindowFrameProps {
   isForeground?: boolean;
   appId: AppId;
   isShaking?: boolean;
-  /** Window material style: "default" (opaque), "transparent" (translucent bg), "notitlebar" (immersive, titlebar on hover) */
-  material?: "default" | "transparent" | "notitlebar";
+  /** Window material style: "default" (opaque), "transparent" (translucent bg), "notitlebar" (immersive, titlebar on hover), "brushedmetal" (macOS brushed aluminum) */
+  material?: "default" | "transparent" | "notitlebar" | "brushedmetal";
   skipInitialSound?: boolean;
   windowConstraints?: {
     minWidth?: number;
@@ -166,6 +166,7 @@ export function WindowFrame({
   // Derive material booleans for internal use
   const isTransparent = material === "transparent" || material === "notitlebar";
   const isNoTitlebar = material === "notitlebar";
+  const isBrushedMetal = material === "brushedmetal";
   
   // Treat all macOS windows as using a transparent outer background so titlebar/content can be styled separately
   const effectiveTransparentBackground =
@@ -1144,7 +1145,8 @@ export function WindowFrame({
             !isXpTheme && (currentTheme !== "system7" || isForeground)
               ? "shadow-os-window"
               : "",
-            isForeground ? "is-foreground" : ""
+            isForeground ? "is-foreground" : "",
+            isBrushedMetal && currentTheme === "macosx" && "window-material-brushedmetal"
           )}
           style={{
             ...(!isXpTheme ? getSwipeStyle() : undefined),
@@ -1370,6 +1372,10 @@ export function WindowFrame({
                       borderBottom: "none",
                       opacity: isTitlebarHovered ? 1 : 0,
                     }
+                  : isBrushedMetal
+                  ? {
+                      background: "transparent",
+                    }
                   : isForeground
                   ? {
                       backgroundColor: "var(--os-color-window-bg)",
@@ -1381,8 +1387,8 @@ export function WindowFrame({
                       backgroundImage: "var(--os-pinstripe-window)",
                       opacity: "0.85",
                     }),
-                // No border for notitlebar
-                ...(!isNoTitlebar && {
+                // No border for notitlebar or brushed metal
+                ...(!isNoTitlebar && !isBrushedMetal && {
                   borderBottom: `1px solid ${
                     isForeground
                       ? theme.colors.titleBar.borderBottom ||
@@ -1627,13 +1633,16 @@ export function WindowFrame({
           <div
             className={cn(
               "flex flex-1 min-h-0 flex-col md:flex-row relative",
-              isXpTheme && "window-body flex-1"
+              isXpTheme && "window-body flex-1",
+              isBrushedMetal && currentTheme === "macosx" && "ml-[8px] mr-[8px] mb-[8px] rounded-none overflow-hidden"
             )}
             style={
               isXpTheme
                 ? { margin: currentTheme === "xp" ? "0px 3px" : "0" }
                 : currentTheme === "macosx"
                 ? isTransparent
+                  ? undefined
+                  : isBrushedMetal
                   ? undefined
                   : isForeground
                   ? {

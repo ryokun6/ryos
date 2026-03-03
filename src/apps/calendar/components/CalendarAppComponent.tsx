@@ -117,14 +117,12 @@ function MiniCalendar({
                     cell.date === todayStr
                       ? isXpTheme ? TODAY_RED_XP : TODAY_RED
                       : cell.date === selectedDate
-                        ? isXpTheme ? "#316AC5" : "rgba(0,122,255,0.15)"
+                        ? isXpTheme ? "rgba(0,0,0,0.15)" : "rgba(0,0,0,0.08)"
                         : "transparent",
                   color:
                     cell.date === todayStr
                       ? "#FFF"
-                      : cell.date === selectedDate && isXpTheme
-                        ? "#FFF"
-                        : undefined,
+                      : undefined,
                   fontWeight: cell.date === todayStr ? "bold" : "normal",
                 }}
               >
@@ -541,14 +539,24 @@ function DayTimeGrid({
               );
             })}
 
+            {/* Current time line (like week view) */}
             {isToday && (() => {
               const topPos = ((currentMinute - HOUR_START * 60) / 60) * HOUR_HEIGHT;
               if (topPos < 0 || topPos > totalHours * HOUR_HEIGHT) return null;
               return (
-                <div className="absolute left-0 right-0 pointer-events-none" style={{ top: topPos, zIndex: 5 }}>
+                <div
+                  className="absolute left-0 right-0 pointer-events-none"
+                  style={{ top: topPos, zIndex: 5 }}
+                >
                   <div className="flex items-center">
-                    <div className="w-2 h-2 rounded-full -ml-1" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
-                    <div className="flex-1 h-px" style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }} />
+                    <div
+                      className="w-2 h-2 rounded-full -ml-1 shrink-0"
+                      style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }}
+                    />
+                    <div
+                      className="flex-1 h-px min-w-0"
+                      style={{ backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED }}
+                    />
                   </div>
                 </div>
               );
@@ -610,7 +618,7 @@ function MonthGrid({
                 style={{
                   opacity: cell.isCurrentMonth ? 1 : 0.3,
                   backgroundColor: cell.isSelected
-                    ? isXpTheme ? "rgba(49,106,197,0.1)" : "rgba(0,122,255,0.06)"
+                    ? isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)"
                     : "transparent",
                 }}
               >
@@ -694,15 +702,14 @@ function BottomToolbar({
     <div
       className={cn(
         "flex items-center justify-between px-2 py-1.5 border-t",
-        isMacOSTheme && "os-toolbar-texture"
       )}
       style={{
-        borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.1)",
-        ...(!isMacOSTheme ? {
-          background: isXpTheme
-            ? "#ECE9D8"
-            : "#e0e0e0",
-        } : {}),
+        borderColor: isXpTheme ? "#ACA899" : isMacOSTheme ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.1)",
+        background: isXpTheme
+          ? "#ECE9D8"
+          : isMacOSTheme
+          ? "transparent"
+          : "#e0e0e0",
       }}
     >
       {/* Left: unified < Day Week Month > segmented control */}
@@ -881,6 +888,7 @@ export function CalendarAppComponent({
         onClose={onClose}
         isForeground={isForeground}
         appId="calendar"
+        material={isMacOSTheme ? "brushedmetal" : "default"}
         skipInitialSound={skipInitialSound}
         instanceId={instanceId}
         onNavigateNext={onNavigateNext}
@@ -893,20 +901,24 @@ export function CalendarAppComponent({
       >
         <div
           ref={containerRef}
-          className="flex flex-col h-full w-full bg-white font-os-ui overflow-hidden"
+          className={cn("flex flex-col h-full w-full font-os-ui overflow-hidden", isMacOSTheme ? "bg-transparent" : "bg-white")}
         >
           {/* Main content */}
-          <div className="flex-1 flex overflow-hidden calendar-grid">
+          <div
+            className={cn("flex-1 flex overflow-hidden calendar-grid bg-white")}
+            style={isMacOSTheme ? {
+              border: "1px solid rgba(0, 0, 0, 0.35)",
+              boxShadow: "inset 0 1px 1px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(255, 255, 255, 0.4)",
+              margin: 0,
+            } : undefined}
+          >
             {/* Mini calendar sidebar — pinstripe on macOS */}
             {showSidebar && effectiveView !== "month" && (
               <div
                 className="border-r overflow-y-auto"
                 style={{
-                  borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)",
-                  ...(isMacOSTheme ? {
-                    backgroundImage: "var(--os-pinstripe-window)",
-                    backgroundAttachment: "fixed",
-                  } : {}),
+                  borderColor: isXpTheme ? "#ACA899" : isMacOSTheme ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.08)",
+                  background: isMacOSTheme ? "transparent" : undefined,
                 }}
               >
                 <MiniCalendar

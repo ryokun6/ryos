@@ -202,6 +202,55 @@
   background-position: var(--os-texture-toolbar-position, center);
 }
 
+/* Brushed metal window material (macOS Aqua only)
+   Classic Mac OS X Tiger-era brushed aluminum chrome
+   used by iTunes, iCal, QuickTime Player, etc. */
+:root[data-os-theme="macosx"] .window-material-brushedmetal {
+  background: none !important;
+  position: relative;
+}
+
+:root[data-os-theme="macosx"] .window-material-brushedmetal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("/assets/brushed-metal.jpg") center / cover no-repeat;
+  filter: contrast(0.85) brightness(1.05);
+  border-radius: inherit;
+  z-index: 0;
+  pointer-events: none;
+}
+
+:root[data-os-theme="macosx"] .window-material-brushedmetal > * {
+  position: relative;
+  z-index: 1;
+}
+
+:root[data-os-theme="macosx"] .window.window-material-brushedmetal.is-foreground .title-bar:not(.absolute),
+:root[data-os-theme="macosx"] .window.window-material-brushedmetal:not(.is-foreground) .title-bar:not(.absolute),
+:root[data-os-theme="macosx"] .window.window-material-brushedmetal .title-bar {
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-os-theme="macosx"] .window-material-brushedmetal.is-foreground {
+  border: 0.5px solid rgba(0, 0, 0, 0.5) !important;
+  box-shadow:
+    0 12px 35px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.15),
+    inset 2px 0 0 rgba(255, 255, 255, 0.2),
+    inset -1px 0 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+:root[data-os-theme="macosx"] .window-material-brushedmetal:not(.is-foreground) {
+  border: 0.5px solid rgba(0, 0, 0, 0.25) !important;
+  box-shadow:
+    0 4px 15px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
 /* Windows 98 Theme */
 :root[data-os-theme="win98"] {
   --os-font-ui: "Pixelated MS Sans Serif", "MS Sans Serif", "ArkPixel",
