@@ -162,13 +162,13 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
       style={{ fontFamily: font, padding: 8, gap: 6, minHeight: "inherit" }}
     >
         {/* Language selectors */}
-        <div className="flex items-center gap-1" style={{ fontSize: 11, flexShrink: 0 }}>
+        <div className="flex items-center justify-end gap-1" style={{ fontSize: 11, flexShrink: 0 }}>
           <select
             value={fromLang}
             onChange={(e) => handleFromLangChange(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
             style={{
-              flex: 1,
+              width: 90,
               fontSize: 11,
               padding: "2px 4px",
               border: "1px solid #ACA899",
@@ -208,7 +208,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
             onChange={(e) => handleToLangChange(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
             style={{
-              flex: 1,
+              width: 90,
               fontSize: 11,
               padding: "2px 4px",
               border: "1px solid #ACA899",
@@ -360,7 +360,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
           >
             {t("apps.dashboard.translation.from", "Translate from")}
           </span>
-          <div style={{ position: "relative", flex: 1 }}>
+          <div style={{ position: "relative", width: 120, marginLeft: "auto", flexShrink: 0 }}>
             <select
               value={fromLang}
               onChange={(e) => handleFromLangChange(e.target.value)}
@@ -448,7 +448,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
           >
             {t("apps.dashboard.translation.to", "To")}
           </span>
-          <div style={{ position: "relative", flex: 1 }}>
+          <div style={{ position: "relative", width: 120, marginLeft: "auto", flexShrink: 0 }}>
             <select
               value={toLang}
               onChange={(e) => handleToLangChange(e.target.value)}
