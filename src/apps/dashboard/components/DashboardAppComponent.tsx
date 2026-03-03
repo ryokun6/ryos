@@ -309,16 +309,16 @@ export function DashboardAppComponent({
               {widgets.map((widget) => (
                 <motion.div
                   key={widget.id}
-                  initial={{ opacity: 0, scale: 0.8, y: 30 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: 30 }}
+                  initial={{ opacity: 0, scale: 0.8, y: 30, zIndex: widget.zIndex ?? 1 }}
+                  animate={{ opacity: 1, scale: 1, y: 0, zIndex: widget.zIndex ?? 1 }}
+                  exit={{ opacity: 0, scale: 0.8, y: 30, zIndex: widget.zIndex ?? 1 }}
                   transition={{
                     duration: 0.35,
                     type: "spring",
                     stiffness: 300,
                     damping: 25,
                   }}
-                  style={{ zIndex: widget.zIndex ?? 1 }}
+                  style={{ position: "relative", zIndex: widget.zIndex ?? 1 }}
                 >
                   <WidgetChrome
                     width={widget.size.width}
