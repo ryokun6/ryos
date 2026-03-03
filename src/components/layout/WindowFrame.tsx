@@ -1471,6 +1471,8 @@ export function WindowFrame({
                 style={{
                   textShadow: isNoTitlebar
                     ? "0 1px 3px rgba(0, 0, 0, 0.8)"
+                    : isBrushedMetal && isForeground
+                    ? "0 1px 0 rgba(255, 255, 255, 0.5)"
                     : isForeground
                     ? "0 2px 3px rgba(0, 0, 0, 0.25)"
                     : "none",

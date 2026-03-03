@@ -57,6 +57,9 @@ export function useCalendarLogic() {
   // Store
   const {
     events,
+    calendars,
+    todos,
+    showTodoSidebar,
     selectedDate,
     currentMonth,
     currentYear,
@@ -64,6 +67,12 @@ export function useCalendarLogic() {
     addEvent,
     updateEvent,
     deleteEvent,
+    addCalendar,
+    toggleCalendarVisibility,
+    addTodo,
+    toggleTodo,
+    deleteTodo,
+    setShowTodoSidebar,
     setSelectedDate,
     setView,
     navigateMonth,
@@ -72,6 +81,9 @@ export function useCalendarLogic() {
   } = useCalendarStore(
     useShallow((state) => ({
       events: state.events,
+      calendars: state.calendars,
+      todos: state.todos,
+      showTodoSidebar: state.showTodoSidebar,
       selectedDate: state.selectedDate,
       currentMonth: state.currentMonth,
       currentYear: state.currentYear,
@@ -79,6 +91,12 @@ export function useCalendarLogic() {
       addEvent: state.addEvent,
       updateEvent: state.updateEvent,
       deleteEvent: state.deleteEvent,
+      addCalendar: state.addCalendar,
+      toggleCalendarVisibility: state.toggleCalendarVisibility,
+      addTodo: state.addTodo,
+      toggleTodo: state.toggleTodo,
+      deleteTodo: state.deleteTodo,
+      setShowTodoSidebar: state.setShowTodoSidebar,
       setSelectedDate: state.setSelectedDate,
       setView: state.setView,
       navigateMonth: state.navigateMonth,
@@ -86,6 +104,16 @@ export function useCalendarLogic() {
       goToToday: state.goToToday,
     }))
   );
+
+  // Visible calendar IDs for filtering
+  const visibleCalendarIds = useMemo(() => {
+    return new Set(calendars.filter((c) => c.visible).map((c) => c.id));
+  }, [calendars]);
+
+  // Filtered events (only from visible calendars)
+  const visibleEvents = useMemo(() => {
+    return events.filter((ev) => visibleCalendarIds.has(ev.calendarId || "home"));
+  }, [events, visibleCalendarIds]);
 
   // Today string
   const todayStr = useMemo(() => {
@@ -114,17 +142,15 @@ export function useCalendarLogic() {
   // WEEK VIEW DATA
   // ==========================================================================
 
-  /** 7 dates (Sun–Sat) of the week containing selectedDate */
   const weekDates = useMemo((): WeekDay[] => {
     const [y, m, d] = selectedDate.split("-").map(Number);
     const sel = new Date(y, m - 1, d);
-    const dayOfWeek = sel.getDay(); // 0=Sun
+    const dayOfWeek = sel.getDay();
     const sunday = new Date(sel);
     sunday.setDate(sunday.getDate() - dayOfWeek);
 
-    // Build event lookup
     const eventsByDate = new Map<string, CalendarEvent[]>();
-    for (const ev of events) {
+    for (const ev of visibleEvents) {
       const existing = eventsByDate.get(ev.date);
       if (existing) existing.push(ev);
       else eventsByDate.set(ev.date, [ev]);
@@ -151,9 +177,8 @@ export function useCalendarLogic() {
       });
     }
     return days;
-  }, [selectedDate, events, todayStr, shortDayNames]);
+  }, [selectedDate, visibleEvents, todayStr, shortDayNames]);
 
-  /** Label for the week header, e.g. "Mar 2 – 8, 2026" */
   const weekLabel = useMemo(() => {
     if (weekDates.length === 0) return "";
     const first = weekDates[0];
@@ -184,7 +209,7 @@ export function useCalendarLogic() {
     const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
 
     const eventsByDate = new Map<string, CalendarEvent[]>();
-    for (const ev of events) {
+    for (const ev of visibleEvents) {
       const existing = eventsByDate.get(ev.date);
       if (existing) existing.push(ev);
       else eventsByDate.set(ev.date, [ev]);
@@ -241,11 +266,11 @@ export function useCalendarLogic() {
       weeks.push(row);
     }
     return weeks;
-  }, [currentYear, currentMonth, events, todayStr, selectedDate]);
+  }, [currentYear, currentMonth, visibleEvents, todayStr, selectedDate]);
 
-  // Events for the selected date
+  // Events for the selected date (filtered)
   const selectedDateEvents = useMemo(() => {
-    return events
+    return visibleEvents
       .filter((ev) => ev.date === selectedDate)
       .sort((a, b) => {
         if (!a.startTime && b.startTime) return -1;
@@ -254,7 +279,7 @@ export function useCalendarLogic() {
           return a.startTime.localeCompare(b.startTime);
         return a.createdAt - b.createdAt;
       });
-  }, [events, selectedDate]);
+  }, [visibleEvents, selectedDate]);
 
   // Month/Year display label
   const monthYearLabel = useMemo(() => {
@@ -297,14 +322,11 @@ export function useCalendarLogic() {
     [setSelectedDate]
   );
 
-  /** Create a new event pre-filled with a specific time */
   const handleNewEventAtTime = useCallback(
     (date: string, hour: number) => {
       setSelectedDate(date);
       setEditingEvent(null);
-      // We'll pass the pre-filled time via a ref or state
       setIsEventDialogOpen(true);
-      // Store the prefill time for the dialog
       setPrefillTime({
         date,
         startTime: `${String(hour).padStart(2, "0")}:00`,
@@ -339,6 +361,7 @@ export function useCalendarLogic() {
       startTime?: string;
       endTime?: string;
       color: EventColor;
+      calendarId?: string;
       notes?: string;
     }) => {
       if (editingEvent) {
@@ -391,6 +414,19 @@ export function useCalendarLogic() {
     calendarGrid,
     selectedDateEvents,
     todayStr,
+
+    // Calendar groups
+    calendars,
+    toggleCalendarVisibility,
+    addCalendar,
+
+    // Todos
+    todos,
+    addTodo,
+    toggleTodo,
+    deleteTodo,
+    showTodoSidebar,
+    setShowTodoSidebar,
 
     // Locale-aware labels
     narrowDayNames,

@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { cn } from "@/lib/utils";
-import type { CalendarEvent, EventColor } from "@/stores/useCalendarStore";
+import type { CalendarEvent, EventColor, CalendarGroup } from "@/stores/useCalendarStore";
 
 interface EventDialogProps {
   isOpen: boolean;
@@ -25,11 +25,13 @@ interface EventDialogProps {
     startTime?: string;
     endTime?: string;
     color: EventColor;
+    calendarId?: string;
     notes?: string;
   }) => void;
   editingEvent: CalendarEvent | null;
   selectedDate: string;
   prefillTime?: { date: string; startTime: string; endTime: string } | null;
+  calendars?: CalendarGroup[];
 }
 
 const EVENT_COLORS: { value: EventColor; hex: string }[] = [
@@ -47,6 +49,7 @@ export function EventDialog({
   editingEvent,
   selectedDate,
   prefillTime,
+  calendars = [],
 }: EventDialogProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
@@ -59,6 +62,7 @@ export function EventDialog({
   const [endTime, setEndTime] = useState("");
   const [allDay, setAllDay] = useState(true);
   const [color, setColor] = useState<EventColor>("blue");
+  const [calendarId, setCalendarId] = useState(calendars[0]?.id || "home");
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
@@ -70,6 +74,7 @@ export function EventDialog({
         setEndTime(editingEvent.endTime || "");
         setAllDay(!editingEvent.startTime);
         setColor(editingEvent.color);
+        setCalendarId(editingEvent.calendarId || calendars[0]?.id || "home");
         setNotes(editingEvent.notes || "");
       } else if (prefillTime) {
         setTitle("");
@@ -77,7 +82,8 @@ export function EventDialog({
         setStartTime(prefillTime.startTime);
         setEndTime(prefillTime.endTime);
         setAllDay(false);
-        setColor("blue");
+        setColor(calendars[0]?.color || "blue");
+        setCalendarId(calendars[0]?.id || "home");
         setNotes("");
       } else {
         setTitle("");
@@ -85,22 +91,31 @@ export function EventDialog({
         setStartTime("09:00");
         setEndTime("10:00");
         setAllDay(true);
-        setColor("blue");
+        setColor(calendars[0]?.color || "blue");
+        setCalendarId(calendars[0]?.id || "home");
         setNotes("");
       }
     }
-  }, [isOpen, editingEvent, selectedDate, prefillTime]);
+  }, [isOpen, editingEvent, selectedDate, prefillTime, calendars]);
 
   const handleSave = () => {
     if (!title.trim()) return;
+    const cal = calendars.find((c) => c.id === calendarId);
     onSave({
       title: title.trim(),
       date,
       startTime: allDay ? undefined : startTime || undefined,
       endTime: allDay ? undefined : endTime || undefined,
-      color,
+      color: cal?.color || color,
+      calendarId,
       notes: notes.trim() || undefined,
     });
+  };
+
+  const handleCalendarChange = (newCalId: string) => {
+    setCalendarId(newCalId);
+    const cal = calendars.find((c) => c.id === newCalId);
+    if (cal) setColor(cal.color);
   };
 
   const themeFont = isXpTheme
@@ -243,6 +258,28 @@ export function EventDialog({
           ))}
         </div>
       </div>
+
+      {/* Calendar */}
+      {calendars.length > 0 && (
+        <div className="mb-3">
+          <Label
+            className={cn("text-gray-700 mb-1 block", themeFont)}
+            style={themeFontStyle}
+          >
+            Calendar
+          </Label>
+          <select
+            value={calendarId}
+            onChange={(e) => handleCalendarChange(e.target.value)}
+            className={cn("w-full h-7 rounded-md border border-input bg-transparent px-2", themeFont)}
+            style={themeFontStyle}
+          >
+            {calendars.map((cal) => (
+              <option key={cal.id} value={cal.id}>{cal.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Notes */}
       <div className="mb-3">

@@ -3,6 +3,13 @@ import { persist } from "zustand/middleware";
 
 export type EventColor = "blue" | "red" | "green" | "orange" | "purple";
 
+export interface CalendarGroup {
+  id: string;
+  name: string;
+  color: EventColor;
+  visible: boolean;
+}
+
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -10,26 +17,57 @@ export interface CalendarEvent {
   startTime?: string; // HH:MM (optional — all-day if omitted)
   endTime?: string; // HH:MM
   color: EventColor;
+  calendarId?: string;
   notes?: string;
   createdAt: number;
   updatedAt: number;
 }
 
+export interface TodoItem {
+  id: string;
+  title: string;
+  completed: boolean;
+  dueDate: string | null; // YYYY-MM-DD or null
+  calendarId: string;
+  createdAt: number;
+}
+
 export type CalendarView = "month" | "week" | "day";
+
+const DEFAULT_CALENDARS: CalendarGroup[] = [
+  { id: "home", name: "Home", color: "blue", visible: true },
+  { id: "work", name: "Work", color: "green", visible: true },
+];
 
 interface CalendarStoreState {
   events: CalendarEvent[];
+  calendars: CalendarGroup[];
+  todos: TodoItem[];
+  showTodoSidebar: boolean;
   selectedDate: string; // YYYY-MM-DD
   currentMonth: number; // 0-11
   currentYear: number;
   view: CalendarView;
 
-  // Actions
+  // Calendar group actions
+  addCalendar: (name: string, color: EventColor) => string;
+  toggleCalendarVisibility: (id: string) => void;
+  removeCalendar: (id: string) => void;
+
+  // Event actions
   addEvent: (
     event: Omit<CalendarEvent, "id" | "createdAt" | "updatedAt">
   ) => string;
   updateEvent: (id: string, updates: Partial<CalendarEvent>) => void;
   deleteEvent: (id: string) => void;
+
+  // Todo actions
+  addTodo: (title: string, calendarId: string, dueDate?: string) => string;
+  toggleTodo: (id: string) => void;
+  deleteTodo: (id: string) => void;
+  setShowTodoSidebar: (show: boolean) => void;
+
+  // Navigation
   setSelectedDate: (date: string) => void;
   setView: (view: CalendarView) => void;
   navigateMonth: (delta: number) => void;
@@ -55,17 +93,48 @@ export const useCalendarStore = create<CalendarStoreState>()(
       const now = new Date();
       return {
         events: [],
+        calendars: DEFAULT_CALENDARS,
+        todos: [],
+        showTodoSidebar: false,
         selectedDate: getTodayStr(),
         currentMonth: now.getMonth(),
         currentYear: now.getFullYear(),
         view: "week" as CalendarView,
 
+        addCalendar: (name, color) => {
+          const id = crypto.randomUUID();
+          set((state) => ({
+            calendars: [...state.calendars, { id, name, color, visible: true }],
+          }));
+          return id;
+        },
+
+        toggleCalendarVisibility: (id) => {
+          set((state) => ({
+            calendars: state.calendars.map((c) =>
+              c.id === id ? { ...c, visible: !c.visible } : c
+            ),
+          }));
+        },
+
+        removeCalendar: (id) => {
+          set((state) => ({
+            calendars: state.calendars.filter((c) => c.id !== id),
+            events: state.events.filter((e) => e.calendarId !== id),
+            todos: state.todos.filter((t) => t.calendarId !== id),
+          }));
+        },
+
         addEvent: (eventData) => {
           const id = crypto.randomUUID();
           const timestamp = Date.now();
+          const calendarId = eventData.calendarId || get().calendars[0]?.id || "home";
+          const calendar = get().calendars.find((c) => c.id === calendarId);
           const newEvent: CalendarEvent = {
             ...eventData,
             id,
+            calendarId,
+            color: calendar?.color || eventData.color,
             createdAt: timestamp,
             updatedAt: timestamp,
           };
@@ -91,8 +160,38 @@ export const useCalendarStore = create<CalendarStoreState>()(
           }));
         },
 
+        addTodo: (title, calendarId, dueDate) => {
+          const id = crypto.randomUUID();
+          set((state) => ({
+            todos: [...state.todos, {
+              id,
+              title,
+              completed: false,
+              dueDate: dueDate || null,
+              calendarId,
+              createdAt: Date.now(),
+            }],
+          }));
+          return id;
+        },
+
+        toggleTodo: (id) => {
+          set((state) => ({
+            todos: state.todos.map((t) =>
+              t.id === id ? { ...t, completed: !t.completed } : t
+            ),
+          }));
+        },
+
+        deleteTodo: (id) => {
+          set((state) => ({
+            todos: state.todos.filter((t) => t.id !== id),
+          }));
+        },
+
+        setShowTodoSidebar: (show) => set({ showTodoSidebar: show }),
+
         setSelectedDate: (date) => {
-          // Also navigate to the month of the selected date
           const [year, month] = date.split("-").map(Number);
           set({
             selectedDate: date,
@@ -142,12 +241,24 @@ export const useCalendarStore = create<CalendarStoreState>()(
         },
 
         getEventsForDate: (date) => {
-          return get().events.filter((ev) => ev.date === date);
+          const state = get();
+          const visibleCalendarIds = new Set(
+            state.calendars.filter((c) => c.visible).map((c) => c.id)
+          );
+          return state.events.filter(
+            (ev) => ev.date === date && visibleCalendarIds.has(ev.calendarId || "home")
+          );
         },
 
         getEventsForMonth: (year, month) => {
+          const state = get();
           const prefix = `${year}-${String(month + 1).padStart(2, "0")}`;
-          return get().events.filter((ev) => ev.date.startsWith(prefix));
+          const visibleCalendarIds = new Set(
+            state.calendars.filter((c) => c.visible).map((c) => c.id)
+          );
+          return state.events.filter(
+            (ev) => ev.date.startsWith(prefix) && visibleCalendarIds.has(ev.calendarId || "home")
+          );
         },
       };
     },
