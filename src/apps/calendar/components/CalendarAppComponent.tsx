@@ -42,7 +42,6 @@ const HOUR_END = 24;
 const HOUR_HEIGHT = 40;
 const TODAY_RED = "#E25B4F";
 const TODAY_RED_XP = "#B53325";
-const DAY_HEADERS_MONTH = ["S", "M", "T", "W", "T", "F", "S"];
 
 // ============================================================================
 // MINI CALENDAR (sidebar)
@@ -56,6 +55,7 @@ function MiniCalendar({
   isXpTheme,
   isMacOSTheme,
   monthYearLabel,
+  narrowDayNames,
   onPrevMonth,
   onNextMonth,
 }: {
@@ -66,6 +66,7 @@ function MiniCalendar({
   isXpTheme: boolean;
   isMacOSTheme: boolean;
   monthYearLabel: string;
+  narrowDayNames: string[];
   onPrevMonth: () => void;
   onNextMonth: () => void;
 }) {
@@ -84,7 +85,7 @@ function MiniCalendar({
 
       {/* Day headers */}
       <div className="grid grid-cols-7 mb-0.5">
-        {DAY_HEADERS_MONTH.map((d, i) => (
+        {narrowDayNames.map((d, i) => (
           <div
             key={i}
             className={cn("text-center text-[9px] font-medium", isMacOSTheme && "font-geneva-12")}
@@ -150,6 +151,7 @@ function WeekTimeGrid({
   onEventDoubleClick,
   isXpTheme,
   isMacOSTheme,
+  hourLabels,
 }: {
   weekDates: WeekDay[];
   selectedEventId: string | null;
@@ -159,6 +161,7 @@ function WeekTimeGrid({
   onEventDoubleClick: (event: CalendarEvent) => void;
   isXpTheme: boolean;
   isMacOSTheme: boolean;
+  hourLabels: string[];
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentMinute, setCurrentMinute] = useState(() => {
@@ -276,18 +279,13 @@ function WeekTimeGrid({
             <div style={{ width: 48, minWidth: 48, flexShrink: 0 }} className="relative">
               {Array.from({ length: totalHours }, (_, i) => {
                 const hour = HOUR_START + i;
-                const label =
-                  hour === 0 ? "12 AM" :
-                  hour < 12 ? `${hour} AM` :
-                  hour === 12 ? "12 PM" :
-                  `${hour - 12} PM`;
                 return (
                   <div
                     key={hour}
                     className={cn("absolute right-1 text-[10px] opacity-40 text-right", isMacOSTheme && "font-geneva-12")}
                     style={{ top: i * HOUR_HEIGHT - 6, width: 40 }}
                   >
-                    {label}
+                    {hourLabels[hour]}
                   </div>
                 );
               })}
@@ -401,6 +399,7 @@ function DayTimeGrid({
   onEventDoubleClick,
   isXpTheme,
   isMacOSTheme,
+  hourLabels,
 }: {
   date: string;
   events: CalendarEvent[];
@@ -410,6 +409,7 @@ function DayTimeGrid({
   onEventDoubleClick: (event: CalendarEvent) => void;
   isXpTheme: boolean;
   isMacOSTheme: boolean;
+  hourLabels: string[];
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentMinute, setCurrentMinute] = useState(() => {
@@ -480,18 +480,13 @@ function DayTimeGrid({
           <div style={{ width: 52, minWidth: 52, flexShrink: 0 }} className="relative">
             {Array.from({ length: totalHours }, (_, i) => {
               const hour = HOUR_START + i;
-              const label =
-                hour === 0 ? "12 AM" :
-                hour < 12 ? `${hour} AM` :
-                hour === 12 ? "12 PM" :
-                `${hour - 12} PM`;
               return (
                 <div
                   key={hour}
                   className={cn("absolute right-1 text-[10px] opacity-40 text-right", isMacOSTheme && "font-geneva-12")}
                   style={{ top: i * HOUR_HEIGHT - 6, width: 44 }}
                 >
-                  {label}
+                  {hourLabels[hour]}
                 </div>
               );
             })}
@@ -579,6 +574,7 @@ function MonthGrid({
   onEventClick,
   onEventDoubleClick,
   isXpTheme,
+  narrowDayNames,
 }: {
   calendarGrid: CalendarDayCell[][];
   selectedEventId: string | null;
@@ -587,11 +583,12 @@ function MonthGrid({
   onEventClick: (event: CalendarEvent) => void;
   onEventDoubleClick: (event: CalendarEvent) => void;
   isXpTheme: boolean;
+  narrowDayNames: string[];
 }) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="grid grid-cols-7 border-b" style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)" }}>
-        {DAY_HEADERS_MONTH.map((d, i) => (
+        {narrowDayNames.map((d, i) => (
           <div
             key={i}
             className="text-center text-[10px] font-medium py-1 select-none"
@@ -814,6 +811,8 @@ export function CalendarAppComponent({
     selectedDateLabel,
     calendarGrid,
     selectedDateEvents,
+    narrowDayNames,
+    hourLabels,
     weekDates,
     weekLabel,
     editingEvent,
@@ -926,6 +925,7 @@ export function CalendarAppComponent({
                   isXpTheme={isXpTheme}
                   isMacOSTheme={isMacOSTheme}
                   monthYearLabel={monthYearLabel}
+                  narrowDayNames={narrowDayNames}
                   onPrevMonth={() => navigateMonth(-1)}
                   onNextMonth={() => navigateMonth(1)}
                 />
@@ -943,6 +943,7 @@ export function CalendarAppComponent({
                 onEventDoubleClick={handleEditEvent}
                 isXpTheme={isXpTheme}
                 isMacOSTheme={isMacOSTheme}
+                hourLabels={hourLabels}
               />
             )}
 
@@ -956,6 +957,7 @@ export function CalendarAppComponent({
                 onEventDoubleClick={handleEditEvent}
                 isXpTheme={isXpTheme}
                 isMacOSTheme={isMacOSTheme}
+                hourLabels={hourLabels}
               />
             )}
 
@@ -968,6 +970,7 @@ export function CalendarAppComponent({
                 onEventClick={(ev) => setSelectedEventId(ev.id)}
                 onEventDoubleClick={handleEditEvent}
                 isXpTheme={isXpTheme}
+                narrowDayNames={narrowDayNames}
               />
             )}
           </div>

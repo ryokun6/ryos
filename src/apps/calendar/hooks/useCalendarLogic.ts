@@ -34,10 +34,9 @@ export interface WeekDay {
 const formatDate = (d: Date): string =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-const SHORT_DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
 export function useCalendarLogic() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const translatedHelpItems = useTranslatedHelpItems("calendar", helpItems);
 
   // Theme
@@ -94,6 +93,23 @@ export function useCalendarLogic() {
     return formatDate(d);
   }, []);
 
+  // Locale-aware day names (Sun=0 .. Sat=6)
+  const shortDayNames = useMemo(() => {
+    const fmt = new Intl.DateTimeFormat(locale, { weekday: "short" });
+    return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(2024, 0, 7 + i)));
+  }, [locale]);
+
+  const narrowDayNames = useMemo(() => {
+    const fmt = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
+    return Array.from({ length: 7 }, (_, i) => fmt.format(new Date(2024, 0, 7 + i)));
+  }, [locale]);
+
+  // Locale-aware hour labels (0–23)
+  const hourLabels = useMemo(() => {
+    const fmt = new Intl.DateTimeFormat(locale, { hour: "numeric", hour12: undefined });
+    return Array.from({ length: 24 }, (_, h) => fmt.format(new Date(2024, 0, 1, h)));
+  }, [locale]);
+
   // ==========================================================================
   // WEEK VIEW DATA
   // ==========================================================================
@@ -124,7 +140,7 @@ export function useCalendarLogic() {
       days.push({
         date: dateStr,
         dayOfMonth: date.getDate(),
-        dayName: SHORT_DAY_NAMES[date.getDay()],
+        dayName: shortDayNames[date.getDay()],
         isToday: dateStr === todayStr,
         isSelected: dateStr === selectedDate,
         events: dayEvents,
@@ -147,14 +163,14 @@ export function useCalendarLogic() {
     const firstDate = new Date(fy, fm - 1, fd);
     const lastDate = new Date(ly, lm - 1, ld);
 
-    const fMonth = firstDate.toLocaleDateString(undefined, { month: "short" });
-    const lMonth = lastDate.toLocaleDateString(undefined, { month: "short" });
+    const fMonth = firstDate.toLocaleDateString(locale, { month: "short" });
+    const lMonth = lastDate.toLocaleDateString(locale, { month: "short" });
 
     if (fm === lm) {
       return `${fMonth} ${fd} – ${ld}, ${fy}`;
     }
     return `${fMonth} ${fd} – ${lMonth} ${ld}, ${ly}`;
-  }, [weekDates]);
+  }, [weekDates, locale]);
 
   // ==========================================================================
   // MONTH VIEW DATA
@@ -243,23 +259,23 @@ export function useCalendarLogic() {
   // Month/Year display label
   const monthYearLabel = useMemo(() => {
     const date = new Date(currentYear, currentMonth, 1);
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleDateString(locale, {
       month: "long",
       year: "numeric",
     });
-  }, [currentYear, currentMonth]);
+  }, [currentYear, currentMonth, locale]);
 
   // Selected date display label
   const selectedDateLabel = useMemo(() => {
     const [year, month, day] = selectedDate.split("-").map(Number);
     const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleDateString(locale, {
       weekday: "long",
       month: "long",
       day: "numeric",
       year: "numeric",
     });
-  }, [selectedDate]);
+  }, [selectedDate, locale]);
 
   // ==========================================================================
   // HANDLERS
@@ -375,6 +391,10 @@ export function useCalendarLogic() {
     calendarGrid,
     selectedDateEvents,
     todayStr,
+
+    // Locale-aware labels
+    narrowDayNames,
+    hourLabels,
 
     // Week view
     weekDates,
