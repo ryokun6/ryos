@@ -266,7 +266,7 @@ export function EventDialog({
             className={cn("text-gray-700 mb-1 block", themeFont)}
             style={themeFontStyle}
           >
-            Calendar
+            {t("apps.calendar.event.calendar")}
           </Label>
           <select
             value={calendarId}

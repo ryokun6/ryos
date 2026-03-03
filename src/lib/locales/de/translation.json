@@ -392,6 +392,7 @@
       "description": "Kalender mit Ereignissen",
       "event": {
         "allDay": "Ganztägig",
+        "calendar": "Kalender",
         "cancel": "Abbrechen",
         "color": "Farbe",
         "date": "Datum",
@@ -413,12 +414,20 @@
         "help": "Kalender-Hilfe",
         "monthView": "Monatsansicht",
         "newEvent": "Neues Ereignis",
+        "showToDoItems": "Aufgaben anzeigen",
         "weekView": "Wochenansicht"
       },
       "name": "Kalender",
+      "sidebar": {
+        "calendars": "Kalender",
+        "newTodoPlaceholder": "Neue Aufgabe...",
+        "noTodoItems": "Keine Aufgaben",
+        "toDoItems": "Aufgaben"
+      },
       "title": "Kalender",
       "today": "Heute",
       "views": {
+        "allDay": "Ganztägig",
         "day": "Tag",
         "month": "Monat",
         "week": "Woche"
@@ -1071,9 +1080,11 @@
         "changeCity": "Stadt ändern",
         "enableLocation": "Standort für Wetter aktivieren",
         "feelsLike": "Gefühlt wie",
+        "high": "H:",
         "humidity": "Luftfeuchtigkeit",
         "loading": "Wetter wird geladen...",
         "locationDenied": "Standortzugriff verweigert",
+        "low": "L:",
         "noResults": "Keine Städte gefunden",
         "searchCity": "Städte suchen...",
         "searching": "Sucht...",

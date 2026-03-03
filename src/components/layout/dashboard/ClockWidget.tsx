@@ -106,8 +106,7 @@ export function ClockWidget({ widgetId }: ClockWidgetProps) {
   const secondAngle = (seconds / 60) * 360;
   const minuteAngle = (minutes / 60) * 360 + (seconds / 60) * 6;
   const hourAngle = ((hours % 12) / 12) * 360 + (minutes / 60) * 30;
-  const h12 = hours % 12 || 12;
-  const digitalTime = `${h12}:${String(minutes).padStart(2, "0")} ${hours >= 12 ? "PM" : "AM"}`;
+  const digitalTime = displayTime.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
 
   const svgSize = 170;
   const clockCenterX = svgSize / 2;

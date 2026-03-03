@@ -392,6 +392,7 @@
       "description": "イベント付きカレンダー",
       "event": {
         "allDay": "終日",
+        "calendar": "カレンダー",
         "cancel": "キャンセル",
         "color": "色",
         "date": "日付",
@@ -413,12 +414,20 @@
         "help": "カレンダーヘルプ",
         "monthView": "月表示",
         "newEvent": "新規イベント",
+        "showToDoItems": "To Do項目を表示",
         "weekView": "週表示"
       },
       "name": "カレンダー",
+      "sidebar": {
+        "calendars": "カレンダー",
+        "newTodoPlaceholder": "新規To Do...",
+        "noTodoItems": "To Do項目はありません",
+        "toDoItems": "To Do項目"
+      },
       "title": "カレンダー",
       "today": "今日",
       "views": {
+        "allDay": "終日",
         "day": "日",
         "month": "月",
         "week": "週"
@@ -1071,9 +1080,11 @@
         "changeCity": "都市を変更",
         "enableLocation": "天気予報の位置情報を有効にする",
         "feelsLike": "体感温度",
+        "high": "高:",
         "humidity": "湿度",
         "loading": "天気を読み込み中...",
         "locationDenied": "位置情報へのアクセスが拒否されました",
+        "low": "低:",
         "noResults": "都市が見つかりませんでした",
         "searchCity": "都市を検索...",
         "searching": "検索中...",

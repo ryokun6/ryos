@@ -277,7 +277,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
           <div>
             <div className="text-xl font-light">{weather.temperature}°</div>
             <div className="text-[10px] text-gray-500">
-              H: {weather.temperatureMax}° L: {weather.temperatureMin}°
+              {t("apps.dashboard.weather.high")} {weather.temperatureMax}° {t("apps.dashboard.weather.low")} {weather.temperatureMin}°
             </div>
           </div>
         </div>
@@ -319,7 +319,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
             className="font-medium"
             style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", textShadow, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
           >
-            H: {weather.temperatureMax}°
+            {t("apps.dashboard.weather.high")} {weather.temperatureMax}°
           </div>
           <span
             className="font-bold truncate"
@@ -337,7 +337,7 @@ export function WeatherWidget({ widgetId }: WeatherWidgetProps) {
             className="font-medium"
             style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", textShadow, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}
           >
-            L: {weather.temperatureMin}°
+            {t("apps.dashboard.weather.low")} {weather.temperatureMin}°
           </div>
         </div>
 

@@ -392,6 +392,7 @@
       "description": "Календарь с событиями",
       "event": {
         "allDay": "Весь день",
+        "calendar": "Календарь",
         "cancel": "Отмена",
         "color": "Цвет",
         "date": "Дата",
@@ -413,12 +414,20 @@
         "help": "Справка Календаря",
         "monthView": "Вид Месяц",
         "newEvent": "Новое событие",
+        "showToDoItems": "Показать Дела",
         "weekView": "Вид Неделя"
       },
       "name": "Календарь",
+      "sidebar": {
+        "calendars": "Календари",
+        "newTodoPlaceholder": "Новое Дело...",
+        "noTodoItems": "Нет дел",
+        "toDoItems": "Дела"
+      },
       "title": "Календарь",
       "today": "Сегодня",
       "views": {
+        "allDay": "Весь день",
         "day": "День",
         "month": "Месяц",
         "week": "Неделя"
@@ -1071,9 +1080,11 @@
         "changeCity": "Изменить город",
         "enableLocation": "Включить определение местоположения для погоды",
         "feelsLike": "Ощущается как",
+        "high": "В:",
         "humidity": "Влажность",
         "loading": "Загрузка погоды...",
         "locationDenied": "Доступ к местоположению запрещен",
+        "low": "Н:",
         "noResults": "Города не найдены",
         "searchCity": "Поиск городов...",
         "searching": "Поиск...",

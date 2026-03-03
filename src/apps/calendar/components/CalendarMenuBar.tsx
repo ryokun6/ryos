@@ -107,7 +107,7 @@ export function CalendarMenuBar({
             onClick={onToggleTodoSidebar}
             className="text-md h-6 px-3"
           >
-            Show To Do Items
+            {t("apps.calendar.menu.showToDoItems")}
           </MenubarCheckboxItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem onClick={onGoToToday} className="text-md h-6 px-3">

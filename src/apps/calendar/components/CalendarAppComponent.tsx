@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent, CalendarGroup, TodoItem } from "@/stores/useCalendarStore";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
+import { useTranslation } from "react-i18next";
 
 // ============================================================================
 // CONSTANTS
@@ -101,6 +102,7 @@ function CalendarList({
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
 }) {
+  const { t } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
   return (
     <div className={cn("select-none calendar-sidebar", !isMacOSTheme && "py-1.5")}>
@@ -115,13 +117,13 @@ function CalendarList({
             borderBottom: "1px solid #787878",
           }}
         >
-          Calendars
+          {t("apps.calendar.sidebar.calendars")}
         </div>
       ) : (
         <div
           className={cn("text-[9px] font-bold uppercase tracking-wide opacity-50 mb-1 px-2.5", useGeneva && "font-geneva-12")}
         >
-          Calendars
+          {t("apps.calendar.sidebar.calendars")}
         </div>
       )}
       {calendars.map((cal) => (
@@ -160,6 +162,7 @@ function TodoSidebar({
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
 }) {
+  const { t } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const [newTitle, setNewTitle] = useState("");
   const defaultCalId = calendars[0]?.id || "home";
@@ -183,18 +186,18 @@ function TodoSidebar({
             borderBottom: "1px solid #787878",
           }}
         >
-          To Do Items
+          {t("apps.calendar.sidebar.toDoItems")}
         </div>
       ) : (
         <div
           className={cn("text-[9px] font-bold uppercase tracking-wide opacity-50 px-2 pt-2 pb-1", useGeneva && "font-geneva-12")}
         >
-          To Do Items
+          {t("apps.calendar.sidebar.toDoItems")}
         </div>
       )}
       <div className="flex-1 overflow-y-auto px-2">
         {todos.length === 0 && (
-          <div className={cn("text-[10px] opacity-30 px-0.5 py-2", useGeneva && "font-geneva-12")}>No to-do items</div>
+          <div className={cn("text-[10px] opacity-30 px-0.5 py-2", useGeneva && "font-geneva-12")}>{t("apps.calendar.sidebar.noTodoItems")}</div>
         )}
         {todos.map((todo) => {
           const cal = calendars.find((c) => c.id === todo.calendarId);
@@ -229,7 +232,7 @@ function TodoSidebar({
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           onKeyDown={(e) => { e.stopPropagation(); if (e.key === "Enter") handleAdd(); }}
-          placeholder="New To Do..."
+          placeholder={t("apps.calendar.sidebar.newTodoPlaceholder")}
           className={cn(
             "w-full text-[10px] px-1.5 py-0.5 rounded border bg-white/80 outline-none",
             useGeneva ? "border-black/20 font-geneva-12" : "border-black/10"
@@ -360,6 +363,7 @@ function WeekTimeGrid({
   isSystem7Theme: boolean;
   hourLabels: string[];
 }) {
+  const { t } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentMinute, setCurrentMinute] = useState(() => {
@@ -430,7 +434,7 @@ function WeekTimeGrid({
               className={cn("flex items-center justify-end px-1 text-[9px] opacity-40", useGeneva && "font-geneva-12")}
               style={{ width: 48, minWidth: 48, flexShrink: 0 }}
             >
-              all-day
+              {t("apps.calendar.views.allDay")}
             </div>
             {weekDates.map((day) => (
               <div key={day.date} className="flex-1 flex flex-col gap-px py-px px-px min-w-0">
@@ -807,7 +811,7 @@ function BottomToolbar({
                 <Plus size={10} weight="bold" />
               </button>
               <button type="button" className="metal-inset-btn metal-inset-icon"
-                onClick={onToggleTodoSidebar} data-state={showTodoSidebar ? "on" : "off"} title="To Do Items">
+                onClick={onToggleTodoSidebar} data-state={showTodoSidebar ? "on" : "off"} title={t("apps.calendar.sidebar.toDoItems")}>
                 <ListChecks size={10} weight="bold" />
               </button>
             </div>
@@ -843,7 +847,7 @@ function BottomToolbar({
             </Button>
             <Button variant={isSystem7Theme ? "player" : "ghost"}
               onClick={onToggleTodoSidebar} data-state={showTodoSidebar ? "on" : "off"}
-              className={cn("h-6 w-6", isXpTheme && "text-black")} title="To Do Items">
+              className={cn("h-6 w-6", isXpTheme && "text-black")} title={t("apps.calendar.sidebar.toDoItems")}>
               <ListChecks size={12} weight="bold" />
             </Button>
           </div>

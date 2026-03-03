@@ -392,6 +392,7 @@
       "description": "含有事件的日曆",
       "event": {
         "allDay": "全天",
+        "calendar": "日曆",
         "cancel": "取消",
         "color": "顏色",
         "date": "日期",
@@ -413,12 +414,20 @@
         "help": "行事曆輔助說明",
         "monthView": "月檢視",
         "newEvent": "新增行程",
+        "showToDoItems": "顯示待辦事項",
         "weekView": "週檢視"
       },
       "name": "行事曆",
+      "sidebar": {
+        "calendars": "日曆",
+        "newTodoPlaceholder": "新增待辦事項...",
+        "noTodoItems": "沒有待辦事項",
+        "toDoItems": "待辦事項"
+      },
       "title": "行事曆",
       "today": "今天",
       "views": {
+        "allDay": "全天",
         "day": "日",
         "month": "月",
         "week": "週"
@@ -1071,9 +1080,11 @@
         "changeCity": "更改城市",
         "enableLocation": "啟用定位以取得天氣",
         "feelsLike": "體感溫度",
+        "high": "高:",
         "humidity": "濕度",
         "loading": "正在載入天氣...",
         "locationDenied": "位置取用遭拒",
+        "low": "低:",
         "noResults": "找不到城市",
         "searchCity": "搜尋城市...",
         "searching": "正在搜尋...",

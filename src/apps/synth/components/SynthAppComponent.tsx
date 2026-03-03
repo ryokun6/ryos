@@ -217,7 +217,7 @@ export function SynthAppComponent({
             {/* Presets section */}
             <div
               className={cn(
-                "p-4 py-4 pb-3 w-full z-[50] relative",
+                "px-2 py-3 pb-2 w-full z-[50] relative",
                 isMacOSTheme
                   ? "border-b border-black/10"
                   : "bg-[#2a2a2a] border-b border-[#3a3a3a] os-toolbar-texture"
@@ -265,70 +265,88 @@ export function SynthAppComponent({
                   </div>
 
                   {/* Desktop preset buttons */}
-                  <div className={cn("hidden md:flex gap-0", isMacOSTheme && "aqua-select-group")}>
-                    {presets.length > 0 ? (
-                      presets.map((preset) => (
-                        <Button
-                          key={preset.id}
-                          variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
-                          data-state={
-                            currentPreset.id === preset.id ? "on" : "off"
-                          }
-                          onClick={() => loadPreset(preset)}
-                          className={cn(
-                            "h-[22px] px-2 whitespace-nowrap uppercase select-none",
-                            isXpTheme && "text-black"
-                          )}
-                        >
-                          {preset.name}
-                        </Button>
-                      ))
-                    ) : (
-                      <p className="text-xs text-gray-400 font-geneva-12 select-none">
-                        {t("apps.synth.noPresetsYet")}
-                      </p>
-                    )}
+                  {isMacOSTheme ? (
+                    <div className="hidden md:flex metal-inset-btn-group">
+                      {presets.length > 0 ? (
+                        presets.map((preset) => (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            className="metal-inset-btn font-geneva-12 !text-[11px] whitespace-nowrap uppercase select-none"
+                            data-state={currentPreset.id === preset.id ? "on" : "off"}
+                            onClick={() => loadPreset(preset)}
+                          >
+                            {preset.name}
+                          </button>
+                        ))
+                      ) : (
+                        <p className="text-xs text-gray-400 font-geneva-12 select-none px-2">
+                          {t("apps.synth.noPresetsYet")}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="hidden md:flex gap-0">
+                      {presets.length > 0 ? (
+                        presets.map((preset) => (
+                          <Button
+                            key={preset.id}
+                            variant={isSystem7Theme ? "player" : "default"}
+                            data-state={currentPreset.id === preset.id ? "on" : "off"}
+                            onClick={() => loadPreset(preset)}
+                            className={cn(
+                              "h-[22px] px-2 whitespace-nowrap uppercase select-none",
+                              isXpTheme && "text-black"
+                            )}
+                          >
+                            {preset.name}
+                          </Button>
+                        ))
+                      ) : (
+                        <p className="text-xs text-gray-400 font-geneva-12 select-none">
+                          {t("apps.synth.noPresetsYet")}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {isMacOSTheme ? (
+                  <div className="metal-inset-btn-group">
+                    <button type="button" className="metal-inset-btn metal-inset-icon select-none" onClick={handleOctaveDown}>
+                      <CaretLeft weight="bold" className="h-3 w-3" />
+                    </button>
+                    <button type="button" className="metal-inset-btn metal-inset-icon select-none" onClick={handleOctaveUp}>
+                      <CaretRight weight="bold" className="h-3 w-3" />
+                    </button>
+                    <button type="button" className="metal-inset-btn font-geneva-12 !text-[11px] select-none" onClick={toggleControls}>
+                      {t("apps.synth.controls")}
+                    </button>
                   </div>
-                </div>
-                <div className={cn("flex gap-0", isMacOSTheme && "aqua-select-group")}>
-                  <Button
-                    variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
-                    onClick={handleOctaveDown}
-                    className={cn(
-                      isSystem7Theme ? "h-[22px] px-2" : isMacOSTheme ? "aqua-compact" : "h-[22px] px-2",
-                      isXpTheme && "text-black",
-                      "select-none"
-                    )}
-                  >
-                    <CaretLeft weight="bold" className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
-                    onClick={handleOctaveUp}
-                    className={cn(
-                      isSystem7Theme ? "h-[22px] px-2" : isMacOSTheme ? "aqua-compact" : "h-[22px] px-2",
-                      isXpTheme && "text-black",
-                      "select-none"
-                    )}
-                  >
-                    <CaretRight weight="bold" className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
-                    onClick={toggleControls}
-                    className={cn(
-                      isSystem7Theme
-                        ? "h-[22px] px-2"
-                        : isMacOSTheme
-                        ? "aqua-compact font-geneva-12 !text-[11px]"
-                        : "h-[22px] px-2",
-                      isXpTheme && "text-black",
-                      "select-none"
-                    )}
-                  >
-                    {t("apps.synth.controls")}
-                  </Button>
-                </div>
+                ) : (
+                  <div className="flex gap-0">
+                    <Button
+                      variant={isSystem7Theme ? "player" : "default"}
+                      onClick={handleOctaveDown}
+                      className={cn("h-[22px] px-2 select-none", isXpTheme && "text-black")}
+                    >
+                      <CaretLeft weight="bold" className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant={isSystem7Theme ? "player" : "default"}
+                      onClick={handleOctaveUp}
+                      className={cn("h-[22px] px-2 select-none", isXpTheme && "text-black")}
+                    >
+                      <CaretRight weight="bold" className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant={isSystem7Theme ? "player" : "default"}
+                      onClick={toggleControls}
+                      className={cn("h-[22px] px-2 select-none", isXpTheme && "text-black")}
+                    >
+                      {t("apps.synth.controls")}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -354,16 +372,24 @@ export function SynthAppComponent({
                           <h3 className="font-semibold text-[#ff00ff] font-geneva-12 text-[10px] select-none">
                             {t("apps.synth.oscillator")}
                           </h3>
-                          <Button
-                            variant={isMacOSTheme ? "aqua_select" : isSystem7Theme ? "player" : "default"}
-                            onClick={addPreset}
-                            className={cn(
-                              "h-[22px] px-2 text-[9px] select-none",
-                              isXpTheme && "text-black"
-                            )}
-                          >
-                            {t("apps.synth.addPreset")}
-                          </Button>
+                          {isMacOSTheme ? (
+                            <div className="metal-inset-btn-group">
+                              <button type="button" className="metal-inset-btn font-geneva-12 !text-[9px] select-none" onClick={addPreset}>
+                                {t("apps.synth.addPreset")}
+                              </button>
+                            </div>
+                          ) : (
+                            <Button
+                              variant={isSystem7Theme ? "player" : "default"}
+                              onClick={addPreset}
+                              className={cn(
+                                "h-[22px] px-2 text-[9px] select-none",
+                                isXpTheme && "text-black"
+                              )}
+                            >
+                              {t("apps.synth.addPreset")}
+                            </Button>
+                          )}
                         </div>
                         <Select
                           value={currentPreset.oscillator.type}

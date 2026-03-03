@@ -16,6 +16,7 @@ import { SeekBar } from "./SeekBar";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { VideoFullScreenPortal } from "./VideoFullScreenPortal";
 import { useVideosLogic } from "../hooks/useVideosLogic";
+import { SkipBack, SkipForward, Play, Pause } from "@phosphor-icons/react";
 
 function AnimatedDigit({
   digit,
@@ -419,7 +420,13 @@ export function VideosAppComponent({
         onFullscreenToggle={toggleFullScreen}
       >
         <div className={cn("flex flex-col w-full h-full text-white", isMacOSTheme ? "bg-transparent" : "bg-[#1a1a1a]")}>
-          <div className="flex-1 relative overflow-hidden">
+          <div
+            className="flex-1 relative overflow-hidden"
+            style={isMacOSTheme ? {
+              border: "1px solid rgba(0, 0, 0, 0.55)",
+              boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
+            } : undefined}
+          >
             {videos.length > 0 ? (
               <div
                 className="w-full h-full overflow-hidden relative"
@@ -623,33 +630,16 @@ export function VideosAppComponent({
               {/* Left Side: Playback Controls */}
               <div className="flex items-center gap-2">
                 {isMacOSTheme ? (
-                  <div className="flex gap-0 aqua-select-group">
-                    <Button
-                      onClick={previousVideo}
-                      variant="aqua_select"
-                      disabled={videos.length === 0}
-                      className="aqua-compact font-chicago"
-                    >
-                      <span className="translate-y-[2px] inline-block">⏮</span>
-                    </Button>
-                    <Button
-                      onClick={togglePlay}
-                      variant="aqua_select"
-                      disabled={videos.length === 0}
-                      className="aqua-compact-wide font-chicago"
-                    >
-                      <span className="translate-y-[2px] inline-block">
-                        {isPlaying ? "⏸" : "▶"}
-                      </span>
-                    </Button>
-                    <Button
-                      onClick={nextVideo}
-                      variant="aqua_select"
-                      disabled={videos.length === 0}
-                      className="aqua-compact font-chicago"
-                    >
-                      <span className="translate-y-[2px] inline-block">⏭</span>
-                    </Button>
+                  <div className="metal-inset-btn-group">
+                    <button type="button" className="metal-inset-btn metal-inset-icon" onClick={previousVideo} disabled={videos.length === 0}>
+                      <SkipBack size={10} weight="fill" />
+                    </button>
+                    <button type="button" className="metal-inset-btn metal-inset-icon" onClick={togglePlay} disabled={videos.length === 0} style={{ minWidth: 32 }}>
+                      {isPlaying ? <Pause size={10} weight="fill" /> : <Play size={10} weight="fill" />}
+                    </button>
+                    <button type="button" className="metal-inset-btn metal-inset-icon" onClick={nextVideo} disabled={videos.length === 0}>
+                      <SkipForward size={10} weight="fill" />
+                    </button>
                   </div>
                 ) : (
                   <div className="flex gap-0">
@@ -717,39 +707,22 @@ export function VideosAppComponent({
               <div className="flex items-center gap-2">
                 {isMacOSTheme ? (
                   <>
-                    <div className="flex gap-0 aqua-select-group">
-                      <Button
-                        onClick={toggleShuffle}
-                        variant="aqua_select"
-                        data-state={isShuffled ? "on" : "off"}
-                        className="px-2 aqua-compact font-geneva-12 !text-[11px]"
-                      >
+                    <div className="metal-inset-btn-group">
+                      <button type="button" className="metal-inset-btn font-geneva-12 !text-[11px]" onClick={toggleShuffle} data-state={isShuffled ? "on" : "off"}>
                         {t("apps.videos.status.shuffle")}
-                      </Button>
-                      <Button
-                        onClick={() => setLoopAll(!loopAll)}
-                        variant="aqua_select"
-                        data-state={loopAll ? "on" : "off"}
-                        className="px-2 aqua-compact font-geneva-12 !text-[11px]"
-                      >
+                      </button>
+                      <button type="button" className="metal-inset-btn font-geneva-12 !text-[11px]" onClick={() => setLoopAll(!loopAll)} data-state={loopAll ? "on" : "off"}>
                         {t("apps.videos.status.repeat")}
-                      </Button>
-                      <Button
-                        onClick={() => setLoopCurrent(!loopCurrent)}
-                        variant="aqua_select"
-                        data-state={loopCurrent ? "on" : "off"}
-                        className="px-2 aqua-compact font-geneva-12 !text-[11px]"
-                      >
+                      </button>
+                      <button type="button" className="metal-inset-btn font-geneva-12 !text-[11px]" onClick={() => setLoopCurrent(!loopCurrent)} data-state={loopCurrent ? "on" : "off"}>
                         {loopCurrent ? "↺" : "→"}
-                      </Button>
+                      </button>
                     </div>
-                    <Button
-                      onClick={() => setIsAddDialogOpen(true)}
-                      variant="aqua_select"
-                      className="px-2 aqua-compact font-geneva-12 !text-[11px]"
-                    >
-                      {t("apps.videos.status.add")}
-                    </Button>
+                    <div className="metal-inset-btn-group">
+                      <button type="button" className="metal-inset-btn font-geneva-12 !text-[11px]" onClick={() => setIsAddDialogOpen(true)}>
+                        {t("apps.videos.status.add")}
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <>

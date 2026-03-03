@@ -222,7 +222,7 @@
 }
 
 :root[data-os-theme="macosx"] .window-material-brushedmetal:not(.is-foreground)::before {
-  filter: contrast(0.3) brightness(1.45) saturate(0.9);
+  filter: contrast(0.4) brightness(1.15) saturate(0.7);
   z-index: 0;
   pointer-events: none;
 }
@@ -267,11 +267,11 @@
 }
 
 :root[data-os-theme="macosx"] .window-material-brushedmetal:not(.is-foreground) {
-  border: 0.5px solid rgba(0, 0, 0, 0.25) !important;
+  border: 0.5px solid rgba(0, 0, 0, 0.5) !important;
   box-shadow:
     0 4px 15px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.1) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Metal inset buttons for brushed metal toolbars */

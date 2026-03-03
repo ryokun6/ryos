@@ -392,6 +392,7 @@
       "description": "Calendario con eventi",
       "event": {
         "allDay": "Tutto il giorno",
+        "calendar": "Calendario",
         "cancel": "Annulla",
         "color": "Colore",
         "date": "Data",
@@ -413,12 +414,20 @@
         "help": "Aiuto Calendario",
         "monthView": "Mese",
         "newEvent": "Nuovo Evento",
+        "showToDoItems": "Mostra elementi da fare",
         "weekView": "Settimana"
       },
       "name": "Calendario",
+      "sidebar": {
+        "calendars": "Calendari",
+        "newTodoPlaceholder": "Nuovo elemento da fare...",
+        "noTodoItems": "Nessun elemento da fare",
+        "toDoItems": "Elementi da fare"
+      },
       "title": "Calendario",
       "today": "Oggi",
       "views": {
+        "allDay": "tutto il giorno",
         "day": "Giorno",
         "month": "Mese",
         "week": "Settimana"
@@ -1071,9 +1080,11 @@
         "changeCity": "Cambia città",
         "enableLocation": "Abilita posizione per il meteo",
         "feelsLike": "Percepita",
+        "high": "Max:",
         "humidity": "Umidità",
         "loading": "Caricamento meteo...",
         "locationDenied": "Accesso alla posizione negato",
+        "low": "Min:",
         "noResults": "Nessuna città trovata",
         "searchCity": "Cerca città...",
         "searching": "Ricerca in corso...",

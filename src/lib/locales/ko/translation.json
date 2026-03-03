@@ -392,6 +392,7 @@
       "description": "이벤트 캘린더",
       "event": {
         "allDay": "종일",
+        "calendar": "캘린더",
         "cancel": "취소",
         "color": "색상",
         "date": "날짜",
@@ -413,12 +414,20 @@
         "help": "캘린더 도움말",
         "monthView": "월 보기",
         "newEvent": "새 이벤트",
+        "showToDoItems": "할 일 항목 보기",
         "weekView": "주 보기"
       },
       "name": "캘린더",
+      "sidebar": {
+        "calendars": "캘린더",
+        "newTodoPlaceholder": "새 할 일...",
+        "noTodoItems": "할 일이 없습니다",
+        "toDoItems": "할 일 항목"
+      },
       "title": "캘린더",
       "today": "오늘",
       "views": {
+        "allDay": "종일",
         "day": "일",
         "month": "월",
         "week": "주"
@@ -1071,9 +1080,11 @@
         "changeCity": "도시 변경",
         "enableLocation": "날씨를 위해 위치 활성화",
         "feelsLike": "체감",
+        "high": "높음:",
         "humidity": "습도",
         "loading": "날씨 로드 중...",
         "locationDenied": "위치 접근 거부됨",
+        "low": "낮음:",
         "noResults": "도시를 찾을 수 없음",
         "searchCity": "도시 검색...",
         "searching": "검색 중...",

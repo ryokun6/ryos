@@ -2522,7 +2522,8 @@
       "views": {
         "day": "Day",
         "week": "Week",
-        "month": "Month"
+        "month": "Month",
+        "allDay": "all-day"
       },
       "event": {
         "title": "Title",
@@ -2532,12 +2533,30 @@
         "allDay": "All Day",
         "notes": "Notes",
         "color": "Color",
+        "calendar": "Calendar",
         "save": "Save",
         "cancel": "Cancel",
         "newEvent": "New Event",
         "editEvent": "Edit Event",
         "deleteConfirm": "Delete this event?",
         "noEvents": "No events"
+      },
+      "sidebar": {
+        "calendars": "Calendars",
+        "toDoItems": "To Do Items",
+        "noTodoItems": "No to-do items",
+        "newTodoPlaceholder": "New To Do..."
+      },
+      "menu": {
+        "newEvent": "New Event",
+        "deleteEvent": "Delete Event",
+        "dayView": "Day View",
+        "weekView": "Week View",
+        "monthView": "Month View",
+        "goToToday": "Go to Today",
+        "showToDoItems": "Show To Do Items",
+        "help": "Calendar Help",
+        "about": "About Calendar"
       },
       "today": "Today"
     },
@@ -2632,7 +2651,9 @@
         "searching": "Searching...",
         "noResults": "No cities found",
         "selectCity": "Choose a city",
-        "unavailable": "Weather unavailable"
+        "unavailable": "Weather unavailable",
+        "high": "H:",
+        "low": "L:"
       },
       "cities": {
         "newYork": "New York",
