@@ -168,7 +168,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
             onChange={(e) => handleFromLangChange(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
             style={{
-              width: 90,
+              width: 117,
               fontSize: 11,
               padding: "2px 4px",
               border: "1px solid #ACA899",
@@ -208,7 +208,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
             onChange={(e) => handleToLangChange(e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
             style={{
-              width: 90,
+              width: 117,
               fontSize: 11,
               padding: "2px 4px",
               border: "1px solid #ACA899",
@@ -360,7 +360,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
           >
             {t("apps.dashboard.translation.from", "Translate from")}
           </span>
-          <div style={{ position: "relative", width: 120, marginLeft: "auto", flexShrink: 0 }}>
+          <div style={{ position: "relative", width: 156, marginLeft: "auto", flexShrink: 0 }}>
             <select
               value={fromLang}
               onChange={(e) => handleFromLangChange(e.target.value)}
@@ -448,7 +448,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
           >
             {t("apps.dashboard.translation.to", "To")}
           </span>
-          <div style={{ position: "relative", width: 120, marginLeft: "auto", flexShrink: 0 }}>
+          <div style={{ position: "relative", width: 156, marginLeft: "auto", flexShrink: 0 }}>
             <select
               value={toLang}
               onChange={(e) => handleToLangChange(e.target.value)}
