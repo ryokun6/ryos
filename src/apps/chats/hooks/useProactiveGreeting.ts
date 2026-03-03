@@ -39,7 +39,10 @@ function getLastMessageTimestamp(messages: AIChatMessage[]): number {
  *    The proactive greeting *replaces* the generic greeting.
  * 2. **Stale chat** – the app is opened / loaded from persisted state and
  *    the last message is older than 5 minutes. The proactive greeting is
- *    *appended* to the conversation.
+ *    *appended* to the existing conversation.
+ *
+ * The greeting is streamed from the server, with `streamingGreetingText`
+ * exposed for progressive display in the chat UI.
  */
 export function useProactiveGreeting() {
   // Initialize loading state eagerly so eligible users never see the static greeting
@@ -52,6 +55,9 @@ export function useProactiveGreeting() {
     const eligible = !!state.username && !!state.authToken;
     return fresh && eligible;
   });
+  const [streamingGreetingText, setStreamingGreetingText] = useState<
+    string | null
+  >(null);
   const hasTriggeredFreshRef = useRef(false);
   const hasTriggeredStaleRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -91,7 +97,45 @@ export function useProactiveGreeting() {
   })();
 
   /**
-   * Fetch a proactive greeting from the server.
+   * Persist the final greeting text as a message in the store.
+   */
+  const commitGreeting = useCallback(
+    (text: string, mode: "fresh" | "stale") => {
+      const proactiveMessage: AIChatMessage = {
+        id: mode === "fresh" ? "proactive-1" : `proactive-${Date.now()}`,
+        role: "assistant",
+        parts: [{ type: "text", text }],
+        metadata: {
+          createdAt: new Date(),
+        },
+      };
+
+      const currentMessages = useChatsStore.getState().aiMessages;
+
+      if (mode === "fresh") {
+        if (
+          currentMessages.length === 1 &&
+          currentMessages[0].id === "1" &&
+          currentMessages[0].role === "assistant"
+        ) {
+          setAiMessages([proactiveMessage]);
+        }
+      } else {
+        const lastMsg = currentMessages[currentMessages.length - 1];
+        const lastTs = getLastMessageTimestamp(currentMessages);
+        const stillStale =
+          lastTs > 0 && Date.now() - lastTs > STALE_CHAT_THRESHOLD_MS;
+
+        if (stillStale && !lastMsg.id?.startsWith("proactive-")) {
+          setAiMessages([...currentMessages, proactiveMessage]);
+        }
+      }
+    },
+    [setAiMessages]
+  );
+
+  /**
+   * Fetch a proactive greeting from the server and stream the response.
    * @param mode  "fresh" → replaces the default greeting;
    *              "stale" → appends the greeting to the existing conversation.
    */
@@ -105,6 +149,7 @@ export function useProactiveGreeting() {
       abortRef.current = controller;
 
       setIsLoadingGreeting(true);
+      setStreamingGreetingText(null);
 
       try {
         const response = await abortableFetch(getApiUrl("/api/chat"), {
@@ -118,63 +163,60 @@ export function useProactiveGreeting() {
             messages: [],
             proactiveGreeting: true,
           }),
-          timeout: 12000,
+          timeout: 20000,
           signal: controller.signal,
         });
 
         if (controller.signal.aborted) return;
 
-        const data = await response.json();
+        const contentType = response.headers.get("content-type") || "";
 
-        if (data.greeting && typeof data.greeting === "string") {
-          const proactiveMessage: AIChatMessage = {
-            id: mode === "fresh" ? "proactive-1" : `proactive-${Date.now()}`,
-            role: "assistant",
-            parts: [{ type: "text", text: data.greeting }],
-            metadata: {
-              createdAt: new Date(),
-            },
-          };
-
-          const currentMessages = useChatsStore.getState().aiMessages;
-
-          if (mode === "fresh") {
-            // Replace the default greeting message
-            if (
-              currentMessages.length === 1 &&
-              currentMessages[0].id === "1" &&
-              currentMessages[0].role === "assistant"
-            ) {
-              setAiMessages([proactiveMessage]);
-            }
-          } else {
-            // Stale mode: append the greeting to the existing conversation
-            // Guard: don't append if user sent a new message while we were loading
-            const lastMsg = currentMessages[currentMessages.length - 1];
-            const lastTs = getLastMessageTimestamp(currentMessages);
-            const stillStale =
-              lastTs > 0 && Date.now() - lastTs > STALE_CHAT_THRESHOLD_MS;
-
-            if (
-              stillStale &&
-              !lastMsg.id?.startsWith("proactive-")
-            ) {
-              setAiMessages([...currentMessages, proactiveMessage]);
-            }
+        // If the server returned JSON (e.g. { greeting: null }), handle it
+        if (contentType.includes("application/json")) {
+          const data = await response.json();
+          if (data.greeting && typeof data.greeting === "string") {
+            commitGreeting(data.greeting, mode);
           }
+          return;
+        }
+
+        // Stream the text response
+        const reader = response.body?.getReader();
+        if (!reader) return;
+
+        const decoder = new TextDecoder();
+        let accumulated = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (controller.signal.aborted) {
+            reader.cancel();
+            break;
+          }
+
+          accumulated += decoder.decode(value, { stream: true });
+          setStreamingGreetingText(accumulated);
+        }
+
+        // Flush any remaining bytes from the decoder
+        accumulated += decoder.decode();
+
+        if (accumulated.trim() && !controller.signal.aborted) {
+          commitGreeting(accumulated.trim(), mode);
         }
       } catch (err) {
-        // Silently fail — the generic greeting remains
         if (!(err instanceof DOMException && err.name === "AbortError")) {
           console.warn("[ProactiveGreeting] Failed to fetch greeting:", err);
         }
       } finally {
         if (!controller.signal.aborted) {
+          setStreamingGreetingText(null);
           setIsLoadingGreeting(false);
         }
       }
     },
-    [username, authToken, setAiMessages]
+    [username, authToken, commitGreeting]
   );
 
   // Trigger proactive greeting for fresh chats
@@ -218,8 +260,6 @@ export function useProactiveGreeting() {
   const triggerGreeting = useCallback(() => {
     hasTriggeredFreshRef.current = false;
     hasTriggeredStaleRef.current = false;
-    // The useEffect will pick it up on the next render
-    // But we can also force it directly
     setTimeout(() => {
       const state = useChatsStore.getState();
       const stillFresh =
@@ -238,6 +278,7 @@ export function useProactiveGreeting() {
 
   return {
     isLoadingGreeting,
+    streamingGreetingText,
     triggerGreeting,
   };
 }

@@ -1,7 +1,6 @@
 import type { VercelRequest } from "@vercel/node";
 import {
   streamText,
-  generateText,
   smoothStream,
   convertToModelMessages,
   stepCountIs,
@@ -608,7 +607,7 @@ export default apiHandler<{
     }
 
     // -------------------------------------------------------------
-    // Proactive greeting mode – quick non-streaming JSON response
+    // Proactive greeting mode – streamed text response
     // Only for authenticated users with memories available
     // -------------------------------------------------------------
     if (isProactiveGreeting && username && isAuthenticated) {
@@ -662,7 +661,7 @@ export default apiHandler<{
       });
 
       try {
-        const { text } = await generateText({
+        const greetingStream = streamText({
           model: google("gemini-2.5-flash"),
           temperature: 1,
           maxOutputTokens: 150,
@@ -693,10 +692,8 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
           prompt: "Generate a proactive greeting.",
         });
 
-        const greeting = text.trim();
-        log(`Generated proactive greeting: "${greeting.substring(0, 50)}..."`);
-
-        res.status(200).json({ greeting });
+        res.setHeader("Access-Control-Allow-Origin", validOrigin);
+        greetingStream.pipeTextStreamToResponse(res, { status: 200 });
         return;
       } catch (greetingErr) {
         logError("Failed to generate proactive greeting", greetingErr);

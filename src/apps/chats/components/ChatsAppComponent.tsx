@@ -140,7 +140,8 @@ export function ChatsAppComponent({
   } = chatRoomResult;
 
   // Proactive greeting for eligible users
-  const { isLoadingGreeting, triggerGreeting } = useProactiveGreeting();
+  const { isLoadingGreeting, streamingGreetingText, triggerGreeting } =
+    useProactiveGreeting();
 
   // Wrap confirmClearChats to trigger proactive greeting after clearing
   const handleConfirmClearChats = useCallback(() => {
@@ -714,6 +715,7 @@ export function ChatsAppComponent({
                     isSpeaking={isSpeaking}
                     onSendMessage={handleSendMessage}
                     isLoadingGreeting={isLoadingGreeting}
+                    streamingGreetingText={streamingGreetingText}
                   />
                 </div>
                 {/* Input Area or Create Account Prompt */}
