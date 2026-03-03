@@ -281,10 +281,12 @@ export interface ChatsStoreState {
   logout: () => Promise<void>; // Logout and clear all user data
 }
 
+const GREETING_FALLBACK = "👋 hey! i'm ryo. ask me anything!";
+
 const getInitialAiMessage = (): AIChatMessage => ({
   id: "1",
   role: "assistant",
-  parts: [{ type: "text" as const, text: i18n.t("apps.chats.messages.greeting") }],
+  parts: [{ type: "text" as const, text: i18n.t("apps.chats.messages.greeting") || GREETING_FALLBACK }],
   metadata: {
     createdAt: new Date(),
   },
