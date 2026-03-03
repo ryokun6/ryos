@@ -203,19 +203,24 @@ function WeekTimeGrid({
               onClick={() => onDateClick(day.date)}
               className="flex-1 text-center py-1.5 min-w-0 transition-colors"
               style={{
-                backgroundColor: day.isToday
-                  ? isMacOSTheme ? "rgba(56,117,215,0.1)" : isXpTheme ? "rgba(49,106,197,0.12)" : "rgba(0,0,0,0.06)"
-                  : "transparent",
-                borderBottom: day.isToday
-                  ? `2px solid ${isXpTheme ? TODAY_RED_XP : TODAY_RED}`
-                  : "2px solid transparent",
+                borderBottom: "2px solid transparent",
               }}
             >
               <div className={cn("text-[10px] opacity-50 leading-none", isMacOSTheme && "font-geneva-12")}>{day.dayName}</div>
               <div
-                className="text-sm font-semibold leading-tight mt-0.5"
+                className={cn(
+                  "text-sm font-semibold leading-tight mt-0.5 mx-auto",
+                  day.isToday && "flex items-center justify-center rounded-full text-white"
+                )}
                 style={{
-                  color: day.isToday ? (isXpTheme ? TODAY_RED_XP : TODAY_RED) : undefined,
+                  ...(day.isToday
+                    ? {
+                        backgroundColor: isXpTheme ? TODAY_RED_XP : TODAY_RED,
+                        width: 22,
+                        height: 22,
+                        lineHeight: "22px",
+                      }
+                    : {}),
                 }}
               >
                 {day.dayOfMonth}
@@ -294,9 +299,6 @@ function WeekTimeGrid({
                 key={day.date}
                 className="flex-1 relative min-w-0"
                 style={{
-                  backgroundColor: day.isToday
-                    ? isMacOSTheme ? "rgba(56,117,215,0.04)" : isXpTheme ? "rgba(49,106,197,0.04)" : "rgba(0,0,0,0.02)"
-                    : "transparent",
                   borderLeft: isXpTheme ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(0,0,0,0.04)",
                 }}
               >
