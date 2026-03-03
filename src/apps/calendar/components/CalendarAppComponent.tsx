@@ -112,6 +112,7 @@ function TodoSidebar({
   onDelete,
   isMacOSTheme,
   isSystem7Theme,
+  fullWidth,
 }: {
   todos: TodoItem[];
   calendars: CalendarGroup[];
@@ -120,6 +121,7 @@ function TodoSidebar({
   onDelete: (id: string) => void;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
+  fullWidth?: boolean;
 }) {
   const { t } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
@@ -133,7 +135,7 @@ function TodoSidebar({
   };
 
   return (
-    <div className="flex flex-col h-full select-none calendar-sidebar" style={{ width: 180, minWidth: 180 }}>
+    <div className="flex flex-col h-full select-none calendar-sidebar" style={fullWidth ? undefined : { width: 180, minWidth: 180 }}>
       {isMacOSTheme ? (
         <div
           className={cn("text-[11px] font-regular text-center", useGeneva && "font-geneva-12")}
@@ -844,8 +846,10 @@ export function CalendarAppComponent({
     setContainerWidth(entry.contentRect.width);
   });
 
+  const isNarrow = containerWidth < 600;
   const showSidebar = containerWidth >= 540;
-  const showTodo = showTodoSidebar && containerWidth >= 600;
+  const showTodo = showTodoSidebar && !isNarrow;
+  const showTodoFullWidth = showTodoSidebar && isNarrow;
   const effectiveView = view;
 
   const handlePrev = useCallback(() => {
@@ -868,7 +872,9 @@ export function CalendarAppComponent({
     }
   }, [effectiveView, navigateWeek, navigateMonth, selectedDate, setSelectedDate]);
 
-  const headerLabel = effectiveView === "week" ? weekLabel : effectiveView === "day" ? selectedDateLabel : monthYearLabel;
+  const headerLabel = showTodoFullWidth
+    ? t("apps.calendar.sidebar.toDoItems")
+    : effectiveView === "week" ? weekLabel : effectiveView === "day" ? selectedDateLabel : monthYearLabel;
 
   const menuBar = (
     <CalendarMenuBar
@@ -979,35 +985,57 @@ export function CalendarAppComponent({
               )
             )}
 
-            {/* Main view area */}
-            <div
-              className={cn("flex-1 flex overflow-hidden calendar-grid bg-white")}
-              style={isMacOSTheme ? {
-                border: "1px solid rgba(0, 0, 0, 0.55)",
-                boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
-              } : undefined}
-            >
-              {effectiveView === "week" && (
-                <WeekTimeGrid weekDates={weekDates} selectedEventId={selectedEventId}
-                  onDateClick={handleDateClick} onTimeSlotClick={handleNewEventAtTime}
-                  onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
-                  isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} hourLabels={hourLabels} />
-              )}
-              {effectiveView === "day" && (
-                <DayTimeGrid date={selectedDate} events={selectedDateEvents} selectedEventId={selectedEventId}
-                  onTimeSlotClick={handleNewEventAtTime}
-                  onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
-                  isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} hourLabels={hourLabels} />
-              )}
-              {effectiveView === "month" && (
-                <MonthGrid calendarGrid={calendarGrid} selectedEventId={selectedEventId}
-                  onDateClick={handleDateClick} onDateDoubleClick={handleDateDoubleClick}
-                  onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
-                  isXpTheme={isXpTheme} narrowDayNames={narrowDayNames} />
-              )}
-            </div>
+            {/* Main view area — hidden when todo is full-width on narrow screens */}
+            {!showTodoFullWidth && (
+              <div
+                className={cn("flex-1 flex overflow-hidden calendar-grid bg-white")}
+                style={isMacOSTheme ? {
+                  border: "1px solid rgba(0, 0, 0, 0.55)",
+                  boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
+                } : undefined}
+              >
+                {effectiveView === "week" && (
+                  <WeekTimeGrid weekDates={weekDates} selectedEventId={selectedEventId}
+                    onDateClick={handleDateClick} onTimeSlotClick={handleNewEventAtTime}
+                    onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
+                    isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} hourLabels={hourLabels} />
+                )}
+                {effectiveView === "day" && (
+                  <DayTimeGrid date={selectedDate} events={selectedDateEvents} selectedEventId={selectedEventId}
+                    onTimeSlotClick={handleNewEventAtTime}
+                    onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
+                    isXpTheme={isXpTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} hourLabels={hourLabels} />
+                )}
+                {effectiveView === "month" && (
+                  <MonthGrid calendarGrid={calendarGrid} selectedEventId={selectedEventId}
+                    onDateClick={handleDateClick} onDateDoubleClick={handleDateDoubleClick}
+                    onEventClick={(ev) => setSelectedEventId(ev.id)} onEventDoubleClick={handleEditEvent}
+                    isXpTheme={isXpTheme} narrowDayNames={narrowDayNames} />
+                )}
+              </div>
+            )}
 
-            {/* Right sidebar: Todo list */}
+            {/* Todo: full-width on narrow screens, sidebar on wide */}
+            {showTodoFullWidth && (
+              <div
+                className="flex-1 overflow-y-auto bg-white"
+                style={isMacOSTheme ? {
+                  border: "1px solid rgba(0, 0, 0, 0.55)",
+                  boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4)",
+                } : undefined}
+              >
+                <TodoSidebar
+                  todos={todos}
+                  calendars={calendars}
+                  onToggle={toggleTodo}
+                  onAdd={addTodo}
+                  onDelete={deleteTodo}
+                  isMacOSTheme={isMacOSTheme}
+                  isSystem7Theme={isSystem7Theme}
+                  fullWidth
+                />
+              </div>
+            )}
             {showTodo && (
               <div
                 className="shrink-0 overflow-y-auto bg-white"
