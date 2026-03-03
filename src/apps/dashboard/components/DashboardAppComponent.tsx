@@ -306,11 +306,13 @@ export function DashboardAppComponent({
               }}
             >
               {/* Widgets */}
-              {widgets.map((widget) => (
+              {widgets.map((widget) => {
+                const z = widget.zIndex ?? 1;
+                return (
                 <motion.div
                   key={widget.id}
-                  initial={{ opacity: 0, scale: 0.8, y: 30 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  initial={{ opacity: 0, scale: 0.8, y: 30, zIndex: z }}
+                  animate={{ opacity: 1, scale: 1, y: 0, zIndex: z }}
                   exit={{ opacity: 0, scale: 0.8, y: 30 }}
                   transition={{
                     duration: 0.35,
@@ -318,7 +320,7 @@ export function DashboardAppComponent({
                     stiffness: 300,
                     damping: 25,
                   }}
-                  style={{ zIndex: widget.zIndex ?? 1 }}
+                  style={{ zIndex: z }}
                 >
                   <WidgetChrome
                     width={widget.size.width}
@@ -336,7 +338,8 @@ export function DashboardAppComponent({
                     <WidgetContent type={widget.type} widgetId={widget.id} />
                   </WidgetChrome>
                 </motion.div>
-              ))}
+                );
+              })}
 
               {/* Widget strip */}
               <AnimatePresence>
