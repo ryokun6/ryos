@@ -19,7 +19,7 @@ import { DashboardMenuBar } from "./DashboardMenuBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
 import { Plus } from "@phosphor-icons/react";
-import type { WidgetType } from "@/stores/useDashboardStore";
+import { useDashboardStore, type WidgetType } from "@/stores/useDashboardStore";
 
 function WidgetContent({ type, widgetId }: { type: string; widgetId: string }) {
   switch (type) {
@@ -250,6 +250,30 @@ export function DashboardAppComponent({
   );
 
   const showOverlay = isWindowOpen && !isClosing;
+
+  useEffect(() => {
+    if (!showOverlay) return;
+    const reposition = () => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const store = useDashboardStore.getState();
+      for (const w of store.widgets) {
+        const { x, y } = w.position;
+        const { width, height } = w.size;
+        const fullyOut =
+          x + width < 0 || x > vw || y + height < 0 || y > vh;
+        if (fullyOut) {
+          const margin = 20;
+          const newX = Math.max(margin, Math.min(vw - width - margin, margin + Math.random() * 100));
+          const newY = Math.max(margin, Math.min(vh - height - 120, margin + Math.random() * 100));
+          store.moveWidget(w.id, { x: newX, y: newY });
+        }
+      }
+    };
+    reposition();
+    window.addEventListener("resize", reposition);
+    return () => window.removeEventListener("resize", reposition);
+  }, [showOverlay]);
 
   return (
     <>

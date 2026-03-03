@@ -190,6 +190,17 @@ export function StickyNoteWidget({ widgetId }: StickyNoteWidgetProps) {
         />
       )}
 
+      {/* Drag handle at top */}
+      <div
+        style={{
+          height: 16,
+          flexShrink: 0,
+          cursor: "grab",
+          position: "relative",
+          zIndex: 3,
+        }}
+      />
+
       <textarea
         ref={textareaRef}
         value={text}
@@ -200,8 +211,8 @@ export function StickyNoteWidget({ widgetId }: StickyNoteWidgetProps) {
         style={{
           flex: 1,
           width: "100%",
-          minHeight: "inherit",
-          padding: "10px 12px",
+          minHeight: 0,
+          padding: "0 12px 10px",
           background: "transparent",
           border: "none",
           outline: "none",

@@ -158,15 +158,15 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
   if (isXpTheme) {
     return (
       <div
-        className="flex flex-col"
-        style={{ fontFamily: font, padding: 8, gap: 6, minHeight: "inherit" }}
-        onPointerDown={(e) => e.stopPropagation()}
-      >
+      className="flex flex-col"
+      style={{ fontFamily: font, padding: 8, gap: 6, minHeight: "inherit" }}
+    >
         {/* Language selectors */}
         <div className="flex items-center gap-1" style={{ fontSize: 11, flexShrink: 0 }}>
           <select
             value={fromLang}
             onChange={(e) => handleFromLangChange(e.target.value)}
+            onPointerDown={(e) => e.stopPropagation()}
             style={{
               flex: 1,
               fontSize: 11,
@@ -187,6 +187,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
           <button
             type="button"
             onClick={handleSwap}
+            onPointerDown={(e) => e.stopPropagation()}
             style={{
               padding: "2px 6px",
               border: "1px solid #ACA899",
@@ -205,6 +206,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
           <select
             value={toLang}
             onChange={(e) => handleToLangChange(e.target.value)}
+            onPointerDown={(e) => e.stopPropagation()}
             style={{
               flex: 1,
               fontSize: 11,
@@ -228,6 +230,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
         <textarea
           value={sourceText}
           onChange={(e) => handleSourceChange(e.target.value)}
+          onPointerDown={(e) => e.stopPropagation()}
           placeholder={t("apps.dashboard.translation.inputPlaceholder", "Enter text...")}
           style={{
             flex: 1,
@@ -343,7 +346,6 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
           padding: "7px 10px 5px",
           zIndex: 1,
         }}
-        onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2">
           <span
@@ -362,6 +364,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
             <select
               value={fromLang}
               onChange={(e) => handleFromLangChange(e.target.value)}
+              onPointerDown={(e) => e.stopPropagation()}
               style={{ ...aquaSelectStyle, width: "100%", paddingRight: 20 }}
             >
               {LANGUAGES.map((l) => (
@@ -379,11 +382,11 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
       <div
         className="relative"
         style={{ padding: "6px 10px 4px", zIndex: 1 }}
-        onPointerDown={(e) => e.stopPropagation()}
       >
         <textarea
           value={sourceText}
           onChange={(e) => handleSourceChange(e.target.value)}
+          onPointerDown={(e) => e.stopPropagation()}
           placeholder={t("apps.dashboard.translation.inputPlaceholder", "Enter text...")}
           style={{
             width: "100%",
@@ -411,7 +414,6 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
           padding: "5px 10px",
           zIndex: 1,
         }}
-        onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2">
           <button
@@ -450,6 +452,7 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
             <select
               value={toLang}
               onChange={(e) => handleToLangChange(e.target.value)}
+              onPointerDown={(e) => e.stopPropagation()}
               style={{ ...aquaSelectStyle, width: "100%", paddingRight: 20 }}
             >
               {LANGUAGES.map((l) => (
@@ -467,7 +470,6 @@ export function TranslationWidget({ widgetId }: TranslationWidgetProps) {
       <div
         className="relative"
         style={{ padding: "4px 10px 8px", zIndex: 1 }}
-        onPointerDown={(e) => e.stopPropagation()}
       >
         <div
           style={{
