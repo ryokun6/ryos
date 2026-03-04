@@ -2262,9 +2262,9 @@
         }
       },
       "autoSync": {
-        "title": "Auto Cloud Sync",
+        "title": "Cloud Sync",
         "description": "Automatically sync data to the cloud when changes are made. Updates are fetched on load and every 5 minutes.",
-        "enableToggle": "Enable Auto Sync",
+        "enableToggle": "Enable Cloud Sync",
         "syncNow": "Sync Now",
         "lastSync": "Last synced: {{date}}",
         "neverSynced": "Not yet synced",

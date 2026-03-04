@@ -163,6 +163,7 @@ function SyncTabContent({
   isMacOSXTheme,
   handleCloudBackup,
   handleCloudRestore,
+  promptSetUsername,
   CLOUD_BACKUP_MAX_SIZE,
 }: {
   username: string | null;
@@ -183,6 +184,7 @@ function SyncTabContent({
   isMacOSXTheme: boolean;
   handleCloudBackup: () => void;
   handleCloudRestore: () => void;
+  promptSetUsername: () => void;
   CLOUD_BACKUP_MAX_SIZE: number;
 }) {
   const { t } = useTranslation();
@@ -275,10 +277,21 @@ function SyncTabContent({
         </div>
       ) : (
         <div className="space-y-2">
-          <Label>{t("apps.control-panels.autoSync.title")}</Label>
-          <p className="text-[11px] text-neutral-600 font-geneva-12">
-            {t("apps.control-panels.autoSync.loginRequired")}
-          </p>
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-1">
+              <Label>{t("apps.control-panels.autoSync.title")}</Label>
+              <Label className="text-[11px] text-neutral-600 font-geneva-12">
+                {t("apps.control-panels.autoSync.loginRequired")}
+              </Label>
+            </div>
+            <Button
+              variant="retro"
+              onClick={promptSetUsername}
+              className="h-7"
+            >
+              {t("apps.control-panels.login")}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -776,6 +789,7 @@ export function ControlPanelsAppComponent({
                 isMacOSXTheme={isMacOSXTheme}
                 handleCloudBackup={handleCloudBackup}
                 handleCloudRestore={() => setIsConfirmCloudRestoreOpen(true)}
+                promptSetUsername={promptSetUsername}
                 CLOUD_BACKUP_MAX_SIZE={CLOUD_BACKUP_MAX_SIZE}
               />
             </ThemedTabsContent>
