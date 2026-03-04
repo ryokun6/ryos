@@ -422,7 +422,7 @@
         "goToToday": "前往今天",
         "help": "行事曆輔助說明",
         "importFromDevice": "從裝置匯入…",
-        "exportToIcs": "匯出為 iCalendar (.ics)…",
+        "exportToIcs": "匯出事件…",
         "monthView": "月檢視",
         "newEvent": "新增行程",
         "showToDoItems": "顯示待辦事項",

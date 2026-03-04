@@ -422,7 +422,7 @@
         "goToToday": "오늘로 이동",
         "help": "캘린더 도움말",
         "importFromDevice": "기기에서 가져오기…",
-        "exportToIcs": "iCalendar (.ics)로 내보내기…",
+        "exportToIcs": "이벤트 내보내기…",
         "monthView": "월 보기",
         "newEvent": "새 이벤트",
         "showToDoItems": "할 일 항목 보기",

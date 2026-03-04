@@ -422,7 +422,7 @@
         "goToToday": "Ir para Hoje",
         "help": "Ajuda do Calendário",
         "importFromDevice": "Importar do dispositivo…",
-        "exportToIcs": "Exportar como iCalendar (.ics)…",
+        "exportToIcs": "Exportar eventos…",
         "monthView": "Vista Mensal",
         "newEvent": "Novo Evento",
         "showToDoItems": "Mostrar Tarefas",

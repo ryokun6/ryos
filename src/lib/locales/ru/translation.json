@@ -422,7 +422,7 @@
         "goToToday": "Перейти на сегодня",
         "help": "Справка Календаря",
         "importFromDevice": "Импорт с устройства…",
-        "exportToIcs": "Экспортировать как iCalendar (.ics)…",
+        "exportToIcs": "Экспортировать события…",
         "monthView": "Вид Месяц",
         "newEvent": "Новое событие",
         "showToDoItems": "Показать Дела",

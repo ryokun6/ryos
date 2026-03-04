@@ -2579,7 +2579,7 @@
         "goToToday": "Go to Today",
         "showToDoItems": "Show To Do Items",
         "importFromDevice": "Import from Device…",
-        "exportToIcs": "Export as iCalendar (.ics)…",
+        "exportToIcs": "Export Events…",
         "help": "Calendar Help",
         "about": "About Calendar"
       },
