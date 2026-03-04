@@ -376,6 +376,17 @@ export function useCalendarLogic() {
     [editingEvent, addEvent, updateEvent]
   );
 
+  const handleEditSelectedEvent = useCallback(() => {
+    if (selectedEventId) {
+      const event = events.find((e) => e.id === selectedEventId);
+      if (event) {
+        setEditingEvent(event);
+        setPrefillTime(null);
+        setIsEventDialogOpen(true);
+      }
+    }
+  }, [selectedEventId, events]);
+
   const handleDeleteSelectedEvent = useCallback(() => {
     if (selectedEventId) {
       deleteEvent(selectedEventId);
@@ -464,6 +475,7 @@ export function useCalendarLogic() {
     handleNewEventAtTime,
     handleEditEvent,
     handleSaveEvent,
+    handleEditSelectedEvent,
     handleDeleteSelectedEvent,
     handleDeleteEditingEvent,
   };

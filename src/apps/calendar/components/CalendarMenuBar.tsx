@@ -16,6 +16,7 @@ interface CalendarMenuBarProps {
   onShowHelp: () => void;
   onShowAbout: () => void;
   onNewEvent: () => void;
+  onEditEvent: () => void;
   onDeleteEvent: () => void;
   hasSelectedEvent: boolean;
   view: CalendarView;
@@ -30,6 +31,7 @@ export function CalendarMenuBar({
   onShowHelp,
   onShowAbout,
   onNewEvent,
+  onEditEvent,
   onDeleteEvent,
   hasSelectedEvent,
   view,
@@ -65,6 +67,13 @@ export function CalendarMenuBar({
           {t("common.menu.edit")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
+            disabled={!hasSelectedEvent}
+            onClick={onEditEvent}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.calendar.menu.editEvent")}
+          </MenubarItem>
           <MenubarItem
             disabled={!hasSelectedEvent}
             onClick={onDeleteEvent}
