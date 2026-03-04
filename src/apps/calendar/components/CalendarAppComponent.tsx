@@ -837,7 +837,7 @@ export function CalendarAppComponent({
     calendars, toggleCalendarVisibility,
     todos, addTodo, toggleTodo, deleteTodo, showTodoSidebar, setShowTodoSidebar,
     navigateMonth, navigateWeek, goToToday, setView, setSelectedDate,
-    handleDateClick, handleDateDoubleClick, handleNewEvent, handleNewEventAtTime, handleEditEvent, handleSaveEvent, handleDeleteSelectedEvent,
+    handleDateClick, handleDateDoubleClick, handleNewEvent, handleNewEventAtTime, handleEditEvent, handleSaveEvent, handleDeleteSelectedEvent, handleDeleteEditingEvent,
   } = logic;
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1068,7 +1068,8 @@ export function CalendarAppComponent({
 
         <EventDialog
           isOpen={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}
-          onSave={handleSaveEvent} editingEvent={editingEvent}
+          onSave={handleSaveEvent} onDelete={handleDeleteEditingEvent}
+          editingEvent={editingEvent}
           selectedDate={selectedDate} prefillTime={prefillTime}
           calendars={calendars}
         />

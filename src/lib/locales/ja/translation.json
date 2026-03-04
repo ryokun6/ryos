@@ -396,6 +396,7 @@
         "cancel": "キャンセル",
         "color": "色",
         "date": "日付",
+        "delete": "削除",
         "deleteConfirm": "このイベントを削除しますか？",
         "editEvent": "イベントを編集",
         "endTime": "終了時刻",

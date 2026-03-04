@@ -396,6 +396,7 @@
         "cancel": "取消",
         "color": "顏色",
         "date": "日期",
+        "delete": "刪除",
         "deleteConfirm": "刪除此事件？",
         "editEvent": "編輯事件",
         "endTime": "結束時間",

@@ -30,6 +30,7 @@ interface EventDialogProps {
     calendarId?: string;
     notes?: string;
   }) => void;
+  onDelete?: () => void;
   editingEvent: CalendarEvent | null;
   selectedDate: string;
   prefillTime?: { date: string; startTime: string; endTime: string } | null;
@@ -48,6 +49,7 @@ export function EventDialog({
   isOpen,
   onOpenChange,
   onSave,
+  onDelete,
   editingEvent,
   selectedDate,
   prefillTime,
@@ -304,24 +306,36 @@ export function EventDialog({
       </div>
 
       {/* Footer */}
-      <DialogFooter className="mt-4 gap-1 sm:gap-0">
-        <Button
-          variant="retro"
-          onClick={() => onOpenChange(false)}
-          className={cn("h-7", themeFont)}
-          style={themeFontStyle}
-        >
-          {t("apps.calendar.event.cancel")}
-        </Button>
-        <Button
-          variant={isMacTheme ? "default" : "retro"}
-          onClick={handleSave}
-          disabled={!title.trim()}
-          className={cn(!isMacTheme && "h-7", themeFont)}
-          style={themeFontStyle}
-        >
-          {t("apps.calendar.event.save")}
-        </Button>
+      <DialogFooter className={cn("mt-4 gap-1 sm:gap-0", editingEvent && onDelete && "sm:justify-between")}>
+        {editingEvent && onDelete && (
+          <Button
+            variant="retro"
+            onClick={onDelete}
+            className={cn("h-7 text-red-600 hover:text-red-700 sm:mr-auto", themeFont)}
+            style={themeFontStyle}
+          >
+            {t("apps.calendar.event.delete")}
+          </Button>
+        )}
+        <div className="flex gap-1">
+          <Button
+            variant="retro"
+            onClick={() => onOpenChange(false)}
+            className={cn("h-7", themeFont)}
+            style={themeFontStyle}
+          >
+            {t("apps.calendar.event.cancel")}
+          </Button>
+          <Button
+            variant={isMacTheme ? "default" : "retro"}
+            onClick={handleSave}
+            disabled={!title.trim()}
+            className={cn(!isMacTheme && "h-7", themeFont)}
+            style={themeFontStyle}
+          >
+            {t("apps.calendar.event.save")}
+          </Button>
+        </div>
       </DialogFooter>
     </div>
   );

@@ -396,6 +396,7 @@
         "cancel": "Annulla",
         "color": "Colore",
         "date": "Data",
+        "delete": "Elimina",
         "deleteConfirm": "Eliminare questo evento?",
         "editEvent": "Modifica evento",
         "endTime": "Ora fine",

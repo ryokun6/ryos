@@ -383,6 +383,15 @@ export function useCalendarLogic() {
     }
   }, [selectedEventId, deleteEvent]);
 
+  const handleDeleteEditingEvent = useCallback(() => {
+    if (editingEvent) {
+      deleteEvent(editingEvent.id);
+      setIsEventDialogOpen(false);
+      setEditingEvent(null);
+      setPrefillTime(null);
+    }
+  }, [editingEvent, deleteEvent]);
+
   return {
     // i18n
     t,
@@ -456,5 +465,6 @@ export function useCalendarLogic() {
     handleEditEvent,
     handleSaveEvent,
     handleDeleteSelectedEvent,
+    handleDeleteEditingEvent,
   };
 }

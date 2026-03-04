@@ -2557,6 +2557,7 @@
         "cancel": "Cancel",
         "newEvent": "New Event",
         "editEvent": "Edit Event",
+        "delete": "Delete",
         "deleteConfirm": "Delete this event?",
         "noEvents": "No events"
       },
