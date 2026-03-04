@@ -2212,6 +2212,7 @@
       "invert": "Invert",
       "appearance": "Appearance",
       "sound": "Sound",
+      "sync": "Sync",
       "system": "System",
       "theme": "Theme",
       "themeDescription": "Changes the appearance of windows, menus, and controls",
@@ -2258,6 +2259,27 @@
           "decompressing": "Decompressing…",
           "restoring": "Restoring data…",
           "finishing": "Finishing up…"
+        }
+      },
+      "autoSync": {
+        "title": "Auto Cloud Sync",
+        "description": "Automatically sync data to the cloud when changes are made. Updates are fetched on load and every 5 minutes.",
+        "enableToggle": "Enable Auto Sync",
+        "syncNow": "Sync Now",
+        "lastSync": "Last synced: {{date}}",
+        "neverSynced": "Not yet synced",
+        "loginRequired": "Log in to use Auto Cloud Sync.",
+        "categories": {
+          "settings": "Settings",
+          "settingsDescription": "Theme, sounds, display, dock layout",
+          "files": "Files",
+          "filesDescription": "Document and file metadata",
+          "musicLibrary": "Music Library",
+          "musicLibraryDescription": "iPod tracks and preferences",
+          "calendar": "Calendar",
+          "calendarDescription": "Events, todos, and calendars",
+          "stickies": "Stickies",
+          "stickiesDescription": "Sticky notes"
         }
       },
       "resetAllSettings": "Reset All Settings",

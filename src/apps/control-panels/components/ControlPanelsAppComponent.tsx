@@ -37,6 +37,8 @@ import { useAppStoreShallow } from "@/stores/helpers";
 import { AIModel } from "@/types/aiModels";
 import { useControlPanelsLogic } from "../hooks/useControlPanelsLogic";
 import { abortableFetch } from "@/utils/abortableFetch";
+import { useCloudSyncStore, type SyncCategory } from "@/stores/useCloudSyncStore";
+import { useCloudAutoSync } from "@/hooks/useCloudAutoSync";
 
 // Version display component that reads from app store
 function VersionDisplay() {
@@ -115,6 +117,258 @@ function VersionDisplay() {
         </>
       )}
     </p>
+  );
+}
+
+const SYNC_CATEGORY_META: {
+  key: SyncCategory;
+  labelKey: string;
+  descKey: string;
+}[] = [
+  {
+    key: "settings",
+    labelKey: "apps.control-panels.autoSync.categories.settings",
+    descKey: "apps.control-panels.autoSync.categories.settingsDescription",
+  },
+  {
+    key: "files",
+    labelKey: "apps.control-panels.autoSync.categories.files",
+    descKey: "apps.control-panels.autoSync.categories.filesDescription",
+  },
+  {
+    key: "musicLibrary",
+    labelKey: "apps.control-panels.autoSync.categories.musicLibrary",
+    descKey: "apps.control-panels.autoSync.categories.musicLibraryDescription",
+  },
+  {
+    key: "calendar",
+    labelKey: "apps.control-panels.autoSync.categories.calendar",
+    descKey: "apps.control-panels.autoSync.categories.calendarDescription",
+  },
+  {
+    key: "stickies",
+    labelKey: "apps.control-panels.autoSync.categories.stickies",
+    descKey: "apps.control-panels.autoSync.categories.stickiesDescription",
+  },
+];
+
+function SyncTabContent({
+  username,
+  tabStyles,
+  isCloudBackingUp,
+  isCloudRestoring,
+  isCloudStatusLoading,
+  cloudSyncStatus,
+  cloudProgress,
+  isMacOSXTheme,
+  handleCloudBackup,
+  handleCloudRestore,
+  CLOUD_BACKUP_MAX_SIZE,
+}: {
+  username: string | null;
+  tabStyles: { separatorStyle: React.CSSProperties };
+  isCloudBackingUp: boolean;
+  isCloudRestoring: boolean;
+  isCloudStatusLoading: boolean;
+  cloudSyncStatus: {
+    hasBackup: boolean;
+    metadata: {
+      timestamp: string;
+      version: number;
+      totalSize: number;
+      createdAt: string;
+    } | null;
+  } | null;
+  cloudProgress: { phase: string; percent: number } | null;
+  isMacOSXTheme: boolean;
+  handleCloudBackup: () => void;
+  handleCloudRestore: () => void;
+  CLOUD_BACKUP_MAX_SIZE: number;
+}) {
+  const { t } = useTranslation();
+  const { syncNow } = useCloudAutoSync();
+
+  const autoSyncEnabled = useCloudSyncStore((s) => s.enabled);
+  const setAutoSyncEnabled = useCloudSyncStore((s) => s.setEnabled);
+  const setSyncCategory = useCloudSyncStore((s) => s.setSyncCategory);
+  const lastSyncTimestamp = useCloudSyncStore((s) => s.lastSyncTimestamp);
+  const syncSettings = useCloudSyncStore((s) => s.syncSettings);
+  const syncFiles = useCloudSyncStore((s) => s.syncFiles);
+  const syncMusicLibrary = useCloudSyncStore((s) => s.syncMusicLibrary);
+  const syncCalendar = useCloudSyncStore((s) => s.syncCalendar);
+  const syncStickies = useCloudSyncStore((s) => s.syncStickies);
+
+  const categoryStates: Record<SyncCategory, boolean> = {
+    settings: syncSettings,
+    files: syncFiles,
+    musicLibrary: syncMusicLibrary,
+    calendar: syncCalendar,
+    stickies: syncStickies,
+  };
+
+  return (
+    <div className="space-y-4 h-full overflow-y-auto p-4 pt-6">
+      {/* Auto Cloud Sync */}
+      {username ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-1">
+              <Label>{t("apps.control-panels.autoSync.title")}</Label>
+              <Label className="text-[11px] text-neutral-600 font-geneva-12">
+                {t("apps.control-panels.autoSync.description")}
+              </Label>
+            </div>
+            <Switch
+              checked={autoSyncEnabled}
+              onCheckedChange={setAutoSyncEnabled}
+              className="data-[state=checked]:bg-[#000000]"
+            />
+          </div>
+
+          {autoSyncEnabled && (
+            <>
+              <div
+                className="border-t"
+                style={tabStyles.separatorStyle}
+              />
+
+              <div className="space-y-2">
+                {SYNC_CATEGORY_META.map((cat) => (
+                  <div
+                    key={cat.key}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <Label className="text-[12px]">{t(cat.labelKey)}</Label>
+                      <Label className="text-[10px] text-neutral-500 font-geneva-12">
+                        {t(cat.descKey)}
+                      </Label>
+                    </div>
+                    <Switch
+                      checked={categoryStates[cat.key]}
+                      onCheckedChange={(checked) =>
+                        setSyncCategory(cat.key, checked)
+                      }
+                      className="data-[state=checked]:bg-[#000000]"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                variant="retro"
+                onClick={syncNow}
+                className="w-full"
+              >
+                {t("apps.control-panels.autoSync.syncNow")}
+              </Button>
+
+              <p className="text-[11px] text-neutral-600 font-geneva-12">
+                {lastSyncTimestamp
+                  ? t("apps.control-panels.autoSync.lastSync", {
+                      date: new Date(lastSyncTimestamp).toLocaleString(),
+                    })
+                  : t("apps.control-panels.autoSync.neverSynced")}
+              </p>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <Label>{t("apps.control-panels.autoSync.title")}</Label>
+          <p className="text-[11px] text-neutral-600 font-geneva-12">
+            {t("apps.control-panels.autoSync.loginRequired")}
+          </p>
+        </div>
+      )}
+
+      <div
+        className="border-t"
+        style={tabStyles.separatorStyle}
+      />
+
+      {/* Cloud Backup / Restore (manual) */}
+      {username ? (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Button
+              variant="retro"
+              onClick={handleCloudBackup}
+              disabled={isCloudBackingUp || isCloudRestoring}
+              className="flex-1"
+            >
+              {isCloudBackingUp
+                ? t("apps.control-panels.cloudSync.backingUp")
+                : t("apps.control-panels.cloudSync.backupToCloud")}
+            </Button>
+            <Button
+              variant="retro"
+              onClick={handleCloudRestore}
+              disabled={
+                isCloudBackingUp ||
+                isCloudRestoring ||
+                !cloudSyncStatus?.hasBackup
+              }
+              className="flex-1"
+            >
+              {isCloudRestoring
+                ? t("apps.control-panels.cloudSync.restoring")
+                : t("apps.control-panels.cloudSync.restoreFromCloud")}
+            </Button>
+          </div>
+          {cloudProgress && (
+            <div className="space-y-1">
+              {isMacOSXTheme ? (
+                <div className="aqua-progress w-full h-[14px]">
+                  <div
+                    className="aqua-progress-fill transition-all duration-300 ease-out"
+                    style={{ width: `${cloudProgress.percent}%` }}
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-3 bg-neutral-200 rounded-sm overflow-hidden border border-neutral-300">
+                  <div
+                    className="h-full bg-neutral-600 transition-all duration-300 ease-out"
+                    style={{ width: `${cloudProgress.percent}%` }}
+                  />
+                </div>
+              )}
+              <p className="text-[11px] text-neutral-600 font-geneva-12">
+                {cloudProgress.phase}
+                {cloudProgress.percent > 0 &&
+                  cloudProgress.percent < 100 &&
+                  ` (${cloudProgress.percent}%)`}
+              </p>
+            </div>
+          )}
+          {!cloudProgress && (
+            <p className="text-[11px] text-neutral-600 font-geneva-12">
+              {isCloudStatusLoading
+                ? t("apps.control-panels.cloudSync.checking")
+                : cloudSyncStatus?.hasBackup && cloudSyncStatus.metadata
+                  ? t("apps.control-panels.cloudSync.lastBackup", {
+                      date: new Date(
+                        cloudSyncStatus.metadata.timestamp
+                      ).toLocaleString(),
+                      size: (
+                        cloudSyncStatus.metadata.totalSize /
+                        (1024 * 1024)
+                      ).toFixed(1),
+                    })
+                  : t("apps.control-panels.cloudSync.description", {
+                      limit: (CLOUD_BACKUP_MAX_SIZE / (1024 * 1024)).toFixed(0),
+                    })}
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-[11px] text-neutral-600 font-geneva-12">
+            {t("apps.control-panels.cloudSync.loginRequired")}
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -293,6 +547,9 @@ export function ControlPanelsAppComponent({
               </ThemedTabsTrigger>
               <ThemedTabsTrigger value="sound">
                 {t("apps.control-panels.sound")}
+              </ThemedTabsTrigger>
+              <ThemedTabsTrigger value="sync">
+                {t("apps.control-panels.sync")}
               </ThemedTabsTrigger>
               <ThemedTabsTrigger value="system">
                 {t("apps.control-panels.system")}
@@ -507,6 +764,22 @@ export function ControlPanelsAppComponent({
               </div>
             </ThemedTabsContent>
 
+            <ThemedTabsContent value="sync">
+              <SyncTabContent
+                username={username}
+                tabStyles={tabStyles}
+                isCloudBackingUp={isCloudBackingUp}
+                isCloudRestoring={isCloudRestoring}
+                isCloudStatusLoading={isCloudStatusLoading}
+                cloudSyncStatus={cloudSyncStatus}
+                cloudProgress={cloudProgress}
+                isMacOSXTheme={isMacOSXTheme}
+                handleCloudBackup={handleCloudBackup}
+                handleCloudRestore={() => setIsConfirmCloudRestoreOpen(true)}
+                CLOUD_BACKUP_MAX_SIZE={CLOUD_BACKUP_MAX_SIZE}
+              />
+            </ThemedTabsContent>
+
             <ThemedTabsContent value="system">
               <div className="space-y-4 h-full overflow-y-auto p-4">
                 {/* User Account Section */}
@@ -608,89 +881,6 @@ export function ControlPanelsAppComponent({
                   </Button>
                   <VersionDisplay />
                 </div>
-
-                {/* Cloud Sync */}
-                {username && (
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Button
-                        variant="retro"
-                        onClick={handleCloudBackup}
-                        disabled={isCloudBackingUp || isCloudRestoring}
-                        className="flex-1"
-                      >
-                        {isCloudBackingUp
-                          ? t("apps.control-panels.cloudSync.backingUp")
-                          : t("apps.control-panels.cloudSync.backupToCloud")}
-                      </Button>
-                      <Button
-                        variant="retro"
-                        onClick={() => setIsConfirmCloudRestoreOpen(true)}
-                        disabled={
-                          isCloudBackingUp ||
-                          isCloudRestoring ||
-                          !cloudSyncStatus?.hasBackup
-                        }
-                        className="flex-1"
-                      >
-                        {isCloudRestoring
-                          ? t("apps.control-panels.cloudSync.restoring")
-                          : t(
-                              "apps.control-panels.cloudSync.restoreFromCloud"
-                            )}
-                      </Button>
-                    </div>
-                    {/* Progress bar during backup/restore */}
-                    {cloudProgress && (
-                      <div className="space-y-1">
-                        {isMacOSXTheme ? (
-                          <div className="aqua-progress w-full h-[14px]">
-                            <div
-                              className="aqua-progress-fill transition-all duration-300 ease-out"
-                              style={{ width: `${cloudProgress.percent}%` }}
-                            />
-                          </div>
-                        ) : (
-                          <div className="w-full h-3 bg-neutral-200 rounded-sm overflow-hidden border border-neutral-300">
-                            <div
-                              className="h-full bg-neutral-600 transition-all duration-300 ease-out"
-                              style={{ width: `${cloudProgress.percent}%` }}
-                            />
-                          </div>
-                        )}
-                        <p className="text-[11px] text-neutral-600 font-geneva-12">
-                          {cloudProgress.phase}
-                          {cloudProgress.percent > 0 &&
-                            cloudProgress.percent < 100 &&
-                            ` (${cloudProgress.percent}%)`}
-                        </p>
-                      </div>
-                    )}
-                    {!cloudProgress && (
-                      <p className="text-[11px] text-neutral-600 font-geneva-12">
-                        {isCloudStatusLoading
-                          ? t("apps.control-panels.cloudSync.checking")
-                          : cloudSyncStatus?.hasBackup &&
-                              cloudSyncStatus.metadata
-                            ? t("apps.control-panels.cloudSync.lastBackup", {
-                                date: new Date(
-                                  cloudSyncStatus.metadata.timestamp
-                                ).toLocaleString(),
-                                size: (
-                                  cloudSyncStatus.metadata.totalSize /
-                                  (1024 * 1024)
-                                ).toFixed(1),
-                              })
-                            : t("apps.control-panels.cloudSync.description", {
-                                limit: (
-                                  CLOUD_BACKUP_MAX_SIZE /
-                                  (1024 * 1024)
-                                ).toFixed(0),
-                              })}
-                      </p>
-                    )}
-                  </div>
-                )}
 
                 {/* Local Backup */}
                 <div className="space-y-2">
