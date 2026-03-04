@@ -15,6 +15,7 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
+import { useInstanceUndoRedo } from "@/hooks/useUndoRedo";
 
 export type ViewType = "small" | "large" | "list";
 export type SortType = "name" | "date" | "size" | "kind";
@@ -45,6 +46,7 @@ export interface FinderMenuBarProps {
   canCreateFolder?: boolean;
   rootFolders?: FileItem[];
   onNewWindow?: () => void;
+  instanceId?: string;
 }
 
 export function FinderMenuBar({
@@ -73,6 +75,7 @@ export function FinderMenuBar({
   canCreateFolder = false,
   rootFolders,
   onNewWindow,
+  instanceId,
 }: FinderMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -81,6 +84,7 @@ export function FinderMenuBar({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacOsxTheme = currentTheme === "macosx";
+  const { canUndo, canRedo, undo, redo } = useInstanceUndoRedo(instanceId || "");
 
   const canMoveToTrash =
     selectedFile &&
@@ -177,8 +181,19 @@ export function FinderMenuBar({
           {t("common.menu.edit")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
-          <MenubarItem className="text-md h-6 px-3">
+          <MenubarItem
+            onClick={undo}
+            disabled={!canUndo}
+            className={`text-md h-6 px-3 ${!canUndo ? "text-gray-500" : ""}`}
+          >
             {t("common.menu.undo")}
+          </MenubarItem>
+          <MenubarItem
+            onClick={redo}
+            disabled={!canRedo}
+            className={`text-md h-6 px-3 ${!canRedo ? "text-gray-500" : ""}`}
+          >
+            {t("common.menu.redo")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem className="text-md h-6 px-3">

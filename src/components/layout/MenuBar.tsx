@@ -47,6 +47,7 @@ import { useIsPhone } from "@/hooks/useIsPhone";
 import { isTauri, isTauriWindows } from "@/utils/platform";
 import { useSpotlightStore } from "@/stores/useSpotlightStore";
 import { toggleExposeView, toggleSpotlightSearch, requestAppLaunch } from "@/utils/appEventBus";
+import { useUndoRedoStore } from "@/stores/useUndoRedoStore";
 
 // Helper function to get app name (using translations)
 const getAppName = (appId: string): string => {
@@ -545,6 +546,11 @@ function DefaultMenuItems() {
   const [isAboutDialogOpen, setIsAboutDialogOpen] = useState(false);
   const translatedHelpItems = useTranslatedHelpItems("finder", finderHelpItems);
 
+  const foregroundId = useAppStoreShallow((s) => s.foregroundInstanceId);
+  const undoRedoEntry = useUndoRedoStore(
+    (s) => (foregroundId ? s.handlers[foregroundId] : null)
+  );
+
   const handleLaunchFinder = (path: string) => {
     launchApp("finder", { initialPath: path });
   };
@@ -599,10 +605,18 @@ function DefaultMenuItems() {
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
-            disabled
-            className="text-md h-6 px-3"
+            onClick={() => undoRedoEntry?.undo()}
+            disabled={!undoRedoEntry?.canUndo}
+            className={`text-md h-6 px-3 ${!undoRedoEntry?.canUndo ? "text-gray-500" : ""}`}
           >
             {t("common.menu.undo")}
+          </MenubarItem>
+          <MenubarItem
+            onClick={() => undoRedoEntry?.redo()}
+            disabled={!undoRedoEntry?.canRedo}
+            className={`text-md h-6 px-3 ${!undoRedoEntry?.canRedo ? "text-gray-500" : ""}`}
+          >
+            {t("common.menu.redo")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem

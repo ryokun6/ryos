@@ -12,6 +12,12 @@ import { useShallow } from "zustand/react/shallow";
 import { parseIcalString, toIcalString } from "../utils/parseIcal";
 import { toast } from "sonner";
 
+type CalendarUndoAction =
+  | { type: "addEvent"; event: CalendarEvent }
+  | { type: "updateEvent"; eventId: string; before: CalendarEvent; after: CalendarEvent }
+  | { type: "deleteEvent"; event: CalendarEvent }
+  | { type: "importEvents"; events: CalendarEvent[] };
+
 export interface CalendarDayCell {
   date: string; // YYYY-MM-DD
   day: number;
@@ -106,6 +112,69 @@ export function useCalendarLogic() {
       goToToday: state.goToToday,
     }))
   );
+
+  // ========================================================================
+  // UNDO / REDO
+  // ========================================================================
+  const [undoStack, setUndoStack] = useState<CalendarUndoAction[]>([]);
+  const [redoStack, setRedoStack] = useState<CalendarUndoAction[]>([]);
+  const canUndo = undoStack.length > 0;
+  const canRedo = redoStack.length > 0;
+
+  const pushUndo = useCallback((action: CalendarUndoAction) => {
+    setUndoStack((prev) => [...prev.slice(-29), action]);
+    setRedoStack([]);
+  }, []);
+
+  const applyUndo = useCallback((action: CalendarUndoAction) => {
+    switch (action.type) {
+      case "addEvent":
+        deleteEvent(action.event.id);
+        break;
+      case "updateEvent":
+        updateEvent(action.eventId, action.before);
+        break;
+      case "deleteEvent":
+        addEvent(action.event);
+        break;
+      case "importEvents":
+        for (const ev of action.events) deleteEvent(ev.id);
+        break;
+    }
+  }, [addEvent, updateEvent, deleteEvent]);
+
+  const applyRedo = useCallback((action: CalendarUndoAction) => {
+    switch (action.type) {
+      case "addEvent":
+        addEvent(action.event);
+        break;
+      case "updateEvent":
+        updateEvent(action.eventId, action.after);
+        break;
+      case "deleteEvent":
+        deleteEvent(action.event.id);
+        break;
+      case "importEvents":
+        for (const ev of action.events) addEvent(ev);
+        break;
+    }
+  }, [addEvent, updateEvent, deleteEvent]);
+
+  const undoCalendar = useCallback(() => {
+    if (undoStack.length === 0) return;
+    const action = undoStack[undoStack.length - 1];
+    applyUndo(action);
+    setUndoStack((prev) => prev.slice(0, -1));
+    setRedoStack((r) => [...r, action]);
+  }, [undoStack, applyUndo]);
+
+  const redoCalendar = useCallback(() => {
+    if (redoStack.length === 0) return;
+    const action = redoStack[redoStack.length - 1];
+    applyRedo(action);
+    setRedoStack((prev) => prev.slice(0, -1));
+    setUndoStack((u) => [...u, action]);
+  }, [redoStack, applyRedo]);
 
   // Visible calendar IDs for filtering
   const visibleCalendarIds = useMemo(() => {
@@ -367,15 +436,21 @@ export function useCalendarLogic() {
       notes?: string;
     }) => {
       if (editingEvent) {
+        const before = { ...editingEvent };
         updateEvent(editingEvent.id, eventData);
+        const after = { ...editingEvent, ...eventData, updatedAt: Date.now() };
+        pushUndo({ type: "updateEvent", eventId: editingEvent.id, before, after });
       } else {
-        addEvent(eventData);
+        const id = addEvent(eventData);
+        const created = events.find((e) => e.id === id) ??
+          ({ ...eventData, id, createdAt: Date.now(), updatedAt: Date.now() } as CalendarEvent);
+        pushUndo({ type: "addEvent", event: created });
       }
       setIsEventDialogOpen(false);
       setEditingEvent(null);
       setPrefillTime(null);
     },
-    [editingEvent, addEvent, updateEvent]
+    [editingEvent, addEvent, updateEvent, events, pushUndo]
   );
 
   const handleEditSelectedEvent = useCallback(() => {
@@ -391,19 +466,22 @@ export function useCalendarLogic() {
 
   const handleDeleteSelectedEvent = useCallback(() => {
     if (selectedEventId) {
+      const ev = events.find((e) => e.id === selectedEventId);
+      if (ev) pushUndo({ type: "deleteEvent", event: { ...ev } });
       deleteEvent(selectedEventId);
       setSelectedEventId(null);
     }
-  }, [selectedEventId, deleteEvent]);
+  }, [selectedEventId, events, deleteEvent, pushUndo]);
 
   const handleDeleteEditingEvent = useCallback(() => {
     if (editingEvent) {
+      pushUndo({ type: "deleteEvent", event: { ...editingEvent } });
       deleteEvent(editingEvent.id);
       setIsEventDialogOpen(false);
       setEditingEvent(null);
       setPrefillTime(null);
     }
-  }, [editingEvent, deleteEvent]);
+  }, [editingEvent, deleteEvent, pushUndo]);
 
   // iCal import
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -424,10 +502,13 @@ export function useCalendarLogic() {
       reader.onload = () => {
         const text = reader.result as string;
         const parsed = parseIcalString(text);
+        const importedEvents: CalendarEvent[] = [];
         for (const ev of parsed) {
-          addEvent(ev);
+          const id = addEvent(ev);
+          importedEvents.push({ ...ev, id, createdAt: Date.now(), updatedAt: Date.now() } as CalendarEvent);
         }
-        if (parsed.length > 0) {
+        if (importedEvents.length > 0) {
+          pushUndo({ type: "importEvents", events: importedEvents });
           setSelectedDate(parsed[0].date);
           toast.success(
             t("apps.calendar.import.success", { count: parsed.length })
@@ -436,7 +517,7 @@ export function useCalendarLogic() {
       };
       reader.readAsText(file);
     },
-    [addEvent, setSelectedDate, t]
+    [addEvent, setSelectedDate, t, pushUndo]
   );
 
   const handleExport = useCallback(() => {
@@ -539,5 +620,11 @@ export function useCalendarLogic() {
     handleImport,
     handleFileSelected,
     handleExport,
+
+    // Undo/redo
+    undoCalendar,
+    redoCalendar,
+    canUndo,
+    canRedo,
   };
 }

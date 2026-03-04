@@ -12,6 +12,7 @@ import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { InputDialog } from "@/components/dialogs/InputDialog";
 import { appMetadata } from "..";
 import { usePaintLogic } from "../hooks/usePaintLogic";
+import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
 
 export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
   isWindowOpen,
@@ -70,6 +71,13 @@ export const PaintAppComponent: React.FC<AppProps<PaintInitialData>> = ({
     handleApplyFilter,
     handleCanvasRef,
   } = usePaintLogic({ initialData, instanceId });
+
+  useRegisterUndoRedo(instanceId!, {
+    undo: handleUndo,
+    redo: handleRedo,
+    canUndo,
+    canRedo,
+  });
 
   const menuBar = (
     <PaintMenuBar

@@ -11,6 +11,7 @@ import {
   type CalendarDayCell,
   type WeekDay,
 } from "../hooks/useCalendarLogic";
+import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
 import { CaretLeft, CaretRight, Plus, ListChecks, Trash } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -894,7 +895,15 @@ export function CalendarAppComponent({
     navigateMonth, navigateWeek, goToToday, setView, setSelectedDate,
     handleDateClick, handleDateDoubleClick, handleNewEvent, handleNewEventAtTime, handleEditEvent, handleSaveEvent, handleEditSelectedEvent, handleDeleteSelectedEvent, handleDeleteEditingEvent,
     fileInputRef, handleImport, handleFileSelected, handleExport,
+    undoCalendar, redoCalendar, canUndo, canRedo,
   } = logic;
+
+  useRegisterUndoRedo(instanceId!, {
+    undo: undoCalendar,
+    redo: redoCalendar,
+    canUndo,
+    canRedo,
+  });
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(700);
@@ -948,6 +957,7 @@ export function CalendarAppComponent({
       onGoToToday={goToToday}
       showTodoSidebar={showTodoSidebar}
       onToggleTodoSidebar={() => setShowTodoSidebar(!showTodoSidebar)}
+      instanceId={instanceId}
     />
   );
 

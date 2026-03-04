@@ -22,6 +22,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { markdownToHtml } from "@/utils/markdown";
 import { useTranslation } from "react-i18next";
 import { onDocumentUpdated } from "@/utils/appEventBus";
+import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
 
 // Inner component that has access to editor context
 function TextEditContent({
@@ -53,6 +54,14 @@ function TextEditContent({
   const [dialogControls, setDialogControls] = useState<DialogControls | null>(
     null
   );
+
+  // Register undo/redo with the universal system
+  useRegisterUndoRedo(instanceId!, {
+    undo: () => editor?.chain().focus().undo().run(),
+    redo: () => editor?.chain().focus().redo().run(),
+    canUndo: editor?.can().undo() ?? false,
+    canRedo: editor?.can().redo() ?? false,
+  });
 
   // Use our custom hooks
   const {
@@ -456,6 +465,7 @@ function TextEditContent({
       hasUnsavedChanges={hasUnsavedChanges}
       currentFilePath={currentFilePath}
       handleFileSelect={handleFileSelect}
+      instanceId={instanceId}
     />
   );
 

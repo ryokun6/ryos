@@ -15,6 +15,7 @@ import {
   useFinderLogic,
   type FinderInitialData,
 } from "../hooks/useFinderLogic";
+import { useRegisterUndoRedo } from "@/hooks/useUndoRedo";
 
 export function FinderAppComponent({
   onClose,
@@ -76,6 +77,11 @@ export function FinderAppComponent({
     handleFileSelect,
     moveToTrash,
     trashItemsCount,
+    // Undo/redo
+    undoFileOp,
+    redoFileOp,
+    canUndoFileOp,
+    canRedoFileOp,
     // Handlers
     handleEmptyTrash,
     confirmEmptyTrash,
@@ -127,6 +133,13 @@ export function FinderAppComponent({
     instanceId,
   });
 
+  useRegisterUndoRedo(instanceId!, {
+    undo: undoFileOp,
+    redo: redoFileOp,
+    canUndo: canUndoFileOp,
+    canRedo: canRedoFileOp,
+  });
+
   const menuBar = (
     <FinderMenuBar
       onClose={onClose}
@@ -154,6 +167,7 @@ export function FinderAppComponent({
       canCreateFolder={canCreateFolder}
       rootFolders={rootFolders}
       onNewWindow={handleNewWindow}
+      instanceId={instanceId}
     />
   );
 

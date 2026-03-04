@@ -29,6 +29,10 @@ import {
   emitFileUpdated,
 } from "@/utils/appEventBus";
 
+type FinderUndoAction =
+  | { type: "moveToTrash"; fileName: string; originalPath: string }
+  | { type: "rename"; basePath: string; oldName: string; newName: string };
+
 // Type for Finder initial data
 export interface FinderInitialData {
   path?: string;
@@ -294,6 +298,106 @@ export function useFinderLogic({
       }
     },
     [currentPath, instanceId, setViewTypeForPath, updateFinderInstance]
+  );
+
+  // Undo/redo state for file operations
+  const [undoStack, setUndoStack] = useState<FinderUndoAction[]>([]);
+  const [redoStack, setRedoStack] = useState<FinderUndoAction[]>([]);
+  const canUndoFileOp = undoStack.length > 0;
+  const canRedoFileOp = redoStack.length > 0;
+
+  const pushUndoAction = useCallback((action: FinderUndoAction) => {
+    setUndoStack((prev) => [...prev.slice(-19), action]);
+    setRedoStack([]);
+  }, []);
+
+  const undoFileOp = useCallback(() => {
+    const stack = undoStack;
+    if (stack.length === 0) return;
+    const action = stack[stack.length - 1];
+
+    try {
+      switch (action.type) {
+        case "moveToTrash": {
+          // Trashed items keep their original path in the store with status "trashed"
+          const item = getFileItem(action.originalPath);
+          if (item) {
+            restoreFromTrash({ path: action.originalPath, name: action.fileName } as FileItem);
+          } else {
+            console.warn("[Finder] undo moveToTrash: item not found at", action.originalPath);
+            return;
+          }
+          break;
+        }
+        case "rename": {
+          const newPath = `${action.basePath}/${action.newName}`;
+          originalRenameFile(newPath, action.oldName);
+          emitFileRenamed({
+            oldPath: newPath,
+            newPath: `${action.basePath}/${action.oldName}`,
+            oldName: action.newName,
+            newName: action.oldName,
+          });
+          break;
+        }
+      }
+    } catch (e) {
+      console.error("[Finder] undo failed:", e);
+      return;
+    }
+
+    setUndoStack((prev) => prev.slice(0, -1));
+    setRedoStack((r) => [...r, action]);
+  }, [undoStack, getFileItem, restoreFromTrash, originalRenameFile]);
+
+  const redoFileOp = useCallback(() => {
+    const stack = redoStack;
+    if (stack.length === 0) return;
+    const action = stack[stack.length - 1];
+
+    try {
+      switch (action.type) {
+        case "moveToTrash": {
+          const item = getFileItem(action.originalPath);
+          if (item) {
+            moveToTrash({ path: action.originalPath, name: action.fileName } as FileItem);
+          } else {
+            console.warn("[Finder] redo moveToTrash: item not found at", action.originalPath);
+            return;
+          }
+          break;
+        }
+        case "rename": {
+          const oldPath = `${action.basePath}/${action.oldName}`;
+          originalRenameFile(oldPath, action.newName);
+          emitFileRenamed({
+            oldPath,
+            newPath: `${action.basePath}/${action.newName}`,
+            oldName: action.oldName,
+            newName: action.newName,
+          });
+          break;
+        }
+      }
+    } catch (e) {
+      console.error("[Finder] redo failed:", e);
+      return;
+    }
+
+    setRedoStack((prev) => prev.slice(0, -1));
+    setUndoStack((u) => [...u, action]);
+  }, [redoStack, getFileItem, moveToTrash, originalRenameFile]);
+
+  const trackedMoveToTrash = useCallback(
+    (file: FileItem) => {
+      pushUndoAction({
+        type: "moveToTrash",
+        fileName: file.name,
+        originalPath: file.path,
+      });
+      moveToTrash(file);
+    },
+    [moveToTrash, pushUndoAction]
   );
 
   // Wrap the original handleFileOpen - now only calls the original without TextEditStore updates
@@ -687,7 +791,13 @@ export function useFinderLogic({
     const oldPathForRename = `${basePath}/${selectedFile.name}`;
     await originalRenameFile(oldPathForRename, trimmedNewName);
 
-    // Dispatch rename event
+    pushUndoAction({
+      type: "rename",
+      basePath,
+      oldName: selectedFile.name,
+      newName: trimmedNewName,
+    });
+
     emitFileRenamed({
       oldPath: oldPathForRename,
       newPath: `${basePath}/${trimmedNewName}`,
@@ -1055,7 +1165,7 @@ export function useFinderLogic({
     {
       type: "item",
       label: t("apps.finder.contextMenu.moveToTrash"),
-      onSelect: () => moveToTrash(file),
+      onSelect: () => trackedMoveToTrash(file),
       disabled:
         file.path.startsWith("/Trash") ||
         file.path === "/Documents" ||
@@ -1229,10 +1339,16 @@ export function useFinderLogic({
     renameFile: originalRenameFile,
     createFolder,
     moveFile,
-    moveToTrash,
+    moveToTrash: trackedMoveToTrash,
     restoreFromTrash,
     emptyTrash,
     trashItemsCount,
+
+    // Undo/redo for file operations
+    undoFileOp,
+    redoFileOp,
+    canUndoFileOp,
+    canRedoFileOp,
 
     // Handlers
     handleEmptyTrash,
