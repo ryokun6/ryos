@@ -893,6 +893,7 @@ export function CalendarAppComponent({
     todos, addTodo, toggleTodo, deleteTodo, showTodoSidebar, setShowTodoSidebar,
     navigateMonth, navigateWeek, goToToday, setView, setSelectedDate,
     handleDateClick, handleDateDoubleClick, handleNewEvent, handleNewEventAtTime, handleEditEvent, handleSaveEvent, handleEditSelectedEvent, handleDeleteSelectedEvent, handleDeleteEditingEvent,
+    fileInputRef, handleImport, handleFileSelected, importResult,
   } = logic;
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -937,6 +938,7 @@ export function CalendarAppComponent({
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onNewEvent={handleNewEvent}
+      onImport={handleImport}
       onEditEvent={handleEditSelectedEvent}
       onDeleteEvent={handleDeleteSelectedEvent}
       hasSelectedEvent={!!selectedEventId}
@@ -1131,6 +1133,28 @@ export function CalendarAppComponent({
         />
         <HelpDialog isOpen={isHelpDialogOpen} onOpenChange={setIsHelpDialogOpen} appId="calendar" helpItems={translatedHelpItems} />
         <AboutDialog isOpen={isAboutDialogOpen} onOpenChange={setIsAboutDialogOpen} metadata={appMetadata} appId="calendar" />
+
+        {/* Hidden file input for iCal import */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".ics,.ical,.ifb,.icalendar"
+          className="hidden"
+          onChange={handleFileSelected}
+        />
+
+        {/* Import result toast */}
+        {importResult?.visible && (
+          <div
+            className="absolute bottom-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg shadow-lg text-sm font-medium animate-in fade-in slide-in-from-bottom-2"
+            style={{
+              backgroundColor: "rgba(0,0,0,0.8)",
+              color: "#fff",
+            }}
+          >
+            {t("apps.calendar.import.success", { count: importResult.count })}
+          </div>
+        )}
       </WindowFrame>
     </>
   );

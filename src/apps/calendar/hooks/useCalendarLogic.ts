@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -9,6 +9,7 @@ import {
 } from "@/stores/useCalendarStore";
 import { helpItems } from "../metadata";
 import { useShallow } from "zustand/react/shallow";
+import { parseIcalString } from "../utils/parseIcal";
 
 export interface CalendarDayCell {
   date: string; // YYYY-MM-DD
@@ -403,6 +404,46 @@ export function useCalendarLogic() {
     }
   }, [editingEvent, deleteEvent]);
 
+  // iCal import
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [importResult, setImportResult] = useState<{
+    count: number;
+    visible: boolean;
+  } | null>(null);
+
+  const handleImport = useCallback(() => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  }, []);
+
+  const handleFileSelected = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = reader.result as string;
+        const parsed = parseIcalString(text);
+        let count = 0;
+        for (const ev of parsed) {
+          addEvent(ev);
+          count++;
+        }
+        if (count > 0) {
+          const firstEvent = parsed[0];
+          setSelectedDate(firstEvent.date);
+          setImportResult({ count, visible: true });
+          setTimeout(() => setImportResult(null), 3000);
+        }
+      };
+      reader.readAsText(file);
+    },
+    [addEvent, setSelectedDate]
+  );
+
   return {
     // i18n
     t,
@@ -478,5 +519,11 @@ export function useCalendarLogic() {
     handleEditSelectedEvent,
     handleDeleteSelectedEvent,
     handleDeleteEditingEvent,
+
+    // Import
+    fileInputRef,
+    handleImport,
+    handleFileSelected,
+    importResult,
   };
 }

@@ -407,6 +407,9 @@
         "startTime": "Heure de début",
         "title": "Titre"
       },
+      "import": {
+        "success": "{{count}} événement(s) importé(s)"
+      },
       "menu": {
         "about": "À propos de Calendrier",
         "dayView": "Vue Jour",
@@ -414,6 +417,7 @@
         "editEvent": "Modifier l'événement",
         "goToToday": "Aller à aujourd'hui",
         "help": "Aide Calendrier",
+        "importFromDevice": "Importer depuis l'appareil…",
         "monthView": "Vue Mois",
         "newEvent": "Nouvel événement",
         "showToDoItems": "Afficher les tâches",
