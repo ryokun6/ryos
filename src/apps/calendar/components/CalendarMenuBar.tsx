@@ -10,6 +10,7 @@ import {
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTranslation } from "react-i18next";
 import type { CalendarView } from "@/stores/useCalendarStore";
+import { useInstanceUndoRedo } from "@/hooks/useUndoRedo";
 
 interface CalendarMenuBarProps {
   onClose: () => void;
@@ -25,6 +26,7 @@ interface CalendarMenuBarProps {
   onGoToToday: () => void;
   showTodoSidebar: boolean;
   onToggleTodoSidebar: () => void;
+  instanceId?: string;
 }
 
 export function CalendarMenuBar({
@@ -41,11 +43,13 @@ export function CalendarMenuBar({
   onGoToToday,
   showTodoSidebar,
   onToggleTodoSidebar,
+  instanceId,
 }: CalendarMenuBarProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacOsxTheme = currentTheme === "macosx";
+  const { canUndo, canRedo, undo, redo } = useInstanceUndoRedo(instanceId || "");
 
   return (
     <MenuBar inWindowFrame={isXpTheme}>
@@ -73,6 +77,21 @@ export function CalendarMenuBar({
           {t("common.menu.edit")}
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
+          <MenubarItem
+            onClick={undo}
+            disabled={!canUndo}
+            className={`text-md h-6 px-3 ${!canUndo ? "text-gray-500" : ""}`}
+          >
+            {t("common.menu.undo")}
+          </MenubarItem>
+          <MenubarItem
+            onClick={redo}
+            disabled={!canRedo}
+            className={`text-md h-6 px-3 ${!canRedo ? "text-gray-500" : ""}`}
+          >
+            {t("common.menu.redo")}
+          </MenubarItem>
+          <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem
             disabled={!hasSelectedEvent}
             onClick={onEditEvent}
