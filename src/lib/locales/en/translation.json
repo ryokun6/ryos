@@ -2273,7 +2273,7 @@
           "settings": "Settings",
           "settingsDescription": "Theme, sounds, display, dock layout",
           "files": "Files",
-          "filesDescription": "Document and file metadata",
+          "filesDescription": "Documents, images, and file system",
           "musicLibrary": "Music Library",
           "musicLibraryDescription": "iPod tracks and preferences",
           "calendar": "Calendar",

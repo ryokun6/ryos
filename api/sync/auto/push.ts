@@ -2,8 +2,8 @@
  * POST /api/sync/auto/push - Push auto-sync data for one or more categories
  *
  * Body: { categories: Record<string, string> }
- * Each value is a JSON string of the localStorage data for that category.
- * Stores per-category data and timestamps in Redis.
+ * Each value is a JSON string (or gzip-compressed base64 for files) of the
+ * category data. Stores per-category data and timestamps in Redis.
  * Requires authentication (Bearer token + X-Username).
  */
 
@@ -11,10 +11,11 @@ import { USER_TTL_SECONDS } from "../../_utils/auth/index.js";
 import { apiHandler } from "../../_utils/api-handler.js";
 
 export const runtime = "nodejs";
-export const maxDuration = 15;
+export const maxDuration = 30;
 
 const META_TTL = USER_TTL_SECONDS;
-const MAX_CATEGORY_SIZE = 1024 * 1024; // 1MB per category
+const MAX_CATEGORY_SIZE = 1024 * 1024; // 1MB for lightweight categories
+const MAX_FILES_SIZE = 50 * 1024 * 1024; // 50MB for files (compressed)
 
 const VALID_CATEGORIES = [
   "settings",
@@ -64,10 +65,12 @@ export default apiHandler<PushBody>(
         continue;
       }
 
-      if (data.length > MAX_CATEGORY_SIZE) {
+      const maxSize =
+        category === "files" ? MAX_FILES_SIZE : MAX_CATEGORY_SIZE;
+      if (data.length > maxSize) {
         results[category] = {
           ok: false,
-          error: `Data too large (${(data.length / 1024).toFixed(0)}KB). Max ${(MAX_CATEGORY_SIZE / 1024).toFixed(0)}KB.`,
+          error: `Data too large (${(data.length / 1024).toFixed(0)}KB). Max ${(maxSize / (1024 * 1024)).toFixed(0)}MB.`,
         };
         continue;
       }

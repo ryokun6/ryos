@@ -17,9 +17,15 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useStickiesStore } from "@/stores/useStickiesStore";
+import {
+  collectFilesData,
+  applyFilesData,
+  compressString,
+  decompressString,
+} from "@/utils/syncData";
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-const PUSH_DEBOUNCE_MS = 3000; // 3 seconds debounce after changes
+const PUSH_DEBOUNCE_MS = 3000;
 
 function hashString(str: string): string {
   let hash = 0;
@@ -31,7 +37,7 @@ function hashString(str: string): string {
   return hash.toString(36);
 }
 
-function collectCategoryData(category: SyncCategory): string {
+function collectSimpleCategoryData(category: SyncCategory): string {
   const keys = SYNC_CATEGORY_KEYS[category];
   const data: Record<string, string | null> = {};
   for (const key of keys) {
@@ -40,7 +46,10 @@ function collectCategoryData(category: SyncCategory): string {
   return JSON.stringify(data);
 }
 
-function applyCategoryData(category: SyncCategory, rawData: string): boolean {
+function applySimpleCategoryData(
+  category: SyncCategory,
+  rawData: string
+): boolean {
   try {
     const data: Record<string, string | null> = JSON.parse(rawData);
     const keys = SYNC_CATEGORY_KEYS[category];
@@ -57,6 +66,42 @@ function applyCategoryData(category: SyncCategory, rawData: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Collect data for a category. Files includes IndexedDB + compression.
+ * Returns the string to send to the API, and a metadata hash for change detection.
+ * For files, the metadata hash is based on localStorage only (cheap), while the
+ * full payload includes IndexedDB data.
+ */
+async function collectCategoryPayload(
+  category: SyncCategory
+): Promise<{ data: string; metadataHash: string }> {
+  if (category === "files") {
+    const metadataOnly = collectSimpleCategoryData(category);
+    const metadataHash = hashString(metadataOnly);
+    const fullData = await collectFilesData(SYNC_CATEGORY_KEYS.files);
+    const compressed = await compressString(fullData);
+    return { data: compressed, metadataHash };
+  }
+  const data = collectSimpleCategoryData(category);
+  return { data, metadataHash: hashString(data) };
+}
+
+async function applyCategoryPayload(
+  category: SyncCategory,
+  rawData: string
+): Promise<boolean> {
+  if (category === "files") {
+    try {
+      const decompressed = await decompressString(rawData);
+      return await applyFilesData(decompressed, SYNC_CATEGORY_KEYS.files);
+    } catch (error) {
+      console.error("[CloudAutoSync] Files decompress/apply error:", error);
+      return false;
+    }
+  }
+  return applySimpleCategoryData(category, rawData);
 }
 
 function rehydrateStoresAfterPull(pulledCategories: SyncCategory[]) {
@@ -115,16 +160,14 @@ export function useCloudAutoSync() {
       try {
         const payload: Record<string, string> = {};
         for (const cat of categories) {
-          const data = collectCategoryData(cat);
-          const hash = hashString(data);
-          if (hash !== lastPushHashes[cat]) {
+          const { data, metadataHash } = await collectCategoryPayload(cat);
+          if (metadataHash !== lastPushHashes[cat]) {
             payload[cat] = data;
+            setLastPushHash(cat, metadataHash);
           }
         }
 
-        if (Object.keys(payload).length === 0) {
-          return;
-        }
+        if (Object.keys(payload).length === 0) return;
 
         const res = await fetch(getApiUrl("/api/sync/auto/push"), {
           method: "POST",
@@ -138,10 +181,6 @@ export function useCloudAutoSync() {
 
         if (res.ok) {
           const result = await res.json();
-          for (const cat of Object.keys(payload)) {
-            const hash = hashString(payload[cat]);
-            setLastPushHash(cat, hash);
-          }
           if (result.timestamp) {
             setLastSyncTimestamp(result.timestamp);
           }
@@ -220,20 +259,11 @@ export function useCloudAutoSync() {
         const entry = pullData.categories?.[cat];
         if (!entry?.data) continue;
 
-        const currentData = collectCategoryData(cat);
-        const currentHash = hashString(currentData);
-        const remoteHash = hashString(entry.data);
-
-        if (currentHash === remoteHash) {
+        const ok = await applyCategoryPayload(cat, entry.data);
+        if (ok) {
           lastPullTimestampsRef.current[cat] = entry.timestamp;
-          setLastPushHash(cat, currentHash);
-          continue;
-        }
-
-        if (applyCategoryData(cat, entry.data)) {
-          lastPullTimestampsRef.current[cat] = entry.timestamp;
-          const newHash = hashString(entry.data);
-          setLastPushHash(cat, newHash);
+          const metaData = collectSimpleCategoryData(cat);
+          setLastPushHash(cat, hashString(metaData));
           applied.push(cat);
         }
       }
@@ -273,6 +303,7 @@ export function useCloudAutoSync() {
     toast.success("Synced successfully.");
   }, [username, authToken, getEnabledCategories, pushCategories, checkAndPull]);
 
+  // Pull on load + poll every 5 minutes
   useEffect(() => {
     if (!enabled || !username || !authToken) return;
 
@@ -293,6 +324,7 @@ export function useCloudAutoSync() {
     };
   }, [enabled, username, authToken, checkAndPull]);
 
+  // Detect local changes and push
   useEffect(() => {
     if (!enabled || !username || !authToken) return;
 
@@ -330,7 +362,7 @@ export function useCloudAutoSync() {
     const checkInterval = setInterval(() => {
       const changedCategories: SyncCategory[] = [];
       for (const cat of categories) {
-        const data = collectCategoryData(cat);
+        const data = collectSimpleCategoryData(cat);
         const hash = hashString(data);
         const store = useCloudSyncStore.getState();
         if (hash !== store.lastPushHashes[cat]) {
