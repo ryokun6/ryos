@@ -327,6 +327,21 @@ function WeekTimeGrid({
   const { t } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const scrollRef = useRef<HTMLDivElement>(null);
+  const lastTapRef = useRef<{ id: string; time: number } | null>(null);
+
+  const handleEventTap = useCallback((ev: CalendarEvent, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const now = Date.now();
+    const last = lastTapRef.current;
+    if (last && last.id === ev.id && now - last.time < 400) {
+      lastTapRef.current = null;
+      onEventDoubleClick(ev);
+    } else {
+      lastTapRef.current = { id: ev.id, time: now };
+      onEventClick(ev);
+    }
+  }, [onEventClick, onEventDoubleClick]);
+
   const [currentMinute, setCurrentMinute] = useState(() => {
     const now = new Date();
     return now.getHours() * 60 + now.getMinutes();
@@ -403,8 +418,7 @@ function WeekTimeGrid({
                   <button
                     key={ev.id}
                     type="button"
-                    onClick={() => onEventClick(ev)}
-                    onDoubleClick={() => onEventDoubleClick(ev)}
+                    onClick={() => handleEventTap(ev)}
                     className="text-[9px] truncate rounded px-1 leading-snug text-left"
                     style={{
                       backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue,
@@ -470,8 +484,7 @@ function WeekTimeGrid({
                     <button
                       key={ev.id}
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                      onDoubleClick={(e) => { e.stopPropagation(); onEventDoubleClick(ev); }}
+                      onClick={(e) => handleEventTap(ev, e)}
                       className="absolute left-0.5 right-0.5 rounded text-left overflow-hidden transition-shadow flex items-start"
                       style={{
                         top: Math.max(top, 0), height,
@@ -546,6 +559,21 @@ function DayTimeGrid({
 }) {
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const scrollRef = useRef<HTMLDivElement>(null);
+  const lastTapRef = useRef<{ id: string; time: number } | null>(null);
+
+  const handleEventTap = useCallback((ev: CalendarEvent, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const now = Date.now();
+    const last = lastTapRef.current;
+    if (last && last.id === ev.id && now - last.time < 400) {
+      lastTapRef.current = null;
+      onEventDoubleClick(ev);
+    } else {
+      lastTapRef.current = { id: ev.id, time: now };
+      onEventClick(ev);
+    }
+  }, [onEventClick, onEventDoubleClick]);
+
   const [currentMinute, setCurrentMinute] = useState(() => {
     const now = new Date();
     return now.getHours() * 60 + now.getMinutes();
@@ -584,7 +612,7 @@ function DayTimeGrid({
           {allDayEvents.map((ev) => (
             <button
               key={ev.id} type="button"
-              onClick={() => onEventClick(ev)} onDoubleClick={() => onEventDoubleClick(ev)}
+              onClick={() => handleEventTap(ev)}
               className="text-xs truncate rounded px-2 py-0.5 text-left"
               style={{
                 backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue,
@@ -629,8 +657,7 @@ function DayTimeGrid({
 
               return (
                 <button key={ev.id} type="button"
-                  onClick={(e) => { e.stopPropagation(); onEventClick(ev); }}
-                  onDoubleClick={(e) => { e.stopPropagation(); onEventDoubleClick(ev); }}
+                  onClick={(e) => handleEventTap(ev, e)}
                   className="absolute left-1 right-1 rounded text-left overflow-hidden transition-shadow flex items-start"
                   style={{
                     top: Math.max(top, 0), height,
@@ -679,6 +706,34 @@ function MonthGrid({
   calendarGrid: CalendarDayCell[][]; selectedEventId: string | null; onDateClick: (date: string) => void; onDateDoubleClick: (date: string) => void;
   onEventClick: (event: CalendarEvent) => void; onEventDoubleClick: (event: CalendarEvent) => void; isXpTheme: boolean; narrowDayNames: string[];
 }) {
+  const lastEventTapRef = useRef<{ id: string; time: number } | null>(null);
+  const lastDateTapRef = useRef<{ id: string; time: number } | null>(null);
+
+  const handleEventTap = useCallback((ev: CalendarEvent, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const now = Date.now();
+    const last = lastEventTapRef.current;
+    if (last && last.id === ev.id && now - last.time < 400) {
+      lastEventTapRef.current = null;
+      onEventDoubleClick(ev);
+    } else {
+      lastEventTapRef.current = { id: ev.id, time: now };
+      onEventClick(ev);
+    }
+  }, [onEventClick, onEventDoubleClick]);
+
+  const handleDateTap = useCallback((date: string) => {
+    const now = Date.now();
+    const last = lastDateTapRef.current;
+    if (last && last.id === date && now - last.time < 400) {
+      lastDateTapRef.current = null;
+      onDateDoubleClick(date);
+    } else {
+      lastDateTapRef.current = { id: date, time: now };
+      onDateClick(date);
+    }
+  }, [onDateClick, onDateDoubleClick]);
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="grid grid-cols-7 border-b" style={{ borderColor: isXpTheme ? "#ACA899" : "rgba(0,0,0,0.08)" }}>
@@ -690,7 +745,7 @@ function MonthGrid({
         {calendarGrid.map((week, wi) => (
           <div key={wi} className="grid grid-cols-7 border-b" style={{ borderColor: "rgba(0,0,0,0.04)" }}>
             {week.map((cell) => (
-              <button key={cell.date} type="button" onClick={() => onDateClick(cell.date)} onDoubleClick={() => onDateDoubleClick(cell.date)}
+              <button key={cell.date} type="button" onClick={() => handleDateTap(cell.date)}
                 className="flex flex-col items-start p-0.5 min-h-[40px] relative transition-colors select-none overflow-hidden"
                 style={{ opacity: cell.isCurrentMonth ? 1 : 0.3, backgroundColor: cell.isSelected ? (isXpTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)") : "transparent" }}
               >
@@ -700,7 +755,7 @@ function MonthGrid({
                 >{cell.day}</span>
                 <div className="flex flex-col gap-px mt-px w-full">
                   {cell.events.slice(0, 2).map((ev) => (
-                    <button key={ev.id} type="button" onClick={(e) => { e.stopPropagation(); onEventClick(ev); }} onDoubleClick={(e) => { e.stopPropagation(); onEventDoubleClick(ev); }}
+                    <button key={ev.id} type="button" onClick={(e) => handleEventTap(ev, e)}
                       className="text-[8px] truncate rounded px-0.5 leading-snug w-full text-left"
                       style={{ backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue, color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue,
                         border: selectedEventId === ev.id ? `1px solid ${EVENT_COLOR_MAP[ev.color]}` : "1px solid transparent" }}
@@ -837,7 +892,7 @@ export function CalendarAppComponent({
     calendars, toggleCalendarVisibility,
     todos, addTodo, toggleTodo, deleteTodo, showTodoSidebar, setShowTodoSidebar,
     navigateMonth, navigateWeek, goToToday, setView, setSelectedDate,
-    handleDateClick, handleDateDoubleClick, handleNewEvent, handleNewEventAtTime, handleEditEvent, handleSaveEvent, handleDeleteSelectedEvent,
+    handleDateClick, handleDateDoubleClick, handleNewEvent, handleNewEventAtTime, handleEditEvent, handleSaveEvent, handleEditSelectedEvent, handleDeleteSelectedEvent, handleDeleteEditingEvent,
   } = logic;
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -882,6 +937,7 @@ export function CalendarAppComponent({
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onNewEvent={handleNewEvent}
+      onEditEvent={handleEditSelectedEvent}
       onDeleteEvent={handleDeleteSelectedEvent}
       hasSelectedEvent={!!selectedEventId}
       view={view}
@@ -1068,7 +1124,8 @@ export function CalendarAppComponent({
 
         <EventDialog
           isOpen={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}
-          onSave={handleSaveEvent} editingEvent={editingEvent}
+          onSave={handleSaveEvent} onDelete={handleDeleteEditingEvent}
+          editingEvent={editingEvent}
           selectedDate={selectedDate} prefillTime={prefillTime}
           calendars={calendars}
         />

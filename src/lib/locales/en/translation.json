@@ -2530,6 +2530,7 @@
       "description": "Calendar with events",
       "menu": {
         "newEvent": "New Event",
+        "editEvent": "Edit Event",
         "deleteEvent": "Delete Event",
         "dayView": "Day View",
         "weekView": "Week View",
@@ -2557,6 +2558,7 @@
         "cancel": "Cancel",
         "newEvent": "New Event",
         "editEvent": "Edit Event",
+        "delete": "Delete",
         "deleteConfirm": "Delete this event?",
         "noEvents": "No events"
       },
@@ -2568,6 +2570,7 @@
       },
       "menu": {
         "newEvent": "New Event",
+        "editEvent": "Edit Event",
         "deleteEvent": "Delete Event",
         "dayView": "Day View",
         "weekView": "Week View",
