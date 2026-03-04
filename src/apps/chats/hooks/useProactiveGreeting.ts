@@ -10,6 +10,9 @@ import { abortableFetch } from "@/utils/abortableFetch";
  */
 const STALE_CHAT_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
+/** Interval (ms) between each character reveal in the typewriter effect. */
+const TYPEWRITER_INTERVAL_MS = 18;
+
 /**
  * Get the timestamp (epoch ms) of the most recent message in the AI chat.
  * Falls back to 0 if no valid timestamp is found.
@@ -21,7 +24,6 @@ function getLastMessageTimestamp(messages: AIChatMessage[]): number {
   const createdAt = last.metadata?.createdAt;
   if (!createdAt) return 0;
 
-  // createdAt can be a Date, a number, or an ISO string (after JSON round-trip)
   if (createdAt instanceof Date) return createdAt.getTime();
   if (typeof createdAt === "number") return createdAt;
   if (typeof createdAt === "string") {
@@ -41,11 +43,10 @@ function getLastMessageTimestamp(messages: AIChatMessage[]): number {
  *    the last message is older than 5 minutes. The proactive greeting is
  *    *appended* to the existing conversation.
  *
- * The greeting is streamed from the server, with `streamingGreetingText`
- * exposed for progressive display in the chat UI.
+ * The greeting is fetched as a complete JSON response from the server and
+ * revealed progressively via a typewriter effect through `streamingGreetingText`.
  */
 export function useProactiveGreeting() {
-  // Initialize loading state eagerly so eligible users never see the static greeting
   const [isLoadingGreeting, setIsLoadingGreeting] = useState(() => {
     const state = useChatsStore.getState();
     const fresh =
@@ -61,7 +62,8 @@ export function useProactiveGreeting() {
   const hasTriggeredFreshRef = useRef(false);
   const hasTriggeredStaleRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
-  const isFetchingRef = useRef(false);
+  const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fetchInFlightRef = useRef(false);
 
   const username = useChatsStore((s) => s.username);
   const authToken = useChatsStore((s) => s.authToken);
@@ -87,9 +89,15 @@ export function useProactiveGreeting() {
     return Date.now() - lastTs > STALE_CHAT_THRESHOLD_MS;
   })();
 
-  /**
-   * Persist the final greeting text as a message in the store.
-   */
+  /** Stop any running typewriter animation. */
+  const stopTypewriter = useCallback(() => {
+    if (typewriterRef.current !== null) {
+      clearInterval(typewriterRef.current);
+      typewriterRef.current = null;
+    }
+  }, []);
+
+  /** Persist the final greeting text as a message in the store. */
   const commitGreeting = useCallback(
     (text: string, mode: "fresh" | "stale") => {
       const proactiveMessage: AIChatMessage = {
@@ -126,19 +134,50 @@ export function useProactiveGreeting() {
   );
 
   /**
-   * Fetch a proactive greeting from the server and stream the response.
+   * Reveal `fullText` character by character via a typewriter animation,
+   * then commit the final message to the store.
+   */
+  const revealGreeting = useCallback(
+    (fullText: string, mode: "fresh" | "stale") => {
+      stopTypewriter();
+
+      let pos = 0;
+      setStreamingGreetingText("");
+
+      typewriterRef.current = setInterval(() => {
+        const step = fullText[pos] === " " ? 2 : 1;
+        pos = Math.min(pos + step, fullText.length);
+        setStreamingGreetingText(fullText.slice(0, pos));
+
+        if (pos >= fullText.length) {
+          stopTypewriter();
+          commitGreeting(fullText, mode);
+          setStreamingGreetingText(null);
+          setIsLoadingGreeting(false);
+        }
+      }, TYPEWRITER_INTERVAL_MS);
+    },
+    [stopTypewriter, commitGreeting]
+  );
+
+  /**
+   * Fetch a proactive greeting from the server (complete JSON response)
+   * and reveal it with a typewriter animation.
    */
   const fetchGreeting = useCallback(
     async (mode: "fresh" | "stale" = "fresh") => {
       if (!username || !authToken) return;
-      if (isFetchingRef.current) return;
 
-      // Abort any in-flight request
+      // Prevent duplicate concurrent requests
+      if (fetchInFlightRef.current) return;
+      fetchInFlightRef.current = true;
+
+      // Abort any in-flight request and stop any running animation
       abortRef.current?.abort();
+      stopTypewriter();
       const controller = new AbortController();
       abortRef.current = controller;
 
-      isFetchingRef.current = true;
       setIsLoadingGreeting(true);
       setStreamingGreetingText(null);
 
@@ -160,55 +199,33 @@ export function useProactiveGreeting() {
 
         if (controller.signal.aborted) return;
 
-        const contentType = response.headers.get("content-type") || "";
+        const data = await response.json();
 
-        // If the server returned JSON (e.g. { greeting: null }), handle it
-        if (contentType.includes("application/json")) {
-          const data = await response.json();
-          if (data.greeting && typeof data.greeting === "string") {
-            commitGreeting(data.greeting, mode);
+        if (
+          controller.signal.aborted ||
+          !data.greeting ||
+          typeof data.greeting !== "string"
+        ) {
+          if (!controller.signal.aborted) {
+            setIsLoadingGreeting(false);
           }
           return;
         }
 
-        // Stream the text response
-        const reader = response.body?.getReader();
-        if (!reader) return;
-
-        const decoder = new TextDecoder();
-        let accumulated = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (controller.signal.aborted) {
-            reader.cancel();
-            break;
-          }
-
-          accumulated += decoder.decode(value, { stream: true });
-          setStreamingGreetingText(accumulated);
-        }
-
-        // Flush any remaining bytes from the decoder
-        accumulated += decoder.decode();
-
-        if (accumulated.trim() && !controller.signal.aborted) {
-          commitGreeting(accumulated.trim(), mode);
-        }
+        revealGreeting(data.greeting, mode);
       } catch (err) {
         if (!(err instanceof DOMException && err.name === "AbortError")) {
           console.warn("[ProactiveGreeting] Failed to fetch greeting:", err);
         }
-      } finally {
         if (!controller.signal.aborted) {
           setStreamingGreetingText(null);
           setIsLoadingGreeting(false);
         }
-        isFetchingRef.current = false;
+      } finally {
+        fetchInFlightRef.current = false;
       }
     },
-    [username, authToken, commitGreeting]
+    [username, authToken, revealGreeting, stopTypewriter]
   );
 
   // Trigger proactive greeting for fresh chats
@@ -239,17 +256,23 @@ export function useProactiveGreeting() {
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
+      stopTypewriter();
     };
-  }, []);
+  }, [stopTypewriter]);
 
   /**
    * Manually trigger a proactive greeting fetch.
    * Used after clearChats to re-trigger the greeting.
+   *
+   * NOTE: the fresh-chat useEffect usually handles the initial trigger.
+   * This callback exists for the case where the useEffect already fired
+   * (e.g. clearing an existing proactive greeting). It waits briefly so
+   * the store state settles, then fetches only if the useEffect didn't.
    */
   const triggerGreeting = useCallback(() => {
-    hasTriggeredFreshRef.current = false;
+    // Mark stale trigger as un-triggered so the effect can re-fire
     hasTriggeredStaleRef.current = false;
-    isFetchingRef.current = false;
+
     setTimeout(() => {
       const state = useChatsStore.getState();
       const stillFresh =
@@ -259,11 +282,11 @@ export function useProactiveGreeting() {
         state.aiMessages[0].role === "assistant";
       const stillEligible = !!state.username && !!state.authToken;
 
-      if (stillFresh && stillEligible) {
+      if (stillFresh && stillEligible && !fetchInFlightRef.current) {
         hasTriggeredFreshRef.current = true;
         fetchGreeting("fresh");
       }
-    }, 100);
+    }, 300);
   }, [fetchGreeting]);
 
   return {
