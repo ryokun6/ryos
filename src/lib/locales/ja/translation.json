@@ -410,6 +410,10 @@
       "import": {
         "success": "{{count}}件のイベントを読み込みました"
       },
+      "export": {
+        "success": "{{count}}件のイベントをエクスポートしました",
+        "noEvents": "エクスポートするイベントがありません"
+      },
       "menu": {
         "about": "カレンダーについて",
         "dayView": "日表示",
@@ -418,6 +422,7 @@
         "goToToday": "今日へ移動",
         "help": "カレンダーヘルプ",
         "importFromDevice": "デバイスから読み込む…",
+        "exportToIcs": "イベントをエクスポート…",
         "monthView": "月表示",
         "newEvent": "新規イベント",
         "showToDoItems": "To Do項目を表示",

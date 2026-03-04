@@ -410,6 +410,10 @@
       "import": {
         "success": "{{count}} evento(s) importado(s)"
       },
+      "export": {
+        "success": "{{count}} evento(s) exportado(s)",
+        "noEvents": "No hay eventos para exportar"
+      },
       "menu": {
         "about": "Acerca de Calendario",
         "dayView": "Vista de día",
@@ -418,6 +422,7 @@
         "goToToday": "Ir a hoy",
         "help": "Ayuda del Calendario",
         "importFromDevice": "Importar desde dispositivo…",
+        "exportToIcs": "Exportar eventos…",
         "monthView": "Vista Mensual",
         "newEvent": "Nuevo Evento",
         "showToDoItems": "Mostrar tareas pendientes",
