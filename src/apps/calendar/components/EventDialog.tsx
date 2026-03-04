@@ -311,17 +311,17 @@ export function EventDialog({
           <Button
             variant="retro"
             onClick={onDelete}
-            className={cn("h-7 text-red-600 hover:text-red-700 sm:mr-auto", themeFont)}
+            className={cn("h-7 w-full sm:w-auto text-red-600 hover:text-red-700 sm:mr-auto", themeFont)}
             style={themeFontStyle}
           >
             {t("apps.calendar.event.delete")}
           </Button>
         )}
-        <div className="flex gap-1">
+        <div className="flex flex-col-reverse sm:flex-row gap-1 w-full sm:w-auto">
           <Button
             variant="retro"
             onClick={() => onOpenChange(false)}
-            className={cn("h-7", themeFont)}
+            className={cn("h-7 w-full sm:w-auto", themeFont)}
             style={themeFontStyle}
           >
             {t("apps.calendar.event.cancel")}
@@ -330,7 +330,7 @@ export function EventDialog({
             variant={isMacTheme ? "default" : "retro"}
             onClick={handleSave}
             disabled={!title.trim()}
-            className={cn(!isMacTheme && "h-7", themeFont)}
+            className={cn("w-full sm:w-auto", !isMacTheme && "h-7", themeFont)}
             style={themeFontStyle}
           >
             {t("apps.calendar.event.save")}
