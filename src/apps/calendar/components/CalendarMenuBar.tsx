@@ -17,6 +17,7 @@ interface CalendarMenuBarProps {
   onShowAbout: () => void;
   onNewEvent: () => void;
   onImport: () => void;
+  onExport: () => void;
   onEditEvent: () => void;
   onDeleteEvent: () => void;
   hasSelectedEvent: boolean;
@@ -33,6 +34,7 @@ export function CalendarMenuBar({
   onShowAbout,
   onNewEvent,
   onImport,
+  onExport,
   onEditEvent,
   onDeleteEvent,
   hasSelectedEvent,
@@ -60,6 +62,9 @@ export function CalendarMenuBar({
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem onClick={onImport} className="text-md h-6 px-3">
             {t("apps.calendar.menu.importFromDevice")}
+          </MenubarItem>
+          <MenubarItem onClick={onExport} className="text-md h-6 px-3">
+            {t("apps.calendar.menu.exportToIcs")}
           </MenubarItem>
           <MenubarSeparator className="h-[2px] bg-black my-1" />
           <MenubarItem onClick={onClose} className="text-md h-6 px-3">

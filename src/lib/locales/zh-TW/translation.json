@@ -410,6 +410,10 @@
       "import": {
         "success": "已匯入 {{count}} 個行程"
       },
+      "export": {
+        "success": "已匯出 {{count}} 個事件",
+        "noEvents": "沒有可匯出的事件"
+      },
       "menu": {
         "about": "關於日曆",
         "dayView": "日檢視",
@@ -418,6 +422,7 @@
         "goToToday": "前往今天",
         "help": "行事曆輔助說明",
         "importFromDevice": "從裝置匯入…",
+        "exportToIcs": "匯出為 iCalendar (.ics)…",
         "monthView": "月檢視",
         "newEvent": "新增行程",
         "showToDoItems": "顯示待辦事項",

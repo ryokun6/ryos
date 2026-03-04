@@ -410,6 +410,10 @@
       "import": {
         "success": "{{count}}개의 이벤트를 가져왔습니다"
       },
+      "export": {
+        "success": "{{count}}개 이벤트를 내보냈습니다",
+        "noEvents": "내보낼 이벤트가 없습니다"
+      },
       "menu": {
         "about": "캘린더 정보",
         "dayView": "일 보기",
@@ -418,6 +422,7 @@
         "goToToday": "오늘로 이동",
         "help": "캘린더 도움말",
         "importFromDevice": "기기에서 가져오기…",
+        "exportToIcs": "iCalendar (.ics)로 내보내기…",
         "monthView": "월 보기",
         "newEvent": "새 이벤트",
         "showToDoItems": "할 일 항목 보기",

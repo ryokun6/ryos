@@ -9,7 +9,7 @@ import {
 } from "@/stores/useCalendarStore";
 import { helpItems } from "../metadata";
 import { useShallow } from "zustand/react/shallow";
-import { parseIcalString } from "../utils/parseIcal";
+import { parseIcalString, toIcalString } from "../utils/parseIcal";
 import { toast } from "sonner";
 
 export interface CalendarDayCell {
@@ -439,6 +439,25 @@ export function useCalendarLogic() {
     [addEvent, setSelectedDate, t]
   );
 
+  const handleExport = useCallback(() => {
+    if (events.length === 0) {
+      toast(t("apps.calendar.export.noEvents"));
+      return;
+    }
+
+    const icsContent = toIcalString(events);
+    const blob = new Blob([icsContent], { type: "text/calendar" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "calendar-events.ics";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(t("apps.calendar.export.success", { count: events.length }));
+  }, [events, t]);
+
   return {
     // i18n
     t,
@@ -515,9 +534,10 @@ export function useCalendarLogic() {
     handleDeleteSelectedEvent,
     handleDeleteEditingEvent,
 
-    // Import
+    // Import / Export
     fileInputRef,
     handleImport,
     handleFileSelected,
+    handleExport,
   };
 }

@@ -2579,11 +2579,16 @@
         "goToToday": "Go to Today",
         "showToDoItems": "Show To Do Items",
         "importFromDevice": "Import from Device…",
+        "exportToIcs": "Export as iCalendar (.ics)…",
         "help": "Calendar Help",
         "about": "About Calendar"
       },
       "import": {
         "success": "{{count}} event(s) imported"
+      },
+      "export": {
+        "success": "{{count}} event(s) exported",
+        "noEvents": "No events to export"
       },
       "today": "Today"
     },

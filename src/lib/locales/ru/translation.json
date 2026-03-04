@@ -410,6 +410,10 @@
       "import": {
         "success": "Импортировано событий: {{count}}"
       },
+      "export": {
+        "success": "{{count}} событие(й) экспортировано",
+        "noEvents": "Нет событий для экспорта"
+      },
       "menu": {
         "about": "О Календаре",
         "dayView": "Дневной вид",
@@ -418,6 +422,7 @@
         "goToToday": "Перейти на сегодня",
         "help": "Справка Календаря",
         "importFromDevice": "Импорт с устройства…",
+        "exportToIcs": "Экспортировать как iCalendar (.ics)…",
         "monthView": "Вид Месяц",
         "newEvent": "Новое событие",
         "showToDoItems": "Показать Дела",
