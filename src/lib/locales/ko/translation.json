@@ -407,6 +407,9 @@
         "startTime": "시작 시간",
         "title": "제목"
       },
+      "import": {
+        "success": "{{count}}개의 이벤트를 가져왔습니다"
+      },
       "menu": {
         "about": "캘린더 정보",
         "dayView": "일 보기",
@@ -414,6 +417,7 @@
         "editEvent": "이벤트 편집",
         "goToToday": "오늘로 이동",
         "help": "캘린더 도움말",
+        "importFromDevice": "기기에서 가져오기…",
         "monthView": "월 보기",
         "newEvent": "새 이벤트",
         "showToDoItems": "할 일 항목 보기",

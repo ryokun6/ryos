@@ -893,6 +893,7 @@ export function CalendarAppComponent({
     todos, addTodo, toggleTodo, deleteTodo, showTodoSidebar, setShowTodoSidebar,
     navigateMonth, navigateWeek, goToToday, setView, setSelectedDate,
     handleDateClick, handleDateDoubleClick, handleNewEvent, handleNewEventAtTime, handleEditEvent, handleSaveEvent, handleEditSelectedEvent, handleDeleteSelectedEvent, handleDeleteEditingEvent,
+    fileInputRef, handleImport, handleFileSelected,
   } = logic;
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -937,6 +938,7 @@ export function CalendarAppComponent({
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onNewEvent={handleNewEvent}
+      onImport={handleImport}
       onEditEvent={handleEditSelectedEvent}
       onDeleteEvent={handleDeleteSelectedEvent}
       hasSelectedEvent={!!selectedEventId}
@@ -1131,6 +1133,15 @@ export function CalendarAppComponent({
         />
         <HelpDialog isOpen={isHelpDialogOpen} onOpenChange={setIsHelpDialogOpen} appId="calendar" helpItems={translatedHelpItems} />
         <AboutDialog isOpen={isAboutDialogOpen} onOpenChange={setIsAboutDialogOpen} metadata={appMetadata} appId="calendar" />
+
+        {/* Hidden file input for iCal import */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".ics,.ical,.ifb,.icalendar"
+          className="hidden"
+          onChange={handleFileSelected}
+        />
       </WindowFrame>
     </>
   );

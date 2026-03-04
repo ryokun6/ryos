@@ -407,6 +407,9 @@
         "startTime": "Startzeit",
         "title": "Titel"
       },
+      "import": {
+        "success": "{{count}} Ereignis(se) importiert"
+      },
       "menu": {
         "about": "Über Kalender",
         "dayView": "Tagesansicht",
@@ -414,6 +417,7 @@
         "editEvent": "Ereignis bearbeiten",
         "goToToday": "Heute",
         "help": "Kalender-Hilfe",
+        "importFromDevice": "Vom Gerät importieren…",
         "monthView": "Monatsansicht",
         "newEvent": "Neues Ereignis",
         "showToDoItems": "Aufgaben anzeigen",

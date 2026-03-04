@@ -407,6 +407,9 @@
         "startTime": "開始時間",
         "title": "標題"
       },
+      "import": {
+        "success": "已匯入 {{count}} 個行程"
+      },
       "menu": {
         "about": "關於日曆",
         "dayView": "日檢視",
@@ -414,6 +417,7 @@
         "editEvent": "編輯事件",
         "goToToday": "前往今天",
         "help": "行事曆輔助說明",
+        "importFromDevice": "從裝置匯入…",
         "monthView": "月檢視",
         "newEvent": "新增行程",
         "showToDoItems": "顯示待辦事項",

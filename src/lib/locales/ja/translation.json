@@ -407,6 +407,9 @@
         "startTime": "開始時刻",
         "title": "タイトル"
       },
+      "import": {
+        "success": "{{count}}件のイベントを読み込みました"
+      },
       "menu": {
         "about": "カレンダーについて",
         "dayView": "日表示",
@@ -414,6 +417,7 @@
         "editEvent": "イベントを編集",
         "goToToday": "今日へ移動",
         "help": "カレンダーヘルプ",
+        "importFromDevice": "デバイスから読み込む…",
         "monthView": "月表示",
         "newEvent": "新規イベント",
         "showToDoItems": "To Do項目を表示",

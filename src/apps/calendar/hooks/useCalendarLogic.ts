@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -9,6 +9,8 @@ import {
 } from "@/stores/useCalendarStore";
 import { helpItems } from "../metadata";
 import { useShallow } from "zustand/react/shallow";
+import { parseIcalString } from "../utils/parseIcal";
+import { toast } from "sonner";
 
 export interface CalendarDayCell {
   date: string; // YYYY-MM-DD
@@ -403,6 +405,40 @@ export function useCalendarLogic() {
     }
   }, [editingEvent, deleteEvent]);
 
+  // iCal import
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleImport = useCallback(() => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  }, []);
+
+  const handleFileSelected = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = reader.result as string;
+        const parsed = parseIcalString(text);
+        for (const ev of parsed) {
+          addEvent(ev);
+        }
+        if (parsed.length > 0) {
+          setSelectedDate(parsed[0].date);
+          toast.success(
+            t("apps.calendar.import.success", { count: parsed.length })
+          );
+        }
+      };
+      reader.readAsText(file);
+    },
+    [addEvent, setSelectedDate, t]
+  );
+
   return {
     // i18n
     t,
@@ -478,5 +514,10 @@ export function useCalendarLogic() {
     handleEditSelectedEvent,
     handleDeleteSelectedEvent,
     handleDeleteEditingEvent,
+
+    // Import
+    fileInputRef,
+    handleImport,
+    handleFileSelected,
   };
 }
