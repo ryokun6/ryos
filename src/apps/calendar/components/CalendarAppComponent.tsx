@@ -894,7 +894,7 @@ export function CalendarAppComponent({
     todos, addTodo, toggleTodo, deleteTodo, showTodoSidebar, setShowTodoSidebar,
     navigateMonth, navigateWeek, goToToday, setView, setSelectedDate,
     handleDateClick, handleDateDoubleClick, handleNewEvent, handleNewEventAtTime, handleEditEvent, handleSaveEvent, handleEditSelectedEvent, handleDeleteSelectedEvent, handleDeleteEditingEvent,
-    fileInputRef, handleImport, handleFileSelected,
+    fileInputRef, handleImport, handleFileSelected, handleExport,
     undoCalendar, redoCalendar, canUndo, canRedo,
   } = logic;
 
@@ -948,6 +948,7 @@ export function CalendarAppComponent({
       onShowAbout={() => setIsAboutDialogOpen(true)}
       onNewEvent={handleNewEvent}
       onImport={handleImport}
+      onExport={handleExport}
       onEditEvent={handleEditSelectedEvent}
       onDeleteEvent={handleDeleteSelectedEvent}
       hasSelectedEvent={!!selectedEventId}

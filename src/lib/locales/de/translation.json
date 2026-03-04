@@ -410,6 +410,10 @@
       "import": {
         "success": "{{count}} Ereignis(se) importiert"
       },
+      "export": {
+        "success": "{{count}} Ereignis(se) exportiert",
+        "noEvents": "Keine Ereignisse zum Exportieren"
+      },
       "menu": {
         "about": "Über Kalender",
         "dayView": "Tagesansicht",
@@ -418,6 +422,7 @@
         "goToToday": "Heute",
         "help": "Kalender-Hilfe",
         "importFromDevice": "Vom Gerät importieren…",
+        "exportToIcs": "Ereignisse exportieren…",
         "monthView": "Monatsansicht",
         "newEvent": "Neues Ereignis",
         "showToDoItems": "Aufgaben anzeigen",

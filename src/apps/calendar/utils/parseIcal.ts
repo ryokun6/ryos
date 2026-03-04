@@ -1,4 +1,4 @@
-import type { EventColor } from "@/stores/useCalendarStore";
+import type { CalendarEvent, EventColor } from "@/stores/useCalendarStore";
 
 export interface ParsedIcalEvent {
   title: string;
@@ -7,6 +7,71 @@ export interface ParsedIcalEvent {
   endTime?: string; // HH:MM
   notes?: string;
   color: EventColor;
+}
+
+function escapeIcalText(text: string): string {
+  return text
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\n/g, "\\n");
+}
+
+/**
+ * Serialize an array of CalendarEvents into an iCalendar (.ics) string
+ * conforming to RFC 5545. The output can be reimported by this parser
+ * or any standard calendar application.
+ */
+export function toIcalString(events: CalendarEvent[]): string {
+  const lines: string[] = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//ryOS//Calendar//EN",
+    "CALSCALE:GREGORIAN",
+  ];
+
+  for (const ev of events) {
+    lines.push("BEGIN:VEVENT");
+    lines.push(`UID:${ev.id}`);
+    lines.push(`DTSTAMP:${formatIcalDateTime(new Date())}Z`);
+
+    const datePart = ev.date.replace(/-/g, "");
+
+    if (ev.startTime) {
+      const startDt = `${datePart}T${ev.startTime.replace(":", "")}00`;
+      lines.push(`DTSTART:${startDt}`);
+      if (ev.endTime) {
+        const endDt = `${datePart}T${ev.endTime.replace(":", "")}00`;
+        lines.push(`DTEND:${endDt}`);
+      }
+    } else {
+      lines.push(`DTSTART;VALUE=DATE:${datePart}`);
+      const nextDay = getNextDay(ev.date);
+      lines.push(`DTEND;VALUE=DATE:${nextDay.replace(/-/g, "")}`);
+    }
+
+    lines.push(`SUMMARY:${escapeIcalText(ev.title)}`);
+
+    if (ev.notes) {
+      lines.push(`DESCRIPTION:${escapeIcalText(ev.notes)}`);
+    }
+
+    lines.push("END:VEVENT");
+  }
+
+  lines.push("END:VCALENDAR");
+  return lines.join("\r\n");
+}
+
+function formatIcalDateTime(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}T${p(d.getUTCHours())}${p(d.getUTCMinutes())}${p(d.getUTCSeconds())}`;
+}
+
+function getNextDay(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const next = new Date(y, m - 1, d + 1);
+  return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
 }
 
 /**
