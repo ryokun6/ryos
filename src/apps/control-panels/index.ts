@@ -26,6 +26,11 @@ export const helpItems = [
     description: "Export or restore all settings and files",
   },
   {
+    icon: "☁️",
+    title: "Sync",
+    description: "Configure automatic cloud sync and manual cloud backups",
+  },
+  {
     icon: "⚙️",
     title: "System",
     description: "Reset preferences or format the virtual file system",

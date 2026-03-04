@@ -1,0 +1,155 @@
+export const CLOUD_SYNC_DOMAINS = [
+  "settings",
+  "files",
+  "songs",
+  "calendar",
+] as const;
+
+export type CloudSyncDomain = (typeof CLOUD_SYNC_DOMAINS)[number];
+
+export interface CloudSyncDomainMetadata {
+  updatedAt: string;
+  version: number;
+  totalSize: number;
+  createdAt: string;
+}
+
+export type CloudSyncMetadataMap = Record<
+  CloudSyncDomain,
+  CloudSyncDomainMetadata | null
+>;
+
+export interface CloudSyncEnvelope<TData> {
+  domain: CloudSyncDomain;
+  version: number;
+  updatedAt: string;
+  data: TData;
+}
+
+export interface ShouldApplyRemoteUpdateParams {
+  remoteUpdatedAt: string | null | undefined;
+  lastAppliedRemoteAt?: string | null;
+  lastUploadedAt?: string | null;
+  lastLocalChangeAt?: string | null;
+  hasPendingUpload?: boolean;
+}
+
+export const AUTO_SYNC_SNAPSHOT_VERSION = 1;
+
+export function isCloudSyncDomain(value: unknown): value is CloudSyncDomain {
+  return (
+    typeof value === "string" &&
+    CLOUD_SYNC_DOMAINS.includes(value as CloudSyncDomain)
+  );
+}
+
+export function createEmptyCloudSyncMetadataMap(): CloudSyncMetadataMap {
+  return {
+    settings: null,
+    files: null,
+    songs: null,
+    calendar: null,
+  };
+}
+
+export function parseCloudSyncTimestamp(
+  value: string | null | undefined
+): number {
+  if (!value) {
+    return 0;
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export function hasUnsyncedLocalChanges(
+  lastLocalChangeAt: string | null | undefined,
+  lastUploadedAt: string | null | undefined,
+  hasPendingUpload: boolean = false
+): boolean {
+  if (hasPendingUpload) {
+    return true;
+  }
+
+  return (
+    parseCloudSyncTimestamp(lastLocalChangeAt) >
+    parseCloudSyncTimestamp(lastUploadedAt)
+  );
+}
+
+export function shouldApplyRemoteUpdate({
+  remoteUpdatedAt,
+  lastAppliedRemoteAt,
+  lastUploadedAt,
+  lastLocalChangeAt,
+  hasPendingUpload = false,
+}: ShouldApplyRemoteUpdateParams): boolean {
+  const remoteTime = parseCloudSyncTimestamp(remoteUpdatedAt);
+
+  if (remoteTime === 0) {
+    return false;
+  }
+
+  if (
+    hasUnsyncedLocalChanges(lastLocalChangeAt, lastUploadedAt, hasPendingUpload)
+  ) {
+    return false;
+  }
+
+  const newestKnownLocalTime = Math.max(
+    parseCloudSyncTimestamp(lastAppliedRemoteAt),
+    parseCloudSyncTimestamp(lastUploadedAt)
+  );
+
+  return remoteTime > newestKnownLocalTime;
+}
+
+function normalizeMetadataEntry(
+  value: unknown
+): CloudSyncDomainMetadata | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Partial<CloudSyncDomainMetadata>;
+
+  if (
+    typeof candidate.updatedAt !== "string" ||
+    typeof candidate.createdAt !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    updatedAt: candidate.updatedAt,
+    createdAt: candidate.createdAt,
+    version:
+      typeof candidate.version === "number" && Number.isFinite(candidate.version)
+        ? candidate.version
+        : AUTO_SYNC_SNAPSHOT_VERSION,
+    totalSize:
+      typeof candidate.totalSize === "number" &&
+      Number.isFinite(candidate.totalSize)
+        ? candidate.totalSize
+        : 0,
+  };
+}
+
+export function normalizeCloudSyncMetadataMap(
+  value: unknown
+): CloudSyncMetadataMap {
+  const normalized = createEmptyCloudSyncMetadataMap();
+
+  if (!value || typeof value !== "object") {
+    return normalized;
+  }
+
+  const candidate = value as Partial<Record<CloudSyncDomain, unknown>>;
+
+  for (const domain of CLOUD_SYNC_DOMAINS) {
+    normalized[domain] = normalizeMetadataEntry(candidate[domain]);
+  }
+
+  return normalized;
+}

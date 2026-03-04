@@ -2212,6 +2212,7 @@
       "invert": "Invert",
       "appearance": "Appearance",
       "sound": "Sound",
+      "sync": "Sync",
       "system": "System",
       "theme": "Theme",
       "themeDescription": "Changes the appearance of windows, menus, and controls",
@@ -2234,6 +2235,20 @@
       "backup": "Backup",
       "restore": "Restore",
       "backupRestoreDescription": "Backup or restore all app settings and files to a local file.",
+      "autoSync": {
+        "title": "Auto Sync",
+        "description": "Automatically sync selected libraries and settings to the cloud after significant updates.",
+        "files": "Files",
+        "settings": "Settings",
+        "songs": "Songs Library",
+        "calendar": "Calendar",
+        "waiting": "Waiting for the next eligible change.",
+        "checking": "Checking for cloud updates…",
+        "lastChecked": "Last checked: {{date}}",
+        "lastSynced": "Last synced: {{date}}",
+        "polling": "Receives new cloud updates on load and every 5 minutes.",
+        "error": "Sync issue: {{error}}"
+      },
       "cloudSync": {
         "description": "Backup or restore all settings and files to the cloud. Max {{limit}}MB.",
         "checking": "Checking cloud backup…",
@@ -2342,6 +2357,10 @@
         "backupRestore": {
           "title": "Backup & Restore",
           "description": "Export or restore all settings and files"
+        },
+        "sync": {
+          "title": "Sync",
+          "description": "Configure automatic cloud sync and manual cloud backups"
         },
         "system": {
           "title": "System",
