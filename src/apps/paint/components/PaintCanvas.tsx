@@ -166,73 +166,21 @@ export const PaintCanvas = forwardRef<PaintCanvasRef, PaintCanvasProps>(
       return () => resizeObserver.disconnect();
     }, [strokeWidth]);
 
-    // Handle ESC key and shortcuts
+    // Handle ESC key for selection
     const handleKeyDown = useCallback(
       (event: KeyboardEvent) => {
-        // Handle selection escape
         if (event.key === "Escape" && selection) {
-          // Restore canvas to state before selection
           if (lastImageRef.current && contextRef.current) {
             contextRef.current.putImageData(lastImageRef.current, 0, 0);
           }
           setSelection(null);
-          return;
-        }
-
-        // Handle undo/redo shortcuts
-        const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-        const cmdKey = isMac ? event.metaKey : event.ctrlKey;
-
-        if (cmdKey && !event.altKey) {
-          if (event.key.toLowerCase() === "z") {
-            event.preventDefault();
-            if (event.shiftKey) {
-              // Cmd/Ctrl+Shift+Z - Redo
-              if (historyIndexRef.current < historyRef.current.length - 1) {
-                historyIndexRef.current++;
-                const imageData = historyRef.current[historyIndexRef.current];
-                if (contextRef.current && imageData) {
-                  contextRef.current.putImageData(imageData, 0, 0);
-                  onCanUndoChange(true);
-                  onCanRedoChange(
-                    historyIndexRef.current < historyRef.current.length - 1
-                  );
-                }
-              }
-            } else {
-              // Cmd/Ctrl+Z - Undo
-              if (historyIndexRef.current > 0) {
-                historyIndexRef.current--;
-                const imageData = historyRef.current[historyIndexRef.current];
-                if (contextRef.current && imageData) {
-                  contextRef.current.putImageData(imageData, 0, 0);
-                  onCanUndoChange(historyIndexRef.current > 0);
-                  onCanRedoChange(true);
-                }
-              }
-            }
-          } else if (event.key.toLowerCase() === "y" && !event.shiftKey) {
-            // Cmd/Ctrl+Y - Alternative Redo
-            event.preventDefault();
-            if (historyIndexRef.current < historyRef.current.length - 1) {
-              historyIndexRef.current++;
-              const imageData = historyRef.current[historyIndexRef.current];
-              if (contextRef.current && imageData) {
-                contextRef.current.putImageData(imageData, 0, 0);
-                onCanUndoChange(true);
-                onCanRedoChange(
-                  historyIndexRef.current < historyRef.current.length - 1
-                );
-              }
-            }
-          }
         }
       },
-      [selection, onCanUndoChange, onCanRedoChange]
+      [selection]
     );
 
     useEffect(() => {
-      if (!isForeground) return; // Only register shortcuts when window is foreground
+      if (!isForeground) return;
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, [isForeground, handleKeyDown]);

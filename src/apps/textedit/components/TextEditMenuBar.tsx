@@ -17,6 +17,7 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
+import { useInstanceUndoRedo } from "@/hooks/useUndoRedo";
 
 interface TextEditMenuBarProps {
   editor: Editor | null;
@@ -31,6 +32,7 @@ interface TextEditMenuBarProps {
   hasUnsavedChanges: boolean;
   currentFilePath: string | null;
   handleFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  instanceId?: string;
 }
 
 export function TextEditMenuBar({
@@ -44,6 +46,7 @@ export function TextEditMenuBar({
   onSave,
   currentFilePath,
   handleFileSelect,
+  instanceId,
 }: TextEditMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -52,6 +55,7 @@ export function TextEditMenuBar({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const isMacOsxTheme = currentTheme === "macosx";
+  const { canUndo, canRedo, undo, redo } = useInstanceUndoRedo(instanceId || "");
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -136,14 +140,16 @@ export function TextEditMenuBar({
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           <MenubarItem
-            onClick={() => editor?.chain().focus().undo().run()}
-            className="text-md h-6 px-3"
+            onClick={undo}
+            disabled={!canUndo}
+            className={`text-md h-6 px-3 ${!canUndo ? "text-gray-500" : ""}`}
           >
             {t("common.menu.undo")}
           </MenubarItem>
           <MenubarItem
-            onClick={() => editor?.chain().focus().redo().run()}
-            className="text-md h-6 px-3"
+            onClick={redo}
+            disabled={!canRedo}
+            className={`text-md h-6 px-3 ${!canRedo ? "text-gray-500" : ""}`}
           >
             {t("common.menu.redo")}
           </MenubarItem>

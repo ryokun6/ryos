@@ -26,6 +26,7 @@ import {
   requestAppLaunch,
   toggleSpotlightSearch,
 } from "@/utils/appEventBus";
+import { useGlobalUndoRedo } from "@/hooks/useGlobalUndoRedo";
 
 interface AppManagerProps {
   apps: AnyApp[];
@@ -83,6 +84,8 @@ export function AppManager({ apps }: AppManagerProps) {
 
   const [isInitialMount, setIsInitialMount] = useState(true);
   const [isExposeViewOpen, setIsExposeViewOpen] = useState(false);
+
+  useGlobalUndoRedo();
 
   // App switcher state
   const [switcherVisible, setSwitcherVisible] = useState(false);
