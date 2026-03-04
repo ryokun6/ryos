@@ -26,6 +26,7 @@ export function parseIcalString(icsText: string): ParsedIcalEvent[] {
     dtstart: string;
     dtend: string;
     isAllDay: boolean;
+    isUtc: boolean;
   }> = {};
 
   for (const line of lines) {
@@ -60,10 +61,12 @@ export function parseIcalString(icsText: string): ParsedIcalEvent[] {
           params.includes("VALUE=DATE") || /^\d{8}$/.test(value);
         current.dtstart = value;
         current.isAllDay = isDateOnly;
+        if (value.endsWith("Z")) current.isUtc = true;
         break;
       }
       case "DTEND":
         current.dtend = value;
+        if (value.endsWith("Z")) current.isUtc = true;
         break;
     }
   }
@@ -100,7 +103,10 @@ function unescapeIcalText(text: string): string {
     .replace(/\\\\/g, "\\");
 }
 
-function parseIcalDateTime(dt: string): { date: string; time?: string } | null {
+function parseIcalDateTime(
+  dt: string,
+  isUtc: boolean
+): { date: string; time?: string } | null {
   const cleaned = dt.replace(/[^0-9T]/g, "");
 
   if (/^\d{8}$/.test(cleaned)) {
@@ -110,14 +116,26 @@ function parseIcalDateTime(dt: string): { date: string; time?: string } | null {
   }
 
   const match = cleaned.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})/);
-  if (match) {
+  if (!match) return null;
+
+  if (isUtc) {
+    const utc = new Date(
+      Date.UTC(+match[1], +match[2] - 1, +match[3], +match[4], +match[5])
+    );
     return {
-      date: `${match[1]}-${match[2]}-${match[3]}`,
-      time: `${match[4]}:${match[5]}`,
+      date: `${utc.getFullYear()}-${pad2(utc.getMonth() + 1)}-${pad2(utc.getDate())}`,
+      time: `${pad2(utc.getHours())}:${pad2(utc.getMinutes())}`,
     };
   }
 
-  return null;
+  return {
+    date: `${match[1]}-${match[2]}-${match[3]}`,
+    time: `${match[4]}:${match[5]}`,
+  };
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
 }
 
 function buildEvent(
@@ -127,14 +145,16 @@ function buildEvent(
     dtstart: string;
     dtend: string;
     isAllDay: boolean;
+    isUtc: boolean;
   }>
 ): ParsedIcalEvent | null {
   if (!raw.summary || !raw.dtstart) return null;
 
-  const start = parseIcalDateTime(raw.dtstart);
+  const isUtc = raw.isUtc ?? false;
+  const start = parseIcalDateTime(raw.dtstart, isUtc);
   if (!start) return null;
 
-  const end = raw.dtend ? parseIcalDateTime(raw.dtend) : null;
+  const end = raw.dtend ? parseIcalDateTime(raw.dtend, isUtc) : null;
 
   const event: ParsedIcalEvent = {
     title: raw.summary,

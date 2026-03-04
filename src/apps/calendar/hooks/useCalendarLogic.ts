@@ -10,6 +10,7 @@ import {
 import { helpItems } from "../metadata";
 import { useShallow } from "zustand/react/shallow";
 import { parseIcalString } from "../utils/parseIcal";
+import { toast } from "sonner";
 
 export interface CalendarDayCell {
   date: string; // YYYY-MM-DD
@@ -406,10 +407,6 @@ export function useCalendarLogic() {
 
   // iCal import
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [importResult, setImportResult] = useState<{
-    count: number;
-    visible: boolean;
-  } | null>(null);
 
   const handleImport = useCallback(() => {
     if (fileInputRef.current) {
@@ -427,21 +424,19 @@ export function useCalendarLogic() {
       reader.onload = () => {
         const text = reader.result as string;
         const parsed = parseIcalString(text);
-        let count = 0;
         for (const ev of parsed) {
           addEvent(ev);
-          count++;
         }
-        if (count > 0) {
-          const firstEvent = parsed[0];
-          setSelectedDate(firstEvent.date);
-          setImportResult({ count, visible: true });
-          setTimeout(() => setImportResult(null), 3000);
+        if (parsed.length > 0) {
+          setSelectedDate(parsed[0].date);
+          toast.success(
+            t("apps.calendar.import.success", { count: parsed.length })
+          );
         }
       };
       reader.readAsText(file);
     },
-    [addEvent, setSelectedDate]
+    [addEvent, setSelectedDate, t]
   );
 
   return {
@@ -524,6 +519,5 @@ export function useCalendarLogic() {
     fileInputRef,
     handleImport,
     handleFileSelected,
-    importResult,
   };
 }

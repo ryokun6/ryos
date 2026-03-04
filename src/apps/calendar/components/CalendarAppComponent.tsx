@@ -893,7 +893,7 @@ export function CalendarAppComponent({
     todos, addTodo, toggleTodo, deleteTodo, showTodoSidebar, setShowTodoSidebar,
     navigateMonth, navigateWeek, goToToday, setView, setSelectedDate,
     handleDateClick, handleDateDoubleClick, handleNewEvent, handleNewEventAtTime, handleEditEvent, handleSaveEvent, handleEditSelectedEvent, handleDeleteSelectedEvent, handleDeleteEditingEvent,
-    fileInputRef, handleImport, handleFileSelected, importResult,
+    fileInputRef, handleImport, handleFileSelected,
   } = logic;
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1142,19 +1142,6 @@ export function CalendarAppComponent({
           className="hidden"
           onChange={handleFileSelected}
         />
-
-        {/* Import result toast */}
-        {importResult?.visible && (
-          <div
-            className="absolute bottom-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg shadow-lg text-sm font-medium animate-in fade-in slide-in-from-bottom-2"
-            style={{
-              backgroundColor: "rgba(0,0,0,0.8)",
-              color: "#fff",
-            }}
-          >
-            {t("apps.calendar.import.success", { count: importResult.count })}
-          </div>
-        )}
       </WindowFrame>
     </>
   );
