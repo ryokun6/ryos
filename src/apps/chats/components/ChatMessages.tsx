@@ -254,7 +254,6 @@ interface ChatMessagesProps {
   isSpeaking?: boolean;
   onSendMessage?: (username: string) => void; // Callback when send message button is clicked
   isLoadingGreeting?: boolean; // Show typing bubble for proactive greeting
-  streamingGreetingText?: string | null; // Incrementally streamed greeting text
 }
 
 // Component to render the scroll-to-bottom button using the library's context
@@ -344,7 +343,6 @@ interface ChatMessageItemProps {
   isInitialMessage: boolean;
   isLoading: boolean;
   isLoadingGreeting: boolean;
-  streamingGreetingText: string | null;
   isRoomView: boolean;
   fontSize: number;
   currentTheme: string;
@@ -387,7 +385,6 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
     isInitialMessage,
     isLoading,
     isLoadingGreeting,
-    streamingGreetingText,
     isRoomView,
     fontSize,
     currentTheme,
@@ -424,13 +421,10 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
 
   let messageText = getMessageText(message);
   const isStaticGreeting = message.role === "assistant" && message.id === "1";
-  if (isStaticGreeting && streamingGreetingText) {
-    messageText = streamingGreetingText;
-  } else if (isStaticGreeting && !messageText) {
+  if (isStaticGreeting && !messageText) {
     messageText = t("apps.chats.messages.greeting");
   }
-  const showTypingDots =
-    isLoadingGreeting && !isRoomView && isStaticGreeting && !streamingGreetingText;
+  const showTypingDots = isLoadingGreeting && !isRoomView && isStaticGreeting;
   const variants = { initial: { opacity: 0 }, animate: { opacity: 1 } };
   const isUrgent = isUrgentMessage(messageText);
   let bgColorClass = "";
@@ -852,10 +846,8 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   switch (part.type) {
                     case "text": {
                       const partText =
-                        (isStaticGreeting && streamingGreetingText)
-                          ? streamingGreetingText
-                          : (part as { type: string; text?: string }).text ||
-                            (isStaticGreeting ? t("apps.chats.messages.greeting") : "");
+                        (part as { type: string; text?: string }).text ||
+                        (isStaticGreeting ? t("apps.chats.messages.greeting") : "");
                       const hasXmlTags =
                         /<textedit:(insert|replace|delete)/i.test(partText);
                       if (hasXmlTags) {
@@ -1137,7 +1129,6 @@ interface ChatMessagesContentProps {
   isSpeaking?: boolean;
   onSendMessage?: (username: string) => void;
   isLoadingGreeting?: boolean;
-  streamingGreetingText?: string | null;
 }
 
 function ChatMessagesContent({
@@ -1157,7 +1148,6 @@ function ChatMessagesContent({
   isSpeaking,
   onSendMessage,
   isLoadingGreeting,
-  streamingGreetingText,
 }: ChatMessagesContentProps) {
   const { t } = useTranslation();
   const { playNote } = useChatSynth();
@@ -1378,7 +1368,6 @@ function ChatMessagesContent({
             isInitialMessage={isInitialMessage}
             isLoading={isLoading}
             isLoadingGreeting={!!isLoadingGreeting}
-            streamingGreetingText={streamingGreetingText ?? null}
             isRoomView={isRoomView}
             fontSize={fontSize}
             currentTheme={currentTheme}
@@ -1491,7 +1480,6 @@ export function ChatMessages({
   isSpeaking,
   onSendMessage,
   isLoadingGreeting,
-  streamingGreetingText,
 }: ChatMessagesProps) {
   return (
     // Use StickToBottom component as the main container
@@ -1521,7 +1509,6 @@ export function ChatMessages({
           isSpeaking={isSpeaking}
           onSendMessage={onSendMessage}
           isLoadingGreeting={isLoadingGreeting}
-          streamingGreetingText={streamingGreetingText}
         />
       </StickToBottom.Content>
 

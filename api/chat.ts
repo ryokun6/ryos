@@ -662,10 +662,10 @@ export default apiHandler<{
       });
 
       try {
-        const { text } = await generateText({
+        const { text, finishReason } = await generateText({
           model: google("gemini-2.5-flash"),
           temperature: 1,
-          maxOutputTokens: 150,
+          maxOutputTokens: 2000,
           system: `You are Ryo, a friendly AI assistant. You're greeting a returning user at the start of a new chat.
 
 Your style:
@@ -694,7 +694,7 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
         });
 
         const greeting = text.trim();
-        log(`Generated proactive greeting (${greeting.length} chars): "${greeting}"`);
+        log(`Generated proactive greeting (${greeting.length} chars, finishReason=${finishReason}): "${greeting}"`);
 
         res.setHeader("Access-Control-Allow-Origin", validOrigin);
         res.status(200).json({ greeting });
