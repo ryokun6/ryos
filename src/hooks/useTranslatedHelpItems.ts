@@ -114,6 +114,7 @@ const HELP_KEYS: Record<AppId, string[]> = {
     "aiModel",
     "shaderEffects",
     "backupRestore",
+    "sync",
     "system",
   ],
   admin: ["adminAccess", "userManagement", "roomManagement", "statistics"],
