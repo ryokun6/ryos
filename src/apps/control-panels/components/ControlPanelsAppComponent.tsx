@@ -535,6 +535,19 @@ export function ControlPanelsAppComponent({
                       <p className="text-[11px] text-neutral-600 font-geneva-12">
                         {t("apps.control-panels.autoSync.description")}
                       </p>
+                      {username && autoSyncEnabled && (
+                        <p className="text-[11px] text-neutral-500 font-geneva-12">
+                          {isAutoSyncChecking
+                            ? t("apps.control-panels.autoSync.checking")
+                            : autoSyncLastCheckedAt
+                              ? t("apps.control-panels.autoSync.lastChecked", {
+                                  date: new Date(
+                                    autoSyncLastCheckedAt
+                                  ).toLocaleString(),
+                                })
+                              : t("apps.control-panels.autoSync.waiting")}
+                        </p>
+                      )}
                     </div>
                     {username ? (
                       <Switch
@@ -643,26 +656,13 @@ export function ControlPanelsAppComponent({
                         </div>
                       </div>
 
-                      <div className="space-y-1">
-                        <p className="text-[11px] text-neutral-600 font-geneva-12">
-                          {isAutoSyncChecking
-                            ? t("apps.control-panels.autoSync.checking")
-                            : autoSyncLastCheckedAt
-                              ? t("apps.control-panels.autoSync.lastChecked", {
-                                  date: new Date(
-                                    autoSyncLastCheckedAt
-                                  ).toLocaleString(),
-                                })
-                              : t("apps.control-panels.autoSync.waiting")}
+                      {autoSyncLastError && (
+                        <p className="text-[11px] text-red-700 font-geneva-12">
+                          {t("apps.control-panels.autoSync.error", {
+                            error: autoSyncLastError,
+                          })}
                         </p>
-                        {autoSyncLastError && (
-                          <p className="text-[11px] text-red-700 font-geneva-12">
-                            {t("apps.control-panels.autoSync.error", {
-                              error: autoSyncLastError,
-                            })}
-                          </p>
-                        )}
-                      </div>
+                      )}
                     </>
                   )}
                 </div>
