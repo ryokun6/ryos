@@ -23,7 +23,6 @@ interface CloudSyncStoreState {
   syncSettings: boolean;
   syncSongs: boolean;
   syncVideos: boolean;
-  syncDock: boolean;
   syncStickies: boolean;
   syncCalendar: boolean;
   isCheckingRemote: boolean;
@@ -63,7 +62,6 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
     "files-applets": empty(),
     songs: empty(),
     videos: empty(),
-    dock: empty(),
     stickies: empty(),
     calendar: empty(),
   };
@@ -80,7 +78,6 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       syncSettings: true,
       syncSongs: true,
       syncVideos: true,
-      syncDock: true,
       syncStickies: true,
       syncCalendar: true,
       isCheckingRemote: false,
@@ -105,9 +102,6 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           case "videos":
             set({ syncVideos: enabled });
             return;
-          case "dock":
-            set({ syncDock: enabled });
-            return;
           case "stickies":
             set({ syncStickies: enabled });
             return;
@@ -128,8 +122,6 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             return state.syncSongs;
           case "videos":
             return state.syncVideos;
-          case "dock":
-            return state.syncDock;
           case "stickies":
             return state.syncStickies;
           case "calendar":
@@ -213,7 +205,6 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         syncSettings: state.syncSettings,
         syncSongs: state.syncSongs,
         syncVideos: state.syncVideos,
-        syncDock: state.syncDock,
         syncStickies: state.syncStickies,
         syncCalendar: state.syncCalendar,
         lastCheckedAt: state.lastCheckedAt,
@@ -273,7 +264,6 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           syncSettings: candidate.syncSettings ?? true,
           syncSongs: candidate.syncSongs ?? true,
           syncVideos: (candidate as Record<string, unknown>).syncVideos as boolean ?? true,
-          syncDock: (candidate as Record<string, unknown>).syncDock as boolean ?? true,
           syncStickies: (candidate as Record<string, unknown>).syncStickies as boolean ?? true,
           syncCalendar: candidate.syncCalendar ?? true,
           lastCheckedAt: candidate.lastCheckedAt ?? null,

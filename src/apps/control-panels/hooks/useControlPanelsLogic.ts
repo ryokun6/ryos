@@ -312,7 +312,6 @@ export function useControlPanelsLogic({
     syncSettings,
     syncSongs,
     syncVideos,
-    syncDock,
     syncStickies,
     syncCalendar,
     isCheckingRemote: isAutoSyncChecking,
@@ -328,7 +327,6 @@ export function useControlPanelsLogic({
       syncSettings: state.syncSettings,
       syncSongs: state.syncSongs,
       syncVideos: state.syncVideos,
-      syncDock: state.syncDock,
       syncStickies: state.syncStickies,
       syncCalendar: state.syncCalendar,
       isCheckingRemote: state.isCheckingRemote,
@@ -359,7 +357,6 @@ export function useControlPanelsLogic({
     settings: internalAutoSyncDomainStatus.settings,
     songs: internalAutoSyncDomainStatus.songs,
     videos: internalAutoSyncDomainStatus.videos,
-    dock: internalAutoSyncDomainStatus.dock,
     stickies: internalAutoSyncDomainStatus.stickies,
     calendar: internalAutoSyncDomainStatus.calendar,
   };
@@ -1758,7 +1755,6 @@ export function useControlPanelsLogic({
     syncSettings,
     syncSongs,
     syncVideos,
-    syncDock,
     syncStickies,
     syncCalendar,
     setSyncFiles: (enabled: boolean) =>
@@ -1767,7 +1763,6 @@ export function useControlPanelsLogic({
       setDomainEnabled("settings", enabled),
     setSyncSongs: (enabled: boolean) => setDomainEnabled("songs", enabled),
     setSyncVideos: (enabled: boolean) => setDomainEnabled("videos", enabled),
-    setSyncDock: (enabled: boolean) => setDomainEnabled("dock", enabled),
     setSyncStickies: (enabled: boolean) =>
       setDomainEnabled("stickies", enabled),
     setSyncCalendar: (enabled: boolean) =>

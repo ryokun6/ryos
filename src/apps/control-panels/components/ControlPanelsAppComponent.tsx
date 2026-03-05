@@ -135,6 +135,26 @@ function formatRelativeTime(
   return t("apps.control-panels.autoSync.daysAgo", { count: days });
 }
 
+function getLatestSyncTime(
+  status: { lastUploadedAt: string | null; lastAppliedRemoteAt: string | null }
+): string | null {
+  const a = status.lastUploadedAt ? new Date(status.lastUploadedAt).getTime() : 0;
+  const b = status.lastAppliedRemoteAt ? new Date(status.lastAppliedRemoteAt).getTime() : 0;
+  if (a === 0 && b === 0) return null;
+  return a >= b ? status.lastUploadedAt : status.lastAppliedRemoteAt;
+}
+
+function formatSyncStatus(
+  status: { lastUploadedAt: string | null; lastAppliedRemoteAt: string | null },
+  t: (key: string, opts?: Record<string, unknown>) => string
+): string {
+  const latest = getLatestSyncTime(status);
+  const relative = formatRelativeTime(latest, t);
+  return relative
+    ? t("apps.control-panels.autoSync.lastSynced", { date: relative })
+    : t("apps.control-panels.autoSync.neverSynced");
+}
+
 export function ControlPanelsAppComponent({
   isWindowOpen,
   onClose,
@@ -259,14 +279,12 @@ export function ControlPanelsAppComponent({
     syncSettings,
     syncSongs,
     syncVideos,
-    syncDock,
     syncStickies,
     syncCalendar,
     setSyncFiles,
     setSyncSettings,
     setSyncSongs,
     setSyncVideos,
-    setSyncDock,
     setSyncStickies,
     setSyncCalendar,
     isAutoSyncChecking,
@@ -605,11 +623,7 @@ export function ControlPanelsAppComponent({
                           <div className="space-y-0.5">
                             <Label>{t("apps.control-panels.autoSync.files")}</Label>
                             <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {formatRelativeTime(autoSyncDomainStatus.files.lastUploadedAt, t)
-                                ? t("apps.control-panels.autoSync.lastSynced", {
-                                    date: formatRelativeTime(autoSyncDomainStatus.files.lastUploadedAt, t),
-                                  })
-                                : t("apps.control-panels.autoSync.waiting")}
+                              {formatSyncStatus(autoSyncDomainStatus.files, t)}
                             </p>
                           </div>
                           <Switch
@@ -623,11 +637,7 @@ export function ControlPanelsAppComponent({
                           <div className="space-y-0.5">
                             <Label>{t("apps.control-panels.autoSync.settings")}</Label>
                             <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {formatRelativeTime(autoSyncDomainStatus.settings.lastUploadedAt, t)
-                                ? t("apps.control-panels.autoSync.lastSynced", {
-                                    date: formatRelativeTime(autoSyncDomainStatus.settings.lastUploadedAt, t),
-                                  })
-                                : t("apps.control-panels.autoSync.waiting")}
+                              {formatSyncStatus(autoSyncDomainStatus.settings, t)}
                             </p>
                           </div>
                           <Switch
@@ -641,11 +651,7 @@ export function ControlPanelsAppComponent({
                           <div className="space-y-0.5">
                             <Label>{t("apps.control-panels.autoSync.songs")}</Label>
                             <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {formatRelativeTime(autoSyncDomainStatus.songs.lastUploadedAt, t)
-                                ? t("apps.control-panels.autoSync.lastSynced", {
-                                    date: formatRelativeTime(autoSyncDomainStatus.songs.lastUploadedAt, t),
-                                  })
-                                : t("apps.control-panels.autoSync.waiting")}
+                              {formatSyncStatus(autoSyncDomainStatus.songs, t)}
                             </p>
                           </div>
                           <Switch
@@ -659,11 +665,7 @@ export function ControlPanelsAppComponent({
                           <div className="space-y-0.5">
                             <Label>{t("apps.control-panels.autoSync.videos")}</Label>
                             <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {formatRelativeTime(autoSyncDomainStatus.videos.lastUploadedAt, t)
-                                ? t("apps.control-panels.autoSync.lastSynced", {
-                                    date: formatRelativeTime(autoSyncDomainStatus.videos.lastUploadedAt, t),
-                                  })
-                                : t("apps.control-panels.autoSync.waiting")}
+                              {formatSyncStatus(autoSyncDomainStatus.videos, t)}
                             </p>
                           </div>
                           <Switch
@@ -675,31 +677,9 @@ export function ControlPanelsAppComponent({
 
                         <div className="flex items-center justify-between gap-3">
                           <div className="space-y-0.5">
-                            <Label>{t("apps.control-panels.autoSync.dock")}</Label>
-                            <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {formatRelativeTime(autoSyncDomainStatus.dock.lastUploadedAt, t)
-                                ? t("apps.control-panels.autoSync.lastSynced", {
-                                    date: formatRelativeTime(autoSyncDomainStatus.dock.lastUploadedAt, t),
-                                  })
-                                : t("apps.control-panels.autoSync.waiting")}
-                            </p>
-                          </div>
-                          <Switch
-                            checked={syncDock}
-                            onCheckedChange={setSyncDock}
-                            className="data-[state=checked]:bg-[#000000]"
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="space-y-0.5">
                             <Label>{t("apps.control-panels.autoSync.stickies")}</Label>
                             <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {formatRelativeTime(autoSyncDomainStatus.stickies.lastUploadedAt, t)
-                                ? t("apps.control-panels.autoSync.lastSynced", {
-                                    date: formatRelativeTime(autoSyncDomainStatus.stickies.lastUploadedAt, t),
-                                  })
-                                : t("apps.control-panels.autoSync.waiting")}
+                              {formatSyncStatus(autoSyncDomainStatus.stickies, t)}
                             </p>
                           </div>
                           <Switch
@@ -713,11 +693,7 @@ export function ControlPanelsAppComponent({
                           <div className="space-y-0.5">
                             <Label>{t("apps.control-panels.autoSync.calendar")}</Label>
                             <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {formatRelativeTime(autoSyncDomainStatus.calendar.lastUploadedAt, t)
-                                ? t("apps.control-panels.autoSync.lastSynced", {
-                                    date: formatRelativeTime(autoSyncDomainStatus.calendar.lastUploadedAt, t),
-                                  })
-                                : t("apps.control-panels.autoSync.waiting")}
+                              {formatSyncStatus(autoSyncDomainStatus.calendar, t)}
                             </p>
                           </div>
                           <Switch

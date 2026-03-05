@@ -11,6 +11,7 @@ import { useIpodStore } from "@/stores/useIpodStore";
 import { useVideoStore } from "@/stores/useVideoStore";
 import { useDockStore } from "@/stores/useDockStore";
 import { useStickiesStore } from "@/stores/useStickiesStore";
+
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import { subscribeToCloudSyncDomainChanges } from "@/utils/cloudSyncEvents";
 import {
@@ -37,7 +38,6 @@ const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
   "files-applets": 8000,
   songs: 4000,
   videos: 4000,
-  dock: 3000,
   stickies: 3000,
   calendar: 4000,
 };
@@ -52,7 +52,6 @@ function createDomainStringMap(initialValue: string | null): Record<CloudSyncDom
     "files-applets": initialValue,
     songs: initialValue,
     videos: initialValue,
-    dock: initialValue,
     stickies: initialValue,
     calendar: initialValue,
   };
@@ -66,7 +65,6 @@ export function useAutoCloudSync() {
   const syncSettings = useCloudSyncStore((state) => state.syncSettings);
   const syncSongs = useCloudSyncStore((state) => state.syncSongs);
   const syncVideos = useCloudSyncStore((state) => state.syncVideos);
-  const syncDock = useCloudSyncStore((state) => state.syncDock);
   const syncStickies = useCloudSyncStore((state) => state.syncStickies);
   const syncCalendar = useCloudSyncStore((state) => state.syncCalendar);
 
@@ -85,7 +83,6 @@ export function useAutoCloudSync() {
     "files-applets": 0,
     songs: 0,
     videos: 0,
-    dock: 0,
     stickies: 0,
     calendar: 0,
   });
@@ -100,11 +97,10 @@ export function useAutoCloudSync() {
         syncFiles ? "1" : "0",
         syncSongs ? "1" : "0",
         syncVideos ? "1" : "0",
-        syncDock ? "1" : "0",
         syncStickies ? "1" : "0",
         syncCalendar ? "1" : "0",
       ].join(""),
-    [syncCalendar, syncDock, syncFiles, syncSettings, syncSongs, syncStickies, syncVideos]
+    [syncCalendar, syncFiles, syncSettings, syncSongs, syncStickies, syncVideos]
   );
 
   const clearUploadTimer = useCallback((domain: CloudSyncDomain) => {
@@ -358,7 +354,7 @@ export function useAutoCloudSync() {
         state.hiding !== prevState.hiding ||
         state.magnification !== prevState.magnification
       ) {
-        queueUpload("dock");
+        queueUpload("settings");
       }
     });
 

@@ -87,6 +87,12 @@ interface SettingsSnapshotData {
     theme: "classic" | "black" | "u2";
     lcdFilterOn: boolean;
   };
+  dock?: {
+    pinnedItems: DockItem[];
+    scale: number;
+    hiding: boolean;
+    magnification: boolean;
+  };
   customWallpapers: StoreItemWithKey[];
 }
 
@@ -107,13 +113,6 @@ interface VideosSnapshotData {
   videos: Video[];
 }
 
-interface DockSnapshotData {
-  pinnedItems: DockItem[];
-  scale: number;
-  hiding: boolean;
-  magnification: boolean;
-}
-
 interface StickiesSnapshotData {
   notes: StickyNote[];
 }
@@ -130,7 +129,6 @@ type AnySnapshotData =
   | FilesStoreSnapshotData
   | SongsSnapshotData
   | VideosSnapshotData
-  | DockSnapshotData
   | StickiesSnapshotData
   | CalendarSnapshotData;
 
@@ -317,6 +315,7 @@ async function serializeSettingsSnapshot(): Promise<SettingsSnapshotData> {
   const displayState = useDisplaySettingsStore.getState();
   const audioState = useAudioSettingsStore.getState();
   const ipodState = useIpodStore.getState();
+  const dockState = useDockStore.getState();
   const db = await ensureIndexedDBInitialized();
 
   try {
@@ -366,6 +365,12 @@ async function serializeSettingsSnapshot(): Promise<SettingsSnapshotData> {
         theme: ipodState.theme,
         lcdFilterOn: ipodState.lcdFilterOn,
       },
+      dock: {
+        pinnedItems: dockState.pinnedItems,
+        scale: dockState.scale,
+        hiding: dockState.hiding,
+        magnification: dockState.magnification,
+      },
       customWallpapers,
     };
   } finally {
@@ -408,16 +413,6 @@ function serializeSongsSnapshot(): SongsSnapshotData {
 function serializeVideosSnapshot(): VideosSnapshotData {
   return {
     videos: useVideoStore.getState().videos,
-  };
-}
-
-function serializeDockSnapshot(): DockSnapshotData {
-  const dockState = useDockStore.getState();
-  return {
-    pinnedItems: dockState.pinnedItems,
-    scale: dockState.scale,
-    hiding: dockState.hiding,
-    magnification: dockState.magnification,
   };
 }
 
@@ -499,13 +494,6 @@ export async function createCloudSyncEnvelope(
         updatedAt,
         data: serializeVideosSnapshot(),
       };
-    case "dock":
-      return {
-        domain,
-        version: AUTO_SYNC_SNAPSHOT_VERSION,
-        updatedAt,
-        data: serializeDockSnapshot(),
-      };
     case "stickies":
       return {
         domain,
@@ -580,6 +568,15 @@ async function applySettingsSnapshot(data: SettingsSnapshotData): Promise<void> 
       lcdFilterOn: data.ipod.lcdFilterOn,
     });
   }
+
+  if (data.dock) {
+    useDockStore.setState({
+      pinnedItems: data.dock.pinnedItems,
+      scale: data.dock.scale,
+      hiding: data.dock.hiding,
+      magnification: data.dock.magnification,
+    });
+  }
 }
 
 async function applyIndexedDbStoreSnapshot(
@@ -613,15 +610,6 @@ function applySongsSnapshot(data: SongsSnapshotData): void {
 function applyVideosSnapshot(data: VideosSnapshotData): void {
   useVideoStore.setState({
     videos: data.videos,
-  });
-}
-
-function applyDockSnapshot(data: DockSnapshotData): void {
-  useDockStore.setState({
-    pinnedItems: data.pinnedItems,
-    scale: data.scale,
-    hiding: data.hiding,
-    magnification: data.magnification,
   });
 }
 
@@ -678,9 +666,6 @@ export async function applyCloudSyncEnvelope(
       return;
     case "videos":
       applyVideosSnapshot(envelope.data as VideosSnapshotData);
-      return;
-    case "dock":
-      applyDockSnapshot(envelope.data as DockSnapshotData);
       return;
     case "stickies":
       applyStickiesSnapshot(envelope.data as StickiesSnapshotData);
