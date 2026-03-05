@@ -759,7 +759,7 @@ export function FileList({
         viewType === "large"
           ? "grid-cols-[repeat(auto-fit,minmax(96px,1fr))]"
           : "grid-cols-[repeat(auto-fit,minmax(80px,1fr))]"
-      } gap-x-2 gap-y-1 p-2 min-h-[150px] ${
+      } gap-x-2 gap-y-3 p-2 min-h-[150px] ${
         files.length <= 1 ? "justify-items-start" : "justify-items-center"
       }`}
       onDragOver={handleContainerDragOver}
