@@ -596,6 +596,10 @@ export function ControlPanelsAppComponent({
 
                   {username && autoSyncEnabled && (
                     <>
+                      <hr
+                        className="my-1 border-t"
+                        style={tabStyles.separatorStyle}
+                      />
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-3">
                           <div className="space-y-0.5">
