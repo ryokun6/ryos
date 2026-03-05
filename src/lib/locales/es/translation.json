@@ -810,7 +810,7 @@
       "backup": "Copia de seguridad",
       "backupRestoreDescription": "Realiza una copia de seguridad o restaura todos los ajustes y archivos de la aplicación.",
       "autoSync": {
-        "title": "Sincronización automática",
+        "title": "Sincronización en la nube",
         "description": "Sincroniza automáticamente las bibliotecas y ajustes seleccionados con la nube tras cambios importantes.",
         "files": "Archivos",
         "settings": "Ajustes",

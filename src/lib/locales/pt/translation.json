@@ -810,7 +810,7 @@
       "backup": "Backup",
       "backupRestoreDescription": "Fazer backup ou restaurar todas as definições e ficheiros da aplicação.",
       "autoSync": {
-        "title": "Sincronização automática",
+        "title": "Sincronização na nuvem",
         "description": "Sincroniza automaticamente as bibliotecas e definições selecionadas com a nuvem após alterações importantes.",
         "files": "Ficheiros",
         "settings": "Definições",

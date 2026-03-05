@@ -2236,7 +2236,7 @@
       "restore": "Restore",
       "backupRestoreDescription": "Backup or restore all app settings and files to a local file.",
       "autoSync": {
-        "title": "Auto Sync",
+        "title": "Cloud Sync",
         "description": "Automatically sync selected libraries and settings to the cloud after significant updates.",
         "files": "Files",
         "settings": "Settings",

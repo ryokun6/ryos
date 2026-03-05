@@ -810,7 +810,7 @@
       "backup": "Backup",
       "backupRestoreDescription": "Esegui il backup o ripristina tutte le impostazioni e i file dell'app.",
       "autoSync": {
-        "title": "Sincronizzazione automatica",
+        "title": "Sincronizzazione cloud",
         "description": "Sincronizza automaticamente le librerie e le impostazioni selezionate con il cloud dopo modifiche importanti.",
         "files": "File",
         "settings": "Impostazioni",

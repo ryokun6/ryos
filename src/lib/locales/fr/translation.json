@@ -810,7 +810,7 @@
       "backup": "Sauvegarde",
       "backupRestoreDescription": "Sauvegarder ou restaurer tous les réglages et fichiers de l'application.",
       "autoSync": {
-        "title": "Synchronisation automatique",
+        "title": "Synchronisation cloud",
         "description": "Synchronise automatiquement les bibliothèques et réglages sélectionnés avec le cloud après des changements importants.",
         "files": "Fichiers",
         "settings": "Réglages",

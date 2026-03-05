@@ -810,7 +810,7 @@
       "backup": "バックアップ",
       "backupRestoreDescription": "すべてのアプリ設定とファイルをバックアップまたは復元します。",
       "autoSync": {
-        "title": "自動同期",
+        "title": "クラウド同期",
         "description": "重要な更新後に、選択したライブラリと設定を自動的にクラウドへ同期します。",
         "files": "ファイル",
         "settings": "設定",

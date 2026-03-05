@@ -810,7 +810,7 @@
       "backup": "백업",
       "backupRestoreDescription": "모든 앱 설정과 파일을 백업하거나 복원합니다.",
       "autoSync": {
-        "title": "자동 동기화",
+        "title": "클라우드 동기화",
         "description": "중요한 변경 후 선택한 라이브러리와 설정을 자동으로 클라우드와 동기화합니다.",
         "files": "파일",
         "settings": "설정",

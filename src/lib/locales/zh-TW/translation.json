@@ -810,7 +810,7 @@
       "backup": "備份",
       "backupRestoreDescription": "備份或還原所有應用程式設定和檔案。",
       "autoSync": {
-        "title": "自動同步",
+        "title": "雲端同步",
         "description": "在重要更新後，自動將選取的資料庫與設定同步到雲端。",
         "files": "檔案",
         "settings": "設定",
