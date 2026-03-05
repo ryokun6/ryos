@@ -21,10 +21,10 @@ import { useTranslation } from "react-i18next";
 import { Plus } from "@phosphor-icons/react";
 import { useDashboardStore, type WidgetType } from "@/stores/useDashboardStore";
 
-function WidgetContent({ type, widgetId }: { type: string; widgetId: string }) {
+function WidgetContent({ type, widgetId, isFlipped }: { type: string; widgetId: string; isFlipped?: boolean }) {
   switch (type) {
     case "clock":
-      return <ClockWidget widgetId={widgetId} />;
+      return <ClockWidget widgetId={widgetId} isFlipped={isFlipped} />;
     case "calendar":
       return <CalendarWidget widgetId={widgetId} />;
     case "weather":
@@ -367,7 +367,7 @@ export function DashboardAppComponent({
                       overflowContent={<WidgetOverflow type={widget.type} widgetId={widget.id} />}
                       backContent={(onFlipBack) => <WidgetBackContent type={widget.type} widgetId={widget.id} onDone={onFlipBack} />}
                     >
-                      <WidgetContent type={widget.type} widgetId={widget.id} />
+                      {(isFlipped) => <WidgetContent type={widget.type} widgetId={widget.id} isFlipped={isFlipped} />}
                     </WidgetChrome>
                   </motion.div>
                 ))}

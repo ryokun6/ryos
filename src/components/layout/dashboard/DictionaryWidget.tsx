@@ -105,6 +105,13 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      abortRef.current?.abort();
+    };
+  }, []);
+
   const handleInput = useCallback(
     (value: string) => {
       setQuery(value);

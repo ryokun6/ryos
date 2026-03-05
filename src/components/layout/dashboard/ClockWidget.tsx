@@ -66,9 +66,10 @@ function handPolygon(
 
 interface ClockWidgetProps {
   widgetId?: string;
+  isFlipped?: boolean;
 }
 
-export function ClockWidget({ widgetId }: ClockWidgetProps) {
+export function ClockWidget({ widgetId, isFlipped }: ClockWidgetProps) {
   const { t } = useTranslation();
   const [time, setTime] = useState(new Date());
   const currentTheme = useThemeStore((state) => state.current);
@@ -84,9 +85,11 @@ export function ClockWidget({ widgetId }: ClockWidgetProps) {
   }, [config?.cityKey, config?.cityName, config?.timezone, t]);
 
   useEffect(() => {
+    if (isFlipped) return;
+    setTime(new Date());
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isFlipped]);
 
   const displayTime = useMemo(() => {
     if (!config?.timezone) return time;
@@ -268,6 +271,12 @@ export function ClockBackPanel({ widgetId, onDone }: { widgetId: string; onDone?
       // search failed silently
     }
     setSearching(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
   }, []);
 
   const handleSearchInput = useCallback(
