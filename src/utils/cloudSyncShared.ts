@@ -6,11 +6,14 @@ export const CLOUD_SYNC_DOMAINS = [
   "files-trash",
   "files-applets",
   "songs",
+  "videos",
+  "dock",
+  "stickies",
   "calendar",
 ] as const;
 
 export type CloudSyncDomain = (typeof CLOUD_SYNC_DOMAINS)[number];
-export type CloudSyncCategory = "files" | "settings" | "songs" | "calendar";
+export type CloudSyncCategory = "files" | "settings" | "songs" | "videos" | "dock" | "stickies" | "calendar";
 
 export const FILE_SYNC_DOMAINS = [
   "files-metadata",
@@ -76,6 +79,12 @@ export function getCloudSyncCategory(
       return "settings";
     case "songs":
       return "songs";
+    case "videos":
+      return "videos";
+    case "dock":
+      return "dock";
+    case "stickies":
+      return "stickies";
     case "calendar":
       return "calendar";
   }
@@ -90,6 +99,9 @@ export function createEmptyCloudSyncMetadataMap(): CloudSyncMetadataMap {
     "files-trash": null,
     "files-applets": null,
     songs: null,
+    videos: null,
+    dock: null,
+    stickies: null,
     calendar: null,
   };
 }

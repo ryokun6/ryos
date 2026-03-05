@@ -258,10 +258,16 @@ export function ControlPanelsAppComponent({
     syncFiles,
     syncSettings,
     syncSongs,
+    syncVideos,
+    syncDock,
+    syncStickies,
     syncCalendar,
     setSyncFiles,
     setSyncSettings,
     setSyncSongs,
+    setSyncVideos,
+    setSyncDock,
+    setSyncStickies,
     setSyncCalendar,
     isAutoSyncChecking,
     autoSyncLastCheckedAt,
@@ -641,6 +647,60 @@ export function ControlPanelsAppComponent({
                           <Switch
                             checked={syncSongs}
                             onCheckedChange={setSyncSongs}
+                            className="data-[state=checked]:bg-[#000000]"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="space-y-0.5">
+                            <Label>{t("apps.control-panels.autoSync.videos")}</Label>
+                            <p className="text-[11px] text-neutral-600 font-geneva-12">
+                              {formatRelativeTime(autoSyncDomainStatus.videos.lastUploadedAt, t)
+                                ? t("apps.control-panels.autoSync.lastSynced", {
+                                    date: formatRelativeTime(autoSyncDomainStatus.videos.lastUploadedAt, t),
+                                  })
+                                : t("apps.control-panels.autoSync.waiting")}
+                            </p>
+                          </div>
+                          <Switch
+                            checked={syncVideos}
+                            onCheckedChange={setSyncVideos}
+                            className="data-[state=checked]:bg-[#000000]"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="space-y-0.5">
+                            <Label>{t("apps.control-panels.autoSync.dock")}</Label>
+                            <p className="text-[11px] text-neutral-600 font-geneva-12">
+                              {formatRelativeTime(autoSyncDomainStatus.dock.lastUploadedAt, t)
+                                ? t("apps.control-panels.autoSync.lastSynced", {
+                                    date: formatRelativeTime(autoSyncDomainStatus.dock.lastUploadedAt, t),
+                                  })
+                                : t("apps.control-panels.autoSync.waiting")}
+                            </p>
+                          </div>
+                          <Switch
+                            checked={syncDock}
+                            onCheckedChange={setSyncDock}
+                            className="data-[state=checked]:bg-[#000000]"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="space-y-0.5">
+                            <Label>{t("apps.control-panels.autoSync.stickies")}</Label>
+                            <p className="text-[11px] text-neutral-600 font-geneva-12">
+                              {formatRelativeTime(autoSyncDomainStatus.stickies.lastUploadedAt, t)
+                                ? t("apps.control-panels.autoSync.lastSynced", {
+                                    date: formatRelativeTime(autoSyncDomainStatus.stickies.lastUploadedAt, t),
+                                  })
+                                : t("apps.control-panels.autoSync.waiting")}
+                            </p>
+                          </div>
+                          <Switch
+                            checked={syncStickies}
+                            onCheckedChange={setSyncStickies}
                             className="data-[state=checked]:bg-[#000000]"
                           />
                         </div>

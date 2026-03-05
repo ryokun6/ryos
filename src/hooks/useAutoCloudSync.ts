@@ -8,6 +8,9 @@ import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { useVideoStore } from "@/stores/useVideoStore";
+import { useDockStore } from "@/stores/useDockStore";
+import { useStickiesStore } from "@/stores/useStickiesStore";
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import { subscribeToCloudSyncDomainChanges } from "@/utils/cloudSyncEvents";
 import {
@@ -33,6 +36,9 @@ const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
   "files-trash": 5000,
   "files-applets": 8000,
   songs: 4000,
+  videos: 4000,
+  dock: 3000,
+  stickies: 3000,
   calendar: 4000,
 };
 
@@ -45,6 +51,9 @@ function createDomainStringMap(initialValue: string | null): Record<CloudSyncDom
     "files-trash": initialValue,
     "files-applets": initialValue,
     songs: initialValue,
+    videos: initialValue,
+    dock: initialValue,
+    stickies: initialValue,
     calendar: initialValue,
   };
 }
@@ -56,6 +65,9 @@ export function useAutoCloudSync() {
   const syncFiles = useCloudSyncStore((state) => state.syncFiles);
   const syncSettings = useCloudSyncStore((state) => state.syncSettings);
   const syncSongs = useCloudSyncStore((state) => state.syncSongs);
+  const syncVideos = useCloudSyncStore((state) => state.syncVideos);
+  const syncDock = useCloudSyncStore((state) => state.syncDock);
+  const syncStickies = useCloudSyncStore((state) => state.syncStickies);
   const syncCalendar = useCloudSyncStore((state) => state.syncCalendar);
 
   const uploadTimersRef = useRef<
@@ -72,6 +84,9 @@ export function useAutoCloudSync() {
     "files-trash": 0,
     "files-applets": 0,
     songs: 0,
+    videos: 0,
+    dock: 0,
+    stickies: 0,
     calendar: 0,
   });
   const checkInFlightRef = useRef(false);
@@ -84,9 +99,12 @@ export function useAutoCloudSync() {
         syncSettings ? "1" : "0",
         syncFiles ? "1" : "0",
         syncSongs ? "1" : "0",
+        syncVideos ? "1" : "0",
+        syncDock ? "1" : "0",
+        syncStickies ? "1" : "0",
         syncCalendar ? "1" : "0",
       ].join(""),
-    [syncCalendar, syncFiles, syncSettings, syncSongs]
+    [syncCalendar, syncDock, syncFiles, syncSettings, syncSongs, syncStickies, syncVideos]
   );
 
   const clearUploadTimer = useCallback((domain: CloudSyncDomain) => {
@@ -300,6 +318,23 @@ export function useAutoCloudSync() {
       }
     });
 
+    const ipodSettingsUnsubscribe = useIpodStore.subscribe(
+      (state, prevState) => {
+        if (
+          state.displayMode !== prevState.displayMode ||
+          state.showLyrics !== prevState.showLyrics ||
+          state.lyricsAlignment !== prevState.lyricsAlignment ||
+          state.lyricsFont !== prevState.lyricsFont ||
+          state.romanization !== prevState.romanization ||
+          state.lyricsTranslationLanguage !== prevState.lyricsTranslationLanguage ||
+          state.theme !== prevState.theme ||
+          state.lcdFilterOn !== prevState.lcdFilterOn
+        ) {
+          queueUpload("settings");
+        }
+      }
+    );
+
     const songsUnsubscribe = useIpodStore.subscribe((state, prevState) => {
       if (
         state.tracks !== prevState.tracks ||
@@ -309,6 +344,31 @@ export function useAutoCloudSync() {
         queueUpload("songs");
       }
     });
+
+    const videosUnsubscribe = useVideoStore.subscribe((state, prevState) => {
+      if (state.videos !== prevState.videos) {
+        queueUpload("videos");
+      }
+    });
+
+    const dockUnsubscribe = useDockStore.subscribe((state, prevState) => {
+      if (
+        state.pinnedItems !== prevState.pinnedItems ||
+        state.scale !== prevState.scale ||
+        state.hiding !== prevState.hiding ||
+        state.magnification !== prevState.magnification
+      ) {
+        queueUpload("dock");
+      }
+    });
+
+    const stickiesUnsubscribe = useStickiesStore.subscribe(
+      (state, prevState) => {
+        if (state.notes !== prevState.notes) {
+          queueUpload("stickies");
+        }
+      }
+    );
 
     const calendarUnsubscribe = useCalendarStore.subscribe((state, prevState) => {
       if (
@@ -335,7 +395,11 @@ export function useAutoCloudSync() {
       displayUnsubscribe();
       audioUnsubscribe();
       appUnsubscribe();
+      ipodSettingsUnsubscribe();
       songsUnsubscribe();
+      videosUnsubscribe();
+      dockUnsubscribe();
+      stickiesUnsubscribe();
       calendarUnsubscribe();
     };
   }, [

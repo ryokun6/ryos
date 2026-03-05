@@ -8,6 +8,9 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useFilesStore, type FileSystemItem } from "@/stores/useFilesStore";
 import { useIpodStore, type Track } from "@/stores/useIpodStore";
+import { useVideoStore, type Video } from "@/stores/useVideoStore";
+import { useDockStore, type DockItem } from "@/stores/useDockStore";
+import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
 import {
   useCalendarStore,
   type CalendarEvent,
@@ -15,6 +18,12 @@ import {
   type TodoItem,
 } from "@/stores/useCalendarStore";
 import type { AIModel } from "@/types/aiModels";
+import type {
+  DisplayMode,
+  LyricsAlignment,
+  LyricsFont,
+  RomanizationSettings,
+} from "@/types/lyrics";
 import {
   AUTO_SYNC_SNAPSHOT_VERSION,
   type CloudSyncDomain,
@@ -68,6 +77,16 @@ interface SettingsSnapshotData {
     ttsVoice: string | null;
     synthPreset: string;
   };
+  ipod?: {
+    displayMode: DisplayMode;
+    showLyrics: boolean;
+    lyricsAlignment: LyricsAlignment;
+    lyricsFont: LyricsFont;
+    romanization: RomanizationSettings;
+    lyricsTranslationLanguage: string | null;
+    theme: "classic" | "black" | "u2";
+    lcdFilterOn: boolean;
+  };
   customWallpapers: StoreItemWithKey[];
 }
 
@@ -84,6 +103,21 @@ interface SongsSnapshotData {
   lastKnownVersion: number;
 }
 
+interface VideosSnapshotData {
+  videos: Video[];
+}
+
+interface DockSnapshotData {
+  pinnedItems: DockItem[];
+  scale: number;
+  hiding: boolean;
+  magnification: boolean;
+}
+
+interface StickiesSnapshotData {
+  notes: StickyNote[];
+}
+
 interface CalendarSnapshotData {
   events: CalendarEvent[];
   calendars: CalendarGroup[];
@@ -95,6 +129,9 @@ type AnySnapshotData =
   | FilesMetadataSnapshotData
   | FilesStoreSnapshotData
   | SongsSnapshotData
+  | VideosSnapshotData
+  | DockSnapshotData
+  | StickiesSnapshotData
   | CalendarSnapshotData;
 
 function assertCompressionSupport(): void {
@@ -279,6 +316,7 @@ async function gunzipBase64Json<T>(base64Data: string): Promise<T> {
 async function serializeSettingsSnapshot(): Promise<SettingsSnapshotData> {
   const displayState = useDisplaySettingsStore.getState();
   const audioState = useAudioSettingsStore.getState();
+  const ipodState = useIpodStore.getState();
   const db = await ensureIndexedDBInitialized();
 
   try {
@@ -318,6 +356,16 @@ async function serializeSettingsSnapshot(): Promise<SettingsSnapshotData> {
         ttsVoice: audioState.ttsVoice,
         synthPreset: audioState.synthPreset,
       },
+      ipod: {
+        displayMode: ipodState.displayMode,
+        showLyrics: ipodState.showLyrics,
+        lyricsAlignment: ipodState.lyricsAlignment,
+        lyricsFont: ipodState.lyricsFont,
+        romanization: ipodState.romanization,
+        lyricsTranslationLanguage: ipodState.lyricsTranslationLanguage,
+        theme: ipodState.theme,
+        lcdFilterOn: ipodState.lcdFilterOn,
+      },
       customWallpapers,
     };
   } finally {
@@ -354,6 +402,28 @@ function serializeSongsSnapshot(): SongsSnapshotData {
     tracks: ipodState.tracks,
     libraryState: ipodState.libraryState,
     lastKnownVersion: ipodState.lastKnownVersion,
+  };
+}
+
+function serializeVideosSnapshot(): VideosSnapshotData {
+  return {
+    videos: useVideoStore.getState().videos,
+  };
+}
+
+function serializeDockSnapshot(): DockSnapshotData {
+  const dockState = useDockStore.getState();
+  return {
+    pinnedItems: dockState.pinnedItems,
+    scale: dockState.scale,
+    hiding: dockState.hiding,
+    magnification: dockState.magnification,
+  };
+}
+
+function serializeStickiesSnapshot(): StickiesSnapshotData {
+  return {
+    notes: useStickiesStore.getState().notes,
   };
 }
 
@@ -422,6 +492,27 @@ export async function createCloudSyncEnvelope(
         updatedAt,
         data: serializeSongsSnapshot(),
       };
+    case "videos":
+      return {
+        domain,
+        version: AUTO_SYNC_SNAPSHOT_VERSION,
+        updatedAt,
+        data: serializeVideosSnapshot(),
+      };
+    case "dock":
+      return {
+        domain,
+        version: AUTO_SYNC_SNAPSHOT_VERSION,
+        updatedAt,
+        data: serializeDockSnapshot(),
+      };
+    case "stickies":
+      return {
+        domain,
+        version: AUTO_SYNC_SNAPSHOT_VERSION,
+        updatedAt,
+        data: serializeStickiesSnapshot(),
+      };
     case "calendar":
       return {
         domain,
@@ -476,6 +567,19 @@ async function applySettingsSnapshot(data: SettingsSnapshotData): Promise<void> 
   });
 
   useAppStore.getState().setAiModel(data.aiModel);
+
+  if (data.ipod) {
+    useIpodStore.setState({
+      displayMode: data.ipod.displayMode,
+      showLyrics: data.ipod.showLyrics,
+      lyricsAlignment: data.ipod.lyricsAlignment,
+      lyricsFont: data.ipod.lyricsFont,
+      romanization: data.ipod.romanization,
+      lyricsTranslationLanguage: data.ipod.lyricsTranslationLanguage,
+      theme: data.ipod.theme,
+      lcdFilterOn: data.ipod.lcdFilterOn,
+    });
+  }
 }
 
 async function applyIndexedDbStoreSnapshot(
@@ -503,6 +607,27 @@ function applySongsSnapshot(data: SongsSnapshotData): void {
     tracks: data.tracks,
     libraryState: data.libraryState,
     lastKnownVersion: data.lastKnownVersion,
+  });
+}
+
+function applyVideosSnapshot(data: VideosSnapshotData): void {
+  useVideoStore.setState({
+    videos: data.videos,
+  });
+}
+
+function applyDockSnapshot(data: DockSnapshotData): void {
+  useDockStore.setState({
+    pinnedItems: data.pinnedItems,
+    scale: data.scale,
+    hiding: data.hiding,
+    magnification: data.magnification,
+  });
+}
+
+function applyStickiesSnapshot(data: StickiesSnapshotData): void {
+  useStickiesStore.setState({
+    notes: data.notes,
   });
 }
 
@@ -550,6 +675,15 @@ export async function applyCloudSyncEnvelope(
       return;
     case "songs":
       applySongsSnapshot(envelope.data as SongsSnapshotData);
+      return;
+    case "videos":
+      applyVideosSnapshot(envelope.data as VideosSnapshotData);
+      return;
+    case "dock":
+      applyDockSnapshot(envelope.data as DockSnapshotData);
+      return;
+    case "stickies":
+      applyStickiesSnapshot(envelope.data as StickiesSnapshotData);
       return;
     case "calendar":
       applyCalendarSnapshot(envelope.data as CalendarSnapshotData);
