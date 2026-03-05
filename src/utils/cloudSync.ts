@@ -71,16 +71,12 @@ interface SettingsSnapshotData {
   customWallpapers: StoreItemWithKey[];
 }
 
-interface FilesSnapshotData {
+interface FilesMetadataSnapshotData {
   items: Record<string, FileSystemItem>;
   libraryState: "uninitialized" | "loaded" | "cleared";
-  stores: {
-    documents: StoreItemWithKey[];
-    images: StoreItemWithKey[];
-    trash: StoreItemWithKey[];
-    applets: StoreItemWithKey[];
-  };
 }
+
+type FilesStoreSnapshotData = StoreItemWithKey[];
 
 interface SongsSnapshotData {
   tracks: Track[];
@@ -96,7 +92,8 @@ interface CalendarSnapshotData {
 
 type AnySnapshotData =
   | SettingsSnapshotData
-  | FilesSnapshotData
+  | FilesMetadataSnapshotData
+  | FilesStoreSnapshotData
   | SongsSnapshotData
   | CalendarSnapshotData;
 
@@ -328,31 +325,26 @@ async function serializeSettingsSnapshot(): Promise<SettingsSnapshotData> {
   }
 }
 
-async function serializeFilesSnapshot(): Promise<FilesSnapshotData> {
-  const filesState = useFilesStore.getState();
+async function serializeIndexedDbStoreSnapshot(
+  storeName: string
+): Promise<FilesStoreSnapshotData> {
   const db = await ensureIndexedDBInitialized();
 
   try {
-    const [documents, images, trash, applets] = await Promise.all([
-      readStoreItems(db, STORES.DOCUMENTS),
-      readStoreItems(db, STORES.IMAGES),
-      readStoreItems(db, STORES.TRASH),
-      readStoreItems(db, STORES.APPLETS),
-    ]);
-
-    return {
-      items: filesState.items,
-      libraryState: filesState.libraryState,
-      stores: {
-        documents: await serializeStoreItems(documents),
-        images: await serializeStoreItems(images),
-        trash: await serializeStoreItems(trash),
-        applets: await serializeStoreItems(applets),
-      },
-    };
+    const items = await readStoreItems(db, storeName);
+    return await serializeStoreItems(items);
   } finally {
     db.close();
   }
+}
+
+function serializeFilesMetadataSnapshot(): FilesMetadataSnapshotData {
+  const filesState = useFilesStore.getState();
+
+  return {
+    items: filesState.items,
+    libraryState: filesState.libraryState,
+  };
 }
 
 function serializeSongsSnapshot(): SongsSnapshotData {
@@ -388,12 +380,40 @@ export async function createCloudSyncEnvelope(
         updatedAt,
         data: await serializeSettingsSnapshot(),
       };
-    case "files":
+    case "files-metadata":
       return {
         domain,
         version: AUTO_SYNC_SNAPSHOT_VERSION,
         updatedAt,
-        data: await serializeFilesSnapshot(),
+        data: serializeFilesMetadataSnapshot(),
+      };
+    case "files-documents":
+      return {
+        domain,
+        version: AUTO_SYNC_SNAPSHOT_VERSION,
+        updatedAt,
+        data: await serializeIndexedDbStoreSnapshot(STORES.DOCUMENTS),
+      };
+    case "files-images":
+      return {
+        domain,
+        version: AUTO_SYNC_SNAPSHOT_VERSION,
+        updatedAt,
+        data: await serializeIndexedDbStoreSnapshot(STORES.IMAGES),
+      };
+    case "files-trash":
+      return {
+        domain,
+        version: AUTO_SYNC_SNAPSHOT_VERSION,
+        updatedAt,
+        data: await serializeIndexedDbStoreSnapshot(STORES.TRASH),
+      };
+    case "files-applets":
+      return {
+        domain,
+        version: AUTO_SYNC_SNAPSHOT_VERSION,
+        updatedAt,
+        data: await serializeIndexedDbStoreSnapshot(STORES.APPLETS),
       };
     case "songs":
       return {
@@ -458,20 +478,20 @@ async function applySettingsSnapshot(data: SettingsSnapshotData): Promise<void> 
   useAppStore.getState().setAiModel(data.aiModel);
 }
 
-async function applyFilesSnapshot(data: FilesSnapshotData): Promise<void> {
+async function applyIndexedDbStoreSnapshot(
+  storeName: string,
+  data: FilesStoreSnapshotData
+): Promise<void> {
   const db = await ensureIndexedDBInitialized();
 
   try {
-    await Promise.all([
-      restoreStoreItems(db, STORES.DOCUMENTS, data.stores.documents),
-      restoreStoreItems(db, STORES.IMAGES, data.stores.images),
-      restoreStoreItems(db, STORES.TRASH, data.stores.trash),
-      restoreStoreItems(db, STORES.APPLETS, data.stores.applets),
-    ]);
+    await restoreStoreItems(db, storeName, data);
   } finally {
     db.close();
   }
+}
 
+function applyFilesMetadataSnapshot(data: FilesMetadataSnapshotData): void {
   useFilesStore.setState({
     items: data.items,
     libraryState: data.libraryState,
@@ -501,8 +521,32 @@ export async function applyCloudSyncEnvelope(
     case "settings":
       await applySettingsSnapshot(envelope.data as SettingsSnapshotData);
       return;
-    case "files":
-      await applyFilesSnapshot(envelope.data as FilesSnapshotData);
+    case "files-metadata":
+      applyFilesMetadataSnapshot(envelope.data as FilesMetadataSnapshotData);
+      return;
+    case "files-documents":
+      await applyIndexedDbStoreSnapshot(
+        STORES.DOCUMENTS,
+        envelope.data as FilesStoreSnapshotData
+      );
+      return;
+    case "files-images":
+      await applyIndexedDbStoreSnapshot(
+        STORES.IMAGES,
+        envelope.data as FilesStoreSnapshotData
+      );
+      return;
+    case "files-trash":
+      await applyIndexedDbStoreSnapshot(
+        STORES.TRASH,
+        envelope.data as FilesStoreSnapshotData
+      );
+      return;
+    case "files-applets":
+      await applyIndexedDbStoreSnapshot(
+        STORES.APPLETS,
+        envelope.data as FilesStoreSnapshotData
+      );
       return;
     case "songs":
       applySongsSnapshot(envelope.data as SongsSnapshotData);

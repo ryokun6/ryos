@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
   createEmptyCloudSyncMetadataMap,
+  getCloudSyncCategory,
+  getLatestCloudSyncTimestamp,
   hasUnsyncedLocalChanges,
   isCloudSyncDomain,
   normalizeCloudSyncMetadataMap,
@@ -9,10 +11,15 @@ import {
 
 describe("cloud sync shared helpers", () => {
   test("validates supported sync domains", () => {
-    expect(isCloudSyncDomain("files")).toBe(true);
     expect(isCloudSyncDomain("settings")).toBe(true);
+    expect(isCloudSyncDomain("files-metadata")).toBe(true);
+    expect(isCloudSyncDomain("files-documents")).toBe(true);
+    expect(isCloudSyncDomain("files-images")).toBe(true);
+    expect(isCloudSyncDomain("files-trash")).toBe(true);
+    expect(isCloudSyncDomain("files-applets")).toBe(true);
     expect(isCloudSyncDomain("songs")).toBe(true);
     expect(isCloudSyncDomain("calendar")).toBe(true);
+    expect(isCloudSyncDomain("files")).toBe(false);
     expect(isCloudSyncDomain("widgets")).toBe(false);
     expect(isCloudSyncDomain(null)).toBe(false);
   });
@@ -20,7 +27,11 @@ describe("cloud sync shared helpers", () => {
   test("creates an empty metadata map", () => {
     expect(createEmptyCloudSyncMetadataMap()).toEqual({
       settings: null,
-      files: null,
+      "files-metadata": null,
+      "files-documents": null,
+      "files-images": null,
+      "files-trash": null,
+      "files-applets": null,
       songs: null,
       calendar: null,
     });
@@ -28,7 +39,7 @@ describe("cloud sync shared helpers", () => {
 
   test("normalizes partial metadata safely", () => {
     const normalized = normalizeCloudSyncMetadataMap({
-      files: {
+      "files-images": {
         updatedAt: "2026-03-04T12:00:00.000Z",
         createdAt: "2026-03-04T12:00:05.000Z",
         totalSize: 2048,
@@ -39,12 +50,23 @@ describe("cloud sync shared helpers", () => {
       },
     });
 
-    expect(normalized.files?.updatedAt).toBe("2026-03-04T12:00:00.000Z");
-    expect(normalized.files?.totalSize).toBe(2048);
-    expect(normalized.files?.version).toBe(3);
+    expect(normalized["files-images"]?.updatedAt).toBe(
+      "2026-03-04T12:00:00.000Z"
+    );
+    expect(normalized["files-images"]?.totalSize).toBe(2048);
+    expect(normalized["files-images"]?.version).toBe(3);
     expect(normalized.settings).toBeNull();
+    expect(normalized["files-metadata"]).toBeNull();
     expect(normalized.songs).toBeNull();
     expect(normalized.calendar).toBeNull();
+  });
+
+  test("maps internal sync domains to user-facing categories", () => {
+    expect(getCloudSyncCategory("files-metadata")).toBe("files");
+    expect(getCloudSyncCategory("files-documents")).toBe("files");
+    expect(getCloudSyncCategory("settings")).toBe("settings");
+    expect(getCloudSyncCategory("songs")).toBe("songs");
+    expect(getCloudSyncCategory("calendar")).toBe("calendar");
   });
 
   test("detects unsynced local changes", () => {
@@ -109,5 +131,17 @@ describe("cloud sync shared helpers", () => {
         hasPendingUpload: false,
       })
     ).toBe(false);
+  });
+
+  test("returns the newest timestamp in a group", () => {
+    expect(
+      getLatestCloudSyncTimestamp([
+        "2026-03-04T12:01:00.000Z",
+        "2026-03-04T12:03:00.000Z",
+        "2026-03-04T12:02:00.000Z",
+      ])
+    ).toBe("2026-03-04T12:03:00.000Z");
+
+    expect(getLatestCloudSyncTimestamp([null, undefined])).toBeNull();
   });
 });

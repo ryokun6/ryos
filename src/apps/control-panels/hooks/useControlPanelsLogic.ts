@@ -26,6 +26,10 @@ import type { ControlPanelsInitialData } from "@/apps/base/types";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import {
+  FILE_SYNC_DOMAINS,
+  getLatestCloudSyncTimestamp,
+} from "@/utils/cloudSyncShared";
 
 interface StoreItem {
   name: string;
@@ -310,7 +314,7 @@ export function useControlPanelsLogic({
     isCheckingRemote: isAutoSyncChecking,
     lastCheckedAt: autoSyncLastCheckedAt,
     lastError: autoSyncLastError,
-    domainStatus: autoSyncDomainStatus,
+    domainStatus: internalAutoSyncDomainStatus,
     setAutoSyncEnabled,
     setDomainEnabled,
   } = useCloudSyncStore((state) => ({
@@ -326,6 +330,27 @@ export function useControlPanelsLogic({
     setAutoSyncEnabled: state.setAutoSyncEnabled,
     setDomainEnabled: state.setDomainEnabled,
   }));
+
+  const autoSyncDomainStatus = {
+    files: {
+      lastUploadedAt: getLatestCloudSyncTimestamp(
+        FILE_SYNC_DOMAINS.map(
+          (domain) => internalAutoSyncDomainStatus[domain].lastUploadedAt
+        )
+      ),
+      lastAppliedRemoteAt: getLatestCloudSyncTimestamp(
+        FILE_SYNC_DOMAINS.map(
+          (domain) => internalAutoSyncDomainStatus[domain].lastAppliedRemoteAt
+        )
+      ),
+      isUploading: FILE_SYNC_DOMAINS.some(
+        (domain) => internalAutoSyncDomainStatus[domain].isUploading
+      ),
+    },
+    settings: internalAutoSyncDomainStatus.settings,
+    songs: internalAutoSyncDomainStatus.songs,
+    calendar: internalAutoSyncDomainStatus.calendar,
+  };
 
   // Password dialog states
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
@@ -1721,7 +1746,8 @@ export function useControlPanelsLogic({
     syncSettings,
     syncSongs,
     syncCalendar,
-    setSyncFiles: (enabled: boolean) => setDomainEnabled("files", enabled),
+    setSyncFiles: (enabled: boolean) =>
+      setDomainEnabled("files-metadata", enabled),
     setSyncSettings: (enabled: boolean) =>
       setDomainEnabled("settings", enabled),
     setSyncSongs: (enabled: boolean) => setDomainEnabled("songs", enabled),

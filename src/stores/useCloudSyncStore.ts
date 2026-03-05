@@ -4,7 +4,10 @@ import type {
   CloudSyncDomain,
   CloudSyncMetadataMap,
 } from "@/utils/cloudSyncShared";
-import { createEmptyCloudSyncMetadataMap } from "@/utils/cloudSyncShared";
+import {
+  createEmptyCloudSyncMetadataMap,
+  getCloudSyncCategory,
+} from "@/utils/cloudSyncShared";
 
 interface CloudSyncDomainStatus {
   lastUploadedAt: string | null;
@@ -48,7 +51,27 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
       lastAppliedRemoteAt: null,
       isUploading: false,
     },
-    files: {
+    "files-metadata": {
+      lastUploadedAt: null,
+      lastAppliedRemoteAt: null,
+      isUploading: false,
+    },
+    "files-documents": {
+      lastUploadedAt: null,
+      lastAppliedRemoteAt: null,
+      isUploading: false,
+    },
+    "files-images": {
+      lastUploadedAt: null,
+      lastAppliedRemoteAt: null,
+      isUploading: false,
+    },
+    "files-trash": {
+      lastUploadedAt: null,
+      lastAppliedRemoteAt: null,
+      isUploading: false,
+    },
+    "files-applets": {
       lastUploadedAt: null,
       lastAppliedRemoteAt: null,
       isUploading: false,
@@ -67,7 +90,7 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 1;
+const STORE_VERSION = 2;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(
@@ -86,25 +109,25 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       setAutoSyncEnabled: (enabled) => set({ autoSyncEnabled: enabled }),
 
       setDomainEnabled: (domain, enabled) => {
-        switch (domain) {
+        switch (getCloudSyncCategory(domain)) {
           case "files":
             set({ syncFiles: enabled });
-            break;
+            return;
           case "settings":
             set({ syncSettings: enabled });
-            break;
+            return;
           case "songs":
             set({ syncSongs: enabled });
-            break;
+            return;
           case "calendar":
             set({ syncCalendar: enabled });
-            break;
+            return;
         }
       },
 
       isDomainEnabled: (domain) => {
         const state = get();
-        switch (domain) {
+        switch (getCloudSyncCategory(domain)) {
           case "files":
             return state.syncFiles;
           case "settings":
@@ -193,28 +216,16 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         syncSongs: state.syncSongs,
         syncCalendar: state.syncCalendar,
         lastCheckedAt: state.lastCheckedAt,
-        domainStatus: {
-          settings: {
-            lastUploadedAt: state.domainStatus.settings.lastUploadedAt,
-            lastAppliedRemoteAt: state.domainStatus.settings.lastAppliedRemoteAt,
-            isUploading: false,
-          },
-          files: {
-            lastUploadedAt: state.domainStatus.files.lastUploadedAt,
-            lastAppliedRemoteAt: state.domainStatus.files.lastAppliedRemoteAt,
-            isUploading: false,
-          },
-          songs: {
-            lastUploadedAt: state.domainStatus.songs.lastUploadedAt,
-            lastAppliedRemoteAt: state.domainStatus.songs.lastAppliedRemoteAt,
-            isUploading: false,
-          },
-          calendar: {
-            lastUploadedAt: state.domainStatus.calendar.lastUploadedAt,
-            lastAppliedRemoteAt: state.domainStatus.calendar.lastAppliedRemoteAt,
-            isUploading: false,
-          },
-        },
+        domainStatus: Object.fromEntries(
+          Object.entries(state.domainStatus).map(([domain, status]) => [
+            domain,
+            {
+              lastUploadedAt: status.lastUploadedAt,
+              lastAppliedRemoteAt: status.lastAppliedRemoteAt,
+              isUploading: false,
+            },
+          ])
+        ) as CloudSyncDomainStatusMap,
       }),
       migrate: (persistedState) => {
         const candidate = persistedState as Partial<CloudSyncStoreState>;
@@ -229,6 +240,28 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
                 lastAppliedRemoteAt: saved.lastAppliedRemoteAt ?? null,
                 isUploading: false,
               };
+            }
+          }
+
+          const legacyFilesStatus = (
+            candidate.domainStatus as Partial<Record<string, CloudSyncDomainStatus>>
+          ).files;
+          if (legacyFilesStatus) {
+            for (const domain of [
+              "files-metadata",
+              "files-documents",
+              "files-images",
+              "files-trash",
+              "files-applets",
+            ] as CloudSyncDomain[]) {
+              if (!domainStatus[domain].lastUploadedAt) {
+                domainStatus[domain] = {
+                  lastUploadedAt: legacyFilesStatus.lastUploadedAt ?? null,
+                  lastAppliedRemoteAt:
+                    legacyFilesStatus.lastAppliedRemoteAt ?? null,
+                  isUploading: false,
+                };
+              }
             }
           }
         }

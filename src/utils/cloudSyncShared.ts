@@ -1,11 +1,26 @@
 export const CLOUD_SYNC_DOMAINS = [
   "settings",
-  "files",
+  "files-metadata",
+  "files-documents",
+  "files-images",
+  "files-trash",
+  "files-applets",
   "songs",
   "calendar",
 ] as const;
 
 export type CloudSyncDomain = (typeof CLOUD_SYNC_DOMAINS)[number];
+export type CloudSyncCategory = "files" | "settings" | "songs" | "calendar";
+
+export const FILE_SYNC_DOMAINS = [
+  "files-metadata",
+  "files-documents",
+  "files-images",
+  "files-trash",
+  "files-applets",
+] as const;
+
+export type FileCloudSyncDomain = (typeof FILE_SYNC_DOMAINS)[number];
 
 export interface CloudSyncDomainMetadata {
   updatedAt: string;
@@ -43,10 +58,37 @@ export function isCloudSyncDomain(value: unknown): value is CloudSyncDomain {
   );
 }
 
+export function isFileCloudSyncDomain(
+  value: CloudSyncDomain
+): value is FileCloudSyncDomain {
+  return FILE_SYNC_DOMAINS.includes(value as FileCloudSyncDomain);
+}
+
+export function getCloudSyncCategory(
+  domain: CloudSyncDomain
+): CloudSyncCategory {
+  if (isFileCloudSyncDomain(domain)) {
+    return "files";
+  }
+
+  switch (domain) {
+    case "settings":
+      return "settings";
+    case "songs":
+      return "songs";
+    case "calendar":
+      return "calendar";
+  }
+}
+
 export function createEmptyCloudSyncMetadataMap(): CloudSyncMetadataMap {
   return {
     settings: null,
-    files: null,
+    "files-metadata": null,
+    "files-documents": null,
+    "files-images": null,
+    "files-trash": null,
+    "files-applets": null,
     songs: null,
     calendar: null,
   };
@@ -103,6 +145,23 @@ export function shouldApplyRemoteUpdate({
   );
 
   return remoteTime > newestKnownLocalTime;
+}
+
+export function getLatestCloudSyncTimestamp(
+  values: Array<string | null | undefined>
+): string | null {
+  let latestValue: string | null = null;
+  let latestTimestamp = 0;
+
+  for (const value of values) {
+    const parsed = parseCloudSyncTimestamp(value);
+    if (parsed > latestTimestamp && value) {
+      latestTimestamp = parsed;
+      latestValue = value;
+    }
+  }
+
+  return latestValue;
 }
 
 function normalizeMetadataEntry(

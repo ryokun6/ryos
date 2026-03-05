@@ -45,7 +45,11 @@ describe("auto cloud sync API", () => {
     expect(data.ok).toBe(true);
     expect(data.metadata).toBeTruthy();
     expect("settings" in data.metadata).toBe(true);
-    expect("files" in data.metadata).toBe(true);
+    expect("files-metadata" in data.metadata).toBe(true);
+    expect("files-documents" in data.metadata).toBe(true);
+    expect("files-images" in data.metadata).toBe(true);
+    expect("files-trash" in data.metadata).toBe(true);
+    expect("files-applets" in data.metadata).toBe(true);
     expect("songs" in data.metadata).toBe(true);
     expect("calendar" in data.metadata).toBe(true);
   });
@@ -70,6 +74,27 @@ describe("auto cloud sync API", () => {
     expect((data.error || "").toLowerCase()).toContain("domain");
   });
 
+  test("POST /api/sync/auto-token accepts split file domains", async () => {
+    const authToken = await getAuthToken();
+    expect(authToken).toBeTruthy();
+
+    const res = await fetchWithAuth(
+      `${BASE_URL}/api/sync/auto-token`,
+      TEST_USERNAME,
+      authToken as string,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: "files-metadata" }),
+      }
+    );
+
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(typeof data.clientToken).toBe("string");
+    expect(data.clientToken.length).toBeGreaterThan(0);
+  });
+
   test("POST /api/sync/auto rejects missing metadata fields", async () => {
     const authToken = await getAuthToken();
     expect(authToken).toBeTruthy();
@@ -81,7 +106,7 @@ describe("auto cloud sync API", () => {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: "files" }),
+        body: JSON.stringify({ domain: "files-metadata" }),
       }
     );
 

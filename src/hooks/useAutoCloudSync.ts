@@ -9,6 +9,7 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useCalendarStore } from "@/stores/useCalendarStore";
+import { subscribeToCloudSyncDomainChanges } from "@/utils/cloudSyncEvents";
 import {
   downloadAndApplyCloudSyncDomain,
   fetchCloudSyncMetadata,
@@ -26,7 +27,11 @@ const REMOTE_APPLY_SUPPRESSION_MS = 4000;
 
 const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
   settings: 2500,
-  files: 10000,
+  "files-metadata": 4000,
+  "files-documents": 8000,
+  "files-images": 8000,
+  "files-trash": 5000,
+  "files-applets": 8000,
   songs: 4000,
   calendar: 4000,
 };
@@ -34,7 +39,11 @@ const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
 function createDomainStringMap(initialValue: string | null): Record<CloudSyncDomain, string | null> {
   return {
     settings: initialValue,
-    files: initialValue,
+    "files-metadata": initialValue,
+    "files-documents": initialValue,
+    "files-images": initialValue,
+    "files-trash": initialValue,
+    "files-applets": initialValue,
     songs: initialValue,
     calendar: initialValue,
   };
@@ -57,7 +66,11 @@ export function useAutoCloudSync() {
   );
   const remoteApplySuppressUntilRef = useRef<Record<CloudSyncDomain, number>>({
     settings: 0,
-    files: 0,
+    "files-metadata": 0,
+    "files-documents": 0,
+    "files-images": 0,
+    "files-trash": 0,
+    "files-applets": 0,
     songs: 0,
     calendar: 0,
   });
@@ -221,8 +234,12 @@ export function useAutoCloudSync() {
         state.items !== prevState.items ||
         state.libraryState !== prevState.libraryState
       ) {
-        queueUpload("files");
+        queueUpload("files-metadata");
       }
+    });
+
+    const syncEventsUnsubscribe = subscribeToCloudSyncDomainChanges((domain) => {
+      queueUpload(domain);
     });
 
     const themeUnsubscribe = useThemeStore.subscribe((state, prevState) => {
@@ -312,6 +329,7 @@ export function useAutoCloudSync() {
       clearInterval(intervalId);
       clearAllUploadTimers();
       filesUnsubscribe();
+      syncEventsUnsubscribe();
       themeUnsubscribe();
       languageUnsubscribe();
       displayUnsubscribe();
