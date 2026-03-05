@@ -30,6 +30,7 @@ import {
   FILE_SYNC_DOMAINS,
   getLatestCloudSyncTimestamp,
 } from "@/utils/cloudSyncShared";
+import { useShallow } from "zustand/react/shallow";
 
 interface StoreItem {
   name: string;
@@ -317,19 +318,21 @@ export function useControlPanelsLogic({
     domainStatus: internalAutoSyncDomainStatus,
     setAutoSyncEnabled,
     setDomainEnabled,
-  } = useCloudSyncStore((state) => ({
-    autoSyncEnabled: state.autoSyncEnabled,
-    syncFiles: state.syncFiles,
-    syncSettings: state.syncSettings,
-    syncSongs: state.syncSongs,
-    syncCalendar: state.syncCalendar,
-    isCheckingRemote: state.isCheckingRemote,
-    lastCheckedAt: state.lastCheckedAt,
-    lastError: state.lastError,
-    domainStatus: state.domainStatus,
-    setAutoSyncEnabled: state.setAutoSyncEnabled,
-    setDomainEnabled: state.setDomainEnabled,
-  }));
+  } = useCloudSyncStore(
+    useShallow((state) => ({
+      autoSyncEnabled: state.autoSyncEnabled,
+      syncFiles: state.syncFiles,
+      syncSettings: state.syncSettings,
+      syncSongs: state.syncSongs,
+      syncCalendar: state.syncCalendar,
+      isCheckingRemote: state.isCheckingRemote,
+      lastCheckedAt: state.lastCheckedAt,
+      lastError: state.lastError,
+      domainStatus: state.domainStatus,
+      setAutoSyncEnabled: state.setAutoSyncEnabled,
+      setDomainEnabled: state.setDomainEnabled,
+    }))
+  );
 
   const autoSyncDomainStatus = {
     files: {
