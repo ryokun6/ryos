@@ -394,9 +394,9 @@ export const appRegistry = {
     helpItems: controlPanelsHelpItems,
     metadata: controlPanelsMetadata,
     windowConfig: {
-      defaultSize: { width: 365, height: 415 },
-      minSize: { width: 320, height: 415 },
-      maxSize: { width: 365, height: 600 },
+      defaultSize: { width: 500, height: 440 },
+      minSize: { width: 420, height: 415 },
+      maxSize: { width: 560, height: 600 },
     } as WindowConstraints,
   } as BaseApp<ControlPanelsInitialData> & { windowConfig: WindowConstraints },
   ["admin"]: {

@@ -809,11 +809,25 @@
       "appearance": "Erscheinungsbild",
       "backup": "Sicherung",
       "backupRestoreDescription": "Alle App-Einstellungen und Dateien sichern oder wiederherstellen.",
+      "autoSync": {
+        "title": "Automatische Synchronisierung",
+        "description": "Synchronisiert ausgewählte Bibliotheken und Einstellungen nach wichtigen Änderungen automatisch mit der Cloud.",
+        "files": "Dateien",
+        "settings": "Einstellungen",
+        "songs": "Musikmediathek",
+        "calendar": "Kalender",
+        "waiting": "Wartet auf die nächste geeignete Änderung.",
+        "checking": "Cloud-Updates werden geprüft…",
+        "lastChecked": "Zuletzt geprüft: {{date}}",
+        "lastSynced": "Zuletzt synchronisiert: {{date}}",
+        "error": "Synchronisierungsproblem: {{error}}"
+      },
       "bootScreen": "Startbildschirm",
       "bootScreenDescription": "Startbildschirm-Animation testen",
       "chatSynth": "Chat-Synth",
       "chatSynthVolume": "Chat-Synth-Lautstärke",
       "checkForUpdates": "Nach Updates suchen",
+      "sync": "Synchronisierung",
       "cloudSync": {
         "backingUp": "Sicherung läuft…",
         "backupFailed": "Cloud-Backup fehlgeschlagen.",
@@ -870,6 +884,10 @@
         "backupRestore": {
           "description": "Alle Einstellungen und Dateien exportieren oder wiederherstellen",
           "title": "Sichern und Wiederherstellen"
+        },
+        "sync": {
+          "description": "Automatische Cloud-Synchronisierung und manuelle Cloud-Backups konfigurieren",
+          "title": "Synchronisierung"
         },
         "shaderEffects": {
           "description": "CRT-, Galaxy- oder Aurora-Visualeffekte aktivieren",

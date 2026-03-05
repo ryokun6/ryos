@@ -25,6 +25,12 @@ import { useLanguageStore } from "@/stores/useLanguageStore";
 import type { ControlPanelsInitialData } from "@/apps/base/types";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
+import {
+  FILE_SYNC_DOMAINS,
+  getLatestCloudSyncTimestamp,
+} from "@/utils/cloudSyncShared";
+import { useShallow } from "zustand/react/shallow";
 
 interface StoreItem {
   name: string;
@@ -299,6 +305,55 @@ export function useControlPanelsLogic({
     verifyError,
     handleVerifyTokenSubmit,
   } = useAuth();
+
+  const {
+    autoSyncEnabled,
+    syncFiles,
+    syncSettings,
+    syncSongs,
+    syncCalendar,
+    isCheckingRemote: isAutoSyncChecking,
+    lastCheckedAt: autoSyncLastCheckedAt,
+    lastError: autoSyncLastError,
+    domainStatus: internalAutoSyncDomainStatus,
+    setAutoSyncEnabled,
+    setDomainEnabled,
+  } = useCloudSyncStore(
+    useShallow((state) => ({
+      autoSyncEnabled: state.autoSyncEnabled,
+      syncFiles: state.syncFiles,
+      syncSettings: state.syncSettings,
+      syncSongs: state.syncSongs,
+      syncCalendar: state.syncCalendar,
+      isCheckingRemote: state.isCheckingRemote,
+      lastCheckedAt: state.lastCheckedAt,
+      lastError: state.lastError,
+      domainStatus: state.domainStatus,
+      setAutoSyncEnabled: state.setAutoSyncEnabled,
+      setDomainEnabled: state.setDomainEnabled,
+    }))
+  );
+
+  const autoSyncDomainStatus = {
+    files: {
+      lastUploadedAt: getLatestCloudSyncTimestamp(
+        FILE_SYNC_DOMAINS.map(
+          (domain) => internalAutoSyncDomainStatus[domain].lastUploadedAt
+        )
+      ),
+      lastAppliedRemoteAt: getLatestCloudSyncTimestamp(
+        FILE_SYNC_DOMAINS.map(
+          (domain) => internalAutoSyncDomainStatus[domain].lastAppliedRemoteAt
+        )
+      ),
+      isUploading: FILE_SYNC_DOMAINS.some(
+        (domain) => internalAutoSyncDomainStatus[domain].isUploading
+      ),
+    },
+    settings: internalAutoSyncDomainStatus.settings,
+    songs: internalAutoSyncDomainStatus.songs,
+    calendar: internalAutoSyncDomainStatus.calendar,
+  };
 
   // Password dialog states
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
@@ -1688,6 +1743,23 @@ export function useControlPanelsLogic({
     handleVerifyTokenSubmit,
     handleSetPassword,
     handleLogoutAllDevices,
+    autoSyncEnabled,
+    setAutoSyncEnabled,
+    syncFiles,
+    syncSettings,
+    syncSongs,
+    syncCalendar,
+    setSyncFiles: (enabled: boolean) =>
+      setDomainEnabled("files-metadata", enabled),
+    setSyncSettings: (enabled: boolean) =>
+      setDomainEnabled("settings", enabled),
+    setSyncSongs: (enabled: boolean) => setDomainEnabled("songs", enabled),
+    setSyncCalendar: (enabled: boolean) =>
+      setDomainEnabled("calendar", enabled),
+    isAutoSyncChecking,
+    autoSyncLastCheckedAt,
+    autoSyncLastError,
+    autoSyncDomainStatus,
     // Cloud Sync
     cloudSyncStatus,
     isCloudBackingUp,

@@ -809,11 +809,25 @@
       "appearance": "모양",
       "backup": "백업",
       "backupRestoreDescription": "모든 앱 설정과 파일을 백업하거나 복원합니다.",
+      "autoSync": {
+        "title": "자동 동기화",
+        "description": "중요한 변경 후 선택한 라이브러리와 설정을 자동으로 클라우드와 동기화합니다.",
+        "files": "파일",
+        "settings": "설정",
+        "songs": "음악 라이브러리",
+        "calendar": "캘린더",
+        "waiting": "다음 동기화 가능한 변경을 기다리는 중입니다.",
+        "checking": "클라우드 업데이트 확인 중…",
+        "lastChecked": "마지막 확인: {{date}}",
+        "lastSynced": "마지막 동기화: {{date}}",
+        "error": "동기화 문제: {{error}}"
+      },
       "bootScreen": "부팅 화면",
       "bootScreenDescription": "부팅 화면 애니메이션을 테스트합니다.",
       "chatSynth": "챗 신스",
       "chatSynthVolume": "채팅 신디 볼륨",
       "checkForUpdates": "업데이트 확인",
+      "sync": "동기화",
       "cloudSync": {
         "backingUp": "백업 중…",
         "backupFailed": "클라우드 백업에 실패했습니다.",
@@ -870,6 +884,10 @@
         "backupRestore": {
           "description": "모든 설정 및 파일 내보내기 또는 복원",
           "title": "백업 및 복원"
+        },
+        "sync": {
+          "description": "자동 클라우드 동기화와 수동 클라우드 백업을 설정합니다",
+          "title": "동기화"
         },
         "shaderEffects": {
           "description": "CRT, 갤럭시 또는 오로라 시각 효과 활성화",

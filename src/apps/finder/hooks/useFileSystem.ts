@@ -22,6 +22,10 @@ import {
 } from "@/stores/helpers";
 import { formatKugouImageUrl } from "@/apps/ipod/constants";
 import { abortableFetch } from "@/utils/abortableFetch";
+import {
+  emitCloudSyncDomainChange,
+  emitCloudSyncDomainChanges,
+} from "@/utils/cloudSyncEvents";
 
 // STORES is now imported from @/utils/indexedDB to avoid duplication
 
@@ -48,6 +52,23 @@ const getParentPath = (path: string): string => {
   const parts = path.split("/").filter(Boolean);
   if (parts.length <= 1) return "/";
   return `/${parts.slice(0, -1).join("/")}`;
+};
+
+const getCloudSyncDomainForContentStore = (
+  storeName: string
+): "files-documents" | "files-images" | "files-trash" | "files-applets" | null => {
+  switch (storeName) {
+    case STORES.DOCUMENTS:
+      return "files-documents";
+    case STORES.IMAGES:
+      return "files-images";
+    case STORES.TRASH:
+      return "files-trash";
+    case STORES.APPLETS:
+      return "files-applets";
+    default:
+      return null;
+  }
 };
 
 // Generic CRUD operations
@@ -512,6 +533,7 @@ export function useFileSystem(
           },
           uuid
         );
+        emitCloudSyncDomainChange("files-applets");
 
         const metadataUpdates: Partial<FileSystemItem> = {};
 
@@ -1361,6 +1383,10 @@ export function useFileSystem(
               contentToStore,
               savedItem.uuid
             );
+            const syncDomain = getCloudSyncDomainForContentStore(storeName);
+            if (syncDomain) {
+              emitCloudSyncDomainChange(syncDomain);
+            }
             console.log(
               `[useFileSystem:saveFile] Content saved to IndexedDB with UUID: ${savedItem.uuid}`
             );
@@ -1456,6 +1482,14 @@ export function useFileSystem(
             );
             // Delete from source store
             await dbOperations.delete(sourceStoreName, sourceFile.uuid);
+            emitCloudSyncDomainChanges(
+              [
+                getCloudSyncDomainForContentStore(sourceStoreName),
+                getCloudSyncDomainForContentStore(targetStoreName),
+              ].filter(Boolean) as Array<
+                "files-documents" | "files-images" | "files-trash" | "files-applets"
+              >
+            );
           }
         }
 
@@ -1518,6 +1552,10 @@ export function useFileSystem(
                 },
                 itemToRename.uuid
               ); // Keep same UUID
+              const syncDomain = getCloudSyncDomainForContentStore(storeName);
+              if (syncDomain) {
+                emitCloudSyncDomainChange(syncDomain);
+              }
             } else {
               console.warn(
                 "Warning: Content not found in IndexedDB for renaming"
@@ -1588,6 +1626,14 @@ export function useFileSystem(
               fileMetadata.uuid
             );
             await dbOperations.delete(storeName, fileMetadata.uuid);
+            emitCloudSyncDomainChanges(
+              [
+                getCloudSyncDomainForContentStore(storeName),
+                "files-trash",
+              ].filter(Boolean) as Array<
+                "files-documents" | "files-images" | "files-trash" | "files-applets"
+              >
+            );
             console.log(
               `[useFileSystem] Moved content for ${fileMetadata.name} from ${storeName} to Trash DB with UUID ${fileMetadata.uuid}.`
             );
@@ -1644,6 +1690,14 @@ export function useFileSystem(
               fileMetadata.uuid
             );
             await dbOperations.delete(STORES.TRASH, fileMetadata.uuid); // Delete content from trash store
+            emitCloudSyncDomainChanges(
+              [
+                getCloudSyncDomainForContentStore(targetStoreName),
+                "files-trash",
+              ].filter(Boolean) as Array<
+                "files-documents" | "files-images" | "files-trash" | "files-applets"
+              >
+            );
             console.log(
               `[useFileSystem] Restored content for ${fileMetadata.name} from Trash DB to ${targetStoreName} with UUID ${fileMetadata.uuid}.`
             );
@@ -1671,6 +1725,9 @@ export function useFileSystem(
       for (const uuid of contentUUIDsToDelete) {
         await dbOperations.delete(STORES.TRASH, uuid);
       }
+      if (contentUUIDsToDelete.length > 0) {
+        emitCloudSyncDomainChange("files-trash");
+      }
       console.log("[useFileSystem] Cleared trash content from IndexedDB.");
     } catch (err) {
       console.error("Error clearing trash content from IndexedDB:", err);
@@ -1687,6 +1744,11 @@ export function useFileSystem(
         dbOperations.clear(STORES.CUSTOM_WALLPAPERS),
       ]);
       await dbOperations.clear(STORES.DOCUMENTS);
+      emitCloudSyncDomainChanges([
+        "files-documents",
+        "files-images",
+        "files-trash",
+      ]);
 
       // Clear the migration flag so UUID migration will run again after reset
       localStorage.removeItem(UUID_MIGRATION_KEY);

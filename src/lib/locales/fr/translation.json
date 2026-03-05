@@ -809,11 +809,25 @@
       "appearance": "Apparence",
       "backup": "Sauvegarde",
       "backupRestoreDescription": "Sauvegarder ou restaurer tous les réglages et fichiers de l'application.",
+      "autoSync": {
+        "title": "Synchronisation automatique",
+        "description": "Synchronise automatiquement les bibliothèques et réglages sélectionnés avec le cloud après des changements importants.",
+        "files": "Fichiers",
+        "settings": "Réglages",
+        "songs": "Bibliothèque musicale",
+        "calendar": "Calendrier",
+        "waiting": "En attente du prochain changement éligible.",
+        "checking": "Vérification des mises à jour cloud…",
+        "lastChecked": "Dernière vérification : {{date}}",
+        "lastSynced": "Dernière synchronisation : {{date}}",
+        "error": "Problème de synchronisation : {{error}}"
+      },
       "bootScreen": "Écran de démarrage",
       "bootScreenDescription": "Tester l'animation de l'écran de démarrage",
       "chatSynth": "Synthétiseur de discussion",
       "chatSynthVolume": "Volume du synthé de chat",
       "checkForUpdates": "Rechercher les mises à jour",
+      "sync": "Synchronisation",
       "cloudSync": {
         "backingUp": "Sauvegarde en cours…",
         "backupFailed": "Échec de la sauvegarde dans le cloud.",
@@ -870,6 +884,10 @@
         "backupRestore": {
           "description": "Exporter ou restaurer tous les paramètres et fichiers",
           "title": "Sauvegarde et restauration"
+        },
+        "sync": {
+          "description": "Configurer la synchronisation cloud automatique et les sauvegardes cloud manuelles",
+          "title": "Synchronisation"
         },
         "shaderEffects": {
           "description": "Activer les effets visuels CRT, Galaxy ou Aurora",

@@ -809,11 +809,25 @@
       "appearance": "Aspetto",
       "backup": "Backup",
       "backupRestoreDescription": "Esegui il backup o ripristina tutte le impostazioni e i file dell'app.",
+      "autoSync": {
+        "title": "Sincronizzazione automatica",
+        "description": "Sincronizza automaticamente le librerie e le impostazioni selezionate con il cloud dopo modifiche importanti.",
+        "files": "File",
+        "settings": "Impostazioni",
+        "songs": "Libreria musicale",
+        "calendar": "Calendario",
+        "waiting": "In attesa della prossima modifica idonea.",
+        "checking": "Controllo degli aggiornamenti cloud…",
+        "lastChecked": "Ultimo controllo: {{date}}",
+        "lastSynced": "Ultima sincronizzazione: {{date}}",
+        "error": "Problema di sincronizzazione: {{error}}"
+      },
       "bootScreen": "Schermata di Avvio",
       "bootScreenDescription": "Testa l'animazione della schermata di avvio",
       "chatSynth": "Synth Chat",
       "chatSynthVolume": "Volume sintetizzatore chat",
       "checkForUpdates": "Verifica aggiornamenti",
+      "sync": "Sincronizzazione",
       "cloudSync": {
         "backingUp": "Backup in corso…",
         "backupFailed": "Backup nel cloud non riuscito.",
@@ -870,6 +884,10 @@
         "backupRestore": {
           "description": "Esporta o ripristina tutte le impostazioni e i file",
           "title": "Backup e Ripristino"
+        },
+        "sync": {
+          "description": "Configura la sincronizzazione cloud automatica e i backup cloud manuali",
+          "title": "Sincronizzazione"
         },
         "shaderEffects": {
           "description": "Abilita effetti visivi CRT, Galaxy o Aurora",
