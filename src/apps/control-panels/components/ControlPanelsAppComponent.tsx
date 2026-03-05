@@ -533,11 +533,8 @@ export function ControlPanelsAppComponent({
                         {t("apps.control-panels.autoSync.title")}
                       </Label>
                       <p className="text-[11px] text-neutral-600 font-geneva-12">
-                        {t("apps.control-panels.autoSync.description")}
-                      </p>
-                      {username && autoSyncEnabled && (
-                        <p className="text-[11px] text-neutral-500 font-geneva-12">
-                          {isAutoSyncChecking
+                        {username && autoSyncEnabled
+                          ? isAutoSyncChecking
                             ? t("apps.control-panels.autoSync.checking")
                             : autoSyncLastCheckedAt
                               ? t("apps.control-panels.autoSync.lastChecked", {
@@ -545,9 +542,9 @@ export function ControlPanelsAppComponent({
                                     autoSyncLastCheckedAt
                                   ).toLocaleString(),
                                 })
-                              : t("apps.control-panels.autoSync.waiting")}
-                        </p>
-                      )}
+                              : t("apps.control-panels.autoSync.waiting")
+                          : t("apps.control-panels.autoSync.description")}
+                      </p>
                     </div>
                     {username ? (
                       <Switch
