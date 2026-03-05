@@ -800,11 +800,25 @@
       "appearance": "Aparência",
       "backup": "Backup",
       "backupRestoreDescription": "Fazer backup ou restaurar todas as definições e ficheiros da aplicação.",
+      "autoSync": {
+        "title": "Sincronização automática",
+        "description": "Sincroniza automaticamente as bibliotecas e definições selecionadas com a nuvem após alterações importantes.",
+        "files": "Ficheiros",
+        "settings": "Definições",
+        "songs": "Biblioteca de música",
+        "calendar": "Calendário",
+        "waiting": "À espera da próxima alteração elegível.",
+        "checking": "A verificar atualizações da nuvem…",
+        "lastChecked": "Última verificação: {{date}}",
+        "lastSynced": "Última sincronização: {{date}}",
+        "error": "Problema de sincronização: {{error}}"
+      },
       "bootScreen": "Tela de Inicialização",
       "bootScreenDescription": "Testar a animação da tela de inicialização",
       "chatSynth": "Synth de Chat",
       "chatSynthVolume": "Volume do Sintetizador de Chat",
       "checkForUpdates": "Verificar Atualizações",
+      "sync": "Sincronização",
       "cloudSync": {
         "backingUp": "Fazendo backup…",
         "backupFailed": "Falha ao salvar backup na nuvem.",
@@ -861,6 +875,10 @@
         "backupRestore": {
           "description": "Exportar ou restaurar todas as configurações e arquivos",
           "title": "Backup e Restauração"
+        },
+        "sync": {
+          "description": "Configurar a sincronização automática na nuvem e os backups manuais na nuvem",
+          "title": "Sincronização"
         },
         "shaderEffects": {
           "description": "Ativar efeitos visuais CRT, Galáxia ou Aurora",

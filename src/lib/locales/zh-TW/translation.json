@@ -800,11 +800,25 @@
       "appearance": "外觀",
       "backup": "備份",
       "backupRestoreDescription": "備份或還原所有應用程式設定和檔案。",
+      "autoSync": {
+        "title": "自動同步",
+        "description": "在重要更新後，自動將選取的資料庫與設定同步到雲端。",
+        "files": "檔案",
+        "settings": "設定",
+        "songs": "音樂資料庫",
+        "calendar": "行事曆",
+        "waiting": "正在等待下一個可同步的變更。",
+        "checking": "正在檢查雲端更新…",
+        "lastChecked": "上次檢查：{{date}}",
+        "lastSynced": "上次同步：{{date}}",
+        "error": "同步問題：{{error}}"
+      },
       "bootScreen": "開機畫面",
       "bootScreenDescription": "測試開機畫面動畫",
       "chatSynth": "聊天合成",
       "chatSynthVolume": "聊天合成音量",
       "checkForUpdates": "檢查更新",
+      "sync": "同步",
       "cloudSync": {
         "backingUp": "正在備份…",
         "backupFailed": "備份到雲端失敗。",
@@ -861,6 +875,10 @@
         "backupRestore": {
           "description": "匯出或還原所有設定和檔案",
           "title": "備份與還原"
+        },
+        "sync": {
+          "description": "設定自動雲端同步與手動雲端備份",
+          "title": "同步"
         },
         "shaderEffects": {
           "description": "啟用 CRT、銀河或極光視覺效果",

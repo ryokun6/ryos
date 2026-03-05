@@ -800,11 +800,25 @@
       "appearance": "外観",
       "backup": "バックアップ",
       "backupRestoreDescription": "すべてのアプリ設定とファイルをバックアップまたは復元します。",
+      "autoSync": {
+        "title": "自動同期",
+        "description": "重要な更新後に、選択したライブラリと設定を自動的にクラウドへ同期します。",
+        "files": "ファイル",
+        "settings": "設定",
+        "songs": "音楽ライブラリ",
+        "calendar": "カレンダー",
+        "waiting": "次の同期対象の変更を待機中です。",
+        "checking": "クラウド更新を確認中…",
+        "lastChecked": "最終確認: {{date}}",
+        "lastSynced": "最終同期: {{date}}",
+        "error": "同期の問題: {{error}}"
+      },
       "bootScreen": "起動画面",
       "bootScreenDescription": "起動画面のアニメーションをテストします",
       "chatSynth": "チャットシンセ",
       "chatSynthVolume": "チャットシンセ音量",
       "checkForUpdates": "アップデートを確認",
+      "sync": "同期",
       "cloudSync": {
         "backingUp": "バックアップ中…",
         "backupFailed": "クラウドへのバックアップに失敗しました。",
@@ -861,6 +875,10 @@
         "backupRestore": {
           "description": "すべての設定とファイルをエクスポートまたは復元",
           "title": "バックアップと復元"
+        },
+        "sync": {
+          "description": "自動クラウド同期と手動クラウドバックアップを設定",
+          "title": "同期"
         },
         "shaderEffects": {
           "description": "CRT、銀河、またはオーロラの視覚効果を有効化",

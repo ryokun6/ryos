@@ -800,11 +800,25 @@
       "appearance": "Apariencia",
       "backup": "Copia de seguridad",
       "backupRestoreDescription": "Realiza una copia de seguridad o restaura todos los ajustes y archivos de la aplicación.",
+      "autoSync": {
+        "title": "Sincronización automática",
+        "description": "Sincroniza automáticamente las bibliotecas y ajustes seleccionados con la nube tras cambios importantes.",
+        "files": "Archivos",
+        "settings": "Ajustes",
+        "songs": "Biblioteca musical",
+        "calendar": "Calendario",
+        "waiting": "Esperando el próximo cambio apto.",
+        "checking": "Comprobando actualizaciones en la nube…",
+        "lastChecked": "Última comprobación: {{date}}",
+        "lastSynced": "Última sincronización: {{date}}",
+        "error": "Problema de sincronización: {{error}}"
+      },
       "bootScreen": "Pantalla de arranque",
       "bootScreenDescription": "Probar la animación de la pantalla de arranque",
       "chatSynth": "Chat Synth",
       "chatSynthVolume": "Volumen del sintetizador de chat",
       "checkForUpdates": "Buscar actualizaciones",
+      "sync": "Sincronización",
       "cloudSync": {
         "backingUp": "Creando copia…",
         "backupFailed": "No se pudo crear la copia en la nube.",
@@ -861,6 +875,10 @@
         "backupRestore": {
           "description": "Exportar o restaurar todos los ajustes y archivos",
           "title": "Copia de seguridad y Restauración"
+        },
+        "sync": {
+          "description": "Configura la sincronización automática en la nube y las copias de seguridad manuales en la nube",
+          "title": "Sincronización"
         },
         "shaderEffects": {
           "description": "Habilitar efectos visuales CRT, Galaxia o Aurora",
