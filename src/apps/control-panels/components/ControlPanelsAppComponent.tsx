@@ -544,28 +544,38 @@ export function ControlPanelsAppComponent({
             <ThemedTabsContent value="sync">
               <div className="space-y-4 h-full overflow-y-auto p-4">
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <Label className="font-medium">
-                        {t("apps.control-panels.autoSync.title")}
-                      </Label>
-                      <p className="text-[11px] text-neutral-600 font-geneva-12">
-                        {username && autoSyncEnabled
-                          ? isAutoSyncChecking
-                            ? t("apps.control-panels.autoSync.checking")
-                            : t("apps.control-panels.autoSync.lastChecked", {
-                                date: formatRelativeTime(autoSyncLastCheckedAt, t),
-                              })
-                          : t("apps.control-panels.autoSync.description")}
-                      </p>
-                    </div>
-                    {username ? (
+                  {username ? (
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <Label className="font-medium">
+                          {t("apps.control-panels.autoSync.title")}
+                        </Label>
+                        <p className="text-[11px] text-neutral-600 font-geneva-12">
+                          {autoSyncEnabled
+                            ? isAutoSyncChecking
+                              ? t("apps.control-panels.autoSync.checking")
+                              : t("apps.control-panels.autoSync.lastChecked", {
+                                  date: formatRelativeTime(autoSyncLastCheckedAt, t),
+                                })
+                            : t("apps.control-panels.autoSync.description")}
+                        </p>
+                      </div>
                       <Switch
                         checked={autoSyncEnabled}
                         onCheckedChange={setAutoSyncEnabled}
                         className="data-[state=checked]:bg-[#000000]"
                       />
-                    ) : (
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <span className="text-[13px] font-geneva-12 font-medium">
+                          {t("apps.control-panels.autoSync.title")}
+                        </span>
+                        <span className="text-[11px] text-neutral-600 font-geneva-12">
+                          {t("apps.control-panels.cloudSync.loginRequired")}
+                        </span>
+                      </div>
                       <Button
                         variant="retro"
                         onClick={promptSetUsername}
@@ -573,13 +583,7 @@ export function ControlPanelsAppComponent({
                       >
                         {t("apps.control-panels.login")}
                       </Button>
-                    )}
-                  </div>
-
-                  {!username && (
-                    <p className="text-[11px] text-neutral-600 font-geneva-12">
-                      {t("apps.control-panels.cloudSync.loginRequired")}
-                    </p>
+                    </div>
                   )}
 
                   {username && autoSyncEnabled && (
