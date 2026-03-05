@@ -22,6 +22,8 @@ interface CloudSyncStoreState {
   syncFiles: boolean;
   syncSettings: boolean;
   syncSongs: boolean;
+  syncVideos: boolean;
+  syncStickies: boolean;
   syncCalendar: boolean;
   isCheckingRemote: boolean;
   lastCheckedAt: string | null;
@@ -45,52 +47,28 @@ interface CloudSyncStoreState {
 }
 
 function createInitialDomainStatus(): CloudSyncDomainStatusMap {
+  const empty = (): CloudSyncDomainStatus => ({
+    lastUploadedAt: null,
+    lastAppliedRemoteAt: null,
+    isUploading: false,
+  });
+
   return {
-    settings: {
-      lastUploadedAt: null,
-      lastAppliedRemoteAt: null,
-      isUploading: false,
-    },
-    "files-metadata": {
-      lastUploadedAt: null,
-      lastAppliedRemoteAt: null,
-      isUploading: false,
-    },
-    "files-documents": {
-      lastUploadedAt: null,
-      lastAppliedRemoteAt: null,
-      isUploading: false,
-    },
-    "files-images": {
-      lastUploadedAt: null,
-      lastAppliedRemoteAt: null,
-      isUploading: false,
-    },
-    "files-trash": {
-      lastUploadedAt: null,
-      lastAppliedRemoteAt: null,
-      isUploading: false,
-    },
-    "files-applets": {
-      lastUploadedAt: null,
-      lastAppliedRemoteAt: null,
-      isUploading: false,
-    },
-    songs: {
-      lastUploadedAt: null,
-      lastAppliedRemoteAt: null,
-      isUploading: false,
-    },
-    calendar: {
-      lastUploadedAt: null,
-      lastAppliedRemoteAt: null,
-      isUploading: false,
-    },
+    settings: empty(),
+    "files-metadata": empty(),
+    "files-documents": empty(),
+    "files-images": empty(),
+    "files-trash": empty(),
+    "files-applets": empty(),
+    songs: empty(),
+    videos: empty(),
+    stickies: empty(),
+    calendar: empty(),
   };
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 2;
+const STORE_VERSION = 3;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(
@@ -99,6 +77,8 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       syncFiles: true,
       syncSettings: true,
       syncSongs: true,
+      syncVideos: true,
+      syncStickies: true,
       syncCalendar: true,
       isCheckingRemote: false,
       lastCheckedAt: null,
@@ -119,6 +99,12 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           case "songs":
             set({ syncSongs: enabled });
             return;
+          case "videos":
+            set({ syncVideos: enabled });
+            return;
+          case "stickies":
+            set({ syncStickies: enabled });
+            return;
           case "calendar":
             set({ syncCalendar: enabled });
             return;
@@ -134,6 +120,10 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
             return state.syncSettings;
           case "songs":
             return state.syncSongs;
+          case "videos":
+            return state.syncVideos;
+          case "stickies":
+            return state.syncStickies;
           case "calendar":
             return state.syncCalendar;
         }
@@ -214,6 +204,8 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         syncFiles: state.syncFiles,
         syncSettings: state.syncSettings,
         syncSongs: state.syncSongs,
+        syncVideos: state.syncVideos,
+        syncStickies: state.syncStickies,
         syncCalendar: state.syncCalendar,
         lastCheckedAt: state.lastCheckedAt,
         domainStatus: Object.fromEntries(
@@ -271,6 +263,8 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           syncFiles: candidate.syncFiles ?? true,
           syncSettings: candidate.syncSettings ?? true,
           syncSongs: candidate.syncSongs ?? true,
+          syncVideos: (candidate as Record<string, unknown>).syncVideos as boolean ?? true,
+          syncStickies: (candidate as Record<string, unknown>).syncStickies as boolean ?? true,
           syncCalendar: candidate.syncCalendar ?? true,
           lastCheckedAt: candidate.lastCheckedAt ?? null,
           domainStatus,
