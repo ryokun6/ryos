@@ -598,6 +598,12 @@ export function StocksBackPanel({
     [currentSymbols]
   );
 
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, []);
+
   const handleSearchInput = useCallback(
     (value: string) => {
       setSearchQuery(value);

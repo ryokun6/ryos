@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 
 interface WidgetChromeProps {
-  children: ReactNode;
+  children: ReactNode | ((isFlipped: boolean) => ReactNode);
   backContent?: ReactNode | ((onFlipBack: () => void) => ReactNode);
   overflowContent?: ReactNode;
   width: number;
@@ -122,6 +122,12 @@ export function WidgetChrome({
     flipTimerRef.current = setTimeout(() => setIsFlipAnimating(false), 650);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (flipTimerRef.current) clearTimeout(flipTimerRef.current);
+    };
+  }, []);
+
   const flipBack = useCallback(() => doFlip(false), [doFlip]);
 
   const handleDoubleClick = useCallback(
@@ -134,6 +140,7 @@ export function WidgetChrome({
     [backContent, doFlip, isFlipped]
   );
 
+  const resolvedChildren = typeof children === "function" ? children(isFlipped) : children;
   const resolvedBackContent = typeof backContent === "function" ? backContent(flipBack) : backContent;
   const hasBack = !!backContent;
 
@@ -259,7 +266,7 @@ export function WidgetChrome({
             }}
           >
             <div className="flex flex-col" style={{ minHeight: "inherit" }}>
-              {children}
+              {resolvedChildren}
             </div>
             {!isXpTheme && (
               <>

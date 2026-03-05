@@ -470,6 +470,12 @@ export function WeatherBackPanel({ widgetId, onDone }: { widgetId: string; onDon
     setSearching(false);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, []);
+
   const handleSearchInput = useCallback(
     (value: string) => {
       setSearchQuery(value);
