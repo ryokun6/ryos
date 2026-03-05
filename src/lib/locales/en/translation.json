@@ -2246,7 +2246,6 @@
         "checking": "Checking for cloud updates…",
         "lastChecked": "Last checked: {{date}}",
         "lastSynced": "Last synced: {{date}}",
-        "polling": "Receives new cloud updates on load and every 5 minutes.",
         "error": "Sync issue: {{error}}"
       },
       "cloudSync": {

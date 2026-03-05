@@ -655,9 +655,6 @@ export function ControlPanelsAppComponent({
                                 })
                               : t("apps.control-panels.autoSync.waiting")}
                         </p>
-                        <p className="text-[11px] text-neutral-600 font-geneva-12">
-                          {t("apps.control-panels.autoSync.polling")}
-                        </p>
                         {autoSyncLastError && (
                           <p className="text-[11px] text-red-700 font-geneva-12">
                             {t("apps.control-panels.autoSync.error", {
