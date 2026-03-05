@@ -137,12 +137,14 @@ export function FileIcon({
       icon: "w-12 h-12",
       image: "w-[32px] h-[32px]",
       text: "text-[10px] max-w-[90px]",
+      labelMinH: "min-h-[22px]",
     },
     large: {
       container: "w-24",
       icon: "w-16 h-16",
       image: "w-12 h-12",
       text: "text-[12px] max-w-[96px]",
+      labelMinH: "min-h-[26px]",
     },
   };
 
@@ -281,7 +283,7 @@ export function FileIcon({
   return (
     <div
       className={`flex flex-col items-center justify-start cursor-default ${
-        isMacOSXTheme ? "gap-0 pb-3" : "gap-0"
+        isMacOSXTheme ? "gap-0 pb-1" : "gap-0"
       } ${sizes.container} ${className}`}
       onDoubleClick={handleDoubleClick}
       onClick={handleClick}
@@ -298,37 +300,39 @@ export function FileIcon({
       >
         {renderIcon()}
       </div>
-      <span
-        className={`px-1 file-icon-label text-center truncate ${sizes.text} ${
-          isMacOSXTheme ? "rounded" : ""
-        } ${isMacOSXTheme && !isFinderContext ? "font-bold" : ""} ${
-          isSelected
-            ? ""
-            : isWin98Theme
-            ? "bg-white text-black"
-            : (isXpTheme || isMacOSXTheme) && !isFinderContext
-            ? "bg-transparent text-white"
-            : "bg-white text-black"
-        }`}
-        style={{
-          ...(isSelected
-            ? {
-                background: "var(--os-color-selection-bg)",
-                color: "var(--os-color-selection-text)",
-              }
-            : {}),
-          ...(!isSelected && (isXpTheme || isMacOSXTheme) && !isFinderContext
-            ? isMacOSXTheme
+      <div className={`${sizes.labelMinH} flex items-start justify-center`}>
+        <span
+          className={`px-1 file-icon-label text-center leading-tight line-clamp-2 break-words ${sizes.text} ${
+            isMacOSXTheme ? "rounded" : ""
+          } ${isMacOSXTheme && !isFinderContext ? "font-bold" : ""} ${
+            isSelected
+              ? ""
+              : isWin98Theme
+              ? "bg-white text-black"
+              : (isXpTheme || isMacOSXTheme) && !isFinderContext
+              ? "bg-transparent text-white"
+              : "bg-white text-black"
+          }`}
+          style={{
+            ...(isSelected
               ? {
-                  textShadow:
-                    "rgba(0, 0, 0, 0.9) 0px 1px 0px, rgba(0, 0, 0, 0.85) 0px 1px 3px, rgba(0, 0, 0, 0.45) 0px 2px 3px",
+                  background: "var(--os-color-selection-bg)",
+                  color: "var(--os-color-selection-text)",
                 }
-              : { textShadow: "1px 1px 2px rgba(0, 0, 0, 0.8)" }
-            : {}),
-        }}
-      >
-        {name}
-      </span>
+              : {}),
+            ...(!isSelected && (isXpTheme || isMacOSXTheme) && !isFinderContext
+              ? isMacOSXTheme
+                ? {
+                    textShadow:
+                      "rgba(0, 0, 0, 0.9) 0px 1px 0px, rgba(0, 0, 0, 0.85) 0px 1px 3px, rgba(0, 0, 0, 0.45) 0px 2px 3px",
+                  }
+                : { textShadow: "1px 1px 2px rgba(0, 0, 0, 0.8)" }
+              : {}),
+          }}
+        >
+          {name}
+        </span>
+      </div>
     </div>
   );
 }
