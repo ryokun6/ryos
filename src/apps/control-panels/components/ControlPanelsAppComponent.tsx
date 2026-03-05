@@ -118,6 +118,23 @@ function VersionDisplay() {
   );
 }
 
+function formatRelativeTime(
+  timestamp: string | null,
+  t: (key: string, opts?: Record<string, unknown>) => string
+): string {
+  if (!timestamp) return t("apps.control-panels.autoSync.waiting");
+  const diff = Date.now() - new Date(timestamp).getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  if (minutes < 1) return t("apps.control-panels.autoSync.justNow");
+  if (minutes < 60)
+    return t("apps.control-panels.autoSync.minutesAgo", { count: minutes });
+  if (hours < 24)
+    return t("apps.control-panels.autoSync.hoursAgo", { count: hours });
+  return t("apps.control-panels.autoSync.daysAgo", { count: days });
+}
+
 export function ControlPanelsAppComponent({
   isWindowOpen,
   onClose,
@@ -536,13 +553,9 @@ export function ControlPanelsAppComponent({
                         {username && autoSyncEnabled
                           ? isAutoSyncChecking
                             ? t("apps.control-panels.autoSync.checking")
-                            : autoSyncLastCheckedAt
-                              ? t("apps.control-panels.autoSync.lastChecked", {
-                                  date: new Date(
-                                    autoSyncLastCheckedAt
-                                  ).toLocaleString(),
-                                })
-                              : t("apps.control-panels.autoSync.waiting")
+                            : t("apps.control-panels.autoSync.lastChecked", {
+                                date: formatRelativeTime(autoSyncLastCheckedAt, t),
+                              })
                           : t("apps.control-panels.autoSync.description")}
                       </p>
                     </div>
@@ -576,13 +589,9 @@ export function ControlPanelsAppComponent({
                           <div className="space-y-0.5">
                             <Label>{t("apps.control-panels.autoSync.files")}</Label>
                             <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {autoSyncDomainStatus.files.lastUploadedAt
-                                ? t("apps.control-panels.autoSync.lastSynced", {
-                                    date: new Date(
-                                      autoSyncDomainStatus.files.lastUploadedAt
-                                    ).toLocaleString(),
-                                  })
-                                : t("apps.control-panels.autoSync.waiting")}
+                              {t("apps.control-panels.autoSync.lastSynced", {
+                                date: formatRelativeTime(autoSyncDomainStatus.files.lastUploadedAt, t),
+                              })}
                             </p>
                           </div>
                           <Switch
@@ -596,13 +605,9 @@ export function ControlPanelsAppComponent({
                           <div className="space-y-0.5">
                             <Label>{t("apps.control-panels.autoSync.settings")}</Label>
                             <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {autoSyncDomainStatus.settings.lastUploadedAt
-                                ? t("apps.control-panels.autoSync.lastSynced", {
-                                    date: new Date(
-                                      autoSyncDomainStatus.settings.lastUploadedAt
-                                    ).toLocaleString(),
-                                  })
-                                : t("apps.control-panels.autoSync.waiting")}
+                              {t("apps.control-panels.autoSync.lastSynced", {
+                                date: formatRelativeTime(autoSyncDomainStatus.settings.lastUploadedAt, t),
+                              })}
                             </p>
                           </div>
                           <Switch
@@ -616,13 +621,9 @@ export function ControlPanelsAppComponent({
                           <div className="space-y-0.5">
                             <Label>{t("apps.control-panels.autoSync.songs")}</Label>
                             <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {autoSyncDomainStatus.songs.lastUploadedAt
-                                ? t("apps.control-panels.autoSync.lastSynced", {
-                                    date: new Date(
-                                      autoSyncDomainStatus.songs.lastUploadedAt
-                                    ).toLocaleString(),
-                                  })
-                                : t("apps.control-panels.autoSync.waiting")}
+                              {t("apps.control-panels.autoSync.lastSynced", {
+                                date: formatRelativeTime(autoSyncDomainStatus.songs.lastUploadedAt, t),
+                              })}
                             </p>
                           </div>
                           <Switch
@@ -636,13 +637,9 @@ export function ControlPanelsAppComponent({
                           <div className="space-y-0.5">
                             <Label>{t("apps.control-panels.autoSync.calendar")}</Label>
                             <p className="text-[11px] text-neutral-600 font-geneva-12">
-                              {autoSyncDomainStatus.calendar.lastUploadedAt
-                                ? t("apps.control-panels.autoSync.lastSynced", {
-                                    date: new Date(
-                                      autoSyncDomainStatus.calendar.lastUploadedAt
-                                    ).toLocaleString(),
-                                  })
-                                : t("apps.control-panels.autoSync.waiting")}
+                              {t("apps.control-panels.autoSync.lastSynced", {
+                                date: formatRelativeTime(autoSyncDomainStatus.calendar.lastUploadedAt, t),
+                              })}
                             </p>
                           </div>
                           <Switch

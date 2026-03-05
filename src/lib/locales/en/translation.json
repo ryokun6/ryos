@@ -2244,8 +2244,12 @@
         "calendar": "Calendar",
         "waiting": "Waiting for the next eligible change.",
         "checking": "Checking for cloud updates…",
-        "lastChecked": "Last checked: {{date}}",
-        "lastSynced": "Last synced: {{date}}",
+        "lastChecked": "Last checked {{date}}",
+        "lastSynced": "Last synced {{date}}",
+        "justNow": "just now",
+        "minutesAgo": "{{count}}m ago",
+        "hoursAgo": "{{count}}h ago",
+        "daysAgo": "{{count}}d ago",
         "error": "Sync issue: {{error}}"
       },
       "cloudSync": {
