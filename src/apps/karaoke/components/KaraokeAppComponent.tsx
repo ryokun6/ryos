@@ -31,6 +31,8 @@ import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 import { WaterBackground } from "@/components/shared/WaterBackground";
 
+const PLAYER_PROGRESS_INTERVAL_MS = 250;
+
 export function KaraokeAppComponent({
   isWindowOpen,
   onClose,
@@ -128,6 +130,7 @@ export function KaraokeAppComponent({
     showStatus,
     showOfflineStatus,
     restartAutoHideTimer,
+    restartAutoHideTimerFromPointerMove,
     registerActivity,
     handlePrevious,
     handlePlayPause,
@@ -253,7 +256,7 @@ export function KaraokeAppComponent({
         <div
           className="relative w-full h-full bg-black select-none overflow-hidden @container"
           onMouseMove={(e) => {
-            restartAutoHideTimer();
+            restartAutoHideTimerFromPointerMove();
             // Cancel long press if moved too far from start position
             if (longPressStartPos.current && screenLongPressTimerRef.current) {
               const dx = e.clientX - longPressStartPos.current.x;
@@ -300,6 +303,7 @@ export function KaraokeAppComponent({
             }, 500);
           }}
           onTouchMove={(e) => {
+            restartAutoHideTimerFromPointerMove();
             // Cancel long press if moved too far from start position
             if (longPressStartPos.current && screenLongPressTimerRef.current) {
               const touch = e.touches[0];
@@ -358,7 +362,7 @@ export function KaraokeAppComponent({
                   onEnded={handleTrackEnd}
                   onProgress={handleProgress}
                   onDuration={setDuration}
-                  progressInterval={100}
+                  progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
                   onPlay={handlePlay}
                   onPause={handleMainPlayerPause}
                   onReady={!isFullScreen ? handleReady : undefined}
@@ -851,7 +855,7 @@ export function KaraokeAppComponent({
                           loop={loopCurrent}
                           onEnded={handleTrackEnd}
                           onProgress={handleProgress}
-                          progressInterval={100}
+                          progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
                           onPlay={handlePlay}
                           onPause={handlePause}
                           onReady={isFullScreen ? handleReady : undefined}
