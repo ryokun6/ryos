@@ -17,6 +17,7 @@ dist-ssr
 version.json
 
 # Editor directories and files
+.cursor/nal-trace
 .vscode/*
 !.vscode/extensions.json
 .idea
