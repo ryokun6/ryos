@@ -50,6 +50,9 @@ export interface UseIpodLogicOptions {
   instanceId: string | undefined;
 }
 
+const ACTIVITY_TIMESTAMP_SYNC_INTERVAL_MS = 120;
+const ELAPSED_TIME_STORE_SYNC_INTERVAL_MS = 500;
+
 export function useIpodLogic({
   isWindowOpen,
   isForeground,
@@ -197,6 +200,8 @@ export function useIpodLogic({
 
   // Status management
   const [lastActivityTime, setLastActivityTime] = useState(Date.now());
+  const lastActivityTimeRef = useRef(lastActivityTime);
+  const lastActivitySyncRef = useRef(0);
   const backlightTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -220,6 +225,7 @@ export function useIpodLogic({
   const [totalTime, setTotalTime] = useState(0);
   const playerRef = useRef<ReactPlayer | null>(null);
   const fullScreenPlayerRef = useRef<ReactPlayer | null>(null);
+  const lastElapsedStoreSyncRef = useRef(0);
   const lastTrackedSongRef = useRef<{ trackId: string; elapsedTime: number } | null>(null);
   const skipOperationRef = useRef(false);
   const coverFlowRef = useRef<CoverFlowRef | null>(null);
@@ -294,7 +300,12 @@ export function useIpodLogic({
   }, [showStatus, t]);
 
   const registerActivity = useCallback(() => {
-    setLastActivityTime(Date.now());
+    const now = Date.now();
+    if (now - lastActivitySyncRef.current >= ACTIVITY_TIMESTAMP_SYNC_INTERVAL_MS) {
+      lastActivitySyncRef.current = now;
+      setLastActivityTime(now);
+      lastActivityTimeRef.current = now;
+    }
     userHasInteractedRef.current = true;
     if (!useIpodStore.getState().backlightOn) {
       toggleBacklight();
@@ -382,6 +393,10 @@ export function useIpodLogic({
 
   // Backlight timer
   useEffect(() => {
+    lastActivityTimeRef.current = lastActivityTime;
+  }, [lastActivityTime]);
+
+  useEffect(() => {
     if (backlightTimerRef.current) {
       clearTimeout(backlightTimerRef.current);
     }
@@ -391,7 +406,7 @@ export function useIpodLogic({
         const currentShowVideo = useIpodStore.getState().showVideo;
         const currentIsPlaying = useIpodStore.getState().isPlaying;
         if (
-          Date.now() - lastActivityTime >= BACKLIGHT_TIMEOUT_MS &&
+          Date.now() - lastActivityTimeRef.current >= BACKLIGHT_TIMEOUT_MS &&
           !(currentShowVideo && currentIsPlaying)
         ) {
           toggleBacklight();
@@ -961,7 +976,11 @@ export function useIpodLogic({
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
     setElapsedTime(state.playedSeconds);
-    useIpodStore.getState().setElapsedTime(state.playedSeconds);
+    const now = performance.now();
+    if (now - lastElapsedStoreSyncRef.current >= ELAPSED_TIME_STORE_SYNC_INTERVAL_MS) {
+      lastElapsedStoreSyncRef.current = now;
+      useIpodStore.getState().setElapsedTime(state.playedSeconds);
+    }
   }, []);
 
   const handleDuration = useCallback((duration: number) => {

@@ -27,6 +27,8 @@ import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 import { WaterBackground } from "@/components/shared/WaterBackground";
 
+const PLAYER_PROGRESS_INTERVAL_MS = 250;
+
 export function IpodAppComponent({
   isWindowOpen,
   onClose,
@@ -475,7 +477,7 @@ export function IpodAppComponent({
                             loop={loopCurrent}
                             onEnded={handleTrackEnd}
                             onProgress={handleProgress}
-                            progressInterval={100}
+                            progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
                             onDuration={handleDuration}
                             onPlay={handlePlay}
                             onPause={handlePause}

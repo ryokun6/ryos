@@ -34,6 +34,9 @@ const menuVariants = {
   }),
 };
 
+const PLAYER_PROGRESS_INTERVAL_MS = 250;
+const MENU_SCROLL_RETRY_DELAYS_MS = [80, 200, 400] as const;
+
 export function IpodScreen({
   currentTrack,
   isPlaying,
@@ -97,6 +100,7 @@ export function IpodScreen({
   const menuScrollRef = useRef<HTMLDivElement>(null);
   const menuItemsRef = useRef<(HTMLDivElement | null)[]>([]);
   const needScrollRef = useRef(false);
+  const scrollRetryTimeoutsRef = useRef<number[]>([]);
 
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
   const finalIpodVolume = ipodVolume * masterVolume;
@@ -120,9 +124,7 @@ export function IpodScreen({
   const forceScrollToSelected = useCallback(() => {
     if (!menuMode || menuHistory.length === 0) return;
 
-    const container = document.querySelector(
-      ".ipod-menu-container"
-    ) as HTMLElement;
+    const container = menuScrollRef.current;
     if (!container) return;
 
     const menuItems = Array.from(container.querySelectorAll(".ipod-menu-item"));
@@ -170,20 +172,28 @@ export function IpodScreen({
 
   // Trigger scroll on various conditions
   useEffect(() => {
-    if (menuMode && menuHistory.length > 0) {
-      needScrollRef.current = true;
-      forceScrollToSelected();
+    if (!menuMode || menuHistory.length === 0) return;
+    needScrollRef.current = true;
+    forceScrollToSelected();
+  }, [menuMode, selectedMenuItem, menuHistory.length, forceScrollToSelected]);
 
-      const attempts = [50, 100, 250, 500, 1000];
-      attempts.forEach((delay) => {
-        setTimeout(() => {
-          if (needScrollRef.current) {
-            forceScrollToSelected();
-          }
-        }, delay);
-      });
-    }
-  }, [menuMode, selectedMenuItem, menuHistory, forceScrollToSelected]);
+  // Retry scroll briefly after menu transitions/mounting settle.
+  useEffect(() => {
+    if (!menuMode || menuHistory.length === 0) return;
+    scrollRetryTimeoutsRef.current.forEach((id) => window.clearTimeout(id));
+    scrollRetryTimeoutsRef.current = MENU_SCROLL_RETRY_DELAYS_MS.map((delay) =>
+      window.setTimeout(() => {
+        if (needScrollRef.current) {
+          forceScrollToSelected();
+        }
+      }, delay)
+    );
+
+    return () => {
+      scrollRetryTimeoutsRef.current.forEach((id) => window.clearTimeout(id));
+      scrollRetryTimeoutsRef.current = [];
+    };
+  }, [menuMode, menuHistory.length, forceScrollToSelected]);
 
   // Prepare for a newly opened menu
   useEffect(() => {
@@ -276,7 +286,7 @@ export function IpodScreen({
                 loop={loopCurrent}
                 volume={finalIpodVolume}
                 playsinline={true}
-                progressInterval={100}
+                progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
                 config={{
                   youtube: {
                     playerVars: {
