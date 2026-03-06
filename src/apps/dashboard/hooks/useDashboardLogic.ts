@@ -35,7 +35,7 @@ export function useDashboardLogic() {
   );
 
   const handleAddWidget = useCallback(
-    (type: WidgetType) => {
+    (type: WidgetType): { centerX: number; centerY: number } => {
       const sizeMap: Record<WidgetType, { width: number; height: number }> = {
         clock: { width: 170, height: 170 },
         calendar: { width: 240, height: 350 },
@@ -61,6 +61,7 @@ export function useDashboardLogic() {
       const maxZ = Math.max(0, ...currentWidgets.map((w) => w.zIndex ?? 0));
 
       addWidget({ type, position: { x, y }, size, zIndex: maxZ + 1 });
+      return { centerX: x + size.width / 2, centerY: y + size.height / 2 };
     },
     [addWidget]
   );
