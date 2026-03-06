@@ -732,8 +732,8 @@ export function Desktop({
         <div
           className={
             isXpTheme
-              ? "flex flex-col flex-wrap justify-start content-start h-full gap-y-0 gap-x-px"
-              : "flex flex-col flex-wrap-reverse justify-start content-start h-full gap-y-0 gap-x-px"
+              ? "flex flex-col flex-wrap justify-start content-start h-full gap-x-3 gap-y-3"
+              : "flex flex-col flex-wrap-reverse justify-start content-start h-full gap-x-3 gap-y-3"
           }
         >
           <FileIcon
