@@ -42,6 +42,9 @@ export interface UseKaraokeLogicOptions {
   instanceId: string | undefined;
 }
 
+const AUTO_HIDE_ACTIVITY_THROTTLE_MS = 120;
+const ELAPSED_TIME_STORE_SYNC_INTERVAL_MS = 500;
+
 export function useKaraokeLogic({
   isWindowOpen,
   isForeground,
@@ -247,7 +250,10 @@ export function useKaraokeLogic({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showControls, setShowControls] = useState(true);
+  const showControlsRef = useRef(true);
   const hideControlsTimeoutRef = useRef<number | null>(null);
+  const lastAutoHideActivityRef = useRef(0);
+  const lastElapsedStoreSyncRef = useRef(0);
 
   // Track switching state to prevent race conditions
   const isTrackSwitchingRef = useRef(false);
@@ -419,17 +425,30 @@ export function useKaraokeLogic({
 
   // Auto-hide controls
   const restartAutoHideTimer = useCallback(() => {
-    setShowControls(true);
+    if (!showControlsRef.current) {
+      showControlsRef.current = true;
+      setShowControls(true);
+    }
     if (hideControlsTimeoutRef.current) {
       clearTimeout(hideControlsTimeoutRef.current);
     }
     // Don't auto-hide when sync mode is open
     if (isPlaying && !anyMenuOpen && !isSyncModeOpen) {
       hideControlsTimeoutRef.current = window.setTimeout(() => {
+        showControlsRef.current = false;
         setShowControls(false);
       }, 3000);
     }
   }, [isPlaying, anyMenuOpen, isSyncModeOpen]);
+
+  const restartAutoHideTimerFromPointerMove = useCallback(() => {
+    const now = performance.now();
+    if (now - lastAutoHideActivityRef.current < AUTO_HIDE_ACTIVITY_THROTTLE_MS) {
+      return;
+    }
+    lastAutoHideActivityRef.current = now;
+    restartAutoHideTimer();
+  }, [restartAutoHideTimer]);
 
   // Register activity (for full screen portal)
   const registerActivity = useCallback(() => {
@@ -482,9 +501,16 @@ export function useKaraokeLogic({
   }, [isOffline, showOfflineStatus, nextTrack, showStatus, startTrackSwitch]);
 
   useEffect(() => {
+    showControlsRef.current = showControls;
+  }, [showControls]);
+
+  useEffect(() => {
     // Always show controls when not playing, menu is open, or sync mode is open
     if (!isPlaying || anyMenuOpen || isSyncModeOpen) {
-      setShowControls(true);
+      if (!showControlsRef.current) {
+        showControlsRef.current = true;
+        setShowControls(true);
+      }
       if (hideControlsTimeoutRef.current) {
         clearTimeout(hideControlsTimeoutRef.current);
       }
@@ -665,7 +691,11 @@ export function useKaraokeLogic({
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
     setElapsedTime(state.playedSeconds);
-    setStoreElapsedTime(state.playedSeconds);
+    const now = performance.now();
+    if (now - lastElapsedStoreSyncRef.current >= ELAPSED_TIME_STORE_SYNC_INTERVAL_MS) {
+      lastElapsedStoreSyncRef.current = now;
+      setStoreElapsedTime(state.playedSeconds);
+    }
   }, [setStoreElapsedTime]);
 
   const handlePlay = useCallback(() => {
@@ -1296,6 +1326,7 @@ export function useKaraokeLogic({
     showStatus,
     showOfflineStatus,
     restartAutoHideTimer,
+    restartAutoHideTimerFromPointerMove,
     registerActivity,
     startTrackSwitch,
     handlePrevious,
