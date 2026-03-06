@@ -1,7 +1,9 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useIpodStore } from "@/stores/useIpodStore";
+import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { useDashboardStore, type IpodWidgetConfig } from "@/stores/useDashboardStore";
 import { requestAppLaunch } from "@/utils/appEventBus";
 import {
   Play,
@@ -173,42 +175,71 @@ function ClickWheel({
   );
 }
 
-export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
+export function IpodWidget({ widgetId }: IpodWidgetProps) {
   const { t } = useTranslation();
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
 
-  const getCurrentTrack = useIpodStore((s) => s.getCurrentTrack);
-  const isPlaying = useIpodStore((s) => s.isPlaying);
-  const togglePlay = useIpodStore((s) => s.togglePlay);
-  const nextTrack = useIpodStore((s) => s.nextTrack);
-  const previousTrack = useIpodStore((s) => s.previousTrack);
-  const isShuffled = useIpodStore((s) => s.isShuffled);
-  const toggleShuffle = useIpodStore((s) => s.toggleShuffle);
-  const loopCurrent = useIpodStore((s) => s.loopCurrent);
-  const loopAll = useIpodStore((s) => s.loopAll);
-  const toggleLoopCurrent = useIpodStore((s) => s.toggleLoopCurrent);
+  const widget = useDashboardStore((s) => widgetId ? s.widgets.find((w) => w.id === widgetId) : undefined);
+  const controlMode = (widget?.config as IpodWidgetConfig | undefined)?.controlMode ?? "ipod";
+  const isKaraoke = controlMode === "karaoke";
 
-  const elapsedTime = useIpodStore((s) => s.elapsedTime);
-  const totalTime = useIpodStore((s) => s.totalTime);
-  const isIpodOpen = useAppStore(
-    (s) => Object.values(s.instances).some((inst) => inst.appId === "ipod" && inst.isOpen)
+  const ipodGetCurrentTrack = useIpodStore((s) => s.getCurrentTrack);
+  const ipodIsPlaying = useIpodStore((s) => s.isPlaying);
+  const ipodTogglePlay = useIpodStore((s) => s.togglePlay);
+  const ipodNextTrack = useIpodStore((s) => s.nextTrack);
+  const ipodPreviousTrack = useIpodStore((s) => s.previousTrack);
+  const ipodIsShuffled = useIpodStore((s) => s.isShuffled);
+  const ipodToggleShuffle = useIpodStore((s) => s.toggleShuffle);
+  const ipodLoopCurrent = useIpodStore((s) => s.loopCurrent);
+  const ipodLoopAll = useIpodStore((s) => s.loopAll);
+  const ipodToggleLoopCurrent = useIpodStore((s) => s.toggleLoopCurrent);
+  const ipodElapsedTime = useIpodStore((s) => s.elapsedTime);
+  const ipodTotalTime = useIpodStore((s) => s.totalTime);
+
+  const karaokeGetCurrentTrack = useKaraokeStore((s) => s.getCurrentTrack);
+  const karaokeIsPlaying = useKaraokeStore((s) => s.isPlaying);
+  const karaokeTogglePlay = useKaraokeStore((s) => s.togglePlay);
+  const karaokeNextTrack = useKaraokeStore((s) => s.nextTrack);
+  const karaokePreviousTrack = useKaraokeStore((s) => s.previousTrack);
+  const karaokeIsShuffled = useKaraokeStore((s) => s.isShuffled);
+  const karaokeToggleShuffle = useKaraokeStore((s) => s.toggleShuffle);
+  const karaokeLoopCurrent = useKaraokeStore((s) => s.loopCurrent);
+  const karaokeLoopAll = useKaraokeStore((s) => s.loopAll);
+  const karaokeToggleLoopCurrent = useKaraokeStore((s) => s.toggleLoopCurrent);
+
+  const getCurrentTrack = isKaraoke ? karaokeGetCurrentTrack : ipodGetCurrentTrack;
+  const isPlaying = isKaraoke ? karaokeIsPlaying : ipodIsPlaying;
+  const togglePlay = isKaraoke ? karaokeTogglePlay : ipodTogglePlay;
+  const nextTrack = isKaraoke ? karaokeNextTrack : ipodNextTrack;
+  const previousTrack = isKaraoke ? karaokePreviousTrack : ipodPreviousTrack;
+  const isShuffled = isKaraoke ? karaokeIsShuffled : ipodIsShuffled;
+  const toggleShuffle = isKaraoke ? karaokeToggleShuffle : ipodToggleShuffle;
+  const loopCurrent = isKaraoke ? karaokeLoopCurrent : ipodLoopCurrent;
+  const loopAll = isKaraoke ? karaokeLoopAll : ipodLoopAll;
+  const toggleLoopCurrent = isKaraoke ? karaokeToggleLoopCurrent : ipodToggleLoopCurrent;
+  const elapsedTime = isKaraoke ? 0 : ipodElapsedTime;
+  const totalTime = isKaraoke ? 0 : ipodTotalTime;
+
+  const targetAppId = isKaraoke ? "karaoke" : "ipod";
+  const isTargetAppOpen = useAppStore(
+    (s) => Object.values(s.instances).some((inst) => inst.appId === targetAppId && inst.isOpen)
   );
 
   const track = getCurrentTrack();
-  const title = track?.title || "iPod";
+  const title = track?.title || (isKaraoke ? "Karaoke" : "iPod");
   const artist = track?.artist || "";
   const hasTrack = !!track;
 
   const launchOrDo = useCallback(
     (action: () => void) => {
-      if (!isIpodOpen) {
-        requestAppLaunch({ appId: "ipod" });
+      if (!isTargetAppOpen) {
+        requestAppLaunch({ appId: targetAppId });
         return;
       }
       action();
     },
-    [isIpodOpen]
+    [isTargetAppOpen, targetAppId]
   );
 
   const handlePlayPause = useCallback(() => launchOrDo(togglePlay), [launchOrDo, togglePlay]);
@@ -364,7 +395,9 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
                 textAlign: "center",
               }}
             >
-              {t("apps.dashboard.ipod.iTunesNotOpen", "iTunes is not open")}
+              {isKaraoke
+                ? t("apps.dashboard.ipod.karaokeNotOpen", "Karaoke is not open")
+                : t("apps.dashboard.ipod.iTunesNotOpen", "iTunes is not open")}
             </div>
           )}
         </div>
@@ -478,7 +511,7 @@ export function IpodWidget({ widgetId: _widgetId }: IpodWidgetProps) {
 }
 
 export function IpodBackPanel({
-  widgetId: _widgetId,
+  widgetId,
   onDone,
 }: {
   widgetId: string;
@@ -488,26 +521,69 @@ export function IpodBackPanel({
   const currentTheme = useThemeStore((state) => state.current);
   const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
   const textColor = isXpTheme ? "#000" : "rgba(255,255,255,0.8)";
+  const updateWidgetConfig = useDashboardStore((s) => s.updateWidgetConfig);
+  const widget = useDashboardStore((s) => s.widgets.find((w) => w.id === widgetId));
+  const config = widget?.config as IpodWidgetConfig | undefined;
+  const controlMode = config?.controlMode ?? "ipod";
 
-  const handleOpenIpod = useCallback(() => {
-    requestAppLaunch({ appId: "ipod" });
+  const handleModeChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const mode = e.target.value as "ipod" | "karaoke";
+      updateWidgetConfig(widgetId, { ...config, controlMode: mode });
+    },
+    [widgetId, config, updateWidgetConfig]
+  );
+
+  const handleOpenApp = useCallback(() => {
+    requestAppLaunch({ appId: controlMode === "karaoke" ? "karaoke" : "ipod" });
     onDone?.();
-  }, [onDone]);
+  }, [onDone, controlMode]);
+
+  const linkColor = isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)";
 
   return (
     <div
-      className="flex flex-col items-center justify-center px-3 py-3"
-      style={{ gap: 8 }}
+      className="flex flex-col items-center justify-center px-6 py-2"
+      style={{ gap: 6, height: "100%" }}
     >
-      <span style={{ fontSize: 11, fontWeight: 600, color: textColor }}>
-        {t("apps.dashboard.widgets.ipod", "iPod")}
-      </span>
+      <div className="flex items-center" style={{ gap: 6 }}>
+        <label
+          style={{ fontSize: 11, fontWeight: 600, color: textColor, whiteSpace: "nowrap" }}
+        >
+          {t("apps.dashboard.ipod.controlLabel", "Controls")}
+        </label>
+        <select
+          value={controlMode}
+          onChange={handleModeChange}
+          onPointerDown={(e) => e.stopPropagation()}
+          style={{
+            fontSize: 11,
+            fontWeight: 500,
+            fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+            padding: "2px 4px",
+            borderRadius: isXpTheme ? 2 : 6,
+            border: isXpTheme ? "1px solid #ACA899" : "1px solid rgba(255,255,255,0.2)",
+            background: isXpTheme ? "#fff" : "rgba(255,255,255,0.1)",
+            color: textColor,
+            cursor: "pointer",
+            outline: "none",
+          }}
+        >
+          <option value="ipod" style={{ color: "#000" }}>
+            {t("apps.dashboard.ipod.modeIpod", "iPod")}
+          </option>
+          <option value="karaoke" style={{ color: "#000" }}>
+            {t("apps.dashboard.ipod.modeKaraoke", "Karaoke")}
+          </option>
+        </select>
+      </div>
+
       <button
         type="button"
-        onClick={handleOpenIpod}
+        onClick={handleOpenApp}
         className="text-[11px] font-medium transition-opacity hover:opacity-80"
         style={{
-          color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
+          color: linkColor,
           background: "transparent",
           border: "none",
           cursor: "pointer",
@@ -515,7 +591,28 @@ export function IpodBackPanel({
           textUnderlineOffset: 2,
         }}
       >
-        {t("apps.dashboard.ipod.openIpod", "Open iPod App")}
+        {controlMode === "karaoke"
+          ? t("apps.dashboard.ipod.openKaraoke", "Open Karaoke App")
+          : t("apps.dashboard.ipod.openIpod", "Open iPod App")}
+      </button>
+
+      <button
+        type="button"
+        data-flip-btn
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); onDone?.(); }}
+        className="font-bold"
+        style={{
+          fontSize: 12,
+          padding: "2px 10px",
+          cursor: "pointer",
+          color: linkColor,
+          fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+          background: "transparent",
+          border: "none",
+        }}
+      >
+        {t("common.dialog.done", "Done")}
       </button>
     </div>
   );
