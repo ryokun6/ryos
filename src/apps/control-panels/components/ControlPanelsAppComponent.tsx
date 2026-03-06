@@ -571,7 +571,7 @@ export function ControlPanelsAppComponent({
                   {username ? (
                     <div className="flex items-center justify-between gap-4">
                       <div className="space-y-1">
-                        <Label className="font-medium">
+                        <Label className="text-[13px] font-medium font-geneva-12">
                           {t("apps.control-panels.autoSync.title")}
                         </Label>
                         <p className="text-[11px] text-neutral-600 font-geneva-12">
@@ -615,7 +615,7 @@ export function ControlPanelsAppComponent({
                   {username && autoSyncEnabled && (
                     <>
                       <hr
-                        className="my-1 border-t"
+                        className="mt-2 mb-4 border-t"
                         style={tabStyles.separatorStyle}
                       />
                       <div className="space-y-2">

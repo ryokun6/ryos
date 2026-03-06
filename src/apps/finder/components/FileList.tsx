@@ -86,6 +86,10 @@ const ListRowItem = memo(function ListRowItem({
   shouldShowThumbnail,
   isImageFile,
 }: ListRowItemProps) {
+  const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
+  const lastClickSoundRef = useRef(0);
+  const CLICK_SOUND_COOLDOWN_MS = 400;
+
   const longPressHandlers = useLongPress((touchEvent) => {
     if (onItemContextMenu) {
       const touch = touchEvent.touches[0];
@@ -99,6 +103,11 @@ const ListRowItem = memo(function ListRowItem({
   });
 
   const handleClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
+    const now = Date.now();
+    if (now - lastClickSoundRef.current >= CLICK_SOUND_COOLDOWN_MS) {
+      lastClickSoundRef.current = now;
+      playClick();
+    }
     if (isTouchDevice()) {
       const rect = e.currentTarget.getBoundingClientRect();
       const launchOrigin: LaunchOriginRect = {
@@ -114,6 +123,11 @@ const ListRowItem = memo(function ListRowItem({
   };
 
   const handleDoubleClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
+    const now = Date.now();
+    if (now - lastClickSoundRef.current >= CLICK_SOUND_COOLDOWN_MS) {
+      lastClickSoundRef.current = now;
+      playClick();
+    }
     if (!isTouchDevice()) {
       const rect = e.currentTarget.getBoundingClientRect();
       const launchOrigin: LaunchOriginRect = {
@@ -324,7 +338,6 @@ export function FileList({
   onItemContextMenu,
 }: FileListProps) {
   const { t } = useTranslation();
-  const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
   const [dropTargetPath, setDropTargetPath] = useState<string | null>(null);
   const draggedFileRef = useRef<FileItem | null>(null);
   const currentTheme = useThemeStore((state) => state.current);
@@ -351,14 +364,11 @@ export function FileList({
       clickTimeoutRef.current = null;
     }
 
-    playClick();
     onFileOpen(file, launchOrigin);
     onFileSelect(null as unknown as FileItem); // Clear selection with proper typing
   };
 
   const handleFileSelect = (file: FileItem) => {
-    playClick();
-
     // If user clicks on already selected file
     if (selectedFile && selectedFile.path === file.path) {
       // If rename is already pending, don't set another timeout

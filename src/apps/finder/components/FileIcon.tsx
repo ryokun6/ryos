@@ -50,6 +50,8 @@ export function FileIcon({
   const blobUrlRef = useRef<string | null>(null);
   const contentRef = useRef(content);
   const contentUrlRef = useRef(contentUrl);
+  const lastClickSoundRef = useRef(0);
+  const CLICK_SOUND_COOLDOWN_MS = 400;
 
   // Track props with refs to avoid dependency issues
   useEffect(() => {
@@ -248,7 +250,11 @@ export function FileIcon({
   };
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    playClick();
+    const now = Date.now();
+    if (now - lastClickSoundRef.current >= CLICK_SOUND_COOLDOWN_MS) {
+      lastClickSoundRef.current = now;
+      playClick();
+    }
 
     // On touch devices, single tap should open the app (execute onDoubleClick)
     if (isTouchDevice() && onDoubleClick) {
