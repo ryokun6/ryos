@@ -207,6 +207,8 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
   const karaokeLoopCurrent = useKaraokeStore((s) => s.loopCurrent);
   const karaokeLoopAll = useKaraokeStore((s) => s.loopAll);
   const karaokeToggleLoopCurrent = useKaraokeStore((s) => s.toggleLoopCurrent);
+  const karaokeElapsedTime = useKaraokeStore((s) => s.elapsedTime);
+  const karaokeTotalTime = useKaraokeStore((s) => s.totalTime);
 
   const getCurrentTrack = isKaraoke ? karaokeGetCurrentTrack : ipodGetCurrentTrack;
   const isPlaying = isKaraoke ? karaokeIsPlaying : ipodIsPlaying;
@@ -218,8 +220,8 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
   const loopCurrent = isKaraoke ? karaokeLoopCurrent : ipodLoopCurrent;
   const loopAll = isKaraoke ? karaokeLoopAll : ipodLoopAll;
   const toggleLoopCurrent = isKaraoke ? karaokeToggleLoopCurrent : ipodToggleLoopCurrent;
-  const elapsedTime = isKaraoke ? 0 : ipodElapsedTime;
-  const totalTime = isKaraoke ? 0 : ipodTotalTime;
+  const elapsedTime = isKaraoke ? karaokeElapsedTime : ipodElapsedTime;
+  const totalTime = isKaraoke ? karaokeTotalTime : ipodTotalTime;
 
   const targetAppId = isKaraoke ? "karaoke" : "ipod";
   const isTargetAppOpen = useAppStore(

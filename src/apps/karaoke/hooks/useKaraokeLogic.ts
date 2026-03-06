@@ -139,6 +139,8 @@ export function useKaraokeLogic({
     previousTrack,
     toggleFullScreen,
     setFullScreen,
+    setStoreElapsedTime,
+    setStoreTotalTime,
   } = useKaraokeStore(
     useShallow((s) => ({
       currentSongId: s.currentSongId,
@@ -157,6 +159,8 @@ export function useKaraokeLogic({
       previousTrack: s.previousTrack,
       toggleFullScreen: s.toggleFullScreen,
       setFullScreen: s.setFullScreen,
+      setStoreElapsedTime: s.setElapsedTime,
+      setStoreTotalTime: s.setTotalTime,
     }))
   );
 
@@ -234,7 +238,11 @@ export function useKaraokeLogic({
 
   // Playback state
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [duration, setDurationLocal] = useState(0);
+  const setDuration = useCallback((d: number) => {
+    setDurationLocal(d);
+    setStoreTotalTime(d);
+  }, [setStoreTotalTime]);
   const playerRef = useRef<ReactPlayer | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -657,7 +665,8 @@ export function useKaraokeLogic({
 
   const handleProgress = useCallback((state: { playedSeconds: number }) => {
     setElapsedTime(state.playedSeconds);
-  }, []);
+    setStoreElapsedTime(state.playedSeconds);
+  }, [setStoreElapsedTime]);
 
   const handlePlay = useCallback(() => {
     // Don't update state if we're in the middle of a track switch
