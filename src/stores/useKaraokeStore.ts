@@ -29,6 +29,10 @@ interface KaraokeData {
   /** Playback history for shuffle mode (song IDs) */
   playbackHistory: string[];
   isFullScreen: boolean;
+  /** Current playback position in seconds (not persisted, synced from ReactPlayer) */
+  elapsedTime: number;
+  /** Total duration of current track in seconds (not persisted, synced from ReactPlayer) */
+  totalTime: number;
 }
 
 export interface KaraokeState extends KaraokeData {
@@ -47,6 +51,8 @@ export interface KaraokeState extends KaraokeData {
   previousTrack: () => void;
   toggleFullScreen: () => void;
   setFullScreen: (fullScreen: boolean) => void;
+  setElapsedTime: (time: number) => void;
+  setTotalTime: (time: number) => void;
 }
 
 const initialKaraokeData: KaraokeData = {
@@ -57,6 +63,8 @@ const initialKaraokeData: KaraokeData = {
   isShuffled: false,
   playbackHistory: [],
   isFullScreen: false,
+  elapsedTime: 0,
+  totalTime: 0,
 };
 
 const CURRENT_KARAOKE_STORE_VERSION = 2; // Updated for currentSongId
@@ -187,6 +195,9 @@ export const useKaraokeStore = create<KaraokeState>()(
       toggleFullScreen: () => set((state) => ({ isFullScreen: !state.isFullScreen })),
 
       setFullScreen: (fullScreen) => set({ isFullScreen: fullScreen }),
+
+      setElapsedTime: (time) => set({ elapsedTime: time }),
+      setTotalTime: (time) => set({ totalTime: time }),
     }),
     {
       name: "ryos:karaoke",

@@ -27,6 +27,7 @@ export interface StocksWidgetConfig {
 
 export interface IpodWidgetConfig {
   placeholder?: boolean;
+  controlMode?: "ipod" | "karaoke";
 }
 
 export interface DictionaryWidgetConfig {

@@ -14,6 +14,7 @@ interface WidgetChromeProps {
   y: number;
   zIndex?: number;
   borderRadius?: string;
+  hideDoneButton?: boolean;
   onRemove?: () => void;
   onMove?: (position: { x: number; y: number }) => void;
   onBringToFront?: () => void;
@@ -29,6 +30,7 @@ export function WidgetChrome({
   y,
   zIndex = 1,
   borderRadius: borderRadiusProp,
+  hideDoneButton,
   onRemove,
   onMove,
   onBringToFront,
@@ -289,23 +291,25 @@ export function WidgetChrome({
               }}
             >
               <div className="flex flex-col" style={{ minHeight: "inherit", transform: "translateZ(1px)" }}>
-                <div className="flex justify-end px-1 pt-1">
-                  <motion.button
-                    data-flip-btn
-                    type="button"
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => { e.stopPropagation(); doFlip(false); }}
-                    className="font-bold"
-                    whileHover={{ opacity: 0.8 }}
-                    style={{
-                      fontSize: 12, padding: "4px 10px", cursor: "pointer",
-                      color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
-                      fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-                    }}
-                  >
-                    {t("common.dialog.done", "Done")}
-                  </motion.button>
-                </div>
+                {!hideDoneButton && (
+                  <div className="flex justify-end px-1 pt-1">
+                    <motion.button
+                      data-flip-btn
+                      type="button"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); doFlip(false); }}
+                      className="font-bold"
+                      whileHover={{ opacity: 0.8 }}
+                      style={{
+                        fontSize: 12, padding: "4px 10px", cursor: "pointer",
+                        color: isXpTheme ? "#0066CC" : "rgba(130,180,255,0.9)",
+                        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+                      }}
+                    >
+                      {t("common.dialog.done", "Done")}
+                    </motion.button>
+                  </div>
+                )}
                 {resolvedBackContent}
               </div>
             </div>
