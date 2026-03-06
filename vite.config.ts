@@ -239,6 +239,7 @@ export default defineConfig({
           /^\/terminal$/,
           /^\/applet-viewer(\/|$)/,
           /^\/control-panels$/,
+          /^\/dashboard$/,
         ],
         // Enable navigation fallback to precached index.html for offline support
         // This ensures the app can start when offline by serving the cached shell

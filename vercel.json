@@ -214,6 +214,7 @@
     { "source": "/infinite-mac", "destination": "/" },
     { "source": "/winamp", "destination": "/" },
     { "source": "/stickies", "destination": "/" },
+    { "source": "/dashboard", "destination": "/" },
     { "source": "/listen/:sessionId", "destination": "/" }
   ],
   "redirects": [
