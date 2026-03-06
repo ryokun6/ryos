@@ -95,6 +95,36 @@ bun run api:start    # Run standalone API server in production mode
 
 For local development, `bun run dev` starts both the standalone Bun API server and the Vite dev server with an `/api` proxy — no Vercel CLI required.
 
+## BlueBubbles iMessage integration
+
+You can wire Ryo into iMessage on a Mac by pointing a BlueBubbles webhook at:
+
+```bash
+POST /api/webhooks/bluebubbles?secret=your-secret
+```
+
+Set these env vars on the ryOS API:
+
+```bash
+BLUEBUBBLES_SERVER_URL=https://your-bluebubbles-server.example
+BLUEBUBBLES_SERVER_PASSWORD=your-bluebubbles-password
+BLUEBUBBLES_WEBHOOK_SECRET=your-secret
+```
+
+Optional controls:
+
+```bash
+BLUEBUBBLES_TRIGGER_PREFIX=@ryo
+BLUEBUBBLES_ALLOWED_CHAT_GUIDS=iMessage;-;me@example.com
+BLUEBUBBLES_SEND_METHOD=private-api
+```
+
+How it works:
+
+1. BlueBubbles sends `new-message` webhooks to ryOS
+2. ryOS only responds when the incoming text starts with `BLUEBUBBLES_TRIGGER_PREFIX` (default `@ryo`)
+3. ryOS keeps recent per-thread context in Redis and sends the reply back through the BlueBubbles REST API
+
 ## Running the API Separately
 
 Use this when you only need the API server (e.g. for running tests):
