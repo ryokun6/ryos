@@ -41,6 +41,8 @@ const APP_CONFIGS: Record<string, { sectionNum: string; docName: string }> = {
   "applet-viewer": { sectionNum: "2.17", docName: "applet-store" },
   "stickies": { sectionNum: "2.18", docName: "stickies" },
   "winamp": { sectionNum: "2.20", docName: "winamp" },
+  "calendar": { sectionNum: "2.21", docName: "calendar" },
+  "dashboard": { sectionNum: "2.22", docName: "dashboard" },
 };
 
 const APP_IDS = Object.keys(APP_CONFIGS) as (keyof typeof APP_CONFIGS)[];
@@ -116,6 +118,7 @@ async function readAppIndex(appId: string): Promise<{
 }> {
   const indexPath = join(APPS_DIR, appId, "index.tsx");
   const indexPathAlt = join(APPS_DIR, appId, "index.ts");
+  const metadataPath = join(APPS_DIR, appId, "metadata.ts");
   
   let content = "";
   try {
@@ -126,6 +129,15 @@ async function readAppIndex(appId: string): Promise<{
     } catch {
       console.warn(`⚠️  No index file found for ${appId}`);
       return { metadata: null, helpItems: [] };
+    }
+  }
+
+  // If index re-exports from metadata, read metadata.ts for appMetadata/helpItems
+  if (content.includes('from "./metadata"') || content.includes("from './metadata'")) {
+    try {
+      content = await readFile(metadataPath, "utf-8");
+    } catch {
+      // metadata.ts not found, continue with index content
     }
   }
 
@@ -267,6 +279,14 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
     winamp: {
       defaultSize: { width: 275, height: 116 },
       minSize: { width: 275, height: 116 },
+    },
+    calendar: {
+      defaultSize: { width: 700, height: 520 },
+      minSize: { width: 300, height: 380 },
+    },
+    dashboard: {
+      defaultSize: { width: 500, height: 400 },
+      minSize: { width: 300, height: 250 },
     },
   };
 
@@ -531,6 +551,8 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false, 
     admin: "System administration panel for managing users, songs, and system configuration (admin only)",
     stickies: "Create and manage colorful sticky notes for quick reminders and note-taking",
     winamp: "Classic Winamp media player powered by Webamp with YouTube playback, skins, and iPod library integration",
+    calendar: "Month and day view calendar with events, color coding, and auto-save",
+    dashboard: "Widget panel with clock, calendar, and weather—press F4 to toggle",
   };
 
   appInfo.description = descriptions[appId] || `A ${metadata.name} application for ryOS`;

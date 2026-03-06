@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ryOS API Design Guide - ryOS Docs</title>
+  <title>Dashboard - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <style>
     @font-face { font-family: "Geneva"; src: url("/fonts/geneva-12.woff2") format("woff2"); }
@@ -195,14 +195,14 @@
     <a href="/docs/self-hosting-vps" class="nav-child ">1.3 Self-hosting ryOS on a VPS (without Vercel)</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/apps" class="">2. Apps</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chats" class="nav-child ">2.1 Chats</a>
     <a href="/docs/internet-explorer" class="nav-child ">2.2 Internet Explorer</a>
     <a href="/docs/ipod" class="nav-child ">2.3 iPod</a>
@@ -224,7 +224,7 @@
     <a href="/docs/infinite-mac" class="nav-child ">2.19 Infinite Mac</a>
     <a href="/docs/winamp" class="nav-child ">2.20 Winamp</a>
     <a href="/docs/calendar" class="nav-child ">2.21 Calendar</a>
-    <a href="/docs/dashboard" class="nav-child ">2.22 Dashboard</a>
+    <a href="/docs/dashboard" class="nav-child active">2.22 Dashboard</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -272,14 +272,14 @@
     <a href="/docs/i18n" class="nav-child ">7.2 i18n & Hooks</a>
   </div>
 </div>
-<div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+<div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/api-reference" class="">8. API Reference</a>
   </button>
-  <div class="nav-children" style="display: block;">
+  <div class="nav-children" style="display: none;">
     <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
     <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
     <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
@@ -289,7 +289,7 @@
     <a href="/docs/presence-api" class="nav-child ">8.7 Presence API</a>
     <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.9 Utility APIs</a>
-    <a href="/docs/api-design-guide" class="nav-child active">8.10 ryOS API Design Guide</a>
+    <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
   </div>
 </div>
 <div class="nav-group">
@@ -302,115 +302,35 @@
     
     <main class="content">
       <article>
-        <h1>ryOS API Design Guide</h1>
-<p>This document outlines the current patterns and conventions used in the ryOS API.</p>
-<h2>Architecture Overview</h2>
-<p>The API is implemented as Node.js route handlers under <code>_api/</code>.   The default implementation pattern is the shared <code>apiHandler</code> wrapper, which centralizes: <ul><li>CORS preflight and response headers</li></ul><ul><li>origin allowlist checks</li><li>method allowlists</li><li>optional JSON body handling</li><li>optional/required auth resolution</li><li>logger setup and consistent fallback error handling</li></ul></p>
-<p>Auth boundaries are unified through <code>request-auth.ts</code>, which enforces paired auth headers.</p>
-<h2>File Structure</h2>
-<pre><code>_api/
-├── _utils/
-│   ├── api-handler.ts      # Primary route wrapper
-│   ├── request-auth.ts     # Unified auth extraction + token validation
-│   ├── redis.ts            # Redis client factory
-│   ├── _cors.ts            # Origin policy + CORS helpers
-│   ├── _rate-limit.ts      # Counter-based rate limit utilities
-│   ├── _validation.ts      # Input/profanity/escaping helpers
-│   ├── _ssrf.ts            # Safe URL fetch + SSRF protections
-│   ├── _sse.ts             # SSE stream helpers
-│   ├── _logging.ts         # Request-scoped logger
-│   └── constants.ts        # Shared constants
-├── auth/                   # Auth/session endpoints
-├── rooms/                  # Chat rooms/messages/presence
-├── listen/                 # Listen Together session APIs
-├── songs/                  # Song library + lyric processing
-├── ai/                     # Memory processing + room AI reply
-├── sync/                   # Cloud backup metadata endpoints
-└── ...                     # Other feature routes</code></pre>
-<h3>Naming Conventions</h3>
-<ul><li><code>_helpers/</code> for domain-specific internal helpers</li></ul><ul><li><code>_utils/</code> for globally shared API utilities</li><li><code>_*.ts</code> files for internal/private modules</li><li><code>index.ts</code> for collection routes</li><li><code>[id].ts</code> and nested dynamic route folders for path params</li></ul>
-<h2>Common Patterns</h2>
-<h3>1. Runtime Declaration</h3>
-<pre><code>export const runtime = "nodejs";
-export const maxDuration = 30; // endpoint-dependent</code></pre>
-<h3>2. <code>apiHandler</code> Wrapper (Primary Pattern)</h3>
-<pre><code>import { apiHandler } from "../_utils/api-handler.js";
-
-export default apiHandler(
-  {
-    methods: ["GET", "POST"],
-    auth: "optional",         // "none" | "optional" | "required"
-    allowExpiredAuth: false,  // optional
-    parseJsonBody: true,      // optional
-    contentType: "application/json", // optional, null disables default header
-  },
-  async ({ req, res, redis, logger, startTime, origin, user, body }) =&gt; {
-    // business logic
-    logger.response(200, Date.now() - startTime);
-    res.status(200).json({ ok: true });
-  }
-);</code></pre>
-<code>apiHandler</code> provides:
-<ul><li><code>OPTIONS</code> handling (<code>204</code>) with endpoint-specific method list</li></ul><ul><li>consistent <code>403</code> for disallowed origins</li><li>consistent <code>405</code> for unsupported methods</li><li>Redis client injection via <code>createRedis()</code></li><li>auth resolution via <code>resolveRequestAuth()</code></li><li>fallback <code>500</code> JSON error guard</li></ul>
-<h3>3. Endpoint Function Signature</h3>
-<p>When using <code>apiHandler</code>, handlers receive: <ul><li><code>req</code>, <code>res</code></li></ul><ul><li><code>redis</code></li><li><code>logger</code>, <code>startTime</code></li><li><code>origin</code></li><li><code>user</code> (<code>null</code> or resolved auth user)</li><li><code>body</code> (<code>null</code> or parsed JSON when <code>parseJsonBody: true</code>)</li></ul></p>
-<h3>4. Auth Boundaries via <code>request-auth</code></h3>
-<code>resolveRequestAuth()</code> enforces a shared policy:
-<ul><li>required auth endpoints need <strong>both</strong> headers:<ul><li><code>Authorization: Bearer &lt;token&gt;</code></li><li><code>X-Username: &lt;username&gt;</code></li></ul></li></ul><ul><li>partial credentials return <code>400</code></li><li>invalid token/username pairs return <code>401</code></li><li>optional-auth endpoints allow anonymous requests, but validate credentials if provided</li></ul>
-<p>For non-<code>apiHandler</code> routes (legacy/multipart), call <code>resolveRequestAuth()</code> directly to keep behavior aligned.</p>
-<h3>5. Rate Limiting</h3>
-<p>Use <code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/_rate-limit.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/_rate-limit.ts</a></code> primitives:</p>
-<pre><code>import * as RateLimit from "../_utils/_rate-limit.js";
-import { getClientIp } from "../_utils/_rate-limit.js";
-
-const ip = getClientIp(req);
-const key = RateLimit.makeKey(["rl", "feature", "burst", "ip", ip]);
-const result = await RateLimit.checkCounterLimit({
-  key,
-  windowSeconds: 60,
-  limit: 30,
-});
-
-if (!result.allowed) {
-  res.setHeader("Retry-After", String(result.resetSeconds));
-  return res.status(429).json({
-    error: "rate_limit_exceeded",
-    limit: result.limit,
-    retryAfter: result.resetSeconds,
-  });
-}</code></pre>
-<h3>6. Response & Error Handling</h3>
-<p>The preferred API shape is JSON for standard requests and SSE for streaming endpoints. <ul><li>success: explicit payloads (<code>{ success: true }</code>, <code>{ data: ... }</code>, etc.)</li></ul><ul><li>client errors: <code>400/401/403/404/405/429</code> with JSON <code>{ error: "..." }</code></li><li>server errors: <code>500</code> with JSON <code>{ error: "..." }</code></li></ul></p>
-<p>For SSE endpoints, set stream headers explicitly and send structured events (<code>start</code>, <code>line</code>, <code>complete</code>, <code>error</code>, etc.).</p>
-<h3>7. Manual Handlers (When Needed)</h3>
-<p>Some endpoints intentionally keep explicit handlers (for example multipart uploads such as <code>/api/audio-transcribe</code>).</p>
-<p>When writing a manual handler, still mirror shared behavior: <ul><li><code>getEffectiveOrigin()</code> + <code>isAllowedOrigin()</code> + <code>setCorsHeaders()</code></li></ul><ul><li>method checks and <code>OPTIONS</code> handling</li><li><code>initLogger()</code> + status timing logs</li><li><code>resolveRequestAuth()</code> for authenticated routes</li></ul></p>
-<h3>8. Logging</h3>
-<p>Use request-scoped logger utilities from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/_logging.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/_logging.ts</a></code>:</p>
-<pre><code>import { initLogger } from "../_utils/_logging.js";
-
-const { logger } = initLogger();
-logger.request(req.method || "GET", req.url || "/api/example");
-logger.info("Processing request", { user: "alice" });
-logger.response(200, Date.now() - startTime);</code></pre>
-<h3>9. Utility Modules</h3>
-<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/_validation.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/_validation.ts</a></code>: username/room/message validation, profanity filtering, HTML escaping</li></ul><ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/_ssrf.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/_ssrf.ts</a></code>: <code>validatePublicUrl()</code> and <code>safeFetchWithRedirects()</code> for outbound URL safety</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/_sse.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/_sse.ts</a></code>: SSE stream helper for chunked/line-based emissions</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/constants.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/constants.ts</a></code>: shared prefixes, TTLs, rate-limit tiers, validation constraints</li></ul>
-<h2>Constants</h2>
-<p>Use shared constants from <code><a href="https://github.com/ryokun6/ryos/blob/main/src/_utils/constants.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">_utils/constants.ts</a></code> where possible instead of hardcoding: <ul><li><code>REDIS_PREFIXES</code></li></ul><ul><li><code>TTL</code></li><li><code>RATE_LIMIT_TIERS</code></li><li><code>PASSWORD</code></li><li><code>VALIDATION</code></li><li><code>TOKEN</code></li></ul></p>
-<p>Feature-specific constants should stay in feature helper modules (for example <code><a href="https://github.com/ryokun6/ryos/blob/main/src/rooms/_helpers/_constants.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">rooms/_helpers/_constants.ts</a></code>, <code><a href="https://github.com/ryokun6/ryos/blob/main/src/listen/_helpers/_constants.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">listen/_helpers/_constants.ts</a></code>).</p>
-<h2>Best Practices</h2>
-<ol><li>Prefer <code>apiHandler</code> for new JSON endpoints.</li></ol><ol><li>Keep auth semantics consistent through <code>request-auth</code>.</li><li>Apply rate limits to public and expensive routes.</li><li>Validate all user-provided input before use.</li><li>Keep response shapes stable and explicit.</li><li>Use SSRF-safe fetch helpers for untrusted URLs.</li><li>Add structured logs for request/response and key branch decisions.</li><li>Keep endpoint docs updated whenever request/response contracts change.</li></ol>
-<h2>Error Response Format</h2>
-<p>Most endpoints use:</p>
-<pre><code>{
-  "error": "Human-readable error message"
-}</code></pre>
-<p>Some endpoints include extra fields (for example rate-limit metadata, validation details, or endpoint-specific diagnostics). Keep these additions additive and backward-compatible.</p>
+        <h1>Dashboard</h1>
+<p>Dashboard is a widget panel for ryOS that displays useful information at a glance. Press F4 or click the Dashboard icon to show your widgets—clock, calendar, and weather—and drag them to rearrange.</p>
+<h2>Overview</h2>
+<p>Dashboard provides a quick-access overlay of widgets including an analog clock, mini calendar with events, and weather (with location permission). It’s designed for at-a-glance information without opening full apps. Widgets can be dragged to customize the layout.</p>
+<h2>Features</h2>
+<ul><li><strong>Open Dashboard:</strong> Press F4 or click the Dashboard icon to show your widgets</li></ul><ul><li><strong>Clock Widget:</strong> Analog clock showing the current time</li><li><strong>Calendar Widget:</strong> Mini calendar showing the current month and your events</li><li><strong>Weather Widget:</strong> Current weather for your location (requires location permission)</li><li><strong>Move Widgets:</strong> Drag widgets to rearrange them on the dashboard</li><li><strong>Close Dashboard:</strong> Click the background or press F4 / Escape to close</li></ul>
+<h2>User Guide</h2>
+<h3>Getting Started</h3>
+Press F4 or launch Dashboard from the application launcher. Widgets load automatically.
+<h3>Key Actions</h3>
+<ul><li><strong>Toggle Dashboard:</strong> Press F4 to open or close</li><li><strong>Reposition Widgets:</strong> Drag any widget to move it</li><li><strong>View Weather:</strong> Grant location permission when prompted to enable the weather widget</li></ul>
+<h3>Tips & Shortcuts</h3>
+<ul><li>F4 and Escape both close the dashboard</li><li>The calendar widget syncs with Calendar app events</li></ul>
+<h2>Technical Details</h2>
+<h3>Window Configuration</h3>
+Dashboard typically runs as an overlay or full-screen panel rather than a standard window.
+<h3>Component Architecture</h3>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/dashboard/components/DashboardAppComponent.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/dashboard/components/DashboardAppComponent.tsx</a></code> — Main application component</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/dashboard/components/DashboardMenuBar.tsx" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/dashboard/components/DashboardMenuBar.tsx</a></code> — Menu bar</li></ul>
+<h3>Hooks & Utilities</h3>
+<ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/apps/dashboard/hooks/useDashboardLogic.ts" target="_blank" rel="noopener noreferrer" style="color: #00f; text-decoration: underline;">src/apps/dashboard/hooks/useDashboardLogic.ts</a></code> — Dashboard state and widget layout</li></ul>
+<h3>State Management</h3>
+Widget positions and layout preferences are persisted. Weather data is fetched based on geolocation when permission is granted.
+<h2>Related Apps</h2>
+<ul><li><strong>Calendar:</strong> Full calendar app; events appear in the Dashboard calendar widget</li></ul><ul><li><strong>Control Panels:</strong> System settings for themes and wallpapers shown on the desktop</li></ul>
       </article>
       
       <nav class="nav">
-        <a href="/docs/utility-apis">← Utility APIs</a>
-        <a href="/docs/changelog">Changelog →</a>
+        <a href="/docs/calendar">← Calendar</a>
+        <a href="/docs/application-framework">Application Framework →</a>
       </nav>
       
     </main>
