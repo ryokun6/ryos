@@ -544,7 +544,7 @@ export function IpodBackPanel({
   return (
     <div
       className="flex flex-col items-center justify-center px-6 py-2"
-      style={{ gap: 6, height: "100%" }}
+      style={{ gap: 6, flex: 1 }}
     >
       <div className="flex items-center" style={{ gap: 6 }}>
         <label
@@ -587,8 +587,6 @@ export function IpodBackPanel({
           background: "transparent",
           border: "none",
           cursor: "pointer",
-          textDecoration: "underline",
-          textUnderlineOffset: 2,
         }}
       >
         {controlMode === "karaoke"
