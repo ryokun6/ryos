@@ -21,6 +21,7 @@ import { useTranslation } from "react-i18next";
 import { Plus } from "@phosphor-icons/react";
 import { useDashboardStore, type WidgetType } from "@/stores/useDashboardStore";
 import { DashboardRipple, type DashboardRippleRef } from "@/components/layout/dashboard/DashboardRipple";
+import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 
 function WidgetContent({ type, widgetId, isFlipped }: { type: string; widgetId: string; isFlipped?: boolean }) {
   switch (type) {
@@ -213,6 +214,7 @@ export function DashboardAppComponent({
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const rippleRef = useRef<DashboardRippleRef>(null);
+  const wallpaperSource = useDisplaySettingsStore((s) => s.wallpaperSource);
 
   const {
     translatedHelpItems,
@@ -332,9 +334,6 @@ export function DashboardAppComponent({
               className="fixed inset-0 dashboard-overlay"
               style={{
                 zIndex: 9998,
-                background: isXpTheme
-                  ? "rgba(0,0,0,0.6)"
-                  : "rgba(0,0,0,0.55)",
               }}
               onClick={(e) => {
                 if (e.target === e.currentTarget) {
@@ -346,8 +345,12 @@ export function DashboardAppComponent({
                 }
               }}
             >
-              {/* Ripple effect canvas */}
-              <DashboardRipple ref={rippleRef} />
+              {/* Shader-based ripple background */}
+              <DashboardRipple
+                ref={rippleRef}
+                wallpaperUrl={wallpaperSource}
+                tintOpacity={isXpTheme ? 0.6 : 0.55}
+              />
 
               {/* Widgets */}
               <AnimatePresence>
