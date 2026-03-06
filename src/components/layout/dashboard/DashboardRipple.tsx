@@ -61,10 +61,10 @@ void main(){
     float d = length(delta);
     vec2 dir = delta / max(d, 1.0);
 
-    float speed   = 400.0;
-    float wl      = 70.0;
-    float damping = 1.5;
-    float spread  = 2.5;
+    float speed   = 340.0;
+    float wl      = 200.0;
+    float damping = 2.2;
+    float spread  = 1.2;
     float amp     = 30.0;
 
     float k     = PI2 / wl;
@@ -338,7 +338,8 @@ const DashboardRippleInner = (
     if (active) {
       rafRef.current = requestAnimationFrame(render);
     } else {
-      rafRef.current = 0;
+      needsStaticRef.current = true;
+      rafRef.current = requestAnimationFrame(render);
     }
   };
 
