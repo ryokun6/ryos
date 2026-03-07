@@ -659,26 +659,26 @@
         "closed": "{{appName}} geschlossen",
         "closing": "{{appName}} wird geschlossen…",
         "contacts": {
-          "created": "[TODO] Created {{name}}",
-          "createdContact": "[TODO] Created {{name}}",
-          "creating": "[TODO] Creating contact…",
-          "deleted": "[TODO] Deleted {{name}}",
-          "deleting": "[TODO] Deleting contact…",
-          "found": "[TODO] Found {{count}} contacts",
-          "foundMany": "[TODO] Found {{count}} contacts",
-          "foundOne": "[TODO] Found 1 contact",
-          "listing": "[TODO] Listing contacts…",
-          "loaded": "[TODO] Loaded {{name}}",
-          "loadedContact": "[TODO] Loaded {{name}}",
-          "loading": "[TODO] Loading contact…",
-          "missingData": "[TODO] Add at least a name, email, phone, or Telegram field",
-          "missingId": "[TODO] Missing contact ID",
-          "noContacts": "[TODO] No contacts found",
-          "noUpdates": "[TODO] No contact updates provided",
-          "notFound": "[TODO] Contact not found: {{id}}",
-          "updated": "[TODO] Updated {{name}}",
-          "updatedContact": "[TODO] Updated {{name}}",
-          "updating": "[TODO] Updating contact…"
+          "created": "{{name}} erstellt",
+          "createdContact": "{{name}} erstellt",
+          "creating": "Kontakt wird erstellt…",
+          "deleted": "{{name}} gelöscht",
+          "deleting": "Kontakt wird gelöscht…",
+          "found": "{{count}} Kontakte gefunden",
+          "foundMany": "{{count}} Kontakte gefunden",
+          "foundOne": "1 Kontakt gefunden",
+          "listing": "Kontakte werden aufgelistet…",
+          "loaded": "{{name}} geladen",
+          "loadedContact": "{{name}} geladen",
+          "loading": "Kontakt wird geladen…",
+          "missingData": "Fügen Sie mindestens ein Feld für Name, E-Mail, Telefon oder Telegram hinzu",
+          "missingId": "Kontakt-ID fehlt",
+          "noContacts": "Keine Kontakte gefunden",
+          "noUpdates": "Keine Kontaktaktualisierungen angegeben",
+          "notFound": "Kontakt nicht gefunden: {{id}}",
+          "updated": "{{name}} aktualisiert",
+          "updatedContact": "{{name}} aktualisiert",
+          "updating": "Kontakt wird aktualisiert…"
         },
         "contentWritten": "Inhalt geschrieben",
         "controllingPlayback": "Wiedergabe wird gesteuert…",
@@ -868,88 +868,88 @@
     },
     "contacts": {
       "buttons": {
-        "edit": "[TODO] Edit"
+        "edit": "Bearbeiten"
       },
-      "description": "[TODO] Address book with vCard import",
-      "emptySelection": "[TODO] Select a contact or create a new one to start editing details.",
-      "emptyState": "[TODO] No contacts yet. Create one or import a vCard to get started.",
+      "description": "Adressbuch mit vCard-Import",
+      "emptySelection": "Wählen Sie einen Kontakt aus oder erstellen Sie einen neuen, um Details zu bearbeiten.",
+      "emptyState": "Noch keine Kontakte. Erstellen Sie einen oder importieren Sie eine vCard, um zu beginnen.",
       "fields": {
-        "addresses": "[TODO] Addresses",
-        "birthday": "[TODO] Birthday",
-        "displayName": "[TODO] Display Name",
-        "emails": "[TODO] Email Addresses",
-        "firstName": "[TODO] First Name",
-        "jobTitle": "[TODO] Job Title",
-        "lastName": "[TODO] Last Name",
-        "nickname": "[TODO] Nickname",
-        "notes": "[TODO] Notes",
-        "organization": "[TODO] Organization",
-        "phones": "[TODO] Phone Numbers",
-        "source": "[TODO] Source",
-        "telegramUserId": "[TODO] Telegram User ID",
-        "telegramUsername": "[TODO] Telegram Username",
-        "urls": "[TODO] Websites / Links"
+        "addresses": "Adressen",
+        "birthday": "Geburtstag",
+        "displayName": "Anzeigename",
+        "emails": "E-Mail-Adressen",
+        "firstName": "Vorname",
+        "jobTitle": "Berufsbezeichnung",
+        "lastName": "Nachname",
+        "nickname": "Spitzname",
+        "notes": "Notizen",
+        "organization": "Organisation",
+        "phones": "Telefonnummern",
+        "source": "Quelle",
+        "telegramUserId": "Telegram-Benutzer-ID",
+        "telegramUsername": "Telegram-Benutzername",
+        "urls": "Websites / Links"
       },
       "groupHeaders": {
-        "groups": "[TODO] Group",
-        "names": "[TODO] Name"
+        "groups": "Gruppe",
+        "names": "Name"
       },
       "groups": {
-        "all": "[TODO] All",
-        "birthdays": "[TODO] Birthdays",
-        "imported": "[TODO] Imported",
-        "telegram": "[TODO] Telegram",
-        "work": "[TODO] Work"
+        "all": "Alle",
+        "birthdays": "Geburtstage",
+        "imported": "Importiert",
+        "telegram": "Telegram",
+        "work": "Arbeit"
       },
       "help": {
         "browseContacts": {
-          "description": "[TODO] Use the left sidebar to search and switch between saved contacts",
-          "title": "[TODO] Browse Contacts"
+          "description": "Nutzen Sie die linke Seitenleiste zum Suchen und Wechseln zwischen gespeicherten Kontakten",
+          "title": "Kontakte durchsuchen"
         },
         "cloudSync": {
-          "description": "[TODO] Enable Contacts sync in Control Panels to keep the address book in Redis",
-          "title": "[TODO] Cloud Sync"
+          "description": "Aktivieren Sie die Kontaktsynchronisierung in der Systemsteuerung, um das Adressbuch in Redis zu speichern",
+          "title": "Cloud-Synchronisierung"
         },
         "createContacts": {
-          "description": "[TODO] Choose File > New Contact to add names, phone numbers, email, and notes",
-          "title": "[TODO] Create Contacts"
+          "description": "Wählen Sie Datei > Neuer Kontakt, um Namen, Telefonnummern, E-Mail und Notizen hinzuzufügen",
+          "title": "Kontakte erstellen"
         },
         "editDetails": {
-          "description": "[TODO] Update contact details in the inspector and changes save automatically",
-          "title": "[TODO] Edit Details"
+          "description": "Aktualisieren Sie Kontaktdetails im Inspektor, und Änderungen werden automatisch gespeichert",
+          "title": "Details bearbeiten"
         },
         "importVCards": {
-          "description": "[TODO] Import .vcf files from the File menu to bring contacts into ryOS",
-          "title": "[TODO] Import vCards"
+          "description": "Importieren Sie .vcf-Dateien aus dem Menü 'Datei', um Kontakte in ryOS zu importieren",
+          "title": "vCards importieren"
         },
         "useWithRyo": {
-          "description": "[TODO] Ryo can list, create, update, and search synced contacts in chat and Telegram",
-          "title": "[TODO] Use with Ryo"
+          "description": "Ryo kann synchronisierte Kontakte im Chat und in Telegram auflisten, erstellen, aktualisieren und suchen",
+          "title": "Mit Ryo verwenden"
         }
       },
       "menu": {
-        "about": "[TODO] About Contacts",
-        "deleteContact": "[TODO] Delete Contact",
-        "help": "[TODO] Contacts Help",
-        "importVCard": "[TODO] Import vCard…",
-        "newContact": "[TODO] New Contact"
+        "about": "Über Kontakte",
+        "deleteContact": "Kontakt löschen",
+        "help": "Kontakte-Hilfe",
+        "importVCard": "vCard importieren…",
+        "newContact": "Neuer Kontakt"
       },
       "messages": {
-        "deleted": "[TODO] Deleted {{name}}",
-        "importEmpty": "[TODO] No contacts were imported from that vCard file.",
-        "importFailed": "[TODO] Failed to import vCard file.",
-        "imported": "[TODO] Imported {{imported}} new contacts and merged {{merged}} duplicates."
+        "deleted": "{{name}} gelöscht",
+        "importEmpty": "Es wurden keine Kontakte aus dieser vCard-Datei importiert.",
+        "importFailed": "Import der vCard-Datei fehlgeschlagen.",
+        "imported": "{{imported}} neue Kontakte importiert und {{merged}} Duplikate zusammengeführt."
       },
-      "name": "[TODO] Contacts",
-      "noSummary": "[TODO] No phone numbers, email, or notes yet",
+      "name": "Kontakte",
+      "noSummary": "Noch keine Telefonnummern, E-Mail-Adressen oder Notizen.",
       "placeholders": {
-        "multiValue": "[TODO] Use a new line for each value"
+        "multiValue": "Jeden Wert in eine neue Zeile"
       },
-      "searchPlaceholder": "[TODO] Search contacts...",
+      "searchPlaceholder": "Kontakte suchen…",
       "status": {
-        "cardsCount": "[TODO] {{count}} cards"
+        "cardsCount": "{{count}} Kontakte"
       },
-      "title": "[TODO] Contacts"
+      "title": "Kontakte"
     },
     "control-panels": {
       "aiModel": "KI-Modell",
@@ -967,7 +967,7 @@
       "autoSync": {
         "calendar": "Kalender",
         "checking": "Cloud-Updates werden geprüft…",
-        "contacts": "[TODO] Contacts",
+        "contacts": "Kontakte",
         "daysAgo": "vor {{count}}T",
         "description": "Synchronisiert ausgewählte Bibliotheken und Einstellungen nach wichtigen Änderungen automatisch mit der Cloud",
         "error": "Synchronisierungsproblem: {{error}}",

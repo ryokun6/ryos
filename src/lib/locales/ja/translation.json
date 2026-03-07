@@ -659,26 +659,26 @@
         "closed": "{{appName}} を閉じました",
         "closing": "{{appName}} を閉じています…",
         "contacts": {
-          "created": "[TODO] Created {{name}}",
-          "createdContact": "[TODO] Created {{name}}",
-          "creating": "[TODO] Creating contact…",
-          "deleted": "[TODO] Deleted {{name}}",
-          "deleting": "[TODO] Deleting contact…",
-          "found": "[TODO] Found {{count}} contacts",
-          "foundMany": "[TODO] Found {{count}} contacts",
-          "foundOne": "[TODO] Found 1 contact",
-          "listing": "[TODO] Listing contacts…",
-          "loaded": "[TODO] Loaded {{name}}",
-          "loadedContact": "[TODO] Loaded {{name}}",
-          "loading": "[TODO] Loading contact…",
-          "missingData": "[TODO] Add at least a name, email, phone, or Telegram field",
-          "missingId": "[TODO] Missing contact ID",
-          "noContacts": "[TODO] No contacts found",
-          "noUpdates": "[TODO] No contact updates provided",
-          "notFound": "[TODO] Contact not found: {{id}}",
-          "updated": "[TODO] Updated {{name}}",
-          "updatedContact": "[TODO] Updated {{name}}",
-          "updating": "[TODO] Updating contact…"
+          "created": "{{name}} を作成しました",
+          "createdContact": "{{name}} を作成しました",
+          "creating": "連絡先を作成中…",
+          "deleted": "{{name}} を削除しました",
+          "deleting": "連絡先を削除中…",
+          "found": "連絡先が {{count}} 件見つかりました",
+          "foundMany": "連絡先が {{count}} 件見つかりました",
+          "foundOne": "連絡先が 1 件見つかりました",
+          "listing": "連絡先を一覧表示中…",
+          "loaded": "{{name}} を読み込みました",
+          "loadedContact": "{{name}} を読み込みました",
+          "loading": "連絡先を読み込み中…",
+          "missingData": "少なくとも名前、メールアドレス、電話番号、またはTelegramフィールドを追加してください",
+          "missingId": "連絡先IDがありません",
+          "noContacts": "連絡先が見つかりませんでした",
+          "noUpdates": "連絡先の更新情報が提供されていません",
+          "notFound": "連絡先が見つかりません: {{id}}",
+          "updated": "{{name}} を更新しました",
+          "updatedContact": "{{name}} を更新しました",
+          "updating": "連絡先を更新中…"
         },
         "contentWritten": "コンテンツを書き込みました",
         "controllingPlayback": "再生を制御中…",
@@ -868,88 +868,88 @@
     },
     "contacts": {
       "buttons": {
-        "edit": "[TODO] Edit"
+        "edit": "編集"
       },
-      "description": "[TODO] Address book with vCard import",
-      "emptySelection": "[TODO] Select a contact or create a new one to start editing details.",
-      "emptyState": "[TODO] No contacts yet. Create one or import a vCard to get started.",
+      "description": "vCardインポート対応アドレス帳",
+      "emptySelection": "連絡先を選択するか、新規作成して詳細の編集を開始してください。",
+      "emptyState": "連絡先がまだありません。新規作成するか、vCardをインポートして開始してください。",
       "fields": {
-        "addresses": "[TODO] Addresses",
-        "birthday": "[TODO] Birthday",
-        "displayName": "[TODO] Display Name",
-        "emails": "[TODO] Email Addresses",
-        "firstName": "[TODO] First Name",
-        "jobTitle": "[TODO] Job Title",
-        "lastName": "[TODO] Last Name",
-        "nickname": "[TODO] Nickname",
-        "notes": "[TODO] Notes",
-        "organization": "[TODO] Organization",
-        "phones": "[TODO] Phone Numbers",
-        "source": "[TODO] Source",
-        "telegramUserId": "[TODO] Telegram User ID",
-        "telegramUsername": "[TODO] Telegram Username",
-        "urls": "[TODO] Websites / Links"
+        "addresses": "住所",
+        "birthday": "誕生日",
+        "displayName": "表示名",
+        "emails": "メールアドレス",
+        "firstName": "名",
+        "jobTitle": "役職",
+        "lastName": "姓",
+        "nickname": "ニックネーム",
+        "notes": "メモ",
+        "organization": "所属",
+        "phones": "電話番号",
+        "source": "ソース",
+        "telegramUserId": "TelegramユーザーID",
+        "telegramUsername": "Telegramユーザー名",
+        "urls": "ウェブサイト / リンク"
       },
       "groupHeaders": {
-        "groups": "[TODO] Group",
-        "names": "[TODO] Name"
+        "groups": "グループ",
+        "names": "名前"
       },
       "groups": {
-        "all": "[TODO] All",
-        "birthdays": "[TODO] Birthdays",
-        "imported": "[TODO] Imported",
-        "telegram": "[TODO] Telegram",
-        "work": "[TODO] Work"
+        "all": "すべて",
+        "birthdays": "誕生日",
+        "imported": "インポート済み",
+        "telegram": "Telegram",
+        "work": "職場"
       },
       "help": {
         "browseContacts": {
-          "description": "[TODO] Use the left sidebar to search and switch between saved contacts",
-          "title": "[TODO] Browse Contacts"
+          "description": "左サイドバーを使って、保存済みの連絡先を検索したり切り替えたりできます",
+          "title": "連絡先をブラウズ"
         },
         "cloudSync": {
-          "description": "[TODO] Enable Contacts sync in Control Panels to keep the address book in Redis",
-          "title": "[TODO] Cloud Sync"
+          "description": "コントロールパネルで連絡先の同期を有効にして、アドレス帳をRedisに保存します",
+          "title": "クラウド同期"
         },
         "createContacts": {
-          "description": "[TODO] Choose File > New Contact to add names, phone numbers, email, and notes",
-          "title": "[TODO] Create Contacts"
+          "description": "ファイル > 新規連絡先を選択して、名前、電話番号、メールアドレス、メモを追加します",
+          "title": "連絡先を作成"
         },
         "editDetails": {
-          "description": "[TODO] Update contact details in the inspector and changes save automatically",
-          "title": "[TODO] Edit Details"
+          "description": "インスペクタで連絡先の詳細を更新すると、変更は自動的に保存されます",
+          "title": "詳細を編集"
         },
         "importVCards": {
-          "description": "[TODO] Import .vcf files from the File menu to bring contacts into ryOS",
-          "title": "[TODO] Import vCards"
+          "description": "ファイルメニューから.vcfファイルをインポートして、連絡先をryOSに取り込みます",
+          "title": "vCardをインポート"
         },
         "useWithRyo": {
-          "description": "[TODO] Ryo can list, create, update, and search synced contacts in chat and Telegram",
-          "title": "[TODO] Use with Ryo"
+          "description": "Ryoは、チャットやTelegramで同期された連絡先を一覧表示、作成、更新、検索できます",
+          "title": "Ryoと連携"
         }
       },
       "menu": {
-        "about": "[TODO] About Contacts",
-        "deleteContact": "[TODO] Delete Contact",
-        "help": "[TODO] Contacts Help",
-        "importVCard": "[TODO] Import vCard…",
-        "newContact": "[TODO] New Contact"
+        "about": "連絡先について",
+        "deleteContact": "連絡先を削除",
+        "help": "連絡先ヘルプ",
+        "importVCard": "vCardをインポート…",
+        "newContact": "新しい連絡先"
       },
       "messages": {
-        "deleted": "[TODO] Deleted {{name}}",
-        "importEmpty": "[TODO] No contacts were imported from that vCard file.",
-        "importFailed": "[TODO] Failed to import vCard file.",
-        "imported": "[TODO] Imported {{imported}} new contacts and merged {{merged}} duplicates."
+        "deleted": "{{name}}を削除しました",
+        "importEmpty": "そのvCardファイルからは連絡先がインポートされませんでした。",
+        "importFailed": "vCardファイルのインポートに失敗しました。",
+        "imported": "{{imported}}件の新しい連絡先をインポートし、{{merged}}件の重複を統合しました。"
       },
-      "name": "[TODO] Contacts",
-      "noSummary": "[TODO] No phone numbers, email, or notes yet",
+      "name": "連絡先",
+      "noSummary": "電話番号、メール、メモはまだありません",
       "placeholders": {
-        "multiValue": "[TODO] Use a new line for each value"
+        "multiValue": "各値は改行で入力してください"
       },
-      "searchPlaceholder": "[TODO] Search contacts...",
+      "searchPlaceholder": "連絡先を検索…",
       "status": {
-        "cardsCount": "[TODO] {{count}} cards"
+        "cardsCount": "{{count}}件"
       },
-      "title": "[TODO] Contacts"
+      "title": "連絡先"
     },
     "control-panels": {
       "aiModel": "AIモデル",
@@ -967,7 +967,7 @@
       "autoSync": {
         "calendar": "カレンダー",
         "checking": "クラウド更新を確認中…",
-        "contacts": "[TODO] Contacts",
+        "contacts": "連絡先",
         "daysAgo": "{{count}}日前",
         "description": "重要な更新後に、選択したライブラリと設定を自動的にクラウドへ同期します",
         "error": "同期の問題: {{error}}",

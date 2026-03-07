@@ -659,26 +659,26 @@
         "closed": "{{appName}} закрыто",
         "closing": "Закрытие {{appName}}...",
         "contacts": {
-          "created": "[TODO] Created {{name}}",
-          "createdContact": "[TODO] Created {{name}}",
-          "creating": "[TODO] Creating contact…",
-          "deleted": "[TODO] Deleted {{name}}",
-          "deleting": "[TODO] Deleting contact…",
-          "found": "[TODO] Found {{count}} contacts",
-          "foundMany": "[TODO] Found {{count}} contacts",
-          "foundOne": "[TODO] Found 1 contact",
-          "listing": "[TODO] Listing contacts…",
-          "loaded": "[TODO] Loaded {{name}}",
-          "loadedContact": "[TODO] Loaded {{name}}",
-          "loading": "[TODO] Loading contact…",
-          "missingData": "[TODO] Add at least a name, email, phone, or Telegram field",
-          "missingId": "[TODO] Missing contact ID",
-          "noContacts": "[TODO] No contacts found",
-          "noUpdates": "[TODO] No contact updates provided",
-          "notFound": "[TODO] Contact not found: {{id}}",
-          "updated": "[TODO] Updated {{name}}",
-          "updatedContact": "[TODO] Updated {{name}}",
-          "updating": "[TODO] Updating contact…"
+          "created": "Создан {{name}}",
+          "createdContact": "Создан {{name}}",
+          "creating": "Создание контакта…",
+          "deleted": "Удален {{name}}",
+          "deleting": "Удаление контакта…",
+          "found": "Найдено {{count}} контактов",
+          "foundMany": "Найдено {{count}} контактов",
+          "foundOne": "Найден 1 контакт",
+          "listing": "Загрузка контактов…",
+          "loaded": "Загружен {{name}}",
+          "loadedContact": "Загружен {{name}}",
+          "loading": "Загрузка контакта…",
+          "missingData": "Добавьте хотя бы имя, электронную почту, телефон или Telegram.",
+          "missingId": "Отсутствует идентификатор контакта",
+          "noContacts": "Контакты не найдены",
+          "noUpdates": "Не указаны данные для обновления контакта.",
+          "notFound": "Контакт не найден: {{id}}",
+          "updated": "Обновлен {{name}}",
+          "updatedContact": "Обновлен {{name}}",
+          "updating": "Обновление контакта…"
         },
         "contentWritten": "Содержимое записано",
         "controllingPlayback": "Управление воспроизведением...",
@@ -868,88 +868,88 @@
     },
     "contacts": {
       "buttons": {
-        "edit": "[TODO] Edit"
+        "edit": "Редактировать"
       },
-      "description": "[TODO] Address book with vCard import",
-      "emptySelection": "[TODO] Select a contact or create a new one to start editing details.",
-      "emptyState": "[TODO] No contacts yet. Create one or import a vCard to get started.",
+      "description": "Адресная книга с импортом vCard",
+      "emptySelection": "Выберите контакт или создайте новый, чтобы начать редактирование данных.",
+      "emptyState": "Контактов пока нет. Создайте контакт или импортируйте vCard, чтобы начать.",
       "fields": {
-        "addresses": "[TODO] Addresses",
-        "birthday": "[TODO] Birthday",
-        "displayName": "[TODO] Display Name",
-        "emails": "[TODO] Email Addresses",
-        "firstName": "[TODO] First Name",
-        "jobTitle": "[TODO] Job Title",
-        "lastName": "[TODO] Last Name",
-        "nickname": "[TODO] Nickname",
-        "notes": "[TODO] Notes",
-        "organization": "[TODO] Organization",
-        "phones": "[TODO] Phone Numbers",
-        "source": "[TODO] Source",
-        "telegramUserId": "[TODO] Telegram User ID",
-        "telegramUsername": "[TODO] Telegram Username",
-        "urls": "[TODO] Websites / Links"
+        "addresses": "Адреса",
+        "birthday": "День рождения",
+        "displayName": "Отображаемое имя",
+        "emails": "Адреса электронной почты",
+        "firstName": "Имя",
+        "jobTitle": "Должность",
+        "lastName": "Фамилия",
+        "nickname": "Псевдоним",
+        "notes": "Заметки",
+        "organization": "Организация",
+        "phones": "Номера телефонов",
+        "source": "Источник",
+        "telegramUserId": "ID пользователя Telegram",
+        "telegramUsername": "Имя пользователя Telegram",
+        "urls": "Веб-сайты / Ссылки"
       },
       "groupHeaders": {
-        "groups": "[TODO] Group",
-        "names": "[TODO] Name"
+        "groups": "Группа",
+        "names": "Имя"
       },
       "groups": {
-        "all": "[TODO] All",
-        "birthdays": "[TODO] Birthdays",
-        "imported": "[TODO] Imported",
-        "telegram": "[TODO] Telegram",
-        "work": "[TODO] Work"
+        "all": "Все",
+        "birthdays": "Дни рождения",
+        "imported": "Импортированные",
+        "telegram": "Telegram",
+        "work": "Работа"
       },
       "help": {
         "browseContacts": {
-          "description": "[TODO] Use the left sidebar to search and switch between saved contacts",
-          "title": "[TODO] Browse Contacts"
+          "description": "Используйте левую боковую панель для поиска и переключения между сохраненными контактами",
+          "title": "Просмотр контактов"
         },
         "cloudSync": {
-          "description": "[TODO] Enable Contacts sync in Control Panels to keep the address book in Redis",
-          "title": "[TODO] Cloud Sync"
+          "description": "Включите синхронизацию контактов в Панелях управления, чтобы хранить адресную книгу в Redis",
+          "title": "Облачная синхронизация"
         },
         "createContacts": {
-          "description": "[TODO] Choose File > New Contact to add names, phone numbers, email, and notes",
-          "title": "[TODO] Create Contacts"
+          "description": "Выберите Файл > Новый контакт, чтобы добавить имена, номера телефонов, электронную почту и заметки",
+          "title": "Создание контактов"
         },
         "editDetails": {
-          "description": "[TODO] Update contact details in the inspector and changes save automatically",
-          "title": "[TODO] Edit Details"
+          "description": "Обновляйте данные контакта в инспекторе, и изменения будут сохраняться автоматически",
+          "title": "Редактировать данные"
         },
         "importVCards": {
-          "description": "[TODO] Import .vcf files from the File menu to bring contacts into ryOS",
-          "title": "[TODO] Import vCards"
+          "description": "Импортируйте файлы .vcf из меню Файл, чтобы перенести контакты в ryOS",
+          "title": "Импорт vCards"
         },
         "useWithRyo": {
-          "description": "[TODO] Ryo can list, create, update, and search synced contacts in chat and Telegram",
-          "title": "[TODO] Use with Ryo"
+          "description": "Ryo может просматривать, создавать, обновлять и искать синхронизированные контакты в чате и Telegram",
+          "title": "Использование с Ryo"
         }
       },
       "menu": {
-        "about": "[TODO] About Contacts",
-        "deleteContact": "[TODO] Delete Contact",
-        "help": "[TODO] Contacts Help",
-        "importVCard": "[TODO] Import vCard…",
-        "newContact": "[TODO] New Contact"
+        "about": "О контактах",
+        "deleteContact": "Удалить контакт",
+        "help": "Справка по Контактам",
+        "importVCard": "Импортировать vCard…",
+        "newContact": "Новый контакт"
       },
       "messages": {
-        "deleted": "[TODO] Deleted {{name}}",
-        "importEmpty": "[TODO] No contacts were imported from that vCard file.",
-        "importFailed": "[TODO] Failed to import vCard file.",
-        "imported": "[TODO] Imported {{imported}} new contacts and merged {{merged}} duplicates."
+        "deleted": "Удален {{name}}",
+        "importEmpty": "Из этого файла vCard не было импортировано ни одного контакта.",
+        "importFailed": "Не удалось импортировать файл vCard.",
+        "imported": "Импортировано {{imported}} новых контактов и объединено {{merged}} дубликатов."
       },
-      "name": "[TODO] Contacts",
-      "noSummary": "[TODO] No phone numbers, email, or notes yet",
+      "name": "Контакты",
+      "noSummary": "Пока нет номеров телефонов, эл. почты или заметок",
       "placeholders": {
-        "multiValue": "[TODO] Use a new line for each value"
+        "multiValue": "Каждое значение с новой строки"
       },
-      "searchPlaceholder": "[TODO] Search contacts...",
+      "searchPlaceholder": "Поиск контактов...",
       "status": {
-        "cardsCount": "[TODO] {{count}} cards"
+        "cardsCount": "{{count}} карточек"
       },
-      "title": "[TODO] Contacts"
+      "title": "Контакты"
     },
     "control-panels": {
       "aiModel": "Модель ИИ",
@@ -967,7 +967,7 @@
       "autoSync": {
         "calendar": "Календарь",
         "checking": "Проверка облачных обновлений…",
-        "contacts": "[TODO] Contacts",
+        "contacts": "Контакты",
         "daysAgo": "{{count}}д назад",
         "description": "Автоматически синхронизирует выбранные библиотеки и настройки с облаком после важных изменений",
         "error": "Проблема синхронизации: {{error}}",
