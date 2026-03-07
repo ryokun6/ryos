@@ -268,39 +268,44 @@ export function ContactsAppComponent({
           >
             {isMacOsxTheme ? (
               <>
-                <div className="metal-inset-btn-group">
-                  <button
-                    type="button"
-                    className="metal-inset-btn metal-inset-icon"
-                    onClick={handleCreateContact}
-                    title={t("apps.contacts.menu.newContact")}
-                  >
-                    <Plus size={10} weight="bold" />
-                  </button>
-                  <button
-                    type="button"
-                    className="metal-inset-btn metal-inset-icon"
-                    onClick={handleImport}
-                    title={t("apps.contacts.menu.importVCard")}
-                  >
-                    <UploadSimple size={10} weight="bold" />
-                  </button>
-                </div>
                 <div className="flex items-center gap-1.5">
                   <div className="metal-inset-btn-group">
-                    <button type="button" className="metal-inset-btn font-geneva-12 !text-[11px]">
-                      {t("apps.contacts.buttons.edit", { defaultValue: "Edit" })}
+                    <button
+                      type="button"
+                      className="metal-inset-btn metal-inset-icon"
+                      onClick={handleCreateContact}
+                      title={t("apps.contacts.menu.newContact")}
+                    >
+                      <Plus size={9} weight="bold" />
+                    </button>
+                    <button
+                      type="button"
+                      className="metal-inset-btn metal-inset-icon"
+                      onClick={handleImport}
+                      title={t("apps.contacts.menu.importVCard")}
+                    >
+                      <UploadSimple size={9} weight="bold" />
+                    </button>
+                    <button
+                      type="button"
+                      className="metal-inset-btn metal-inset-icon"
+                      onClick={handleDeleteSelectedContact}
+                      title={t("apps.contacts.menu.deleteContact")}
+                      disabled={!selectedContact}
+                    >
+                      <Trash size={9} weight="bold" />
                     </button>
                   </div>
                 </div>
+                <div className="flex-1" />
                 <div className="flex items-center gap-2">
                   <input
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder={t("apps.contacts.searchPlaceholder")}
-                    className="w-[220px] rounded-full border border-black/20 bg-white px-3 py-1 text-[12px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none"
+                    className="w-[150px] rounded-full border border-black/20 bg-white px-3 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none font-geneva-12"
                   />
-                  <div className="text-black/60 font-geneva-12 text-[11px] px-1">
+                  <div className="text-black/55 font-geneva-12 text-[10px] min-w-[34px] text-right">
                     {t("apps.contacts.status.cardsCount", {
                       count: totalContacts,
                       defaultValue: "{{count}} cards",
@@ -329,16 +334,24 @@ export function ContactsAppComponent({
                   >
                     <UploadSimple size={12} weight="bold" />
                   </Button>
+                  <Button
+                    type="button"
+                    variant={isSystem7Theme ? "player" : "ghost"}
+                    onClick={handleDeleteSelectedContact}
+                    className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
+                    title={t("apps.contacts.menu.deleteContact")}
+                    disabled={!selectedContact}
+                  >
+                    <Trash size={12} weight="bold" />
+                  </Button>
                 </div>
-                <div className={cn("text-[11px]", useGeneva && "font-geneva-12")}>
-                  {t("apps.contacts.buttons.edit", { defaultValue: "Edit" })}
-                </div>
+                <div className="flex-1" />
                 <div className="flex items-center gap-2">
                   <input
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder={t("apps.contacts.searchPlaceholder")}
-                    className="w-[220px] rounded-full border border-black/20 bg-white px-3 py-1 text-[12px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none"
+                    className="w-[170px] rounded-full border border-black/20 bg-white px-3 py-1 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none"
                   />
                   <div className={cn("text-black/60 text-[11px]", useGeneva && "font-geneva-12")}>
                     {t("apps.contacts.status.cardsCount", {
