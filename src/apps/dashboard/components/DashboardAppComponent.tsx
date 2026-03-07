@@ -20,6 +20,8 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
 import { Plus } from "@phosphor-icons/react";
 import { useDashboardStore, type WidgetType } from "@/stores/useDashboardStore";
+import { DashboardRipple, type DashboardRippleRef } from "@/components/layout/dashboard/DashboardRipple";
+import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 
 function WidgetContent({ type, widgetId, isFlipped }: { type: string; widgetId: string; isFlipped?: boolean }) {
   switch (type) {
@@ -211,6 +213,8 @@ export function DashboardAppComponent({
   const closeAppInstance = useAppStore((state) => state.closeAppInstance);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const rippleRef = useRef<DashboardRippleRef>(null);
+  const wallpaperSource = useDisplaySettingsStore((s) => s.wallpaperSource);
 
   const {
     translatedHelpItems,
@@ -226,6 +230,14 @@ export function DashboardAppComponent({
     bringToFront,
     resetToDefaults,
   } = useDashboardLogic();
+
+  const addWidgetWithRipple = useCallback(
+    (type: WidgetType) => {
+      const { centerX, centerY } = handleAddWidget(type);
+      rippleRef.current?.triggerRipple(centerX, centerY);
+    },
+    [handleAddWidget]
+  );
 
   const handleClose = useCallback(() => {
     if (isClosing) return;
@@ -268,14 +280,14 @@ export function DashboardAppComponent({
       onClose={handleClose}
       onShowHelp={() => setIsHelpDialogOpen(true)}
       onShowAbout={() => setIsAboutDialogOpen(true)}
-      onAddClock={() => handleAddWidget("clock")}
-      onAddCalendar={() => handleAddWidget("calendar")}
-      onAddWeather={() => handleAddWidget("weather")}
-      onAddStocks={() => handleAddWidget("stocks")}
-      onAddIpod={() => handleAddWidget("ipod")}
-      onAddTranslation={() => handleAddWidget("translation")}
-      onAddStickyNote={() => handleAddWidget("stickynote")}
-      onAddDictionary={() => handleAddWidget("dictionary")}
+      onAddClock={() => addWidgetWithRipple("clock")}
+      onAddCalendar={() => addWidgetWithRipple("calendar")}
+      onAddWeather={() => addWidgetWithRipple("weather")}
+      onAddStocks={() => addWidgetWithRipple("stocks")}
+      onAddIpod={() => addWidgetWithRipple("ipod")}
+      onAddTranslation={() => addWidgetWithRipple("translation")}
+      onAddStickyNote={() => addWidgetWithRipple("stickynote")}
+      onAddDictionary={() => addWidgetWithRipple("dictionary")}
       onResetWidgets={resetToDefaults}
     />
   );
@@ -322,9 +334,6 @@ export function DashboardAppComponent({
               className="fixed inset-0 dashboard-overlay"
               style={{
                 zIndex: 9998,
-                background: isXpTheme
-                  ? "rgba(0,0,0,0.6)"
-                  : "rgba(0,0,0,0.55)",
               }}
               onClick={(e) => {
                 if (e.target === e.currentTarget) {
@@ -336,6 +345,13 @@ export function DashboardAppComponent({
                 }
               }}
             >
+              {/* Shader-based ripple background */}
+              <DashboardRipple
+                ref={rippleRef}
+                wallpaperUrl={wallpaperSource}
+                tintOpacity={isXpTheme ? 0.6 : 0.55}
+              />
+
               {/* Widgets */}
               <AnimatePresence>
                 {widgets.map((widget) => (
@@ -378,7 +394,7 @@ export function DashboardAppComponent({
               <AnimatePresence>
                 {isPickerOpen && (
                   <WidgetStrip
-                    onAdd={handleAddWidget}
+                    onAdd={addWidgetWithRipple}
                     isXpTheme={isXpTheme}
                   />
                 )}
