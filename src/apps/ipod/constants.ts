@@ -49,6 +49,7 @@ export type IpodTheme = (typeof IPOD_THEMES)[number];
 export const BACKLIGHT_TIMEOUT_MS = 5000;
 export const STATUS_MESSAGE_DURATION_MS = 2000;
 export const CONTROLS_HIDE_DELAY_MS = 2000;
+export const PLAYER_PROGRESS_INTERVAL_MS = 200;
 
 // Wheel interaction constants
 export const ROTATION_STEP_DEG = 15; // Degrees of rotation per scroll step
