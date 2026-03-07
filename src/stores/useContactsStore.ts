@@ -8,6 +8,7 @@ import {
   findMatchingContact,
   mergeContacts,
   parseVCardText,
+  seedDefaultContacts,
   sortContacts,
   updateContactFromDraft,
 } from "@/utils/contacts";
@@ -32,11 +33,17 @@ function getNextSelectedId(contacts: Contact[], deletedId: string): string | nul
   return remaining[0]?.id ?? null;
 }
 
+function createInitialSeededContacts(): Contact[] {
+  return seedDefaultContacts([]);
+}
+
+const INITIAL_CONTACTS = createInitialSeededContacts();
+
 export const useContactsStore = create<ContactsStoreState>()(
   persist(
     (set, get) => ({
-      contacts: [],
-      selectedContactId: null,
+      contacts: INITIAL_CONTACTS,
+      selectedContactId: INITIAL_CONTACTS[0]?.id ?? null,
 
       setSelectedContactId: (id) => set({ selectedContactId: id }),
 
@@ -115,6 +122,24 @@ export const useContactsStore = create<ContactsStoreState>()(
     }),
     {
       name: "contacts-storage",
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<ContactsStoreState> | undefined;
+        const contacts = seedDefaultContacts(
+          Array.isArray(persisted?.contacts) ? persisted.contacts : []
+        );
+
+        const selectedContactId =
+          typeof persisted?.selectedContactId === "string" &&
+          contacts.some((contact) => contact.id === persisted.selectedContactId)
+            ? persisted.selectedContactId
+            : contacts[0]?.id ?? null;
+
+        return {
+          ...currentState,
+          contacts,
+          selectedContactId,
+        };
+      },
     }
   )
 );

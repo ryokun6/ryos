@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
+  createDefaultRyoContact,
   createContactFromDraft,
   findMatchingContact,
   mergeContacts,
   parseVCardText,
+  seedDefaultContacts,
 } from "../src/utils/contacts";
 
 describe("contacts vCard parsing", () => {
@@ -59,5 +61,18 @@ describe("contacts vCard parsing", () => {
     expect(merged.phones[0]?.value).toBe("+1 555 0100");
     expect(merged.telegramUsername).toBe("averyc");
     expect(merged.notes).toContain("Original note");
+  });
+
+  test("seeds default ryo contact exactly once", () => {
+    const seeded = seedDefaultContacts([]);
+    expect(seeded).toHaveLength(1);
+    expect(seeded[0].displayName).toBe("Ryo Lu");
+    expect(seeded[0].emails[0]?.value).toBe("me@ryo.lu");
+    expect(seeded[0].organization).toBe("Cursor");
+
+    const existingRyo = createDefaultRyoContact();
+    const seededAgain = seedDefaultContacts([existingRyo]);
+    expect(seededAgain).toHaveLength(1);
+    expect(seededAgain[0].displayName).toBe("Ryo Lu");
   });
 });
