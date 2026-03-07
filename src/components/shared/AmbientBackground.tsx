@@ -3,6 +3,11 @@ import * as THREE from "three";
 
 /** Duration of crossfade between cover textures (seconds) */
 const CROSSFADE_SECONDS = 1.5;
+/** Render at a lower internal resolution to reduce shader cost. */
+const RENDER_SCALE = 0.4;
+/** Cap the shader loop to reduce steady-state GPU usage. */
+const TARGET_FPS = 30;
+const FRAME_INTERVAL_MS = 1000 / TARGET_FPS;
 
 export type AmbientVariant = "liquid" | "warp";
 
@@ -42,7 +47,7 @@ const liquidFragmentShader = `
   const float ZOOM       = 1.4;
   const float SWIRL      = 1.0;
   const float SATURATION = 1.4;
-  const float BLUR       = 0.16;   // blur radius in UV space
+  const float BLUR       = 0.14;   // blur radius in UV space
 
   float hash(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -81,15 +86,15 @@ const liquidFragmentShader = `
 
     texUV = clamp(texUV + distort, 0.002, 0.998);
 
-    // Blur: 3 concentric rings (12 taps + center) – regular but no grid
+    // Blur: 2 concentric rings (4 + 8 taps + center)
     vec3 col = vec3(0.0);
     col += mix(texture2D(coverTextureA, texUV).rgb, texture2D(coverTextureB, texUV).rgb, blendFactor);
     float total = 1.0;
-    for (int ring = 1; ring <= 3; ring++) {
-      float r = BLUR * float(ring) / 3.0;
+    for (int ring = 1; ring <= 2; ring++) {
+      float r = BLUR * float(ring) / 2.0;
       float w = 1.0 / float(ring);          // inner rings weighted more
-      int taps = ring * 4;                   // 4, 8, 12 taps per ring
-      for (int i = 0; i < 12; i++) {
+      int taps = ring * 4;                   // 4, 8 taps per ring
+      for (int i = 0; i < 8; i++) {
         if (i >= taps) break;
         float a = float(i) * 6.28318 / float(taps);
         vec2 sampleUV = clamp(texUV + vec2(cos(a), sin(a)) * r, 0.002, 0.998);
@@ -139,7 +144,7 @@ const warpFragmentShader = `
     );
 
     vec3 col = vec3(0.0);
-    for (int r = 0; r < 40; r++) {
+    for (int r = 0; r < 28; r++) {
       vec3 p = init + s * vec3(uv, 0.05);
       p.z = fract(p.z);
 
@@ -181,7 +186,6 @@ export function AmbientBackground({
   className = "",
 }: AmbientBackgroundProps) {
   const mountRef = useRef<HTMLDivElement>(null);
-  const clockRef = useRef(new THREE.Clock());
 
   const currentUrlRef = useRef<string | null>(null);
   const showingBRef = useRef(false);
@@ -256,7 +260,8 @@ export function AmbientBackground({
       alpha: true,
       powerPreference: "high-performance",
     });
-    const scale = 0.5;
+    renderer.setPixelRatio(1);
+    const scale = RENDER_SCALE;
     renderer.setSize(
       Math.floor(el.clientWidth * scale),
       Math.floor(el.clientHeight * scale),
@@ -319,12 +324,19 @@ export function AmbientBackground({
     resizeObserver.observe(el);
 
     let frameId: number;
-    const animate = () => {
+    let lastRenderAt = 0;
+    const animate = (now: number) => {
       frameId = requestAnimationFrame(animate);
-      shaderMaterial.uniforms.time.value = clockRef.current.getElapsedTime();
+      if (lastRenderAt !== 0 && now - lastRenderAt < FRAME_INTERVAL_MS) {
+        return;
+      }
+
+      const deltaSeconds = lastRenderAt === 0 ? 0 : (now - lastRenderAt) / 1000;
+      lastRenderAt = now;
+      shaderMaterial.uniforms.time.value = now / 1000;
 
       const blend = blendRef.current;
-      const step = 1 / (CROSSFADE_SECONDS * 60);
+      const step = deltaSeconds > 0 ? deltaSeconds / CROSSFADE_SECONDS : 0;
       if (blend.current < blend.target) {
         blend.current = Math.min(blend.target, blend.current + step);
       } else if (blend.current > blend.target) {
@@ -334,7 +346,7 @@ export function AmbientBackground({
 
       renderer.render(scene, camera);
     };
-    animate();
+    frameId = requestAnimationFrame(animate);
 
     return () => {
       cancelAnimationFrame(frameId);

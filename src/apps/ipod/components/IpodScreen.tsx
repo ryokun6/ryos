@@ -13,7 +13,11 @@ import {
   ScrollingText,
   StatusDisplay,
 } from "./screen";
-import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
+import {
+  PLAYER_PROGRESS_INTERVAL_MS,
+  getYouTubeVideoId,
+  formatKugouImageUrl,
+} from "../constants";
 import { DisplayMode } from "@/types/lyrics";
 import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBackground";
 import { AmbientBackground } from "@/components/shared/AmbientBackground";
@@ -100,6 +104,7 @@ export function IpodScreen({
 
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
   const finalIpodVolume = ipodVolume * masterVolume;
+  const shouldAnimateVisuals = showVideo && isPlaying;
 
   // Cover URL for paused state overlay
   const coverUrl = useMemo(() => {
@@ -276,7 +281,7 @@ export function IpodScreen({
                 loop={loopCurrent}
                 volume={finalIpodVolume}
                 playsinline={true}
-                progressInterval={100}
+                progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
                 config={{
                   youtube: {
                     playerVars: {
@@ -301,7 +306,7 @@ export function IpodScreen({
             {/* Landscape video background */}
             {displayMode === DisplayMode.Landscapes && (
               <LandscapeVideoBackground
-                isActive={showVideo}
+                isActive={shouldAnimateVisuals}
                 className="absolute inset-0 z-[5]"
               />
             )}
@@ -311,7 +316,7 @@ export function IpodScreen({
               <AmbientBackground
                 coverUrl={coverUrl}
                 variant="warp"
-                isActive={showVideo}
+                isActive={shouldAnimateVisuals}
                 className="absolute inset-0 z-[5]"
               />
             )}
@@ -320,7 +325,7 @@ export function IpodScreen({
             {displayMode === DisplayMode.Mesh && (
               <MeshGradientBackground
                 coverUrl={coverUrl}
-                isActive={showVideo}
+                isActive={shouldAnimateVisuals}
                 className="absolute inset-0 z-[5]"
               />
             )}
@@ -329,7 +334,7 @@ export function IpodScreen({
             {displayMode === DisplayMode.Water && (
               <WaterBackground
                 coverUrl={coverUrl}
-                isActive={showVideo}
+                isActive={shouldAnimateVisuals}
                 className="absolute inset-0 z-[5]"
               />
             )}

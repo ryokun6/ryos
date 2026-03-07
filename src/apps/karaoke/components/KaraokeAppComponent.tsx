@@ -30,6 +30,7 @@ import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBack
 import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 import { WaterBackground } from "@/components/shared/WaterBackground";
+import { PLAYER_PROGRESS_INTERVAL_MS } from "@/apps/ipod/constants";
 
 export function KaraokeAppComponent({
   isWindowOpen,
@@ -231,6 +232,7 @@ export function KaraokeAppComponent({
       isListenSessionHost={isListenSessionHost}
     />
   );
+  const shouldAnimateVisuals = isPlaying && (isForeground ?? true);
 
   if (!isWindowOpen) return null;
 
@@ -358,7 +360,7 @@ export function KaraokeAppComponent({
                   onEnded={handleTrackEnd}
                   onProgress={handleProgress}
                   onDuration={setDuration}
-                  progressInterval={100}
+                  progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
                   onPlay={handlePlay}
                   onPause={handleMainPlayerPause}
                   onReady={!isFullScreen ? handleReady : undefined}
@@ -394,7 +396,7 @@ export function KaraokeAppComponent({
           {/* Landscape video background */}
           {displayMode === DisplayMode.Landscapes && currentTrack && (
             <LandscapeVideoBackground
-              isActive={!!currentTrack}
+              isActive={shouldAnimateVisuals}
               className="absolute inset-0 z-[5]"
             />
           )}
@@ -404,7 +406,7 @@ export function KaraokeAppComponent({
             <AmbientBackground
               coverUrl={coverUrl}
               variant="warp"
-              isActive={!!currentTrack}
+              isActive={shouldAnimateVisuals}
               className="absolute inset-0 z-[5]"
             />
           )}
@@ -413,7 +415,7 @@ export function KaraokeAppComponent({
           {displayMode === DisplayMode.Mesh && currentTrack && (
             <MeshGradientBackground
               coverUrl={coverUrl}
-              isActive={!!currentTrack}
+              isActive={shouldAnimateVisuals}
               className="absolute inset-0 z-[5]"
             />
           )}
@@ -422,7 +424,7 @@ export function KaraokeAppComponent({
           {displayMode === DisplayMode.Water && currentTrack && (
             <WaterBackground
               coverUrl={coverUrl}
-              isActive={!!currentTrack}
+              isActive={shouldAnimateVisuals}
               className="absolute inset-0 z-[5]"
             />
           )}
@@ -851,7 +853,7 @@ export function KaraokeAppComponent({
                           loop={loopCurrent}
                           onEnded={handleTrackEnd}
                           onProgress={handleProgress}
-                          progressInterval={100}
+                          progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
                           onPlay={handlePlay}
                           onPause={handlePause}
                           onReady={isFullScreen ? handleReady : undefined}
@@ -882,7 +884,7 @@ export function KaraokeAppComponent({
                 {/* Landscape video background (fullscreen) */}
                 {displayMode === DisplayMode.Landscapes && currentTrack && (
                   <LandscapeVideoBackground
-                    isActive={!!currentTrack}
+                    isActive={shouldAnimateVisuals}
                     className="fixed inset-0 z-[5]"
                   />
                 )}
@@ -892,7 +894,7 @@ export function KaraokeAppComponent({
                   <AmbientBackground
                     coverUrl={coverUrl}
                     variant="warp"
-                    isActive={!!currentTrack}
+                    isActive={shouldAnimateVisuals}
                     className="fixed inset-0 z-[5]"
                   />
                 )}
@@ -901,7 +903,7 @@ export function KaraokeAppComponent({
                 {displayMode === DisplayMode.Mesh && currentTrack && (
                   <MeshGradientBackground
                     coverUrl={coverUrl}
-                    isActive={!!currentTrack}
+                    isActive={shouldAnimateVisuals}
                     className="fixed inset-0 z-[5]"
                   />
                 )}
@@ -910,7 +912,7 @@ export function KaraokeAppComponent({
                 {displayMode === DisplayMode.Water && currentTrack && (
                   <WaterBackground
                     coverUrl={coverUrl}
-                    isActive={!!currentTrack}
+                    isActive={shouldAnimateVisuals}
                     className="fixed inset-0 z-[5]"
                   />
                 )}

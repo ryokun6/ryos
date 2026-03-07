@@ -26,6 +26,7 @@ import { LandscapeVideoBackground } from "@/components/shared/LandscapeVideoBack
 import { AmbientBackground } from "@/components/shared/AmbientBackground";
 import { MeshGradientBackground } from "@/components/shared/MeshGradientBackground";
 import { WaterBackground } from "@/components/shared/WaterBackground";
+import { PLAYER_PROGRESS_INTERVAL_MS } from "../constants";
 
 export function IpodAppComponent({
   isWindowOpen,
@@ -165,6 +166,7 @@ export function IpodAppComponent({
       onToggleCoverFlow={() => setIsCoverFlowOpen(!isCoverFlowOpen)}
     />
   );
+  const shouldAnimateFullScreenVisuals = isPlaying && (isForeground ?? true);
 
   if (!isWindowOpen) return null;
 
@@ -475,7 +477,6 @@ export function IpodAppComponent({
                             loop={loopCurrent}
                             onEnded={handleTrackEnd}
                             onProgress={handleProgress}
-                            progressInterval={100}
                             onDuration={handleDuration}
                             onPlay={handlePlay}
                             onPause={handlePause}
@@ -498,6 +499,7 @@ export function IpodAppComponent({
                                 },
                               },
                             }}
+                            progressInterval={PLAYER_PROGRESS_INTERVAL_MS}
                           />
                         </div>
                       )}
@@ -507,7 +509,7 @@ export function IpodAppComponent({
                   {/* Landscape video background (fullscreen) */}
                   {displayMode === DisplayMode.Landscapes && tracks[currentIndex] && (
                     <LandscapeVideoBackground
-                      isActive={!!tracks[currentIndex]}
+                      isActive={shouldAnimateFullScreenVisuals}
                       className="fixed inset-0 z-[5]"
                     />
                   )}
@@ -517,7 +519,7 @@ export function IpodAppComponent({
                     <AmbientBackground
                       coverUrl={fullscreenCoverUrl}
                       variant="warp"
-                      isActive={!!tracks[currentIndex]}
+                      isActive={shouldAnimateFullScreenVisuals}
                       className="fixed inset-0 z-[5]"
                     />
                   )}
@@ -526,7 +528,7 @@ export function IpodAppComponent({
                   {displayMode === DisplayMode.Mesh && tracks[currentIndex] && (
                     <MeshGradientBackground
                       coverUrl={fullscreenCoverUrl}
-                      isActive={!!tracks[currentIndex]}
+                      isActive={shouldAnimateFullScreenVisuals}
                       className="fixed inset-0 z-[5]"
                     />
                   )}
@@ -535,7 +537,7 @@ export function IpodAppComponent({
                   {displayMode === DisplayMode.Water && tracks[currentIndex] && (
                     <WaterBackground
                       coverUrl={fullscreenCoverUrl}
-                      isActive={!!tracks[currentIndex]}
+                      isActive={shouldAnimateFullScreenVisuals}
                       className="fixed inset-0 z-[5]"
                     />
                   )}
