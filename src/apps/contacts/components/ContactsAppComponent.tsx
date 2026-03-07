@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { AboutDialog } from "@/components/dialogs/AboutDialog";
 import { HelpDialog } from "@/components/dialogs/HelpDialog";
@@ -9,7 +9,8 @@ import { appMetadata } from "..";
 import type { AppProps } from "@/apps/base/types";
 import { cn } from "@/lib/utils";
 import { getContactInitials, getContactSummary, type Contact } from "@/utils/contacts";
-import { Plus, Trash, UploadSimple } from "@phosphor-icons/react";
+import { Plus, UploadSimple } from "@phosphor-icons/react";
+import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 
 function splitMultivalueInput(value: string): string[] {
   return value
@@ -151,15 +152,6 @@ function Field({
 const compactInputClassName =
   "w-full rounded-none border border-black/20 bg-white px-2 py-1 text-[12px] outline-none focus:border-black/45";
 
-function DetailDots() {
-  return (
-    <div className="flex items-center gap-1 shrink-0 pt-1.5">
-      <span className="block h-3.5 w-3.5 rounded-full bg-[#e37e7e] border border-[#b34848]" />
-      <span className="block h-3.5 w-3.5 rounded-full bg-[#a3d79a] border border-[#619d59]" />
-    </div>
-  );
-}
-
 function DetailRow({
   label,
   children,
@@ -168,12 +160,9 @@ function DetailRow({
   children: ReactNode;
 }) {
   return (
-    <div className="flex gap-3 py-2 border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
-      <DetailDots />
-      <div className="min-w-0 flex-1">
-        <div className="text-[11px] font-semibold text-black/55 mb-1">{label}</div>
-        {children}
-      </div>
+    <div className="py-2 border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+      <div className="text-[11px] font-semibold text-black/55 mb-1">{label}</div>
+      {children}
     </div>
   );
 }
@@ -200,7 +189,6 @@ export function ContactsAppComponent({
     selectedGroupId,
     contactGroups,
     contacts,
-    totalContacts,
     selectedContact,
     handleSelectGroup,
     handleSelectContact,
@@ -212,6 +200,12 @@ export function ContactsAppComponent({
     fileInputRef,
   } = useContactsLogic();
   const useGeneva = isMacOsxTheme || isSystem7Theme;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(820);
+  useResizeObserverWithRef(containerRef, (entry) => {
+    setContainerWidth(entry.contentRect.width);
+  });
+  const isMobileLayout = containerWidth < 640;
 
   const menuBar = (
     <ContactsMenuBar
@@ -243,6 +237,7 @@ export function ContactsAppComponent({
         menuBar={isXpTheme ? menuBar : undefined}
       >
         <div
+          ref={containerRef}
           className={cn(
             "h-full flex flex-col font-os-ui overflow-hidden",
             isMacOsxTheme ? "bg-transparent" : isSystem7Theme ? "bg-white" : "bg-[#efede4]"
@@ -250,7 +245,7 @@ export function ContactsAppComponent({
         >
           <div
             className={cn(
-              "flex items-center justify-between py-1.5 border-b",
+              "flex items-center justify-between py-1.5 border-b gap-2",
               isMacOsxTheme ? "px-1" : "px-2"
             )}
             style={{
@@ -286,15 +281,6 @@ export function ContactsAppComponent({
                     >
                       <UploadSimple size={9} weight="bold" />
                     </button>
-                    <button
-                      type="button"
-                      className="metal-inset-btn metal-inset-icon"
-                      onClick={handleDeleteSelectedContact}
-                      title={t("apps.contacts.menu.deleteContact")}
-                      disabled={!selectedContact}
-                    >
-                      <Trash size={9} weight="bold" />
-                    </button>
                   </div>
                 </div>
                 <div className="flex-1" />
@@ -303,14 +289,11 @@ export function ContactsAppComponent({
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder={t("apps.contacts.searchPlaceholder")}
-                    className="w-[150px] rounded-full border border-black/20 bg-white px-3 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none font-geneva-12"
+                    className={cn(
+                      "rounded-full border border-black/20 bg-white px-3 py-[3px] text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none font-geneva-12",
+                      isMobileLayout ? "w-[120px]" : "w-[150px]"
+                    )}
                   />
-                  <div className="text-black/55 font-geneva-12 text-[10px] min-w-[34px] text-right">
-                    {t("apps.contacts.status.cardsCount", {
-                      count: totalContacts,
-                      defaultValue: "{{count}} cards",
-                    })}
-                  </div>
                 </div>
               </>
             ) : (
@@ -334,37 +317,34 @@ export function ContactsAppComponent({
                   >
                     <UploadSimple size={12} weight="bold" />
                   </Button>
-                  <Button
-                    type="button"
-                    variant={isSystem7Theme ? "player" : "ghost"}
-                    onClick={handleDeleteSelectedContact}
-                    className={cn("h-6 w-6 px-0", isXpTheme && "text-black")}
-                    title={t("apps.contacts.menu.deleteContact")}
-                    disabled={!selectedContact}
-                  >
-                    <Trash size={12} weight="bold" />
-                  </Button>
                 </div>
                 <div className="flex-1" />
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <input
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
                     placeholder={t("apps.contacts.searchPlaceholder")}
-                    className="w-[170px] rounded-full border border-black/20 bg-white px-3 py-1 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none"
+                    className={cn(
+                      "rounded-full border border-black/20 bg-white px-3 py-1 text-[11px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.12)] outline-none min-w-0",
+                      isMobileLayout ? "w-[130px]" : "w-[170px]"
+                    )}
                   />
-                  <div className={cn("text-black/60 text-[11px]", useGeneva && "font-geneva-12")}>
-                    {t("apps.contacts.status.cardsCount", {
-                      count: totalContacts,
-                      defaultValue: "{{count}} cards",
-                    })}
-                  </div>
                 </div>
               </>
             )}
           </div>
 
-          <div className={cn("flex-1 flex overflow-hidden", isMacOsxTheme && "gap-[5px] px-[5px] pb-[5px]")}>
+          <div
+            className={cn(
+              "flex-1 overflow-hidden",
+              isMobileLayout
+                ? "flex flex-col gap-[5px]"
+                : "flex",
+              isMacOsxTheme && "px-[5px] pb-[5px]",
+              !isMobileLayout && isMacOsxTheme && "gap-[5px]"
+            )}
+          >
+            {!isMobileLayout && (
             <Panel className="w-[170px] shrink-0 flex flex-col min-h-0">
               <PanelHeader
                 title={t("apps.contacts.groupHeaders.groups", {
@@ -384,8 +364,14 @@ export function ContactsAppComponent({
                 ))}
               </div>
             </Panel>
+            )}
 
-            <Panel className="w-[245px] shrink-0 flex flex-col min-h-0">
+            <Panel
+              className={cn(
+                "flex flex-col min-h-0",
+                isMobileLayout ? "w-full h-[140px] shrink-0" : "w-[245px] shrink-0"
+              )}
+            >
               <PanelHeader
                 title={t("apps.contacts.groupHeaders.names", {
                   defaultValue: "Name",
@@ -393,7 +379,7 @@ export function ContactsAppComponent({
                 useGeneva={useGeneva}
               />
               <div className={cn("flex-1 overflow-y-auto calendar-sidebar", useGeneva && "font-geneva-12")}>
-                  {contacts.length === 0 ? (
+                {contacts.length === 0 ? (
                   <div className="px-4 py-6 text-[12px] text-black/55">
                     {t("apps.contacts.emptyState")}
                   </div>
@@ -414,18 +400,6 @@ export function ContactsAppComponent({
               <PanelHeader
                 title={selectedContact?.displayName || t("apps.contacts.title")}
                 useGeneva={useGeneva}
-                trailing={
-                  selectedContact ? (
-                    <Button
-                      type="button"
-                      variant={isSystem7Theme ? "player" : "retro"}
-                      onClick={handleDeleteSelectedContact}
-                      className="h-5 px-2 text-[10px]"
-                    >
-                      <Trash size={11} weight="bold" />
-                    </Button>
-                  ) : undefined
-                }
               />
               {selectedContact ? (
                 <>
