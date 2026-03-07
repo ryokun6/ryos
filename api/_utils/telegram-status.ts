@@ -5,8 +5,6 @@ import {
   sendTelegramMessage,
 } from "./telegram.js";
 
-const TELEGRAM_TYPING_STATUS = "Thinking...";
-
 export function getTelegramToolStatusText(
   toolName: string,
   input: unknown
@@ -101,8 +99,7 @@ export function createTelegramStatusReporter({
   const sendChatAction = deps.sendChatAction ?? sendTelegramChatAction;
 
   let statusMessageId: number | null = null;
-  let renderedStatusText: string | null = null;
-  let statusTrail: string[] = [];
+  let lastStatusText: string | null = null;
   let typingTimer: ReturnType<typeof setInterval> | null = null;
   let queue = Promise.resolve();
 
@@ -132,9 +129,8 @@ export function createTelegramStatusReporter({
     }
   };
 
-  const syncStatusMessage = async () => {
-    const text = statusTrail.join("\n");
-    if (!text || text === renderedStatusText) {
+  const updateStatus = async (text: string) => {
+    if (text === lastStatusText) {
       return;
     }
 
@@ -148,7 +144,7 @@ export function createTelegramStatusReporter({
         });
         if (typeof messageId === "number") {
           statusMessageId = messageId;
-          renderedStatusText = text;
+          lastStatusText = text;
         }
         return;
       }
@@ -159,17 +155,8 @@ export function createTelegramStatusReporter({
         messageId: statusMessageId,
         text,
       });
-      renderedStatusText = text;
+      lastStatusText = text;
     });
-  };
-
-  const appendStatus = async (text: string) => {
-    if (statusTrail.at(-1) === text) {
-      return;
-    }
-
-    statusTrail = [...statusTrail, text];
-    await syncStatusMessage();
   };
 
   return {
@@ -184,11 +171,11 @@ export function createTelegramStatusReporter({
     },
 
     async markTool(toolName: string, input: unknown) {
-      await appendStatus(getTelegramToolStatusText(toolName, input));
+      await updateStatus(getTelegramToolStatusText(toolName, input));
     },
 
     async markThinking() {
-      await appendStatus(TELEGRAM_TYPING_STATUS);
+      // Keep the most recent tool status visible while typing continues.
     },
 
     async dispose() {
@@ -210,8 +197,7 @@ export function createTelegramStatusReporter({
           });
         } finally {
           statusMessageId = null;
-          renderedStatusText = null;
-          statusTrail = [];
+          lastStatusText = null;
         }
       });
     },
