@@ -27,7 +27,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { StartMenu } from "./StartMenu";
 import { useAppStoreShallow, useAudioSettingsStoreShallow, useDisplaySettingsStoreShallow } from "@/stores/helpers";
 import { Slider } from "@/components/ui/slider";
-import { SpeakerSimpleLow, SpeakerSimpleHigh, SpeakerSimpleSlash, Gear, CaretUp, DotsThree, MagnifyingGlass } from "@phosphor-icons/react";
+import { SpeakerSimpleLow, SpeakerSimpleHigh, SpeakerSimpleSlash, Gear, CaretUp, DotsThree, MagnifyingGlass, ArrowsClockwise } from "@phosphor-icons/react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getAppIconPath, appRegistry } from "@/config/appRegistry";
@@ -48,6 +48,7 @@ import { isTauri, isTauriWindows } from "@/utils/platform";
 import { useSpotlightStore } from "@/stores/useSpotlightStore";
 import { toggleExposeView, toggleSpotlightSearch, requestAppLaunch } from "@/utils/appEventBus";
 import { useUndoRedoStore } from "@/stores/useUndoRedoStore";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 
 // Helper function to get app name (using translations)
 const getAppName = (appId: string): string => {
@@ -1544,6 +1545,7 @@ export function MenuBar({ children, inWindowFrame = false }: MenuBarProps) {
       )}
       <div className={`${isPhone ? "flex-shrink-0 pl-1 pr-0.5" : "ml-auto"} flex items-center`}>
         <OfflineIndicator />
+        <CloudSyncIndicator />
         <ExposeButton />
         <div className="hidden sm:flex">
           <VolumeControl />
@@ -1657,6 +1659,49 @@ function ExposeButton() {
     >
       <DotsThree aria-hidden="true" className="h-4 w-4" weight="bold" />
     </button>
+  );
+}
+
+function CloudSyncIndicator() {
+  const { t } = useTranslation();
+  const currentTheme = useThemeStore((state) => state.current);
+  const isXpTheme = currentTheme === "xp" || currentTheme === "win98";
+  const isCloudSyncActive = useCloudSyncStore(
+    (state) =>
+      state.isCheckingRemote ||
+      Object.values(state.domainStatus).some((status) => status.isUploading)
+  );
+
+  if (isXpTheme || !isCloudSyncActive) return null;
+
+  return (
+    <AnimatePresence initial={false}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.85 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.85 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        className="flex items-center justify-center px-1 py-0.5"
+        style={{ marginRight: "2px" }}
+        title={t("apps.control-panels.autoSync.title")}
+        aria-label={t("apps.control-panels.autoSync.title")}
+        role="status"
+        aria-live="polite"
+      >
+        <ArrowsClockwise
+          aria-hidden="true"
+          className="h-3.5 w-3.5 animate-spin"
+          weight="bold"
+          style={{
+            opacity: currentTheme === "system7" ? 1 : 0.82,
+            textShadow:
+              currentTheme === "macosx"
+                ? "0 2px 3px rgba(0, 0, 0, 0.25)"
+                : undefined,
+          }}
+        />
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
