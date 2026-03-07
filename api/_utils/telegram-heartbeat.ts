@@ -1,4 +1,5 @@
 import type { DailyNote, DailyNoteEntry } from "./_memory.js";
+import type { HeartbeatRecord } from "./heartbeats.js";
 import type { TelegramConversationMessage } from "./telegram-link.js";
 
 export const TELEGRAM_HEARTBEAT_TARGET_USERNAME = "ryo";
@@ -7,6 +8,7 @@ export const TELEGRAM_HEARTBEAT_CRON_PATH = "/api/cron/telegram-heartbeat";
 export const TELEGRAM_HEARTBEAT_CRON_SCHEDULE = "*/30 * * * *";
 export const TELEGRAM_HEARTBEAT_SLOT_TTL_SECONDS = 7 * 24 * 60 * 60;
 export const TELEGRAM_HEARTBEAT_TIME_ZONE = "America/Los_Angeles";
+export const TELEGRAM_HEARTBEAT_TOPIC = "telegram-heartbeat";
 export const TELEGRAM_HEARTBEAT_LOG_PREFIX = "[telegram heartbeat]";
 export const TELEGRAM_HEARTBEAT_SKIP_TOKEN = "NO_HEARTBEAT";
 
@@ -30,10 +32,13 @@ export function buildTelegramHeartbeatRedisKey(
 }
 
 export interface TelegramHeartbeatNoteContext {
-  actionableEntries: DailyNoteEntry[];
-  logEntries: DailyNoteEntry[];
+  entries: DailyNoteEntry[];
   latestActionableTimestamp: number | null;
-  latestLogTimestamp: number | null;
+}
+
+export interface TelegramHeartbeatHistoryContext {
+  entries: HeartbeatRecord[];
+  latestHeartbeatTimestamp: number | null;
 }
 
 export interface TelegramHeartbeatGateDecision {
@@ -75,31 +80,39 @@ function truncateHeartbeatText(text: string, maxLength: number): string {
   return `${text.slice(0, Math.max(0, maxLength - 1)).trimEnd()}...`;
 }
 
-export function isTelegramHeartbeatLogEntry(content: string): boolean {
+export function isTelegramHeartbeatLegacyNoteEntry(content: string): boolean {
   return content.trim().toLowerCase().startsWith(TELEGRAM_HEARTBEAT_LOG_PREFIX);
 }
 
-export function splitTelegramHeartbeatEntries(
+export function buildTelegramHeartbeatNoteContext(
   note: DailyNote | null | undefined
 ): TelegramHeartbeatNoteContext {
-  const entries = note?.entries ?? [];
-  const actionableEntries = entries.filter(
-    (entry) => !isTelegramHeartbeatLogEntry(entry.content)
-  );
-  const logEntries = entries.filter((entry) =>
-    isTelegramHeartbeatLogEntry(entry.content)
+  const entries = (note?.entries ?? []).filter(
+    (entry) => !isTelegramHeartbeatLegacyNoteEntry(entry.content)
   );
 
   return {
-    actionableEntries,
-    logEntries,
+    entries,
     latestActionableTimestamp:
-      actionableEntries.length > 0
-        ? Math.max(...actionableEntries.map((entry) => entry.timestamp))
+      entries.length > 0
+        ? Math.max(...entries.map((entry) => entry.timestamp))
         : null,
-    latestLogTimestamp:
-      logEntries.length > 0
-        ? Math.max(...logEntries.map((entry) => entry.timestamp))
+  };
+}
+
+export function buildTelegramHeartbeatHistoryContext(
+  records: HeartbeatRecord[]
+): TelegramHeartbeatHistoryContext {
+  const entries = records
+    .filter((record) => record.topic === TELEGRAM_HEARTBEAT_TOPIC)
+    .slice()
+    .sort((a, b) => a.timestamp - b.timestamp);
+
+  return {
+    entries,
+    latestHeartbeatTimestamp:
+      entries.length > 0
+        ? Math.max(...entries.map((entry) => entry.timestamp))
         : null,
   };
 }
@@ -167,6 +180,7 @@ function getLatestSignalTimestamp(
 
 export function shouldSendTelegramHeartbeat(
   noteContext: TelegramHeartbeatNoteContext,
+  historyContext: TelegramHeartbeatHistoryContext,
   conversationContext?: TelegramHeartbeatConversationContext
 ): TelegramHeartbeatGateDecision {
   const latestSignalTimestamp = getLatestSignalTimestamp(
@@ -183,8 +197,8 @@ export function shouldSendTelegramHeartbeat(
   }
 
   if (
-    noteContext.latestLogTimestamp !== null &&
-    latestSignalTimestamp <= noteContext.latestLogTimestamp
+    historyContext.latestHeartbeatTimestamp !== null &&
+    latestSignalTimestamp <= historyContext.latestHeartbeatTimestamp
   ) {
     return {
       shouldSend: false,
@@ -200,7 +214,7 @@ export function shouldSendTelegramHeartbeat(
   };
 }
 
-export function formatTelegramHeartbeatEntries(
+export function formatTelegramHeartbeatDailyNoteEntries(
   entries: DailyNoteEntry[],
   maxEntries: number = 6
 ): string {
@@ -215,6 +229,61 @@ export function formatTelegramHeartbeatEntries(
       return `- ${timestamp}: ${entry.content}`;
     })
     .join("\n");
+}
+
+function formatTelegramHeartbeatHistoryDetail(entry: HeartbeatRecord): string {
+  const detail = entry.shouldSend
+    ? entry.message || "sent a proactive check-in"
+    : entry.skipReason || "nothing needed attention";
+
+  return `${entry.shouldSend ? "sent" : "skipped"} - ${truncateHeartbeatText(
+    normalizeHeartbeatText(detail),
+    220
+  )}`;
+}
+
+export function formatTelegramHeartbeatHistoryEntries(
+  entries: HeartbeatRecord[],
+  maxEntries: number = 6
+): string {
+  if (entries.length === 0) {
+    return "(none)";
+  }
+
+  return entries
+    .slice(-maxEntries)
+    .map((entry) => {
+      const timestamp = entry.localTime || entry.isoTimestamp || String(entry.timestamp);
+      return `- ${timestamp}: ${formatTelegramHeartbeatHistoryDetail(entry)}`;
+    })
+    .join("\n");
+}
+
+function formatStateSummaryTimestamp(timestamp: number | null): string {
+  return timestamp === null ? "(none)" : new Date(timestamp).toISOString();
+}
+
+export function buildTelegramHeartbeatStateSummary(args: {
+  noteContext?: TelegramHeartbeatNoteContext;
+  historyContext?: TelegramHeartbeatHistoryContext;
+  conversationContext?: TelegramHeartbeatConversationContext;
+  decisionCode: string;
+}): string {
+  return [
+    `decision=${args.decisionCode}`,
+    `note_entries=${args.noteContext?.entries.length ?? 0}`,
+    `recent_messages=${args.conversationContext?.recentMessages.length ?? 0}`,
+    `heartbeat_entries=${args.historyContext?.entries.length ?? 0}`,
+    `latest_note=${formatStateSummaryTimestamp(
+      args.noteContext?.latestActionableTimestamp ?? null
+    )}`,
+    `latest_user=${formatStateSummaryTimestamp(
+      args.conversationContext?.latestUserTimestamp ?? null
+    )}`,
+    `latest_heartbeat=${formatStateSummaryTimestamp(
+      args.historyContext?.latestHeartbeatTimestamp ?? null
+    )}`,
+  ].join("; ");
 }
 
 export function buildTelegramHeartbeatPrompt({
@@ -270,23 +339,4 @@ export function parseTelegramHeartbeatResult(text: string): TelegramHeartbeatRes
     replyText: normalized,
     reason: null,
   };
-}
-
-export function buildTelegramHeartbeatLogEntry(args: {
-  sent: boolean;
-  reason?: string | null;
-  replyText?: string | null;
-}): string {
-  const detail = args.sent
-    ? args.replyText
-      ? truncateHeartbeatText(normalizeHeartbeatText(args.replyText), 220)
-      : "sent a proactive check-in"
-    : truncateHeartbeatText(
-        normalizeHeartbeatText(args.reason || "nothing needed attention"),
-        220
-      );
-
-  return `${TELEGRAM_HEARTBEAT_LOG_PREFIX} ${
-    args.sent ? "sent" : "skipped"
-  } - ${detail}`;
 }

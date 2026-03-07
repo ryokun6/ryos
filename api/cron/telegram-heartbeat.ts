@@ -2,11 +2,8 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { stepCountIs, streamText } from "ai";
 import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
-import {
-  appendDailyNote,
-  getDailyNote,
-  getTodayDateString,
-} from "../_utils/_memory.js";
+import { getDailyNote, getTodayDateString } from "../_utils/_memory.js";
+import { appendHeartbeatRecord, getHeartbeatRecordsForDate } from "../_utils/heartbeats.js";
 import {
   appendTelegramConversationMessage,
   getLinkedTelegramAccountByUsername,
@@ -15,17 +12,20 @@ import {
 import { sendTelegramMessage } from "../_utils/telegram.js";
 import { simplifyTelegramCitationDisplay } from "../_utils/telegram-format.js";
 import {
+  buildTelegramHeartbeatHistoryContext,
+  buildTelegramHeartbeatNoteContext,
   buildTelegramHeartbeatConversationContext,
-  buildTelegramHeartbeatLogEntry,
   buildTelegramHeartbeatPrompt,
   buildTelegramHeartbeatRedisKey,
-  formatTelegramHeartbeatEntries,
+  buildTelegramHeartbeatStateSummary,
   formatTelegramConversationEntries,
+  formatTelegramHeartbeatDailyNoteEntries,
+  formatTelegramHeartbeatHistoryEntries,
   getTelegramHeartbeatAuthSecret,
   parseTelegramHeartbeatResult,
   shouldSendTelegramHeartbeat,
-  splitTelegramHeartbeatEntries,
   TELEGRAM_HEARTBEAT_SLOT_TTL_SECONDS,
+  TELEGRAM_HEARTBEAT_TOPIC,
   TELEGRAM_HEARTBEAT_TARGET_USERNAME,
   TELEGRAM_HEARTBEAT_TIME_ZONE,
 } from "../_utils/telegram-heartbeat.js";
@@ -88,17 +88,27 @@ async function markHeartbeatSlot(
 async function appendHeartbeatLog(
   redis: ReturnType<typeof createRedis>,
   username: string,
-  text: string,
+  payload: {
+    shouldSend: boolean;
+    message?: string | null;
+    skipReason?: string | null;
+    stateSummary: string;
+  },
   logger: ReturnType<typeof initLogger>["logger"]
 ): Promise<void> {
-  const result = await appendDailyNote(redis, username, text, {
-    timeZone: TELEGRAM_HEARTBEAT_TIME_ZONE,
-  });
-
-  if (!result.success) {
-    logger.warn("Failed to append telegram heartbeat log to daily notes", {
+  try {
+    await appendHeartbeatRecord(redis, username, {
+      shouldSend: payload.shouldSend,
+      topic: TELEGRAM_HEARTBEAT_TOPIC,
+      message: payload.message,
+      skipReason: payload.skipReason,
+      stateSummary: payload.stateSummary,
+      timeZone: TELEGRAM_HEARTBEAT_TIME_ZONE,
+    });
+  } catch (error) {
+    logger.warn("Failed to append telegram heartbeat record", {
       username,
-      message: result.message,
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 }
@@ -155,6 +165,16 @@ export default async function handler(
   const linkedAccount = await getLinkedTelegramAccountByUsername(redis, username);
 
   if (!linkedAccount) {
+    await appendHeartbeatLog(
+      redis,
+      username,
+      {
+        shouldSend: false,
+        skipReason: "not-linked",
+        stateSummary: "decision=not-linked; linked_account=false",
+      },
+      logger
+    );
     logger.info("Skipping telegram heartbeat because user is not linked", { username });
     logger.response(200, Date.now() - startTime);
     sendJson(res, 200, { success: true, sent: false, reason: "not-linked", username });
@@ -163,6 +183,16 @@ export default async function handler(
 
   const slotKey = buildTelegramHeartbeatRedisKey(username);
   if ((await redis.exists(slotKey)) > 0) {
+    await appendHeartbeatLog(
+      redis,
+      username,
+      {
+        shouldSend: false,
+        skipReason: "already-sent",
+        stateSummary: `decision=already-sent; slot_key=${slotKey}`,
+      },
+      logger
+    );
     logger.info("Skipping duplicate telegram heartbeat for current slot", {
       username,
       slotKey,
@@ -179,19 +209,36 @@ export default async function handler(
 
   const today = getTodayDateString(TELEGRAM_HEARTBEAT_TIME_ZONE);
   const todaysDailyNote = await getDailyNote(redis, username, today);
-  const noteContext = splitTelegramHeartbeatEntries(todaysDailyNote);
+  const noteContext = buildTelegramHeartbeatNoteContext(todaysDailyNote);
+  const heartbeatRecords = await getHeartbeatRecordsForDate(
+    redis,
+    username,
+    today,
+    TELEGRAM_HEARTBEAT_TOPIC
+  );
+  const heartbeatHistoryContext = buildTelegramHeartbeatHistoryContext(heartbeatRecords);
   const history = await loadTelegramConversationHistory(redis, linkedAccount.chatId);
   const conversationContext = buildTelegramHeartbeatConversationContext(history);
-  const gateDecision = shouldSendTelegramHeartbeat(noteContext, conversationContext);
+  const gateDecision = shouldSendTelegramHeartbeat(
+    noteContext,
+    heartbeatHistoryContext,
+    conversationContext
+  );
 
   if (!gateDecision.shouldSend) {
     await appendHeartbeatLog(
       redis,
       username,
-      buildTelegramHeartbeatLogEntry({
-        sent: false,
-        reason: gateDecision.reason,
-      }),
+      {
+        shouldSend: false,
+        skipReason: gateDecision.reason,
+        stateSummary: buildTelegramHeartbeatStateSummary({
+          noteContext,
+          historyContext: heartbeatHistoryContext,
+          conversationContext,
+          decisionCode: gateDecision.code,
+        }),
+      },
       logger
     );
     await markHeartbeatSlot(redis, slotKey, {
@@ -205,8 +252,8 @@ export default async function handler(
     logger.info("Skipping telegram heartbeat after reading current notes and chats", {
       username,
       reason: gateDecision.reason,
-      actionableEntries: noteContext.actionableEntries.length,
-      logEntries: noteContext.logEntries.length,
+      noteEntries: noteContext.entries.length,
+      heartbeatEntries: heartbeatHistoryContext.entries.length,
       recentMessages: conversationContext.recentMessages.length,
       date: today,
     });
@@ -231,14 +278,14 @@ export default async function handler(
       id: `heartbeat-${Date.now()}`,
       role: "user",
       content: buildTelegramHeartbeatPrompt({
-        dailyNoteSnapshot: formatTelegramHeartbeatEntries(
-          noteContext.actionableEntries
+        dailyNoteSnapshot: formatTelegramHeartbeatDailyNoteEntries(
+          noteContext.entries
         ),
         recentTelegramSnapshot: formatTelegramConversationEntries(
           conversationContext.recentMessages
         ),
-        heartbeatLogSnapshot: formatTelegramHeartbeatEntries(
-          noteContext.logEntries
+        heartbeatLogSnapshot: formatTelegramHeartbeatHistoryEntries(
+          heartbeatHistoryContext.entries
         ),
       }),
     },
@@ -305,10 +352,16 @@ export default async function handler(
     await appendHeartbeatLog(
       redis,
       username,
-      buildTelegramHeartbeatLogEntry({
-        sent: false,
-        reason: heartbeatResult.reason,
-      }),
+      {
+        shouldSend: false,
+        skipReason: heartbeatResult.reason,
+        stateSummary: buildTelegramHeartbeatStateSummary({
+          noteContext,
+          historyContext: heartbeatHistoryContext,
+          conversationContext,
+          decisionCode: "model-no-heartbeat",
+        }),
+      },
       logger
     );
     await markHeartbeatSlot(redis, slotKey, {
@@ -367,10 +420,16 @@ export default async function handler(
   await appendHeartbeatLog(
     redis,
     username,
-    buildTelegramHeartbeatLogEntry({
-      sent: true,
-      replyText,
-    }),
+    {
+      shouldSend: true,
+      message: replyText,
+      stateSummary: `${buildTelegramHeartbeatStateSummary({
+        noteContext,
+        historyContext: heartbeatHistoryContext,
+        conversationContext,
+        decisionCode: "sent",
+      })}; reply_length=${replyText.length}`,
+    },
     logger
   );
 
