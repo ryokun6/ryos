@@ -2,6 +2,7 @@ import { Check } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import HtmlPreview from "@/components/shared/HtmlPreview";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
+import { getWebSearchSummary } from "@/lib/toolInvocationDisplay";
 import { useTranslation } from "react-i18next";
 
 // AI SDK v5 tool invocation structure
@@ -162,6 +163,9 @@ export function ToolInvocationMessage({
         displayCallMessage = t("apps.chats.toolCalls.searchingSongs", { query });
         break;
       }
+      case "web_search":
+        displayCallMessage = t("apps.chats.toolCalls.searchingWeb");
+        break;
       case "calendarControl": {
         const action = input?.action;
         const title = typeof input?.title === "string" ? input.title : "";
@@ -434,6 +438,11 @@ export function ToolInvocationMessage({
         }
       }
       displayResultMessage = t("apps.chats.toolCalls.foundVideos", { count });
+    } else if (toolName === "web_search") {
+      const summary = getWebSearchSummary(output);
+      displayResultMessage = summary?.query
+        ? t("apps.chats.toolCalls.searchedWebFor", { query: summary.query })
+        : t("apps.chats.toolCalls.searchedWeb");
     } else if (toolName === "calendarControl") {
       const out = output as { success?: boolean; message?: string; event?: { title?: string }; todo?: { title?: string; completed?: boolean }; events?: unknown[]; todos?: unknown[] } | undefined;
       const action = input?.action;

@@ -32,6 +32,7 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
+import { formatToolName } from "@/lib/toolInvocationDisplay";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -186,18 +187,6 @@ const getErrorMessage = (error: Error): string => {
   // Return the original message as fallback
   return error.message;
 };
-
-// --- New helper: prettify tool names ---
-/**
- * Convert camelCase / PascalCase tool names to a human-readable string.
- * Example: "textEditSearchReplace" -> "Text Edit Search Replace".
- */
-const formatToolName = (name: string): string =>
-  name
-    .replace(/([A-Z])/g, " $1") // insert space before capitals
-    .replace(/^./, (ch) => ch.toUpperCase()) // capitalize first letter
-    .trim();
-// --- End helper: prettify tool names ---
 
 // Helper to map an app id to a user-friendly name (uses translations)
 const getAppName = (id?: string): string => {
