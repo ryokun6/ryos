@@ -16,10 +16,13 @@ describe("web search link instructions", () => {
 
   test("telegram prompt keeps web-search sourcing light", () => {
     expect(TELEGRAM_CHAT_INSTRUCTIONS).toContain(
-      "Default to one short sentence. Use two brief sentences only when it genuinely helps."
+      "Keep replies concise and natural. A short paragraph or two is fine when it helps."
     );
     expect(TELEGRAM_CHAT_INSTRUCTIONS).toContain(
       "Text like a close friend – casual, natural, and concise, not polished support-speak."
+    );
+    expect(TELEGRAM_CHAT_INSTRUCTIONS).toContain(
+      "Avoid walls of text, too many paragraphs, and bullet-heavy replies unless the user asks for structure."
     );
     expect(TELEGRAM_CHAT_INSTRUCTIONS).toContain(
       "Output plain text only. Do not use markdown emphasis, headings, blockquotes, markdown list markers, or code fences."
