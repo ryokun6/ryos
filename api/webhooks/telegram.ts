@@ -149,6 +149,47 @@ function wrapTelegramToolsWithStatus<T extends Record<string, unknown>>(
   ) as T;
 }
 
+type TelegramStatusStreamChunk =
+  | {
+      type: "tool-input-start";
+      id: string;
+      toolName: string;
+      providerExecuted?: boolean;
+    }
+  | {
+      type: "tool-call";
+      toolCallId: string;
+      toolName: string;
+      input: unknown;
+      providerExecuted?: boolean;
+    };
+
+export function getTelegramProviderStatusToolCall(
+  chunk: TelegramStatusStreamChunk
+): { toolCallId: string; toolName: string; input: unknown } | null {
+  if (chunk.providerExecuted !== true) {
+    return null;
+  }
+
+  if (chunk.type === "tool-input-start") {
+    return {
+      toolCallId: chunk.id,
+      toolName: chunk.toolName,
+      input: undefined,
+    };
+  }
+
+  if (chunk.type === "tool-call") {
+    return {
+      toolCallId: chunk.toolCallId,
+      toolName: chunk.toolName,
+      input: chunk.input,
+    };
+  }
+
+  return null;
+}
+
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
@@ -393,6 +434,7 @@ export default async function handler(
     chatId: parsedUpdate.chatId,
     logWarn: (message, details) => logger.warn(message, details),
   });
+  const reportedProviderToolCalls = new Set<string>();
 
   try {
     await statusReporter.start();
@@ -421,6 +463,35 @@ export default async function handler(
         openai: {
           reasoningEffort: "none",
         },
+      },
+      onChunk: async ({ chunk }) => {
+        if (chunk.type !== "tool-input-start" && chunk.type !== "tool-call") {
+          return;
+        }
+
+        const providerToolCall = getTelegramProviderStatusToolCall(chunk);
+        if (!providerToolCall) {
+          return;
+        }
+
+        if (reportedProviderToolCalls.has(providerToolCall.toolCallId)) {
+          return;
+        }
+
+        reportedProviderToolCalls.add(providerToolCall.toolCallId);
+        const statusText = getTelegramToolStatusText(
+          providerToolCall.toolName,
+          providerToolCall.input
+        );
+        logger.info("Telegram provider tool started", {
+          username: linkedAccount.username,
+          toolName: providerToolCall.toolName,
+          statusText,
+        });
+        await statusReporter.markTool(
+          providerToolCall.toolName,
+          providerToolCall.input
+        );
       },
       onStepFinish: async (stepResult) => {
         if (stepResult.toolResults.length > 0) {

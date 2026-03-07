@@ -10,6 +10,7 @@ import {
   createTelegramStatusReporter,
   getTelegramToolStatusText,
 } from "../api/_utils/telegram-status";
+import { getTelegramProviderStatusToolCall } from "../api/webhooks/telegram";
 
 describe("telegram status helpers", () => {
   test("maps tool names to concise status text", () => {
@@ -66,6 +67,44 @@ describe("telegram status helpers", () => {
       { type: "edit", text: "Adding to calendar...", messageId: 9001 },
     ]);
     expect(calls.at(-1)).toEqual({ type: "delete", messageId: 9001 });
+  });
+
+  test("detects provider-executed tool chunks for telegram status updates", () => {
+    expect(
+      getTelegramProviderStatusToolCall({
+        type: "tool-input-start",
+        id: "call-1",
+        toolName: "web_search",
+        providerExecuted: true,
+      })
+    ).toEqual({
+      toolCallId: "call-1",
+      toolName: "web_search",
+      input: undefined,
+    });
+
+    expect(
+      getTelegramProviderStatusToolCall({
+        type: "tool-call",
+        toolCallId: "call-2",
+        toolName: "web_search",
+        input: { query: "weather sf" },
+        providerExecuted: true,
+      })
+    ).toEqual({
+      toolCallId: "call-2",
+      toolName: "web_search",
+      input: { query: "weather sf" },
+    });
+
+    expect(
+      getTelegramProviderStatusToolCall({
+        type: "tool-call",
+        toolCallId: "call-3",
+        toolName: "calendarControl",
+        input: { action: "list" },
+      })
+    ).toBeNull();
   });
 });
 
