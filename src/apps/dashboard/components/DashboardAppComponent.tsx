@@ -338,14 +338,14 @@ export function DashboardAppComponent({
               exit={{ opacity: 0, scale: 1.15 }}
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
               className="fixed inset-0 dashboard-overlay"
-              style={{
-                zIndex: 9998,
-                background: isXpTheme
-                  ? "rgba(0,0,0,0.6)"
-                  : "rgba(0,0,0,0.55)",
-              }}
+              style={{ zIndex: 9998 }}
               onClick={(e) => {
-                if (e.target === e.currentTarget) {
+                const target = e.target as HTMLElement;
+                const isInteractive =
+                  target.closest?.("[data-dashboard-widget]") ||
+                  target.closest?.("[data-dashboard-strip]") ||
+                  target.closest?.("[data-dashboard-add-btn]");
+                if (!isInteractive) {
                   if (isPickerOpen) {
                     setIsPickerOpen(false);
                   } else {
@@ -354,10 +354,25 @@ export function DashboardAppComponent({
                 }
               }}
             >
-              {/* Widgets */}
+              {/* Scrim - receives backdrop clicks (wrapper has pointer-events-none); overlay handles via delegation */}
+              <div
+                data-dashboard-scrim
+                className="absolute inset-0"
+                style={{
+                  background: isXpTheme
+                    ? "rgba(0,0,0,0.6)"
+                    : "rgba(0,0,0,0.55)",
+                }}
+                onClick={() => {
+                  if (isPickerOpen) setIsPickerOpen(false);
+                  else handleClose();
+                }}
+              />
+              {/* Widgets - pointer-events-none so scrim receives backdrop clicks */}
               <motion.div
-                className="absolute inset-0 pointer-events-none"
-                style={{ pointerEvents: "auto" }}
+                data-dashboard-widget
+                className="absolute inset-0"
+                style={{ pointerEvents: "none" }}
                 animate={{ y: isPickerOpen ? -stripHeight : 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
               >
@@ -374,6 +389,7 @@ export function DashboardAppComponent({
                     }}
                     style={{
                       position: "relative",
+                      pointerEvents: "auto",
                       zIndex: widget.zIndex ?? 1,
                       transformOrigin: `${widget.position.x + widget.size.width / 2}px ${widget.position.y + widget.size.height / 2}px`,
                     }}
@@ -402,16 +418,19 @@ export function DashboardAppComponent({
               {/* Widget strip */}
               <AnimatePresence>
                 {isPickerOpen && (
-                  <WidgetStrip
-                    onAdd={handleAddWidget}
-                    isXpTheme={isXpTheme}
-                    onHeightMeasured={setStripHeight}
-                  />
+                  <div data-dashboard-strip>
+                    <WidgetStrip
+                      onAdd={handleAddWidget}
+                      isXpTheme={isXpTheme}
+                      onHeightMeasured={setStripHeight}
+                    />
+                  </div>
                 )}
               </AnimatePresence>
 
               {/* + / × toggle button */}
               <motion.button
+                data-dashboard-add-btn
                 type="button"
                 initial={{ opacity: 0, scale: 0 }}
                 animate={{ opacity: 1, scale: 1, rotate: isPickerOpen ? 45 : 0 }}
