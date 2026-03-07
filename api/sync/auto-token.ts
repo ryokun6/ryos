@@ -5,8 +5,8 @@
 
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 import {
-  isCloudSyncDomain,
-  type CloudSyncDomain,
+  isBlobSyncDomain,
+  type BlobSyncDomain,
 } from "../../src/utils/cloudSyncShared.js";
 import { apiHandler } from "../_utils/api-handler.js";
 
@@ -18,10 +18,10 @@ const RATE_LIMIT_WINDOW = 60;
 const RATE_LIMIT_MAX = 20;
 
 interface AutoTokenBody {
-  domain?: CloudSyncDomain;
+  domain?: BlobSyncDomain;
 }
 
-function syncPath(username: string, domain: CloudSyncDomain) {
+function syncPath(username: string, domain: BlobSyncDomain) {
   return `sync/${username}/${domain}.gz`;
 }
 
@@ -35,7 +35,7 @@ export default apiHandler<AutoTokenBody>(
     const username = user?.username || "";
     const domain = body?.domain;
 
-    if (!isCloudSyncDomain(domain)) {
+    if (!isBlobSyncDomain(domain as never)) {
       res.status(400).json({ error: "Invalid sync domain" });
       return;
     }

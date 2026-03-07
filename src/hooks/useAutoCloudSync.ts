@@ -31,8 +31,7 @@ const REMOTE_APPLY_SUPPRESSION_MS = 4000;
 
 const UPLOAD_DEBOUNCE_MS: Record<CloudSyncDomain, number> = {
   settings: 2500,
-  "files-metadata": 4000,
-  "files-documents": 8000,
+  "files-metadata": 8000,
   "files-images": 8000,
   "files-trash": 5000,
   "files-applets": 8000,
@@ -47,7 +46,6 @@ function createDomainStringMap(initialValue: string | null): Record<CloudSyncDom
   return {
     settings: initialValue,
     "files-metadata": initialValue,
-    "files-documents": initialValue,
     "files-images": initialValue,
     "files-trash": initialValue,
     "files-applets": initialValue,
@@ -79,7 +77,6 @@ export function useAutoCloudSync() {
   const remoteApplySuppressUntilRef = useRef<Record<CloudSyncDomain, number>>({
     settings: 0,
     "files-metadata": 0,
-    "files-documents": 0,
     "files-images": 0,
     "files-trash": 0,
     "files-applets": 0,

@@ -56,7 +56,6 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
   return {
     settings: empty(),
     "files-metadata": empty(),
-    "files-documents": empty(),
     "files-images": empty(),
     "files-trash": empty(),
     "files-applets": empty(),
@@ -69,7 +68,7 @@ function createInitialDomainStatus(): CloudSyncDomainStatusMap {
 }
 
 const STORE_NAME = "ryos:cloud-sync";
-const STORE_VERSION = 4;
+const STORE_VERSION = 5;
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
   persist(
@@ -242,7 +241,6 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
           if (legacyFilesStatus) {
             for (const domain of [
               "files-metadata",
-              "files-documents",
               "files-images",
               "files-trash",
               "files-applets",
