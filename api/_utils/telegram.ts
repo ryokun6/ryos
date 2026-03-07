@@ -63,6 +63,28 @@ export interface TelegramSendMessageOptions {
   fetchImpl?: typeof fetch;
 }
 
+export interface TelegramEditMessageOptions {
+  botToken: string;
+  chatId: string;
+  messageId: number;
+  text: string;
+  fetchImpl?: typeof fetch;
+}
+
+export interface TelegramDeleteMessageOptions {
+  botToken: string;
+  chatId: string;
+  messageId: number;
+  fetchImpl?: typeof fetch;
+}
+
+export interface TelegramChatActionOptions {
+  botToken: string;
+  chatId: string;
+  action: "typing";
+  fetchImpl?: typeof fetch;
+}
+
 export interface TelegramWebhookOptions {
   botToken: string;
   webhookUrl: string;
@@ -194,7 +216,7 @@ export async function sendTelegramMessage({
   replyToMessageId,
   disableNotification = false,
   fetchImpl = fetch,
-}: TelegramSendMessageOptions): Promise<void> {
+}: TelegramSendMessageOptions): Promise<number | null> {
   const response = await fetchImpl(buildTelegramApiUrl(botToken, "sendMessage"), {
     method: "POST",
     headers: {
@@ -211,12 +233,109 @@ export async function sendTelegramMessage({
   });
 
   if (response.ok) {
-    return;
+    try {
+      const data = (await response.json()) as {
+        ok?: boolean;
+        result?: { message_id?: number };
+      };
+      return typeof data.result?.message_id === "number" ? data.result.message_id : null;
+    } catch {
+      return null;
+    }
   }
 
   const body = await response.text();
   throw new Error(
     `Telegram sendMessage failed (${response.status})${
+      body ? `: ${body}` : ""
+    }`
+  );
+}
+
+export async function editTelegramMessageText({
+  botToken,
+  chatId,
+  messageId,
+  text,
+  fetchImpl = fetch,
+}: TelegramEditMessageOptions): Promise<void> {
+  const response = await fetchImpl(buildTelegramApiUrl(botToken, "editMessageText"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+      text,
+    }),
+  });
+
+  if (response.ok) {
+    return;
+  }
+
+  const body = await response.text();
+  throw new Error(
+    `Telegram editMessageText failed (${response.status})${
+      body ? `: ${body}` : ""
+    }`
+  );
+}
+
+export async function deleteTelegramMessage({
+  botToken,
+  chatId,
+  messageId,
+  fetchImpl = fetch,
+}: TelegramDeleteMessageOptions): Promise<void> {
+  const response = await fetchImpl(buildTelegramApiUrl(botToken, "deleteMessage"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+    }),
+  });
+
+  if (response.ok) {
+    return;
+  }
+
+  const body = await response.text();
+  throw new Error(
+    `Telegram deleteMessage failed (${response.status})${
+      body ? `: ${body}` : ""
+    }`
+  );
+}
+
+export async function sendTelegramChatAction({
+  botToken,
+  chatId,
+  action,
+  fetchImpl = fetch,
+}: TelegramChatActionOptions): Promise<void> {
+  const response = await fetchImpl(buildTelegramApiUrl(botToken, "sendChatAction"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chat_id: chatId,
+      action,
+    }),
+  });
+
+  if (response.ok) {
+    return;
+  }
+
+  const body = await response.text();
+  throw new Error(
+    `Telegram sendChatAction failed (${response.status})${
       body ? `: ${body}` : ""
     }`
   );
