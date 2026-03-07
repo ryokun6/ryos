@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { stepCountIs, streamText } from "ai";
 import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
-import { getDailyNote, getTodayDateString } from "../_utils/_memory.js";
+import { getDailyNote, getMemoryIndex, getTodayDateString } from "../_utils/_memory.js";
 import { appendHeartbeatRecord, getHeartbeatRecordsForDate } from "../_utils/heartbeats.js";
 import {
   appendTelegramConversationMessage,
@@ -294,6 +294,7 @@ export default async function handler(
   const telegramModel = getTelegramModel((message, ...rest) =>
     logger.info(String(message), rest.length > 0 ? rest : undefined)
   );
+  const userMemories = await getMemoryIndex(redis, username);
 
   const {
     selectedModel,
@@ -311,6 +312,11 @@ export default async function handler(
     log: (...args: unknown[]) => logger.info(`[TelegramHeartbeat:${username}]`, args),
     logError: (...args: unknown[]) =>
       logger.error(`[TelegramHeartbeat:${username}]`, args),
+    preloadedMemoryContext: {
+      userMemories,
+      dailyNotesText: null,
+      userTimeZone: TELEGRAM_HEARTBEAT_TIME_ZONE,
+    },
   });
 
   logger.info("Telegram heartbeat prompt sections loaded", {

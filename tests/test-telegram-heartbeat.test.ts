@@ -374,6 +374,44 @@ describe("telegram heartbeat helpers", () => {
     expect("stickiesControl" in prepared.tools).toBe(true);
     expect("web_search" in prepared.tools).toBe(true);
   });
+
+  test("heartbeat can keep long-term memories without duplicating shared daily notes", async () => {
+    const prepared = await prepareRyoConversationModelInput({
+      channel: "telegram",
+      username: TELEGRAM_HEARTBEAT_TARGET_USERNAME,
+      model: "gpt-5.4",
+      messages: [
+        {
+          id: "heartbeat-1",
+          role: "user",
+          content: buildTelegramHeartbeatPrompt({
+            dailyNoteSnapshot: "- 10:15:00: need to review the latest cron behavior",
+            recentTelegramSnapshot:
+              "- 2026-03-07T18:00:00.000Z user: done with the onboarding doc",
+            heartbeatLogSnapshot: "- 09:30:00: sent - earlier check-in",
+          }),
+        },
+      ],
+      preloadedMemoryContext: {
+        userMemories: {
+          version: 1,
+          memories: [
+            {
+              key: "projects",
+              summary: "User is actively iterating on ryOS ambient agent behavior.",
+              updatedAt: 123,
+            },
+          ],
+        },
+        dailyNotesText: null,
+        userTimeZone: "America/Los_Angeles",
+      },
+    });
+
+    expect(prepared.dynamicSystemPrompt).toContain("## LONG-TERM MEMORIES");
+    expect(prepared.dynamicSystemPrompt).toContain("projects: User is actively iterating");
+    expect(prepared.dynamicSystemPrompt).not.toContain("## DAILY NOTES (recent journal)");
+  });
 });
 
 describe("vercel cron wiring", () => {
