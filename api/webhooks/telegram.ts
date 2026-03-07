@@ -48,6 +48,32 @@ function sendJson(
   res.status(status).json(payload);
 }
 
+function formatTelegramRateLimitDuration(seconds: number): string {
+  if (seconds >= 60 * 60) {
+    const hours = Math.ceil(seconds / (60 * 60));
+    return `${hours} hour${hours === 1 ? "" : "s"}`;
+  }
+
+  if (seconds >= 60) {
+    const minutes = Math.ceil(seconds / 60);
+    return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+  }
+
+  const roundedSeconds = Math.max(1, Math.ceil(seconds));
+  return `${roundedSeconds} second${roundedSeconds === 1 ? "" : "s"}`;
+}
+
+function buildTelegramRateLimitMessage(
+  rateLimit: Pick<
+    Awaited<ReturnType<typeof RateLimit.checkCounterLimit>>,
+    "limit" | "windowSeconds" | "resetSeconds"
+  >
+): string {
+  const windowText = formatTelegramRateLimitDuration(rateLimit.windowSeconds);
+  const retryText = formatTelegramRateLimitDuration(rateLimit.resetSeconds);
+  return `you've hit the limit of ${rateLimit.limit} messages in ${windowText}. try again in about ${retryText}.`;
+}
+
 function getTelegramWebhookSecret(req: VercelRequest): string | null {
   const value = req.headers["x-telegram-bot-api-secret-token"];
   if (Array.isArray(value)) {
@@ -80,6 +106,39 @@ async function sendTelegramInfoMessage(
     chatId,
     text,
     replyToMessageId,
+  });
+}
+
+async function handleTelegramRateLimitedUpdate(args: {
+  botToken: string;
+  chatId: string;
+  replyToMessageId: number;
+  updateId: number;
+  rateLimit: Pick<
+    Awaited<ReturnType<typeof RateLimit.checkCounterLimit>>,
+    "count" | "limit" | "windowSeconds" | "resetSeconds"
+  >;
+  redis: ReturnType<typeof createRedis>;
+  res: VercelResponse;
+  startTime: number;
+  logger: ReturnType<typeof initLogger>["logger"];
+  scope: "user-burst" | "account-window";
+}): Promise<void> {
+  await sendTelegramInfoMessage(
+    args.botToken,
+    args.chatId,
+    buildTelegramRateLimitMessage(args.rateLimit),
+    args.replyToMessageId
+  );
+  await markTelegramUpdateProcessed(args.redis, args.updateId);
+  args.logger.response(200, Date.now() - args.startTime);
+  sendJson(args.res, 200, {
+    success: true,
+    rateLimited: true,
+    scope: args.scope,
+    limit: args.rateLimit.limit,
+    count: args.rateLimit.count,
+    retryAfter: args.rateLimit.resetSeconds,
   });
 }
 
@@ -339,9 +398,22 @@ export default async function handler(
     if (!userBurstLimit.allowed) {
       logger.warn("Telegram user burst rate limit exceeded", {
         telegramUserId: parsedUpdate.telegramUserId,
+        count: userBurstLimit.count,
+        limit: userBurstLimit.limit,
+        retryAfter: userBurstLimit.resetSeconds,
       });
-      logger.response(429, Date.now() - startTime);
-      sendJson(res, 429, { error: "Rate limit exceeded" });
+      await handleTelegramRateLimitedUpdate({
+        botToken,
+        chatId: parsedUpdate.chatId,
+        replyToMessageId: parsedUpdate.messageId,
+        updateId: parsedUpdate.updateId,
+        rateLimit: userBurstLimit,
+        redis,
+        res,
+        startTime,
+        logger,
+        scope: "user-burst",
+      });
       return;
     }
 
@@ -353,9 +425,22 @@ export default async function handler(
     if (!accountLimit.allowed) {
       logger.warn("Linked ryOS user rate limit exceeded via Telegram", {
         username: linkedAccount.username,
+        count: accountLimit.count,
+        limit: accountLimit.limit,
+        retryAfter: accountLimit.resetSeconds,
       });
-      logger.response(429, Date.now() - startTime);
-      sendJson(res, 429, { error: "Rate limit exceeded" });
+      await handleTelegramRateLimitedUpdate({
+        botToken,
+        chatId: parsedUpdate.chatId,
+        replyToMessageId: parsedUpdate.messageId,
+        updateId: parsedUpdate.updateId,
+        rateLimit: accountLimit,
+        redis,
+        res,
+        startTime,
+        logger,
+        scope: "account-window",
+      });
       return;
     }
   }
