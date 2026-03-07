@@ -682,6 +682,7 @@
       "menu": {
         "saveTranscript": "Save Transcript...",
         "clearChat": "Clear Chat",
+        "linkToTelegram": "Link to Telegram",
         "logOut": "Log Out",
         "createAccount": "Create Account...",
         "login": "Login...",
@@ -2237,7 +2238,9 @@
         "checking": "Checking Telegram link...",
         "linkedAs": "Linked as {{account}}",
         "linkPending": "Link ready - finish it in Telegram",
+        "link": "Link",
         "connect": "Link Telegram",
+        "manage": "Manage...",
         "disconnect": "Disconnect",
         "disconnecting": "Disconnecting...",
         "preparing": "Preparing...",

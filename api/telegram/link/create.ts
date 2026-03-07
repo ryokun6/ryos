@@ -2,6 +2,7 @@ import { apiHandler } from "../../_utils/api-handler.js";
 import {
   createTelegramLinkCode,
   getLinkedTelegramAccountByUsername,
+  getTelegramPendingLinkSession,
 } from "../../_utils/telegram-link.js";
 import {
   buildTelegramDeepLink,
@@ -19,6 +20,27 @@ export default apiHandler(
   },
   async ({ res, redis, user, logger, startTime }) => {
     const username = user?.username || "";
+    const existingLink = await getLinkedTelegramAccountByUsername(redis, username);
+    const existingPendingLink = existingLink
+      ? null
+      : await getTelegramPendingLinkSession(redis, username);
+    const botUsername = getTelegramBotUsername();
+
+    if (existingPendingLink) {
+      logger.response(200, Date.now() - startTime);
+      res.status(200).json({
+        code: existingPendingLink.code,
+        expiresIn: existingPendingLink.expiresIn,
+        botUsername,
+        deepLink: buildTelegramDeepLink(
+          botUsername,
+          `link_${existingPendingLink.code}`
+        ),
+        linkedAccount: null,
+      });
+      return;
+    }
+
     const rlKey = RateLimit.makeKey(["rl", "telegram", "link-create", username]);
     const rlResult = await RateLimit.checkCounterLimit({
       key: rlKey,
@@ -33,9 +55,7 @@ export default apiHandler(
       return;
     }
 
-    const existingLink = await getLinkedTelegramAccountByUsername(redis, username);
     const { code, expiresIn } = await createTelegramLinkCode(redis, username);
-    const botUsername = getTelegramBotUsername();
     const deepLink = buildTelegramDeepLink(botUsername, `link_${code}`);
 
     logger.response(200, Date.now() - startTime);

@@ -11,6 +11,11 @@ export interface TelegramLinkCodeRecord {
   createdAt: number;
 }
 
+export interface TelegramPendingLinkSessionRecord
+  extends TelegramLinkCodeRecord {
+  code: string;
+}
+
 export interface LinkedTelegramAccount {
   username: string;
   telegramUserId: string;
@@ -29,6 +34,10 @@ export interface TelegramConversationMessage {
 
 export function buildTelegramLinkCodeKey(code: string): string {
   return `telegram:link:code:${code}`;
+}
+
+export function buildTelegramPendingLinkKey(username: string): string {
+  return `telegram:link:username:${username.toLowerCase()}`;
 }
 
 export function buildTelegramUserKey(telegramUserId: string): string {
@@ -115,18 +124,81 @@ export function parseTelegramLinkCodeRecord(
   };
 }
 
+export function parseTelegramPendingLinkSessionRecord(
+  raw: unknown
+): TelegramPendingLinkSessionRecord | null {
+  const parsed = parseJsonRecord<TelegramPendingLinkSessionRecord>(raw);
+  if (
+    !parsed ||
+    typeof parsed.username !== "string" ||
+    typeof parsed.code !== "string" ||
+    typeof parsed.createdAt !== "number"
+  ) {
+    return null;
+  }
+
+  return {
+    username: parsed.username.toLowerCase(),
+    code: parsed.code,
+    createdAt: parsed.createdAt,
+  };
+}
+
+export async function getTelegramPendingLinkSession(
+  redis: RedisLike,
+  username: string
+): Promise<{ code: string; expiresIn: number } | null> {
+  const pendingKey = buildTelegramPendingLinkKey(username);
+  const raw = await redis.get<string>(pendingKey);
+  const pending = parseTelegramPendingLinkSessionRecord(raw);
+
+  if (!pending) {
+    return null;
+  }
+
+  const expiresIn = await redis.ttl(buildTelegramLinkCodeKey(pending.code));
+  if (expiresIn <= 0) {
+    await redis.del(pendingKey);
+    return null;
+  }
+
+  return {
+    code: pending.code,
+    expiresIn,
+  };
+}
+
 export async function createTelegramLinkCode(
   redis: RedisLike,
   username: string,
   ttlSeconds: number = TELEGRAM_LINK_CODE_TTL_SECONDS
 ): Promise<{ code: string; expiresIn: number }> {
+  const normalizedUsername = username.toLowerCase();
+  const existingSession = await getTelegramPendingLinkSession(
+    redis,
+    normalizedUsername
+  );
+  if (existingSession) {
+    return existingSession;
+  }
+
   const code = generateAuthToken().slice(0, 24);
+  const createdAt = Date.now();
   await redis.set(
     buildTelegramLinkCodeKey(code),
     JSON.stringify({
-      username: username.toLowerCase(),
-      createdAt: Date.now(),
+      username: normalizedUsername,
+      createdAt,
     } satisfies TelegramLinkCodeRecord),
+    { ex: ttlSeconds }
+  );
+  await redis.set(
+    buildTelegramPendingLinkKey(normalizedUsername),
+    JSON.stringify({
+      username: normalizedUsername,
+      code,
+      createdAt,
+    } satisfies TelegramPendingLinkSessionRecord),
     { ex: ttlSeconds }
   );
 
@@ -145,7 +217,7 @@ export async function consumeTelegramLinkCode(
     return null;
   }
 
-  await redis.del(key);
+  await redis.del(key, buildTelegramPendingLinkKey(parsed.username));
   return parsed;
 }
 

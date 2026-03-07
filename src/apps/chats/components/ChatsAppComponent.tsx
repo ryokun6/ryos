@@ -34,6 +34,7 @@ import {
 } from "../utils/messages";
 import { useChatsFrameLayout } from "../hooks/useChatsFrameLayout";
 import { useProactiveGreeting } from "../hooks/useProactiveGreeting";
+import { useTelegramLink } from "@/hooks/useTelegramLink";
 
 export function ChatsAppComponent({
   isWindowOpen,
@@ -416,6 +417,18 @@ export function ChatsAppComponent({
   const isWindowsLegacyTheme = isXpTheme;
   const isMacTheme = currentTheme === "macosx";
   const isOffline = useOffline();
+  const {
+    telegramLinkedAccount,
+    telegramLinkSession,
+    isTelegramStatusLoading,
+    isCreatingTelegramLink,
+    isDisconnectingTelegramLink,
+    refreshTelegramLinkStatus,
+    handleCreateTelegramLink,
+    handleOpenTelegramLink,
+    handleCopyTelegramCode,
+    handleDisconnectTelegramLink,
+  } = useTelegramLink({ username, authToken });
 
   const menuBar = (
     <ChatsMenuBar
@@ -447,6 +460,16 @@ export function ChatsAppComponent({
       verifyError={verifyError}
       handleVerifyTokenSubmit={handleVerifyTokenSubmit}
       onLogout={logout}
+      telegramLinkedAccount={telegramLinkedAccount}
+      telegramLinkSession={telegramLinkSession}
+      isTelegramStatusLoading={isTelegramStatusLoading}
+      isCreatingTelegramLink={isCreatingTelegramLink}
+      isDisconnectingTelegramLink={isDisconnectingTelegramLink}
+      onRefreshTelegramLinkStatus={refreshTelegramLinkStatus}
+      onCreateTelegramLink={handleCreateTelegramLink}
+      onOpenTelegramLink={handleOpenTelegramLink}
+      onCopyTelegramCode={handleCopyTelegramCode}
+      onDisconnectTelegramLink={handleDisconnectTelegramLink}
     />
   );
 

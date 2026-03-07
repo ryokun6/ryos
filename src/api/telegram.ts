@@ -8,17 +8,21 @@ export interface TelegramLinkedAccount {
   linkedAt: number;
 }
 
-export interface TelegramLinkCreateResponse {
+export interface TelegramLinkSession {
   code: string;
   expiresIn: number;
   botUsername: string | null;
   deepLink: string | null;
+}
+
+export interface TelegramLinkCreateResponse extends TelegramLinkSession {
   linkedAccount: TelegramLinkedAccount | null;
 }
 
 export interface TelegramLinkStatusResponse {
   linked: boolean;
   account: TelegramLinkedAccount | null;
+  pendingLink: TelegramLinkSession | null;
 }
 
 export async function createTelegramLink(

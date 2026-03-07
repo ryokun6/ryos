@@ -93,6 +93,7 @@ describe("telegram link api", () => {
     const data = await res.json();
     expect(data.linked).toBe(false);
     expect(data.account).toBeNull();
+    expect(data.pendingLink).toBeNull();
   });
 
   test("create returns a link code", async () => {
@@ -113,6 +114,48 @@ describe("telegram link api", () => {
     expect(data.code.length).toBeGreaterThan(0);
     expect(typeof data.expiresIn).toBe("number");
     expect(data.expiresIn).toBeGreaterThan(0);
+  });
+
+  test("create reuses an active pending link", async () => {
+    expect(token).toBeTruthy();
+
+    const firstRes = await fetchWithAuth(
+      `${TEST_BASE_URL}/api/telegram/link/create`,
+      username,
+      token!,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+      }
+    );
+    expect(firstRes.status).toBe(200);
+    const firstData = await firstRes.json();
+
+    const secondRes = await fetchWithAuth(
+      `${TEST_BASE_URL}/api/telegram/link/create`,
+      username,
+      token!,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+      }
+    );
+    expect(secondRes.status).toBe(200);
+    const secondData = await secondRes.json();
+
+    expect(secondData.code).toBe(firstData.code);
+    expect(secondData.expiresIn).toBeGreaterThan(0);
+
+    const statusRes = await fetchWithAuth(
+      `${TEST_BASE_URL}/api/telegram/link/status`,
+      username,
+      token!,
+      { method: "GET" }
+    );
+    expect(statusRes.status).toBe(200);
+    const statusData = await statusRes.json();
+    expect(statusData.linked).toBe(false);
+    expect(statusData.pendingLink?.code).toBe(firstData.code);
   });
 });
 

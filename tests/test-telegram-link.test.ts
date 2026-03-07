@@ -206,6 +206,25 @@ describe("telegram helpers", () => {
     expect(secondAttempt).toBeNull();
   });
 
+  test("reuses an active link code for the same username", async () => {
+    const redis = new MemoryRedis();
+
+    const first = await createTelegramLinkCode(redis, "ryo");
+    const second = await createTelegramLinkCode(redis, "ryo");
+
+    expect(second.code).toBe(first.code);
+    expect(second.expiresIn).toBeGreaterThan(0);
+
+    await linkTelegramAccount(redis, {
+      code: first.code,
+      telegramUserId: "3003",
+      chatId: "3003",
+    });
+
+    const third = await createTelegramLinkCode(redis, "ryo");
+    expect(third.code).not.toBe(first.code);
+  });
+
   test("enforces one-to-one telegram account mapping", async () => {
     const redis = new MemoryRedis();
 

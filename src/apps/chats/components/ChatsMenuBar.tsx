@@ -18,10 +18,17 @@ import { useThemeStore } from "@/stores/useThemeStore";
 import { ShareItemDialog } from "@/components/dialogs/ShareItemDialog";
 import { appRegistry } from "@/config/appRegistry";
 import { useTranslation } from "react-i18next";
+import { TelegramLinkDialog } from "@/components/dialogs/TelegramLinkDialog";
 import {
   useNotificationPermission,
   isNotificationApiAvailable,
 } from "@/utils/browserNotifications";
+import type {
+  TelegramLinkCreateResponse,
+  TelegramLinkSession,
+  TelegramLinkedAccount,
+  TelegramLinkStatusResponse,
+} from "@/api/telegram";
 
 interface ChatsMenuBarProps {
   onClose: () => void;
@@ -55,6 +62,16 @@ interface ChatsMenuBarProps {
     isPassword: boolean
   ) => Promise<void>;
   onLogout?: () => Promise<void>;
+  telegramLinkedAccount: TelegramLinkedAccount | null;
+  telegramLinkSession: TelegramLinkSession | null;
+  isTelegramStatusLoading: boolean;
+  isCreatingTelegramLink: boolean;
+  isDisconnectingTelegramLink: boolean;
+  onRefreshTelegramLinkStatus: () => Promise<TelegramLinkStatusResponse | null>;
+  onCreateTelegramLink: () => Promise<TelegramLinkCreateResponse | null>;
+  onOpenTelegramLink: () => void;
+  onCopyTelegramCode: () => void;
+  onDisconnectTelegramLink: () => void;
 }
 
 export function ChatsMenuBar({
@@ -86,9 +103,20 @@ export function ChatsMenuBar({
   verifyError,
   handleVerifyTokenSubmit,
   onLogout,
+  telegramLinkedAccount,
+  telegramLinkSession,
+  isTelegramStatusLoading,
+  isCreatingTelegramLink,
+  isDisconnectingTelegramLink,
+  onRefreshTelegramLinkStatus,
+  onCreateTelegramLink,
+  onOpenTelegramLink,
+  onCopyTelegramCode,
+  onDisconnectTelegramLink,
 }: ChatsMenuBarProps) {
   const { t } = useTranslation();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isTelegramDialogOpen, setIsTelegramDialogOpen] = useState(false);
   const appId = "chats";
   const appName = appRegistry[appId as keyof typeof appRegistry]?.name || appId;
   const currentTheme = useThemeStore((state) => state.current);
@@ -97,6 +125,19 @@ export function ChatsMenuBar({
 
   const { permission: notificationPermission, requestPermission: requestNotificationPermission } =
     useNotificationPermission();
+
+  const openTelegramDialog = async () => {
+    const status = await onRefreshTelegramLinkStatus();
+
+    if (!status?.account && !status?.pendingLink && !telegramLinkSession) {
+      const createdLink = await onCreateTelegramLink();
+      if (!createdLink) {
+        return;
+      }
+    }
+
+    setIsTelegramDialogOpen(true);
+  };
 
   const {
     speechEnabled,
@@ -144,13 +185,20 @@ export function ChatsMenuBar({
 
             {/* Account Section */}
             {username && authToken ? (
-              // When logged in: Show Log Out only
-              <MenubarItem
-                onClick={() => onLogout?.()}
-                className="text-md h-6 px-3"
-              >
-                {t("apps.chats.menu.logOut")}
-              </MenubarItem>
+              <>
+                <MenubarItem
+                  onSelect={openTelegramDialog}
+                  className="text-md h-6 px-3"
+                >
+                  {t("apps.chats.menu.linkToTelegram")}
+                </MenubarItem>
+                <MenubarItem
+                  onClick={() => onLogout?.()}
+                  className="text-md h-6 px-3"
+                >
+                  {t("apps.chats.menu.logOut")}
+                </MenubarItem>
+              </>
             ) : (
               // When not logged in: Show Create Account and Login
               <>
@@ -412,6 +460,19 @@ export function ChatsMenuBar({
         itemIdentifier={appId}
         title={appName}
         generateShareUrl={generateAppShareUrl}
+      />
+      <TelegramLinkDialog
+        isOpen={isTelegramDialogOpen}
+        onClose={() => setIsTelegramDialogOpen(false)}
+        linkedAccount={telegramLinkedAccount}
+        linkSession={telegramLinkSession}
+        isStatusLoading={isTelegramStatusLoading}
+        isCreatingLink={isCreatingTelegramLink}
+        isDisconnectingLink={isDisconnectingTelegramLink}
+        onCreateLink={onCreateTelegramLink}
+        onOpenTelegramLink={onOpenTelegramLink}
+        onCopyTelegramCode={onCopyTelegramCode}
+        onDisconnectTelegramLink={onDisconnectTelegramLink}
       />
     </>
   );
