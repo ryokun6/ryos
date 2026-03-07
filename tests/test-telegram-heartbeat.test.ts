@@ -9,7 +9,6 @@ import {
   formatTelegramConversationEntries,
   getTelegramHeartbeatAuthSecret,
   getTelegramHeartbeatSlot,
-  isRepeatedTelegramHeartbeatReply,
   parseTelegramHeartbeatResult,
   shouldSendTelegramHeartbeat,
   splitTelegramHeartbeatEntries,
@@ -95,6 +94,7 @@ describe("telegram heartbeat helpers", () => {
     expect(prompt).toContain("Telegram-safe tools");
     expect(prompt).toContain("Do not infer, resurrect, or repeat stale tasks");
     expect(prompt).toContain("fresh insight");
+    expect(prompt).toContain("did not get a user response");
     expect(prompt).toContain("Do not mention that this message is automated");
     expect(prompt).toContain("RECENT TELEGRAM CHAT:");
     expect(prompt).toContain(TELEGRAM_HEARTBEAT_SKIP_TOKEN);
@@ -201,22 +201,10 @@ describe("telegram heartbeat helpers", () => {
     ).toContain("[telegram heartbeat] skipped");
   });
 
-  test("formats recent telegram chats and detects repeated heartbeat replies", () => {
+  test("formats recent telegram chats for prompt context", () => {
     expect(formatTelegramConversationEntries(sampleConversationHistory)).toContain(
       "user: done with that, now i need to review the cron behavior"
     );
-    expect(
-      isRepeatedTelegramHeartbeatReply(
-        "want me to draft the onboarding doc follow-up?",
-        sampleConversationHistory
-      )
-    ).toBe(true);
-    expect(
-      isRepeatedTelegramHeartbeatReply(
-        "one fresh thought: batch the cron review around the last heartbeat slot so you can compare behavior changes side by side.",
-        sampleConversationHistory
-      )
-    ).toBe(false);
   });
 
   test("uses CRON_SECRET for heartbeat auth", () => {

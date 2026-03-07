@@ -230,6 +230,8 @@ export function buildTelegramHeartbeatPrompt({
     "Only continue the conversation naturally if you can add net-new value grounded in today's notes or recent Telegram chats.",
     "Before replying, internally extract: (1) open tasks that still need attention, (2) tasks already done or already acknowledged, and (3) ideas the assistant already suggested.",
     "If a task is already complete, already answered, or you do not have a fresh angle, skip the message.",
+    "Pay special attention to the latest proactive heartbeat or check-in already sent by the assistant.",
+    "If that earlier heartbeat did not get a user response, do not send another similar nudge unless you have materially new information, a clearly better angle, or a concrete next step the user has not already seen.",
     "If a full note or memory would help, use memoryRead before deciding.",
     "Use other available Telegram-safe tools only when they help with one concrete, current need from today's notes or recent Telegram chats.",
     `If nothing currently needs attention, reply exactly ${TELEGRAM_HEARTBEAT_SKIP_TOKEN} or ${TELEGRAM_HEARTBEAT_SKIP_TOKEN}: <brief reason>.`,
@@ -287,39 +289,4 @@ export function buildTelegramHeartbeatLogEntry(args: {
   return `${TELEGRAM_HEARTBEAT_LOG_PREFIX} ${
     args.sent ? "sent" : "skipped"
   } - ${detail}`;
-}
-
-function normalizeHeartbeatComparisonText(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-export function isRepeatedTelegramHeartbeatReply(
-  replyText: string,
-  history: TelegramConversationMessage[],
-  maxAssistantMessages: number = 6
-): boolean {
-  const normalizedReply = normalizeHeartbeatComparisonText(replyText);
-  if (!normalizedReply) {
-    return false;
-  }
-
-  return history
-    .filter((message) => message.role === "assistant")
-    .slice(-Math.max(0, maxAssistantMessages))
-    .some((message) => {
-      const normalizedMessage = normalizeHeartbeatComparisonText(message.content);
-      if (!normalizedMessage) {
-        return false;
-      }
-
-      return (
-        normalizedReply === normalizedMessage ||
-        normalizedReply.includes(normalizedMessage) ||
-        normalizedMessage.includes(normalizedReply)
-      );
-    });
 }

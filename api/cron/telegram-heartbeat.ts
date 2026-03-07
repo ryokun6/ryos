@@ -22,7 +22,6 @@ import {
   formatTelegramHeartbeatEntries,
   formatTelegramConversationEntries,
   getTelegramHeartbeatAuthSecret,
-  isRepeatedTelegramHeartbeatReply,
   parseTelegramHeartbeatResult,
   shouldSendTelegramHeartbeat,
   splitTelegramHeartbeatEntries,
@@ -340,40 +339,6 @@ export default async function handler(
     logger.warn("Telegram heartbeat generated empty reply", { username });
     logger.response(500, Date.now() - startTime);
     sendJson(res, 500, { error: "Generated empty reply" });
-    return;
-  }
-
-  if (isRepeatedTelegramHeartbeatReply(replyText, history)) {
-    const reason = "generated reply repeated a recent Telegram message";
-    await appendHeartbeatLog(
-      redis,
-      username,
-      buildTelegramHeartbeatLogEntry({
-        sent: false,
-        reason,
-      }),
-      logger
-    );
-    await markHeartbeatSlot(redis, slotKey, {
-      username,
-      chatId: linkedAccount.chatId,
-      sent: false,
-      reason,
-      code: "model-duplicate-reply",
-      checkedAt: Date.now(),
-    });
-    logger.info("Telegram heartbeat skipped because reply repeated recent context", {
-      username,
-      replyLength: replyText.length,
-    });
-    logger.response(200, Date.now() - startTime);
-    sendJson(res, 200, {
-      success: true,
-      sent: false,
-      reason,
-      code: "model-duplicate-reply",
-      username,
-    });
     return;
   }
 
