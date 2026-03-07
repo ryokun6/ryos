@@ -17,4 +17,20 @@ describe("telegram citation formatting", () => {
       )
     ).toBe("you can check The Verge for details");
   });
+
+  test("strips common markdown syntax while preserving readable plain text", () => {
+    expect(
+      simplifyTelegramCitationDisplay(
+        "# Update\n- **Fast** and _clean_\n1. `Ship it`\n> ~~Done~~"
+      )
+    ).toBe("Update\n• Fast and clean\n1) Ship it\nDone");
+  });
+
+  test("converts task lists and fenced code blocks to plain text", () => {
+    expect(
+      simplifyTelegramCitationDisplay(
+        "- [x] shipped\n```ts\nconst done = true;\n```"
+      )
+    ).toBe("• [x] shipped\nconst done = true;");
+  });
 });
