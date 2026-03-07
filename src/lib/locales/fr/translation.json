@@ -407,22 +407,22 @@
         "startTime": "Heure de début",
         "title": "Titre"
       },
+      "export": {
+        "noEvents": "Aucun événement à exporter",
+        "success": "{{count}} événement(s) exporté(s)"
+      },
       "import": {
         "success": "{{count}} événement(s) importé(s)"
-      },
-      "export": {
-        "success": "{{count}} événement(s) exporté(s)",
-        "noEvents": "Aucun événement à exporter"
       },
       "menu": {
         "about": "À propos de Calendrier",
         "dayView": "Vue Jour",
         "deleteEvent": "Supprimer l'événement",
         "editEvent": "Modifier l'événement",
+        "exportToIcs": "Exporter les événements…",
         "goToToday": "Aller à aujourd'hui",
         "help": "Aide Calendrier",
         "importFromDevice": "Importer depuis l'appareil…",
-        "exportToIcs": "Exporter les événements…",
         "monthView": "Vue Mois",
         "newEvent": "Nouvel événement",
         "showToDoItems": "Afficher les tâches",
@@ -607,6 +607,25 @@
         "addedAndStartedPlaying": "Nouvelle chanson ajoutée et lecture démarrée",
         "addingSong": "Ajout de la chanson…",
         "applet": "Applet",
+        "calendar": {
+          "addedEvent": "Événement «{{title}}» ajouté",
+          "addedTodo": "Tâche «{{title}}» ajoutée",
+          "addingEvent": "Ajout de l'événement «{{title}}»…",
+          "addingTodo": "Ajout de la tâche «{{title}}»…",
+          "deletedEvent": "Événement «{{title}}» supprimé",
+          "deletedTodo": "Tâche «{{title}}» supprimée",
+          "deletingEvent": "Suppression de l'événement…",
+          "deletingTodo": "Suppression de la tâche…",
+          "foundEvents": "Trouvé {{count}} événement(s)",
+          "foundTodos": "Trouvé {{count}} tâche(s)",
+          "listingEvents": "Affichage des événements…",
+          "listingTodos": "Affichage des tâches…",
+          "toggledTodoCompleted": "«{{title}}» terminé",
+          "toggledTodoPending": "«{{title}}» marqué comme incomplet",
+          "togglingTodo": "Mise à jour de la tâche…",
+          "updatedEvent": "Événement «{{title}}» mis à jour",
+          "updatingEvent": "Mise à jour de l'événement…"
+        },
         "calling": "Appel de {{toolName}}…",
         "changingSettings": "Modification des paramètres…",
         "closed": "{{appName}} fermé",
@@ -807,34 +826,33 @@
         "unknownError": "Erreur inconnue"
       },
       "appearance": "Apparence",
-      "backup": "Sauvegarde",
-      "backupRestoreDescription": "Sauvegarder ou restaurer tous les réglages et fichiers de l'application",
       "autoSync": {
-        "title": "Synchronisation cloud",
-        "description": "Synchronise automatiquement les bibliothèques et réglages sélectionnés avec le cloud après des changements importants",
-        "files": "Fichiers",
-        "settings": "Réglages",
-        "songs": "Bibliothèque musicale",
-        "videos": "Vidéothèque",
-        "stickies": "Pense-bêtes",
         "calendar": "Calendrier",
-        "waiting": "En attente du prochain changement éligible",
-        "neverSynced": "Pas encore synchronisé",
         "checking": "Vérification des mises à jour cloud…",
+        "daysAgo": "il y a {{count}}j",
+        "description": "Synchronise automatiquement les bibliothèques et réglages sélectionnés avec le cloud après des changements importants",
+        "error": "Problème de synchronisation : {{error}}",
+        "files": "Fichiers",
+        "hoursAgo": "il y a {{count}}h",
+        "justNow": "à l'instant",
         "lastChecked": "Dernière vérification {{date}}",
         "lastSynced": "Dernière synchronisation {{date}}",
-        "justNow": "à l'instant",
         "minutesAgo": "il y a {{count}}min",
-        "hoursAgo": "il y a {{count}}h",
-        "daysAgo": "il y a {{count}}j",
-        "error": "Problème de synchronisation : {{error}}"
+        "neverSynced": "Pas encore synchronisé",
+        "settings": "Réglages",
+        "songs": "Bibliothèque musicale",
+        "stickies": "Pense-bêtes",
+        "title": "Synchronisation cloud",
+        "videos": "Vidéothèque",
+        "waiting": "En attente du prochain changement éligible"
       },
+      "backup": "Sauvegarde",
+      "backupRestoreDescription": "Sauvegarder ou restaurer tous les réglages et fichiers de l'application",
       "bootScreen": "Écran de démarrage",
       "bootScreenDescription": "Tester l'animation de l'écran de démarrage",
       "chatSynth": "Synthétiseur de discussion",
       "chatSynthVolume": "Volume du synthé de chat",
       "checkForUpdates": "Rechercher les mises à jour",
-      "sync": "Synchronisation",
       "cloudSync": {
         "backingUp": "Sauvegarde en cours…",
         "backupFailed": "Échec de la sauvegarde dans le cloud",
@@ -892,10 +910,6 @@
           "description": "Exporter ou restaurer tous les paramètres et fichiers",
           "title": "Sauvegarde et restauration"
         },
-        "sync": {
-          "description": "Configurer la synchronisation cloud automatique et les sauvegardes cloud manuelles",
-          "title": "Synchronisation"
-        },
         "shaderEffects": {
           "description": "Activer les effets visuels CRT, Galaxy ou Aurora",
           "title": "Effets de shader"
@@ -903,6 +917,10 @@
         "sounds": {
           "description": "Basculer les sons de l'interface utilisateur, le synthé de frappe et les effets Terminal / IE",
           "title": "Sons"
+        },
+        "sync": {
+          "description": "Configurer la synchronisation cloud automatique et les sauvegardes cloud manuelles",
+          "title": "Synchronisation"
         },
         "system": {
           "description": "Réinitialiser les préférences ou formater le système de fichiers virtuel",
@@ -994,8 +1012,35 @@
       "speech": "Parole",
       "speechVolume": "Volume de la parole",
       "startAfter": "Démarrer après",
+      "sync": "Synchronisation",
       "synth": "Synthé",
       "system": "Système",
+      "telegram": {
+        "checking": "Vérification du lien Telegram…",
+        "codeCopied": "Code du lien Telegram copié",
+        "codeValue": "Code : {{code}}",
+        "connect": "Lier Telegram",
+        "copyCode": "Copier le code",
+        "copyFailed": "Échec de la copie du code de lien Telegram",
+        "deepLinkUnavailable": "Le lien profond Telegram n'est pas disponible",
+        "description": "Liez un message direct Telegram pour discuter avec Ryo en utilisant votre compte ryOS",
+        "disconnect": "Déconnecter",
+        "disconnectFailed": "Échec de la déconnexion de Telegram",
+        "disconnected": "Telegram déconnecté",
+        "disconnecting": "Déconnexion en cours...",
+        "expiresInMinutes": "Expire dans environ {{minutes}} min",
+        "instructionsCodeOnly": "Copiez le code ci-dessous et utilisez-le dans Telegram pour finaliser le lien.",
+        "instructionsDeepLink": "Ouvrez Telegram avec le bouton ci-dessous, puis appuyez sur Démarrer pour finaliser le lien.",
+        "linkFailed": "Échec de la création du lien Telegram",
+        "linkPending": "Lien prêt - finalisez-le dans Telegram",
+        "linkReady": "Le lien Telegram est prêt",
+        "linkedAs": "Lié en tant que {{account}}",
+        "loggedOutDescription": "Connectez-vous pour lier Telegram à votre compte ryOS",
+        "loginRequired": "Veuillez vous connecter pour lier Telegram",
+        "openTelegram": "Ouvrir Telegram",
+        "preparing": "Préparation en cours...",
+        "title": "Telegram"
+      },
       "terminalIeAmbientSynth": "Synthé",
       "theme": "Thème",
       "themeDescription": "Modifie l'apparence des fenêtres, des menus et des contrôles",

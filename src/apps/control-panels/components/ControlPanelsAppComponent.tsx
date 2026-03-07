@@ -273,6 +273,15 @@ export function ControlPanelsAppComponent({
     handleVerifyTokenSubmit,
     handleSetPassword,
     handleLogoutAllDevices,
+    telegramLinkedAccount,
+    telegramLinkSession,
+    isTelegramStatusLoading,
+    isCreatingTelegramLink,
+    isDisconnectingTelegramLink,
+    handleCreateTelegramLink,
+    handleOpenTelegramLink,
+    handleCopyTelegramCode,
+    handleDisconnectTelegramLink,
     autoSyncEnabled,
     setAutoSyncEnabled,
     syncFiles,
@@ -886,6 +895,101 @@ export function ControlPanelsAppComponent({
                       </div>
                     </div>
                   )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col">
+                      <span className="text-[13px] font-geneva-12 font-medium">
+                        {t("apps.control-panels.telegram.title")}
+                      </span>
+                      <span className="text-[11px] text-neutral-600 font-geneva-12">
+                        {!username
+                          ? t("apps.control-panels.telegram.loggedOutDescription")
+                          : isTelegramStatusLoading
+                            ? t("apps.control-panels.telegram.checking")
+                            : telegramLinkedAccount
+                              ? t("apps.control-panels.telegram.linkedAs", {
+                                  account:
+                                    telegramLinkedAccount.telegramUsername
+                                      ? `@${telegramLinkedAccount.telegramUsername}`
+                                      : telegramLinkedAccount.firstName ||
+                                        telegramLinkedAccount.telegramUserId,
+                                })
+                              : telegramLinkSession
+                                ? t("apps.control-panels.telegram.linkPending")
+                                : t("apps.control-panels.telegram.description")}
+                      </span>
+                    </div>
+
+                    {username ? (
+                      telegramLinkedAccount ? (
+                        <Button
+                          variant="retro"
+                          onClick={handleDisconnectTelegramLink}
+                          disabled={isDisconnectingTelegramLink}
+                          className="h-7"
+                        >
+                          {isDisconnectingTelegramLink
+                            ? t("apps.control-panels.telegram.disconnecting")
+                            : t("apps.control-panels.telegram.disconnect")}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="retro"
+                          onClick={handleCreateTelegramLink}
+                          disabled={
+                            isCreatingTelegramLink || isTelegramStatusLoading
+                          }
+                          className="h-7"
+                        >
+                          {isCreatingTelegramLink
+                            ? t("apps.control-panels.telegram.preparing")
+                            : t("apps.control-panels.telegram.connect")}
+                        </Button>
+                      )
+                    ) : null}
+                  </div>
+
+                  {username && !telegramLinkedAccount && telegramLinkSession ? (
+                    <div className="space-y-2 rounded-md border p-2">
+                      <p className="text-[11px] text-neutral-600 font-geneva-12">
+                        {telegramLinkSession.deepLink
+                          ? t(
+                              "apps.control-panels.telegram.instructionsDeepLink"
+                            )
+                          : t("apps.control-panels.telegram.instructionsCodeOnly")}
+                      </p>
+                      <p className="text-[11px] font-geneva-12">
+                        {t("apps.control-panels.telegram.codeValue", {
+                          code: telegramLinkSession.code,
+                        })}
+                      </p>
+                      <p className="text-[11px] text-neutral-600 font-geneva-12">
+                        {t("apps.control-panels.telegram.expiresInMinutes", {
+                          minutes: Math.ceil(telegramLinkSession.expiresIn / 60),
+                        })}
+                      </p>
+                      <div className="flex gap-2">
+                        {telegramLinkSession.deepLink ? (
+                          <Button
+                            variant="retro"
+                            onClick={handleOpenTelegramLink}
+                            className="h-7 flex-1"
+                          >
+                            {t("apps.control-panels.telegram.openTelegram")}
+                          </Button>
+                        ) : null}
+                        <Button
+                          variant="retro"
+                          onClick={handleCopyTelegramCode}
+                          className="h-7 flex-1"
+                        >
+                          {t("apps.control-panels.telegram.copyCode")}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 <hr

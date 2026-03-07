@@ -407,22 +407,22 @@
         "startTime": "開始時刻",
         "title": "タイトル"
       },
+      "export": {
+        "noEvents": "エクスポートするイベントがありません",
+        "success": "{{count}}件のイベントをエクスポートしました"
+      },
       "import": {
         "success": "{{count}}件のイベントを読み込みました"
-      },
-      "export": {
-        "success": "{{count}}件のイベントをエクスポートしました",
-        "noEvents": "エクスポートするイベントがありません"
       },
       "menu": {
         "about": "カレンダーについて",
         "dayView": "日表示",
         "deleteEvent": "イベントを削除",
         "editEvent": "イベントを編集",
+        "exportToIcs": "イベントをエクスポート…",
         "goToToday": "今日へ移動",
         "help": "カレンダーヘルプ",
         "importFromDevice": "デバイスから読み込む…",
-        "exportToIcs": "イベントをエクスポート…",
         "monthView": "月表示",
         "newEvent": "新規イベント",
         "showToDoItems": "To Do項目を表示",
@@ -607,6 +607,25 @@
         "addedAndStartedPlaying": "新しい曲を追加して再生を開始しました",
         "addingSong": "曲を追加中…",
         "applet": "アプレット",
+        "calendar": {
+          "addedEvent": "「{{title}}」イベントを追加しました",
+          "addedTodo": "「{{title}}」To-Doを追加しました",
+          "addingEvent": "「{{title}}」イベントを追加中…",
+          "addingTodo": "「{{title}}」To-Doを追加中…",
+          "deletedEvent": "「{{title}}」イベントを削除しました",
+          "deletedTodo": "「{{title}}」To-Doを削除しました",
+          "deletingEvent": "イベントを削除中…",
+          "deletingTodo": "To-Doを削除中…",
+          "foundEvents": "イベントを{{count}}件見つけました",
+          "foundTodos": "To-Doを{{count}}件見つけました",
+          "listingEvents": "イベントを一覧表示中…",
+          "listingTodos": "To-Doを一覧表示中…",
+          "toggledTodoCompleted": "「{{title}}」を完了しました",
+          "toggledTodoPending": "「{{title}}」を未完了にしました",
+          "togglingTodo": "To-Doを更新中…",
+          "updatedEvent": "「{{title}}」イベントを更新しました",
+          "updatingEvent": "イベントを更新中…"
+        },
         "calling": "{{toolName}} を呼び出し中…",
         "changingSettings": "設定を変更中…",
         "closed": "{{appName}} を閉じました",
@@ -807,34 +826,33 @@
         "unknownError": "不明なエラー"
       },
       "appearance": "外観",
-      "backup": "バックアップ",
-      "backupRestoreDescription": "すべてのアプリ設定とファイルをバックアップまたは復元します",
       "autoSync": {
-        "title": "クラウド同期",
-        "description": "重要な更新後に、選択したライブラリと設定を自動的にクラウドへ同期します",
-        "files": "ファイル",
-        "settings": "設定",
-        "songs": "音楽ライブラリ",
-        "videos": "ビデオライブラリ",
-        "stickies": "スティッキーズ",
         "calendar": "カレンダー",
-        "waiting": "次の同期対象の変更を待機中です",
-        "neverSynced": "未同期",
         "checking": "クラウド更新を確認中…",
+        "daysAgo": "{{count}}日前",
+        "description": "重要な更新後に、選択したライブラリと設定を自動的にクラウドへ同期します",
+        "error": "同期の問題: {{error}}",
+        "files": "ファイル",
+        "hoursAgo": "{{count}}時間前",
+        "justNow": "たった今",
         "lastChecked": "最終確認 {{date}}",
         "lastSynced": "最終同期 {{date}}",
-        "justNow": "たった今",
         "minutesAgo": "{{count}}分前",
-        "hoursAgo": "{{count}}時間前",
-        "daysAgo": "{{count}}日前",
-        "error": "同期の問題: {{error}}"
+        "neverSynced": "未同期",
+        "settings": "設定",
+        "songs": "音楽ライブラリ",
+        "stickies": "スティッキーズ",
+        "title": "クラウド同期",
+        "videos": "ビデオライブラリ",
+        "waiting": "次の同期対象の変更を待機中です"
       },
+      "backup": "バックアップ",
+      "backupRestoreDescription": "すべてのアプリ設定とファイルをバックアップまたは復元します",
       "bootScreen": "起動画面",
       "bootScreenDescription": "起動画面のアニメーションをテストします",
       "chatSynth": "チャットシンセ",
       "chatSynthVolume": "チャットシンセ音量",
       "checkForUpdates": "アップデートを確認",
-      "sync": "同期",
       "cloudSync": {
         "backingUp": "バックアップ中…",
         "backupFailed": "クラウドへのバックアップに失敗しました",
@@ -892,10 +910,6 @@
           "description": "すべての設定とファイルをエクスポートまたは復元",
           "title": "バックアップと復元"
         },
-        "sync": {
-          "description": "自動クラウド同期と手動クラウドバックアップを設定",
-          "title": "同期"
-        },
         "shaderEffects": {
           "description": "CRT、銀河、またはオーロラの視覚効果を有効化",
           "title": "シェーダーエフェクト"
@@ -903,6 +917,10 @@
         "sounds": {
           "description": "UIサウンド、タイピングシンセ、ターミナル/IEエフェクトを切り替え",
           "title": "サウンド"
+        },
+        "sync": {
+          "description": "自動クラウド同期と手動クラウドバックアップを設定",
+          "title": "同期"
         },
         "system": {
           "description": "設定をリセットまたは仮想ファイルシステムをフォーマット",
@@ -994,8 +1012,35 @@
       "speech": "スピーチ",
       "speechVolume": "スピーチ音量",
       "startAfter": "起動まで",
+      "sync": "同期",
       "synth": "シンセ",
       "system": "システム",
+      "telegram": {
+        "checking": "Telegramリンクを確認中...",
+        "codeCopied": "Telegramリンクコードをコピーしました",
+        "codeValue": "コード: {{code}}",
+        "connect": "Telegramと連携",
+        "copyCode": "コードをコピー",
+        "copyFailed": "Telegram連携コードのコピーに失敗しました",
+        "deepLinkUnavailable": "Telegramディープリンクは利用できません",
+        "description": "ryOSアカウントでRyoとチャットするために、Telegram DMを連携",
+        "disconnect": "連携解除",
+        "disconnectFailed": "Telegramの連携解除に失敗しました",
+        "disconnected": "Telegramの連携が解除されました",
+        "disconnecting": "連携解除中...",
+        "expiresInMinutes": "約{{minutes}}分で有効期限が切れます",
+        "instructionsCodeOnly": "以下のコードをコピーし、Telegramで連携を完了してください。",
+        "instructionsDeepLink": "以下のボタンでTelegramを開き、Startを押して連携を完了してください。",
+        "linkFailed": "Telegram連携の作成に失敗しました",
+        "linkPending": "連携準備完了 - Telegramで完了してください",
+        "linkReady": "Telegram連携準備完了",
+        "linkedAs": "{{account}}として連携済み",
+        "loggedOutDescription": "TelegramをryOSアカウントに連携するには、ログインしてください。",
+        "loginRequired": "Telegramを連携するにはログインしてください",
+        "openTelegram": "Telegramを開く",
+        "preparing": "準備中...",
+        "title": "テレグラム"
+      },
       "terminalIeAmbientSynth": "シンセ",
       "theme": "テーマ",
       "themeDescription": "ウィンドウ、メニュー、コントロールの外観を変更します",

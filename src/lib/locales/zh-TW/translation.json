@@ -407,22 +407,22 @@
         "startTime": "開始時間",
         "title": "標題"
       },
+      "export": {
+        "noEvents": "沒有可匯出的事件",
+        "success": "已匯出 {{count}} 個事件"
+      },
       "import": {
         "success": "已匯入 {{count}} 個行程"
-      },
-      "export": {
-        "success": "已匯出 {{count}} 個事件",
-        "noEvents": "沒有可匯出的事件"
       },
       "menu": {
         "about": "關於日曆",
         "dayView": "日檢視",
         "deleteEvent": "刪除事件",
         "editEvent": "編輯事件",
+        "exportToIcs": "匯出事件…",
         "goToToday": "前往今天",
         "help": "行事曆輔助說明",
         "importFromDevice": "從裝置匯入…",
-        "exportToIcs": "匯出事件…",
         "monthView": "月檢視",
         "newEvent": "新增行程",
         "showToDoItems": "顯示待辦事項",
@@ -607,6 +607,25 @@
         "addedAndStartedPlaying": "已新增並開始播放新歌曲",
         "addingSong": "新增歌曲…",
         "applet": "小程式",
+        "calendar": {
+          "addedEvent": "已新增事件「{{title}}」",
+          "addedTodo": "已新增待辦事項「{{title}}」",
+          "addingEvent": "正在新增事件「{{title}}」…",
+          "addingTodo": "正在新增待辦事項「{{title}}」…",
+          "deletedEvent": "已刪除事件「{{title}}」",
+          "deletedTodo": "已刪除待辦事項「{{title}}」",
+          "deletingEvent": "正在刪除事件…",
+          "deletingTodo": "正在刪除待辦事項…",
+          "foundEvents": "找到 {{count}} 個事件",
+          "foundTodos": "找到 {{count}} 個待辦事項",
+          "listingEvents": "正在列出事件…",
+          "listingTodos": "正在列出待辦事項…",
+          "toggledTodoCompleted": "已完成「{{title}}」",
+          "toggledTodoPending": "已將「{{title}}」標示為未完成",
+          "togglingTodo": "正在更新待辦事項…",
+          "updatedEvent": "已更新事件「{{title}}」",
+          "updatingEvent": "正在更新事件…"
+        },
         "calling": "呼叫 {{toolName}}…",
         "changingSettings": "正在變更設定…",
         "closed": "已關閉 {{appName}}",
@@ -807,34 +826,33 @@
         "unknownError": "未知錯誤"
       },
       "appearance": "外觀",
-      "backup": "備份",
-      "backupRestoreDescription": "備份或還原所有應用程式設定和檔案",
       "autoSync": {
-        "title": "雲端同步",
-        "description": "在重要更新後，自動將選取的資料庫與設定同步到雲端",
-        "files": "檔案",
-        "settings": "設定",
-        "songs": "音樂資料庫",
-        "videos": "影片資料庫",
-        "stickies": "便利貼",
         "calendar": "行事曆",
-        "waiting": "正在等待下一個可同步的變更",
-        "neverSynced": "尚未同步",
         "checking": "正在檢查雲端更新…",
+        "daysAgo": "{{count}}天前",
+        "description": "在重要更新後，自動將選取的資料庫與設定同步到雲端",
+        "error": "同步問題：{{error}}",
+        "files": "檔案",
+        "hoursAgo": "{{count}}小時前",
+        "justNow": "剛剛",
         "lastChecked": "上次檢查 {{date}}",
         "lastSynced": "上次同步 {{date}}",
-        "justNow": "剛剛",
         "minutesAgo": "{{count}}分鐘前",
-        "hoursAgo": "{{count}}小時前",
-        "daysAgo": "{{count}}天前",
-        "error": "同步問題：{{error}}"
+        "neverSynced": "尚未同步",
+        "settings": "設定",
+        "songs": "音樂資料庫",
+        "stickies": "便利貼",
+        "title": "雲端同步",
+        "videos": "影片資料庫",
+        "waiting": "正在等待下一個可同步的變更"
       },
+      "backup": "備份",
+      "backupRestoreDescription": "備份或還原所有應用程式設定和檔案",
       "bootScreen": "開機畫面",
       "bootScreenDescription": "測試開機畫面動畫",
       "chatSynth": "聊天合成",
       "chatSynthVolume": "聊天合成音量",
       "checkForUpdates": "檢查更新",
-      "sync": "同步",
       "cloudSync": {
         "backingUp": "正在備份…",
         "backupFailed": "備份到雲端失敗",
@@ -892,10 +910,6 @@
           "description": "匯出或還原所有設定和檔案",
           "title": "備份與還原"
         },
-        "sync": {
-          "description": "設定自動雲端同步與手動雲端備份",
-          "title": "同步"
-        },
         "shaderEffects": {
           "description": "啟用 CRT、銀河或極光視覺效果",
           "title": "著色器效果"
@@ -903,6 +917,10 @@
         "sounds": {
           "description": "切換 UI 音效、打字合成器和終端機 / IE 效果",
           "title": "音效"
+        },
+        "sync": {
+          "description": "設定自動雲端同步與手動雲端備份",
+          "title": "同步"
         },
         "system": {
           "description": "重設偏好設定或格式化虛擬檔案系統",
@@ -994,8 +1012,35 @@
       "speech": "語音",
       "speechVolume": "語音音量",
       "startAfter": "閒置後啟動",
+      "sync": "同步",
       "synth": "合成器",
       "system": "系統",
+      "telegram": {
+        "checking": "正在檢查 Telegram 連結...",
+        "codeCopied": "Telegram 連結代碼已複製",
+        "codeValue": "代碼：{{code}}",
+        "connect": "連結 Telegram",
+        "copyCode": "複製代碼",
+        "copyFailed": "無法複製 Telegram 連結代碼",
+        "deepLinkUnavailable": "Telegram 深度連結無法使用",
+        "description": "連結 Telegram 私訊以使用您的 ryOS 帳戶與 Ryo 聊天",
+        "disconnect": "中斷連結",
+        "disconnectFailed": "無法中斷 Telegram 連結",
+        "disconnected": "Telegram 已中斷連結",
+        "disconnecting": "正在中斷連結...",
+        "expiresInMinutes": "約 {{minutes}} 分鐘後到期",
+        "instructionsCodeOnly": "複製下方代碼並在 Telegram 中使用以完成連結。",
+        "instructionsDeepLink": "使用下方按鈕開啟 Telegram，然後按下「開始」以完成連結。",
+        "linkFailed": "無法建立 Telegram 連結",
+        "linkPending": "連結已準備就緒 - 在 Telegram 中完成它",
+        "linkReady": "Telegram 連結已準備就緒",
+        "linkedAs": "已連結為 {{account}}",
+        "loggedOutDescription": "登入以連結 Telegram 至您的 ryOS 帳戶",
+        "loginRequired": "請登入以連結 Telegram",
+        "openTelegram": "開啟 Telegram",
+        "preparing": "正在準備...",
+        "title": "Telegram"
+      },
       "terminalIeAmbientSynth": "合成器",
       "theme": "主題",
       "themeDescription": "變更視窗、選單和控制項的外觀",

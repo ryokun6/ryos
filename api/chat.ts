@@ -3,149 +3,27 @@ import {
   streamText,
   generateText,
   smoothStream,
-  convertToModelMessages,
   stepCountIs,
-  type UIMessage,
 } from "ai";
 import { geolocation } from "@vercel/functions";
 import { google } from "@ai-sdk/google";
 import {
-  SupportedModel,
   DEFAULT_MODEL,
-  getModelInstance,
+  SUPPORTED_AI_MODELS,
+  type SupportedModel,
 } from "./_utils/_aiModels.js";
 import {
-  CORE_PRIORITY_INSTRUCTIONS,
-  RYO_PERSONA_INSTRUCTIONS,
-  ANSWER_STYLE_INSTRUCTIONS,
-  CODE_GENERATION_INSTRUCTIONS,
-  CHAT_INSTRUCTIONS,
-  TOOL_USAGE_INSTRUCTIONS,
-  MEMORY_INSTRUCTIONS,
-} from "./_utils/_aiPrompts.js";
-import { getMemoryIndex, getDailyNotesForPrompt, getUnprocessedDailyNotesExcludingToday, type MemoryIndex } from "./_utils/_memory.js";
-import { SUPPORTED_AI_MODELS } from "./_utils/_aiModels.js";
+  getUnprocessedDailyNotesExcludingToday,
+} from "./_utils/_memory.js";
+import {
+  loadRyoMemoryContext,
+  prepareRyoConversationModelInput,
+  type RyoConversationSystemState,
+  type SimpleConversationMessage,
+} from "./_utils/ryo-conversation.js";
 import { checkAndIncrementAIMessageCount } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
-import { createChatTools } from "./chat/tools/index.js";
-
-// Helper to ensure messages are in UIMessage format for AI SDK v6
-// Handles both simple { role, content } format and UIMessage format with parts
-type SimpleMessage = { id?: string; role: string; content?: string; parts?: Array<{ type: string; text?: string }> };
-const ensureUIMessageFormat = (messages: SimpleMessage[]): UIMessage[] => {
-  return messages.map((msg, index) => {
-    // If message already has parts, it's in UIMessage format
-    if (msg.parts && Array.isArray(msg.parts)) {
-      const sanitizedParts = msg.parts.map(part => {
-        if (part.type === 'text' && typeof part.text !== 'string') {
-          return { ...part, text: '' };
-        }
-        return part;
-      });
-      return {
-        id: msg.id || `msg-${index}`,
-        role: msg.role as UIMessage['role'],
-        parts: sanitizedParts,
-      } as UIMessage;
-    }
-    // Convert simple { role, content } format to UIMessage format
-    return {
-      id: msg.id || `msg-${index}`,
-      role: msg.role as UIMessage['role'],
-      parts: [{ type: 'text', text: msg.content || '' }],
-    } as UIMessage;
-  });
-};
-
-// Update SystemState type to match new store structure (optimized for token efficiency)
-interface SystemState {
-  username?: string | null;
-  /** User's operating system (e.g., "iOS", "Android", "macOS", "Windows", "Linux") */
-  userOS?: string;
-  /** User's system locale (e.g., "en", "zh-TW", "ja", "ko", "fr", "de", "es", "pt", "it", "ru") */
-  locale?: string;
-  internetExplorer?: {
-    url: string;
-    year: string;
-    currentPageTitle: string | null;
-    /** Markdown form of the AI generated HTML (more token-efficient than raw HTML) */
-    aiGeneratedMarkdown?: string | null;
-  };
-  video?: {
-    currentVideo: {
-      id: string;
-      title: string;
-      artist?: string;
-    } | null;
-    isPlaying: boolean;
-  };
-  ipod?: {
-    currentTrack: {
-      id: string;
-      title: string;
-      artist?: string;
-    } | null;
-    isPlaying: boolean;
-    currentLyrics?: {
-      lines: Array<{
-        startTimeMs: string;
-        words: string;
-      }>;
-    } | null;
-  };
-  karaoke?: {
-    currentTrack: {
-      id: string;
-      title: string;
-      artist?: string;
-    } | null;
-    isPlaying: boolean;
-  };
-  textEdit?: {
-    instances: Array<{
-      instanceId: string;
-      filePath: string | null;
-      title: string;
-      contentMarkdown?: string | null;
-      hasUnsavedChanges: boolean;
-    }>;
-  };
-  /** Local time information reported by the user's browser */
-  userLocalTime?: {
-    timeString: string;
-    dateString: string;
-    timeZone: string;
-  };
-  /** Geolocation info inferred from the incoming request (provided by Vercel). */
-  requestGeo?: {
-    city?: string;
-    region?: string;
-    country?: string;
-    latitude?: string;
-    longitude?: string;
-  };
-  runningApps?: {
-    foreground: {
-      instanceId: string;
-      appId: string;
-      title?: string;
-      appletPath?: string;
-      appletId?: string;
-    } | null;
-    background: Array<{
-      instanceId: string;
-      appId: string;
-      title?: string;
-      appletPath?: string;
-      appletId?: string;
-    }>;
-  };
-  chatRoomContext?: {
-    roomId: string;
-    recentMessages: string;
-    mentionedMessage: string;
-  };
-}
+type SystemState = RyoConversationSystemState;
 
 
 // Node.js runtime configuration
@@ -160,272 +38,6 @@ function getHeader(req: VercelRequest, name: string): string | null {
   }
   return typeof value === "string" ? value : null;
 }
-
-// Unified static prompt with all instructions
-const STATIC_SYSTEM_PROMPT = [
-  CORE_PRIORITY_INSTRUCTIONS,
-  ANSWER_STYLE_INSTRUCTIONS,
-  RYO_PERSONA_INSTRUCTIONS,
-  CHAT_INSTRUCTIONS,
-  TOOL_USAGE_INSTRUCTIONS,
-  MEMORY_INSTRUCTIONS,
-  CODE_GENERATION_INSTRUCTIONS,
-].join("\n");
-
-const CACHE_CONTROL_OPTIONS = {
-  providerOptions: {
-    anthropic: { cacheControl: { type: "ephemeral" } },
-  },
-} as const;
-
-const generateDynamicSystemPrompt = (systemState?: SystemState, userMemories?: MemoryIndex | null, dailyNotesText?: string | null) => {
-  const now = new Date();
-  const timeString = now.toLocaleTimeString("en-US", {
-    timeZone: "America/Los_Angeles",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-  const dateString = now.toLocaleDateString("en-US", {
-    timeZone: "America/Los_Angeles",
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  const ryoTimeZone = "America/Los_Angeles";
-
-  if (!systemState) return "";
-
-  let prompt = `<system_state>
-## USER CONTEXT
-Current User: ${systemState.username || "you"}
-
-## TIME & LOCATION
-Ryo Time: ${timeString} on ${dateString} (${ryoTimeZone})`;
-
-  if (systemState.userLocalTime) {
-    prompt += `
-User Time: ${systemState.userLocalTime.timeString} on ${systemState.userLocalTime.dateString} (${systemState.userLocalTime.timeZone})`;
-  }
-
-  if (systemState.userOS) {
-    prompt += `
-User OS: ${systemState.userOS}`;
-  }
-
-  if (systemState.locale) {
-    prompt += `
-User Locale: ${systemState.locale}`;
-  }
-
-  if (systemState.requestGeo) {
-    const location = [
-      systemState.requestGeo.city,
-      systemState.requestGeo.country,
-    ]
-      .filter(Boolean)
-      .join(", ");
-    prompt += `
-User Location: ${location} (inferred from IP, may be inaccurate)`;
-  }
-
-  // Daily Notes Section (Tier 1 - recent journal entries)
-  if (dailyNotesText) {
-    prompt += `\n\n## DAILY NOTES (recent journal)`;
-    prompt += `\n${dailyNotesText}`;
-  }
-
-  // Long-Term Memory Section (Tier 2 - stable facts, summaries always visible)
-  if (userMemories && userMemories.memories.length > 0) {
-    prompt += `\n\n## LONG-TERM MEMORIES`;
-    prompt += `\nYou have ${userMemories.memories.length} long-term memories about this user:`;
-    for (const mem of userMemories.memories) {
-      prompt += `\n- ${mem.key}: ${mem.summary}`;
-    }
-    prompt += `\nUse memoryRead("key") to get full details for any memory.`;
-  }
-
-  // Applications Section
-  prompt += `\n\n## RUNNING APPLICATIONS`;
-
-  // Helper to format app instance info
-  const formatAppInstance = (inst: { appId: string; title?: string; appletPath?: string; appletId?: string }) => {
-    let info = inst.appId;
-    if (inst.title) info += ` (${inst.title})`;
-    // For applet-viewer, include applet path and/or ID
-    if (inst.appId === "applet-viewer") {
-      if (inst.appletPath) info += ` [path: ${inst.appletPath}]`;
-      if (inst.appletId) info += ` [appletId: ${inst.appletId}]`;
-    }
-    return info;
-  };
-
-  if (systemState.runningApps?.foreground) {
-    prompt += `
-Foreground: ${formatAppInstance(systemState.runningApps.foreground)}`;
-  } else {
-    prompt += `
-Foreground: None`;
-  }
-
-  if (
-    systemState.runningApps?.background &&
-    systemState.runningApps.background.length > 0
-  ) {
-    const backgroundApps = systemState.runningApps.background
-      .map((inst) => formatAppInstance(inst))
-      .join(", ");
-    prompt += `
-Background: ${backgroundApps}`;
-  } else {
-    prompt += `
-Background: None`;
-  }
-
-  // Media Section
-  let hasMedia = false;
-
-  if (systemState.video?.currentVideo && systemState.video.isPlaying) {
-    if (!hasMedia) {
-      prompt += `\n\n## MEDIA PLAYBACK`;
-      hasMedia = true;
-    }
-    const videoArtist = systemState.video.currentVideo.artist
-      ? ` by ${systemState.video.currentVideo.artist}`
-      : "";
-    prompt += `
-Video: ${systemState.video.currentVideo.title}${videoArtist} (Playing)`;
-  }
-
-  // Check if iPod app is open
-  const hasOpenIpod =
-    systemState.runningApps?.foreground?.appId === "ipod" ||
-    systemState.runningApps?.background?.some((app) => app.appId === "ipod");
-
-  if (hasOpenIpod && systemState.ipod?.currentTrack) {
-    if (!hasMedia) {
-      prompt += `\n\n## MEDIA PLAYBACK`;
-      hasMedia = true;
-    }
-    const playingStatus = systemState.ipod.isPlaying ? "Playing" : "Paused";
-    const trackArtist = systemState.ipod.currentTrack.artist
-      ? ` by ${systemState.ipod.currentTrack.artist}`
-      : "";
-    prompt += `
-iPod: ${systemState.ipod.currentTrack.title}${trackArtist} (${playingStatus})`;
-
-    if (systemState.ipod.currentLyrics?.lines) {
-      const lyricsText = systemState.ipod.currentLyrics.lines.map((line) => line.words).join("\n");
-      prompt += `
-Lyrics:
-${lyricsText}`;
-    }
-  }
-
-  // Check if Karaoke app is open
-  const hasOpenKaraoke =
-    systemState.runningApps?.foreground?.appId === "karaoke" ||
-    systemState.runningApps?.background?.some((app) => app.appId === "karaoke");
-
-  if (hasOpenKaraoke && systemState.karaoke?.currentTrack) {
-    if (!hasMedia) {
-      prompt += `\n\n## MEDIA PLAYBACK`;
-      hasMedia = true;
-    }
-    const karaokePlayingStatus = systemState.karaoke.isPlaying ? "Playing" : "Paused";
-    const karaokeTrackArtist = systemState.karaoke.currentTrack.artist
-      ? ` by ${systemState.karaoke.currentTrack.artist}`
-      : "";
-    prompt += `
-Karaoke: ${systemState.karaoke.currentTrack.title}${karaokeTrackArtist} (${karaokePlayingStatus})`;
-
-    // Karaoke shares lyrics storage with iPod - include lyrics if available and iPod section didn't already show them
-    if (!hasOpenIpod && systemState.ipod?.currentLyrics?.lines) {
-      const lyricsText = systemState.ipod.currentLyrics.lines.map((line) => line.words).join("\n");
-      prompt += `
-Lyrics:
-${lyricsText}`;
-    }
-  }
-
-  // Browser Section
-  const hasOpenInternetExplorer =
-    systemState.runningApps?.foreground?.appId === "internet-explorer" ||
-    systemState.runningApps?.background?.some(
-      (app) => app.appId === "internet-explorer"
-    );
-
-  if (hasOpenInternetExplorer && systemState.internetExplorer?.url) {
-    prompt += `\n\n## INTERNET EXPLORER
-URL: ${systemState.internetExplorer.url}
-Time Travel Year: ${systemState.internetExplorer.year}`;
-
-    if (systemState.internetExplorer.currentPageTitle) {
-      prompt += `
-Page Title: ${systemState.internetExplorer.currentPageTitle}`;
-    }
-
-    const htmlMd = systemState.internetExplorer.aiGeneratedMarkdown;
-    if (htmlMd) {
-      prompt += `
-Page Content (Markdown):
-${htmlMd}`;
-    }
-  }
-
-  // TextEdit Section
-  if (
-    systemState.textEdit?.instances &&
-    systemState.textEdit.instances.length > 0
-  ) {
-    prompt += `\n\n## TEXTEDIT DOCUMENTS (${systemState.textEdit.instances.length} open)`;
-
-    systemState.textEdit.instances.forEach((instance, index) => {
-      const unsavedMark = instance.hasUnsavedChanges ? " *" : "";
-      const pathInfo = instance.filePath ? ` [${instance.filePath}]` : "";
-      prompt += `
-${index + 1}. ${instance.title}${unsavedMark}${pathInfo} (instanceId: ${instance.instanceId})`;
-
-      if (instance.contentMarkdown) {
-        // Limit content preview to avoid overly long prompts
-        const preview =
-          instance.contentMarkdown.length > 500
-            ? instance.contentMarkdown.substring(0, 500) + "..."
-            : instance.contentMarkdown;
-        prompt += `
-   Content:
-   ${preview}`;
-      }
-    });
-  }
-
-  prompt += `\n</system_state>`;
-
-  if (systemState.chatRoomContext) {
-    prompt += `\n\n<chat_room_reply_instructions>
-## CHAT ROOM CONTEXT
-Room ID: ${systemState.chatRoomContext.roomId}
-Your Role: Respond as 'ryo' in this IRC-style chat room
-Response Style: Use extremely concise responses
-
-Recent Conversation:
-${systemState.chatRoomContext.recentMessages}
-
-Mentioned Message: "${systemState.chatRoomContext.mentionedMessage}"
-</chat_room_reply_instructions>`;
-  }
-
-  return prompt;
-};
-
-// Simplified prompt builder that always includes every instruction
-const buildContextAwarePrompts = () => {
-  const prompts = [STATIC_SYSTEM_PROMPT];
-  const loadedSections = ["STATIC_SYSTEM_PROMPT"];
-  return { prompts, loadedSections };
-};
 
 
 export default apiHandler<{
@@ -572,46 +184,13 @@ export default apiHandler<{
       ? { ...incomingSystemState, requestGeo: geo }
       : ({ requestGeo: geo } as SystemState);
     const userTimeZone = systemState?.userLocalTime?.timeZone;
-
-    const selectedModel = getModelInstance(model as SupportedModel);
-
-    // Build unified static prompts
-    const { prompts: staticPrompts, loadedSections } =
-      buildContextAwarePrompts();
-    const staticSystemPrompt = staticPrompts.join("\n");
-
-    // Log prompt optimization metrics with loaded sections
-    log(
-      `Context-aware prompts (${
-        loadedSections.length
-      } sections): ${loadedSections.join(", ")}`
-    );
-    const approxTokens = staticSystemPrompt.length / 4; // rough estimate
-    log(`Approximate prompt tokens: ${Math.round(approxTokens)}`);
-
-    // Fetch user memories and daily notes for authenticated users
-    let userMemories: MemoryIndex | null = null;
-    let dailyNotesText: string | null = null;
-    if (username && isAuthenticated) {
-      try {
-        const [memories, notes] = await Promise.all([
-          getMemoryIndex(redis, username),
-          getDailyNotesForPrompt(redis, username, userTimeZone),
-        ]);
-        userMemories = memories;
-        dailyNotesText = notes;
-        if (userMemories) {
-          log(`Loaded ${userMemories.memories.length} long-term memories for user ${username}`);
-        }
-        if (dailyNotesText) {
-          log(`Loaded daily notes for user ${username}`);
-        }
-      } catch (memErr) {
-        logError("Error fetching user memories/notes:", memErr);
-        // Continue without memories - not a fatal error
-      }
-
-    }
+    const loadedMemoryContext = await loadRyoMemoryContext({
+      redis: isAuthenticated ? redis : undefined,
+      username: isAuthenticated ? username : null,
+      timeZone: userTimeZone,
+      log,
+      logError,
+    });
 
     // -------------------------------------------------------------
     // Proactive greeting mode – streamed text response
@@ -636,19 +215,22 @@ export default apiHandler<{
       } catch { /* non-blocking */ }
 
       // Build memory context
-      let memoryContext = "";
-      if (userMemories && userMemories.memories.length > 0) {
-        memoryContext += "## User's long-term memories:\n";
-        for (const mem of userMemories.memories) {
-          memoryContext += `- ${mem.key}: ${mem.summary}\n`;
+      let greetingMemoryContext = "";
+      if (
+        loadedMemoryContext.userMemories &&
+        loadedMemoryContext.userMemories.memories.length > 0
+      ) {
+        greetingMemoryContext += "## User's long-term memories:\n";
+        for (const mem of loadedMemoryContext.userMemories.memories) {
+          greetingMemoryContext += `- ${mem.key}: ${mem.summary}\n`;
         }
       }
-      if (dailyNotesText) {
-        memoryContext += `\n## Recent daily notes:\n${dailyNotesText}\n`;
+      if (loadedMemoryContext.dailyNotesText) {
+        greetingMemoryContext += `\n## Recent daily notes:\n${loadedMemoryContext.dailyNotesText}\n`;
       }
 
       // If no memories, return null (client will keep the generic greeting)
-      if (!memoryContext) {
+      if (!greetingMemoryContext) {
         log("No memories available for proactive greeting");
         res.status(200).json({ greeting: null, reason: "no memories available" });
         return;
@@ -685,7 +267,7 @@ Your style:
 
 It's ${dayOfWeek} ${sfTime}. The user's name is "${username}".
 
-${memoryContext}
+${greetingMemoryContext}
 
 Generate ONE short proactive greeting. Pick one interesting angle from the context — a recent topic, a memory, something timely — and use it naturally. Don't try to cover everything.
 
@@ -712,56 +294,31 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
       }
     }
 
-    // -------------------------------------------------------------
-    // System messages – first the LARGE static prompt (cached),
-    // then the smaller dynamic prompt (not cached)
-    // -------------------------------------------------------------
-
-    // 1) Static system instructions – mark as cacheable so Anthropic
-    // can reuse this costly prefix across calls (min-1024-token rule)
-    const staticSystemMessage = {
-      role: "system" as const,
-      content: staticSystemPrompt,
-      ...CACHE_CONTROL_OPTIONS, // { providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } } }
-    };
-
-    // 2) Dynamic, user-specific system state (don't cache)
-    const dynamicSystemMessage = {
-      role: "system" as const,
-      content: generateDynamicSystemPrompt(systemState, userMemories, dailyNotesText),
-    };
-
-    // Create tools with server-side context for logging and API access
-    // This follows the Vercel AI SDK's tool loop agent pattern:
-    // - Server-side tools have `execute` functions
-    // - Client-side tools are handled via `onToolCall` on the frontend
-    // - Tools with `toModelOutput` can convert results to multimodal content
-    const tools = createChatTools({
-      log: (...args: unknown[]) => log(...args),
-      logError: (...args: unknown[]) => logError(...args),
-      env: {
-        YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
-        YOUTUBE_API_KEY_2: process.env.YOUTUBE_API_KEY_2,
-      },
-      // Memory tool context - only available for authenticated users
+    const {
+      selectedModel,
+      tools,
+      enrichedMessages,
+      loadedSections,
+      staticSystemPrompt,
+    } = await prepareRyoConversationModelInput({
+      channel: "chat",
+      messages: messages as SimpleConversationMessage[],
+      systemState,
       username: isAuthenticated ? username : null,
+      model: model as SupportedModel,
       redis: isAuthenticated ? redis : undefined,
-      timeZone: userTimeZone,
+      log,
+      logError,
+      preloadedMemoryContext: loadedMemoryContext,
     });
 
-    // Convert UIMessages to ModelMessages for the AI model
-    // Ensure messages are in UIMessage format (handles both simple and parts-based formats)
-    // Pass tools so toModelOutput can convert tool results to multimodal content
-    const uiMessages = ensureUIMessageFormat(messages as SimpleMessage[]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const modelMessages = await convertToModelMessages(uiMessages, { tools: tools as any });
-
-    // Merge all messages: static sys → dynamic sys → user/assistant turns
-    const enrichedMessages = [
-      staticSystemMessage,
-      dynamicSystemMessage,
-      ...modelMessages,
-    ];
+    log(
+      `Context-aware prompts (${
+        loadedSections.length
+      } sections): ${loadedSections.join(", ")}`
+    );
+    const approxTokens = staticSystemPrompt.length / 4;
+    log(`Approximate prompt tokens: ${Math.round(approxTokens)}`);
 
     // Log all messages right before model call (as per user preference)
     enrichedMessages.forEach((msg, index) => {
@@ -775,7 +332,7 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = streamText({
       model: selectedModel,
-      messages: enrichedMessages,
+      messages: enrichedMessages as any,
       tools: tools as any,
       temperature: 0.7,
       maxOutputTokens: 48000, // Increased from 6000 to prevent code generation cutoff

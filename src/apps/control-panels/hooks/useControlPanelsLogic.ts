@@ -27,6 +27,13 @@ import { abortableFetch } from "@/utils/abortableFetch";
 import { triggerRuntimeCrashTest } from "@/utils/errorReporting";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import {
+  createTelegramLink,
+  disconnectTelegramLink,
+  getTelegramLinkStatus,
+  type TelegramLinkCreateResponse,
+  type TelegramLinkedAccount,
+} from "@/api/telegram";
+import {
   FILE_SYNC_DOMAINS,
   getLatestCloudSyncTimestamp,
 } from "@/utils/cloudSyncShared";
@@ -456,6 +463,114 @@ export function useControlPanelsLogic({
       setIsLoggingOutAllDevices(false);
     }
   };
+
+  // ====================================================================
+  // Telegram linking state
+  // ====================================================================
+  const [telegramLinkedAccount, setTelegramLinkedAccount] =
+    useState<TelegramLinkedAccount | null>(null);
+  const [telegramLinkSession, setTelegramLinkSession] =
+    useState<TelegramLinkCreateResponse | null>(null);
+  const [isTelegramStatusLoading, setIsTelegramStatusLoading] = useState(false);
+  const [isCreatingTelegramLink, setIsCreatingTelegramLink] = useState(false);
+  const [isDisconnectingTelegramLink, setIsDisconnectingTelegramLink] =
+    useState(false);
+
+  const fetchTelegramLinkStatus = useCallback(async () => {
+    if (!username || !authToken) {
+      setTelegramLinkedAccount(null);
+      setTelegramLinkSession(null);
+      return;
+    }
+
+    setIsTelegramStatusLoading(true);
+    try {
+      const result = await getTelegramLinkStatus({
+        username,
+        token: authToken,
+      });
+      setTelegramLinkedAccount(result.account);
+      if (result.account) {
+        setTelegramLinkSession(null);
+      }
+    } catch (error) {
+      console.error("[Telegram] Failed to fetch link status:", error);
+    } finally {
+      setIsTelegramStatusLoading(false);
+    }
+  }, [username, authToken]);
+
+  useEffect(() => {
+    void fetchTelegramLinkStatus();
+  }, [fetchTelegramLinkStatus]);
+
+  const handleCreateTelegramLink = useCallback(async () => {
+    if (!username || !authToken) {
+      toast.error(t("apps.control-panels.telegram.loginRequired"));
+      return;
+    }
+
+    setIsCreatingTelegramLink(true);
+    try {
+      const result = await createTelegramLink({
+        username,
+        token: authToken,
+      });
+      setTelegramLinkSession(result);
+      toast.success(t("apps.control-panels.telegram.linkReady"));
+    } catch (error) {
+      console.error("[Telegram] Failed to create link:", error);
+      toast.error(t("apps.control-panels.telegram.linkFailed"));
+    } finally {
+      setIsCreatingTelegramLink(false);
+    }
+  }, [username, authToken, t]);
+
+  const handleOpenTelegramLink = useCallback(() => {
+    if (!telegramLinkSession?.deepLink) {
+      toast.error(t("apps.control-panels.telegram.deepLinkUnavailable"));
+      return;
+    }
+
+    window.open(telegramLinkSession.deepLink, "_blank", "noopener,noreferrer");
+  }, [telegramLinkSession, t]);
+
+  const handleCopyTelegramCode = useCallback(async () => {
+    if (!telegramLinkSession?.code) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(telegramLinkSession.code);
+      toast.success(t("apps.control-panels.telegram.codeCopied"));
+    } catch (error) {
+      console.error("[Telegram] Failed to copy code:", error);
+      toast.error(t("apps.control-panels.telegram.copyFailed"));
+    }
+  }, [telegramLinkSession, t]);
+
+  const handleDisconnectTelegramLink = useCallback(async () => {
+    if (!username || !authToken) {
+      toast.error(t("apps.control-panels.telegram.loginRequired"));
+      return;
+    }
+
+    setIsDisconnectingTelegramLink(true);
+    try {
+      await disconnectTelegramLink({
+        username,
+        token: authToken,
+      });
+      setTelegramLinkedAccount(null);
+      setTelegramLinkSession(null);
+      toast.success(t("apps.control-panels.telegram.disconnected"));
+    } catch (error) {
+      console.error("[Telegram] Failed to disconnect link:", error);
+      toast.error(t("apps.control-panels.telegram.disconnectFailed"));
+    } finally {
+      setIsDisconnectingTelegramLink(false);
+    }
+  }, [username, authToken, t]);
 
   // ====================================================================
   // Cloud Sync state
@@ -1749,6 +1864,15 @@ export function useControlPanelsLogic({
     handleVerifyTokenSubmit,
     handleSetPassword,
     handleLogoutAllDevices,
+    telegramLinkedAccount,
+    telegramLinkSession,
+    isTelegramStatusLoading,
+    isCreatingTelegramLink,
+    isDisconnectingTelegramLink,
+    handleCreateTelegramLink,
+    handleOpenTelegramLink,
+    handleCopyTelegramCode,
+    handleDisconnectTelegramLink,
     autoSyncEnabled,
     setAutoSyncEnabled,
     syncFiles,

@@ -55,17 +55,6 @@ export interface RedisLike {
   lrange<T = unknown>(key: string, start: number, stop: number): Promise<T[]>;
   ltrim(key: string, start: number, stop: number): Promise<string>;
   llen(key: string): Promise<number>;
-  zadd(key: string, options: { score: number; member: string }): Promise<number>;
-  zrangebyscore<T = string>(
-    key: string,
-    min: number | string,
-    max: number | string
-  ): Promise<T[]>;
-  zremrangebyscore(
-    key: string,
-    min: number | string,
-    max: number | string
-  ): Promise<number>;
   mget<T = unknown>(...keys: string[]): Promise<(T | null)[]>;
 }
 

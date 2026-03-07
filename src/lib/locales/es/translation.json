@@ -407,22 +407,22 @@
         "startTime": "Hora de inicio",
         "title": "Título"
       },
+      "export": {
+        "noEvents": "No hay eventos para exportar",
+        "success": "{{count}} evento(s) exportado(s)"
+      },
       "import": {
         "success": "{{count}} evento(s) importado(s)"
-      },
-      "export": {
-        "success": "{{count}} evento(s) exportado(s)",
-        "noEvents": "No hay eventos para exportar"
       },
       "menu": {
         "about": "Acerca de Calendario",
         "dayView": "Vista de día",
         "deleteEvent": "Eliminar evento",
         "editEvent": "Editar evento",
+        "exportToIcs": "Exportar eventos…",
         "goToToday": "Ir a hoy",
         "help": "Ayuda del Calendario",
         "importFromDevice": "Importar desde dispositivo…",
-        "exportToIcs": "Exportar eventos…",
         "monthView": "Vista Mensual",
         "newEvent": "Nuevo Evento",
         "showToDoItems": "Mostrar tareas pendientes",
@@ -607,6 +607,25 @@
         "addedAndStartedPlaying": "Se agregó y comenzó a reproducirse una nueva canción",
         "addingSong": "Añadiendo canción…",
         "applet": "Applet",
+        "calendar": {
+          "addedEvent": "Evento \"{{title}}\" añadido",
+          "addedTodo": "Tarea \"{{title}}\" añadida",
+          "addingEvent": "Añadiendo evento \"{{title}}\"…",
+          "addingTodo": "Añadiendo tarea \"{{title}}\"…",
+          "deletedEvent": "Evento \"{{title}}\" eliminado",
+          "deletedTodo": "Tarea \"{{title}}\" eliminada",
+          "deletingEvent": "Eliminando evento…",
+          "deletingTodo": "Eliminando tarea…",
+          "foundEvents": "Se encontraron {{count}} evento(s)",
+          "foundTodos": "Se encontraron {{count}} tarea(s)",
+          "listingEvents": "Listando eventos…",
+          "listingTodos": "Listando tareas…",
+          "toggledTodoCompleted": "Tarea \"{{title}}\" completada",
+          "toggledTodoPending": "Tarea \"{{title}}\" marcada como incompleta",
+          "togglingTodo": "Actualizando tarea…",
+          "updatedEvent": "Evento \"{{title}}\" actualizado",
+          "updatingEvent": "Actualizando evento…"
+        },
         "calling": "Llamando a {{toolName}}…",
         "changingSettings": "Cambiando ajustes…",
         "closed": "Se cerró {{appName}}",
@@ -807,34 +826,33 @@
         "unknownError": "Error desconocido"
       },
       "appearance": "Apariencia",
-      "backup": "Copia de seguridad",
-      "backupRestoreDescription": "Realiza una copia de seguridad o restaura todos los ajustes y archivos de la aplicación",
       "autoSync": {
-        "title": "Sincronización en la nube",
-        "description": "Sincroniza automáticamente las bibliotecas y ajustes seleccionados con la nube tras cambios importantes",
-        "files": "Archivos",
-        "settings": "Ajustes",
-        "songs": "Biblioteca musical",
-        "videos": "Videoteca",
-        "stickies": "Notas adhesivas",
         "calendar": "Calendario",
-        "waiting": "Esperando el próximo cambio apto",
-        "neverSynced": "Aún no sincronizado",
         "checking": "Comprobando actualizaciones en la nube…",
+        "daysAgo": "hace {{count}}d",
+        "description": "Sincroniza automáticamente las bibliotecas y ajustes seleccionados con la nube tras cambios importantes",
+        "error": "Problema de sincronización: {{error}}",
+        "files": "Archivos",
+        "hoursAgo": "hace {{count}}h",
+        "justNow": "ahora",
         "lastChecked": "Última comprobación {{date}}",
         "lastSynced": "Última sincronización {{date}}",
-        "justNow": "ahora",
         "minutesAgo": "hace {{count}}min",
-        "hoursAgo": "hace {{count}}h",
-        "daysAgo": "hace {{count}}d",
-        "error": "Problema de sincronización: {{error}}"
+        "neverSynced": "Aún no sincronizado",
+        "settings": "Ajustes",
+        "songs": "Biblioteca musical",
+        "stickies": "Notas adhesivas",
+        "title": "Sincronización en la nube",
+        "videos": "Videoteca",
+        "waiting": "Esperando el próximo cambio apto"
       },
+      "backup": "Copia de seguridad",
+      "backupRestoreDescription": "Realiza una copia de seguridad o restaura todos los ajustes y archivos de la aplicación",
       "bootScreen": "Pantalla de arranque",
       "bootScreenDescription": "Probar la animación de la pantalla de arranque",
       "chatSynth": "Chat Synth",
       "chatSynthVolume": "Volumen del sintetizador de chat",
       "checkForUpdates": "Buscar actualizaciones",
-      "sync": "Sincronización",
       "cloudSync": {
         "backingUp": "Creando copia…",
         "backupFailed": "No se pudo crear la copia en la nube",
@@ -892,10 +910,6 @@
           "description": "Exportar o restaurar todos los ajustes y archivos",
           "title": "Copia de seguridad y Restauración"
         },
-        "sync": {
-          "description": "Configura la sincronización automática en la nube y las copias de seguridad manuales en la nube",
-          "title": "Sincronización"
-        },
         "shaderEffects": {
           "description": "Habilitar efectos visuales CRT, Galaxia o Aurora",
           "title": "Efectos de Sombreado"
@@ -903,6 +917,10 @@
         "sounds": {
           "description": "Activar/desactivar sonidos de la interfaz, sintetizador de escritura y efectos de Terminal / IE",
           "title": "Sonidos"
+        },
+        "sync": {
+          "description": "Configura la sincronización automática en la nube y las copias de seguridad manuales en la nube",
+          "title": "Sincronización"
         },
         "system": {
           "description": "Restablecer preferencias o formatear el sistema de archivos virtual",
@@ -994,8 +1012,35 @@
       "speech": "Voz",
       "speechVolume": "Volumen de voz",
       "startAfter": "Iniciar después de",
+      "sync": "Sincronización",
       "synth": "Sintetizador",
       "system": "Sistema",
+      "telegram": {
+        "checking": "Comprobando enlace de Telegram...",
+        "codeCopied": "Código del enlace de Telegram copiado",
+        "codeValue": "Código: {{code}}",
+        "connect": "Vincular Telegram",
+        "copyCode": "Copiar código",
+        "copyFailed": "Error al copiar el código de enlace de Telegram",
+        "deepLinkUnavailable": "El enlace profundo de Telegram no está disponible",
+        "description": "Vincula un DM de Telegram para chatear con Ryo usando tu cuenta de ryOS",
+        "disconnect": "Desconectar",
+        "disconnectFailed": "Error al desconectar Telegram",
+        "disconnected": "Telegram desconectado",
+        "disconnecting": "Desconectando...",
+        "expiresInMinutes": "Expira en aproximadamente {{minutes}} min",
+        "instructionsCodeOnly": "Copia el código de abajo y úsalo en Telegram para finalizar la vinculación.",
+        "instructionsDeepLink": "Abre Telegram con el botón de abajo, luego presiona Iniciar para finalizar la vinculación.",
+        "linkFailed": "Error al crear el enlace de Telegram",
+        "linkPending": "Enlace listo - finalízalo en Telegram",
+        "linkReady": "El enlace de Telegram está listo",
+        "linkedAs": "Vinculado como {{account}}",
+        "loggedOutDescription": "Inicia sesión para vincular Telegram a tu cuenta de ryOS",
+        "loginRequired": "Por favor, inicia sesión para vincular Telegram",
+        "openTelegram": "Abrir Telegram",
+        "preparing": "Preparando...",
+        "title": "Telegram"
+      },
       "terminalIeAmbientSynth": "Synth",
       "theme": "Tema",
       "themeDescription": "Cambia la apariencia de ventanas, menús y controles",

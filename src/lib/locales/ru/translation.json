@@ -407,22 +407,22 @@
         "startTime": "Время начала",
         "title": "Заголовок"
       },
+      "export": {
+        "noEvents": "Нет событий для экспорта",
+        "success": "{{count}} событие(й) экспортировано"
+      },
       "import": {
         "success": "Импортировано событий: {{count}}"
-      },
-      "export": {
-        "success": "{{count}} событие(й) экспортировано",
-        "noEvents": "Нет событий для экспорта"
       },
       "menu": {
         "about": "О Календаре",
         "dayView": "Дневной вид",
         "deleteEvent": "Удалить событие",
         "editEvent": "Редактировать событие",
+        "exportToIcs": "Экспортировать события…",
         "goToToday": "Перейти на сегодня",
         "help": "Справка Календаря",
         "importFromDevice": "Импорт с устройства…",
-        "exportToIcs": "Экспортировать события…",
         "monthView": "Вид Месяц",
         "newEvent": "Новое событие",
         "showToDoItems": "Показать Дела",
@@ -607,6 +607,25 @@
         "addedAndStartedPlaying": "Добавлена новая песня и начато воспроизведение",
         "addingSong": "Добавление песни...",
         "applet": "Апплет",
+        "calendar": {
+          "addedEvent": "Событие «{{title}}» добавлено",
+          "addedTodo": "Задача «{{title}}» добавлена",
+          "addingEvent": "Добавление события «{{title}}»…",
+          "addingTodo": "Добавление задачи «{{title}}»…",
+          "deletedEvent": "Событие «{{title}}» удалено",
+          "deletedTodo": "Задача «{{title}}» удалена",
+          "deletingEvent": "Удаление события…",
+          "deletingTodo": "Удаление задачи…",
+          "foundEvents": "Найдено {{count}} событий",
+          "foundTodos": "Найдено {{count}} задач",
+          "listingEvents": "Загрузка событий…",
+          "listingTodos": "Загрузка задач…",
+          "toggledTodoCompleted": "Завершено «{{title}}»",
+          "toggledTodoPending": "«{{title}}» отмечено как незавершенное",
+          "togglingTodo": "Обновление задачи…",
+          "updatedEvent": "Событие «{{title}}» обновлено",
+          "updatingEvent": "Обновление события…"
+        },
         "calling": "Вызов {{toolName}}...",
         "changingSettings": "Изменение настроек...",
         "closed": "{{appName}} закрыто",
@@ -807,34 +826,33 @@
         "unknownError": "Неизвестная ошибка"
       },
       "appearance": "Внешний вид",
-      "backup": "Резервное копирование",
-      "backupRestoreDescription": "Резервное копирование или восстановление всех настроек и файлов приложения",
       "autoSync": {
-        "title": "Облачная синхронизация",
-        "description": "Автоматически синхронизирует выбранные библиотеки и настройки с облаком после важных изменений",
-        "files": "Файлы",
-        "settings": "Настройки",
-        "songs": "Музыкальная библиотека",
-        "videos": "Видеотека",
-        "stickies": "Стикеры",
         "calendar": "Календарь",
-        "waiting": "Ожидание следующего подходящего изменения",
-        "neverSynced": "Ещё не синхронизировано",
         "checking": "Проверка облачных обновлений…",
+        "daysAgo": "{{count}}д назад",
+        "description": "Автоматически синхронизирует выбранные библиотеки и настройки с облаком после важных изменений",
+        "error": "Проблема синхронизации: {{error}}",
+        "files": "Файлы",
+        "hoursAgo": "{{count}}ч назад",
+        "justNow": "только что",
         "lastChecked": "Последняя проверка {{date}}",
         "lastSynced": "Последняя синхронизация {{date}}",
-        "justNow": "только что",
         "minutesAgo": "{{count}}мин назад",
-        "hoursAgo": "{{count}}ч назад",
-        "daysAgo": "{{count}}д назад",
-        "error": "Проблема синхронизации: {{error}}"
+        "neverSynced": "Ещё не синхронизировано",
+        "settings": "Настройки",
+        "songs": "Музыкальная библиотека",
+        "stickies": "Стикеры",
+        "title": "Облачная синхронизация",
+        "videos": "Видеотека",
+        "waiting": "Ожидание следующего подходящего изменения"
       },
+      "backup": "Резервное копирование",
+      "backupRestoreDescription": "Резервное копирование или восстановление всех настроек и файлов приложения",
       "bootScreen": "Экран загрузки",
       "bootScreenDescription": "Проверить анимацию экрана загрузки",
       "chatSynth": "Чат-синтезатор",
       "chatSynthVolume": "Громкость чат-синтезатора",
       "checkForUpdates": "Проверить обновления",
-      "sync": "Синхронизация",
       "cloudSync": {
         "backingUp": "Создание резервной копии…",
         "backupFailed": "Не удалось сохранить резервную копию в облаке",
@@ -892,10 +910,6 @@
           "description": "Экспортировать или восстановить все настройки и файлы",
           "title": "Резервное копирование и восстановление"
         },
-        "sync": {
-          "description": "Настроить автоматическую облачную синхронизацию и ручные облачные резервные копии",
-          "title": "Синхронизация"
-        },
         "shaderEffects": {
           "description": "Включить визуальные эффекты ЭЛТ, Галактика или Аврора",
           "title": "Эффекты шейдеров"
@@ -903,6 +917,10 @@
         "sounds": {
           "description": "Включить/выключить звуки интерфейса, синтезатор набора текста и эффекты Терминала / IE",
           "title": "Звуки"
+        },
+        "sync": {
+          "description": "Настроить автоматическую облачную синхронизацию и ручные облачные резервные копии",
+          "title": "Синхронизация"
         },
         "system": {
           "description": "Сбросить настройки или отформатировать виртуальную файловую систему",
@@ -994,8 +1012,35 @@
       "speech": "Речь",
       "speechVolume": "Громкость речи",
       "startAfter": "Запускать через",
+      "sync": "Синхронизация",
       "synth": "Синтезатор",
       "system": "Система",
+      "telegram": {
+        "checking": "Проверка ссылки Telegram…",
+        "codeCopied": "Код ссылки Telegram скопирован",
+        "codeValue": "Код: {{code}}",
+        "connect": "Привязать Telegram",
+        "copyCode": "Скопировать код",
+        "copyFailed": "Не удалось скопировать код ссылки Telegram",
+        "deepLinkUnavailable": "Глубокая ссылка Telegram недоступна",
+        "description": "Привяжите личный чат Telegram, чтобы общаться с Ryo через ваш аккаунт ryOS",
+        "disconnect": "Отвязать",
+        "disconnectFailed": "Не удалось отвязать Telegram",
+        "disconnected": "Telegram отвязан",
+        "disconnecting": "Отвязка...",
+        "expiresInMinutes": "Истекает примерно через {{minutes}} мин",
+        "instructionsCodeOnly": "Скопируйте код ниже и используйте его в Telegram, чтобы завершить привязку.",
+        "instructionsDeepLink": "Откройте Telegram с помощью кнопки ниже, затем нажмите «Старт», чтобы завершить привязку.",
+        "linkFailed": "Не удалось создать ссылку Telegram",
+        "linkPending": "Привязка готова – завершите ее в Telegram",
+        "linkReady": "Привязка Telegram готова",
+        "linkedAs": "Привязано как {{account}}",
+        "loggedOutDescription": "Войдите, чтобы привязать Telegram к вашему аккаунту ryOS",
+        "loginRequired": "Войдите, чтобы привязать Telegram",
+        "openTelegram": "Открыть Telegram",
+        "preparing": "Подготовка...",
+        "title": "Телеграм"
+      },
       "terminalIeAmbientSynth": "Синтезатор",
       "theme": "Тема",
       "themeDescription": "Изменяет внешний вид окон, меню и элементов управления",

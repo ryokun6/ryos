@@ -60,6 +60,15 @@ export {
   type MemoryToolContext,
 } from "./executors.js";
 
+const MEMORY_TOOL_NAMES = [
+  "memoryWrite",
+  "memoryRead",
+  "memoryDelete",
+] as const;
+
+export type ChatToolProfile = "all" | "memory";
+export type ChatToolsContext = MemoryToolContext;
+
 /**
  * Tool descriptions - centralized for easy maintenance
  */
@@ -193,10 +202,14 @@ export const TOOL_DESCRIPTIONS = {
  * directly to the Vercel AI SDK's streamText function.
  * 
  * @param context - Server-side context with logging, environment, and optional memory support
+ * @param options - Tool profile selection for channel-specific capability filtering
  * @returns Tools configuration for streamText
  */
-export function createChatTools(context: MemoryToolContext) {
-  return {
+export function createChatTools(
+  context: MemoryToolContext,
+  options: { profile?: ChatToolProfile } = {}
+) {
+  const allTools = {
     // ============================================================================
     // App Control Tools (Client-side execution)
     // ============================================================================
@@ -378,6 +391,14 @@ export function createChatTools(context: MemoryToolContext) {
       },
     },
   };
+
+  if ((options.profile || "all") === "all") {
+    return allTools;
+  }
+
+  return Object.fromEntries(
+    MEMORY_TOOL_NAMES.map((toolName) => [toolName, allTools[toolName]])
+  ) as Pick<typeof allTools, (typeof MEMORY_TOOL_NAMES)[number]>;
 }
 
 /**

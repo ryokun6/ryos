@@ -407,22 +407,22 @@
         "startTime": "시작 시간",
         "title": "제목"
       },
+      "export": {
+        "noEvents": "내보낼 이벤트가 없습니다",
+        "success": "{{count}}개 이벤트를 내보냈습니다"
+      },
       "import": {
         "success": "{{count}}개의 이벤트를 가져왔습니다"
-      },
-      "export": {
-        "success": "{{count}}개 이벤트를 내보냈습니다",
-        "noEvents": "내보낼 이벤트가 없습니다"
       },
       "menu": {
         "about": "캘린더 정보",
         "dayView": "일 보기",
         "deleteEvent": "이벤트 삭제",
         "editEvent": "이벤트 편집",
+        "exportToIcs": "이벤트 내보내기…",
         "goToToday": "오늘로 이동",
         "help": "캘린더 도움말",
         "importFromDevice": "기기에서 가져오기…",
-        "exportToIcs": "이벤트 내보내기…",
         "monthView": "월 보기",
         "newEvent": "새 이벤트",
         "showToDoItems": "할 일 항목 보기",
@@ -607,6 +607,25 @@
         "addedAndStartedPlaying": "새 곡 추가 및 재생 시작됨",
         "addingSong": "곡 추가 중…",
         "applet": "애플릿",
+        "calendar": {
+          "addedEvent": "\"{{title}}\" 이벤트가 추가되었습니다.",
+          "addedTodo": "\"{{title}}\" 할 일이 추가되었습니다.",
+          "addingEvent": "\"{{title}}\" 이벤트 추가 중…",
+          "addingTodo": "\"{{title}}\" 할 일 추가 중…",
+          "deletedEvent": "\"{{title}}\" 이벤트가 삭제되었습니다.",
+          "deletedTodo": "\"{{title}}\" 할 일이 삭제되었습니다.",
+          "deletingEvent": "이벤트 삭제 중…",
+          "deletingTodo": "할 일 삭제 중…",
+          "foundEvents": "{{count}}개의 이벤트를 찾았습니다.",
+          "foundTodos": "{{count}}개의 할 일을 찾았습니다.",
+          "listingEvents": "이벤트 목록 불러오는 중…",
+          "listingTodos": "할 일 목록 불러오는 중…",
+          "toggledTodoCompleted": "\"{{title}}\" 완료됨.",
+          "toggledTodoPending": "\"{{title}}\" 미완료 처리됨.",
+          "togglingTodo": "할 일 업데이트 중…",
+          "updatedEvent": "\"{{title}}\" 이벤트가 업데이트되었습니다.",
+          "updatingEvent": "이벤트 업데이트 중…"
+        },
         "calling": "{{toolName}} 호출 중…",
         "changingSettings": "설정 변경 중…",
         "closed": "{{appName}} 닫힘",
@@ -807,34 +826,33 @@
         "unknownError": "알 수 없는 오류"
       },
       "appearance": "모양",
-      "backup": "백업",
-      "backupRestoreDescription": "모든 앱 설정과 파일을 백업하거나 복원합니다",
       "autoSync": {
-        "title": "클라우드 동기화",
-        "description": "중요한 변경 후 선택한 라이브러리와 설정을 자동으로 클라우드와 동기화합니다",
-        "files": "파일",
-        "settings": "설정",
-        "songs": "음악 라이브러리",
-        "videos": "비디오 라이브러리",
-        "stickies": "스티커",
         "calendar": "캘린더",
-        "waiting": "다음 동기화 가능한 변경을 기다리는 중입니다",
-        "neverSynced": "아직 동기화되지 않음",
         "checking": "클라우드 업데이트 확인 중…",
+        "daysAgo": "{{count}}일 전",
+        "description": "중요한 변경 후 선택한 라이브러리와 설정을 자동으로 클라우드와 동기화합니다",
+        "error": "동기화 문제: {{error}}",
+        "files": "파일",
+        "hoursAgo": "{{count}}시간 전",
+        "justNow": "방금",
         "lastChecked": "마지막 확인 {{date}}",
         "lastSynced": "마지막 동기화 {{date}}",
-        "justNow": "방금",
         "minutesAgo": "{{count}}분 전",
-        "hoursAgo": "{{count}}시간 전",
-        "daysAgo": "{{count}}일 전",
-        "error": "동기화 문제: {{error}}"
+        "neverSynced": "아직 동기화되지 않음",
+        "settings": "설정",
+        "songs": "음악 라이브러리",
+        "stickies": "스티커",
+        "title": "클라우드 동기화",
+        "videos": "비디오 라이브러리",
+        "waiting": "다음 동기화 가능한 변경을 기다리는 중입니다"
       },
+      "backup": "백업",
+      "backupRestoreDescription": "모든 앱 설정과 파일을 백업하거나 복원합니다",
       "bootScreen": "부팅 화면",
       "bootScreenDescription": "부팅 화면 애니메이션을 테스트합니다.",
       "chatSynth": "챗 신스",
       "chatSynthVolume": "채팅 신디 볼륨",
       "checkForUpdates": "업데이트 확인",
-      "sync": "동기화",
       "cloudSync": {
         "backingUp": "백업 중…",
         "backupFailed": "클라우드 백업에 실패했습니다",
@@ -892,10 +910,6 @@
           "description": "모든 설정 및 파일 내보내기 또는 복원",
           "title": "백업 및 복원"
         },
-        "sync": {
-          "description": "자동 클라우드 동기화와 수동 클라우드 백업을 설정합니다",
-          "title": "동기화"
-        },
         "shaderEffects": {
           "description": "CRT, 갤럭시 또는 오로라 시각 효과 활성화",
           "title": "셰이더 효과"
@@ -903,6 +917,10 @@
         "sounds": {
           "description": "UI 사운드, 타이핑 신시사이저 및 터미널/IE 효과 전환",
           "title": "사운드"
+        },
+        "sync": {
+          "description": "자동 클라우드 동기화와 수동 클라우드 백업을 설정합니다",
+          "title": "동기화"
         },
         "system": {
           "description": "기본 설정 재설정 또는 가상 파일 시스템 포맷",
@@ -994,8 +1012,35 @@
       "speech": "음성",
       "speechVolume": "음성 음량",
       "startAfter": "대기 시간",
+      "sync": "동기화",
       "synth": "신디",
       "system": "시스템",
+      "telegram": {
+        "checking": "텔레그램 링크 확인 중...",
+        "codeCopied": "텔레그램 링크 코드가 복사되었습니다.",
+        "codeValue": "코드: {{code}}",
+        "connect": "Telegram 연결",
+        "copyCode": "코드 복사",
+        "copyFailed": "Telegram 연결 코드 복사 실패",
+        "deepLinkUnavailable": "Telegram 딥 링크를 사용할 수 없습니다",
+        "description": "ryOS 계정을 사용하여 Ryo와 채팅할 Telegram DM을 연결하세요",
+        "disconnect": "연결 해제",
+        "disconnectFailed": "Telegram 연결 해제 실패",
+        "disconnected": "Telegram 연결 해제됨",
+        "disconnecting": "연결 해제 중...",
+        "expiresInMinutes": "약 {{minutes}}분 후에 만료됩니다",
+        "instructionsCodeOnly": "아래 코드를 복사하여 Telegram에서 연결을 완료하세요.",
+        "instructionsDeepLink": "아래 버튼으로 Telegram을 열고, 시작을 눌러 연결을 완료하세요.",
+        "linkFailed": "Telegram 링크 생성 실패",
+        "linkPending": "링크 준비 완료 - Telegram에서 마무리하세요",
+        "linkReady": "Telegram 링크가 준비되었습니다",
+        "linkedAs": "{{account}}으로(로) 연결됨",
+        "loggedOutDescription": "Telegram을 ryOS 계정에 연결하려면 로그인하세요",
+        "loginRequired": "Telegram을 연결하려면 로그인해주세요",
+        "openTelegram": "Telegram 열기",
+        "preparing": "준비 중...",
+        "title": "텔레그램"
+      },
       "terminalIeAmbientSynth": "신디",
       "theme": "테마",
       "themeDescription": "창, 메뉴 및 컨트롤의 모양을 변경합니다",

@@ -34,6 +34,7 @@
     "tauri:build:mac": "bash -c 'set -a && [ -f .env.local ] && source .env.local; set +a && tauri build --target universal-apple-darwin'",
     "tauri:build:windows": "tauri build --target x86_64-pc-windows-msvc",
     "seed:dev": "bun run scripts/seed-dev-users.ts",
+    "telegram:webhook": "bun run scripts/setup-telegram-webhook.ts",
     "test": "bun test",
     "test:unit": "bun test tests/test-chat-notification-logic.test.ts tests/test-chat-notification-integration-wiring.test.ts tests/test-chat-broadcast-wiring.test.ts tests/test-chat-hook-channel-lifecycle-wiring.test.ts tests/test-chat-store-guards-wiring.test.ts tests/test-pusher-client-refcount.test.ts tests/test-pusher-client-constructor-wiring.test.ts tests/test-song-import-batching.test.ts tests/test-memory-system.test.ts tests/test-error-boundary-wiring.test.ts",
     "test:api": "bun test --filter 'new-api|admin|iframe|link-preview|parse-title|song|speech|share-applet|ai|media|auth-extra|rooms-extra|listen-security'",
