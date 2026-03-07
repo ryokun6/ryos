@@ -24,6 +24,8 @@ import type {
   MemoryDeleteOutput,
   CalendarControlInput,
   CalendarControlOutput,
+  DocumentsControlInput,
+  DocumentsControlOutput,
   StickiesControlInput,
   StickiesControlOutput,
   CalendarSnapshotData,
@@ -462,10 +464,377 @@ export async function executeMemoryDelete(
 }
 
 // ============================================================================
-// Server-Side Calendar & Stickies Executors (Redis-backed)
+// Server-Side Documents / Calendar / Stickies Executors (Redis-backed)
 // ============================================================================
 
 type AppStateToolContext = MemoryToolContext;
+
+interface SyncedFileSystemItem {
+  path: string;
+  name: string;
+  isDirectory: boolean;
+  uuid?: string;
+  size?: number;
+  createdAt?: number;
+  modifiedAt?: number;
+  status: "active" | "trashed";
+  type?: string;
+  icon?: string;
+  [key: string]: unknown;
+}
+
+interface SyncedStoreItem {
+  key: string;
+  value: {
+    name?: string;
+    content?: unknown;
+    [key: string]: unknown;
+  };
+}
+
+interface FilesMetadataSnapshotData {
+  items: Record<string, SyncedFileSystemItem>;
+  libraryState: "uninitialized" | "loaded" | "cleared";
+  documents?: SyncedStoreItem[];
+}
+
+function filesMetadataStateKey(username: string): string {
+  return stateKey(username, "files-metadata");
+}
+
+function stateMetaKey(username: string): string {
+  return `sync:state:meta:${username}`;
+}
+
+async function readFilesMetadataState(
+  redis: Redis,
+  username: string
+): Promise<FilesMetadataSnapshotData | null> {
+  const raw = await redis.get<string | { data: FilesMetadataSnapshotData }>(
+    filesMetadataStateKey(username)
+  );
+  if (!raw) return null;
+  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  return parsed?.data ?? null;
+}
+
+async function writeFilesMetadataState(
+  redis: Redis,
+  username: string,
+  data: FilesMetadataSnapshotData
+): Promise<void> {
+  const now = new Date().toISOString();
+  await redis.set(
+    filesMetadataStateKey(username),
+    JSON.stringify({
+      data,
+      updatedAt: now,
+      version: 1,
+      createdAt: now,
+    })
+  );
+
+  const rawMeta = await redis.get<string | Record<string, unknown>>(
+    stateMetaKey(username)
+  );
+  const meta = typeof rawMeta === "string" ? JSON.parse(rawMeta) : rawMeta || {};
+  meta["files-metadata"] = { updatedAt: now, version: 1, createdAt: now };
+  await redis.set(stateMetaKey(username), JSON.stringify(meta));
+}
+
+function isActiveDocument(item: SyncedFileSystemItem | undefined): item is SyncedFileSystemItem {
+  return !!item && item.status === "active" && !item.isDirectory && item.path.startsWith("/Documents/");
+}
+
+function createDocumentsIndex(documents: SyncedStoreItem[] | undefined): Map<string, SyncedStoreItem> {
+  return new Map((documents || []).map((entry) => [entry.key, entry]));
+}
+
+function getDocumentNameFromPath(path: string): string {
+  return path.split("/").filter(Boolean).pop() || "Untitled.md";
+}
+
+function getDocumentContentAsString(entry: SyncedStoreItem | undefined): string | null {
+  if (!entry) return null;
+  return typeof entry.value.content === "string" ? entry.value.content : null;
+}
+
+function createDocumentSize(content: string): number {
+  return new TextEncoder().encode(content).length;
+}
+
+function createMissingFilesSyncMessage(): string {
+  return "No file data synced yet. Enable cloud sync in ryOS first.";
+}
+
+export async function executeDocumentsControl(
+  input: DocumentsControlInput,
+  context: AppStateToolContext
+): Promise<DocumentsControlOutput> {
+  if (!context.username) {
+    return { success: false, message: "Authentication required." };
+  }
+  if (!context.redis) {
+    return { success: false, message: "Storage not available." };
+  }
+
+  const state = await readFilesMetadataState(context.redis, context.username);
+  if (!state) {
+    return {
+      success: false,
+      message: createMissingFilesSyncMessage(),
+    };
+  }
+
+  const { action } = input;
+  const documentsIndex = createDocumentsIndex(state.documents);
+
+  switch (action) {
+    case "list": {
+      const documents = Object.values(state.items)
+        .filter(isActiveDocument)
+        .sort((a, b) => {
+          const aModified = a.modifiedAt ?? 0;
+          const bModified = b.modifiedAt ?? 0;
+          if (bModified !== aModified) {
+            return bModified - aModified;
+          }
+          return a.path.localeCompare(b.path);
+        })
+        .map((item) => ({
+          path: item.path,
+          name: item.name,
+          size: item.size,
+          modifiedAt: item.modifiedAt,
+        }));
+
+      return {
+        success: true,
+        message: `Found ${documents.length} ${documents.length === 1 ? "document" : "documents"}.`,
+        documents,
+      };
+    }
+
+    case "read": {
+      const path = input.path?.trim() || "";
+      const item = state.items[path];
+      if (!isActiveDocument(item)) {
+        return {
+          success: false,
+          message: `Document '${path}' not found.`,
+        };
+      }
+      if (!item.uuid) {
+        return {
+          success: false,
+          message: `Document '${path}' is missing synced content metadata.`,
+        };
+      }
+
+      const content = getDocumentContentAsString(documentsIndex.get(item.uuid));
+      if (content === null) {
+        return {
+          success: false,
+          message: "No document data synced yet. Open ryOS and let files sync finish first.",
+        };
+      }
+
+      return {
+        success: true,
+        message: `Read document '${item.name}'.`,
+        document: {
+          path: item.path,
+          name: item.name,
+          content,
+          size: item.size,
+          modifiedAt: item.modifiedAt,
+        },
+      };
+    }
+
+    case "write": {
+      const path = input.path?.trim() || "";
+      const content = input.content ?? "";
+      const mode = input.mode || "overwrite";
+      const existingItem = state.items[path];
+      const existingIsDocument = isActiveDocument(existingItem);
+
+      let baseContent = "";
+      if (existingIsDocument) {
+        if (!existingItem.uuid) {
+          return {
+            success: false,
+            message: `Document '${path}' is missing synced content metadata.`,
+          };
+        }
+        const currentContent = getDocumentContentAsString(
+          documentsIndex.get(existingItem.uuid)
+        );
+        if (currentContent === null && mode !== "overwrite") {
+          return {
+            success: false,
+            message: `Document '${path}' is missing synced content.`,
+          };
+        }
+        baseContent = currentContent ?? "";
+      } else if (existingItem?.isDirectory) {
+        return {
+          success: false,
+          message: `Path '${path}' is a directory, not a document.`,
+        };
+      }
+
+      const finalContent =
+        mode === "append"
+          ? `${baseContent}${content}`
+          : mode === "prepend"
+            ? `${content}${baseContent}`
+            : content;
+
+      const now = Date.now();
+      const uuid = existingIsDocument ? existingItem.uuid! : crypto.randomUUID();
+      const name = getDocumentNameFromPath(path);
+      const updatedItem: SyncedFileSystemItem = {
+        ...(existingItem || {}),
+        path,
+        name,
+        isDirectory: false,
+        uuid,
+        size: createDocumentSize(finalContent),
+        createdAt: existingIsDocument ? existingItem.createdAt : now,
+        modifiedAt: now,
+        status: "active",
+        type: existingItem?.type || "markdown",
+        icon: existingItem?.icon || "/icons/file-text.png",
+      };
+
+      const nextDocuments = state.documents
+        ? [...state.documents.filter((entry) => entry.key !== uuid)]
+        : [];
+      nextDocuments.push({
+        key: uuid,
+        value: {
+          name,
+          content: finalContent,
+        },
+      });
+
+      const nextState: FilesMetadataSnapshotData = {
+        ...state,
+        items: {
+          ...state.items,
+          [path]: updatedItem,
+        },
+        libraryState: state.libraryState === "uninitialized" ? "loaded" : state.libraryState,
+        documents: nextDocuments,
+      };
+
+      await writeFilesMetadataState(context.redis, context.username, nextState);
+
+      context.log(`[documentsControl] Wrote document '${path}' with mode '${mode}'`);
+      return {
+        success: true,
+        message: `${existingIsDocument ? "Updated" : "Created"} document '${name}'.`,
+        document: {
+          path,
+          name,
+          content: finalContent,
+          size: updatedItem.size,
+          modifiedAt: updatedItem.modifiedAt,
+        },
+      };
+    }
+
+    case "edit": {
+      const path = input.path?.trim() || "";
+      const item = state.items[path];
+      if (!isActiveDocument(item)) {
+        return {
+          success: false,
+          message: `Document '${path}' not found.`,
+        };
+      }
+      if (!item.uuid) {
+        return {
+          success: false,
+          message: `Document '${path}' is missing synced content metadata.`,
+        };
+      }
+
+      const content = getDocumentContentAsString(documentsIndex.get(item.uuid));
+      if (content === null) {
+        return {
+          success: false,
+          message: `Document '${path}' is missing synced content.`,
+        };
+      }
+
+      const oldString = (input.old_string || "").replace(/\r\n?/g, "\n");
+      const newString = (input.new_string || "").replace(/\r\n?/g, "\n");
+      const normalizedContent = content.replace(/\r\n?/g, "\n");
+      const occurrences = normalizedContent.split(oldString).length - 1;
+
+      if (occurrences === 0) {
+        return {
+          success: false,
+          message: "old_string was not found in the document.",
+        };
+      }
+
+      if (occurrences > 1) {
+        return {
+          success: false,
+          message: `old_string matched ${occurrences} locations. Provide more context so it is unique.`,
+        };
+      }
+
+      const finalContent = normalizedContent.replace(oldString, newString);
+      const now = Date.now();
+      const updatedItem: SyncedFileSystemItem = {
+        ...item,
+        size: createDocumentSize(finalContent),
+        modifiedAt: now,
+      };
+
+      const nextDocuments = state.documents
+        ? [...state.documents.filter((entry) => entry.key !== item.uuid)]
+        : [];
+      nextDocuments.push({
+        key: item.uuid,
+        value: {
+          name: item.name,
+          content: finalContent,
+        },
+      });
+
+      const nextState: FilesMetadataSnapshotData = {
+        ...state,
+        items: {
+          ...state.items,
+          [path]: updatedItem,
+        },
+        documents: nextDocuments,
+      };
+
+      await writeFilesMetadataState(context.redis, context.username, nextState);
+
+      return {
+        success: true,
+        message: `Edited document '${item.name}'.`,
+        document: {
+          path,
+          name: item.name,
+          content: finalContent,
+          size: updatedItem.size,
+          modifiedAt: updatedItem.modifiedAt,
+        },
+      };
+    }
+
+    default:
+      return { success: false, message: `Unknown action: ${action}` };
+  }
+}
 
 async function readCalendarState(
   redis: Redis,

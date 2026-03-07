@@ -19,12 +19,34 @@ export function getTelegramToolStatusText(
       return "Saving to memory...";
     case "memoryDelete":
       return "Removing memory...";
+    case "documentsControl":
+      return getTelegramDocumentsStatusText(input);
     case "calendarControl":
       return getTelegramCalendarStatusText(input);
     case "stickiesControl":
       return getTelegramStickiesStatusText(input);
     default:
       return "Using a tool...";
+  }
+}
+
+function getTelegramDocumentsStatusText(input: unknown): string {
+  const action =
+    input && typeof input === "object" && "action" in input
+      ? String((input as { action?: unknown }).action || "")
+      : "";
+
+  switch (action) {
+    case "list":
+      return "Checking documents...";
+    case "read":
+      return "Reading document...";
+    case "write":
+      return "Saving document...";
+    case "edit":
+      return "Editing document...";
+    default:
+      return "Using documents...";
   }
 }
 

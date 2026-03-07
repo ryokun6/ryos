@@ -108,6 +108,7 @@ type CustomWallpapersSnapshotData = StoreItemWithKey[];
 interface FilesMetadataSnapshotData {
   items: Record<string, FileSystemItem>;
   libraryState: "uninitialized" | "loaded" | "cleared";
+  documents?: FilesStoreSnapshotData;
 }
 
 type FilesStoreSnapshotData = StoreItemWithKey[];
@@ -388,12 +389,13 @@ async function serializeIndexedDbStoreSnapshot(
   }
 }
 
-function serializeFilesMetadataSnapshot(): FilesMetadataSnapshotData {
+async function serializeFilesMetadataSnapshot(): Promise<FilesMetadataSnapshotData> {
   const filesState = useFilesStore.getState();
 
   return {
     items: filesState.items,
     libraryState: filesState.libraryState,
+    documents: await serializeIndexedDbStoreSnapshot(STORES.DOCUMENTS),
   };
 }
 
@@ -447,14 +449,7 @@ export async function createCloudSyncEnvelope(
         domain,
         version: AUTO_SYNC_SNAPSHOT_VERSION,
         updatedAt,
-        data: serializeFilesMetadataSnapshot(),
-      };
-    case "files-documents":
-      return {
-        domain,
-        version: AUTO_SYNC_SNAPSHOT_VERSION,
-        updatedAt,
-        data: await serializeIndexedDbStoreSnapshot(STORES.DOCUMENTS),
+        data: await serializeFilesMetadataSnapshot(),
       };
     case "files-images":
       return {
@@ -599,11 +594,17 @@ async function applyIndexedDbStoreSnapshot(
   }
 }
 
-function applyFilesMetadataSnapshot(data: FilesMetadataSnapshotData): void {
+async function applyFilesMetadataSnapshot(
+  data: FilesMetadataSnapshotData
+): Promise<void> {
   useFilesStore.setState({
     items: data.items,
     libraryState: data.libraryState,
   });
+
+  if (data.documents) {
+    await applyIndexedDbStoreSnapshot(STORES.DOCUMENTS, data.documents);
+  }
 }
 
 function applySongsSnapshot(data: SongsSnapshotData): void {
@@ -674,12 +675,8 @@ export async function applyCloudSyncEnvelope(
       await applySettingsSnapshot(envelope.data as SettingsSnapshotData);
       return;
     case "files-metadata":
-      applyFilesMetadataSnapshot(envelope.data as FilesMetadataSnapshotData);
-      return;
-    case "files-documents":
-      await applyIndexedDbStoreSnapshot(
-        STORES.DOCUMENTS,
-        envelope.data as FilesStoreSnapshotData
+      await applyFilesMetadataSnapshot(
+        envelope.data as FilesMetadataSnapshotData
       );
       return;
     case "files-images":

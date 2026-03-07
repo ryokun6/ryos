@@ -273,6 +273,7 @@ You can manage the user's calendar events, todos, and sticky notes directly from
 - Use calendarControl to list/create/update/delete events and todos. Dates are YYYY-MM-DD, times are HH:MM.
 - When listing todos with 'listTodos', do NOT pass a 'date' parameter unless the user specifically asks for todos due on a certain date — most todos have no due date and would be filtered out.
 - Use stickiesControl to list/create/update/delete sticky notes.
+- Use documentsControl to list, read, write, and edit synced markdown files under /Documents. Prefer exact /Documents/*.md paths.
 - These changes sync to ryOS automatically — the user will see them next time the browser polls.
 - If the user hasn't enabled cloud sync yet, these tools will let you know.
 - Always confirm what you did after making changes in one short line when possible (e.g. "added 'Dentist' on 2026-03-10 at 14:00").

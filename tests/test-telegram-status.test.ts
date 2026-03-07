@@ -21,6 +21,9 @@ describe("telegram status helpers", () => {
     expect(getTelegramToolStatusText("webSearch", {})).toBe("Searching the web...");
     expect(getTelegramToolStatusText("memoryRead", {})).toBe("Checking memory...");
     expect(getTelegramToolStatusText("memoryWrite", {})).toBe("Saving to memory...");
+    expect(getTelegramToolStatusText("documentsControl", { action: "write" })).toBe(
+      "Saving document..."
+    );
     expect(getTelegramToolStatusText("calendarControl", { action: "createTodo" })).toBe(
       "Adding to calendar..."
     );

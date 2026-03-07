@@ -56,10 +56,10 @@ const getParentPath = (path: string): string => {
 
 const getCloudSyncDomainForContentStore = (
   storeName: string
-): "files-documents" | "files-images" | "files-trash" | "files-applets" | null => {
+): "files-metadata" | "files-images" | "files-trash" | "files-applets" | null => {
   switch (storeName) {
     case STORES.DOCUMENTS:
-      return "files-documents";
+      return "files-metadata";
     case STORES.IMAGES:
       return "files-images";
     case STORES.TRASH:
@@ -1487,7 +1487,7 @@ export function useFileSystem(
                 getCloudSyncDomainForContentStore(sourceStoreName),
                 getCloudSyncDomainForContentStore(targetStoreName),
               ].filter(Boolean) as Array<
-                "files-documents" | "files-images" | "files-trash" | "files-applets"
+                "files-metadata" | "files-images" | "files-trash" | "files-applets"
               >
             );
           }
@@ -1631,7 +1631,7 @@ export function useFileSystem(
                 getCloudSyncDomainForContentStore(storeName),
                 "files-trash",
               ].filter(Boolean) as Array<
-                "files-documents" | "files-images" | "files-trash" | "files-applets"
+                "files-metadata" | "files-images" | "files-trash" | "files-applets"
               >
             );
             console.log(
@@ -1695,7 +1695,7 @@ export function useFileSystem(
                 getCloudSyncDomainForContentStore(targetStoreName),
                 "files-trash",
               ].filter(Boolean) as Array<
-                "files-documents" | "files-images" | "files-trash" | "files-applets"
+                "files-metadata" | "files-images" | "files-trash" | "files-applets"
               >
             );
             console.log(
@@ -1745,7 +1745,7 @@ export function useFileSystem(
       ]);
       await dbOperations.clear(STORES.DOCUMENTS);
       emitCloudSyncDomainChanges([
-        "files-documents",
+        "files-metadata",
         "files-images",
         "files-trash",
       ]);

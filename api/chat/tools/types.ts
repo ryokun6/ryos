@@ -331,6 +331,47 @@ export interface CalendarControlOutput {
 }
 
 // ============================================================================
+// Documents Control Types
+// ============================================================================
+
+export const DOCUMENTS_ACTIONS = ["list", "read", "write", "edit"] as const;
+export type DocumentsAction = typeof DOCUMENTS_ACTIONS[number];
+
+export const DOCUMENT_WRITE_MODES = [
+  "overwrite",
+  "append",
+  "prepend",
+] as const;
+export type DocumentWriteMode = typeof DOCUMENT_WRITE_MODES[number];
+
+export interface DocumentsControlInput {
+  action: DocumentsAction;
+  path?: string;
+  content?: string;
+  mode?: DocumentWriteMode;
+  old_string?: string;
+  new_string?: string;
+}
+
+export interface DocumentsControlOutput {
+  success: boolean;
+  message: string;
+  documents?: Array<{
+    path: string;
+    name: string;
+    size?: number;
+    modifiedAt?: number;
+  }>;
+  document?: {
+    path: string;
+    name: string;
+    content: string;
+    size?: number;
+    modifiedAt?: number;
+  };
+}
+
+// ============================================================================
 // Memory Tool Types (Unified for both daily notes and long-term memories)
 // ============================================================================
 
