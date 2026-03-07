@@ -4,6 +4,18 @@ export const TELEGRAM_HEARTBEAT_CRON_PATH = "/api/cron/telegram-heartbeat";
 export const TELEGRAM_HEARTBEAT_CRON_SCHEDULE = "*/30 * * * *";
 export const TELEGRAM_HEARTBEAT_SLOT_TTL_SECONDS = 7 * 24 * 60 * 60;
 
+export function getTelegramHeartbeatAuthSecret(
+  env: NodeJS.ProcessEnv = process.env
+): string | null {
+  const webhookSecret = env.TELEGRAM_WEBHOOK_SECRET?.trim();
+  if (webhookSecret) {
+    return webhookSecret;
+  }
+
+  const cronSecret = env.CRON_SECRET?.trim();
+  return cronSecret || null;
+}
+
 export function getTelegramHeartbeatSlot(date: Date = new Date()): number {
   const intervalMs = TELEGRAM_HEARTBEAT_INTERVAL_MINUTES * 60 * 1000;
   return Math.floor(date.getTime() / intervalMs);

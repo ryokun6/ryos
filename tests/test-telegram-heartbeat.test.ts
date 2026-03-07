@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   buildTelegramHeartbeatPrompt,
   buildTelegramHeartbeatRedisKey,
+  getTelegramHeartbeatAuthSecret,
   getTelegramHeartbeatSlot,
   TELEGRAM_HEARTBEAT_CRON_PATH,
   TELEGRAM_HEARTBEAT_CRON_SCHEDULE,
@@ -36,6 +37,24 @@ describe("telegram heartbeat helpers", () => {
     expect(prompt).toContain("use memoryRead");
     expect(prompt).toContain("Telegram-safe tools");
     expect(prompt).toContain("Do not mention that this message is automated");
+  });
+
+  test("prefers the telegram webhook secret for heartbeat auth", () => {
+    expect(
+      getTelegramHeartbeatAuthSecret({
+        TELEGRAM_WEBHOOK_SECRET: "telegram-secret",
+        CRON_SECRET: "cron-secret",
+      } as NodeJS.ProcessEnv)
+    ).toBe("telegram-secret");
+  });
+
+  test("falls back to CRON_SECRET when no telegram webhook secret exists", () => {
+    expect(
+      getTelegramHeartbeatAuthSecret({
+        CRON_SECRET: "cron-secret",
+      } as NodeJS.ProcessEnv)
+    ).toBe("cron-secret");
+    expect(getTelegramHeartbeatAuthSecret({} as NodeJS.ProcessEnv)).toBeNull();
   });
 
   test("heartbeat conversations keep telegram-safe tools available", async () => {

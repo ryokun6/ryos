@@ -12,6 +12,7 @@ import { simplifyTelegramCitationDisplay } from "../_utils/telegram-format.js";
 import {
   buildTelegramHeartbeatPrompt,
   buildTelegramHeartbeatRedisKey,
+  getTelegramHeartbeatAuthSecret,
   TELEGRAM_HEARTBEAT_SLOT_TTL_SECONDS,
   TELEGRAM_HEARTBEAT_TARGET_USERNAME,
 } from "../_utils/telegram-heartbeat.js";
@@ -83,15 +84,17 @@ export default async function handler(
     return;
   }
 
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    logger.warn("CRON_SECRET is not configured");
+  const authSecret = getTelegramHeartbeatAuthSecret();
+  if (!authSecret) {
+    logger.warn("Telegram heartbeat auth secret is not configured");
     logger.response(503, Date.now() - startTime);
-    sendJson(res, 503, { error: "Cron secret is not configured" });
+    sendJson(res, 503, {
+      error: "Telegram heartbeat secret is not configured",
+    });
     return;
   }
 
-  if (getHeader(req, "authorization") !== `Bearer ${cronSecret}`) {
+  if (getHeader(req, "authorization") !== `Bearer ${authSecret}`) {
     logger.warn("Rejected telegram heartbeat cron due to invalid secret");
     logger.response(401, Date.now() - startTime);
     sendJson(res, 401, { error: "Unauthorized" });
