@@ -58,6 +58,7 @@ interface IconButtonProps {
   mouseX: MotionValue<number>;
   magnifyEnabled: boolean;
   managedTargetSize?: MotionValue<number>;
+  enableLayoutProjection?: boolean;
   isNew: boolean;
   isHovered: boolean;
   isSwapping: boolean;
@@ -80,10 +81,20 @@ interface DockSpacerProps {
   mouseX: MotionValue<number>;
   magnifyEnabled: boolean;
   baseSize?: number;
+  enableLayoutProjection?: boolean;
 }
 
 const DockSpacer = forwardRef<HTMLDivElement, DockSpacerProps>(
-  ({ idKey, mouseX, magnifyEnabled, baseSize: baseSizeProp }, ref) => {
+  (
+    {
+      idKey,
+      mouseX,
+      magnifyEnabled,
+      baseSize: baseSizeProp,
+      enableLayoutProjection = false,
+    },
+    ref
+  ) => {
     const wrapperRef = useRef<HTMLDivElement | null>(null);
     const baseSize = baseSizeProp ?? BASE_BUTTON_SIZE;
     const maxSize = Math.round(baseSize * MAX_SCALE);
@@ -148,8 +159,8 @@ const DockSpacer = forwardRef<HTMLDivElement, DockSpacerProps>(
     return (
       <motion.div
         ref={setCombinedRef}
-        layout
-        layoutId={`dock-spacer-${idKey}`}
+        layout={enableLayoutProjection}
+        layoutId={enableLayoutProjection ? `dock-spacer-${idKey}` : undefined}
         initial={{ width: 0, height: 0 }}
         animate={{ width: baseSize + 8, height: baseSize }} // Base size for layout, actual size controlled by style
         exit={{ width: 0, height: 0 }}
@@ -188,6 +199,7 @@ const IconButton = memo(forwardRef<HTMLDivElement, IconButtonProps>(
       mouseX,
       magnifyEnabled,
       managedTargetSize,
+      enableLayoutProjection = false,
       isNew,
       isHovered,
       isSwapping,
@@ -218,6 +230,7 @@ const IconButton = memo(forwardRef<HTMLDivElement, IconButtonProps>(
     
     // Calculate distance from cursor to icon center
     const distanceCalc = useTransform(mouseX, (val) => {
+      if (managedTargetSize) return Infinity;
       const bounds = wrapperRef.current?.getBoundingClientRect();
       if (!bounds || !Number.isFinite(val)) return Infinity;
       return val - (bounds.left + bounds.width / 2);
@@ -297,8 +310,8 @@ const IconButton = memo(forwardRef<HTMLDivElement, IconButtonProps>(
     return (
       <motion.div
         ref={setCombinedRef}
-        layout
-        layoutId={`dock-icon-${idKey}`}
+        layout={enableLayoutProjection}
+        layoutId={enableLayoutProjection ? `dock-icon-${idKey}` : undefined}
         data-dock-icon={idKey}
         initial={isNew ? { scale: 0, opacity: 0 } : undefined}
         animate={{
@@ -470,10 +483,26 @@ interface DividerProps {
   onTouchEnd?: React.TouchEventHandler;
   onTouchMove?: React.TouchEventHandler;
   onTouchCancel?: React.TouchEventHandler;
+  enableLayoutProjection?: boolean;
 }
 
 const Divider = forwardRef<HTMLDivElement, DividerProps>(
-  ({ idKey, onDragOver, onDrop, onDragLeave, isDropTarget, height = 48, resizable, onResizeStart, onContextMenu, onTouchStart, onTouchEnd, onTouchMove, onTouchCancel }, ref) => {
+  ({
+    idKey,
+    onDragOver,
+    onDrop,
+    onDragLeave,
+    isDropTarget,
+    height = 48,
+    resizable,
+    onResizeStart,
+    onContextMenu,
+    onTouchStart,
+    onTouchEnd,
+    onTouchMove,
+    onTouchCancel,
+    enableLayoutProjection = false,
+  }, ref) => {
     const baseWidth = 1;
     
     // Wrap handlers to stop propagation and prevent icon menus from triggering
@@ -505,8 +534,8 @@ const Divider = forwardRef<HTMLDivElement, DividerProps>(
     return (
       <motion.div
         ref={ref}
-        layout
-        layoutId={`dock-divider-${idKey}`}
+        layout={enableLayoutProjection}
+        layoutId={enableLayoutProjection ? `dock-divider-${idKey}` : undefined}
         initial={{ opacity: 0, scaleY: 0.8 }}
         animate={{ 
           opacity: 0.9, 
@@ -2006,6 +2035,11 @@ function MacDock() {
     if (!hasMounted) setHasMounted(true);
   }, [allVisibleIds, hasMounted]);
 
+  const enableDockLayoutProjection =
+    draggingItemId !== null ||
+    externalDragIndex !== null ||
+    isDividerDropTarget;
+
   const getOrCreateIconTargetSize = useCallback(
     (id: string) => {
       const existing = iconTargetSizesRef.current.get(id);
@@ -2175,8 +2209,8 @@ function MacDock() {
       >
         <motion.div
           ref={dockBarRef}
-          layout
-          layoutRoot
+          layout={enableDockLayoutProjection}
+          layoutRoot={enableDockLayoutProjection}
           className="inline-flex items-end"
           initial={false}
           animate={{
@@ -2263,7 +2297,10 @@ function MacDock() {
           onDrop={handleDockDrop}
         >
           <LayoutGroup>
-            <AnimatePresence mode="popLayout" initial={false}>
+            <AnimatePresence
+              mode={enableDockLayoutProjection ? "popLayout" : "sync"}
+              initial={false}
+            >
               {/* Left pinned items from dock store */}
               {(() => {
                 // Build array of elements with spacer inserted at correct position
@@ -2272,7 +2309,16 @@ function MacDock() {
                 pinnedItems.forEach((item, index) => {
                   // Insert spacer before this item if it's the drop target
                   if (externalDragIndex === index) {
-                    elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" mouseX={mouseX} magnifyEnabled={effectiveMagnifyEnabled} baseSize={scaledButtonSize} />);
+                    elements.push(
+                      <DockSpacer
+                        key="dock-drop-spacer"
+                        idKey="dock-drop-spacer"
+                        mouseX={mouseX}
+                        magnifyEnabled={effectiveMagnifyEnabled}
+                        baseSize={scaledButtonSize}
+                        enableLayoutProjection={enableDockLayoutProjection}
+                      />
+                    );
                   }
                   
                   if (item.type === "app") {
@@ -2315,6 +2361,7 @@ function MacDock() {
                         mouseX={mouseX}
                         magnifyEnabled={effectiveMagnifyEnabled}
                         managedTargetSize={getOrCreateIconTargetSize(appId)}
+                        enableLayoutProjection={enableDockLayoutProjection}
                         isNew={hasMounted && !seenIdsRef.current.has(appId)}
                         isHovered={hoveredId === appId}
                         isSwapping={isSwapping}
@@ -2365,6 +2412,7 @@ function MacDock() {
                         mouseX={mouseX}
                         magnifyEnabled={effectiveMagnifyEnabled}
                         managedTargetSize={getOrCreateIconTargetSize(item.id)}
+                        enableLayoutProjection={enableDockLayoutProjection}
                         isNew={hasMounted && !seenIdsRef.current.has(item.id)}
                         isHovered={hoveredId === item.id}
                         isSwapping={isSwapping}
@@ -2384,7 +2432,16 @@ function MacDock() {
                 
                 // Add spacer at end if dropping after all items
                 if (externalDragIndex === pinnedItems.length) {
-                  elements.push(<DockSpacer key="dock-drop-spacer" idKey="dock-drop-spacer" mouseX={mouseX} magnifyEnabled={effectiveMagnifyEnabled} baseSize={scaledButtonSize} />);
+                  elements.push(
+                    <DockSpacer
+                      key="dock-drop-spacer"
+                      idKey="dock-drop-spacer"
+                      mouseX={mouseX}
+                      magnifyEnabled={effectiveMagnifyEnabled}
+                      baseSize={scaledButtonSize}
+                      enableLayoutProjection={enableDockLayoutProjection}
+                    />
+                  );
                 }
                 
                 return elements;
@@ -2401,6 +2458,7 @@ function MacDock() {
                   isDropTarget={isDividerDropTarget}
                   height={scaledButtonSize}
                   onContextMenu={handleDividerContextMenu}
+                  enableLayoutProjection={enableDockLayoutProjection}
                   {...dividerLongPress}
                 />
               )}
@@ -2438,6 +2496,7 @@ function MacDock() {
                       mouseX={mouseX}
                       magnifyEnabled={effectiveMagnifyEnabled}
                       managedTargetSize={getOrCreateIconTargetSize(item.instanceId!)}
+                      enableLayoutProjection={enableDockLayoutProjection}
                       isNew={hasMounted && !seenIdsRef.current.has(item.instanceId!)}
                       isHovered={hoveredId === item.instanceId}
                       isSwapping={isSwapping}
@@ -2470,6 +2529,7 @@ function MacDock() {
                       mouseX={mouseX}
                       magnifyEnabled={effectiveMagnifyEnabled}
                       managedTargetSize={getOrCreateIconTargetSize(item.appId)}
+                      enableLayoutProjection={enableDockLayoutProjection}
                       isNew={hasMounted && !seenIdsRef.current.has(item.appId)}
                       isHovered={hoveredId === item.appId}
                       isSwapping={isSwapping}
@@ -2491,6 +2551,7 @@ function MacDock() {
                 resizable={!isPhone}
                 onResizeStart={handleResizeStart}
                 onContextMenu={handleDividerContextMenu}
+                enableLayoutProjection={enableDockLayoutProjection}
                 {...dividerLongPress}
               />
 
@@ -2542,6 +2603,7 @@ function MacDock() {
                     mouseX={mouseX}
                     magnifyEnabled={effectiveMagnifyEnabled}
                     managedTargetSize={getOrCreateIconTargetSize("__applications__")}
+                    enableLayoutProjection={enableDockLayoutProjection}
                     isNew={hasMounted && !seenIdsRef.current.has("__applications__")}
                     isHovered={hoveredId === "__applications__"}
                     isSwapping={isSwapping}
@@ -2645,6 +2707,7 @@ function MacDock() {
                       mouseX={mouseX}
                       magnifyEnabled={effectiveMagnifyEnabled}
                       managedTargetSize={getOrCreateIconTargetSize("__trash__")}
+                      enableLayoutProjection={enableDockLayoutProjection}
                       isNew={hasMounted && !seenIdsRef.current.has("__trash__")}
                       isHovered={hoveredId === "__trash__"}
                       isSwapping={isSwapping}
