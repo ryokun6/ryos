@@ -10,6 +10,9 @@ export function getTelegramToolStatusText(
   input: unknown
 ): string {
   switch (toolName) {
+    case "web_search":
+    case "webSearch":
+      return "Searching the web...";
     case "memoryRead":
       return "Checking memory...";
     case "memoryWrite":

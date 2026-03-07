@@ -16,6 +16,9 @@ describe("web search link instructions", () => {
 
   test("telegram prompt keeps web-search sourcing light", () => {
     expect(TELEGRAM_CHAT_INSTRUCTIONS).toContain(
+      "Output plain text only. Do not use markdown emphasis, headings, blockquotes, markdown list markers, or code fences."
+    );
+    expect(TELEGRAM_CHAT_INSTRUCTIONS).toContain(
       "prefer no citations, or mention the source name naturally in prose"
     );
     expect(TELEGRAM_CHAT_INSTRUCTIONS).toContain(

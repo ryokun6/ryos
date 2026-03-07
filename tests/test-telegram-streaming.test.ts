@@ -66,7 +66,7 @@ describe("telegram streaming helpers", () => {
       draftId: 90,
       replyToMessageId: 55,
       textStream: makeTextStream([
-        "it shipped yesterday ([example.com](https://example.com/news)).",
+        "# Update\n- **it shipped yesterday** ([example.com](https://example.com/news)).",
       ]),
       updateIntervalMs: 0,
       minCharDelta: 1,
@@ -83,13 +83,13 @@ describe("telegram streaming helpers", () => {
     });
 
     expect(result).toEqual({
-      text: "it shipped yesterday.",
+      text: "Update\n• it shipped yesterday.",
       previewMode: "draft",
       messageIds: [777],
     });
     expect(calls).toEqual([
-      { type: "draft", text: "it shipped yesterday." },
-      { type: "send", text: "it shipped yesterday.", replyToMessageId: 55 },
+      { type: "draft", text: "Update\n• it shipped yesterday." },
+      { type: "send", text: "Update\n• it shipped yesterday.", replyToMessageId: 55 },
     ]);
   });
 

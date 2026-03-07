@@ -13,6 +13,8 @@ import {
 
 describe("telegram status helpers", () => {
   test("maps tool names to concise status text", () => {
+    expect(getTelegramToolStatusText("web_search", {})).toBe("Searching the web...");
+    expect(getTelegramToolStatusText("webSearch", {})).toBe("Searching the web...");
     expect(getTelegramToolStatusText("memoryRead", {})).toBe("Checking memory...");
     expect(getTelegramToolStatusText("memoryWrite", {})).toBe("Saving to memory...");
     expect(getTelegramToolStatusText("calendarControl", { action: "createTodo" })).toBe(
