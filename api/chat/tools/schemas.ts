@@ -677,9 +677,11 @@ export const memoryWriteSchema = z.object({
     ),
   mode: z
     .enum(MEMORY_MODES)
-    .default("add")
+    .default("merge")
     .describe(
-      "For long_term only: 'add' (new), 'update' (replace existing), 'merge' (append or create). Ignored for daily."
+      "For long_term only. 'merge' (PREFERRED — appends new content to existing, or creates if new). " +
+      "'add' (create new key, fails if exists). " +
+      "'update' (REPLACES all content — only use after memoryRead). Ignored for daily."
     ),
 }).superRefine((data, ctx) => {
   if (data.type === "long_term") {

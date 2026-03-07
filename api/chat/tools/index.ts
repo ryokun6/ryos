@@ -192,17 +192,19 @@ export const TOOL_DESCRIPTIONS = {
     "Write to user memory. Supports two types via the 'type' parameter:\n" +
     "- type='long_term' (default): Save permanent facts. Requires key, summary, content. " +
     "Use for: name, preferences, identity, instructions, stable facts. " +
-    "Modes: 'add' (new), 'update' (replace), 'merge' (append/create).\n" +
+    "Modes: 'merge' (PREFERRED — safely appends to existing or creates new), 'add' (create new key only, fails if exists), " +
+    "'update' (REPLACES all content — DANGEROUS, always memoryRead first!).\n" +
     "- type='daily': Append a journal entry to today's daily note. Only requires content. " +
     "Use for: passing observations, mood, plans, conversation context, things discussed. " +
     "Daily notes expire after 30 days but get processed into long-term memories automatically.\n" +
+    "IMPORTANT: Prefer mode='merge' to safely add info. NEVER use mode='update' without calling memoryRead first — it replaces ALL existing content. " +
     "Most memory extraction happens automatically in the background – use this tool for explicit user requests " +
     "('remember my name', 'note that...') and important things you want to capture right now.",
   
   memoryRead:
-    "Read from user memory. Supports two types via the 'type' parameter:\n" +
+    "Read from user memory. ALWAYS call this before using memoryWrite with mode='update' to avoid losing existing content.\n" +
     "- type='long_term' (default): Read a specific long-term memory by key. " +
-    "Memory summaries are always visible in LONG-TERM MEMORIES section.\n" +
+    "Memory summaries are always visible in LONG-TERM MEMORIES section — use this to get full content.\n" +
     "- type='daily': Read daily notes for a specific date (defaults to today).",
   
   memoryDelete:
