@@ -23,7 +23,7 @@ describe("telegram status helpers", () => {
     expect(getTelegramToolStatusText("unknownTool", {})).toBe("Using a tool...");
   });
 
-  test("keeps a single progress message while sending typing", async () => {
+  test("keeps the latest tool status visible while typing continues", async () => {
     const calls: Array<{ type: string; text?: string; messageId?: number }> = [];
 
     const reporter = createTelegramStatusReporter({
@@ -60,7 +60,6 @@ describe("telegram status helpers", () => {
       { type: "send", text: "Checking memory..." },
     ]);
     expect(calls.filter((call) => call.type === "edit")).toEqual([
-      { type: "edit", text: "Thinking...", messageId: 9001 },
       { type: "edit", text: "Adding to calendar...", messageId: 9001 },
     ]);
     expect(calls.at(-1)).toEqual({ type: "delete", messageId: 9001 });

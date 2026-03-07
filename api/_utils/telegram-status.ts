@@ -5,8 +5,6 @@ import {
   sendTelegramMessage,
 } from "./telegram.js";
 
-const TELEGRAM_TYPING_STATUS = "Thinking...";
-
 export function getTelegramToolStatusText(
   toolName: string,
   input: unknown
@@ -177,7 +175,7 @@ export function createTelegramStatusReporter({
     },
 
     async markThinking() {
-      await updateStatus(TELEGRAM_TYPING_STATUS);
+      // Keep the most recent tool status visible while typing continues.
     },
 
     async dispose() {
