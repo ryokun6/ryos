@@ -225,19 +225,12 @@ async function handleDomainDownload(
       return;
     }
 
-    const blobResponse = await fetch(entry.blobUrl);
-    if (!blobResponse.ok) {
-      res.status(500).json({ error: `Failed to retrieve ${domain} sync data` });
-      return;
-    }
-
-    const arrayBuffer = await blobResponse.arrayBuffer();
-    const base64Data = Buffer.from(arrayBuffer).toString("base64");
-
+    // Return the CDN URL so the client can download the blob directly,
+    // avoiding server-side proxy timeouts for large files.
     res.status(200).json({
       ok: true,
       domain,
-      data: base64Data,
+      blobUrl: entry.blobUrl,
       metadata: {
         updatedAt: entry.updatedAt,
         version: entry.version,

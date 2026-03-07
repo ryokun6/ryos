@@ -10,7 +10,7 @@ import {
 import { useWallpaper } from "@/hooks/useWallpaper";
 import { useSound, Sounds } from "@/hooks/useSound";
 import type { DisplayMode } from "@/utils/displayMode";
-import { Plus } from "@phosphor-icons/react";
+import { Plus, Trash } from "@phosphor-icons/react";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { loadWallpaperManifest } from "@/utils/wallpapers";
 import type { WallpaperManifest as WallpaperManifestType } from "@/utils/wallpapers";
@@ -155,6 +155,12 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     loadCustomWallpapers,
     getWallpaperData,
   } = useWallpaper();
+  const deleteCustomWallpaper = useDisplaySettingsStore(
+    (s) => s.deleteCustomWallpaper
+  );
+  const customWallpapersRevision = useDisplaySettingsStore(
+    (s) => s.customWallpapersRevision
+  );
 
   const { play: playClick } = useSound(Sounds.BUTTON_CLICK, 0.3);
   const displayMode = useDisplaySettingsStore((s) => s.displayMode);
@@ -250,7 +256,7 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     return () => {
       isActive = false;
     };
-  }, [loadCustomWallpapers, getWallpaperData, INDEXEDDB_PREFIX]);
+  }, [loadCustomWallpapers, getWallpaperData, INDEXEDDB_PREFIX, customWallpapersRevision]);
 
   const handleWallpaperSelect = (path: string) => {
     setWallpaper(path);
@@ -258,6 +264,21 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
     if (onSelect) {
       onSelect(path);
     }
+  };
+
+  const handleDeleteWallpaper = async (
+    e: React.MouseEvent,
+    ref: string
+  ) => {
+    e.stopPropagation();
+    playClick();
+    await deleteCustomWallpaper(ref);
+    setCustomWallpaperRefs((prev) => prev.filter((r) => r !== ref));
+    setCustomWallpaperPreviews((prev) => {
+      const next = { ...prev };
+      delete next[ref];
+      return next;
+    });
   };
 
   const handleFileUpload = async (
@@ -449,17 +470,25 @@ export function WallpaperPicker({ onSelect }: WallpaperPickerProps) {
               </button>
               {customWallpaperRefs.length > 0 ? (
                 customWallpaperRefs.map((path) => (
-                  <WallpaperItem
-                    key={path}
-                    path={path}
-                    previewUrl={customWallpaperPreviews[path]}
-                    isSelected={currentWallpaper === path}
-                    onClick={() => handleWallpaperSelect(path)}
-                    isVideo={isVideoWallpaper(
-                      path,
-                      customWallpaperPreviews[path]
-                    )}
-                  />
+                  <div key={path} className="relative group">
+                    <WallpaperItem
+                      path={path}
+                      previewUrl={customWallpaperPreviews[path]}
+                      isSelected={currentWallpaper === path}
+                      onClick={() => handleWallpaperSelect(path)}
+                      isVideo={isVideoWallpaper(
+                        path,
+                        customWallpaperPreviews[path]
+                      )}
+                    />
+                    <button
+                      type="button"
+                      className="absolute top-1 right-1 p-0.5 rounded bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-red-600/80"
+                      onClick={(e) => handleDeleteWallpaper(e, path)}
+                    >
+                      <Trash className="h-3.5 w-3.5" weight="bold" />
+                    </button>
+                  </div>
                 ))
               ) : (
                 <></>

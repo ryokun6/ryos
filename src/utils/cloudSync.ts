@@ -38,7 +38,6 @@ import {
   type BlobSyncDomain,
   createEmptyCloudSyncMetadataMap,
 } from "@/utils/cloudSyncShared";
-
 type AuthContext = {
   username: string;
   authToken: string;
@@ -307,20 +306,6 @@ async function gzipJson(value: unknown): Promise<Uint8Array> {
   return combined;
 }
 
-async function gunzipBase64Json<T>(base64Data: string): Promise<T> {
-  assertCompressionSupport();
-  const compressed = Uint8Array.from(atob(base64Data), (char) =>
-    char.charCodeAt(0)
-  );
-  const compressedBlob = new Blob([compressed], { type: "application/gzip" });
-  const compressedStream = compressedBlob.stream();
-  const decompressedStream = compressedStream.pipeThrough(
-    new DecompressionStream("gzip")
-  );
-  const jsonString = await new Response(decompressedStream).text();
-
-  return JSON.parse(jsonString) as T;
-}
 
 function serializeSettingsSnapshot(): SettingsSnapshotData {
   const displayState = useDisplaySettingsStore.getState();
@@ -652,9 +637,30 @@ function applyCalendarSnapshot(data: CalendarSnapshotData): void {
 async function applyCustomWallpapersSnapshot(
   data: CustomWallpapersSnapshotData
 ): Promise<void> {
+  console.log(`[CloudSync] applyCustomWallpapersSnapshot: replacing with ${data.length} items`);
   const db = await ensureIndexedDBInitialized();
   try {
     await restoreStoreItems(db, STORES.CUSTOM_WALLPAPERS, data);
+
+    const remoteKeys = new Set(data.map((item) => item.key));
+    const displayStore = useDisplaySettingsStore.getState();
+    const current = displayStore.currentWallpaper;
+    if (current?.startsWith("indexeddb://")) {
+      const id = current.substring("indexeddb://".length);
+      if (remoteKeys.has(id)) {
+        // Re-resolve: settings may have been applied before the blob data
+        // was available in IndexedDB, leaving wallpaperSource as the raw
+        // indexeddb:// reference. Now that the data is restored, re-resolve
+        // it to a fresh object URL.
+        await displayStore.setWallpaper(current);
+      } else {
+        useDisplaySettingsStore.setState({
+          currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
+          wallpaperSource: "/wallpapers/photos/aqua/water.jpg",
+        });
+      }
+    }
+    displayStore.bumpCustomWallpapersRevision();
   } finally {
     db.close();
   }
@@ -813,7 +819,10 @@ async function uploadBlobDomain(
   auth: AuthContext
 ): Promise<CloudSyncDomainMetadata> {
   const envelope = await createCloudSyncEnvelope(domain);
+  const dataItems = Array.isArray(envelope.data) ? envelope.data.length : 'N/A';
+  console.log(`[CloudSync:blob] ${domain}: serialized ${dataItems} items`);
   const compressed = await gzipJson(envelope);
+  console.log(`[CloudSync:blob] ${domain}: compressed to ${compressed.length} bytes`);
 
   const tokenResponse = await abortableFetch(getApiUrl("/api/sync/auto-token"), {
     method: "POST",
@@ -949,7 +958,7 @@ async function downloadBlobDomain(
     {
       method: "GET",
       headers: authHeaders(auth),
-      timeout: 30000,
+      timeout: 15000,
       throwOnHttpError: false,
       retry: { maxAttempts: 1, initialDelayMs: 250 },
     }
@@ -964,17 +973,26 @@ async function downloadBlobDomain(
   }
 
   const data = (await response.json()) as {
-    data?: string;
+    blobUrl?: string;
     metadata?: CloudSyncDomainMetadata;
   };
 
-  if (!data.data || !data.metadata) {
+  if (!data.blobUrl || !data.metadata) {
     throw new Error("Sync download response was invalid.");
   }
 
-  const envelope = await gunzipBase64Json<CloudSyncEnvelope<AnySnapshotData>>(
-    data.data
-  );
+  const blobResponse = await fetch(data.blobUrl);
+  if (!blobResponse.ok) {
+    throw new Error(`Failed to fetch ${domain} blob from CDN`);
+  }
+
+  const compressedBuf = await blobResponse.arrayBuffer();
+  const compressedBlob = new Blob([compressedBuf], { type: "application/gzip" });
+  const decompressedStream = compressedBlob
+    .stream()
+    .pipeThrough(new DecompressionStream("gzip"));
+  const jsonString = await new Response(decompressedStream).text();
+  const envelope = JSON.parse(jsonString) as CloudSyncEnvelope<AnySnapshotData>;
 
   await applyCloudSyncEnvelope(envelope);
   return data.metadata;

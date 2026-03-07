@@ -1010,7 +1010,9 @@ export function useControlPanelsLogic({
         }
       }
 
-      // Ensure files store is in a safe state
+      // Ensure files store is in a safe state.
+      // Preserve the version from the backup so Zustand doesn't
+      // re-run migrations on already-current data.
       try {
         const persistedKey = "ryos:files";
         const persistedState = localStorage.getItem(persistedKey);
@@ -1021,15 +1023,11 @@ export function useControlPanelsLogic({
               parsed.state.items &&
               Object.keys(parsed.state.items).length > 0;
             parsed.state.libraryState = hasItems ? "loaded" : "uninitialized";
-            parsed.version = 5;
+            if (!parsed.version || parsed.version < 5) {
+              parsed.version = 5;
+            }
             localStorage.setItem(persistedKey, JSON.stringify(parsed));
           }
-        } else {
-          const defaultStore = {
-            state: { items: {}, libraryState: "loaded" },
-            version: 5,
-          };
-          localStorage.setItem(persistedKey, JSON.stringify(defaultStore));
         }
       } catch (fallbackErr) {
         console.error("[CloudSync] Files store fallback failed:", fallbackErr);
@@ -1535,46 +1533,26 @@ export function useControlPanelsLogic({
         }
 
         try {
-          // Ensure the files store is in a safe state after restore
+          // Ensure the files store is in a safe state after restore.
+          // Preserve the version from the backup so Zustand doesn't
+          // re-run migrations on already-current data.
           const persistedKey = "ryos:files";
           const persistedState = localStorage.getItem(persistedKey);
 
           if (persistedState) {
             const parsed = JSON.parse(persistedState);
             if (parsed && parsed.state) {
-              // Check if we likely have restored data
               const hasItems =
                 parsed.state.items &&
                 Object.keys(parsed.state.items).length > 0;
               parsed.state.libraryState = hasItems
                 ? "loaded"
                 : "uninitialized";
-              parsed.version = 5;
+              if (!parsed.version || parsed.version < 5) {
+                parsed.version = 5;
+              }
               localStorage.setItem(persistedKey, JSON.stringify(parsed));
-              console.log(
-                `[ControlPanels] Emergency: Set libraryState to ${parsed.state.libraryState} to handle restore properly`
-              );
-            } else {
-              // No files store exists, create one with "loaded" state to be safe
-              const defaultStore = {
-                state: { items: {}, libraryState: "loaded" },
-                version: 5,
-              };
-              localStorage.setItem(persistedKey, JSON.stringify(defaultStore));
-              console.log(
-                "[ControlPanels] Emergency: Created files store with libraryState: loaded"
-              );
             }
-          } else {
-            // No files store exists, create one with "loaded" state to be safe
-            const defaultStore = {
-              state: { items: {}, libraryState: "loaded" },
-              version: 5,
-            };
-            localStorage.setItem(persistedKey, JSON.stringify(defaultStore));
-            console.log(
-              "[ControlPanels] Emergency: Created files store with libraryState: loaded"
-            );
           }
         } catch (fallbackErr) {
           console.error(

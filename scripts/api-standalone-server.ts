@@ -516,6 +516,7 @@ async function bootstrap(): Promise<void> {
   Bun.serve({
     port: API_PORT,
     hostname: API_HOST,
+    idleTimeout: 30,
     fetch: async (request) => {
       const url = new URL(request.url);
       const pathname = url.pathname;

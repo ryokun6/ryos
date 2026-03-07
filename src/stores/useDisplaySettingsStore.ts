@@ -4,6 +4,7 @@ import { ShaderType } from "@/types/shader";
 import { DisplayMode } from "@/utils/displayMode";
 import { checkShaderPerformance } from "@/utils/performanceCheck";
 import { ensureIndexedDBInitialized } from "@/utils/indexedDB";
+import { emitCloudSyncDomainChange } from "@/utils/cloudSyncEvents";
 
 /**
  * Display settings store - manages wallpaper, shaders, and screen saver settings.
@@ -81,6 +82,7 @@ interface DisplaySettingsState {
   setCurrentWallpaper: (p: string) => void;
   setWallpaper: (p: string | File) => Promise<void>;
   loadCustomWallpapers: () => Promise<string[]>;
+  deleteCustomWallpaper: (reference: string) => Promise<void>;
   getWallpaperData: (reference: string) => Promise<string | null>;
 
   // Screen saver
@@ -98,6 +100,10 @@ interface DisplaySettingsState {
   // HTML preview
   htmlPreviewSplit: boolean;
   setHtmlPreviewSplit: (v: boolean) => void;
+
+  // Non-persisted revision counter — incremented when IndexedDB custom wallpapers change
+  customWallpapersRevision: number;
+  bumpCustomWallpapersRevision: () => void;
 }
 
 const STORE_VERSION = 1;
@@ -161,6 +167,37 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         }
       },
 
+      deleteCustomWallpaper: async (reference) => {
+        const id = reference.startsWith(INDEXEDDB_PREFIX)
+          ? reference.substring(INDEXEDDB_PREFIX.length)
+          : reference;
+        try {
+          const db = await ensureIndexedDBInitialized();
+          const tx = db.transaction(CUSTOM_WALLPAPERS_STORE, "readwrite");
+          const store = tx.objectStore(CUSTOM_WALLPAPERS_STORE);
+          await new Promise<void>((res, rej) => {
+            const r = store.delete(id);
+            r.onsuccess = () => res();
+            r.onerror = () => rej(r.error);
+          });
+          db.close();
+          if (objectURLs[id]) {
+            URL.revokeObjectURL(objectURLs[id]);
+            delete objectURLs[id];
+          }
+          if (get().currentWallpaper === reference) {
+            set({
+              currentWallpaper: "/wallpapers/photos/aqua/water.jpg",
+              wallpaperSource: "/wallpapers/photos/aqua/water.jpg",
+            });
+          }
+          get().bumpCustomWallpapersRevision();
+          emitCloudSyncDomainChange("custom-wallpapers");
+        } catch (e) {
+          console.error("deleteCustomWallpaper", e);
+        }
+      },
+
       getWallpaperData: async (reference) => {
         if (!reference.startsWith(INDEXEDDB_PREFIX)) return reference;
         const id = reference.substring(INDEXEDDB_PREFIX.length);
@@ -210,6 +247,10 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
       // HTML preview
       htmlPreviewSplit: true,
       setHtmlPreviewSplit: (v) => set({ htmlPreviewSplit: v }),
+
+      customWallpapersRevision: 0,
+      bumpCustomWallpapersRevision: () =>
+        set((s) => ({ customWallpapersRevision: s.customWallpapersRevision + 1 })),
     }),
     {
       name: "ryos:display-settings",

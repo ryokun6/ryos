@@ -139,11 +139,13 @@ export function useAutoCloudSync() {
       syncState.markUploadStart(domain);
 
       try {
+        console.log(`[CloudSync] Uploading ${domain}...`);
         const metadata = await uploadCloudSyncDomain(domain, {
           username,
           authToken,
         });
 
+        console.log(`[CloudSync] Upload ${domain} succeeded`, metadata.updatedAt);
         syncState.markUploadSuccess(domain, metadata.updatedAt);
         syncState.updateRemoteMetadataForDomain(domain, metadata);
 
@@ -157,6 +159,7 @@ export function useAutoCloudSync() {
       } catch (error) {
         const message =
           error instanceof Error ? error.message : `Failed to sync ${domain}.`;
+        console.error(`[CloudSync] Upload ${domain} FAILED:`, message, error);
         useCloudSyncStore.getState().markUploadFailure(domain, message);
       }
     },
@@ -166,13 +169,16 @@ export function useAutoCloudSync() {
   const queueUpload = useCallback(
     (domain: CloudSyncDomain) => {
       if (!isSyncActive || !isDomainEnabled(domain)) {
+        console.log(`[CloudSync] queueUpload(${domain}) skipped: syncActive=${isSyncActive}, enabled=${isDomainEnabled(domain)}`);
         return;
       }
 
       if (Date.now() < remoteApplySuppressUntilRef.current[domain]) {
+        console.log(`[CloudSync] queueUpload(${domain}) skipped: suppressed for ${remoteApplySuppressUntilRef.current[domain] - Date.now()}ms`);
         return;
       }
 
+      console.log(`[CloudSync] queueUpload(${domain}) — debounce ${UPLOAD_DEBOUNCE_MS[domain]}ms`);
       lastLocalChangeAtRef.current[domain] = new Date().toISOString();
       clearUploadTimer(domain);
       uploadTimersRef.current[domain] = setTimeout(() => {
@@ -194,6 +200,18 @@ export function useAutoCloudSync() {
       const metadataMap = await fetchCloudSyncMetadata({ username, authToken });
       useCloudSyncStore.getState().setRemoteMetadata(metadataMap);
       useCloudSyncStore.getState().setLastError(null);
+
+      // Pre-suppress ALL domains before applying any. Applying one domain
+      // can trigger side-effect uploads on another (e.g. settings apply
+      // changes currentWallpaper → subscriber queues custom-wallpapers
+      // upload while IndexedDB is still empty). A generous window ensures
+      // the entire batch completes before any upload can fire.
+      const batchSuppressUntil = Date.now() + 120_000;
+      for (const d of CLOUD_SYNC_DOMAINS) {
+        remoteApplySuppressUntilRef.current[d] = batchSuppressUntil;
+      }
+
+      const appliedDomains: CloudSyncDomain[] = [];
 
       for (const domain of CLOUD_SYNC_DOMAINS) {
         if (!isDomainEnabled(domain)) {
@@ -217,9 +235,6 @@ export function useAutoCloudSync() {
           continue;
         }
 
-        remoteApplySuppressUntilRef.current[domain] =
-          Date.now() + REMOTE_APPLY_SUPPRESSION_MS;
-
         const appliedMetadata = await downloadAndApplyCloudSyncDomain(domain, {
           username,
           authToken,
@@ -229,6 +244,16 @@ export function useAutoCloudSync() {
           .getState()
           .markRemoteApplied(domain, appliedMetadata.updatedAt);
         lastLocalChangeAtRef.current[domain] = appliedMetadata.updatedAt;
+        appliedDomains.push(domain);
+      }
+
+      // Narrow suppression: applied domains get a short post-apply window,
+      // all others are released immediately.
+      const postApplyUntil = Date.now() + REMOTE_APPLY_SUPPRESSION_MS;
+      for (const d of CLOUD_SYNC_DOMAINS) {
+        remoteApplySuppressUntilRef.current[d] = appliedDomains.includes(d)
+          ? postApplyUntil
+          : 0;
       }
     } catch (error) {
       const message =
@@ -256,6 +281,7 @@ export function useAutoCloudSync() {
     });
 
     const syncEventsUnsubscribe = subscribeToCloudSyncDomainChanges((domain) => {
+      console.log(`[CloudSync] Domain change event received: ${domain}`);
       queueUpload(domain);
     });
 
@@ -385,15 +411,28 @@ export function useAutoCloudSync() {
       }
     });
 
-    void checkRemoteUpdates().then(() => {
-      if (!isDomainEnabled("custom-wallpapers")) return;
-      const wallpaper = useDisplaySettingsStore.getState().currentWallpaper;
-      if (!wallpaper.startsWith("indexeddb://")) return;
-      const remoteMeta =
-        useCloudSyncStore.getState().remoteMetadata["custom-wallpapers"];
-      if (!remoteMeta?.updatedAt) {
-        queueUpload("custom-wallpapers");
+    // Clear any uploads queued by store hydration/initialization so the
+    // first remote check can pull down data without being blocked by
+    // "has pending upload" guards (e.g. initializeLibrary on new devices).
+    clearAllUploadTimers();
+    for (const d of CLOUD_SYNC_DOMAINS) {
+      lastLocalChangeAtRef.current[d] = null;
+    }
+
+    void checkRemoteUpdates().then(async () => {
+      if (!isDomainEnabled("custom-wallpapers")) {
+        console.log("[CloudSync] custom-wallpapers domain not enabled, skipping initial upload check");
+        return;
       }
+      const localRefs = await useDisplaySettingsStore
+        .getState()
+        .loadCustomWallpapers();
+      console.log(`[CloudSync] Initial check: ${localRefs.length} local custom wallpapers found`);
+      if (localRefs.length === 0) return;
+      setTimeout(
+        () => queueUpload("custom-wallpapers"),
+        REMOTE_APPLY_SUPPRESSION_MS + 1000
+      );
     });
     const intervalId = setInterval(() => {
       void checkRemoteUpdates();
