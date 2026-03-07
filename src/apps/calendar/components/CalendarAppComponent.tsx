@@ -383,7 +383,10 @@ function WeekTimeGrid({
               type="button"
               onClick={() => onDateClick(day.date)}
               className="flex-1 text-center py-1.5 min-w-0 transition-colors"
-              style={{ borderBottom: "2px solid transparent" }}
+              style={{
+                borderBottom: "2px solid transparent",
+                ...(day.isToday ? { backgroundColor: isXpTheme ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.04)" } : {}),
+              }}
             >
               <div className={cn("text-[10px] opacity-50 leading-none", useGeneva && "font-geneva-12")}>{day.dayName}</div>
               <div
@@ -414,7 +417,11 @@ function WeekTimeGrid({
               {t("apps.calendar.views.allDay")}
             </div>
             {weekDates.map((day) => (
-              <div key={day.date} className="flex-1 flex flex-col gap-px py-px px-px min-w-0">
+              <div
+                key={day.date}
+                className="flex-1 flex flex-col gap-px py-px px-px min-w-0"
+                style={day.isToday ? { backgroundColor: isXpTheme ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.04)" } : undefined}
+              >
                 {day.allDayEvents.map((ev) => (
                   <button
                     key={ev.id}
@@ -458,7 +465,10 @@ function WeekTimeGrid({
               <div
                 key={day.date}
                 className="flex-1 relative min-w-0"
-                style={{ borderLeft: isXpTheme ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(0,0,0,0.04)" }}
+                style={{
+                  borderLeft: isXpTheme ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(0,0,0,0.04)",
+                  ...(day.isToday ? { backgroundColor: isXpTheme ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.04)" } : {}),
+                }}
               >
                 {Array.from({ length: totalHours }, (_, i) => (
                   <button
