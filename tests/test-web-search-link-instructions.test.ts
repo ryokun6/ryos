@@ -14,12 +14,15 @@ describe("web search link instructions", () => {
     );
   });
 
-  test("telegram prompt requires plain inline urls instead of citation blocks", () => {
+  test("telegram prompt keeps web-search sourcing light", () => {
     expect(TELEGRAM_CHAT_INSTRUCTIONS).toContain(
-      "use a normal inline URL in the sentence"
+      "prefer no citations, or mention the source name naturally in prose"
     );
     expect(TELEGRAM_CHAT_INSTRUCTIONS).toContain(
-      "Do not use markdown link syntax or parenthetical citation blocks"
+      "Only include a plain URL when the user explicitly asks for the source or direct link"
+    );
+    expect(TELEGRAM_CHAT_INSTRUCTIONS).toContain(
+      "Never use markdown link syntax, parenthetical citation blocks, or a separate sources/references list"
     );
   });
 });

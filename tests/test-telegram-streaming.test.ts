@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { simplifyTelegramCitationDisplay } from "../api/_utils/telegram-format";
 import {
   splitTelegramMessageText,
   streamTelegramReply,
@@ -53,6 +54,42 @@ describe("telegram streaming helpers", () => {
       { type: "draft", text: "hello" },
       { type: "draft", text: "hello there" },
       { type: "send", text: "hello there", replyToMessageId: 55 },
+    ]);
+  });
+
+  test("formats streamed Telegram text before previewing and sending", async () => {
+    const calls: Array<{ type: string; text: string; replyToMessageId?: number }> = [];
+
+    const result = await streamTelegramReply({
+      botToken: "bot-token",
+      chatId: "chat-1",
+      draftId: 90,
+      replyToMessageId: 55,
+      textStream: makeTextStream([
+        "it shipped yesterday ([example.com](https://example.com/news)).",
+      ]),
+      updateIntervalMs: 0,
+      minCharDelta: 1,
+      formatText: simplifyTelegramCitationDisplay,
+      deps: {
+        sendDraft: async ({ text }) => {
+          calls.push({ type: "draft", text });
+        },
+        sendMessage: async ({ text, replyToMessageId }) => {
+          calls.push({ type: "send", text, replyToMessageId });
+          return 777;
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      text: "it shipped yesterday.",
+      previewMode: "draft",
+      messageIds: [777],
+    });
+    expect(calls).toEqual([
+      { type: "draft", text: "it shipped yesterday." },
+      { type: "send", text: "it shipped yesterday.", replyToMessageId: 55 },
     ]);
   });
 

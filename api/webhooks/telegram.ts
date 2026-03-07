@@ -17,6 +17,7 @@ import {
   sendTelegramMessage,
   type TelegramUpdate,
 } from "../_utils/telegram.js";
+import { simplifyTelegramCitationDisplay } from "../_utils/telegram-format.js";
 import { streamTelegramReply } from "../_utils/telegram-streaming.js";
 import {
   createTelegramStatusReporter,
@@ -434,6 +435,7 @@ export default async function handler(
       draftId: parsedUpdate.updateId,
       textStream: result.textStream,
       replyToMessageId: parsedUpdate.messageId,
+      formatText: simplifyTelegramCitationDisplay,
       onBeforePreview: async () => {
         await statusReporter.dispose();
       },

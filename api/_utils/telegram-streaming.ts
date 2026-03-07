@@ -23,6 +23,7 @@ type StreamTelegramReplyOptions = {
   replyToMessageId?: number;
   updateIntervalMs?: number;
   minCharDelta?: number;
+  formatText?: (text: string) => string;
   onBeforePreview?: () => Promise<void>;
   logWarn?: (message: string, details?: unknown) => void;
   deps?: TelegramStreamDeps;
@@ -88,6 +89,7 @@ export async function streamTelegramReply({
   replyToMessageId,
   updateIntervalMs = DEFAULT_STREAM_UPDATE_INTERVAL_MS,
   minCharDelta = DEFAULT_STREAM_MIN_CHAR_DELTA,
+  formatText,
   onBeforePreview,
   logWarn,
   deps = {},
@@ -168,7 +170,7 @@ export async function streamTelegramReply({
 
   for await (const chunk of textStream) {
     fullText += chunk;
-    const normalized = fullText.trim();
+    const normalized = formatText ? formatText(fullText.trim()) : fullText.trim();
     if (!normalized) {
       continue;
     }
@@ -187,7 +189,7 @@ export async function streamTelegramReply({
     lastFlushedLength = normalized.length;
   }
 
-  const replyText = fullText.trim();
+  const replyText = formatText ? formatText(fullText.trim()) : fullText.trim();
   if (!replyText) {
     return {
       text: "",
