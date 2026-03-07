@@ -33,6 +33,7 @@ import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
+import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -74,57 +75,6 @@ const getUserColorClass = (username?: string): string => {
   return userColors[hash % userColors.length];
 };
 // --- End Color Hashing ---
-
-// Helper function to parse markdown and segment text
-const parseMarkdown = (
-  text: string
-): { type: string; content: string; url?: string }[] => {
-  const tokens: { type: string; content: string; url?: string }[] = [];
-  let currentIndex = 0;
-  // Regex to match URLs, Markdown links, bold, italic, CJK, emojis, words, spaces, or other characters
-  const regex =
-    /(\[([^\]]+?)\]\((https?:\/\/[^\s]+?)\))|(\*\*(.*?)\*\*)|(\*(.*?)\*)|(https?:\/\/[^\s]+)|([\p{Emoji_Presentation}\p{Extended_Pictographic}]|[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]|[a-zA-Z0-9]+|[^\S\n]+|[^a-zA-Z0-9\s\p{Emoji_Presentation}\p{Extended_Pictographic}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}*]+)/gu;
-  let match;
-
-  while ((match = regex.exec(text)) !== null) {
-    if (match[1]) {
-      // Markdown link: [text](url)
-      tokens.push({ type: "link", content: match[2], url: match[3] });
-    } else if (match[4]) {
-      // Bold: **text**
-      tokens.push({ type: "bold", content: match[5] });
-    } else if (match[6]) {
-      // Italic: *text*
-      tokens.push({ type: "italic", content: match[7] });
-    } else if (match[8]) {
-      // Plain URL
-      tokens.push({ type: "link", content: match[8], url: match[8] });
-    } else if (match[9]) {
-      // Other text (CJK, emoji, word, space, etc.)
-      tokens.push({ type: "text", content: match[9] });
-    }
-    currentIndex = regex.lastIndex;
-  }
-
-  // Capture any remaining text (shouldn't happen with the current regex, but good practice)
-  if (currentIndex < text.length) {
-    tokens.push({ type: "text", content: text.slice(currentIndex) });
-  }
-
-  return tokens;
-};
-
-// Helper function to segment text properly for CJK and emojis
-const segmentText = (
-  text: string
-): { type: string; content: string; url?: string }[] => {
-  // First split by line breaks to preserve them
-  return text.split(/(\n)/).flatMap((segment) => {
-    if (segment === "\n") return [{ type: "text", content: "\n" }];
-    // Parse markdown (including links) and maintain word boundaries in the segment
-    return parseMarkdown(segment);
-  });
-};
 
 // Helper function to check if text contains only emojis
 const isEmojiOnly = (text: string): boolean => {
@@ -457,7 +407,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
 
   const extractUrls = (content: string): string[] => {
     const urls = new Set<string>();
-    segmentText(content).forEach((token) => {
+    segmentChatMarkdownText(content).forEach((token) => {
       if (token.type === "link" && token.url) urls.add(token.url);
     });
     return Array.from(urls);
@@ -628,7 +578,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                       if (chunks.length > 0) {
                         let charCursor = 0;
                         const segments = chunks.map((chunk) => {
-                          const visibleLen = segmentText(chunk).reduce(
+                          const visibleLen = segmentChatMarkdownText(chunk).reduce(
                             (acc, token) => acc + token.content.length,
                             0
                           );
@@ -872,7 +822,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                           <div className="whitespace-pre-wrap">
                             {textContent &&
                               (() => {
-                                const tokens = segmentText(textContent.trim());
+                                const tokens = segmentChatMarkdownText(textContent.trim());
                                 let charPos = 0;
                                 return tokens.map((segment, idx) => {
                                   const start = charPos;
@@ -1001,7 +951,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }}
                 >
                   {(() => {
-                    const tokens = segmentText(displayContent);
+                    const tokens = segmentChatMarkdownText(displayContent);
                     let charPos2 = 0;
                     return tokens.map((segment, idx) => {
                       const start2 = charPos2;
