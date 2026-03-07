@@ -3,6 +3,7 @@ import {
   deleteTelegramMessage,
   editTelegramMessageText,
   sendTelegramChatAction,
+  sendTelegramMessageDraft,
   sendTelegramMessage,
 } from "../api/_utils/telegram";
 import {
@@ -102,7 +103,7 @@ describe("telegram bot api helpers", () => {
     ]);
   });
 
-  test("edit, delete, and typing helpers call the matching telegram endpoints", async () => {
+  test("draft, edit, delete, and typing helpers call the matching telegram endpoints", async () => {
     const requests: Array<{ url: string; body: Record<string, unknown> }> = [];
     const fetchImpl: typeof fetch = async (input, init) => {
       requests.push({
@@ -112,6 +113,13 @@ describe("telegram bot api helpers", () => {
       return Response.json({ ok: true, result: true });
     };
 
+    await sendTelegramMessageDraft({
+      botToken: "bot-token",
+      chatId: "chat-1",
+      draftId: 99,
+      text: "drafted",
+      fetchImpl,
+    });
     await editTelegramMessageText({
       botToken: "bot-token",
       chatId: "chat-1",
@@ -133,6 +141,14 @@ describe("telegram bot api helpers", () => {
     });
 
     expect(requests).toEqual([
+      {
+        url: "https://api.telegram.org/botbot-token/sendMessageDraft",
+        body: {
+          chat_id: "chat-1",
+          draft_id: 99,
+          text: "drafted",
+        },
+      },
       {
         url: "https://api.telegram.org/botbot-token/editMessageText",
         body: {
