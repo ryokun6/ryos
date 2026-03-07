@@ -443,13 +443,15 @@ export function ToolInvocationMessage({
         } else if (action === "update" && out.event?.title) {
           displayResultMessage = t("apps.chats.toolCalls.calendar.updatedEvent", { title: out.event.title });
         } else if (action === "update" && out.message) {
-          const titleMatch = out.message.match(/\"(.+?)\"/);
+          const titleMatch = out.message.match(/"(.+?)"/);
           displayResultMessage = t("apps.chats.toolCalls.calendar.updatedEvent", { title: titleMatch?.[1] ?? "event" });
         } else if (action === "delete" && out.message) {
-          const titleMatch = out.message.match(/\"(.+?)\"/);
+          const titleMatch = out.message.match(/"(.+?)"/);
           displayResultMessage = t("apps.chats.toolCalls.calendar.deletedEvent", { title: titleMatch?.[1] ?? "event" });
         } else if (action === "list" && out.events) {
-          displayResultMessage = t("apps.chats.toolCalls.calendar.foundEvents", { count: out.events.length });
+          displayResultMessage = out.events.length === 1
+            ? t("apps.chats.toolCalls.calendar.foundEvents", { count: out.events.length })
+            : t("apps.chats.toolCalls.calendar.foundEventsPlural", { count: out.events.length });
         } else if (action === "createTodo" && out.todo?.title) {
           displayResultMessage = t("apps.chats.toolCalls.calendar.addedTodo", { title: out.todo.title });
         } else if (action === "toggleTodo" && out.todo) {
@@ -457,10 +459,12 @@ export function ToolInvocationMessage({
             ? t("apps.chats.toolCalls.calendar.toggledTodoCompleted", { title: out.todo.title ?? "to-do" })
             : t("apps.chats.toolCalls.calendar.toggledTodoPending", { title: out.todo.title ?? "to-do" });
         } else if (action === "deleteTodo" && out.message) {
-          const titleMatch = out.message.match(/\"(.+?)\"/);
+          const titleMatch = out.message.match(/"(.+?)"/);
           displayResultMessage = t("apps.chats.toolCalls.calendar.deletedTodo", { title: titleMatch?.[1] ?? "to-do" });
         } else if (action === "listTodos" && out.todos) {
-          displayResultMessage = t("apps.chats.toolCalls.calendar.foundTodos", { count: out.todos.length });
+          displayResultMessage = out.todos.length === 1
+            ? t("apps.chats.toolCalls.calendar.foundTodos", { count: out.todos.length })
+            : t("apps.chats.toolCalls.calendar.foundTodosPlural", { count: out.todos.length });
         } else if (out.message) {
           displayResultMessage = out.message;
         }

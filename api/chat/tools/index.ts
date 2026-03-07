@@ -180,7 +180,7 @@ export const TOOL_DESCRIPTIONS = {
     "'update' modifies an existing event by ID; " +
     "'delete' removes an event by ID. " +
     "Todo actions: " +
-    "'listTodos' returns all todos (optionally filter by completed status or due date); " +
+    "'listTodos' returns all todos — do NOT pass 'date' unless specifically asked, as most todos have no due date (optionally filter by completed status or due date); " +
     "'createTodo' adds a new todo (requires title, optional date as due date in YYYY-MM-DD, optional calendarId); " +
     "'toggleTodo' toggles a todo's completion status by ID; " +
     "'deleteTodo' removes a todo by ID. " +

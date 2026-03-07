@@ -174,7 +174,7 @@ export async function executeSearchSongs(
 
       return {
         results,
-        message: `Found ${results.length} song(s) for "${query}"`,
+        message: `Found ${results.length} ${results.length === 1 ? "song" : "songs"} for "${query}"`,
         hint: "Use ipodControl with action 'addAndPlay' and the videoId to add a song to the iPod",
       };
     } catch (error) {
@@ -567,8 +567,8 @@ export async function executeCalendarControl(
       return {
         success: true,
         message: input.date
-          ? `Found ${formatted.length} event(s) for ${input.date}.`
-          : `Found ${formatted.length} event(s) total.`,
+          ? `Found ${formatted.length} ${formatted.length === 1 ? "event" : "events"} for ${input.date}.`
+          : `Found ${formatted.length} ${formatted.length === 1 ? "event" : "events"} total.`,
         events: formatted,
       };
     }
@@ -643,15 +643,12 @@ export async function executeCalendarControl(
 
     case "listTodos": {
       let todos = state.todos;
-      if (input.completed !== undefined) {
-        todos = todos.filter((t) => t.completed === input.completed);
-      }
-      if (input.date) {
-        todos = todos.filter((t) => t.dueDate === input.date);
+      if (input.completed === true) {
+        todos = todos.filter((t) => t.completed);
       }
       return {
         success: true,
-        message: `Found ${todos.length} todo(s).`,
+        message: `Found ${todos.length} ${todos.length === 1 ? "todo" : "todos"}.`,
         todos: todos.map((t) => ({
           id: t.id,
           title: t.title,
@@ -762,7 +759,7 @@ export async function executeStickiesControl(
       }
       return {
         success: true,
-        message: `Found ${notes.length} sticky note(s).`,
+        message: `Found ${notes.length} ${notes.length === 1 ? "sticky note" : "sticky notes"}.`,
         notes: notes.map((n) => ({
           id: n.id,
           content: n.content,
@@ -839,7 +836,7 @@ export async function executeStickiesControl(
       }
       const count = notes.length;
       await writeStickiesState(context.redis, context.username!, { notes: [] });
-      return { success: true, message: `Cleared ${count} sticky note(s).` };
+      return { success: true, message: `Cleared ${count} ${count === 1 ? "sticky note" : "sticky notes"}.` };
     }
 
     default:

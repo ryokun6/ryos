@@ -573,7 +573,7 @@ export const calendarControlSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Date must be YYYY-MM-DD format" })
     .optional()
-    .describe("For events: event date (YYYY-MM-DD). For 'createTodo': optional due date. For 'list'/'listTodos': filter by date."),
+    .describe("For events: event date (YYYY-MM-DD). For 'createTodo': optional due date. For 'list': filter events by date. For 'listTodos': filter by due date — OMIT to return ALL todos (most todos have no due date)."),
   startTime: z
     .string()
     .regex(/^\d{2}:\d{2}$/, { message: "Time must be HH:MM format" })

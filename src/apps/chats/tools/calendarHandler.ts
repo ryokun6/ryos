@@ -1,6 +1,7 @@
 import type { ToolHandler } from "./types";
 import { useCalendarStore } from "@/stores/useCalendarStore";
 import type { EventColor } from "@/stores/useCalendarStore";
+import i18n from "@/lib/i18n";
 
 export interface CalendarControlInput {
   action: "list" | "create" | "update" | "delete" | "listTodos" | "createTodo" | "toggleTodo" | "deleteTodo";
@@ -14,6 +15,9 @@ export interface CalendarControlInput {
   completed?: boolean;
   calendarId?: string;
 }
+
+const tc = (key: string, opts?: Record<string, unknown>) =>
+  i18n.t(`apps.chats.toolCalls.calendar.${key}`, opts);
 
 export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
   input,
@@ -38,14 +42,16 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
         color: ev.color,
         notes: ev.notes,
       }));
+      const count = formatted.length;
+      const message = input.date
+        ? tc(count === 1 ? "foundEventsForDate" : "foundEventsForDatePlural", { count, date: input.date })
+        : tc(count === 1 ? "foundEventsTotal" : "foundEventsTotalPlural", { count });
       context.addToolResult({
         tool: "calendarControl",
         toolCallId,
         output: {
           success: true,
-          message: input.date
-            ? `Found ${formatted.length} event(s) for ${input.date}.`
-            : `Found ${formatted.length} event(s) total.`,
+          message,
           events: formatted,
         },
       });
@@ -58,7 +64,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
-          errorText: "Creating an event requires 'title' and 'date'.",
+          errorText: tc("createEventMissingFields"),
         });
         return;
       }
@@ -80,7 +86,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
         toolCallId,
         output: {
           success: true,
-          message: `Created event "${input.title}" on ${input.date}.`,
+          message: tc("createdEvent", { title: input.title, date: input.date }),
           event: {
             id: eventId,
             title: input.title,
@@ -101,7 +107,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
-          errorText: "Updating an event requires 'id'.",
+          errorText: tc("updateEventMissingId"),
         });
         return;
       }
@@ -112,7 +118,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
-          errorText: `Event with id '${input.id}' not found.`,
+          errorText: tc("eventNotFound", { id: input.id }),
         });
         return;
       }
@@ -132,7 +138,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
         toolCallId,
         output: {
           success: true,
-          message: `Updated event "${existing.title}".`,
+          message: tc("updatedEventMsg", { title: existing.title }),
         },
       });
       break;
@@ -144,7 +150,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
-          errorText: "Deleting an event requires 'id'.",
+          errorText: tc("deleteEventMissingId"),
         });
         return;
       }
@@ -155,7 +161,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
-          errorText: `Event with id '${input.id}' not found.`,
+          errorText: tc("eventNotFound", { id: input.id }),
         });
         return;
       }
@@ -167,7 +173,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
         toolCallId,
         output: {
           success: true,
-          message: `Deleted event "${toDelete.title}".`,
+          message: tc("deletedEventMsg", { title: toDelete.title }),
         },
       });
       break;
@@ -175,11 +181,8 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
 
     case "listTodos": {
       let todos = store.todos;
-      if (input.completed !== undefined) {
-        todos = todos.filter((t) => t.completed === input.completed);
-      }
-      if (input.date) {
-        todos = todos.filter((t) => t.dueDate === input.date);
+      if (input.completed === true) {
+        todos = todos.filter((t) => t.completed);
       }
       const formatted = todos.map((t) => ({
         id: t.id,
@@ -188,12 +191,13 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
         dueDate: t.dueDate,
         calendarId: t.calendarId,
       }));
+      const count = formatted.length;
       context.addToolResult({
         tool: "calendarControl",
         toolCallId,
         output: {
           success: true,
-          message: `Found ${formatted.length} todo(s).`,
+          message: tc(count === 1 ? "foundTodosMsg" : "foundTodosMsgPlural", { count }),
           todos: formatted,
         },
       });
@@ -206,7 +210,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
-          errorText: "Creating a todo requires 'title'.",
+          errorText: tc("createTodoMissingTitle"),
         });
         return;
       }
@@ -222,7 +226,9 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
         toolCallId,
         output: {
           success: true,
-          message: `Created todo "${input.title}"${input.date ? ` due ${input.date}` : ""}.`,
+          message: input.date
+            ? tc("createdTodoDue", { title: input.title, date: input.date })
+            : tc("createdTodo", { title: input.title }),
           todo: {
             id: todoId,
             title: input.title,
@@ -241,7 +247,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
-          errorText: "Toggling a todo requires 'id'.",
+          errorText: tc("toggleTodoMissingId"),
         });
         return;
       }
@@ -252,20 +258,21 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
-          errorText: `Todo with id '${input.id}' not found.`,
+          errorText: tc("todoNotFound", { id: input.id }),
         });
         return;
       }
 
       store.toggleTodo(input.id);
 
-      const newStatus = !todoToToggle.completed ? "completed" : "pending";
       context.addToolResult({
         tool: "calendarControl",
         toolCallId,
         output: {
           success: true,
-          message: `Marked todo "${todoToToggle.title}" as ${newStatus}.`,
+          message: !todoToToggle.completed
+            ? tc("markedTodoCompleted", { title: todoToToggle.title })
+            : tc("markedTodoPending", { title: todoToToggle.title }),
           todo: {
             id: todoToToggle.id,
             title: todoToToggle.title,
@@ -284,7 +291,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
-          errorText: "Deleting a todo requires 'id'.",
+          errorText: tc("deleteTodoMissingId"),
         });
         return;
       }
@@ -295,7 +302,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
           state: "output-error",
           tool: "calendarControl",
           toolCallId,
-          errorText: `Todo with id '${input.id}' not found.`,
+          errorText: tc("todoNotFound", { id: input.id }),
         });
         return;
       }
@@ -307,7 +314,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
         toolCallId,
         output: {
           success: true,
-          message: `Deleted todo "${todoToDelete.title}".`,
+          message: tc("deletedTodoMsg", { title: todoToDelete.title }),
         },
       });
       break;
@@ -318,7 +325,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
         state: "output-error",
         tool: "calendarControl",
         toolCallId,
-        errorText: `Unknown action: ${action}`,
+        errorText: tc("unknownAction", { action }),
       });
   }
 };

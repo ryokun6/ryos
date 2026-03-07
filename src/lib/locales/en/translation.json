@@ -997,12 +997,37 @@
           "addedEvent": "Added event \"{{title}}\"",
           "updatedEvent": "Updated event \"{{title}}\"",
           "deletedEvent": "Deleted event \"{{title}}\"",
-          "foundEvents": "Found {{count}} event(s)",
+          "foundEvents": "Found {{count}} event",
+          "foundEventsPlural": "Found {{count}} events",
           "addedTodo": "Added to-do \"{{title}}\"",
           "toggledTodoCompleted": "Completed \"{{title}}\"",
           "toggledTodoPending": "Marked \"{{title}}\" incomplete",
           "deletedTodo": "Deleted to-do \"{{title}}\"",
-          "foundTodos": "Found {{count}} to-do(s)"
+          "foundTodos": "Found {{count}} to-do",
+          "foundTodosPlural": "Found {{count}} to-dos",
+          "foundEventsForDate": "Found {{count}} event for {{date}}.",
+          "foundEventsForDatePlural": "Found {{count}} events for {{date}}.",
+          "foundEventsTotal": "Found {{count}} event total.",
+          "foundEventsTotalPlural": "Found {{count}} events total.",
+          "createEventMissingFields": "Creating an event requires 'title' and 'date'.",
+          "createdEvent": "Created event \"{{title}}\" on {{date}}.",
+          "updateEventMissingId": "Updating an event requires 'id'.",
+          "eventNotFound": "Event with id '{{id}}' not found.",
+          "updatedEventMsg": "Updated event \"{{title}}\".",
+          "deleteEventMissingId": "Deleting an event requires 'id'.",
+          "deletedEventMsg": "Deleted event \"{{title}}\".",
+          "foundTodosMsg": "Found {{count}} todo.",
+          "foundTodosMsgPlural": "Found {{count}} todos.",
+          "createTodoMissingTitle": "Creating a to-do requires 'title'.",
+          "createdTodo": "Created to-do \"{{title}}\".",
+          "createdTodoDue": "Created to-do \"{{title}}\" due {{date}}.",
+          "toggleTodoMissingId": "Toggling a to-do requires 'id'.",
+          "todoNotFound": "To-do with id '{{id}}' not found.",
+          "markedTodoCompleted": "Marked to-do \"{{title}}\" as completed.",
+          "markedTodoPending": "Marked to-do \"{{title}}\" as pending.",
+          "deleteTodoMissingId": "Deleting a to-do requires 'id'.",
+          "deletedTodoMsg": "Deleted to-do \"{{title}}\".",
+          "unknownAction": "Unknown action: {{action}}"
         },
         "infiniteMac": {
           "startingSystem": "Starting {{system}}…",
@@ -2638,10 +2663,12 @@
         "about": "About Calendar"
       },
       "import": {
-        "success": "{{count}} event(s) imported"
+        "success": "{{count}} event imported",
+        "successPlural": "{{count}} events imported"
       },
       "export": {
-        "success": "{{count}} event(s) exported",
+        "success": "{{count}} event exported",
+        "successPlural": "{{count}} events exported",
         "noEvents": "No events to export"
       },
       "today": "Today"

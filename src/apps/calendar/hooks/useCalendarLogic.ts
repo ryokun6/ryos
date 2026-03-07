@@ -511,7 +511,9 @@ export function useCalendarLogic() {
           pushUndo({ type: "importEvents", events: importedEvents });
           setSelectedDate(parsed[0].date);
           toast.success(
-            t("apps.calendar.import.success", { count: parsed.length })
+            parsed.length === 1
+              ? t("apps.calendar.import.success", { count: parsed.length })
+              : t("apps.calendar.import.successPlural", { count: parsed.length })
           );
         }
       };
@@ -536,7 +538,11 @@ export function useCalendarLogic() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success(t("apps.calendar.export.success", { count: events.length }));
+    toast.success(
+      events.length === 1
+        ? t("apps.calendar.export.success", { count: events.length })
+        : t("apps.calendar.export.successPlural", { count: events.length })
+    );
   }, [events, t]);
 
   return {
