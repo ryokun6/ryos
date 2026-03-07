@@ -86,12 +86,28 @@ const WIDGET_ICONS: Record<WidgetType, string> = {
 function WidgetStrip({
   onAdd,
   isXpTheme,
+  onHeightMeasured,
 }: {
   onAdd: (type: WidgetType) => void;
   isXpTheme: boolean;
+  onHeightMeasured?: (height: number) => void;
 }) {
   const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!stripRef.current || !onHeightMeasured) return;
+    const el = stripRef.current;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const h = entry.contentRect.height;
+        if (h > 0) onHeightMeasured(h);
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onHeightMeasured]);
 
   const widgets: { type: WidgetType; label: string }[] = [
     { type: "clock", label: t("apps.dashboard.widgets.clock") },
@@ -115,6 +131,7 @@ function WidgetStrip({
       onClick={(e) => e.stopPropagation()}
     >
       <div
+        ref={stripRef}
         style={{
           background: isXpTheme
             ? "linear-gradient(to bottom, rgba(200,200,200,0.95), rgba(180,180,180,0.98))"
@@ -211,6 +228,7 @@ export function DashboardAppComponent({
   const closeAppInstance = useAppStore((state) => state.closeAppInstance);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [stripHeight, setStripHeight] = useState(0);
 
   const {
     translatedHelpItems,
@@ -337,9 +355,15 @@ export function DashboardAppComponent({
               }}
             >
               {/* Widgets */}
-              <AnimatePresence>
-                {widgets.map((widget) => (
-                  <motion.div
+              <motion.div
+                className="absolute inset-0 pointer-events-none"
+                style={{ pointerEvents: "auto" }}
+                animate={{ y: isPickerOpen ? -stripHeight : 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              >
+                <AnimatePresence>
+                  {widgets.map((widget) => (
+                    <motion.div
                     key={widget.id}
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -371,8 +395,9 @@ export function DashboardAppComponent({
                       {(isFlipped) => <WidgetContent type={widget.type} widgetId={widget.id} isFlipped={isFlipped} />}
                     </WidgetChrome>
                   </motion.div>
-                ))}
-              </AnimatePresence>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
 
               {/* Widget strip */}
               <AnimatePresence>
@@ -380,6 +405,7 @@ export function DashboardAppComponent({
                   <WidgetStrip
                     onAdd={handleAddWidget}
                     isXpTheme={isXpTheme}
+                    onHeightMeasured={setStripHeight}
                   />
                 )}
               </AnimatePresence>
