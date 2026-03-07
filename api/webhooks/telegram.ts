@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { generateText, stepCountIs } from "ai";
+import { generateText, stepCountIs, type ModelMessage } from "ai";
 import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
@@ -12,6 +12,7 @@ import {
   markTelegramUpdateProcessed,
 } from "../_utils/telegram-link.js";
 import {
+  downloadTelegramFile,
   parseTelegramTextUpdate,
   sendTelegramMessage,
   type TelegramUpdate,
@@ -74,6 +75,41 @@ async function sendTelegramInfoMessage(
     text,
     replyToMessageId,
   });
+}
+
+function injectImageIntoLastUserMessage(
+  messages: ModelMessage[],
+  image: { data: Uint8Array; mimeType: string }
+): ModelMessage[] {
+  let lastUserIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === "user") { lastUserIdx = i; break; }
+  }
+  if (lastUserIdx === -1) return messages;
+
+  const msg = messages[lastUserIdx];
+  if (msg.role !== "user") return messages;
+
+  const existingContent = typeof msg.content === "string"
+    ? [{ type: "text" as const, text: msg.content }]
+    : Array.isArray(msg.content)
+      ? msg.content
+      : [];
+
+  const updated: ModelMessage[] = [...messages];
+  updated[lastUserIdx] = {
+    ...msg,
+    content: [
+      ...existingContent,
+      {
+        type: "image" as const,
+        image: image.data,
+        mimeType: image.mimeType,
+      },
+    ],
+  } as ModelMessage;
+
+  return updated;
 }
 
 export default async function handler(
@@ -246,17 +282,41 @@ export default async function handler(
     }
   }
 
+  let imageData: { data: Uint8Array; mimeType: string } | null = null;
+  if (parsedUpdate.photoFileId) {
+    try {
+      imageData = await downloadTelegramFile({
+        botToken,
+        fileId: parsedUpdate.photoFileId,
+      });
+      logger.info("Downloaded Telegram photo", {
+        mimeType: imageData.mimeType,
+        sizeBytes: imageData.data.length,
+      });
+    } catch (err) {
+      logger.warn("Failed to download Telegram photo, continuing without image", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
   const history = await loadTelegramConversationHistory(redis, parsedUpdate.chatId);
+  const userMessageText = imageData && !parsedUpdate.text
+    ? "[sent an image]"
+    : parsedUpdate.text;
+
   const conversationMessages: SimpleConversationMessage[] = [
     ...history.map((message, index) => ({
       id: `history-${index}`,
       role: message.role,
-      content: message.content,
+      content: message.imageUrl
+        ? `[image] ${message.content}`
+        : message.content,
     })),
     {
       id: `telegram-${parsedUpdate.updateId}`,
       role: "user",
-      content: parsedUpdate.text,
+      content: userMessageText || "[sent an image]",
     },
   ];
 
@@ -287,9 +347,13 @@ export default async function handler(
     approxTokens: Math.round(staticSystemPrompt.length / 4),
   });
 
+  const finalMessages: ModelMessage[] = imageData
+    ? injectImageIntoLastUserMessage(enrichedMessages as ModelMessage[], imageData)
+    : (enrichedMessages as ModelMessage[]);
+
   const { text } = await generateText({
     model: selectedModel,
-    messages: enrichedMessages as any,
+    messages: finalMessages as any,
     tools: tools as any,
     temperature: 0.7,
     maxOutputTokens: 4000,
@@ -322,8 +386,9 @@ export default async function handler(
   const timestamp = Date.now();
   await appendTelegramConversationMessage(redis, parsedUpdate.chatId, {
     role: "user",
-    content: parsedUpdate.text,
+    content: userMessageText || "[sent an image]",
     createdAt: timestamp,
+    ...(imageData ? { imageUrl: "photo" } : {}),
   });
   await appendTelegramConversationMessage(redis, parsedUpdate.chatId, {
     role: "assistant",
@@ -336,6 +401,7 @@ export default async function handler(
     username: linkedAccount.username,
     telegramUserId: parsedUpdate.telegramUserId,
     updateId: parsedUpdate.updateId,
+    hasImage: !!imageData,
     replyLength: replyText.length,
   });
   logger.response(200, Date.now() - startTime);

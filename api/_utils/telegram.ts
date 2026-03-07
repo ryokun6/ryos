@@ -16,12 +16,22 @@ export interface TelegramChat {
   title?: string;
 }
 
+export interface TelegramPhotoSize {
+  file_id: string;
+  file_unique_id: string;
+  width: number;
+  height: number;
+  file_size?: number;
+}
+
 export interface TelegramMessage {
   message_id: number;
   from?: TelegramUser;
   chat: TelegramChat;
   date?: number;
   text?: string;
+  caption?: string;
+  photo?: TelegramPhotoSize[];
 }
 
 export interface TelegramUpdate {
@@ -41,6 +51,7 @@ export interface ParsedTelegramTextUpdate {
   lastName: string | null;
   isPrivateChat: boolean;
   startPayload: string | null;
+  photoFileId: string | null;
 }
 
 export interface TelegramSendMessageOptions {
@@ -128,16 +139,28 @@ export function parseTelegramTextUpdate(
     typeof message.message_id !== "number" ||
     typeof message.chat?.id !== "number" ||
     typeof message.chat?.type !== "string" ||
-    typeof message.text !== "string" ||
     typeof message.from?.id !== "number"
   ) {
     return null;
   }
 
-  const text = message.text.trim();
-  if (!text) {
+  const hasPhoto = Array.isArray(message.photo) && message.photo.length > 0;
+  const hasText = typeof message.text === "string" && message.text.trim().length > 0;
+  const hasCaption = typeof message.caption === "string" && message.caption.trim().length > 0;
+
+  if (!hasText && !hasPhoto) {
     return null;
   }
+
+  const text = hasText
+    ? message.text!.trim()
+    : hasCaption
+      ? message.caption!.trim()
+      : "";
+
+  const photoFileId = hasPhoto
+    ? message.photo![message.photo!.length - 1].file_id
+    : null;
 
   return {
     updateId: update.update_id,
@@ -159,7 +182,8 @@ export function parseTelegramTextUpdate(
         ? message.from.last_name
         : null,
     isPrivateChat: message.chat.type === "private",
-    startPayload: extractTelegramStartPayload(text),
+    startPayload: text ? extractTelegramStartPayload(text) : null,
+    photoFileId,
   };
 }
 
@@ -254,4 +278,68 @@ export async function getTelegramBotProfile({
   }
 
   return data.result;
+}
+
+export async function getTelegramFileUrl({
+  botToken,
+  fileId,
+  fetchImpl = fetch,
+}: {
+  botToken: string;
+  fileId: string;
+  fetchImpl?: typeof fetch;
+}): Promise<string> {
+  const response = await fetchImpl(
+    buildTelegramApiUrl(botToken, "getFile"),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ file_id: fileId }),
+    }
+  );
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `Telegram getFile failed (${response.status})${body ? `: ${body}` : ""}`
+    );
+  }
+
+  const data = (await response.json()) as {
+    ok?: boolean;
+    result?: { file_id: string; file_path?: string };
+  };
+
+  if (!data.ok || !data.result?.file_path) {
+    throw new Error("Telegram getFile returned no file_path");
+  }
+
+  return `${getTelegramBotApiBaseUrl()}/file/bot${botToken}/${data.result.file_path}`;
+}
+
+export async function downloadTelegramFile({
+  botToken,
+  fileId,
+  fetchImpl = fetch,
+}: {
+  botToken: string;
+  fileId: string;
+  fetchImpl?: typeof fetch;
+}): Promise<{ data: Uint8Array; mimeType: string }> {
+  const fileUrl = await getTelegramFileUrl({ botToken, fileId, fetchImpl });
+  const response = await fetchImpl(fileUrl);
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to download Telegram file (${response.status})`
+    );
+  }
+
+  const contentType = response.headers.get("content-type") || "image/jpeg";
+  const buffer = await response.arrayBuffer();
+
+  return {
+    data: new Uint8Array(buffer),
+    mimeType: contentType,
+  };
 }

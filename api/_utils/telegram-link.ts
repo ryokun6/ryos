@@ -30,6 +30,7 @@ export interface TelegramConversationMessage {
   role: "user" | "assistant";
   content: string;
   createdAt: number;
+  imageUrl?: string;
 }
 
 export function buildTelegramLinkCodeKey(code: string): string {
