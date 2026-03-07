@@ -4,6 +4,12 @@
   "devCommand": "bun run dev",
   "cleanUrls": true,
   "trailingSlash": false,
+  "crons": [
+    {
+      "path": "/api/cron/telegram-heartbeat",
+      "schedule": "*/30 * * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/embed/infinite-mac",
