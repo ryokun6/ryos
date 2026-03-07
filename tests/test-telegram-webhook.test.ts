@@ -1,4 +1,10 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import * as RateLimit from "../api/_utils/_rate-limit";
+import { createRedis } from "../api/_utils/redis";
+import {
+  createTelegramLinkCode,
+  linkTelegramAccount,
+} from "../api/_utils/telegram-link";
 import {
   BASE_URL,
   fetchWithOrigin,
@@ -318,5 +324,97 @@ describe("telegram webhook", () => {
     const statusData = await statusRes.json();
     expect(statusData.linked).toBe(false);
     expect(statusData.account).toBeNull();
+  });
+
+  test("sends a Telegram rate limit message when the burst limit is reached", async () => {
+    const redis = createRedis();
+    const limitedUsername = `tg_limit_${Date.now()}`;
+    const telegramUserId = String(RUN_ID + 7004);
+    const chatId = telegramUserId;
+    const updateId = UPDATE_ID_BASE + 4;
+
+    const linkSession = await createTelegramLinkCode(redis, limitedUsername, 60);
+    const linkedAccount = await linkTelegramAccount(redis, {
+      code: linkSession.code,
+      telegramUserId,
+      chatId,
+      firstName: "Limited",
+    });
+    expect(linkedAccount?.username).toBe(limitedUsername);
+
+    await redis.set(
+      RateLimit.makeKey(["rl", "telegram", "user", telegramUserId]),
+      "20",
+      { ex: 5 * 60 }
+    );
+
+    mockRequests.length = 0;
+
+    const rateLimitedRes = await fetch(`${TEST_BASE_URL}/api/webhooks/telegram`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Bot-Api-Secret-Token": WEBHOOK_SECRET,
+      },
+      body: JSON.stringify({
+        update_id: updateId,
+        message: {
+          message_id: 14,
+          from: {
+            id: Number(telegramUserId),
+            first_name: "Limited",
+          },
+          chat: {
+            id: Number(chatId),
+            type: "private",
+          },
+          text: "one more message",
+        },
+      }),
+    });
+
+    expect(rateLimitedRes.status).toBe(200);
+    const rateLimitedData = await rateLimitedRes.json();
+    expect(rateLimitedData.rateLimited).toBe(true);
+    expect(rateLimitedData.scope).toBe("user-burst");
+    expect(Number(rateLimitedData.retryAfter)).toBeGreaterThan(0);
+
+    const sendMessageRequest = mockRequests.find((request) =>
+      request.path.endsWith("/sendMessage")
+    );
+    expect(sendMessageRequest).toBeTruthy();
+    expect((sendMessageRequest?.body as { text?: string }).text).toContain(
+      "you've hit the limit of 20 messages in 5 minutes"
+    );
+    expect((sendMessageRequest?.body as { text?: string }).text).toContain(
+      "try again in about"
+    );
+
+    const duplicateRes = await fetch(`${TEST_BASE_URL}/api/webhooks/telegram`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Bot-Api-Secret-Token": WEBHOOK_SECRET,
+      },
+      body: JSON.stringify({
+        update_id: updateId,
+        message: {
+          message_id: 14,
+          from: {
+            id: Number(telegramUserId),
+            first_name: "Limited",
+          },
+          chat: {
+            id: Number(chatId),
+            type: "private",
+          },
+          text: "one more message",
+        },
+      }),
+    });
+
+    expect(duplicateRes.status).toBe(202);
+    const duplicateData = await duplicateRes.json();
+    expect(duplicateData.reason).toBe("duplicate-update");
   });
 });
