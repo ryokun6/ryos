@@ -90,6 +90,7 @@ export function useAutoCloudSync() {
     "custom-wallpapers": 0,
   });
   const checkInFlightRef = useRef(false);
+  const wallpaperSeedDoneRef = useRef(false);
 
   const isSyncActive = Boolean(username && authToken && autoSyncEnabled);
 
@@ -255,6 +256,25 @@ export function useAutoCloudSync() {
           ? postApplyUntil
           : 0;
       }
+
+      // One-time seed: if the cloud has no custom-wallpapers but local does,
+      // queue an upload after the suppression window so the first device
+      // populates the cloud. Runs only once per session.
+      if (!wallpaperSeedDoneRef.current && isDomainEnabled("custom-wallpapers")) {
+        wallpaperSeedDoneRef.current = true;
+        if (!metadataMap["custom-wallpapers"]?.updatedAt) {
+          const localRefs = await useDisplaySettingsStore
+            .getState()
+            .loadCustomWallpapers();
+          if (localRefs.length > 0) {
+            console.log(`[CloudSync] Seed upload: ${localRefs.length} local custom wallpapers, no remote data`);
+            setTimeout(
+              () => queueUpload("custom-wallpapers"),
+              REMOTE_APPLY_SUPPRESSION_MS + 1000
+            );
+          }
+        }
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to check cloud sync.";
@@ -263,7 +283,7 @@ export function useAutoCloudSync() {
       useCloudSyncStore.getState().setCheckingRemote(false);
       checkInFlightRef.current = false;
     }
-  }, [authToken, isDomainEnabled, isSyncActive, username]);
+  }, [authToken, isDomainEnabled, isSyncActive, queueUpload, username]);
 
   useEffect(() => {
     if (!isSyncActive) {
@@ -316,6 +336,7 @@ export function useAutoCloudSync() {
           state.currentWallpaper !== prevState.currentWallpaper &&
           state.currentWallpaper.startsWith("indexeddb://")
         ) {
+          console.log(`[CloudSync] display subscriber: currentWallpaper changed from "${prevState.currentWallpaper}" to "${state.currentWallpaper}"`);
           queueUpload("custom-wallpapers");
         }
       }
@@ -419,21 +440,7 @@ export function useAutoCloudSync() {
       lastLocalChangeAtRef.current[d] = null;
     }
 
-    void checkRemoteUpdates().then(async () => {
-      if (!isDomainEnabled("custom-wallpapers")) {
-        console.log("[CloudSync] custom-wallpapers domain not enabled, skipping initial upload check");
-        return;
-      }
-      const localRefs = await useDisplaySettingsStore
-        .getState()
-        .loadCustomWallpapers();
-      console.log(`[CloudSync] Initial check: ${localRefs.length} local custom wallpapers found`);
-      if (localRefs.length === 0) return;
-      setTimeout(
-        () => queueUpload("custom-wallpapers"),
-        REMOTE_APPLY_SUPPRESSION_MS + 1000
-      );
-    });
+    void checkRemoteUpdates();
     const intervalId = setInterval(() => {
       void checkRemoteUpdates();
     }, POLL_INTERVAL_MS);
