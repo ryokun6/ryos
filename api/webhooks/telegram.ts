@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { stepCountIs, streamText, type ModelMessage } from "ai";
+import { stepCountIs, streamText, type ModelMessage, type ToolSet } from "ai";
 import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
@@ -177,35 +177,29 @@ function injectImageIntoLastUserMessage(
   return updated;
 }
 
-function wrapTelegramToolsWithStatus<T extends Record<string, unknown>>(
+function wrapTelegramToolsWithStatus<T extends ToolSet>(
   tools: T,
   onToolStart: (toolName: string, input: unknown) => Promise<void>
 ): T {
-  return Object.fromEntries(
-    Object.entries(tools).map(([toolName, tool]) => {
-      if (
-        !tool ||
-        typeof tool !== "object" ||
-        !("execute" in tool) ||
-        typeof (tool as { execute?: unknown }).execute !== "function"
-      ) {
-        return [toolName, tool];
-      }
+  const wrappedTools = { ...tools } as T;
 
-      return [
-        toolName,
-        {
-          ...tool,
-          execute: async (...args: unknown[]) => {
-            await onToolStart(toolName, args[0]);
-            return await (tool as { execute: (...callArgs: unknown[]) => Promise<unknown> }).execute(
-              ...args
-            );
-          },
-        },
-      ];
-    })
-  ) as T;
+  for (const toolName of Object.keys(tools) as Array<keyof T & string>) {
+    const tool = tools[toolName];
+    if (typeof tool.execute !== "function") {
+      continue;
+    }
+
+    const execute = tool.execute;
+    wrappedTools[toolName] = {
+      ...tool,
+      execute: async (...args) => {
+        await onToolStart(toolName, args[0]);
+        return await execute(...args);
+      },
+    } as T[typeof toolName];
+  }
+
+  return wrappedTools;
 }
 
 type TelegramStatusStreamChunk =
@@ -525,7 +519,7 @@ export default async function handler(
     await statusReporter.start();
 
     const toolsWithStatus = wrapTelegramToolsWithStatus(
-      tools as Record<string, unknown>,
+      tools,
       async (toolName, input) => {
         const statusText = getTelegramToolStatusText(toolName, input);
         logger.info("Telegram tool started", {

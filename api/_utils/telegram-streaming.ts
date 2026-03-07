@@ -212,7 +212,7 @@ export async function streamTelegramReply({
     };
   }
 
-  if (previewMode === "legacy" && legacyMessageId != null) {
+  if (legacyMessageId != null) {
     if (previewText !== pages[0]) {
       await editMessage({
         botToken,

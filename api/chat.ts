@@ -329,11 +329,10 @@ Do NOT start with generic greetings like "hey! i'm ryo" or "welcome back". Jump 
       log(`Message ${index} [${msg.role}]: ${contentStr.substring(0, 100)}...`);
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = streamText({
       model: selectedModel,
-      messages: enrichedMessages as any,
-      tools: tools as any,
+      messages: enrichedMessages,
+      tools,
       temperature: 0.7,
       maxOutputTokens: 48000, // Increased from 6000 to prevent code generation cutoff
       stopWhen: stepCountIs(10), // Allow up to 10 steps for multi-tool workflows (agent loop)
