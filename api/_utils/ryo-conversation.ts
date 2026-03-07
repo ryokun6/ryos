@@ -1,3 +1,4 @@
+import { openai } from "@ai-sdk/openai";
 import type { Redis } from "@upstash/redis";
 import {
   convertToModelMessages,
@@ -207,6 +208,42 @@ const CHANNEL_STATE_PROFILES = {
 } as const;
 
 function defaultLog(): void {}
+
+function shouldEnableOpenAIWebSearch({
+  model,
+  username,
+}: {
+  model: SupportedModel;
+  username?: string | null;
+}): boolean {
+  return model === "gpt-5.4" && !!username;
+}
+
+function createOpenAIWebSearchTool(
+  systemState?: RyoConversationSystemState
+): ReturnType<typeof openai.tools.webSearch> {
+  const requestGeo = systemState?.requestGeo;
+  const userTimeZone = systemState?.userLocalTime?.timeZone;
+  const hasLocationContext =
+    !!requestGeo?.country ||
+    !!requestGeo?.city ||
+    !!requestGeo?.region ||
+    !!userTimeZone;
+
+  return openai.tools.webSearch(
+    hasLocationContext
+      ? {
+          userLocation: {
+            type: "approximate",
+            ...(requestGeo?.country ? { country: requestGeo.country } : {}),
+            ...(requestGeo?.city ? { city: requestGeo.city } : {}),
+            ...(requestGeo?.region ? { region: requestGeo.region } : {}),
+            ...(userTimeZone ? { timezone: userTimeZone } : {}),
+          },
+        }
+      : {}
+  );
+}
 
 export function ensureUIMessageFormat(
   messages: SimpleConversationMessage[]
@@ -624,7 +661,7 @@ export async function prepareRyoConversationModelInput(
     dailyNotesText: memoryContext.dailyNotesText,
   });
 
-  const tools = createChatTools(
+  const baseTools = createChatTools(
     {
       log,
       logError,
@@ -639,6 +676,12 @@ export async function prepareRyoConversationModelInput(
     },
     { profile: toolProfile }
   );
+  const tools = shouldEnableOpenAIWebSearch({ model, username })
+    ? {
+        ...baseTools,
+        web_search: createOpenAIWebSearchTool(systemState),
+      }
+    : baseTools;
 
   const uiMessages = ensureUIMessageFormat(messages);
   const modelMessages = await convertToModelMessages(uiMessages, {
