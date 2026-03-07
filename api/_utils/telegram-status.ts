@@ -101,7 +101,8 @@ export function createTelegramStatusReporter({
   const sendChatAction = deps.sendChatAction ?? sendTelegramChatAction;
 
   let statusMessageId: number | null = null;
-  let lastStatusText: string | null = null;
+  let renderedStatusText: string | null = null;
+  let statusTrail: string[] = [];
   let typingTimer: ReturnType<typeof setInterval> | null = null;
   let queue = Promise.resolve();
 
@@ -131,8 +132,9 @@ export function createTelegramStatusReporter({
     }
   };
 
-  const updateStatus = async (text: string) => {
-    if (text === lastStatusText) {
+  const syncStatusMessage = async () => {
+    const text = statusTrail.join("\n");
+    if (!text || text === renderedStatusText) {
       return;
     }
 
@@ -146,7 +148,7 @@ export function createTelegramStatusReporter({
         });
         if (typeof messageId === "number") {
           statusMessageId = messageId;
-          lastStatusText = text;
+          renderedStatusText = text;
         }
         return;
       }
@@ -157,8 +159,17 @@ export function createTelegramStatusReporter({
         messageId: statusMessageId,
         text,
       });
-      lastStatusText = text;
+      renderedStatusText = text;
     });
+  };
+
+  const appendStatus = async (text: string) => {
+    if (statusTrail.at(-1) === text) {
+      return;
+    }
+
+    statusTrail = [...statusTrail, text];
+    await syncStatusMessage();
   };
 
   return {
@@ -173,11 +184,11 @@ export function createTelegramStatusReporter({
     },
 
     async markTool(toolName: string, input: unknown) {
-      await updateStatus(getTelegramToolStatusText(toolName, input));
+      await appendStatus(getTelegramToolStatusText(toolName, input));
     },
 
     async markThinking() {
-      await updateStatus(TELEGRAM_TYPING_STATUS);
+      await appendStatus(TELEGRAM_TYPING_STATUS);
     },
 
     async dispose() {
@@ -199,7 +210,8 @@ export function createTelegramStatusReporter({
           });
         } finally {
           statusMessageId = null;
-          lastStatusText = null;
+          renderedStatusText = null;
+          statusTrail = [];
         }
       });
     },
