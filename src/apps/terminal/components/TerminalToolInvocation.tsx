@@ -3,14 +3,10 @@ import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import { useTranslation } from "react-i18next";
 import type { ToolInvocationData } from "../types";
 import { getTranslatedAppName, type AppId } from "@/utils/i18n";
-
-// Helper to format tool names
-function formatToolName(name: string): string {
-  return name
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (str) => str.toUpperCase())
-    .trim();
-}
+import {
+  formatToolName,
+  getWebSearchSummary,
+} from "@/lib/toolInvocationDisplay";
 
 // Helper to get app name
 function getAppName(id?: string): string {
@@ -112,6 +108,9 @@ export function TerminalToolInvocation({
         break;
       case "generateHtml":
         displayCallMessage = t("apps.chats.toolCalls.generating");
+        break;
+      case "web_search":
+        displayCallMessage = t("apps.chats.toolCalls.searchingWeb");
         break;
       default:
         displayCallMessage = t("apps.chats.toolCalls.running", {
@@ -247,6 +246,11 @@ export function TerminalToolInvocation({
       }
     } else if (toolName === "generateHtml") {
       displayResultMessage = t("apps.chats.toolCalls.preparingHtmlPreview");
+    } else if (toolName === "web_search") {
+      const summary = getWebSearchSummary(output);
+      displayResultMessage = summary?.query
+        ? t("apps.chats.toolCalls.searchedWebFor", { query: summary.query })
+        : t("apps.chats.toolCalls.searchedWeb");
     } else if (typeof output === "string" && output.trim().length > 0) {
       // Don't show raw HTML in result message for generateHtml
       if (toolName !== "generateHtml") {

@@ -32,6 +32,8 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
+import { formatToolName } from "@/lib/toolInvocationDisplay";
+import { segmentChatMarkdownText, type ChatMarkdownToken } from "@/lib/chatMarkdown";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -74,57 +76,6 @@ const getUserColorClass = (username?: string): string => {
 };
 // --- End Color Hashing ---
 
-// Helper function to parse markdown and segment text
-const parseMarkdown = (
-  text: string
-): { type: string; content: string; url?: string }[] => {
-  const tokens: { type: string; content: string; url?: string }[] = [];
-  let currentIndex = 0;
-  // Regex to match URLs, Markdown links, bold, italic, CJK, emojis, words, spaces, or other characters
-  const regex =
-    /(\[([^\]]+?)\]\((https?:\/\/[^\s]+?)\))|(\*\*(.*?)\*\*)|(\*(.*?)\*)|(https?:\/\/[^\s]+)|([\p{Emoji_Presentation}\p{Extended_Pictographic}]|[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]|[a-zA-Z0-9]+|[^\S\n]+|[^a-zA-Z0-9\s\p{Emoji_Presentation}\p{Extended_Pictographic}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}*]+)/gu;
-  let match;
-
-  while ((match = regex.exec(text)) !== null) {
-    if (match[1]) {
-      // Markdown link: [text](url)
-      tokens.push({ type: "link", content: match[2], url: match[3] });
-    } else if (match[4]) {
-      // Bold: **text**
-      tokens.push({ type: "bold", content: match[5] });
-    } else if (match[6]) {
-      // Italic: *text*
-      tokens.push({ type: "italic", content: match[7] });
-    } else if (match[8]) {
-      // Plain URL
-      tokens.push({ type: "link", content: match[8], url: match[8] });
-    } else if (match[9]) {
-      // Other text (CJK, emoji, word, space, etc.)
-      tokens.push({ type: "text", content: match[9] });
-    }
-    currentIndex = regex.lastIndex;
-  }
-
-  // Capture any remaining text (shouldn't happen with the current regex, but good practice)
-  if (currentIndex < text.length) {
-    tokens.push({ type: "text", content: text.slice(currentIndex) });
-  }
-
-  return tokens;
-};
-
-// Helper function to segment text properly for CJK and emojis
-const segmentText = (
-  text: string
-): { type: string; content: string; url?: string }[] => {
-  // First split by line breaks to preserve them
-  return text.split(/(\n)/).flatMap((segment) => {
-    if (segment === "\n") return [{ type: "text", content: "\n" }];
-    // Parse markdown (including links) and maintain word boundaries in the segment
-    return parseMarkdown(segment);
-  });
-};
-
 // Helper function to check if text contains only emojis
 const isEmojiOnly = (text: string): boolean => {
   const emojiRegex = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+$/u;
@@ -138,6 +89,23 @@ const isUrlOnly = (text: string): boolean => {
 };
 
 const isUrgentMessage = (content: string) => content.startsWith("!!!!");
+
+const getFaviconUrl = (url: string): string => {
+  try {
+    const domain = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+  } catch {
+    return `https://www.google.com/s2/favicons?domain=example.com&sz=16`;
+  }
+};
+
+const getCitationLabel = (url: string): string => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+};
 
 // Helper function to extract user-friendly error message
 const getErrorMessage = (error: Error): string => {
@@ -186,18 +154,6 @@ const getErrorMessage = (error: Error): string => {
   // Return the original message as fallback
   return error.message;
 };
-
-// --- New helper: prettify tool names ---
-/**
- * Convert camelCase / PascalCase tool names to a human-readable string.
- * Example: "textEditSearchReplace" -> "Text Edit Search Replace".
- */
-const formatToolName = (name: string): string =>
-  name
-    .replace(/([A-Z])/g, " $1") // insert space before capitals
-    .replace(/^./, (ch) => ch.toUpperCase()) // capitalize first letter
-    .trim();
-// --- End helper: prettify tool names ---
 
 // Helper to map an app id to a user-friendly name (uses translations)
 const getAppName = (id?: string): string => {
@@ -468,10 +424,59 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
 
   const extractUrls = (content: string): string[] => {
     const urls = new Set<string>();
-    segmentText(content).forEach((token) => {
+    segmentChatMarkdownText(content).forEach((token) => {
       if (token.type === "link" && token.url) urls.add(token.url);
     });
     return Array.from(urls);
+  };
+
+  const renderInlineToken = (segment: ChatMarkdownToken) => {
+    const tokenNode =
+      (segment.type === "link" || segment.type === "citation") && segment.url ? (
+        <a
+          href={segment.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={
+            segment.type === "citation"
+              ? "inline-flex h-4 w-4 translate-y-[1px] items-center justify-center align-baseline no-underline"
+              : "text-blue-600 hover:underline"
+          }
+          style={{
+            color:
+              segment.type === "citation"
+                ? undefined
+                : isUrgent
+                ? "inherit"
+                : undefined,
+          }}
+          onClick={(e) => e.stopPropagation()}
+          title={
+            segment.type === "citation"
+              ? getCitationLabel(segment.url)
+              : undefined
+          }
+          aria-label={
+            segment.type === "citation"
+              ? `Source: ${getCitationLabel(segment.url)}`
+              : undefined
+          }
+        >
+          {segment.type === "citation" ? (
+            <img
+              src={getFaviconUrl(segment.url)}
+              alt=""
+              aria-hidden="true"
+              className="h-3.5 w-3.5 rounded-[2px]"
+            />
+          ) : (
+            segment.content
+          )}
+        </a>
+      ) : (
+        segment.content
+      );
+    return tokenNode;
   };
 
   return (
@@ -639,7 +644,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                       if (chunks.length > 0) {
                         let charCursor = 0;
                         const segments = chunks.map((chunk) => {
-                          const visibleLen = segmentText(chunk).reduce(
+                          const visibleLen = segmentChatMarkdownText(chunk).reduce(
                             (acc, token) => acc + token.content.length,
                             0
                           );
@@ -883,7 +888,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                           <div className="whitespace-pre-wrap">
                             {textContent &&
                               (() => {
-                                const tokens = segmentText(textContent.trim());
+                                const tokens = segmentChatMarkdownText(textContent.trim());
                                 let charPos = 0;
                                 return tokens.map((segment, idx) => {
                                   const start = charPos;
@@ -928,38 +933,10 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                       start < (combinedHighlightSeg?.end ?? 0) &&
                                       end > (combinedHighlightSeg?.start ?? 0) ? (
                                         <span className="animate-highlight">
-                                          {segment.type === "link" && segment.url ? (
-                                            <a
-                                              href={segment.url}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="text-blue-600 hover:underline"
-                                              style={{
-                                                color: isUrgent ? "inherit" : undefined,
-                                              }}
-                                              onClick={(e) => e.stopPropagation()}
-                                            >
-                                              {segment.content}
-                                            </a>
-                                          ) : (
-                                            segment.content
-                                          )}
+                                          {renderInlineToken(segment)}
                                         </span>
-                                      ) : segment.type === "link" && segment.url ? (
-                                        <a
-                                          href={segment.url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-blue-600 hover:underline"
-                                          style={{
-                                            color: isUrgent ? "inherit" : undefined,
-                                          }}
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          {segment.content}
-                                        </a>
                                       ) : (
-                                        segment.content
+                                        renderInlineToken(segment)
                                       )}
                                     </motion.span>
                                   );
@@ -1012,7 +989,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                   }}
                 >
                   {(() => {
-                    const tokens = segmentText(displayContent);
+                    const tokens = segmentChatMarkdownText(displayContent);
                     let charPos2 = 0;
                     return tokens.map((segment, idx) => {
                       const start2 = charPos2;
@@ -1022,23 +999,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         highlightActive &&
                         start2 < (combinedHighlightSeg?.end ?? 0) &&
                         end2 > (combinedHighlightSeg?.start ?? 0);
-                      const contentNode =
-                        segment.type === "link" && segment.url ? (
-                          <a
-                            href={segment.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
-                            style={{
-                              color: isUrgent ? "inherit" : undefined,
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {segment.content}
-                          </a>
-                        ) : (
-                          segment.content
-                        );
+                      const contentNode = renderInlineToken(segment);
                       return (
                         <span
                           key={`${messageKey}-segment-${idx}`}
