@@ -5,7 +5,7 @@ import {
 } from "../src/lib/chatMarkdown";
 
 describe("chat markdown parsing", () => {
-  test("parses parenthesized markdown citations as inline link text", () => {
+  test("parses parenthesized markdown citations as citation tokens", () => {
     expect(
       parseChatMarkdownInline(
         "dispute. ([straitstimes.com](https://example.com/story?utm_source=openai))"
@@ -14,13 +14,11 @@ describe("chat markdown parsing", () => {
       { type: "text", content: "dispute" },
       { type: "text", content: "." },
       { type: "text", content: " " },
-      { type: "text", content: "(" },
       {
-        type: "link",
+        type: "citation",
         content: "straitstimes.com",
         url: "https://example.com/story?utm_source=openai",
       },
-      { type: "text", content: ")" },
     ]);
   });
 
@@ -69,13 +67,11 @@ describe("chat markdown parsing", () => {
       { type: "text", content: " " },
       { type: "text", content: "line" },
       { type: "text", content: "\n" },
-      { type: "text", content: "(" },
       {
-        type: "link",
+        type: "citation",
         content: "source",
         url: "https://example.com",
       },
-      { type: "text", content: ")" },
     ]);
   });
 });

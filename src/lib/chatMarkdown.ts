@@ -1,5 +1,5 @@
 export type ChatMarkdownToken = {
-  type: "text" | "bold" | "italic" | "link";
+  type: "text" | "bold" | "italic" | "link" | "citation";
   content: string;
   url?: string;
 };
@@ -62,13 +62,11 @@ export function parseChatMarkdownInline(text: string): ChatMarkdownToken[] {
       PARENTHESIZED_MARKDOWN_LINK_RE
     );
     if (parenthesizedLinkMatch) {
-      tokens.push({ type: "text", content: "(" });
       tokens.push({
-        type: "link",
+        type: "citation",
         content: parenthesizedLinkMatch[1],
         url: parenthesizedLinkMatch[2],
       });
-      tokens.push({ type: "text", content: ")" });
       remaining = remaining.slice(parenthesizedLinkMatch[0].length);
       continue;
     }

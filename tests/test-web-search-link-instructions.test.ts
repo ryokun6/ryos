@@ -5,12 +5,12 @@ import {
 } from "../api/_utils/_aiPrompts.js";
 
 describe("web search link instructions", () => {
-  test("chat prompt requires normal inline markdown links", () => {
+  test("chat prompt requires compact parenthesized markdown citations", () => {
     expect(CHAT_INSTRUCTIONS).toContain(
-      "cite sources only as natural inline markdown links"
+      "cite sources as compact parenthesized markdown citations"
     );
     expect(CHAT_INSTRUCTIONS).toContain(
-      "Never wrap markdown links in extra parentheses"
+      "Keep citations minimal"
     );
   });
 

@@ -33,7 +33,7 @@ import i18n from "@/lib/i18n";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
-import { segmentChatMarkdownText } from "@/lib/chatMarkdown";
+import { segmentChatMarkdownText, type ChatMarkdownToken } from "@/lib/chatMarkdown";
 
 // Helper to extract image URLs from message parts
 const extractImageParts = (message: {
@@ -89,6 +89,23 @@ const isUrlOnly = (text: string): boolean => {
 };
 
 const isUrgentMessage = (content: string) => content.startsWith("!!!!");
+
+const getFaviconUrl = (url: string): string => {
+  try {
+    const domain = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${domain}&sz=16`;
+  } catch {
+    return `https://www.google.com/s2/favicons?domain=example.com&sz=16`;
+  }
+};
+
+const getCitationLabel = (url: string): string => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+};
 
 // Helper function to extract user-friendly error message
 const getErrorMessage = (error: Error): string => {
@@ -411,6 +428,55 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
       if (token.type === "link" && token.url) urls.add(token.url);
     });
     return Array.from(urls);
+  };
+
+  const renderInlineToken = (segment: ChatMarkdownToken) => {
+    const tokenNode =
+      (segment.type === "link" || segment.type === "citation") && segment.url ? (
+        <a
+          href={segment.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={
+            segment.type === "citation"
+              ? "inline-flex h-4 w-4 translate-y-[1px] items-center justify-center align-baseline no-underline"
+              : "text-blue-600 hover:underline"
+          }
+          style={{
+            color:
+              segment.type === "citation"
+                ? undefined
+                : isUrgent
+                ? "inherit"
+                : undefined,
+          }}
+          onClick={(e) => e.stopPropagation()}
+          title={
+            segment.type === "citation"
+              ? getCitationLabel(segment.url)
+              : undefined
+          }
+          aria-label={
+            segment.type === "citation"
+              ? `Source: ${getCitationLabel(segment.url)}`
+              : undefined
+          }
+        >
+          {segment.type === "citation" ? (
+            <img
+              src={getFaviconUrl(segment.url)}
+              alt=""
+              aria-hidden="true"
+              className="h-3.5 w-3.5 rounded-[2px]"
+            />
+          ) : (
+            segment.content
+          )}
+        </a>
+      ) : (
+        segment.content
+      );
+    return tokenNode;
   };
 
   return (
@@ -867,38 +933,10 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                                       start < (combinedHighlightSeg?.end ?? 0) &&
                                       end > (combinedHighlightSeg?.start ?? 0) ? (
                                         <span className="animate-highlight">
-                                          {segment.type === "link" && segment.url ? (
-                                            <a
-                                              href={segment.url}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="text-blue-600 hover:underline"
-                                              style={{
-                                                color: isUrgent ? "inherit" : undefined,
-                                              }}
-                                              onClick={(e) => e.stopPropagation()}
-                                            >
-                                              {segment.content}
-                                            </a>
-                                          ) : (
-                                            segment.content
-                                          )}
+                                          {renderInlineToken(segment)}
                                         </span>
-                                      ) : segment.type === "link" && segment.url ? (
-                                        <a
-                                          href={segment.url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-blue-600 hover:underline"
-                                          style={{
-                                            color: isUrgent ? "inherit" : undefined,
-                                          }}
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          {segment.content}
-                                        </a>
                                       ) : (
-                                        segment.content
+                                        renderInlineToken(segment)
                                       )}
                                     </motion.span>
                                   );
@@ -961,23 +999,7 @@ const ChatMessageItem = memo(function ChatMessageItem(props: ChatMessageItemProp
                         highlightActive &&
                         start2 < (combinedHighlightSeg?.end ?? 0) &&
                         end2 > (combinedHighlightSeg?.start ?? 0);
-                      const contentNode =
-                        segment.type === "link" && segment.url ? (
-                          <a
-                            href={segment.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
-                            style={{
-                              color: isUrgent ? "inherit" : undefined,
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {segment.content}
-                          </a>
-                        ) : (
-                          segment.content
-                        );
+                      const contentNode = renderInlineToken(segment);
                       return (
                         <span
                           key={`${messageKey}-segment-${idx}`}
