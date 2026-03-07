@@ -63,6 +63,14 @@ export interface TelegramSendMessageOptions {
   fetchImpl?: typeof fetch;
 }
 
+export interface TelegramSendMessageDraftOptions {
+  botToken: string;
+  chatId: string;
+  draftId: number;
+  text: string;
+  fetchImpl?: typeof fetch;
+}
+
 export interface TelegramEditMessageOptions {
   botToken: string;
   chatId: string;
@@ -247,6 +255,37 @@ export async function sendTelegramMessage({
   const body = await response.text();
   throw new Error(
     `Telegram sendMessage failed (${response.status})${
+      body ? `: ${body}` : ""
+    }`
+  );
+}
+
+export async function sendTelegramMessageDraft({
+  botToken,
+  chatId,
+  draftId,
+  text,
+  fetchImpl = fetch,
+}: TelegramSendMessageDraftOptions): Promise<void> {
+  const response = await fetchImpl(buildTelegramApiUrl(botToken, "sendMessageDraft"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chat_id: chatId,
+      draft_id: draftId,
+      text,
+    }),
+  });
+
+  if (response.ok) {
+    return;
+  }
+
+  const body = await response.text();
+  throw new Error(
+    `Telegram sendMessageDraft failed (${response.status})${
       body ? `: ${body}` : ""
     }`
   );

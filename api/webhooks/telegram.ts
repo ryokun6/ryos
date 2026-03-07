@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { generateText, stepCountIs, type ModelMessage } from "ai";
+import { stepCountIs, streamText, type ModelMessage } from "ai";
 import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
@@ -17,6 +17,7 @@ import {
   sendTelegramMessage,
   type TelegramUpdate,
 } from "../_utils/telegram.js";
+import { streamTelegramReply } from "../_utils/telegram-streaming.js";
 import {
   createTelegramStatusReporter,
   getTelegramToolStatusText,
@@ -408,7 +409,7 @@ export default async function handler(
       }
     );
 
-    const { text } = await generateText({
+    const result = streamText({
       model: selectedModel,
       messages: finalMessages,
       tools: toolsWithStatus,
@@ -427,7 +428,18 @@ export default async function handler(
       },
     });
 
-    const replyText = text.trim();
+    const { text: replyText, previewMode } = await streamTelegramReply({
+      botToken,
+      chatId: parsedUpdate.chatId,
+      draftId: parsedUpdate.updateId,
+      textStream: result.textStream,
+      replyToMessageId: parsedUpdate.messageId,
+      onBeforePreview: async () => {
+        await statusReporter.dispose();
+      },
+      logWarn: (message, details) => logger.warn(message, details),
+    });
+
     if (!replyText) {
       logger.warn("Generated empty Telegram reply", {
         username: linkedAccount.username,
@@ -437,13 +449,6 @@ export default async function handler(
       sendJson(res, 500, { error: "Generated empty reply" });
       return;
     }
-
-    await sendTelegramMessage({
-      botToken,
-      chatId: parsedUpdate.chatId,
-      text: replyText,
-      replyToMessageId: parsedUpdate.messageId,
-    });
 
     const timestamp = Date.now();
     await appendTelegramConversationMessage(redis, parsedUpdate.chatId, {
@@ -465,6 +470,7 @@ export default async function handler(
       updateId: parsedUpdate.updateId,
       hasImage: !!imageData,
       replyLength: replyText.length,
+      previewMode,
     });
     logger.response(200, Date.now() - startTime);
     sendJson(res, 200, { success: true, reply: replyText });
